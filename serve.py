@@ -2,14 +2,14 @@
 """
 serve.py — Serveur local pour tester le dashboard Coach IA.
 
-Sert les fichiers statiques (dashboard.html, data.js, streams.js, etc.).
-Plus de proxy API depuis la migration vers Strava (data.js déjà généré par fetch_data.py).
+Sert les fichiers statiques du site (index.html, js/, styles/…).
+Toutes les données viennent de Supabase : pas de proxy ni de data.js.
 
 Usage:
     python serve.py            # port 8000 par défaut
     python serve.py 9000       # port custom
 
-Puis ouvre : http://localhost:8000/dashboard.html
+Puis ouvre : http://localhost:8000/index.html
 """
 import os
 import sys
@@ -47,7 +47,7 @@ def run(port=8000):
     ThreadingHTTPServer.request_queue_size = 128   # plus de connexions simultanees en attente
     server = ThreadingHTTPServer(("0.0.0.0", port), CoachIAHandler)
     server.daemon_threads = True
-    url = f"http://localhost:{port}/dashboard.html"
+    url = f"http://localhost:{port}/index.html"
     print("=" * 60)
     print("Coach IA - Serveur local actif")
     print(f"  Dashboard : {url}")
