@@ -15,7 +15,7 @@
 // Pré-requis : migration supabase/migrations/2026-10-10_oauth_states.sql
 // ============================================================
 // deno-lint-ignore-file no-explicit-any
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.3";
 import {
   ALLOWED_RETURN_URLS, STATE_TTL_MIN, corsHeadersFor, newState,
 } from "../_shared/oauth-state.ts";

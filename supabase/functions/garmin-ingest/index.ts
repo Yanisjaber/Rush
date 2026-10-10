@@ -26,7 +26,8 @@
 // (déjà posés pour strava-ingest, réutilisés ici)
 // ============================================================
 // deno-lint-ignore-file no-explicit-any
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.3";
+import { corsHeadersFor } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -41,13 +42,11 @@ const USER_AGENT_API = "GCM-iOS-5.7.2.1";
 const USER_AGENT_SSO = "com.garmin.android.apps.connectmobile";
 const DEFAULT_DAYS = 3;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// CORS restreint (voir _shared/cors.ts) : renseigné à chaque requête.
+let corsHeaders: Record<string, string> = {};
 
 Deno.serve(async (req) => {
+  corsHeaders = corsHeadersFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {

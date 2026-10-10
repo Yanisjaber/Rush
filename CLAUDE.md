@@ -53,7 +53,8 @@ Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon
 - Pense sécurité **dès la conception** : avant chaque ajout, « qui peut lire ou modifier ça ? ».
 - Toute nouvelle table a la RLS activée, avec des policies limitées à `auth.uid() = user_id`.
 - Les clés publiques (`anon`, `*-config.js`) sont OK dans le front. Ne mets **jamais** la clé `service_role`, un `client_secret`, un mot de passe ou un token dans le code, un commit, une réponse ou un log.
-- Échappe tout texte venant de la base ou de l'utilisateur avant de l'insérer dans du HTML. Pas de `innerHTML` avec des données non échappées, pas de `eval`.
+- Échappe tout texte venant de Strava, de la base ou de l'utilisateur avant de l'insérer dans du HTML : `escapeHtml()` de `src/core/utils.js`. Pas de `innerHTML` avec des données non échappées, pas de `eval`. Test dynamique de référence : mettre `<img src=x onerror=...>` dans les noms d'activités (en mémoire, via `window.DASHBOARD_DATA`), parcourir les écrans et vérifier que rien ne s'exécute.
+- Edge Functions appelées par le navigateur : CORS via `_shared/cors.ts` (GitHub Pages + localhost), jamais `*`. `supabase-js` et les scripts CDN sont figés (version exacte, SRI dans `index.html`) : si tu changes une version, recalcule l'empreinte `sha384`.
 - Valide les entrées (formulaires, fichiers GPX/imports : type et taille) côté client **et** compte sur la RLS côté base.
 - Si tu repères une faille existante, dis-le à Yanis tout de suite, même si ce n'est pas ce qu'il a demandé.
 - Ne lance jamais de SQL sur la base Supabase ni de déploiement d'Edge Function sans que Yanis le demande.

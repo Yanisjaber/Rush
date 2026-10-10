@@ -22,7 +22,7 @@
 // l'identité vient de l'état à usage unique (oauth_states).
 // ============================================================
 // deno-lint-ignore-file no-explicit-any
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.3";
 import { FALLBACK_REDIRECT, consumeState, pickSafeReturnUrl, redirectToApp } from "../_shared/oauth-state.ts";
 
 const STRAVA_CLIENT_ID = Deno.env.get("STRAVA_CLIENT_ID")!;

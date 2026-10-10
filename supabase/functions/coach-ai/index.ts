@@ -17,7 +17,8 @@
 // Secrets : GEMINI_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY. Optionnel : GEMINI_MODEL, GEMINI_FALLBACK_MODEL.
 // ============================================================
 // deno-lint-ignore-file no-explicit-any
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.3";
+import { corsHeadersFor } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -25,11 +26,8 @@ const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
 const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
 const GEMINI_FALLBACK = Deno.env.get("GEMINI_FALLBACK_MODEL") || "gemini-2.5-flash-lite";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// CORS restreint (voir _shared/cors.ts) : renseigné à chaque requête.
+let corsHeaders: Record<string, string> = {};
 
 const SYS_ANALYZE = `Tu es un entraîneur de cyclisme et de sports d'endurance, expert, précis et bienveillant.
 On te donne le résumé chiffré d'UNE séance d'un athlète, plus son état de forme (modèle PMC : CTL = forme/fitness, ATL = fatigue, TSB = fraîcheur).
@@ -253,6 +251,7 @@ async function geminiJson(systemText: string, contents: any[], schema: any, maxT
 }
 
 Deno.serve(async (req) => {
+  corsHeaders = corsHeadersFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {

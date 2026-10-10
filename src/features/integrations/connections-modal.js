@@ -11,6 +11,8 @@
    Expose : window.openConnectionsModal()
    ============================================================ */
 
+import { escapeHtml } from '../../core/utils.js';
+
 function fmtDate(iso) {
   if (!iso) return null;
   try {
@@ -75,7 +77,7 @@ async function render(body) {
   try {
     data = await fetchConnections();
   } catch (e) {
-    body.innerHTML = `<div class="cnx-error">Impossible de charger le statut : ${e.message || e}</div>`;
+    body.innerHTML = `<div class="cnx-error">Impossible de charger le statut : ${escapeHtml(e.message || e)}</div>`;
     return;
   }
   if (!data.user) {
@@ -107,7 +109,7 @@ function statusPill(conn) {
 function cardStrava(c, acts = 0) {
   const last = fmtDate(c?.last_sync_at);
   const sub = c
-    ? `${c.athlete_name ? c.athlete_name + ' · ' : ''}${acts} activités${last ? ' · sync ' + last : ''}`
+    ? `${c.athlete_name ? escapeHtml(c.athlete_name) + ' · ' : ''}${acts} activités${last ? ' · sync ' + last : ''}`
     : 'Importe automatiquement tes activités, puissances et streams.';
   return `
     <div class="cnx-card strava">
@@ -129,7 +131,7 @@ function stravaSyncBarOrActions(c) {
     return `
       <div class="cnx-cardprog" data-sync="strava">
         <div class="cnx-cardprog-row">
-          <span class="cnx-cardprog-step" data-ccp="step">${st.label || 'Synchronisation…'}</span>
+          <span class="cnx-cardprog-step" data-ccp="step">${escapeHtml(st.label || 'Synchronisation…')}</span>
           <span class="cnx-cardprog-pct" data-ccp="pct">${st.pct || 0} %</span>
         </div>
         <div class="cnx-cardprog-bar"><div class="cnx-cardprog-fill" data-ccp="fill" style="width:${st.pct || 0}%"></div></div>
@@ -169,7 +171,7 @@ function cardOpenDossard() {
   const lic = window.odGetLicence ? window.odGetLicence() : null;
   const name = lic ? `${lic.firstName || ''} ${lic.lastName || lic.name || ''}`.trim() : '';
   const sub = lic
-    ? `${name || 'Licence liée'}${lic.licenceNumber ? ' · N° ' + lic.licenceNumber : ''}${lic.club ? ' · ' + lic.club : ''}`
+    ? `${escapeHtml(name || 'Licence liée')}${lic.licenceNumber ? ' · N° ' + escapeHtml(lic.licenceNumber) : ''}${lic.club ? ' · ' + escapeHtml(lic.club) : ''}`
     : 'Importe ton palmarès et tes résultats officiels (FSGT, UFOLEP…).';
   return `
     <div class="cnx-card opendossard">

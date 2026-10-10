@@ -2,6 +2,7 @@
 import { appState } from '../../core/state.js';
 import { renderCompList } from '../competitions/competitions-page.js';
 import { renderCalendar } from '../calendar/realise-calendar.js';
+import { escapeHtml } from '../../core/utils.js';
 
 
 // ========= CHAT COACH IA =========
@@ -74,7 +75,7 @@ function renderChat() {
     <div class="chat-message ${m.role}">
       <div class="chat-avatar ${m.role}">${m.role === 'user' ? 'TOI' : 'IA'}</div>
       <div class="chat-bubble-wrap">
-        <div class="chat-bubble">${m.text}</div>
+        <div class="chat-bubble">${escapeHtml(m.text)}</div>
         <div class="chat-time">${m.time}</div>
       </div>
     </div>

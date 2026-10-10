@@ -24,7 +24,8 @@
 //   SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
 // ============================================================
 // deno-lint-ignore-file no-explicit-any
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.3";
+import { corsHeadersFor } from "../_shared/cors.ts";
 
 const STRAVA_CLIENT_ID = Deno.env.get("STRAVA_CLIENT_ID")!;
 const STRAVA_CLIENT_SECRET = Deno.env.get("STRAVA_CLIENT_SECRET")!;
@@ -63,13 +64,11 @@ const MMP_DURS = Array.from(new Set([...DURATIONS, ...PC_DURS])).sort((a, b) => 
 // Version du jeu de durées CLIENT (doit rester égale à __PC_VERSION dans js/app.js).
 const CLIENT_PC_VERSION = 3;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// CORS restreint (voir _shared/cors.ts) : renseigné à chaque requête.
+let corsHeaders: Record<string, string> = {};
 
 Deno.serve(async (req) => {
+  corsHeaders = corsHeadersFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {

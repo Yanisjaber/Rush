@@ -10,6 +10,7 @@ import { openSessionModal } from '../sessions/session-modal.js';
 import { openCompModalForEdit } from '../sessions/session-actions.js';
 import { setActivityCategory } from '../gpx/gpx-render.js';
 import { removeCompFromDashboard } from './comp-form.js';
+import { escapeHtml } from '../../core/utils.js';
 
 
 // ========= PANEL 2: ENTRAÎNEUR (compétitions + plan 7j) =========
@@ -172,7 +173,7 @@ export function renderCompList() {
     fillPct = Math.max(0, Math.min(100, fillPct));
     return `<div class="comp-item" data-prio="${_pi.key}" data-comp-id="${c.id}" title="Voir le détail de la compétition">
       <div class="comp-row">
-        <span class="comp-name">${trophySvg(_pi.color)}<span class="comp-name-text">${c.name}</span>${(window.SportProfiles && window.SportProfiles.sportIconHTML) ? window.SportProfiles.sportIconHTML(c.sport) : ''}${window.compFedBadges ? window.compFedBadges(c) : ''}</span>
+        <span class="comp-name">${trophySvg(_pi.color)}<span class="comp-name-text">${escapeHtml(c.name)}</span>${(window.SportProfiles && window.SportProfiles.sportIconHTML) ? window.SportProfiles.sportIconHTML(c.sport) : ''}${window.compFedBadges ? window.compFedBadges(c) : ''}</span>
         <span class="comp-date">${dateStr}</span>
         <span class="comp-countdown">${daysUntil <= 0 ? 'en cours' : 'J‑' + daysUntil}</span>
         <button class="comp-more" data-id="${c.id}" title="Actions">⋯</button>
@@ -332,7 +333,7 @@ export function renderCompetitionsPage() {
               </div>
             </div>
             <div class="comp-hero-main">
-              <div class="comp-hero-name">${trophySvg(_pi.color)}<span style="color:${_pi.color};">${next.name}</span>
+              <div class="comp-hero-name">${trophySvg(_pi.color)}<span style="color:${_pi.color};">${escapeHtml(next.name)}</span>
                 <span class="comp-pill" style="background:${_pi.color}28;color:${_pi.color};">${prioLabel}</span>
               </div>
               <div class="comp-hero-sub">${dateLabel(next)}</div>
@@ -500,7 +501,7 @@ export function renderCompetitionsPage() {
       fillPct = Math.max(0, Math.min(100, fillPct));
       return `<div class="comp-item" data-prio="${_pi.key}" data-comp-id="${c.id}" title="Voir le détail">
         <div class="comp-row">
-          <span class="comp-name">${trophySvg(_pi.color)}<span class="comp-name-text">${c.name}</span>${(window.SportProfiles && window.SportProfiles.sportIconHTML) ? window.SportProfiles.sportIconHTML(c.sport) : ''}${window.compFedBadges ? window.compFedBadges(c) : ''}</span>
+          <span class="comp-name">${trophySvg(_pi.color)}<span class="comp-name-text">${escapeHtml(c.name)}</span>${(window.SportProfiles && window.SportProfiles.sportIconHTML) ? window.SportProfiles.sportIconHTML(c.sport) : ''}${window.compFedBadges ? window.compFedBadges(c) : ''}</span>
           <span class="comp-date">${dateLabel(c)}</span>
           <span class="comp-countdown">${daysUntil <= 0 ? 'en cours' : 'J‑' + daysUntil}</span>
           <button class="comp-more" data-id="${c.id}" title="Actions">⋯</button>
@@ -694,7 +695,7 @@ export function renderCompetitionsPage() {
         ${_medalHTML(g.od, _pi.color)}
         <div class="comp-res-content">
           <div class="comp-res-top">
-            <span class="comp-res-name" title="${String(_tooltipNames || '').replace(/"/g, '&quot;')}"><span style="color:${_pi.color};">${_dispName}</span>${window.compFedBadges ? window.compFedBadges(c) : ''}</span>
+            <span class="comp-res-name" title="${escapeHtml(_tooltipNames || '')}"><span style="color:${_pi.color};">${escapeHtml(_dispName)}</span>${window.compFedBadges ? window.compFedBadges(c) : ''}</span>
             <span class="comp-res-date">${dateLabel(c)}</span>
             <button class="comp-more" data-id="${c.id}" title="Actions">⋯</button>
             <button class="comp-del" data-id="${c.id}" title="Supprimer">×</button>
@@ -710,7 +711,7 @@ export function renderCompetitionsPage() {
           ${_medalHTML(r, _pi.color)}
           <div class="comp-res-content">
             <div class="comp-res-top">
-              <span class="comp-res-name"><span style="color:${_pi.color};">${r.competitionName || 'Résultat officiel'}</span></span>
+              <span class="comp-res-name"><span style="color:${_pi.color};">${escapeHtml(r.competitionName || 'Résultat officiel')}</span></span>
               <span class="comp-res-date">${_fmtIsoDate(g.iso)}</span>
               <button class="comp-more od-more" data-od-id="${r.id}" data-iso="${g.iso}" title="Actions">⋯</button>
               <button class="comp-del od-del" data-od-id="${r.id}" title="Masquer ce résultat">×</button>

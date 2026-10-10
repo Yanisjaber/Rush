@@ -1,5 +1,6 @@
 /* src/features/calendar/realise-calendar.js — extrait de l'ancien app.js (découpage par fonctionnalité). */
 import { appState } from '../../core/state.js';
+import { escapeHtml } from '../../core/utils.js';
 import { loadRealisedTrainings, openTrainModal } from '../training/train-modal.js';
 import { openCompModal } from '../competitions/comp-form.js';
 import { compIsRealised, dowFr, loadCompetitionsExpanded, renderCompList } from '../competitions/competitions-page.js';
@@ -88,7 +89,7 @@ function renderRealisedDayCard(d, dow, realDay, isToday) {
       const _tRaw = a.duration ? fmtDur(a.duration) : (a.distance_km ? window.fmtDist(a.distance_km, a.raw_type || a.sport, '100m') : '');
       const t = _tRaw.replace(' min', 'm');
       const _nm = a.name || a.sessionName || 'Séance';
-      return `<div class="day-multi-col" data-iso="${iso}" data-source="realise" data-actidx="${i}" title="${String(_nm).replace(/"/g, '&quot;')}" style="background:${hex}1a">`
+      return `<div class="day-multi-col" data-iso="${iso}" data-source="realise" data-actidx="${i}" title="${escapeHtml(_nm)}" style="background:${hex}1a">`
         + `<div class="dmc-bar" style="background:${hex}"></div>`
         + `<div class="dmc-body">${g ? `<span class="dmc-glyph" style="line-height:0">${g}</span>` : ''}${t ? `<span class="dmc-time">${t}</span>` : ''}</div>`
         + `</div>`;
@@ -191,13 +192,13 @@ function renderRealisedDayCard(d, dow, realDay, isToday) {
     <div class="day-card past${isToday ? ' today' : ''}${raceClass}${manualClass} day-card--single" data-iso="${iso}" data-source="realise"${raceAttr}>
       <div class="day-card-dow">${dowFr[dow]}${isToday ? '<span class="dow-suffix"> · auj.</span>' : ''}</div>
       <div class="day-card-date">${d.getDate()}</div>
-      <div class="day-single-tile" style="background:${_hex}1a" title="${String(aName).replace(/"/g, '&quot;')}">
+      <div class="day-single-tile" style="background:${_hex}1a" title="${escapeHtml(aName)}">
         <div class="dmc-bar" style="background:${_hex}"></div>
         <div class="dst-body">
           <div class="dst-head">
             ${_headGlyph ? `<span class="dst-glyph" style="line-height:0">${_headGlyph}</span>` : ''}
             <div class="dst-text">
-              <span class="dst-name">${aName}</span>
+              <span class="dst-name">${escapeHtml(aName)}</span>
               ${metaLine ? `<span class="dst-meta">${metaLine}</span>` : ''}
             </div>
           </div>

@@ -19,6 +19,8 @@
    - À mettre dans strava-config.js (similaire à supabase-config.js)
    ============================================================ */
 
+import { escapeHtml } from '../../core/utils.js';
+
 const STRAVA_AUTH_URL = 'https://www.strava.com/oauth/authorize';
 const SCOPES = 'read,activity:read_all,profile:read_all';
 
@@ -329,7 +331,7 @@ function showIngestToast(message, type = 'loading') {
     : (type === 'success'
       ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>'
       : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>');
-  toast.innerHTML = `${icon}<span>${message}</span>`;
+  toast.innerHTML = `${icon}<span>${escapeHtml(message)}</span>`;
   if (!document.getElementById('ingest-toast-spin')) {
     const s = document.createElement('style');
     s.id = 'ingest-toast-spin';

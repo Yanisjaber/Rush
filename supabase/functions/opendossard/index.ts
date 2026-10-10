@@ -19,7 +19,8 @@
 //                  SUPABASE_URL, SUPABASE_ANON_KEY (déjà présents).
 // ============================================================
 // deno-lint-ignore-file no-explicit-any
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.3";
+import { corsHeadersFor } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -27,11 +28,8 @@ const OD_EMAIL = Deno.env.get("OPENDOSSARD_EMAIL") || "";
 const OD_PASSWORD = Deno.env.get("OPENDOSSARD_PASSWORD") || "";
 const OD_BASE = "https://app-v2.opendossard.com/api/v2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// CORS restreint (voir _shared/cors.ts) : renseigné à chaque requête.
+let corsHeaders: Record<string, string> = {};
 
 // Cache du token OD en mémoire de l'instance (réutilisé tant qu'il est valide).
 let _odToken: string | null = null;
@@ -81,6 +79,7 @@ function qs(params: Record<string, any>): string {
 }
 
 Deno.serve(async (req) => {
+  corsHeaders = corsHeadersFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {

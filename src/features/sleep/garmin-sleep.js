@@ -17,6 +17,8 @@
    ce fichier), pas depuis ce panel.
    ============================================================ */
 
+import { escapeHtml } from '../../core/utils.js';
+
 const LEVEL_NAME = ['deep', 'light', 'rem', 'awake'];
 const LEVEL_LABEL = { deep: 'Profond', light: 'Léger', rem: 'Paradoxal', awake: 'Éveil' };
 const QUALIFIER_LABEL_FR = { EXCELLENT: 'Excellent', GOOD: 'Bon', FAIR: 'Correct', POOR: 'Faible', INVALID: 'N/D' };
@@ -1131,7 +1133,7 @@ async function loadAndRender() {
   const { data, error } = await window.sb
     .from('garmin_sleep').select('*')
     .eq('user_id', user.id).order('date', { ascending: false }).limit(60);
-  if (error) { app.innerHTML = `<div class="card"><div class="sleep-state">Erreur de chargement : ${error.message}</div></div>`; return; }
+  if (error) { app.innerHTML = `<div class="card"><div class="sleep-state">Erreur de chargement : ${escapeHtml(error.message)}</div></div>`; return; }
   render(data || []);
 }
 
@@ -1154,7 +1156,7 @@ function showGarminToast(message, type = 'loading') {
     : (type === 'success'
       ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>'
       : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>');
-  toast.innerHTML = `${icon}<span>${message}</span>`;
+  toast.innerHTML = `${icon}<span>${escapeHtml(message)}</span>`;
   if (!document.getElementById('ingest-toast-spin')) {
     const s = document.createElement('style');
     s.id = 'ingest-toast-spin';

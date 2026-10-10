@@ -10,6 +10,7 @@ import { renderStreamsSection } from '../streams/streams-section.js';
 import { dayPrevuIndex } from '../calendar/realise-calendar.js';
 import { isRestDayForMode } from './session-actions.js';
 import { PHASE_LABELS } from '../plan/week-plan.js';
+import { escapeHtml } from '../../core/utils.js';
 
 export function openSessionModal(iso, source) {
   window.__currentModalIso = iso; window.__currentModalSource = source;
@@ -120,7 +121,7 @@ export function openSessionModal(iso, source) {
           if (_prefixes[0] && _prefixes.every(p => p === _prefixes[0])) name = _prefixes[0];
         }
         if (!name) name = _msGroup.kind;
-        titleEl.innerHTML = isComp ? `${trophySvg(_pi.color, 18)} ${name}` : name;
+        titleEl.innerHTML = isComp ? `${trophySvg(_pi.color, 18)} ${escapeHtml(name)}` : escapeHtml(name);
         const sportPill = `<span class="sport-pill" data-sport-cat="triathlon" style="margin-left:8px;vertical-align:middle;">${_msGroup.kind}</span>`;
         let startTime = '';
         const _st0 = _msGroup.legs[0].act.start_date_local;
@@ -398,8 +399,8 @@ export function openSessionModal(iso, source) {
         const m = (dur % 60).toString().padStart(2, '0');
         // Compétition : meme look que la fiche prevu (trophee + couleur de priorite).
         titleEl.innerHTML = (act.category === 'competition')
-          ? `${trophySvg(compPrio(act.priority).color, 18)} ${act.name || 'Compétition'}`
-          : `${act.name || act.sessionName || 'Séance'}`;
+          ? `${trophySvg(compPrio(act.priority).color, 18)} ${escapeHtml(act.name || 'Compétition')}`
+          : `${escapeHtml(act.name || act.sessionName || 'Séance')}`;
         // Nom de sport Strava exact + clé couleur pour la pill
         const sportLabel = window.activitySportLabel(act);
         const sportCat = window.activitySportColorKey ? window.activitySportColorKey(act) : 'autre';
@@ -427,7 +428,7 @@ export function openSessionModal(iso, source) {
     const _ck = window.activitySportColorKey ? window.activitySportColorKey(a) : 'autre';
     return `<button class="${i === idx ? 'active' : ''}" data-i="${i}" title="${(a.name || 'Séance').replace(/"/g, '&quot;')}">
               <span class="mas-dot" data-c="${_ck}"></span>
-              <span class="mas-name">${a.name || 'Séance'}</span>
+              <span class="mas-name">${escapeHtml(a.name || 'Séance')}</span>
               ${a.tss ? `<span class="mas-tss">${a.tss}</span>` : ''}
             </button>`;
   }).join('')}
@@ -875,7 +876,7 @@ export function openSessionModal(iso, source) {
       const sportPill = `<span class="sport-pill" data-sport-cat="${sportCat}" style="margin-left:10px;vertical-align:middle;">${sportLabel}</span>`;
 
       // Title : juste le nom de la course (pas le numéro d'étape — déjà visible dans le switcher + section dédiée)
-      titleEl.innerHTML = `${trophySvg(compPrio(c.priority).color, 18)} ${parentName}`;
+      titleEl.innerHTML = `${trophySvg(compPrio(c.priority).color, 18)} ${escapeHtml(parentName)}`;
 
       // Meta : date + heure + sport pill
       const timeStr = c.time ? ` · ${c.time.replace(':', 'h')}` : '';
@@ -1041,7 +1042,7 @@ export function openSessionModal(iso, source) {
           <div class="climb-row">
             <div class="climb-cat cat-${cat}">${cat}</div>
             <div class="climb-info">
-              <div class="climb-range">${s.name || `Segment ${i + 1}`}</div>
+              <div class="climb-range">${escapeHtml(s.name || `Segment ${i + 1}`)}</div>
               <div class="climb-meta">km ${s.startKm.toFixed(1)} → ${s.endKm.toFixed(1)} · ${s.distKm.toFixed(2)} km · D+ ${Math.round(s.gain)} m · ${s.avgSlope.toFixed(1)}% moy. · ${s.maxSlope.toFixed(1)}% max</div>
             </div>
             <button class="seg-del-btn" data-seg-del="${i}" title="Supprimer">×</button>
@@ -1413,7 +1414,7 @@ export function openSessionModal(iso, source) {
       }
       const dur = proposal.dur || 0;
       const h = Math.floor(dur / 60), mm = (dur % 60).toString().padStart(2, '0');
-      titleEl.innerHTML = `${proposal.name}`;
+      titleEl.innerHTML = escapeHtml(proposal.name);
       metaEl.textContent = `${_dateStr} · ${fmtDur(dur)} · ${proposal.tss || 0} TSS prévus · phase ${PHASE_LABELS[phase] || phase}`;
       bodyEl.innerHTML = `
         ${switchHTML}
@@ -1424,7 +1425,7 @@ export function openSessionModal(iso, source) {
         </div>
         <div class="modal-section">
           <div class="modal-section-title">Pourquoi cette séance</div>
-          <div class="modal-info-box">${proposal.why || '—'}</div>
+          <div class="modal-info-box">${escapeHtml(proposal.why || '—')}</div>
         </div>
       `;
       wireSwitchButtons();

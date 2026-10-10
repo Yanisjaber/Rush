@@ -14,28 +14,13 @@ export const ALLOWED_RETURN_URLS = [
 ];
 export const FALLBACK_REDIRECT = Deno.env.get("APP_REDIRECT_URL") || "https://yanisjaber.github.io/coach-ia/";
 
-// Origines autorisées à appeler les fonctions depuis le navigateur.
-export const ALLOWED_ORIGINS = [
-  "http://localhost:8000",
-  "https://yanisjaber.github.io",
-];
-
 export const STATE_TTL_MIN = 10;
 
 export function pickSafeReturnUrl(requested: string | null | undefined): string {
   return requested && ALLOWED_RETURN_URLS.includes(requested) ? requested : FALLBACK_REDIRECT;
 }
 
-export function corsHeadersFor(req: Request): Record<string, string> {
-  const origin = req.headers.get("Origin") || "";
-  const h: Record<string, string> = {
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Vary": "Origin",
-  };
-  if (ALLOWED_ORIGINS.includes(origin)) h["Access-Control-Allow-Origin"] = origin;
-  return h;
-}
+export { corsHeadersFor } from "./cors.ts";
 
 export function newState(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));

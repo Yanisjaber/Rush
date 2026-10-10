@@ -24,7 +24,8 @@
 // (>2000 activités), pourrait nécessiter pagination côté client + appels multiples.
 // ============================================================
 // deno-lint-ignore-file no-explicit-any
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.3";
+import { corsHeadersFor } from "../_shared/cors.ts";
 
 const STRAVA_CLIENT_ID = Deno.env.get("STRAVA_CLIENT_ID")!;
 const STRAVA_CLIENT_SECRET = Deno.env.get("STRAVA_CLIENT_SECRET")!;
@@ -37,13 +38,11 @@ const BATCH_SIZE = 100;
 const PER_PAGE = 100;
 
 // CORS headers pour pouvoir être appelée depuis n'importe quel domaine front
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// CORS restreint (voir _shared/cors.ts) : renseigné à chaque requête.
+let corsHeaders: Record<string, string> = {};
 
 Deno.serve(async (req) => {
+  corsHeaders = corsHeadersFor(req);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

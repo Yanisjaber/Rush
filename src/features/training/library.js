@@ -10,6 +10,8 @@
    - Stockage local (coach_ia_templates_v1) + miroir Supabase (activity_template)
    ============================================================ */
 
+import { escapeHtml } from '../../core/utils.js';
+
 const LIB_KEY = 'coach_ia_templates_v1';
 
 const SPORTS = [
@@ -255,7 +257,7 @@ function showPlacingHint(name) {
   const hint = document.createElement('div');
   hint.id = 'lib-placing-hint';
   hint.innerHTML = `
-    <span><b>${name}</b> sélectionnée — tape un jour du calendrier pour l'y placer</span>
+    <span><b>${escapeHtml(name)}</b> sélectionnée — tape un jour du calendrier pour l'y placer</span>
     <button type="button" id="lib-placing-cancel">Annuler</button>
   `;
   document.body.appendChild(hint);

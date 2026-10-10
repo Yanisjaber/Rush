@@ -14,7 +14,7 @@
    un message d'erreur est affiché à l'utilisateur.
    ============================================================ */
 
-const SDK_URL = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const SDK_URL = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/+esm';
 
 async function loadSdk() {
   // Le SDK est livré en ESM, on l'import dynamiquement

@@ -4,6 +4,7 @@ import { enhanceSelect } from '../competitions/comp-modal-ui.js';
 import { fmtDur } from '../../core/format.js';
 import { openSessionModal } from './session-modal.js';
 import { toIsoDate } from '../dashboard/filters.js';
+import { escapeHtml } from '../../core/utils.js';
 
 // Index plat de toutes les activités (une ligne = une activité, pas un jour),
 // pour la recherche par titre + filtre sport.
@@ -129,7 +130,7 @@ export function renderSessionsTable() {
     <tr data-idx="${i}">
       <td><span class="sport-pill" data-sport-cat="${sportCat}">${sportLabel}</span></td>
       <td>${fmtSearchDate(s.date)}</td>
-      <td class="act-title-cell">${s.sessionName}</td>
+      <td class="act-title-cell">${escapeHtml(s.sessionName)}</td>
       <td>${fmtDur(s.duration)}</td>
       <td>${dist}</td>
       <td>${dplus}</td>

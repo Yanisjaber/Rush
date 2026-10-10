@@ -16,6 +16,8 @@
      - computeTotals(blocks) : { duration, tss }
    ============================================================ */
 
+import { escapeHtml } from '../../core/utils.js';
+
 const STORAGE_DRAFT_KEY = '_coach_ia_workout_draft';
 
 // État local de la modal (réinitialisé à chaque ouverture)
@@ -97,7 +99,7 @@ function renderBlocksList() {
         ` : `
           <div class="workout-block-input-wrap">
             <span class="workout-block-label">Type</span>
-            <span style="font-size:12px;color:${colorForTarget(b.target || 0)};font-weight:600;">${b.label || '—'}</span>
+            <span style="font-size:12px;color:${colorForTarget(b.target || 0)};font-weight:600;">${escapeHtml(b.label || '—')}</span>
           </div>
         `}
         <div class="workout-block-input-wrap">
