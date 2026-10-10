@@ -27,10 +27,13 @@ Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon
 ## Architecture
 
 ### Front (`index.html` + `src/` + `styles/`)
-- `index.html` est l'unique page de l'app.
-- Point d'entrée : `src/app.js` (+ `core/ui/mobile-nav`, `features/coach/*`, `features/sleep/garmin-sleep` chargés en `type="module"` en bas d'`index.html`). `src/core/` = briques partagées (client Supabase, stockage, chargement des données, utils, UI commune) ; `src/features/<sujet>/` = un sujet (auth, profile, settings, coach, training, sleep, bilan, integrations, opendossard…). `core/` ne dépend pas de `features/`. Un CSS par domaine dans `styles/`.
-- Les modules communiquent beaucoup via `window.*` (notamment `window.DASHBOARD_DATA`), d'où la config ESLint permissive. Chart.js, flatpickr, Leaflet sont chargés par CDN, pas via npm.
-- Flux de données : **tout vient de Supabase** (migration « Supabase-only », cf. `MIGRATION_SUPABASE_ONLY.md`). `auth.js` → login → `supabase-data-loader.js` injecte les données dans `window.DASHBOARD_DATA`. `data-loader.js` fournit un dataset de 90 jours vides au boot pour que les vues ne plantent pas avant le login. Les streams sont chargés à la demande (colonne `streams_gz`). `cloud-sync.js`/`storage-adapter.js` gèrent la persistance.
+- `index.html` est l'unique page de l'app. `src/app.js` est le **point d'entrée** : il importe les modules puis appelle leurs `bootXxx()` dans l'ordre d'origine (ne pas réordonner : le câblage DOM en dépend). `core/ui/mobile-nav`, `features/coach/*` et `features/sleep/garmin-sleep` sont chargés à part en `type="module"` dans `index.html`.
+- `src/core/` : briques partagées (client Supabase, stockage, chargement des données, utils, `state.js`, dialogues, catalogue de sports). `core/` ne dépend pas de `features/`.
+- `src/features/<sujet>/` : un sujet par dossier (auth, profile, settings, integrations, coach, training, plan, calendar, competitions, dashboard, sessions, streams, gpx, sleep, bilan, opendossard…). `src/routing/tabs.js` gère les onglets et les ancres (`#calendrier`…).
+- **État partagé** : `appState` (`src/core/state.js`) remplace les anciennes variables de la grosse fonction d'`app.js` (données, `today`, modes du calendrier, graphiques, éléments DOM). Lire/écrire `appState.xxx`, ne pas recréer de variable globale.
+- Chaque module issu d'`app.js` expose une fonction `bootXxx()` (câblage des écouteurs, premiers rendus) appelée depuis `app.js`. Les dépendances circulaires entre modules sont normales (tout était une seule fermeture) et sans risque tant qu'aucune constante n'en lit une autre **au chargement du module**.
+- Les autres modules (auth, coach, bilan…) communiquent surtout via `window.*` (notamment `window.DASHBOARD_DATA`), d'où la config ESLint permissive. Chart.js, flatpickr, Leaflet sont chargés par CDN, pas via npm.
+- Flux de données : **tout vient de Supabase** (migration « Supabase-only », cf. `MIGRATION_SUPABASE_ONLY.md`). `auth.js` → login → `supabase-data-loader.js` injecte les données dans `window.DASHBOARD_DATA`. `data-loader.js` fournit un dataset de 90 jours vides au boot. Les streams sont chargés à la demande (colonne `streams_gz`). `cloud-sync.js`/`storage-adapter.js` gèrent la persistance.
 - Les zones (FTP/LTHR) sont recalculées à l'affichage, jamais stockées.
 - Config client : `supabase-config.js`, `strava-config.js`, `whoop-config.js` à la racine (clés publiques).
 
