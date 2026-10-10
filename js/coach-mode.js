@@ -246,7 +246,6 @@ function pendingCard(l) {
     '  <div class="coach-pending-note">Invitation creee. En attente de l&rsquo;acceptation de l&rsquo;athlete.</div>',
     '  <div class="coach-card-actions">',
     '    <button data-act="copy" data-link="' + l.id + '" type="button">Copier le lien</button>',
-    '    <button data-act="resend" data-link="' + l.id + '" data-email="' + escapeHtml(l.invited_email || '') + '" type="button">Renvoyer l&rsquo;email</button>',
     '    <button data-act="remove-link" data-link="' + l.id + '" type="button" class="danger">Retirer</button>',
     '  </div>',
     '</div>'
@@ -262,7 +261,6 @@ function wireCards(wrap) {
       else if (act === 'remove') removeAthlete(btn.dataset.id, btn.dataset.name);
       else if (act === 'remove-link') removeLink(btn.dataset.link);
       else if (act === 'copy') copyInvite(btn.dataset.link, btn);
-      else if (act === 'resend') resendInvite(btn.dataset.link, btn.dataset.email, btn);
     });
   });
 }
@@ -307,7 +305,7 @@ function statHtml(val, lbl, kind) {
 /* ---- Actions ---- */
 // Le lien d'invitation pointe TOUJOURS vers le site en ligne (jamais localhost),
 // pour que l'athlete puisse l'ouvrir depuis son propre appareil.
-const APP_PUBLIC_URL = 'https://jaberautomations.fr/';
+const APP_PUBLIC_URL = 'https://yanisjaber.github.io/coach-ia/';
 function inviteUrl(linkId) {
   const base = /^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname)
     ? APP_PUBLIC_URL
@@ -319,12 +317,6 @@ async function copyInvite(linkId, btn) {
   const url = inviteUrl(linkId);
   try { await navigator.clipboard.writeText(url); if (btn) flash(btn, 'Lien copie !'); }
   catch (e) { window.prompt && window.prompt('Copie ce lien d invitation :', url); }
-}
-
-async function resendInvite(linkId, email, btn) {
-  const ok = await sendInviteEmail(email, inviteUrl(linkId));
-  if (btn) flash(btn, ok ? 'Email envoye' : 'Lien copie (email indispo)');
-  if (!ok) copyInvite(linkId);
 }
 
 async function renameAthlete(id) {
@@ -426,28 +418,13 @@ async function addAthlete(email) {
     if (input) input.value = '';
     if (row && row.link_status === 'active') { showMsg(msg, 'Deja un athlete actif', 'ok'); loadCards(); return; }
     const url = inviteUrl(row.invite_id);
-    const sent = await sendInviteEmail(val, url);
-    try { await navigator.clipboard.writeText(url); } catch (e) {}
-    showMsg(msg, sent ? ('Invitation envoyee a ' + val) : ('Invitation creee. Lien copie (email a configurer)'), 'ok');
+    let copied = false;
+    try { await navigator.clipboard.writeText(url); copied = true; } catch (e) {}
+    showMsg(msg, copied ? ('Invitation creee pour ' + val + '. Lien copie : envoie-le lui.') : ('Invitation creee pour ' + val + '. Copie le lien depuis la carte.'), 'ok');
     loadCards();
   } catch (e) {
     showMsg(msg, frError((e && (e.message || e.hint)) || 'Echec'), 'error');
   }
-}
-
-/* ---- Email (Edge Function Resend) ---- */
-async function sendInviteEmail(email, acceptUrl) {
-  try {
-    const sb = window.sb; if (!sb || !sb.functions) return false;
-    let coachName = (_coachUser && (_coachUser.email || '')) || 'Votre coach';
-    // Prefere le nom affiche du coach (quand on n'est pas en train de consulter un athlete)
-    if (!document.body.classList.contains('coach-has-athlete') &&
-        window.DASHBOARD_DATA && window.DASHBOARD_DATA.athlete && window.DASHBOARD_DATA.athlete.name) {
-      coachName = window.DASHBOARD_DATA.athlete.name;
-    }
-    const { error } = await sb.functions.invoke('send-invite', { body: { email, acceptUrl, coachName } });
-    return !error;
-  } catch (e) { return false; }
 }
 
 /* ---- Acceptation cote athlete ---- */
