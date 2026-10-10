@@ -54,7 +54,7 @@ Relie un coach à ses athlètes (relation plusieurs-à-plusieurs).
 Colonnes directes : `ftp`, `hr_max`, `lthr`, `weight`, `display_name`,
 `app_mode`. Tout le reste (FC repos `x_rhr`, VMA, allures, VO2max, date de
 naissance, équipement…) est dans la colonne JSONB `extras`. Clé : `user_id`
-(→ auth.users). Édité via `js/profile-modal.js` (upsert), lu dans
+(→ auth.users). Édité via `src/features/profile/profile-modal.js` (upsert), lu dans
 `window.DASHBOARD_DATA.athlete`. Les zones sont **recalculées à l'affichage**
 (jamais stockées) depuis FTP/LTHR.
 

@@ -3,7 +3,7 @@
 // donc no-undef / no-unused-vars resteraient trop bruyants -> désactivés.
 export default [
   {
-    files: ['js/**/*.js'],
+    files: ['src/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',

@@ -31,7 +31,7 @@
 <script src="strava-config.js" onerror="console.warn('strava-config.js absent')"></script>
 <!-- Config Whoop OAuth (client_id public + URL Edge Function) -->
 <script src="whoop-config.js" onerror="console.warn('whoop-config.js absent')"></script>
-<script src="js/modal-select-guard.js"></script>
+<script src="src/core/ui/modal-select-guard.js"></script>
 <!-- ============================================================ -->
 <!-- Styles externalisés (refactoring Phase 1) -->
 <!-- L'ordre est important : base/cards/tabs en premier, mode-ia en dernier. -->
@@ -1301,11 +1301,11 @@
 <!-- JS externalisé (refactoring Phase 2) -->
 <!-- Module ES6 — defer automatique, exécuté après le DOM ready. -->
 <!-- ============================================================ -->
-<script type="module" src="js/app.js"></script>
-<script type="module" src="js/mobile-nav.js"></script>
-<script type="module" src="js/coach-mode.js"></script>
-<script type="module" src="js/coach-athlete-page.js"></script>
-<script type="module" src="js/coach-overview.js"></script>
-<script type="module" src="js/garmin-sleep.js"></script>
+<script type="module" src="src/app.js"></script>
+<script type="module" src="src/core/ui/mobile-nav.js"></script>
+<script type="module" src="src/features/coach/coach-mode.js"></script>
+<script type="module" src="src/features/coach/coach-athlete-page.js"></script>
+<script type="module" src="src/features/coach/coach-overview.js"></script>
+<script type="module" src="src/features/sleep/garmin-sleep.js"></script>
 </body>
 </html>

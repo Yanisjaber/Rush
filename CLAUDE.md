@@ -19,16 +19,16 @@ Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon
 ## Commandes
 
 - Dev local : `python3 serve.py [port]` (défaut 8000) puis ouvrir `http://localhost:8000/index.html`. Vérifie que le port est libre (`lsof -nP -iTCP:8000 -sTCP:LISTEN`) : un autre serveur (Revise) tourne souvent dessus et `serve.py` échoue en silence. Le login Supabase n'autorise que `localhost:8000`.
-- Lint (CI `.github/workflows/lint.yml`) : `for f in js/*.js; do node --check "$f"; done` puis `npx eslint js/` (ESLint 9, installé à la volée en CI : `npm install --no-save eslint@9`). La config n'active que des règles « vrais bugs » (pas de style, `no-undef`/`no-unused-vars` désactivés car les globals sont croisés via `window.*`). Le `node --check` sert de filet contre les fichiers tronqués/corrompus par un Edit.
+- Lint (CI `.github/workflows/lint.yml`) : `for f in $(find src -name '*.js'); do node --check "$f"; done` puis `npx eslint src/` (ESLint 9, installé à la volée en CI : `npm install --no-save eslint@9`). La config n'active que des règles « vrais bugs » (pas de style, `no-undef`/`no-unused-vars` désactivés car les globals sont croisés via `window.*`). Le `node --check` sert de filet contre les fichiers tronqués/corrompus par un Edit.
 - Pas de suite de tests.
 - Edge Functions : `supabase functions deploy <nom>` (`whoop-oauth-callback` se déploie avec `--no-verify-jwt`). Les migrations SQL (`supabase/migrations/`) s'appliquent à la main dans le SQL Editor Supabase et doivent rester idempotentes.
 - Garmin (scripts Python locaux, `pip3 install garth requests`) : `python3 garmin_auth.py` génère `.garmin_tokens.json`, `python3 garmin_refresh.py [--force]` rafraîchit le token depuis l'IP résidentielle et le pousse dans Supabase (`connexions_app`). Nécessaire car Garmin bloque l'échange OAuth1→OAuth2 depuis les serveurs Supabase ; `garmin-ingest` (pg_cron horaire) consomme ensuite un token déjà valide.
 
 ## Architecture
 
-### Front (`index.html` + `js/` + `styles/`)
+### Front (`index.html` + `src/` + `styles/`)
 - `index.html` est l'unique page de l'app.
-- Point d'entrée : `js/app.js` (+ `mobile-nav`, `coach-mode`, `coach-athlete-page`, `coach-overview`, `garmin-sleep` chargés en `type="module"` en bas d'`index.html`). Un fichier JS ≈ une fonctionnalité/modale/onglet ; un CSS par domaine dans `styles/`.
+- Point d'entrée : `src/app.js` (+ `core/ui/mobile-nav`, `features/coach/*`, `features/sleep/garmin-sleep` chargés en `type="module"` en bas d'`index.html`). `src/core/` = briques partagées (client Supabase, stockage, chargement des données, utils, UI commune) ; `src/features/<sujet>/` = un sujet (auth, profile, settings, coach, training, sleep, bilan, integrations, opendossard…). `core/` ne dépend pas de `features/`. Un CSS par domaine dans `styles/`.
 - Les modules communiquent beaucoup via `window.*` (notamment `window.DASHBOARD_DATA`), d'où la config ESLint permissive. Chart.js, flatpickr, Leaflet sont chargés par CDN, pas via npm.
 - Flux de données : **tout vient de Supabase** (migration « Supabase-only », cf. `MIGRATION_SUPABASE_ONLY.md`). `auth.js` → login → `supabase-data-loader.js` injecte les données dans `window.DASHBOARD_DATA`. `data-loader.js` fournit un dataset de 90 jours vides au boot pour que les vues ne plantent pas avant le login. Les streams sont chargés à la demande (colonne `streams_gz`). `cloud-sync.js`/`storage-adapter.js` gèrent la persistance.
 - Les zones (FTP/LTHR) sont recalculées à l'affichage, jamais stockées.
@@ -43,7 +43,7 @@ Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon
 ## Pièges
 
 - `.env`, `.garmin_tokens.json`, `.strava_tokens.json`, `.whoop_tokens.json` sont ignorés par git. GitHub Pages publie la racine de `main` : tout ce qui est commité est public.
-- Ne pas casser le format des fichiers `js/*.js` lors d'éditions volumineuses (incident de troncature en juin) : relancer `node --check` après modification.
+- Ne pas casser le format des fichiers `src/**/*.js` lors d'éditions volumineuses (incident de troncature en juin) : relancer `node --check` après modification.
 
 ## Sécurité — toujours, sur tout ce que tu écris
 

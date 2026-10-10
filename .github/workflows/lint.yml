@@ -3,9 +3,9 @@ name: Lint JS
 on:
   push:
     branches: [main]
-    paths: ['js/**', '*.js', '.github/workflows/lint.yml', 'eslint.config.mjs']
+    paths: ['src/**', '*.js', '.github/workflows/lint.yml', 'eslint.config.mjs']
   pull_request:
-    paths: ['js/**', '*.js']
+    paths: ['src/**', '*.js']
 
 jobs:
   lint:
@@ -17,13 +17,13 @@ jobs:
         with:
           node-version: 22
 
-      # 1) Syntaxe : node --check sur chaque fichier JS du front.
+      # 1) Syntaxe : node --check sur chaque fichier JS de src/.
       #    C'est le filet anti-troncature/corruption (l'incident Edit de juin).
       - name: Vérification syntaxe (node --check)
         run: |
           set -e
           fail=0
-          for f in js/*.js; do
+          for f in $(find src -name '*.js'); do
             if ! node --check "$f" 2>err.txt; then
               echo "::error file=$f::$(head -2 err.txt | tr '\n' ' ')"
               fail=1
@@ -37,4 +37,4 @@ jobs:
       - name: ESLint (bugs uniquement)
         run: |
           npm install --no-save eslint@9
-          npx eslint js/
+          npx eslint src/
