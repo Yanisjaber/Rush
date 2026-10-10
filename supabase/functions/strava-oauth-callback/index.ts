@@ -2,10 +2,11 @@
 // Edge Function : strava-oauth-callback
 //
 // Reçoit le callback OAuth de Strava :
-//   GET ?code=XXX&state=JWT_SUPABASE
+//   GET ?code=XXX&state=<état à usage unique créé par oauth-start>
 //
-// Vérifie le JWT (= identité de l'utilisateur Supabase),
-// échange le code contre les tokens Strava (via client_secret),
+// Consomme l'état (table oauth_states) pour retrouver l'utilisateur et l'URL
+// de retour (aucun JWT dans l'URL), puis échange le code contre les tokens
+// Strava (via client_secret),
 // stocke dans la table strava_connections,
 // redirige vers l'app avec un flag de succès.
 //
@@ -17,44 +18,17 @@
 //   supabase secrets set STRAVA_CLIENT_SECRET=xxxx
 //   supabase secrets set APP_REDIRECT_URL=https://yanisjaber.github.io/coach-ia/
 //
-// Note : on utilise --no-verify-jwt parce qu'on vérifie le JWT MANUELLEMENT
-// avec le state (sinon Supabase exigerait l'auth header).
+// Note : --no-verify-jwt car Strava appelle cette URL sans en-tête d'auth ;
+// l'identité vient de l'état à usage unique (oauth_states).
 // ============================================================
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { FALLBACK_REDIRECT, consumeState, pickSafeReturnUrl, redirectToApp } from "../_shared/oauth-state.ts";
 
 const STRAVA_CLIENT_ID = Deno.env.get("STRAVA_CLIENT_ID")!;
 const STRAVA_CLIENT_SECRET = Deno.env.get("STRAVA_CLIENT_SECRET")!;
-// URLs autorisées vers lesquelles on peut rediriger après l'OAuth.
-// Whitelist pour éviter l'open redirect attack.
-const ALLOWED_RETURN_URLS = [
-  "http://localhost:8000/dashboard.html",
-  "http://localhost:8000/index.html",
-  "http://localhost:8000/",
-  "https://yanisjaber.github.io/coach-ia/",
-  "https://yanisjaber.github.io/coach-ia/dashboard.html",
-];
-const FALLBACK_REDIRECT = Deno.env.get("APP_REDIRECT_URL") || "https://yanisjaber.github.io/coach-ia/";
-
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-function decodeState(stateRaw: string): { jwt: string; returnUrl: string } | null {
-  // 1) Nouveau format : base64(JSON {jwt, returnUrl})
-  try {
-    const decoded = JSON.parse(atob(stateRaw));
-    if (decoded && decoded.jwt) return { jwt: decoded.jwt, returnUrl: decoded.returnUrl || FALLBACK_REDIRECT };
-  } catch (_) { /* fallback */ }
-  // 2) Ancien format : state = JWT brut (compat)
-  return { jwt: stateRaw, returnUrl: FALLBACK_REDIRECT };
-}
-
-function pickSafeReturnUrl(requested: string): string {
-  if (ALLOWED_RETURN_URLS.includes(requested)) return requested;
-  // Sinon fallback
-  return FALLBACK_REDIRECT;
-}
 
 Deno.serve(async (req) => {
   let returnUrl = FALLBACK_REDIRECT;
@@ -71,18 +45,12 @@ Deno.serve(async (req) => {
       return redirectToApp(returnUrl, { strava_error: "missing_code_or_state" });
     }
 
-    // Décoder le state pour récupérer JWT + returnUrl
-    const decoded = decodeState(state);
-    if (!decoded) return redirectToApp(returnUrl, { strava_error: "invalid_state" });
-    returnUrl = pickSafeReturnUrl(decoded.returnUrl);
-    const jwt = decoded.jwt;
-
-    // ===== 1) Vérifier le JWT pour identifier l'utilisateur Supabase =====
-    const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const { data: { user }, error: userErr } = await sbAuth.auth.getUser(jwt);
-    if (userErr || !user) {
-      return redirectToApp(returnUrl, { strava_error: "invalid_state_jwt" });
-    }
+    // ===== 1) Consommer l'état (usage unique) : identifie l'utilisateur =====
+    const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const consumed = await consumeState(sbAdmin, state, "strava");
+    if (!consumed) return redirectToApp(returnUrl, { strava_error: "invalid_state" });
+    returnUrl = pickSafeReturnUrl(consumed.return_url);
+    const user = { id: consumed.user_id };
 
     // ===== 2) Échanger le code Strava contre les tokens =====
     const tokenRes = await fetch("https://www.strava.com/oauth/token", {
@@ -107,8 +75,7 @@ Deno.serve(async (req) => {
       return redirectToApp(returnUrl, { strava_error: "no_access_token" });
     }
 
-    // ===== 3) Stocker dans strava_connections (utilise service_role pour bypass RLS) =====
-    const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    // ===== 3) Stocker dans connexions_app (service_role pour bypass RLS) =====
     const athlete = tokens.athlete || {};
     const expiresAt = new Date((tokens.expires_at || 0) * 1000).toISOString();
 
@@ -149,11 +116,3 @@ Deno.serve(async (req) => {
     return redirectToApp(returnUrl, { strava_error: "unexpected" });
   }
 });
-
-function redirectToApp(baseUrl: string, params: Record<string, string>): Response {
-  const url = new URL(baseUrl);
-  for (const [k, v] of Object.entries(params)) {
-    url.searchParams.set(k, v);
-  }
-  return Response.redirect(url.toString(), 302);
-}

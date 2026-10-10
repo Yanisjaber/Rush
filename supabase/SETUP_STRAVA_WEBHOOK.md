@@ -96,3 +96,17 @@ curl -X DELETE \
 | athlete | update | "false" | Désauthorisation : delete strava_connections |
 
 Le recompute de daily_metrics part de la date de l'activité et avance jusqu'à aujourd'hui, en seed-ant CTL/ATL avec la valeur de la veille (donc rapide et correct).
+
+### 5. Filtrer les faux events (recommandé)
+
+Strava ne signe pas ses events. La fonction vérifie donc que le `subscription_id` reçu est le tien. Récupère-le puis enregistre-le :
+
+```bash
+curl -G https://www.strava.com/api/v3/push_subscriptions \
+  -d client_id=248376 -d client_secret=<TON_STRAVA_CLIENT_SECRET>
+# → [{"id": 123456, ...}]
+
+supabase secrets set STRAVA_WEBHOOK_SUBSCRIPTION_ID=123456
+```
+
+Sans ce secret, la fonction marche mais ne filtre pas (un avertissement est loggé). Par sécurité, une désautorisation n'est appliquée qu'après vérification auprès de Strava, et une suppression d'activité seulement si Strava répond 404.

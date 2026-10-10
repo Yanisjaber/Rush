@@ -26,6 +26,7 @@
 //   SUPABASE_URL (auto)
 //   SUPABASE_SERVICE_ROLE_KEY (auto)
 //   STRAVA_WEBHOOK_VERIFY_TOKEN  ← à définir, une chaîne aléatoire qu'on partage avec Strava
+//   STRAVA_WEBHOOK_SUBSCRIPTION_ID ← id de l'abonnement (GET /push_subscriptions), filtre les faux events
 //
 // Abonnement (1 seule fois, voir SETUP_STRAVA_WEBHOOK.md) :
 //   curl -X POST https://www.strava.com/api/v3/push_subscriptions \
@@ -43,7 +44,11 @@ const STRAVA_CLIENT_ID = Deno.env.get("STRAVA_CLIENT_ID")!;
 const STRAVA_CLIENT_SECRET = Deno.env.get("STRAVA_CLIENT_SECRET")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const VERIFY_TOKEN = Deno.env.get("STRAVA_WEBHOOK_VERIFY_TOKEN") || "coachia-webhook-token";
+// Pas de valeur par défaut : sans secret défini, la validation Strava est refusée.
+const VERIFY_TOKEN = Deno.env.get("STRAVA_WEBHOOK_VERIFY_TOKEN") || "";
+// Id de l'abonnement Strava (GET /push_subscriptions). Strava ne signe pas les
+// events : on vérifie au moins que subscription_id correspond au nôtre.
+const SUBSCRIPTION_ID = Deno.env.get("STRAVA_WEBHOOK_SUBSCRIPTION_ID") || "";
 
 const STRAVA_API = "https://www.strava.com/api/v3";
 
@@ -58,7 +63,7 @@ Deno.serve(async (req) => {
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
     console.log(`[webhook] GET validation : mode=${mode} token=${token ? "(set)" : "(missing)"}`);
-    if (mode === "subscribe" && token === VERIFY_TOKEN && challenge) {
+    if (VERIFY_TOKEN && mode === "subscribe" && token === VERIFY_TOKEN && challenge) {
       return json({ "hub.challenge": challenge });
     }
     return new Response("Forbidden", { status: 403 });
@@ -79,6 +84,17 @@ Deno.serve(async (req) => {
   }
 
   console.log("[webhook] event:", JSON.stringify(event));
+
+  // Strava n'authentifie pas ses events : on écarte ceux qui ne viennent pas de NOTRE abonnement.
+  // (200 pour éviter les retentatives, mais aucun traitement.)
+  if (SUBSCRIPTION_ID) {
+    if (String(event?.subscription_id ?? "") !== SUBSCRIPTION_ID) {
+      console.warn("[webhook] subscription_id inattendu, event ignoré");
+      return json({ ok: true });
+    }
+  } else {
+    console.warn("[webhook] STRAVA_WEBHOOK_SUBSCRIPTION_ID non défini : events non filtrés");
+  }
 
   // ⚠ IMPORTANT : Strava attend une réponse 200 RAPIDEMENT (< 2s) sinon il retente.
   // On retourne tout de suite, puis on traite en arrière-plan.
@@ -123,8 +139,23 @@ async function handleEvent(event: any) {
   // ===== Désauthorisation =====
   // Si l'athlète a révoqué l'autorisation de l'app via Strava → on supprime la connection.
   if (objectType === "athlete" && updates.authorized === "false") {
-    console.log(`[webhook] deauth pour athlete ${ownerId}`);
-    await sb.from("connexions_app").delete().eq("app", "strava").eq("external_id", String(ownerId));
+    console.log(`[webhook] deauth annoncée pour athlete ${ownerId} : vérification auprès de Strava`);
+    const { data: authConns } = await sb.from("connexions_app").select("*")
+      .eq("app", "strava").eq("external_id", String(ownerId));
+    for (const c of authConns || []) {
+      // Le refresh_token ne marche plus ssi l'accès a vraiment été révoqué.
+      const refreshed = await refreshStravaToken(c.refresh_token);
+      if (refreshed) {
+        console.warn(`[webhook] deauth ignorée pour user ${c.user_id} : l'accès Strava est toujours valide`);
+        await sb.from("connexions_app").update({
+          access_token: refreshed.access_token,
+          refresh_token: refreshed.refresh_token,
+          expires_at: new Date(refreshed.expires_at * 1000).toISOString(),
+        }).eq("user_id", c.user_id).eq("app", "strava");
+      } else {
+        await sb.from("connexions_app").delete().eq("user_id", c.user_id).eq("app", "strava");
+      }
+    }
     return;
   }
 
@@ -149,7 +180,12 @@ async function handleEvent(event: any) {
   for (const conn of conns) {
     try {
       if (aspectType === "delete") {
-        await handleActivityDelete(sb, conn.user_id, objectId);
+        // On ne supprime que si Strava confirme que l'activité n'existe plus (404).
+        if (await stravaActivityStillExists(sb, conn, objectId)) {
+          console.warn(`[webhook] delete ignoré : activité ${objectId} toujours présente chez Strava`);
+        } else {
+          await handleActivityDelete(sb, conn.user_id, objectId);
+        }
       } else {
         // create ou update : on (re)fetch l'activité complète
         await handleActivityUpsert(sb, conn, objectId);
@@ -167,6 +203,26 @@ async function handleEvent(event: any) {
       }).eq("user_id", conn.user_id).eq("app", "strava");
     }
   }
+}
+
+// Renvoie true si l'activité existe encore chez Strava (ou en cas de doute :
+// on préfère ne rien supprimer).
+async function stravaActivityStillExists(sb: any, conn: any, activityId: number): Promise<boolean> {
+  let accessToken = conn.access_token;
+  if (new Date(conn.expires_at) <= new Date(Date.now() + 60_000)) {
+    const refreshed = await refreshStravaToken(conn.refresh_token);
+    if (!refreshed) return true;
+    accessToken = refreshed.access_token;
+    await sb.from("connexions_app").update({
+      access_token: refreshed.access_token,
+      refresh_token: refreshed.refresh_token,
+      expires_at: new Date(refreshed.expires_at * 1000).toISOString(),
+    }).eq("user_id", conn.user_id).eq("app", "strava");
+  }
+  const res = await fetch(`${STRAVA_API}/activities/${activityId}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return res.status !== 404;
 }
 
 // ============================================================

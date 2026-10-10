@@ -2,11 +2,11 @@
    src/features/integrations/strava-oauth.js — Flow OAuth Strava côté navigateur
 
    1. Au clic sur "Connecter Strava" : redirige vers Strava OAuth avec
-      le JWT Supabase comme state (pour identifier l'user au retour).
+      un state à usage unique (oauth-start) pour identifier l'user au retour.
    2. Strava redirige vers l'Edge Function Supabase qui :
-        - vérifie le JWT (state)
+        - consomme le state à usage unique (identifie l'user)
         - échange le code contre les tokens
-        - stocke dans strava_connections
+        - stocke dans connexions_app
         - redirige vers l'app avec ?strava_connected=1
    3. Au prochain chargement de l'app, on détecte ?strava_connected=1
       et on lance l'ingestion des activités.
@@ -29,23 +29,27 @@ export async function startStravaOAuth() {
     console.error('[strava-oauth] window.STRAVA_CONFIG manquant');
     return;
   }
-  // Récupérer le JWT Supabase comme state (auth de l'user au retour)
   const sb = window.sb;
   if (!sb) { alert('Supabase non initialisé.'); return; }
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { alert('Tu dois être connecté à ton compte Coach IA.'); return; }
 
-  // Le state contient le JWT + l'URL de retour (encodés en base64 JSON)
-  // L'Edge Function va décoder ça pour rediriger vers la BONNE app (localhost / GitHub Pages / domaine custom)
+  // Le state est un jeton aléatoire à usage unique créé côté serveur (oauth-start) :
+  // plus aucun JWT dans l'URL. Le serveur retient aussi l'URL de retour (liste blanche).
   const returnUrl = window.location.origin + window.location.pathname;
-  const stateData = btoa(JSON.stringify({ jwt: session.access_token, returnUrl }));
+  const { data, error } = await sb.functions.invoke('oauth-start', { body: { provider: 'strava', returnUrl } });
+  if (error || !data || !data.state) {
+    console.error('[strava-oauth] oauth-start', error);
+    alert('Impossible de démarrer la connexion Strava (adresse non autorisée ou serveur indisponible).');
+    return;
+  }
   const params = new URLSearchParams({
     client_id: cfg.client_id,
     response_type: 'code',
     redirect_uri: cfg.redirect_uri,
     approval_prompt: 'force', // redemande l'écran d'autorisation à chaque connexion (comme Whoop)
     scope: SCOPES,
-    state: stateData,
+    state: data.state,
   });
   window.location.href = `${STRAVA_AUTH_URL}?${params.toString()}`;
 }

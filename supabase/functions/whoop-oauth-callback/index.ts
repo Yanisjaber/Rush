@@ -1,9 +1,9 @@
 // ============================================================
 // Edge Function : whoop-oauth-callback
 //
-// Reçoit le callback OAuth de Whoop :  GET ?code=XXX&state=base64({jwt,returnUrl})
+// Reçoit le callback OAuth de Whoop :  GET ?code=XXX&state=<état à usage unique créé par oauth-start>
 //
-// 1. décode le state → JWT Supabase + URL de retour
+// 1. consomme l'état (oauth_states) → utilisateur + URL de retour
 // 2. vérifie le JWT (identité de l'utilisateur Supabase)
 // 3. échange le code contre les tokens Whoop (avec client_secret, redirect_uri)
 // 4. récupère le profil Whoop (whoop_user_id)
@@ -23,25 +23,17 @@
 // ============================================================
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { FALLBACK_REDIRECT, consumeState, pickSafeReturnUrl, redirectToApp } from "../_shared/oauth-state.ts";
 
 const WHOOP_CLIENT_ID = Deno.env.get("WHOOP_CLIENT_ID")!;
 const WHOOP_CLIENT_SECRET = Deno.env.get("WHOOP_CLIENT_SECRET")!;
 const WHOOP_REDIRECT_URI = Deno.env.get("WHOOP_REDIRECT_URI")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const WHOOP_TOKEN_URL = "https://api.prod.whoop.com/oauth/oauth2/token";
 const WHOOP_API = "https://api.prod.whoop.com/developer/v2";
 
-const ALLOWED_RETURN_URLS = [
-  "http://localhost:8000/dashboard.html",
-  "http://localhost:8000/index.html",
-  "http://localhost:8000/",
-  "https://yanisjaber.github.io/coach-ia/",
-  "https://yanisjaber.github.io/coach-ia/dashboard.html",
-];
-const FALLBACK_REDIRECT = Deno.env.get("APP_REDIRECT_URL") || "https://yanisjaber.github.io/coach-ia/";
 
 Deno.serve(async (req) => {
   let returnUrl = FALLBACK_REDIRECT;
@@ -54,14 +46,12 @@ Deno.serve(async (req) => {
     if (error) return redirectToApp(returnUrl, { whoop_error: error });
     if (!code || !state) return redirectToApp(returnUrl, { whoop_error: "missing_code_or_state" });
 
-    const decoded = decodeState(state);
-    if (!decoded) return redirectToApp(returnUrl, { whoop_error: "invalid_state" });
-    returnUrl = pickSafeReturnUrl(decoded.returnUrl);
-
-    // ===== 1) Vérifier le JWT Supabase =====
-    const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const { data: { user }, error: userErr } = await sbAuth.auth.getUser(decoded.jwt);
-    if (userErr || !user) return redirectToApp(returnUrl, { whoop_error: "invalid_state_jwt" });
+    // ===== 1) Consommer l'état (usage unique) : identifie l'utilisateur =====
+    const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const consumed = await consumeState(sbAdmin, state, "whoop");
+    if (!consumed) return redirectToApp(returnUrl, { whoop_error: "invalid_state" });
+    returnUrl = pickSafeReturnUrl(consumed.return_url);
+    const user = { id: consumed.user_id };
 
     // ===== 2) Échanger le code contre les tokens (form-encoded) =====
     const form = new URLSearchParams({
@@ -101,7 +91,6 @@ Deno.serve(async (req) => {
     } catch (_) { /* non bloquant */ }
 
     // ===== 4) Stocker dans whoop_connections =====
-    const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { error: upErr } = await sbAdmin.from("connexions_app").upsert({
       user_id: user.id,
       app: "whoop",
@@ -124,19 +113,3 @@ Deno.serve(async (req) => {
     return redirectToApp(returnUrl, { whoop_error: "unexpected" });
   }
 });
-
-function decodeState(stateRaw: string): { jwt: string; returnUrl: string } | null {
-  try {
-    const decoded = JSON.parse(atob(stateRaw));
-    if (decoded && decoded.jwt) return { jwt: decoded.jwt, returnUrl: decoded.returnUrl || FALLBACK_REDIRECT };
-  } catch (_) { /* fallback */ }
-  return { jwt: stateRaw, returnUrl: FALLBACK_REDIRECT };
-}
-function pickSafeReturnUrl(requested: string): string {
-  return ALLOWED_RETURN_URLS.includes(requested) ? requested : FALLBACK_REDIRECT;
-}
-function redirectToApp(baseUrl: string, params: Record<string, string>): Response {
-  const url = new URL(baseUrl);
-  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  return Response.redirect(url.toString(), 302);
-}

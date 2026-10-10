@@ -1,8 +1,8 @@
 /* ============================================================
    src/features/integrations/whoop-oauth.js — Flow OAuth Whoop côté navigateur (calqué sur strava-oauth.js)
 
-   1. Au clic "Connecter Whoop" : redirige vers Whoop OAuth avec le JWT
-      Supabase encodé dans le state (pour identifier l'user au retour).
+   1. Au clic "Connecter Whoop" : redirige vers Whoop OAuth avec un state
+      à usage unique (oauth-start) pour identifier l'user au retour.
    2. Whoop redirige vers l'Edge Function whoop-oauth-callback qui échange
       le code, stocke les tokens dans whoop_connections, puis revient à l'app
       avec ?whoop_connected=1.
@@ -26,14 +26,20 @@ export async function startWhoopOAuth() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { alert('Tu dois être connecté à ton compte Coach IA.'); return; }
 
+  // State aléatoire à usage unique créé côté serveur (oauth-start) : aucun JWT dans l'URL.
   const returnUrl = window.location.origin + window.location.pathname;
-  const stateData = btoa(JSON.stringify({ jwt: session.access_token, returnUrl }));
+  const { data, error } = await sb.functions.invoke('oauth-start', { body: { provider: 'whoop', returnUrl } });
+  if (error || !data || !data.state) {
+    console.error('[whoop-oauth] oauth-start', error);
+    alert('Impossible de démarrer la connexion Whoop (adresse non autorisée ou serveur indisponible).');
+    return;
+  }
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: cfg.client_id,
     redirect_uri: cfg.redirect_uri,
     scope: WHOOP_SCOPES,
-    state: stateData,
+    state: data.state,
   });
   window.location.href = `${WHOOP_AUTH_URL}?${params.toString()}`;
 }

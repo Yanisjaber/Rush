@@ -38,7 +38,7 @@ Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon
 - Config client : `supabase-config.js`, `strava-config.js`, `whoop-config.js` à la racine (clés publiques).
 
 ### Backend (`supabase/`)
-- `supabase/functions/` : Edge Functions Deno — ingestion (`strava-ingest`, `strava-webhook`, `strava-streams`, `whoop-ingest`, `garmin-ingest`), callbacks OAuth (`strava-oauth-callback`, `whoop-oauth-callback`), `coach-ai` (chat IA), `opendossard`, `disconnect-integration`.
+- `supabase/functions/` : Edge Functions Deno — ingestion (`strava-ingest`, `strava-webhook`, `strava-streams`, `whoop-ingest`, `garmin-ingest`), `oauth-start` (crée un `state` aléatoire à usage unique dans `oauth_states`, aucun JWT dans l'URL OAuth), callbacks OAuth (`strava-oauth-callback`, `whoop-oauth-callback`, qui consomment ce `state`), helpers communs dans `functions/_shared/`, `coach-ai` (chat IA), `opendossard`, `disconnect-integration`.
 - Les tokens OAuth (`strava_connections`, etc.) sont masqués au rôle `authenticated` par révocation de colonnes : le navigateur ne doit jamais les lire, tout passe par les Edge Functions (service role).
 - Modèle de données : voir `MODELE_DONNEES.md`. Tables clés : `activities` (réalisé, Strava/Garmin/manuel), `activity_planned` (prévu), `activity_template`, `user_profiles` (réglages ; extras en JSONB `extras`), `coach_athlete` (pivot coach↔athlète). RLS : l'athlète accède à ses lignes (`auth.uid() = user_id`), le coach lié et actif en lecture via `is_coach_of(user_id)`.
 - `supabase/migrations/` est le journal officiel des changements de schéma, nommé `AAAA-MM-JJ_nom.sql`. Toutes les migrations sont dans ce dossier.
