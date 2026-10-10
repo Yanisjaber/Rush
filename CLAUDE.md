@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Vue d'ensemble
 
-Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon) avec modes athlète et coach. Front **vanilla JS en modules ES** (pas de bundler, pas de framework), backend **Supabase** (Postgres + RLS + Edge Functions Deno), déployé sur GitHub Pages (`https://yanisjaber.github.io/coach-ia/`), utilisable en PWA (plus d'app Capacitor ni de domaine perso).
+Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon) avec un Coach IA (assistant d'analyse et de planification). Mono-utilisateur : le système de coaching humain (coach ↔ athlète) a été supprimé le 2026-10-11. Front **vanilla JS en modules ES** (pas de bundler, pas de framework), backend **Supabase** (Postgres + RLS + Edge Functions Deno), déployé sur GitHub Pages (`https://yanisjaber.github.io/coach-ia/`), utilisable en PWA (plus d'app Capacitor ni de domaine perso).
 
 ## Commandes
 
@@ -29,10 +29,10 @@ Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon
 ### Front (`index.html` + `src/` + `styles/`)
 - `index.html` est l'unique page de l'app. `src/app.js` est le **point d'entrée** : il importe les modules puis appelle leurs `bootXxx()` dans l'ordre d'origine (ne pas réordonner : le câblage DOM en dépend). `core/ui/mobile-nav`, `features/coach/*` et `features/sleep/garmin-sleep` sont chargés à part en `type="module"` dans `index.html`.
 - `src/core/` : briques partagées (client Supabase, stockage, chargement des données, utils, `state.js`, dialogues, catalogue de sports). `core/` ne dépend pas de `features/`.
-- `src/features/<sujet>/` : un sujet par dossier (auth, profile, settings, integrations, coach, training, plan, calendar, competitions, dashboard, sessions, streams, gpx, sleep, bilan, opendossard…). `src/routing/tabs.js` gère les onglets et les ancres (`#calendrier`…).
+- `src/features/<sujet>/` : un sujet par dossier (auth, profile, settings, integrations, coach = Coach IA uniquement, training, plan, calendar, competitions, dashboard, sessions, streams, gpx, sleep, bilan, opendossard…). `src/routing/tabs.js` gère les onglets et les ancres (`#calendrier`…).
 - **État partagé** : `appState` (`src/core/state.js`) remplace les anciennes variables de la grosse fonction d'`app.js` (données, `today`, modes du calendrier, graphiques, éléments DOM). Lire/écrire `appState.xxx`, ne pas recréer de variable globale.
 - Chaque module issu d'`app.js` expose une fonction `bootXxx()` (câblage des écouteurs, premiers rendus) appelée depuis `app.js`. Les dépendances circulaires entre modules sont normales (tout était une seule fermeture) et sans risque tant qu'aucune constante n'en lit une autre **au chargement du module**.
-- Les autres modules (auth, coach, bilan…) communiquent surtout via `window.*` (notamment `window.DASHBOARD_DATA`), d'où la config ESLint permissive. Chart.js, flatpickr, Leaflet sont chargés par CDN, pas via npm.
+- Les autres modules (auth, bilan…) communiquent surtout via `window.*` (notamment `window.DASHBOARD_DATA`), d'où la config ESLint permissive. Chart.js, flatpickr, Leaflet sont chargés par CDN, pas via npm.
 - Flux de données : **tout vient de Supabase** (migration « Supabase-only » terminée). `auth.js` → login → `supabase-data-loader.js` injecte les données dans `window.DASHBOARD_DATA`. `data-loader.js` fournit un dataset de 90 jours vides au boot. Les streams sont chargés à la demande (colonne `streams_gz`). `cloud-sync.js`/`storage-adapter.js` gèrent la persistance.
 - Les zones (FTP/LTHR) sont recalculées à l'affichage, jamais stockées.
 - Config client : `supabase-config.js`, `strava-config.js` à la racine (clés publiques).
@@ -40,7 +40,7 @@ Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon
 ### Backend (`supabase/`)
 - `supabase/functions/` : Edge Functions Deno — ingestion (`strava-ingest`, `strava-webhook`, `strava-streams`, `garmin-ingest`), `oauth-start` (crée un `state` aléatoire à usage unique dans `oauth_states`, aucun JWT dans l'URL OAuth), callback OAuth (`strava-oauth-callback`, qui consomme ce `state`), helpers communs dans `functions/_shared/`, `coach-ai` (chat IA), `opendossard`, `disconnect-integration`.
 - Les tokens OAuth (`strava_connections`, etc.) sont masqués au rôle `authenticated` par révocation de colonnes : le navigateur ne doit jamais les lire, tout passe par les Edge Functions (service role).
-- Modèle de données : voir `MODELE_DONNEES.md`. Tables clés : `activities` (réalisé, Strava/Garmin/manuel), `activity_planned` (prévu), `activity_template`, `user_profiles` (réglages ; extras en JSONB `extras`), `coach_athlete` (pivot coach↔athlète). RLS : l'athlète accède à ses lignes (`auth.uid() = user_id`), le coach lié et actif en lecture via `is_coach_of(user_id)`.
+- Modèle de données : voir `MODELE_DONNEES.md`. Tables clés : `activities` (réalisé, Strava/Garmin/manuel), `activity_planned` (prévu), `activity_template`, `user_profiles` (réglages ; extras en JSONB `extras`), `connexions_app` (OAuth Strava/Garmin, tokens masqués au navigateur), `oauth_states` (état OAuth à usage unique, service_role seulement). RLS : chaque utilisateur n'accède qu'à ses lignes (`auth.uid() = user_id`) ; aucun accès `anon`.
 - `supabase/migrations/` est le journal officiel des changements de schéma, nommé `AAAA-MM-JJ_nom.sql`. Toutes les migrations sont dans ce dossier.
 
 ## Pièges
@@ -51,7 +51,7 @@ Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon
 ## Sécurité — toujours, sur tout ce que tu écris
 
 - Pense sécurité **dès la conception** : avant chaque ajout, « qui peut lire ou modifier ça ? ».
-- Toute nouvelle table a la RLS activée, avec des policies limitées à `auth.uid() = user_id` (plus l'accès coach via `is_coach_of` quand c'est voulu).
+- Toute nouvelle table a la RLS activée, avec des policies limitées à `auth.uid() = user_id`.
 - Les clés publiques (`anon`, `*-config.js`) sont OK dans le front. Ne mets **jamais** la clé `service_role`, un `client_secret`, un mot de passe ou un token dans le code, un commit, une réponse ou un log.
 - Échappe tout texte venant de la base ou de l'utilisateur avant de l'insérer dans du HTML. Pas de `innerHTML` avec des données non échappées, pas de `eval`.
 - Valide les entrées (formulaires, fichiers GPX/imports : type et taille) côté client **et** compte sur la RLS côté base.

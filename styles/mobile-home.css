@@ -36,31 +36,6 @@
 
 @media (max-width: 860px) {
 
-  /* === Bottom nav : tabs adaptées au mode (perso / coach / coach+athlete) === */
-
-  /* Mode PERSO (non-coach) : seulement Accueil / Calendrier / Compétitions / Performance */
-  body:not(.coach-mode) .sidebar .sidebar-nav .tab#coach-athletes-tab,
-  body:not(.coach-mode) .sidebar .sidebar-nav .tab#coach-overview-tab,
-  body:not(.coach-mode) .sidebar .sidebar-nav .tab#coach-chat-tab,
-  body:not(.coach-mode) .sidebar .sidebar-nav .tab[data-panel="p-athletes"],
-  body:not(.coach-mode) .sidebar .sidebar-nav .tab[data-panel="p-overview"],
-  body:not(.coach-mode) .sidebar .sidebar-nav .tab[data-panel="p-chat"] { display: none !important; }
-
-  /* Mode COACH sans athlète sélectionné : seul "Athletes" est visible */
-  body.coach-mode:not(.coach-has-athlete) .sidebar .sidebar-nav .tab:not(#coach-athletes-tab):not([data-panel="p-athletes"]) {
-    display: none !important;
-  }
-
-  /* Mode COACH avec athlète sélectionné : Vue d'ensemble + Calendrier + Performance + Messagerie */
-  body.coach-mode.coach-has-athlete .sidebar .sidebar-nav .tab[data-panel="p1"],
-  body.coach-mode.coach-has-athlete .sidebar .sidebar-nav .tab[data-panel="p3"],
-  body.coach-mode.coach-has-athlete .sidebar .sidebar-nav .tab[data-panel="p5"],
-  body.coach-mode.coach-has-athlete .sidebar .sidebar-nav .tab[data-panel="p6"],
-  body.coach-mode.coach-has-athlete .sidebar .sidebar-nav .tab[data-panel="p7"],
-  body.coach-mode.coach-has-athlete .sidebar .sidebar-nav .tab#coach-athletes-tab {
-    display: none !important;
-  }
-
   /* Plus bouton supprimé partout */
   .sidebar .sidebar-nav .tab-more { display: none !important; }
 
@@ -107,7 +82,6 @@
      puisque le bouton est désormais en haut à droite uniquement */
   .sidebar .header-info,
   .msheet-foot .header-info { display: none !important; }
-  .coach-ath-side { display: none !important; }
   /* Menu dropdown : positionné sous l'avatar dans la topbar */
   .topbar .auth-user-menu {
     top: calc(100% + 6px) !important;

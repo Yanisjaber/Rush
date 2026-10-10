@@ -11,8 +11,8 @@
 // Panels "secondaires" affichés dans la sheet "Plus" sur mobile.
 // Compétitions (p6) et Performance (p4) sont MAINTENANT visibles dans la
 // bottom nav (l'user les veut accessibles directement), donc retirés de Plus.
-// Plus ne garde que Termes (p5) + les tabs coach injectées dynamiquement.
-const MORE_PANELS = ['p5', 'p-athletes', 'p-overview', 'p-chat'];
+// Plus ne garde que Termes (p5).
+const MORE_PANELS = ['p5'];
 const SHORT_LABELS = { p1: 'Accueil', p2: 'Calendrier', p6: 'Compét.', p4: 'Perf.', p7: 'IA', p3: 'Stats' };
 
 const mq = window.matchMedia('(max-width: 860px)');
@@ -62,8 +62,7 @@ function buildOnce() {
 }
 
 // Rebuild les items du sheet "Plus" depuis le nav courant. Appelé au boot
-// puis re-appelé quand des tabs coach (p-athletes, p-overview, p-chat) sont
-// ajoutées dynamiquement après l'init.
+// puis re-appelé quand des tabs sont ajoutées dynamiquement après l'init.
 function rebuildSheetItems() {
   if (!sheet) return;
   const sheetNav = sheet.querySelector('.msheet-nav');
@@ -194,7 +193,7 @@ window.addEventListener('coach-ia-auth', () => {
 });
 
 // Filet de sécurité : observe SEULEMENT le nav latéral pour détecter l'arrivée
-// de nouvelles tabs (coach), pas tout document.body (sinon boucle infinie car
+// de nouvelles tabs, pas tout document.body (sinon boucle infinie car
 // rebuildSheetItems modifie le DOM → ré-trigger l'observer).
 function setupNavObserver() {
   if (!window.MutationObserver) return;
