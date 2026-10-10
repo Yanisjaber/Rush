@@ -5,14 +5,13 @@
 // de l'utilisateur (option "tout effacer").
 //
 // Appel (front, POST, JWT Supabase dans Authorization) :
-//   body JSON : { "provider": "strava" | "whoop", "wipe": true | false }
+//   body JSON : { "provider": "strava", "wipe": true | false }
 //
 // wipe=false (déconnexion seule) → supprime UNIQUEMENT la connexion
-//   (strava_connections / whoop_connections). Les données importées restent.
+//   (connexions_app). Les données importées restent.
 // wipe=true (déconnexion + suppression) :
 //   provider=strava → supprime power_profile, daily_metrics, activities,
 //     strava_connections, et remet à zéro strava_athlete_id/ftp/weight dans user_profiles.
-//   provider=whoop  → supprime whoop_data, whoop_connections.
 //
 // Utilise la service_role (bypass RLS) mais ne touche QUE les lignes de
 // l'utilisateur identifié par le JWT → un user ne peut effacer que ses données.
@@ -27,6 +26,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+// Tables de données effaçables (dans l'ordre des clés étrangères).
+const STEP_TABLES = ["power_profile", "daily_metrics", "activities"];
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,7 +50,7 @@ Deno.serve(async (req) => {
     const provider = String(body?.provider || "").toLowerCase();
     const wipe = body?.wipe === true; // false/absent = déconnexion seule
     const only = body?.only ? String(body.only) : null; // traiter UNE seule étape (barre de progression)
-    if (provider !== "strava" && provider !== "whoop") {
+    if (provider !== "strava") {
       return json({ error: "invalid_provider" }, 400);
     }
 
@@ -69,6 +71,8 @@ Deno.serve(async (req) => {
         if (error) { console.error("delete connexions_app:", error.message); return json({ error: "delete_connexions_app_failed", detail: error.message }, 500); }
         return json({ ok: true, step: only });
       }
+      // Liste blanche : on ne laisse jamais le client choisir une table au hasard.
+      if (!STEP_TABLES.includes(only)) return json({ error: "invalid_step" }, 400);
       const { error } = await sb.from(only).delete().eq("user_id", uid);
       if (error) { console.error(`delete ${only}:`, error.message); return json({ error: `delete_${only}_failed`, detail: error.message }, 500); }
       return json({ ok: true, step: only });
@@ -76,14 +80,9 @@ Deno.serve(async (req) => {
 
     // Tables de DONNÉES à vider selon le mode (la connexion est supprimée à part,
     // car elle vit dans la table mutualisée connexions_app filtrée par app).
-    let tables: string[];
-    if (provider === "strava") {
-      // Ordre FK : daily_metrics.main_activity_id et power_profile.activity_id_*
-      // référencent activities → on les vide avant activities.
-      tables = wipe ? ["power_profile", "daily_metrics", "activities"] : [];
-    } else {
-      tables = wipe ? ["whoop_data"] : [];
-    }
+    // Ordre FK : daily_metrics.main_activity_id et power_profile.activity_id_*
+    // référencent activities → on les vide avant activities.
+    const tables: string[] = wipe ? STEP_TABLES : [];
 
     for (const table of tables) {
       const { error } = await sb.from(table).delete().eq("user_id", uid);

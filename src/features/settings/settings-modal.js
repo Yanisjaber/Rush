@@ -215,10 +215,10 @@ async function renderBody(body) {
     <section class="set-section" id="sec-donnees">
       <h3>Données &amp; connexions</h3>
       <div class="set-actions">
-        <button class="set-btn" data-act="open-connections">Gérer les connexions (Strava / Whoop)</button>
+        <button class="set-btn" data-act="open-connections">Gérer les connexions (Strava / Garmin)</button>
         <button class="set-btn danger" data-act="wipe-all">Vider toutes mes données</button>
       </div>
-      <p class="set-note">« Vider » supprime définitivement tes activités, ta charge, ton power profile et tes données Whoop. Les connexions sont conservées.</p>
+      <p class="set-note">« Vider » supprime définitivement tes activités, ta charge, ton power profile et tes données Strava. Les connexions sont conservées.</p>
     </section>
   `;
   wire(body);
@@ -267,8 +267,8 @@ function wire(body) {
 
 async function wipeAll() {
   const ok = window.appConfirm
-    ? await window.appConfirm({ title: 'Vider toutes mes données', message: 'Action irréversible : toutes tes données Strava et Whoop seront effacées (les connexions restent). Continuer ?', confirmLabel: 'Tout vider', cancelLabel: 'Annuler' })
-    : confirm('Vider toutes tes données Strava et Whoop ?');
+    ? await window.appConfirm({ title: 'Vider toutes mes données', message: 'Action irréversible : toutes tes données Strava seront effacées (les connexions restent). Continuer ?', confirmLabel: 'Tout vider', cancelLabel: 'Annuler' })
+    : confirm('Vider toutes tes données Strava ?');
   if (!ok) return;
   const sb = window.sb;
   const { data: { session } } = await sb.auth.getSession();
@@ -279,7 +279,7 @@ async function wipeAll() {
   let p = 0;
   const timer = prog ? setInterval(() => { p = Math.min(90, p + 6); prog.update(p, 'Suppression en cours…'); }, 250) : null;
   try {
-    for (const provider of ['strava', 'whoop']) {
+    for (const provider of ['strava']) {
       await fetch(url, { method: 'POST', headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ provider, wipe: true }) });
     }
     if (timer) clearInterval(timer);

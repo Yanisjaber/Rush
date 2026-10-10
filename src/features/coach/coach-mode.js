@@ -267,24 +267,21 @@ function wireCards(wrap) {
 
 async function fillCard(sb, id) {
   try {
-    const [dm, wd, act] = await Promise.all([
+    const [dm, act] = await Promise.all([
       sb.from('daily_metrics').select('ctl, atl, tsb, iso_date').eq('user_id', id).order('iso_date', { ascending: false }).limit(1),
-      sb.from('whoop_data').select('recovery, iso_date').eq('user_id', id).order('iso_date', { ascending: false }).limit(1),
       sb.from('activities').select('name, tss, start_date_local').eq('user_id', id).order('start_date_local', { ascending: false }).limit(1),
     ]);
-    const m = (dm.data && dm.data[0]) || {}, w = (wd.data && wd.data[0]) || {}, s = (act.data && act.data[0]) || {};
+    const m = (dm.data && dm.data[0]) || {}, s = (act.data && act.data[0]) || {};
     const stats = document.getElementById('cc-' + id);
     if (stats) {
       const tsb = (m.tsb != null) ? Math.round(m.tsb) : null;
       const ctl = (m.ctl != null) ? Math.round(m.ctl) : null;
       const atl = (m.atl != null) ? Math.round(m.atl) : null;
-      const rec = (w.recovery != null) ? (w.recovery + '%') : '--';
       const tsbStr = tsb != null ? (tsb > 0 ? '+' + tsb : '' + tsb) : '--';
       stats.innerHTML =
         statHtml(tsbStr, 'Forme', tsb != null ? (tsb >= -10 ? 'ok' : 'warn') : '') +
         statHtml(ctl != null ? '' + ctl : '--', 'Fitness', '') +
-        statHtml(atl != null ? '' + atl : '--', 'Fatigue', '') +
-        statHtml(rec, 'Recup', (w.recovery != null) ? (w.recovery >= 66 ? 'ok' : (w.recovery <= 33 ? 'warn' : '')) : '');
+        statHtml(atl != null ? '' + atl : '--', 'Fatigue', '');
     }
     const last = document.getElementById('cl-' + id);
     if (last) {

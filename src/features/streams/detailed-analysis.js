@@ -13,7 +13,7 @@ export function bootDetailedAnalysis() {
 // puissance (mean-max) + temps par zone (puissance/FC) + distribution.
 // ============================================================
 // Calcule les metriques avancees d'une activite a partir des streams.
-// S = { watts:[], hr:[], ftp, hrMax } ; ath = objet athlete ; hrRest = FC repos (Whoop si dispo).
+// S = { watts:[], hr:[], ftp, hrMax } ; ath = objet athlete ; hrRest = FC repos (profil).
 // Tout est calculable depuis watts+FC sauf l'equilibre G/D (mesure capteur, pas dans Strava).
 window.__computeActivityMetrics = function (S, ath, hrRest) {
   S = S || {}; ath = ath || {};

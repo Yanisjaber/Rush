@@ -1218,8 +1218,7 @@ function renderGpxTrack(gpxContent, svgId) {
 }
 
 
-// Détail d'un jour de repos passé : si Whoop est connecté et qu'on a des données
-// de récupération pour ce jour, on les affiche. Sinon message simple.
+// Détail d'un jour de repos passé : message simple.
 export function openRestDayModal(iso) {
   const date = new Date(iso + 'T12:00:00');
   if (isNaN(date.getTime())) return;
@@ -1236,29 +1235,8 @@ export function openRestDayModal(iso) {
   titleEl.innerHTML = 'Repos';
   metaEl.textContent = dateStr;
 
-  const day = appState.data.find(d => toIsoDate(d.date) === iso);
-  const hasReco = day && day.recovery != null;
-  const whoopConnected = !window.__noWhoopCard;
   const couchBlock = `<div class="rest-modal-couch">${REST_COUCH_SVG}</div>`;
-
-  if (hasReco) {
-    const rec = day.recovery;
-    const recColor = rec > 66 ? 'var(--accent)' : rec > 33 ? 'var(--warn)' : 'var(--danger)';
-    const cards = [];
-    cards.push(`<div class="modal-metric"><div class="m-label">Récupération</div><div class="m-value" style="color:${recColor};">${rec}<span style="font-size:14px;">%</span></div></div>`);
-    if (day.hrv != null) cards.push(`<div class="modal-metric"><div class="m-label">HRV</div><div class="m-value">${day.hrv}<span style="font-size:14px;"> ms</span></div></div>`);
-    if (day.rhr != null) cards.push(`<div class="modal-metric"><div class="m-label">FC repos</div><div class="m-value">${day.rhr}<span style="font-size:14px;"> bpm</span></div></div>`);
-    if (day.sleepH != null) cards.push(`<div class="modal-metric"><div class="m-label">Sommeil</div><div class="m-value">${fmtDur(Math.round(day.sleepH * 60))}${day.sleepQ != null ? `<span style="font-size:13px;color:var(--text-dim);"> · ${day.sleepQ}%</span>` : ''}</div></div>`);
-    if (day.strain != null) cards.push(`<div class="modal-metric"><div class="m-label">Strain</div><div class="m-value">${typeof day.strain === 'number' ? day.strain.toFixed(1) : day.strain}</div></div>`);
-    bodyEl.innerHTML = `
-      ${couchBlock}
-      <div style="margin-bottom:14px;color:var(--text-dim);font-size:13px;">Jour de repos — récupération Whoop</div>
-      <div class="modal-metrics">${cards.join('')}</div>`;
-  } else if (whoopConnected) {
-    bodyEl.innerHTML = `${couchBlock}<div class="modal-placeholder">Jour de repos. Aucune donnée de récupération Whoop pour ce jour.</div>`;
-  } else {
-    bodyEl.innerHTML = `${couchBlock}<div class="modal-placeholder">Jour de repos. Connecte Whoop pour voir ta récupération ce jour-là.</div>`;
-  }
+  bodyEl.innerHTML = `${couchBlock}<div class="modal-placeholder">Jour de repos.</div>`;
   document.getElementById('session-modal').classList.add('active');
 }
 

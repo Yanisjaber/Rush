@@ -261,7 +261,7 @@ function injectUserMenu(user) {
         } else if (action === 'connections') {
           if (window.openConnectionsModal) window.openConnectionsModal();
           else if (window.appAlert) {
-            window.appAlert({ title: 'Connexions', message: 'La page Connexions arrive bientôt (Strava, Whoop, Intervals.icu, etc. avec re-synchro et déconnexion).' });
+            window.appAlert({ title: 'Connexions', message: 'La page Connexions arrive bientôt (Strava, Garmin, etc. avec re-synchro et déconnexion).' });
           }
         } else if (action === 'help') {
           if (window.openHelpModal) window.openHelpModal();

@@ -759,7 +759,7 @@ function renderEquipment() {
         </label>
         <label class="profile-field">
           <span>Bracelet / capteur recovery</span>
-          <input name="x_recovery_device" type="text" maxlength="120" placeholder="Ex: Whoop, Oura…">
+          <input name="x_recovery_device" type="text" maxlength="120" placeholder="Ex: Garmin, Oura…">
         </label>
         <label class="profile-field">
           <span>Capteur natation</span>

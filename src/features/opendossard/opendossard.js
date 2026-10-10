@@ -3,7 +3,7 @@
 
    - Appelle l'edge function `opendossard` (identifiants OD gardés côté serveur)
      avec le JWT Supabase de l'utilisateur.
-   - La LIAISON de la licence se fait dans la modale Connexions (avec Strava/Whoop).
+   - La LIAISON de la licence se fait dans la modale Connexions (avec Strava/Garmin).
    - Une fois la licence liée, on charge le palmarès pour :
        · le récap « Mon palmarès » en haut de l'onglet Compétitions (#od-recap)
        · lier automatiquement (par date) le résultat officiel aux compétitions passées

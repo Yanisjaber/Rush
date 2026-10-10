@@ -1,12 +1,12 @@
 // ============================================================
 // Edge Function : oauth-start
 //
-// Démarre un flux OAuth (Strava / Whoop) sans exposer le JWT Supabase :
+// Démarre un flux OAuth (Strava) sans exposer le JWT Supabase :
 // crée un `state` aléatoire à usage unique (table oauth_states), lié à
 // l'utilisateur connecté, que le navigateur envoie ensuite au fournisseur.
 //
 // Appel (front, POST, JWT Supabase dans Authorization) :
-//   body JSON : { "provider": "strava" | "whoop", "returnUrl": "https://…/" }
+//   body JSON : { "provider": "strava", "returnUrl": "https://…/" }
 //   réponse   : { "state": "<hex 64>" }
 //
 // Déploiement :
@@ -24,7 +24,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const PROVIDERS = ["strava", "whoop"];
+const PROVIDERS = ["strava"];
 
 Deno.serve(async (req) => {
   const cors = corsHeadersFor(req);

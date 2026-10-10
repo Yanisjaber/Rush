@@ -52,10 +52,9 @@ function fmtDur(min){ return (window.fmtDur ? window.fmtDur(min) : (min + ' min'
 function dStr(iso){ try{ return new Date(iso+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}catch(e){return iso;} }
 
 function synthesize(o) {
-  // o : { tsb, ctl, atl, acwr, rec, conf, planned, hasWhoop, sleepAvg }
+  // o : { tsb, ctl, atl, acwr, conf, planned }
   let status='ok', text='';
-  if (o.rec != null && o.rec <= 33) { status='bad'; text='Recuperation tres basse aujourd\'hui : privilegier le repos ou une seance tres legere.'; }
-  else if (o.acwr > 1.5) { status='bad'; text='Charge aigue tres elevee (ratio '+o.acwr.toFixed(2)+') : risque de blessure, une decharge s\'impose.'; }
+  if (o.acwr > 1.5) { status='bad'; text='Charge aigue tres elevee (ratio '+o.acwr.toFixed(2)+') : risque de blessure, une decharge s\'impose.'; }
   else if (o.acwr > 1.3) { status='warn'; text='Charge en forte hausse : surveiller la fatigue et eviter d\'empiler les seances dures.'; }
   else if (o.tsb > 22 && o.acwr && o.acwr < 0.8) { status='warn'; text='Tres frais mais la charge a fortement baisse : l\'athlete se desentraine, c\'est le moment de relancer le volume.'; }
   else if (o.tsb > 12) { status='ok'; text='Frais et disponible : bon moment pour une seance cle ou une competition.'; }
@@ -67,8 +66,6 @@ function synthesize(o) {
   if (o.acwr > 1.3) actions.push({t:'Prevoir une journee de decharge', go:null});
   if (o.tsb > 22 && o.acwr && o.acwr < 0.8) actions.push({t:'Relancer le volume progressivement (endurance Z2)', go:'cal'});
   if (o.conf != null && o.conf < 70) actions.push({t:'Faire le point sur les seances manquees', go:'msg'});
-  if (!o.hasWhoop) actions.push({t:'Demander a l\'athlete de connecter Whoop (suivi recup/sommeil)', go:'msg'});
-  if (o.sleepAvg != null && o.sleepAvg < 7) actions.push({t:'Aborder le sommeil avec l\'athlete (<7h en moyenne)', go:'msg'});
   if (!actions.length) actions.push({t:'Rien d\'urgent : continuer le suivi', go:null});
   return { status, text, actions };
 }
@@ -110,7 +107,6 @@ function renderOverview() {
   // ---- Readiness ----
   const tsb = Math.round(last.tsb||0), ctl = Math.round(last.ctl||0), atl = Math.round(last.atl||0);
   const acwr = ctl > 0 ? (atl/ctl) : 0;
-  const rec = (last.recovery!=null) ? Math.round(last.recovery) : null;
 
   // conformite 7j : TSS realise / TSS prevu (7 derniers jours)
   const wk = ls('coach_ia_trainings_v1');
@@ -120,16 +116,12 @@ function renderOverview() {
   const conf = plannedTss7 > 0 ? Math.round(Math.min(realTss7/plannedTss7,1.5)*100) : null;
 
   const tsbCls = tsb >= -10 ? 'ok' : (tsb >= -30 ? 'warn' : 'bad');
-  const recCls = rec==null ? '' : (rec>=66?'ok':(rec<=33?'bad':'warn'));
   const acwrCls = acwr===0 ? '' : (acwr>1.5?'bad':(acwr>1.3||acwr<0.8?'warn':'ok'));
   const confCls = conf==null ? '' : (conf>=90?'ok':(conf>=70?'warn':'bad'));
 
   // ---- Alertes ----
   const alerts = [];
   if (acwr>1.3) alerts.push(['bad','▲','Ratio de charge a '+acwr.toFixed(2)+' (zone sure 0.8-1.3) — risque accru, envisager une decharge.']);
-  if (rec!=null && rec<=33) alerts.push(['bad','▲','Recuperation tres basse ('+rec+'%) — seance intense deconseillee aujourd’hui.']);
-  const sl = days.slice(-5).map(d=>d.sleepH).filter(v=>v!=null);
-  if (sl.length>=3 && (sl.filter(v=>v<7).length>=3)) alerts.push(['warn','●','Sommeil < 7h sur plusieurs nuits recentes — vigilance fatigue.']);
   if (conf!=null && conf<70) alerts.push(['warn','●','Conformite au plan basse ('+conf+'%) — des seances prevues n’ont pas ete realisees.']);
 
   // ---- Graphe CTL/ATL/TSB (84 derniers jours) ----
@@ -155,17 +147,6 @@ function renderOverview() {
     ? 'Prevu '+Math.round(weekPrevus.reduce((s,t)=>s+(+t.tss||0),0))+' / realise '+Math.round(realTss7)+' TSS'
     : '';
 
-  // ---- Monitoring ----
-  const lastVal = (f)=>{ for(let i=days.length-1;i>=0;i--) if(days[i][f]!=null) return days[i][f]; return null; };
-  const avgN = (f,n)=>{ const v=days.slice(-n).map(d=>d[f]).filter(x=>x!=null); return v.length? v.reduce((a,b)=>a+b,0)/v.length : null; };
-  const hrv = lastVal('hrv'), rhr = lastVal('rhr');
-  const slAvg = avgN('sleepH',7);
-  const monHtml =
-    monTile('HRV', hrv!=null? Math.round(hrv)+' ms':'—') +
-    monTile('Sommeil moy 7j', slAvg!=null? fmtSleep(slAvg):'—') +
-    monTile('FC repos', rhr!=null? Math.round(rhr)+' bpm':'—') +
-    monTile('Recup moy 7j', avgN('recovery',7)!=null? Math.round(avgN('recovery',7))+'%':'—');
-
   // ---- Dernieres seances ----
   const recent = [];
   for (let i=days.length-1;i>=0 && recent.length<5;i--){
@@ -179,8 +160,7 @@ function renderOverview() {
   const noteKey = 'coach_notes_'+aid;
   const noteVal = localStorage.getItem(noteKey) || '';
 
-  const hasWhoop = days.some(d=>d.recovery!=null);
-  const read = synthesize({ tsb, ctl, atl, acwr, rec, conf, planned: weekPrevus.length, hasWhoop, sleepAvg: slAvg });
+  const read = synthesize({ tsb, ctl, atl, acwr, conf, planned: weekPrevus.length });
   const verdict = '<div class="co-quote '+read.status+'">'+esc(read.text)+'</div>';
 
   const wkg = (ath.ftp>0 && ath.weight>0) ? ' ('+(ath.ftp/ath.weight).toFixed(1)+' W/kg)' : '';
@@ -199,7 +179,6 @@ function renderOverview() {
     + '</div>'
     + '<div class="co-kpis">'
       + kpi(tsbCls,'Forme (TSB)',(tsb>0?'+':'')+tsb,'CTL '+ctl+' / ATL '+atl)
-      + kpi(recCls,'Recuperation',rec!=null?rec+'%':'—',hrv!=null?'HRV '+Math.round(hrv)+' ms':'Whoop non connecte')
       + kpi(acwrCls,'Risque (ACWR)',acwr? acwr.toFixed(2):'—',acwr>1.3?'Eleve':(acwr?'Sous controle':'—'))
       + kpi(confCls,'Conformite 7j',conf!=null?conf+'%':'—',plannedTss7>0?'plan suivi':'aucun plan')
     + '</div>'
@@ -210,7 +189,6 @@ function renderOverview() {
         + '<div class="co-card"><h3>Conformite au plan <span class="small">'+planHead+'</span></h3>'+(planRows||'<div class="co-mini">Aucune seance planifiee cette semaine.</div>')+'</div>'
       + '</div>'
       + '<div>'
-        + '<div class="co-card"><h3>Monitoring <span class="small">recent</span></h3><div class="co-mons">'+monHtml+'</div></div>'
         + '<div class="co-card"><h3>Dernieres seances</h3>'+recentHtml+'</div>'
       + '</div>'
     + '</div>';
@@ -225,8 +203,6 @@ function renderOverview() {
 function kpi(cls,lab,val,sub){
   return '<div class="co-kpi '+cls+'"><div class="co-lab">'+lab+'</div><div class="co-val '+cls+'">'+val+'</div><div class="co-sub">'+sub+'</div></div>';
 }
-function monTile(lab,val){ return '<div class="co-mon"><div class="co-mlab">'+lab+'</div><div class="co-mval">'+val+'</div></div>'; }
-function fmtSleep(h){ const H=Math.floor(h); const M=Math.round((h-H)*60); return H+'h'+String(M).padStart(2,'0'); }
 
 function buildChart(series){
   if (!series.length) return '<div class="co-mini">Pas assez de donnees.</div>';

@@ -5,7 +5,7 @@
 // dans garmin_sleep. Port direct du script Python validé localement
 // (mêmes endpoints connectapi.garmin.com, même mapping des phases).
 //
-// Différence avec strava-ingest/whoop-ingest : Garmin n'a pas de portail
+// Différence avec strava-ingest : Garmin n'a pas de portail
 // OAuth développeur public. Le token initial vient d'un login manuel
 // (garth/garminconnect) inséré une fois dans connexions_app. Le
 // renouvellement de l'access_token ne passe pas par un refresh_token
@@ -23,7 +23,7 @@
 //   supabase functions deploy garmin-ingest --no-verify-jwt
 //
 // Secrets requis : SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
-// (déjà posés pour whoop-ingest / strava-ingest, réutilisés ici)
+// (déjà posés pour strava-ingest, réutilisés ici)
 // ============================================================
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";

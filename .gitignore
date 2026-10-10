@@ -25,7 +25,6 @@ Thumbs.db
 
 # Tokens OAuth locaux : ne jamais les suivre dans git
 .strava_tokens.json
-.whoop_tokens.json
 
 supabase/.temp/
 

@@ -5,11 +5,10 @@ import { goToCalendarDay } from './chart-load.js';
 import { toIsoDate } from './filters.js';
 
 
-// Carte ACWR (Acute:Chronic Workload Ratio) affichée à la place de la carte Whoop
-// quand Whoop n'est pas connecté. ACWR ≈ charge aiguë (ATL) / charge chronique (CTL),
+// Carte ACWR (Acute:Chronic Workload Ratio). ACWR ≈ charge aiguë (ATL) / charge chronique (CTL),
 // cohérent avec les CTL/ATL affichés dans la carte Forme (TSB).
 function renderAcwrCard() {
-  const card = document.getElementById('whoop-card');
+  const card = document.getElementById('acwr-card');
   if (!card) return;
   const ctl = appState.todayData.ctl || 0;
   const atl = appState.todayData.atl || 0;
@@ -54,37 +53,7 @@ function renderAcwrCard() {
 
 
 export function renderHeroKpi() {
-// Capture le HTML d'origine de la carte Whoop (mode récupération) avant tout swap ACWR.
-if (appState._whoopCardOriginal === null) {
-  const _wc = document.getElementById('whoop-card');
-  if (_wc) appState._whoopCardOriginal = _wc.innerHTML;
-}
-const noWhoop = !!window.__noWhoopCard;
-if (noWhoop) {
-  renderAcwrCard();
-} else {
-  // Restaure la carte Récupération si elle était passée en mode ACWR.
-  const _wc = document.getElementById('whoop-card');
-  if (_wc && _wc.dataset.mode === 'acwr' && appState._whoopCardOriginal !== null) {
-    _wc.innerHTML = appState._whoopCardOriginal;
-    _wc.removeAttribute('data-mode');
-  }
-  const hasRecovery = appState.todayData.recovery != null;
-  document.getElementById('recovery-val').textContent = hasRecovery ? appState.todayData.recovery + '%' : '—';
-  const ringDash = 213.6;
-  if (hasRecovery) {
-    document.getElementById('recovery-ring').style.strokeDashoffset = ringDash * (1 - appState.todayData.recovery / 100);
-    const recColor = appState.todayData.recovery > 66 ? 'var(--accent)' : appState.todayData.recovery > 33 ? 'var(--warn)' : 'var(--danger)';
-    document.getElementById('recovery-ring').style.stroke = recColor;
-  } else {
-    document.getElementById('recovery-ring').style.strokeDashoffset = ringDash;
-    document.getElementById('recovery-ring').style.stroke = 'var(--text-mute)';
-  }
-  document.getElementById('hrv-val').textContent = appState.todayData.hrv != null ? appState.todayData.hrv + ' ms' : '— ms';
-  document.getElementById('sleep-val').textContent = appState.todayData.sleepH != null
-    ? appState.todayData.sleepH + ' h' + (appState.todayData.sleepQ != null ? ' (qualité ' + appState.todayData.sleepQ + '%)' : '')
-    : '— h';
-}
+renderAcwrCard();
 
 document.getElementById('tsb-val').textContent = (appState.todayData.tsb >= 0 ? '+' : '') + appState.todayData.tsb.toFixed(0);
 // État TSB : on garde le label court en clair, le détail dans un span qu'on
@@ -191,8 +160,6 @@ export function bootHeroKpi() {
 }
 
 
-// HTML d'origine de la carte Whoop (mode "Récupération"), capturé avant tout swap ACWR.
-appState._whoopCardOriginal = null;
 
 window.renderHeroKpi = renderHeroKpi;
 

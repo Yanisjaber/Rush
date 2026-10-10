@@ -21,7 +21,7 @@ Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon
 - Dev local : `python3 serve.py [port]` (défaut 8000) puis ouvrir `http://localhost:8000/index.html`. Vérifie que le port est libre (`lsof -nP -iTCP:8000 -sTCP:LISTEN`) : un autre serveur (Revise) tourne souvent dessus et `serve.py` échoue en silence. Le login Supabase n'autorise que `localhost:8000`.
 - Lint (CI `.github/workflows/lint.yml`) : `for f in $(find src -name '*.js'); do node --check "$f"; done` puis `npx eslint src/` (ESLint 9, installé à la volée en CI : `npm install --no-save eslint@9`). La config n'active que des règles « vrais bugs » (pas de style, `no-undef`/`no-unused-vars` désactivés car les globals sont croisés via `window.*`). Le `node --check` sert de filet contre les fichiers tronqués/corrompus par un Edit.
 - Pas de suite de tests.
-- Edge Functions : `supabase functions deploy <nom>` (`whoop-oauth-callback` se déploie avec `--no-verify-jwt`). Les migrations SQL (`supabase/migrations/`) s'appliquent à la main dans le SQL Editor Supabase et doivent rester idempotentes.
+- Edge Functions : `supabase functions deploy <nom>` (`strava-oauth-callback`, `strava-webhook` et `garmin-ingest` se déploient avec `--no-verify-jwt`). Les migrations SQL (`supabase/migrations/`) s'appliquent à la main dans le SQL Editor Supabase et doivent rester idempotentes.
 - Garmin (scripts Python locaux, `pip3 install garth requests`) : `python3 garmin_auth.py` génère `.garmin_tokens.json`, `python3 garmin_refresh.py [--force]` rafraîchit le token depuis l'IP résidentielle et le pousse dans Supabase (`connexions_app`). Nécessaire car Garmin bloque l'échange OAuth1→OAuth2 depuis les serveurs Supabase ; `garmin-ingest` (pg_cron horaire) consomme ensuite un token déjà valide.
 
 ## Architecture
@@ -33,19 +33,19 @@ Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon
 - **État partagé** : `appState` (`src/core/state.js`) remplace les anciennes variables de la grosse fonction d'`app.js` (données, `today`, modes du calendrier, graphiques, éléments DOM). Lire/écrire `appState.xxx`, ne pas recréer de variable globale.
 - Chaque module issu d'`app.js` expose une fonction `bootXxx()` (câblage des écouteurs, premiers rendus) appelée depuis `app.js`. Les dépendances circulaires entre modules sont normales (tout était une seule fermeture) et sans risque tant qu'aucune constante n'en lit une autre **au chargement du module**.
 - Les autres modules (auth, coach, bilan…) communiquent surtout via `window.*` (notamment `window.DASHBOARD_DATA`), d'où la config ESLint permissive. Chart.js, flatpickr, Leaflet sont chargés par CDN, pas via npm.
-- Flux de données : **tout vient de Supabase** (migration « Supabase-only », cf. `MIGRATION_SUPABASE_ONLY.md`). `auth.js` → login → `supabase-data-loader.js` injecte les données dans `window.DASHBOARD_DATA`. `data-loader.js` fournit un dataset de 90 jours vides au boot. Les streams sont chargés à la demande (colonne `streams_gz`). `cloud-sync.js`/`storage-adapter.js` gèrent la persistance.
+- Flux de données : **tout vient de Supabase** (migration « Supabase-only » terminée). `auth.js` → login → `supabase-data-loader.js` injecte les données dans `window.DASHBOARD_DATA`. `data-loader.js` fournit un dataset de 90 jours vides au boot. Les streams sont chargés à la demande (colonne `streams_gz`). `cloud-sync.js`/`storage-adapter.js` gèrent la persistance.
 - Les zones (FTP/LTHR) sont recalculées à l'affichage, jamais stockées.
-- Config client : `supabase-config.js`, `strava-config.js`, `whoop-config.js` à la racine (clés publiques).
+- Config client : `supabase-config.js`, `strava-config.js` à la racine (clés publiques).
 
 ### Backend (`supabase/`)
-- `supabase/functions/` : Edge Functions Deno — ingestion (`strava-ingest`, `strava-webhook`, `strava-streams`, `whoop-ingest`, `garmin-ingest`), `oauth-start` (crée un `state` aléatoire à usage unique dans `oauth_states`, aucun JWT dans l'URL OAuth), callbacks OAuth (`strava-oauth-callback`, `whoop-oauth-callback`, qui consomment ce `state`), helpers communs dans `functions/_shared/`, `coach-ai` (chat IA), `opendossard`, `disconnect-integration`.
+- `supabase/functions/` : Edge Functions Deno — ingestion (`strava-ingest`, `strava-webhook`, `strava-streams`, `garmin-ingest`), `oauth-start` (crée un `state` aléatoire à usage unique dans `oauth_states`, aucun JWT dans l'URL OAuth), callback OAuth (`strava-oauth-callback`, qui consomme ce `state`), helpers communs dans `functions/_shared/`, `coach-ai` (chat IA), `opendossard`, `disconnect-integration`.
 - Les tokens OAuth (`strava_connections`, etc.) sont masqués au rôle `authenticated` par révocation de colonnes : le navigateur ne doit jamais les lire, tout passe par les Edge Functions (service role).
 - Modèle de données : voir `MODELE_DONNEES.md`. Tables clés : `activities` (réalisé, Strava/Garmin/manuel), `activity_planned` (prévu), `activity_template`, `user_profiles` (réglages ; extras en JSONB `extras`), `coach_athlete` (pivot coach↔athlète). RLS : l'athlète accède à ses lignes (`auth.uid() = user_id`), le coach lié et actif en lecture via `is_coach_of(user_id)`.
 - `supabase/migrations/` est le journal officiel des changements de schéma, nommé `AAAA-MM-JJ_nom.sql`. Toutes les migrations sont dans ce dossier.
 
 ## Pièges
 
-- `.env`, `.garmin_tokens.json`, `.strava_tokens.json`, `.whoop_tokens.json` sont ignorés par git. GitHub Pages publie la racine de `main` : tout ce qui est commité est public.
+- `.env`, `.garmin_tokens.json`, `.strava_tokens.json` sont ignorés par git. GitHub Pages publie la racine de `main` : tout ce qui est commité est public.
 - Ne pas casser le format des fichiers `src/**/*.js` lors d'éditions volumineuses (incident de troncature en juin) : relancer `node --check` après modification.
 
 ## Sécurité — toujours, sur tout ce que tu écris

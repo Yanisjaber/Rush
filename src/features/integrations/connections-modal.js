@@ -2,12 +2,12 @@
    src/features/integrations/connections-modal.js — Page « Connexions »
 
    Fenêtre accessible via le menu utilisateur → Connexions.
-   Pour Strava et Whoop : statut, (re)connexion, re-synchro, déconnexion.
+   Pour Strava et Garmin : statut, (re)connexion, re-synchro, déconnexion.
 
    Lit le statut depuis Supabase (colonnes "safe" uniquement — jamais les tokens).
    S'appuie sur les fonctions déjà exposées :
      window.startStravaOAuth / startStravaIngest / startStravaStreams
-     window.startWhoopOAuth  / startWhoopIngest
+     window.startGarminIngest
    Expose : window.openConnectionsModal()
    ============================================================ */
 
@@ -23,23 +23,19 @@ async function fetchConnections() {
   const sb = window.sb;
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return { user: null };
-  const [{ data: strava }, { data: whoop }, { data: garmin }, { count: whoopDays }, { count: stravaActs }, { count: garminNights }] = await Promise.all([
+  const [{ data: strava }, { data: garmin }, { count: stravaActs }, { count: garminNights }] = await Promise.all([
     sb.from('connexions_app')
       .select('external_id, athlete_name, last_sync_at, last_sync_status, total_activities_synced, first_connected_at')
       .eq('user_id', user.id).eq('app', 'strava').maybeSingle(),
     sb.from('connexions_app')
       .select('external_id, athlete_name, last_sync_at, last_sync_status, first_connected_at')
-      .eq('user_id', user.id).eq('app', 'whoop').maybeSingle(),
-    sb.from('connexions_app')
-      .select('external_id, athlete_name, last_sync_at, last_sync_status, first_connected_at')
       .eq('user_id', user.id).eq('app', 'garmin').maybeSingle(),
-    sb.from('whoop_data').select('iso_date', { count: 'exact', head: true }).eq('user_id', user.id),
     sb.from('activities').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
     sb.from('garmin_sleep').select('date', { count: 'exact', head: true }).eq('user_id', user.id),
   ]);
   return {
-    user, strava, whoop, garmin,
-    whoopDays: whoopDays || 0, stravaActs: stravaActs || 0, garminNights: garminNights || 0,
+    user, strava, garmin,
+    stravaActs: stravaActs || 0, garminNights: garminNights || 0,
   };
 }
 
@@ -91,7 +87,6 @@ async function render(body) {
   const orphanStrava = !data.strava && data.stravaActs > 0;
   body.innerHTML = `
     ${cardStrava(data.strava, data.stravaActs)}
-    ${cardWhoop(data.whoop, data.whoopDays)}
     ${cardGarmin(data.garmin, data.garminNights)}
     ${cardOpenDossard()}
     ${orphanStrava ? `<button class="cnx-purge" data-act="purge-strava" type="button">Vider les activités restantes (${data.stravaActs})</button>` : ''}
@@ -150,28 +145,6 @@ function stravaSyncBarOrActions(c) {
     </div>`;
 }
 
-function cardWhoop(c, days = 0) {
-  const last = fmtDate(c?.last_sync_at);
-  const sub = c
-    ? `${c.athlete_name ? c.athlete_name + ' · ' : ''}${days} jour${days > 1 ? 's' : ''} de données${last ? ' · sync ' + last : ''}`
-    : 'Importe ta récupération, ton sommeil et ton strain.';
-  return `
-    <div class="cnx-card whoop">
-      <div class="cnx-card-top">
-        <div class="cnx-logo whoop">W</div>
-        <div class="cnx-card-title"><strong>Whoop</strong>${statusPill(c)}</div>
-      </div>
-      <p class="cnx-card-sub">${sub}</p>
-      <div class="cnx-actions">
-        ${c
-          ? `<button class="cnx-btn primary" data-act="whoop-sync">Re-synchroniser</button>
-             ${c.last_sync_status === 'error' ? `<button class="cnx-link" data-act="whoop-connect">Reconnecter</button>` : ''}
-             <button class="cnx-link danger" data-act="whoop-disconnect">Déconnecter</button>`
-          : `<button class="cnx-btn primary" data-act="whoop-connect">Connecter Whoop</button>`}
-      </div>
-    </div>`;
-}
-
 function cardGarmin(c, nights = 0) {
   const last = fmtDate(c?.last_sync_at);
   const sub = c
@@ -224,17 +197,11 @@ function wire(body) {
         return;
       }
       if (act === 'strava-connect') return window.startStravaOAuth?.();
-      if (act === 'whoop-connect') return window.startWhoopOAuth?.();
       if (act === 'strava-sync') {
         // Pas de barre liée à la carte : on lance via l'encart bas-droite (beginImport),
         // qui SURVIT à la fermeture de la fenêtre, et la carte se met à jour en direct
         // via l'événement 'strava-sync-progress'. La synchro continue si on ferme.
         window.startStravaIngest?.(); // enchaîne aussi le power profile
-        return;
-      }
-      if (act === 'whoop-sync') {
-        closeOverlay();
-        await window.startWhoopIngest?.();
         return;
       }
       if (act === 'garmin-sync') {
@@ -243,7 +210,6 @@ function wire(body) {
         return;
       }
       if (act === 'strava-disconnect') return showDisconnectChoice('strava', 'Strava', body);
-      if (act === 'whoop-disconnect') return showDisconnectChoice('whoop', 'Whoop', body);
       if (act === 'purge-strava') return doDisconnect('strava', 'Strava', true, body); // efface les activités orphelines
     });
   });
@@ -424,7 +390,6 @@ function injectStyles() {
     .cnx-card { background: var(--bg, #0b0e14); border: 1px solid var(--border, #2a3242);
       border-radius: 12px; padding: 13px 14px; }
     .cnx-card.strava { border-left: 3px solid #FC4C02; }
-    .cnx-card.whoop { border-left: 3px solid #0bbfa6; }
     .cnx-card.garmin { border-left: 3px solid #007cc3; }
     .cnx-card.opendossard { border-left: 3px solid #fbbf24; }
     .cnx-logo.garmin { background: rgba(0,124,195,0.18); color: #4db8e8; font-size: 13px; }
@@ -433,7 +398,6 @@ function injectStyles() {
     .cnx-logo { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center;
       justify-content: center; flex-shrink: 0; font-weight: 800; }
     .cnx-logo.strava { background: rgba(252,76,2,0.15); color: #FC4C02; }
-    .cnx-logo.whoop { background: rgba(11,191,166,0.15); color: #0bbfa6; }
     .cnx-card-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
     .cnx-card-title strong { color: var(--text, #e8edf5); font-size: 14px; }
     .cnx-pill { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
@@ -558,7 +522,7 @@ window.refreshConnectionsIfOpen = () => {
 };
 
 window.openConnectionsModal = openConnectionsModal;
-// Barres de progression réutilisables par les autres modules (import Strava/Whoop).
+// Barres de progression réutilisables par les autres modules (import Strava).
 window.coachProgress = showProgress;       // bloquante (centrée)
 window.coachBgProgress = showBgProgress;   // non-bloquante (coin)
 

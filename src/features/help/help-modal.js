@@ -35,14 +35,12 @@ function buildPanel() {
         <h3>Bien démarrer</h3>
         <details class="help-qa"><summary>Comment connecter Strava ?</summary>
           <p>Menu (en haut à droite) → <strong>Connexions</strong> → <strong>Connecter Strava</strong>, ou clique sur le bouton du bandeau « Aucun compte connecté ». Autorise l'accès sur Strava : tes activités s'importent automatiquement.</p></details>
-        <details class="help-qa"><summary>Comment connecter Whoop ?</summary>
-          <p>Menu → <strong>Connexions</strong> → <strong>Connecter Whoop</strong>. Tu récupères ta récupération, ton sommeil et ton strain réels.</p></details>
         <details class="help-qa"><summary>C'est quoi le « Power Profile » ?</summary>
           <p>Ce sont tes meilleurs records de puissance par durée d'effort (5 s, 1 min, 5 min, 20 min…), calculés à partir des streams de tes activités Strava. Il se construit en arrière-plan après la connexion et se complète au fil des synchros.</p></details>
         <details class="help-qa"><summary>Pourquoi l'import prend du temps ?</summary>
           <p>Les activités arrivent vite, mais l'analyse du power profile se fait par lots (≈ 40 activités) à cause de la limite de l'API Strava. Si la limite est atteinte, ça reprend tout seul au prochain chargement.</p></details>
         <details class="help-qa"><summary>Je ne vois pas mes données / elles sont à zéro</summary>
-          <p>Vérifie qu'un compte est connecté (menu → Connexions). Si oui, clique <strong>Re-synchroniser</strong>. Les données Whoop n'apparaissent que si Whoop est connecté.</p></details>
+          <p>Vérifie qu'un compte est connecté (menu → Connexions). Si oui, clique <strong>Re-synchroniser</strong>.</p></details>
       </section>
 
       <section class="help-section" id="help-terms">
@@ -59,7 +57,7 @@ function buildPanel() {
 
       <section class="help-section" id="help-about">
         <h3>À propos</h3>
-        <p class="help-text">Coach IA — dashboard d'entraînement &amp; récupération. Sources : Strava + Whoop.</p>
+        <p class="help-text">Coach IA — dashboard d'entraînement &amp; récupération. Sources : Strava + Garmin (sommeil).</p>
       </section>
       </div>
     </div>

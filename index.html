@@ -23,14 +23,12 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <!-- Mode Supabase-only : data.js / streams.js statiques supprimés.
-     Toutes les données (activités, streams, power profile, whoop) sont
+     Toutes les données (activités, streams, power profile, sommeil) sont
      chargées depuis Supabase au login (voir js/supabase-data-loader.js). -->
 <!-- Config Supabase (clé publique, voir supabase/SETUP_SUPABASE.md) -->
 <script src="supabase-config.js" onerror="console.warn('supabase-config.js absent')"></script>
 <!-- Config Strava OAuth (client_id public + URL Edge Function) -->
 <script src="strava-config.js" onerror="console.warn('strava-config.js absent')"></script>
-<!-- Config Whoop OAuth (client_id public + URL Edge Function) -->
-<script src="whoop-config.js" onerror="console.warn('whoop-config.js absent')"></script>
 <script src="src/core/ui/modal-select-guard.js"></script>
 <!-- ============================================================ -->
 <!-- Styles externalisés (refactoring Phase 1) -->
@@ -144,21 +142,7 @@
       <div id="last-session-metrics" style="display:flex;gap:18px;flex-wrap:wrap;"></div>
     </div>
 
-    <div class="card" id="whoop-card">
-      <div class="kpi-label">Récupération Whoop</div>
-      <div class="ring-container">
-        <div class="ring">
-          <svg width="80" height="80"><circle cx="40" cy="40" r="34" fill="none" stroke="var(--border)" stroke-width="8"/><circle id="recovery-ring" cx="40" cy="40" r="34" fill="none" stroke="var(--accent)" stroke-width="8" stroke-dasharray="213.6" stroke-dashoffset="100" stroke-linecap="round"/></svg>
-          <div class="ring-text" id="recovery-val">—</div>
-        </div>
-        <div>
-          <div style="font-size:12px;color:var(--text-dim);">HRV</div>
-          <div style="font-size:18px;font-weight:600;" id="hrv-val">— ms</div>
-          <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Sommeil</div>
-          <div style="font-size:13px;" id="sleep-val">— h</div>
-        </div>
-      </div>
-    </div>
+    <div class="card" id="acwr-card"></div>
 
     <div class="card">
       <div class="kpi-label">Forme (TSB)</div>
@@ -449,15 +433,6 @@
     <div class="section-subtitle">Durée quotidienne par sport · <span id="bilan-duration-year">—</span></div>
     <div class="chart-wrap" style="height:300px;"><canvas id="chart-bilan-duration"></canvas></div>
   </div>
-
-  <!-- Compatibilité : anciens canvas cachés (le code legacy pointe encore dessus) -->
-  <div style="display:none;">
-    <canvas id="chart-hrv"></canvas>
-    <canvas id="chart-sleep"></canvas>
-    <canvas id="chart-ratio"></canvas>
-    <canvas id="chart-ctl-trend"></canvas>
-    <div class="insight-list" id="alerts-list"></div>
-  </div>
 </section>
 
 <!-- PANEL 4: Performance (records + objectifs + Power Profile) -->
@@ -585,7 +560,7 @@
       <a href="#g-zones">Zones d'entraînement</a>
       <a href="#g-typeseances">Types de séances</a>
       <a href="#g-recup">Récupération & physiologie</a>
-      <a href="#g-whoop">Whoop & sommeil</a>
+      <a href="#g-sommeil">Sommeil</a>
       <a href="#g-planification">Planification & adaptation</a>
       <a href="#g-metriques">Métriques séance</a>
     </nav>
@@ -740,17 +715,9 @@
       </div>
     </div>
 
-    <div class="glossary-section" id="g-whoop">
-      <h2>Whoop & sommeil</h2>
+    <div class="glossary-section" id="g-sommeil">
+      <h2>Sommeil</h2>
       <div class="term-grid">
-        <div class="term">
-          <div class="term-head"><span class="term-abbr">Recovery Score</span><span class="term-name">Whoop</span></div>
-          <div class="term-def">Score 0-100% calculé chaque matin par Whoop à partir de HRV, FC repos, sommeil et fréquence respiratoire. Code couleur : <strong style="color:var(--danger);">rouge &lt; 33%</strong>, <strong style="color:var(--warn);">jaune 34-66%</strong>, <strong style="color:var(--accent);">vert &gt; 66%</strong>.</div>
-        </div>
-        <div class="term">
-          <div class="term-head"><span class="term-abbr">Strain</span><span class="term-name">Whoop</span></div>
-          <div class="term-def">Score 0-21 de l'effort cardiovasculaire total de la journée (échelle Borg modifiée, logarithmique). Combine FC sur 24h, pas seulement les séances. Strain &gt; 14 = journée très exigeante.</div>
-        </div>
         <div class="term">
           <div class="term-head"><span class="term-abbr">Sommeil profond</span></div>
           <div class="term-def">Phase SWS (Slow Wave Sleep). Récupération physique maximale : sécrétion d'hormone de croissance, réparation tissulaire. Cible : 15-25% du temps de sommeil total.</div>

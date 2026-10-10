@@ -83,7 +83,6 @@ Tables existantes, à faire évoluer pour pointer vers `athlete_id` au lieu de
 
 - **daily_metrics** — CTL / ATL / TSB calculés par jour.
 - **power_profile** / **power_profile_sport** — records de puissance (MMP).
-- **whoop_data** — récupération, HRV, sommeil, strain.
 
 ---
 
@@ -145,7 +144,7 @@ Alertes : nouvelle séance assignée, message reçu, surcharge détectée…
 
 ## ⑥ Intégrations
 
-- **strava_connections** / **whoop_connections** — OAuth (existant).
+- **connexions_app** — connexions OAuth (Strava, Garmin ; tokens masqués au navigateur).
 - **integrations** (nouveau) — table générique pour ajouter Garmin, Apple
   Health, Coros… sans recréer une table par service :
   `athlete_id, provider, access_token, refresh_token, expires_at, scope`.

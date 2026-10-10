@@ -155,7 +155,7 @@
   }
   /* Border-left coloré par card (4 cards → 4 couleurs comme la maquette) */
   .hero #last-session-card { border-left: 3px solid var(--accent); }
-  .hero #whoop-card { border-left: 3px solid var(--warn); }
+  .hero #acwr-card { border-left: 3px solid var(--warn); }
   .hero .card:has(#tsb-val) { border-left: 3px solid var(--accent); }
   .hero .card:has(#weekly-tss) { border-left: 3px solid var(--info); }
   .hero .kpi-label {
@@ -242,7 +242,7 @@
        [   Sous-charge    ]  ← pill jaune
        [ 7j 16 · 42j 32   ]  ← détails compact
   */
-  .hero #whoop-card { text-align: center; }
+  .hero #acwr-card { text-align: center; }
   .hero .ring-container {
     display: flex !important;
     flex-direction: column !important;

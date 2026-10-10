@@ -3,7 +3,7 @@
 
    Au login : tente de charger toutes les données de l'utilisateur
    depuis les tables Supabase (activities, daily_metrics, power_profile,
-   whoop_data, user_profile, strava_connections), reconstitue un objet
+   user_profile, strava_connections), reconstitue un objet
    identique à window.DASHBOARD_DATA et le set sur window.
 
    Fallback : si l'utilisateur n'est pas connecté OU si la BDD est vide
@@ -165,9 +165,7 @@ async function loadFromSupabase() {
       activities,
       dailyMetrics,
       powerProfile,
-      whoopData,
       { data: stravaConnection },
-      { data: whoopConnection },
       { data: powerProfileSport },
     ] = await Promise.all([
       sb.from('user_profiles').select('*').eq('user_id', userId).maybeSingle(),
@@ -179,9 +177,7 @@ async function loadFromSupabase() {
         }),
       fetchAllPaged('daily_metrics', userId, 'iso_date'),
       fetchAllPaged('power_profile', userId, 'duration_s'),
-      fetchAllPaged('whoop_data', userId, 'iso_date'),
       sb.from('connexions_app').select(STRAVA_CONN_SAFE_COLS).eq('user_id', userId).eq('app', 'strava').maybeSingle(),
-      sb.from('connexions_app').select('user_id, last_sync_at').eq('user_id', userId).eq('app', 'whoop').maybeSingle(),
       sb.from('power_profile_sport').select('*').eq('user_id', userId),
     ]);
 
@@ -197,7 +193,7 @@ async function loadFromSupabase() {
       // Bandeau d'onboarding UNIQUEMENT si AUCUN compte n'est connecté.
       // Si un compte est connecté (mais 0 activité), pas de bandeau — juste les
       // messages "aucune donnée" ; la (re)synchro se fait via la page Connexions.
-      if (!stravaConnection && !whoopConnection) showOnboardingBanner();
+      if (!stravaConnection) showOnboardingBanner();
       else hideOnboardingBanner();
       setTimeout(() => setEmptyDataOverlays(true), 400);
       _loadInProgress = false;
@@ -206,12 +202,12 @@ async function loadFromSupabase() {
 
     // Bandeau dès qu'AUCUN compte n'est connecté (même s'il reste d'anciennes
     // données en base après une déconnexion douce).
-    if (!stravaConnection && !whoopConnection) showOnboardingBanner();
+    if (!stravaConnection) showOnboardingBanner();
     else hideOnboardingBanner();
     setEmptyDataOverlays(false); // données présentes → on retire les messages vides
 
     const reconstituted = reconstituteData({
-      profile, activities, dailyMetrics, powerProfile, whoopData, stravaConnection, whoopConnection, powerProfileSport,
+      profile, activities, dailyMetrics, powerProfile, stravaConnection, powerProfileSport,
     });
 
     // Remplace window.DASHBOARD_DATA
@@ -221,19 +217,10 @@ async function loadFromSupabase() {
     // Re-render complet de l'app
     triggerFullReload();
 
-    // Carte Récupération Whoop : si pas de compte Whoop connecté, on affiche
-    // "Aucune donnée Whoop" au lieu des "—".
-    setTimeout(() => setWhoopCardEmpty(!whoopConnection), 250);
-
     // Reprise automatique du power profile : si des activités n'ont pas encore de
     // streams (ex : import interrompu par un rechargement), on relance la boucle
     // de lots de 40 + la barre, tout seul.
     maybeResumeStreams(stravaConnection, userId);
-
-    // Rafraîchissement auto de Whoop (pas de webhook côté Whoop, contrairement à
-    // Strava) : si connecté et dernière synchro ancienne, on relance un import
-    // SILENCIEUX en arrière-plan, une seule fois par session.
-    maybeRefreshWhoop(whoopConnection);
   } catch (e) {
     console.error('[sb-data] Erreur chargement Supabase:', e);
   } finally {
@@ -300,26 +287,8 @@ async function maybeResumeStreams(stravaConnection, userId) {
   } catch (_) { /* silencieux */ }
 }
 
-// Rafraîchit Whoop en arrière-plan si la dernière synchro date de plus de 6h.
-// Une seule fois par session (et l'import met à jour last_sync_at → pas de boucle).
-let _whoopAutoRefreshed = false;
-function maybeRefreshWhoop(whoopConnection) {
-  if (!whoopConnection || _whoopAutoRefreshed || !window.startWhoopIngest) return;
-  const ageMs = whoopConnection.last_sync_at
-    ? Date.now() - new Date(whoopConnection.last_sync_at).getTime()
-    : Infinity;
-  if (ageMs < 6 * 60 * 60 * 1000) return; // déjà synchro récemment
-  _whoopAutoRefreshed = true;
-  console.log('[sb-data] Whoop : synchro auto en arrière-plan (dernière > 6h)');
-  // 14 jours suffisent pour un refresh courant (recovery/sommeil récents).
-  window.startWhoopIngest(14, { silent: true });
-}
-
 // ============ RECONSTITUTION FORMAT DASHBOARD_DATA ============
-function reconstituteData({ profile, activities, dailyMetrics, powerProfile, whoopData, stravaConnection, whoopConnection, powerProfileSport }) {
-  // On n'affiche les données Whoop QUE si un compte Whoop est réellement connecté.
-  // (Évite d'afficher d'anciennes données simulées encore présentes en base.)
-  if (!whoopConnection) whoopData = [];
+function reconstituteData({ profile, activities, dailyMetrics, powerProfile, stravaConnection, powerProfileSport }) {
   // 1) Athlete (incl. sexe + âge depuis extras → pour W/kg & barèmes)
   const _extras = (profile && profile.extras) || {};
   let _age = null;
@@ -428,18 +397,12 @@ function reconstituteData({ profile, activities, dailyMetrics, powerProfile, who
     actsByDate[iso].sort((x, y) => (y.tss || 0) - (x.tss || 0));
   }
 
-  // 3) Index whoop par iso_date
-  const whoopByDate = {};
-  for (const w of whoopData || []) {
-    whoopByDate[w.iso_date] = w;
-  }
 
   // 4) Construire days[] depuis daily_metrics (la liste de référence)
   let days = (dailyMetrics || []).map(m => {
     const iso = m.iso_date;
     const acts = actsByDate[iso] || [];
     const main = acts[0] || {};
-    const w = whoopByDate[iso] || {};
     return {
       date: iso,
       tss: m.tss || 0,
@@ -460,16 +423,6 @@ function reconstituteData({ profile, activities, dailyMetrics, powerProfile, who
       zones_hr: main.zones_hr || null,
       zones_power: main.zones_power || null,
       activities: acts,
-      // Whoop
-      recovery: w.recovery ?? null,
-      hrv: w.hrv ?? null,
-      sleepH: w.sleep_h ?? null,
-      sleepQ: w.sleep_q ?? null,
-      whoopSource: w.source || null,
-      rhr: w.rhr ?? null,
-      strain: w.strain ?? null,
-      deepH: w.deep_h ?? null,
-      remH: w.rem_h ?? null,
     };
   });
 
@@ -487,7 +440,6 @@ function reconstituteData({ profile, activities, dailyMetrics, powerProfile, who
     days = [...dateSet].sort().map(iso => {
       const acts = actsByDate[iso] || [];
       const main = acts[0] || {};
-      const w = whoopByDate[iso] || {};
       return {
         date: iso,
         tss: acts.reduce((s, a) => s + (a.tss || 0), 0),
@@ -499,8 +451,6 @@ function reconstituteData({ profile, activities, dailyMetrics, powerProfile, who
         compliance: null, zones: main.zones_hr || main.zones_power || null,
         zones_hr: main.zones_hr || null, zones_power: main.zones_power || null,
         activities: acts,
-        recovery: w.recovery ?? null, hrv: w.hrv ?? null, sleepH: w.sleep_h ?? null, sleepQ: w.sleep_q ?? null,
-        whoopSource: w.source || null, rhr: w.rhr ?? null, strain: w.strain ?? null, deepH: w.deep_h ?? null, remH: w.rem_h ?? null,
       };
     });
   }
@@ -513,7 +463,6 @@ function reconstituteData({ profile, activities, dailyMetrics, powerProfile, who
       if (have.has(iso)) continue;
       const acts = actsByDate[iso];
       const main = acts[0] || {};
-      const w = whoopByDate[iso] || {};
       days.push({
         date: iso,
         tss: acts.reduce((s, a) => s + (a.tss || 0), 0),
@@ -525,8 +474,6 @@ function reconstituteData({ profile, activities, dailyMetrics, powerProfile, who
         compliance: null, zones: main.zones_hr || main.zones_power || null,
         zones_hr: main.zones_hr || null, zones_power: main.zones_power || null,
         activities: acts,
-        recovery: w.recovery ?? null, hrv: w.hrv ?? null, sleepH: w.sleep_h ?? null, sleepQ: w.sleep_q ?? null,
-        whoopSource: w.source || null, rhr: w.rhr ?? null, strain: w.strain ?? null, deepH: w.deep_h ?? null, remH: w.rem_h ?? null,
       });
     }
     days.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
@@ -551,14 +498,11 @@ function reconstituteData({ profile, activities, dailyMetrics, powerProfile, who
       const iso = fmt(dt);
       let day = byIso[iso];
       if (!day) {
-        const w = whoopByDate[iso] || {};
-        day = {
+          day = {
           date: iso, tss: 0, ctl: lastCtl, atl: lastAtl, tsb: +(lastCtl - lastAtl).toFixed(1),
           duration: 0, sessionName: null, sessionType: null, sport: null,
           np: 0, avgW: 0, hr: 0, ftpPct: 0, intensity: 0, compliance: null,
           zones: null, zones_hr: null, zones_power: null, activities: [],
-          recovery: w.recovery ?? null, hrv: w.hrv ?? null, sleepH: w.sleep_h ?? null, sleepQ: w.sleep_q ?? null,
-          whoopSource: w.source || null, rhr: w.rhr ?? null, strain: w.strain ?? null, deepH: w.deep_h ?? null, remH: w.rem_h ?? null,
         };
       }
       lastCtl = day.ctl || 0; lastAtl = day.atl || 0;
@@ -629,16 +573,12 @@ function reconstituteData({ profile, activities, dailyMetrics, powerProfile, who
   }
 
   // 6) Source + meta
-  const realDays = (whoopData || []).filter(w => w.source === 'whoop').length;
   return {
     generated_at: new Date().toISOString(),
     athlete,
     source: {
       strava: !!stravaConnection,
       intervals_icu: false,
-      whoop_real: realDays > 0,
-      whoop_real_days: realDays,
-      whoop_simulated_days: Math.max(0, days.length - realDays),
       history_days: days.length,
       activities_count: (activities || []).length,
       planned_events_count: 0,
@@ -666,8 +606,6 @@ function buildEmptyDataset(user, profile) {
       np: 0, avgW: 0, hr: 0, ftpPct: 0, intensity: 0,
       compliance: null, zones: null, zones_hr: null, zones_power: null,
       activities: [],
-      recovery: null, hrv: null, sleepH: null, sleepQ: null, whoopSource: null,
-      rhr: null, strain: null, deepH: null, remH: null,
     });
   }
   const name = profile?.display_name || (user.email ? user.email.split('@')[0] : 'Athlète');
@@ -682,7 +620,6 @@ function buildEmptyDataset(user, profile) {
     },
     source: {
       strava: false, intervals_icu: false,
-      whoop_real: false, whoop_real_days: 0, whoop_simulated_days: 0,
       history_days: 90, activities_count: 0, planned_events_count: 0,
       backend: 'supabase-empty',
     },
@@ -693,7 +630,7 @@ function buildEmptyDataset(user, profile) {
 // ============ BANNIÈRE D'ONBOARDING (compte vide) ============
 function showOnboardingBanner(opts = {}) {
   // En vue coach (on consulte un autre athlete), on n'a pas acces a SES tokens
-  // Strava/Whoop : ne pas afficher l'onboarding "Connecter un compte".
+  // Strava : ne pas afficher l'onboarding "Connecter un compte".
   if (window.isViewingOtherAthlete && window.isViewingOtherAthlete()) { hideOnboardingBanner(); return; }
   const stravaConnected = !!opts.stravaConnected;
   let banner = document.getElementById('onboarding-banner');
@@ -720,7 +657,6 @@ function showOnboardingBanner(opts = {}) {
       </div>
       <div class="onboarding-banner-body"><strong>${message}</strong></div>
       ${stravaBtn}
-      <button class="onboarding-whoop-btn" id="onboarding-connect-whoop" type="button"><span>Connecter Whoop</span></button>
     </div>
   `;
   // Wire les boutons
@@ -730,19 +666,15 @@ function showOnboardingBanner(opts = {}) {
   banner.querySelector('#onboarding-sync-strava')?.addEventListener('click', () => {
     if (window.startStravaIngest) window.startStravaIngest(); else alert('Module Strava non chargé');
   });
-  banner.querySelector('#onboarding-connect-whoop').addEventListener('click', () => {
-    if (window.startWhoopOAuth) window.startWhoopOAuth();
-    else alert('Module Whoop OAuth non chargé');
-  });
   // Petit "i" cliquable → explication de la situation actuelle
   const icon = banner.querySelector('.onboarding-banner-icon');
   if (icon) {
     icon.style.cursor = 'pointer';
     icon.title = 'En savoir plus';
     icon.addEventListener('click', () => {
-      const msg = "Aucun compte Strava ou Whoop n'est relié à Coach IA pour l'instant.\n\n"
+      const msg = "Aucun compte Strava n'est relié à Coach IA pour l'instant.\n\n"
         + "• Connecte Strava pour importer tes activités, ta puissance et ta charge (CTL/ATL/TSB).\n"
-        + "• Connecte Whoop pour ta récupération, ton sommeil et ton strain.\n\n"
+        + "\n"
         + "Tant qu'aucun compte n'est connecté, le tableau de bord reste vide. Si d'anciennes "
         + "activités sont encore affichées, tu peux les conserver (elles réapparaîtront à la "
         + "reconnexion) ou les supprimer via la fenêtre Connexions.";
@@ -792,19 +724,9 @@ function setEmptyDataOverlays(on) {
         <path d="M21 15V6a2 2 0 0 0-2-2H9l-2-2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h6"/><line x1="16" y1="19" x2="22" y2="19"/>
       </svg>
       <div class="ed-title">Aucune donnée importée</div>
-      <div class="ed-sub">Connecte Strava ou Whoop</div>`;
+      <div class="ed-sub">Connecte Strava</div>`;
     card.appendChild(o);
   });
-}
-
-// Quand Whoop n'est pas connecté, la carte "Récupération Whoop" est remplacée par
-// la carte "Ratio de charge (ACWR)" (calculée depuis Strava). Le swap est géré par
-// renderHeroKpi() dans app.js, via le flag window.__noWhoopCard.
-function setWhoopCardEmpty(on) {
-  window.__noWhoopCard = !!on;
-  // Nettoie un éventuel ancien overlay (versions précédentes).
-  document.getElementById('whoop-card')?.querySelector('.empty-data-overlay')?.remove();
-  if (typeof window.renderHeroKpi === 'function') window.renderHeroKpi();
 }
 
 function injectEmptyOverlayStyles() {
@@ -881,19 +803,6 @@ function injectOnboardingStyles() {
       box-shadow: 0 4px 12px rgba(252, 76, 2, 0.35);
     }
     .onboarding-strava-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-    .onboarding-whoop-btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: #0bbfa6;
-      color: #04211d;
-      border: none; border-radius: 8px;
-      padding: 10px 18px;
-      font-size: 13px; font-weight: 700; cursor: pointer;
-      font-family: inherit; transition: all 0.15s;
-      box-shadow: 0 2px 8px rgba(11, 191, 166, 0.25);
-      flex-shrink: 0;
-    }
-    .onboarding-whoop-btn:hover { background: #0aa991; transform: translateY(-1px); }
-    .onboarding-whoop-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
   `;
   document.head.appendChild(s);
 }

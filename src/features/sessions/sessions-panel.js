@@ -19,7 +19,6 @@ function buildActivityIndex() {
         ...a,
         sessionName: a.name || d.sessionName || '—',
         date: (dt instanceof Date && !isNaN(dt)) ? dt : d.date,
-        recovery: d.recovery ?? null,
         compliance: null,
       });
     }

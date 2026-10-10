@@ -1,5 +1,5 @@
 // ============================================================
-// Helpers partagés OAuth (Strava / Whoop) : URLs de retour autorisées,
+// Helpers partagés OAuth (Strava) : URLs de retour autorisées,
 // état à usage unique, CORS restreint aux origines du site.
 // ============================================================
 // deno-lint-ignore-file no-explicit-any

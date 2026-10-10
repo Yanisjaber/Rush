@@ -175,7 +175,7 @@ body.coach-mode.coach-has-athlete .sidebar-nav .tab[data-panel="p-chat"] { displ
 .co-actions .btn { padding: 9px 14px; border-radius: 9px; font-size: 13px; font-weight: 600; border: 1px solid var(--border); background: var(--bg-elev2); color: var(--text); cursor: pointer; font-family: inherit; }
 .co-actions .btn.green { background: rgba(74,222,128,.15); border-color: rgba(74,222,128,.4); color: var(--accent); }
 
-.co-kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 14px; }
+.co-kpis { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 14px; }
 .co-kpi { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 14px; padding: 16px; text-align: center; position: relative; overflow: hidden; }
 .co-kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--mute); }
 .co-kpi.ok::before { background: var(--accent); } .co-kpi.warn::before { background: var(--warn); } .co-kpi.bad::before { background: var(--danger); }

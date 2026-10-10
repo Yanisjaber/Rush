@@ -173,7 +173,7 @@ document.getElementById('week-calendar').addEventListener('click', (e) => {
   const iso = card.dataset.iso;
   const source = card.dataset.source;
   if (!iso) return;
-  // Jour de repos passé : clic → détail récupération (Whoop) au lieu de rien.
+  // Jour de repos passé : clic → détail du jour de repos au lieu de rien.
   if (card.classList.contains('empty-past')) {
     if (card.classList.contains('rest-clickable')) openRestDayModal(iso);
     return;

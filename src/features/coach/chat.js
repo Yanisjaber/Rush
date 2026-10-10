@@ -87,9 +87,7 @@ function renderChat() {
 function generateCoachResponse(userText) {
   const t = userText.toLowerCase();
   const tsb = appState.todayData?.tsb ?? 0;
-  const rec = appState.todayData?.recovery;
   const ctxTSB = tsb < -15 ? ` Ton TSB actuel (${tsb.toFixed(0)}) confirme.` : tsb > 5 ? ` Ton TSB est positif (+${tsb.toFixed(0)}), c'est cohérent.` : '';
-  const ctxRec = rec != null ? ` Recovery Whoop du jour : ${rec}%.` : '';
 
   // Détection d'intentions (ordre de priorité)
   if (/blesse|blessé|blessee|douleur|mal au|mal a la|tendinit|claqu|knee|genou|cheville|dos|épaule|coude|poignet/.test(t)) {
@@ -100,13 +98,13 @@ function generateCoachResponse(userText) {
   }
   if (/fatig|crevé|crevee|épuis|epuis|nase|usé|usee|kacho|ko|naze/.test(t)) {
     return {
-      message: `Compris, fatigue signalée.${ctxTSB}${ctxRec}\n\nJe vais alléger les séances :\n• Pas de blocs VO2max\n• Focus endurance Z2 et récupération active\n• Si la fatigue persiste 2-3 jours, on bascule en semaine de décharge\n\nDors bien, hydrate-toi, mange protéiné.`,
+      message: `Compris, fatigue signalée.${ctxTSB}\n\nJe vais alléger les séances :\n• Pas de blocs VO2max\n• Focus endurance Z2 et récupération active\n• Si la fatigue persiste 2-3 jours, on bascule en semaine de décharge\n\nDors bien, hydrate-toi, mange protéiné.`,
       prefs: { recoveryMode: true, blocked: false }
     };
   }
   if (/frais|en forme|reposé|reposee|pleine forme|envie de pousser|au top|peche|pêche/.test(t)) {
     return {
-      message: `Top, tu es frais.${ctxTSB}${ctxRec} Bonne fenêtre pour pousser.\n\nJe peux densifier la semaine avec :\n• Un bloc de seuil supplémentaire\n• Ou un VO2max si ton TSB le permet\n\nTu veux travailler quoi en priorité ? Seuil, VO2max, endurance, force ?`,
+      message: `Top, tu es frais.${ctxTSB} Bonne fenêtre pour pousser.\n\nJe peux densifier la semaine avec :\n• Un bloc de seuil supplémentaire\n• Ou un VO2max si ton TSB le permet\n\nTu veux travailler quoi en priorité ? Seuil, VO2max, endurance, force ?`,
       prefs: { hardMode: true, recoveryMode: false, blocked: false }
     };
   }
@@ -166,7 +164,7 @@ function generateCoachResponse(userText) {
   }
   if (/^(salut|bonjour|hello|coucou|hey|yo)/.test(t)) {
     return {
-      message: `Salut ! Prêt à bosser. Dis-moi comment tu te sens aujourd'hui, ce que tu veux travailler, ou si tu as des douleurs/contraintes.${ctxRec}${ctxTSB}`,
+      message: `Salut ! Prêt à bosser. Dis-moi comment tu te sens aujourd'hui, ce que tu veux travailler, ou si tu as des douleurs/contraintes.${ctxTSB}`,
       prefs: {}
     };
   }

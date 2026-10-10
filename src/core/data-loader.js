@@ -23,8 +23,6 @@ function emptyBootDays() {
       np: 0, avgW: 0, hr: 0, ftpPct: 0, intensity: 0,
       compliance: null, zones: null, zones_hr: null, zones_power: null,
       activities: [],
-      recovery: null, hrv: null, sleepH: null, sleepQ: null, whoopSource: null,
-      rhr: null, strain: null, deepH: null, remH: null,
     });
   }
   return days;
@@ -50,19 +48,9 @@ export async function loadData() {
         sub.textContent = `${a.name}${ftpStr}`;
       }
     }
-    // Badge : nombre de jours réels Whoop disponibles
+    // Badge de source
     const badge = document.querySelector('header .badge');
-    if (badge) {
-      const realDays = (json.source && json.source.whoop_real_days) || 0;
-      if (realDays > 0) {
-        badge.textContent = `Strava · Whoop : ${realDays}j réels`;
-        badge.style.background = 'rgba(74, 222, 128, 0.1)';
-        badge.style.borderColor = 'rgba(74, 222, 128, 0.3)';
-        badge.style.color = 'var(--accent)';
-      } else {
-        badge.textContent = 'Strava · Whoop indisponible';
-      }
-    }
+    if (badge) badge.textContent = 'Strava';
 
     // Indicateur "dernière mise à jour" — placé dans .badge-stack (sous le badge)
     if (json.generated_at) {

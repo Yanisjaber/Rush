@@ -88,7 +88,6 @@ function caiBuildContext(day) {
     variability_index: vi != null ? caiR(vi, 2) : null,
     zones_fc_pct: day.zones_hr || null,
     forme: { ctl: caiR(day.ctl), atl: caiR(day.atl), tsb: caiR(day.tsb) },
-    recovery_whoop_pct: day.recovery ?? null,
   };
 }
 function caiHeader(ctx, btnLabel) {

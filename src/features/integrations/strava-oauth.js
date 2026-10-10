@@ -47,7 +47,7 @@ export async function startStravaOAuth() {
     client_id: cfg.client_id,
     response_type: 'code',
     redirect_uri: cfg.redirect_uri,
-    approval_prompt: 'force', // redemande l'écran d'autorisation à chaque connexion (comme Whoop)
+    approval_prompt: 'force', // redemande l'écran d'autorisation à chaque connexion
     scope: SCOPES,
     state: data.state,
   });
