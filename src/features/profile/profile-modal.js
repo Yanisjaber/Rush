@@ -1540,7 +1540,6 @@ async function openProfilePage(skipHash = false) {
   // On GARDE le vrai logo du header en place (pixel-perfect, aucun décalage au retour) :
   // on masque seulement les autres éléments et on injecte le titre profil à droite.
   document.getElementById('sport-filter')?.style.setProperty('display', 'none');
-  document.getElementById('mode-toggle')?.style.setProperty('display', 'none');
   const _hInfo = document.querySelector('.header-info');
   if (_hInfo) _hInfo.style.display = 'none';
   showProfileHeaderTitle();
@@ -1572,7 +1571,6 @@ function closeProfilePage() {
   if (tabsBar) tabsBar.classList.remove('profile-hidden');
   // Restaurer le header principal + le bandeau.
   document.getElementById('sport-filter')?.style.setProperty('display', '');
-  document.getElementById('mode-toggle')?.style.setProperty('display', '');
   const _hInfo = document.querySelector('.header-info');
   if (_hInfo) _hInfo.style.display = '';
   const _pht = document.getElementById('profile-header-title');

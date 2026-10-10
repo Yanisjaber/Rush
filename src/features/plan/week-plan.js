@@ -216,7 +216,7 @@ export function renderWeekPlan() {
         }
 
         // 2) Tous les entraînements prévus manuels pour ce jour
-        const manualTrainings = ((typeof loadTrainings === 'function') ? loadTrainings() : []).filter(t => !window.coachModeKeep || window.coachModeKeep(t.ia));
+        const manualTrainings = ((typeof loadTrainings === 'function') ? loadTrainings() : []);
         const manualForToday = manualTrainings.filter(t => t.date === iso && !_realisedKeySet.has(String(t.id)) && !(t._sbId && _realisedKeySet.has(String(t._sbId))));
         for (const m of manualForToday) {
           items.push({

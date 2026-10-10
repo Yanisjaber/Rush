@@ -39,11 +39,9 @@ function loadRestIaSet() {
 
 function isTemplateRestDay(iso) { return loadTemplateRestDays().includes(iso); }
 
-// Repos visible dans le mode courant (Manuel => repos non-IA ; IA => repos IA).
+// Jour de repos prévu (qu'il vienne de toi ou de l'IA : tout est affiché).
 export function isRestDayForMode(iso) {
-  if (!loadTemplateRestDays().includes(iso)) return false;
-  const isIa = loadRestIaSet().includes(iso);
-  return window.coachModeKeep ? window.coachModeKeep(isIa) : !isIa;
+  return loadTemplateRestDays().includes(iso);
 }
 
 function addTemplateRestDay(iso, ia = false) {
@@ -66,7 +64,7 @@ function removeTemplateRestDay(iso) {
 
 function toggleTemplateRestDay(iso) {
   if (isTemplateRestDay(iso)) removeTemplateRestDay(iso);
-  else addTemplateRestDay(iso, window.APP_MODE === 'ia'); // toggle manuel en mode IA => repos IA
+  else addTemplateRestDay(iso, false);
 }
 
 

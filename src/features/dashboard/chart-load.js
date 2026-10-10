@@ -49,7 +49,6 @@ function plannedItemsForDay(iso) {
   const items = [];
   try {
     const tr = ((typeof loadTrainings === 'function') ? loadTrainings() : [])
-      .filter(t => !window.coachModeKeep || window.coachModeKeep(t.ia))
       .filter(t => t.date === iso);
     for (const t of tr) items.push({ name: t.name || 'Séance prévue', tss: +t.tss || 0, duration: +t.duration || 0, sport: t.sport || 'Ride' });
   } catch (_) {}

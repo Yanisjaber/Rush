@@ -58,7 +58,6 @@ syncTabFromHash();
 window.goHome = function () {
   document.querySelector('.tabs')?.classList.remove('profile-hidden');
   document.getElementById('sport-filter')?.style.setProperty('display', '');
-  document.getElementById('mode-toggle')?.style.setProperty('display', '');
   const hi = document.querySelector('.header-info'); if (hi) hi.style.display = '';
   const ft = document.querySelector('footer'); if (ft) ft.style.display = '';
   const ob = document.getElementById('onboarding-banner'); if (ob) ob.style.display = '';

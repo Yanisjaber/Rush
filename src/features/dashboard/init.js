@@ -77,27 +77,6 @@ window.activeSports = activeSports;
 scheduleMidnightRefresh();
 
 
-// Re-render des vues qui dépendent du mode IA/Manuel quand on bascule le toggle.
-// L'event 'appModeChange' est dispatché par js/app-mode.js à chaque applyAppMode().
-window.addEventListener('appModeChange', (e) => {
-  if (typeof renderCalendar === 'function') renderCalendar();
-  // La projection de la courbe de charge filtre les prévus par mode IA/Manuel
-  if (window.refreshLoadChart) window.refreshLoadChart();
-  // L'onglet IA (p7) n'existe qu'en mode IA : si on repasse en Manuel dessus, on rebascule au tableau de bord.
-  const mode = e && e.detail && e.detail.mode;
-  if (mode === 'manual') {
-    const p7 = document.getElementById('p7');
-    if (p7 && p7.classList.contains('active') && typeof activatePanel === 'function') activatePanel('p1', true);
-  }
-});
-
-
-// Filtre planif selon le mode : Manuel => éléments non-IA ; IA => éléments IA.
-// (les activités RÉALISÉES ne passent jamais par ce filtre — toujours visibles)
-window.coachModeKeep = function (ia) {
-  return (window.APP_MODE === 'ia') ? (ia === true) : (ia !== true);
-};
-
 window.__applyOverridesAndRerender = rebuildFromDashboard;
 
 

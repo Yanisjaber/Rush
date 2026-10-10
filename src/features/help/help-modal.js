@@ -115,7 +115,6 @@ export function openHelpModal(skipHash = false) {
   const tabsBar = document.querySelector('.tabs');
   if (tabsBar) tabsBar.classList.add('profile-hidden');
   document.getElementById('sport-filter')?.style.setProperty('display', 'none');
-  document.getElementById('mode-toggle')?.style.setProperty('display', 'none');
   const hi = document.querySelector('.header-info'); if (hi) hi.style.display = 'none';
   showHelpHeaderTitle();
   const ft = document.querySelector('footer'); if (ft) ft.style.display = 'none';
@@ -128,7 +127,6 @@ function closeHelpPage() {
   const tabsBar = document.querySelector('.tabs');
   if (tabsBar) tabsBar.classList.remove('profile-hidden');
   document.getElementById('sport-filter')?.style.setProperty('display', '');
-  document.getElementById('mode-toggle')?.style.setProperty('display', '');
   const hi = document.querySelector('.header-info'); if (hi) hi.style.display = '';
   const ht = document.getElementById('help-header-title'); if (ht) ht.style.display = 'none';
   const ft = document.querySelector('footer'); if (ft) ft.style.display = '';

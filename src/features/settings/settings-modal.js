@@ -108,7 +108,6 @@ export function openSettingsModal(skipHash = false) {
   const tabsBar = document.querySelector('.tabs');
   if (tabsBar) tabsBar.classList.add('profile-hidden');
   document.getElementById('sport-filter')?.style.setProperty('display', 'none');
-  document.getElementById('mode-toggle')?.style.setProperty('display', 'none');
   const hi = document.querySelector('.header-info'); if (hi) hi.style.display = 'none';
   showSettingsHeaderTitle();
   const ft = document.querySelector('footer'); if (ft) ft.style.display = 'none';
@@ -123,7 +122,6 @@ function closeSettingsPage() {
   const tabsBar = document.querySelector('.tabs');
   if (tabsBar) tabsBar.classList.remove('profile-hidden');
   document.getElementById('sport-filter')?.style.setProperty('display', '');
-  document.getElementById('mode-toggle')?.style.setProperty('display', '');
   const hi = document.querySelector('.header-info'); if (hi) hi.style.display = '';
   const sht = document.getElementById('settings-header-title'); if (sht) sht.style.display = 'none';
   const ft = document.querySelector('footer'); if (ft) ft.style.display = '';

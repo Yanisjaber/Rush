@@ -32,7 +32,7 @@
 <script src="src/core/ui/modal-select-guard.js"></script>
 <!-- ============================================================ -->
 <!-- Styles externalisés (refactoring Phase 1) -->
-<!-- L'ordre est important : base/cards/tabs en premier, mode-ia en dernier. -->
+<!-- L'ordre est important : base/cards/tabs en premier, mode-ia (badges/stubs IA) en dernier. -->
 <!-- ============================================================ -->
 <link rel="stylesheet" href="styles/base.css">
 <link rel="stylesheet" href="styles/cards.css">
@@ -94,32 +94,13 @@
     <button class="tab active" data-panel="p1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg><span>Tableau de bord</span></button>
     <button class="tab" data-panel="p2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Calendrier</span></button>
     <button class="tab" data-panel="p6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg><span>Compétitions</span></button>
-    <button class="tab ia-only" data-panel="p7"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 14l.7 1.8 1.8.7-1.8.7L19 19l-.7-1.8-1.8-.7 1.8-.7z"/></svg><span>IA</span></button>
+    <button class="tab" data-panel="p7"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 14l.7 1.8 1.8.7-1.8.7L19 19l-.7-1.8-1.8-.7 1.8-.7z"/></svg><span>IA</span></button>
     <button class="tab" data-panel="p3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Statistiques</span></button>
     <button class="tab" data-panel="p4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 22l5-3 5 3-1.21-8.11"/></svg><span>Performance</span></button>
     <button class="tab" data-panel="p5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Termes</span></button>
     <button class="tab" data-panel="p8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span>Sommeil</span></button>
   </nav>
   <div class="header-info sidebar-foot">
-    <!-- Toggle Mode IA / Manuel -->
-    <div class="mode-toggle" id="mode-toggle" title="Basculer entre Mode IA (assistance intelligente) et Mode Manuel (planification 100% manuelle)">
-      <div class="mode-slider" id="mode-slider"></div>
-      <span class="mode-opt opt-manual" data-mode="manual">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 20h9"/>
-          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-        </svg>
-        Manuel
-      </span>
-      <span class="mode-opt opt-ia" data-mode="ia">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-          <path d="M2 17l10 5 10-5"/>
-          <path d="M2 12l10 5 10-5"/>
-        </svg>
-        IA
-      </span>
-    </div>
     <!-- Date supprimée (info redondante avec le calendrier) -->
     <span class="date" id="today-date" style="display:none;">—</span>
   </div>
@@ -1213,52 +1194,6 @@
   </div>
 </div>
 
-</div>
-
-<!-- ============================================================ -->
-<!-- MODAL DE BIENVENUE (s'affiche à la première visite) -->
-<!-- ============================================================ -->
-<div class="welcome-backdrop" id="welcome-backdrop">
-  <div class="welcome-modal">
-    <h2>Bienvenue sur Coach IA</h2>
-    <p class="welcome-sub">Choisis comment tu veux utiliser l'app. Tu peux changer à tout moment via le toggle en haut à droite.</p>
-    <div class="welcome-modes">
-      <button class="welcome-card card-ia" data-choice="ia">
-        <div class="welcome-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5"/>
-            <path d="M2 12l10 5 10-5"/>
-          </svg>
-        </div>
-        <h3>Mode IA</h3>
-        <p class="welcome-desc">L'app t'assiste avec des recommandations intelligentes basées sur ta forme, ta charge et ta récupération.</p>
-        <ul class="welcome-features">
-          <li>Recommandations quotidiennes</li>
-          <li>Plan d'entraînement auto-suggéré</li>
-          <li>Analyse post-séance</li>
-          <li>Alertes de surentraînement</li>
-        </ul>
-      </button>
-      <button class="welcome-card card-manual" data-choice="manual">
-        <div class="welcome-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 20h9"/>
-            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-          </svg>
-        </div>
-        <h3>Mode Manuel</h3>
-        <p class="welcome-desc">Tu planifies tout toi-même. L'app reste un dashboard pur : visualisation, calendrier, tracking — sans suggestion automatique.</p>
-        <ul class="welcome-features">
-          <li>Calendrier 100% personnel</li>
-          <li>Aucune recommandation auto</li>
-          <li>Stats &amp; graphiques purs</li>
-          <li>Contrôle total</li>
-        </ul>
-      </button>
-    </div>
-    <p class="welcome-footnote">Tu peux basculer entre les deux modes à tout moment depuis le compte.</p>
-  </div>
 </div>
 </main>
 </div>

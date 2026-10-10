@@ -271,13 +271,6 @@ window.renderFormSummary = renderFormSummary;
 const CAI_HOME_KEY = 'coach_ia_home_report_v5';
 
 // Données prêtes ? (profil de puissance OU activités chargées)
-function caiHasData() {
-  const d = window.DASHBOARD_DATA || {};
-  const pbs = d.power_by_sport || {};
-  const anyPower = Object.values(pbs).some(s => s && s.durations && Object.keys(s.durations).length >= 3);
-  const anyAct = (d.days || []).some(day => day.activities && day.activities.length);
-  return anyPower || anyAct;
-}
 
 // Toutes les stats analysables, calculées depuis les sorties (sans IA).
 function caiStats() {
@@ -408,10 +401,9 @@ function renderHomeReport() {
   // Cache valide = nouveau format (type_label) ET généré aujourd'hui.
   const fresh = cache && cache.report && cache.report.type_label && cache.iso === todayIso;
   if (fresh) { paintHomeReport(stub, cache.report); return; }
-  // Pas de bilan frais → on affiche tout de suite un aperçu (réel si dispo, sinon démo),
-  // puis l'IA enrichit en arrière-plan quand les données sont chargées (mode IA).
+  // Pas de bilan frais → on affiche l'aperçu calculé localement (réel si dispo, sinon démo)
+  // avec un bouton « Générer le bilan IA » : aucun appel IA tant que tu ne le demandes pas.
   paintHomeReport(stub, (cache && cache.report) || {});
-  if (window.APP_MODE === 'ia' && !_homeBusy && caiHasData()) runHomeReport();
 }
 window.renderHomeReport = renderHomeReport;
 
@@ -930,11 +922,31 @@ function wireBilanTabs(root) {
 }
 
 // Pose le rapport dans le stub + câble les onglets + dessine les visuels.
+function homeReportIsFresh() {
+  try {
+    const c = JSON.parse(localStorage.getItem(CAI_HOME_KEY) || 'null');
+    return !!(c && c.report && c.report.type_label && c.iso === new Date().toISOString().slice(0, 10));
+  } catch { return false; }
+}
+
 function paintHomeReport(stub, report) {
   _caiLastReport = report || {};
   stub.innerHTML = homeReportHtml(report);
   wireBilanTabs(stub);
   setTimeout(drawHomeVisuals, 30);
+  // Bilan pas encore généré aujourd'hui : bouton à la demande.
+  if (!homeReportIsFresh()) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:flex-end;margin-top:12px';
+    row.innerHTML = '<button class="cai-btn" id="cai-home-run" type="button">Générer le bilan IA</button>';
+    stub.appendChild(row);
+    const btn = row.querySelector('#cai-home-run');
+    btn.addEventListener('click', async () => {
+      btn.disabled = true; btn.textContent = 'Analyse en cours…';
+      await runHomeReport();
+      if (btn.isConnected) { btn.disabled = false; btn.textContent = 'Réessayer'; } // échec : on peut relancer
+    });
+  }
 }
 
 let _homeBusy = false;
@@ -967,8 +979,16 @@ function renderDailyReco() {
   let cache = null;
   try { cache = JSON.parse(localStorage.getItem(CAI_RECO_KEY) || 'null'); } catch {}
   if (cache && cache.iso === todayIso && cache.text) { stub.innerHTML = `<div class="cai-text">${caiMd(cache.text)}</div>`; return; }
-  stub.innerHTML = `<div class="cai-loading"><span class="cai-spin"></span> Le coach prépare ta reco…</div>`;
-  if (window.APP_MODE === 'ia' && !_recoBusy) runDailyReco();
+  // Pas de reco pour aujourd'hui : un bouton la génère à la demande (aucun appel IA automatique).
+  stub.innerHTML = `
+    <div class="cai-head">
+      <div class="cai-sess">
+        <div class="cai-sess-name">Reco du jour</div>
+        <div class="cai-sess-meta">Pas encore générée aujourd'hui</div>
+      </div>
+      <button class="cai-btn" id="cai-reco-run" type="button">Générer</button>
+    </div>`;
+  stub.querySelector('#cai-reco-run').addEventListener('click', () => runDailyReco());
 }
 window.renderDailyReco = renderDailyReco;
 

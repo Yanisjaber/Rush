@@ -25,8 +25,6 @@ import './features/integrations/strava-oauth.js';
 import './features/integrations/connections-modal.js';
 import './features/settings/settings-modal.js';
 import './features/help/help-modal.js';
-// ========= MODE IA / MANUEL =========
-import './core/app-mode.js';
 // ========= WORKOUT BUILDER (séances structurées par blocs) =========
 import './features/training/workout-builder.js';
 // Editeur de seance structuree (style Nolio) pour la modale prevu. Doit etre importe

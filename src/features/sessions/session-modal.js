@@ -774,7 +774,7 @@ export function openSessionModal(iso, source) {
     // ============= Source = 'prevu' =============
     const compsAll = loadCompetitionsExpanded().map(c => ({ ...c, dateObj: new Date(c.date + 'T12:00:00') }));
     const compsForToday = compsAll.filter(c => toIsoDate(c.dateObj) === iso);
-    const manualTrainings = ((typeof loadTrainings === 'function') ? loadTrainings() : []).filter(t => !window.coachModeKeep || window.coachModeKeep(t.ia));
+    const manualTrainings = ((typeof loadTrainings === 'function') ? loadTrainings() : []);
     const manualForToday = manualTrainings.filter(t => t.date === iso);
 
     // === Items affichables sur la day card (source de vérité pour la sélection clavier/flèches) ===
@@ -1468,7 +1468,6 @@ window.__plannedMatch = function (act, iso) {
   try {
     if (!act || act.category === 'competition') return empty;
     var planned = ((typeof loadTrainings === 'function') ? loadTrainings() : [])
-      .filter(function (t) { return !window.coachModeKeep || window.coachModeKeep(t.ia); })
       .filter(function (t) { return t.date === iso; });
     var catOf = function (x) { return (typeof getSportCategory === 'function') ? getSportCategory(x) : x; };
     var actCat = catOf(act.raw_type || act.sport);

@@ -143,7 +143,7 @@ document.getElementById('week-calendar').addEventListener('click', (e) => {
     // On compte le nombre d'items pour ce jour (compés + manuels)
     const compsExp = (typeof loadCompetitionsExpanded === 'function') ? loadCompetitionsExpanded() : [];
     const nbComps = compsExp.filter(c => c.date === iso).length;
-    const manualTr = ((typeof loadTrainings === 'function') ? loadTrainings() : []).filter(t => !window.coachModeKeep || window.coachModeKeep(t.ia));
+    const manualTr = ((typeof loadTrainings === 'function') ? loadTrainings() : []);
     const nbManual = manualTr.filter(t => t.date === iso).length;
     const total = nbComps + nbManual;
     if (total < 2) return;
