@@ -174,23 +174,23 @@ export async function chargerSommeil(userId, jours = 60) {
 // ---------------------------------------------------------------------------
 
 /** Crée une séance prévue (ligne produite par versLigne). Renvoie la ligne créée. */
-export async function creerPlanifiee(userId, ligne) {
+export async function creerPlanifiee(userId, ligne, colonnes = COLONNES_PLANIFIEE) {
   const r = await sb
     .from('activity_planned')
     .insert({ ...ligne, user_id: userId, client_id: `v2-${crypto.randomUUID()}` })
-    .select(COLONNES_PLANIFIEE)
+    .select(colonnes)
     .single();
   return resultat(r, "Impossible d'enregistrer la séance.");
 }
 
 /** Modifie une séance prévue qui t'appartient. */
-export async function modifierPlanifiee(userId, id, ligne) {
+export async function modifierPlanifiee(userId, id, ligne, colonnes = COLONNES_PLANIFIEE) {
   const r = await sb
     .from('activity_planned')
     .update(ligne)
     .eq('id', id)
     .eq('user_id', userId)
-    .select(COLONNES_PLANIFIEE)
+    .select(colonnes)
     .single();
   return resultat(r, 'Impossible de modifier la séance.');
 }
@@ -226,4 +226,40 @@ export async function enregistrerProfil(userId, colonnes, extras) {
     .maybeSingle();
   if (!r.error && !r.data) return { data: null, erreur: 'Profil introuvable : reconnecte-toi puis réessaie.' };
   return resultat(r, "Impossible d'enregistrer ton profil.");
+}
+
+// ---------------------------------------------------------------------------
+// Compétitions : à venir (activity_planned) et passées (activités marquées « competition »)
+// ---------------------------------------------------------------------------
+
+export const COLONNES_COMPETITION = 'id,name,date,start_date_local,sport,priority,km,d_plus,type,duration,notes,category';
+
+/** Compétitions prévues (toutes dates ; la page sépare passé et futur) et compétitions déjà courues. */
+export async function chargerCompetitions(userId) {
+  const [prevues, courues] = await Promise.all([
+    sb.from('activity_planned').select(COLONNES_COMPETITION).eq('user_id', userId).eq('category', 'competition').order('date', { ascending: true }).limit(300),
+    sb.from('activities').select(`${COLONNES_SEANCE},priority`).eq('user_id', userId).eq('category', 'competition').order('start_date_local', { ascending: false }).limit(200),
+  ]);
+  if (prevues.error || courues.error) {
+    console.error('[v2/api] competitions', prevues.error?.code || courues.error?.code || '');
+    return { data: null, erreur: 'Impossible de charger tes compétitions.' };
+  }
+  return { data: { prevues: prevues.data || [], courues: courues.data || [] }, erreur: '' };
+}
+
+/**
+ * Marque une activité comme compétition (ou la repasse en entraînement). `category_set_by_user` empêche la synchro Strava
+ * de la reclasser ensuite (même règle que la v1). N'écrit que sur une activité de l'utilisateur.
+ */
+export async function definirCategorieActivite(userId, id, categorie) {
+  if (!['competition', 'entrainement'].includes(categorie)) return { data: null, erreur: 'Catégorie invalide.' };
+  const r = await sb
+    .from('activities')
+    .update({ category: categorie, category_set_by_user: true })
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select('id,category')
+    .maybeSingle();
+  if (!r.error && !r.data) return { data: null, erreur: 'Activité introuvable.' };
+  return resultat(r, 'Impossible de modifier cette sortie.');
 }

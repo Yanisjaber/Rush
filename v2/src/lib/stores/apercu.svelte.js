@@ -11,3 +11,8 @@ export function ouvrirApercu(seance) {
 export function fermerApercu() {
   apercu.ouvert = false;
 }
+
+/** Met à jour la séance affichée (ex. après l'avoir marquée comme compétition). */
+export function majApercu(champs) {
+  if (apercu.seance) apercu.seance = { ...apercu.seance, ...champs };
+}

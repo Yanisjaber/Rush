@@ -2,7 +2,10 @@
   import Panneau from './Panneau.svelte';
   import Bouton from './Bouton.svelte';
   import StatCle from './StatCle.svelte';
-  import { apercu, fermerApercu } from '../stores/apercu.svelte.js';
+  import { apercu, fermerApercu, majApercu } from '../stores/apercu.svelte.js';
+  import { auth } from '../stores/auth.svelte.js';
+  import { definirCategorieActivite } from '../data/api.js';
+  import { modeDemo } from '../routeur.svelte.js';
   import { chargeSeance } from '../data/synthese.js';
   import { familleAffichage } from '../data/familles.js';
   import { SPORTS, couleurSport } from '../sports.js';
@@ -14,6 +17,22 @@
   const famille = $derived(s ? familleAffichage(s.sport) : 'autre');
   const nomSport = $derived((SPORTS[famille] || SPORTS.autre).nom);
   const couleur = $derived(couleurSport(famille));
+
+  // Marquer la sortie comme compétition (ou l'en retirer) : elle apparaît alors dans la page Compétitions
+  let envoi = $state(false);
+  let retour = $state({ texte: '', erreur: false });
+  const estCompetition = $derived(s?.category === 'competition');
+  async function basculer() {
+    if (!s || envoi) return;
+    envoi = true;
+    retour = { texte: '', erreur: false };
+    const cible = estCompetition ? 'entrainement' : 'competition';
+    const r = modeDemo() ? { erreur: '' } : await definirCategorieActivite(auth.session?.user?.id, s.id, cible);
+    envoi = false;
+    if (r.erreur) return (retour = { texte: r.erreur, erreur: true });
+    majApercu({ category: cible });
+    retour = { texte: cible === 'competition' ? 'Marquée comme compétition.' : 'Retirée des compétitions.', erreur: false };
+  }
 
   const tuiles = $derived.by(() => {
     if (!s) return [];
@@ -50,6 +69,12 @@
         <Bouton href="#/seance/{s.id}" onclick={fermerApercu}>Voir le détail</Bouton>
         <Bouton variante="discret" onclick={fermerApercu}>Fermer</Bouton>
       </div>
+      {#if s.category !== undefined}
+        <div class="competition">
+          <Bouton variante="texte" onclick={basculer}>{envoi ? 'Enregistrement…' : estCompetition ? 'Retirer des compétitions' : 'Marquer comme compétition'}</Bouton>
+          {#if retour.texte}<p class={retour.erreur ? 'erreur' : 'info'} role="status" aria-live="polite">{retour.texte}</p>{/if}
+        </div>
+      {/if}
     </article>
   {/if}
 </Panneau>
@@ -95,5 +120,18 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+  }
+  .competition {
+    padding-top: 14px;
+    border-top: 1px solid var(--trait);
+  }
+  .info,
+  .erreur {
+    margin-top: 6px;
+    font-size: 14px;
+    color: var(--texte-doux);
+  }
+  .erreur {
+    color: var(--danger);
   }
 </style>

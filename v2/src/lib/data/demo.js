@@ -152,3 +152,22 @@ export function sommeilDemo(aujourdhui = new Date(), nombre = 30) {
   }
   return nuits;
 }
+
+/** Compétitions d'exemple : à venir (activity_planned) et déjà courues (activités marquées « competition »). */
+export function competitionsDemo(aujourdhui = new Date()) {
+  const jour = (delta) => dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + delta));
+  const prevue = (id, name, delta, sport, priority, km, d_plus, duration, type, notes = null) => ({
+    id, name, date: jour(delta), start_date_local: `${jour(delta)}T09:00:00`, sport, priority, km, d_plus, duration, type, notes, category: 'competition',
+  });
+  return {
+    prevues: [
+      prevue('demo-comp-b1', 'Cyclo des Vignes', 27, 'Ride', 'B', 82, 850, 150, 'Cyclosportive', 'Sortie test avant la saison.'),
+      prevue('demo-ramonville', 'Ronde de Ramonville', 62, 'Run', 'A', 10.15, 42, 40, 'Route', "Objectif de l'automne : passer sous les 40 minutes."),
+      prevue('demo-comp-b2', 'Trail des Crêtes', 120, 'TrailRun', 'B', 24, 1300, 195, 'Trail'),
+    ],
+    courues: [
+      { id: 'demo-comp-c1', name: '10 km de Blagnac', sport: 'Run', start_date_local: `${jour(-43)}T09:00:00+00:00`, moving_time: 2472, distance_km: 10, total_elevation_gain: 38, avg_heartrate: 176, avg_watts: null, np: null, tss: 71, category: 'competition', priority: 'A' },
+      { id: 'demo-comp-c2', name: 'Cyclo de la Garonne', sport: 'Ride', start_date_local: `${jour(-22)}T08:30:00+00:00`, moving_time: 15300, distance_km: 82, total_elevation_gain: 850, avg_heartrate: 158, avg_watts: 205, np: 225, tss: 210, category: 'competition', priority: 'B' },
+    ],
+  };
+}
