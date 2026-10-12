@@ -6,7 +6,7 @@
   import BibliothequeWidgets from '../lib/widgets/BibliothequeWidgets.svelte';
   import { COMPOSANTS } from '../lib/widgets/composants.js';
   import { disponibles } from '../lib/widgets/registre.js';
-  import { auth, deconnexion } from '../lib/stores/auth.svelte.js';
+  import { auth } from '../lib/stores/auth.svelte.js';
   import {
     disposition,
     chargerDisposition,
@@ -31,13 +31,22 @@
 
   const famillesDe = (seances) => [...new Set(seances.map((s) => familleAffichage(s.sport)))].filter((f) => f !== 'autre');
 
+  /** Fin du chargement : ouvre le mode édition si on arrive depuis les paramètres. */
+  function terminerChargement() {
+    etat.chargement = false;
+    if (disposition.editionDemandee) {
+      disposition.editionDemandee = false;
+      demarrerEdition();
+    }
+  }
+
   async function charger(userId) {
     etat.chargement = true;
     etat.erreur = '';
     if (demo) {
       Object.assign(etat, donneesDemo());
       await chargerDisposition('demo', famillesDe(etat.seances));
-      etat.chargement = false;
+      terminerChargement();
       return;
     }
     if (!userId) return;
@@ -53,7 +62,7 @@
     etat.objectifs = objectifs.data || [];
     etat.erreur = [profil, metriques, seances, objectifs].map((r) => r.erreur).find(Boolean) || '';
     await chargerDisposition(userId, famillesDe(etat.seances));
-    etat.chargement = false;
+    terminerChargement();
   }
   // L'effet ne dépend QUE de l'identité de l'utilisateur. Tout ce que `charger` lit ou écrit dans `etat`
   // est isolé par `untrack` : sinon l'effet se déclencherait lui-même en boucle (il écrit etat.seances,
@@ -98,14 +107,9 @@
       {#if demo}
         <span class="etiquette-demo">Mode démo</span>
       {/if}
-      {#if !etat.chargement && !disposition.enEdition}
-        <Bouton variante="discret" onclick={demarrerEdition}>Personnaliser</Bouton>
-      {/if}
-      {#if demo}
-        <Bouton variante="discret" href="./">Se connecter</Bouton>
-      {:else}
-        <Bouton variante="discret" onclick={deconnexion}>Se déconnecter</Bouton>
-      {/if}
+      <a class="reglages" href="#/parametres" aria-label="Paramètres">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
+      </a>
     </div>
   </header>
 
@@ -216,6 +220,19 @@
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+  }
+  .reglages {
+    width: var(--cible);
+    height: var(--cible);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--trait-fort);
+    border-radius: 50%;
+    color: var(--texte-doux);
+  }
+  .reglages:hover {
+    color: var(--texte);
   }
   .etiquette-demo {
     padding: 6px 10px;

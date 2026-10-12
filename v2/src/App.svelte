@@ -1,8 +1,9 @@
 <script>
-  // Aiguillage de l'app : catalogue, démo, connexion ou accueil selon l'état.
+  // Aiguillage de l'app : catalogue, paramètres, démo, connexion ou accueil selon l'adresse et l'état.
   import Catalogue from './routes/Catalogue.svelte';
   import Connexion from './routes/Connexion.svelte';
   import Accueil from './routes/Accueil.svelte';
+  import Parametres from './routes/Parametres.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
   import { route, modeDemo } from './lib/routeur.svelte.js';
 
@@ -15,11 +16,13 @@
 {#if route.chemin === '/catalogue'}
   <Catalogue />
 {:else if demo}
-  <Accueil demo={true} />
+  {#if route.chemin === '/parametres'}<Parametres demo={true} />{:else}<Accueil demo={true} />{/if}
 {:else if !auth.pret}
   <p class="attente" role="status">Chargement…</p>
 {:else if !auth.session}
   <Connexion />
+{:else if route.chemin === '/parametres'}
+  <Parametres />
 {:else}
   <Accueil />
 {/if}

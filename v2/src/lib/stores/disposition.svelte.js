@@ -14,6 +14,7 @@ export const disposition = $state({
   auto: true,
   widgets: [],
   enEdition: false,
+  editionDemandee: false, // posé depuis les paramètres : l'accueil ouvre le mode édition dès qu'il est chargé
   stockage: 'local', // 'base' ou 'local'
   message: '',
 });
@@ -101,6 +102,11 @@ export function demarrerEdition() {
   instantane = { auto: disposition.auto, widgets: disposition.widgets.map((w) => ({ ...w })) };
   disposition.message = '';
   disposition.enEdition = true;
+}
+
+/** Demande l'ouverture du mode édition à l'arrivée sur l'accueil (utilisé par la page Paramètres). */
+export function demanderEdition() {
+  disposition.editionDemandee = true;
 }
 
 export function annulerEdition() {
