@@ -253,3 +253,17 @@ export function objectifsAnnuelsDemo(maintenant = new Date()) {
     { id: 'demo-g4', annee, sport: 'course', template: 'run_10k', target: 40, currentManual: 42.5 },
   ];
 }
+
+/** Modèles de séances d'exemple (forme des lignes de activity_template). */
+export function modelesDemo() {
+  return [
+    { id: 'demo-m1', sport: 'cyclisme', sport_raw: 'Ride', name: '4×4 VO2max', duration_min: 53, tss: 48, description: 'Après un bon échauffement.', rpe: 8, distance_km: null, dplus: null, structure: [
+      { type: 'warmup', name: 'Échauffement', reps: 1, metric: 'power', unit: 'zone', work: { min: 15, int: 40, intHi: 55 } },
+      { type: 'interval', name: '4×4 VO2', reps: 4, metric: 'power', unit: 'zone', work: { min: 4, int: 106, intHi: 120 }, rec: { min: 3, int: 40, intHi: 55 } },
+      { type: 'cooldown', name: 'Retour au calme', reps: 1, metric: 'power', unit: 'zone', work: { min: 10, int: 40, intHi: 55 } },
+    ] },
+    { id: 'demo-m2', sport: 'cyclisme', sport_raw: 'Ride', name: 'Endurance 2 h', duration_min: 120, tss: 85, description: null, rpe: 4, distance_km: 55, dplus: null, structure: null },
+    { id: 'demo-m3', sport: 'course', sport_raw: 'Run', name: 'Footing facile', duration_min: 50, tss: 40, description: 'Aisance respiratoire.', rpe: 3, distance_km: 9, dplus: null, structure: null },
+    { id: 'demo-m4', sport: 'musculation', sport_raw: 'WeightTraining', name: 'Haut du corps', duration_min: 60, tss: 45, description: null, rpe: 6, distance_km: null, dplus: null, structure: null },
+  ];
+}

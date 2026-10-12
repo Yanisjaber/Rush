@@ -383,3 +383,31 @@ export async function retirerRepos(userId, jours) {
   const r = await sb.from('rest_day').delete().eq('user_id', userId).in('iso_date', jours);
   return resultat(r, 'Impossible de retirer le repos.');
 }
+
+// ---------------------------------------------------------------------------
+// Modèles de séances (table activity_template)
+// ---------------------------------------------------------------------------
+
+const COLONNES_MODELE = 'id,sport,sport_raw,name,duration_min,tss,description,rpe,distance_km,dplus,structure';
+
+/** Modèles de séances de l'utilisateur. */
+export async function chargerModeles(userId) {
+  const r = await sb.from('activity_template').select(COLONNES_MODELE).eq('user_id', userId).order('name', { ascending: true }).limit(500);
+  return resultat(r, 'Impossible de charger tes modèles.');
+}
+
+/** Crée un modèle (ligne produite par modeleDepuisValeurs). */
+export async function creerModele(userId, ligne) {
+  const r = await sb
+    .from('activity_template')
+    .insert({ ...ligne, user_id: userId, client_id: `v2-${crypto.randomUUID()}`, updated_at: new Date().toISOString() })
+    .select(COLONNES_MODELE)
+    .single();
+  return resultat(r, "Impossible d'enregistrer le modèle.");
+}
+
+/** Supprime un modèle qui t'appartient. */
+export async function supprimerModele(userId, id) {
+  const r = await sb.from('activity_template').delete().eq('id', id).eq('user_id', userId);
+  return resultat(r, 'Impossible de supprimer le modèle.');
+}

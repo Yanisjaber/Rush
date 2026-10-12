@@ -10,12 +10,14 @@
   import { SPORTS_PREVUE, formulaireVide, formulaireDepuisLigne, validerPrevue, versLigne, estimerTss } from '../data/prevue.js';
   import { sportAvecStructure } from '../data/structure.js';
   import { donneesDemo } from '../data/demo.js';
-  import { creerPlanifiee, modifierPlanifiee, supprimerPlanifiee, chargerProfil } from '../data/api.js';
+  import { creerPlanifiee, modifierPlanifiee, supprimerPlanifiee, chargerProfil, creerModele } from '../data/api.js';
+  import { formulaireDepuisModele, modeleDepuisValeurs } from '../data/modeles.js';
 
   // Créer ou modifier une séance prévue.
   //  seance : ligne de activity_planned à modifier (null = nouvelle) · dateInitiale : jour proposé pour une nouvelle
+  //  modele : modèle de séance de départ (nouvelle séance préremplie) · modeleEnregistre(ligne) : un modèle vient d'être créé
   //  enregistree(ligne) / supprimee(id) : prévient la page pour qu'elle se mette à jour
-  let { ouvert = false, seance = null, dateInitiale, userId, demo = false, onfermer, enregistree, supprimee } = $props();
+  let { ouvert = false, seance = null, modele = null, dateInitiale, userId, demo = false, onfermer, enregistree, supprimee, modeleEnregistre } = $props();
 
   let f = $state(formulaireVide(dateInitiale));
   let erreurs = $state({});
@@ -26,6 +28,7 @@
   let avecStructure = $state(false);
   // 'voir' : affichage seul (clic sur une séance existante) · 'modifier' : formulaire (nouvelle séance ou bouton Modifier)
   let mode = $state('modifier');
+  let retourModele = $state({ texte: '', erreur: false }); // résultat de « Enregistrer comme modèle »
 
   // À chaque ouverture : on repart d'un formulaire propre (celui de la séance, ou vide).
   // L'effet ne dépend que de l'ouverture et de la séance visée : le reste est isolé par untrack,
@@ -33,9 +36,11 @@
   $effect(() => {
     if (!ouvert) return;
     const cible = seance;
+    const depart = modele;
     const jour = dateInitiale;
     untrack(() => {
-      f = cible ? formulaireDepuisLigne(cible) : formulaireVide(jour);
+      f = cible ? formulaireDepuisLigne(cible) : depart ? formulaireDepuisModele(depart, jour) : formulaireVide(jour);
+      retourModele = { texte: '', erreur: false };
       erreurs = {};
       erreurGlobale = '';
       envoi = false;
@@ -75,6 +80,22 @@
     }
     enregistree?.(r.data);
     if (!seance) onfermer?.(); // une séance modifiée se réaffiche (la page met `seance` à jour) ; une nouvelle séance ferme le panneau
+  }
+
+  // Enregistre la séance telle qu'elle est dans le formulaire comme modèle réutilisable
+  async function enregistrerModele() {
+    if (envoi) return;
+    const { valeurs, erreurs: e2 } = validerPrevue(f, ref);
+    erreurs = e2;
+    retourModele = { texte: '', erreur: false };
+    if (!valeurs) return (retourModele = { texte: 'Complète le formulaire avant de l’enregistrer comme modèle.', erreur: true });
+    envoi = true;
+    const ligne = modeleDepuisValeurs(valeurs);
+    const r = demo ? { data: { ...ligne, id: `demo-m-${Date.now()}` }, erreur: '' } : await creerModele(userId, ligne);
+    envoi = false;
+    if (r.erreur) return (retourModele = { texte: r.erreur, erreur: true });
+    modeleEnregistre?.(r.data);
+    retourModele = { texte: 'Modèle enregistré.', erreur: false };
   }
 
   // Annuler : sur une séance existante on revient à son affichage (en reprenant ses valeurs), sinon on ferme
@@ -169,7 +190,9 @@
     <div class="actions">
       <Bouton type="submit">{envoi ? 'Enregistrement…' : 'Enregistrer'}</Bouton>
       <Bouton variante="discret" onclick={annulerSaisie}>Annuler</Bouton>
+      <Bouton variante="texte" onclick={enregistrerModele}>Enregistrer comme modèle</Bouton>
     </div>
+    {#if retourModele.texte}<p class={retourModele.erreur ? 'erreur' : 'aide'} role="status" aria-live="polite">{retourModele.texte}</p>{/if}
 
     {#if seance}
       <div class="danger">

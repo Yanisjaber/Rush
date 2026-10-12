@@ -5,11 +5,12 @@
   import Bouton from '../lib/components/Bouton.svelte';
   import PanneauPrevue from '../lib/components/PanneauPrevue.svelte';
   import PanneauMarquage from '../lib/components/PanneauMarquage.svelte';
+  import PanneauModeles from '../lib/components/PanneauModeles.svelte';
   import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
   import { auth } from '../lib/stores/auth.svelte.js';
-  import { chargerSeancesPeriode, chargerPlanifiees, chargerAnnotations } from '../lib/data/api.js';
+  import { chargerSeancesPeriode, chargerPlanifiees, chargerAnnotations, chargerModeles } from '../lib/data/api.js';
   import { joursDe, versLigneNote } from '../lib/data/annotations.js';
-  import { donneesDemo } from '../lib/data/demo.js';
+  import { donneesDemo, modelesDemo } from '../lib/data/demo.js';
   import { grilleMois, bornesGrille, decalerMois, JOURS_SEMAINE } from '../lib/data/calendrier.js';
   import { familleAffichage } from '../lib/data/familles.js';
   import { SPORTS, couleurSport } from '../lib/sports.js';
@@ -99,12 +100,12 @@
   function aujourdhui() { cible = { annee: maintenant.getFullYear(), mois: maintenant.getMonth() }; }
 
   // --- Séances prévues : panneau de création / modification ---
-  let panneau = $state({ ouvert: false, seance: null, date: dateIsoLocale(maintenant) });
+  let panneau = $state({ ouvert: false, seance: null, modele: null, date: dateIsoLocale(maintenant) });
   function nouvelle() {
-    panneau = { ouvert: true, seance: null, date: dateIsoLocale(maintenant) };
+    panneau = { ouvert: true, seance: null, modele: null, date: dateIsoLocale(maintenant) };
   }
   function modifier(p) {
-    panneau = { ouvert: true, seance: p, date: p.date };
+    panneau = { ouvert: true, seance: p, modele: null, date: p.date };
   }
   function apresEnregistrement(ligne) {
     // La séance affichée dans le panneau prend les nouvelles valeurs (le panneau repasse à l'affichage)
@@ -120,6 +121,28 @@
     etat.planifiees = etat.planifiees.filter((p) => p.id !== id);
   }
   const vide = (j) => !j.seances.length && !j.planifiees.length && !j.objectifs.length && !j.notes.length && !j.repos;
+
+  // --- Modèles de séances ---
+  let modeles = $state({ ouvert: false, charge: false, chargement: false, erreur: '', liste: [] });
+  async function ouvrirModeles() {
+    modeles.ouvert = true;
+    if (modeles.charge) return;
+    if (demo) {
+      modeles.liste = modelesDemo();
+      return (modeles.charge = true);
+    }
+    modeles.chargement = true;
+    const r = await chargerModeles(userId);
+    modeles.chargement = false;
+    modeles.erreur = r.erreur;
+    modeles.liste = r.data || [];
+    modeles.charge = !r.erreur;
+  }
+  function utiliserModele(m) {
+    modeles.ouvert = false;
+    panneau = { ouvert: true, seance: null, modele: m, date: dateIsoLocale(maintenant) };
+  }
+  const modeleAjoute = (m) => (modeles.liste = [...modeles.liste.filter((x) => x.id !== m.id), m]);
 
   // --- Repos, notes, maladies, blessures ---
   let panneauMarquage = $state({ ouvert: false, marquage: null, date: dateIsoLocale(maintenant) });
@@ -170,6 +193,7 @@
     <div class="droite">
       <span class="resume">{seancesDuMois.length} séance{seancesDuMois.length > 1 ? 's' : ''} · {formatDuree(tempsDuMois)}</span>
       <Bouton variante="discret" onclick={aujourdhui}>Aujourd'hui</Bouton>
+      <Bouton variante="discret" onclick={ouvrirModeles}>Modèles</Bouton>
       <Bouton variante="discret" onclick={() => nouveauMarquage()}>Repos ou note</Bouton>
       <Bouton onclick={nouvelle}>Nouvelle séance</Bouton>
     </div>
@@ -228,6 +252,18 @@
   </div>
 </div>
 
+<PanneauModeles
+  ouvert={modeles.ouvert}
+  modeles={modeles.liste}
+  chargement={modeles.chargement}
+  erreur={modeles.erreur}
+  {userId}
+  {demo}
+  onfermer={() => (modeles.ouvert = false)}
+  onutiliser={utiliserModele}
+  onsupprime={(id) => (modeles.liste = modeles.liste.filter((m) => m.id !== id))}
+/>
+
 <PanneauMarquage
   ouvert={panneauMarquage.ouvert}
   marquage={panneauMarquage.marquage}
@@ -242,12 +278,14 @@
 <PanneauPrevue
   ouvert={panneau.ouvert}
   seance={panneau.seance}
+  modele={panneau.modele}
   dateInitiale={panneau.date}
   {userId}
   {demo}
   onfermer={() => (panneau.ouvert = false)}
   enregistree={apresEnregistrement}
   supprimee={apresSuppression}
+  modeleEnregistre={modeleAjoute}
 />
 
 <style>
