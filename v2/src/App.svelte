@@ -5,10 +5,17 @@
   import Accueil from './routes/Accueil.svelte';
   import Parametres from './routes/Parametres.svelte';
   import Calendrier from './routes/Calendrier.svelte';
+  import Seance from './routes/Seance.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
   import { route, modeDemo } from './lib/routeur.svelte.js';
 
   const demo = modeDemo();
+
+  // Identifiant de séance dans l'adresse (#/seance/<id>) : on n'accepte que des caractères sûrs
+  const idSeance = $derived.by(() => {
+    const m = /^\/seance\/([A-Za-z0-9_-]{1,64})$/.exec(route.chemin);
+    return m ? m[1] : null;
+  });
 
   // En démo, on n'a pas besoin de session : on évite même de contacter Supabase.
   if (!demo) initAuth();
@@ -21,6 +28,8 @@
     <Parametres demo={true} />
   {:else if route.chemin === '/calendrier'}
     <Calendrier demo={true} />
+  {:else if idSeance}
+    <Seance id={idSeance} demo={true} />
   {:else}
     <Accueil demo={true} />
   {/if}
@@ -32,6 +41,8 @@
   <Parametres />
 {:else if route.chemin === '/calendrier'}
   <Calendrier />
+{:else if idSeance}
+  <Seance id={idSeance} />
 {:else}
   <Accueil />
 {/if}

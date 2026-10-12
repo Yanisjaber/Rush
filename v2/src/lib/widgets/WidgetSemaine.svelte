@@ -22,10 +22,10 @@
         <div class="contenu">
           {#each j.seances.slice(0, 2) as s (s.id)}
             {@const famille = familleAffichage(s.sport)}
-            <div class="seance" style:background={couleurSport(famille)}>
+            <a class="seance" href="#/seance/{s.id}" style:background={couleurSport(famille)}>
               <span class="type">{nomFamille(famille)}</span>
               <span class="duree">{formatDuree(s.moving_time)}</span>
-            </div>
+            </a>
           {/each}
           {#if j.seances.length > 2}<span class="plus">+{j.seances.length - 2}</span>{/if}
           {#if !j.seances.length}<span class="repos">{j.futur ? '' : 'Repos'}</span>{/if}

@@ -21,12 +21,14 @@
     <ul class="seances">
       {#each recentes as s (s.id)}
         <li>
-          <span class="barre" style:background={couleurSport(familleAffichage(s.sport))}></span>
-          <div class="infos">
-            <div class="nom">{s.name || nomFamille(familleAffichage(s.sport))}</div>
-            <div class="detail">{detail(s)}</div>
-          </div>
-          <div class="points"><span class="titre">{chargeSeance(s)}</span><span class="petit">pts</span></div>
+          <a class="ligne" href="#/seance/{s.id}">
+            <span class="barre" style:background={couleurSport(familleAffichage(s.sport))}></span>
+            <div class="infos">
+              <div class="nom">{s.name || nomFamille(familleAffichage(s.sport))}</div>
+              <div class="detail">{detail(s)}</div>
+            </div>
+            <div class="points"><span class="titre">{chargeSeance(s)}</span><span class="petit">pts</span></div>
+          </a>
         </li>
       {/each}
     </ul>
@@ -37,14 +39,20 @@
 
 <style>
   .seances li {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-height: 60px;
     border-top: 1px solid var(--trait);
   }
   .seances li:first-child {
     border-top: 0;
+  }
+  .ligne {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 60px;
+  }
+  .ligne:hover .nom {
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
   .barre {
     width: 6px;

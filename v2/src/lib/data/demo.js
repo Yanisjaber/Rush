@@ -92,3 +92,29 @@ export function donneesDemo(aujourdhui = new Date()) {
     ],
   };
 }
+
+/**
+ * Streams d'exemple pour le mode démo (une valeur par seconde), au même format que ceux de Strava :
+ * [{ type, data }]. Muscu : pas de courbes (renvoie null), comme une vraie séance de force sur Strava.
+ */
+export function streamsDemo(seance) {
+  if (!seance || seance.sport === 'WeightTraining') return null;
+  const n = Math.max(600, Math.round(seance.moving_time || 3600));
+  const velo = seance.sport === 'Ride';
+  const temps = Array.from({ length: n }, (_, i) => i);
+  const altitude = temps.map((i) => 120 + 38 * Math.sin(i / 380) + 14 * Math.sin(i / 97 + 1) + i * 0.004);
+  const watts = velo ? temps.map((i) => Math.max(0, Math.round(150 + 55 * Math.sin(i / 70) + 35 * Math.sin(i / 23) + (i % 900 > 640 ? 80 : 0)))) : null;
+  const vitesse = temps.map((i) => (velo ? 7.4 + 1.6 * Math.sin(i / 90) : 3.1 + 0.35 * Math.sin(i / 120) + (i > n * 0.8 ? 0.3 : 0)));
+  const fc = temps.map((i) => Math.round(118 + 38 * (1 - Math.exp(-i / 420)) + 6 * Math.sin(i / 60)));
+  let d = 0;
+  const distance = vitesse.map((v) => (d += v));
+  const streams = [
+    { type: 'time', data: temps },
+    { type: 'altitude', data: altitude.map((v) => Math.round(v * 10) / 10) },
+    { type: 'velocity_smooth', data: vitesse.map((v) => Math.round(v * 100) / 100) },
+    { type: 'heartrate', data: fc },
+    { type: 'distance', data: distance.map((v) => Math.round(v)) },
+  ];
+  if (watts) streams.push({ type: 'watts', data: watts });
+  return streams;
+}

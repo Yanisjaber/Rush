@@ -8,6 +8,7 @@
 //    jamais le texte brut de l'erreur de la base.
 import { sb } from '../supabase.js';
 import { dateIsoLocale } from '../utils/format.js';
+import { decoderStreams } from './streams.js';
 
 const COLONNES_SEANCE =
   'id,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,avg_heartrate,avg_watts,np,tss,category';
@@ -114,4 +115,40 @@ export async function chargerPlanifiees(userId, debutIso, finIso) {
     .order('date', { ascending: true })
     .limit(300);
   return resultat(r, 'Impossible de charger les séances prévues.');
+}
+
+// ---------------------------------------------------------------------------
+// Détail d'une séance
+// ---------------------------------------------------------------------------
+
+const COLONNES_DETAIL =
+  'id,name,sport,start_date_local,elapsed_time,moving_time,distance_km,total_elevation_gain,avg_speed_kmh,max_speed_kmh,' +
+  'avg_heartrate,max_heartrate,avg_watts,max_watts,np,intensity,ftp_at_time,avg_cadence,kj,calories,tss,variability_index,' +
+  'has_heartrate,has_power,user_notes,category';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Une séance du joueur (jamais les gros champs : streams, GPX…). Un identifiant qui n'est pas un UUID n'existe pas. */
+export async function chargerSeance(userId, id) {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Séance introuvable.' };
+  const r = await sb.from('activities').select(COLONNES_DETAIL).eq('user_id', userId).eq('id', id).maybeSingle();
+  if (!r.error && !r.data) return { data: null, erreur: 'Séance introuvable.' };
+  return resultat(r, 'Impossible de charger cette séance.');
+}
+
+/** Streams d'une séance (courbes), chargés à part car volumineux (jusqu'à plusieurs centaines de Ko). */
+export async function chargerStreams(userId, id) {
+  if (!UUID.test(String(id))) return { data: null, erreur: '' };
+  const r = await sb.from('activities').select('streams_gz,streams_format').eq('user_id', userId).eq('id', id).maybeSingle();
+  if (r.error) {
+    console.error('[v2/api] streams', r.error.code || '');
+    return { data: null, erreur: 'Impossible de charger les courbes de cette séance.' };
+  }
+  if (!r.data || !r.data.streams_gz || r.data.streams_format === 'none') return { data: null, erreur: '' };
+  try {
+    return { data: await decoderStreams(r.data.streams_gz), erreur: '' };
+  } catch (e) {
+    console.error('[v2/api] décodage des streams');
+    return { data: null, erreur: 'Les courbes de cette séance sont illisibles.' };
+  }
 }
