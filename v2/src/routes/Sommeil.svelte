@@ -1,150 +1,143 @@
 <script>
-  import { untrack } from 'svelte';
+  import { untrack, onDestroy } from 'svelte';
   import EnTete from '../lib/components/EnTete.svelte';
-  import Bloc from '../lib/components/Bloc.svelte';
-  import Dossard from '../lib/components/Dossard.svelte';
-  import StatCle from '../lib/components/StatCle.svelte';
-  import CourbeLissee from '../lib/components/charts/CourbeLissee.svelte';
+  import Bouton from '../lib/components/Bouton.svelte';
+  import Apercu from '../lib/sommeil/Apercu.svelte';
+  import Graphiques from '../lib/sommeil/Graphiques.svelte';
+  import Conseils from '../lib/sommeil/Conseils.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { chargerSommeil } from '../lib/data/api.js';
+  import { synchroniserGarmin } from '../lib/data/integrations.js';
   import { sommeilDemo } from '../lib/data/demo.js';
-  import { phases, efficacite, moyenne, moyenneCoucher, heureDe, heureDepuisMinutes, triees, tendance } from '../lib/data/sommeil.js';
-  import { formatDuree, formatDateLongue } from '../lib/utils/format.js';
+  import { preparer } from '../lib/data/score-sommeil.js';
 
-  let { demo = false } = $props();
+  // Sommeil : trois sous-onglets (#/sommeil, #/sommeil/graphiques, #/sommeil/conseils).
+  // Les nuits viennent de garmin_sleep ; le score est calculé ici (score maison), jamais lu de Garmin.
+  let { demo = false, onglet = 'apercu' } = $props();
 
-  let etat = $state({ chargement: true, erreur: '', nuits: [] });
-  let choisie = $state(null); // date de la nuit sélectionnée (null = la plus récente)
+  const ONGLETS = [
+    { cle: 'apercu', nom: 'Aperçu', href: '#/sommeil' },
+    { cle: 'graphiques', nom: 'Graphiques', href: '#/sommeil/graphiques' },
+    { cle: 'conseils', nom: 'Conseils', href: '#/sommeil/conseils' },
+  ];
+
+  let etat = $state({ chargement: true, erreur: '', brutes: [] });
+  let choisie = $state(null); // date de la nuit affichée dans l'aperçu (null = la plus récente)
+  let synchro = $state({ actif: false, texte: '', erreur: false });
+  const arret = new AbortController();
+  onDestroy(() => arret.abort());
 
   async function charger(userId) {
     if (demo) {
-      etat = { chargement: false, erreur: '', nuits: sommeilDemo() };
+      etat = { chargement: false, erreur: '', brutes: sommeilDemo() };
       return;
     }
     if (!userId) return;
-    const r = await chargerSommeil(userId, 60);
-    etat = { chargement: false, erreur: r.erreur, nuits: r.data || [] };
+    const r = await chargerSommeil(userId, 90);
+    etat = { chargement: false, erreur: r.erreur, brutes: r.data || [] };
   }
+  const userId = $derived(demo ? 'demo' : auth.session?.user?.id);
   $effect(() => {
-    const u = auth.session?.user?.id;
+    const u = userId;
     untrack(() => charger(u));
   });
 
-  const nuits = $derived(triees(etat.nuits));
-  const nuit = $derived(nuits.find((n) => n.date === choisie) || nuits[0] || null);
-  const trente = $derived(nuits.slice(0, 30).reverse()); // de la plus ancienne à la plus récente
-  const dernieres7 = $derived(nuits.slice(0, 7));
+  const nuits = $derived(preparer(etat.brutes));
 
-  const phasesNuit = $derived(phases(nuit));
-  const eff = $derived(efficacite(nuit));
-  const hauteurMax = $derived(Math.max(8 * 3600, ...trente.map((n) => n.total_sec || 0)));
-  const coucherMoyen = $derived(heureDepuisMinutes(moyenneCoucher(dernieres7)));
-  const dureeMoy = $derived(moyenne(dernieres7, 'total_sec'));
-
-  const COULEURS = {
-    profond: 'color-mix(in srgb, var(--texte) 95%, var(--surface))',
-    rem: 'color-mix(in srgb, var(--texte) 65%, var(--surface))',
-    leger: 'color-mix(in srgb, var(--texte) 35%, var(--surface))',
-    eveille: 'var(--sport-course)',
-  };
-  const LIBELLE_TENDANCE = { hausse: 'en hausse', baisse: 'en baisse', stable: 'stable' };
-  // Navigation nuit par nuit (les barres sont trop fines pour le doigt sur téléphone)
-  const indice = $derived(nuit ? nuits.findIndex((n) => n.date === nuit.date) : -1);
-  const aller = (delta) => {
-    const cible = nuits[indice + delta];
-    if (cible) choisie = cible.date;
-  };
-  const serie = (champ) => trente.map((n) => (n[champ] == null ? null : Number(n[champ])));
+  async function lancerSynchro() {
+    if (synchro.actif) return;
+    if (demo) return (synchro = { actif: false, texte: 'Désactivé en mode démo.', erreur: true });
+    synchro = { actif: true, texte: 'Demande envoyée…', erreur: false };
+    const r = await synchroniserGarmin(userId, (e) => (synchro = { actif: true, texte: e.texte, erreur: false }), arret.signal);
+    synchro = { actif: false, texte: r.ok ? `Sommeil synchronisé : ${r.nuits} nuit${r.nuits > 1 ? 's' : ''}.` : r.erreur, erreur: !r.ok && !!r.erreur };
+    if (r.ok) await charger(userId);
+  }
 </script>
 
 <div class="page">
   <EnTete actif="sommeil" {demo} />
 
+  <header class="entete-page">
+    <h1 class="titre">Sommeil</h1>
+    <div class="synchro">
+      <Bouton variante="discret" onclick={lancerSynchro}>{synchro.actif ? 'Synchro en cours…' : 'Synchroniser Garmin'}</Bouton>
+      {#if synchro.texte}<span class="retour" class:erreur={synchro.erreur} role="status" aria-live="polite">{synchro.texte}</span>{/if}
+    </div>
+  </header>
+
+  <nav class="onglets" aria-label="Sections du sommeil">
+    {#each ONGLETS as o (o.cle)}
+      <a href={o.href} aria-current={onglet === o.cle ? 'page' : undefined}>{o.nom}</a>
+    {/each}
+  </nav>
+
   {#if etat.chargement}
     <p class="info" role="status">Chargement du sommeil…</p>
   {:else if etat.erreur}
     <p class="alerte" role="alert">{etat.erreur}</p>
-  {:else if !nuit}
+  {:else if !nuits.length}
     <p class="info">Aucune nuit pour l'instant. Lance une synchro Garmin pour récupérer ton sommeil.</p>
+  {:else if onglet === 'graphiques'}
+    <Graphiques {nuits} />
+  {:else if onglet === 'conseils'}
+    <Conseils {nuits} />
   {:else}
-    <Dossard
-      etiquette={nuit === nuits[0] ? 'Dernière nuit' : 'Nuit sélectionnée'}
-      nom={formatDateLongue(nuit.date)}
-      valeur={formatDuree(nuit.total_sec || 0)}
-      detail={[nuit.score != null ? `score ${nuit.score}` : '', heureDe(nuit.bedtime) ? `couché ${heureDe(nuit.bedtime)}` : '', heureDe(nuit.wake_time) ? `levé ${heureDe(nuit.wake_time)}` : ''].filter(Boolean).join(' · ')}
-    />
-
-    <Bloc titre="Phases de la nuit">
-      {#if phasesNuit.length}
-        <div class="barre-phases" role="img" aria-label="Répartition des phases de sommeil">
-          {#each phasesNuit as p (p.cle)}
-            <span style:flex={Math.max(p.part, 0.004)} style:background={COULEURS[p.cle]}></span>
-          {/each}
-        </div>
-        <ul class="legende">
-          {#each phasesNuit as p (p.cle)}
-            <li>
-              <span class="carre" style:background={COULEURS[p.cle]}></span>
-              <span class="nom">{p.nom}</span>
-              <strong>{formatDuree(p.secondes)}</strong>
-              <span class="part">{Math.round(p.part * 100)} %</span>
-            </li>
-          {/each}
-        </ul>
-        {#if eff != null}<p class="info">Efficacité : {Math.round(eff * 100)} % du temps au lit passé à dormir.</p>{/if}
-      {:else}
-        <p class="info">Pas de détail des phases pour cette nuit.</p>
-      {/if}
-    </Bloc>
-
-    <Bloc titre="30 dernières nuits">
-      {#snippet actions()}
-        <div class="nav-nuits">
-          <button class="fleche" aria-label="Nuit précédente" disabled={indice >= nuits.length - 1} onclick={() => aller(1)}>‹</button>
-          <button class="fleche" aria-label="Nuit suivante" disabled={indice <= 0} onclick={() => aller(-1)}>›</button>
-        </div>
-      {/snippet}
-      <div class="nuits" role="group" aria-label="Durée de sommeil des 30 dernières nuits">
-        {#each trente as n (n.date)}
-          <button
-            class="colonne"
-            class:active={n.date === nuit.date}
-            aria-pressed={n.date === nuit.date}
-            aria-label="{formatDateLongue(n.date)} : {formatDuree(n.total_sec || 0)}"
-            onclick={() => (choisie = n.date)}
-          >
-            <span class="fut" style:height="{Math.round(((n.total_sec || 0) / hauteurMax) * 100)}%"></span>
-          </button>
-        {/each}
-      </div>
-      <p class="info">Touche une barre ou utilise les flèches pour changer de nuit.</p>
-    </Bloc>
-
-    <div class="stats">
-      <Bloc>
-        <StatCle etiquette="Moyenne 7 nuits" valeur={dureeMoy ? formatDuree(dureeMoy) : '—'} note={coucherMoyen ? `couché vers ${coucherMoyen}` : ''} />
-      </Bloc>
-      <Bloc titre="HRV nocturne">
-        <StatCle etiquette="Moyenne 7 nuits" valeur={moyenne(dernieres7, 'hrv_avg') ? String(Math.round(moyenne(dernieres7, 'hrv_avg'))) : '—'} unite="ms" note={tendance(nuits, 'hrv_avg') ? LIBELLE_TENDANCE[tendance(nuits, 'hrv_avg')] : ''} />
-        <CourbeLissee valeurs={serie('hrv_avg').map((v) => v ?? 0)} etiquette="HRV sur 30 nuits" couleur="var(--sport-neutre)" />
-      </Bloc>
-      <Bloc titre="FC au repos">
-        <StatCle etiquette="Moyenne 7 nuits" valeur={moyenne(dernieres7, 'resting_heart_rate') ? String(Math.round(moyenne(dernieres7, 'resting_heart_rate'))) : '—'} unite="bpm" note={tendance(nuits, 'resting_heart_rate') ? LIBELLE_TENDANCE[tendance(nuits, 'resting_heart_rate')] : ''} />
-        <CourbeLissee valeurs={serie('resting_heart_rate').map((v) => v ?? 0)} etiquette="FC au repos sur 30 nuits" couleur="var(--sport-muscu)" />
-      </Bloc>
-    </div>
+    <Apercu {nuits} {choisie} onchoisir={(d) => (choisie = d)} {userId} {demo} />
   {/if}
 </div>
 
 <style>
-  .page {
+  .entete-page {
     display: flex;
-    flex-direction: column;
-    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 24px;
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-size: clamp(32px, 6vw, 52px);
+    line-height: 1.05;
+  }
+  .synchro {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+  .retour {
+    font-size: 14px;
+    color: var(--texte-doux);
+  }
+  .retour.erreur {
+    color: var(--danger);
+  }
+  .onglets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .onglets a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 1px solid var(--trait-fort);
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--texte-doux);
+  }
+  .onglets a:hover {
+    color: var(--texte);
+  }
+  .onglets a[aria-current='page'] {
+    background: var(--texte);
+    border-color: var(--texte);
+    color: var(--fond);
   }
   .info {
-    margin-top: 12px;
-    font-size: 14px;
     color: var(--texte-doux);
   }
   .alerte {
@@ -153,107 +146,5 @@
     border-radius: var(--rayon-l);
     background: var(--surface);
     font-size: 14px;
-  }
-  .barre-phases {
-    display: flex;
-    gap: 3px;
-    height: 36px;
-  }
-  .barre-phases span {
-    min-width: 3px;
-    border-radius: 4px;
-  }
-  .legende {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 16px;
-    font-size: 14px;
-  }
-  .legende li {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .carre {
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-    flex: none;
-  }
-  .nom {
-    flex: 1;
-    color: var(--texte-doux);
-  }
-  .part {
-    flex: 0 0 44px;
-    text-align: right;
-    color: var(--texte-doux);
-  }
-  .nuits {
-    display: flex;
-    align-items: flex-end;
-    gap: 3px;
-    height: 140px;
-  }
-  .colonne {
-    flex: 1;
-    min-width: 0;
-    height: 100%;
-    display: flex;
-    align-items: flex-end;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    cursor: pointer;
-  }
-  .fut {
-    display: block;
-    width: 100%;
-    min-height: 3px;
-    border-radius: 3px 3px 0 0;
-    background: var(--trait-fort);
-  }
-  .colonne:hover .fut {
-    background: var(--texte-doux);
-  }
-  .colonne.active .fut {
-    background: var(--texte);
-  }
-  .colonne:focus-visible {
-    outline: 2px solid var(--texte);
-    outline-offset: 2px;
-  }
-  .nav-nuits {
-    display: flex;
-    gap: 8px;
-  }
-  .fleche {
-    width: 44px;
-    height: 44px;
-    border: 1px solid var(--trait-fort);
-    border-radius: var(--rayon);
-    background: transparent;
-    color: var(--texte);
-    font-size: 22px;
-    line-height: 1;
-    cursor: pointer;
-  }
-  .fleche:disabled {
-    opacity: 0.35;
-    cursor: default;
-  }
-  .fleche:focus-visible {
-    outline: 2px solid var(--texte);
-    outline-offset: 2px;
-  }
-  .stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-  .stats > :global(*) {
-    flex: 1 1 260px;
-    min-width: 0;
   }
 </style>

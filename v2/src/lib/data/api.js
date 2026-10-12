@@ -155,7 +155,15 @@ export async function chargerStreams(userId, id) {
 
 // Colonnes légères de garmin_sleep : on évite `segments` et `hr_stream` (gros JSON, inutiles pour la vue d'ensemble)
 const COLONNES_SOMMEIL =
-  'date,bedtime,wake_time,total_sec,deep_sec,light_sec,rem_sec,awake_sec,awake_count,avg_stress,avg_heart_rate,resting_heart_rate,body_battery_change,hrv_avg,hrv_status,spo2_avg,score,score_qualifier';
+  'date,bedtime,wake_time,total_sec,deep_sec,light_sec,rem_sec,awake_sec,awake_count,restless_count,avg_stress,avg_heart_rate,resting_heart_rate,body_battery_change,hrv_avg,hrv_status,resp_avg,resp_min,resp_max,spo2_avg,score,score_qualifier,segments';
+
+/** FC minute par minute d'UNE nuit ([minute, bpm]) : colonne lourde, chargée seulement quand on ouvre le détail. */
+export async function chargerFcNuit(userId, date) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date))) return { data: null, erreur: 'Date invalide.' };
+  const r = await sb.from('garmin_sleep').select('hr_stream').eq('user_id', userId).eq('date', date).maybeSingle();
+  const res = resultat(r, 'Impossible de charger la FC de cette nuit.');
+  return { data: Array.isArray(res.data?.hr_stream) ? res.data.hr_stream : null, erreur: res.erreur };
+}
 
 /** Nuits Garmin des N derniers jours (la plus récente d'abord). */
 export async function chargerSommeil(userId, jours = 60) {

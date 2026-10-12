@@ -59,7 +59,9 @@
   }
   .liens {
     display: flex;
+    flex-wrap: wrap; /* sur téléphone, les liens passent à la ligne au lieu de déborder */
     gap: 4px;
+    min-width: 0;
   }
   .liens a {
     display: inline-flex;
@@ -70,6 +72,11 @@
     font-size: 14px;
     font-weight: 600;
     color: var(--texte-doux);
+  }
+  @media (max-width: 600px) {
+    .liens a {
+      padding: 0 11px;
+    }
   }
   .liens a:hover {
     color: var(--texte);

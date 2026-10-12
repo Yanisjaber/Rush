@@ -119,35 +119,71 @@ export function streamsDemo(seance) {
   return streams;
 }
 
+/** Segments d'une nuit d'exemple : [début_min, fin_min, niveau] (0 profond, 1 léger, 2 paradoxal, 3 éveillé). */
+function segmentsDemo(totalMin, i) {
+  const segs = [];
+  let t = 0;
+  const ajoute = (duree, niveau) => {
+    const fin = Math.min(totalMin, t + duree);
+    if (fin > t) segs.push([t, fin, niveau]);
+    t = fin;
+  };
+  ajoute(6 + (i % 5) * 4, 3); // endormissement
+  let cycle = 0;
+  while (t < totalMin) {
+    ajoute(18 + ((i + cycle) % 4) * 3, 1);
+    ajoute(Math.max(8, 38 - cycle * 8), 0);
+    ajoute(15 + ((i * 3 + cycle) % 5) * 3, 1);
+    ajoute(8 + cycle * 7, 2);
+    if ((i + cycle) % 3 === 0) ajoute(3, 3);
+    cycle++;
+  }
+  return segs;
+}
+
+/** FC minute par minute d'une nuit d'exemple ([minute, bpm]). */
+export function fcNuitDemo(nuit) {
+  const total = Math.round(((nuit?.total_sec || 25000) + (nuit?.awake_sec || 0)) / 60);
+  const base = Number(nuit?.avg_heart_rate) || 54;
+  const graine = String(nuit?.date || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  return Array.from({ length: total }, (_, m) => [m, Math.round(base + 6 * Math.exp(-m / 90) + 3 * Math.sin((m + graine) / 22) + ((m * 7 + graine) % 5) / 2)]);
+}
+
 /** Nuits d'exemple (la plus récente d'abord), même forme que les lignes de garmin_sleep. */
-export function sommeilDemo(aujourdhui = new Date(), nombre = 30) {
+export function sommeilDemo(aujourdhui = new Date(), nombre = 45) {
   const nuits = [];
   for (let i = 0; i < nombre; i++) {
     const d = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - i);
     const veille = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
     const total = 6 * 3600 + 20 * 60 + ((i * 37) % 11) * 360; // 6h20 à 7h56
-    const couche = 22 * 60 + 40 + ((i * 17) % 9) * 8; // 22h40 à 23h44
-    const leve = (couche + total / 60 + 25) % 1440;
+    const eveille = 900 + ((i * 7) % 5) * 240;
+    const couche = 22 * 60 + 40 + ((i * 17) % 9) * 8 + (i % 7 === 5 || i % 7 === 6 ? 50 : 0); // coucher plus tard le week-end
+    const leve = (couche + (total + eveille) / 60) % 1440;
     const hm = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(Math.round(m % 60)).padStart(2, '0')}`;
     nuits.push({
       date: dateIsoLocale(d),
       bedtime: `${dateIsoLocale(veille)} ${hm(couche)}`,
       wake_time: `${dateIsoLocale(d)} ${hm(leve)}`,
       total_sec: total,
-      deep_sec: Math.round(total * 0.17),
-      rem_sec: Math.round(total * 0.22),
-      light_sec: Math.round(total * 0.61),
-      awake_sec: 900 + ((i * 7) % 5) * 240,
-      awake_count: 1 + (i % 4),
-      avg_stress: 18 + (i % 9),
+      deep_sec: Math.round(total * (0.12 + ((i * 5) % 7) / 100)),
+      rem_sec: Math.round(total * (0.18 + ((i * 3) % 6) / 100)),
+      light_sec: Math.round(total * 0.62),
+      awake_sec: eveille,
+      awake_count: 1 + (i % 5),
+      restless_count: 20 + ((i * 11) % 40),
+      avg_stress: 18 + (i % 9) + (i % 6 === 0 ? 14 : 0),
       avg_heart_rate: 52 + (i % 5),
       resting_heart_rate: 48 + (i % 4),
       body_battery_change: 48 + ((i * 5) % 30),
-      hrv_avg: 58 + ((i * 3) % 14) - (i > 20 ? 4 : 0),
+      hrv_avg: 58 + ((i * 3) % 14) - (i > 20 ? 4 : 0) - (i === 0 ? 9 : 0),
       hrv_status: 'BALANCED',
-      spo2_avg: 95 + (i % 3),
+      resp_avg: 14 + (i % 4) * 0.5,
+      resp_min: 11 + (i % 3),
+      resp_max: 18 + (i % 3),
+      spo2_avg: 94 + (i % 4),
       score: 66 + ((i * 11) % 24),
       score_qualifier: 'GOOD',
+      segments: segmentsDemo(Math.round((total + eveille) / 60), i),
     });
   }
   return nuits;
