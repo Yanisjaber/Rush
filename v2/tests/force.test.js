@@ -1,0 +1,224 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  tonnage,
+  unRmEstime,
+  tonnageParSemaine,
+  seriesParGroupe,
+  progressionParExercice,
+  exercicesPhares,
+  resumeProgramme,
+  programmeDuJour,
+  brouillonDepuisProgramme,
+  brouillonDepuisSeance,
+  dernieresCharges,
+  validerSeance,
+  ligneSeanceForce,
+  lignesSeries,
+} from '../src/lib/data/force.js';
+import { trouverExercice, chercherExercices, groupeValide, BIBLIOTHEQUE, GROUPES } from '../src/lib/data/exercices.js';
+
+// Lundi 12 octobre 2026
+const AUJ = new Date(2026, 9, 12, 14, 0);
+const serie = (date, cle, reps, poids, extra = {}) => ({
+  date,
+  exercise_key: cle,
+  exercise_name: cle,
+  muscle_group: 'pectoraux',
+  position: 0,
+  set_no: 1,
+  reps,
+  weight_kg: poids,
+  ...extra,
+});
+
+test('bibliothèque : clés uniques, groupes valides', () => {
+  const cles = new Set(BIBLIOTHEQUE.map((e) => e.cle));
+  assert.equal(cles.size, BIBLIOTHEQUE.length);
+  for (const e of BIBLIOTHEQUE) assert.ok(groupeValide(e.groupe), e.cle);
+  assert.equal(groupeValide('constructor'), false);
+  assert.equal(groupeValide('__proto__'), false);
+  assert.ok(Object.keys(GROUPES).length >= 6);
+});
+
+test('trouverExercice et chercherExercices (accents ignorés, perso mélangés)', () => {
+  assert.equal(trouverExercice('squat').nom, 'Squat');
+  assert.equal(trouverExercice('inconnu'), null);
+  const perso = [{ cle: 'perso-1', nom: 'Développé Svend', groupe: 'pectoraux', perso: true }];
+  assert.equal(trouverExercice('perso-1', perso).nom, 'Développé Svend');
+  const r = chercherExercices(perso, { texte: 'developpe', groupe: 'pectoraux' });
+  assert.ok(r.some((e) => e.cle === 'perso-1'));
+  assert.ok(r.every((e) => e.groupe === 'pectoraux'));
+  assert.equal(chercherExercices(perso, { texte: 'zzzz' }).length, 0);
+});
+
+test('tonnage et 1RM estimé (Epley)', () => {
+  assert.equal(tonnage([serie('2026-10-12', 'a', 5, 100), serie('2026-10-12', 'a', 8, 50.5)]), 904);
+  assert.equal(unRmEstime(100, 1), 100);
+  assert.equal(unRmEstime(100, 5), 116.7);
+  assert.equal(unRmEstime(100, 13), null); // trop de répétitions : estimation non fiable
+  assert.equal(unRmEstime(0, 10), null); // poids du corps
+  assert.equal(unRmEstime(100, 0), null);
+});
+
+test('tonnage par semaine : fenêtres de 7 jours glissants et écart à la moyenne', () => {
+  const s = [
+    serie('2026-10-12', 'a', 10, 100), // aujourd'hui → dernière semaine : 1000
+    serie('2026-10-06', 'a', 10, 100), // il y a 6 jours → même fenêtre : +1000
+    serie('2026-10-05', 'a', 10, 50), // il y a 7 jours → fenêtre d'avant : 500
+    serie('2026-09-28', 'a', 10, 100), // il y a 14 jours → encore avant : 1000
+    serie('2026-10-13', 'a', 10, 999), // dans le futur : ignorée
+  ];
+  const t = tonnageParSemaine(s, 4, AUJ);
+  assert.deepEqual(t.parSemaine, [0, 1000, 500, 2000]);
+  assert.equal(t.derniere, 2000);
+  assert.equal(t.moyenne, 750);
+  assert.equal(t.ecartPct, 167);
+  assert.equal(tonnageParSemaine([], 4, AUJ).ecartPct, null);
+});
+
+test('séries par groupe : 7 derniers jours seulement', () => {
+  const s = [
+    serie('2026-10-12', 'a', 8, 50),
+    serie('2026-10-10', 'a', 8, 50),
+    serie('2026-10-10', 'b', 8, 50, { muscle_group: 'dos' }),
+    serie('2026-10-01', 'a', 8, 50), // trop ancienne
+    serie('2026-10-11', 'c', 0, 50, { muscle_group: 'jambes' }), // 0 répétition : ne compte pas
+  ];
+  const g = seriesParGroupe(s, AUJ);
+  assert.equal(g.length, 6);
+  assert.equal(g.find((x) => x.groupe === 'pectoraux').series, 2);
+  assert.equal(g.find((x) => x.groupe === 'dos').series, 1);
+  assert.equal(g.find((x) => x.groupe === 'jambes').series, 0);
+  assert.deepEqual(g[0].cible, [10, 20]);
+});
+
+test('progression : record, delta et séances', () => {
+  const s = [
+    serie('2026-09-01', 'squat', 5, 100),
+    serie('2026-09-01', 'squat', 8, 80), // meilleure série du jour = 100 × 5 → 116,7 (80 × 8 → 101,3)
+    serie('2026-09-20', 'squat', 5, 110),
+    serie('2026-10-10', 'squat', 5, 120),
+    serie('2026-10-10', 'curl', 15, 20), // 15 reps : ignoré (1RM non fiable)
+  ];
+  const p = progressionParExercice(s);
+  assert.equal(p.length, 1);
+  const squat = p[0];
+  assert.equal(squat.cle, 'squat');
+  assert.equal(squat.rm, 140);
+  assert.equal(squat.record, true);
+  assert.equal(squat.delta, 11.7);
+  assert.equal(squat.serie.length, 3);
+  assert.equal(squat.meilleurRm, 140);
+});
+
+test('progression : pas de record si la dernière séance est plus faible, ni de delta sur une seule séance', () => {
+  const baisse = progressionParExercice([serie('2026-09-01', 'a', 5, 120), serie('2026-10-10', 'a', 5, 100)]);
+  assert.equal(baisse[0].record, false);
+  assert.ok(baisse[0].delta < 0);
+  const seule = progressionParExercice([serie('2026-10-10', 'a', 5, 100)]);
+  assert.equal(seule[0].record, false);
+  assert.equal(seule[0].delta, null);
+});
+
+test('exercices phares : les plus pratiqués sur 90 jours', () => {
+  const s = [
+    serie('2026-10-10', 'a', 5, 100), serie('2026-10-10', 'a', 5, 100), serie('2026-10-10', 'a', 5, 100),
+    serie('2026-10-10', 'b', 5, 100),
+    serie('2026-10-10', 'c', 5, 100), serie('2026-10-10', 'c', 5, 100),
+    serie('2026-01-01', 'd', 5, 100), serie('2026-01-01', 'd', 5, 100), serie('2026-01-01', 'd', 5, 100), serie('2026-01-01', 'd', 5, 100),
+  ];
+  assert.deepEqual(exercicesPhares(s, 2, AUJ).map((e) => e.cle), ['a', 'c']);
+});
+
+const PUSH = { id: 'p1', name: 'PUSH', created_at: '2026-01-01', exercises: [
+  { key: 'developpe-couche', name: 'Développé couché', group: 'pectoraux', sets: 4, reps: 6, weight: 82.5 },
+  { key: 'dips', name: 'Dips', group: 'pectoraux', sets: 3, reps: 10, weight: 0 },
+] };
+const PULL = { id: 'p2', name: 'PULL', created_at: '2026-01-02', exercises: [{ key: 'tractions', name: 'Tractions', group: 'dos', sets: 4, reps: 8, weight: 0 }] };
+
+test('résumé de programme et programme du jour (rotation)', () => {
+  assert.deepEqual(resumeProgramme(PUSH), { exercices: 2, series: 7, minutes: 21 });
+  assert.deepEqual(resumeProgramme(null), { exercices: 0, series: 0, minutes: 0 });
+  assert.equal(programmeDuJour([], []), null);
+  assert.equal(programmeDuJour([PULL, PUSH], []).name, 'PUSH'); // sans historique : le premier créé
+  const apresPush = [{ name: 'PUSH', sport: 'WeightTraining', start_date_local: '2026-10-10T18:00:00' }];
+  assert.equal(programmeDuJour([PUSH, PULL], apresPush).name, 'PULL');
+  const apresPull = [{ name: 'PULL', sport: 'WeightTraining', start_date_local: '2026-10-11T18:00:00' }, ...apresPush];
+  assert.equal(programmeDuJour([PUSH, PULL], apresPull).name, 'PUSH'); // on reboucle
+});
+
+test('brouillon depuis un programme : séries cibles et dernière charge connue', () => {
+  const derniers = dernieresCharges([serie('2026-10-01', 'developpe-couche', 6, 80), serie('2026-10-08', 'developpe-couche', 6, 85, { set_no: 2 })]);
+  const b = brouillonDepuisProgramme(PUSH, '2026-10-12', derniers);
+  assert.equal(b.nom, 'PUSH');
+  assert.equal(b.programmeId, 'p1');
+  assert.equal(b.exercices.length, 2);
+  assert.equal(b.exercices[0].series.length, 4);
+  assert.equal(b.exercices[0].series[0].poids, '85'); // la dernière fois, pas la charge du programme
+  assert.equal(b.exercices[1].series[0].poids, '');
+  assert.equal(b.exercices[0].series[0].fait, false);
+});
+
+test('validation : ne garde que les séries faites, borne les valeurs', () => {
+  const b = brouillonDepuisProgramme(PUSH, '2026-10-12');
+  b.exercices[0].series[0] = { reps: '6', poids: '82,5', fait: true };
+  b.exercices[0].series[1] = { reps: '6', poids: '82.5', fait: true };
+  b.exercices[1].series[0] = { reps: '12', poids: '', fait: true };
+  const { valeurs, erreurs } = validerSeance(b);
+  assert.deepEqual(erreurs, {});
+  assert.equal(valeurs.series.length, 3);
+  assert.equal(valeurs.series[0].weight_kg, 82.5);
+  assert.equal(valeurs.series[1].set_no, 2);
+  assert.equal(valeurs.series[2].exercise_key, 'dips');
+  assert.equal(valeurs.series[2].set_no, 1);
+  assert.equal(valeurs.series[2].position, 1);
+});
+
+test('validation : erreurs (aucune série, charge absurde, répétitions, nom, durée, effort)', () => {
+  const b = brouillonDepuisProgramme(PUSH, '2026-10-12');
+  assert.match(validerSeance(b).erreurs.exercices, /au moins une série/);
+  b.exercices[0].series[0] = { reps: '6', poids: '5000', fait: true };
+  assert.match(validerSeance(b).erreurs.exercices, /Charge invalide/);
+  b.exercices[0].series[0] = { reps: '0', poids: '50', fait: true };
+  assert.match(validerSeance(b).erreurs.exercices, /Répétitions invalides/);
+  b.exercices[0].series[0] = { reps: '6', poids: '50', fait: true };
+  b.nom = '  ';
+  b.duree = '9999';
+  b.rpe = '11';
+  b.date = 'demain';
+  const e = validerSeance(b).erreurs;
+  assert.ok(e.nom && e.duree && e.rpe && e.date);
+  assert.equal(validerSeance(b).valeurs, null);
+});
+
+test('ligne de séance : sport musculation, durée estimée si absente, TSS estimé', () => {
+  const b = brouillonDepuisProgramme(PUSH, '2026-10-12');
+  b.exercices[0].series.forEach((s) => Object.assign(s, { reps: '6', poids: '80', fait: true }));
+  const { valeurs } = validerSeance(b);
+  const ligne = ligneSeanceForce(valeurs);
+  assert.equal(ligne.sport, 'WeightTraining');
+  assert.equal(ligne.source, 'manual');
+  assert.equal(ligne.moving_time, 4 * 3 * 60);
+  assert.ok(ligne.tss > 0);
+  assert.equal(ligne.start_date_local, '2026-10-12T18:00:00');
+  const lignes = lignesSeries(valeurs);
+  assert.equal(lignes.length, 4);
+  assert.equal(lignes[0].date, '2026-10-12');
+});
+
+test('brouillon depuis une séance enregistrée : regroupe les séries par exercice, dans l\'ordre', () => {
+  const seance = { name: 'PUSH', start_date_local: '2026-10-10T17:30:00', moving_time: 3600, rpe: 8, user_notes: 'bien' };
+  const series = [
+    serie('2026-10-10', 'dips', 10, 0, { position: 1, set_no: 1 }),
+    serie('2026-10-10', 'developpe-couche', 6, 80, { position: 0, set_no: 2 }),
+    serie('2026-10-10', 'developpe-couche', 6, 80, { position: 0, set_no: 1 }),
+  ];
+  const b = brouillonDepuisSeance(seance, series);
+  assert.equal(b.heure, '17:30');
+  assert.equal(b.duree, '60');
+  assert.equal(b.exercices.length, 2);
+  assert.equal(b.exercices[0].cle, 'developpe-couche');
+  assert.equal(b.exercices[0].series.length, 2);
+  assert.ok(b.exercices[0].series.every((s) => s.fait));
+});
