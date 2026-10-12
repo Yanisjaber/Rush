@@ -15,6 +15,19 @@ const temps = (cle, label, exemple) => ({ cle, label, type: 'temps', exemple });
 const choix = (cle, label, options) => ({ cle, label, type: 'choix', options });
 const colonne = (champ) => ({ ...champ, colonne: true });
 
+// Prénom et nom : nouveaux champs, mais les profils de la v1 n'ont que `display_name` (colonne) et `full_name` (extras).
+// On relit donc ces anciennes valeurs tant que les nouvelles n'existent pas.
+function lirePrenom(ligne, extras) {
+  if (typeof extras.first_name === 'string') return extras.first_name;
+  const complet = String(extras.full_name ?? '').trim();
+  return complet ? complet.split(/\s+/)[0] : String(ligne?.display_name ?? '');
+}
+function lireNom(ligne, extras) {
+  if (typeof extras.last_name === 'string') return extras.last_name;
+  const complet = String(extras.full_name ?? '').trim();
+  return complet ? complet.split(/\s+/).slice(1).join(' ') : '';
+}
+
 export const SECTIONS = [
   {
     id: 'identite',
@@ -22,8 +35,8 @@ export const SECTIONS = [
     groupes: [
       {
         champs: [
-          colonne(t('display_name', 'Nom affiché', 80, 'Ton nom')),
-          t('full_name', 'Nom complet', 120, 'Prénom Nom'),
+          { ...t('first_name', 'Prénom', 60, 'Ton prénom'), requis: true, lire: lirePrenom },
+          { ...t('last_name', 'Nom', 60, 'Ton nom'), lire: lireNom },
           { cle: 'birth_date', label: 'Date de naissance', type: 'date' },
           choix('sex', 'Sexe', [['M', 'Homme'], ['F', 'Femme'], ['O', 'Autre / non précisé']]),
           t('country', 'Pays', 60, 'France'),
@@ -32,7 +45,6 @@ export const SECTIONS = [
           colonne(n('weight', 'Poids', 20, 250, 0.1, 'kg')),
         ],
       },
-      { champs: [{ cle: 'bio', label: 'À propos de toi', type: 'paragraphe', max: 500 }] },
     ],
   },
   {
@@ -100,7 +112,7 @@ export function valeursDepuis(ligne, section) {
   const extras = ligne && typeof ligne.extras === 'object' && ligne.extras ? ligne.extras : {};
   const sortie = {};
   for (const c of champsDe(section)) {
-    const brut = c.colonne ? ligne?.[c.cle] : Object.hasOwn(extras, c.cle) ? extras[c.cle] : undefined;
+    const brut = c.lire ? c.lire(ligne, extras) : c.colonne ? ligne?.[c.cle] : Object.hasOwn(extras, c.cle) ? extras[c.cle] : undefined;
     if (c.type === 'case') sortie[c.cle] = brut === true;
     else sortie[c.cle] = brut === undefined || brut === null ? '' : String(brut);
   }
@@ -134,7 +146,7 @@ export function validerSection(section, valeurs, aujourdhui = new Date().toISOSt
     const texte = String(brut ?? '').trim();
     if (texte === '') {
       propres[c.cle] = null;
-      if (c.cle === 'display_name') erreurs.display_name = 'Le nom affiché est obligatoire.';
+      if (c.requis) erreurs[c.cle] = 'Ce champ est obligatoire.';
       continue;
     }
     if (c.type === 'nombre') {
@@ -170,6 +182,11 @@ export function versPayload(section, propres, extrasActuels = {}) {
       if (!COLONNES.includes(c.cle)) continue;
       colonnes[c.cle] = propres[c.cle];
     } else extras[c.cle] = propres[c.cle];
+  }
+  if (Object.hasOwn(propres, 'first_name')) {
+    // L'accueil et la v1 lisent encore `display_name` et `full_name` : on les tient à jour
+    colonnes.display_name = propres.first_name;
+    extras.full_name = [propres.first_name, propres.last_name].filter(Boolean).join(' ') || null;
   }
   return { colonnes, extras };
 }

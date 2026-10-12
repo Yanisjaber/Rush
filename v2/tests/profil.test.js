@@ -17,22 +17,23 @@ test('chaque champ a une clé unique par section et un type connu', () => {
 
 test('valeursDepuis : colonnes, extras, champs absents vides, extras hérités ignorés', () => {
   const v = valeursDepuis({ display_name: 'Yanis', weight: 71.5, extras: { city: 'Toulouse', sex: 'M' } }, identite);
-  assert.equal(v.display_name, 'Yanis');
+  assert.equal(v.first_name, 'Yanis'); // ancien profil : le prénom vient du nom affiché
+  assert.equal(v.last_name, '');
   assert.equal(v.weight, '71.5');
   assert.equal(v.city, 'Toulouse');
   assert.equal(v.height, '');
-  assert.deepEqual(valeursDepuis(null, identite).display_name, '');
+  assert.equal(valeursDepuis(null, identite).first_name, '');
   assert.equal(valeursDepuis({ extras: JSON.parse('{"__proto__":{"city":"x"}}') }, identite).city, '');
 });
 
 test('validerSection : nom obligatoire, bornes des nombres, date future refusée, choix inconnu refusé', () => {
-  const r = validerSection(identite, { display_name: '', weight: '999', height: 'abc', birth_date: '2999-01-01', sex: 'Z' }, '2026-10-12');
-  for (const c of ['display_name', 'weight', 'height', 'birth_date', 'sex']) assert.ok(r.erreurs[c], c);
-  const ok = validerSection(identite, { display_name: ' Yanis ', weight: '71,5', height: '180', birth_date: '2005-03-02', sex: 'M', bio: '' }, '2026-10-12');
+  const r = validerSection(identite, { first_name: '', weight: '999', height: 'abc', birth_date: '2999-01-01', sex: 'Z' }, '2026-10-12');
+  for (const c of ['first_name', 'weight', 'height', 'birth_date', 'sex']) assert.ok(r.erreurs[c], c);
+  const ok = validerSection(identite, { first_name: ' Yanis ', last_name: 'Jaber', weight: '71,5', height: '180', birth_date: '2005-03-02', sex: 'M' }, '2026-10-12');
   assert.deepEqual(ok.erreurs, {});
-  assert.equal(ok.propres.display_name, 'Yanis');
+  assert.equal(ok.propres.first_name, 'Yanis');
   assert.equal(ok.propres.weight, 71.5);
-  assert.equal(ok.propres.bio, null);
+  assert.equal(ok.propres.city, null);
 });
 
 test('validerSection : temps au bon format, cases, champs vides = null', () => {
@@ -56,8 +57,10 @@ test('versPayload : colonnes séparées des extras, extras des autres sections c
   assert.equal(extras.city, 'Toulouse'); // autre section : intact
   assert.equal(extras.pr_p_5s, 900);
   assert.ok(!('ftp' in extras));
-  const { colonnes: c2 } = versPayload(identite, validerSection(identite, { display_name: 'Yanis', city: 'Toulouse' }).propres, {});
+  const { colonnes: c2, extras: e2 } = versPayload(identite, validerSection(identite, { first_name: 'Yanis', last_name: 'Jaber' }).propres, {});
   assert.deepEqual(Object.keys(c2).sort(), ['display_name', 'weight']);
+  assert.equal(c2.display_name, 'Yanis'); // l'accueil et la v1 lisent encore le nom affiché
+  assert.equal(e2.full_name, 'Yanis Jaber');
 });
 
 test('zones : puissance (FTP 250), allure avec min/km, référence absente = null', () => {
@@ -91,4 +94,15 @@ test('avatarSur : accepte data:image et https, refuse le reste', () => {
   assert.equal(avatarSur('javascript:alert(1)'), false);
   assert.equal(avatarSur('data:image/svg+xml;base64,AAAA'), false);
   assert.equal(avatarSur('http://exemple.fr/a.png'), false);
+});
+
+test('prénom et nom : relus depuis l\'ancien nom complet, ou depuis les nouveaux champs', () => {
+  const ancien = valeursDepuis({ display_name: 'Yanis', extras: { full_name: 'Yanis Jaber Martin' } }, identite);
+  assert.equal(ancien.first_name, 'Yanis');
+  assert.equal(ancien.last_name, 'Jaber Martin');
+  const nouveau = valeursDepuis({ display_name: 'Yanis', extras: { first_name: 'Yan', last_name: 'J', full_name: 'autre chose' } }, identite);
+  assert.equal(nouveau.first_name, 'Yan');
+  assert.equal(nouveau.last_name, 'J');
+  const sansNom = versPayload(identite, validerSection(identite, { first_name: 'Yanis' }).propres, {});
+  assert.equal(sansNom.extras.full_name, 'Yanis');
 });
