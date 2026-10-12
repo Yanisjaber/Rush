@@ -201,11 +201,6 @@
 </div>
 
 <style>
-  .page {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 0 32px 64px;
-  }
   .entete {
     display: flex;
     flex-wrap: wrap;
@@ -348,9 +343,6 @@
   }
 
   @media (max-width: 600px) {
-    .page {
-      padding: 0 16px 48px;
-    }
     h1 {
       font-size: 40px;
     }

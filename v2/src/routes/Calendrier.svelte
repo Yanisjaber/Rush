@@ -151,11 +151,6 @@
 </div>
 
 <style>
-  .page {
-    max-width: 1360px;
-    margin: 0 auto;
-    padding: 0 32px 64px;
-  }
   .puces {
     display: flex;
     flex-wrap: wrap;
@@ -330,9 +325,6 @@
 
   /* Sur téléphone : le calendrier devient un agenda, une ligne par jour, les jours vides sont masqués */
   @media (max-width: 760px) {
-    .page {
-      padding: 0 16px 48px;
-    }
     .entetes {
       display: none;
     }

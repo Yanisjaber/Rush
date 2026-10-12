@@ -177,11 +177,6 @@
 </div>
 
 <style>
-  .page {
-    max-width: 1360px;
-    margin: 0 auto;
-    padding: 0 32px 64px;
-  }
   .puces {
     display: flex;
     flex-wrap: wrap;
@@ -286,9 +281,4 @@
     margin-top: 24px;
   }
 
-  @media (max-width: 600px) {
-    .page {
-      padding: 0 16px 48px;
-    }
-  }
 </style>

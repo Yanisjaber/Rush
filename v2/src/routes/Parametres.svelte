@@ -76,11 +76,6 @@
 </div>
 
 <style>
-  .page {
-    max-width: 760px;
-    margin: 0 auto;
-    padding: 0 32px 64px;
-  }
   .barre {
     display: flex;
     align-items: center;
@@ -111,6 +106,11 @@
     font-size: clamp(36px, 6vw, 48px);
     line-height: 1;
     margin: 12px 0 28px;
+  }
+  /* Les réglages restent en colonne lisible, même sur un très grand écran */
+  h1,
+  .sections {
+    max-width: 760px;
   }
   .sections {
     display: flex;
@@ -173,10 +173,5 @@
     gap: 8px;
     font-size: 15px;
     color: var(--texte-doux);
-  }
-  @media (max-width: 600px) {
-    .page {
-      padding: 0 16px 48px;
-    }
   }
 </style>

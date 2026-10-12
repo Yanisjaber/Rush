@@ -208,9 +208,6 @@
 
 <style>
   .page {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 32px 64px;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -321,10 +318,5 @@
     flex: 0 0 44px;
     text-align: right;
     color: var(--texte-doux);
-  }
-  @media (max-width: 600px) {
-    .page {
-      padding: 0 16px 48px;
-    }
   }
 </style>

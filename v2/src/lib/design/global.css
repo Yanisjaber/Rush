@@ -78,3 +78,48 @@ textarea {
   font-weight: 800;
   letter-spacing: -0.02em;
 }
+
+/* Mise en page commune à toutes les pages : une seule largeur, donc l'en-tête ne saute plus d'une page à l'autre.
+   - téléphone : marges de 16 px, tout en colonne
+   - tablette et ordinateur : 1360 px de large au maximum, marges de 24 puis 32 px
+   - très grands écrans : la page s'étend (les widgets se rangent alors sur plus de colonnes) */
+:root {
+  --page-max: 1360px;
+  --gouttiere: 32px;
+}
+.page {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 0 var(--gouttiere) 64px;
+}
+@media (max-width: 1100px) {
+  :root {
+    --gouttiere: 24px;
+  }
+}
+@media (max-width: 600px) {
+  :root {
+    --gouttiere: 16px;
+  }
+  .page {
+    padding-bottom: 48px;
+  }
+}
+@media (min-width: 1800px) {
+  :root {
+    --page-max: 1760px;
+  }
+}
+@media (min-width: 2400px) {
+  :root {
+    --page-max: 2300px;
+    --gouttiere: 48px;
+  }
+}
+@media (min-width: 3200px) {
+  :root {
+    --page-max: 3000px;
+  }
+}
