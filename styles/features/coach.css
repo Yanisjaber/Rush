@@ -1,0 +1,19 @@
+/* ============================================================
+   features/coach.css
+   Placeholders du Coach IA (.ia-stub) : accueil IA et bilan post-séance
+   ============================================================ */
+
+  /* --- Stub IA générique : carte qui dit "à venir" --- */
+  .ia-stub {
+    border: 1px dashed rgba(74, 222, 128, 0.3);
+    background: rgba(74, 222, 128, 0.04);
+    border-radius: 12px;
+    padding: 18px;
+    color: var(--text-dim);
+    font-size: 13px;
+    line-height: 1.55;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .ia-stub .ia-stub-body strong { color: var(--text); display: block; margin-bottom: 4px; font-size: 14px; }

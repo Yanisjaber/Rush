@@ -36,6 +36,7 @@ Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon
 - Flux de données : **tout vient de Supabase** (migration « Supabase-only » terminée). `auth.js` → login → `supabase-data-loader.js` injecte les données dans `window.DASHBOARD_DATA`. `data-loader.js` fournit un dataset de 90 jours vides au boot. Les streams sont chargés à la demande (colonne `streams_gz`). `cloud-sync.js`/`storage-adapter.js` gèrent la persistance.
 - Les zones (FTP/LTHR) sont recalculées à l'affichage, jamais stockées.
 - Config client : `supabase-config.js`, `strava-config.js` à la racine (clés publiques).
+- `styles/` : `core/` (base, cartes, onglets, formulaires, modales), `features/` (un fichier par sujet), `mobile/` (surcharges mobiles). **L'ordre des `<link>` dans `index.html` fait la cascade** (`mobile/*` doit rester après le reste, `mobile/mobile.css` écrase des règles de `features/` et `core/modals.css`) : ne le change pas.
 
 ### Backend (`supabase/`)
 - `supabase/functions/` : Edge Functions Deno — ingestion (`strava-ingest`, `strava-webhook`, `strava-streams`), `oauth-start` (crée un `state` aléatoire à usage unique dans `oauth_states`, aucun JWT dans l'URL OAuth), callback OAuth (`strava-oauth-callback`, qui consomme ce `state`), helpers communs dans `functions/_shared/`, `coach-ai` (chat IA), `opendossard`, `disconnect-integration`.
@@ -62,7 +63,7 @@ Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon
 ## Design — pas de look « IA générique »
 
 - Interdit : dégradés violet/bleu, cartes arrondies toutes identiques avec ombre douce, emojis partout, hero centré générique, palette « SaaS ».
-- Pars de l'identité existante de l'app (`styles/base.css`) et pousse-la : choix assumés, cohérents sur toutes les pages.
+- Pars de l'identité existante de l'app (`styles/core/base.css`) et pousse-la : choix assumés, cohérents sur toutes les pages.
 - Avant de refaire un visuel, propose 2 ou 3 directions en quelques mots et demande laquelle il veut.
 - Garde le clair/sombre, le mobile d'abord (usage PWA sur téléphone), l'accessibilité.
 
