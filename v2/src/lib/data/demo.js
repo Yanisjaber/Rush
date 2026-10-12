@@ -4,7 +4,15 @@ import { dateIsoLocale } from '../utils/format.js';
 import { appliquerTout } from './retouches.js';
 
 // Modifications faites en démo (sorties saisies, retouches) : gardées en mémoire et réappliquées à chaque lecture des données d'exemple.
-export const ajoutsDemo = { manuelles: [], retouches: Object.create(null) };
+export const ajoutsDemo = {
+  manuelles: [],
+  retouches: Object.create(null),
+  programmes: null, // programmes de force (copie des exemples à la première lecture)
+  exercices: [], // exercices perso
+  seriesParSeance: Object.create(null), // id de séance → séries enregistrées en démo (remplacent celles d'exemple)
+  testsHyrox: null,
+  objectifHyrox: undefined, // undefined = exemple ; null = effacé
+};
 
 export function donneesDemo(aujourdhui = new Date()) {
   const seances = [];
@@ -23,7 +31,8 @@ export function donneesDemo(aujourdhui = new Date()) {
 
   for (let i = 83; i >= 0; i--) {
     const d = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - i);
-    const m = modele[d.getDay()];
+    const base = modele[d.getDay()];
+    const m = base && d.getDay() === 5 && Math.floor(i / 7) % 2 === 1 ? { ...base, nom: 'Legs' } : base;
     // un jour sur neuf de repos en plus, pour une régularité réaliste
     if (!m || (i * 7) % 9 === 0) continue;
     const variation = 0.85 + ((i * 13) % 30) / 100;
@@ -94,6 +103,7 @@ export function donneesDemo(aujourdhui = new Date()) {
       { id: 'demo-ramonville', name: 'Ronde de Ramonville', date: '2026-12-13', sport: 'Run', duration: 40, tss: null, category: 'competition', km: 10.15 },
     ],
     objectifs: [
+      { id: 'demo-hyrox-open', name: 'Hyrox Open', date: dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + 27)), sport: 'Hyrox', km: null, d_plus: null, priority: 'A', duration: 70, category: 'competition' },
       { id: 'demo-ramonville', name: 'Ronde de Ramonville', date: '2026-12-13', sport: 'Run', km: 10.15, d_plus: 42, priority: 'A', duration: 40, category: 'competition' },
     ],
   };
@@ -203,6 +213,7 @@ export function competitionsDemo(aujourdhui = new Date()) {
   });
   return {
     prevues: [
+      prevue('demo-hyrox-open', 'Hyrox Open', 27, 'Hyrox', 'A', null, null, 70, 'Hyrox', 'Objectif : passer sous 1h10.'),
       prevue('demo-comp-b1', 'Cyclo des Vignes', 27, 'Ride', 'B', 82, 850, 150, 'Cyclosportive', 'Sortie test avant la saison.'),
       prevue('demo-ramonville', 'Ronde de Ramonville', 62, 'Run', 'A', 10.15, 42, 40, 'Route', "Objectif de l'automne : passer sous les 40 minutes."),
       prevue('demo-comp-b2', 'Trail des Crêtes', 120, 'TrailRun', 'B', 24, 1300, 195, 'Trail'),
@@ -310,4 +321,96 @@ export function palmaresDemo(maintenant = new Date()) {
       r(an - 1, 3, 30, "Ronde d'Auzeville", 4, 41),
     ],
   };
+}
+
+// ---------------------------------------------------------------------------
+// Force et Hyrox (mode démo)
+// ---------------------------------------------------------------------------
+
+const PROGRAMMES_BASE = [
+  { id: 'demo-prog-push', name: 'PUSH', created_at: '2026-01-01T10:00:00Z', notes: null, exercises: [
+    { key: 'developpe-couche', name: 'Développé couché', group: 'pectoraux', sets: 4, reps: 8, weight: 82.5 },
+    { key: 'developpe-incline-halteres', name: 'Développé incliné haltères', group: 'pectoraux', sets: 3, reps: 10, weight: 26 },
+    { key: 'developpe-militaire', name: 'Développé militaire', group: 'epaules', sets: 4, reps: 8, weight: 50 },
+    { key: 'elevations-laterales', name: 'Élévations latérales', group: 'epaules', sets: 3, reps: 15, weight: 10 },
+    { key: 'extension-triceps-poulie', name: 'Extension triceps poulie', group: 'bras', sets: 4, reps: 12, weight: 25 },
+    { key: 'dips', name: 'Dips', group: 'pectoraux', sets: 4, reps: 10, weight: 0 },
+  ] },
+  { id: 'demo-prog-pull', name: 'PULL', created_at: '2026-01-02T10:00:00Z', notes: null, exercises: [
+    { key: 'souleve-de-terre', name: 'Soulevé de terre', group: 'dos', sets: 3, reps: 5, weight: 140 },
+    { key: 'tractions', name: 'Tractions', group: 'dos', sets: 4, reps: 8, weight: 0 },
+    { key: 'rowing-barre', name: 'Rowing barre', group: 'dos', sets: 4, reps: 8, weight: 70 },
+    { key: 'tirage-vertical', name: 'Tirage vertical', group: 'dos', sets: 3, reps: 10, weight: 60 },
+    { key: 'curl-barre', name: 'Curl barre', group: 'bras', sets: 3, reps: 10, weight: 30 },
+  ] },
+  { id: 'demo-prog-legs', name: 'LEGS', created_at: '2026-01-03T10:00:00Z', notes: null, exercises: [
+    { key: 'squat', name: 'Squat', group: 'jambes', sets: 4, reps: 6, weight: 120 },
+    { key: 'presse-a-cuisses', name: 'Presse à cuisses', group: 'jambes', sets: 3, reps: 10, weight: 200 },
+    { key: 'fentes', name: 'Fentes', group: 'jambes', sets: 3, reps: 10, weight: 30 },
+    { key: 'leg-curl', name: 'Leg curl', group: 'jambes', sets: 3, reps: 12, weight: 40 },
+    { key: 'mollets-debout', name: 'Mollets debout', group: 'jambes', sets: 4, reps: 15, weight: 60 },
+  ] },
+];
+
+/** Programmes de démo (modifiables en mémoire). */
+export function programmesDemo() {
+  if (!ajoutsDemo.programmes) ajoutsDemo.programmes = PROGRAMMES_BASE.map((p) => ({ ...p, exercises: p.exercises.map((e) => ({ ...e })) }));
+  return ajoutsDemo.programmes;
+}
+
+/** Séries d'exemple : les séances Push/Pull/Legs des 12 dernières semaines, avec des charges qui montent doucement. */
+export function seriesForceDemo(aujourdhui = new Date()) {
+  const { seances } = donneesDemo(aujourdhui);
+  const programmes = PROGRAMMES_BASE;
+  const lignes = [];
+  for (const s of seances) {
+    if (s.sport !== 'WeightTraining' || !s.id.startsWith('demo-')) continue;
+    const prog = programmes.find((p) => p.name === String(s.name).toUpperCase());
+    if (!prog) continue;
+    const date = s.start_date_local.slice(0, 10);
+    const jours = Math.round((new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate()) - new Date(`${date}T00:00:00`)) / 86400000);
+    const progression = 0.86 + 0.14 * ((83 - jours) / 83); // de 86 % à 100 % des charges du programme
+    prog.exercises.forEach((e, position) => {
+      for (let n = 1; n <= e.sets; n++) {
+        const poids = e.weight ? Math.round((e.weight * progression) / 2.5) * 2.5 : 0;
+        lignes.push({
+          id: `demo-serie-${s.id}-${position}-${n}`,
+          activity_id: s.id,
+          date,
+          exercise_key: e.key,
+          exercise_name: e.name,
+          muscle_group: e.group,
+          position,
+          set_no: n,
+          reps: Math.max(1, e.reps - (n === e.sets ? 1 : 0)),
+          weight_kg: poids,
+        });
+      }
+    });
+  }
+  const remplacees = ajoutsDemo.seriesParSeance;
+  return [...lignes.filter((l) => !(l.activity_id in remplacees)), ...Object.values(remplacees).flat()].sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+/** Tests Hyrox d'exemple : trois simulations qui progressent (runs plus rapides, stations mieux tenues). */
+export function testsHyroxDemo(aujourdhui = new Date()) {
+  if (ajoutsDemo.testsHyrox) return ajoutsDemo.testsHyrox;
+  const jour = (delta) => dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + delta));
+  // runs puis stations, dans l'ordre : run1, ski, run2, push, run3, pull, run4, bbj, run5, row, run6, farm, run7, lunge, run8, wall
+  const fabriquer = (id, delta, label, runs, stations) => {
+    const segments = [];
+    runs.forEach((r, k) => segments.push(r, stations[k]));
+    return { id, date: jour(delta), label, kind: 'test', segments, total_s: segments.reduce((a, b) => a + b, 0), source: 'manuel', activity_id: null, notes: null };
+  };
+  ajoutsDemo.testsHyrox = [
+    fabriquer('demo-hx-3', -4, 'Simulation 8 × (1 km + station)', [285, 296, 305, 315, 322, 330, 336, 342], [235, 248, 236, 252, 245, 215, 220, 240]),
+    fabriquer('demo-hx-2', -32, 'Simulation 8 × (1 km + station)', [298, 314, 326, 340, 352, 360, 368, 376], [262, 280, 268, 284, 276, 240, 246, 305]),
+    fabriquer('demo-hx-1', -60, 'Premier test', [305, 322, 336, 352, 366, 378, 388, 398], [270, 292, 280, 298, 288, 250, 258, 322]),
+  ];
+  return ajoutsDemo.testsHyrox;
+}
+
+/** Objectif Hyrox d'exemple : 1h10'00" au total. */
+export function objectifHyroxDemo() {
+  return ajoutsDemo.objectifHyrox === undefined ? { total_s: 4200, segments: null } : ajoutsDemo.objectifHyrox;
 }

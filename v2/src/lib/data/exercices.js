@@ -72,6 +72,9 @@ export const BIBLIOTHEQUE = [
   L('crunch-poulie', 'Crunch poulie', 'tronc'),
 ];
 
+/** Grands mouvements, dans l'ordre où on les met en avant sur l'accueil (cartes « records »). */
+export const GRANDS_MOUVEMENTS = ['squat', 'developpe-couche', 'souleve-de-terre', 'developpe-militaire', 'tractions', 'rowing-barre', 'front-squat', 'hip-thrust', 'dips'];
+
 const PAR_CLE = new Map(BIBLIOTHEQUE.map((e) => [e.cle, e]));
 
 /** Un identifiant de groupe est-il valide ? (propriétés propres seulement : « constructor » n'est pas un groupe) */

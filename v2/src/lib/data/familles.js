@@ -21,6 +21,7 @@ const FAMILLES = {
   // Force et hybride
   WeightTraining: 'muscu',
   Crossfit: 'crossfit',
+  Hyrox: 'hyrox', // type propre à l'app : Strava n'a pas de sport Hyrox
   HighIntensityIntervalTraining: 'crossfit',
   // Ski
   NordicSki: 'ski',

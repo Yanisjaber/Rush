@@ -11,6 +11,16 @@ import WidgetEfficacite from './WidgetEfficacite.svelte';
 import WidgetMeilleures from './WidgetMeilleures.svelte';
 import WidgetPuissance from './WidgetPuissance.svelte';
 import WidgetForce from './WidgetForce.svelte';
+import WidgetSeanceDuJour from './WidgetSeanceDuJour.svelte';
+import WidgetTonnage from './WidgetTonnage.svelte';
+import WidgetRecords from './WidgetRecords.svelte';
+import WidgetProgramme from './WidgetProgramme.svelte';
+import WidgetGroupes from './WidgetGroupes.svelte';
+import WidgetHyroxDossard from './WidgetHyroxDossard.svelte';
+import WidgetHyroxTest from './WidgetHyroxTest.svelte';
+import WidgetHyroxAllure from './WidgetHyroxAllure.svelte';
+import WidgetHyroxGains from './WidgetHyroxGains.svelte';
+import WidgetChargeForce from './WidgetChargeForce.svelte';
 
 export const COMPOSANTS = {
   objectif: WidgetObjectif,
@@ -25,4 +35,14 @@ export const COMPOSANTS = {
   meilleures: WidgetMeilleures,
   puissance: WidgetPuissance,
   force: WidgetForce,
+  seancedujour: WidgetSeanceDuJour,
+  tonnage: WidgetTonnage,
+  records: WidgetRecords,
+  programme: WidgetProgramme,
+  groupes: WidgetGroupes,
+  hyroxdossard: WidgetHyroxDossard,
+  hyroxtest: WidgetHyroxTest,
+  hyroxallure: WidgetHyroxAllure,
+  hyroxgains: WidgetHyroxGains,
+  chargeforce: WidgetChargeForce,
 };

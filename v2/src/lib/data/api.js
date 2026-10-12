@@ -522,3 +522,169 @@ export async function chargerGpx(userId, id) {
   const res = resultat(r, 'Impossible de charger le parcours.');
   return { data: typeof res.data?.gpx_content === 'string' && res.data.gpx_content ? res.data.gpx_content : null, erreur: res.erreur };
 }
+
+// ---------------------------------------------------------------------------
+// Carnet de force : exercices perso, programmes, séries (tables strength_*)
+// ---------------------------------------------------------------------------
+
+const COLONNES_SERIE = 'id,activity_id,date,exercise_key,exercise_name,muscle_group,position,set_no,reps,weight_kg';
+const COLONNES_PROGRAMME = 'id,name,exercises,notes,created_at';
+
+/** Séries des N derniers jours (les plus récentes d'abord). Plafonné : une séance fait rarement plus de 100 séries. */
+export async function chargerSeriesForce(userId, jours = 180, limite = 5000) {
+  const depuis = new Date();
+  depuis.setDate(depuis.getDate() - jours);
+  const r = await sb
+    .from('strength_sets')
+    .select(COLONNES_SERIE)
+    .eq('user_id', userId)
+    .gte('date', dateIsoLocale(depuis))
+    .order('date', { ascending: false })
+    .limit(limite);
+  return resultat(r, 'Impossible de charger ton carnet de force.');
+}
+
+/** Séries d'une séance précise. */
+export async function chargerSeriesSeance(userId, activiteId) {
+  if (!UUID.test(String(activiteId))) return { data: [], erreur: '' };
+  const r = await sb.from('strength_sets').select(COLONNES_SERIE).eq('user_id', userId).eq('activity_id', activiteId).order('position', { ascending: true }).order('set_no', { ascending: true }).limit(1500);
+  return resultat(r, 'Impossible de charger les séries de cette séance.');
+}
+
+export async function chargerProgrammes(userId) {
+  const r = await sb.from('strength_programs').select(COLONNES_PROGRAMME).eq('user_id', userId).order('created_at', { ascending: true }).limit(100);
+  return resultat(r, 'Impossible de charger tes programmes.');
+}
+
+export async function creerProgramme(userId, ligne) {
+  const r = await sb.from('strength_programs').insert({ ...ligne, user_id: userId }).select(COLONNES_PROGRAMME).single();
+  return resultat(r, "Impossible d'enregistrer le programme.");
+}
+
+export async function modifierProgramme(userId, id, ligne) {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Programme introuvable.' };
+  const r = await sb.from('strength_programs').update({ ...ligne, updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', userId).select(COLONNES_PROGRAMME).maybeSingle();
+  if (!r.error && !r.data) return { data: null, erreur: 'Programme introuvable.' };
+  return resultat(r, 'Impossible de modifier le programme.');
+}
+
+export async function supprimerProgramme(userId, id) {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Programme introuvable.' };
+  const r = await sb.from('strength_programs').delete().eq('id', id).eq('user_id', userId);
+  return resultat(r, 'Impossible de supprimer le programme.');
+}
+
+export async function chargerExercicesPerso(userId) {
+  const r = await sb.from('strength_exercises').select('id,name,muscle_group').eq('user_id', userId).order('name', { ascending: true }).limit(500);
+  return resultat(r, 'Impossible de charger tes exercices.');
+}
+
+export async function creerExercicePerso(userId, nom, groupe) {
+  const r = await sb.from('strength_exercises').insert({ user_id: userId, name: nom, muscle_group: groupe }).select('id,name,muscle_group').single();
+  return resultat(r, "Impossible d'ajouter l'exercice.");
+}
+
+export async function supprimerExercicePerso(userId, id) {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Exercice introuvable.' };
+  const r = await sb.from('strength_exercises').delete().eq('id', id).eq('user_id', userId);
+  return resultat(r, "Impossible de supprimer l'exercice.");
+}
+
+/** Insère des séries par paquets (la base limite la taille d'une requête). */
+async function insererSeries(userId, activiteId, lignes) {
+  for (let i = 0; i < lignes.length; i += 400) {
+    const paquet = lignes.slice(i, i + 400).map((l) => ({ ...l, user_id: userId, activity_id: activiteId }));
+    const r = await sb.from('strength_sets').insert(paquet);
+    if (r.error) {
+      console.error('[v2/api] séries', r.error.code || '');
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Enregistre une séance de force : la séance (ligne `activities` saisie à la main) puis ses séries.
+ *  - création : si les séries échouent, la séance créée est supprimée (pas de séance vide à moitié enregistrée) ;
+ *  - modification : `existante` = { id, manuelle }. Une séance Strava n'est jamais réécrite : on remplace seulement ses séries ;
+ *  - remplacement des séries : on insère les nouvelles AVANT de supprimer les anciennes (par leur identifiant), pour ne rien perdre en cas d'échec.
+ */
+export async function enregistrerSeanceForce(userId, ligne, lignesSeries, existante = null) {
+  let id = existante?.id;
+  if (!existante) {
+    const c = await creerSortieManuelle(userId, ligne);
+    if (c.erreur) return { data: null, erreur: c.erreur };
+    id = c.data.id;
+    if (!(await insererSeries(userId, id, lignesSeries))) {
+      await supprimerSortieManuelle(userId, id);
+      return { data: null, erreur: "Impossible d'enregistrer les séries. Rien n'a été gardé, réessaie." };
+    }
+    return { data: { id }, erreur: '' };
+  }
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Séance introuvable.' };
+  if (existante.manuelle) {
+    const m = await modifierSortieManuelle(userId, id, ligne);
+    if (m.erreur) return { data: null, erreur: m.erreur };
+  }
+  const anciennes = await sb.from('strength_sets').select('id').eq('user_id', userId).eq('activity_id', id).limit(1500);
+  if (anciennes.error) return { data: null, erreur: 'Impossible de relire les séries de cette séance.' };
+  if (!(await insererSeries(userId, id, lignesSeries))) return { data: null, erreur: "Impossible d'enregistrer les séries. Les anciennes sont conservées." };
+  const ids = (anciennes.data || []).map((l) => l.id);
+  for (let i = 0; i < ids.length; i += 200) {
+    const d = await sb.from('strength_sets').delete().eq('user_id', userId).in('id', ids.slice(i, i + 200));
+    if (d.error) return { data: null, erreur: "Les nouvelles séries sont enregistrées, mais les anciennes n'ont pas pu être retirées." };
+  }
+  return { data: { id }, erreur: '' };
+}
+
+/** Supprime les séries d'une séance (séance Strava : la séance reste) ou la séance entière (saisie à la main : séries en cascade). */
+export async function supprimerSeanceForce(userId, id, manuelle) {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Séance introuvable.' };
+  if (manuelle) return supprimerSortieManuelle(userId, id);
+  const r = await sb.from('strength_sets').delete().eq('user_id', userId).eq('activity_id', id);
+  return resultat(r, 'Impossible de supprimer les séries.');
+}
+
+// ---------------------------------------------------------------------------
+// Hyrox : tests / courses (hyrox_tests) et objectif de temps (hyrox_objectif)
+// ---------------------------------------------------------------------------
+
+const COLONNES_HYROX = 'id,date,label,kind,segments,total_s,source,activity_id,notes';
+
+export async function chargerTestsHyrox(userId) {
+  const r = await sb.from('hyrox_tests').select(COLONNES_HYROX).eq('user_id', userId).order('date', { ascending: false }).limit(200);
+  return resultat(r, 'Impossible de charger tes tests Hyrox.');
+}
+
+export async function creerTestHyrox(userId, valeurs, extra = {}) {
+  const r = await sb.from('hyrox_tests').insert({ ...valeurs, ...extra, user_id: userId }).select(COLONNES_HYROX).single();
+  return resultat(r, "Impossible d'enregistrer le test.");
+}
+
+export async function modifierTestHyrox(userId, id, valeurs) {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Test introuvable.' };
+  const r = await sb.from('hyrox_tests').update(valeurs).eq('id', id).eq('user_id', userId).select(COLONNES_HYROX).maybeSingle();
+  if (!r.error && !r.data) return { data: null, erreur: 'Test introuvable.' };
+  return resultat(r, 'Impossible de modifier le test.');
+}
+
+export async function supprimerTestHyrox(userId, id) {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Test introuvable.' };
+  const r = await sb.from('hyrox_tests').delete().eq('id', id).eq('user_id', userId);
+  return resultat(r, 'Impossible de supprimer le test.');
+}
+
+export async function chargerObjectifHyrox(userId) {
+  const r = await sb.from('hyrox_objectif').select('total_s,segments').eq('user_id', userId).maybeSingle();
+  return resultat(r, "Impossible de charger ton objectif Hyrox.");
+}
+
+export async function enregistrerObjectifHyrox(userId, valeurs) {
+  const r = await sb.from('hyrox_objectif').upsert({ ...valeurs, user_id: userId, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+  return resultat(r, "Impossible d'enregistrer ton objectif.");
+}
+
+export async function supprimerObjectifHyrox(userId) {
+  const r = await sb.from('hyrox_objectif').delete().eq('user_id', userId);
+  return resultat(r, "Impossible d'effacer ton objectif.");
+}

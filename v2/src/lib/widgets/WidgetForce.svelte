@@ -26,7 +26,7 @@
         </span>
       {/each}
     </div>
-    <p class="note">Séances de musculation sur 12 semaines. Les exercices, séries et charges arriveront avec le carnet de force.</p>
+    <p class="note">Séances de musculation sur 12 semaines.</p>
   {:else}
     <p class="vide">Aucune séance de musculation sur les 12 dernières semaines.</p>
   {/if}

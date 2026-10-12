@@ -22,6 +22,7 @@ export const SPORTS_PREVUE = [
   { cle: 'natation', type: 'Swim' },
   { cle: 'muscu', type: 'WeightTraining' },
   { cle: 'crossfit', type: 'Crossfit' },
+  { cle: 'hyrox', type: 'Hyrox' },
   { cle: 'aviron', type: 'Rowing' },
   { cle: 'ski', type: 'NordicSki' },
   { cle: 'combat', type: 'MartialArts' },

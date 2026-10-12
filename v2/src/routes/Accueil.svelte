@@ -6,7 +6,7 @@
   import CadreEdition from '../lib/widgets/CadreEdition.svelte';
   import BibliothequeWidgets from '../lib/widgets/BibliothequeWidgets.svelte';
   import { COMPOSANTS } from '../lib/widgets/composants.js';
-  import { disponibles } from '../lib/widgets/registre.js';
+  import { disponibles, composerOnglet } from '../lib/widgets/registre.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
   import {
@@ -21,17 +21,34 @@
     ajouter,
     changerTaille,
   } from '../lib/stores/disposition.svelte.js';
-  import { chargerProfil, chargerMetriques, chargerSeances, chargerObjectifs, chargerPuissance } from '../lib/data/api.js';
-  import { donneesDemo } from '../lib/data/demo.js';
-  import { chargeParSemaine, formeActuelle } from '../lib/data/synthese.js';
+  import {
+    chargerProfil, chargerMetriques, chargerSeances, chargerObjectifs, chargerPuissance,
+    chargerSeriesForce, chargerProgrammes, chargerExercicesPerso, chargerTestsHyrox, chargerObjectifHyrox,
+  } from '../lib/data/api.js';
+  import { donneesDemo, programmesDemo, seriesForceDemo, testsHyroxDemo, objectifHyroxDemo } from '../lib/data/demo.js';
+  import { chargeParSemaine, formeActuelle, seancesForce } from '../lib/data/synthese.js';
+  import { programmeDuJour } from '../lib/data/force.js';
+  import { accrocheMuscu, accrocheHyrox } from '../lib/data/accroche.js';
+  import { familleSport } from '../lib/data/familles.js';
   import { familleAffichage } from '../lib/data/familles.js';
 
   let { demo = false } = $props();
 
-  let etat = $state({ chargement: true, erreur: '', profil: null, metriques: [], seances: [], objectifs: [], puissance: [] });
+  const forceVide = { series: [], programmes: [], exercicesPerso: [] };
+  const hyroxVide = { tests: [], objectif: null };
+  let etat = $state({
+    chargement: true, erreur: '', erreurSport: '', profil: null, metriques: [], seances: [], objectifs: [], puissance: [],
+    force: forceVide, hyrox: hyroxVide,
+  });
   let filtre = $state('tout');
 
-  const famillesDe = (seances) => [...new Set(seances.map((s) => familleAffichage(s.sport)))].filter((f) => f !== 'autre');
+  // Sports de l'utilisateur : ceux de ses séances, plus la muscu s'il a un programme ou des séries, plus Hyrox s'il a un test ou un objectif Hyrox
+  const famillesDe = (seances, force = forceVide, hyrox = hyroxVide, objectifs = []) => {
+    const f = new Set(seances.map((s) => familleAffichage(s.sport)));
+    if (force.programmes.length || force.series.length) f.add('muscu');
+    if (hyrox.tests.length || hyrox.objectif || objectifs.some((o) => familleAffichage(o.sport) === 'hyrox')) f.add('hyrox');
+    return [...f].filter((x) => x !== 'autre');
+  };
 
   /** Fin du chargement : ouvre le mode édition si on arrive depuis les paramètres. */
   function terminerChargement() {
@@ -47,17 +64,25 @@
     etat.erreur = '';
     if (demo) {
       Object.assign(etat, donneesDemo());
-      await chargerDisposition('demo', famillesDe(etat.seances));
+      etat.force = { series: seriesForceDemo(), programmes: programmesDemo(), exercicesPerso: [] };
+      etat.hyrox = { tests: testsHyroxDemo(), objectif: objectifHyroxDemo() };
+      etat.erreurSport = '';
+      await chargerDisposition('demo', famillesDe(etat.seances, etat.force, etat.hyrox, etat.objectifs));
       terminerChargement();
       return;
     }
     if (!userId) return;
-    const [profil, metriques, seances, objectifs, puissance] = await Promise.all([
+    const [profil, metriques, seances, objectifs, puissance, series, programmes, exercices, tests, objectifHyrox] = await Promise.all([
       chargerProfil(userId),
       chargerMetriques(userId),
       chargerSeances(userId),
-      chargerObjectifs(userId),
+      chargerObjectifs(userId, 10),
       chargerPuissance(userId),
+      chargerSeriesForce(userId),
+      chargerProgrammes(userId),
+      chargerExercicesPerso(userId),
+      chargerTestsHyrox(userId),
+      chargerObjectifHyrox(userId),
     ]);
     etat.profil = profil.data;
     etat.metriques = metriques.data || [];
@@ -65,7 +90,13 @@
     etat.objectifs = objectifs.data || [];
     etat.puissance = puissance.data || [];
     etat.erreur = [profil, metriques, seances, objectifs, puissance].map((r) => r.erreur).find(Boolean) || '';
-    await chargerDisposition(userId, famillesDe(etat.seances));
+    // Force et Hyrox : tables ajoutées par la migration 2026-10-13. Si elle n'est pas appliquée, on affiche l'accueil quand même.
+    etat.force = { series: series.data || [], programmes: programmes.data || [], exercicesPerso: exercices.data || [] };
+    etat.hyrox = { tests: tests.data || [], objectif: objectifHyrox.data || null };
+    etat.erreurSport = [series, programmes, exercices, tests, objectifHyrox].some((r) => r.erreur)
+      ? "Le carnet de force et le suivi Hyrox ne répondent pas : la migration « force_hyrox » n'est peut-être pas appliquée sur ta base."
+      : '';
+    await chargerDisposition(userId, famillesDe(etat.seances, etat.force, etat.hyrox, etat.objectifs));
     terminerChargement();
   }
   // L'effet ne dépend QUE de l'identité de l'utilisateur. Tout ce que `charger` lit ou écrit dans `etat`
@@ -80,8 +111,10 @@
 
   // --- Données dérivées ---
   const prenom = $derived(etat.profil?.display_name || auth.session?.user?.email?.split('@')[0] || '');
-  const familles = $derived(famillesDe(etat.seances));
-  const seancesVisibles = $derived(filtre === 'tout' ? etat.seances : etat.seances.filter((s) => familleAffichage(s.sport) === filtre));
+  const familles = $derived(famillesDe(etat.seances, etat.force, etat.hyrox, etat.objectifs));
+  // Le filtre doit rester un sport que l'utilisateur pratique (sinon on revient sur « Tout »)
+  const filtreActif = $derived(filtre === 'tout' || familles.includes(filtre) ? filtre : 'tout');
+  const seancesVisibles = $derived(filtreActif === 'tout' ? etat.seances : etat.seances.filter((s) => familleAffichage(s.sport) === filtreActif));
   // Ce que reçoit chaque widget : toujours la même enveloppe, filtrée par le sport choisi
   const contexte = $derived({
     seances: seancesVisibles,
@@ -91,7 +124,30 @@
     profil: etat.profil,
     puissance: etat.puissance,
     hrMax: etat.profil?.hr_max || null,
-    filtre,
+    filtre: filtreActif,
+    force: etat.force,
+    hyrox: etat.hyrox,
+  });
+
+  // Widgets affichés : tous ceux de ta disposition sur l'onglet « Tout » (et pendant l'édition) ; sur un onglet de sport,
+  // la composition de ce sport (muscu et Hyrox ont la leur, voir registre.js).
+  const widgetsAffiches = $derived(filtreActif === 'tout' || disposition.enEdition ? disposition.widgets : composerOnglet(disposition.widgets, filtreActif));
+  const accrocheSport = $derived.by(() => {
+    if (filtreActif === 'muscu') {
+      return accrocheMuscu({
+        serie: seancesForce(etat.seances).serie,
+        series: etat.force.series,
+        programme: programmeDuJour(etat.force.programmes, etat.seances),
+      });
+    }
+    if (filtreActif === 'hyrox') {
+      return accrocheHyrox({
+        objectif: etat.objectifs.find((o) => familleSport(o.sport) === 'hyrox') || null,
+        test: etat.hyrox.tests[0] || null,
+        cible: etat.hyrox.objectif,
+      });
+    }
+    return '';
   });
   const forme = $derived(formeActuelle(etat.metriques));
   const chargeSemaine = $derived(
@@ -102,9 +158,9 @@
 <div class="page">
   <EnTete actif="accueil" {demo} />
   <nav class="puces" aria-label="Filtrer par sport">
-    <ChipSport label="Tout" sport="autre" actif={filtre === 'tout'} onclick={() => (filtre = 'tout')} />
+    <ChipSport label="Tout" sport="autre" actif={filtreActif === 'tout'} onclick={() => (filtre = 'tout')} />
     {#each familles as f}
-      <ChipSport sport={f} actif={filtre === f} onclick={() => (filtre = f)} />
+      <ChipSport sport={f} actif={filtreActif === f} onclick={() => (filtre = f)} />
     {/each}
   </nav>
 
@@ -130,10 +186,13 @@
     <p class="info" role="status">Chargement de tes données…</p>
   {:else}
     {#if etat.erreur}<p class="alerte" role="alert">{etat.erreur}</p>{/if}
+    {#if etat.erreurSport && (filtreActif === 'muscu' || filtreActif === 'hyrox')}<p class="alerte" role="alert">{etat.erreurSport}</p>{/if}
 
     <section class="accroche">
       <h1 class="titre">Salut{prenom ? ` ${prenom}` : ''}.</h1>
-      {#if forme}
+      {#if accrocheSport}
+        <p>{accrocheSport}</p>
+      {:else if forme}
         <p>
           Ta forme est de <strong class="ok">{forme.tsb > 0 ? '+' : ''}{forme.tsb}</strong> ({forme.libelle.toLowerCase()}).
           {#if chargeSemaine}Tu as encaissé <strong>{chargeSemaine} points de charge</strong> ces 7 derniers jours.{/if}
@@ -143,9 +202,9 @@
       {/if}
     </section>
 
-    {#if disposition.widgets.length}
+    {#if widgetsAffiches.length}
       <div class="grille">
-        {#each disposition.widgets as w, i (w.id)}
+        {#each widgetsAffiches as w, i (w.id)}
           {@const Composant = COMPOSANTS[w.id]}
           <div class="cellule t-{w.taille}">
             {#if disposition.enEdition}

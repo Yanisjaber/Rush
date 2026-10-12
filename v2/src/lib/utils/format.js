@@ -58,3 +58,15 @@ export function formatAllure(secondesParKm) {
   const s = Math.round(secondesParKm || 0);
   return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"/km`;
 }
+
+/** 82.5 → « 82,5 », 100 → « 100 » (virgule française, une décimale seulement si utile). */
+export function formatKg(kg) {
+  if (kg == null || Number.isNaN(Number(kg))) return '—';
+  return String(Math.round(Number(kg) * 10) / 10).replace('.', ',');
+}
+
+/** 14820 → « 14 820 » (espace insécable entre les milliers). */
+export function formatNombre(n) {
+  if (n == null || Number.isNaN(Number(n))) return '—';
+  return Math.round(Number(n)).toLocaleString('fr-FR').replace(/[\u202f\u00a0]/g, '\u00a0');
+}

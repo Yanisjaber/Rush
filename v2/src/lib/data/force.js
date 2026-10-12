@@ -1,7 +1,7 @@
 // Calculs du carnet de force : tonnage, 1RM estimé, records, séries par groupe, programme du jour, brouillon de séance.
 // Fonctions pures (ni réseau ni écran), donc testables. Une « série » vient de la table strength_sets :
 // { date, exercise_key, exercise_name, muscle_group, position, set_no, reps, weight_kg, activity_id }.
-import { GROUPES, ORDRE_GROUPES, groupeValide } from './exercices.js';
+import { GROUPES, ORDRE_GROUPES, GRANDS_MOUVEMENTS, groupeValide } from './exercices.js';
 import { estimerTss } from './prevue.js';
 
 const JOUR = 86400000;
@@ -111,11 +111,18 @@ export function progressionParExercice(series) {
   return sortie.sort((a, b) => b.date.localeCompare(a.date) || b.nbSeries - a.nbSeries);
 }
 
-/** Les N exercices les plus pratiqués ces 90 derniers jours (pour les cartes « record » de l'accueil). */
+/**
+ * Les N exercices à mettre en avant (cartes « records » de l'accueil), sur les 90 derniers jours :
+ * les grands mouvements d'abord (squat, développé couché, soulevé de terre…), puis les plus pratiqués.
+ */
 export function exercicesPhares(series, n = 3, aujourdhui = new Date()) {
   const recentes = series.filter((s) => joursDepuis(s.date, aujourdhui) <= 90);
+  const rang = (cle) => {
+    const i = GRANDS_MOUVEMENTS.indexOf(cle);
+    return i === -1 ? GRANDS_MOUVEMENTS.length : i;
+  };
   return progressionParExercice(recentes)
-    .sort((a, b) => b.nbSeries - a.nbSeries)
+    .sort((a, b) => rang(a.cle) - rang(b.cle) || b.nbSeries - a.nbSeries)
     .slice(0, n);
 }
 

@@ -86,6 +86,86 @@ export const WIDGETS = {
     tailles: ['m', 'l'],
     taille: 'm',
   },
+  seancedujour: {
+    nom: 'Séance du jour',
+    description: 'Le dossard de ta prochaine séance de force, avec un bouton pour la démarrer.',
+    categorie: 'Musculation',
+    sports: ['muscu'],
+    tailles: ['m', 'l'],
+    taille: 'm',
+  },
+  tonnage: {
+    nom: 'Tonnage par semaine',
+    description: 'Le poids total soulevé chaque semaine (répétitions × charge), sur 12 semaines.',
+    categorie: 'Musculation',
+    sports: ['muscu'],
+    tailles: ['m', 'l'],
+    taille: 'm',
+  },
+  records: {
+    nom: 'Tes records',
+    description: 'Tes exercices les plus pratiqués : 1RM estimé, record battu et courbe de progression.',
+    categorie: 'Musculation',
+    sports: ['muscu'],
+    tailles: ['m', 'l', 'xl'],
+    taille: 'xl',
+  },
+  programme: {
+    nom: 'Au programme',
+    description: 'Les exercices de ta prochaine séance : séries, répétitions et charges.',
+    categorie: 'Musculation',
+    sports: ['muscu'],
+    tailles: ['m', 'l'],
+    taille: 'm',
+  },
+  groupes: {
+    nom: 'Séries par groupe',
+    description: 'Combien de séries tu as faites cette semaine sur chaque groupe musculaire.',
+    categorie: 'Musculation',
+    sports: ['muscu'],
+    tailles: ['m', 'l'],
+    taille: 'm',
+  },
+  hyroxdossard: {
+    nom: 'Dossard Hyrox',
+    description: 'Compte à rebours de ta compétition Hyrox, avec ton dernier test et ton objectif de temps.',
+    categorie: 'Hyrox',
+    sports: ['hyrox'],
+    tailles: ['m', 'l'],
+    taille: 'm',
+  },
+  hyroxtest: {
+    nom: 'Dernier test, course par course',
+    description: 'Tes 16 segments (8 runs et 8 stations) avec le temps passé sur chacun.',
+    categorie: 'Hyrox',
+    sports: ['hyrox'],
+    tailles: ['l', 'xl'],
+    taille: 'l',
+  },
+  hyroxallure: {
+    nom: 'Allure des 8 runs',
+    description: "Le temps de chacun de tes 8 kilomètres, comparé à ton objectif.",
+    categorie: 'Hyrox',
+    sports: ['hyrox'],
+    tailles: ['m', 'l'],
+    taille: 'm',
+  },
+  hyroxgains: {
+    nom: 'Où gagner du temps',
+    description: "L'écart par station entre ton dernier test et ton objectif.",
+    categorie: 'Hyrox',
+    sports: ['hyrox'],
+    tailles: ['m', 'l'],
+    taille: 'm',
+  },
+  chargeforce: {
+    nom: 'Charge de force',
+    description: 'Combien de séances de force par semaine soutiennent ton Hyrox.',
+    categorie: 'Hyrox',
+    sports: ['hyrox'],
+    tailles: ['s', 'm'],
+    taille: 's',
+  },
   semaine: {
     nom: 'Cette semaine',
     description: 'Les sept jours de la semaine, séance par séance.',
@@ -112,8 +192,24 @@ export const WIDGETS = {
   },
 };
 
+/**
+ * Onglets « riches » : muscu et Hyrox ont leur propre accueil, composé dans cet ordre (comme sur les maquettes).
+ * Ces widgets n'apparaissent donc pas sur l'onglet « Tout », qui reste le tableau de bord général.
+ */
+export const ORDRE_ONGLET = {
+  muscu: ['seancedujour', 'tonnage', 'regularite', 'records', 'programme', 'groupes', 'dernieres'],
+  hyrox: ['hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'semaine', 'chargeforce'],
+};
+
+// Widgets propres à un onglet riche (ceux qui ne sont pas des widgets « tous sports » réutilisés)
+const PROPRES_AUX_ONGLETS = new Set(
+  Object.values(ORDRE_ONGLET).flat().filter((id) => Object.hasOwn(WIDGETS, id) && WIDGETS[id].sports !== 'tous'),
+);
+
 /** Ordre de composition automatique de l'accueil. */
 const ORDRE_AUTO = [
+  'seancedujour',
+  'hyroxdossard',
   'objectif',
   'charge',
   'forme',
@@ -122,6 +218,14 @@ const ORDRE_AUTO = [
   'efficacite',
   'volume',
   'semaine',
+  'tonnage',
+  'records',
+  'programme',
+  'groupes',
+  'hyroxtest',
+  'hyroxallure',
+  'hyroxgains',
+  'chargeforce',
   'force',
   'meilleures',
   'regularite',
@@ -150,8 +254,25 @@ export function compositionAuto(familles = []) {
   return {
     v: 1,
     auto: true,
-    widgets: ORDRE_AUTO.filter((id) => estPertinent(id, familles)).map((id) => ({ id, taille: WIDGETS[id].taille })),
+    widgets: ORDRE_AUTO.filter((id) => !PROPRES_AUX_ONGLETS.has(id) && estPertinent(id, familles)).map((id) => ({ id, taille: WIDGETS[id].taille })),
   };
+}
+
+/**
+ * Widgets d'un onglet de sport. Muscu et Hyrox : composition fixe (ORDRE_ONGLET), en gardant la taille choisie par l'utilisateur.
+ * Autres sports : les widgets de la disposition qui concernent ce sport, ceux du sport d'abord.
+ */
+export function composerOnglet(widgets, sport) {
+  if (Object.hasOwn(ORDRE_ONGLET, sport)) {
+    const tailles = new Map(widgets.map((w) => [w.id, w.taille]));
+    return ORDRE_ONGLET[sport].map((id) => ({ id, taille: tailleValide(id, tailles.get(id)) }));
+  }
+  const pertinents = widgets.filter((w) => estPertinent(w.id, [sport]));
+  return [...pertinents.filter((w) => WIDGETS[w.id].sports !== 'tous'), ...pertinents.filter((w) => WIDGETS[w.id].sports === 'tous')];
+}
+
+function tailleValide(id, souhaitee) {
+  return WIDGETS[id].tailles.includes(souhaitee) ? souhaitee : WIDGETS[id].taille;
 }
 
 /**

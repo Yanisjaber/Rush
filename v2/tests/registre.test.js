@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { WIDGETS, existe, estPertinent, compositionAuto, normaliser, disponibles } from '../src/lib/widgets/registre.js';
+import { WIDGETS, ORDRE_ONGLET, existe, estPertinent, compositionAuto, composerOnglet, normaliser, disponibles } from '../src/lib/widgets/registre.js';
 
 test("existe : seuls les vrais widgets sont reconnus (pas les propriétés héritées d'un objet)", () => {
   assert.equal(existe('objectif'), true);
@@ -65,9 +65,39 @@ test('disponibles : exclut les widgets déjà présents', () => {
   // Sans sport pratiqué, l'accueil automatique ne contient que les widgets universels : les widgets propres
   // à un sport restent disponibles dans la bibliothèque, mais pas composés d'office.
   const sportifs = disponibles(d, []).sort();
-  assert.deepEqual(sportifs, ['efficacite', 'force', 'meilleures', 'predictions', 'puissance']);
+  assert.deepEqual(sportifs, [
+    'chargeforce', 'efficacite', 'force', 'groupes', 'hyroxallure', 'hyroxdossard', 'hyroxgains', 'hyroxtest',
+    'meilleures', 'predictions', 'programme', 'puissance', 'records', 'seancedujour', 'tonnage',
+  ]);
   // Un coureur qui fait aussi du vélo voit ses widgets de course et de vélo composés automatiquement
   const coureur = compositionAuto(['course', 'velo']).widgets.map((w) => w.id);
   for (const id of ['predictions', 'efficacite', 'meilleures', 'puissance']) assert.ok(coureur.includes(id), id);
   assert.equal(coureur.includes('force'), false);
+});
+
+test("onglets riches : muscu et Hyrox ont leur composition, absente de l'onglet « Tout »", () => {
+  const general = compositionAuto(['muscu', 'hyrox']).widgets.map((w) => w.id);
+  for (const id of ['seancedujour', 'tonnage', 'records', 'programme', 'groupes', 'hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'chargeforce']) {
+    assert.equal(general.includes(id), false, id);
+    assert.ok(existe(id) && estPertinent(id, id.startsWith('hyrox') || id === 'chargeforce' ? ['hyrox'] : ['muscu']), id);
+  }
+  for (const sport of Object.keys(ORDRE_ONGLET)) {
+    const onglet = composerOnglet(compositionAuto([sport]).widgets, sport);
+    assert.deepEqual(onglet.map((w) => w.id), ORDRE_ONGLET[sport]);
+    for (const w of onglet) assert.ok(WIDGETS[w.id].tailles.includes(w.taille), w.id);
+  }
+  assert.equal(composerOnglet([], 'muscu')[0].id, 'seancedujour'); // même sans disposition
+});
+
+test('onglet : la taille choisie est gardée, une taille invalide revient à celle par défaut', () => {
+  const o = composerOnglet([{ id: 'tonnage', taille: 'l' }, { id: 'records', taille: 'zzz' }], 'muscu');
+  assert.equal(o.find((w) => w.id === 'tonnage').taille, 'l');
+  assert.equal(o.find((w) => w.id === 'records').taille, WIDGETS.records.taille);
+});
+
+test('onglet d\'un autre sport : widgets du sport d\'abord, puis ceux valables pour tous', () => {
+  const o = composerOnglet(compositionAuto(['course', 'velo']).widgets, 'course').map((w) => w.id);
+  assert.ok(o.includes('predictions'));
+  assert.equal(o.includes('puissance'), false); // vélo seulement
+  assert.ok(o.indexOf('predictions') < o.indexOf('charge'));
 });

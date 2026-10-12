@@ -121,6 +121,15 @@ test('progression : pas de record si la dernière séance est plus faible, ni de
   assert.equal(seule[0].delta, null);
 });
 
+test('exercices phares : grands mouvements d\'abord, puis les plus pratiqués', () => {
+  const s = [
+    serie('2026-10-10', 'curl', 10, 20), serie('2026-10-10', 'curl', 10, 20), serie('2026-10-10', 'curl', 10, 20),
+    serie('2026-10-10', 'squat', 5, 100),
+    serie('2026-10-10', 'developpe-couche', 5, 80),
+  ];
+  assert.deepEqual(exercicesPhares(s, 3, AUJ).map((e) => e.cle), ['squat', 'developpe-couche', 'curl']);
+});
+
 test('exercices phares : les plus pratiqués sur 90 jours', () => {
   const s = [
     serie('2026-10-10', 'a', 5, 100), serie('2026-10-10', 'a', 5, 100), serie('2026-10-10', 'a', 5, 100),
