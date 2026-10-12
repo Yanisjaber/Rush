@@ -89,7 +89,7 @@ export async function chargerPuissance(userId) {
 // Calendrier : séances réalisées et prévues sur une période
 // ---------------------------------------------------------------------------
 
-const COLONNES_PLANIFIEE = 'id,name,date,sport,duration,tss,category,km,start_date_local,rpe,d_plus,notes';
+const COLONNES_PLANIFIEE = 'id,name,date,sport,duration,tss,category,km,start_date_local,rpe,d_plus,notes,structure';
 
 /** Séances réalisées entre deux dates ISO incluses (le calendrier d'un mois). */
 export async function chargerSeancesPeriode(userId, debutIso, finIso) {

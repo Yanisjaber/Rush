@@ -44,3 +44,22 @@ test('formulaireDepuisLigne : relit une ligne de la base, sport inconnu → Work
   assert.equal(f.rpe, '');
   assert.equal(formulaireDepuisLigne({ sport: 'Bizarre' }).sport, 'Workout');
 });
+
+test('validerPrevue : avec structure, durée, charge et estimations viennent des blocs', () => {
+  const structure = [{ type: 'steady', name: 'Bloc', reps: 1, metric: 'power', unit: 'pct', work: { min: 60, int: 100, intHi: null } }];
+  const { valeurs, erreurs } = validerPrevue({ ...bon(), sport: 'Ride', duree: '', tss: '', structure }, { ftp: 250 });
+  assert.deepEqual(erreurs, {});
+  assert.equal(valeurs.duree, 60);
+  assert.equal(valeurs.tss, 100);
+  const l = versLigne(valeurs);
+  assert.equal(l.structure.length, 1);
+  assert.equal(l.est_kj, 900);
+  assert.equal(l.est_watts, 250);
+});
+
+test('validerPrevue : une structure est ignorée pour un sport qui n\'en a pas (muscu)', () => {
+  const structure = [{ type: 'steady', work: { min: 60, int: 100 } }];
+  const { valeurs } = validerPrevue({ ...bon(), sport: 'WeightTraining', structure });
+  assert.equal(valeurs.structure.length, 0);
+  assert.equal(versLigne(valeurs).structure, null);
+});

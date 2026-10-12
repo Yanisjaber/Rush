@@ -1,11 +1,15 @@
 <script>
+  import { untrack } from 'svelte';
   import Panneau from './Panneau.svelte';
   import Champ from './Champ.svelte';
   import Bouton from './Bouton.svelte';
-  import { SPORTS } from '../sports.js';
+  import EditeurStructure from './EditeurStructure.svelte';
+  import { SPORTS, couleurSport } from '../sports.js';
   import { familleAffichage } from '../data/familles.js';
   import { SPORTS_PREVUE, formulaireVide, formulaireDepuisLigne, validerPrevue, versLigne, estimerTss } from '../data/prevue.js';
-  import { creerPlanifiee, modifierPlanifiee, supprimerPlanifiee } from '../data/api.js';
+  import { sportAvecStructure } from '../data/structure.js';
+  import { donneesDemo } from '../data/demo.js';
+  import { creerPlanifiee, modifierPlanifiee, supprimerPlanifiee, chargerProfil } from '../data/api.js';
 
   // Créer ou modifier une séance prévue.
   //  seance : ligne de activity_planned à modifier (null = nouvelle) · dateInitiale : jour proposé pour une nouvelle
@@ -17,24 +21,41 @@
   let erreurGlobale = $state('');
   let envoi = $state(false);
   let confirmerSuppression = $state(false);
+  let ref = $state({ ftp: 0, hrMax: 0 }); // FTP et FC max du profil : servent à traduire les % en watts et en bpm
+  let avecStructure = $state(false);
 
-  // À chaque ouverture : on repart d'un formulaire propre (celui de la séance, ou vide)
+  // À chaque ouverture : on repart d'un formulaire propre (celui de la séance, ou vide).
+  // L'effet ne dépend que de l'ouverture et de la séance visée : le reste est isolé par untrack,
+  // sinon chaque modification d'un bloc relancerait l'effet et effacerait la saisie.
   $effect(() => {
     if (!ouvert) return;
-    f = seance ? formulaireDepuisLigne(seance) : formulaireVide(dateInitiale);
-    erreurs = {};
-    erreurGlobale = '';
-    envoi = false;
-    confirmerSuppression = false;
+    const cible = seance;
+    const jour = dateInitiale;
+    untrack(() => {
+      f = cible ? formulaireDepuisLigne(cible) : formulaireVide(jour);
+      erreurs = {};
+      erreurGlobale = '';
+      envoi = false;
+      confirmerSuppression = false;
+      avecStructure = f.structure.length > 0;
+      chargerReference();
+    });
   });
 
+  async function chargerReference() {
+    const p = demo ? donneesDemo().profil : userId ? (await chargerProfil(userId)).data : null;
+    ref = { ftp: Number(p?.ftp) || 0, hrMax: Number(p?.hr_max) || 0 };
+  }
+
   const nomSport = (type) => (SPORTS[familleAffichage(type)] || SPORTS.autre).nom;
+  const peutStructurer = $derived(sportAvecStructure(f.sport));
+  const structureActive = $derived(peutStructurer && avecStructure && f.structure.length > 0);
   const tssEstime = $derived(estimerTss(Number(f.duree), Number(f.rpe) || null));
 
   async function enregistrer(e) {
     e.preventDefault();
     if (envoi) return;
-    const { valeurs, erreurs: e2 } = validerPrevue(f);
+    const { valeurs, erreurs: e2 } = validerPrevue(f, ref);
     erreurs = e2;
     erreurGlobale = '';
     if (!valeurs) return;
@@ -86,15 +107,37 @@
       {#if erreurs.sport}<span class="erreur" role="alert">{erreurs.sport}</span>{/if}
     </div>
 
-    <div class="ligne">
-      <Champ id="prevue-duree" label="Durée (min)" inputmode="numeric" bind:valeur={f.duree} erreur={erreurs.duree} />
-      <Champ id="prevue-rpe" label="Effort ressenti (1 à 10)" inputmode="numeric" bind:valeur={f.rpe} erreur={erreurs.rpe} />
-    </div>
+    {#if peutStructurer}
+      <section class="structure" aria-label="Structure de la séance">
+        {#if avecStructure}
+          <div class="entete-structure">
+            <h3 class="titre">Structure</h3>
+            <Bouton variante="texte" onclick={() => { avecStructure = false; f.structure = []; }}>Retirer la structure</Bouton>
+          </div>
+          <EditeurStructure bind:blocs={f.structure} sport={f.sport} {ref} couleur={couleurSport(familleAffichage(f.sport))} />
+          {#if structureActive}<p class="aide">Durée et charge sont calculées à partir des blocs.</p>{/if}
+        {:else}
+          <Bouton variante="discret" onclick={() => (avecStructure = true)}>Construire la séance par blocs</Bouton>
+        {/if}
+      </section>
+    {/if}
 
-    <div class="ligne">
-      <Champ id="prevue-tss" label="Charge (TSS)" inputmode="numeric" placeholder="auto : {tssEstime}" bind:valeur={f.tss} erreur={erreurs.tss} />
-      <Champ id="prevue-km" label="Distance (km)" inputmode="decimal" bind:valeur={f.km} erreur={erreurs.km} />
-    </div>
+    {#if !structureActive}
+      <div class="ligne">
+        <Champ id="prevue-duree" label="Durée (min)" inputmode="numeric" bind:valeur={f.duree} erreur={erreurs.duree} />
+        <Champ id="prevue-rpe" label="Effort ressenti (1 à 10)" inputmode="numeric" bind:valeur={f.rpe} erreur={erreurs.rpe} />
+      </div>
+
+      <div class="ligne">
+        <Champ id="prevue-tss" label="Charge (TSS)" inputmode="numeric" placeholder="auto : {tssEstime}" bind:valeur={f.tss} erreur={erreurs.tss} />
+        <Champ id="prevue-km" label="Distance (km)" inputmode="decimal" bind:valeur={f.km} erreur={erreurs.km} />
+      </div>
+    {:else}
+      <div class="ligne">
+        <Champ id="prevue-rpe" label="Effort ressenti (1 à 10)" inputmode="numeric" bind:valeur={f.rpe} erreur={erreurs.rpe} />
+        <Champ id="prevue-km" label="Distance (km)" inputmode="decimal" bind:valeur={f.km} erreur={erreurs.km} />
+      </div>
+    {/if}
 
     <Champ id="prevue-dplus" label="Dénivelé + (m)" inputmode="numeric" bind:valeur={f.dPlus} erreur={erreurs.dPlus} />
 
@@ -176,6 +219,27 @@
   .erreur {
     font-size: 13px;
     color: var(--danger);
+  }
+  .structure {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--trait);
+    border-radius: var(--rayon-l);
+  }
+  .entete-structure {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .entete-structure h3 {
+    font-size: 17px;
+  }
+  .aide {
+    font-size: 13px;
+    color: var(--texte-doux);
   }
   .global {
     padding: 10px 14px;
