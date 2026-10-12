@@ -1,6 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import Bloc from '../components/Bloc.svelte';
+  import LogoApp from '../components/LogoApp.svelte';
   import Bouton from '../components/Bouton.svelte';
   import { auth } from '../stores/auth.svelte.js';
   import { retourStrava, effacerRetour } from '../stores/connexions.svelte.js';
@@ -123,8 +123,12 @@
   {:else if etat.erreur}
     <p class="alerte" role="alert">{etat.erreur}</p>
   {:else}
-    <Bloc titre="Strava">
+  <div class="grille">
+    <article class="case">
+      <div class="logo strava"><LogoApp app="strava" /></div>
+      <div class="corps">
       <div class="entete-carte">
+        <h2 class="titre">Strava</h2>
         <span class="pastille {statutS.cle}">{statutS.texte}</span>
       </div>
       <p class="detail">{detailStrava(etat.strava, etat.nbActivites)}</p>
@@ -172,10 +176,14 @@
 
       {#if erreurStrava}<p class="erreur" role="alert">{erreurStrava}</p>{/if}
       {#if infoStrava}<p class="succes" role="status">{infoStrava}</p>{/if}
-    </Bloc>
+      </div>
+    </article>
 
-    <Bloc titre="Garmin">
+    <article class="case">
+      <div class="logo garmin"><LogoApp app="garmin" /></div>
+      <div class="corps">
       <div class="entete-carte">
+        <h2 class="titre">Garmin</h2>
         <span class="pastille {statutG.cle}">{statutG.texte}</span>
       </div>
       <p class="detail">{detailGarmin(etat.garmin, etat.nbNuits)}</p>
@@ -187,7 +195,20 @@
         <p class="aide">Garmin n'a pas de connexion publique : la synchro passe par ton Raspberry Pi. Voir <code>tools/garmin_auth.py</code> pour la configurer.</p>
       {/if}
       {#if garmin.texte}<p class={garmin.erreur ? 'erreur' : 'succes'} role="status" aria-live="polite">{garmin.texte}</p>{/if}
-    </Bloc>
+      </div>
+    </article>
+
+    <article class="case a-venir">
+      <div class="logo opendossard"><LogoApp app="opendossard" /></div>
+      <div class="corps">
+        <div class="entete-carte">
+          <h2 class="titre">Open Dossard</h2>
+          <span class="pastille non">Bientôt</span>
+        </div>
+        <p class="detail">Importe ton palmarès et tes résultats officiels (FSGT, UFOLEP…). Cette connexion arrivera avec les compétitions.</p>
+      </div>
+    </article>
+  </div>
 
     <p class="pied">Tes jetons d'accès restent stockés côté serveur et ne sont jamais affichés ici.</p>
   {/if}
@@ -209,8 +230,53 @@
     background: var(--surface);
     font-size: 14px;
   }
+  .grille {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+  .case {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--surface);
+    border-radius: var(--rayon);
+  }
+  /* Le logo de l'app occupe le haut de la case, sur la couleur de sa marque */
+  .logo {
+    display: grid;
+    place-items: center;
+    height: 132px;
+  }
+  .logo.strava {
+    background: #fc4c02;
+    color: #fff;
+  }
+  .logo.garmin {
+    background: #f3f2ee; /* fond clair fixe : le logo Garmin est noir, il doit rester lisible en thème clair comme en sombre */
+    color: #000;
+  }
+  .logo.opendossard {
+    background: var(--surface-2);
+    color: var(--texte-doux);
+  }
+  .corps {
+    padding: 20px 22px 24px;
+  }
+  .a-venir {
+    opacity: 0.75;
+  }
   .entete-carte {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 12px;
     margin-bottom: 8px;
+  }
+  .entete-carte h2 {
+    font-size: 24px;
   }
   .pastille {
     display: inline-block;
