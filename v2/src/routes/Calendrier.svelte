@@ -328,8 +328,10 @@
   }
   .droite {
     display: flex;
+    flex-wrap: wrap; /* les boutons passent à la ligne sur téléphone au lieu de déborder */
     align-items: center;
-    gap: 14px;
+    gap: 8px 14px;
+    min-width: 0;
   }
   .resume {
     font-size: 14px;

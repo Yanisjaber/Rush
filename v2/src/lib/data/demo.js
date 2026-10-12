@@ -38,6 +38,7 @@ export function donneesDemo(aujourdhui = new Date()) {
       distance_km: distance ? Math.round(distance * variation * 100) / 100 : null,
       total_elevation_gain: m.sport === 'WeightTraining' ? null : Math.round(40 + ((i * 17) % 200)),
       avg_heartrate: 142 + ((i * 3) % 18),
+      ftp_at_time: m.sport === 'Ride' ? 250 : null,
       avg_watts: m.sport === 'Ride' ? 135 + ((i * 5) % 40) : null,
       np: m.sport === 'Ride' ? 142 + ((i * 7) % 40) : null,
       tss,
@@ -266,4 +267,24 @@ export function modelesDemo() {
     { id: 'demo-m3', sport: 'course', sport_raw: 'Run', name: 'Footing facile', duration_min: 50, tss: 40, description: 'Aisance respiratoire.', rpe: 3, distance_km: 9, dplus: null, structure: null },
     { id: 'demo-m4', sport: 'musculation', sport_raw: 'WeightTraining', name: 'Haut du corps', duration_min: 60, tss: 45, description: null, rpe: 6, distance_km: null, dplus: null, structure: null },
   ];
+}
+
+/** Séance prévue d'exemple pour la démo de « Prévu contre réalisé » (sortie vélo : 4×4 min). */
+export function prevueDemo(seance) {
+  const jour = String(seance.start_date_local).slice(0, 10);
+  return {
+    id: 'demo-prevue',
+    name: 'Séance VO2 : 4×4 min',
+    date: jour,
+    sport: 'Ride',
+    duration: 60,
+    tss: 58,
+    km: null,
+    category: 'entrainement',
+    structure: [
+      { type: 'warmup', name: 'Échauffement', reps: 1, metric: 'power', unit: 'zone', work: { min: 12, int: 45, intHi: 55 } },
+      { type: 'interval', name: '4×4 VO2', reps: 4, metric: 'power', unit: 'zone', work: { min: 4, int: 106, intHi: 120 }, rec: { min: 3, int: 40, intHi: 55 } },
+      { type: 'cooldown', name: 'Retour au calme', reps: 1, metric: 'power', unit: 'zone', work: { min: 8, int: 40, intHi: 55 } },
+    ],
+  };
 }

@@ -124,7 +124,7 @@ export async function chargerPlanifiees(userId, debutIso, finIso) {
 const COLONNES_DETAIL =
   'id,name,sport,start_date_local,elapsed_time,moving_time,distance_km,total_elevation_gain,avg_speed_kmh,max_speed_kmh,' +
   'avg_heartrate,max_heartrate,avg_watts,max_watts,np,intensity,ftp_at_time,avg_cadence,kj,calories,tss,variability_index,' +
-  'has_heartrate,has_power,user_notes,category';
+  'has_heartrate,has_power,user_notes,category,planned_id';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -410,4 +410,29 @@ export async function creerModele(userId, ligne) {
 export async function supprimerModele(userId, id) {
   const r = await sb.from('activity_template').delete().eq('id', id).eq('user_id', userId);
   return resultat(r, 'Impossible de supprimer le modèle.');
+}
+
+// ---------------------------------------------------------------------------
+// Lien prévu / réalisé (colonne activities.planned_id)
+// ---------------------------------------------------------------------------
+
+/** Séance prévue (avec sa structure) d'après son identifiant. Un identifiant qui n'est pas un UUID n'existe pas. */
+export async function chargerPlanifieeParId(userId, id) {
+  if (!UUID.test(String(id))) return { data: null, erreur: '' };
+  const r = await sb.from('activity_planned').select('id,name,date,sport,duration,tss,km,rpe,structure,category').eq('user_id', userId).eq('id', id).maybeSingle();
+  return resultat(r, 'Impossible de charger la séance prévue.');
+}
+
+/** Séances prévues d'un jour (pour proposer un rapprochement avec une sortie). */
+export async function chargerPlanifieesDuJour(userId, dateIso) {
+  const r = await sb.from('activity_planned').select('id,name,date,sport,duration,tss,km,structure,category').eq('user_id', userId).eq('date', dateIso).limit(20);
+  return resultat(r, 'Impossible de charger les séances prévues de ce jour.');
+}
+
+/** Relie une sortie à une séance prévue (uuid), ou la délie ('none'). N'écrit que sur une activité de l'utilisateur. */
+export async function lierPrevu(userId, activiteId, valeur) {
+  if (valeur !== 'none' && !UUID.test(String(valeur))) return { data: null, erreur: 'Séance prévue invalide.' };
+  const r = await sb.from('activities').update({ planned_id: valeur }).eq('id', activiteId).eq('user_id', userId).select('id,planned_id').maybeSingle();
+  if (!r.error && !r.data) return { data: null, erreur: 'Sortie introuvable.' };
+  return resultat(r, 'Impossible de modifier le lien.');
 }

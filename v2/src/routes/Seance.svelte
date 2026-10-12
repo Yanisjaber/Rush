@@ -4,9 +4,11 @@
   import Bloc from '../lib/components/Bloc.svelte';
   import StatCle from '../lib/components/StatCle.svelte';
   import GraphiqueStream from '../lib/components/charts/GraphiqueStream.svelte';
+  import PrevuReel from '../lib/components/PrevuReel.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
-  import { chargerSeance, chargerStreams, chargerProfil } from '../lib/data/api.js';
-  import { donneesDemo, streamsDemo } from '../lib/data/demo.js';
+  import { chargerSeance, chargerStreams, chargerProfil, chargerPlanifieeParId, chargerPlanifieesDuJour, lierPrevu } from '../lib/data/api.js';
+  import { estLien, candidates as trouverCandidates } from '../lib/data/adherence.js';
+  import { donneesDemo, streamsDemo, prevueDemo } from '../lib/data/demo.js';
   import { chargeSeance } from '../lib/data/synthese.js';
   import { familleAffichage } from '../lib/data/familles.js';
   import { extraireStream, reduire, tempsParZone, ZONES_PUISSANCE, ZONES_CARDIO } from '../lib/data/streams.js';
@@ -15,7 +17,7 @@
 
   let { id, demo = false } = $props();
 
-  let etat = $state({ chargement: true, erreur: '', seance: null, profil: null, streams: null, streamsEtat: 'attente', erreurStreams: '' });
+  let etat = $state({ chargement: true, erreur: '', seance: null, profil: null, streams: null, streamsEtat: 'attente', erreurStreams: '', prevue: null, candidates: [], erreurLien: '', envoiLien: false });
   let curseur = $state(null);
   let numeroRequete = 0;
 
@@ -25,6 +27,9 @@
     etat.erreur = '';
     etat.streams = null;
     etat.streamsEtat = 'attente';
+    etat.prevue = null;
+    etat.candidates = [];
+    etat.erreurLien = '';
     curseur = null;
 
     if (demo) {
@@ -35,6 +40,7 @@
       etat.erreur = seance ? '' : 'Séance introuvable.';
       etat.chargement = false;
       if (seance) {
+        if (seance.sport === 'Ride') etat.prevue = prevueDemo(seance); // démo : les sorties vélo ont une séance prévue liée
         const streams = streamsDemo(seance);
         etat.streams = streams;
         etat.streamsEtat = streams ? 'ok' : 'absent';
@@ -50,6 +56,7 @@
     etat.erreur = s.erreur;
     etat.chargement = false;
     if (!s.data) return;
+    chercherPrevue(userId, s.data, numero);
 
     // Les courbes sont lourdes : on les charge après l'affichage de la séance
     etat.streamsEtat = 'chargement';
@@ -58,6 +65,32 @@
     etat.streams = r.data;
     etat.erreurStreams = r.erreur;
     etat.streamsEtat = r.erreur ? 'erreur' : r.data ? 'ok' : 'absent';
+  }
+
+  // Séance prévue liée à la sortie (planned_id), ou séances prévues du même jour à proposer
+  async function chercherPrevue(userId, sortie, numero) {
+    if (estLien(sortie.planned_id)) {
+      const r = await chargerPlanifieeParId(userId, sortie.planned_id);
+      if (numero === numeroRequete) etat.prevue = r.data;
+    } else if (sortie.planned_id !== 'none') {
+      const r = await chargerPlanifieesDuJour(userId, String(sortie.start_date_local).slice(0, 10));
+      if (numero === numeroRequete) etat.candidates = trouverCandidates(r.data, sortie, familleAffichage);
+    }
+  }
+  async function changerLien(valeur, prevue = null) {
+    if (etat.envoiLien) return;
+    etat.erreurLien = '';
+    etat.envoiLien = true;
+    const r = demo ? { erreur: '' } : await lierPrevu(userId, id, valeur);
+    etat.envoiLien = false;
+    if (r.erreur) return (etat.erreurLien = r.erreur);
+    if (valeur === 'none') {
+      etat.candidates = etat.prevue ? [etat.prevue] : [];
+      etat.prevue = null;
+    } else {
+      etat.prevue = prevue;
+      etat.candidates = [];
+    }
   }
 
   const userId = $derived(demo ? 'demo' : auth.session?.user?.id);
@@ -145,6 +178,19 @@
         {/each}
       </div>
     </Bloc>
+
+    <PrevuReel
+      prevue={etat.prevue}
+      candidates={etat.candidates}
+      seance={s}
+      charge={chargeSeance(s)}
+      {watts}
+      {ftp}
+      erreur={etat.erreurLien}
+      envoi={etat.envoiLien}
+      onlier={(pid) => changerLien(pid, etat.candidates.find((c) => c.id === pid))}
+      odelier={() => changerLien('none')}
+    />
 
     {#if etat.streamsEtat === 'chargement'}
       <p class="info" role="status">Chargement des courbes…</p>
