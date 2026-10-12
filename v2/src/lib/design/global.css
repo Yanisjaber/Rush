@@ -81,12 +81,12 @@ textarea {
 
 /* Mise en page commune à toutes les pages : une seule largeur, donc l'en-tête ne saute plus d'une page à l'autre.
    Tout varie en continu avec l'écran, sans palier :
-   - marges : 2,2 % de la largeur de l'écran, entre 16 px (téléphone) et 64 px (écran géant)
-   - largeur de la page : au moins 1360 px, puis 88 % de l'écran quand il est plus large
+   - marges : 1,2 % de la largeur de l'écran, entre 12 px (téléphone) et 32 px (écran géant)
+   - largeur de la page : au moins 1360 px, puis 96 % de l'écran quand il est plus large
      (donc 1360 px jusque vers 1550 px, puis elle s'étend à mesure que l'écran grandit ; les widgets passent à plus de colonnes) */
 :root {
-  --page-max: max(1360px, 88vw);
-  --gouttiere: clamp(16px, 2.2vw, 64px);
+  --page-max: max(1360px, 96vw);
+  --gouttiere: clamp(12px, 1.2vw, 32px);
 }
 .page {
   box-sizing: border-box;
