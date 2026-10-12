@@ -4,7 +4,6 @@ import { SECTIONS, sectionParId, champsDe, valeursDepuis, validerSection, versPa
 
 const identite = sectionParId('identite');
 const physio = sectionParId('physiologie');
-const records = sectionParId('records');
 
 test('chaque champ a une clé unique par section et un type connu', () => {
   const types = new Set(['texte', 'nombre', 'date', 'choix', 'case', 'temps', 'paragraphe']);
@@ -43,8 +42,9 @@ test('validerSection : temps au bon format, cases, champs vides = null', () => {
   assert.deepEqual(ok.erreurs, {});
   assert.equal(ok.propres.ftp, 250);
   assert.equal(ok.propres.lthr, null);
-  assert.equal(validerSection(sectionParId('sports'), { sec_gym: true }).propres.sec_gym, true);
-  assert.equal(validerSection(sectionParId('sports'), {}).propres.sec_ski, false);
+  const fictive = { groupes: [{ champs: [{ cle: 'a', label: 'A', type: 'case' }] }] };
+  assert.equal(validerSection(fictive, { a: true }).propres.a, true);
+  assert.equal(validerSection(fictive, {}).propres.a, false);
 });
 
 test('versPayload : colonnes séparées des extras, extras des autres sections conservés', () => {
@@ -56,8 +56,8 @@ test('versPayload : colonnes séparées des extras, extras des autres sections c
   assert.equal(extras.city, 'Toulouse'); // autre section : intact
   assert.equal(extras.pr_p_5s, 900);
   assert.ok(!('ftp' in extras));
-  const { colonnes: c2 } = versPayload(records, validerSection(records, { pr_p_5s: '1000' }).propres, {});
-  assert.deepEqual(c2, {});
+  const { colonnes: c2 } = versPayload(identite, validerSection(identite, { display_name: 'Yanis', city: 'Toulouse' }).propres, {});
+  assert.deepEqual(Object.keys(c2).sort(), ['display_name', 'weight']);
 });
 
 test('zones : puissance (FTP 250), allure avec min/km, référence absente = null', () => {

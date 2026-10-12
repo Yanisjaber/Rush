@@ -13,12 +13,12 @@
   let { demo = false } = $props();
 
   // Sections éditables (les zones sont affichées à part : elles sont calculées, pas saisies)
-  const ORDRE = ['identite', 'sports', 'physiologie', 'zones', 'records'];
-  const TITRES = { identite: 'Identité', sports: 'Sports et niveau', physiologie: 'Physiologie', zones: 'Zones', records: 'Records' };
+  const ORDRE = ['identite', 'physiologie', 'zones'];
+  const TITRES = { identite: 'Identité', physiologie: 'Physiologie', zones: 'Zones' };
 
   let etat = $state({ chargement: true, erreur: '' });
   let ligne = $state(null); // ligne user_profiles telle qu'enregistrée (colonnes + extras)
-  let courbe = $state([]); // courbe de puissance mesurée (aide : FTP estimée, records mesurés)
+  let courbe = $state([]); // courbe de puissance mesurée (sert à estimer la FTP)
   let valeurs = $state({}); // { idSection: { cle: valeur } } : ce qui est tapé dans les formulaires
   let initial = $state({}); // { idSection: JSON } : valeurs au dernier enregistrement (pour savoir ce qui a changé)
   let erreurs = $state({});
@@ -101,17 +101,7 @@
     ...(!ftp && ftpEstimee ? { ftp: { texte: `Estimée à partir de tes sorties : ~${ftpEstimee} W.`, bouton: 'Utiliser', onbouton: () => (valeurs.physiologie.ftp = String(ftpEstimee)) } } : {}),
     ...(!lthr && lthrEstimee ? { lthr: { texte: `Estimée (92 % de ta FC max) : ~${lthrEstimee} bpm.`, bouton: 'Utiliser', onbouton: () => (valeurs.physiologie.lthr = String(lthrEstimee)) } } : {}),
   });
-  // Records de puissance mesurés dans tes sorties, en regard des valeurs saisies
-  const DUREES_RECORDS = { pr_p_5s: 5, pr_p_30s: 30, pr_p_1m: 60, pr_p_5m: 300, pr_p_20m: 1200, pr_p_60m: 3600 };
-  const aidesRecords = $derived(
-    Object.fromEntries(
-      Object.entries(DUREES_RECORDS)
-        .map(([cle, d]) => [cle, courbe.find((l) => Number(l.duration_s) === d)])
-        .filter(([, l]) => l && Number(l.watts_alltime) > 0)
-        .map(([cle, l]) => [cle, { texte: `Mesuré dans tes sorties : ${Math.round(l.watts_alltime)} W.`, bouton: 'Utiliser', onbouton: () => (valeurs.records[cle] = String(Math.round(l.watts_alltime))) }]),
-    ),
-  );
-  const aides = $derived({ identite: aidesIdentite, sports: {}, physiologie: aidesPhysio, records: aidesRecords });
+  const aides = $derived({ identite: aidesIdentite, physiologie: aidesPhysio });
 
   // Remplissage du profil : champs renseignés / champs proposés
   const remplissage = $derived.by(() => {

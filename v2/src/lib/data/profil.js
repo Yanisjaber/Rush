@@ -15,17 +15,6 @@ const temps = (cle, label, exemple) => ({ cle, label, type: 'temps', exemple });
 const choix = (cle, label, options) => ({ cle, label, type: 'choix', options });
 const colonne = (champ) => ({ ...champ, colonne: true });
 
-const SPORTS_PRINCIPAUX = [
-  ['cycling_road', 'Cyclisme route'], ['cycling_gravel', 'Gravel'], ['cycling_mtb', 'VTT (XC / Enduro / DH)'],
-  ['cycling_tt', 'Contre-la-montre / Tri-bike'], ['cycling_track', 'Piste'], ['running_road', 'Course route'],
-  ['running_trail', 'Trail'], ['ultra', 'Ultra-endurance'], ['swimming', 'Natation'], ['triathlon', 'Triathlon'],
-  ['duathlon', 'Duathlon'], ['other', 'Autre'],
-];
-const SPORTS_SECONDAIRES = [
-  ['sec_cycling', 'Cyclisme'], ['sec_running', 'Course'], ['sec_swimming', 'Natation'], ['sec_mtb', 'VTT'],
-  ['sec_trail', 'Trail'], ['sec_gym', 'Renforcement / muscu'], ['sec_yoga', 'Yoga / mobilité'], ['sec_ski', 'Ski / ski-alpinisme'],
-];
-
 export const SECTIONS = [
   {
     id: 'identite',
@@ -44,23 +33,6 @@ export const SECTIONS = [
         ],
       },
       { champs: [{ cle: 'bio', label: 'À propos de toi', type: 'paragraphe', max: 500 }] },
-    ],
-  },
-  {
-    id: 'sports',
-    titre: 'Sports et niveau',
-    groupes: [
-      {
-        champs: [
-          choix('main_sport', 'Sport principal', SPORTS_PRINCIPAUX),
-          t('speciality', 'Spécialité', 100, 'Grimpeur, sprinter, marathonien…'),
-          n('years_practice', 'Années de pratique', 0, 80, 1, 'ans'),
-          choix('level', 'Niveau', [['1', 'Débutant'], ['2', 'Loisir confirmé'], ['3', 'Compétiteur amateur'], ['4', 'Compétiteur régional / national'], ['5', 'Élite']]),
-          t('age_category', 'Catégorie d’âge', 40, 'Senior, Master 2…'),
-          t('club', 'Club ou équipe', 120),
-        ],
-      },
-      { titre: 'Sports secondaires', champs: SPORTS_SECONDAIRES.map(([cle, label]) => ({ cle, label, type: 'case' })) },
     ],
   },
   {
@@ -113,36 +85,6 @@ export const SECTIONS = [
           temps('swim_1500', 'Record 1500 m', '25:00'),
           temps('swim_3800', 'Record 3800 m', '1:08:00'),
         ],
-      },
-    ],
-  },
-  {
-    id: 'records',
-    titre: 'Records personnels',
-    groupes: [
-      {
-        titre: 'Puissance vélo',
-        champs: [
-          n('pr_p_5s', '5 s', 0, 2500, 1, 'W'), n('pr_p_30s', '30 s', 0, 2000, 1, 'W'), n('pr_p_1m', '1 min', 0, 1500, 1, 'W'),
-          n('pr_p_5m', '5 min', 0, 800, 1, 'W'), n('pr_p_8m', '8 min', 0, 700, 1, 'W'), n('pr_p_20m', '20 min', 0, 600, 1, 'W'),
-          n('pr_p_60m', '60 min', 0, 500, 1, 'W'), n('pr_p_max', 'Sprint max', 0, 2500, 1, 'W'),
-        ],
-      },
-      {
-        titre: 'Vélo : distance et dénivelé',
-        champs: [n('pr_longest_ride', 'Plus longue sortie', 0, 2000, 1, 'km'), n('pr_max_elev', 'Plus gros dénivelé', 0, 20000, 50, 'm'), n('pr_max_speed', 'Vitesse max', 0, 150, 0.1, 'km/h')],
-      },
-      {
-        titre: 'Course à pied',
-        champs: [
-          temps('pr_r_5k', '5 km', '22:30'), temps('pr_r_10k', '10 km', '46:00'), temps('pr_r_half', 'Semi', '1:42:00'),
-          temps('pr_r_marathon', 'Marathon', '3:35:00'), temps('pr_r_50k', '50 km'), temps('pr_r_100k', '100 km'),
-          n('pr_r_trail_d', 'D+ max en trail', 0, 20000, 50, 'm'), n('pr_r_longest', 'Plus longue course', 0, 500, 0.5, 'km'),
-        ],
-      },
-      {
-        titre: 'Triathlon',
-        champs: [temps('pr_tri_sprint', 'Sprint', '1:10:00'), temps('pr_tri_m', 'Olympique (M)', '2:25:00'), temps('pr_tri_half', 'Half (70.3)', '5:30:00'), temps('pr_tri_full', 'Full (140.6)', '11:00:00')],
       },
     ],
   },
