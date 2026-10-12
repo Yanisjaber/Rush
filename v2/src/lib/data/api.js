@@ -200,3 +200,30 @@ export async function supprimerPlanifiee(userId, id) {
   const r = await sb.from('activity_planned').delete().eq('id', id).eq('user_id', userId);
   return resultat(r, 'Impossible de supprimer la séance.');
 }
+
+// ---------------------------------------------------------------------------
+// Profil complet (page Profil) : colonnes + extras (JSON)
+// ---------------------------------------------------------------------------
+
+const COLONNES_PROFIL_COMPLET = 'display_name,weight,ftp,hr_max,lthr,extras';
+
+/** Profil complet de l'utilisateur (colonnes et extras). `data` vaut null si aucune ligne n'existe encore. */
+export async function chargerProfilComplet(userId) {
+  const r = await sb.from('user_profiles').select(COLONNES_PROFIL_COMPLET).eq('user_id', userId).maybeSingle();
+  return resultat(r, 'Impossible de charger ton profil.');
+}
+
+/**
+ * Enregistre une section du profil. `colonnes` : colonnes à mettre à jour ; `extras` : objet COMPLET (les clés des autres
+ * sections sont déjà conservées par versPayload). Met à jour la ligne de l'utilisateur, jamais celle d'un autre.
+ */
+export async function enregistrerProfil(userId, colonnes, extras) {
+  const r = await sb
+    .from('user_profiles')
+    .update({ ...colonnes, extras, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .select(COLONNES_PROFIL_COMPLET)
+    .maybeSingle();
+  if (!r.error && !r.data) return { data: null, erreur: 'Profil introuvable : reconnecte-toi puis réessaie.' };
+  return resultat(r, "Impossible d'enregistrer ton profil.");
+}
