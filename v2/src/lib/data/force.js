@@ -298,3 +298,59 @@ export function ligneSeanceForce(v) {
 export function lignesSeries(v) {
   return v.series.map((s) => ({ ...s, date: v.date }));
 }
+
+// ---------------------------------------------------------------------------
+// Programmes : formulaire et validation
+// ---------------------------------------------------------------------------
+
+export const LIMITES_PROGRAMME = { nom: 60, exercices: 30, series: 20, reps: 100, poids: 1000, notes: 500 };
+
+/** Formulaire de programme vide. */
+export function formulaireProgrammeVide() {
+  return { nom: '', notes: '', exercices: [] };
+}
+
+/** Formulaire prérempli depuis une ligne strength_programs (valeurs en texte, comme des champs de formulaire). */
+export function formulaireProgramme(prog) {
+  return {
+    nom: prog.name || '',
+    notes: prog.notes || '',
+    exercices: (Array.isArray(prog.exercises) ? prog.exercises : []).map((e) => ({
+      cle: e.key,
+      nom: e.name,
+      groupe: groupeValide(e.group) ? e.group : 'tronc',
+      sets: String(e.sets ?? 3),
+      reps: String(e.reps ?? 8),
+      weight: e.weight ? String(e.weight) : '',
+    })),
+  };
+}
+
+/** Exercice du programme à partir d'un exercice de la bibliothèque. */
+export function exerciceDeProgramme(exo) {
+  return { cle: exo.cle, nom: exo.nom, groupe: exo.groupe, sets: '3', reps: '8', weight: '' };
+}
+
+/** Valide un programme. Renvoie { valeurs: { name, exercises, notes }, erreurs } (valeurs = null en cas d'erreur). */
+export function validerProgramme(f) {
+  const erreurs = {};
+  const nom = String(f.nom || '').trim();
+  if (!nom) erreurs.nom = 'Donne un nom au programme (Push, Pull, Legs…).';
+  else if (nom.length > LIMITES_PROGRAMME.nom) erreurs.nom = `${LIMITES_PROGRAMME.nom} caractères maximum.`;
+  const notes = String(f.notes || '').trim();
+  if (notes.length > LIMITES_PROGRAMME.notes) erreurs.notes = `${LIMITES_PROGRAMME.notes} caractères maximum.`;
+  if (!f.exercices.length) erreurs.exercices = 'Ajoute au moins un exercice.';
+  else if (f.exercices.length > LIMITES_PROGRAMME.exercices) erreurs.exercices = `${LIMITES_PROGRAMME.exercices} exercices maximum.`;
+  const exercices = [];
+  for (const e of f.exercices.slice(0, LIMITES_PROGRAMME.exercices)) {
+    const sets = entier(e.sets);
+    const reps = entier(e.reps);
+    const poids = String(e.weight).trim() === '' ? 0 : decimal(e.weight);
+    if (!(sets >= 1 && sets <= LIMITES_PROGRAMME.series)) erreurs.exercices = `« ${e.nom} » : séries entre 1 et ${LIMITES_PROGRAMME.series}.`;
+    else if (!(reps >= 1 && reps <= LIMITES_PROGRAMME.reps)) erreurs.exercices = `« ${e.nom} » : répétitions entre 1 et ${LIMITES_PROGRAMME.reps}.`;
+    else if (!(poids >= 0 && poids <= LIMITES_PROGRAMME.poids)) erreurs.exercices = `« ${e.nom} » : charge entre 0 et ${LIMITES_PROGRAMME.poids} kg.`;
+    else exercices.push({ key: e.cle, name: e.nom, group: groupeValide(e.groupe) ? e.groupe : 'tronc', sets, reps, weight: poids });
+  }
+  if (Object.keys(erreurs).length) return { valeurs: null, erreurs };
+  return { valeurs: { name: nom, exercises: exercices, notes: notes || null }, erreurs: {} };
+}

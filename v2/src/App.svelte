@@ -10,6 +10,9 @@
   import Competitions from './routes/Competitions.svelte';
   import Bilan from './routes/Bilan.svelte';
   import Plan from './routes/Plan.svelte';
+  import Force from './routes/Force.svelte';
+  import ForceSeance from './routes/ForceSeance.svelte';
+  import Hyrox from './routes/Hyrox.svelte';
   import PanneauSeance from './lib/components/PanneauSeance.svelte';
   import PanneauReel from './lib/components/PanneauReel.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
@@ -31,6 +34,17 @@
     const m = /^\/sommeil(?:\/([a-z]+))?$/.exec(route.chemin);
     if (!m) return null;
     return m[1] === 'graphiques' || m[1] === 'conseils' ? m[1] : 'apercu';
+  });
+
+  // Force : #/force, #/force/journal, #/force/exercices (pages) ; #/force/seance|apres/<programme|libre> et #/force/modifier/<id> (saisie d'une séance)
+  const forceOnglet = $derived.by(() => {
+    const m = /^\/force(?:\/(journal|exercices))?$/.exec(route.chemin);
+    return m ? m[1] || 'programmes' : null;
+  });
+  const forceSeance = $derived.by(() => {
+    const m = /^\/force\/(seance|apres|modifier)\/([A-Za-z0-9_-]{1,64})$/.exec(route.chemin);
+    if (!m) return null;
+    return { mode: m[1] === 'seance' ? 'direct' : m[1], cible: m[2] };
   });
 
   // Identifiant de séance dans l'adresse (#/seance/<id>) : on n'accepte que des caractères sûrs
@@ -61,6 +75,12 @@
     <Bilan demo={true} />
   {:else if route.chemin === '/plan'}
     <Plan demo={true} />
+  {:else if forceOnglet}
+    <Force demo={true} onglet={forceOnglet} />
+  {:else if forceSeance}
+    {#key route.chemin}<ForceSeance demo={true} mode={forceSeance.mode} cible={forceSeance.cible} />{/key}
+  {:else if route.chemin === '/hyrox'}
+    <Hyrox demo={true} />
   {:else if idSeance}
     <Seance id={idSeance} demo={true} />
   {:else}
@@ -82,6 +102,12 @@
   <Bilan />
 {:else if route.chemin === '/plan'}
   <Plan />
+{:else if forceOnglet}
+  <Force onglet={forceOnglet} />
+{:else if forceSeance}
+  {#key route.chemin}<ForceSeance mode={forceSeance.mode} cible={forceSeance.cible} />{/key}
+{:else if route.chemin === '/hyrox'}
+  <Hyrox />
 {:else if idSeance}
   <Seance id={idSeance} />
 {:else}

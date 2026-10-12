@@ -231,3 +231,37 @@ test('brouillon depuis une séance enregistrée : regroupe les séries par exerc
   assert.equal(b.exercices[0].series.length, 2);
   assert.ok(b.exercices[0].series.every((s) => s.fait));
 });
+
+import { formulaireProgrammeVide, formulaireProgramme, exerciceDeProgramme, validerProgramme } from '../src/lib/data/force.js';
+
+test('programme : formulaire ↔ ligne, aller-retour sans perte', () => {
+  const f = formulaireProgramme(PUSH);
+  assert.equal(f.nom, 'PUSH');
+  assert.equal(f.exercices[0].weight, '82.5');
+  assert.equal(f.exercices[1].weight, ''); // poids du corps
+  const { valeurs, erreurs } = validerProgramme(f);
+  assert.deepEqual(erreurs, {});
+  assert.deepEqual(valeurs.exercises, PUSH.exercises);
+  assert.equal(valeurs.notes, null);
+});
+
+test('programme : validation (nom, aucun exercice, valeurs hors limites, texte injecté gardé tel quel)', () => {
+  const f = formulaireProgrammeVide();
+  const e = validerProgramme(f).erreurs;
+  assert.ok(e.nom && e.exercices);
+  f.nom = '<img src=x onerror=alert(1)>'; // du texte : jamais interprété (Svelte échappe), et la base le stocke tel quel
+  f.exercices.push(exerciceDeProgramme(trouverExercice('squat')));
+  assert.equal(validerProgramme(f).valeurs.name, '<img src=x onerror=alert(1)>');
+  f.exercices[0].sets = '0';
+  assert.match(validerProgramme(f).erreurs.exercices, /séries/);
+  f.exercices[0].sets = '3';
+  f.exercices[0].reps = '500';
+  assert.match(validerProgramme(f).erreurs.exercices, /répétitions/);
+  f.exercices[0].reps = '5';
+  f.exercices[0].weight = '9999';
+  assert.match(validerProgramme(f).erreurs.exercices, /charge/);
+  f.exercices[0].weight = '120,5';
+  assert.equal(validerProgramme(f).valeurs.exercises[0].weight, 120.5);
+  f.nom = 'x'.repeat(61);
+  assert.ok(validerProgramme(f).erreurs.nom);
+});

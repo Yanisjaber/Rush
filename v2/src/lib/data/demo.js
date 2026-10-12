@@ -364,7 +364,7 @@ export function seriesForceDemo(aujourdhui = new Date()) {
   const programmes = PROGRAMMES_BASE;
   const lignes = [];
   for (const s of seances) {
-    if (s.sport !== 'WeightTraining' || !s.id.startsWith('demo-')) continue;
+    if (s.sport !== 'WeightTraining' || !/^demo-\d{4}-\d{2}-\d{2}$/.test(s.id)) continue; // séances d'exemple seulement
     const prog = programmes.find((p) => p.name === String(s.name).toUpperCase());
     if (!prog) continue;
     const date = s.start_date_local.slice(0, 10);
