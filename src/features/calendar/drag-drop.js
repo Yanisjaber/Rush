@@ -6,7 +6,7 @@ import { loadCompetitions, loadCompetitionsExpanded, renderCompList, renderCompe
 import { openSessionModal } from '../sessions/session-modal.js';
 import { enforceWtLabels } from './week-summary.js';
 import { toIsoDate } from '../dashboard/filters.js';
-import { openRestDayModal } from '../gpx/gpx-render.js';
+import { openRestDayModal } from '../sessions/activity-edit.js';
 
 
 // ============================================================

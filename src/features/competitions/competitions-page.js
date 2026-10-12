@@ -8,7 +8,7 @@ import { FEDERATIONS_BY_CAT, enhanceSelect } from './comp-modal-ui.js';
 import { PHASE_LABELS } from '../plan/week-plan.js';
 import { openSessionModal } from '../sessions/session-modal.js';
 import { openCompModalForEdit } from '../sessions/session-actions.js';
-import { setActivityCategory } from '../gpx/gpx-render.js';
+import { setActivityCategory } from '../sessions/activity-edit.js';
 import { removeCompFromDashboard } from './comp-form.js';
 import { escapeHtml } from '../../core/utils.js';
 

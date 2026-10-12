@@ -6,7 +6,7 @@ import { _clearAllFieldErrors, _markFieldError, adaptTrainSportForm, closeCompMo
 import { loadCompetitions, renderCompList, renderCompetitionsPage, saveCompetitions } from '../competitions/competitions-page.js';
 import { renderCalendar } from '../calendar/realise-calendar.js';
 import { closeSessionModal } from '../sessions/session-modal.js';
-import { setActivityCategory } from '../gpx/gpx-render.js';
+import { setActivityCategory } from '../sessions/activity-edit.js';
 
 
 // ============================================================

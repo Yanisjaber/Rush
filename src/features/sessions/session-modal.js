@@ -2,7 +2,9 @@
 import { appState } from '../../core/state.js';
 import { loadTrainings } from '../training/train-modal.js';
 import { getSportCategory, toIsoDate } from '../dashboard/filters.js';
-import { _injectRealisedStageTabs, buildRealisedDay, extractGpxStats, renderGpxElevationChart, renderGpxLeafletMap } from '../gpx/gpx-render.js';
+import { extractGpxStats, renderGpxElevationChart, renderGpxLeafletMap } from '../gpx/gpx-render.js';
+import { _injectRealisedStageTabs } from './stage-race.js';
+import { buildRealisedDay } from './realised-day.js';
 import { compPrio, fmtDur, trophySvg } from '../../core/format.js';
 import { compIsRealised, loadCompetitionsExpanded } from '../competitions/competitions-page.js';
 import { fmtMinToTime, parseTimeToMin } from '../competitions/comp-stages.js';

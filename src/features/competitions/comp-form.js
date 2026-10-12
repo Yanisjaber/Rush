@@ -4,7 +4,8 @@ import { getSportCategory, toIsoDate } from '../dashboard/filters.js';
 import { enhanceSelect, initFilePickers, initFlatpickrAll, populateFedSelectForSport, populateSportSelect, populateTypeSelectForSport, updateLapsVisibility } from './comp-modal-ui.js';
 import { _autofillKmDplusFromCompGpx, fmtMinToTime, parseTimeToMin, readFormToStage } from './comp-stages.js';
 import { loadCompetitions, renderCompList, saveCompetitions } from './competitions-page.js';
-import { _findActBySbId, setActivityCategory } from '../gpx/gpx-render.js';
+import { setActivityCategory } from '../sessions/activity-edit.js';
+import { _findActBySbId } from '../sessions/stage-race.js';
 import { renderCalendar } from '../calendar/realise-calendar.js';
 
 
