@@ -15,7 +15,6 @@
 create table if not exists public.user_profiles (
   user_id uuid references auth.users(id) on delete cascade primary key,
   display_name text,
-  app_mode text default 'manual' check (app_mode in ('ia', 'manual')),
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
