@@ -7,12 +7,19 @@
   import Calendrier from './routes/Calendrier.svelte';
   import Seance from './routes/Seance.svelte';
   import Sommeil from './routes/Sommeil.svelte';
-  import Profil from './routes/Profil.svelte';
   import PanneauSeance from './lib/components/PanneauSeance.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
   import { route, modeDemo } from './lib/routeur.svelte.js';
 
   const demo = modeDemo();
+
+  // Paramètres : #/parametres ou #/parametres/<onglet> (onglet inconnu = Général)
+  const ONGLETS = ['general', 'physiologie', 'zones', 'preferences'];
+  const paramOnglet = $derived.by(() => {
+    const m = /^\/parametres(?:\/([a-z]+))?$/.exec(route.chemin);
+    if (!m) return null;
+    return ONGLETS.includes(m[1]) ? m[1] : 'general';
+  });
 
   // Identifiant de séance dans l'adresse (#/seance/<id>) : on n'accepte que des caractères sûrs
   const idSeance = $derived.by(() => {
@@ -27,14 +34,12 @@
 {#if route.chemin === '/catalogue'}
   <Catalogue />
 {:else if demo}
-  {#if route.chemin === '/parametres'}
-    <Parametres demo={true} />
+  {#if paramOnglet}
+    <Parametres demo={true} onglet={paramOnglet} />
   {:else if route.chemin === '/calendrier'}
     <Calendrier demo={true} />
   {:else if route.chemin === '/sommeil'}
     <Sommeil demo={true} />
-  {:else if route.chemin === '/profil'}
-    <Profil demo={true} />
   {:else if idSeance}
     <Seance id={idSeance} demo={true} />
   {:else}
@@ -44,14 +49,12 @@
   <p class="attente" role="status">Chargement…</p>
 {:else if !auth.session}
   <Connexion />
-{:else if route.chemin === '/parametres'}
-  <Parametres />
+{:else if paramOnglet}
+  <Parametres onglet={paramOnglet} />
 {:else if route.chemin === '/calendrier'}
   <Calendrier />
 {:else if route.chemin === '/sommeil'}
   <Sommeil />
-{:else if route.chemin === '/profil'}
-  <Profil />
 {:else if idSeance}
   <Seance id={idSeance} />
 {:else}
