@@ -4,10 +4,12 @@
   import Bloc from '../lib/components/Bloc.svelte';
   import StatCle from '../lib/components/StatCle.svelte';
   import GraphiqueStream from '../lib/components/charts/GraphiqueStream.svelte';
+  import GraphiqueDouble from '../lib/components/charts/GraphiqueDouble.svelte';
+  import AnalyseSortie from '../lib/components/AnalyseSortie.svelte';
   import PrevuReel from '../lib/components/PrevuReel.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees, ouvrirModification } from '../lib/stores/edition.svelte.js';
-  import { chargerSeance, chargerStreams, chargerProfil, chargerPlanifieeParId, chargerPlanifieesDuJour, lierPrevu } from '../lib/data/api.js';
+  import { chargerSeance, chargerStreams, chargerProfil, chargerPuissance, chargerPlanifieeParId, chargerPlanifieesDuJour, lierPrevu } from '../lib/data/api.js';
   import { estLien, candidates as trouverCandidates } from '../lib/data/adherence.js';
   import { donneesDemo, streamsDemo, prevueDemo } from '../lib/data/demo.js';
   import { chargeSeance } from '../lib/data/synthese.js';
@@ -18,8 +20,9 @@
 
   let { id, demo = false } = $props();
 
-  let etat = $state({ chargement: true, erreur: '', seance: null, profil: null, streams: null, streamsEtat: 'attente', erreurStreams: '', prevue: null, candidates: [], erreurLien: '', envoiLien: false });
+  let etat = $state({ chargement: true, erreur: '', seance: null, profil: null, streams: null, streamsEtat: 'attente', erreurStreams: '', prevue: null, candidates: [], erreurLien: '', envoiLien: false, records: [] });
   let curseur = $state(null);
+  let superposer = $state(false); // un seul graphique avec la puissance et la FC superposées
   let numeroRequete = 0;
 
   async function charger(userId, idSeance) {
@@ -38,6 +41,7 @@
       const seance = d.seances.find((s) => s.id === idSeance) || null;
       etat.seance = seance;
       etat.profil = d.profil;
+      etat.records = d.puissance;
       etat.erreur = seance ? '' : 'Séance introuvable.';
       etat.chargement = false;
       if (seance) {
@@ -50,7 +54,8 @@
     }
     if (!userId) return;
 
-    const [s, p] = await Promise.all([chargerSeance(userId, idSeance), chargerProfil(userId)]);
+    const [s, p, rec] = await Promise.all([chargerSeance(userId, idSeance), chargerProfil(userId), chargerPuissance(userId)]);
+    etat.records = rec.data || [];
     if (numero !== numeroRequete) return;
     etat.seance = s.data;
     etat.profil = p.data;
@@ -206,13 +211,25 @@
         <Bloc titre="Courbes de la séance">
           {#snippet actions()}
             <span class="lecture" aria-live="off">{lectureCurseur || 'Survole un graphique pour voir un instant précis'}</span>
+            {#if wattsR.length && cardioR.length}
+              <button type="button" class="bascule" aria-pressed={superposer} onclick={() => (superposer = !superposer)}>Superposer puissance et FC</button>
+            {/if}
           {/snippet}
           <div class="pile">
-            {#if wattsR.length}
-              <GraphiqueStream titre="Puissance" valeurs={wattsR} {couleur} unite="W" {curseur} onsurvol={(i) => (curseur = i)} min={0} />
-            {/if}
-            {#if cardioR.length}
-              <GraphiqueStream titre="Fréquence cardiaque" valeurs={cardioR} couleur="var(--sport-muscu)" unite="bpm" {curseur} onsurvol={(i) => (curseur = i)} />
+            {#if superposer && wattsR.length && cardioR.length}
+              <GraphiqueDouble
+                a={{ titre: 'Puissance', valeurs: wattsR, couleur, unite: 'W' }}
+                b={{ titre: 'Fréquence cardiaque', valeurs: cardioR, couleur: 'var(--sport-muscu)', unite: 'bpm' }}
+                {curseur}
+                onsurvol={(i) => (curseur = i)}
+              />
+            {:else}
+              {#if wattsR.length}
+                <GraphiqueStream titre="Puissance" valeurs={wattsR} {couleur} unite="W" {curseur} onsurvol={(i) => (curseur = i)} min={0} />
+              {/if}
+              {#if cardioR.length}
+                <GraphiqueStream titre="Fréquence cardiaque" valeurs={cardioR} couleur="var(--sport-muscu)" unite="bpm" {curseur} onsurvol={(i) => (curseur = i)} />
+              {/if}
             {/if}
             {#if vitesseR.length}
               <GraphiqueStream titre="Vitesse" valeurs={vitesseR} {couleur} unite="km/h" formater={(v) => v.toFixed(1).replace('.', ',')} {curseur} onsurvol={(i) => (curseur = i)} min={0} />
@@ -251,6 +268,10 @@
           {/if}
         {/each}
       </div>
+
+      {#if watts?.length}
+        <AnalyseSortie {watts} {ftp} profil={etat.profil} records={etat.records} {curseur} onsurvol={(i) => (curseur = i)} {couleur} />
+      {/if}
     {/if}
   {/if}
 </div>
@@ -335,6 +356,26 @@
     display: flex;
     flex-wrap: wrap;
     gap: 24px 40px;
+  }
+  .bascule {
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1px solid var(--trait-fort);
+    border-radius: var(--rayon);
+    background: transparent;
+    color: var(--texte-doux);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .bascule[aria-pressed='true'] {
+    background: var(--texte);
+    border-color: var(--texte);
+    color: var(--fond);
+  }
+  .bascule:focus-visible {
+    outline: 2px solid var(--texte);
+    outline-offset: 2px;
   }
   .lecture {
     font-size: 13px;

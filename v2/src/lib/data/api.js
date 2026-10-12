@@ -15,7 +15,7 @@ const COLONNES_SEANCE =
   'id,strava_id,source,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,avg_heartrate,avg_watts,np,tss,category';
 const COLONNES_METRIQUES = 'iso_date,tss,ctl,atl,tsb,duration_min,activity_count';
 const COLONNES_OBJECTIF = 'id,name,date,sport,km,d_plus,priority,duration,category';
-const COLONNES_PROFIL = 'display_name,ftp,hr_max,lthr,weight';
+const COLONNES_PROFIL = 'display_name,ftp,hr_max,lthr,weight,extras';
 
 // Retouches de sorties (table activity_edits) : chargées une fois, puis réappliquées à toutes les sorties lues.
 // Si elles ne se chargent pas, on affiche les sorties telles quelles plutôt que de bloquer la page.
