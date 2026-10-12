@@ -152,3 +152,18 @@ export async function chargerStreams(userId, id) {
     return { data: null, erreur: 'Les courbes de cette séance sont illisibles.' };
   }
 }
+
+// Colonnes légères de garmin_sleep : on évite `segments` et `hr_stream` (gros JSON, inutiles pour la vue d'ensemble)
+const COLONNES_SOMMEIL =
+  'date,bedtime,wake_time,total_sec,deep_sec,light_sec,rem_sec,awake_sec,awake_count,avg_stress,avg_heart_rate,resting_heart_rate,body_battery_change,hrv_avg,hrv_status,spo2_avg,score,score_qualifier';
+
+/** Nuits Garmin des N derniers jours (la plus récente d'abord). */
+export async function chargerSommeil(userId, jours = 60) {
+  const r = await sb
+    .from('garmin_sleep')
+    .select(COLONNES_SOMMEIL)
+    .eq('user_id', userId)
+    .order('date', { ascending: false })
+    .limit(jours);
+  return resultat(r, 'Impossible de charger ton sommeil.');
+}
