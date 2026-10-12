@@ -1,5 +1,6 @@
 <script>
   import { untrack } from 'svelte';
+  import EnTete from '../lib/components/EnTete.svelte';
   import ChipSport from '../lib/components/ChipSport.svelte';
   import Bouton from '../lib/components/Bouton.svelte';
   import CadreEdition from '../lib/widgets/CadreEdition.svelte';
@@ -97,25 +98,13 @@
 </script>
 
 <div class="page">
-  <header class="barre">
-    <div class="gauche">
-      <span class="logo titre" aria-hidden="true">CI</span>
-      <nav class="puces" aria-label="Filtrer par sport">
-        <ChipSport label="Tout" sport="autre" actif={filtre === 'tout'} onclick={() => (filtre = 'tout')} />
-        {#each familles as f}
-          <ChipSport sport={f} actif={filtre === f} onclick={() => (filtre = f)} />
-        {/each}
-      </nav>
-    </div>
-    <div class="droite">
-      {#if demo}
-        <span class="etiquette-demo">Mode démo</span>
-      {/if}
-      <a class="reglages" href="#/parametres" aria-label="Paramètres">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
-      </a>
-    </div>
-  </header>
+  <EnTete actif="accueil" {demo} />
+  <nav class="puces" aria-label="Filtrer par sport">
+    <ChipSport label="Tout" sport="autre" actif={filtre === 'tout'} onclick={() => (filtre = 'tout')} />
+    {#each familles as f}
+      <ChipSport sport={f} actif={filtre === f} onclick={() => (filtre = f)} />
+    {/each}
+  </nav>
 
   {#if disposition.enEdition}
     <section class="bandeau-edition" aria-label="Mode édition">
@@ -193,57 +182,11 @@
     margin: 0 auto;
     padding: 0 32px 64px;
   }
-  .barre {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px 24px;
-    padding: 20px 0;
-  }
-  .gauche,
-  .droite {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px;
-  }
-  .logo {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--dossard-fond);
-    color: var(--dossard-texte);
-    border-radius: var(--rayon);
-    font-size: 17px;
-    letter-spacing: 0;
-  }
   .puces {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-  }
-  .reglages {
-    width: var(--cible);
-    height: var(--cible);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--trait-fort);
-    border-radius: 50%;
-    color: var(--texte-doux);
-  }
-  .reglages:hover {
-    color: var(--texte);
-  }
-  .etiquette-demo {
-    padding: 6px 10px;
-    border: 1px solid var(--trait);
-    border-radius: var(--rayon-rond);
-    font-size: 12px;
-    color: var(--texte-doux);
+    margin-bottom: 8px;
   }
 
   .bandeau-edition {

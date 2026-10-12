@@ -4,6 +4,7 @@
   import Connexion from './routes/Connexion.svelte';
   import Accueil from './routes/Accueil.svelte';
   import Parametres from './routes/Parametres.svelte';
+  import Calendrier from './routes/Calendrier.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
   import { route, modeDemo } from './lib/routeur.svelte.js';
 
@@ -16,13 +17,21 @@
 {#if route.chemin === '/catalogue'}
   <Catalogue />
 {:else if demo}
-  {#if route.chemin === '/parametres'}<Parametres demo={true} />{:else}<Accueil demo={true} />{/if}
+  {#if route.chemin === '/parametres'}
+    <Parametres demo={true} />
+  {:else if route.chemin === '/calendrier'}
+    <Calendrier demo={true} />
+  {:else}
+    <Accueil demo={true} />
+  {/if}
 {:else if !auth.pret}
   <p class="attente" role="status">Chargement…</p>
 {:else if !auth.session}
   <Connexion />
 {:else if route.chemin === '/parametres'}
   <Parametres />
+{:else if route.chemin === '/calendrier'}
+  <Calendrier />
 {:else}
   <Accueil />
 {/if}

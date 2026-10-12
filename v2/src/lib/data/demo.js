@@ -81,6 +81,12 @@ export function donneesDemo(aujourdhui = new Date()) {
       { duration_s: 1200, watts_90d: 232, watts_alltime: 270 },
       { duration_s: 3600, watts_90d: 205, watts_alltime: 245 },
     ],
+    planifiees: [
+      { id: 'demo-p1', name: 'Fractionné 8 × 400 m', date: dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + 1)), sport: 'Run', duration: 55, tss: 70, category: 'entrainement', km: null },
+      { id: 'demo-p2', name: 'Endurance vélo', date: dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + 2)), sport: 'Ride', duration: 90, tss: 62, category: 'entrainement', km: null },
+      { id: 'demo-p3', name: 'Sortie longue', date: dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + 6)), sport: 'Ride', duration: 180, tss: 95, category: 'entrainement', km: null },
+      { id: 'demo-ramonville', name: 'Ronde de Ramonville', date: '2026-12-13', sport: 'Run', duration: 40, tss: null, category: 'competition', km: 10.15 },
+    ],
     objectifs: [
       { id: 'demo-ramonville', name: 'Ronde de Ramonville', date: '2026-12-13', sport: 'Run', km: 10.15, d_plus: 42, priority: 'A', duration: 40, category: 'competition' },
     ],

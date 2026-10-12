@@ -83,3 +83,35 @@ export async function chargerPuissance(userId) {
     .order('duration_s', { ascending: true });
   return resultat(r, 'Impossible de charger ta courbe de puissance.');
 }
+
+// ---------------------------------------------------------------------------
+// Calendrier : séances réalisées et prévues sur une période
+// ---------------------------------------------------------------------------
+
+const COLONNES_PLANIFIEE = 'id,name,date,sport,duration,tss,category,km';
+
+/** Séances réalisées entre deux dates ISO incluses (le calendrier d'un mois). */
+export async function chargerSeancesPeriode(userId, debutIso, finIso) {
+  const r = await sb
+    .from('activities')
+    .select(COLONNES_SEANCE)
+    .eq('user_id', userId)
+    .gte('start_date_local', debutIso)
+    .lt('start_date_local', `${finIso}T23:59:59`)
+    .order('start_date_local', { ascending: true })
+    .limit(500);
+  return resultat(r, 'Impossible de charger les séances de ce mois.');
+}
+
+/** Séances et compétitions prévues entre deux dates ISO incluses. */
+export async function chargerPlanifiees(userId, debutIso, finIso) {
+  const r = await sb
+    .from('activity_planned')
+    .select(COLONNES_PLANIFIEE)
+    .eq('user_id', userId)
+    .gte('date', debutIso)
+    .lte('date', finIso)
+    .order('date', { ascending: true })
+    .limit(300);
+  return resultat(r, 'Impossible de charger les séances prévues.');
+}
