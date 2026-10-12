@@ -1,11 +1,11 @@
 <script>
-  import { segmentsDuBloc, milieu, indiceZone, ZONES } from '../data/structure.js';
+  import { segmentsDuBloc, milieu, indiceZone, COULEURS_ZONE } from '../data/structure.js';
 
   // Profil d'une séance structurée : une barre par segment, largeur = durée, hauteur = intensité, teinte = zone.
-  // Cliquable : toucher une barre sélectionne son bloc (le bloc choisi reste en couleur, les autres s'estompent).
-  //  blocs : structure normalisée · couleur : couleur du sport · selection : indice du bloc choisi (ou null)
+  // Couleurs de zone (Z1 bleu … Z7 rose), comme dans l'éditeur. Cliquable si onselectionner est fourni.
+  //  blocs : structure normalisée · selection : indice du bloc choisi (ou null)
   //  onselectionner(indice) : appelé au clic ; absent = graphique en lecture seule
-  let { blocs = [], couleur = 'var(--sport-neutre)', hauteur = 150, selection = null, onselectionner } = $props();
+  let { blocs = [], hauteur = 150, selection = null, onselectionner } = $props();
 
   const LARGEUR = 800;
   const total = $derived(blocs.reduce((t, b) => t + segmentsDuBloc(b).reduce((s, x) => s + x.seg.min, 0), 0));
@@ -17,10 +17,9 @@
       for (const { seg } of segmentsDuBloc(b)) {
         const largeur = Math.max(2, (seg.min / total) * LARGEUR);
         const pct = milieu(seg);
-        const nb = (ZONES[b.metric] || ZONES.power).noms.length;
         const zone = indiceZone(pct, b.metric);
         const h = Math.max(8, Math.min(1, pct / 150) * hauteur);
-        liste.push({ bi, x, largeur: Math.max(0, largeur - 1), y: hauteur - h, h, teinte: Math.round(25 + (zone / Math.max(1, nb - 1)) * 75) });
+        liste.push({ bi, x, largeur: Math.max(0, largeur - 1), y: hauteur - h, h, couleur: COULEURS_ZONE[Math.min(COULEURS_ZONE.length - 1, zone)] });
         x += largeur;
       }
     });
@@ -63,7 +62,7 @@
         height={b.h}
         rx="2"
         class:estompe={selection !== null && selection !== b.bi}
-        style:fill="color-mix(in srgb, {couleur} {b.teinte}%, var(--surface-2))"
+        style:fill={b.couleur}
         pointer-events="none"
       />
     {/each}

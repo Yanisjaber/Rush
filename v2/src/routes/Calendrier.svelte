@@ -88,6 +88,8 @@
     panneau = { ouvert: true, seance: p, date: p.date };
   }
   function apresEnregistrement(ligne) {
+    // La séance affichée dans le panneau prend les nouvelles valeurs (le panneau repasse à l'affichage)
+    if (panneau.seance && panneau.seance.id === ligne.id) panneau.seance = ligne;
     if (demo) {
       // En démo, rien n'est écrit en base : on met juste la liste à jour sous les yeux
       etat.planifiees = [...etat.planifiees.filter((p) => p.id !== ligne.id), ligne];

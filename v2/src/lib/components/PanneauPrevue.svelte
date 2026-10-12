@@ -4,6 +4,7 @@
   import Champ from './Champ.svelte';
   import Bouton from './Bouton.svelte';
   import EditeurStructure from './EditeurStructure.svelte';
+  import VuePrevue from './VuePrevue.svelte';
   import { SPORTS, couleurSport } from '../sports.js';
   import { familleAffichage } from '../data/familles.js';
   import { SPORTS_PREVUE, formulaireVide, formulaireDepuisLigne, validerPrevue, versLigne, estimerTss } from '../data/prevue.js';
@@ -23,6 +24,8 @@
   let confirmerSuppression = $state(false);
   let ref = $state({ ftp: 0, hrMax: 0 }); // FTP et FC max du profil : servent à traduire les % en watts et en bpm
   let avecStructure = $state(false);
+  // 'voir' : affichage seul (clic sur une séance existante) · 'modifier' : formulaire (nouvelle séance ou bouton Modifier)
+  let mode = $state('modifier');
 
   // À chaque ouverture : on repart d'un formulaire propre (celui de la séance, ou vide).
   // L'effet ne dépend que de l'ouverture et de la séance visée : le reste est isolé par untrack,
@@ -38,6 +41,7 @@
       envoi = false;
       confirmerSuppression = false;
       avecStructure = f.structure.length > 0;
+      mode = cible ? 'voir' : 'modifier';
       chargerReference();
     });
   });
@@ -70,7 +74,17 @@
       return;
     }
     enregistree?.(r.data);
-    onfermer?.();
+    if (!seance) onfermer?.(); // une séance modifiée se réaffiche (la page met `seance` à jour) ; une nouvelle séance ferme le panneau
+  }
+
+  // Annuler : sur une séance existante on revient à son affichage (en reprenant ses valeurs), sinon on ferme
+  function annulerSaisie() {
+    if (!seance) return onfermer?.();
+    f = formulaireDepuisLigne(seance);
+    erreurs = {};
+    erreurGlobale = '';
+    avecStructure = f.structure.length > 0;
+    mode = 'voir';
   }
 
   async function supprimer() {
@@ -88,7 +102,10 @@
   }
 </script>
 
-<Panneau {ouvert} grand={peutStructurer && avecStructure} titre={seance ? 'Modifier la séance' : 'Nouvelle séance'} {onfermer}>
+<Panneau {ouvert} grand={mode === 'modifier' && peutStructurer && avecStructure} titre={!seance ? 'Nouvelle séance' : mode === 'voir' ? 'Séance prévue' : 'Modifier la séance'} {onfermer}>
+  {#if mode === 'voir' && seance}
+    <VuePrevue {f} {ref} erreur={erreurGlobale} {envoi} onmodifier={() => { erreurGlobale = ''; mode = 'modifier'; }} onsupprimer={supprimer} {onfermer} />
+  {:else}
   <form class="formulaire" onsubmit={enregistrer} novalidate>
     <Champ id="prevue-nom" label="Nom" bind:valeur={f.nom} erreur={erreurs.nom} maxlength={120} placeholder="Footing, sortie longue…" />
 
@@ -151,7 +168,7 @@
 
     <div class="actions">
       <Bouton type="submit">{envoi ? 'Enregistrement…' : 'Enregistrer'}</Bouton>
-      <Bouton variante="discret" onclick={() => onfermer?.()}>Annuler</Bouton>
+      <Bouton variante="discret" onclick={annulerSaisie}>Annuler</Bouton>
     </div>
 
     {#if seance}
@@ -168,6 +185,7 @@
       </div>
     {/if}
   </form>
+  {/if}
 </Panneau>
 
 <style>
