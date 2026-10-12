@@ -46,7 +46,7 @@ Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon
 
 ## v2 (nouvelle app, dossier `v2/`)
 
-La v2 est une refonte complète construite **à côté** de la v1 (même dépôt, même Supabase). Elle vise **tout sport de performance lié à un entraînement physique et une forme** (pas de sports collectifs), avec un accueil composé de widgets selon les sports de l'utilisateur, un mode édition, un onboarding, et deux coques (mobile simple, desktop complet). La v1 reste en ligne et ne doit jamais être cassée.
+La v2 est une refonte complète construite **à côté** de la v1 (même dépôt, même Supabase). Elle vise **tout sport de performance lié à un entraînement physique et une forme** (pas de sports collectifs), avec un accueil composé de widgets selon les sports de l'utilisateur, un mode édition, un onboarding, et deux coques (mobile simple, desktop complet). La v1 reste en ligne et ne doit jamais être cassée. **La v2 reste en local tant que Yanis ne dit pas qu'elle est terminée : aucun déploiement, aucun changement de réglage GitHub Pages.**
 
 - **Stack** : Svelte 5 + Vite 8 (le « pas de bundler » ne vaut que pour la v1). Polices hébergées via `@fontsource` (aucun appel à Google Fonts).
 - **Commandes** : `cd v2 && npm ci` puis `npm run dev` (http://localhost:5173) ou `npm run build`. Le catalogue du design system est la page d'accueil de `v2/`.
