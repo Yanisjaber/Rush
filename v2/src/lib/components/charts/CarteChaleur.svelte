@@ -11,7 +11,7 @@
   {#each cases as c}
     <span
       class="case"
-      style:background={c.intensite ? c.couleur : 'var(--surface-2)'}
+      style:background={c.vide ? 'transparent' : c.intensite ? c.couleur : 'var(--surface-2)'}
       style:opacity={c.intensite ? opacites[c.intensite] ?? 1 : 1}
     ></span>
   {/each}

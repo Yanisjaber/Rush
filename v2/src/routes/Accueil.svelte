@@ -1,32 +1,45 @@
 <script>
-  import Dossard from '../lib/components/Dossard.svelte';
-  import Bloc from '../lib/components/Bloc.svelte';
+  import { untrack } from 'svelte';
   import ChipSport from '../lib/components/ChipSport.svelte';
-  import StatCle from '../lib/components/StatCle.svelte';
   import Bouton from '../lib/components/Bouton.svelte';
-  import BarresEmpilees from '../lib/components/charts/BarresEmpilees.svelte';
-  import Anneau from '../lib/components/charts/Anneau.svelte';
+  import CadreEdition from '../lib/widgets/CadreEdition.svelte';
+  import BibliothequeWidgets from '../lib/widgets/BibliothequeWidgets.svelte';
+  import { COMPOSANTS } from '../lib/widgets/composants.js';
+  import { disponibles } from '../lib/widgets/registre.js';
   import { auth, deconnexion } from '../lib/stores/auth.svelte.js';
+  import {
+    disposition,
+    chargerDisposition,
+    demarrerEdition,
+    annulerEdition,
+    terminerEdition,
+    reinitialiserAuto,
+    deplacer,
+    retirer,
+    ajouter,
+    changerTaille,
+  } from '../lib/stores/disposition.svelte.js';
   import { chargerProfil, chargerMetriques, chargerSeances, chargerObjectifs } from '../lib/data/api.js';
   import { donneesDemo } from '../lib/data/demo.js';
-  import { chargeParSemaine, conditionHebdo, formeActuelle, repartition7Jours, chargeSeance } from '../lib/data/synthese.js';
+  import { chargeParSemaine, formeActuelle } from '../lib/data/synthese.js';
   import { familleAffichage } from '../lib/data/familles.js';
-  import { SPORTS, couleurSport } from '../lib/sports.js';
-  import { formatDuree, formatKm, formatDateCourte, formatDateLongue, joursAvant } from '../lib/utils/format.js';
 
   let { demo = false } = $props();
 
   let etat = $state({ chargement: true, erreur: '', profil: null, metriques: [], seances: [], objectifs: [] });
   let filtre = $state('tout');
 
-  async function charger() {
+  const famillesDe = (seances) => [...new Set(seances.map((s) => familleAffichage(s.sport)))].filter((f) => f !== 'autre');
+
+  async function charger(userId) {
     etat.chargement = true;
     etat.erreur = '';
     if (demo) {
-      Object.assign(etat, donneesDemo(), { chargement: false });
+      Object.assign(etat, donneesDemo());
+      await chargerDisposition('demo', famillesDe(etat.seances));
+      etat.chargement = false;
       return;
     }
-    const userId = auth.session?.user?.id;
     if (!userId) return;
     const [profil, metriques, seances, objectifs] = await Promise.all([
       chargerProfil(userId),
@@ -39,33 +52,35 @@
     etat.seances = seances.data || [];
     etat.objectifs = objectifs.data || [];
     etat.erreur = [profil, metriques, seances, objectifs].map((r) => r.erreur).find(Boolean) || '';
+    await chargerDisposition(userId, famillesDe(etat.seances));
     etat.chargement = false;
   }
+  // L'effet ne dépend QUE de l'identité de l'utilisateur. Tout ce que `charger` lit ou écrit dans `etat`
+  // est isolé par `untrack` : sinon l'effet se déclencherait lui-même en boucle (il écrit etat.seances,
+  // puis le relit).
+  const userId = $derived(demo ? 'demo' : auth.session?.user?.id);
   $effect(() => {
-    charger();
+    const id = userId;
+    untrack(() => charger(id));
   });
 
-  // --- Données dérivées pour l'affichage ---
+  // --- Données dérivées ---
   const prenom = $derived(etat.profil?.display_name || auth.session?.user?.email?.split('@')[0] || '');
-  const familles = $derived([...new Set(etat.seances.map((s) => familleAffichage(s.sport)))].filter((f) => f !== 'autre'));
+  const familles = $derived(famillesDe(etat.seances));
   const seancesVisibles = $derived(filtre === 'tout' ? etat.seances : etat.seances.filter((s) => familleAffichage(s.sport) === filtre));
+  // Ce que reçoit chaque widget : toujours la même enveloppe, filtrée par le sport choisi
+  const contexte = $derived({
+    seances: seancesVisibles,
+    toutesSeances: etat.seances,
+    metriques: etat.metriques,
+    objectifs: etat.objectifs,
+    profil: etat.profil,
+    filtre,
+  });
   const forme = $derived(formeActuelle(etat.metriques));
-  const charge = $derived(chargeParSemaine(seancesVisibles));
-  const condition = $derived(conditionHebdo(etat.metriques));
-  const repartition = $derived(repartition7Jours(seancesVisibles));
-  const recentes = $derived(seancesVisibles.slice(0, 5));
-  const objectif = $derived(etat.objectifs[0] || null);
-  const chargeSemaine = $derived(charge.series.reduce((s, serie) => s + (serie.valeurs[serie.valeurs.length - 1] || 0), 0));
-  const jours = $derived(objectif ? joursAvant(objectif.date) : null);
-
-  function detailSeance(s) {
-    const morceaux = [formatDateCourte(s.start_date_local), formatDuree(s.moving_time)];
-    if (s.distance_km) morceaux.push(`${formatKm(s.distance_km)} km`);
-    return morceaux.join(' · ');
-  }
-  function nomFamille(f) {
-    return (SPORTS[f] || SPORTS.autre).court;
-  }
+  const chargeSemaine = $derived(
+    chargeParSemaine(seancesVisibles).series.reduce((s, serie) => s + (serie.valeurs[serie.valeurs.length - 1] || 0), 0),
+  );
 </script>
 
 <div class="page">
@@ -82,12 +97,35 @@
     <div class="droite">
       {#if demo}
         <span class="etiquette-demo">Mode démo</span>
+      {/if}
+      {#if !etat.chargement && !disposition.enEdition}
+        <Bouton variante="discret" onclick={demarrerEdition}>Personnaliser</Bouton>
+      {/if}
+      {#if demo}
         <Bouton variante="discret" href="./">Se connecter</Bouton>
       {:else}
         <Bouton variante="discret" onclick={deconnexion}>Se déconnecter</Bouton>
       {/if}
     </div>
   </header>
+
+  {#if disposition.enEdition}
+    <section class="bandeau-edition" aria-label="Mode édition">
+      <div class="texte">
+        <div class="titre">Mode édition</div>
+        <p>Monte, descends, redimensionne ou retire les widgets. Ajoute-en depuis la bibliothèque en bas.</p>
+      </div>
+      <div class="actions">
+        <Bouton variante="texte" onclick={reinitialiserAuto}>Revenir à l'accueil automatique</Bouton>
+        <Bouton variante="discret" onclick={annulerEdition}>Annuler</Bouton>
+        <Bouton variante="sur-dossard" onclick={terminerEdition}>Terminer</Bouton>
+      </div>
+    </section>
+  {/if}
+
+  {#if disposition.message && !disposition.enEdition}
+    <p class="message" role="status">{disposition.message}</p>
+  {/if}
 
   {#if etat.chargement}
     <p class="info" role="status">Chargement de tes données…</p>
@@ -106,99 +144,38 @@
       {/if}
     </section>
 
-    <div class="ligne">
-      <div class="col objectif">
-        {#if objectif}
-          <Dossard
-            etiquette="Prochain objectif"
-            nom={objectif.name}
-            valeur={`J-${jours}`}
-            detail={`${formatDateLongue(objectif.date)}${objectif.km ? ` · ${formatKm(objectif.km, 2)} km` : ''}${objectif.duration ? ` · objectif ${objectif.duration} min` : ''}`}
-          />
-        {:else}
-          <Dossard etiquette="Prochain objectif" nom="Aucun objectif" valeur="—" detail="Ajoute une compétition pour voir ton compte à rebours." />
-        {/if}
+    {#if disposition.widgets.length}
+      <div class="grille">
+        {#each disposition.widgets as w, i (w.id)}
+          {@const Composant = COMPOSANTS[w.id]}
+          <div class="cellule t-{w.taille}">
+            {#if disposition.enEdition}
+              <CadreEdition
+                id={w.id}
+                taille={w.taille}
+                index={i}
+                total={disposition.widgets.length}
+                onDeplacer={deplacer}
+                onTaille={changerTaille}
+                onRetirer={retirer}
+              >
+                <Composant {contexte} taille={w.taille} />
+              </CadreEdition>
+            {:else}
+              <Composant {contexte} taille={w.taille} />
+            {/if}
+          </div>
+        {/each}
       </div>
+    {:else}
+      <p class="vide">Ton accueil est vide. Passe en mode personnalisation pour y ajouter des widgets.</p>
+    {/if}
 
-      <div class="col large">
-        <Bloc titre="Charge d'entraînement">
-          {#if charge.series.length}
-            <BarresEmpilees
-              series={charge.series}
-              etiquettes={charge.etiquettes}
-              ligne={condition}
-              hauteur={220}
-              etiquette="Charge par semaine et par sport sur 12 semaines, avec la courbe de condition"
-            />
-            <ul class="legende">
-              {#each charge.series as s}
-                <li><span class="pastille" style:background={s.couleur}></span>{nomFamille(s.nom)}</li>
-              {/each}
-              {#if condition.length}<li><span class="trait"></span>Condition</li>{/if}
-            </ul>
-          {:else}
-            <p class="vide">Pas encore de séance sur les 12 dernières semaines.</p>
-          {/if}
-        </Bloc>
+    {#if disposition.enEdition}
+      <div class="bibliotheque">
+        <BibliothequeWidgets ids={disponibles(disposition, familles)} {familles} onAjouter={ajouter} />
       </div>
-    </div>
-
-    <div class="ligne">
-      <div class="col">
-        <Bloc titre="Forme">
-          {#if forme}
-            <div class="stats">
-              <StatCle etiquette="Forme" valeur={`${forme.tsb > 0 ? '+' : ''}${forme.tsb}`} note={forme.libelle} couleur={forme.tsb >= 5 ? 'var(--ok)' : ''} />
-              <StatCle etiquette="Condition" valeur={String(forme.ctl)} />
-              <StatCle etiquette="Fatigue" valeur={String(forme.atl)} />
-            </div>
-          {:else}
-            <p class="vide">Pas encore de données de forme.</p>
-          {/if}
-        </Bloc>
-      </div>
-
-      <div class="col">
-        <Bloc titre="Volume, 7 derniers jours">
-          {#if repartition.totalSecondes}
-            <div class="centre">
-              <Anneau segments={repartition.segments} taille={170} etiquette="Répartition du temps d'entraînement par sport sur 7 jours">
-                <div class="titre gros">{formatDuree(repartition.totalSecondes)}</div>
-                <div class="petit">cette semaine</div>
-              </Anneau>
-            </div>
-            <ul class="legende vertical">
-              {#each repartition.segments as s}
-                <li><span class="pastille" style:background={s.couleur}></span><span class="nomsport">{nomFamille(s.nom)}</span><strong>{formatDuree(s.valeur)}</strong></li>
-              {/each}
-            </ul>
-          {:else}
-            <p class="vide">Aucune séance sur les 7 derniers jours.</p>
-          {/if}
-        </Bloc>
-      </div>
-
-      <div class="col">
-        <Bloc titre="Dernières séances">
-          {#if recentes.length}
-            <ul class="seances">
-              {#each recentes as s (s.id)}
-                <li>
-                  <span class="barre-sport" style:background={couleurSport(familleAffichage(s.sport))}></span>
-                  <div class="infos">
-                    <div class="nom">{s.name || nomFamille(familleAffichage(s.sport))}</div>
-                    <div class="detail">{detailSeance(s)}</div>
-                  </div>
-                  <div class="points"><span class="titre">{chargeSeance(s)}</span><span class="petit">pts</span></div>
-                </li>
-              {/each}
-            </ul>
-          {:else}
-            <p class="vide">Aucune séance à afficher.</p>
-          {/if}
-        </Bloc>
-      </div>
-    </div>
+    {/if}
   {/if}
 </div>
 
@@ -248,6 +225,45 @@
     color: var(--texte-doux);
   }
 
+  .bandeau-edition {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 24px;
+    margin-bottom: 16px;
+    padding: 14px 18px;
+    background: var(--dossard-fond);
+    color: var(--dossard-texte);
+    --texte: var(--dossard-texte);
+    --texte-doux: var(--dossard-texte);
+    border-radius: var(--rayon-l);
+  }
+  .bandeau-edition .titre {
+    font-size: 20px;
+    letter-spacing: 0;
+  }
+  .bandeau-edition p {
+    font-size: 13px;
+    opacity: 0.8;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  /* Sur le bandeau (clair en thème sombre), les boutons « discret » ont besoin d'un contour foncé */
+  .bandeau-edition :global(.discret) {
+    color: var(--dossard-texte);
+    border-color: var(--dossard-texte);
+  }
+
+  .message {
+    margin-bottom: 12px;
+    font-size: 14px;
+    color: var(--ok);
+  }
   .accroche {
     padding: 20px 0 28px;
   }
@@ -283,120 +299,27 @@
     font-size: 14px;
   }
 
-  .ligne {
+  /* Grille : chaque widget occupe une largeur selon sa taille, et passe à la ligne si l'écran est étroit */
+  .grille {
     display: flex;
     flex-wrap: wrap;
     gap: 16px;
-    margin-bottom: 16px;
   }
-  .col {
-    flex: 1 1 320px;
+  .cellule {
+    display: flex;
     min-width: 0;
   }
-  .col.large {
-    flex: 2 1 560px;
-  }
-  .col.objectif :global(.dossard) {
-    height: 100%;
-  }
-
-  .legende {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 16px;
-    margin: 14px 0 0;
-    font-size: 12px;
-    color: var(--texte-doux);
-  }
-  .legende li {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .legende.vertical {
-    flex-direction: column;
-    gap: 8px;
-    font-size: 14px;
-    color: var(--texte);
-  }
-  .legende.vertical li {
-    gap: 10px;
-  }
-  .nomsport {
-    flex: 1;
-  }
-  .pastille {
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-    flex: none;
-  }
-  .trait {
-    width: 16px;
-    height: 3px;
-    background: var(--texte);
-    border-radius: 2px;
-  }
-
-  .stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 28px;
-  }
-  .centre {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 16px;
-  }
-  .gros {
-    font-size: 30px;
-    line-height: 1;
-  }
-  .petit {
-    font-size: 12px;
-    color: var(--texte-doux);
-  }
-
-  .seances li {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-height: 60px;
-    border-top: 1px solid var(--trait);
-  }
-  .seances li:first-child {
-    border-top: 0;
-  }
-  .barre-sport {
-    width: 6px;
-    height: 36px;
-    border-radius: 3px;
-    flex: none;
-  }
-  .infos {
+  .cellule > :global(*) {
     flex: 1;
     min-width: 0;
   }
-  .nom {
-    font-size: 15px;
-    font-weight: 600;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .detail {
-    font-size: 12px;
-    color: var(--texte-doux);
-  }
-  .points {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-  }
-  .points .titre {
-    font-size: 20px;
-    line-height: 1;
-    letter-spacing: 0;
+  .t-s { flex: 1 1 240px; }
+  .t-m { flex: 1 1 320px; }
+  .t-l { flex: 2 1 560px; }
+  .t-xl { flex: 1 1 100%; }
+
+  .bibliotheque {
+    margin-top: 24px;
   }
 
   @media (max-width: 600px) {

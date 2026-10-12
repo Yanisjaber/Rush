@@ -32,7 +32,8 @@ const FAMILLES = {
 
 /** Famille d'un type de sport brut. Tout ce qui est inconnu (marche, foot, « Workout »…) devient « autre ». */
 export function familleSport(typeBrut) {
-  return FAMILLES[typeBrut] || 'autre';
+  // Object.hasOwn : on ignore les propriétés héritées d'un objet ('constructor', '__proto__'…)
+  return typeof typeBrut === 'string' && Object.hasOwn(FAMILLES, typeBrut) ? FAMILLES[typeBrut] : 'autre';
 }
 
 /** Regroupe les familles proches pour les graphiques (trail compte comme de la course). */

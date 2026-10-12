@@ -35,5 +35,8 @@ jobs:
       - name: Audit de sécurité (dépendances de production)
         run: npm audit --omit=dev --audit-level=high
 
+      - name: Tests
+        run: npm test
+
       - name: Compiler
         run: npm run build

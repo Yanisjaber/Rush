@@ -20,5 +20,6 @@ export const SPORTS = {
 
 /** Couleur d'un sport (repli neutre si le sport est inconnu). */
 export function couleurSport(cle) {
-  return (SPORTS[cle] || SPORTS.autre).couleur;
+  const sport = typeof cle === 'string' && Object.hasOwn(SPORTS, cle) ? SPORTS[cle] : SPORTS.autre;
+  return sport.couleur;
 }

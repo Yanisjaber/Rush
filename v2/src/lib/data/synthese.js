@@ -94,3 +94,89 @@ export function repartition7Jours(seances, aujourdhui = new Date()) {
     .sort((a, b) => b.valeur - a.valeur);
   return { segments, totalSecondes: total };
 }
+
+// ---------------------------------------------------------------------------
+// Régularité (carte de chaleur) et semaine en cours
+// ---------------------------------------------------------------------------
+
+const JOURS_COURTS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
+/** Lundi (à midi) de la semaine qui contient `d`. */
+function lundiDe(d) {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+  const decalage = (x.getDay() + 6) % 7; // lundi = 0
+  x.setDate(x.getDate() - decalage);
+  return x;
+}
+
+function intensiteDeCharge(charge) {
+  if (charge >= 80) return 3;
+  if (charge >= 40) return 2;
+  return charge > 0 ? 1 : 0;
+}
+
+/**
+ * Cases de la carte de chaleur sur `nbSemaines` semaines : 7 rangées (lundi → dimanche) × nbSemaines colonnes,
+ * la dernière colonne étant la semaine en cours. Chaque case a la couleur du sport dominant du jour
+ * (celui qui a la plus grande charge) et une intensité 0 à 3. Les jours à venir sont marqués `vide`.
+ */
+export function casesRegularite(seances, nbSemaines = 12, aujourdhui = new Date()) {
+  const parJour = new Map(); // date ISO → Map(famille → charge)
+  for (const s of seances) {
+    const iso = String(s.start_date_local).slice(0, 10);
+    const famille = familleAffichage(s.sport);
+    if (!parJour.has(iso)) parJour.set(iso, new Map());
+    const m = parJour.get(iso);
+    m.set(famille, (m.get(famille) || 0) + chargeSeance(s));
+  }
+  const debut = lundiDe(aujourdhui);
+  debut.setDate(debut.getDate() - (nbSemaines - 1) * 7);
+  const aujIso = dateIsoLocale(aujourdhui);
+  const cases = [];
+  for (let rangee = 0; rangee < 7; rangee++) {
+    for (let col = 0; col < nbSemaines; col++) {
+      const d = new Date(debut);
+      d.setDate(debut.getDate() + col * 7 + rangee);
+      const iso = dateIsoLocale(d);
+      if (iso > aujIso) {
+        cases.push({ couleur: 'transparent', intensite: 0, vide: true });
+        continue;
+      }
+      const m = parJour.get(iso);
+      if (!m) {
+        cases.push({ couleur: 'transparent', intensite: 0, vide: false });
+        continue;
+      }
+      const [famille, charge] = [...m.entries()].sort((a, b) => b[1] - a[1])[0];
+      const total = [...m.values()].reduce((a, b) => a + b, 0);
+      cases.push({ couleur: couleurSport(famille), intensite: intensiteDeCharge(total), vide: false });
+    }
+  }
+  return cases;
+}
+
+/** Nombre de jours avec au moins une séance sur les N dernières semaines (pour un résumé de régularité). */
+export function joursActifs(seances, nbSemaines = 12, aujourdhui = new Date()) {
+  const limite = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - nbSemaines * 7);
+  const iso = dateIsoLocale(limite);
+  return new Set(seances.filter((s) => String(s.start_date_local).slice(0, 10) > iso).map((s) => String(s.start_date_local).slice(0, 10))).size;
+}
+
+/** La semaine en cours (lundi → dimanche) : pour chaque jour, ses séances réalisées. */
+export function semaineCourante(seances, aujourdhui = new Date()) {
+  const lundi = lundiDe(aujourdhui);
+  const aujIso = dateIsoLocale(aujourdhui);
+  return JOURS_COURTS.map((jour, i) => {
+    const d = new Date(lundi);
+    d.setDate(lundi.getDate() + i);
+    const iso = dateIsoLocale(d);
+    return {
+      iso,
+      jour,
+      num: d.getDate(),
+      aujourdhui: iso === aujIso,
+      futur: iso > aujIso,
+      seances: seances.filter((s) => String(s.start_date_local).slice(0, 10) === iso),
+    };
+  });
+}
