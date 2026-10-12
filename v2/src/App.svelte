@@ -6,6 +6,7 @@
   import Parametres from './routes/Parametres.svelte';
   import Calendrier from './routes/Calendrier.svelte';
   import Seance from './routes/Seance.svelte';
+  import Sommeil from './routes/Sommeil.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
   import { route, modeDemo } from './lib/routeur.svelte.js';
 
@@ -28,6 +29,8 @@
     <Parametres demo={true} />
   {:else if route.chemin === '/calendrier'}
     <Calendrier demo={true} />
+  {:else if route.chemin === '/sommeil'}
+    <Sommeil demo={true} />
   {:else if idSeance}
     <Seance id={idSeance} demo={true} />
   {:else}
@@ -41,6 +44,8 @@
   <Parametres />
 {:else if route.chemin === '/calendrier'}
   <Calendrier />
+{:else if route.chemin === '/sommeil'}
+  <Sommeil />
 {:else if idSeance}
   <Seance id={idSeance} />
 {:else}

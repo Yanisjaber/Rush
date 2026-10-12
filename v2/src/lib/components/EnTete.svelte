@@ -1,11 +1,12 @@
 <script>
   // En-tête commun à toutes les pages : logo, navigation principale, zone libre (droite) et réglages.
-  // actif : 'accueil' | 'calendrier' | 'parametres' (la page courante est signalée aux lecteurs d'écran)
+  // actif : 'accueil' | 'calendrier' | 'sommeil' | 'parametres' (la page courante est signalée aux lecteurs d'écran)
   let { actif = 'accueil', demo = false, droite } = $props();
 
   const liens = [
     { cle: 'accueil', nom: 'Accueil', href: '#/' },
     { cle: 'calendrier', nom: 'Calendrier', href: '#/calendrier' },
+    { cle: 'sommeil', nom: 'Sommeil', href: '#/sommeil' },
   ];
 </script>
 

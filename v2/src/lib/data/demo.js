@@ -118,3 +118,37 @@ export function streamsDemo(seance) {
   if (watts) streams.push({ type: 'watts', data: watts });
   return streams;
 }
+
+/** Nuits d'exemple (la plus récente d'abord), même forme que les lignes de garmin_sleep. */
+export function sommeilDemo(aujourdhui = new Date(), nombre = 30) {
+  const nuits = [];
+  for (let i = 0; i < nombre; i++) {
+    const d = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - i);
+    const veille = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
+    const total = 6 * 3600 + 20 * 60 + ((i * 37) % 11) * 360; // 6h20 à 7h56
+    const couche = 22 * 60 + 40 + ((i * 17) % 9) * 8; // 22h40 à 23h44
+    const leve = (couche + total / 60 + 25) % 1440;
+    const hm = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(Math.round(m % 60)).padStart(2, '0')}`;
+    nuits.push({
+      date: dateIsoLocale(d),
+      bedtime: `${dateIsoLocale(veille)} ${hm(couche)}`,
+      wake_time: `${dateIsoLocale(d)} ${hm(leve)}`,
+      total_sec: total,
+      deep_sec: Math.round(total * 0.17),
+      rem_sec: Math.round(total * 0.22),
+      light_sec: Math.round(total * 0.61),
+      awake_sec: 900 + ((i * 7) % 5) * 240,
+      awake_count: 1 + (i % 4),
+      avg_stress: 18 + (i % 9),
+      avg_heart_rate: 52 + (i % 5),
+      resting_heart_rate: 48 + (i % 4),
+      body_battery_change: 48 + ((i * 5) % 30),
+      hrv_avg: 58 + ((i * 3) % 14) - (i > 20 ? 4 : 0),
+      hrv_status: 'BALANCED',
+      spo2_avg: 95 + (i % 3),
+      score: 66 + ((i * 11) % 24),
+      score_qualifier: 'GOOD',
+    });
+  }
+  return nuits;
+}
