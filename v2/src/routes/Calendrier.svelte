@@ -3,13 +3,14 @@
   import EnTete from '../lib/components/EnTete.svelte';
   import ChipSport from '../lib/components/ChipSport.svelte';
   import Bouton from '../lib/components/Bouton.svelte';
+  import PanneauPrevue from '../lib/components/PanneauPrevue.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { chargerSeancesPeriode, chargerPlanifiees } from '../lib/data/api.js';
   import { donneesDemo } from '../lib/data/demo.js';
   import { grilleMois, bornesGrille, decalerMois, JOURS_SEMAINE } from '../lib/data/calendrier.js';
   import { familleAffichage } from '../lib/data/familles.js';
   import { SPORTS, couleurSport } from '../lib/sports.js';
-  import { formatDuree } from '../lib/utils/format.js';
+  import { formatDuree, dateIsoLocale } from '../lib/utils/format.js';
 
   let { demo = false } = $props();
 
@@ -77,6 +78,26 @@
   function precedent() { cible = decalerMois(cible.annee, cible.mois, -1); }
   function suivant() { cible = decalerMois(cible.annee, cible.mois, 1); }
   function aujourdhui() { cible = { annee: maintenant.getFullYear(), mois: maintenant.getMonth() }; }
+
+  // --- Séances prévues : panneau de création / modification ---
+  let panneau = $state({ ouvert: false, seance: null, date: dateIsoLocale(maintenant) });
+  function nouvelle() {
+    panneau = { ouvert: true, seance: null, date: dateIsoLocale(maintenant) };
+  }
+  function modifier(p) {
+    panneau = { ouvert: true, seance: p, date: p.date };
+  }
+  function apresEnregistrement(ligne) {
+    if (demo) {
+      // En démo, rien n'est écrit en base : on met juste la liste à jour sous les yeux
+      etat.planifiees = [...etat.planifiees.filter((p) => p.id !== ligne.id), ligne];
+    } else {
+      charger(userId, cible.annee, cible.mois);
+    }
+  }
+  function apresSuppression(id) {
+    etat.planifiees = etat.planifiees.filter((p) => p.id !== id);
+  }
   const vide = (j) => !j.seances.length && !j.planifiees.length && !j.objectifs.length;
 </script>
 
@@ -103,6 +124,7 @@
     <div class="droite">
       <span class="resume">{seancesDuMois.length} séance{seancesDuMois.length > 1 ? 's' : ''} · {formatDuree(tempsDuMois)}</span>
       <Bouton variante="discret" onclick={aujourdhui}>Aujourd'hui</Bouton>
+      <Bouton onclick={nouvelle}>Nouvelle séance</Bouton>
     </div>
   </div>
 
@@ -137,10 +159,10 @@
               {/each}
               {#if j.seances.length > 3}<span class="plus">+{j.seances.length - 3}</span>{/if}
               {#each j.planifiees as p (p.id)}
-                <span class="pastille prevue" style:border-color={couleurSport(familleAffichage(p.sport))} title="Séance prévue : {p.name}">
+                <button type="button" class="pastille prevue" style:border-color={couleurSport(familleAffichage(p.sport))} title="Séance prévue : {p.name}" aria-label="Modifier la séance prévue {p.name}" onclick={() => modifier(p)}>
                   <span class="type">{p.name || nomFamille(p.sport)}</span>
                   {#if p.duration}<span class="duree">{formatDuree(p.duration * 60)}</span>{/if}
-                </span>
+                </button>
               {/each}
             </div>
           </div>
@@ -149,6 +171,17 @@
     {/each}
   </div>
 </div>
+
+<PanneauPrevue
+  ouvert={panneau.ouvert}
+  seance={panneau.seance}
+  dateInitiale={panneau.date}
+  {userId}
+  {demo}
+  onfermer={() => (panneau.ouvert = false)}
+  enregistree={apresEnregistrement}
+  supprimee={apresSuppression}
+/>
 
 <style>
   .puces {
@@ -301,6 +334,12 @@
     opacity: 0.85;
   }
   .pastille.prevue {
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    font-size: 12px;
+    line-height: 1.2;
+    cursor: pointer;
     background: transparent;
     color: var(--texte);
     border: 2px dashed var(--trait-fort);

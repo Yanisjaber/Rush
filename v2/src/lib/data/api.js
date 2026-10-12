@@ -89,7 +89,7 @@ export async function chargerPuissance(userId) {
 // Calendrier : séances réalisées et prévues sur une période
 // ---------------------------------------------------------------------------
 
-const COLONNES_PLANIFIEE = 'id,name,date,sport,duration,tss,category,km';
+const COLONNES_PLANIFIEE = 'id,name,date,sport,duration,tss,category,km,start_date_local,rpe,d_plus,notes';
 
 /** Séances réalisées entre deux dates ISO incluses (le calendrier d'un mois). */
 export async function chargerSeancesPeriode(userId, debutIso, finIso) {
@@ -166,4 +166,37 @@ export async function chargerSommeil(userId, jours = 60) {
     .order('date', { ascending: false })
     .limit(jours);
   return resultat(r, 'Impossible de charger ton sommeil.');
+}
+
+// ---------------------------------------------------------------------------
+// Écriture des séances prévues. user_id vient toujours de la session (jamais d'un formulaire) ;
+// la RLS refuse de toute façon une ligne qui n'est pas la tienne.
+// ---------------------------------------------------------------------------
+
+/** Crée une séance prévue (ligne produite par versLigne). Renvoie la ligne créée. */
+export async function creerPlanifiee(userId, ligne) {
+  const r = await sb
+    .from('activity_planned')
+    .insert({ ...ligne, user_id: userId, client_id: `v2-${crypto.randomUUID()}` })
+    .select(COLONNES_PLANIFIEE)
+    .single();
+  return resultat(r, "Impossible d'enregistrer la séance.");
+}
+
+/** Modifie une séance prévue qui t'appartient. */
+export async function modifierPlanifiee(userId, id, ligne) {
+  const r = await sb
+    .from('activity_planned')
+    .update(ligne)
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select(COLONNES_PLANIFIEE)
+    .single();
+  return resultat(r, 'Impossible de modifier la séance.');
+}
+
+/** Supprime définitivement une séance prévue qui t'appartient. */
+export async function supprimerPlanifiee(userId, id) {
+  const r = await sb.from('activity_planned').delete().eq('id', id).eq('user_id', userId);
+  return resultat(r, 'Impossible de supprimer la séance.');
 }
