@@ -9,6 +9,7 @@
   import Sommeil from './routes/Sommeil.svelte';
   import Competitions from './routes/Competitions.svelte';
   import Bilan from './routes/Bilan.svelte';
+  import Plan from './routes/Plan.svelte';
   import PanneauSeance from './lib/components/PanneauSeance.svelte';
   import PanneauReel from './lib/components/PanneauReel.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
@@ -58,6 +59,8 @@
     <Competitions demo={true} />
   {:else if route.chemin === '/bilan'}
     <Bilan demo={true} />
+  {:else if route.chemin === '/plan'}
+    <Plan demo={true} />
   {:else if idSeance}
     <Seance id={idSeance} demo={true} />
   {:else}
@@ -77,6 +80,8 @@
   <Competitions />
 {:else if route.chemin === '/bilan'}
   <Bilan />
+{:else if route.chemin === '/plan'}
+  <Plan />
 {:else if idSeance}
   <Seance id={idSeance} />
 {:else}
