@@ -1,5 +1,6 @@
 <script>
   import Bloc from '../components/Bloc.svelte';
+  import { ouvrirApercu } from '../stores/apercu.svelte.js';
   import { chargeSeance } from '../data/synthese.js';
   import { familleAffichage } from '../data/familles.js';
   import { SPORTS, couleurSport } from '../sports.js';
@@ -21,7 +22,7 @@
     <ul class="seances">
       {#each recentes as s (s.id)}
         <li>
-          <a class="ligne" href="#/seance/{s.id}">
+          <a class="ligne" href="#/seance/{s.id}" onclick={(e) => { e.preventDefault(); ouvrirApercu(s); }}>
             <span class="barre" style:background={couleurSport(familleAffichage(s.sport))}></span>
             <div class="infos">
               <div class="nom">{s.name || nomFamille(familleAffichage(s.sport))}</div>

@@ -1,5 +1,6 @@
 <script>
   import Bloc from '../components/Bloc.svelte';
+  import { ouvrirApercu } from '../stores/apercu.svelte.js';
   import { semaineCourante } from '../data/synthese.js';
   import { familleAffichage } from '../data/familles.js';
   import { SPORTS, couleurSport } from '../sports.js';
@@ -22,7 +23,7 @@
         <div class="contenu">
           {#each j.seances.slice(0, 2) as s (s.id)}
             {@const famille = familleAffichage(s.sport)}
-            <a class="seance" href="#/seance/{s.id}" style:background={couleurSport(famille)}>
+            <a class="seance" href="#/seance/{s.id}" onclick={(e) => { e.preventDefault(); ouvrirApercu(s); }} style:background={couleurSport(famille)}>
               <span class="type">{nomFamille(famille)}</span>
               <span class="duree">{formatDuree(s.moving_time)}</span>
             </a>

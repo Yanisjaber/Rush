@@ -4,6 +4,7 @@
   import ChipSport from '../lib/components/ChipSport.svelte';
   import Bouton from '../lib/components/Bouton.svelte';
   import PanneauPrevue from '../lib/components/PanneauPrevue.svelte';
+  import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { chargerSeancesPeriode, chargerPlanifiees } from '../lib/data/api.js';
   import { donneesDemo } from '../lib/data/demo.js';
@@ -152,6 +153,7 @@
                 <a
                   class="pastille"
                   href="#/seance/{s.id}"
+                  onclick={(e) => { e.preventDefault(); ouvrirApercu(s); }}
                   style:background={couleurSport(familleAffichage(s.sport))}
                   aria-label="{s.name || nomFamille(s.sport)}, {formatDuree(s.moving_time)}"
                 >

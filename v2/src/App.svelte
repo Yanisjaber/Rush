@@ -7,6 +7,7 @@
   import Calendrier from './routes/Calendrier.svelte';
   import Seance from './routes/Seance.svelte';
   import Sommeil from './routes/Sommeil.svelte';
+  import PanneauSeance from './lib/components/PanneauSeance.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
   import { route, modeDemo } from './lib/routeur.svelte.js';
 
@@ -51,6 +52,9 @@
 {:else}
   <Accueil />
 {/if}
+
+<!-- Résumé d'une séance réalisée : ouvert depuis le calendrier ou les widgets -->
+<PanneauSeance />
 
 <style>
   .attente {
