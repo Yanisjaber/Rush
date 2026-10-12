@@ -9,6 +9,7 @@
 export const ALLOWED_RETURN_URLS = [
   "http://localhost:8000/",
   "http://localhost:8000/index.html",
+  "http://localhost:5173/", // v2 en développement local
   "https://yanisjaber.github.io/coach-ia/",
   "https://yanisjaber.github.io/coach-ia/index.html",
 ];
