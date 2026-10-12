@@ -5,6 +5,10 @@
   import Bouton from '../lib/components/Bouton.svelte';
   import Dossard from '../lib/components/Dossard.svelte';
   import PanneauCompetition from '../lib/components/PanneauCompetition.svelte';
+  import Palmares from '../lib/components/Palmares.svelte';
+  import PanneauLicence from '../lib/components/PanneauLicence.svelte';
+  import { palmares, initialiserPalmares, lierLicence } from '../lib/stores/palmares.svelte.js';
+  import { fusionner, resultatsManuels, resultatDuJour, texteClassement, nomLicence } from '../lib/data/opendossard.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
   import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
@@ -37,6 +41,17 @@
       : { chargement: false, erreur: '', prevues: c.data.prevues, courues: c.data.courues, tsb: serie.length ? serie[serie.length - 1].tsb : null };
   }
   const userId = $derived(demo ? 'demo' : auth.session?.user?.id);
+  // Palmarès Open Dossard (la licence est liée depuis ici ou depuis Paramètres > Connexions)
+  $effect(() => {
+    const u = userId;
+    untrack(() => initialiserPalmares(u, demo));
+  });
+  let licence = $state({ ouvert: false });
+  async function choisirLicence(l) {
+    licence.ouvert = false;
+    await lierLicence(userId, l, demo);
+  }
+  const resultats = $derived(fusionner(palmares.officiels, resultatsManuels(etat.courues)));
   $effect(() => {
     const u = userId;
     void donnees.version; // se recharge quand une sortie est créée, retouchée ou supprimée
@@ -107,6 +122,16 @@
       </Bloc>
     </div>
 
+    {#if resultats.length}
+      <div class="palmares"><Palmares {resultats} /></div>
+    {:else if !palmares.licence}
+      <Bloc titre="Mon palmarès">
+        <p class="vide">Lie ta licence Open Dossard pour importer tes résultats officiels (victoires, podiums, saison par saison).</p>
+        <Bouton variante="discret" onclick={() => (licence.ouvert = true)}>Lier ma licence</Bouton>
+      </Bloc>
+    {/if}
+    {#if palmares.erreur}<p class="alerte" role="alert">{palmares.erreur}</p>{/if}
+
     <section aria-labelledby="titre-venir">
       <h2 class="titre" id="titre-venir">À venir</h2>
       {#if aVenir.length}
@@ -144,7 +169,7 @@
                 <span class="date"><b>{new Date(String(c.start_date_local).slice(0, 10) + 'T12:00:00').getDate()}</b><i>{formatDateCourte(String(c.start_date_local).slice(0, 10)).replace(/^\d+\s*/, '')}</i></span>
                 <span class="corps">
                   <span class="nom"><span class="sport-point" style:background={couleurSport(familleAffichage(c.sport))}></span>{c.name}</span>
-                  <span class="sous">{nomFamille(c.sport)}{#if c.distance_km} · {formatKm(c.distance_km)} km{/if} · {formatDuree(c.moving_time)}</span>
+                  <span class="sous">{nomFamille(c.sport)}{#if c.distance_km} · {formatKm(c.distance_km)} km{/if} · {formatDuree(c.moving_time)}{#if texteClassement(resultatDuJour(resultats, String(c.start_date_local).slice(0, 10)))} · <strong>{texteClassement(resultatDuJour(resultats, String(c.start_date_local).slice(0, 10)))}</strong>{/if}</span>
                 </span>
                 <span class="droite"><span class="badge {prioriteDe(c.priority) === 'A' ? 'objectif' : 'prepa'}">{nomPriorite(c.priority)}</span></span>
               </button>
@@ -169,6 +194,8 @@
     </section>
   {/if}
 </div>
+
+<PanneauLicence ouvert={licence.ouvert} {demo} onfermer={() => (licence.ouvert = false)} onchoisir={choisirLicence} />
 
 <PanneauCompetition
   ouvert={panneau.ouvert}
@@ -357,6 +384,13 @@
     font-weight: 700;
   }
   .vide {
+    margin-bottom: 12px;
     color: var(--texte-doux);
+  }
+  .palmares {
+    margin-bottom: 28px;
+  }
+  .sous strong {
+    color: var(--texte);
   }
 </style>

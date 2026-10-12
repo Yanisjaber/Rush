@@ -273,7 +273,7 @@ export const COLONNES_COMPETITION = 'id,name,date,start_date_local,sport,priorit
 export async function chargerCompetitions(userId) {
   const [prevues, courues] = await Promise.all([
     sb.from('activity_planned').select(COLONNES_COMPETITION).eq('user_id', userId).eq('category', 'competition').order('date', { ascending: true }).limit(300),
-    sb.from('activities').select(`${COLONNES_SEANCE},priority`).eq('user_id', userId).eq('category', 'competition').order('start_date_local', { ascending: false }).limit(200),
+    sb.from('activities').select(`${COLONNES_SEANCE},priority,result_place,result_total,result_catev`).eq('user_id', userId).eq('category', 'competition').order('start_date_local', { ascending: false }).limit(200),
   ]);
   if (prevues.error || courues.error) {
     console.error('[v2/api] competitions', prevues.error?.code || courues.error?.code || '');
@@ -505,4 +505,12 @@ export async function supprimerRetouche(userId, cle) {
   const r = await sb.from('activity_edits').delete().eq('user_id', userId).eq('activity_id', String(cle));
   invaliderRetouches();
   return resultat(r, "Impossible d'effacer tes retouches.");
+}
+
+/** Enregistre (ou efface, valeurs à null) le résultat saisi à la main d'une compétition courue. */
+export async function enregistrerResultat(userId, id, valeurs) {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Sortie introuvable.' };
+  const r = await sb.from('activities').update(valeurs).eq('id', id).eq('user_id', userId).select('id,result_place,result_total,result_catev').maybeSingle();
+  if (!r.error && !r.data) return { data: null, erreur: 'Sortie introuvable.' };
+  return resultat(r, "Impossible d'enregistrer le résultat.");
 }

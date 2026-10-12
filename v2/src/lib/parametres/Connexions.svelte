@@ -1,6 +1,9 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import LogoApp from '../components/LogoApp.svelte';
+  import PanneauLicence from '../components/PanneauLicence.svelte';
+  import { palmares, initialiserPalmares, lierLicence, delierLicence } from '../stores/palmares.svelte.js';
+  import { nomLicence } from '../data/opendossard.js';
   import Bouton from '../components/Bouton.svelte';
   import { auth } from '../stores/auth.svelte.js';
   import { retourStrava, effacerRetour } from '../stores/connexions.svelte.js';
@@ -37,7 +40,14 @@
     etat = r.erreur ? { ...etat, chargement: false, erreur: r.erreur } : { chargement: false, erreur: '', ...r.data };
   }
 
+  let licence = $state({ ouvert: false });
+  async function choisirLicence(l) {
+    licence.ouvert = false;
+    await lierLicence(userId, l, demo);
+  }
+
   onMount(async () => {
+    initialiserPalmares(userId, demo);
     await charger();
     // Retour de Strava après l'autorisation : on prévient, et on lance l'import si c'est une première connexion
     if (retourStrava.erreur) {
@@ -198,17 +208,31 @@
       </div>
     </article>
 
-    <article class="case a-venir">
+    <article class="case">
       <div class="logo opendossard"><LogoApp app="opendossard" /></div>
       <div class="corps">
         <div class="entete-carte">
           <h2 class="titre">Open Dossard</h2>
-          <span class="pastille non">Bientôt</span>
+          <span class="pastille {palmares.licence ? 'ok' : 'non'}">{palmares.licence ? 'Connecté' : 'Non connecté'}</span>
         </div>
-        <p class="detail">Importe ton palmarès et tes résultats officiels (FSGT, UFOLEP…). Cette connexion arrivera avec les compétitions.</p>
+        <p class="detail">
+          {#if palmares.licence}{nomLicence(palmares.licence)}{palmares.licence.numero ? ` · N° ${palmares.licence.numero}` : ''}{palmares.licence.club ? ` · ${palmares.licence.club}` : ''} · {palmares.officiels.length} résultat{palmares.officiels.length > 1 ? 's' : ''}
+          {:else}Importe ton palmarès et tes résultats officiels (FSGT, UFOLEP…).{/if}
+        </p>
+        <div class="actions">
+          {#if palmares.licence}
+            <Bouton variante="discret" onclick={() => (licence.ouvert = true)}>Changer de licence</Bouton>
+            <Bouton variante="texte" onclick={() => delierLicence(userId)}>Délier</Bouton>
+          {:else}
+            <Bouton onclick={() => (licence.ouvert = true)}>Lier ma licence</Bouton>
+          {/if}
+        </div>
+        {#if palmares.erreur}<p class="erreur" role="alert">{palmares.erreur}</p>{/if}
       </div>
     </article>
   </div>
+
+    <PanneauLicence ouvert={licence.ouvert} {demo} onfermer={() => (licence.ouvert = false)} onchoisir={choisirLicence} />
 
     <p class="pied">Tes jetons d'accès restent stockés côté serveur et ne sont jamais affichés ici.</p>
   {/if}

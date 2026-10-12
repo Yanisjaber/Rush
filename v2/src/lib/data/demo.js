@@ -208,8 +208,8 @@ export function competitionsDemo(aujourdhui = new Date()) {
       prevue('demo-comp-b2', 'Trail des Crêtes', 120, 'TrailRun', 'B', 24, 1300, 195, 'Trail'),
     ],
     courues: [
-      { id: 'demo-comp-c1', name: '10 km de Blagnac', sport: 'Run', start_date_local: `${jour(-43)}T09:00:00+00:00`, moving_time: 2472, distance_km: 10, total_elevation_gain: 38, avg_heartrate: 176, avg_watts: null, np: null, tss: 71, category: 'competition', priority: 'A' },
-      { id: 'demo-comp-c2', name: 'Cyclo de la Garonne', sport: 'Ride', start_date_local: `${jour(-22)}T08:30:00+00:00`, moving_time: 15300, distance_km: 82, total_elevation_gain: 850, avg_heartrate: 158, avg_watts: 205, np: 225, tss: 210, category: 'competition', priority: 'B' },
+      { id: 'demo-comp-c1', name: '10 km de Blagnac', sport: 'Run', start_date_local: `${jour(-43)}T09:00:00+00:00`, moving_time: 2472, distance_km: 10, total_elevation_gain: 38, avg_heartrate: 176, avg_watts: null, np: null, tss: 71, category: 'competition', priority: 'A', result_place: null, result_total: null, result_catev: null },
+      { id: 'demo-comp-c2', name: 'Cyclo de la Garonne', sport: 'Ride', start_date_local: `${jour(-22)}T08:30:00+00:00`, moving_time: 15300, distance_km: 82, total_elevation_gain: 850, avg_heartrate: 158, avg_watts: 205, np: 225, tss: 210, category: 'competition', priority: 'B', result_place: null, result_total: null, result_catev: null },
     ],
   };
 }
@@ -290,6 +290,24 @@ export function prevueDemo(seance) {
       { type: 'warmup', name: 'Échauffement', reps: 1, metric: 'power', unit: 'zone', work: { min: 12, int: 45, intHi: 55 } },
       { type: 'interval', name: '4×4 VO2', reps: 4, metric: 'power', unit: 'zone', work: { min: 4, int: 106, intHi: 120 }, rec: { min: 3, int: 40, intHi: 55 } },
       { type: 'cooldown', name: 'Retour au calme', reps: 1, metric: 'power', unit: 'zone', work: { min: 8, int: 40, intHi: 55 } },
+    ],
+  };
+}
+
+/** Licence et palmarès Open Dossard d'exemple (forme des résultats normalisés par opendossard.js). */
+export function palmaresDemo(maintenant = new Date()) {
+  const an = maintenant.getFullYear();
+  const r = (annee, mois, jour, nom, place, total, categorie = '3') => ({ date: `${annee}-${String(mois).padStart(2, '0')}-${String(jour).padStart(2, '0')}`, nom, place, total, categorie, idCompetition: null, source: 'od' });
+  return {
+    licence: { id: 'demo-licence', numero: '1234567', prenom: 'Yanis', nom: 'Jaber', club: 'UV Toulouse', departement: '31' },
+    resultats: [
+      r(an, 9, 20, 'Grand Prix de Ramonville', 3, 52),
+      r(an, 8, 30, 'Critérium de Blagnac', 1, 38),
+      r(an, 6, 14, 'Prix de Saint-Orens', 12, 60),
+      r(an, 4, 5, 'Course de Castanet', 7, 45),
+      r(an - 1, 9, 8, 'Grand Prix de Labège', 2, 49),
+      r(an - 1, 6, 22, 'Prix de Colomiers', 15, 55),
+      r(an - 1, 3, 30, "Ronde d'Auzeville", 4, 41),
     ],
   };
 }

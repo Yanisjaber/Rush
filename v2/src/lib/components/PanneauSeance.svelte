@@ -1,11 +1,13 @@
 <script>
+  import { untrack } from 'svelte';
   import Panneau from './Panneau.svelte';
   import Bouton from './Bouton.svelte';
   import StatCle from './StatCle.svelte';
   import { apercu, fermerApercu, majApercu } from '../stores/apercu.svelte.js';
   import { auth } from '../stores/auth.svelte.js';
   import { ouvrirModification } from '../stores/edition.svelte.js';
-  import { definirCategorieActivite } from '../data/api.js';
+  import { definirCategorieActivite, enregistrerResultat } from '../data/api.js';
+  import { validerResultat, texteClassement } from '../data/opendossard.js';
   import { modeDemo } from '../routeur.svelte.js';
   import { chargeSeance } from '../data/synthese.js';
   import { familleAffichage } from '../data/familles.js';
@@ -33,6 +35,27 @@
     if (r.erreur) return (retour = { texte: r.erreur, erreur: true });
     majApercu({ category: cible });
     retour = { texte: cible === 'competition' ? 'Marquée comme compétition.' : 'Retirée des compétitions.', erreur: false };
+  }
+
+  // Résultat saisi à la main (compétition courue) : seulement quand la ligne vient de la page Compétitions, qui connaît déjà le résultat
+  const peutSaisirResultat = $derived(s?.category === 'competition' && s?.result_place !== undefined);
+  let resultat = $state({ place: '', total: '', categorie: '' });
+  let retourResultat = $state({ texte: '', erreur: false });
+  $effect(() => {
+    const x = s;
+    untrack(() => {
+      resultat = { place: x?.result_place != null ? String(x.result_place) : '', total: x?.result_total != null ? String(x.result_total) : '', categorie: x?.result_catev || '' };
+      retourResultat = { texte: '', erreur: false };
+    });
+  });
+  async function sauverResultat(e) {
+    e.preventDefault();
+    const { valeurs, erreurs } = validerResultat(resultat);
+    if (!valeurs) return (retourResultat = { texte: Object.values(erreurs)[0], erreur: true });
+    const r = modeDemo() ? { erreur: '' } : await enregistrerResultat(auth.session?.user?.id, s.id, valeurs);
+    if (r.erreur) return (retourResultat = { texte: r.erreur, erreur: true });
+    majApercu(valeurs);
+    retourResultat = { texte: valeurs.result_place ? 'Résultat enregistré.' : 'Résultat effacé.', erreur: false };
   }
 
   const tuiles = $derived.by(() => {
@@ -71,6 +94,19 @@
         <Bouton variante="discret" onclick={() => { const sortie = apercu.seance; fermerApercu(); ouvrirModification(sortie); }}>Modifier</Bouton>
         <Bouton variante="texte" onclick={fermerApercu}>Fermer</Bouton>
       </div>
+      {#if peutSaisirResultat}
+        <form class="resultat" onsubmit={sauverResultat} novalidate>
+          <h4>Mon résultat{#if s.result_place}<span class="actuel"> · {texteClassement({ place: s.result_place, total: s.result_total, categorie: s.result_catev })}</span>{/if}</h4>
+          <div class="ligne">
+            <label>Place<input type="text" inputmode="numeric" bind:value={resultat.place} /></label>
+            <label>Sur (partants)<input type="text" inputmode="numeric" bind:value={resultat.total} /></label>
+            <label>Catégorie<input type="text" maxlength="30" bind:value={resultat.categorie} /></label>
+          </div>
+          <div class="actions"><Bouton type="submit" variante="discret">Enregistrer le résultat</Bouton></div>
+          {#if retourResultat.texte}<p class={retourResultat.erreur ? 'erreur' : 'info'} role="status" aria-live="polite">{retourResultat.texte}</p>{/if}
+        </form>
+      {/if}
+
       {#if s.category !== undefined}
         <div class="competition">
           <Bouton variante="texte" onclick={basculer}>{envoi ? 'Enregistrement…' : estCompetition ? 'Retirer des compétitions' : 'Marquer comme compétition'}</Bouton>
@@ -122,6 +158,52 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+  }
+  .resultat {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 14px;
+    border-top: 1px solid var(--trait);
+  }
+  .resultat h4 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--texte-muet);
+  }
+  .resultat .actuel {
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--texte);
+  }
+  .resultat .ligne {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 10px;
+  }
+  .resultat label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--texte-doux);
+  }
+  .resultat input {
+    box-sizing: border-box;
+    min-height: 48px;
+    padding: 0 12px;
+    background: var(--fond);
+    color: var(--texte);
+    border: 1px solid var(--trait-fort);
+    border-radius: var(--rayon);
+    font-size: 16px;
+  }
+  .resultat input:focus-visible {
+    outline: 2px solid var(--texte);
+    outline-offset: 2px;
   }
   .competition {
     padding-top: 14px;

@@ -8,7 +8,7 @@ import { urlAutorisationStrava, etatSyncGarmin } from './connexions.js';
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** Appelle une Edge Function avec le jeton de la session. Renvoie { ok, statut, data, abandon }. */
-async function appeler(fonction, corps, signal) {
+export async function appeler(fonction, corps, signal) {
   const { data: s } = await sb.auth.getSession();
   const jeton = s.session?.access_token;
   if (!jeton) return { ok: false, statut: 401, data: null, abandon: false };
