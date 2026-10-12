@@ -11,4 +11,11 @@ import './lib/design/global.css';
 
 import App from './App.svelte';
 
+// Thème mémorisé (sombre par défaut), appliqué avant l'affichage pour éviter un éclair de mauvaise couleur.
+try {
+  document.documentElement.dataset.theme = localStorage.getItem('coachia-v2-theme') === 'clair' ? 'light' : 'dark';
+} catch (e) {
+  document.documentElement.dataset.theme = 'dark';
+}
+
 mount(App, { target: document.getElementById('app') });

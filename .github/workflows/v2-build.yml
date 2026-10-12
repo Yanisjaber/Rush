@@ -1,0 +1,39 @@
+name: Build v2
+
+# Vérifie que la v2 (Svelte + Vite) compile et que ses dépendances de production n'ont pas de faille grave.
+# Ne déploie rien : le déploiement sera ajouté séparément.
+on:
+  push:
+    branches: [main]
+    paths: ['v2/**', '.github/workflows/v2-build.yml']
+  pull_request:
+    paths: ['v2/**']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: v2
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: v2/package-lock.json
+
+      # npm ci : installe EXACTEMENT ce qui est dans package-lock.json (jamais de version « flottante »).
+      # --ignore-scripts : aucun script d'installation n'est exécuté (même règle que v2/.npmrc).
+      - name: Installer les dépendances
+        run: npm ci --ignore-scripts
+
+      - name: Audit de sécurité (dépendances de production)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Compiler
+        run: npm run build
