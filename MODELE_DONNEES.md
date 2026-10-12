@@ -19,6 +19,7 @@ humain (coach ↔ athlète, messagerie) a été supprimé le 2026-10-11 ; le rô
 | `daily_metrics` | Charge calculée par jour (CTL/ATL/TSB), recalculée par trigger |
 | `power_profile`, `power_profile_sport` | Records de puissance par durée (global et par sport) |
 | `garmin_sleep` | Nuits de sommeil Garmin (phases, score, HRV, stress, FC nocturne) |
+| `garmin_sync_requests` | Demandes de synchro Garmin (bouton de l'appli → lues par le Raspberry Pi) ; le navigateur ne peut insérer que `user_id` |
 | `od_prefs` | Préférences Open Dossard |
 | `connexions_app` | Connexions OAuth (Strava, Garmin) ; `access_token`/`refresh_token` masqués au navigateur par révocation de colonnes |
 | `oauth_states` | État OAuth à usage unique (créé par `oauth-start`, consommé par les callbacks) ; aucun accès client |

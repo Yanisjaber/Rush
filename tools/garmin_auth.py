@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 garmin_auth.py — Login manuel Garmin Connect (via garth) pour (re)générer
-oauth1_token/oauth1_secret, consommés par l'Edge Function garmin-ingest.
+oauth1_token/oauth1_secret, consommés par tools/garmin_sync.py (Raspberry Pi).
 
 Garmin n'a pas de portail OAuth développeur public : contrairement à
 whoop_auth.py, ce script fait un vrai login (email + mot de passe entrés
@@ -10,15 +10,15 @@ librairie garth (pip install garth), qui reproduit le flow SSO officiel.
 
 Le login SSO (oauth1_token) réussit indépendamment du endpoint
 connectapi.garmin.com/oauth-service/oauth/exchange/user/2.0, qui est
-celui qu'utilise garmin-ingest pour rafraîchir l'access_token — et qui
+celui qu'utilise garmin_sync.py pour rafraîchir l'access_token — et qui
 peut être rate-limité (429) après trop d'appels rapprochés. Ce script
 tente donc l'échange en access_token, mais sauvegarde l'oauth1_token
-même si cet échange échoue : garmin-ingest retentera tout seul (cron
-horaire) une fois le rate-limit retombé.
+même si cet échange échoue : garmin_sync.py retentera au prochain clic sur Synchroniser,
+une fois le rate-limit retombé.
 
 Usage :
     pip3 install garth
-    python3 garmin_auth.py
+    python3 tools/garmin_auth.py
 
 Résultat : .garmin_tokens.json (local, jamais commité — voir .gitignore).
 """
@@ -31,7 +31,7 @@ from pathlib import Path
 import garth
 from garth import sso
 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).resolve().parent.parent
 TOKEN_FILE = ROOT / ".garmin_tokens.json"
 
 
@@ -101,7 +101,7 @@ def main():
         print(f"[OK] access_token obtenu, expire à {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(oauth2.expires_at))}")
     except Exception as e:
         print(f"[!] Échange access_token échoué ({e}) — pas grave, oauth1_token sauvegardé quand même.")
-        print("    garmin-ingest retentera automatiquement (cron horaire) une fois le rate-limit retombé.")
+        print("    garmin_sync.py retentera au prochain clic sur Synchroniser une fois le rate-limit retombé.")
 
     TOKEN_FILE.write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(f"\n[OK] Tokens sauvegardés dans {TOKEN_FILE.name}")

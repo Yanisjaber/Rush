@@ -1,10 +1,11 @@
 /* ============================================================
    src/features/sleep/garmin-sleep.js — Panel Sommeil (p8)
 
-   Lit la table garmin_sleep (remplie automatiquement toutes les heures
-   par l'Edge Function garmin-ingest via pg_cron — voir
-   supabase/functions/garmin-ingest/). Ce module ne fait QUE lire et
-   afficher ; il ne touche jamais à Garmin directement.
+   Lit la table garmin_sleep, remplie par tools/garmin_sync.py qui tourne
+   sur un Raspberry Pi (Garmin refuse les serveurs cloud). Ce module ne
+   touche jamais à Garmin directement : il lit, et il peut demander une
+   synchro en écrivant une ligne dans garmin_sync_requests (voir
+   startGarminIngest en bas de ce fichier).
 
    Structure : 3 sous-onglets —
      Aperçu     : nuit précédente + historique déroulant (existant)
@@ -1173,31 +1174,43 @@ async function startGarminIngest(opts = {}) {
   if (!sb) { if (!silent) showGarminToast('Supabase non initialisé', 'error'); return; }
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { if (!silent) showGarminToast('Tu dois être connecté', 'error'); return; }
-  if (!silent) showGarminToast('Synchro sommeil Garmin en cours…', 'loading');
+  if (!silent) showGarminToast('Demande de synchro envoyée, en attente du Raspberry Pi…', 'loading');
   try {
-    const cfg = window.SUPABASE_CONFIG;
-    const res = await fetch(`${cfg.url}/functions/v1/garmin-ingest`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ days: opts.days || 3 }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      const msg = data.error === 'no_garmin_connection'
-        ? 'Aucun compte Garmin connecté'
-        : data.error === 'garmin_rate_limited_cooldown'
-        ? `Garmin limite les requêtes, réessaie dans ~${data.retry_in_minutes} min`
-        : `Erreur synchro Garmin : ${data.error || res.status}`;
+    // 1) On dépose une demande. La base impose user_id = soi et une seule demande active à la fois.
+    const { data: demande, error: errInsert } = await sb
+      .from('garmin_sync_requests').insert({ user_id: session.user.id }).select('id').single();
+    if (errInsert) {
+      const msg = errInsert.code === '23505'
+        ? 'Une synchro est déjà en cours, patiente un peu'
+        : `Impossible de lancer la synchro : ${errInsert.message}`;
       if (!silent) showGarminToast(msg, 'error');
-      console.error('[garmin-ingest]', data);
+      console.error('[garmin-sync]', errInsert);
       return;
     }
-    if (!silent) showGarminToast(`Sommeil Garmin synchronisé : ${data.days_upserted || 0} nuit(s)`, 'success');
-    if (document.getElementById('sleep-app')) await loadAndRender();
-    if (window.refreshConnectionsIfOpen) window.refreshConnectionsIfOpen();
+
+    // 2) Le Pi vérifie les demandes chaque minute : on interroge le résultat toutes les 4 s, 3 min max.
+    const FIN = Date.now() + 3 * 60 * 1000;
+    while (Date.now() < FIN) {
+      await new Promise((r) => setTimeout(r, 4000));
+      const { data: etat, error: errLecture } = await sb
+        .from('garmin_sync_requests').select('status,nights,error').eq('id', demande.id).single();
+      if (errLecture) throw errLecture;
+      if (etat.status === 'running' && !silent) showGarminToast('Synchro Garmin en cours…', 'loading');
+      if (etat.status === 'done') {
+        if (!silent) showGarminToast(`Sommeil Garmin synchronisé : ${etat.nights || 0} nuit(s)`, 'success');
+        if (document.getElementById('sleep-app')) await loadAndRender();
+        if (window.refreshConnectionsIfOpen) window.refreshConnectionsIfOpen();
+        return;
+      }
+      if (etat.status === 'error') {
+        if (!silent) showGarminToast(`Synchro Garmin échouée : ${etat.error || 'erreur inconnue'}`, 'error');
+        return;
+      }
+    }
+    if (!silent) showGarminToast('Le Raspberry Pi ne répond pas (éteint ou hors ligne ?). Réessaie plus tard.', 'error');
   } catch (e) {
-    if (!silent) showGarminToast('Erreur réseau Garmin : ' + (e.message || e), 'error');
-    console.error('[garmin-ingest]', e);
+    if (!silent) showGarminToast('Erreur synchro Garmin : ' + (e.message || e), 'error');
+    console.error('[garmin-sync]', e);
   }
 }
 window.startGarminIngest = startGarminIngest;

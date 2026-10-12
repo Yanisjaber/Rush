@@ -1,30 +1,37 @@
 #!/usr/bin/env python3
 """
-garmin_sync.py — Synchro Garmin complète, hors Supabase (port Python de la
-Edge Function garmin-ingest).
+garmin_sync.py — Synchro Garmin hors Supabase (port Python de l'ancienne Edge
+Function garmin-ingest), prévue pour tourner sur un Raspberry Pi chez toi.
 
 Pourquoi hors Supabase : Garmin bloque l'échange de token OAuth1 -> OAuth2
-quand il vient des serveurs Supabase. Ce script tourne ailleurs (GitHub
-Actions, ou ton Mac) et fait tout :
+quand il vient des serveurs Supabase ou de GitHub (IP de datacenter). Depuis une
+IP résidentielle, ça passe.
+
+Deux modes :
+  --si-demande   (cron du Pi, chaque minute) : ne fait RIEN s'il n'y a pas de
+                 demande. Quand tu cliques sur « Synchroniser » dans l'appli,
+                 elle écrit une ligne 'pending' dans garmin_sync_requests ;
+                 le Pi la voit, lance la synchro, puis marque la demande
+                 'done' ou 'error' (l'appli lit ce résultat).
+  (sans option)  synchro immédiate, à la main : python3 tools/garmin_sync.py
+
+Étapes d'une synchro :
   1. lit la connexion garmin dans connexions_app (service role)
-  2. rafraîchit le token si besoin (échange via garth, qui gère la clé
-     consumer lui-même : plus de téléchargement depuis un S3 tiers)
+  2. rafraîchit le token si besoin (garth gère la clé consumer lui-même)
   3. récupère sommeil + FC repos + stream FC des N derniers jours
   4. upsert dans garmin_sleep
 
-Variables d'environnement (GitHub Secrets, ou fichier .env en local) :
+Variables d'environnement (ou fichier .env à la racine, en chmod 600) :
     SUPABASE_URL
     SUPABASE_SERVICE_ROLE_KEY
 
-Usage :
-    python3 tools/garmin_sync.py [--days 3]
+Options :
+    --days N       nombre de jours à récupérer (1 à 30, défaut 3)
 
 Sécurité : ce script ne doit JAMAIS afficher un token ni la clé service_role.
-Les logs d'un workflow GitHub sur un dépôt public sont lisibles par tout le monde.
 """
 import os
 import sys
-import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -35,8 +42,13 @@ from garth.auth_tokens import OAuth1Token
 
 ROOT = Path(__file__).resolve().parent.parent
 USER_AGENT_API = "GCM-iOS-5.7.2.1"
-MARGIN_SEC = 2 * 3600   # on rafraîchit si le token expire dans moins de 2 h
+MARGIN_SEC = 2 * 3600        # on rafraîchit si le token expire dans moins de 2 h
 DEFAULT_DAYS = 3
+DEMANDE_PERIMEE = timedelta(hours=1)   # une demande plus vieille est abandonnée
+
+
+class GarminErreur(Exception):
+    """Erreur de synchro déjà formulée pour être affichée à l'utilisateur."""
 
 
 def charger_env():
@@ -60,6 +72,10 @@ def charger_env():
 def court(msg, n=150):
     """Message d'erreur tronqué pour les logs (jamais de détail sensible)."""
     return str(msg).replace("\n", " ")[:n]
+
+
+def maintenant():
+    return datetime.now(timezone.utc).isoformat()
 
 
 # ============ EXTRACTION SOMMEIL (même mapping que garmin-ingest) ============
@@ -157,36 +173,50 @@ def rafraichir_token(oauth1_token, oauth1_secret):
     return sso.exchange(oauth1, client)
 
 
-# ============ MAIN ============
-def main():
-    jours = DEFAULT_DAYS
-    if "--days" in sys.argv:
-        jours = max(1, min(30, int(sys.argv[sys.argv.index("--days") + 1])))
+# ============ ACCÈS SUPABASE (REST, service role) ============
+class Supabase:
+    def __init__(self, env):
+        self.base = env["SUPABASE_URL"].rstrip("/") + "/rest/v1"
+        cle = env["SUPABASE_SERVICE_ROLE_KEY"]
+        self.h = {"apikey": cle, "Authorization": f"Bearer {cle}", "Content-Type": "application/json"}
 
-    env = charger_env()
-    base = env["SUPABASE_URL"].rstrip("/") + "/rest/v1"
-    h = {
-        "apikey": env["SUPABASE_SERVICE_ROLE_KEY"],
-        "Authorization": f"Bearer {env['SUPABASE_SERVICE_ROLE_KEY']}",
-        "Content-Type": "application/json",
-    }
+    def get(self, table, params):
+        r = requests.get(f"{self.base}/{table}", headers=self.h, params=params, timeout=20)
+        r.raise_for_status()
+        return r.json()
 
-    def maj_connexion(user_id, champs):
-        requests.patch(f"{base}/connexions_app", headers={**h, "Prefer": "return=minimal"},
-                       params={"app": "eq.garmin", "user_id": f"eq.{user_id}"},
-                       json=champs, timeout=20).raise_for_status()
+    def patch(self, table, params, champs, retour=False):
+        h = {**self.h, "Prefer": "return=representation" if retour else "return=minimal"}
+        r = requests.patch(f"{self.base}/{table}", headers=h, params=params, json=champs, timeout=20)
+        r.raise_for_status()
+        return r.json() if retour else None
 
-    r = requests.get(f"{base}/connexions_app", headers=h, timeout=20, params={
-        "app": "eq.garmin",
-        "select": "user_id,access_token,expires_at,oauth1_token,oauth1_secret"})
-    r.raise_for_status()
-    lignes = r.json()
+    def upsert(self, table, lignes, conflit):
+        h = {**self.h, "Prefer": "resolution=merge-duplicates,return=minimal"}
+        return requests.post(f"{self.base}/{table}", headers=h,
+                             params={"on_conflict": conflit}, json=lignes, timeout=30)
+
+
+# ============ SYNCHRO ============
+def synchroniser(sb, jours=DEFAULT_DAYS, user_id=None):
+    """Synchronise le sommeil. Retourne le nombre de nuits. Lève GarminErreur."""
+    filtre = {"app": "eq.garmin",
+              "select": "user_id,access_token,expires_at,oauth1_token,oauth1_secret"}
+    if user_id:
+        filtre["user_id"] = f"eq.{user_id}"
+    lignes = sb.get("connexions_app", filtre)
     if not lignes:
-        sys.exit("[X] Aucune connexion garmin dans connexions_app.")
+        raise GarminErreur("Aucune connexion Garmin enregistrée.")
     conn = lignes[0]
     user_id = conn["user_id"]
-    maintenant = datetime.now(timezone.utc).isoformat()
-    maj_connexion(user_id, {"last_sync_status": "running", "last_sync_at": maintenant})
+    cible = {"app": "eq.garmin", "user_id": f"eq.{user_id}"}
+
+    def erreur(msg, detail):
+        sb.patch("connexions_app", cible, {"last_sync_status": "error",
+                                           "last_sync_error": detail[:500], "last_sync_at": maintenant()})
+        raise GarminErreur(msg)
+
+    sb.patch("connexions_app", cible, {"last_sync_status": "running", "last_sync_at": maintenant()})
 
     # 1) Token : on ne l'échange que s'il expire bientôt
     access_token = conn["access_token"]
@@ -198,11 +228,9 @@ def main():
         try:
             oauth2 = rafraichir_token(conn["oauth1_token"], conn["oauth1_secret"])
         except Exception as e:
-            maj_connexion(user_id, {"last_sync_status": "error",
-                                    "last_sync_error": f"token_refresh_failed: {court(e)}"})
-            sys.exit(f"[X] Échange de token échoué : {court(e)}")
+            erreur("Garmin a refusé le renouvellement du token.", f"token_refresh_failed: {court(e)}")
         access_token = oauth2.access_token
-        maj_connexion(user_id, {
+        sb.patch("connexions_app", cible, {
             "access_token": access_token,
             "expires_at": datetime.fromtimestamp(oauth2.expires_at, timezone.utc).isoformat()})
         print("[OK] Token rafraîchi.")
@@ -211,9 +239,7 @@ def main():
     try:
         nom = garmin_get("/userprofile-service/socialProfile", access_token)["displayName"]
     except Exception as e:
-        maj_connexion(user_id, {"last_sync_status": "error",
-                                "last_sync_error": f"profile_fetch: {court(e, 80)}"})
-        sys.exit(f"[X] Profil Garmin : {court(e)}")
+        erreur("Profil Garmin illisible.", f"profile_fetch: {court(e, 80)}")
 
     # 3) Sommeil des N derniers jours
     nuits = []
@@ -249,19 +275,72 @@ def main():
 
     # 4) Upsert garmin_sleep
     if nuits:
-        maintenant = datetime.now(timezone.utc).isoformat()
-        lignes_sommeil = [{**n, "user_id": user_id, "updated_at": maintenant} for n in nuits]
-        r = requests.post(f"{base}/garmin_sleep", headers={
-            **h, "Prefer": "resolution=merge-duplicates,return=minimal"},
-            params={"on_conflict": "user_id,date"}, json=lignes_sommeil, timeout=30)
+        horodatage = maintenant()
+        r = sb.upsert("garmin_sleep",
+                      [{**n, "user_id": user_id, "updated_at": horodatage} for n in nuits],
+                      "user_id,date")
         if not r.ok:
-            maj_connexion(user_id, {"last_sync_status": "error",
-                                    "last_sync_error": f"upsert_{r.status_code}"})
-            sys.exit(f"[X] Upsert garmin_sleep refusé ({r.status_code}).")
+            erreur("Écriture du sommeil refusée par la base.", f"upsert_{r.status_code}")
 
-    maj_connexion(user_id, {"last_sync_status": "ok", "last_sync_error": None,
-                            "last_sync_at": datetime.now(timezone.utc).isoformat()})
-    print(f"[OK] {len(nuits)} nuit(s) synchronisée(s).")
+    sb.patch("connexions_app", cible, {"last_sync_status": "ok", "last_sync_error": None,
+                                       "last_sync_at": maintenant()})
+    return len(nuits)
+
+
+# ============ MODE « SI DEMANDE » (cron du Pi) ============
+def traiter_demande(sb, jours):
+    """Ne fait rien (et n'affiche rien) s'il n'y a aucune demande en attente."""
+    limite = (datetime.now(timezone.utc) - DEMANDE_PERIMEE).isoformat()
+    # Demandes abandonnées (Pi éteint, plantage) : on les clôt pour débloquer le bouton.
+    sb.patch("garmin_sync_requests",
+             {"status": "in.(pending,running)", "requested_at": f"lt.{limite}"},
+             {"status": "error", "error": "Demande expirée (le Pi n'a pas répondu).",
+              "finished_at": maintenant()})
+
+    en_attente = sb.get("garmin_sync_requests", {
+        "status": "eq.pending", "select": "id,user_id", "order": "requested_at.asc", "limit": "1"})
+    if not en_attente:
+        return
+    demande = en_attente[0]
+
+    # On « réserve » la demande : si une autre exécution l'a déjà prise, on s'arrête.
+    prise = sb.patch("garmin_sync_requests",
+                     {"id": f"eq.{demande['id']}", "status": "eq.pending"},
+                     {"status": "running"}, retour=True)
+    if not prise:
+        return
+
+    cible = {"id": f"eq.{demande['id']}"}
+    try:
+        nb = synchroniser(sb, jours, demande["user_id"])
+        sb.patch("garmin_sync_requests", cible, {"status": "done", "nights": nb,
+                                                 "finished_at": maintenant()})
+        print(f"[OK] Demande {demande['id'][:8]} : {nb} nuit(s) synchronisée(s).")
+    except GarminErreur as e:
+        sb.patch("garmin_sync_requests", cible, {"status": "error", "error": str(e)[:200],
+                                                 "finished_at": maintenant()})
+        print(f"[X] Demande {demande['id'][:8]} : {e}")
+    except Exception as e:
+        sb.patch("garmin_sync_requests", cible, {"status": "error", "error": "Erreur inattendue.",
+                                                 "finished_at": maintenant()})
+        print(f"[X] Demande {demande['id'][:8]} : erreur inattendue ({court(e)})")
+
+
+def main():
+    jours = DEFAULT_DAYS
+    if "--days" in sys.argv:
+        jours = max(1, min(30, int(sys.argv[sys.argv.index("--days") + 1])))
+    sb = Supabase(charger_env())
+
+    if "--si-demande" in sys.argv:
+        traiter_demande(sb, jours)
+        return
+
+    try:
+        nb = synchroniser(sb, jours)
+    except GarminErreur as e:
+        sys.exit(f"[X] {e}")
+    print(f"[OK] {nb} nuit(s) synchronisée(s).")
 
 
 if __name__ == "__main__":
