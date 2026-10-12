@@ -35,12 +35,13 @@ export function titreMois(annee, mois) {
 
 /**
  * Grille d'un mois : { titre, semaines: [[jour × 7] × n] }.
- * jour : { iso, num, dansMois, aujourdhui, futur, seances, planifiees, objectifs }
+ * jour : { iso, num, dansMois, aujourdhui, futur, seances, planifiees, objectifs, notes, repos }
  *  - seances : séances réalisées (table activities)
  *  - planifiees : séances prévues (activity_planned, hors compétitions)
  *  - objectifs : compétitions (activity_planned, category = 'competition')
+ *  - notes : notes, maladies et blessures qui recouvrent le jour (day_notes) ; repos : jour de repos (rest_day)
  */
-export function grilleMois(annee, mois, { seances = [], planifiees = [], objectifs = [] } = {}, aujourdhui = new Date()) {
+export function grilleMois(annee, mois, { seances = [], planifiees = [], objectifs = [], notes = [], repos = [] } = {}, aujourdhui = new Date()) {
   const { debut } = bornesGrille(annee, mois);
   const auj = dateIsoLocale(aujourdhui);
 
@@ -56,6 +57,7 @@ export function grilleMois(annee, mois, { seances = [], planifiees = [], objecti
   const parSeance = range(seances, (s) => s.start_date_local);
   const parPlan = range(planifiees, (p) => p.date);
   const parObjectif = range(objectifs, (o) => o.date);
+  const jourDeRepos = new Set(repos.map((r) => iso10(r.iso_date ?? r)));
 
   const semaines = [];
   const curseur = new Date(`${debut}T12:00:00`);
@@ -72,6 +74,8 @@ export function grilleMois(annee, mois, { seances = [], planifiees = [], objecti
         seances: parSeance.get(iso) || [],
         planifiees: parPlan.get(iso) || [],
         objectifs: parObjectif.get(iso) || [],
+        notes: notes.filter((n) => String(n.from_date) <= iso && iso <= String(n.to_date)),
+        repos: jourDeRepos.has(iso),
       });
       curseur.setDate(curseur.getDate() + 1);
     }

@@ -4,9 +4,11 @@
   import ChipSport from '../lib/components/ChipSport.svelte';
   import Bouton from '../lib/components/Bouton.svelte';
   import PanneauPrevue from '../lib/components/PanneauPrevue.svelte';
+  import PanneauMarquage from '../lib/components/PanneauMarquage.svelte';
   import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
   import { auth } from '../lib/stores/auth.svelte.js';
-  import { chargerSeancesPeriode, chargerPlanifiees } from '../lib/data/api.js';
+  import { chargerSeancesPeriode, chargerPlanifiees, chargerAnnotations } from '../lib/data/api.js';
+  import { joursDe, versLigneNote } from '../lib/data/annotations.js';
   import { donneesDemo } from '../lib/data/demo.js';
   import { grilleMois, bornesGrille, decalerMois, JOURS_SEMAINE } from '../lib/data/calendrier.js';
   import { familleAffichage } from '../lib/data/familles.js';
@@ -17,7 +19,13 @@
 
   const maintenant = new Date();
   let cible = $state({ annee: maintenant.getFullYear(), mois: maintenant.getMonth() });
-  let etat = $state({ chargement: true, erreur: '', seances: [], planifiees: [], objectifs: [] });
+  let etat = $state({ chargement: true, erreur: '', seances: [], planifiees: [], objectifs: [], notes: [], repos: [] });
+  // En démo, les notes et repos vivent en mémoire (ils survivent au changement de mois, pas au rechargement de la page)
+  const jourDemo = (delta) => dateIsoLocale(new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate() + delta));
+  let annotationsDemo = $state({
+    notes: [{ id: 'demo-n1', type: 'blessure', text: 'Genou gauche : on lève le pied', color: '#fb923c', from_date: jourDemo(-3), to_date: jourDemo(-1) }],
+    repos: [jourDemo(-6), jourDemo(3)],
+  });
   let filtre = $state('tout');
 
   let numeroRequete = 0; // pour ignorer une réponse arrivée en retard si on a déjà changé de mois
@@ -29,16 +37,22 @@
     const { debut, fin } = bornesGrille(annee, mois);
     let seances = [];
     let prevues = [];
+    let notes = [];
+    let repos = [];
     let erreur = '';
     if (demo) {
       const d = donneesDemo();
       seances = d.seances.filter((s) => String(s.start_date_local).slice(0, 10) >= debut && String(s.start_date_local).slice(0, 10) <= fin);
       prevues = d.planifiees.filter((p) => p.date >= debut && p.date <= fin);
+      notes = annotationsDemo.notes.filter((n) => n.from_date <= fin && n.to_date >= debut);
+      repos = annotationsDemo.repos.filter((r) => r >= debut && r <= fin);
     } else if (userId) {
-      const [s, p] = await Promise.all([chargerSeancesPeriode(userId, debut, fin), chargerPlanifiees(userId, debut, fin)]);
+      const [s, p, a] = await Promise.all([chargerSeancesPeriode(userId, debut, fin), chargerPlanifiees(userId, debut, fin), chargerAnnotations(userId, debut, fin)]);
       seances = s.data || [];
       prevues = p.data || [];
-      erreur = s.erreur || p.erreur;
+      notes = a.data?.notes || [];
+      repos = a.data?.repos || [];
+      erreur = s.erreur || p.erreur || a.erreur;
     } else {
       return;
     }
@@ -46,6 +60,8 @@
     etat.seances = seances;
     etat.objectifs = prevues.filter((p) => p.category === 'competition');
     etat.planifiees = prevues.filter((p) => p.category !== 'competition');
+    etat.notes = notes;
+    etat.repos = repos;
     etat.erreur = erreur;
     etat.chargement = false;
   }
@@ -67,6 +83,8 @@
       seances: etat.seances.filter((s) => garder(s.sport)),
       planifiees: etat.planifiees.filter((p) => garder(p.sport)),
       objectifs: etat.objectifs,
+      notes: etat.notes,
+      repos: etat.repos,
     }),
   );
   const seancesDuMois = $derived(
@@ -101,7 +119,32 @@
   function apresSuppression(id) {
     etat.planifiees = etat.planifiees.filter((p) => p.id !== id);
   }
-  const vide = (j) => !j.seances.length && !j.planifiees.length && !j.objectifs.length;
+  const vide = (j) => !j.seances.length && !j.planifiees.length && !j.objectifs.length && !j.notes.length && !j.repos;
+
+  // --- Repos, notes, maladies, blessures ---
+  let panneauMarquage = $state({ ouvert: false, marquage: null, date: dateIsoLocale(maintenant) });
+  function nouveauMarquage(date = dateIsoLocale(maintenant)) {
+    panneauMarquage = { ouvert: true, marquage: null, date };
+  }
+  const ouvrirNote = (n) => (panneauMarquage = { ouvert: true, marquage: n, date: n.from_date });
+  const ouvrirRepos = (iso) => (panneauMarquage = { ouvert: true, marquage: { type: 'repos', iso }, date: iso });
+  function marquageEnregistre(valeurs) {
+    if (demo) {
+      const ancien = panneauMarquage.marquage;
+      if (ancien?.type === 'repos') annotationsDemo.repos = annotationsDemo.repos.filter((r) => r !== ancien.iso);
+      else if (ancien) annotationsDemo.notes = annotationsDemo.notes.filter((n) => n.id !== ancien.id);
+      if (valeurs.type === 'repos') annotationsDemo.repos = [...new Set([...annotationsDemo.repos, ...joursDe(valeurs.de, valeurs.a)])];
+      else annotationsDemo.notes = [...annotationsDemo.notes, { id: ancien && ancien.type !== 'repos' ? ancien.id : `demo-n${Date.now()}`, ...versLigneNote(valeurs) }];
+    }
+    charger(userId, cible.annee, cible.mois);
+  }
+  function marquageSupprime(m) {
+    if (demo) {
+      if (m.type === 'repos') annotationsDemo.repos = annotationsDemo.repos.filter((r) => r !== m.iso);
+      else annotationsDemo.notes = annotationsDemo.notes.filter((n) => n.id !== m.id);
+    }
+    charger(userId, cible.annee, cible.mois);
+  }
 </script>
 
 <div class="page">
@@ -127,6 +170,7 @@
     <div class="droite">
       <span class="resume">{seancesDuMois.length} séance{seancesDuMois.length > 1 ? 's' : ''} · {formatDuree(tempsDuMois)}</span>
       <Bouton variante="discret" onclick={aujourdhui}>Aujourd'hui</Bouton>
+      <Bouton variante="discret" onclick={() => nouveauMarquage()}>Repos ou note</Bouton>
       <Bouton onclick={nouvelle}>Nouvelle séance</Bouton>
     </div>
   </div>
@@ -148,6 +192,14 @@
             <div class="contenu">
               {#each j.objectifs as o (o.id)}
                 <span class="pastille objectif" title={o.name}>{o.name}</span>
+              {/each}
+              {#if j.repos}
+                <button type="button" class="marque repos" aria-label="Jour de repos, modifier" onclick={() => ouvrirRepos(j.iso)}>Repos</button>
+              {/if}
+              {#each j.notes as n (n.id)}
+                <button type="button" class="marque" style:--c={n.color || '#60a5fa'} aria-label="{n.type === 'texte' ? 'Note' : n.type === 'maladie' ? 'Maladie' : 'Blessure'} : {n.text || ''}, modifier" title={n.text || n.type} onclick={() => ouvrirNote(n)}>
+                  <span class="point" aria-hidden="true"></span><span class="txt">{n.text || (n.type === 'maladie' ? 'Maladie' : n.type === 'blessure' ? 'Blessure' : 'Note')}</span>
+                </button>
               {/each}
               {#each j.seances.slice(0, 3) as s (s.id)}
                 <a
@@ -175,6 +227,17 @@
     {/each}
   </div>
 </div>
+
+<PanneauMarquage
+  ouvert={panneauMarquage.ouvert}
+  marquage={panneauMarquage.marquage}
+  dateInitiale={panneauMarquage.date}
+  {userId}
+  {demo}
+  onfermer={() => (panneauMarquage.ouvert = false)}
+  enregistre={marquageEnregistre}
+  supprime={marquageSupprime}
+/>
 
 <PanneauPrevue
   ouvert={panneau.ouvert}
@@ -336,6 +399,36 @@
   }
   .duree {
     opacity: 0.85;
+  }
+  .marque {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 32px;
+    padding: 4px 8px;
+    border: 0;
+    border-left: 3px solid var(--c);
+    border-radius: var(--rayon-s);
+    background: color-mix(in srgb, var(--c) 16%, var(--surface));
+    color: var(--texte);
+    font: inherit;
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .marque .txt {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .marque.repos {
+    --c: var(--texte-muet);
+    background: transparent;
+    border: 1px dashed var(--trait-fort);
+    border-left-width: 1px;
+    color: var(--texte-doux);
+    justify-content: center;
   }
   .pastille.prevue {
     width: 100%;

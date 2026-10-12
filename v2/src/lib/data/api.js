@@ -334,3 +334,52 @@ export async function supprimerObjectifAnnuel(userId, id) {
   const r = await sb.from('yearly_goals').delete().eq('id', id).eq('user_id', userId);
   return resultat(r, "Impossible de supprimer l'objectif.");
 }
+
+// ---------------------------------------------------------------------------
+// Repos, notes et annotations du calendrier (tables rest_day et day_notes)
+// ---------------------------------------------------------------------------
+
+const COLONNES_NOTE = 'id,type,text,color,from_date,to_date';
+
+/** Notes qui recouvrent la période et jours de repos de la période. */
+export async function chargerAnnotations(userId, debutIso, finIso) {
+  const [notes, repos] = await Promise.all([
+    sb.from('day_notes').select(COLONNES_NOTE).eq('user_id', userId).lte('from_date', finIso).gte('to_date', debutIso).order('from_date', { ascending: true }).limit(300),
+    sb.from('rest_day').select('iso_date').eq('user_id', userId).gte('iso_date', debutIso).lte('iso_date', finIso).limit(400),
+  ]);
+  if (notes.error || repos.error) {
+    console.error('[v2/api] annotations', notes.error?.code || repos.error?.code || '');
+    return { data: null, erreur: 'Impossible de charger tes notes.' };
+  }
+  return { data: { notes: notes.data || [], repos: (repos.data || []).map((r) => r.iso_date) }, erreur: '' };
+}
+
+/** Crée une note (ligne produite par versLigneNote). */
+export async function creerNote(userId, ligne) {
+  const r = await sb.from('day_notes').insert({ ...ligne, user_id: userId, client_id: `v2-${crypto.randomUUID()}` }).select(COLONNES_NOTE).single();
+  return resultat(r, "Impossible d'enregistrer la note.");
+}
+
+/** Modifie une note qui t'appartient. */
+export async function modifierNote(userId, id, ligne) {
+  const r = await sb.from('day_notes').update(ligne).eq('id', id).eq('user_id', userId).select(COLONNES_NOTE).single();
+  return resultat(r, 'Impossible de modifier la note.');
+}
+
+/** Supprime une note qui t'appartient. */
+export async function supprimerNote(userId, id) {
+  const r = await sb.from('day_notes').delete().eq('id', id).eq('user_id', userId);
+  return resultat(r, 'Impossible de supprimer la note.');
+}
+
+/** Pose des jours de repos (un par jour, sans doublon). */
+export async function poserRepos(userId, jours) {
+  const r = await sb.from('rest_day').upsert(jours.map((iso_date) => ({ user_id: userId, iso_date })), { onConflict: 'user_id,iso_date' });
+  return resultat(r, "Impossible d'enregistrer le repos.");
+}
+
+/** Retire des jours de repos. */
+export async function retirerRepos(userId, jours) {
+  const r = await sb.from('rest_day').delete().eq('user_id', userId).in('iso_date', jours);
+  return resultat(r, 'Impossible de retirer le repos.');
+}
