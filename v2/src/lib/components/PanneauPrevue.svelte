@@ -88,7 +88,7 @@
   }
 </script>
 
-<Panneau {ouvert} titre={seance ? 'Modifier la séance' : 'Nouvelle séance'} {onfermer}>
+<Panneau {ouvert} grand={peutStructurer && avecStructure} titre={seance ? 'Modifier la séance' : 'Nouvelle séance'} {onfermer}>
   <form class="formulaire" onsubmit={enregistrer} novalidate>
     <Champ id="prevue-nom" label="Nom" bind:valeur={f.nom} erreur={erreurs.nom} maxlength={120} placeholder="Footing, sortie longue…" />
 

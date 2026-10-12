@@ -3,7 +3,7 @@
 
   // Panneau qui glisse par-dessus la page : en bas sur téléphone, sur le côté sur grand écran.
   // Accessible : rôle « dialog », Échap pour fermer, focus gardé dedans puis rendu à l'élément qui l'a ouvert.
-  let { ouvert = false, titre = '', onfermer, children } = $props();
+  let { ouvert = false, titre = '', grand = false, onfermer, children } = $props();
 
   let panneau = $state(null);
   let precedent = null;
@@ -45,7 +45,7 @@
 
 {#if ouvert}
   <div class="voile" onclick={() => onfermer?.()} aria-hidden="true"></div>
-  <div class="panneau" role="dialog" aria-modal="true" aria-label={titre} tabindex="-1" bind:this={panneau} onkeydown={touche}>
+  <div class="panneau" class:grand role="dialog" aria-modal="true" aria-label={titre} tabindex="-1" bind:this={panneau} onkeydown={touche}>
     <header class="entete">
       <h2 class="titre">{titre}</h2>
       <button type="button" class="fermer" aria-label="Fermer" onclick={() => onfermer?.()}>
@@ -89,6 +89,26 @@
       border-radius: 0;
       border-left: 1px solid var(--trait-fort);
       animation: glisse 0.22s ease-out;
+    }
+  }
+  /* Mode « grand » (ex. construire une structure) : presque tout l'écran, même sur ordinateur */
+  .panneau.grand {
+    height: 96dvh;
+    max-height: 96dvh;
+  }
+  @media (min-width: 900px) {
+    .panneau.grand {
+      width: min(1280px, 96vw);
+      height: auto;
+      max-height: none;
+    }
+  }
+  .panneau {
+    transition: width 0.2s ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .panneau {
+      transition: none;
     }
   }
   .entete {
