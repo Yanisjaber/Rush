@@ -162,7 +162,7 @@ function cardGarmin(c, nights = 0) {
       <div class="cnx-actions">
         ${c
           ? `<button class="cnx-btn primary" data-act="garmin-sync">Re-synchroniser</button>`
-          : `<span class="cnx-card-note">Connexion à mettre en place manuellement pour l'instant (pas d'OAuth public Garmin).</span>`}
+          : `<span class="cnx-card-note">Connexion Garmin non configurée (pas d'OAuth public : voir tools/garmin_auth.py).</span>`}
       </div>
     </div>`;
 }

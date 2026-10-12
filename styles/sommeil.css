@@ -1,7 +1,7 @@
 /* ============================================================
    sommeil.css
    Panel Sommeil (p8) : données Garmin (garmin_sleep), synchronisées
-   automatiquement via l'Edge Function garmin-ingest (pg_cron horaire).
+   via tools/garmin_sync.py (Raspberry Pi, à la demande).
    Couleurs de phases distinctes des tokens --accent/--info/--purple/--warn
    déjà utilisés ailleurs (cohérence visuelle avec le reste de l'app).
    ============================================================ */
