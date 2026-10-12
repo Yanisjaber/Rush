@@ -10,11 +10,12 @@
   import PanneauSeance from './lib/components/PanneauSeance.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
   import { route, modeDemo } from './lib/routeur.svelte.js';
+  import { lireRetourDansAdresse } from './lib/stores/connexions.svelte.js';
 
   const demo = modeDemo();
 
   // Paramètres : #/parametres ou #/parametres/<onglet> (onglet inconnu = Général)
-  const ONGLETS = ['general', 'physiologie', 'zones', 'preferences'];
+  const ONGLETS = ['general', 'physiologie', 'zones', 'connexions', 'preferences'];
   const paramOnglet = $derived.by(() => {
     const m = /^\/parametres(?:\/([a-z]+))?$/.exec(route.chemin);
     if (!m) return null;
@@ -28,7 +29,10 @@
   });
 
   // En démo, on n'a pas besoin de session : on évite même de contacter Supabase.
-  if (!demo) initAuth();
+  if (!demo) {
+    lireRetourDansAdresse(); // retour de Strava (?strava_connected=1) : ouvre l'onglet Connexions
+    initAuth();
+  }
 </script>
 
 {#if route.chemin === '/catalogue'}

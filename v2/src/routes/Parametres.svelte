@@ -4,11 +4,12 @@
   import General from '../lib/parametres/General.svelte';
   import Physiologie from '../lib/parametres/Physiologie.svelte';
   import Zones from '../lib/parametres/Zones.svelte';
+  import Connexions from '../lib/parametres/Connexions.svelte';
   import Preferences from '../lib/parametres/Preferences.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { profil, chargerProfilStore } from '../lib/stores/profil.svelte.js';
 
-  // Paramètres : un espace à onglets (#/parametres/general, /physiologie, /zones, /preferences).
+  // Paramètres : un espace à onglets (#/parametres/general, /physiologie, /zones, /connexions, /preferences).
   // Le profil est chargé une seule fois ici, puis partagé par les onglets (voir stores/profil.svelte.js).
   let { demo = false, onglet = 'general' } = $props();
 
@@ -16,6 +17,7 @@
     { cle: 'general', nom: 'Général' },
     { cle: 'physiologie', nom: 'Physiologie' },
     { cle: 'zones', nom: 'Zones' },
+    { cle: 'connexions', nom: 'Connexions' },
     { cle: 'preferences', nom: 'Préférences' },
   ];
   const userId = $derived(demo ? 'demo' : auth.session?.user?.id);
@@ -24,8 +26,8 @@
     untrack(() => chargerProfilStore(u, demo));
   });
 
-  // Préférences ne dépend pas du profil : elle s'affiche tout de suite
-  const besoinProfil = $derived(onglet !== 'preferences');
+  // Connexions et Préférences ne dépendent pas du profil : elles s'affichent tout de suite
+  const besoinProfil = $derived(onglet !== 'preferences' && onglet !== 'connexions');
 </script>
 
 <div class="page">
@@ -51,6 +53,8 @@
         <Physiologie {demo} {userId} />
       {:else if onglet === 'zones'}
         <Zones />
+      {:else if onglet === 'connexions'}
+        <Connexions {demo} />
       {:else}
         <Preferences />
       {/if}
