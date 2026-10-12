@@ -10,6 +10,7 @@
   import Competitions from './routes/Competitions.svelte';
   import Bilan from './routes/Bilan.svelte';
   import PanneauSeance from './lib/components/PanneauSeance.svelte';
+  import PanneauReel from './lib/components/PanneauReel.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
   import { route, modeDemo } from './lib/routeur.svelte.js';
   import { lireRetourDansAdresse } from './lib/stores/connexions.svelte.js';
@@ -84,6 +85,7 @@
 
 <!-- Résumé d'une séance réalisée : ouvert depuis le calendrier ou les widgets -->
 <PanneauSeance />
+<PanneauReel />
 
 <style>
   .attente {

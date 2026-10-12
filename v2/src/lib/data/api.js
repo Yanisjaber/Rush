@@ -9,12 +9,33 @@
 import { sb } from '../supabase.js';
 import { dateIsoLocale } from '../utils/format.js';
 import { decoderStreams } from './streams.js';
+import { appliquerTout } from './retouches.js';
 
 const COLONNES_SEANCE =
-  'id,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,avg_heartrate,avg_watts,np,tss,category';
+  'id,strava_id,source,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,avg_heartrate,avg_watts,np,tss,category';
 const COLONNES_METRIQUES = 'iso_date,tss,ctl,atl,tsb,duration_min,activity_count';
 const COLONNES_OBJECTIF = 'id,name,date,sport,km,d_plus,priority,duration,category';
 const COLONNES_PROFIL = 'display_name,ftp,hr_max,lthr,weight';
+
+// Retouches de sorties (table activity_edits) : chargées une fois, puis réappliquées à toutes les sorties lues.
+// Si elles ne se chargent pas, on affiche les sorties telles quelles plutôt que de bloquer la page.
+let cacheRetouches = { userId: null, table: null };
+export function invaliderRetouches() {
+  cacheRetouches = { userId: null, table: null };
+}
+async function tableRetouches(userId) {
+  if (cacheRetouches.userId === userId && cacheRetouches.table) return cacheRetouches.table;
+  const r = await sb.from('activity_edits').select('activity_id,data').eq('user_id', userId).limit(5000);
+  if (r.error) return null;
+  const table = Object.create(null); // sans prototype : une clé comme « constructor » n'est jamais prise pour une retouche
+  for (const l of r.data || []) if (l && typeof l.data === 'object' && l.data) table[String(l.activity_id)] = l.data;
+  cacheRetouches = { userId, table };
+  return table;
+}
+async function avecRetouches(userId, lignes) {
+  const table = await tableRetouches(userId);
+  return table ? appliquerTout(lignes, table) : lignes;
+}
 
 function resultat(reponse, message) {
   if (reponse.error) {
@@ -54,7 +75,9 @@ export async function chargerSeances(userId, jours = 84, limite = 600) {
     .gte('start_date_local', dateIsoLocale(depuis))
     .order('start_date_local', { ascending: false })
     .limit(limite);
-  return resultat(r, 'Impossible de charger tes séances.');
+  const res = resultat(r, 'Impossible de charger tes séances.');
+  if (res.data) res.data = await avecRetouches(userId, res.data);
+  return res;
 }
 
 /** Prochaines compétitions (objectifs), de la plus proche à la plus lointaine. */
@@ -101,7 +124,9 @@ export async function chargerSeancesPeriode(userId, debutIso, finIso) {
     .lt('start_date_local', `${finIso}T23:59:59`)
     .order('start_date_local', { ascending: true })
     .limit(500);
-  return resultat(r, 'Impossible de charger les séances de ce mois.');
+  const res = resultat(r, 'Impossible de charger les séances de ce mois.');
+  if (res.data) res.data = await avecRetouches(userId, res.data);
+  return res;
 }
 
 /** Séances et compétitions prévues entre deux dates ISO incluses. */
@@ -122,9 +147,9 @@ export async function chargerPlanifiees(userId, debutIso, finIso) {
 // ---------------------------------------------------------------------------
 
 const COLONNES_DETAIL =
-  'id,name,sport,start_date_local,elapsed_time,moving_time,distance_km,total_elevation_gain,avg_speed_kmh,max_speed_kmh,' +
+  'id,strava_id,source,name,sport,start_date_local,elapsed_time,moving_time,distance_km,total_elevation_gain,avg_speed_kmh,max_speed_kmh,' +
   'avg_heartrate,max_heartrate,avg_watts,max_watts,np,intensity,ftp_at_time,avg_cadence,kj,calories,tss,variability_index,' +
-  'has_heartrate,has_power,user_notes,category,planned_id';
+  'has_heartrate,has_power,user_notes,rpe,category,planned_id';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -133,7 +158,9 @@ export async function chargerSeance(userId, id) {
   if (!UUID.test(String(id))) return { data: null, erreur: 'Séance introuvable.' };
   const r = await sb.from('activities').select(COLONNES_DETAIL).eq('user_id', userId).eq('id', id).maybeSingle();
   if (!r.error && !r.data) return { data: null, erreur: 'Séance introuvable.' };
-  return resultat(r, 'Impossible de charger cette séance.');
+  const res = resultat(r, 'Impossible de charger cette séance.');
+  if (res.data) res.data = (await avecRetouches(userId, [res.data]))[0];
+  return res;
 }
 
 /** Streams d'une séance (courbes), chargés à part car volumineux (jusqu'à plusieurs centaines de Ko). */
@@ -252,7 +279,7 @@ export async function chargerCompetitions(userId) {
     console.error('[v2/api] competitions', prevues.error?.code || courues.error?.code || '');
     return { data: null, erreur: 'Impossible de charger tes compétitions.' };
   }
-  return { data: { prevues: prevues.data || [], courues: courues.data || [] }, erreur: '' };
+  return { data: { prevues: prevues.data || [], courues: await avecRetouches(userId, courues.data || []) }, erreur: '' };
 }
 
 /**
@@ -276,7 +303,7 @@ export async function definirCategorieActivite(userId, id, categorie) {
 // Bilan annuel : activités des 3 dernières années et objectifs annuels
 // ---------------------------------------------------------------------------
 
-const COLONNES_BILAN = 'id,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,tss';
+const COLONNES_BILAN = 'id,strava_id,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,tss';
 const TAILLE_PAGE = 1000; // l'API renvoie au plus 1000 lignes par requête : on lit par pages
 
 /** Activités de l'année et des deux précédentes (colonnes légères), par pages de 1000. */
@@ -298,7 +325,7 @@ export async function chargerActivitesBilan(userId, annee) {
     toutes.push(...r.data);
     if (r.data.length < TAILLE_PAGE) break;
   }
-  return { data: toutes, erreur: '' };
+  return { data: await avecRetouches(userId, toutes), erreur: '' };
 }
 
 const COLONNES_OBJECTIF_ANNUEL = 'id,year,sport,template,target,current_manual';
@@ -435,4 +462,47 @@ export async function lierPrevu(userId, activiteId, valeur) {
   const r = await sb.from('activities').update({ planned_id: valeur }).eq('id', activiteId).eq('user_id', userId).select('id,planned_id').maybeSingle();
   if (!r.error && !r.data) return { data: null, erreur: 'Sortie introuvable.' };
   return resultat(r, 'Impossible de modifier le lien.');
+}
+
+// ---------------------------------------------------------------------------
+// Sorties saisies à la main (source = 'manual') et retouches des sorties Strava (activity_edits)
+// ---------------------------------------------------------------------------
+
+/** Crée une sortie saisie à la main (ligne produite par versLigneManuelle). */
+export async function creerSortieManuelle(userId, ligne) {
+  const r = await sb
+    .from('activities')
+    .insert({ ...ligne, user_id: userId, client_id: `v2-${crypto.randomUUID()}` })
+    .select(COLONNES_DETAIL)
+    .single();
+  return resultat(r, "Impossible d'enregistrer la sortie.");
+}
+
+/** Modifie une sortie saisie à la main. Le filtre sur `source` garantit qu'une sortie Strava ou Garmin n'est jamais écrasée. */
+export async function modifierSortieManuelle(userId, id, ligne) {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Sortie introuvable.' };
+  const r = await sb.from('activities').update(ligne).eq('id', id).eq('user_id', userId).eq('source', 'manual').select(COLONNES_DETAIL).maybeSingle();
+  if (!r.error && !r.data) return { data: null, erreur: 'Sortie introuvable.' };
+  return resultat(r, 'Impossible de modifier la sortie.');
+}
+
+/** Supprime une sortie saisie à la main (jamais une sortie synchronisée). */
+export async function supprimerSortieManuelle(userId, id) {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Sortie introuvable.' };
+  const r = await sb.from('activities').delete().eq('id', id).eq('user_id', userId).eq('source', 'manual');
+  return resultat(r, 'Impossible de supprimer la sortie.');
+}
+
+/** Enregistre (ou remplace) les retouches d'une sortie Strava. `cle` : strava_id en texte. */
+export async function enregistrerRetouche(userId, cle, data) {
+  const r = await sb.from('activity_edits').upsert({ user_id: userId, activity_id: String(cle), data }, { onConflict: 'user_id,activity_id' });
+  invaliderRetouches();
+  return resultat(r, "Impossible d'enregistrer tes retouches.");
+}
+
+/** Efface les retouches d'une sortie : elle retrouve ses valeurs d'origine. */
+export async function supprimerRetouche(userId, cle) {
+  const r = await sb.from('activity_edits').delete().eq('user_id', userId).eq('activity_id', String(cle));
+  invaliderRetouches();
+  return resultat(r, "Impossible d'effacer tes retouches.");
 }

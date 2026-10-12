@@ -4,6 +4,7 @@
   import StatCle from './StatCle.svelte';
   import { apercu, fermerApercu, majApercu } from '../stores/apercu.svelte.js';
   import { auth } from '../stores/auth.svelte.js';
+  import { ouvrirModification } from '../stores/edition.svelte.js';
   import { definirCategorieActivite } from '../data/api.js';
   import { modeDemo } from '../routeur.svelte.js';
   import { chargeSeance } from '../data/synthese.js';
@@ -67,7 +68,8 @@
 
       <div class="actions">
         <Bouton href="#/seance/{s.id}" onclick={fermerApercu}>Voir le détail</Bouton>
-        <Bouton variante="discret" onclick={fermerApercu}>Fermer</Bouton>
+        <Bouton variante="discret" onclick={() => { const sortie = apercu.seance; fermerApercu(); ouvrirModification(sortie); }}>Modifier</Bouton>
+        <Bouton variante="texte" onclick={fermerApercu}>Fermer</Bouton>
       </div>
       {#if s.category !== undefined}
         <div class="competition">

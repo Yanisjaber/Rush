@@ -6,6 +6,7 @@
   import GraphiqueStream from '../lib/components/charts/GraphiqueStream.svelte';
   import PrevuReel from '../lib/components/PrevuReel.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
+  import { donnees, ouvrirModification } from '../lib/stores/edition.svelte.js';
   import { chargerSeance, chargerStreams, chargerProfil, chargerPlanifieeParId, chargerPlanifieesDuJour, lierPrevu } from '../lib/data/api.js';
   import { estLien, candidates as trouverCandidates } from '../lib/data/adherence.js';
   import { donneesDemo, streamsDemo, prevueDemo } from '../lib/data/demo.js';
@@ -97,6 +98,7 @@
   $effect(() => {
     const u = userId;
     const i = id;
+    void donnees.version; // se recharge quand une sortie est créée, retouchée ou supprimée
     untrack(() => charger(u, i));
   });
 
@@ -168,6 +170,7 @@
     <header class="entete-seance">
       <div class="sport"><span class="pastille" style:background={couleur}></span>{nomSport} · {formatDateLongue(s.start_date_local)}</div>
       <h1 class="titre">{s.name || nomSport}</h1>
+      <div class="modifier"><button type="button" class="lien-action" onclick={() => ouvrirModification(s)}>Modifier cette sortie</button></div>
       {#if s.user_notes}<p class="notes">{s.user_notes}</p>{/if}
     </header>
 
@@ -297,6 +300,28 @@
     margin-top: 8px;
     font-size: clamp(32px, 6vw, 52px);
     line-height: 1.05;
+  }
+  .modifier {
+    margin-top: 8px;
+  }
+  .lien-action {
+    min-height: 44px;
+    padding: 0 4px;
+    border: 0;
+    background: transparent;
+    color: var(--texte-doux);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  .lien-action:hover {
+    color: var(--texte);
+  }
+  .lien-action:focus-visible {
+    outline: 2px solid var(--texte);
+    outline-offset: 2px;
   }
   .notes {
     margin-top: 12px;

@@ -7,6 +7,7 @@
   import PanneauObjectif from '../lib/components/PanneauObjectif.svelte';
   import GrapheNuits from '../lib/components/charts/GrapheNuits.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
+  import { donnees } from '../lib/stores/edition.svelte.js';
   import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
   import { chargerActivitesBilan, chargerObjectifsAnnuels } from '../lib/data/api.js';
   import { activitesBilanDemo, objectifsAnnuelsDemo } from '../lib/data/demo.js';
@@ -39,6 +40,7 @@
   // On recharge quand l'utilisateur change (les trois années sont chargées d'un coup ; changer d'année ne recharge pas)
   $effect(() => {
     const u = userId;
+    void donnees.version; // se recharge quand une sortie est créée, retouchée ou supprimée
     untrack(() => charger(u, new Date().getFullYear()));
   });
 

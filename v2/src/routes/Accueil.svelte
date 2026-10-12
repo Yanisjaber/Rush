@@ -8,6 +8,7 @@
   import { COMPOSANTS } from '../lib/widgets/composants.js';
   import { disponibles } from '../lib/widgets/registre.js';
   import { auth } from '../lib/stores/auth.svelte.js';
+  import { donnees } from '../lib/stores/edition.svelte.js';
   import {
     disposition,
     chargerDisposition,
@@ -73,6 +74,7 @@
   const userId = $derived(demo ? 'demo' : auth.session?.user?.id);
   $effect(() => {
     const id = userId;
+    void donnees.version; // se recharge quand une sortie est créée, retouchée ou supprimée
     untrack(() => charger(id));
   });
 

@@ -6,6 +6,7 @@
   import Dossard from '../lib/components/Dossard.svelte';
   import PanneauCompetition from '../lib/components/PanneauCompetition.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
+  import { donnees } from '../lib/stores/edition.svelte.js';
   import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
   import { chargerCompetitions, chargerMetriques } from '../lib/data/api.js';
   import { competitionsDemo, donneesDemo } from '../lib/data/demo.js';
@@ -38,6 +39,7 @@
   const userId = $derived(demo ? 'demo' : auth.session?.user?.id);
   $effect(() => {
     const u = userId;
+    void donnees.version; // se recharge quand une sortie est créée, retouchée ou supprimée
     untrack(() => charger(u));
   });
 

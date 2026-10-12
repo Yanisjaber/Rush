@@ -1,6 +1,10 @@
 // Données d'exemple pour le mode démo (?demo dans l'adresse) : mêmes formes que les réponses de l'API,
 // générées de façon déterministe. Elles servent à montrer et à tester l'interface sans être connecté.
 import { dateIsoLocale } from '../utils/format.js';
+import { appliquerTout } from './retouches.js';
+
+// Modifications faites en démo (sorties saisies, retouches) : gardées en mémoire et réappliquées à chaque lecture des données d'exemple.
+export const ajoutsDemo = { manuelles: [], retouches: Object.create(null) };
 
 export function donneesDemo(aujourdhui = new Date()) {
   const seances = [];
@@ -45,6 +49,7 @@ export function donneesDemo(aujourdhui = new Date()) {
       category: 'entrainement',
     });
   }
+  seances.splice(0, seances.length, ...appliquerTout([...seances, ...ajoutsDemo.manuelles], ajoutsDemo.retouches));
   seances.sort((a, b) => (a.start_date_local < b.start_date_local ? 1 : -1));
 
   // CTL (42 jours) et ATL (7 jours) : moyennes exponentielles de la charge quotidienne

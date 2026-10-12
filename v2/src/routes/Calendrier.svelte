@@ -7,6 +7,7 @@
   import PanneauMarquage from '../lib/components/PanneauMarquage.svelte';
   import PanneauModeles from '../lib/components/PanneauModeles.svelte';
   import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
+  import { ouvrirCreation, donnees } from '../lib/stores/edition.svelte.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { chargerSeancesPeriode, chargerPlanifiees, chargerAnnotations, chargerModeles } from '../lib/data/api.js';
   import { joursDe, versLigneNote } from '../lib/data/annotations.js';
@@ -73,6 +74,7 @@
     const id = userId;
     const a = cible.annee;
     const m = cible.mois;
+    void donnees.version; // se recharge quand une sortie est créée, retouchée ou supprimée
     untrack(() => charger(id, a, m));
   });
 
@@ -193,6 +195,7 @@
     <div class="droite">
       <span class="resume">{seancesDuMois.length} séance{seancesDuMois.length > 1 ? 's' : ''} · {formatDuree(tempsDuMois)}</span>
       <Bouton variante="discret" onclick={aujourdhui}>Aujourd'hui</Bouton>
+      <Bouton variante="discret" onclick={() => ouvrirCreation(dateIsoLocale(maintenant))}>Sortie réalisée</Bouton>
       <Bouton variante="discret" onclick={ouvrirModeles}>Modèles</Bouton>
       <Bouton variante="discret" onclick={() => nouveauMarquage()}>Repos ou note</Bouton>
       <Bouton onclick={nouvelle}>Nouvelle séance</Bouton>
