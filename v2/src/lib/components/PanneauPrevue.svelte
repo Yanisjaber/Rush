@@ -114,7 +114,7 @@
             <h3 class="titre">Structure</h3>
             <Bouton variante="texte" onclick={() => { avecStructure = false; f.structure = []; }}>Retirer la structure</Bouton>
           </div>
-          <EditeurStructure bind:blocs={f.structure} sport={f.sport} {ref} couleur={couleurSport(familleAffichage(f.sport))} />
+          <EditeurStructure bind:blocs={f.structure} sport={f.sport} {ref} />
           {#if structureActive}<p class="aide">Durée et charge sont calculées à partir des blocs.</p>{/if}
         {:else}
           <Bouton variante="discret" onclick={() => (avecStructure = true)}>Construire la séance par blocs</Bouton>

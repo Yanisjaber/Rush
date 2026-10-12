@@ -37,6 +37,9 @@ export const ZONES = {
   },
 };
 
+/** Couleur de chaque zone, de Z1 (bleu) à Z7 (rose) : un code couleur d'information, partagé par toutes les métriques. */
+export const COULEURS_ZONE = ['#3b82f6', '#22c55e', '#eab308', '#f97316', '#ef4444', '#a855f7', '#ec4899'];
+
 const MAX_BLOCS = 40;
 const bornes = (v, min, max, repli) => (Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : repli);
 
