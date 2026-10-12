@@ -265,3 +265,18 @@ test('programme : validation (nom, aucun exercice, valeurs hors limites, texte i
   f.nom = 'x'.repeat(61);
   assert.ok(validerProgramme(f).erreurs.nom);
 });
+
+import { grouperParExercice } from '../src/lib/data/force.js';
+
+test('regroupement par exercice : ordre de la séance, séries dans l\'ordre, tonnage', () => {
+  const g = grouperParExercice([
+    serie('2026-10-10', 'dips', 10, 0, { position: 1, set_no: 1 }),
+    serie('2026-10-10', 'developpe-couche', 6, 80, { position: 0, set_no: 2 }),
+    serie('2026-10-10', 'developpe-couche', 8, 70, { position: 0, set_no: 1 }),
+  ]);
+  assert.deepEqual(g.map((e) => e.cle), ['developpe-couche', 'dips']);
+  assert.deepEqual(g[0].series, [{ reps: 8, poids: 70 }, { reps: 6, poids: 80 }]);
+  assert.equal(g[0].tonnage, 1040);
+  assert.equal(g[1].tonnage, 0);
+  assert.deepEqual(grouperParExercice([]), []);
+});

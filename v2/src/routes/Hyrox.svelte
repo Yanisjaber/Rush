@@ -162,7 +162,7 @@
   {/if}
 </div>
 
-<PanneauTestHyrox ouvert={panneauTest.ouvert} test={panneauTest.test} onenregistrer={enregistrerTest} onsupprimer={supprimerTest} onfermer={fermerTest} />
+<PanneauTestHyrox ouvert={panneauTest.ouvert} test={panneauTest.test} {demo} {userId} onenregistrer={enregistrerTest} onsupprimer={supprimerTest} onfermer={fermerTest} />
 <PanneauObjectifHyrox ouvert={panneauObjectif.ouvert} objectif={etat.objectif} onenregistrer={enregistrerObjectif} onfermer={() => (panneauObjectif = { ouvert: false })} />
 
 <style>
@@ -212,6 +212,12 @@
     margin-bottom: 16px;
     background: var(--surface);
     border-radius: var(--rayon);
+  }
+  @media (max-width: 600px) {
+    .chiffres {
+      grid-template-columns: 1fr 1fr;
+      padding: 18px;
+    }
   }
   .graphe {
     max-width: 640px;

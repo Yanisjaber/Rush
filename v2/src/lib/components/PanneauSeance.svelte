@@ -10,9 +10,11 @@
   import { validerResultat, texteClassement } from '../data/opendossard.js';
   import { modeDemo } from '../routeur.svelte.js';
   import { chargeSeance } from '../data/synthese.js';
+  import { lireSeriesSeance } from '../data/force-acces.js';
+  import { grouperParExercice } from '../data/force.js';
   import { familleAffichage } from '../data/familles.js';
   import { SPORTS, couleurSport } from '../sports.js';
-  import { formatDuree, formatKm, formatAllure, formatDateLongue } from '../utils/format.js';
+  import { formatDuree, formatKm, formatAllure, formatDateLongue, formatKg } from '../utils/format.js';
 
   // Résumé d'une séance réalisée, sans entrer dans le détail : chiffres clés et notes.
   // Le détail complet (courbes, zones) est sur la page de la séance, atteinte par « Voir le détail ».
@@ -20,6 +22,19 @@
   const famille = $derived(s ? familleAffichage(s.sport) : 'autre');
   const nomSport = $derived((SPORTS[famille] || SPORTS.autre).nom);
   const couleur = $derived(couleurSport(famille));
+
+  // Séance de force : exercices et séries enregistrés dans le carnet (si elle en a)
+  let exercices = $state([]);
+  $effect(() => {
+    const x = s;
+    const muscu = x && familleAffichage(x.sport) === 'muscu';
+    untrack(async () => {
+      exercices = [];
+      if (!muscu) return;
+      const r = await lireSeriesSeance(modeDemo(), modeDemo() ? 'demo' : auth.session?.user?.id, x.id);
+      if (apercu.seance?.id === x.id) exercices = grouperParExercice(r.data || []);
+    });
+  });
 
   // Marquer la sortie comme compétition (ou l'en retirer) : elle apparaît alors dans la page Compétitions
   let envoi = $state(false);
@@ -89,7 +104,22 @@
         {/each}
       </div>
 
+      {#if exercices.length}
+        <section class="exercices" aria-label="Exercices de la séance">
+          <h4>Exercices</h4>
+          <ul>
+            {#each exercices as e}
+              <li>
+                <span class="nom">{e.nom}</span>
+                <span class="series">{e.series.map((x) => (x.poids ? `${x.reps} × ${formatKg(x.poids)}` : `${x.reps}`)).join(' · ')}{e.series.some((x) => x.poids) ? ' kg' : ' reps'}</span>
+              </li>
+            {/each}
+          </ul>
+        </section>
+      {/if}
+
       <div class="actions">
+        {#if famille === 'muscu'}<Bouton href="#/force/modifier/{s.id}" onclick={fermerApercu}>{exercices.length ? 'Modifier les séries' : 'Ajouter les séries'}</Bouton>{/if}
         <Bouton href="#/seance/{s.id}" onclick={fermerApercu}>Voir le détail</Bouton>
         <Bouton variante="discret" onclick={() => { const sortie = apercu.seance; fermerApercu(); ouvrirModification(sortie); }}>Modifier</Bouton>
         <Bouton variante="texte" onclick={fermerApercu}>Fermer</Bouton>
@@ -118,6 +148,27 @@
 </Panneau>
 
 <style>
+  .exercices h4 {
+    margin: 0 0 8px;
+    font-size: 15px;
+  }
+  .exercices ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .exercices li {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 9px 0;
+    border-top: 1px solid var(--trait);
+    font-size: 14px;
+  }
+  .exercices .series {
+    font-size: 13px;
+    color: var(--texte-doux);
+  }
   .apercu {
     display: flex;
     flex-direction: column;

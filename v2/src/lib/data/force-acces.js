@@ -2,6 +2,7 @@
 // sinon on passe par la base (api.js). Les pages n'ont ainsi jamais à distinguer les deux cas.
 // Toutes les fonctions renvoient { data, erreur } comme api.js.
 import * as api from './api.js';
+import { appeler } from './integrations.js';
 import {
   ajoutsDemo, donneesDemo, programmesDemo, seriesForceDemo, testsHyroxDemo, objectifHyroxDemo,
 } from './demo.js';
@@ -41,6 +42,13 @@ export async function lireSeanceForce(demo, userId, id) {
   const [s, series] = await Promise.all([api.chargerSeance(userId, id), api.chargerSeriesSeance(userId, id)]);
   if (s.erreur || !s.data) return { data: null, erreur: s.erreur || 'Séance introuvable.' };
   return { data: { seance: s.data, series: series.data || [] }, erreur: series.erreur };
+}
+
+/** Séries d'une séance (tableau vide si la séance n'en a pas). */
+export async function lireSeriesSeance(demo, userId, id) {
+  if (demo) return ok(seriesForceDemo().filter((l) => l.activity_id === id));
+  const r = await api.chargerSeriesSeance(userId, id);
+  return r.erreur ? r : ok(r.data || []);
 }
 
 /** Enregistre une séance (création, ou modification si `existante` = { id, manuelle }). */
@@ -126,4 +134,40 @@ export async function sauverObjectif(demo, userId, valeurs) {
   if (!demo) return valeurs ? api.enregistrerObjectifHyrox(userId, valeurs) : api.supprimerObjectifHyrox(userId);
   ajoutsDemo.objectifHyrox = valeurs;
   return ok(null);
+}
+
+// --- Import des tours d'une montre (via Strava, où arrivent aussi les activités Garmin) ---
+
+/** Sorties récentes venant de Strava (les seules dont on peut lire les tours), les plus récentes d'abord. */
+export async function lireSortiesImportables(demo, userId) {
+  if (demo) {
+    const jour = new Date();
+    jour.setDate(jour.getDate() - 2);
+    return ok([{ id: 'demo-hx-import', name: 'Hyrox simulation (montre)', sport: 'Workout', start_date_local: `${jour.toISOString().slice(0, 10)}T09:00:00`, strava_id: 1 }]);
+  }
+  const r = await api.chargerSeances(userId, 120, 300);
+  if (r.erreur) return r;
+  return ok((r.data || []).filter((s) => s.strava_id));
+}
+
+/** Message clair selon la réponse de la fonction strava-laps. */
+function messageTours(r) {
+  const code = r.data?.error;
+  if (r.statut === 429 || code === 'rate_limited') return 'Strava demande de patienter quelques minutes avant de réessayer.';
+  if (code === 'no_strava_connection') return 'Connecte Strava dans les paramètres pour importer les tours.';
+  if (code === 'not_a_strava_activity') return "Cette sortie ne vient pas de Strava : ses tours ne sont pas disponibles.";
+  if (code === 'activity_not_found') return 'Sortie introuvable.';
+  if (r.statut === 404) return "L'import des tours n'est pas encore activé sur ton serveur (fonction « strava-laps » à déployer).";
+  return 'Impossible de récupérer les tours pour le moment.';
+}
+
+/** Tours d'une sortie Strava : [{ index, name, elapsed_time, moving_time, distance }]. */
+export async function lireToursSortie(demo, userId, id) {
+  if (demo) {
+    const laps = testsHyroxDemo()[0].segments.map((t, i) => ({ index: i + 1, name: `Tour ${i + 1}`, elapsed_time: t, moving_time: t, distance: 0 }));
+    return ok(laps);
+  }
+  const r = await appeler('strava-laps', { activity_id: id });
+  if (!r.ok) return { data: null, erreur: messageTours(r) };
+  return ok(Array.isArray(r.data?.laps) ? r.data.laps : []);
 }

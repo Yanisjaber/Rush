@@ -77,8 +77,36 @@
     font-weight: 600;
     color: var(--texte-doux);
   }
-  @media (max-width: 600px) {
+  @media (max-width: 760px) {
+    /* Téléphone : une seule ligne (logo, liens qui défilent, réglages) pour laisser la place au contenu */
+    .barre {
+      flex-wrap: nowrap;
+      gap: 8px;
+      padding: 12px 0;
+    }
+    .gauche {
+      flex: 1;
+      min-width: 0;
+      flex-wrap: nowrap;
+      gap: 8px;
+    }
+    .droite {
+      flex: none;
+    }
+    .etiquette-demo {
+      display: none;
+    }
+    .liens {
+      flex: 1;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .liens::-webkit-scrollbar {
+      display: none;
+    }
     .liens a {
+      flex: none;
       padding: 0 11px;
     }
   }

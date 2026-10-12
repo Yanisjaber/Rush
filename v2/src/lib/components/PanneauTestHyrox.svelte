@@ -4,19 +4,23 @@
   import Champ from './Champ.svelte';
   import Bouton from './Bouton.svelte';
   import GrilleTemps from './GrilleTemps.svelte';
-  import { formulaireTestVide, formulaireDepuisTest, validerTest } from '../data/hyrox.js';
-  import { dateIsoLocale } from '../utils/format.js';
+  import { formulaireTestVide, formulaireDepuisTest, validerTest, segmentsDepuisTours, ecrireTemps } from '../data/hyrox.js';
+  import { lireSortiesImportables, lireToursSortie } from '../data/force-acces.js';
+  import { dateIsoLocale, formatDateCourte } from '../utils/format.js';
 
   // Saisir ou modifier un test Hyrox (simulation) ou une course.
   //  - test : ligne hyrox_tests à modifier, ou null pour en créer un
   //  - onenregistrer(valeurs, id) : écrit en base (ou en démo) et renvoie { erreur }
-  let { ouvert = false, test = null, onenregistrer, onsupprimer, onfermer } = $props();
+  //  - demo, userId : pour l'import des tours d'une montre (Strava)
+  let { ouvert = false, test = null, demo = false, userId = '', onenregistrer, onsupprimer, onfermer } = $props();
 
   let f = $state(formulaireTestVide(dateIsoLocale()));
   let erreurs = $state({});
   let erreurGlobale = $state('');
   let envoi = $state(false);
   let confirmer = $state(false);
+  // Import des tours d'une montre : sorties Strava proposées, choix, message
+  let imp = $state({ ouvert: false, sorties: null, choix: '', envoi: false, message: '', source: null });
 
   $effect(() => {
     if (!ouvert) return;
@@ -27,8 +31,43 @@
       erreurGlobale = '';
       envoi = false;
       confirmer = false;
+      imp = { ouvert: false, sorties: null, choix: '', envoi: false, message: '', source: null };
     });
   });
+
+  async function ouvrirImport() {
+    imp.ouvert = true;
+    if (imp.sorties) return;
+    const r = await lireSortiesImportables(demo, userId);
+    imp.sorties = r.data || [];
+    if (r.erreur) imp.message = r.erreur;
+    else if (!imp.sorties.length) imp.message = "Aucune sortie Strava récente. Synchronise ta montre avec Strava, ou saisis les temps à la main.";
+    imp.choix = imp.sorties[0]?.id || '';
+  }
+
+  async function importer() {
+    if (imp.envoi || !imp.choix) return;
+    imp.envoi = true;
+    imp.message = '';
+    const r = await lireToursSortie(demo, userId, imp.choix);
+    imp.envoi = false;
+    if (r.erreur) return (imp.message = r.erreur);
+    const segments = segmentsDepuisTours(r.data);
+    if (!segments) {
+      const n = r.data.length;
+      return (imp.message = n
+        ? `Cette sortie a ${n} tour${n > 1 ? 's' : ''}, il en faut exactement 16 (un par run d'1 km et par station). Règle les tours de ta montre pour les prochains tests, ou saisis les temps à la main.`
+        : "Cette sortie n'a pas de tours enregistrés. Saisis les temps à la main.");
+    }
+    const sortie = imp.sorties.find((s) => s.id === imp.choix);
+    f.temps = segments.map((s) => ecrireTemps(s));
+    if (sortie) {
+      f.date = String(sortie.start_date_local).slice(0, 10);
+      if (!f.label || f.label === 'Simulation') f.label = String(sortie.name || 'Simulation').slice(0, 80);
+    }
+    imp.source = { source: 'strava', activity_id: demo ? null : imp.choix };
+    imp.message = `Tours importés (${ecrireTemps(segments.reduce((a, b) => a + b, 0))}). Vérifie les temps puis enregistre.`;
+  }
 
   async function enregistrer(e) {
     e.preventDefault();
@@ -38,7 +77,7 @@
     erreurGlobale = '';
     if (!valeurs) return;
     envoi = true;
-    const r = await onenregistrer(valeurs, test?.id || null);
+    const r = await onenregistrer(imp.source && !test ? { ...valeurs, ...imp.source } : valeurs, test?.id || null);
     envoi = false;
     if (r.erreur) erreurGlobale = r.erreur;
   }
@@ -68,6 +107,24 @@
         </select>
       </div>
     </div>
+
+    {#if !test}
+      <section class="import" aria-label="Importer depuis ma montre">
+        {#if !imp.ouvert}
+          <Bouton variante="discret" onclick={ouvrirImport}>Importer les tours de ma montre</Bouton>
+        {:else}
+          <h3>Importer depuis ma montre</h3>
+          {#if imp.sorties?.length}
+            <label for="hx-sortie">Sortie Strava</label>
+            <select id="hx-sortie" bind:value={imp.choix}>
+              {#each imp.sorties as s (s.id)}<option value={s.id}>{formatDateCourte(s.start_date_local)} · {s.name}</option>{/each}
+            </select>
+            <Bouton variante="discret" onclick={importer}>{imp.envoi ? 'Lecture des tours…' : 'Récupérer les 16 tours'}</Bouton>
+          {/if}
+          {#if imp.message}<p class="aide" role="status">{imp.message}</p>{/if}
+        {/if}
+      </section>
+    {/if}
 
     <section aria-label="Temps de chaque segment">
       <h3>Temps par segment <span>format 4:52</span></h3>
@@ -140,6 +197,28 @@
   }
   textarea {
     resize: vertical;
+  }
+  .import {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 14px;
+    border: 1px dashed var(--trait-fort);
+    border-radius: var(--rayon-l);
+  }
+  .import label {
+    font-size: 13px;
+    color: var(--texte-doux);
+  }
+  .import select {
+    max-width: 100%;
+  }
+  .aide {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--texte-doux);
   }
   h3 {
     display: flex;

@@ -354,3 +354,23 @@ export function validerProgramme(f) {
   if (Object.keys(erreurs).length) return { valeurs: null, erreurs };
   return { valeurs: { name: nom, exercises: exercices, notes: notes || null }, erreurs: {} };
 }
+
+/** Séries d'une séance regroupées par exercice, dans l'ordre : [{ cle, nom, groupe, series: [{ reps, poids }], tonnage }]. */
+export function grouperParExercice(series) {
+  const ordonnees = [...series].sort((a, b) => nombre(a.position) - nombre(b.position) || nombre(a.set_no) - nombre(b.set_no));
+  const index = new Map();
+  const sortie = [];
+  for (const s of ordonnees) {
+    const cle = `${s.position}|${s.exercise_key}`;
+    let ex = index.get(cle);
+    if (!ex) {
+      ex = { cle: s.exercise_key, nom: s.exercise_name, groupe: s.muscle_group, series: [], tonnage: 0 };
+      index.set(cle, ex);
+      sortie.push(ex);
+    }
+    ex.series.push({ reps: nombre(s.reps), poids: nombre(s.weight_kg) });
+    ex.tonnage += tonnageSerie(s);
+  }
+  for (const ex of sortie) ex.tonnage = Math.round(ex.tonnage);
+  return sortie;
+}
