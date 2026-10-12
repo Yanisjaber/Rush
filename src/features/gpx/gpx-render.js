@@ -1,6 +1,6 @@
 /* src/features/gpx/gpx-render.js — extrait de l'ancien app.js (découpage par fonctionnalité). */
 import { appState } from '../../core/state.js';
-import { _resizeOverlay, _scheduleSmoothDraw } from '../streams/streams-section.js';
+import { _resizeOverlay, _scheduleSmoothDraw } from '../streams/stream-overlay.js';
 import { REST_COUCH_SVG, compPrio, fmtDur } from '../../core/format.js';
 import { getSportCategory, toIsoDate } from '../dashboard/filters.js';
 import { getActivityEdit, setActivityEdit } from '../calendar/overrides.js';
