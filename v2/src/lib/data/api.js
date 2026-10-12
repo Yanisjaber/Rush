@@ -112,7 +112,7 @@ export async function chargerPuissance(userId) {
 // Calendrier : séances réalisées et prévues sur une période
 // ---------------------------------------------------------------------------
 
-const COLONNES_PLANIFIEE = 'id,name,date,sport,duration,tss,category,km,start_date_local,rpe,d_plus,notes,structure';
+const COLONNES_PLANIFIEE = 'id,name,date,sport,duration,tss,category,km,start_date_local,rpe,d_plus,notes,structure,gpx_name';
 
 /** Séances réalisées entre deux dates ISO incluses (le calendrier d'un mois). */
 export async function chargerSeancesPeriode(userId, debutIso, finIso) {
@@ -267,7 +267,7 @@ export async function enregistrerProfil(userId, colonnes, extras) {
 // Compétitions : à venir (activity_planned) et passées (activités marquées « competition »)
 // ---------------------------------------------------------------------------
 
-export const COLONNES_COMPETITION = 'id,name,date,start_date_local,sport,priority,km,d_plus,type,duration,notes,category';
+export const COLONNES_COMPETITION = 'id,name,date,start_date_local,sport,priority,km,d_plus,type,duration,notes,category,gpx_name';
 
 /** Compétitions prévues (toutes dates ; la page sépare passé et futur) et compétitions déjà courues. */
 export async function chargerCompetitions(userId) {
@@ -513,4 +513,12 @@ export async function enregistrerResultat(userId, id, valeurs) {
   const r = await sb.from('activities').update(valeurs).eq('id', id).eq('user_id', userId).select('id,result_place,result_total,result_catev').maybeSingle();
   if (!r.error && !r.data) return { data: null, erreur: 'Sortie introuvable.' };
   return resultat(r, "Impossible d'enregistrer le résultat.");
+}
+
+/** Contenu GPX d'une séance prévue ou d'une compétition (colonne lourde, chargée seulement quand on affiche le parcours). */
+export async function chargerGpx(userId, id) {
+  if (!UUID.test(String(id))) return { data: null, erreur: '' };
+  const r = await sb.from('activity_planned').select('gpx_content').eq('user_id', userId).eq('id', id).maybeSingle();
+  const res = resultat(r, 'Impossible de charger le parcours.');
+  return { data: typeof res.data?.gpx_content === 'string' && res.data.gpx_content ? res.data.gpx_content : null, erreur: res.erreur };
 }

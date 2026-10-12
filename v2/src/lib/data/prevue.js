@@ -1,6 +1,17 @@
 // Séance prévue : choix proposés, validation du formulaire, estimation de la charge, conversion vers la ligne de la base.
 // Fonctions pures : aucune écriture ici, tout est vérifié avant d'envoyer quoi que ce soit.
 import { normaliser, resume, sportAvecStructure } from './structure.js';
+import { TAILLE_MAX_GPX } from './gpx.js';
+
+/**
+ * Vérifie le parcours GPX d'un formulaire : undefined = inchangé (on n'écrit rien), null = à retirer, { nom, contenu } = nouveau parcours.
+ * Renvoie { gpx, erreur }.
+ */
+export function validerGpxFormulaire(g) {
+  if (g === undefined || g === null) return { gpx: g, erreur: '' };
+  if (typeof g !== 'object' || typeof g.contenu !== 'string' || !g.contenu || g.contenu.length > TAILLE_MAX_GPX) return { gpx: undefined, erreur: 'Parcours GPX invalide.' };
+  return { gpx: { nom: String(g.nom || 'parcours.gpx').slice(0, 120), contenu: g.contenu }, erreur: '' };
+}
 
 /** Sports proposables : clé de famille (voir sports.js) → type brut stocké en base (comme Strava). */
 export const SPORTS_PREVUE = [
@@ -52,6 +63,7 @@ export function formulaireDepuisLigne(l) {
     dPlus: texte(l.d_plus),
     notes: texte(l.notes),
     structure: normaliser(l.structure, 'power'),
+    gpxNom: texte(l.gpx_name), // nom du parcours déjà enregistré (le contenu se charge à part) ; `gpx` reste indéfini tant qu'on n'y touche pas
   };
 }
 
@@ -106,6 +118,8 @@ export function validerPrevue(entree, ref = {}) {
 
   const notes = String(f.notes ?? '');
   if (notes.length > 2000) erreurs.notes = '2000 caractères maximum.';
+  const gpxVerifie = validerGpxFormulaire(entree.gpx);
+  if (gpxVerifie.erreur) erreurs.gpx = gpxVerifie.erreur;
 
   if (Object.keys(erreurs).length) return { valeurs: null, erreurs };
   return {
@@ -123,6 +137,7 @@ export function validerPrevue(entree, ref = {}) {
       notes: notes.trim() || null,
       structure,
       estimations: calcul,
+      gpx: gpxVerifie.gpx,
     },
   };
 }
@@ -147,5 +162,7 @@ export function versLigne(v) {
     est_bpm: v.estimations?.bpm ?? null,
     est_kj: v.estimations?.kj ?? null,
     est_if: v.estimations?.facteurIntensite ?? null,
+    // Le parcours GPX n'est écrit que s'il a changé (ajout ou retrait) : sinon on ne touche pas à celui qui est déjà enregistré
+    ...(v.gpx !== undefined ? { gpx_name: v.gpx?.nom ?? null, gpx_content: v.gpx?.contenu ?? null } : {}),
   };
 }

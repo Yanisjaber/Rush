@@ -5,12 +5,13 @@
   import Bouton from './Bouton.svelte';
   import EditeurStructure from './EditeurStructure.svelte';
   import VuePrevue from './VuePrevue.svelte';
+  import ChampGpx from './ChampGpx.svelte';
   import { SPORTS, couleurSport } from '../sports.js';
   import { familleAffichage } from '../data/familles.js';
   import { SPORTS_PREVUE, formulaireVide, formulaireDepuisLigne, validerPrevue, versLigne, estimerTss } from '../data/prevue.js';
   import { sportAvecStructure } from '../data/structure.js';
   import { donneesDemo } from '../data/demo.js';
-  import { creerPlanifiee, modifierPlanifiee, supprimerPlanifiee, chargerProfil, creerModele } from '../data/api.js';
+  import { creerPlanifiee, modifierPlanifiee, supprimerPlanifiee, chargerProfil, creerModele, chargerGpx } from '../data/api.js';
   import { formulaireDepuisModele, modeleDepuisValeurs } from '../data/modeles.js';
 
   // Créer ou modifier une séance prévue.
@@ -29,6 +30,31 @@
   // 'voir' : affichage seul (clic sur une séance existante) · 'modifier' : formulaire (nouvelle séance ou bouton Modifier)
   let mode = $state('modifier');
   let retourModele = $state({ texte: '', erreur: false }); // résultat de « Enregistrer comme modèle »
+  let contenuGpx = $state(''); // parcours de la séance affichée (chargé à la demande : colonne lourde)
+
+  // Quand on affiche une séance qui a un parcours, on va chercher son contenu (jamais chargé avec les listes)
+  $effect(() => {
+    const cible = seance;
+    const vue = ouvert && mode === 'voir';
+    untrack(async () => {
+      contenuGpx = '';
+      if (!vue || !cible?.gpx_name) return;
+      if (demo) return (contenuGpx = cible.gpx_content || '');
+      const r = await chargerGpx(userId, cible.id);
+      if (seance === cible) contenuGpx = r.data || '';
+    });
+  });
+  const sportSansParcours = $derived(['WeightTraining', 'Swim'].includes(f.sport));
+  function parcoursChoisi(g) {
+    f.gpx = { nom: g.nom, contenu: g.contenu };
+    f.gpxNom = g.nom;
+    if (String(f.km).trim() === '' && g.km != null) f.km = String(g.km).replace('.', ',');
+    if (String(f.dPlus).trim() === '' && g.dPlus != null) f.dPlus = String(g.dPlus);
+  }
+  function parcoursRetire() {
+    f.gpx = null;
+    f.gpxNom = '';
+  }
 
   // À chaque ouverture : on repart d'un formulaire propre (celui de la séance, ou vide).
   // L'effet ne dépend que de l'ouverture et de la séance visée : le reste est isolé par untrack,
@@ -125,7 +151,7 @@
 
 <Panneau {ouvert} grand={mode === 'modifier' && peutStructurer && avecStructure} titre={!seance ? 'Nouvelle séance' : mode === 'voir' ? 'Séance prévue' : 'Modifier la séance'} {onfermer}>
   {#if mode === 'voir' && seance}
-    <VuePrevue {f} {ref} erreur={erreurGlobale} {envoi} onmodifier={() => { erreurGlobale = ''; mode = 'modifier'; }} onsupprimer={supprimer} {onfermer} />
+    <VuePrevue {f} {ref} gpx={contenuGpx} erreur={erreurGlobale} {envoi} onmodifier={() => { erreurGlobale = ''; mode = 'modifier'; }} onsupprimer={supprimer} {onfermer} />
   {:else}
   <form class="formulaire" onsubmit={enregistrer} novalidate>
     <Champ id="prevue-nom" label="Nom" bind:valeur={f.nom} erreur={erreurs.nom} maxlength={120} placeholder="Footing, sortie longue…" />
@@ -178,6 +204,10 @@
     {/if}
 
     <Champ id="prevue-dplus" label="Dénivelé + (m)" inputmode="numeric" bind:valeur={f.dPlus} erreur={erreurs.dPlus} />
+
+    {#if !sportSansParcours}
+      <ChampGpx nomActuel={f.gpxNom || ''} onchoisi={parcoursChoisi} onretirer={parcoursRetire} erreur={erreurs.gpx} />
+    {/if}
 
     <div class="champ">
       <label for="prevue-notes">Notes</label>

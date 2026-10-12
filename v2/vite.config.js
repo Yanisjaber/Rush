@@ -5,12 +5,14 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 // (en développement, Vite a besoin de WebSocket et de scripts inline pour le rechargement à chaud).
 // - scripts : uniquement ceux de notre origine
 // - styles : l'origine + attributs style (les composants posent des couleurs de sport en ligne)
+// - images : notre origine + les tuiles de carte OpenStreetMap (parcours GPX)
 // - connexions : notre origine + Supabase (le projet coach-ia)
 const CSP = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data:",
+  // Fonds de carte du parcours GPX (OpenStreetMap) : seules les images de leurs serveurs de tuiles sont autorisées
+  "img-src 'self' data: https://tile.openstreetmap.org https://*.tile.openstreetmap.org",
   "font-src 'self'",
   "connect-src 'self' https://gfavgstyyaaidkpadkxz.supabase.co",
   "object-src 'none'",

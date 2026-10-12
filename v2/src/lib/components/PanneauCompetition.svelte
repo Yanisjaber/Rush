@@ -4,11 +4,13 @@
   import Champ from './Champ.svelte';
   import Bouton from './Bouton.svelte';
   import StatCle from './StatCle.svelte';
+  import ChampGpx from './ChampGpx.svelte';
+  import ParcoursGpx from './ParcoursGpx.svelte';
   import { SPORTS } from '../sports.js';
   import { familleAffichage } from '../data/familles.js';
   import { SPORTS_PREVUE } from '../data/prevue.js';
   import { PRIORITES, formulaireVide, formulaireDepuisLigne, validerCompetition, versLigne, nomPriorite } from '../data/competitions.js';
-  import { creerPlanifiee, modifierPlanifiee, supprimerPlanifiee, COLONNES_COMPETITION } from '../data/api.js';
+  import { creerPlanifiee, modifierPlanifiee, supprimerPlanifiee, chargerGpx, COLONNES_COMPETITION } from '../data/api.js';
   import { formatDateLongue, formatKm, joursAvant } from '../utils/format.js';
 
   // Créer, afficher, modifier ou supprimer une compétition à venir (ligne de activity_planned, catégorie « competition »).
@@ -23,6 +25,29 @@
   let confirmer = $state(false);
   // 'voir' : affichage seul (clic sur une compétition existante) · 'modifier' : formulaire (nouvelle ou bouton Modifier)
   let mode = $state('modifier');
+  let contenuGpx = $state(''); // parcours de la compétition affichée (chargé à la demande : colonne lourde)
+
+  $effect(() => {
+    const cible = competition;
+    const vue = ouvert && mode === 'voir';
+    untrack(async () => {
+      contenuGpx = '';
+      if (!vue || !cible?.gpx_name) return;
+      if (demo) return (contenuGpx = cible.gpx_content || '');
+      const r = await chargerGpx(userId, cible.id);
+      if (competition === cible) contenuGpx = r.data || '';
+    });
+  });
+  function parcoursChoisi(g) {
+    f.gpx = { nom: g.nom, contenu: g.contenu };
+    f.gpxNom = g.nom;
+    if (String(f.km).trim() === '' && g.km != null) f.km = String(g.km).replace('.', ',');
+    if (String(f.dPlus).trim() === '' && g.dPlus != null) f.dPlus = String(g.dPlus);
+  }
+  function parcoursRetire() {
+    f.gpx = null;
+    f.gpxNom = '';
+  }
 
   // À chaque ouverture : formulaire propre. L'effet ne dépend que de l'ouverture et de la compétition visée.
   $effect(() => {
@@ -106,6 +131,9 @@
           {#each tuiles as t (t.etiquette)}<StatCle etiquette={t.etiquette} valeur={t.valeur} unite={t.unite || ''} />{/each}
         </div>
       {/if}
+      {#if contenuGpx}
+        <section aria-label="Parcours"><h4>Parcours</h4><ParcoursGpx contenu={contenuGpx} nom={f.gpxNom} /></section>
+      {/if}
       {#if f.notes}
         <section aria-label="Notes"><h4>Notes</h4><p class="notes">{f.notes}</p></section>
       {/if}
@@ -163,6 +191,8 @@
       </div>
 
       <Champ id="comp-objectif" label="Temps visé (ex. 1h45, 40 min)" bind:valeur={f.objectif} erreur={erreurs.objectif} placeholder="1h45" />
+
+      <ChampGpx nomActuel={f.gpxNom || ''} onchoisi={parcoursChoisi} onretirer={parcoursRetire} erreur={erreurs.gpx} />
 
       <div class="champ">
         <label for="comp-notes">Notes</label>

@@ -2,6 +2,7 @@
   import Bouton from './Bouton.svelte';
   import StatCle from './StatCle.svelte';
   import ProfilStructure from './ProfilStructure.svelte';
+  import ParcoursGpx from './ParcoursGpx.svelte';
   import { SPORTS, couleurSport } from '../sports.js';
   import { familleAffichage } from '../data/familles.js';
   import { formatDateLongue, formatKm } from '../utils/format.js';
@@ -10,7 +11,7 @@
   // Affichage (lecture seule) d'une séance prévue : résumé, profil, déroulé, notes.
   // Rien n'est modifié ici : « Modifier » ouvre le formulaire, « Supprimer » demande d'abord une confirmation.
   //  f : séance au format du formulaire (voir formulaireDepuisLigne) · ref : { ftp, hrMax } · erreur / envoi : état du parent
-  let { f, ref = {}, erreur = '', envoi = false, onmodifier, onsupprimer, onfermer } = $props();
+  let { f, ref = {}, gpx = '', erreur = '', envoi = false, onmodifier, onsupprimer, onfermer } = $props();
 
   let confirmer = $state(false);
 
@@ -63,6 +64,13 @@
           </li>
         {/each}
       </ol>
+    </section>
+  {/if}
+
+  {#if gpx}
+    <section aria-label="Parcours">
+      <h4>Parcours</h4>
+      <ParcoursGpx contenu={gpx} nom={f.gpxNom} />
     </section>
   {/if}
 

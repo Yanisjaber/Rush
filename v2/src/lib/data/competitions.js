@@ -2,7 +2,7 @@
 //
 // STOCKAGE (comme la v1) : une compétition à venir est une ligne de `activity_planned` (category = 'competition') ;
 // une compétition passée est une activité (`activities`, category = 'competition'). Priorité : 'A' (objectif) ou 'B' (préparation).
-import { SPORTS_PREVUE } from './prevue.js';
+import { SPORTS_PREVUE, validerGpxFormulaire } from './prevue.js';
 
 export const PRIORITES = [
   ['A', 'Objectif', 'Ta course principale : la préparation vise cette date.'],
@@ -97,6 +97,7 @@ export function formulaireDepuisLigne(l) {
     dPlus: t(l.d_plus),
     objectif: texteObjectif(l.duration),
     notes: t(l.notes),
+    gpxNom: t(l.gpx_name),
   };
 }
 
@@ -132,8 +133,10 @@ export function validerCompetition(f) {
   if (objectifBrut && (objectif == null || objectif < 1 || objectif > 7200)) erreurs.objectif = 'Format attendu : 1h45, 1:45:00 ou 45 min.';
   const notes = String(f.notes ?? '');
   if (notes.length > 2000) erreurs.notes = '2000 caractères maximum.';
+  const gpxVerifie = validerGpxFormulaire(f.gpx);
+  if (gpxVerifie.erreur) erreurs.gpx = gpxVerifie.erreur;
   if (Object.keys(erreurs).length) return { valeurs: null, erreurs };
-  return { erreurs, valeurs: { nom, date: f.date, heure: f.heure, sport: f.sport, priorite: f.priorite, type: type || null, km, dPlus, objectif, notes: notes.trim() || null } };
+  return { erreurs, valeurs: { nom, date: f.date, heure: f.heure, sport: f.sport, priorite: f.priorite, type: type || null, km, dPlus, objectif, notes: notes.trim() || null, gpx: gpxVerifie.gpx } };
 }
 
 /** Ligne à écrire dans activity_planned (sans user_id : ajouté par l'API depuis la session). */
@@ -150,6 +153,7 @@ export function versLigne(v) {
     d_plus: v.dPlus,
     duration: v.objectif,
     notes: v.notes,
+    ...(v.gpx !== undefined ? { gpx_name: v.gpx?.nom ?? null, gpx_content: v.gpx?.contenu ?? null } : {}),
   };
 }
 

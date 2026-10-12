@@ -63,3 +63,17 @@ test('validerPrevue : une structure est ignorée pour un sport qui n\'en a pas (
   assert.equal(valeurs.structure.length, 0);
   assert.equal(versLigne(valeurs).structure, null);
 });
+
+test('GPX : inchangé = rien d\'écrit, retrait = colonnes à null, nouveau parcours = nom et contenu, contenu invalide refusé', () => {
+  const base = { ...formulaireVide('2026-10-20'), nom: 'Sortie' };
+  assert.ok(!('gpx_content' in versLigne(validerPrevue(base).valeurs))); // on ne touche pas au parcours existant
+  const retrait = versLigne(validerPrevue({ ...base, gpx: null }).valeurs);
+  assert.equal(retrait.gpx_content, null);
+  assert.equal(retrait.gpx_name, null);
+  const ajout = versLigne(validerPrevue({ ...base, gpx: { nom: 'col.gpx', contenu: '<gpx></gpx>' } }).valeurs);
+  assert.equal(ajout.gpx_name, 'col.gpx');
+  assert.equal(ajout.gpx_content, '<gpx></gpx>');
+  assert.ok(validerPrevue({ ...base, gpx: { nom: 'x', contenu: '' } }).erreurs.gpx);
+  assert.ok(validerPrevue({ ...base, gpx: 'pas un objet' }).erreurs.gpx);
+  assert.ok(validerPrevue({ ...base, gpx: { nom: 'x', contenu: 'a'.repeat(5 * 1024 * 1024 + 1) } }).erreurs.gpx);
+});

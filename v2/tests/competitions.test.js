@@ -86,3 +86,10 @@ test('répartition et prochain objectif', () => {
   assert.equal(prochainObjectif([]), null);
   assert.deepEqual(repartir(null, '2026-10-12'), { aVenir: [], passees: [] });
 });
+
+test('GPX d\'une compétition : même règle que pour une séance prévue', () => {
+  const l = versLigne(validerCompetition({ ...bon(), gpx: { nom: 'course.gpx', contenu: '<gpx/>' } }).valeurs);
+  assert.equal(l.gpx_name, 'course.gpx');
+  assert.ok(!('gpx_content' in versLigne(validerCompetition(bon()).valeurs)));
+  assert.ok(validerCompetition({ ...bon(), gpx: { contenu: 42 } }).erreurs.gpx);
+});
