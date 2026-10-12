@@ -62,5 +62,12 @@ test('disponibles : exclut les widgets déjà présents', () => {
   assert.deepEqual(disponibles({ widgets: [] }, []).sort(), Object.keys(WIDGETS).sort());
   const restants = disponibles({ widgets: [{ id: 'charge', taille: 'l' }] }, []);
   assert.equal(restants.includes('charge'), false);
-  assert.equal(disponibles(d, []).length, 0); // l'auto contient déjà tout
+  // Sans sport pratiqué, l'accueil automatique ne contient que les widgets universels : les widgets propres
+  // à un sport restent disponibles dans la bibliothèque, mais pas composés d'office.
+  const sportifs = disponibles(d, []).sort();
+  assert.deepEqual(sportifs, ['efficacite', 'force', 'meilleures', 'predictions', 'puissance']);
+  // Un coureur qui fait aussi du vélo voit ses widgets de course et de vélo composés automatiquement
+  const coureur = compositionAuto(['course', 'velo']).widgets.map((w) => w.id);
+  for (const id of ['predictions', 'efficacite', 'meilleures', 'puissance']) assert.ok(coureur.includes(id), id);
+  assert.equal(coureur.includes('force'), false);
 });

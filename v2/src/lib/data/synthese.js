@@ -180,3 +180,111 @@ export function semaineCourante(seances, aujourdhui = new Date()) {
     };
   });
 }
+
+// ---------------------------------------------------------------------------
+// Course à pied : prédictions, efficacité, meilleures sorties
+// ---------------------------------------------------------------------------
+
+const EST_COURSE = (s) => familleAffichage(s.sport) === 'course';
+const joursDepuis = (dateSeance, aujourdhui) => {
+  const base = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate());
+  return Math.floor((base - new Date(String(dateSeance).slice(0, 10) + 'T00:00:00')) / JOUR);
+};
+
+/**
+ * Prédictions de temps sur 5 km, 10 km et semi, par la formule de Riegel (t2 = t1 × (d2 / d1)^1,06),
+ * à partir des sorties de course récentes (au moins 5 km). On garde la meilleure estimation parmi les
+ * sorties dont la distance est comparable (de 0,45 à 2,2 fois la distance visée). Ce sont des moyennes de
+ * sorties entières : l'estimation est donc volontairement prudente.
+ */
+export function predictionsCourse(seances, aujourdhui = new Date(), jours = 120) {
+  const sorties = seances.filter(
+    (s) => EST_COURSE(s) && s.distance_km >= 5 && s.moving_time > 0 && joursDepuis(s.start_date_local, aujourdhui) <= jours,
+  );
+  const cibles = [
+    { cle: '5k', label: '5 km', km: 5 },
+    { cle: '10k', label: '10 km', km: 10 },
+    { cle: 'semi', label: 'Semi', km: 21.0975 },
+  ];
+  const resultats = [];
+  for (const c of cibles) {
+    let meilleur = null;
+    for (const s of sorties) {
+      const d = Number(s.distance_km);
+      if (d < c.km * 0.45 || d > c.km * 2.2) continue;
+      const estimation = s.moving_time * Math.pow(c.km / d, 1.06);
+      if (meilleur === null || estimation < meilleur) meilleur = estimation;
+    }
+    if (meilleur !== null) resultats.push({ ...c, secondes: Math.round(meilleur) });
+  }
+  return resultats;
+}
+
+/**
+ * Efficacité : allure moyenne des sorties « faciles » (cardio entre 60 et 80 % de la FC max) semaine par
+ * semaine. Si l'allure baisse à cardio égal, la condition progresse. Renvoie null s'il y a moins de 3 semaines
+ * exploitables. `points` : une valeur d'allure (secondes par km) par semaine disponible, de la plus ancienne
+ * à la plus récente ; `amelioration` : gain en pourcentage entre la première et la dernière semaine.
+ */
+export function efficaciteCourse(seances, hrMax, nbSemaines = 12, aujourdhui = new Date()) {
+  const bas = hrMax ? hrMax * 0.6 : 125;
+  const haut = hrMax ? hrMax * 0.8 : 155;
+  const semaines = new Map(); // indice de semaine (0 = ancienne) → { temps, km }
+  for (const s of seances) {
+    if (!EST_COURSE(s) || !(s.distance_km >= 3) || !(s.moving_time > 0)) continue;
+    const fc = s.avg_heartrate;
+    if (!fc || fc < bas || fc > haut) continue;
+    const i = indexSemaine(s.start_date_local, aujourdhui);
+    if (i < 0 || i >= nbSemaines) continue;
+    const cle = nbSemaines - 1 - i;
+    const m = semaines.get(cle) || { temps: 0, km: 0 };
+    m.temps += s.moving_time;
+    m.km += Number(s.distance_km);
+    semaines.set(cle, m);
+  }
+  const points = [...semaines.entries()].sort((a, b) => a[0] - b[0]).map(([semaine, m]) => ({ semaine, allure: m.temps / m.km }));
+  if (points.length < 3) return null;
+  const premiere = points[0].allure;
+  const derniere = points[points.length - 1].allure;
+  return { points, amelioration: Math.round(((premiere - derniere) / premiere) * 1000) / 10, allureActuelle: derniere };
+}
+
+/** Meilleures sorties de course sur la période chargée : la plus longue, la plus rapide ≥ 5 km et ≥ 10 km. */
+export function meilleuresSortiesCourse(seances) {
+  const courses = seances.filter((s) => EST_COURSE(s) && s.distance_km > 0 && s.moving_time > 0);
+  const allure = (s) => s.moving_time / Number(s.distance_km);
+  const meilleur = (liste, cle) => (liste.length ? liste.reduce((a, b) => (cle(b) < cle(a) ? b : a)) : null);
+  const resume = (s, valeur) => (s ? { id: s.id, nom: s.name, date: String(s.start_date_local).slice(0, 10), valeur } : null);
+  const plusLongue = meilleur(courses, (s) => -Number(s.distance_km));
+  const rapide5 = meilleur(courses.filter((s) => s.distance_km >= 5), allure);
+  const rapide10 = meilleur(courses.filter((s) => s.distance_km >= 10), allure);
+  return {
+    plusLongue: resume(plusLongue, plusLongue && { km: Number(plusLongue.distance_km), secondes: plusLongue.moving_time }),
+    rapide5: resume(rapide5, rapide5 && { km: Number(rapide5.distance_km), allure: allure(rapide5) }),
+    rapide10: resume(rapide10, rapide10 && { km: Number(rapide10.distance_km), allure: allure(rapide10) }),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Force : régularité des séances de musculation
+// ---------------------------------------------------------------------------
+
+/**
+ * Nombre de séances de force par semaine sur N semaines, et série de semaines consécutives avec au moins
+ * une séance (la semaine en cours ne casse pas la série tant qu'elle n'est pas terminée).
+ */
+export function seancesForce(seances, nbSemaines = 12, aujourdhui = new Date()) {
+  const parSemaine = new Array(nbSemaines).fill(0);
+  for (const s of seances) {
+    if (familleAffichage(s.sport) !== 'muscu') continue;
+    const i = indexSemaine(s.start_date_local, aujourdhui);
+    if (i < 0 || i >= nbSemaines) continue;
+    parSemaine[nbSemaines - 1 - i] += 1;
+  }
+  let serie = 0;
+  let i = nbSemaines - 1;
+  if (parSemaine[i] === 0) i--; // semaine en cours encore vide : on ne casse pas la série
+  for (; i >= 0 && parSemaine[i] > 0; i--) serie++;
+  const total = parSemaine.reduce((a, b) => a + b, 0);
+  return { parSemaine, serie, total, moyenne: Math.round((total / nbSemaines) * 10) / 10 };
+}

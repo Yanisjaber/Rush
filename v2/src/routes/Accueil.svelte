@@ -19,14 +19,14 @@
     ajouter,
     changerTaille,
   } from '../lib/stores/disposition.svelte.js';
-  import { chargerProfil, chargerMetriques, chargerSeances, chargerObjectifs } from '../lib/data/api.js';
+  import { chargerProfil, chargerMetriques, chargerSeances, chargerObjectifs, chargerPuissance } from '../lib/data/api.js';
   import { donneesDemo } from '../lib/data/demo.js';
   import { chargeParSemaine, formeActuelle } from '../lib/data/synthese.js';
   import { familleAffichage } from '../lib/data/familles.js';
 
   let { demo = false } = $props();
 
-  let etat = $state({ chargement: true, erreur: '', profil: null, metriques: [], seances: [], objectifs: [] });
+  let etat = $state({ chargement: true, erreur: '', profil: null, metriques: [], seances: [], objectifs: [], puissance: [] });
   let filtre = $state('tout');
 
   const famillesDe = (seances) => [...new Set(seances.map((s) => familleAffichage(s.sport)))].filter((f) => f !== 'autre');
@@ -50,17 +50,19 @@
       return;
     }
     if (!userId) return;
-    const [profil, metriques, seances, objectifs] = await Promise.all([
+    const [profil, metriques, seances, objectifs, puissance] = await Promise.all([
       chargerProfil(userId),
       chargerMetriques(userId),
       chargerSeances(userId),
       chargerObjectifs(userId),
+      chargerPuissance(userId),
     ]);
     etat.profil = profil.data;
     etat.metriques = metriques.data || [];
     etat.seances = seances.data || [];
     etat.objectifs = objectifs.data || [];
-    etat.erreur = [profil, metriques, seances, objectifs].map((r) => r.erreur).find(Boolean) || '';
+    etat.puissance = puissance.data || [];
+    etat.erreur = [profil, metriques, seances, objectifs, puissance].map((r) => r.erreur).find(Boolean) || '';
     await chargerDisposition(userId, famillesDe(etat.seances));
     terminerChargement();
   }
@@ -84,6 +86,8 @@
     metriques: etat.metriques,
     objectifs: etat.objectifs,
     profil: etat.profil,
+    puissance: etat.puissance,
+    hrMax: etat.profil?.hr_max || null,
     filtre,
   });
   const forme = $derived(formeActuelle(etat.metriques));

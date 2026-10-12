@@ -68,3 +68,18 @@ export async function chargerObjectifs(userId, limite = 3) {
     .limit(limite);
   return resultat(r, 'Impossible de charger tes objectifs.');
 }
+
+/**
+ * Courbe de puissance (vélo) : meilleures puissances par durée, sur 90 jours et sur toute la vie.
+ * On ne garde que des durées standard (5 s, 15 s, 30 s, 1, 5, 10, 20, 60 min).
+ */
+const DUREES_PUISSANCE = [5, 15, 30, 60, 300, 600, 1200, 3600];
+export async function chargerPuissance(userId) {
+  const r = await sb
+    .from('power_profile')
+    .select('duration_s,watts_90d,watts_alltime')
+    .eq('user_id', userId)
+    .in('duration_s', DUREES_PUISSANCE)
+    .order('duration_s', { ascending: true });
+  return resultat(r, 'Impossible de charger ta courbe de puissance.');
+}

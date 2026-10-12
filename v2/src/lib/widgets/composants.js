@@ -6,6 +6,11 @@ import WidgetVolume from './WidgetVolume.svelte';
 import WidgetSemaine from './WidgetSemaine.svelte';
 import WidgetRegularite from './WidgetRegularite.svelte';
 import WidgetDernieres from './WidgetDernieres.svelte';
+import WidgetPredictions from './WidgetPredictions.svelte';
+import WidgetEfficacite from './WidgetEfficacite.svelte';
+import WidgetMeilleures from './WidgetMeilleures.svelte';
+import WidgetPuissance from './WidgetPuissance.svelte';
+import WidgetForce from './WidgetForce.svelte';
 
 export const COMPOSANTS = {
   objectif: WidgetObjectif,
@@ -15,4 +20,9 @@ export const COMPOSANTS = {
   semaine: WidgetSemaine,
   regularite: WidgetRegularite,
   dernieres: WidgetDernieres,
+  predictions: WidgetPredictions,
+  efficacite: WidgetEfficacite,
+  meilleures: WidgetMeilleures,
+  puissance: WidgetPuissance,
+  force: WidgetForce,
 };

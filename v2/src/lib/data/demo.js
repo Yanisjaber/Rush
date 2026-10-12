@@ -26,7 +26,9 @@ export function donneesDemo(aujourdhui = new Date()) {
     const iso = dateIsoLocale(d);
     const tss = Math.round(m.tss * variation);
     quotidien[iso] = (quotidien[iso] || 0) + tss;
-    const distance = m.sport === 'Run' ? (m.min / 60) * 11.5 : m.sport === 'Ride' ? (m.min / 60) * 27 : null;
+    // La vitesse en course progresse doucement sur 12 semaines (de 10,6 à 11,8 km/h) : de quoi montrer l'efficacité
+    const vitesseCourse = 10.6 + ((83 - i) / 83) * 1.2;
+    const distance = m.sport === 'Run' ? (m.min / 60) * vitesseCourse : m.sport === 'Ride' ? (m.min / 60) * 27 : null;
     seances.push({
       id: `demo-${iso}`,
       name: m.nom,
@@ -69,6 +71,16 @@ export function donneesDemo(aujourdhui = new Date()) {
     profil: { display_name: 'Yanis', ftp: null, hr_max: 196, lthr: null, weight: null },
     metriques,
     seances,
+    puissance: [
+      { duration_s: 5, watts_90d: 674, watts_alltime: 790 },
+      { duration_s: 15, watts_90d: 560, watts_alltime: 640 },
+      { duration_s: 30, watts_90d: 470, watts_alltime: 520 },
+      { duration_s: 60, watts_90d: 380, watts_alltime: 430 },
+      { duration_s: 300, watts_90d: 290, watts_alltime: 330 },
+      { duration_s: 600, watts_90d: 255, watts_alltime: 290 },
+      { duration_s: 1200, watts_90d: 232, watts_alltime: 270 },
+      { duration_s: 3600, watts_90d: 205, watts_alltime: 245 },
+    ],
     objectifs: [
       { id: 'demo-ramonville', name: 'Ronde de Ramonville', date: '2026-12-13', sport: 'Run', km: 10.15, d_plus: 42, priority: 'A', duration: 40, category: 'competition' },
     ],

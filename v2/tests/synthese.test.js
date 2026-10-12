@@ -131,3 +131,77 @@ test('couleurSport : sport inconnu ou piégé → couleur neutre', async () => {
   assert.equal(couleurSport('constructor'), 'var(--sport-neutre)');
   assert.equal(couleurSport(undefined), 'var(--sport-neutre)');
 });
+
+// ---------------------------------------------------------------------------
+// Course à pied et force
+// ---------------------------------------------------------------------------
+import { predictionsCourse, efficaciteCourse, meilleuresSortiesCourse, seancesForce } from '../src/lib/data/synthese.js';
+import { formatChrono, formatAllure } from '../src/lib/utils/format.js';
+
+const course = (date, km, minutes, fc) => seance(date, 'Run', minutes, { distance_km: km, avg_heartrate: fc });
+
+test('formatChrono et formatAllure', () => {
+  assert.equal(formatChrono(2472), "41'12\"");
+  assert.equal(formatChrono(5500), "1h31'40\"");
+  assert.equal(formatAllure(252), "4'12\"/km");
+});
+
+test('predictionsCourse : Riegel à partir des sorties récentes de 5 km et plus', () => {
+  // 10 km en 50 min : 10k = 3000 s ; 5k = 3000 × (5/10)^1,06 ≈ 1439 s ; le semi = 3000 × (21,0975/10)^1,06
+  const p = predictionsCourse([course('2026-10-05', 10, 50, 150)], AUJ);
+  const par = Object.fromEntries(p.map((x) => [x.cle, x.secondes]));
+  assert.equal(par['10k'], 3000);
+  assert.ok(Math.abs(par['5k'] - 1439) <= 2, `5k = ${par['5k']}`);
+  assert.ok(par.semi > 6500 && par.semi < 6800, `semi = ${par.semi}`);
+});
+
+test('predictionsCourse : ignore les sorties trop courtes, trop anciennes ou trop éloignées de la distance visée', () => {
+  assert.deepEqual(predictionsCourse([course('2026-10-05', 3, 20, 150)], AUJ), []); // moins de 5 km
+  assert.deepEqual(predictionsCourse([course('2026-02-01', 10, 50, 150)], AUJ), []); // plus de 120 jours
+  const p = predictionsCourse([course('2026-10-05', 5, 25, 150)], AUJ);
+  assert.equal(p.some((x) => x.cle === 'semi'), false); // 5 km est trop loin d'un semi (moins de la moitié)
+});
+
+test("predictionsCourse : garde la meilleure estimation parmi plusieurs sorties", () => {
+  const p = predictionsCourse([course('2026-10-05', 10, 60, 150), course('2026-10-08', 10, 50, 150)], AUJ);
+  assert.equal(p.find((x) => x.cle === '10k').secondes, 3000);
+});
+
+test("efficaciteCourse : null sans assez de semaines, sinon l'allure s'améliore", () => {
+  assert.equal(efficaciteCourse([course('2026-10-05', 8, 48, 140)], 196, 12, AUJ), null);
+  // une sortie facile par semaine sur 4 semaines, de plus en plus rapide à cardio comparable
+  const s = [
+    course('2026-09-16', 8, 48, 140), // 6'00"/km
+    course('2026-09-23', 8, 46, 141),
+    course('2026-09-30', 8, 44, 140),
+    course('2026-10-07', 8, 42, 141), // 5'15"/km
+    course('2026-10-08', 8, 30, 185), // trop intense : ignorée
+  ];
+  const r = efficaciteCourse(s, 196, 12, AUJ);
+  assert.equal(r.points.length, 4);
+  assert.ok(r.amelioration > 10, `amélioration = ${r.amelioration}`);
+  assert.ok(r.allureActuelle < r.points[0].allure);
+});
+
+test('meilleuresSortiesCourse : la plus longue et les plus rapides', () => {
+  const m = meilleuresSortiesCourse([
+    course('2026-10-01', 12, 66, 150),
+    course('2026-10-03', 5, 22, 160), // 4'24"/km, la plus rapide ≥ 5 km
+    course('2026-10-05', 10, 48, 155), // 4'48"/km, la plus rapide ≥ 10 km
+    seance('2026-10-06', 'Ride', 120, { distance_km: 60 }), // ignorée : ce n'est pas de la course
+  ]);
+  assert.equal(m.plusLongue.valeur.km, 12);
+  assert.ok(Math.abs(m.rapide5.valeur.allure - 264) < 1);
+  assert.equal(m.rapide10.valeur.km, 10);
+  assert.equal(meilleuresSortiesCourse([]).plusLongue, null);
+});
+
+test('seancesForce : séances par semaine et série de semaines consécutives', () => {
+  const muscu = (d) => seance(d, 'WeightTraining', 60);
+  // semaine en cours vide (aujourd'hui lundi 12), puis 3 semaines consécutives avec séance
+  const r = seancesForce([muscu('2026-10-07'), muscu('2026-10-08'), muscu('2026-09-30'), muscu('2026-09-23')], 12, AUJ);
+  assert.equal(r.parSemaine.length, 12);
+  assert.equal(r.total, 4);
+  assert.equal(r.serie, 3);
+  assert.equal(seancesForce([], 12, AUJ).serie, 0);
+});

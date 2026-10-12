@@ -42,3 +42,19 @@ export function dateIsoLocale(d = new Date()) {
   const p = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
+
+/** Chronomètre : 2472 s → « 41'12" », 5500 s → « 1h31'40" ». */
+export function formatChrono(secondes) {
+  const s = Math.max(0, Math.round(secondes || 0));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const r = s % 60;
+  const sec = String(r).padStart(2, '0');
+  return h > 0 ? `${h}h${String(m).padStart(2, '0')}'${sec}"` : `${m}'${sec}"`;
+}
+
+/** Allure : 252 s/km → « 4'12"/km ». */
+export function formatAllure(secondesParKm) {
+  const s = Math.round(secondesParKm || 0);
+  return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"/km`;
+}

@@ -46,6 +46,46 @@ export const WIDGETS = {
     tailles: ['s', 'm'],
     taille: 'm',
   },
+  predictions: {
+    nom: 'Prédictions de temps',
+    description: '5 km, 10 km et semi, estimés d’après tes sorties récentes, avec l’écart à ton objectif.',
+    categorie: 'Course à pied',
+    sports: ['course'],
+    tailles: ['s', 'm'],
+    taille: 'm',
+  },
+  efficacite: {
+    nom: 'Allure à cardio égal',
+    description: 'Ton allure en endurance semaine après semaine : elle baisse quand ta condition monte.',
+    categorie: 'Course à pied',
+    sports: ['course'],
+    tailles: ['m', 'l'],
+    taille: 'm',
+  },
+  meilleures: {
+    nom: 'Meilleures sorties',
+    description: 'Ta sortie la plus longue et tes sorties les plus rapides sur 5 et 10 km.',
+    categorie: 'Course à pied',
+    sports: ['course'],
+    tailles: ['m', 'l'],
+    taille: 'm',
+  },
+  puissance: {
+    nom: 'Courbe de puissance',
+    description: 'Tes meilleures puissances de 5 secondes à 1 heure, sur 90 jours et sur toute la vie.',
+    categorie: 'Vélo',
+    sports: ['velo'],
+    tailles: ['m', 'l'],
+    taille: 'm',
+  },
+  force: {
+    nom: 'Séances de force',
+    description: 'Combien de séances par semaine, et depuis combien de semaines tu tiens le rythme.',
+    categorie: 'Musculation',
+    sports: ['muscu'],
+    tailles: ['m', 'l'],
+    taille: 'm',
+  },
   semaine: {
     nom: 'Cette semaine',
     description: 'Les sept jours de la semaine, séance par séance.',
@@ -73,7 +113,20 @@ export const WIDGETS = {
 };
 
 /** Ordre de composition automatique de l'accueil. */
-const ORDRE_AUTO = ['objectif', 'charge', 'forme', 'volume', 'semaine', 'regularite', 'dernieres'];
+const ORDRE_AUTO = [
+  'objectif',
+  'charge',
+  'forme',
+  'predictions',
+  'puissance',
+  'efficacite',
+  'volume',
+  'semaine',
+  'force',
+  'meilleures',
+  'regularite',
+  'dernieres',
+];
 
 /**
  * Un identifiant désigne-t-il un vrai widget ? Vérification stricte : `WIDGETS['constructor']`
