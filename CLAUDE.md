@@ -44,6 +44,17 @@ Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon
 - Modèle de données : voir `MODELE_DONNEES.md`. Tables clés : `activities` (réalisé, Strava/Garmin/manuel), `activity_planned` (prévu), `activity_template`, `user_profiles` (réglages ; extras en JSONB `extras`), `connexions_app` (OAuth Strava/Garmin, tokens masqués au navigateur), `oauth_states` (état OAuth à usage unique, service_role seulement). RLS : chaque utilisateur n'accède qu'à ses lignes (`auth.uid() = user_id`) ; aucun accès `anon`.
 - `supabase/migrations/` est le journal officiel des changements de schéma, nommé `AAAA-MM-JJ_nom.sql`. Toutes les migrations sont dans ce dossier.
 
+## v2 (nouvelle app, dossier `v2/`)
+
+La v2 est une refonte complète construite **à côté** de la v1 (même dépôt, même Supabase). Elle vise **tout sport de performance lié à un entraînement physique et une forme** (pas de sports collectifs), avec un accueil composé de widgets selon les sports de l'utilisateur, un mode édition, un onboarding, et deux coques (mobile simple, desktop complet). La v1 reste en ligne et ne doit jamais être cassée.
+
+- **Stack** : Svelte 5 + Vite 8 (le « pas de bundler » ne vaut que pour la v1). Polices hébergées via `@fontsource` (aucun appel à Google Fonts).
+- **Commandes** : `cd v2 && npm ci` puis `npm run dev` (http://localhost:5173) ou `npm run build`. Le catalogue du design system est la page d'accueil de `v2/`.
+- **Chaîne d'approvisionnement** : versions **exactes** (`save-exact`), `ignore-scripts=true` dans `v2/.npmrc`, `package-lock.json` commité, `npm ci` en CI. Choisir des versions publiées il y a plus de deux semaines. Peu de dépendances : en ajouter une est une décision à discuter.
+- **Sécurité** : les templates Svelte échappent le HTML (jamais `{@html}` avec des données externes). Le build injecte une CSP stricte (voir `v2/vite.config.js`) : si une nouvelle origine est nécessaire (Supabase, Strava…), l'ajouter explicitement.
+- **Design system** (`v2/src/lib/design/tokens.css`) : **la couleur désigne le sport**, pas le profil (course orange, vélo bleu, natation cyan, muscu corail, hybride jaune). Fond sombre par défaut, thème clair en option. Titres et chiffres en Bricolage Grotesque, texte en Instrument Sans. Le **dossard** (bloc clair avec quatre points d'attache) est la signature visuelle. Cibles tactiles d'au moins 44 px, focus visible, contraste vérifié.
+- **Données** : tout vient de Supabase (RLS `auth.uid() = user_id`). Charge d'entraînement universelle : TSS (puissance), sinon TRIMP (cardio), sinon effort ressenti × durée.
+
 ## Pièges
 
 - `.env`, `.garmin_tokens.json`, `.strava_tokens.json` sont ignorés par git. GitHub Pages publie la racine de `main` : tout ce qui est commité est public.
