@@ -207,3 +207,49 @@ export function competitionsDemo(aujourdhui = new Date()) {
     ],
   };
 }
+
+/** Activités d'exemple sur 3 ans (forme des lignes de la table activities), pour le bilan en démo. */
+export function activitesBilanDemo(maintenant = new Date()) {
+  const lignes = [];
+  const modele = [
+    null,
+    { sport: 'Run', min: 55, km: 10.5, d: 60 },
+    { sport: 'WeightTraining', min: 55, km: 0, d: 0 },
+    { sport: 'Run', min: 45, km: 8.2, d: 40 },
+    { sport: 'Swim', min: 45, km: 1.8, d: 0 },
+    { sport: 'Ride', min: 80, km: 36, d: 250 },
+    { sport: 'Ride', min: 160, km: 72, d: 900 },
+  ];
+  for (let a = maintenant.getFullYear() - 2; a <= maintenant.getFullYear(); a++) {
+    const progression = 0.78 + (a - (maintenant.getFullYear() - 2)) * 0.12; // l'athlète s'entraîne un peu plus chaque année
+    for (let j = 0; j < 366; j++) {
+      const d = new Date(a, 0, 1 + j, 12);
+      if (d.getFullYear() !== a || d > maintenant) continue;
+      const m = modele[d.getDay() === 0 ? 6 : d.getDay()];
+      if (!m || (j * 7 + a) % 9 === 0) continue; // un jour sur neuf de repos en plus
+      const v = (0.85 + ((j * 13) % 30) / 100) * progression;
+      lignes.push({
+        id: `demo-bilan-${a}-${j}`,
+        name: `${m.sport === 'Ride' ? 'Sortie vélo' : m.sport === 'Run' ? 'Footing' : m.sport === 'Swim' ? 'Natation' : 'Séance'} ${j}`,
+        sport: m.sport,
+        start_date_local: `${dateIsoLocale(d)}T18:00:00+00:00`,
+        moving_time: Math.round(m.min * 60 * v),
+        distance_km: m.km ? Math.round(m.km * v * 100) / 100 : null,
+        total_elevation_gain: m.d ? Math.round(m.d * v) : null,
+        tss: Math.round(m.min * 0.9 * v),
+      });
+    }
+  }
+  return lignes;
+}
+
+/** Objectifs annuels d'exemple. */
+export function objectifsAnnuelsDemo(maintenant = new Date()) {
+  const annee = maintenant.getFullYear();
+  return [
+    { id: 'demo-g1', annee, sport: 'course', template: 'run_dist', target: 1500 },
+    { id: 'demo-g2', annee, sport: 'cyclisme', template: 'cyc_dist', target: 8000 },
+    { id: 'demo-g3', annee, sport: 'tous', template: 'all_hours', target: 380 },
+    { id: 'demo-g4', annee, sport: 'course', template: 'run_10k', target: 40, currentManual: 42.5 },
+  ];
+}

@@ -8,6 +8,7 @@
   import Seance from './routes/Seance.svelte';
   import Sommeil from './routes/Sommeil.svelte';
   import Competitions from './routes/Competitions.svelte';
+  import Bilan from './routes/Bilan.svelte';
   import PanneauSeance from './lib/components/PanneauSeance.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
   import { route, modeDemo } from './lib/routeur.svelte.js';
@@ -54,6 +55,8 @@
     <Sommeil demo={true} onglet={sommeilOnglet} />
   {:else if route.chemin === '/competitions'}
     <Competitions demo={true} />
+  {:else if route.chemin === '/bilan'}
+    <Bilan demo={true} />
   {:else if idSeance}
     <Seance id={idSeance} demo={true} />
   {:else}
@@ -71,6 +74,8 @@
   <Sommeil onglet={sommeilOnglet} />
 {:else if route.chemin === '/competitions'}
   <Competitions />
+{:else if route.chemin === '/bilan'}
+  <Bilan />
 {:else if idSeance}
   <Seance id={idSeance} />
 {:else}

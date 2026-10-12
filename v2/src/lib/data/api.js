@@ -271,3 +271,66 @@ export async function definirCategorieActivite(userId, id, categorie) {
   if (!r.error && !r.data) return { data: null, erreur: 'Activité introuvable.' };
   return resultat(r, 'Impossible de modifier cette sortie.');
 }
+
+// ---------------------------------------------------------------------------
+// Bilan annuel : activités des 3 dernières années et objectifs annuels
+// ---------------------------------------------------------------------------
+
+const COLONNES_BILAN = 'id,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,tss';
+const TAILLE_PAGE = 1000; // l'API renvoie au plus 1000 lignes par requête : on lit par pages
+
+/** Activités de l'année et des deux précédentes (colonnes légères), par pages de 1000. */
+export async function chargerActivitesBilan(userId, annee) {
+  const toutes = [];
+  for (let page = 0; page < 12; page++) {
+    const r = await sb
+      .from('activities')
+      .select(COLONNES_BILAN)
+      .eq('user_id', userId)
+      .gte('start_date_local', `${annee - 2}-01-01`)
+      .lte('start_date_local', `${annee}-12-31T23:59:59`)
+      .order('start_date_local', { ascending: true })
+      .range(page * TAILLE_PAGE, (page + 1) * TAILLE_PAGE - 1);
+    if (r.error) {
+      console.error('[v2/api] bilan', r.error.code || '');
+      return { data: null, erreur: 'Impossible de charger tes activités.' };
+    }
+    toutes.push(...r.data);
+    if (r.data.length < TAILLE_PAGE) break;
+  }
+  return { data: toutes, erreur: '' };
+}
+
+const COLONNES_OBJECTIF_ANNUEL = 'id,year,sport,template,target,current_manual';
+const versObjectif = (l) => ({ id: l.id, annee: l.year, sport: l.sport, template: l.template, target: Number(l.target), currentManual: l.current_manual ?? undefined });
+
+/** Tous les objectifs annuels de l'utilisateur (toutes années). */
+export async function chargerObjectifsAnnuels(userId) {
+  const r = await sb.from('yearly_goals').select(COLONNES_OBJECTIF_ANNUEL).eq('user_id', userId).order('year', { ascending: false }).limit(500);
+  const res = resultat(r, 'Impossible de charger tes objectifs.');
+  return { data: res.data ? res.data.map(versObjectif) : null, erreur: res.erreur };
+}
+
+/** Crée un objectif annuel (valeurs : sport, template, target, current_manual). */
+export async function creerObjectifAnnuel(userId, annee, valeurs) {
+  const r = await sb
+    .from('yearly_goals')
+    .insert({ ...valeurs, user_id: userId, year: annee, client_id: `v2-${crypto.randomUUID()}` })
+    .select(COLONNES_OBJECTIF_ANNUEL)
+    .single();
+  const res = resultat(r, "Impossible d'enregistrer l'objectif.");
+  return { data: res.data ? versObjectif(res.data) : null, erreur: res.erreur };
+}
+
+/** Modifie un objectif annuel qui t'appartient. */
+export async function modifierObjectifAnnuel(userId, id, valeurs) {
+  const r = await sb.from('yearly_goals').update(valeurs).eq('id', id).eq('user_id', userId).select(COLONNES_OBJECTIF_ANNUEL).single();
+  const res = resultat(r, "Impossible de modifier l'objectif.");
+  return { data: res.data ? versObjectif(res.data) : null, erreur: res.erreur };
+}
+
+/** Supprime un objectif annuel qui t'appartient. */
+export async function supprimerObjectifAnnuel(userId, id) {
+  const r = await sb.from('yearly_goals').delete().eq('id', id).eq('user_id', userId);
+  return resultat(r, "Impossible de supprimer l'objectif.");
+}
