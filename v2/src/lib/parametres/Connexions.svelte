@@ -167,13 +167,20 @@
             {#if statutS.cle === 'erreur'}<Bouton variante="discret" onclick={connecter}>Reconnecter</Bouton>{/if}
             <Bouton variante="texte" onclick={() => (choixDeconnexion = true)}>Déconnecter</Bouton>
           {:else}
-            <Bouton onclick={connecter}>Connecter Strava</Bouton>
+            <!-- Bouton officiel de la charte Strava : fichier fourni par Strava, jamais modifié (48 px de haut) -->
+            <button type="button" class="btn-strava" onclick={connecter} aria-label="Connecter Strava">
+              <img src="{import.meta.env.BASE_URL}strava/btn_strava_connect_with_orange.svg" alt="Connect with Strava" width="237" height="48" />
+            </button>
           {/if}
         </div>
       {/if}
 
       {#if erreurStrava}<p class="erreur" role="alert">{erreurStrava}</p>{/if}
       {#if infoStrava}<p class="succes" role="status">{infoStrava}</p>{/if}
+      <!-- Mention de la charte Strava : logo officiel, petit, séparé du nom de l'app -->
+      <!-- blanc sur le thème sombre, orange (texte noir) sur le thème clair -->
+      <img class="powered sombre" src="{import.meta.env.BASE_URL}strava/api_logo_pwrdBy_strava_horiz_white.svg" alt="Powered by Strava" width="146" height="15" />
+      <img class="powered clair" src="{import.meta.env.BASE_URL}strava/api_logo_pwrdBy_strava_horiz_orange.svg" alt="Powered by Strava" width="146" height="15" />
       </div>
     </article>
 
@@ -264,6 +271,36 @@
   .logo.opendossard {
     background: var(--surface-2);
     color: var(--texte-doux);
+  }
+  .btn-strava {
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    cursor: pointer;
+    line-height: 0; /* pas d'espace autour de l'image : le bouton garde ses 48 px */
+  }
+  .btn-strava:focus-visible {
+    outline: 3px solid var(--texte);
+    outline-offset: 3px;
+  }
+  .btn-strava img {
+    display: block;
+  }
+  .powered {
+    display: block;
+    margin-top: 18px;
+    height: 15px;
+    width: auto;
+  }
+  .powered.clair {
+    display: none;
+  }
+  :global(:root[data-theme='light']) .powered.sombre {
+    display: none;
+  }
+  :global(:root[data-theme='light']) .powered.clair {
+    display: block;
   }
   .corps {
     padding: 20px 22px 24px;
