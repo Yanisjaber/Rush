@@ -157,7 +157,7 @@
   let menuJour = $state({ ouvert: false, iso: '' });
   const choisir = (action) => {
     const iso = menuJour.iso;
-    menuJour = { ouvert: false, iso: '' };
+    fermerPanneau('jour');
     action(iso);
   };
 
@@ -257,6 +257,15 @@
       } else if (!chargement) fermerPanneau('marquage', 'date');
     });
   });
+
+  // Le menu d'un jour touché dans la grille est dans l'adresse (?jour=2026-10-14)
+  $effect(() => {
+    const iso = route.q.jour || '';
+    untrack(() => {
+      if (iso && !menuJour.ouvert) menuJour = { ouvert: true, iso };
+      else if (!iso && menuJour.ouvert) menuJour = { ouvert: false, iso: '' };
+    });
+  });
 </script>
 
 <main class="page">
@@ -295,7 +304,7 @@
         {#each semaine as j (j.iso)}
           <div class="jour" class:hors={!j.dansMois} class:aujourdhui={j.aujourdhui} class:vide={vide(j) && !j.aujourdhui}>
             <!-- Toucher une zone libre de la case ouvre le menu du jour ; les séances et notes restent cliquables par-dessus -->
-            <button type="button" class="ajout" aria-label="Ajouter pour le {formatDateLongue(j.iso)}" onclick={() => (menuJour = { ouvert: true, iso: j.iso })}></button>
+            <button type="button" class="ajout" aria-label="Ajouter pour le {formatDateLongue(j.iso)}" onclick={() => ouvrirPanneau({ jour: j.iso })}></button>
             <div class="entete-jour">
               <span class="nomjour">{JOURS_SEMAINE[(new Date(j.iso + 'T12:00:00').getDay() + 6) % 7]}</span>
               <span class="num titre">{j.num}</span>
@@ -339,7 +348,7 @@
   </div>
 </main>
 
-<Dialogue ouvert={menuJour.ouvert} titre={menuJour.iso ? formatDateLongue(menuJour.iso) : ''} onfermer={() => (menuJour = { ouvert: false, iso: '' })}>
+<Dialogue ouvert={menuJour.ouvert} titre={menuJour.iso ? formatDateLongue(menuJour.iso) : ''} onfermer={() => fermerPanneau('jour')}>
   <p class="menu-aide">Que veux-tu ajouter ce jour-là ?</p>
   <div class="menu-choix">
     <button type="button" onclick={() => choisir((iso) => nouvelle(iso))}>Nouvelle séance prévue</button>
@@ -347,7 +356,7 @@
     <button type="button" onclick={() => choisir((iso) => nouveauMarquage(iso))}>Repos ou note</button>
     <button type="button" onclick={() => choisir((iso) => ouvrirModeles(iso))}>Modèle de séance</button>
   </div>
-  <button type="button" class="menu-annuler" onclick={() => (menuJour = { ouvert: false, iso: '' })}>Annuler</button>
+  <button type="button" class="menu-annuler" onclick={() => fermerPanneau('jour')}>Annuler</button>
 </Dialogue>
 
 <PanneauModeles

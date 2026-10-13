@@ -8,7 +8,7 @@
   import GrapheNuits from '../lib/components/charts/GrapheNuits.svelte';
   import { menu } from '../lib/stores/menu.svelte.js';
   import SelecteurSport from '../lib/components/SelecteurSport.svelte';
-  import { route, aller } from '../lib/routeur.svelte.js';
+  import { route, aller, ouvrirPanneau, fermerPanneau, regler } from '../lib/routeur.svelte.js';
   import { construireAdresse, anneeDepuisAdresse } from '../lib/data/adresses.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
@@ -28,7 +28,8 @@
   // L'année affichée est dans l'adresse (#/course/bilan/2025) ; sans année, c'est l'année en cours
   const annee = $derived(anneeDepuisAdresse(route.sous) ?? maintenant.getFullYear());
   const choisirAnnee = (a) => aller(construireAdresse({ sport: menu.filtre, page: '/bilan', sous: Number(a) === maintenant.getFullYear() ? '' : String(a) }));
-  let metrique = $state('distance_km'); // graphique de cumul : distance ou dénivelé
+  // graphique de cumul : distance ou dénivelé, dans l'adresse (?metrique=d_plus)
+  const metrique = $derived(route.q.metrique === 'd_plus' ? 'd_plus' : 'distance_km');
   let etat = $state({ chargement: true, erreur: '', brutes: [], objectifs: [] });
   let panneau = $state({ ouvert: false, objectif: null });
 
@@ -85,10 +86,10 @@
   const chipSport = { cyclisme: 'velo', course: 'course', natation: 'natation', musculation: 'muscu', autre: 'autre' };
 
   function nouvelObjectif() {
-    panneau = { ouvert: true, objectif: null };
+    ouvrirPanneau({ objectif: 'nouveau' }); // ce qui est ouvert est dans l'adresse (voir plus bas)
   }
   function ouvrirObjectif(o) {
-    panneau = { ouvert: true, objectif: o };
+    ouvrirPanneau({ objectif: o.id });
   }
   const apresEnregistrement = (o) => (etat.objectifs = [...etat.objectifs.filter((x) => x.id !== o.id), o]);
   const apresSuppression = (id) => (etat.objectifs = etat.objectifs.filter((x) => x.id !== id));
@@ -96,6 +97,27 @@
     const ligne = r.id ? parId.get(r.id) : null;
     if (ligne) ouvrirApercu(ligne);
   }
+
+  // --- L'adresse décide de ce qui est ouvert (arrivée sur la page, rechargement, bouton Retour) ---
+  $effect(() => {
+    const id = route.q.objectif || '';
+    void etat.objectifs;
+    const chargement = etat.chargement;
+    untrack(() => {
+      if (!id) {
+        if (panneau.ouvert) panneau.ouvert = false;
+        return;
+      }
+      if (id === 'nouveau') {
+        if (!panneau.ouvert || panneau.objectif) panneau = { ouvert: true, objectif: null };
+        return;
+      }
+      const trouve = etat.objectifs.find((o) => o.id === id);
+      if (trouve) {
+        if (!panneau.ouvert || panneau.objectif?.id !== id) panneau = { ouvert: true, objectif: trouve };
+      } else if (!chargement) fermerPanneau('objectif');
+    });
+  });
 </script>
 
 <main class="page">
@@ -184,8 +206,8 @@
       <Bloc titre="Cumul sur 3 ans">
         {#snippet actions()}
           <div class="bascule" role="group" aria-label="Mesure du cumul">
-            <button type="button" aria-pressed={metrique === 'distance_km'} onclick={() => (metrique = 'distance_km')}>Distance</button>
-            <button type="button" aria-pressed={metrique === 'd_plus'} onclick={() => (metrique = 'd_plus')}>Dénivelé</button>
+            <button type="button" aria-pressed={metrique === 'distance_km'} onclick={() => regler({ metrique: 'distance_km' })}>Distance</button>
+            <button type="button" aria-pressed={metrique === 'd_plus'} onclick={() => regler({ metrique: 'd_plus' })}>Dénivelé</button>
           </div>
         {/snippet}
         <GrapheNuits
@@ -246,7 +268,7 @@
   {annee}
   {userId}
   {demo}
-  onfermer={() => (panneau.ouvert = false)}
+  onfermer={() => fermerPanneau('objectif')}
   enregistre={apresEnregistrement}
   supprime={apresSuppression}
 />

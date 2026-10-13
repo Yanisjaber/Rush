@@ -1,5 +1,6 @@
 <script>
   import { untrack } from 'svelte';
+  import { route, regler } from '../lib/routeur.svelte.js';
   import EnTete from '../lib/components/EnTete.svelte';
   import Apercu from '../lib/sommeil/Apercu.svelte';
   import Graphiques from '../lib/sommeil/Graphiques.svelte';
@@ -20,7 +21,8 @@
   ];
 
   let etat = $state({ chargement: true, erreur: '', brutes: [] });
-  let choisie = $state(null); // date de la nuit affichée dans l'aperçu (null = la plus récente)
+  // date de la nuit affichée dans l'aperçu, dans l'adresse (?nuit=2026-10-13) ; sans elle, la plus récente
+  const choisie = $derived(route.q.nuit || null);
 
   async function charger(userId) {
     if (demo) {
@@ -65,7 +67,7 @@
   {:else if onglet === 'conseils'}
     <Conseils {nuits} />
   {:else}
-    <Apercu {nuits} {choisie} onchoisir={(d) => (choisie = d)} {userId} {demo} />
+    <Apercu {nuits} {choisie} onchoisir={(d) => regler({ nuit: d })} {userId} {demo} />
   {/if}
 </main>
 

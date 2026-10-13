@@ -122,3 +122,10 @@ test('analyserAdresse lit les compléments, construireAdresse les écrit', () =>
   assert.equal(analyserAdresse('#/force?prevue=x').redirection, '#/muscu/programmes?prevue=x'); // l'ancien lien garde ses compléments
   assert.equal(analyserAdresse('#/sommeil?fc=1').q.fc, '1');
 });
+
+test('compléments d\'adresse : nuit, jour et feuille du téléphone', () => {
+  assert.deepEqual(nettoyerQ('nuit=2026-10-13&jour=2026-10-14&feuille=plus'), { nuit: '2026-10-13', jour: '2026-10-14', feuille: 'plus' });
+  assert.deepEqual(nettoyerQ('feuille=PLUS'), {});
+  assert.deepEqual(nettoyerQ('nuit=hier'), {});
+  assert.equal(construireAdresse({ page: '/sommeil', q: { nuit: '2026-10-13', fc: '1' } }), '#/sommeil?nuit=2026-10-13&fc=1');
+});

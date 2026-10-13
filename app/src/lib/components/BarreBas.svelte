@@ -1,9 +1,8 @@
 <script>
   import Panneau from './Panneau.svelte';
   import { menu } from '../stores/menu.svelte.js';
-  import { route } from '../routeur.svelte.js';
   import { barreBas, cleDePage, ouvertureActive, lienPage } from '../data/menu.js';
-  import { changerSport } from '../routeur.svelte.js';
+  import { route, changerSport, ouvrirPanneau, fermerPanneau } from '../routeur.svelte.js';
   import { SPORTS, couleurSport } from '../sports.js';
 
   // Barre de navigation fixe en bas du téléphone (au pouce). Sur ordinateur elle n'existe pas : le menu est en haut.
@@ -13,11 +12,13 @@
   const b = $derived(barreBas(menu.familles));
   const courante = $derived(cleDePage(route.chemin));
   const surligne = $derived(ouvertureActive(courante));
-  let feuille = $state(null); // null | 'sports' | 'plus'
+  // La feuille ouverte (« sports » ou « plus ») est dans l'adresse (?feuille=plus)
+  const feuille = $derived(route.q.feuille === 'sports' || route.q.feuille === 'plus' ? route.q.feuille : null);
+  const fermerFeuille = () => fermerPanneau('feuille');
   const pagesFeuille = $derived(feuille === 'plus' ? b.plus : []);
   const choisir = (f) => {
     changerSport(f);
-    feuille = null;
+    fermerFeuille();
   };
 </script>
 
@@ -37,7 +38,7 @@
   {#each b.items as it (it.cle)}
     {@const actif = it.ouvre === 'sports' ? menu.filtre !== 'tout' : it.ouvre ? surligne === it.ouvre : courante === it.cle}
     {#if it.ouvre}
-      <button type="button" class="btn" class:actif aria-haspopup="dialog" onclick={() => (feuille = it.ouvre)}>
+      <button type="button" class="btn" class:actif aria-haspopup="dialog" onclick={() => ouvrirPanneau({ feuille: it.ouvre })}>
         {@render icone(it.cle)}
         <span>{it.cle === 'sports' && menu.filtre !== 'tout' ? (SPORTS[menu.filtre] || SPORTS.autre).court : it.nom}</span>
       </button>
@@ -50,7 +51,7 @@
   {/each}
 </nav>
 
-<Panneau ouvert={feuille !== null} titre={feuille === 'sports' ? 'Sport affiché' : 'Plus'} onfermer={() => (feuille = null)}>
+<Panneau ouvert={feuille !== null} titre={feuille === 'sports' ? 'Sport affiché' : 'Plus'} onfermer={fermerFeuille}>
   <ul class="liste">
     {#if feuille === 'sports'}
       <li><button type="button" class:courant={menu.filtre === 'tout'} onclick={() => choisir('tout')}>Tous les sports</button></li>
@@ -63,10 +64,10 @@
       {/each}
     {/if}
     {#each pagesFeuille as p (p.cle)}
-      <li><a href={lienPage(p.cle, menu.filtre)} aria-current={courante === p.cle ? 'page' : undefined} onclick={() => (feuille = null)}>{p.nom}</a></li>
+      <li><a href={lienPage(p.cle, menu.filtre)} aria-current={courante === p.cle ? 'page' : undefined} onclick={fermerFeuille}>{p.nom}</a></li>
     {/each}
     {#if feuille === 'plus' && demo}
-      <li><a href="./" onclick={() => (feuille = null)}>Quitter la démo</a></li>
+      <li><a href="./" onclick={fermerFeuille}>Quitter la démo</a></li>
     {/if}
   </ul>
 </Panneau>

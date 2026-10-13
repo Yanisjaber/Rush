@@ -1,5 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
+  import { route, ouvrirPanneau, fermerPanneau } from '../routeur.svelte.js';
   import LogoApp from '../components/LogoApp.svelte';
   import PanneauLicence from '../components/PanneauLicence.svelte';
   import { palmares, initialiserPalmares, lierLicence, delierLicence } from '../stores/palmares.svelte.js';
@@ -40,9 +41,17 @@
 
   let licence = $state({ ouvert: false });
   async function choisirLicence(l) {
-    licence.ouvert = false;
+    fermerPanneau('licence');
     await lierLicence(userId, l, demo);
   }
+
+  // Le panneau de licence est dans l'adresse (?licence=1)
+  $effect(() => {
+    const ouvert = route.q.licence === '1';
+    untrack(() => {
+      if (licence.ouvert !== ouvert) licence.ouvert = ouvert;
+    });
+  });
 
   onMount(async () => {
     initialiserPalmares(userId, demo);
@@ -208,10 +217,10 @@
         </p>
         <div class="actions">
           {#if palmares.licence}
-            <Bouton variante="discret" onclick={() => (licence.ouvert = true)}>Changer de licence</Bouton>
+            <Bouton variante="discret" onclick={() => ouvrirPanneau({ licence: '1' })}>Changer de licence</Bouton>
             <Bouton variante="texte" onclick={() => delierLicence(userId)}>Délier</Bouton>
           {:else}
-            <Bouton onclick={() => (licence.ouvert = true)}>Lier ma licence</Bouton>
+            <Bouton onclick={() => ouvrirPanneau({ licence: '1' })}>Lier ma licence</Bouton>
           {/if}
         </div>
         {#if palmares.erreur}<p class="erreur" role="alert">{palmares.erreur}</p>{/if}
@@ -219,7 +228,7 @@
     </article>
   </div>
 
-    <PanneauLicence ouvert={licence.ouvert} {demo} onfermer={() => (licence.ouvert = false)} onchoisir={choisirLicence} />
+    <PanneauLicence ouvert={licence.ouvert} {demo} onfermer={() => fermerPanneau('licence')} onchoisir={choisirLicence} />
 
     <p class="pied">Tes jetons d'accès restent stockés côté serveur et ne sont jamais affichés ici.</p>
   {/if}

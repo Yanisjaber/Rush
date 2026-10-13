@@ -24,7 +24,7 @@ export const SOUS_ACCUEIL = { muscu: ['programmes', 'journal', 'exercices'], hyr
  */
 export const CLES_Q = {
   prevue: 'id', sortie: 'id', apercu: 'id', competition: 'id', marquage: 'id', modele: 'id', objectif: 'id', programme: 'id', test: 'id',
-  date: 'date', metrique: 'mot',
+  date: 'date', nuit: 'date', jour: 'date', metrique: 'mot', feuille: 'mot',
   modeles: 'drapeau', objectifhyrox: 'drapeau', licence: 'drapeau', edition: 'drapeau', fc: 'drapeau',
 };
 const FORMES = { id: /^[A-Za-z0-9_-]{1,64}$/, date: /^\d{4}-\d{2}-\d{2}$/, mot: /^[a-z_]{1,30}$/, drapeau: /^1?$/ };

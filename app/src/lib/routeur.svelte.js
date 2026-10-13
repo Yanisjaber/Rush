@@ -59,6 +59,14 @@ export function ouvrirPanneau(params, retirer = []) {
   }, false);
 }
 
+/** Change un réglage de la vue (ex. { metrique: 'd_plus' }) en remplaçant l'entrée d'historique : le bouton Retour n'a pas à les défaire un par un. */
+export function regler(params, retirer = []) {
+  majQ((q) => {
+    for (const c of retirer) delete q[c];
+    return { ...q, ...params };
+  }, true);
+}
+
 /** Referme : retire ces clés de l'adresse (sans ajouter d'entrée à l'historique). */
 export function fermerPanneau(...cles) {
   majQ((q) => {

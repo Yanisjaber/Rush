@@ -5,6 +5,7 @@
   import PanneauCompetition from '../lib/components/PanneauCompetition.svelte';
   import { menu } from '../lib/stores/menu.svelte.js';
   import SelecteurSport from '../lib/components/SelecteurSport.svelte';
+  import { route, ouvrirPanneau, fermerPanneau } from '../lib/routeur.svelte.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
@@ -77,8 +78,10 @@
   const forme = $derived(formeDepuisTsb(etat.tsb));
   const nomFamille = (sport) => (SPORTS[familleAffichage(sport)] || SPORTS.autre).court;
 
-  const nouvelle = (date) => (panneau = { ouvert: true, seance: null, date });
-  const modifier = (p) => (panneau = { ouvert: true, seance: p, date: p.date });
+  // Ce qui est ouvert est dans l'adresse (?prevue=nouvelle&date=… / ?prevue=<id> / ?competition=<id>) : `panneau` n'en est que le reflet
+  const nouvelle = (date) => ouvrirPanneau({ prevue: 'nouvelle', date }, ['competition']);
+  const modifier = (p) => ouvrirPanneau({ prevue: p.id }, ['date', 'competition']);
+  const ouvrirCompetition = (o) => ouvrirPanneau({ competition: o.id }, ['prevue', 'date']);
   const apresEnregistrement = (ligne) => {
     if (panneau.seance && panneau.seance.id === ligne.id) panneau.seance = ligne;
     etat.planifiees = [...etat.planifiees.filter((p) => p.id !== ligne.id), ligne];
@@ -90,6 +93,44 @@
     etat.objectifs = [...etat.objectifs.filter((o) => o.id !== ligne.id), ligne];
     if (!demo) charger(userId);
   };
+
+  // --- L'adresse décide de ce qui est ouvert (arrivée sur la page, rechargement, bouton Retour) ---
+  $effect(() => {
+    const id = route.q.prevue || '';
+    const jour = route.q.date || dateIsoLocale(maintenant);
+    void etat.planifiees;
+    const chargement = etat.chargement;
+    untrack(() => {
+      if (!id) {
+        if (panneau.ouvert) panneau.ouvert = false;
+        return;
+      }
+      if (id === 'nouvelle') {
+        if (!panneau.ouvert || panneau.seance || panneau.date !== jour) panneau = { ouvert: true, seance: null, date: jour };
+        return;
+      }
+      const trouvee = etat.planifiees.find((p) => p.id === id);
+      if (trouvee) {
+        if (!panneau.ouvert || panneau.seance?.id !== id) panneau = { ouvert: true, seance: trouvee, date: trouvee.date };
+      } else if (!chargement) fermerPanneau('prevue', 'date');
+    });
+  });
+
+  $effect(() => {
+    const id = route.q.competition || '';
+    void etat.objectifs;
+    const chargement = etat.chargement;
+    untrack(() => {
+      if (!id) {
+        if (panneauCompetition.ouvert) panneauCompetition.ouvert = false;
+        return;
+      }
+      const trouvee = etat.objectifs.find((o) => o.id === id);
+      if (trouvee) {
+        if (!panneauCompetition.ouvert || panneauCompetition.competition?.id !== id) panneauCompetition = { ouvert: true, competition: trouvee };
+      } else if (!chargement) fermerPanneau('competition');
+    });
+  });
 </script>
 
 <main class="page">
@@ -136,7 +177,7 @@
               </div>
               <div class="contenu">
                 {#each j.objectifs as o (o.id)}
-                  <button type="button" class="chip objectif" onclick={() => (panneauCompetition = { ouvert: true, competition: o })} aria-label="Compétition {o.name}, modifier">
+                  <button type="button" class="chip objectif" onclick={() => ouvrirCompetition(o)} aria-label="Compétition {o.name}, modifier">
                     <span class="t">{o.name}</span>
                     <span class="d">{nomPriorite(o.priority)}{#if o.duration} · {formatDuree(o.duration * 60)}{/if}</span>
                   </button>
@@ -175,7 +216,7 @@
   dateInitiale={panneau.date}
   {userId}
   {demo}
-  onfermer={() => (panneau.ouvert = false)}
+  onfermer={() => fermerPanneau('prevue', 'date')}
   enregistree={apresEnregistrement}
   supprimee={apresSuppression}
 />
@@ -186,7 +227,7 @@
   dateInitiale={dateIsoLocale(maintenant)}
   {userId}
   {demo}
-  onfermer={() => (panneauCompetition.ouvert = false)}
+  onfermer={() => fermerPanneau('competition')}
   enregistree={competitionEnregistree}
   supprimee={(id) => (etat.objectifs = etat.objectifs.filter((o) => o.id !== id))}
 />

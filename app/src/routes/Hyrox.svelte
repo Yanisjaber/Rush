@@ -7,6 +7,7 @@
   import PanneauTestHyrox from '../lib/components/PanneauTestHyrox.svelte';
   import PanneauObjectifHyrox from '../lib/components/PanneauObjectifHyrox.svelte';
   import CourbeLissee from '../lib/components/charts/CourbeLissee.svelte';
+  import { route, ouvrirPanneau, fermerPanneau } from '../lib/routeur.svelte.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees, rafraichir } from '../lib/stores/edition.svelte.js';
   import { lireHyrox, sauverTest, retirerTest, sauverObjectif } from '../lib/data/force-acces.js';
@@ -42,8 +43,10 @@
   // Évolution des temps totaux, du plus ancien au plus récent (un total plus bas est meilleur : on inverse pour que « mieux » monte)
   const evolution = $derived([...etat.tests].reverse().map((t) => -t.total_s));
 
-  const ouvrirTest = (t = null) => (panneauTest = { ouvert: true, test: t });
-  const fermerTest = () => (panneauTest = { ouvert: false, test: null });
+  // Ce qui est ouvert est dans l'adresse (?test=nouveau / ?test=<id> / ?objectifhyrox=1) : les panneaux n'en sont que le reflet (voir plus bas)
+  const ouvrirTest = (t = null) => ouvrirPanneau({ test: t ? t.id : 'nouveau' }, ['objectifhyrox']);
+  const fermerTest = () => fermerPanneau('test');
+  const fermerObjectif = () => fermerPanneau('objectifhyrox');
 
   async function enregistrerTest(valeurs, id) {
     const r = await sauverTest(demo, userId, valeurs, id);
@@ -64,7 +67,7 @@
   async function enregistrerObjectif(valeurs) {
     const r = await sauverObjectif(demo, userId, valeurs);
     if (!r.erreur) {
-      panneauObjectif = { ouvert: false };
+      fermerObjectif();
       rafraichir();
     }
     return r;
@@ -72,6 +75,33 @@
 
   /** Écart d'un segment avec le test précédent (négatif = plus rapide). */
   const delta = (i) => (resume.dernier && resume.precedent ? Number(resume.dernier.segments[i]) - Number(resume.precedent.segments[i]) : null);
+
+  // --- L'adresse décide de ce qui est ouvert (arrivée sur la page, rechargement, bouton Retour) ---
+  $effect(() => {
+    const id = route.q.test || '';
+    void etat.tests;
+    const chargement = etat.chargement;
+    untrack(() => {
+      if (!id) {
+        if (panneauTest.ouvert) panneauTest = { ouvert: false, test: null };
+        return;
+      }
+      if (id === 'nouveau') {
+        if (!panneauTest.ouvert || panneauTest.test) panneauTest = { ouvert: true, test: null };
+        return;
+      }
+      const trouve = etat.tests.find((t) => t.id === id);
+      if (trouve) {
+        if (!panneauTest.ouvert || panneauTest.test?.id !== id) panneauTest = { ouvert: true, test: trouve };
+      } else if (!chargement) fermerPanneau('test');
+    });
+  });
+  $effect(() => {
+    const ouvert = route.q.objectifhyrox === '1';
+    untrack(() => {
+      if (panneauObjectif.ouvert !== ouvert) panneauObjectif = { ouvert };
+    });
+  });
 </script>
 
 <svelte:element this={integre ? 'div' : 'main'} class={integre ? 'integre' : 'page'}>
@@ -80,7 +110,7 @@
   <header class="titre-page">
     {#if !integre}<h1 class="titre">Hyrox</h1>{/if}
     <div class="actions">
-      <Bouton variante="discret" onclick={() => (panneauObjectif = { ouvert: true })}>{etat.objectif ? 'Mon objectif' : 'Fixer un objectif'}</Bouton>
+      <Bouton variante="discret" onclick={() => ouvrirPanneau({ objectifhyrox: '1' }, ['test'])}>{etat.objectif ? 'Mon objectif' : 'Fixer un objectif'}</Bouton>
       <Bouton onclick={() => ouvrirTest(null)}>Nouveau test</Bouton>
     </div>
   </header>
@@ -164,7 +194,7 @@
 </svelte:element>
 
 <PanneauTestHyrox ouvert={panneauTest.ouvert} test={panneauTest.test} {demo} {userId} onenregistrer={enregistrerTest} onsupprimer={supprimerTest} onfermer={fermerTest} />
-<PanneauObjectifHyrox ouvert={panneauObjectif.ouvert} objectif={etat.objectif} onenregistrer={enregistrerObjectif} onfermer={() => (panneauObjectif = { ouvert: false })} />
+<PanneauObjectifHyrox ouvert={panneauObjectif.ouvert} objectif={etat.objectif} onenregistrer={enregistrerObjectif} onfermer={fermerObjectif} />
 
 <style>
   .page > :global(section + section),

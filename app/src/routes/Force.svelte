@@ -6,6 +6,7 @@
   import PanneauProgramme from '../lib/components/PanneauProgramme.svelte';
   import CourbeLissee from '../lib/components/charts/CourbeLissee.svelte';
   import { construireAdresse } from '../lib/data/adresses.js';
+  import { route, ouvrirPanneau, fermerPanneau } from '../lib/routeur.svelte.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees, rafraichir } from '../lib/stores/edition.svelte.js';
   import { lireForce, sauverProgramme, retirerProgramme, ajouterExercicePerso, retirerExercicePerso } from '../lib/data/force-acces.js';
@@ -38,8 +39,9 @@
   });
 
   // --- Programmes ---
-  const ouvrirProgramme = (p = null) => (panneau = { ouvert: true, programme: p });
-  const fermerProgramme = () => (panneau = { ouvert: false, programme: null });
+  // Le programme ouvert est dans l'adresse (?programme=nouveau / ?programme=<id>) : `panneau` n'en est que le reflet (voir plus bas)
+  const ouvrirProgramme = (p = null) => ouvrirPanneau({ programme: p ? p.id : 'nouveau' });
+  const fermerProgramme = () => fermerPanneau('programme');
 
   async function enregistrerProgramme(valeurs, id) {
     const r = await sauverProgramme(demo, userId, valeurs, id);
@@ -107,6 +109,27 @@
     { cle: 'journal', nom: 'Journal', href: construireAdresse({ sport: 'muscu', sous: 'journal' }) },
     { cle: 'exercices', nom: 'Exercices et records', href: construireAdresse({ sport: 'muscu', sous: 'exercices' }) },
   ];
+
+  // --- L'adresse décide de ce qui est ouvert (arrivée sur la page, rechargement, bouton Retour) ---
+  $effect(() => {
+    const id = route.q.programme || '';
+    void etat.programmes;
+    const chargement = etat.chargement;
+    untrack(() => {
+      if (!id) {
+        if (panneau.ouvert) panneau = { ouvert: false, programme: null };
+        return;
+      }
+      if (id === 'nouveau') {
+        if (!panneau.ouvert || panneau.programme) panneau = { ouvert: true, programme: null };
+        return;
+      }
+      const trouve = etat.programmes.find((p) => p.id === id);
+      if (trouve) {
+        if (!panneau.ouvert || panneau.programme?.id !== id) panneau = { ouvert: true, programme: trouve };
+      } else if (!chargement) fermerPanneau('programme');
+    });
+  });
 </script>
 
 <svelte:element this={integre ? 'div' : 'main'} class={integre ? 'integre' : 'page'}>

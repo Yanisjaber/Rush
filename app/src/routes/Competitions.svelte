@@ -11,6 +11,7 @@
   import { fusionner, resultatsManuels, resultatDuJour, texteClassement, nomLicence } from '../lib/data/opendossard.js';
   import { menu } from '../lib/stores/menu.svelte.js';
   import SelecteurSport from '../lib/components/SelecteurSport.svelte';
+  import { route, ouvrirPanneau, fermerPanneau } from '../lib/routeur.svelte.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
   import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
@@ -50,7 +51,7 @@
   });
   let licence = $state({ ouvert: false });
   async function choisirLicence(l) {
-    licence.ouvert = false;
+    fermerPanneau('licence');
     await lierLicence(userId, l, demo);
   }
   const resultats = $derived(fusionner(palmares.officiels, resultatsManuels(etat.courues)));
@@ -79,10 +80,10 @@
   );
 
   function nouvelle() {
-    panneau = { ouvert: true, competition: null, date: aujourdhui };
+    ouvrirPanneau({ competition: 'nouvelle', date: aujourdhui }, ['licence']); // ce qui est ouvert est dans l'adresse (voir plus bas)
   }
   function ouvrir(c) {
-    panneau = { ouvert: true, competition: c, date: c.date };
+    ouvrirPanneau({ competition: c.id }, ['date', 'licence']);
   }
   function apresEnregistrement(ligne) {
     if (panneau.competition && panneau.competition.id === ligne.id) panneau.competition = ligne;
@@ -92,6 +93,34 @@
   function apresSuppression(id) {
     etat.prevues = etat.prevues.filter((c) => c.id !== id);
   }
+
+  // --- L'adresse décide de ce qui est ouvert (arrivée sur la page, rechargement, bouton Retour) ---
+  $effect(() => {
+    const id = route.q.competition || '';
+    const jour = route.q.date || aujourdhui;
+    void etat.prevues;
+    const chargement = etat.chargement;
+    untrack(() => {
+      if (!id) {
+        if (panneau.ouvert) panneau.ouvert = false;
+        return;
+      }
+      if (id === 'nouvelle') {
+        if (!panneau.ouvert || panneau.competition || panneau.date !== jour) panneau = { ouvert: true, competition: null, date: jour };
+        return;
+      }
+      const trouvee = etat.prevues.find((c) => c.id === id);
+      if (trouvee) {
+        if (!panneau.ouvert || panneau.competition?.id !== id) panneau = { ouvert: true, competition: trouvee, date: trouvee.date };
+      } else if (!chargement) fermerPanneau('competition', 'date');
+    });
+  });
+  $effect(() => {
+    const ouvert = route.q.licence === '1';
+    untrack(() => {
+      if (licence.ouvert !== ouvert) licence.ouvert = ouvert;
+    });
+  });
 </script>
 
 <main class="page">
@@ -134,7 +163,7 @@
     {:else if !palmares.licence}
       <Bloc titre="Mon palmarès">
         <p class="vide">Lie ta licence Open Dossard pour importer tes résultats officiels (victoires, podiums, saison par saison).</p>
-        <Bouton variante="discret" onclick={() => (licence.ouvert = true)}>Lier ma licence</Bouton>
+        <Bouton variante="discret" onclick={() => ouvrirPanneau({ licence: '1' }, ['competition', 'date'])}>Lier ma licence</Bouton>
       </Bloc>
     {/if}
     {#if palmares.erreur}<p class="alerte" role="alert">{palmares.erreur}</p>{/if}
@@ -202,7 +231,7 @@
   {/if}
 </main>
 
-<PanneauLicence ouvert={licence.ouvert} {demo} onfermer={() => (licence.ouvert = false)} onchoisir={choisirLicence} />
+<PanneauLicence ouvert={licence.ouvert} {demo} onfermer={() => fermerPanneau('licence')} onchoisir={choisirLicence} />
 
 <PanneauCompetition
   ouvert={panneau.ouvert}
@@ -210,7 +239,7 @@
   dateInitiale={panneau.date}
   {userId}
   {demo}
-  onfermer={() => (panneau.ouvert = false)}
+  onfermer={() => fermerPanneau('competition', 'date')}
   enregistree={apresEnregistrement}
   supprimee={apresSuppression}
 />

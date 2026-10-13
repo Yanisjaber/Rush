@@ -1,5 +1,6 @@
 <script>
   import { untrack } from 'svelte';
+  import { route, ouvrirPanneau, fermerPanneau } from '../routeur.svelte.js';
   import Bloc from '../components/Bloc.svelte';
   import Bouton from '../components/Bouton.svelte';
   import Panneau from '../components/Panneau.svelte';
@@ -91,11 +92,21 @@
 
   // --- FC minute par minute (chargée à la demande : colonne lourde) ---
   let fc = $state({ ouvert: false, chargement: false, points: null, erreur: '' });
-  async function ouvrirFc() {
-    fc = { ouvert: true, chargement: true, points: null, erreur: '' };
-    const r = demo ? { data: fcNuitDemo(nuit), erreur: '' } : await chargerFcNuit(userId, nuit.date);
-    fc = { ouvert: true, chargement: false, points: r.data, erreur: r.erreur };
-  }
+  // Le panneau est dans l'adresse (?fc=1) : ouvrirFc l'y écrit, l'effet ci-dessous charge les points et ouvre le panneau
+  const ouvrirFc = () => ouvrirPanneau({ fc: '1' });
+  $effect(() => {
+    const veut = route.q.fc === '1';
+    const date = nuit?.date;
+    untrack(async () => {
+      if (!veut || !date) {
+        if (fc.ouvert) fc = { ouvert: false, chargement: false, points: null, erreur: '' };
+        return;
+      }
+      fc = { ouvert: true, chargement: true, points: null, erreur: '' };
+      const r = demo ? { data: fcNuitDemo(nuit), erreur: '' } : await chargerFcNuit(userId, date);
+      if (route.q.fc === '1') fc = { ouvert: true, chargement: false, points: r.data, erreur: r.erreur };
+    });
+  });
   const fcValeurs = $derived(fc.points ? fc.points.map((p) => p[1]) : []);
   const fcStats = $derived(fcValeurs.length ? { moy: Math.round(fcValeurs.reduce((a, b) => a + b, 0) / fcValeurs.length), min: Math.min(...fcValeurs), max: Math.max(...fcValeurs) } : null);
   const fcEtiquettes = $derived(fc.points ? fc.points.map((_, i) => nuit.date) : []);
@@ -204,7 +215,7 @@
     </div>
   </div>
 
-  <Panneau ouvert={fc.ouvert} titre="FC pendant la nuit" onfermer={() => (fc.ouvert = false)}>
+  <Panneau ouvert={fc.ouvert} titre="FC pendant la nuit" onfermer={() => fermerPanneau('fc')}>
     <p class="quand">{formatDateLongue(nuit.date)}</p>
     {#if fc.chargement}
       <p class="info" role="status">Chargement…</p>

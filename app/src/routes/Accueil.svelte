@@ -14,7 +14,7 @@
   import { sportsChoisis, chargerSportsChoisis } from '../lib/stores/sports.svelte.js';
   import { onboardingNecessaire, fusionnerFamilles } from '../lib/data/sports-choisis.js';
   import { menu, chargerMenu } from '../lib/stores/menu.svelte.js';
-  import { route } from '../lib/routeur.svelte.js';
+  import { route, ouvrirPanneau, fermerPanneau } from '../lib/routeur.svelte.js';
   import { construireAdresse, SOUS_ACCUEIL } from '../lib/data/adresses.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
@@ -62,7 +62,7 @@
     etat.chargement = false;
     if (disposition.editionDemandee) {
       disposition.editionDemandee = false;
-      demarrerEdition();
+      ouvrirPanneau({ edition: '1' }); // le mode édition est dans l'adresse (?edition=1) : l'effet plus bas le démarre
     }
   }
 
@@ -184,6 +184,17 @@
   const idsBibliotheque = $derived(
     disposition.ongletEdition !== 'tout' ? disponiblesOnglet(listeEnEdition, disposition.ongletEdition) : disponibles(disposition, familles),
   );
+
+  // Le mode édition est dans l'adresse (?edition=1) : on le démarre quand elle le demande (arrivée, rechargement),
+  // on l'abandonne si le bouton Retour la ramène sans (les boutons Terminer et Annuler s'en occupent eux-mêmes).
+  $effect(() => {
+    const veut = route.q.edition === '1' && route.chemin === '/';
+    const pret = !etat.chargement && disposition.pret;
+    untrack(() => {
+      if (veut && pret && !disposition.enEdition) demarrerEdition(filtreActif);
+      else if (!veut && disposition.enEdition) annulerEdition();
+    });
+  });
 </script>
 
 <main class="page">
@@ -200,9 +211,9 @@
         <p>Monte, descends, redimensionne ou retire les widgets. Ajoute-en depuis la bibliothèque en bas.</p>
       </div>
       <div class="actions">
-        <Bouton variante="texte" onclick={reinitialiserAuto}>{nomOngletEdition ? 'Revenir à la composition par défaut de cet onglet' : "Revenir à l'accueil automatique"}</Bouton>
-        <Bouton variante="discret" onclick={annulerEdition}>Annuler</Bouton>
-        <Bouton variante="sur-dossard" onclick={terminerEdition}>Terminer</Bouton>
+        <Bouton variante="texte" onclick={async () => { await reinitialiserAuto(); fermerPanneau('edition'); }}>{nomOngletEdition ? 'Revenir à la composition par défaut de cet onglet' : "Revenir à l'accueil automatique"}</Bouton>
+        <Bouton variante="discret" onclick={() => { annulerEdition(); fermerPanneau('edition'); }}>Annuler</Bouton>
+        <Bouton variante="sur-dossard" onclick={async () => { const fin = terminerEdition(); fermerPanneau('edition'); await fin; }}>Terminer</Bouton>
       </div>
     </section>
   {/if}
@@ -272,7 +283,7 @@
 
     {#if !disposition.enEdition && !etat.chargement && !enDetail}
       <div class="pied">
-        <Bouton variante="discret" onclick={() => demarrerEdition(filtreActif)}>{ongletRiche ? `Personnaliser l'onglet ${(SPORTS[filtreActif] || SPORTS.autre).court}` : "Personnaliser l'accueil"}</Bouton>
+        <Bouton variante="discret" onclick={() => ouvrirPanneau({ edition: '1' })}>{ongletRiche ? `Personnaliser l'onglet ${(SPORTS[filtreActif] || SPORTS.autre).court}` : "Personnaliser l'accueil"}</Bouton>
       </div>
     {/if}
   {/if}
