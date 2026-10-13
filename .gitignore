@@ -29,3 +29,6 @@ Thumbs.db
 supabase/.temp/
 
 node_modules/
+
+# Jetons Whoop (intégration abandonnée) : ne jamais suivre dans git
+.whoop_tokens.json
