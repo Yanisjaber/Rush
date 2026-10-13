@@ -6,10 +6,11 @@
   import Zones from '../lib/parametres/Zones.svelte';
   import Connexions from '../lib/parametres/Connexions.svelte';
   import Preferences from '../lib/parametres/Preferences.svelte';
+  import Confidentialite from '../lib/parametres/Confidentialite.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { profil, chargerProfilStore } from '../lib/stores/profil.svelte.js';
 
-  // Paramètres : un espace à onglets (#/parametres/general, /physiologie, /zones, /connexions, /preferences).
+  // Paramètres : un espace à onglets (#/parametres/general, /physiologie, /zones, /connexions, /preferences, /confidentialite).
   // Le profil est chargé une seule fois ici, puis partagé par les onglets (voir stores/profil.svelte.js).
   let { demo = false, onglet = 'general' } = $props();
 
@@ -19,6 +20,7 @@
     { cle: 'zones', nom: 'Zones' },
     { cle: 'connexions', nom: 'Connexions' },
     { cle: 'preferences', nom: 'Préférences' },
+    { cle: 'confidentialite', nom: 'Confidentialité' },
   ];
   const userId = $derived(demo ? 'demo' : auth.session?.user?.id);
   $effect(() => {
@@ -26,8 +28,8 @@
     untrack(() => chargerProfilStore(u, demo));
   });
 
-  // Connexions et Préférences ne dépendent pas du profil : elles s'affichent tout de suite
-  const besoinProfil = $derived(onglet !== 'preferences' && onglet !== 'connexions');
+  // Connexions, Préférences et Confidentialité ne dépendent pas du profil : elles s'affichent tout de suite
+  const besoinProfil = $derived(!['preferences', 'connexions', 'confidentialite'].includes(onglet));
 </script>
 
 <div class="page">
@@ -55,6 +57,8 @@
         <Zones />
       {:else if onglet === 'connexions'}
         <Connexions {demo} />
+      {:else if onglet === 'confidentialite'}
+        <Confidentialite />
       {:else}
         <Preferences />
       {/if}

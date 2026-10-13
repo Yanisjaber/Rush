@@ -24,7 +24,7 @@
   const demo = modeDemo();
 
   // Paramètres : #/parametres ou #/parametres/<onglet> (onglet inconnu = Général)
-  const ONGLETS = ['general', 'physiologie', 'zones', 'connexions', 'preferences'];
+  const ONGLETS = ['general', 'physiologie', 'zones', 'connexions', 'preferences', 'confidentialite'];
   const paramOnglet = $derived.by(() => {
     const m = /^\/parametres(?:\/([a-z]+))?$/.exec(route.chemin);
     if (!m) return null;

@@ -90,7 +90,7 @@
 
   {#if !demo}
     <Bloc titre="Mes données">
-      <p class="aide">Tes données restent privées. Tu peux les récupérer ou tout supprimer quand tu veux. <a href="#/confidentialite">Lire la page Confidentialité</a>.</p>
+      <p class="aide">Tes données restent privées. Tu peux les récupérer ou tout supprimer quand tu veux. <a href="#/parametres/confidentialite">Lire la page Confidentialité</a>.</p>
       <div class="actions-compte">
         <Bouton variante="discret" onclick={exporter}>{export_.enCours ? 'Préparation…' : 'Exporter mes données'}</Bouton>
       </div>
