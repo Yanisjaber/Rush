@@ -1,9 +1,9 @@
 <script>
   import { SPORTS, couleurSport } from '../sports.js';
-  import { SPORTS_PRINCIPAUX, SPORTS_AUTRES } from '../data/sports-choisis.js';
+  import { GROUPES_SPORTS } from '../data/sports-choisis.js';
   import { DISCIPLINES } from '../data/disciplines.js';
 
-  // Cases à cocher pour choisir ses sports : les cinq de l'accueil en grand, puis les autres sports de performance.
+  // Choix des sports en pastilles compactes, rangées par thème : une pastille cochée se remplit de la couleur du sport.
   // `selection` est la liste des clés cochées ; `disciplines` les sous-disciplines cochées, par sport (ex. { athletisme: ['100m'] }). Les deux sont bindables.
   let { selection = $bindable([]), disciplines = $bindable({}), desactive = false } = $props();
 
@@ -18,116 +18,126 @@
   }
 </script>
 
-{#snippet carte(cle, grande)}
-  {@const actif = selection.includes(cle)}
-  <button type="button" class="sport" class:grande class:actif aria-pressed={actif} disabled={desactive} onclick={() => basculer(cle)} style:--c={couleurSport(cle)}>
-    <span class="pastille" aria-hidden="true"></span>
-    <span class="nom">{(SPORTS[cle] || SPORTS.autre).nom}</span>
-    <span class="coche" aria-hidden="true">{actif ? '✓' : ''}</span>
-  </button>
-{/snippet}
-
-<div class="groupe" role="group" aria-label="Tes sports">
-  <div class="sports">
-    {#each SPORTS_PRINCIPAUX as cle (cle)}{@render carte(cle, true)}{/each}
-  </div>
-  <h3 class="sous-titre">Autres sports de performance</h3>
-  <div class="sports">
-    {#each SPORTS_AUTRES as cle (cle)}{@render carte(cle, false)}{/each}
+<div class="choix" role="group" aria-label="Tes sports">
+  <div class="groupes">
+    {#each GROUPES_SPORTS as groupe (groupe.titre)}
+      <section class="groupe">
+        <h3 class="titre-groupe">{groupe.titre}</h3>
+        <div class="pastilles">
+          {#each groupe.sports as cle (cle)}
+            {@const actif = selection.includes(cle)}
+            <button type="button" class="sport" class:actif aria-pressed={actif} disabled={desactive} onclick={() => basculer(cle)} style:--c={couleurSport(cle)}>
+              <span class="point" aria-hidden="true"></span>
+              {(SPORTS[cle] || SPORTS.autre).nom}
+              {#if actif}<span class="coche" aria-hidden="true">✓</span>{/if}
+            </button>
+          {/each}
+        </div>
+      </section>
+    {/each}
   </div>
 
   <!-- Sous-disciplines : une rubrique par sport coché qui en a (aujourd'hui l'athlétisme) -->
   {#each Object.keys(DISCIPLINES) as sport (sport)}
     {#if selection.includes(sport)}
-      <div class="disciplines" role="group" aria-label="Disciplines : {(SPORTS[sport] || SPORTS.autre).nom}">
-        <h3 class="sous-titre">Tes disciplines : {(SPORTS[sport] || SPORTS.autre).nom.toLowerCase()}</h3>
-        {#each DISCIPLINES[sport] as groupe (groupe.titre)}
-          <div class="famille">
-            <span class="titre-famille">{groupe.titre}</span>
-            <div class="puces">
-              {#each groupe.disciplines as d (d.cle)}
-                {@const actif = dejaCochee(sport, d.cle)}
-                <button type="button" class="puce" class:actif aria-pressed={actif} disabled={desactive} onclick={() => basculerDiscipline(sport, d.cle)} style:--c={couleurSport(sport)}>
-                  {d.nom}
-                </button>
-              {/each}
+      <section class="disciplines" aria-label="Disciplines : {(SPORTS[sport] || SPORTS.autre).nom}" style:--c={couleurSport(sport)}>
+        <h3 class="titre-groupe">Tes disciplines : {(SPORTS[sport] || SPORTS.autre).nom.toLowerCase()}</h3>
+        <div class="familles">
+          {#each DISCIPLINES[sport] as groupe (groupe.titre)}
+            <div class="famille">
+              <span class="titre-famille">{groupe.titre}</span>
+              <div class="pastilles">
+                {#each groupe.disciplines as d (d.cle)}
+                  {@const actif = dejaCochee(sport, d.cle)}
+                  <button type="button" class="discipline" class:actif aria-pressed={actif} disabled={desactive} onclick={() => basculerDiscipline(sport, d.cle)}>
+                    {d.nom}
+                  </button>
+                {/each}
+              </div>
             </div>
-          </div>
-        {/each}
-      </div>
+          {/each}
+        </div>
+      </section>
     {/if}
   {/each}
 </div>
 
 <style>
-  .groupe {
+  .choix {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 22px;
   }
-  .sous-titre {
-    margin: 6px 0 0;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
+  /* les thèmes se rangent côte à côte tant qu'il y a la place */
+  .groupes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px 32px;
+  }
+  .titre-groupe {
+    margin: 0 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--trait);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--texte-doux);
   }
-  /* auto-fit : les cartes s'étirent pour remplir toute la largeur disponible */
-  .sports {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  .pastilles {
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
   }
+
   .sport {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
-    min-height: 48px;
-    padding: 0 14px;
-    border: 2px solid var(--trait-fort);
-    border-radius: var(--rayon-l);
-    background: var(--fond);
+    gap: 9px;
+    min-height: 44px;
+    padding: 0 18px 0 14px;
+    border: 1.5px solid var(--trait-fort);
+    border-radius: var(--rayon-rond);
+    background: transparent;
     color: var(--texte);
     font: inherit;
-    font-size: 14px;
-    font-weight: 600;
-    text-align: left;
-    cursor: pointer;
-  }
-  .sport.grande {
-    min-height: 56px;
-    padding: 0 16px;
     font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, transform 0.12s;
+  }
+  .sport .point {
+    width: 10px;
+    height: 10px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--c);
   }
   .sport:hover:not(:disabled) {
     border-color: var(--c);
   }
+  /* cochée : la pastille se remplit de la couleur du sport (texte foncé, la coche double l'information pour ne pas dépendre de la couleur) */
   .sport.actif {
     border-color: var(--c);
-    background: color-mix(in srgb, var(--c) 18%, var(--fond));
+    background: var(--c);
+    color: var(--encre-sur-couleur, #0c0d10);
   }
-  .sport:focus-visible {
-    outline: 3px solid var(--texte);
-    outline-offset: 2px;
+  .sport.actif .point {
+    background: var(--encre-sur-couleur, #0c0d10);
   }
-  .sport:disabled {
-    opacity: 0.6;
-    cursor: default;
+  .coche {
+    font-weight: 800;
   }
-  /* les familles d'épreuves se rangent en colonnes pour occuper la largeur */
+
   .disciplines {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 16px 24px;
-    align-items: start;
-    padding: 16px;
-    border: 1px dashed var(--trait-fort);
+    padding: 16px 18px 18px;
     border-radius: var(--rayon-l);
+    background: var(--surface-2);
   }
-  .disciplines .sous-titre {
-    grid-column: 1 / -1;
-    margin: 0;
+  .familles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px 28px;
   }
   .famille {
     display: flex;
@@ -138,48 +148,35 @@
     font-size: 12px;
     color: var(--texte-doux);
   }
-  .puces {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .puce {
-    min-height: 40px;
-    padding: 0 14px;
+  .discipline {
+    min-height: 36px;
+    padding: 0 13px;
     border: 1px solid var(--trait-fort);
     border-radius: var(--rayon-rond);
-    background: var(--fond);
+    background: transparent;
     color: var(--texte);
     font: inherit;
     font-size: 13px;
     cursor: pointer;
   }
-  .puce.actif {
+  .discipline:hover:not(:disabled) {
     border-color: var(--c);
-    background: color-mix(in srgb, var(--c) 22%, var(--fond));
+  }
+  .discipline.actif {
+    border-color: var(--c);
+    background: var(--c);
+    color: var(--encre-sur-couleur, #0c0d10);
     font-weight: 700;
   }
-  .puce:focus-visible {
+
+  .sport:focus-visible,
+  .discipline:focus-visible {
     outline: 3px solid var(--texte);
     outline-offset: 2px;
   }
-  .puce:disabled {
+  .sport:disabled,
+  .discipline:disabled {
     opacity: 0.6;
     cursor: default;
-  }
-  .pastille {
-    width: 14px;
-    height: 14px;
-    flex: none;
-    border-radius: 50%;
-    background: var(--c);
-  }
-  .nom {
-    flex: 1;
-  }
-  .coche {
-    width: 20px;
-    text-align: center;
-    font-weight: 800;
   }
 </style>

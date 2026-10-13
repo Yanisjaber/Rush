@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SPORTS } from '../src/lib/sports.js';
-import { SPORTS_PRINCIPAUX, SPORTS_AUTRES, SPORTS_A_CHOISIR, nettoyerSports, onboardingNecessaire, fusionnerFamilles } from '../src/lib/data/sports-choisis.js';
+import { SPORTS_PRINCIPAUX, SPORTS_AUTRES, SPORTS_A_CHOISIR, GROUPES_SPORTS, nettoyerSports, onboardingNecessaire, fusionnerFamilles } from '../src/lib/data/sports-choisis.js';
 
 test('sports proposés : les 5 sports de l\'accueil, puis les autres sports de performance (plus de case « Autre »)', () => {
   assert.deepEqual(SPORTS_PRINCIPAUX, ['course', 'velo', 'natation', 'muscu', 'hyrox']);
@@ -43,4 +43,11 @@ test('fusionnerFamilles : données + sports choisis, sans doublon et sans « aut
   assert.deepEqual(fusionnerFamilles([], ['muscu']), ['muscu']);
   assert.deepEqual(fusionnerFamilles(['autre'], null), []);
   assert.deepEqual(fusionnerFamilles(), []);
+});
+
+test('groupes de l\'écran de choix : tous les sports proposés, chacun dans un seul groupe', () => {
+  const dansGroupes = GROUPES_SPORTS.flatMap((g) => g.sports);
+  assert.equal(new Set(dansGroupes).size, dansGroupes.length); // aucun sport en double
+  assert.deepEqual([...dansGroupes].sort(), [...SPORTS_A_CHOISIR].sort()); // ni oublié, ni inventé
+  assert.ok(GROUPES_SPORTS.every((g) => g.titre.length > 1 && g.sports.length > 0));
 });

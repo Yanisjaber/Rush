@@ -10,6 +10,15 @@ export const SPORTS_AUTRES = ['athletisme', 'trail', 'vtt', 'triathlon', 'duathl
 /** Tout ce qu'on peut cocher, dans l'ordre de l'écran. */
 export const SPORTS_A_CHOISIR = [...SPORTS_PRINCIPAUX, ...SPORTS_AUTRES];
 
+/** Les sports rangés par thème pour l'écran de choix (chaque sport proposé apparaît dans un seul groupe). */
+export const GROUPES_SPORTS = [
+  { titre: 'Course & athlé', sports: ['course', 'trail', 'athletisme'] },
+  { titre: 'Vélo & multisport', sports: ['velo', 'vtt', 'triathlon', 'duathlon'] },
+  { titre: 'Eau', sports: ['natation', 'aviron', 'pagaie'] },
+  { titre: 'Force & hybride', sports: ['muscu', 'hyrox', 'crossfit', 'combat'] },
+  { titre: 'Nature', sports: ['rando', 'escalade', 'ski'] },
+];
+
 /**
  * Nettoie une liste venue du stockage : on ne garde que des clés connues, une seule fois chacune, dans l'ordre de l'écran.
  * Renvoie null si ce n'est pas un tableau (= « jamais demandé »).
