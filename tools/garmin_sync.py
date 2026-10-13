@@ -16,7 +16,7 @@ Deux modes :
   (sans option)  synchro immédiate, à la main : python3 tools/garmin_sync.py
 
 Étapes d'une synchro :
-  1. lit la connexion garmin dans connexions_app (service role)
+  1. lit la connexion garmin dans connexions_app et ses jetons CHIFFRÉS dans le coffre (service role)
   2. rafraîchit le token si besoin (garth gère la clé consumer lui-même)
   3. récupère sommeil + FC repos + stream FC des N derniers jours
   4. upsert dans garmin_sleep
@@ -191,17 +191,53 @@ class Supabase:
         r.raise_for_status()
         return r.json() if retour else None
 
+    def rpc(self, fonction, args):
+        """Appelle une fonction SQL (ex. les fonctions de jetons chiffrés). Renvoie le JSON de la réponse (ou None)."""
+        r = requests.post(f"{self.base}/rpc/{fonction}", headers=self.h, json=args, timeout=20)
+        r.raise_for_status()
+        return r.json() if r.content else None
+
     def upsert(self, table, lignes, conflit):
         h = {**self.h, "Prefer": "resolution=merge-duplicates,return=minimal"}
         return requests.post(f"{self.base}/{table}", headers=h,
                              params={"on_conflict": conflit}, json=lignes, timeout=30)
 
 
+# ============ JETONS (chiffrés dans Supabase Vault) ============
+def _fonction_absente(e):
+    return isinstance(e, requests.HTTPError) and e.response is not None and e.response.status_code == 404
+
+
+def lire_jetons(sb, user_id):
+    """Jetons Garmin (access_token, oauth1_token, oauth1_secret) : via le coffre ; repli sur l'ancien emplacement si la migration n'est pas appliquée."""
+    try:
+        jetons = sb.rpc("rpc_connection_secrets", {"p_user_id": user_id, "p_app": "garmin"})
+        if jetons:
+            return jetons
+    except requests.HTTPError as e:
+        if not _fonction_absente(e):
+            raise
+    lignes = sb.get("connexions_app", {"app": "eq.garmin", "user_id": f"eq.{user_id}",
+                                       "select": "access_token,oauth1_token,oauth1_secret"})
+    return lignes[0] if lignes else {}
+
+
+def sauver_jetons(sb, user_id, access_token, expires_at_iso):
+    """Enregistre le jeton renouvelé (chiffré) et son expiration. Repli sur l'ancien emplacement si la migration n'est pas appliquée."""
+    try:
+        sb.rpc("rpc_save_connection_secrets", {"p_user_id": user_id, "p_app": "garmin",
+                                               "p_payload": {"access_token": access_token}, "p_expires_at": expires_at_iso})
+    except requests.HTTPError as e:
+        if not _fonction_absente(e):
+            raise
+        sb.patch("connexions_app", {"app": "eq.garmin", "user_id": f"eq.{user_id}"},
+                 {"access_token": access_token, "expires_at": expires_at_iso})
+
+
 # ============ SYNCHRO ============
 def synchroniser(sb, jours=DEFAULT_DAYS, user_id=None):
     """Synchronise le sommeil. Retourne le nombre de nuits. Lève GarminErreur."""
-    filtre = {"app": "eq.garmin",
-              "select": "user_id,access_token,expires_at,oauth1_token,oauth1_secret"}
+    filtre = {"app": "eq.garmin", "select": "user_id,expires_at"}   # les jetons viennent du coffre (lire_jetons)
     if user_id:
         filtre["user_id"] = f"eq.{user_id}"
     lignes = sb.get("connexions_app", filtre)
@@ -219,20 +255,19 @@ def synchroniser(sb, jours=DEFAULT_DAYS, user_id=None):
     sb.patch("connexions_app", cible, {"last_sync_status": "running", "last_sync_at": maintenant()})
 
     # 1) Token : on ne l'échange que s'il expire bientôt
-    access_token = conn["access_token"]
+    jetons = lire_jetons(sb, user_id)
+    access_token = jetons.get("access_token")
     restant = -1
     if conn.get("expires_at"):
         exp = datetime.fromisoformat(conn["expires_at"].replace("Z", "+00:00"))
         restant = (exp - datetime.now(timezone.utc)).total_seconds()
     if restant < MARGIN_SEC:
         try:
-            oauth2 = rafraichir_token(conn["oauth1_token"], conn["oauth1_secret"])
+            oauth2 = rafraichir_token(jetons.get("oauth1_token"), jetons.get("oauth1_secret"))
         except Exception as e:
             erreur("Garmin a refusé le renouvellement du token.", f"token_refresh_failed: {court(e)}")
         access_token = oauth2.access_token
-        sb.patch("connexions_app", cible, {
-            "access_token": access_token,
-            "expires_at": datetime.fromtimestamp(oauth2.expires_at, timezone.utc).isoformat()})
+        sauver_jetons(sb, user_id, access_token, datetime.fromtimestamp(oauth2.expires_at, timezone.utc).isoformat())
         print("[OK] Token rafraîchi.")
 
     # 2) Profil (displayName requis par l'endpoint sommeil)

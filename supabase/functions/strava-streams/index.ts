@@ -26,6 +26,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.3";
 import { corsHeadersFor } from "../_shared/cors.ts";
+import { joindreJetons, ecrireRenouvellementStrava } from "../_shared/jetons.ts";
 
 const STRAVA_CLIENT_ID = Deno.env.get("STRAVA_CLIENT_ID")!;
 const STRAVA_CLIENT_SECRET = Deno.env.get("STRAVA_CLIENT_SECRET")!;
@@ -104,17 +105,14 @@ Deno.serve(async (req) => {
       const { data: conn, error: connErr } = await sbAdmin
         .from("connexions_app").select("*").eq("user_id", user.id).eq("app", "strava").maybeSingle();
       if (connErr || !conn) return json({ error: "no_strava_connection" }, 400);
+      await joindreJetons(sbAdmin, conn); // jetons déchiffrés (Vault)
 
       let accessToken = conn.access_token;
       if (new Date(conn.expires_at) <= new Date(Date.now() + 60_000)) {
         const refreshed = await refreshStravaToken(conn.refresh_token);
         if (!refreshed) return json({ error: "token_refresh_failed" }, 500);
         accessToken = refreshed.access_token;
-        await sbAdmin.from("connexions_app").update({
-          access_token: refreshed.access_token,
-          refresh_token: refreshed.refresh_token,
-          expires_at: new Date(refreshed.expires_at * 1000).toISOString(),
-        }).eq("user_id", user.id).eq("app", "strava");
+        await ecrireRenouvellementStrava(sbAdmin, user.id, refreshed);
       }
 
       // ===== 3) Activités sans streams (les plus récentes d'abord) =====

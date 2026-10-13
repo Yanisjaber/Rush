@@ -39,6 +39,7 @@
 // ============================================================
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.3";
+import { joindreJetons, ecrireRenouvellementStrava } from "../_shared/jetons.ts";
 
 const STRAVA_CLIENT_ID = Deno.env.get("STRAVA_CLIENT_ID")!;
 const STRAVA_CLIENT_SECRET = Deno.env.get("STRAVA_CLIENT_SECRET")!;
@@ -143,15 +144,12 @@ async function handleEvent(event: any) {
     const { data: authConns } = await sb.from("connexions_app").select("*")
       .eq("app", "strava").eq("external_id", String(ownerId));
     for (const c of authConns || []) {
+      await joindreJetons(sb, c); // jetons déchiffrés (Vault)
       // Le refresh_token ne marche plus ssi l'accès a vraiment été révoqué.
       const refreshed = await refreshStravaToken(c.refresh_token);
       if (refreshed) {
         console.warn(`[webhook] deauth ignorée pour user ${c.user_id} : l'accès Strava est toujours valide`);
-        await sb.from("connexions_app").update({
-          access_token: refreshed.access_token,
-          refresh_token: refreshed.refresh_token,
-          expires_at: new Date(refreshed.expires_at * 1000).toISOString(),
-        }).eq("user_id", c.user_id).eq("app", "strava");
+        await ecrireRenouvellementStrava(sb, c.user_id, refreshed);
       } else {
         await sb.from("connexions_app").delete().eq("user_id", c.user_id).eq("app", "strava");
       }
@@ -179,6 +177,7 @@ async function handleEvent(event: any) {
 
   for (const conn of conns) {
     try {
+      await joindreJetons(sb, conn); // jetons déchiffrés (Vault)
       if (aspectType === "delete") {
         // On ne supprime que si Strava confirme que l'activité n'existe plus (404).
         if (await stravaActivityStillExists(sb, conn, objectId)) {
@@ -213,11 +212,7 @@ async function stravaActivityStillExists(sb: any, conn: any, activityId: number)
     const refreshed = await refreshStravaToken(conn.refresh_token);
     if (!refreshed) return true;
     accessToken = refreshed.access_token;
-    await sb.from("connexions_app").update({
-      access_token: refreshed.access_token,
-      refresh_token: refreshed.refresh_token,
-      expires_at: new Date(refreshed.expires_at * 1000).toISOString(),
-    }).eq("user_id", conn.user_id).eq("app", "strava");
+    await ecrireRenouvellementStrava(sb, conn.user_id, refreshed);
   }
   const res = await fetch(`${STRAVA_API}/activities/${activityId}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -235,11 +230,7 @@ async function handleActivityUpsert(sb: any, conn: any, activityId: number) {
     const refreshed = await refreshStravaToken(conn.refresh_token);
     if (!refreshed) throw new Error("token_refresh_failed");
     accessToken = refreshed.access_token;
-    await sb.from("connexions_app").update({
-      access_token: refreshed.access_token,
-      refresh_token: refreshed.refresh_token,
-      expires_at: new Date(refreshed.expires_at * 1000).toISOString(),
-    }).eq("user_id", conn.user_id).eq("app", "strava");
+    await ecrireRenouvellementStrava(sb, conn.user_id, refreshed);
   }
 
   // 2) Fetch activité depuis Strava

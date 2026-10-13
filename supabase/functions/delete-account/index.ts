@@ -20,6 +20,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.3";
 import { corsHeadersFor } from "../_shared/cors.ts";
+import { lireJetons } from "../_shared/jetons.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -49,12 +50,11 @@ Deno.serve(async (req) => {
     // 3) Révocation chez Strava, au mieux : si elle échoue, la suppression du compte continue
     //    (l'utilisateur peut toujours retirer l'app depuis ses réglages Strava).
     try {
-      const { data: conn } = await sbAdmin
-        .from("connexions_app").select("access_token").eq("user_id", user.id).eq("app", "strava").maybeSingle();
-      if (conn?.access_token) {
+      const jetons = await lireJetons(sbAdmin, user.id, "strava");
+      if (jetons?.access_token) {
         await fetch("https://www.strava.com/oauth/deauthorize", {
           method: "POST",
-          headers: { Authorization: `Bearer ${conn.access_token}` },
+          headers: { Authorization: `Bearer ${jetons.access_token}` },
         });
       }
     } catch (_e) {

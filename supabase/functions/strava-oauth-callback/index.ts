@@ -24,6 +24,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.3";
 import { FALLBACK_REDIRECT, consumeState, pickSafeReturnUrl, redirectToApp } from "../_shared/oauth-state.ts";
+import { ecrireJetons } from "../_shared/jetons.ts";
 
 const STRAVA_CLIENT_ID = Deno.env.get("STRAVA_CLIENT_ID")!;
 const STRAVA_CLIENT_SECRET = Deno.env.get("STRAVA_CLIENT_SECRET")!;
@@ -86,8 +87,6 @@ Deno.serve(async (req) => {
         app: "strava",
         external_id: athlete.id != null ? String(athlete.id) : null,
         athlete_name: `${athlete.firstname || ""} ${athlete.lastname || ""}`.trim() || null,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
         expires_at: expiresAt,
         scope: tokens.scope || null,
         first_connected_at: new Date().toISOString(),
@@ -96,6 +95,13 @@ Deno.serve(async (req) => {
     if (insertErr) {
       console.error("Insert strava_connections failed:", insertErr);
       return redirectToApp(returnUrl, { strava_error: "db_insert_failed" });
+    }
+
+    // Les jetons sont chiffrés dans Vault (jamais stockés en clair dans la table)
+    try {
+      await ecrireJetons(sbAdmin, user.id, "strava", { access_token: tokens.access_token, refresh_token: tokens.refresh_token }, expiresAt);
+    } catch (_e) {
+      return redirectToApp(returnUrl, { strava_error: "token_save_failed" });
     }
 
     // ===== 4) Mettre à jour aussi user_profiles avec FTP / weight / strava_athlete_id =====
