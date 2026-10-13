@@ -1,0 +1,841 @@
+/* ============================================================
+   competitions.css
+   Compétitions : liste, layout split, pill sport, day card race, sport cell
+   Extrait de dashboard.html (L317-388, L2603-2737, L2858-2934)
+   ============================================================ */
+
+  /* === COMPETITIONS === */
+  .comp-form {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .comp-form input, .comp-form select {
+    background: var(--bg-elev2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    color-scheme: dark;
+  }
+  .comp-form input[type="text"] { flex: 1; min-width: 220px; }
+  .comp-form button {
+    background: rgba(74, 222, 128, 0.15);
+    border: 1px solid rgba(74, 222, 128, 0.35);
+    color: var(--accent);
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+  }
+  .comp-form button:hover { background: rgba(74, 222, 128, 0.25); }
+
+  .comp-list { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
+  /* Le card qui contient comp-list doit être flex column pour que comp-list prenne la hauteur */
+  .entraineur-split > .card:first-child { display: flex; flex-direction: column; }
+  .comp-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-elev2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+  .comp-prio {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .comp-prio.A { background: rgba(248, 113, 113, 0.18); color: var(--danger); }
+  .comp-prio.B { background: rgba(251, 191, 36, 0.18); color: var(--warn); }
+  .comp-prio.C { background: rgba(96, 165, 250, 0.18); color: var(--info); }
+  .comp-name { flex: 1; font-weight: 500; }
+  .comp-date { color: var(--text-dim); font-size: 12px; }
+  .comp-countdown { color: var(--accent); font-size: 12px; font-weight: 600; min-width: 90px; text-align: right; }
+  .comp-del {
+    background: transparent;
+    border: none;
+    color: var(--text-mute);
+    cursor: pointer;
+    padding: 2px 6px;
+    font-size: 16px;
+    line-height: 1;
+  }
+  .comp-del:hover { color: var(--danger); }
+  .comp-empty { color: var(--text-dim); font-size: 13px; font-style: italic; text-align: center; padding: 16px; }
+
+
+  /* === ENTRAÎNEUR — split layout listing/ajouts === */
+  .entraineur-split {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .entraineur-add-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .add-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .big-add-btn {
+    margin-top: auto;
+    padding: 14px 20px;
+    background: rgba(74, 222, 128, 0.12);
+    border: 1px dashed rgba(74, 222, 128, 0.5);
+    border-radius: 10px;
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    font-family: inherit;
+  }
+  .big-add-btn:hover {
+    background: rgba(74, 222, 128, 0.2);
+    border-color: var(--accent);
+  }
+  /* Split de 2 boutons d'ajout (prévu / réalisé) */
+  .add-btn-split {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: auto;
+  }
+  .add-btn-split .split-btn {
+    margin-top: 0;
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+  /* Bouton "réalisé" légèrement différencié (bleu doux pour les passées) */
+  .add-btn-split .split-btn[data-mode="realise"] {
+    background: rgba(96, 165, 250, 0.10);
+    border-color: rgba(96, 165, 250, 0.4);
+    color: var(--info);
+  }
+  .add-btn-split .split-btn[data-mode="realise"]:hover {
+    background: rgba(96, 165, 250, 0.18);
+    border-color: var(--info);
+  }
+  @media (max-width: 900px) {
+    .entraineur-split { grid-template-columns: 1fr; }
+  }
+
+  /* === Liste compétitions === */
+  .comp-empty {
+    padding: 12px 16px;
+    text-align: center;
+    color: var(--text-mute);
+    font-size: 13px;
+    font-style: italic;
+  }
+  .comp-item {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 9px;
+    padding: 11px 18px 12px 20px;
+    border-radius: 14px;
+    font-size: 13px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s, background 0.15s;
+    --pc: #fbbf24;
+    background: var(--bg-elev2);
+  }
+  .comp-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto 28px 28px; /* nom · date · J-x · ⋯ · × */
+    gap: 14px;
+    align-items: center;
+  }
+  /* Jauge de progression : du 1er jour de saison jusqu'à la course */
+  .comp-phase-track {
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+    overflow: hidden;
+  }
+  .comp-phase-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--pc);
+    transition: width 0.3s ease;
+  }
+  /* Liseré dégradé vertical, couleur selon la priorité */
+  .comp-item::before {
+    content: "";
+    position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: linear-gradient(180deg, var(--pc), color-mix(in srgb, var(--pc) 30%, transparent));
+  }
+  .comp-item[data-prio="principal"] {
+    --pc: #fbbf24;
+    background: linear-gradient(110deg, rgba(251, 191, 36, 0.10), transparent 58%), var(--bg-elev2);
+  }
+  .comp-item[data-prio="secondaire"] {
+    --pc: #9ca3af;
+    background: linear-gradient(110deg, rgba(156, 163, 175, 0.10), transparent 58%), var(--bg-elev2);
+  }
+  .comp-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 26px color-mix(in srgb, var(--pc) 18%, transparent);
+    border-color: color-mix(in srgb, var(--pc) 45%, var(--border));
+  }
+  .comp-name { display: flex; align-items: center; gap: 9px; font-weight: 700; min-width: 0; font-size: 14px; }
+  .comp-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .comp-trophy { flex-shrink: 0; vertical-align: -3px; }
+  .comp-item[data-prio="principal"] .comp-name-text { color: #fbbf24; }
+  .comp-item[data-prio="secondaire"] .comp-name-text { color: #d1d5db; }
+  .comp-date { color: var(--text-dim); font-size: 12px; white-space: nowrap; }
+  .comp-stages-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    background: rgba(167, 139, 250, 0.15);
+    color: #a78bfa;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  /* Compteur en pastille teintée priorité */
+  .comp-countdown {
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+    padding: 5px 13px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--pc) 16%, transparent);
+    color: var(--pc);
+    border: 1px solid color-mix(in srgb, var(--pc) 30%, transparent);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .comp-del {
+    background: none;
+    border: none;
+    color: var(--text-mute);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px 6px;
+    border-radius: 8px;
+    transition: color 0.12s, background 0.12s;
+  }
+  .comp-del:hover { color: var(--danger); background: rgba(248, 113, 113, 0.12); }
+
+  /* Compétitions passées (page dédiée) */
+  .comp-item-past { opacity: 0.92; }
+  .comp-countdown.comp-past-result {
+    background: var(--bg-elev2);
+    color: var(--text-dim);
+    border-color: var(--border);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  /* === Page Compétitions : pastille générique === */
+  .comp-pill {
+    display: inline-block;
+    font-size: 10px; font-weight: 700;
+    padding: 3px 9px; border-radius: 999px;
+    letter-spacing: 0.02em;
+  }
+
+  /* === HERO : prochain objectif === */
+  .comp-hero {
+    position: relative;
+    background: linear-gradient(120deg, color-mix(in srgb, var(--pc) 9%, transparent), transparent 55%), var(--bg-elev);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--pc);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.12s;
+  }
+  .comp-hero:hover { transform: translateY(-2px); }
+  .comp-hero-lbl { font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-mute); font-weight: 600; }
+  .comp-hero-body { display: flex; align-items: center; gap: 26px; flex-wrap: wrap; margin-top: 12px; }
+  .comp-hero-ring { position: relative; width: 108px; height: 108px; flex: none; }
+  .comp-hero-ring svg { width: 108px; height: 108px; }
+  .comp-hero-ring-txt { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .comp-hero-jx { font-size: 28px; font-weight: 800; line-height: 1; }
+  .comp-hero-jdate { font-size: 11px; color: var(--text-mute); margin-top: 2px; }
+  .comp-hero-main { flex: 1; min-width: 220px; }
+  .comp-hero-name { display: flex; align-items: center; gap: 9px; font-size: 20px; font-weight: 700; flex-wrap: wrap; }
+  .comp-hero-name .comp-trophy { flex: none; }
+  .comp-hero-sub { font-size: 13px; color: var(--text-dim); margin: 6px 0 14px; }
+  .comp-hero-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+  .comp-hero-prep { flex: 1; min-width: 220px; background: var(--bg-elev2); border: 1px solid var(--border); border-radius: 12px; padding: 13px 15px; }
+  .comp-prep-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; margin-top: 8px; }
+  .comp-prep-val { font-size: 18px; font-weight: 700; color: var(--text); line-height: 1; }
+  .comp-prep-k { font-size: 9px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 3px; }
+  .comp-prep-reco { font-size: 11px; color: var(--text-dim); margin-top: 11px; line-height: 1.45; }
+
+  /* === FRISE DE SAISON === */
+  .comp-timeline { position: relative; height: 56px; margin: 14px 8px 4px; }
+  .comp-tl-axis { position: absolute; top: 28px; left: 0; right: 0; height: 2px; background: var(--border); }
+  .comp-tl-today { position: absolute; top: 22px; transform: translateX(-50%); }
+  .comp-tl-today::before { content: ""; display: block; width: 2px; height: 12px; background: var(--accent); margin: 0 auto; }
+  .comp-tl-today span { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 9px; color: var(--accent); }
+  .comp-tl-marker { position: absolute; top: 20px; transform: translateX(-50%); text-align: center; }
+  .comp-tl-marker.past { opacity: 0.6; }
+  .comp-tl-dot { display: block; width: 13px; height: 13px; border-radius: 50%; margin: 0 auto; }
+  .comp-tl-dot.big { width: 16px; height: 16px; border: 2px solid var(--bg-elev); }
+  .comp-tl-stem { position: absolute; left: 50%; transform: translateX(-50%); width: 1.5px; border-radius: 1px; opacity: 0.45; }
+  .comp-tl-cap { display: block; font-size: 9px; color: var(--text-mute); margin-top: 5px; white-space: nowrap; position: relative; }
+  .comp-season-stats { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 10px; }
+  .comp-ss-val { font-size: 18px; font-weight: 700; color: var(--text); }
+  .comp-ss-k { font-size: 11px; color: var(--text-mute); }
+
+  /* === Cartes résultat (passées enrichies) — format "résultat" === */
+  .comp-results { display: flex; flex-direction: column; gap: 10px; }
+  .comp-result-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg-elev2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--pc);
+    border-radius: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.12s;
+  }
+  .comp-result-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--pc) 45%, var(--border)); }
+  /* Médaille = résultat officiel */
+  .comp-res-medal {
+    flex: none; width: 74px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 7px 4px; border-radius: 10px; background: var(--bg);
+  }
+  .comp-res-medal-rank { font-size: 24px; font-weight: 800; color: var(--text-dim); line-height: 1; }
+  .comp-res-medal-rank sup { font-size: 11px; }
+  .comp-res-medal-cat { font-size: 9px; color: var(--text-mute); margin-top: 4px; white-space: nowrap; }
+  .comp-res-medal.podium { background: rgba(203, 210, 224, 0.10); }
+  .comp-res-medal.podium .comp-res-medal-rank { color: #d1d5db; }
+  .comp-res-medal.gold { background: rgba(251, 191, 36, 0.12); }
+  .comp-res-medal.gold .comp-res-medal-rank { color: #fbbf24; }
+  .comp-res-medal.none { background: transparent; width: auto; min-width: 38px; }
+  .comp-res-content { flex: 1; min-width: 0; }
+  .comp-res-top { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+  .comp-res-name { font-size: 16px; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .comp-res-date { font-size: 12px; color: var(--text-mute); white-space: nowrap; }
+  .comp-res-metrics { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--text); }
+  .comp-res-m { font-weight: 600; }
+  .comp-res-sep { color: var(--text-mute); }
+  .comp-res-nodata { color: var(--text-mute); font-style: italic; font-weight: 400; }
+
+
+  /* === PILL SPORT — couleurs par catégorie (utilisé partout) === */
+  .sport-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    border: 1px solid currentColor;
+    background: rgba(255,255,255,0.03);
+    color: var(--text-mute);
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+  /* Cyclisme route — bleu */
+  .sport-pill[data-sport-cat="cyclisme"] { color: #3b82f6; background: rgba(59, 130, 246, 0.12); }
+  /* VTT — brun-orange terre */
+  .sport-pill[data-sport-cat="vtt"]      { color: #b45309; background: rgba(180, 83, 9, 0.12); }
+  /* Course à pied — orange Strava */
+  .sport-pill[data-sport-cat="course"]   { color: #fc4c02; background: rgba(252, 76, 2, 0.12); }
+  /* Trail — vert forêt */
+  .sport-pill[data-sport-cat="trail"]    { color: #15803d; background: rgba(21, 128, 61, 0.15); }
+  /* Natation — cyan */
+  .sport-pill[data-sport-cat="natation"] { color: #06b6d4; background: rgba(6, 182, 212, 0.12); }
+  /* Musculation — rouge-rose */
+  .sport-pill[data-sport-cat="musculation"] { color: #ef4444; background: rgba(239, 68, 68, 0.12); }
+  /* Marche / Rando — vert lime */
+  .sport-pill[data-sport-cat="marche"]   { color: #84cc16; background: rgba(132, 204, 22, 0.12); }
+  /* Ski — bleu glace clair */
+  .sport-pill[data-sport-cat="ski"]      { color: #93c5fd; background: rgba(147, 197, 253, 0.15); }
+  /* Nautique — bleu profond */
+  .sport-pill[data-sport-cat="nautique"] { color: #0284c7; background: rgba(2, 132, 199, 0.12); }
+  /* Football — vert pelouse */
+  .sport-pill[data-sport-cat="football"] { color: #22c55e; background: rgba(34, 197, 94, 0.12); }
+  /* Sports collectifs — magenta */
+  .sport-pill[data-sport-cat="collectif"] { color: #c026d3; background: rgba(192, 38, 211, 0.12); }
+  /* Raquettes — jaune */
+  .sport-pill[data-sport-cat="raquette"] { color: #eab308; background: rgba(234, 179, 8, 0.12); }
+  /* Yoga / Mobilité — violet */
+  .sport-pill[data-sport-cat="yoga"]     { color: #a78bfa; background: rgba(167, 139, 250, 0.12); }
+  /* Escalade — orange-rouge */
+  .sport-pill[data-sport-cat="escalade"] { color: #c2410c; background: rgba(194, 65, 12, 0.12); }
+  /* Combat — rouge sombre */
+  .sport-pill[data-sport-cat="combat"]   { color: #b91c1c; background: rgba(185, 28, 28, 0.12); }
+  /* Autre / fallback — gris */
+  .sport-pill[data-sport-cat="autre"]    { color: #9ca3af; background: rgba(156, 163, 175, 0.12); }
+
+  /* === Sport cell dans la table Séances === */
+  .sport-cell {
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* === DAY CARD : race day (damier F1) + sport label === */
+  .day-card-sport {
+    margin-top: auto;
+    padding-top: 6px;
+    display: flex;
+    justify-content: flex-start;
+  }
+  /* Pill plus compacte dans les cartes jour */
+  .day-card .sport-pill {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+  /* === DAY CARD : jour de course (design spécial, sans priorité) === */
+  /* Thème doré "événement". La priorité n'est plus affichée ici (seulement dans le détail). */
+  .day-card.race {
+    position: relative;
+    --race-gold: #fbbf24;
+    border: 1.5px solid color-mix(in srgb, var(--race-gold) 60%, var(--border));
+    background: linear-gradient(165deg, color-mix(in srgb, var(--race-gold) 10%, var(--bg-elev2)) 0%, var(--bg-elev2) 62%);
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--race-gold) 18%, transparent);
+    overflow: hidden;
+  }
+  .day-card.race[data-prio="principal"] { --race-gold: #fbbf24; } /* objectif principal — doré */
+  .day-card.race[data-prio="secondaire"] { --race-gold: #9ca3af; } /* secondaire — argenté */
+  /* Liseré doré dégradé en haut */
+  .day-card.race::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--race-gold), color-mix(in srgb, var(--race-gold) 35%, transparent));
+  }
+  /* Écritures dans la couleur de la compétition + trophée avant le nom */
+  .day-card.race .day-card-name {
+    color: var(--race-gold);
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .day-card.race .day-card-name .comp-trophy { flex-shrink: 0; vertical-align: 0; }
+  .day-card.race .day-card-name .dc-name-text { overflow: hidden; text-overflow: ellipsis; }
+  .day-card.race .day-card-date { color: var(--race-gold); }
+  .day-card.race .day-card-dow,
+  .day-card.race .day-card-meta {
+    color: color-mix(in srgb, var(--race-gold) 70%, var(--text-dim));
+  }
+
+
+
+/* Bouton + "Ajouter une compétition" dans l'en-tête des listes de compéts */
+.comp-add-btn {
+  width: 26px;
+  height: 26px;
+  min-width: 0;
+  min-height: 0;
+  flex: none;
+  border-radius: 50%;
+  background: rgba(74, 222, 128, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s, color 0.15s, transform 0.12s;
+}
+.comp-add-btn:hover {
+  background: var(--accent);
+  color: #0b0e14;
+  transform: scale(1.06);
+}
+
+/* Distances triathlon sur les cartes de compétition (750m · 20km · 5km) */
+.comp-tri-mini {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;   /* objectif collé aux distances, pas à l'autre bout */
+  gap: 12px;
+  font-size: clamp(9.5px, 8.6px + 0.28vw, 11px);
+  font-weight: 600;
+  margin: 2px 0 4px 26px;   /* aligné sous le nom (après le trophée) */
+  letter-spacing: 0.2px;
+}
+.comp-tri-mini .ctm-dist { color: var(--text, #e7ecf3); }   /* distances en blanc */
+.comp-tri-mini .ctm-obj {
+  color: #f43f5e;
+  text-transform: uppercase;
+  font-size: 0.9em;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* Onglets triathlon de la modale compétition (Nat / T1 / Vélo / T2 / CAP) */
+.tri-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.tri-tab {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 8px;
+  padding: clamp(6px, 4.5px + 0.45vw, 8px) 4px;
+  font-size: clamp(11px, 10px + 0.34vw, 12.5px);
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+  white-space: nowrap;
+}
+.tri-tab:hover { color: var(--text); }
+.tri-tab.active {
+  color: #f43f5e;
+  border-color: rgba(244, 63, 94, 0.5);
+  background: rgba(244, 63, 94, 0.10);
+}
+.tri-tab.filled:not(.active) { color: var(--text); border-color: var(--text-mute); }
+
+/* Icone sport coloree a cote du nom d'epreuve */
+.comp-name .sport-ico {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 7px;
+  flex: 0 0 auto;
+}
+.comp-name .sport-ico span { display: inline-flex; }
+.comp-name .sport-ico svg { display: block; }
+
+/* Bouton ⋯ + menu d'actions des cartes compet */
+.comp-more {
+  background: none;
+  border: none;
+  color: var(--text-mute, #6b7686);
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.comp-more:hover { color: var(--text, #e7ecf3); background: var(--bg-elev2, #141a26); }
+.comp-actions-menu {
+  position: fixed;
+  z-index: 10000;
+  min-width: 200px;
+  background: var(--bg-elev, #10151f);
+  border: 1px solid var(--border, #26304a);
+  border-radius: 10px;
+  padding: 5px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+.comp-actions-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text-dim, #8b93a7);
+  font-size: 12.5px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.comp-actions-menu button:hover { background: var(--bg-elev2, #141a26); color: var(--text, #e7ecf3); }
+.comp-actions-menu button.danger { color: var(--danger, #f87171); }
+.comp-actions-menu button.danger:hover { background: rgba(248, 113, 113, 0.1); }
+
+/* Mini-formulaire resultat manuel */
+.comp-res-form { min-width: 270px; padding: 10px; }
+/* Rangées à 2 champs (place/partants, fédé/catégorie) : label au-dessus */
+.comp-res-form .crf-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.comp-res-form .crf-row2 label,
+.comp-res-form label:has(#crf-url) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+}
+.comp-res-form .crf-row2 input,
+.comp-res-form .crf-row2 select,
+.comp-res-form input#crf-url { width: 100%; box-sizing: border-box; }
+.comp-res-form select {
+  background: var(--bg-elev2, #141a26);
+  border: 1px solid var(--border, #26304a);
+  border-radius: 7px;
+  color: var(--text, #e7ecf3);
+  font-size: 12px;
+  padding: 6px 8px;
+  font-family: inherit;
+}
+/* Lien « Résultats ↗ » sur les cartes passées */
+.comp-res-link {
+  color: var(--accent, #4ade80);
+  font-size: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.comp-res-link:hover { text-decoration: underline; }
+.comp-res-form .crf-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim, #8b93a7);
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+.comp-res-form label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-mute, #6b7686);
+  margin-top: 6px;
+}
+.comp-res-form input {
+  width: 120px;
+  background: var(--bg-elev2, #141a26);
+  border: 1px solid var(--border, #26304a);
+  border-radius: 7px;
+  color: var(--text, #e7ecf3);
+  font-size: 12px;
+  padding: 6px 8px;
+  font-family: inherit;
+}
+.comp-res-form .crf-btns { display: flex; gap: 6px; margin-top: 10px; }
+.comp-res-form .crf-btns button {
+  flex: 1;
+  text-align: center;
+  border: 1px solid var(--border, #26304a);
+  background: var(--bg-elev2, #141a26);
+  border-radius: 7px;
+  padding: 7px 0;
+  font-size: 12px;
+  color: var(--text-dim, #8b93a7);
+  cursor: pointer;
+  font-family: inherit;
+}
+.comp-res-form #crf-save { background: rgba(74, 222, 128, 0.12); color: var(--accent, #4ade80); border-color: rgba(74, 222, 128, 0.35); }
+.comp-res-form .crf-btns button:hover { color: var(--text, #e7ecf3); }
+
+/* Badges federation / niveau / format sur les cartes compet */
+.comp-fed-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: clamp(8.5px, 8px + 0.15vw, 9.5px);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-dim, #8b93a7);
+  border: 1px solid var(--border, #26304a);
+  background: var(--bg-elev2, #141a26);
+  vertical-align: middle;
+  flex: 0 0 auto;
+}
+.comp-fed-badge.fmt { color: #f43f5e; border-color: rgba(244, 63, 94, 0.35); }
+.comp-fed-badge.lvl { text-transform: none; letter-spacing: 0; }
+
+/* Barre de filtres de la page Competitions */
+.comp-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(6px, 4.5px + 0.44vw, 9px);
+  margin: 2px 0 6px;
+  max-width: 560px;
+}
+.comp-flt-sel {
+  width: 100%;
+  background: var(--bg-elev, #10151f);
+  border: 1px solid var(--border, #26304a);
+  color: var(--text-dim, #8b93a7);
+  border-radius: 999px;
+  padding: clamp(6px, 4.8px + 0.37vw, 8px) clamp(10px, 8px + 0.6vw, 14px);
+  font-size: clamp(11px, 10.1px + 0.29vw, 12.5px);
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%236b7686'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+.comp-flt-sel:not([data-neutral]):focus { outline: none; border-color: rgba(74, 222, 128, 0.45); }
+.comp-flt-chip {
+  background: var(--bg-elev, #10151f);
+  border: 1px solid var(--border, #26304a);
+  color: var(--text-dim, #8b93a7);
+  border-radius: 999px;
+  padding: clamp(4px, 3.1px + 0.29vw, 6px) clamp(9px, 7.5px + 0.44vw, 12px);
+  font-size: clamp(10.5px, 9.6px + 0.29vw, 12px);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.comp-flt-chip:hover { color: var(--text, #e7ecf3); }
+.comp-flt-chip.on {
+  color: var(--accent, #4ade80);
+  border-color: rgba(74, 222, 128, 0.45);
+  background: rgba(74, 222, 128, 0.08);
+}
+.comp-flt-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--border, #26304a);
+  margin: 0 4px;
+}
+
+/* Frise de saison v2 : points + mois, info-bulle unique (fini les
+   etiquettes empilees illisibles) */
+.comp-timeline.v2 { height: clamp(58px, 54px + 1.25vw, 68px) !important; margin: calc(26px + var(--tl-rise, 0px)) 8px 0; }
+.comp-tl-rise {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(100% - 5px);
+  width: 1.5px;
+  border-radius: 1px;
+  opacity: 0.45;
+  pointer-events: none;
+}
+.comp-timeline.v2 .comp-tl-axis { top: 26px; }
+.comp-timeline.v2 .comp-tl-today { top: 20px; }
+.comp-tl-tick {
+  position: absolute;
+  top: 22px;
+  width: 1px;
+  height: 10px;
+  background: var(--border, #26304a);
+  opacity: 0.55;
+}
+.comp-tl-month {
+  position: absolute;
+  top: 42px;
+  transform: translateX(-50%);
+  font-size: clamp(8.5px, 8px + 0.15vw, 9.5px);
+  color: var(--text-mute, #6b7686);
+  letter-spacing: 0.5px;
+}
+.comp-timeline.v2 .comp-tl-marker {
+  background: none;
+  border: none;
+  top: 18px;
+  padding: 3px;
+  cursor: pointer;
+}
+.comp-timeline.v2 .comp-tl-dot { width: clamp(9px, 8px + 0.3vw, 12px); height: clamp(9px, 8px + 0.3vw, 12px); transition: transform 0.12s; }
+.comp-timeline.v2 .comp-tl-dot.big { width: clamp(12px, 11px + 0.3vw, 15px); height: clamp(12px, 11px + 0.3vw, 15px); }
+.comp-timeline.v2 .comp-tl-marker:hover .comp-tl-dot { transform: scale(1.3); }
+.comp-tl-tip {
+  position: absolute;
+  top: -22px;
+  transform: translateX(-50%);
+  background: var(--bg-elev2, #141a26);
+  border: 1px solid var(--border, #26304a);
+  border-radius: 7px;
+  padding: 3px 10px;
+  font-size: clamp(10px, 9.4px + 0.2vw, 11.5px);
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 6;
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+/* Compteur des points regroupes de la frise */
+.comp-tl-count {
+  position: absolute;
+  top: -7px;
+  left: 60%;
+  min-width: 14px;
+  height: 14px;
+  line-height: 14px;
+  border-radius: 999px;
+  background: var(--bg-elev2, #141a26);
+  border: 1px solid var(--border, #26304a);
+  color: var(--text-dim, #8b93a7);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 0 3px;
+  pointer-events: none;
+}
+.comp-tl-tip { text-align: left; line-height: 1.45; pointer-events: auto; max-height: 148px; overflow-y: auto; }
+.tl-tip-line {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  padding: 3px 4px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tl-tip-line:hover { background: rgba(255, 255, 255, 0.07); }
+
+.comp-flt-sel.on { color: var(--accent, #4ade80); border-color: rgba(74, 222, 128, 0.45); background-color: rgba(74, 222, 128, 0.07); }
+
+/* Filtres : habillage pilule du custom-select maison */
+.comp-filters .custom-select { width: 100%; }
+.comp-filters .custom-select-btn {
+  border-radius: 999px;
+  background: var(--bg-elev, #10151f);
+  border: 1px solid var(--border, #26304a);
+  padding: clamp(6px, 4.8px + 0.37vw, 8px) clamp(12px, 10px + 0.6vw, 16px);
+  font-size: clamp(11px, 10.1px + 0.29vw, 12.5px);
+  font-weight: 600;
+  color: var(--text-dim, #8b93a7);
+}
+.comp-filters .custom-select.on .custom-select-btn {
+  color: var(--accent, #4ade80);
+  border-color: rgba(74, 222, 128, 0.45);
+  background: rgba(74, 222, 128, 0.07);
+}
+.comp-filters .custom-select-panel { min-width: 100%; }
+
+/* Demi-frises empilees (mobile) : un peu d'espace entre les deux */
+.comp-timeline.v2 + .comp-timeline.v2 { margin-top: 8px; }
