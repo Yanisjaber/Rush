@@ -9,6 +9,7 @@ import {
   casesRegularite,
   joursActifs,
   semaineCourante,
+  prochainesPrevues,
 } from '../src/lib/data/synthese.js';
 import { familleSport, familleAffichage } from '../src/lib/data/familles.js';
 
@@ -204,4 +205,22 @@ test('seancesForce : séances par semaine et série de semaines consécutives', 
   assert.equal(r.total, 4);
   assert.equal(r.serie, 3);
   assert.equal(seancesForce([], 12, AUJ).serie, 0);
+});
+
+test("séances prévues : sur la semaine à partir d'aujourd'hui seulement, et « à venir » trié sans les compétitions", () => {
+  const mercredi = new Date(2026, 9, 14, 10, 0); // mercredi 14 octobre 2026
+  const prevues = [
+    { id: 'p-passe', date: '2026-10-12', name: 'Hier-avant', sport: 'Run' }, // lundi : passé, n'est plus « à venir »
+    { id: 'p-jour', date: '2026-10-14', name: 'Aujourd\'hui', sport: 'Run' },
+    { id: 'p-ven', date: '2026-10-16', name: 'Vendredi', sport: 'Ride' },
+    { id: 'p-semaine-suivante', date: '2026-10-20', name: 'Plus tard', sport: 'Ride' },
+    { id: 'p-course', date: '2026-10-15', name: 'Compétition', sport: 'Run', category: 'competition' },
+  ];
+  const jours = semaineCourante([], mercredi, prevues);
+  assert.deepEqual(jours.map((j) => j.prevues.map((p) => p.id)), [[], [], ['p-jour'], ['p-course'], ['p-ven'], [], []]);
+  const aVenir = prochainesPrevues(prevues, mercredi, 3);
+  assert.deepEqual(aVenir.map((p) => p.id), ['p-jour', 'p-ven', 'p-semaine-suivante']); // trié, sans le passé ni la compétition
+  assert.equal(prochainesPrevues(prevues, mercredi, 1).length, 1);
+  assert.deepEqual(prochainesPrevues(null, mercredi), []);
+  assert.deepEqual(semaineCourante([], mercredi).map((j) => j.prevues.length), [0, 0, 0, 0, 0, 0, 0]); // sans séances prévues : rien
 });

@@ -174,6 +174,14 @@ export const WIDGETS = {
     tailles: ['l', 'xl'],
     taille: 'l',
   },
+  avenir: {
+    nom: 'À venir',
+    description: 'Tes prochaines séances prévues, de la plus proche à la plus lointaine.',
+    categorie: 'Séances',
+    sports: 'tous',
+    tailles: ['m', 'l'],
+    taille: 'm',
+  },
   regularite: {
     nom: 'Régularité',
     description: 'Une case par jour sur 12 semaines, à la couleur du sport.',
@@ -218,6 +226,7 @@ const ORDRE_AUTO = [
   'efficacite',
   'volume',
   'semaine',
+  'avenir',
   'tonnage',
   'records',
   'programme',

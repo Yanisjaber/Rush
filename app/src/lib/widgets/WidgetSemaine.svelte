@@ -7,7 +7,7 @@
   import { formatDuree } from '../utils/format.js';
 
   let { contexte, taille = 'l' } = $props();
-  const jours = $derived(semaineCourante(contexte.seances));
+  const jours = $derived(semaineCourante(contexte.seances, new Date(), contexte.planifiees || []));
   const nomFamille = (f) => (SPORTS[f] || SPORTS.autre).court;
   const nbSeances = $derived(jours.reduce((n, j) => n + j.seances.length, 0));
 </script>
@@ -29,7 +29,13 @@
             </a>
           {/each}
           {#if j.seances.length > 2}<span class="plus">+{j.seances.length - 2}</span>{/if}
-          {#if !j.seances.length}<span class="repos">{j.futur ? '' : 'Repos'}</span>{/if}
+          {#each j.prevues.slice(0, 2) as p (p.id)}
+            <a class="seance prevue" href="#/calendrier" style:border-color={couleurSport(familleAffichage(p.sport))} title="Séance prévue : {p.name || nomFamille(familleAffichage(p.sport))}" aria-label="Séance prévue : {p.name || nomFamille(familleAffichage(p.sport))}">
+              <span class="type">{nomFamille(familleAffichage(p.sport))}</span>
+              {#if p.duration}<span class="duree">{formatDuree(p.duration * 60)}</span>{/if}
+            </a>
+          {/each}
+          {#if !j.seances.length && !j.prevues.length}<span class="repos">{j.futur ? '' : 'Repos'}</span>{/if}
         </div>
       </div>
     {/each}
@@ -81,6 +87,12 @@
     padding: 8px 10px;
     border-radius: var(--rayon-s);
     color: var(--encre-sur-couleur);
+  }
+  /* séance prévue : même pastille en pointillés, comme dans le calendrier */
+  .seance.prevue {
+    background: transparent;
+    border: 1px dashed;
+    color: var(--texte);
   }
   .type {
     font-size: 13px;

@@ -163,7 +163,7 @@ export function joursActifs(seances, nbSemaines = 12, aujourdhui = new Date()) {
 }
 
 /** La semaine en cours (lundi → dimanche) : pour chaque jour, ses séances réalisées. */
-export function semaineCourante(seances, aujourdhui = new Date()) {
+export function semaineCourante(seances, aujourdhui = new Date(), prevues = []) {
   const lundi = lundiDe(aujourdhui);
   const aujIso = dateIsoLocale(aujourdhui);
   return JOURS_COURTS.map((jour, i) => {
@@ -177,8 +177,22 @@ export function semaineCourante(seances, aujourdhui = new Date()) {
       aujourdhui: iso === aujIso,
       futur: iso > aujIso,
       seances: seances.filter((s) => String(s.start_date_local).slice(0, 10) === iso),
+      // séances prévues à partir d'aujourd'hui (une séance prévue dans le passé n'est plus « à venir »)
+      prevues: iso >= aujIso ? prevues.filter((p) => String(p.date).slice(0, 10) === iso) : [],
     };
   });
+}
+
+/**
+ * Les prochaines séances prévues (aujourd'hui compris), de la plus proche à la plus lointaine.
+ * Les compétitions n'en font pas partie : elles ont leur dossard d'objectif.
+ */
+export function prochainesPrevues(planifiees, aujourdhui = new Date(), limite = 3) {
+  const aujIso = dateIsoLocale(aujourdhui);
+  return (planifiees || [])
+    .filter((p) => p.category !== 'competition' && String(p.date).slice(0, 10) >= aujIso)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .slice(0, limite);
 }
 
 // ---------------------------------------------------------------------------

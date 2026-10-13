@@ -22,7 +22,7 @@
     changerTaille,
   } from '../lib/stores/disposition.svelte.js';
   import {
-    chargerProfil, chargerMetriques, chargerSeances, chargerObjectifs, chargerPuissance,
+    chargerProfil, chargerMetriques, chargerSeances, chargerObjectifs, chargerPuissance, chargerPlanifiees,
     chargerSeriesForce, chargerProgrammes, chargerExercicesPerso, chargerTestsHyrox, chargerObjectifHyrox,
   } from '../lib/data/api.js';
   import { donneesDemo, programmesDemo, seriesForceDemo, testsHyroxDemo, objectifHyroxDemo } from '../lib/data/demo.js';
@@ -30,6 +30,7 @@
   import { programmeDuJour } from '../lib/data/force.js';
   import { accrocheMuscu, accrocheHyrox } from '../lib/data/accroche.js';
   import { familleSport } from '../lib/data/familles.js';
+  import { dateIsoLocale } from '../lib/utils/format.js';
   import { familleAffichage } from '../lib/data/familles.js';
 
   let { demo = false } = $props();
@@ -37,7 +38,7 @@
   const forceVide = { series: [], programmes: [], exercicesPerso: [] };
   const hyroxVide = { tests: [], objectif: null };
   let etat = $state({
-    chargement: true, erreur: '', erreurSport: '', profil: null, metriques: [], seances: [], objectifs: [], puissance: [],
+    chargement: true, erreur: '', erreurSport: '', profil: null, metriques: [], seances: [], objectifs: [], puissance: [], planifiees: [],
     force: forceVide, hyrox: hyroxVide,
   });
   let filtre = $state('tout');
@@ -72,7 +73,7 @@
       return;
     }
     if (!userId) return;
-    const [profil, metriques, seances, objectifs, puissance, series, programmes, exercices, tests, objectifHyrox] = await Promise.all([
+    const [profil, metriques, seances, objectifs, puissance, series, programmes, exercices, tests, objectifHyrox, prevues] = await Promise.all([
       chargerProfil(userId),
       chargerMetriques(userId),
       chargerSeances(userId),
@@ -83,12 +84,14 @@
       chargerExercicesPerso(userId),
       chargerTestsHyrox(userId),
       chargerObjectifHyrox(userId),
+      chargerPlanifiees(userId, dateIsoLocale(), dateIsoLocale(new Date(Date.now() + 60 * 86400e3))), // séances prévues des 60 prochains jours
     ]);
     etat.profil = profil.data;
     etat.metriques = metriques.data || [];
     etat.seances = seances.data || [];
     etat.objectifs = objectifs.data || [];
     etat.puissance = puissance.data || [];
+    etat.planifiees = prevues.data || []; // non bloquant : sans elles, l'accueil s'affiche quand même
     etat.erreur = [profil, metriques, seances, objectifs, puissance].map((r) => r.erreur).find(Boolean) || '';
     // Force et Hyrox : tables ajoutées par la migration 2026-10-13. Si elle n'est pas appliquée, on affiche l'accueil quand même.
     etat.force = { series: series.data || [], programmes: programmes.data || [], exercicesPerso: exercices.data || [] };
@@ -121,6 +124,7 @@
     toutesSeances: etat.seances,
     metriques: etat.metriques,
     objectifs: etat.objectifs,
+    planifiees: etat.planifiees.filter((p) => filtreActif === 'tout' || familleAffichage(p.sport) === filtreActif),
     profil: etat.profil,
     puissance: etat.puissance,
     hrMax: etat.profil?.hr_max || null,

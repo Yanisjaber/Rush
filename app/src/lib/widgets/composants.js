@@ -4,6 +4,7 @@ import WidgetCharge from './WidgetCharge.svelte';
 import WidgetForme from './WidgetForme.svelte';
 import WidgetVolume from './WidgetVolume.svelte';
 import WidgetSemaine from './WidgetSemaine.svelte';
+import WidgetAvenir from './WidgetAvenir.svelte';
 import WidgetRegularite from './WidgetRegularite.svelte';
 import WidgetDernieres from './WidgetDernieres.svelte';
 import WidgetPredictions from './WidgetPredictions.svelte';
@@ -28,6 +29,7 @@ export const COMPOSANTS = {
   forme: WidgetForme,
   volume: WidgetVolume,
   semaine: WidgetSemaine,
+  avenir: WidgetAvenir,
   regularite: WidgetRegularite,
   dernieres: WidgetDernieres,
   predictions: WidgetPredictions,
