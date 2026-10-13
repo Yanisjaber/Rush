@@ -1,8 +1,11 @@
 <script>
+  import { untrack } from 'svelte';
   // Aiguillage de l'app : catalogue, paramètres, démo, connexion ou accueil selon l'adresse et l'état.
   import Connexion from './routes/Connexion.svelte';
   import Accueil from './routes/Accueil.svelte';
   import Ecran from './lib/components/Ecran.svelte';
+  import BarreBas from './lib/components/BarreBas.svelte';
+  import { chargerMenu, menuDemo, oublierMenu } from './lib/stores/menu.svelte.js';
   import PanneauSeance from './lib/components/PanneauSeance.svelte';
   import PanneauReel from './lib/components/PanneauReel.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
@@ -74,6 +77,21 @@
     if (uid) synchroniserTheme(uid);
     else oublierCompteTheme();
   });
+
+  // Les sports décident du menu (Muscu, Hyrox) : chargés à la connexion, en démo on montre tout
+  $effect(() => {
+    const uid = auth.session?.user?.id;
+    untrack(() => {
+      if (demo) menuDemo();
+      else if (uid) chargerMenu(uid);
+      else oublierMenu();
+    });
+  });
+
+  // La barre du bas (téléphone) n'a de sens qu'une fois dans l'app : ni sur la connexion, ni sur les pages publiques
+  const avecBarreBas = $derived(
+    route.chemin !== '/catalogue' && route.chemin !== '/confidentialite' && (demo || (auth.pret && !!auth.session && !auth.definirMdp && route.chemin !== '/mot-de-passe')),
+  );
 </script>
 
 {#if route.chemin === '/catalogue'}
@@ -133,6 +151,8 @@
 {:else}
   <Accueil />
 {/if}
+
+{#if avecBarreBas}<BarreBas {demo} />{/if}
 
 <!-- Résumé d'une séance réalisée : ouvert depuis le calendrier ou les widgets -->
 <PanneauSeance />

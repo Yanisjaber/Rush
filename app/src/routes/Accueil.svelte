@@ -1,16 +1,17 @@
 <script>
   import { untrack } from 'svelte';
   import EnTete from '../lib/components/EnTete.svelte';
-  import ChipSport from '../lib/components/ChipSport.svelte';
   import Bouton from '../lib/components/Bouton.svelte';
   import CadreEdition from '../lib/widgets/CadreEdition.svelte';
   import BibliothequeWidgets from '../lib/widgets/BibliothequeWidgets.svelte';
   import { COMPOSANTS } from '../lib/widgets/composants.js';
   import { disponibles, disponiblesOnglet, composerOnglet, ONGLETS_PERSONNALISABLES } from '../lib/widgets/registre.js';
   import { SPORTS } from '../lib/sports.js';
+  import ParcoursDemarrage from '../lib/components/ParcoursDemarrage.svelte';
   import Onboarding from '../lib/components/Onboarding.svelte';
   import { sportsChoisis, chargerSportsChoisis } from '../lib/stores/sports.svelte.js';
   import { onboardingNecessaire, fusionnerFamilles } from '../lib/data/sports-choisis.js';
+  import { chargerMenu } from '../lib/stores/menu.svelte.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
   import {
@@ -165,6 +166,13 @@
         ? disposition.widgets
         : composerOnglet(disposition.widgets, filtreActif, disposition.onglets),
   );
+  // Compte neuf (aucune séance, rien de prévu, aucun objectif) : parcours de démarrage + seulement objectif / semaine / à venir
+  const compteVide = $derived(
+    !demo && !etat.chargement && !etat.erreur && !etat.seances.length && !etat.planifiees.length && !etat.objectifs.length,
+  );
+  const widgetsVisibles = $derived(
+    compteVide && !disposition.enEdition ? widgetsAffiches.filter((w) => ['objectif', 'semaine', 'avenir'].includes(w.id)) : widgetsAffiches,
+  );
   const ongletRiche = $derived(ONGLETS_PERSONNALISABLES.includes(filtreActif));
   const nomOngletEdition = $derived(disposition.ongletEdition !== 'tout' ? (SPORTS[disposition.ongletEdition] || SPORTS.autre).court : ''); // « Muscu », « Hyrox »
   const idsBibliotheque = $derived(
@@ -196,18 +204,24 @@
 <main class="page">
   <EnTete actif="accueil" {demo} />
   {#if afficherOnboarding}
-    <Onboarding userId={userId} onTermine={() => mettreAJourSports(familles)} />
+    <Onboarding userId={userId} onTermine={() => { mettreAJourSports(familles); chargerMenu(userId); }} />
   {:else}
-  <nav class="puces" aria-label="Filtrer par sport">
-    <ChipSport label="Tout" sport="autre" actif={filtreActif === 'tout'} onclick={() => (filtre = 'tout')} />
-    {#each familles as f}
-      <ChipSport sport={f} actif={filtreActif === f} onclick={() => (filtre = f)} />
-    {/each}
+  <div class="outils">
+    {#if familles.length > 1}
+      <label class="voir">
+        <span>Voir</span>
+        <select value={filtreActif} onchange={(e) => (filtre = e.currentTarget.value)}>
+          <option value="tout">Tout</option>
+          {#each familles as f}
+            <option value={f}>{(SPORTS[f] || SPORTS.autre).nom}</option>
+          {/each}
+        </select>
+      </label>
+    {/if}
     {#if !disposition.enEdition && !etat.chargement}
-      <span class="espace"></span>
       <Bouton variante="discret" onclick={() => demarrerEdition(filtreActif)}>{ongletRiche ? `Personnaliser l'onglet ${(SPORTS[filtreActif] || SPORTS.autre).court}` : "Personnaliser l'accueil"}</Bouton>
     {/if}
-  </nav>
+  </div>
 
   {#if disposition.enEdition}
     <section class="bandeau-edition" aria-label="Mode édition">
@@ -247,9 +261,10 @@
       {/if}
     </section>
 
-    {#if widgetsAffiches.length}
+    {#if compteVide && !disposition.enEdition}<ParcoursDemarrage />{/if}
+    {#if widgetsVisibles.length}
       <div class="grille">
-        {#each widgetsAffiches as w, i (w.id)}
+        {#each widgetsVisibles as w, i (w.id)}
           {@const Composant = COMPOSANTS[w.id]}
           <div class="cellule t-{w.taille}">
             {#if disposition.enEdition}
@@ -257,7 +272,7 @@
                 id={w.id}
                 taille={w.taille}
                 index={i}
-                total={widgetsAffiches.length}
+                total={widgetsVisibles.length}
                 onDeplacer={deplacer}
                 onTaille={changerTaille}
                 onRetirer={retirer}
@@ -284,16 +299,32 @@
 </main>
 
 <style>
-  .puces {
+  .outils {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
+    justify-content: flex-end;
+    gap: 8px 16px;
     margin-bottom: 8px;
   }
-  /* pousse le bouton « Personnaliser » à droite des puces de sport */
-  .espace {
-    flex: 1;
+  /* sélecteur « Voir : Tout / un sport » (remplace les puces) */
+  .voir {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: auto;
+    font-size: 13px;
+    color: var(--texte-doux);
+  }
+  .voir select {
+    min-height: 44px;
+    padding: 0 12px;
+    font: inherit;
+    font-weight: 600;
+    color: var(--texte);
+    background: var(--surface);
+    border: 1px solid var(--trait-fort);
+    border-radius: var(--rayon);
   }
 
   .bandeau-edition {

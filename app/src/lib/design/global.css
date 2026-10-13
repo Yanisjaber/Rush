@@ -95,3 +95,10 @@ textarea {
   margin: 0 auto;
   padding: 0 var(--gouttiere) clamp(48px, 4vw, 96px);
 }
+/* Téléphone : la barre du bas est fixe, on laisse sa place sous le contenu ; le contenu commence tout en haut (plus d'en-tête) */
+@media (max-width: 760px) {
+  .page {
+    padding-top: 16px;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+}

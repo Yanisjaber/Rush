@@ -6,6 +6,7 @@
   import { disposition, demanderEdition, reinitialiserAuto } from '../stores/disposition.svelte.js';
   import { aller, modeDemo } from '../routeur.svelte.js';
   import ChoixSports from '../components/ChoixSports.svelte';
+  import { chargerMenu } from '../stores/menu.svelte.js';
   import { auth } from '../stores/auth.svelte.js';
   import { sportsChoisis, chargerSportsChoisis, enregistrerSportsChoisis } from '../stores/sports.svelte.js';
 
@@ -34,6 +35,7 @@
     sportsMessage = '';
     const r = await enregistrerSportsChoisis(uid, choix, disciplines);
     sportsEnCours = false;
+    if (uid !== 'demo') chargerMenu(uid); // le menu suit les sports choisis (Muscu, Hyrox)
     sportsMessage = r.local && uid !== 'demo' ? 'Enregistré sur cet appareil (la sauvegarde en ligne a échoué).' : 'Sports enregistrés : ton accueil s\'adapte à ton prochain passage.';
   }
   async function revenirAuto() {

@@ -111,7 +111,7 @@
   <EnTete actif="force" {demo} />
 
   <header class="titre-page">
-    <h1 class="titre">Force</h1>
+    <h1 class="titre">Muscu</h1>
     <div class="actions">
       <Bouton variante="discret" href="#/force/apres/libre">Ajouter une séance passée</Bouton>
       <Bouton href="#/force/seance/libre">Séance libre</Bouton>

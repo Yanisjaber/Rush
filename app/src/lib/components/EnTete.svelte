@@ -1,18 +1,13 @@
 <script>
-  // En-tête commun à toutes les pages : logo, navigation principale, zone libre (droite) et réglages.
-  // actif : 'accueil' | 'calendrier' | 'plan' | 'force' | 'hyrox' | 'competitions' | 'bilan' | 'sommeil' | 'parametres' (la page courante est signalée aux lecteurs d'écran)
-  let { actif = 'accueil', demo = false, droite } = $props();
+  import { menu } from '../stores/menu.svelte.js';
+  import { pagesMenu } from '../data/menu.js';
 
-  const liens = [
-    { cle: 'accueil', nom: 'Accueil', href: '#/' },
-    { cle: 'calendrier', nom: 'Calendrier', href: '#/calendrier' },
-    { cle: 'plan', nom: 'Plan', href: '#/plan' },
-    { cle: 'force', nom: 'Force', href: '#/force' },
-    { cle: 'hyrox', nom: 'Hyrox', href: '#/hyrox' },
-    { cle: 'competitions', nom: 'Compétitions', href: '#/competitions' },
-    { cle: 'bilan', nom: 'Bilan', href: '#/bilan' },
-    { cle: 'sommeil', nom: 'Sommeil', href: '#/sommeil' },
-  ];
+  // En-tête commun à toutes les pages, sur ordinateur : logo, navigation en UNE ligne (les pages Muscu et Hyrox seulement si on
+  // pratique ces sports) et réglages. Sur téléphone il n'existe pas : la navigation est la barre du bas (BarreBas.svelte).
+  // actif : 'accueil' | 'calendrier' | 'plan' | 'force' | 'hyrox' | 'competitions' | 'bilan' | 'sommeil' | 'parametres' (la page courante est signalée aux lecteurs d'écran).
+  let { actif = 'accueil', demo = false } = $props();
+
+  const liens = $derived(pagesMenu(menu.familles));
 </script>
 
 <header class="barre">
@@ -26,7 +21,6 @@
   </div>
   <div class="droite">
     {#if demo}<span class="etiquette-demo">Mode démo</span>{/if}
-    {@render droite?.()}
     <a class="reglages" href="#/parametres" aria-label="Paramètres" aria-current={actif === 'parametres' ? 'page' : undefined}>
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
     </a>
@@ -77,37 +71,10 @@
     font-weight: 600;
     color: var(--texte-doux);
   }
+  /* Téléphone : pas d'en-tête, la navigation est la barre du bas (BarreBas.svelte) : le contenu commence tout en haut */
   @media (max-width: 760px) {
-    /* Téléphone : une seule ligne (logo, liens qui défilent, réglages) pour laisser la place au contenu */
     .barre {
-      flex-wrap: nowrap;
-      gap: 8px;
-      padding: 12px 0;
-    }
-    .gauche {
-      flex: 1;
-      min-width: 0;
-      flex-wrap: nowrap;
-      gap: 8px;
-    }
-    .droite {
-      flex: none;
-    }
-    .etiquette-demo {
       display: none;
-    }
-    .liens {
-      flex: 1;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-    .liens::-webkit-scrollbar {
-      display: none;
-    }
-    .liens a {
-      flex: none;
-      padding: 0 11px;
     }
   }
   .liens a:hover {
