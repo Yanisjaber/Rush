@@ -492,10 +492,10 @@ export async function lierPrevu(userId, activiteId, valeur) {
 // ---------------------------------------------------------------------------
 
 /** Crée une sortie saisie à la main (ligne produite par versLigneManuelle). */
-export async function creerSortieManuelle(userId, ligne) {
+export async function creerSortieManuelle(userId, ligne, clientId = null) {
   const r = await sb
     .from('activities')
-    .insert({ ...ligne, user_id: userId, client_id: `app-${crypto.randomUUID()}` })
+    .insert({ ...ligne, user_id: userId, client_id: clientId || `app-${crypto.randomUUID()}` })
     .select(COLONNES_DETAIL)
     .single();
   return resultat(r, "Impossible d'enregistrer la sortie.");
@@ -632,10 +632,10 @@ async function insererSeries(userId, activiteId, lignes) {
  *  - modification : `existante` = { id, manuelle }. Une séance Strava n'est jamais réécrite : on remplace seulement ses séries ;
  *  - remplacement des séries : on insère les nouvelles AVANT de supprimer les anciennes (par leur identifiant), pour ne rien perdre en cas d'échec.
  */
-export async function enregistrerSeanceForce(userId, ligne, lignesSeries, existante = null) {
+export async function enregistrerSeanceForce(userId, ligne, lignesSeries, existante = null, clientId = null) {
   let id = existante?.id;
   if (!existante) {
-    const c = await creerSortieManuelle(userId, ligne);
+    const c = await creerSortieManuelle(userId, ligne, clientId);
     if (c.erreur) return { data: null, erreur: c.erreur };
     id = c.data.id;
     if (!(await insererSeries(userId, id, lignesSeries))) {
@@ -710,4 +710,40 @@ export async function enregistrerObjectifHyrox(userId, valeurs) {
 export async function supprimerObjectifHyrox(userId) {
   const r = await sb.from('hyrox_objectif').delete().eq('user_id', userId);
   return resultat(r, "Impossible d'effacer ton objectif.");
+}
+
+// ---------------------------------------------------------------------------
+// Import Hevy : ce qui existe déjà autour des dates importées
+// ---------------------------------------------------------------------------
+
+/** Séances déjà dans l'app entre deux dates, et lesquelles ont déjà des séries. Sert à ne rien importer en double. */
+export async function chargerContexteImport(userId, debutIso, finIso) {
+  const existantes = [];
+  for (let page = 0; page < 6; page++) {
+    const r = await sb
+      .from('activities')
+      .select('id,source,sport,start_date_local,client_id')
+      .eq('user_id', userId)
+      .gte('start_date_local', `${debutIso}T00:00:00`)
+      .lt('start_date_local', `${finIso}T23:59:59`)
+      .order('start_date_local', { ascending: true })
+      .range(page * 1000, page * 1000 + 999);
+    if (r.error) return { data: null, erreur: "Impossible de lire tes séances existantes." };
+    existantes.push(...r.data);
+    if (r.data.length < 1000) break;
+  }
+  const avecSeries = new Set();
+  for (let page = 0; page < 10; page++) {
+    const r = await sb
+      .from('strength_sets')
+      .select('activity_id')
+      .eq('user_id', userId)
+      .gte('date', debutIso)
+      .lte('date', finIso)
+      .range(page * 1000, page * 1000 + 999);
+    if (r.error) return { data: null, erreur: 'Impossible de lire tes séries existantes.' };
+    for (const l of r.data) avecSeries.add(l.activity_id);
+    if (r.data.length < 1000) break;
+  }
+  return { data: { existantes, avecSeries }, erreur: '' };
 }

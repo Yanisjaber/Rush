@@ -138,6 +138,7 @@
   <header class="titre-page">
     {#if !integre}<h1 class="titre">Muscu</h1>{/if}
     <div class="actions">
+      <Bouton variante="discret" onclick={() => ouvrirPanneau({ hevy: '1' })}>Importer depuis Hevy</Bouton>
       <Bouton variante="discret" href="#/force/apres/libre">Ajouter une séance passée</Bouton>
       <Bouton href="#/force/seance/libre">Séance libre</Bouton>
     </div>

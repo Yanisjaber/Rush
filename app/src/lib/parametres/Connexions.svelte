@@ -205,6 +205,22 @@
     </article>
 
     <article class="case">
+      <div class="logo import" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11" /></svg>
+      </div>
+      <div class="corps">
+        <div class="entete-carte">
+          <h2 class="titre">Hevy</h2>
+          <span class="pastille bientot">Import par fichier</span>
+        </div>
+        <p class="detail">Importe tes séances de musculation depuis l'export CSV de Hevy : séries, charges et répétitions, sans doublon avec Strava.</p>
+        <div class="actions">
+          <Bouton onclick={() => ouvrirPanneau({ hevy: '1' })}>Importer un export Hevy</Bouton>
+        </div>
+      </div>
+    </article>
+
+    <article class="case">
       <div class="logo opendossard"><LogoApp app="opendossard" /></div>
       <div class="corps">
         <div class="entete-carte">
@@ -276,6 +292,13 @@
   .logo.garmin {
     background: #f3f2ee; /* fond clair fixe : le logo Garmin est noir, il doit rester lisible en thème clair comme en sombre */
     color: #000;
+  }
+  .logo.import {
+    background: var(--surface-2);
+    color: var(--texte);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .logo.opendossard {
     background: var(--surface-2);

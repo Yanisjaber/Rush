@@ -8,6 +8,7 @@
   import { chargerMenu, menuDemo, oublierMenu } from './lib/stores/menu.svelte.js';
   import PanneauSeance from './lib/components/PanneauSeance.svelte';
   import PanneauReel from './lib/components/PanneauReel.svelte';
+  import PanneauImportHevy from './lib/components/PanneauImportHevy.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
   import { route, modeDemo } from './lib/routeur.svelte.js';
   import { hydraterApercu } from './lib/stores/apercu.svelte.js';
@@ -163,6 +164,7 @@
 <!-- Résumé d'une séance réalisée : ouvert depuis le calendrier ou les widgets -->
 <PanneauSeance />
 <PanneauReel />
+<PanneauImportHevy {demo} />
 
 <style>
   .attente {
