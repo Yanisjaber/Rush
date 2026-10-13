@@ -1,0 +1,16 @@
+{
+  "name": "Coach IA",
+  "short_name": "Coach IA",
+  "description": "Entraînement, récupération et compétitions : course, vélo, natation, musculation, Hyrox.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0c0d10",
+  "theme_color": "#0c0d10",
+  "icons": [
+    { "src": "icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
