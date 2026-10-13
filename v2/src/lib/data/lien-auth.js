@@ -4,7 +4,7 @@
 
 const JETON_ACCES = /^[A-Za-z0-9_-]{8,4000}\.[A-Za-z0-9_-]{8,4000}\.[A-Za-z0-9_-]{0,4000}$/; // forme d'un JWT
 const JETON_RENOUVELLEMENT = /^[A-Za-z0-9_-]{6,500}$/;
-const TYPES = ['invite', 'recovery'];
+const TYPES = ['invite', 'recovery', 'signup']; // signup : lien de confirmation après « Créer un compte »
 
 /**
  * Lit le fragment de l'adresse. Renvoie :
@@ -51,4 +51,28 @@ export function validerMotDePasse(motDePasse, confirmation, email = '') {
   if (debut.length >= 3 && mdp.toLowerCase().includes(debut)) return { ok: false, message: 'Ne mets pas ton adresse e-mail dans ton mot de passe.' };
   if (mdp !== confirmation) return { ok: false, message: 'Les deux mots de passe ne sont pas identiques.' };
   return { ok: true };
+}
+
+/** Nettoie un prénom ou un nom : espaces réduits, caractères de contrôle retirés. */
+export function nettoyerNom(valeur) {
+  // eslint-disable-next-line no-control-regex
+  return String(valeur ?? '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+const NOM_MAX = 60;
+
+/**
+ * Valide le formulaire « Créer un compte » (hors format de l'e-mail, vérifié par le store).
+ * Renvoie { ok: true, prenom, nom } (valeurs nettoyées) ou { ok: false, message }.
+ */
+export function validerInscription({ prenom, nom, motDePasse, email = '', consentement }) {
+  const p = nettoyerNom(prenom);
+  const n = nettoyerNom(nom);
+  if (!p) return { ok: false, message: 'Saisis ton prénom.' };
+  if (!n) return { ok: false, message: 'Saisis ton nom.' };
+  if (p.length > NOM_MAX || n.length > NOM_MAX) return { ok: false, message: `${NOM_MAX} caractères maximum pour le prénom et le nom.` };
+  const v = validerMotDePasse(motDePasse, motDePasse, email);
+  if (!v.ok) return v;
+  if (consentement !== true) return { ok: false, message: 'Coche la case pour accepter la politique de confidentialité.' };
+  return { ok: true, prenom: p, nom: n };
 }

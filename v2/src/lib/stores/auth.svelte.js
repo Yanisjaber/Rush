@@ -2,8 +2,9 @@
 // `auth.pret` passe à true une fois la session (éventuelle) lue ; `auth.session` est null si déconnecté.
 import { sb } from '../supabase.js';
 import { route } from '../routeur.svelte.js';
-import { lireLienAuth, messageLienErreur, validerMotDePasse } from '../data/lien-auth.js';
+import { lireLienAuth, messageLienErreur, validerMotDePasse, validerInscription } from '../data/lien-auth.js';
 import { appeler } from '../data/integrations.js';
+import { chargerProfilComplet, enregistrerProfil } from '../data/api.js';
 
 // definirMdp : true quand l'utilisateur arrive par un lien d'invitation ou de réinitialisation : il doit choisir un mot de passe.
 // erreurLien : message à afficher si ce lien est expiré ou refusé.
@@ -72,7 +73,56 @@ async function traiterLien() {
     auth.erreurLien = messageLienErreur('invalide');
     return;
   }
+  if (lien.type === 'signup') {
+    // Compte tout juste confirmé : il a déjà choisi son mot de passe, on recopie seulement son prénom et son nom dans le profil.
+    await completerProfilInscription(verif.data.user);
+    return;
+  }
   auth.definirMdp = true;
+}
+
+/** Recopie prénom et nom (saisis à l'inscription, gardés dans les métadonnées du compte) dans user_profiles, une seule fois. */
+async function completerProfilInscription(user) {
+  try {
+    const m = user?.user_metadata || {};
+    const prenom = typeof m.first_name === 'string' ? m.first_name.slice(0, 60) : '';
+    const nom = typeof m.last_name === 'string' ? m.last_name.slice(0, 60) : '';
+    if (!prenom && !nom) return;
+    const { data } = await chargerProfilComplet(user.id);
+    const extras = data?.extras && typeof data.extras === 'object' ? data.extras : {};
+    if (extras.first_name || extras.last_name) return;
+    const complet = [prenom, nom].filter(Boolean).join(' ');
+    await enregistrerProfil(user.id, { display_name: prenom || complet }, { ...extras, first_name: prenom, last_name: nom, full_name: complet });
+  } catch (_e) {
+    /* non bloquant : il pourra remplir son profil à la main */
+  }
+}
+
+/**
+ * « Créer un compte » : inscription par e-mail et mot de passe, avec confirmation par e-mail.
+ * La réponse est toujours la même, que l'adresse existe déjà ou non (Supabase renvoie un faux succès dans ce cas) :
+ * on ne révèle jamais qui a un compte.
+ */
+export async function inscription({ prenom, nom, email, motDePasse, consentement }) {
+  const adresse = String(email || '').trim();
+  if (!FORMAT_EMAIL.test(adresse)) return { ok: false, message: 'Saisis une adresse e-mail valide.' };
+  const v = validerInscription({ prenom, nom, motDePasse, email: adresse, consentement });
+  if (!v.ok) return v;
+  const { error } = await sb.auth.signUp({
+    email: adresse,
+    password: motDePasse,
+    options: {
+      emailRedirectTo: `${location.origin}${location.pathname}`,
+      data: { first_name: v.prenom, last_name: v.nom, display_name: v.prenom },
+    },
+  });
+  if (error) {
+    if (error.status === 429) return { ok: false, message: "Trop d'inscriptions en peu de temps. Réessaie dans quelques minutes." };
+    if (error.code === 'weak_password') return { ok: false, message: 'Le serveur trouve ce mot de passe trop faible. Allonge-le ou varie les caractères.' };
+    if (error.status === 422 || error.status === 400) return { ok: false, message: "Inscription refusée. Vérifie l'adresse e-mail et le mot de passe." };
+    return { ok: false, message: "Inscription impossible pour le moment. Vérifie ta connexion internet." };
+  }
+  return { ok: true, message: 'Presque fini : un e-mail de confirmation vient de partir. Clique sur le lien dedans (pense à regarder les indésirables).' };
 }
 
 /** Enregistre un nouveau mot de passe pour l'utilisateur connecté. Renvoie { ok: true } ou { ok: false, message }. */

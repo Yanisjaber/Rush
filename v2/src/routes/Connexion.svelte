@@ -1,7 +1,7 @@
 <script>
   import Champ from '../lib/components/Champ.svelte';
   import Bouton from '../lib/components/Bouton.svelte';
-  import { auth, connexion, demanderReinitialisation } from '../lib/stores/auth.svelte.js';
+  import { auth, connexion, demanderReinitialisation, inscription } from '../lib/stores/auth.svelte.js';
 
   let email = $state('');
   let motDePasse = $state('');
@@ -9,6 +9,24 @@
   let enCours = $state(false);
   let oubli = $state(false); // true : on demande un e-mail de réinitialisation au lieu de se connecter
   let infoOubli = $state('');
+  let creer = $state(false); // true : formulaire « Créer un compte »
+  let prenom = $state('');
+  let nom = $state('');
+  let consentement = $state(false);
+  let infoCreation = $state('');
+
+  async function creerCompte(evenement) {
+    evenement.preventDefault();
+    if (enCours) return;
+    message = '';
+    infoCreation = '';
+    enCours = true;
+    const r = await inscription({ prenom, nom, email, motDePasse, consentement });
+    enCours = false;
+    motDePasse = ''; // le mot de passe ne reste jamais dans le champ
+    if (r.ok) infoCreation = r.message;
+    else message = r.message;
+  }
 
   async function reinitialiser(evenement) {
     evenement.preventDefault();
@@ -47,7 +65,23 @@
     <p class="accroche">Charge, forme, objectifs et records, pour tous tes sports, au même endroit.</p>
   </div>
 
-  {#if oubli}
+  {#if creer}
+    <form class="formulaire" onsubmit={creerCompte}>
+      <h2 class="titre">Créer un compte</h2>
+      <Champ id="prenom" label="Prénom" autocomplete="given-name" maxlength={60} bind:valeur={prenom} requis />
+      <Champ id="nom" label="Nom" autocomplete="family-name" maxlength={60} bind:valeur={nom} requis />
+      <Champ id="email-creation" label="Adresse e-mail" type="email" autocomplete="email" bind:valeur={email} requis />
+      <Champ id="mdp-creation" label="Mot de passe (10 caractères minimum)" type="password" autocomplete="new-password" bind:valeur={motDePasse} requis />
+      <label class="consentement">
+        <input type="checkbox" bind:checked={consentement} required />
+        <span>J'ai lu la <a href="#/confidentialite" target="_blank" rel="noopener">politique de confidentialité</a> et je l'accepte.</span>
+      </label>
+      {#if message}<p class="erreur" role="alert">{message}</p>{/if}
+      {#if infoCreation}<p class="info ok" role="status">{infoCreation}</p>{/if}
+      <Bouton type="submit">{enCours ? 'Création…' : 'Créer mon compte'}</Bouton>
+      <Bouton variante="texte" onclick={() => { creer = false; message = ''; infoCreation = ''; }}>J'ai déjà un compte</Bouton>
+    </form>
+  {:else if oubli}
     <form class="formulaire" onsubmit={reinitialiser}>
       <h2 class="titre">Mot de passe oublié</h2>
       <p class="info">Saisis ton adresse e-mail : on t'envoie un lien pour choisir un nouveau mot de passe.</p>
@@ -67,6 +101,7 @@
       {#if message}<p class="erreur" role="alert">{message}</p>{/if}
 
       <Bouton type="submit">{enCours ? 'Connexion…' : 'Se connecter'}</Bouton>
+      <Bouton variante="discret" onclick={() => { creer = true; message = ''; auth.erreurLien = ''; }}>Créer un compte</Bouton>
       <Bouton variante="texte" onclick={() => { oubli = true; message = ''; auth.erreurLien = ''; }}>Mot de passe oublié ?</Bouton>
       <Bouton variante="texte" href="?demo">Voir la démo, sans compte</Bouton>
       <Bouton variante="texte" href="#/confidentialite">Confidentialité</Bouton>
@@ -150,6 +185,28 @@
     font-size: 14px;
     line-height: 1.5;
     color: var(--texte-doux);
+  }
+  .consentement {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--texte-doux);
+  }
+  .consentement input {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    accent-color: var(--accent, currentColor);
+  }
+  .consentement a {
+    color: var(--texte);
+    /* zone tactile de 44 px sans changer la mise en page */
+    display: inline-block;
+    padding: 10px 0;
+    margin: -10px 0;
   }
   .info.ok {
     color: var(--ok);

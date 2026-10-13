@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { lireLienAuth, messageLienErreur, validerMotDePasse, MDP_MIN, MDP_MAX } from '../src/lib/data/lien-auth.js';
+import { lireLienAuth, messageLienErreur, validerMotDePasse, validerInscription, nettoyerNom, MDP_MIN, MDP_MAX } from '../src/lib/data/lien-auth.js';
 
 const JWT = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3OCJ9.c2lnbmF0dXJlX2JpZW5fbG9uZ3VlXzEyMw';
 
@@ -42,4 +42,25 @@ test('mot de passe : longueur, chiffres seuls, espaces, e-mail dedans, confirmat
   assert.match(validerMotDePasse('Une-phrase-longue-1', 'Une-phrase-longue-2').message, /identiques/);
   assert.deepEqual(validerMotDePasse('Une-phrase-longue-1', 'Une-phrase-longue-1', 'yanisjaber23@gmail.com'), { ok: true });
   assert.equal(validerMotDePasse('x'.repeat(MDP_MAX), 'x'.repeat(MDP_MAX)).ok, true);
+});
+
+test('lien de confirmation d\'inscription : type signup accepté', () => {
+  assert.equal(lireLienAuth(`#access_token=${JWT}&refresh_token=abc123xyz&type=signup`).type, 'signup');
+});
+
+test('inscription : prénom, nom, mot de passe et consentement sont exigés', () => {
+  const bon = { prenom: ' Léa ', nom: 'Martin', motDePasse: 'correct-horse-battery', email: 'lea@exemple.fr', consentement: true };
+  assert.deepEqual(validerInscription(bon), { ok: true, prenom: 'Léa', nom: 'Martin' });
+  assert.equal(validerInscription({ ...bon, prenom: '  ' }).ok, false);
+  assert.equal(validerInscription({ ...bon, nom: '' }).ok, false);
+  assert.equal(validerInscription({ ...bon, nom: 'x'.repeat(61) }).ok, false);
+  assert.equal(validerInscription({ ...bon, motDePasse: 'court' }).ok, false);
+  assert.equal(validerInscription({ ...bon, motDePasse: 'lea-mon-mot-de-passe' }).ok, false); // contient l'e-mail
+  assert.equal(validerInscription({ ...bon, consentement: false }).ok, false);
+  assert.equal(validerInscription({ ...bon, consentement: 'oui' }).ok, false);
+});
+
+test('nettoyerNom : retire chevrons, contrôles et espaces en trop', () => {
+  assert.equal(nettoyerNom('  Jean\u0000   <b>Pierre</b> '), 'Jean bPierre/b');
+  assert.equal(nettoyerNom(null), '');
 });
