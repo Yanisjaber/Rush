@@ -14,7 +14,7 @@ const TABLES = [
   ['objectifs_annuels', 'yearly_goals', '*'],
   ['forme_par_jour', 'daily_metrics', '*'],
   ['sommeil', 'garmin_sleep', '*'],
-  ['disposition_accueil', 'user_dashboard', '*'],
+  ['preferences', 'user_preferences', '*'],
   ['exercices_perso', 'strength_exercises', '*'],
   ['programmes_force', 'strength_programs', '*'],
   ['series_force', 'strength_sets', '*'],

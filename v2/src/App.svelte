@@ -20,6 +20,7 @@
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
   import { route, modeDemo } from './lib/routeur.svelte.js';
   import { lireRetourDansAdresse } from './lib/stores/connexions.svelte.js';
+  import { synchroniserTheme, oublierCompteTheme } from './lib/stores/theme.svelte.js';
 
   const demo = modeDemo();
 
@@ -60,6 +61,14 @@
     lireRetourDansAdresse(); // retour de Strava (?strava_connected=1) : ouvre l'onglet Connexions
     initAuth();
   }
+
+  // Le thème suit le compte : récupéré à la connexion, plus écrit après la déconnexion
+  $effect(() => {
+    const uid = auth.session?.user?.id;
+    if (demo) return;
+    if (uid) synchroniserTheme(uid);
+    else oublierCompteTheme();
+  });
 </script>
 
 {#if route.chemin === '/catalogue'}

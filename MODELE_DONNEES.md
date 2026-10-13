@@ -10,6 +10,7 @@ humain (coach ↔ athlète, messagerie) a été supprimé le 2026-10-11 ; le rô
 | Table | Rôle |
 |---|---|
 | `user_profiles` | Réglages physiologiques : `ftp`, `hr_max`, `lthr`, `weight` ; le reste (FC repos, VMA, allures, équipement…) dans la colonne JSONB `extras`. Les zones sont recalculées à l'affichage, jamais stockées |
+| `user_preferences` | Préférences d'un compte (une ligne par utilisateur, RLS `auth.uid() = user_id`) : `layout` = disposition de l'accueil (JSON, widgets et tailles), `theme` = `sombre` ou `clair`. Ancien nom : `user_dashboard` |
 | `activities` | Séances réalisées (Strava, Garmin ou manuelles) ; `streams_gz` (streams compressés), `power_curve`, `tss`, `category`… |
 | `activity_edits` | Calque de retouches utilisateur sur les activités |
 | `activity_planned` | Séances prévues (dont celles générées par l'IA) |

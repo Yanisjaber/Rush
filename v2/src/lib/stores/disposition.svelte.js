@@ -1,6 +1,6 @@
 // Disposition de l'accueil (quels widgets, dans quel ordre, quelle taille), réactive.
 //
-// Stockage : table Supabase `user_dashboard` (une ligne par utilisateur, protégée par la RLS).
+// Stockage : table Supabase `user_preferences` (une ligne par utilisateur, protégée par la RLS).
 // Si la table n'existe pas encore (migration non appliquée) ou en mode démo, la disposition est
 // gardée dans le navigateur (localStorage) : l'app marche dans tous les cas.
 //
@@ -57,7 +57,7 @@ export async function chargerDisposition(uid, famillesPresentes) {
   let layout = null;
   disposition.stockage = 'local';
   if (uid !== 'demo') {
-    const r = await sb.from('user_dashboard').select('layout').eq('user_id', uid).maybeSingle();
+    const r = await sb.from('user_preferences').select('layout').eq('user_id', uid).maybeSingle();
     if (!r.error) {
       disposition.stockage = 'base';
       layout = normaliser(r.data?.layout);
@@ -85,7 +85,7 @@ async function enregistrer() {
     return;
   }
   const r = await sb
-    .from('user_dashboard')
+    .from('user_preferences')
     .upsert({ user_id: utilisateur, layout, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
   if (r.error) {
     console.error('[v2/disposition]', r.error.code || '');
