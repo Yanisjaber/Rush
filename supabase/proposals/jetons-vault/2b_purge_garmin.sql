@@ -1,6 +1,6 @@
--- Jetons des connexions : PHASE 2 sur 2 — on EFFACE le clair (PROPOSITION : à lancer SEULEMENT quand tout est redéployé et vérifié).
--- Prérequis, tous vérifiés : migration 2026-10-14_jetons_vault_1_ajout.sql appliquée ; les 7 Edge Functions redéployées ; le script du
--- Raspberry Pi mis à jour (git pull) ; une connexion Strava, une synchro Strava, une synchro Garmin réussies APRÈS ces déploiements.
+-- Jetons des connexions : PHASE 2b sur 2 — on EFFACE le clair restant (GARMIN). PROPOSITION : à lancer SEULEMENT quand le Pi est à jour et vérifié.
+-- (La phase 2a, déjà appliquée, a effacé le clair de Strava : supabase/migrations/2026-10-14_jetons_vault_2a_purge_strava.sql.)
+-- Prérequis : phases 1 et 2a appliquées ; le script du Raspberry Pi mis à jour (git pull) ; une synchro Garmin réussie APRÈS cette mise à jour.
 -- Relançable sans risque. Quand c'est appliqué, déplacer ce fichier dans supabase/migrations/.
 
 -- 1. L'écriture double s'arrête : plus aucun jeton en clair n'est écrit

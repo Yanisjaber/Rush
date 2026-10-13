@@ -1,4 +1,4 @@
--- Jetons des connexions : RETOUR ARRIÈRE (à utiliser seulement si la phase 2 a été appliquée puis qu'il faut revenir aux anciennes fonctions).
+-- Jetons des connexions : RETOUR ARRIÈRE (à utiliser seulement si la phase 2a ou 2b a été appliquée puis qu'il faut revenir aux anciennes fonctions).
 -- Remet les jetons EN CLAIR dans les anciennes colonnes à partir du coffre, pour que les anciennes versions des Edge Functions et du Pi refonctionnent.
 -- (Avant la phase 2, rien à faire : le clair est tenu à jour par l'écriture double.)
 update public.connexions_app c set

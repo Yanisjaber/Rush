@@ -58,20 +58,32 @@ select pg_temp.ok('déconnexion : le secret chiffré est supprimé avec la conne
 delete from auth.users where id = 'aaaaaaaa-0000-4000-8000-000000000001';
 select pg_temp.ok('suppression de compte : plus aucun secret chiffré', (select count(*) from vault.secrets) = 0, '');
 
--- ===== Phase 2 ==========================================================================================================
+-- ===== Phase 2a (Strava) puis 2b (Garmin) ===============================================================================
 insert into auth.users (id, email) values ('aaaaaaaa-0000-4000-8000-000000000003', 'c@test.invalid');
 insert into public.connexions_app (user_id, app, access_token, refresh_token, expires_at) values ('aaaaaaaa-0000-4000-8000-000000000003', 'strava', 'c_acc', 'c_ref', now());
+insert into public.connexions_app (user_id, app, access_token, expires_at, oauth1_token, oauth1_secret) values ('aaaaaaaa-0000-4000-8000-000000000003', 'garmin', 'cg_acc', now(), 'cg_o1', 'cg_o1s');
 select public.rpc_save_connection_secrets('aaaaaaaa-0000-4000-8000-000000000003', 'strava', '{}', null);
-\ir ../proposals/jetons-vault/2_purge.sql
-select pg_temp.ok('phase 2 : plus aucun jeton en clair', (select count(*) from public.connexions_app where access_token is not null or refresh_token is not null or oauth1_token is not null or oauth1_secret is not null) = 0, '');
-select pg_temp.ok('phase 2 : les jetons restent lisibles via le coffre', public.rpc_connection_secrets('aaaaaaaa-0000-4000-8000-000000000003', 'strava') = '{"access_token":"c_acc","refresh_token":"c_ref"}'::jsonb, '');
+select public.rpc_save_connection_secrets('aaaaaaaa-0000-4000-8000-000000000003', 'garmin', '{}', null);
+\ir ../migrations/2026-10-14_jetons_vault_2a_purge_strava.sql
+select pg_temp.ok('2a : le clair STRAVA est effacé', (select count(*) from public.connexions_app where app = 'strava' and (access_token is not null or refresh_token is not null)) = 0, '');
+select pg_temp.ok('2a : le clair GARMIN reste (le Pi n''est pas encore à jour)', (select access_token = 'cg_acc' and oauth1_secret = 'cg_o1s' from public.connexions_app where app = 'garmin'), '');
+select pg_temp.ok('2a : les jetons Strava restent lisibles via le coffre', public.rpc_connection_secrets('aaaaaaaa-0000-4000-8000-000000000003', 'strava') = '{"access_token":"c_acc","refresh_token":"c_ref"}'::jsonb, '');
 select public.rpc_save_connection_secrets('aaaaaaaa-0000-4000-8000-000000000003', 'strava', '{"access_token":"c_new"}', null);
-select pg_temp.ok('phase 2 : une écriture ne remet PAS de clair', (select access_token is null and refresh_token is null from public.connexions_app where app = 'strava'), '');
-select pg_temp.ok('phase 2 : l''écriture est bien prise en compte', public.rpc_connection_secrets('aaaaaaaa-0000-4000-8000-000000000003', 'strava') ->> 'access_token' = 'c_new', '');
--- garde-fou : une connexion sans secret empêche la purge
-insert into public.connexions_app (user_id, app, access_token, expires_at) values ('aaaaaaaa-0000-4000-8000-000000000003', 'garmin', 'x', now());
+select pg_temp.ok('2a : une écriture Strava ne remet PAS de clair', (select access_token is null and refresh_token is null from public.connexions_app where app = 'strava'), '');
+select pg_temp.ok('2a : l''écriture Strava est bien prise en compte', public.rpc_connection_secrets('aaaaaaaa-0000-4000-8000-000000000003', 'strava') ->> 'access_token' = 'c_new', '');
+select public.rpc_save_connection_secrets('aaaaaaaa-0000-4000-8000-000000000003', 'garmin', '{"access_token":"cg_new"}', null);
+select pg_temp.ok('2a : une écriture Garmin garde le clair à jour (ancien Pi)', (select access_token = 'cg_new' and oauth1_token = 'cg_o1' from public.connexions_app where app = 'garmin'), '');
+create temp table _sid on commit drop as select secret_id from public.connexions_app where app = 'strava' and user_id = 'aaaaaaaa-0000-4000-8000-000000000003';
 do $$ declare v boolean := false; begin
-  begin execute $q$do $z$ begin if exists (select 1 from public.connexions_app where secret_id is null) then raise exception 'garde-fou'; end if; end $z$ $q$; exception when others then v := true; end;
-  perform pg_temp.ok('phase 2 : le garde-fou refuse la purge si un secret manque', v, ''); end $$;
+  update public.connexions_app set secret_id = null where app = 'strava';
+  begin execute $q$do $z$ begin if exists (select 1 from public.connexions_app where app = 'strava' and secret_id is null) then raise exception 'garde-fou'; end if; end $z$ $q$; exception when others then v := true; end;
+  perform pg_temp.ok('2a : le garde-fou refuse si un secret Strava manque', v, '');
+end $$;
+update public.connexions_app set secret_id = (select secret_id from _sid) where app = 'strava' and user_id = 'aaaaaaaa-0000-4000-8000-000000000003';
+\ir ../proposals/jetons-vault/2b_purge_garmin.sql
+select pg_temp.ok('2b : plus aucun jeton en clair, nulle part', (select count(*) from public.connexions_app where access_token is not null or refresh_token is not null or oauth1_token is not null or oauth1_secret is not null) = 0, '');
+select pg_temp.ok('2b : les jetons Garmin restent lisibles via le coffre', public.rpc_connection_secrets('aaaaaaaa-0000-4000-8000-000000000003', 'garmin') = '{"access_token":"cg_new","oauth1_token":"cg_o1","oauth1_secret":"cg_o1s"}'::jsonb, '');
+select public.rpc_save_connection_secrets('aaaaaaaa-0000-4000-8000-000000000003', 'garmin', '{"access_token":"cg_new2"}', null);
+select pg_temp.ok('2b : une écriture Garmin ne remet PAS de clair', (select access_token is null and oauth1_secret is null from public.connexions_app where app = 'garmin'), '');
 rollback;
 select 'TOUS LES CONTRÔLES DES JETONS SONT PASSÉS' as resultat;
