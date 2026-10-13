@@ -1,9 +1,0 @@
-{
-  "name": "coach-ia",
-  "version": "1.0.0",
-  "description": "Coach IA - Dashboard Entraînement & Récupération",
-  "private": true,
-  "devDependencies": {
-    "browser-sync": "^3.0.4"
-  }
-}
