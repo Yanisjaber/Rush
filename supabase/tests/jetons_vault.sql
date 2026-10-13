@@ -58,7 +58,7 @@ select pg_temp.ok('déconnexion : le secret chiffré est supprimé avec la conne
 delete from auth.users where id = 'aaaaaaaa-0000-4000-8000-000000000001';
 select pg_temp.ok('suppression de compte : plus aucun secret chiffré', (select count(*) from vault.secrets) = 0, '');
 
--- ===== Phase 2a (Strava) puis 2b (Garmin) ===============================================================================
+-- ===== Phase 2a (Strava) puis 2b (fin : plus aucun clair) ===============================================================================
 insert into auth.users (id, email) values ('aaaaaaaa-0000-4000-8000-000000000003', 'c@test.invalid');
 insert into public.connexions_app (user_id, app, access_token, refresh_token, expires_at) values ('aaaaaaaa-0000-4000-8000-000000000003', 'strava', 'c_acc', 'c_ref', now());
 insert into public.connexions_app (user_id, app, access_token, expires_at, oauth1_token, oauth1_secret) values ('aaaaaaaa-0000-4000-8000-000000000003', 'garmin', 'cg_acc', now(), 'cg_o1', 'cg_o1s');
@@ -80,7 +80,7 @@ do $$ declare v boolean := false; begin
   perform pg_temp.ok('2a : le garde-fou refuse si un secret Strava manque', v, '');
 end $$;
 update public.connexions_app set secret_id = (select secret_id from _sid) where app = 'strava' and user_id = 'aaaaaaaa-0000-4000-8000-000000000003';
-\ir ../proposals/jetons-vault/2b_purge_garmin.sql
+\ir ../migrations/2026-10-14_jetons_vault_2b_fin.sql
 select pg_temp.ok('2b : plus aucun jeton en clair, nulle part', (select count(*) from public.connexions_app where access_token is not null or refresh_token is not null or oauth1_token is not null or oauth1_secret is not null) = 0, '');
 select pg_temp.ok('2b : les jetons Garmin restent lisibles via le coffre', public.rpc_connection_secrets('aaaaaaaa-0000-4000-8000-000000000003', 'garmin') = '{"access_token":"cg_new","oauth1_token":"cg_o1","oauth1_secret":"cg_o1s"}'::jsonb, '');
 select public.rpc_save_connection_secrets('aaaaaaaa-0000-4000-8000-000000000003', 'garmin', '{"access_token":"cg_new2"}', null);

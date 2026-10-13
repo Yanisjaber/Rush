@@ -19,7 +19,7 @@ humain (coach ↔ athlète, messagerie) a été supprimé le 2026-10-11 ; le rô
 | `daily_metrics` | Charge calculée par jour (CTL/ATL/TSB), recalculée par trigger |
 | `power_profile`, `power_profile_sport` | Records de puissance par durée (global et par sport) |
 | `garmin_sleep` | Nuits de sommeil Garmin (phases, score, HRV, stress, FC nocturne) |
-| `garmin_sync_requests` | Demandes de synchro Garmin (bouton de l'appli → lues par le Raspberry Pi) ; le navigateur ne peut insérer que `user_id` |
+| `garmin_sync_requests` | **Inutilisée** (ancien pont vers le Raspberry Pi, supprimé le 2026-10-13) ; vide |
 | `strength_exercises`, `strength_programs`, `strength_sets` | Carnet de force (v2) : exercices perso, programmes (séances types, exercices en JSONB) et séries réalisées (rattachées à une ligne `activities`, supprimées avec elle). La bibliothèque d'exercices de base est dans le code de la v2 |
 | `hyrox_tests`, `hyrox_objectif` | Hyrox (v2) : tests et courses en 16 segments (8 runs + 8 stations, en secondes) et objectif de temps (une ligne par utilisateur) |
 | `od_prefs` | Préférences Open Dossard |

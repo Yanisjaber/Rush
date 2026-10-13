@@ -219,7 +219,7 @@
       <GrapheNuits etiquettes={fcEtiquettes} lignes={[{ nom: 'FC', valeurs: fcValeurs, couleur: 'var(--danger)' }]} min={Math.max(0, fcStats.min - 5)} max={fcStats.max + 5} hauteur={220} titre="Fréquence cardiaque pendant la nuit" formater={(v) => `${Math.round(v)} bpm`} />
       <div class="reperes fc-reperes">{#each reperesTemps(Math.max(...fc.points.map((p) => p[0]))) as h, k (k)}<span>{h}</span>{/each}</div>
     {:else}
-      <p class="info">Pas de données minute par minute pour cette nuit. Lance une synchro Garmin pour les récupérer sur les prochaines nuits.</p>
+      <p class="info">Pas de données minute par minute pour cette nuit.</p>
     {/if}
   </Panneau>
 {/if}

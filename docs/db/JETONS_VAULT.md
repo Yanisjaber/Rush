@@ -19,19 +19,19 @@ Le navigateur ne lit toujours **aucun** jeton (droits par colonne inchangés) et
 |---|---|
 | `supabase/migrations/2026-10-14_jetons_vault_1_ajout.sql` | **Phase 1** : ajoute le coffre à côté de l'existant (écriture double, repli en lecture), chiffre les 4 connexions actuelles |
 | `supabase/migrations/2026-10-14_jetons_vault_2a_purge_strava.sql` | **Phase 2a (appliquée)** : efface le clair des jetons **Strava** et arrête de l'écrire (garde-fou : refuse si un secret manque) |
-| `supabase/proposals/jetons-vault/2b_purge_garmin.sql` | **Phase 2b (à faire)** : efface le clair restant (**Garmin**), une fois le Pi à jour |
+| `supabase/migrations/2026-10-14_jetons_vault_2b_fin.sql` | **Phase 2b (appliquée)** : plus aucun clair, pour aucune connexion |
 | `supabase/proposals/jetons-vault/9_retour_arriere.sql` | remet le clair depuis le coffre si la phase 2 doit être annulée |
 | `supabase/functions/_shared/jetons.ts` | lecture/écriture des jetons pour les Edge Functions |
 | `strava-ingest`, `strava-streams`, `strava-webhook`, `strava-oauth-callback`, `strava-laps`, `delete-account` | modifiées pour utiliser le module (`disconnect-integration` n'a rien à changer : le déclencheur s'en charge) |
-| `tools/garmin_sync.py` | le Pi lit/écrit les jetons Garmin via le coffre |
+| ~~`tools/garmin_sync.py`~~ | supprimé avec l'intégration Garmin (13/10/2026) |
 
 ## Ordre de bascule (aucune coupure) et avancement
 
 1. ✅ **Phase 1 appliquée** (13/10/2026) : le coffre est ajouté à côté de l'existant ; les 4 connexions sont chiffrées.
 2. ✅ **6 Edge Functions déployées**, vérifiées avec le vrai compte : synchro Strava complète, tours, courbes, `delete-account`.
 3. ✅ **Phase 2a appliquée** : le clair Strava est effacé. Vérifié ensuite avec un **renouvellement de jeton forcé** : écriture uniquement dans le coffre, clair toujours effacé, aucun doublon de secret.
-4. ⏳ **Mettre à jour le Pi** : `git pull` dans le dossier du projet sur le Raspberry Pi, puis cliquer sur « Synchroniser » (Paramètres › Connexions).
-5. ⏳ **Phase 2b** (`2b_purge_garmin.sql`) : efface le clair Garmin. Contrôle attendu : 0 jeton en clair.
+4. ✅ **Garmin supprimé** (13/10/2026, décision de Yanis : le Pi ne servait que lui, l'intégration passera par l'accès officiel de Garmin) : connexion, jeton chiffré, demandes de synchro et scripts du Pi retirés. La mise à jour du Pi n'a donc plus lieu d'être.
+5. ✅ **Phase 2b appliquée** (`2026-10-14_jetons_vault_2b_fin.sql`) : plus aucun jeton n'est jamais écrit en clair, pour aucune connexion. Contrôle : 0 jeton en clair, 3 secrets (Strava) dans le coffre.
 6. ⏳ Observer un événement du webhook Strava (nouvelle activité) et la prochaine connexion Strava : non déclenchables par Claude.
 
 Pourquoi en plusieurs temps : effacer le clair avant que **toutes** les fonctions et le Pi soient à jour ferait lire un champ vide à l'une d'elles. Les jetons Strava n'avaient plus d'ancien lecteur, pas Garmin (le Pi a encore l'ancien code tant qu'il n'a pas fait `git pull`).
@@ -40,7 +40,6 @@ Pourquoi en plusieurs temps : effacer le clair avant que **toutes** les fonction
 
 - **Base** (`supabase/tests/jetons_vault.sql`, sur un Postgres local jetable) : 26 contrôles — chiffrement des jetons d'origine, repli en lecture, fusion à l'écriture (un renouvellement Strava ne renvoie pas tous les champs), un seul secret par connexion, suppression du secret avec la connexion et avec le compte, **un utilisateur connecté ou anonyme ne peut ni lire ni écrire les jetons ni lire Vault**, phases 2a et 2b (clair Strava effacé et Garmin conservé tant que le Pi n'est pas à jour, puis plus aucun clair, écritures sans clair, garde-fou).
 - **Module des fonctions** (`supabase/tests/jetons.test.mts`) : 5 tests avec un faux client, dont « aucune erreur de la base n'est journalisée ».
-- **Script du Pi** (`tools/test_garmin_jetons.py`) : 6 tests, dont le repli et le fait qu'une vraie erreur n'est pas avalée.
 - Syntaxe des 8 fichiers TypeScript contrôlée.
 
 ## Ce qui ne peut pas être testé hors ligne

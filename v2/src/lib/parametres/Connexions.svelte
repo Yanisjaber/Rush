@@ -8,22 +8,21 @@
   import { auth } from '../stores/auth.svelte.js';
   import { retourStrava, effacerRetour } from '../stores/connexions.svelte.js';
   import {
-    chargerConnexions, preparerConnexionStrava, importerActivitesStrava, traiterStreamsStrava, deconnecterStrava, synchroniserGarmin,
+    chargerConnexions, preparerConnexionStrava, importerActivitesStrava, traiterStreamsStrava, deconnecterStrava,
   } from '../data/integrations.js';
   import { statutConnexion, detailStrava, detailGarmin, messageErreurOAuth, progressionStreams } from '../data/connexions.js';
 
-  // Onglet Connexions : Strava (activités) et Garmin (sommeil, via le Raspberry Pi).
+  // Onglet Connexions : Strava (activités), Garmin (à venir : connexion officielle) et Open Dossard.
   // En démo, les états sont fictifs et aucun bouton ne contacte le serveur.
   let { demo = false } = $props();
 
   const userId = $derived(demo ? 'demo' : auth.session?.user?.id);
-  let etat = $state({ chargement: true, erreur: '', strava: null, garmin: null, nbActivites: 0, nbNuits: 0 });
+  let etat = $state({ chargement: true, erreur: '', strava: null, nbActivites: 0, nbNuits: 0 });
   let infoStrava = $state(''); // message sous la carte Strava (réussite, limite…)
   let erreurStrava = $state('');
   let sync = $state({ actif: false, pct: 0, etiquette: '' }); // import Strava en cours
   let choixDeconnexion = $state(false); // panneau « déconnecter seulement / supprimer aussi »
   let confirmerEffacement = $state(false);
-  let garmin = $state({ actif: false, texte: '', erreur: false });
   let arret = new AbortController(); // coupe les attentes si on quitte l'onglet
 
   async function charger() {
@@ -31,7 +30,6 @@
       etat = {
         chargement: false, erreur: '', nbActivites: 969, nbNuits: 61,
         strava: { athlete_name: 'Yanis J.', last_sync_at: new Date(Date.now() - 2 * 3600e3).toISOString(), last_sync_status: 'ok' },
-        garmin: { last_sync_at: new Date(Date.now() - 26 * 3600e3).toISOString(), last_sync_status: 'ok' },
       };
       return;
     }
@@ -113,18 +111,8 @@
     await charger();
   }
 
-  // --- Garmin ---
-  async function synchroGarmin() {
-    if (garmin.actif) return;
-    if (demo) return (garmin = { actif: false, texte: 'Désactivé en mode démo.', erreur: true });
-    garmin = { actif: true, texte: 'Demande envoyée…', erreur: false };
-    const r = await synchroniserGarmin(userId, (e) => (garmin = { actif: true, texte: e.texte, erreur: false }), arret.signal);
-    garmin = { actif: false, texte: r.ok ? `Sommeil synchronisé : ${r.nuits} nuit${r.nuits > 1 ? 's' : ''}.` : r.erreur, erreur: !r.ok && !!r.erreur };
-    if (r.ok) await charger();
-  }
 
   const statutS = $derived(statutConnexion(etat.strava));
-  const statutG = $derived(statutConnexion(etat.garmin));
 </script>
 
 <div class="onglet">
@@ -194,17 +182,9 @@
       <div class="corps">
       <div class="entete-carte">
         <h2 class="titre">Garmin</h2>
-        <span class="pastille {statutG.cle}">{statutG.texte}</span>
+        <span class="pastille bientot">Bientôt disponible</span>
       </div>
-      <p class="detail">{detailGarmin(etat.garmin, etat.nbNuits)}</p>
-      {#if etat.garmin}
-        <div class="actions">
-          <Bouton onclick={synchroGarmin}>{garmin.actif ? 'Synchro en cours…' : 'Synchroniser'}</Bouton>
-        </div>
-      {:else}
-        <p class="aide">Garmin n'a pas de connexion publique : la synchro passe par ton Raspberry Pi. Voir <code>tools/garmin_auth.py</code> pour la configurer.</p>
-      {/if}
-      {#if garmin.texte}<p class={garmin.erreur ? 'erreur' : 'succes'} role="status" aria-live="polite">{garmin.texte}</p>{/if}
+      <p class="detail">{detailGarmin(etat.nbNuits)}</p>
       </div>
     </article>
 
@@ -311,6 +291,9 @@
     font-weight: 700;
     color: var(--texte-doux);
   }
+  .pastille.bientot {
+    color: var(--texte-doux);
+  }
   .pastille.ok {
     color: var(--ok);
     border-color: currentColor;
@@ -357,9 +340,6 @@
   .pied {
     font-size: 13px;
     color: var(--texte-doux);
-  }
-  code {
-    font-size: 12px;
   }
   .choix {
     display: flex;

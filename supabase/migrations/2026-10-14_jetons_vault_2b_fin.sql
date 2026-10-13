@@ -1,7 +1,7 @@
--- Jetons des connexions : PHASE 2b sur 2 — on EFFACE le clair restant (GARMIN). PROPOSITION : à lancer SEULEMENT quand le Pi est à jour et vérifié.
--- (La phase 2a, déjà appliquée, a effacé le clair de Strava : supabase/migrations/2026-10-14_jetons_vault_2a_purge_strava.sql.)
--- Prérequis : phases 1 et 2a appliquées ; le script du Raspberry Pi mis à jour (git pull) ; une synchro Garmin réussie APRÈS cette mise à jour.
--- Relançable sans risque. Quand c'est appliqué, déplacer ce fichier dans supabase/migrations/.
+-- Jetons des connexions : PHASE 2b (FIN) — plus AUCUN jeton n'est jamais écrit en clair, pour aucune connexion. Relançable sans risque.
+-- Contexte : la connexion Garmin (Raspberry Pi) a été supprimée le 13/10/2026 (décision de Yanis : l'intégration passera par l'accès officiel de Garmin).
+-- Il ne reste que des connexions Strava, dont le clair a déjà été effacé en phase 2a : plus aucun ancien lecteur ni écrivain en clair.
+-- Retour arrière éventuel : supabase/proposals/jetons-vault/9_retour_arriere.sql (remet le clair depuis le coffre).
 
 -- 1. L'écriture double s'arrête : plus aucun jeton en clair n'est écrit
 create or replace function public.rpc_save_connection_secrets(p_user_id uuid, p_app text, p_payload jsonb, p_expires_at timestamptz default null) returns void

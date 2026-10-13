@@ -40,7 +40,7 @@
     <h2>Les services connectés</h2>
     <ul>
       <li><strong>Strava</strong> (si tu le connectes) : l'app lit tes activités pour les afficher. Tu peux déconnecter Strava à tout moment dans Paramètres › Connexions, ou retirer l'app depuis tes réglages sur strava.com.</li>
-      <li><strong>Garmin</strong> (si tu le connectes) : le sommeil est récupéré par un petit programme que fait tourner Yanis.</li>
+      <li><strong>Garmin</strong> : la connexion officielle arrive bientôt. En attendant, seules les nuits de sommeil déjà importées s'affichent.</li>
       <li><strong>Open Dossard</strong> (si tu lies ta licence) : l'app interroge leur site avec ton numéro de licence pour afficher tes résultats.</li>
       <li><strong>OpenStreetMap</strong> : pour afficher une carte, ton navigateur télécharge des images de carte sur leurs serveurs, qui voient donc ton adresse IP et la zone affichée.</li>
     </ul>

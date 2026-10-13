@@ -1,9 +1,9 @@
-// Connexions Strava / Garmin : appels réseau (Edge Functions Supabase et tables). Aucun jeton ne passe ici :
+// Connexions Strava : appels réseau (Edge Functions Supabase et tables). Aucun jeton ne passe ici :
 // les jetons Strava restent côté serveur, masqués au navigateur par la base.
 // Chaque fonction renvoie { data, erreur } (message court en français) ou un objet de résultat décrit ci-dessous.
 import { sb } from '../supabase.js';
 import { SUPABASE_URL, STRAVA_CLIENT_ID, STRAVA_REDIRECT_URI } from '../config.js';
-import { urlAutorisationStrava, etatSyncGarmin } from './connexions.js';
+import { urlAutorisationStrava } from './connexions.js';
 
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -30,20 +30,19 @@ export async function appeler(fonction, corps, signal) {
 // Statut des connexions (colonnes « sûres » : jamais les jetons)
 // ---------------------------------------------------------------------------
 
-/** Statut Strava et Garmin + compteurs (activités, nuits). */
+/** Statut Strava + compteurs (activités, nuits de sommeil déjà importées). */
 export async function chargerConnexions(userId) {
   const base = sb.from('connexions_app');
-  const [strava, garmin, activites, nuits] = await Promise.all([
+  const [strava, activites, nuits] = await Promise.all([
     base.select('external_id,athlete_name,last_sync_at,last_sync_status,first_connected_at').eq('user_id', userId).eq('app', 'strava').maybeSingle(),
-    sb.from('connexions_app').select('external_id,athlete_name,last_sync_at,last_sync_status,first_connected_at').eq('user_id', userId).eq('app', 'garmin').maybeSingle(),
     sb.from('activities').select('id', { count: 'exact', head: true }).eq('user_id', userId),
     sb.from('garmin_sleep').select('date', { count: 'exact', head: true }).eq('user_id', userId),
   ]);
-  if (strava.error || garmin.error) {
-    console.error('[v2/connexions]', strava.error?.code || garmin.error?.code || '');
+  if (strava.error) {
+    console.error('[v2/connexions]', strava.error?.code || '');
     return { data: null, erreur: 'Impossible de charger tes connexions.' };
   }
-  return { data: { strava: strava.data, garmin: garmin.data, nbActivites: activites.count || 0, nbNuits: nuits.count || 0 }, erreur: '' };
+  return { data: { strava: strava.data, nbActivites: activites.count || 0, nbNuits: nuits.count || 0 }, erreur: '' };
 }
 
 // ---------------------------------------------------------------------------
@@ -123,30 +122,3 @@ export async function deconnecterStrava(wipe) {
   return { ok: true, erreur: '' };
 }
 
-// ---------------------------------------------------------------------------
-// Garmin : demande de synchro lue par le Raspberry Pi
-// ---------------------------------------------------------------------------
-
-/**
- * Dépose une demande de synchro (la base impose user_id = soi et une seule demande active à la fois), puis attend le
- * résultat du Raspberry Pi (il vérifie les demandes chaque minute) : on interroge toutes les 4 s, 3 minutes au maximum.
- * onEtat({ texte }) est appelé à chaque changement d'étape. Renvoie { ok, erreur, nuits }.
- */
-export async function synchroniserGarmin(userId, onEtat, signal) {
-  const { data: demande, error } = await sb.from('garmin_sync_requests').insert({ user_id: userId }).select('id').single();
-  if (error) {
-    return { ok: false, nuits: 0, erreur: error.code === '23505' ? 'Une synchro est déjà en cours, patiente un peu.' : 'Impossible de lancer la synchro Garmin.' };
-  }
-  onEtat?.(etatSyncGarmin({ status: 'pending' }));
-  const fin = Date.now() + 3 * 60 * 1000;
-  while (Date.now() < fin) {
-    await pause(4000);
-    if (signal?.aborted) return { ok: false, nuits: 0, erreur: '' };
-    const { data: ligne, error: e2 } = await sb.from('garmin_sync_requests').select('status,nights,error').eq('id', demande.id).single();
-    if (e2) return { ok: false, nuits: 0, erreur: 'Impossible de lire le résultat de la synchro.' };
-    const etat = etatSyncGarmin(ligne);
-    onEtat?.(etat);
-    if (etat.fini) return etat.erreur ? { ok: false, nuits: 0, erreur: etat.texte } : { ok: true, nuits: Number(ligne.nights) || 0, erreur: '' };
-  }
-  return { ok: false, nuits: 0, erreur: 'Le Raspberry Pi ne répond pas (éteint ou hors ligne ?). Réessaie plus tard.' };
-}

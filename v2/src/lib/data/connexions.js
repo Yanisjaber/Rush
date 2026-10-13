@@ -1,4 +1,4 @@
-// Connexions (Strava, Garmin) : fonctions pures (statuts, textes, adresse d'autorisation, retour de Strava).
+// Connexions (Strava ; Garmin à venir) : fonctions pures (statuts, textes, adresse d'autorisation, retour de Strava).
 // Aucun appel réseau ici : voir integrations.js.
 
 export const SCOPES_STRAVA = 'read,activity:read_all,profile:read_all';
@@ -32,13 +32,10 @@ export function detailStrava(conn, nbActivites = 0) {
   return morceaux.join(' · ');
 }
 
-/** Ligne de détail de la carte Garmin. */
-export function detailGarmin(conn, nbNuits = 0) {
-  if (!conn) return 'Importe ton sommeil (phases, score, HRV, SpO2, stress).';
-  const morceaux = [pluriel(nbNuits, 'nuit') + ' de sommeil'];
-  const date = texteDate(conn.last_sync_at);
-  if (date) morceaux.push(`synchro ${date}`);
-  return morceaux.join(' · ');
+/** Ligne de détail de la carte Garmin : la connexion officielle arrive plus tard ; les nuits déjà importées restent visibles. */
+export function detailGarmin(nbNuits = 0) {
+  const base = "La connexion officielle Garmin (sommeil, phases, HRV…) arrive bientôt.";
+  return nbNuits > 0 ? `${base} ${pluriel(nbNuits, 'nuit')} déjà importée${nbNuits > 1 ? 's' : ''}, à retrouver dans Sommeil.` : base;
 }
 
 /** Adresse d'autorisation Strava. `state` : jeton à usage unique fourni par le serveur (oauth-start), jamais un JWT. */
@@ -86,11 +83,3 @@ export function progressionStreams(total, restantes, base = 28) {
   return { traitees, pct: Math.min(99, base + Math.round((traitees / t) * (100 - base))) };
 }
 
-/** Texte et état d'une demande de synchro Garmin (table garmin_sync_requests). */
-export function etatSyncGarmin(ligne) {
-  const s = ligne?.status;
-  if (s === 'done') return { fini: true, erreur: false, texte: `Sommeil synchronisé : ${pluriel(Number(ligne.nights) || 0, 'nuit')}.` };
-  if (s === 'error') return { fini: true, erreur: true, texte: `Synchro échouée : ${String(ligne.error || 'erreur inconnue').slice(0, 120)}` };
-  if (s === 'running') return { fini: false, erreur: false, texte: 'Synchro Garmin en cours…' };
-  return { fini: false, erreur: false, texte: 'Demande envoyée, en attente du Raspberry Pi…' };
-}

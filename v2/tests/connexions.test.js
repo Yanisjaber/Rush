@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { statutConnexion, detailStrava, detailGarmin, urlAutorisationStrava, lireRetourOAuth, messageErreurOAuth, progressionStreams, etatSyncGarmin, texteDate } from '../src/lib/data/connexions.js';
+import { statutConnexion, detailStrava, detailGarmin, urlAutorisationStrava, lireRetourOAuth, messageErreurOAuth, progressionStreams, texteDate } from '../src/lib/data/connexions.js';
 
 test('statut : non connecté, connecté, erreur', () => {
   assert.equal(statutConnexion(null).cle, 'non');
@@ -12,7 +12,9 @@ test('détails : pluriels, nom de l\'athlète, date absente tolérée', () => {
   assert.match(detailStrava(null), /Importe/);
   assert.equal(detailStrava({ athlete_name: 'Yanis J.' }, 1), 'Yanis J. · 1 activité');
   assert.match(detailStrava({}, 969), /969 activités/);
-  assert.equal(detailGarmin({}, 2), '2 nuits de sommeil');
+  assert.match(detailGarmin(0), /arrive bientôt/);
+  assert.match(detailGarmin(1), /1 nuit déjà importée,/);
+  assert.match(detailGarmin(2), /2 nuits déjà importées/);
   assert.equal(texteDate('pas une date'), '');
   assert.equal(texteDate(null), '');
 });
@@ -50,12 +52,3 @@ test('progression : bornée entre 28 et 99, tolère les valeurs absurdes', () =>
   assert.equal(progressionStreams('x', 'y').pct, 28);
 });
 
-test('synchro Garmin : étapes de la demande', () => {
-  assert.equal(etatSyncGarmin({ status: 'pending' }).fini, false);
-  assert.equal(etatSyncGarmin({ status: 'running' }).texte, 'Synchro Garmin en cours…');
-  assert.match(etatSyncGarmin({ status: 'done', nights: 3 }).texte, /3 nuits/);
-  const e = etatSyncGarmin({ status: 'error', error: 'x'.repeat(500) });
-  assert.equal(e.erreur, true);
-  assert.ok(e.texte.length < 160);
-  assert.equal(etatSyncGarmin(null).fini, false);
-});
