@@ -2,6 +2,7 @@
   import FormulaireSection from '../components/FormulaireSection.svelte';
   import Bloc from '../components/Bloc.svelte';
   import Bouton from '../components/Bouton.svelte';
+  import Dialogue from '../components/Dialogue.svelte';
   import { auth, deconnexion, supprimerCompte } from '../stores/auth.svelte.js';
   import { exporterMesDonnees, telechargerJson } from '../data/export.js';
   import { profil, estSale, enregistrerSection } from '../stores/profil.svelte.js';
@@ -42,13 +43,22 @@
       message: r.avertissements.length ? `Fichier téléchargé. Ces parties n'ont pas pu être lues : ${r.avertissements.join(', ')}.` : 'Fichier téléchargé.',
     };
   }
-  let suppression = $state({ ouvert: false, texte: '', enCours: false, message: '' });
+  let suppression = $state({ ouvert: false, texte: '', enCours: false, message: '', pct: 0, etape: '' });
+  const pretASupprimer = $derived(suppression.texte.trim() === 'SUPPRIMER');
+  function fermerSuppression() {
+    if (suppression.enCours) return; // pas de fermeture pendant la suppression
+    suppression = { ouvert: false, texte: '', enCours: false, message: '', pct: 0, etape: '' };
+  }
   async function supprimer(e) {
     e.preventDefault();
-    if (suppression.enCours) return;
+    if (suppression.enCours || !pretASupprimer) return;
     suppression.enCours = true;
     suppression.message = '';
-    const r = await supprimerCompte(suppression.texte.trim());
+    suppression.pct = 0;
+    const r = await supprimerCompte(suppression.texte.trim(), ({ pct, texte }) => {
+      suppression.pct = pct;
+      suppression.etape = texte;
+    });
     suppression.enCours = false;
     if (!r.ok) suppression.message = r.message;
     // En cas de succès, la session est fermée : l'app affiche l'écran de connexion toute seule.
@@ -97,26 +107,133 @@
       {#if export_.message}<p class="retour" role="status">{export_.message}</p>{/if}
 
       <div class="zone-danger">
-        {#if !suppression.ouvert}
-          <Bouton variante="texte" onclick={() => (suppression.ouvert = true)}>Supprimer mon compte et mes données</Bouton>
-        {:else}
-          <form onsubmit={supprimer}>
-            <p><strong>Action définitive.</strong> Ton compte, tes séances, ton sommeil, tes programmes, tes tests et tous tes réglages seront effacés, et l'accès de Coach IA à ton compte Strava sera retiré. Il n'y a aucun retour en arrière : pense à exporter tes données avant.</p>
-            <label for="confirmer-suppression">Pour confirmer, tape <strong>SUPPRIMER</strong></label>
-            <input id="confirmer-suppression" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" bind:value={suppression.texte} />
-            {#if suppression.message}<p class="erreur" role="alert">{suppression.message}</p>{/if}
-            <div class="actions-compte">
-              <Bouton type="submit" variante="discret">{suppression.enCours ? 'Suppression…' : 'Supprimer définitivement'}</Bouton>
-              <Bouton variante="texte" onclick={() => (suppression = { ouvert: false, texte: '', enCours: false, message: '' })}>Annuler</Bouton>
-            </div>
-          </form>
-        {/if}
+        <Bouton variante="texte" onclick={() => (suppression.ouvert = true)}>Supprimer mon compte et mes données</Bouton>
       </div>
     </Bloc>
   {/if}
 </div>
 
+<Dialogue ouvert={suppression.ouvert} titre="Supprimer mon compte" ton="danger" onfermer={fermerSuppression}>
+  {#snippet icone()}
+    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16" /><path d="M9 7V4.5h6V7" /><path d="M6.5 7l1 13h9l1-13" /><path d="M10 11v5M14 11v5" /></svg>
+  {/snippet}
+  {#if suppression.enCours}
+    <div class="suppr-progression" role="status" aria-live="polite">
+      <p class="suppr-etape">{suppression.etape}</p>
+      <div class="suppr-barre" role="progressbar" aria-label="Avancement de la suppression" aria-valuemin="0" aria-valuemax="100" aria-valuenow={suppression.pct}>
+        <span style="width: {suppression.pct}%"></span>
+      </div>
+      <p class="suppr-note">{suppression.pct} % · Ne ferme pas cette page.</p>
+    </div>
+  {:else}
+    <form class="suppr-form" onsubmit={supprimer}>
+      <p class="suppr-texte"><strong>Action définitive.</strong> Ton compte, tes séances, ton sommeil, tes programmes, tes tests et tous tes réglages seront effacés, et l'accès de Coach IA à ton compte Strava sera retiré. Il n'y a aucun retour en arrière : pense à exporter tes données avant.</p>
+      <label class="suppr-label" for="confirmer-suppression">Pour confirmer, tape <strong>SUPPRIMER</strong></label>
+      <input id="confirmer-suppression" class="suppr-champ" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" bind:value={suppression.texte} />
+      {#if suppression.message}<p class="suppr-erreur" role="alert">{suppression.message}</p>{/if}
+      <button type="submit" class="suppr-bouton" disabled={!pretASupprimer}>Supprimer définitivement</button>
+      <button type="button" class="suppr-lien" onclick={fermerSuppression}>Annuler</button>
+    </form>
+  {/if}
+</Dialogue>
+
 <style>
+  /* Pop-up de suppression (carte claire « dossard ») */
+  .suppr-form, .suppr-progression {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+  }
+  .suppr-texte {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .suppr-label {
+    font-size: 14px;
+  }
+  .suppr-champ {
+    height: 48px;
+    box-sizing: border-box;
+    padding: 0 14px;
+    border: 1px solid #b9b6ad;
+    border-radius: var(--rayon-l);
+    background: #fff;
+    color: #0c0d10;
+    font: inherit;
+    font-size: 16px; /* évite le zoom automatique sur iPhone */
+    letter-spacing: 1px;
+  }
+  .suppr-champ:focus-visible {
+    outline: 3px solid var(--sport-muscu);
+    outline-offset: 1px;
+  }
+  .suppr-erreur {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: var(--rayon-l);
+    border: 1px solid #c4281c;
+    background: #fff;
+    color: #8f1b12;
+    font-size: 14px;
+  }
+  .suppr-bouton {
+    min-height: 48px;
+    border: 0;
+    border-radius: var(--rayon-l);
+    background: #0c0d10;
+    color: #f3f2ee;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .suppr-bouton:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .suppr-bouton:focus-visible, .suppr-lien:focus-visible {
+    outline: 3px solid var(--sport-muscu);
+    outline-offset: 2px;
+  }
+  .suppr-lien {
+    min-height: 44px;
+    border: 0;
+    background: none;
+    color: #0c0d10;
+    font: inherit;
+    font-size: 14px;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .suppr-etape {
+    margin: 0;
+    font-weight: 700;
+    text-align: center;
+  }
+  .suppr-barre {
+    height: 14px;
+    overflow: hidden;
+    border-radius: 7px;
+    background: #d9d6cc;
+  }
+  .suppr-barre span {
+    display: block;
+    height: 100%;
+    border-radius: 7px;
+    background: #0c0d10;
+    transition: width 0.25s ease-out;
+  }
+  .suppr-note {
+    margin: 0;
+    text-align: center;
+    font-size: 14px;
+    color: #4a4f5a;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .suppr-barre span { transition: none; }
+  }
+
   .aide {
     margin: 0 0 14px;
     font-size: 14px;

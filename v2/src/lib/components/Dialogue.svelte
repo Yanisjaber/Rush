@@ -3,7 +3,7 @@
 
   // Pop-up centrée, au style « dossard » (carte claire, quatre points d'attache).
   // Accessible : rôle « dialog », Échap pour fermer, focus gardé dedans puis rendu à l'élément qui l'a ouvert.
-  let { ouvert = false, titre = '', onfermer, icone, children } = $props();
+  let { ouvert = false, titre = '', onfermer, icone, ton = 'course', children } = $props();
 
   let boite = $state(null);
   let precedent = null;
@@ -50,7 +50,7 @@
       <span class="point haut-droite" aria-hidden="true"></span>
       <span class="point bas-gauche" aria-hidden="true"></span>
       <span class="point bas-droite" aria-hidden="true"></span>
-      {#if icone}<div class="icone" aria-hidden="true">{@render icone()}</div>{/if}
+      {#if icone}<div class="icone {ton}" aria-hidden="true">{@render icone()}</div>{/if}
       <h2 class="titre">{titre}</h2>
       <div class="contenu">{@render children?.()}</div>
     </div>
@@ -115,6 +115,9 @@
     color: #0c0d10;
     transform: rotate(-4deg);
     box-shadow: 0 6px 0 rgb(12 13 16 / 0.18);
+  }
+  .icone.danger {
+    background: var(--sport-muscu);
   }
   .titre {
     margin: 0 0 12px;

@@ -156,17 +156,47 @@ export async function demanderReinitialisation(email) {
 }
 
 /**
- * Supprime définitivement le compte et toutes les données (fonction serveur delete-account).
- * `confirmation` doit valoir exactement « SUPPRIMER ». Renvoie { ok: true } ou { ok: false, message }.
- * En cas de succès : on efface aussi ce que la v2 garde dans ce navigateur, puis on ferme la session.
+ * Supprime définitivement le compte et toutes les données (fonction serveur delete-account), en 3 étapes :
+ *   1. préparation : retrait de l'accès Strava, comptage de ce qu'il faut effacer ;
+ *   2. données lourdes effacées par petits lots (c'est ce qui fait avancer la barre) ;
+ *   3. suppression du compte lui-même.
+ * `confirmation` doit valoir exactement « SUPPRIMER ». `onProgres({ pct, texte })` est appelée à chaque avancée.
+ * Renvoie { ok: true } ou { ok: false, message }. En cas de succès : on efface aussi ce que la v2 garde dans ce navigateur,
+ * puis on ferme la session.
  */
-export async function supprimerCompte(confirmation) {
+export async function supprimerCompte(confirmation, onProgres = () => {}) {
   if (confirmation !== 'SUPPRIMER') return { ok: false, message: 'Tape exactement SUPPRIMER pour confirmer.' };
-  const r = await appeler('delete-account', { confirmation });
-  if (!r.ok) {
-    if (r.statut === 404) return { ok: false, message: "La suppression n'est pas encore activée sur le serveur. Demande à Yanis." };
-    return { ok: false, message: 'La suppression a échoué. Rien n\'a été supprimé : réessaie, ou demande à Yanis.' };
+  const echecDebut = { ok: false, message: "La suppression a échoué. Rien n'a été supprimé : réessaie, ou demande à Yanis." };
+  const echec = { ok: false, message: "La suppression s'est interrompue. Une partie de tes données a peut-être déjà été effacée : relance la suppression pour terminer, ou demande à Yanis." };
+
+  onProgres({ pct: 2, texte: 'Préparation…' });
+  const prep = await appeler('delete-account', { confirmation, etape: 'preparer' });
+  if (!prep.ok) {
+    if (prep.statut === 404) return { ok: false, message: "La suppression n'est pas encore activée sur le serveur. Demande à Yanis." };
+    return echecDebut;
   }
+
+  // Ancien serveur (sans étapes) : il a déjà tout supprimé en un appel, pas de total renvoyé
+  const total = Number(prep.data?.total);
+  if (Number.isFinite(total)) {
+    let restant = total;
+    let essaisSansAvancer = 0;
+    for (let tour = 0; restant > 0; tour++) {
+      if (tour > 2000) return echec; // garde-fou : jamais de boucle sans fin
+      onProgres({ pct: 5 + Math.round(((total - restant) / total) * 90), texte: 'Suppression de tes données…' });
+      const lot = await appeler('delete-account', { confirmation, etape: 'purger' });
+      if (!lot.ok) return echec;
+      const reste = Number(lot.data?.restant);
+      if (!Number.isFinite(reste)) return echec;
+      essaisSansAvancer = reste >= restant ? essaisSansAvancer + 1 : 0;
+      if (essaisSansAvancer >= 3) return echec; // ça n'avance plus : on s'arrête plutôt que de tourner dans le vide
+      restant = reste;
+    }
+    onProgres({ pct: 97, texte: 'Suppression du compte…' });
+    const fin = await appeler('delete-account', { confirmation, etape: 'supprimer' });
+    if (!fin.ok) return echec;
+  }
+  onProgres({ pct: 100, texte: 'Terminé' });
   try {
     for (const cle of Object.keys(localStorage)) if (cle.startsWith('coachia-v2-')) localStorage.removeItem(cle);
   } catch (_e) {
