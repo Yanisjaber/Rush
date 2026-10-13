@@ -3,6 +3,7 @@
   // supprimer ses données. Utilisé dans Paramètres › Confidentialité et sur la page publique #/confidentialite.
   // La date de mise à jour est à changer à chaque modification du texte.
   export const DATE_MAJ = '13 octobre 2026';
+  const CONTACT = 'yanisjaber23@gmail.com';
 </script>
 
 <p class="maj">Dernière mise à jour : {DATE_MAJ}</p>
@@ -31,7 +32,7 @@
     <ul>
       <li>Les données sont stockées chez <strong>Supabase</strong>, le service qui héberge la base de données de l'app.</li>
       <li>Une règle de sécurité dans la base garantit que <strong>chaque compte ne voit que ses propres lignes</strong>. Un autre utilisateur de l'app ne peut pas lire les tiennes.</li>
-      <li>Yanis administre l'app et a, comme tout administrateur, un accès technique à la base. Si tu as une question sur l'usage de tes données, demande-lui directement.</li>
+      <li>Yanis administre l'app et a, comme tout administrateur, un accès technique à la base. Si tu as une question sur l'usage de tes données, écris-lui (voir « Contact » plus bas).</li>
     </ul>
   </section>
 
@@ -57,7 +58,12 @@
       <li><strong>Corriger</strong> : tout ce que tu as saisi se modifie dans l'app.</li>
       <li><strong>Tout supprimer</strong> : Paramètres › Général › « Supprimer mon compte et mes données ». C'est immédiat et définitif.</li>
     </ul>
-    <p>Pour toute autre demande, contacte Yanis directement.</p>
+    <p>Pour toute autre demande, écris à Yanis (voir « Contact » plus bas).</p>
+  </section>
+
+  <section>
+    <h2>Contact</h2>
+    <p>Une question, une demande d'accès, de correction ou de suppression, un problème ? Écris à Yanis : <a href="mailto:{CONTACT}">{CONTACT}</a>.</p>
   </section>
 
   <section>
@@ -102,6 +108,9 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+  }
+  a {
+    color: var(--texte);
   }
   strong {
     color: var(--texte);
