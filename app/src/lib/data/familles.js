@@ -18,26 +18,39 @@ const FAMILLES = {
   Swim: 'natation',
   Rowing: 'aviron',
   VirtualRow: 'aviron',
-  // Force et hybride
+  // Force et hybride. « Workout » est le type générique de Strava (séance en salle, renforcement) : on le range avec la muscu,
+  // comme le yoga et le pilates (gainage, mobilité, renforcement) : ce sont des séances de travail du corps.
   WeightTraining: 'muscu',
+  Workout: 'muscu',
+  Yoga: 'muscu',
+  Pilates: 'muscu',
+  // « Other » : type interne de l'app pour une séance prévue « Autre sport » (ce n'est pas un type Strava) : il reste dans « autre »
   Crossfit: 'crossfit',
   Hyrox: 'hyrox', // type propre à l'app : Strava n'a pas de sport Hyrox
   HighIntensityIntervalTraining: 'crossfit',
-  // Ski
+  // Ski et glisse
   NordicSki: 'ski',
   BackcountrySki: 'ski',
+  AlpineSki: 'ski',
+  Snowboard: 'ski',
+  RollerSki: 'ski',
+  // Machines d'endurance en salle : de la course à pied pour la charge et la forme
+  Elliptical: 'course',
+  StairStepper: 'course',
   // Combat
   Boxing: 'combat',
   MartialArts: 'combat',
   // Autres sports de performance
   Hike: 'rando',
+  Walk: 'rando', // la marche rejoint la randonnée
+  Snowshoe: 'rando',
   RockClimbing: 'escalade',
   Canoeing: 'pagaie',
   Kayaking: 'pagaie',
   StandUpPaddling: 'pagaie',
 };
 
-/** Famille d'un type de sport brut. Tout ce qui est inconnu (marche, foot, « Workout »…) devient « autre ». */
+/** Famille d'un type de sport brut. Tout ce qui est inconnu (foot, tennis, golf…) devient « autre ». */
 export function familleSport(typeBrut) {
   // Object.hasOwn : on ignore les propriétés héritées d'un objet ('constructor', '__proto__'…)
   return typeof typeBrut === 'string' && Object.hasOwn(FAMILLES, typeBrut) ? FAMILLES[typeBrut] : 'autre';

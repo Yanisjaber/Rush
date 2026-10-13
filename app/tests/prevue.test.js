@@ -37,12 +37,12 @@ test('versLigne : jamais de user_id, date et heure combinées', () => {
   assert.ok(!('user_id' in l));
 });
 
-test('formulaireDepuisLigne : relit une ligne de la base, sport inconnu → Workout', () => {
+test('formulaireDepuisLigne : relit une ligne de la base, sport inconnu → Other', () => {
   const f = formulaireDepuisLigne({ name: 'Sortie', date: '2026-10-21', start_date_local: '2026-10-21T07:30:00', sport: 'Ride', duration: 90, tss: 62, rpe: null, km: 40, d_plus: null, notes: null });
   assert.equal(f.heure, '07:30');
   assert.equal(f.duree, '90');
   assert.equal(f.rpe, '');
-  assert.equal(formulaireDepuisLigne({ sport: 'Bizarre' }).sport, 'Workout');
+  assert.equal(formulaireDepuisLigne({ sport: 'Bizarre' }).sport, 'Other');
 });
 
 test('validerPrevue : avec structure, durée, charge et estimations viennent des blocs', () => {

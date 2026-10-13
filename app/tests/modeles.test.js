@@ -26,7 +26,7 @@ test('modèle → formulaire : champs repris, structure nettoyée, sport brut ou
   assert.equal(f.structure.length, 2);
   assert.equal(f.structure[1].type, 'steady'); // type inconnu ramené à un bloc continu : jamais de valeur dangereuse
   assert.equal(formulaireDepuisModele({ name: 'x', sport: 'trail' }, '2026-10-20').sport, 'TrailRun');
-  assert.equal(formulaireDepuisModele({ name: 'x', sport: 'bizarre', sport_raw: 'Piratage' }, '2026-10-20').sport, 'Workout');
+  assert.equal(formulaireDepuisModele({ name: 'x', sport: 'bizarre', sport_raw: 'Piratage' }, '2026-10-20').sport, 'Other');
 });
 
 test('formulaire → modèle : jamais de user_id, estimations copiées, structure vide = null', () => {

@@ -11,7 +11,8 @@ test('famille de bilan et normalisation', () => {
   assert.equal(familleBilan('TrailRun'), 'course');
   assert.equal(familleBilan('Swim'), 'natation');
   assert.equal(familleBilan('WeightTraining'), 'musculation');
-  assert.equal(familleBilan('Yoga'), 'autre');
+  assert.equal(familleBilan('Soccer'), 'autre');
+  assert.equal(familleBilan('Workout'), 'musculation'); // séance en salle
   const n = normaliser({ id: '1', name: 'Sortie', sport: 'Ride', start_date_local: '2026-10-01T08:00:00+00:00', moving_time: 3600, distance_km: '40.5', total_elevation_gain: null, tss: 55 });
   assert.deepEqual(n, { id: '1', name: 'Sortie', iso: '2026-10-01', sport: 'cyclisme', famille: 'velo', duree_min: 60, distance_km: 40.5, d_plus: 0, tss: 55 });
   assert.equal(normaliser({ sport: 'MountainBikeRide' }).famille, 'velo'); // le VTT compte avec le vélo pour le filtre

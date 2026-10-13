@@ -27,7 +27,7 @@ export const SPORTS_PREVUE = [
   { cle: 'aviron', type: 'Rowing' },
   { cle: 'ski', type: 'NordicSki' },
   { cle: 'combat', type: 'MartialArts' },
-  { cle: 'autre', type: 'Workout' },
+  { cle: 'autre', type: 'Other' },
 ];
 
 /** La liste des sports proposés, avec ceux du sport filtré (« course », « muscu »…, ou « tout ») en premier. */
@@ -70,7 +70,7 @@ export function formulaireDepuisLigne(l) {
     nom: texte(l.name),
     date: texte(l.date),
     heure: heure ? heure[1] : '12:00',
-    sport: TYPES.has(l.sport) ? l.sport : 'Workout',
+    sport: TYPES.has(l.sport) ? l.sport : 'Other',
     duree: texte(l.duration),
     tss: texte(l.tss),
     rpe: texte(l.rpe),

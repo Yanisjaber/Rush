@@ -18,13 +18,13 @@ export function categorieDe(sportBrut) {
   return 'autre';
 }
 export const NOM_CATEGORIE = { cyclisme: 'Cyclisme', vtt: 'VTT', course: 'Course à pied', trail: 'Trail', natation: 'Natation', musculation: 'Musculation', triathlon: 'Triathlon', autre: 'Autre' };
-const TYPE_PAR_CATEGORIE = { cyclisme: 'Ride', vtt: 'MountainBikeRide', course: 'Run', trail: 'TrailRun', natation: 'Swim', musculation: 'WeightTraining', autre: 'Workout' };
+const TYPE_PAR_CATEGORIE = { cyclisme: 'Ride', vtt: 'MountainBikeRide', course: 'Run', trail: 'TrailRun', natation: 'Swim', musculation: 'WeightTraining', autre: 'Other' };
 
 const texte = (v) => (v == null ? '' : String(v));
 
 /** Formulaire de séance prévue prérempli depuis un modèle, pour la date donnée. */
 export function formulaireDepuisModele(m, dateIso) {
-  const sport = TYPES.has(m.sport_raw) ? m.sport_raw : TYPE_PAR_CATEGORIE[m.sport] || 'Workout';
+  const sport = TYPES.has(m.sport_raw) ? m.sport_raw : TYPE_PAR_CATEGORIE[m.sport] || 'Other';
   return {
     ...formulaireVide(dateIso),
     nom: texte(m.name),

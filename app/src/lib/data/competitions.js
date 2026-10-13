@@ -90,7 +90,7 @@ export function formulaireDepuisLigne(l) {
     nom: t(l.name),
     date: t(l.date),
     heure: heure ? heure[1] : '09:00',
-    sport: TYPES.has(l.sport) ? l.sport : 'Workout',
+    sport: TYPES.has(l.sport) ? l.sport : 'Other',
     priorite: prioriteDe(l.priority),
     type: t(l.type),
     km: t(l.km),
