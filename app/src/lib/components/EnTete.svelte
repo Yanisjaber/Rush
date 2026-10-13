@@ -1,13 +1,14 @@
 <script>
-  import { menu, choisirFiltre } from '../stores/menu.svelte.js';
-  import { page, pagesPlus, pageDuSport } from '../data/menu.js';
+  import { menu } from '../stores/menu.svelte.js';
+  import { page, pagesDeSports } from '../data/menu.js';
   import { SPORTS, couleurSport } from '../sports.js';
-  import { aller } from '../routeur.svelte.js';
 
   // En-tête commun, sur ordinateur et tablette (sur téléphone il n'existe pas : voir BarreBas.svelte).
-  //   Accueil · Calendrier · Plan | pastilles des sports pratiqués | Compétitions · Bilan · Sommeil
+  // Deux groupes complémentaires :
+  //   à gauche, les PAGES : Accueil · Calendrier · Plan · Compétitions · Bilan · Sommeil (+ « Plus ▾ » : écrans Muscu / Hyrox si pratiqués) ;
+  //   à droite, les SPORTS : Tous · Course · Vélo… Le sport choisi est un filtre global : il reste quand on change de page
+  //   (sauf Sommeil, qui l'ignore). Page courante et sport choisi sont surlignés en même temps.
   // Selon la place disponible :
-  // Deux groupes complémentaires : les pages de base, puis les sports (qui servent de filtre à l'accueil).
   //   1. tout à plat ;
   //   2. les sports rangés dans « Sports ▾ » ;
   //   3. en plus, Compétitions, Bilan, Sommeil rangés dans « Plus ▾ » ;
@@ -15,12 +16,10 @@
   // actif : 'accueil' | 'calendrier' | 'plan' | 'force' | 'hyrox' | 'competitions' | 'bilan' | 'sommeil' | 'parametres'.
   let { actif = 'accueil', demo = false } = $props();
 
-  const principaux = [page('accueil'), page('calendrier'), page('plan')];
+  const debut = [page('accueil'), page('calendrier'), page('plan')];
+  const fin = [page('competitions'), page('bilan'), page('sommeil')];
   const familles = $derived(menu.familles);
-  const plus = pagesPlus();
-  const plusActif = $derived(plus.some((l) => l.cle === actif));
-  const filtreSur = $derived(actif === 'accueil' ? menu.filtre : 'tout'); // le sport surligné (seulement sur l'accueil)
-  const sportsPageActive = $derived(familles.some((f) => pageDuSport(f)?.cle === actif));
+  const pagesSport = $derived(pagesDeSports(menu.familles)); // Muscu, Hyrox : leurs écrans vivent dans « Plus »
   const nomSport = (f) => (SPORTS[f] || SPORTS.autre).court;
 
   let pagesEnPlus = $state(false);
@@ -33,18 +32,22 @@
   let ouvert = $state(null); // null | 'sports' | 'plus'
   let posMenu = $state({ top: 0, left: 0 });
 
-  // On mesure la largeur dont chaque version a besoin (deux copies invisibles) et on la compare à la place de la barre.
+  // Contenu du menu « Plus » : les écrans de sports, et (si la place manque) les dernières pages
+  const listePlus = $derived([...pagesSport, ...(pagesEnPlus ? fin : [])]);
+  const plusActif = $derived(listePlus.some((l) => l.cle === actif));
+
+  // On mesure la largeur dont chaque version a besoin (copies invisibles) et on la compare à la place de la barre.
   $effect(() => {
     if (!nav || !mesureComplet || !mesureMilieu || !mesureCompact) return;
     void familles;
     const calculer = () => {
       const dispo = nav.clientWidth;
       const toutPlat = mesureComplet.scrollWidth <= dispo;
-      const sportsRanges = familles.length > 0 && mesureMilieu.scrollWidth <= dispo; // seuls les sports sont rangés
-      compact = !toutPlat && familles.length > 0;
+      const sportsRanges = mesureMilieu.scrollWidth <= dispo; // seuls les sports sont rangés
+      compact = !toutPlat;
       pagesEnPlus = !toutPlat && !sportsRanges;
       defile = pagesEnPlus && mesureCompact.scrollWidth > dispo;
-      if (!pagesEnPlus && ouvert === 'plus') ouvert = null;
+      if (!pagesEnPlus && !pagesSport.length && ouvert === 'plus') ouvert = null;
       if (!compact && ouvert === 'sports') ouvert = null;
     };
     calculer();
@@ -68,12 +71,9 @@
   function touche(e) {
     if (e.key === 'Escape' && ouvert) ouvert = null;
   }
-  // Un sport = un filtre de l'accueil : depuis une autre page, on revient d'abord à l'accueil
+  // Un sport = un filtre global (« tout » = tous les sports) ; recliquer sur le sport choisi revient à « Tous »
   function choisir(f) {
-    if (actif !== 'accueil') {
-      menu.filtre = f;
-      aller('/');
-    } else choisirFiltre(f);
+    menu.filtre = f === 'tout' || menu.filtre === f ? 'tout' : f;
     ouvert = null;
   }
 </script>
@@ -87,41 +87,32 @@
 <header class="barre">
   <span class="logo titre" aria-hidden="true">CI</span>
   <nav class="liens" class:defile aria-label="Navigation principale" bind:this={nav}>
-    {#each principaux as l (l.cle)}
-      <a href={l.href} aria-current={actif === l.cle && !(l.cle === 'accueil' && filtreSur !== 'tout') ? 'page' : undefined}>{l.nom}</a>
+    {#each pagesEnPlus ? debut : [...debut, ...fin] as l (l.cle)}
+      <a href={l.href} aria-current={actif === l.cle ? 'page' : undefined}>{l.nom}</a>
     {/each}
-    {#if familles.length}
-      <span class="sep" aria-hidden="true"></span>
-      {#if compact}
-        <button class="menu-deroulant" class:courant={filtreSur !== 'tout' || sportsPageActive} type="button" aria-haspopup="true" aria-expanded={ouvert === 'sports'} onclick={(e) => basculer('sports', e)}>
-          {filtreSur !== 'tout' ? nomSport(filtreSur) : 'Sports'}
-          {@render fleche()}
-        </button>
-      {:else}
-        {#each familles as f (f)}
-          {@const pg = pageDuSport(f)}
-          {#if pg}
-            <a class="sport" class:courant={actif === pg.cle} href={pg.href} aria-current={actif === pg.cle ? 'page' : undefined}>
-              <span class="point" style:background={couleurSport(f)}></span>{nomSport(f)}
-            </a>
-          {:else}
-            <button class="sport" class:courant={filtreSur === f} type="button" aria-pressed={filtreSur === f} onclick={() => choisir(f)}>
-              <span class="point" style:background={couleurSport(f)}></span>{nomSport(f)}
-            </button>
-          {/if}
-        {/each}
-      {/if}
-    {/if}
-    <span class="sep" aria-hidden="true"></span>
-    {#if pagesEnPlus}
+    {#if listePlus.length}
       <button class="menu-deroulant" class:courant={plusActif} type="button" aria-haspopup="true" aria-expanded={ouvert === 'plus'} onclick={(e) => basculer('plus', e)}>
         Plus
         {@render fleche()}
       </button>
-    {:else}
-      {#each plus as l (l.cle)}
-        <a href={l.href} aria-current={actif === l.cle ? 'page' : undefined}>{l.nom}</a>
-      {/each}
+    {/if}
+    {#if familles.length}
+      <span class="espace" aria-hidden="true"></span>
+      <div class="sports" class:neutre={actif === 'sommeil'} role="group" aria-label="Filtrer par sport" title={actif === 'sommeil' ? 'Le sommeil ne dépend pas du sport' : undefined}>
+        {#if compact}
+          <button class="menu-deroulant" class:courant={menu.filtre !== 'tout'} type="button" aria-haspopup="true" aria-expanded={ouvert === 'sports'} onclick={(e) => basculer('sports', e)}>
+            {menu.filtre !== 'tout' ? nomSport(menu.filtre) : 'Sports'}
+            {@render fleche()}
+          </button>
+        {:else}
+          <button class="sport" class:courant={menu.filtre === 'tout'} type="button" aria-pressed={menu.filtre === 'tout'} onclick={() => choisir('tout')}>Tous</button>
+          {#each familles as f (f)}
+            <button class="sport" class:courant={menu.filtre === f} type="button" aria-pressed={menu.filtre === f} onclick={() => choisir(f)}>
+              <span class="point" style:background={couleurSport(f)}></span>{nomSport(f)}
+            </button>
+          {/each}
+        {/if}
+      </div>
     {/if}
   </nav>
   <div class="droite">
@@ -133,44 +124,35 @@
 
   <!-- Copies invisibles, uniquement pour mesurer la place nécessaire (tout à plat / « Sports » seul / « Sports » et « Plus ») -->
   <div class="mesure" aria-hidden="true" bind:this={mesureComplet}>
-    {#each principaux as l (l.cle)}<span>{l.nom}</span>{/each}
-    {#each familles as f (f)}<span class="m-sport">{nomSport(f)}</span>{/each}
-    {#each plus as l (l.cle)}<span>{l.nom}</span>{/each}
+    {#each [...debut, ...fin] as l (l.cle)}<span>{l.nom}</span>{/each}
+    {#if pagesSport.length}<span>Plus&nbsp;&nbsp;&nbsp;&nbsp;</span>{/if}
+    {#if familles.length}<span>Tous</span>{#each familles as f (f)}<span class="m-sport">{nomSport(f)}</span>{/each}{/if}
   </div>
   <div class="mesure" aria-hidden="true" bind:this={mesureMilieu}>
-    {#each principaux as l (l.cle)}<span>{l.nom}</span>{/each}
+    {#each [...debut, ...fin] as l (l.cle)}<span>{l.nom}</span>{/each}
+    {#if pagesSport.length}<span>Plus&nbsp;&nbsp;&nbsp;&nbsp;</span>{/if}
     {#if familles.length}<span>Sports&nbsp;&nbsp;&nbsp;&nbsp;</span>{/if}
-    {#each plus as l (l.cle)}<span>{l.nom}</span>{/each}
   </div>
   <div class="mesure" aria-hidden="true" bind:this={mesureCompact}>
-    {#each principaux as l (l.cle)}<span>{l.nom}</span>{/each}
-    {#if familles.length}<span>Sports&nbsp;&nbsp;&nbsp;&nbsp;</span>{/if}
+    {#each debut as l (l.cle)}<span>{l.nom}</span>{/each}
     <span>Plus&nbsp;&nbsp;&nbsp;&nbsp;</span>
+    {#if familles.length}<span>Sports&nbsp;&nbsp;&nbsp;&nbsp;</span>{/if}
   </div>
 </header>
 
 {#if ouvert}
   <ul class="liste-deroulante" style:top="{posMenu.top}px" style:left="{posMenu.left}px">
     {#if ouvert === 'sports'}
-      <li>
-        <button type="button" class:courant={filtreSur === 'tout'} onclick={() => choisir('tout')}>Tous les sports</button>
-      </li>
+      <li><button type="button" class:courant={menu.filtre === 'tout'} onclick={() => choisir('tout')}>Tous les sports</button></li>
       {#each familles as f (f)}
-        {@const pg = pageDuSport(f)}
         <li>
-          {#if pg}
-            <a href={pg.href} aria-current={actif === pg.cle ? 'page' : undefined} onclick={() => (ouvert = null)}>
-              <span class="point" style:background={couleurSport(f)}></span>{(SPORTS[f] || SPORTS.autre).nom}
-            </a>
-          {:else}
-            <button type="button" class:courant={filtreSur === f} onclick={() => choisir(f)}>
-              <span class="point" style:background={couleurSport(f)}></span>{(SPORTS[f] || SPORTS.autre).nom}
-            </button>
-          {/if}
+          <button type="button" class:courant={menu.filtre === f} onclick={() => choisir(f)}>
+            <span class="point" style:background={couleurSport(f)}></span>{(SPORTS[f] || SPORTS.autre).nom}
+          </button>
         </li>
       {/each}
     {:else}
-      {#each plus as l (l.cle)}
+      {#each listePlus as l (l.cle)}
         <li><a href={l.href} aria-current={actif === l.cle ? 'page' : undefined} onclick={() => (ouvert = null)}>{l.nom}</a></li>
       {/each}
     {/if}
@@ -268,14 +250,21 @@
     height: 9px;
     border-radius: 50%;
   }
-  /* trait fin entre les trois groupes : pages · sports · plus */
-  .sep {
+  /* pousse le groupe des sports à droite de la ligne */
+  .espace {
+    flex: 1;
+    min-width: 16px;
+  }
+  .sports {
+    display: flex;
     flex: none;
-    align-self: center;
-    width: 1px;
-    height: 22px;
-    margin: 0 8px;
-    background: var(--trait-fort);
+    gap: 4px;
+    padding-left: 16px;
+    border-left: 1px solid var(--trait-fort);
+  }
+  /* sur Sommeil le sport ne compte pas : les pastilles sont atténuées (mais gardent le choix) */
+  .sports.neutre {
+    opacity: 0.45;
   }
   .liste-deroulante button,
   .liste-deroulante a {
@@ -336,7 +325,7 @@
   }
   .mesure {
     gap: 4px;
-    padding-right: 36px; /* + les deux traits de séparation */
+    padding-right: 52px; /* + le trait de séparation et l'espace entre les deux groupes */
   }
   /* Téléphone : pas d'en-tête, la navigation est la barre du bas (BarreBas.svelte) : le contenu commence tout en haut */
   @media (max-width: 760px) {

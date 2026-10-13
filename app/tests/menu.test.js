@@ -48,11 +48,3 @@ test('ouvertureActive : « Plus » ou « Sports » est surligné quand on est su
   assert.equal(ouvertureActive(null, []), null);
   assert.deepEqual(cles(pagesDeSports(['hyrox'])), ['hyrox']);
 });
-
-test('pagesPlus : Compétitions, Bilan, Sommeil ; pageDuSport : Muscu et Hyrox ont leur page, pas Course', async () => {
-  const { pagesPlus, pageDuSport } = await import('../src/lib/data/menu.js');
-  assert.deepEqual(pagesPlus().map((p) => p.cle), ['competitions', 'bilan', 'sommeil']);
-  assert.equal(pageDuSport('muscu').href, '#/force');
-  assert.equal(pageDuSport('hyrox').href, '#/hyrox');
-  assert.equal(pageDuSport('course'), null);
-});

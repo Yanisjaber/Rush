@@ -1,7 +1,8 @@
 <script>
   import { untrack } from 'svelte';
   import EnTete from '../lib/components/EnTete.svelte';
-  import ChipSport from '../lib/components/ChipSport.svelte';
+  import SelecteurSport from '../lib/components/SelecteurSport.svelte';
+  import { menu } from '../lib/stores/menu.svelte.js';
   import Bouton from '../lib/components/Bouton.svelte';
   import PanneauPrevue from '../lib/components/PanneauPrevue.svelte';
   import PanneauMarquage from '../lib/components/PanneauMarquage.svelte';
@@ -29,7 +30,7 @@
     notes: [{ id: 'demo-n1', type: 'blessure', text: 'Genou gauche : on lève le pied', color: '#fb923c', from_date: jourDemo(-3), to_date: jourDemo(-1) }],
     repos: [jourDemo(-6), jourDemo(3)],
   });
-  let filtre = $state('tout');
+  const filtre = $derived(menu.filtre); // sport choisi dans l'en-tête (filtre global)
 
   let numeroRequete = 0; // pour ignorer une réponse arrivée en retard si on a déjà changé de mois
 
@@ -80,7 +81,6 @@
   });
 
   // --- Dérivés ---
-  const familles = $derived([...new Set(etat.seances.map((s) => familleAffichage(s.sport)))].filter((f) => f !== 'autre'));
   const garder = (sport) => filtre === 'tout' || familleAffichage(sport) === filtre;
   const grille = $derived(
     grilleMois(cible.annee, cible.mois, {
@@ -186,12 +186,7 @@
 <main class="page">
   <EnTete actif="calendrier" {demo} />
 
-  <nav class="puces" aria-label="Filtrer par sport">
-    <ChipSport label="Tout" sport="autre" actif={filtre === 'tout'} onclick={() => (filtre = 'tout')} />
-    {#each familles as f}
-      <ChipSport sport={f} actif={filtre === f} onclick={() => (filtre = f)} />
-    {/each}
-  </nav>
+  <SelecteurSport />
 
   <div class="navigation">
     <div class="mois">
@@ -316,12 +311,6 @@
 />
 
 <style>
-  .puces {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 8px;
-  }
   .navigation {
     display: flex;
     flex-wrap: wrap;

@@ -7,6 +7,7 @@
   import { COMPOSANTS } from '../lib/widgets/composants.js';
   import { disponibles, disponiblesOnglet, composerOnglet, ONGLETS_PERSONNALISABLES } from '../lib/widgets/registre.js';
   import { SPORTS } from '../lib/sports.js';
+  import SelecteurSport from '../lib/components/SelecteurSport.svelte';
   import ParcoursDemarrage from '../lib/components/ParcoursDemarrage.svelte';
   import Onboarding from '../lib/components/Onboarding.svelte';
   import { sportsChoisis, chargerSportsChoisis } from '../lib/stores/sports.svelte.js';
@@ -207,17 +208,7 @@
     <Onboarding userId={userId} onTermine={() => { mettreAJourSports(familles); chargerMenu(userId); }} />
   {:else}
   <div class="outils">
-    {#if familles.length > 1}
-      <label class="voir">
-        <span>Voir</span>
-        <select value={filtreActif} onchange={(e) => (menu.filtre = e.currentTarget.value)}>
-          <option value="tout">Tout</option>
-          {#each familles as f}
-            <option value={f}>{(SPORTS[f] || SPORTS.autre).nom}</option>
-          {/each}
-        </select>
-      </label>
-    {/if}
+    <SelecteurSport />
     {#if !disposition.enEdition && !etat.chargement}
       <Bouton variante="discret" onclick={() => demarrerEdition(filtreActif)}>{ongletRiche ? `Personnaliser l'onglet ${(SPORTS[filtreActif] || SPORTS.autre).court}` : "Personnaliser l'accueil"}</Bouton>
     {/if}
@@ -307,32 +298,9 @@
     gap: 8px 16px;
     margin-bottom: 8px;
   }
-  /* sélecteur « Voir : Tout / un sport » (remplace les puces) */
-  /* Sur ordinateur le choix du sport est dans l'en-tête : le sélecteur ne sert que sur téléphone */
-  @media (min-width: 761px) {
-    .voir {
-      display: none !important;
-    }
+  .outils :global(.voir) {
+    margin: 0 auto 0 0;
   }
-  .voir {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-right: auto;
-    font-size: 13px;
-    color: var(--texte-doux);
-  }
-  .voir select {
-    min-height: 44px;
-    padding: 0 12px;
-    font: inherit;
-    font-weight: 600;
-    color: var(--texte);
-    background: var(--surface);
-    border: 1px solid var(--trait-fort);
-    border-radius: var(--rayon);
-  }
-
   .bandeau-edition {
     display: flex;
     flex-wrap: wrap;
