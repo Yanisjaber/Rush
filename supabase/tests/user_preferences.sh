@@ -17,9 +17,11 @@ grant select, insert, update, delete on public.user_dashboard to authenticated;
 insert into auth.users (id, email) values ('00000000-0000-4000-8000-000000000001','a@test'), ('00000000-0000-4000-8000-000000000002','b@test');
 insert into public.user_dashboard (user_id, layout) values ('00000000-0000-4000-8000-000000000001', '{"v":1,"auto":false,"widgets":[{"id":"charge","taille":"m"}]}');
 SQL
-echo "== migration deux fois (idempotente)"
+echo "== migration deux fois (idempotente), puis colonne sports deux fois"
 bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences.sql
 bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences.sql
+bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_sports.sql
+bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_sports.sql
 bash $H psql -d coachia -v ON_ERROR_STOP=1 <<'SQL'
 -- comme le navigateur : rôle authenticated + identité de l'utilisateur A
 select 'ancienne table renommée' as controle, to_regclass('public.user_dashboard') is null and to_regclass('public.user_preferences') is not null as ok
@@ -41,6 +43,24 @@ do $$ begin
   begin update public.user_preferences set theme = 'violet' where user_id='00000000-0000-4000-8000-000000000002'; raise exception 'devait échouer (thème invalide)';
   exception when check_violation then null; end;
   raise notice 'ok : un thème invalide est refusé';
+end $$;
+reset role;
+-- Sports choisis : mêmes droits que le navigateur
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000002', false);
+insert into public.user_preferences (user_id, sports) values ('00000000-0000-4000-8000-000000000002', '["course","muscu"]') on conflict (user_id) do update set sports = excluded.sports;
+select 'B enregistre ses sports sans toucher à son thème ni à sa disposition' as controle, (select sports = '["course","muscu"]'::jsonb and theme = 'clair' and layout = '{}'::jsonb from public.user_preferences where user_id='00000000-0000-4000-8000-000000000002') as ok
+union all select 'B ne voit pas les sports de A', (select count(*) = 0 from public.user_preferences where user_id = '00000000-0000-4000-8000-000000000001');
+do $$ begin
+  begin update public.user_preferences set sports = '{"a":1}' where user_id='00000000-0000-4000-8000-000000000002'; raise exception 'devait échouer (objet)';
+  exception when check_violation then null; end;
+  begin update public.user_preferences set sports = '["a","b","c","d","e","f","g"]' where user_id='00000000-0000-4000-8000-000000000002'; raise exception 'devait échouer (7 sports)';
+  exception when check_violation then null; end;
+  begin update public.user_preferences set sports = to_jsonb(repeat('x', 600)) where user_id='00000000-0000-4000-8000-000000000002'; raise exception 'devait échouer (texte)';
+  exception when check_violation then null; end;
+  update public.user_preferences set sports = null where user_id='00000000-0000-4000-8000-000000000002'; -- null = jamais demandé : autorisé
+  update public.user_preferences set sports = '[]' where user_id='00000000-0000-4000-8000-000000000002'; -- vide = demandé sans rien choisir : autorisé
+  raise notice 'ok : sports invalides refusés (objet, plus de 6, trop gros), null et [] acceptés';
 end $$;
 reset role;
 SQL

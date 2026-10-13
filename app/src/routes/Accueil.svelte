@@ -8,6 +8,9 @@
   import { COMPOSANTS } from '../lib/widgets/composants.js';
   import { disponibles, disponiblesOnglet, composerOnglet, ONGLETS_PERSONNALISABLES } from '../lib/widgets/registre.js';
   import { SPORTS } from '../lib/sports.js';
+  import Onboarding from '../lib/components/Onboarding.svelte';
+  import { sportsChoisis, chargerSportsChoisis } from '../lib/stores/sports.svelte.js';
+  import { onboardingNecessaire, fusionnerFamilles } from '../lib/data/sports-choisis.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
   import {
@@ -17,6 +20,7 @@
     annulerEdition,
     terminerEdition,
     reinitialiserAuto,
+    mettreAJourSports,
     deplacer,
     retirer,
     ajouter,
@@ -49,7 +53,7 @@
     const f = new Set(seances.map((s) => familleAffichage(s.sport)));
     if (force.programmes.length || force.series.length) f.add('muscu');
     if (hyrox.tests.length || hyrox.objectif || objectifs.some((o) => familleAffichage(o.sport) === 'hyrox')) f.add('hyrox');
-    return [...f].filter((x) => x !== 'autre');
+    return fusionnerFamilles([...f], sportsChoisis.liste);
   };
 
   /** Fin du chargement : ouvre le mode édition si on arrive depuis les paramètres. */
@@ -69,11 +73,13 @@
       etat.force = { series: seriesForceDemo(), programmes: programmesDemo(), exercicesPerso: [] };
       etat.hyrox = { tests: testsHyroxDemo(), objectif: objectifHyroxDemo() };
       etat.erreurSport = '';
+      await chargerSportsChoisis('demo');
       await chargerDisposition('demo', famillesDe(etat.seances, etat.force, etat.hyrox, etat.objectifs));
       terminerChargement();
       return;
     }
     if (!userId) return;
+    await chargerSportsChoisis(userId); // avant la disposition : les sports choisis comptent pour composer l'accueil
     const [profil, metriques, seances, objectifs, puissance, series, programmes, exercices, tests, objectifHyrox, prevues] = await Promise.all([
       chargerProfil(userId),
       chargerMetriques(userId),
@@ -114,6 +120,17 @@
   });
 
   // --- Données dérivées ---
+  // Compte neuf (aucune donnée, sports jamais demandés) : on propose de choisir ses sports avant d'afficher l'accueil
+  const afficherOnboarding = $derived(
+    !etat.chargement &&
+      onboardingNecessaire({
+        demo,
+        sportsEnregistres: sportsChoisis.liste,
+        nbSeances: etat.seances.length,
+        aForce: etat.force.programmes.length > 0 || etat.force.series.length > 0,
+        aHyrox: etat.hyrox.tests.length > 0 || !!etat.hyrox.objectif,
+      }),
+  );
   const prenom = $derived(etat.profil?.extras?.first_name || auth.session?.user?.email?.split('@')[0] || '');
   const familles = $derived(famillesDe(etat.seances, etat.force, etat.hyrox, etat.objectifs));
   // Le filtre doit rester un sport que l'utilisateur pratique (sinon on revient sur « Tout »)
@@ -177,6 +194,9 @@
 
 <main class="page">
   <EnTete actif="accueil" {demo} />
+  {#if afficherOnboarding}
+    <Onboarding userId={userId} onTermine={() => mettreAJourSports(familles)} />
+  {:else}
   <nav class="puces" aria-label="Filtrer par sport">
     <ChipSport label="Tout" sport="autre" actif={filtreActif === 'tout'} onclick={() => (filtre = 'tout')} />
     {#each familles as f}
@@ -258,6 +278,7 @@
         <BibliothequeWidgets ids={idsBibliotheque} {familles} onAjouter={ajouter} />
       </div>
     {/if}
+  {/if}
   {/if}
 </main>
 

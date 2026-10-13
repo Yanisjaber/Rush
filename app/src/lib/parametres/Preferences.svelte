@@ -3,12 +3,31 @@
   import Bouton from '../components/Bouton.svelte';
   import { theme, choisirTheme } from '../stores/theme.svelte.js';
   import { disposition, demanderEdition, reinitialiserAuto } from '../stores/disposition.svelte.js';
-  import { aller } from '../routeur.svelte.js';
+  import { aller, modeDemo } from '../routeur.svelte.js';
+  import ChoixSports from '../components/ChoixSports.svelte';
+  import { auth } from '../stores/auth.svelte.js';
+  import { sportsChoisis, chargerSportsChoisis, enregistrerSportsChoisis } from '../stores/sports.svelte.js';
 
   // Onglet Préférences : accueil personnalisable et apparence.
   function modifierAccueil() {
     demanderEdition();
     aller('/');
+  }
+  // « Mes sports » : change les sports qui composent l'accueil et ses onglets
+  const uid = modeDemo() ? 'demo' : auth.session?.user?.id;
+  let choix = $state([]);
+  let sportsEnCours = $state(false);
+  let sportsMessage = $state('');
+  $effect(() => {
+    chargerSportsChoisis(uid).then(() => (choix = [...(sportsChoisis.liste || [])]));
+  });
+  async function enregistrerSports() {
+    if (sportsEnCours) return;
+    sportsEnCours = true;
+    sportsMessage = '';
+    const r = await enregistrerSportsChoisis(uid, choix);
+    sportsEnCours = false;
+    sportsMessage = r.local && uid !== 'demo' ? 'Enregistré sur cet appareil (la sauvegarde en ligne a échoué).' : 'Sports enregistrés : ton accueil s\'adapte à ton prochain passage.';
   }
   async function revenirAuto() {
     await reinitialiserAuto();
@@ -17,6 +36,15 @@
 </script>
 
 <div class="onglet">
+  <Bloc titre="Mes sports">
+    <p class="aide">Les sports que tu pratiques composent ton accueil et ses onglets. Triathlon : coche course, vélo et natation.</p>
+    <ChoixSports bind:selection={choix} desactive={sportsEnCours} />
+    <div class="actions" style="margin-top: 14px">
+      <Bouton onclick={enregistrerSports}>{sportsEnCours ? 'Enregistrement…' : 'Enregistrer mes sports'}</Bouton>
+    </div>
+    {#if sportsMessage}<p class="aide" role="status">{sportsMessage}</p>{/if}
+  </Bloc>
+
   <Bloc titre="Mon accueil">
     <p class="aide">
       Choisis quels widgets s'affichent, dans quel ordre et à quelle taille.
