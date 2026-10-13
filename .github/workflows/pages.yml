@@ -1,0 +1,80 @@
+name: Publier le site
+
+# Publie sur GitHub Pages :
+#   - la v2 (Svelte + Vite, compilée) à la racine  → https://yanisjaber.github.io/coach-ia/
+#   - la v1 (fichiers statiques, en secours)       → https://yanisjaber.github.io/coach-ia/v1/
+#
+# Le job « deploy » ne tourne que si la variable de dépôt DEPLOY_PAGES vaut « true ».
+# Elle est posée au moment de la bascule (Réglages → Pages → Source : « GitHub Actions »), pas avant :
+# tant que Pages sert encore la branche main, ce workflow se contente de construire et de tester le site.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Un seul déploiement à la fois ; on n'interrompt jamais un déploiement en cours.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: v2/package-lock.json
+
+      # npm ci : installe EXACTEMENT ce qui est dans package-lock.json. --ignore-scripts : aucun script d'installation.
+      - name: Installer les dépendances de la v2
+        working-directory: v2
+        run: npm ci --ignore-scripts
+
+      - name: Audit de sécurité (dépendances de production)
+        working-directory: v2
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Tests de la v2
+        working-directory: v2
+        run: npm test
+
+      - name: Compiler la v2
+        working-directory: v2
+        run: npm run build
+
+      # Assemblage : la v2 compilée à la racine, la v1 (uniquement les fichiers que son index.html charge) dans v1/.
+      # Rien d'autre du dépôt n'est publié (ni tools/, ni supabase/, ni .env…).
+      - name: Assembler le site
+        run: |
+          set -e
+          mkdir _site
+          cp -R v2/dist/. _site/
+          mkdir _site/v1
+          cp -R index.html manifest.webmanifest supabase-config.js strava-config.js src styles _site/v1/
+          touch _site/.nojekyll
+          test -f _site/index.html && test -f _site/v1/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    if: ${{ vars.DEPLOY_PAGES == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
