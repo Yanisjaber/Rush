@@ -1,26 +1,31 @@
 <script>
   // Aiguillage de l'app : catalogue, paramètres, démo, connexion ou accueil selon l'adresse et l'état.
-  import Catalogue from './routes/Catalogue.svelte';
   import Connexion from './routes/Connexion.svelte';
   import Accueil from './routes/Accueil.svelte';
-  import Parametres from './routes/Parametres.svelte';
-  import Calendrier from './routes/Calendrier.svelte';
-  import Seance from './routes/Seance.svelte';
-  import Sommeil from './routes/Sommeil.svelte';
-  import Competitions from './routes/Competitions.svelte';
-  import Bilan from './routes/Bilan.svelte';
-  import Plan from './routes/Plan.svelte';
-  import Force from './routes/Force.svelte';
-  import ForceSeance from './routes/ForceSeance.svelte';
-  import Hyrox from './routes/Hyrox.svelte';
-  import DefinirMotDePasse from './routes/DefinirMotDePasse.svelte';
-  import Confidentialite from './routes/Confidentialite.svelte';
+  import Ecran from './lib/components/Ecran.svelte';
   import PanneauSeance from './lib/components/PanneauSeance.svelte';
   import PanneauReel from './lib/components/PanneauReel.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
   import { route, modeDemo } from './lib/routeur.svelte.js';
   import { lireRetourDansAdresse } from './lib/stores/connexions.svelte.js';
   import { synchroniserTheme, oublierCompteTheme } from './lib/stores/theme.svelte.js';
+
+  // Chaque écran est chargé à la demande (voir Ecran.svelte). Connexion et Accueil restent dans le premier fichier.
+  const ecrans = {
+    Catalogue: () => import('./routes/Catalogue.svelte'),
+    Confidentialite: () => import('./routes/Confidentialite.svelte'),
+    DefinirMotDePasse: () => import('./routes/DefinirMotDePasse.svelte'),
+    Parametres: () => import('./routes/Parametres.svelte'),
+    Calendrier: () => import('./routes/Calendrier.svelte'),
+    Sommeil: () => import('./routes/Sommeil.svelte'),
+    Competitions: () => import('./routes/Competitions.svelte'),
+    Bilan: () => import('./routes/Bilan.svelte'),
+    Plan: () => import('./routes/Plan.svelte'),
+    Force: () => import('./routes/Force.svelte'),
+    ForceSeance: () => import('./routes/ForceSeance.svelte'),
+    Hyrox: () => import('./routes/Hyrox.svelte'),
+    Seance: () => import('./routes/Seance.svelte'),
+  };
 
   const demo = modeDemo();
 
@@ -72,30 +77,30 @@
 </script>
 
 {#if route.chemin === '/catalogue'}
-  <Catalogue />
+  <Ecran charger={ecrans.Catalogue} />
 {:else if route.chemin === '/confidentialite'}
-  <Confidentialite />
+  <Ecran charger={ecrans.Confidentialite} />
 {:else if demo}
   {#if paramOnglet}
-    <Parametres demo={true} onglet={paramOnglet} />
+    <Ecran charger={ecrans.Parametres} demo={true} onglet={paramOnglet} />
   {:else if route.chemin === '/calendrier'}
-    <Calendrier demo={true} />
+    <Ecran charger={ecrans.Calendrier} demo={true} />
   {:else if sommeilOnglet}
-    <Sommeil demo={true} onglet={sommeilOnglet} />
+    <Ecran charger={ecrans.Sommeil} demo={true} onglet={sommeilOnglet} />
   {:else if route.chemin === '/competitions'}
-    <Competitions demo={true} />
+    <Ecran charger={ecrans.Competitions} demo={true} />
   {:else if route.chemin === '/bilan'}
-    <Bilan demo={true} />
+    <Ecran charger={ecrans.Bilan} demo={true} />
   {:else if route.chemin === '/plan'}
-    <Plan demo={true} />
+    <Ecran charger={ecrans.Plan} demo={true} />
   {:else if forceOnglet}
-    <Force demo={true} onglet={forceOnglet} />
+    <Ecran charger={ecrans.Force} demo={true} onglet={forceOnglet} />
   {:else if forceSeance}
-    {#key route.chemin}<ForceSeance demo={true} mode={forceSeance.mode} cible={forceSeance.cible} />{/key}
+    {#key route.chemin}<Ecran charger={ecrans.ForceSeance} demo={true} mode={forceSeance.mode} cible={forceSeance.cible} />{/key}
   {:else if route.chemin === '/hyrox'}
-    <Hyrox demo={true} />
+    <Ecran charger={ecrans.Hyrox} demo={true} />
   {:else if idSeance}
-    <Seance id={idSeance} demo={true} />
+    <Ecran charger={ecrans.Seance} id={idSeance} demo={true} />
   {:else}
     <Accueil demo={true} />
   {/if}
@@ -104,27 +109,27 @@
 {:else if !auth.session}
   <Connexion />
 {:else if auth.definirMdp || route.chemin === '/mot-de-passe'}
-  <DefinirMotDePasse />
+  <Ecran charger={ecrans.DefinirMotDePasse} />
 {:else if paramOnglet}
-  <Parametres onglet={paramOnglet} />
+  <Ecran charger={ecrans.Parametres} onglet={paramOnglet} />
 {:else if route.chemin === '/calendrier'}
-  <Calendrier />
+  <Ecran charger={ecrans.Calendrier} />
 {:else if sommeilOnglet}
-  <Sommeil onglet={sommeilOnglet} />
+  <Ecran charger={ecrans.Sommeil} onglet={sommeilOnglet} />
 {:else if route.chemin === '/competitions'}
-  <Competitions />
+  <Ecran charger={ecrans.Competitions} />
 {:else if route.chemin === '/bilan'}
-  <Bilan />
+  <Ecran charger={ecrans.Bilan} />
 {:else if route.chemin === '/plan'}
-  <Plan />
+  <Ecran charger={ecrans.Plan} />
 {:else if forceOnglet}
-  <Force onglet={forceOnglet} />
+  <Ecran charger={ecrans.Force} onglet={forceOnglet} />
 {:else if forceSeance}
-  {#key route.chemin}<ForceSeance mode={forceSeance.mode} cible={forceSeance.cible} />{/key}
+  {#key route.chemin}<Ecran charger={ecrans.ForceSeance} mode={forceSeance.mode} cible={forceSeance.cible} />{/key}
 {:else if route.chemin === '/hyrox'}
-  <Hyrox />
+  <Ecran charger={ecrans.Hyrox} />
 {:else if idSeance}
-  <Seance id={idSeance} />
+  <Ecran charger={ecrans.Seance} id={idSeance} />
 {:else}
   <Accueil />
 {/if}
