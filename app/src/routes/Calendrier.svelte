@@ -10,7 +10,7 @@
   import Dialogue from '../lib/components/Dialogue.svelte';
   import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
   import { ouvrirCreation, donnees } from '../lib/stores/edition.svelte.js';
-  import { route, aller } from '../lib/routeur.svelte.js';
+  import { route, aller, ouvrirPanneau, fermerPanneau } from '../lib/routeur.svelte.js';
   import { construireAdresse, moisDepuisAdresse, moisVersAdresse } from '../lib/data/adresses.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { chargerSeancesPeriode, chargerPlanifiees, chargerAnnotations, chargerModeles } from '../lib/data/api.js';
@@ -107,13 +107,15 @@
   function aujourdhui() { aller(construireAdresse({ sport: menu.filtre, page: '/calendrier' })); }
 
   // --- Séances prévues : panneau de création / modification ---
+  // Ce qui est ouvert est dans l'adresse (?prevue=nouvelle&date=…&modele=… ou ?prevue=<id>) : `panneau` n'en est que le reflet (voir plus bas)
   let panneau = $state({ ouvert: false, seance: null, modele: null, date: dateIsoLocale(maintenant) });
   function nouvelle(date = dateIsoLocale(maintenant)) {
-    panneau = { ouvert: true, seance: null, modele: null, date };
+    ouvrirPanneau({ prevue: 'nouvelle', date }, ['modele']);
   }
   function modifier(p) {
-    panneau = { ouvert: true, seance: p, modele: null, date: p.date };
+    ouvrirPanneau({ prevue: p.id }, ['date', 'modele']);
   }
+  const fermerPrevue = () => fermerPanneau('prevue', 'date', 'modele');
   function apresEnregistrement(ligne) {
     // La séance affichée dans le panneau prend les nouvelles valeurs (le panneau repasse à l'affichage)
     if (panneau.seance && panneau.seance.id === ligne.id) panneau.seance = ligne;
@@ -132,9 +134,8 @@
   // --- Modèles de séances ---
   let modeles = $state({ ouvert: false, charge: false, chargement: false, erreur: '', liste: [] });
   let dateModele = dateIsoLocale(maintenant); // jour pour lequel on choisit un modèle (aujourd'hui, ou le jour touché dans la grille)
-  async function ouvrirModeles(date = dateIsoLocale(maintenant)) {
-    dateModele = date;
-    modeles.ouvert = true;
+  const ouvrirModeles = (date = dateIsoLocale(maintenant)) => ouvrirPanneau({ modeles: '1', date }, ['prevue', 'modele']);
+  async function chargerListeModeles() {
     if (modeles.charge) return;
     if (demo) {
       modeles.liste = modelesDemo();
@@ -148,8 +149,7 @@
     modeles.charge = !r.erreur;
   }
   function utiliserModele(m) {
-    modeles.ouvert = false;
-    panneau = { ouvert: true, seance: null, modele: m, date: dateModele };
+    ouvrirPanneau({ prevue: 'nouvelle', modele: m.id, date: dateModele }, ['modeles']);
   }
   const modeleAjoute = (m) => (modeles.liste = [...modeles.liste.filter((x) => x.id !== m.id), m]);
 
@@ -163,11 +163,10 @@
 
   // --- Repos, notes, maladies, blessures ---
   let panneauMarquage = $state({ ouvert: false, marquage: null, date: dateIsoLocale(maintenant) });
-  function nouveauMarquage(date = dateIsoLocale(maintenant)) {
-    panneauMarquage = { ouvert: true, marquage: null, date };
-  }
-  const ouvrirNote = (n) => (panneauMarquage = { ouvert: true, marquage: n, date: n.from_date });
-  const ouvrirRepos = (iso) => (panneauMarquage = { ouvert: true, marquage: { type: 'repos', iso }, date: iso });
+  const nouveauMarquage = (date = dateIsoLocale(maintenant)) => ouvrirPanneau({ marquage: 'nouveau', date });
+  const ouvrirNote = (n) => ouvrirPanneau({ marquage: n.id }, ['date']);
+  const ouvrirRepos = (iso) => ouvrirPanneau({ marquage: 'repos-' + iso }, ['date']);
+  const fermerMarquage = () => fermerPanneau('marquage', 'date');
   function marquageEnregistre(valeurs) {
     if (demo) {
       const ancien = panneauMarquage.marquage;
@@ -185,6 +184,79 @@
     }
     charger(userId, cible.annee, cible.mois);
   }
+
+  // --- L'adresse décide de ce qui est ouvert : chaque effet aligne un panneau sur elle (arrivée sur la page, rechargement, bouton Retour) ---
+  // Les effets ne lisent que l'adresse et les données chargées ; ce qu'ils écrivent est isolé par untrack (sinon boucle infinie).
+  const dateOuAujourdhui = (iso) => iso || dateIsoLocale(maintenant);
+
+  $effect(() => {
+    const id = route.q.prevue || '';
+    const jour = route.q.date || '';
+    const idModele = route.q.modele || '';
+    void etat.planifiees;
+    const chargement = etat.chargement;
+    void modeles.liste;
+    untrack(() => {
+      if (!id) {
+        if (panneau.ouvert) panneau.ouvert = false;
+        return;
+      }
+      if (id === 'nouvelle') {
+        const m = idModele ? modeles.liste.find((x) => x.id === idModele) || null : null;
+        if (idModele && !m && !modeles.charge) return void chargerListeModeles(); // le modèle demandé n'est pas encore là : on le charge, l'effet repartira
+        if (!panneau.ouvert || panneau.seance || panneau.modele !== m || panneau.date !== dateOuAujourdhui(jour)) {
+          panneau = { ouvert: true, seance: null, modele: m, date: dateOuAujourdhui(jour) };
+        }
+        return;
+      }
+      const trouvee = etat.planifiees.find((p) => p.id === id);
+      if (trouvee) {
+        if (!panneau.ouvert || panneau.seance?.id !== id) panneau = { ouvert: true, seance: trouvee, modele: null, date: trouvee.date };
+      } else if (!chargement) fermerPanneau('prevue', 'date', 'modele'); // identifiant inconnu (ou séance supprimée)
+    });
+  });
+
+  $effect(() => {
+    const ouvert = route.q.modeles === '1';
+    const jour = route.q.date || '';
+    untrack(() => {
+      if (!ouvert) {
+        if (modeles.ouvert) modeles.ouvert = false;
+        return;
+      }
+      dateModele = dateOuAujourdhui(jour);
+      modeles.ouvert = true;
+      chargerListeModeles();
+    });
+  });
+
+  $effect(() => {
+    const id = route.q.marquage || '';
+    const jour = route.q.date || '';
+    void etat.notes;
+    const chargement = etat.chargement;
+    untrack(() => {
+      if (!id) {
+        if (panneauMarquage.ouvert) panneauMarquage.ouvert = false;
+        return;
+      }
+      if (id === 'nouveau') {
+        if (!panneauMarquage.ouvert || panneauMarquage.marquage || panneauMarquage.date !== dateOuAujourdhui(jour)) {
+          panneauMarquage = { ouvert: true, marquage: null, date: dateOuAujourdhui(jour) };
+        }
+        return;
+      }
+      const repos = /^repos-(\d{4}-\d{2}-\d{2})$/.exec(id);
+      if (repos) {
+        if (!panneauMarquage.ouvert || panneauMarquage.marquage?.iso !== repos[1]) panneauMarquage = { ouvert: true, marquage: { type: 'repos', iso: repos[1] }, date: repos[1] };
+        return;
+      }
+      const note = etat.notes.find((n) => n.id === id);
+      if (note) {
+        if (!panneauMarquage.ouvert || panneauMarquage.marquage?.id !== id) panneauMarquage = { ouvert: true, marquage: note, date: note.from_date };
+      } else if (!chargement) fermerPanneau('marquage', 'date');
+    });
+  });
 </script>
 
 <main class="page">
@@ -285,7 +357,7 @@
   erreur={modeles.erreur}
   {userId}
   {demo}
-  onfermer={() => (modeles.ouvert = false)}
+  onfermer={() => fermerPanneau('modeles', 'date')}
   onutiliser={utiliserModele}
   onsupprime={(id) => (modeles.liste = modeles.liste.filter((m) => m.id !== id))}
 />
@@ -296,7 +368,7 @@
   dateInitiale={panneauMarquage.date}
   {userId}
   {demo}
-  onfermer={() => (panneauMarquage.ouvert = false)}
+  onfermer={fermerMarquage}
   enregistre={marquageEnregistre}
   supprime={marquageSupprime}
 />
@@ -308,7 +380,7 @@
   dateInitiale={panneau.date}
   {userId}
   {demo}
-  onfermer={() => (panneau.ouvert = false)}
+  onfermer={fermerPrevue}
   enregistree={apresEnregistrement}
   supprimee={apresSuppression}
   modeleEnregistre={modeleAjoute}

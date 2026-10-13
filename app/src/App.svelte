@@ -10,6 +10,8 @@
   import PanneauReel from './lib/components/PanneauReel.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
   import { route, modeDemo } from './lib/routeur.svelte.js';
+  import { hydraterApercu } from './lib/stores/apercu.svelte.js';
+  import { hydraterEdition } from './lib/stores/edition.svelte.js';
   import { lireRetourDansAdresse } from './lib/stores/connexions.svelte.js';
   import { synchroniserTheme, oublierCompteTheme } from './lib/stores/theme.svelte.js';
 
@@ -80,6 +82,18 @@
       if (demo) menuDemo();
       else if (uid) chargerMenu(uid);
       else oublierMenu();
+    });
+  });
+
+  // Les fenêtres globales (aperçu d'une séance, saisie d'une sortie) suivent l'adresse : un rechargement les rouvre au même endroit
+  $effect(() => {
+    const idApercu = route.q.apercu || '';
+    const idSortie = route.q.sortie || '';
+    const jour = route.q.date || '';
+    const uid = auth.session?.user?.id;
+    untrack(() => {
+      hydraterApercu(idApercu, uid, demo);
+      hydraterEdition(idSortie, jour, uid, demo);
     });
   });
 

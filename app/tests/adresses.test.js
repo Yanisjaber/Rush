@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { analyserAdresse, construireAdresse, estSport, estPageSport, moisDepuisAdresse, moisVersAdresse, anneeDepuisAdresse } from '../src/lib/data/adresses.js';
+import { nettoyerQ, analyserAdresse, construireAdresse, estSport, estPageSport, moisDepuisAdresse, moisVersAdresse, anneeDepuisAdresse } from '../src/lib/data/adresses.js';
 
 test('estSport : sports connus oui, pages et pièges non', () => {
   for (const s of ['course', 'velo', 'muscu', 'hyrox', 'natation']) assert.equal(estSport(s), true, s);
@@ -8,29 +8,29 @@ test('estSport : sports connus oui, pages et pièges non', () => {
 });
 
 test('analyserAdresse : accueil, avec et sans sport', () => {
-  assert.deepEqual(analyserAdresse(''), { chemin: '/', sport: null, sous: '', redirection: null });
-  assert.deepEqual(analyserAdresse('#/'), { chemin: '/', sport: null, sous: '', redirection: null });
-  assert.deepEqual(analyserAdresse('#/course'), { chemin: '/', sport: 'course', sous: '', redirection: null });
+  assert.deepEqual(analyserAdresse(''), { chemin: '/', sport: null, sous: '', q: {}, redirection: null });
+  assert.deepEqual(analyserAdresse('#/'), { chemin: '/', sport: null, sous: '', q: {}, redirection: null });
+  assert.deepEqual(analyserAdresse('#/course'), { chemin: '/', sport: 'course', sous: '', q: {}, redirection: null });
 });
 
 test('analyserAdresse : pages qui suivent le sport, avec détail', () => {
-  assert.deepEqual(analyserAdresse('#/calendrier'), { chemin: '/calendrier', sport: null, sous: '', redirection: null });
-  assert.deepEqual(analyserAdresse('#/velo/calendrier/2026-09'), { chemin: '/calendrier', sport: 'velo', sous: '2026-09', redirection: null });
-  assert.deepEqual(analyserAdresse('#/muscu/bilan/2025'), { chemin: '/bilan', sport: 'muscu', sous: '2025', redirection: null });
+  assert.deepEqual(analyserAdresse('#/calendrier'), { chemin: '/calendrier', sport: null, sous: '', q: {}, redirection: null });
+  assert.deepEqual(analyserAdresse('#/velo/calendrier/2026-09'), { chemin: '/calendrier', sport: 'velo', sous: '2026-09', q: {}, redirection: null });
+  assert.deepEqual(analyserAdresse('#/muscu/bilan/2025'), { chemin: '/bilan', sport: 'muscu', sous: '2025', q: {}, redirection: null });
   assert.equal(analyserAdresse('#/course/plan').chemin, '/plan');
   assert.equal(analyserAdresse('#/competitions').chemin, '/competitions');
 });
 
 test('analyserAdresse : vues détaillées Muscu et Hyrox', () => {
-  assert.deepEqual(analyserAdresse('#/muscu/journal'), { chemin: '/', sport: 'muscu', sous: 'journal', redirection: null });
-  assert.deepEqual(analyserAdresse('#/hyrox/tests'), { chemin: '/', sport: 'hyrox', sous: 'tests', redirection: null });
+  assert.deepEqual(analyserAdresse('#/muscu/journal'), { chemin: '/', sport: 'muscu', sous: 'journal', q: {}, redirection: null });
+  assert.deepEqual(analyserAdresse('#/hyrox/tests'), { chemin: '/', sport: 'hyrox', sous: 'tests', q: {}, redirection: null });
   // une vue qui n'existe pas pour ce sport : pas une vue détaillée
   assert.equal(analyserAdresse('#/course/journal').sous, '');
   assert.equal(analyserAdresse('#/hyrox/journal').sous, '');
 });
 
 test('analyserAdresse : pages sans sport inchangées', () => {
-  assert.deepEqual(analyserAdresse('#/sommeil/graphiques'), { chemin: '/sommeil/graphiques', sport: null, sous: '', redirection: null });
+  assert.deepEqual(analyserAdresse('#/sommeil/graphiques'), { chemin: '/sommeil/graphiques', sport: null, sous: '', q: {}, redirection: null });
   assert.equal(analyserAdresse('#/parametres/connexions').chemin, '/parametres/connexions');
   assert.equal(analyserAdresse('#/seance/abc-123').chemin, '/seance/abc-123');
   assert.equal(analyserAdresse('#/force/seance/libre').chemin, '/force/seance/libre');
@@ -89,4 +89,36 @@ test('mois et année dans l\'adresse', () => {
   assert.equal(anneeDepuisAdresse('25'), null);
   assert.equal(anneeDepuisAdresse('abcd'), null);
   assert.equal(anneeDepuisAdresse('9999'), null);
+});
+
+test('compléments d\'adresse : seules les clés connues aux valeurs bien formées passent', () => {
+  assert.deepEqual(nettoyerQ('prevue=nouvelle&date=2026-09-14'), { prevue: 'nouvelle', date: '2026-09-14' });
+  assert.deepEqual(nettoyerQ('prevue=abc-123_X'), { prevue: 'abc-123_X' });
+  assert.deepEqual(nettoyerQ('edition'), { edition: '1' });
+  assert.deepEqual(nettoyerQ('edition=1&fc=1'), { edition: '1', fc: '1' });
+  assert.deepEqual(nettoyerQ('metrique=total_elevation_gain'), { metrique: 'total_elevation_gain' });
+  // pièges : clé inconnue, valeur mal formée, doublon, injection
+  assert.deepEqual(nettoyerQ('inconnue=1&__proto__=x&constructor=y'), {});
+  assert.deepEqual(nettoyerQ('prevue=a b'), {});
+  assert.deepEqual(nettoyerQ('prevue=<img src=x>'), {});
+  assert.deepEqual(nettoyerQ('prevue=' + 'a'.repeat(65)), {});
+  assert.deepEqual(nettoyerQ('date=2026-9-1'), {});
+  assert.deepEqual(nettoyerQ('edition=oui'), {});
+  assert.deepEqual(nettoyerQ('prevue=a&prevue=b'), { prevue: 'a' });
+  assert.deepEqual(nettoyerQ({ prevue: 'x', zzz: 'y' }), { prevue: 'x' });
+  assert.deepEqual(nettoyerQ(null), {});
+});
+
+test('analyserAdresse lit les compléments, construireAdresse les écrit', () => {
+  const a = analyserAdresse('#/course/calendrier/2026-09?prevue=nouvelle&date=2026-09-14');
+  assert.equal(a.chemin, '/calendrier');
+  assert.equal(a.sous, '2026-09');
+  assert.deepEqual(a.q, { prevue: 'nouvelle', date: '2026-09-14' });
+  assert.equal(construireAdresse({ sport: 'course', page: '/calendrier', sous: '2026-09', q: a.q }), '#/course/calendrier/2026-09?prevue=nouvelle&date=2026-09-14');
+  assert.equal(construireAdresse({ page: '/plan', q: { prevue: 'abc' } }), '#/plan?prevue=abc');
+  assert.equal(construireAdresse({ q: { edition: '1' } }), '#/?edition=1');
+  assert.equal(construireAdresse({ q: { zzz: '1', prevue: 'a b' } }), '#/'); // rien d'invalide n'est écrit
+  assert.deepEqual(analyserAdresse('#/?edition').q, { edition: '1' });
+  assert.equal(analyserAdresse('#/force?prevue=x').redirection, '#/muscu/programmes?prevue=x'); // l'ancien lien garde ses compléments
+  assert.equal(analyserAdresse('#/sommeil?fc=1').q.fc, '1');
 });
