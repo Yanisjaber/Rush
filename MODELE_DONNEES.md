@@ -22,7 +22,7 @@ humain (coach ↔ athlète, messagerie) a été supprimé le 2026-10-11 ; le rô
 | `strength_exercises`, `strength_programs`, `strength_sets` | Carnet de force (v2) : exercices perso, programmes (séances types, exercices en JSONB) et séries réalisées (rattachées à une ligne `activities`, supprimées avec elle). La bibliothèque d'exercices de base est dans le code de la v2 |
 | `hyrox_tests`, `hyrox_objectif` | Hyrox (v2) : tests et courses en 16 segments (8 runs + 8 stations, en secondes) et objectif de temps (une ligne par utilisateur) |
 | `od_prefs` | Préférences Open Dossard |
-| `connexions_app` | Connexions OAuth (Strava, Garmin) ; `access_token`/`refresh_token` masqués au navigateur par révocation de colonnes |
+| `connexions_app` | Connexions OAuth (Strava ; Garmin à venir). **Aucune colonne de jeton** : les jetons sont chiffrés dans Supabase Vault (colonne `secret_id`) et ne sont lus que par les Edge Functions (service role), via `rpc_connection_secrets`. Le navigateur ne voit que le statut (`external_id`, `athlete_name`, dates de synchro) |
 | `oauth_states` | État OAuth à usage unique (créé par `oauth-start`, consommé par les callbacks) ; aucun accès client |
 
 ## Règles
