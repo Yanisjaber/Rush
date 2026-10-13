@@ -15,6 +15,7 @@
   let nom = $state('');
   let consentement = $state(false);
   let popup = $state(false); // pop-up « e-mail envoyé » après une inscription réussie
+  let popupExiste = $state(false); // pop-up « cette adresse a déjà un compte »
   let erreurs = $state({}); // erreur par champ : prenom, nom, email, mdp, consentement
 
   async function creerCompte(evenement) {
@@ -26,13 +27,29 @@
     const r = await inscription({ prenom, nom, email, motDePasse, consentement });
     enCours = false;
     motDePasse = ''; // le mot de passe ne reste jamais dans le champ
-    if (r.ok) {
+    if (r.ok && r.existe) {
+      popupExiste = true;
+    } else if (r.ok) {
       popup = true;
       prenom = '';
       nom = '';
       consentement = false;
     } else if (r.champ) erreurs = { [r.champ]: r.message };
     else message = r.message;
+  }
+
+  /** « Cette adresse a déjà un compte » : on ferme et on revient à la connexion (e-mail déjà rempli). */
+  function versConnexion() {
+    popupExiste = false;
+    creer = false;
+    message = '';
+    erreurs = {};
+  }
+
+  /** Idem, mais direct vers « Mot de passe oublié ». */
+  function versOubli() {
+    versConnexion();
+    oubli = true;
   }
 
   /** Ferme la pop-up et revient à l'écran de connexion (l'e-mail reste rempli). */
@@ -127,8 +144,18 @@
     <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="M3.5 7.5l8.5 6 8.5-6" /></svg>
   {/snippet}
   <p class="pop-texte">Un e-mail de confirmation vient de partir. Clique sur le lien dedans pour activer ton compte.</p>
-  <p class="pop-note">Rien dans ta boîte ? Regarde dans les indésirables. Si tu as déjà un compte, aucun e-mail n'est envoyé : connecte-toi, ou utilise « Mot de passe oublié ».</p>
+  <p class="pop-note">Rien dans ta boîte ? Regarde dans les indésirables.</p>
   <button type="button" class="pop-bouton" onclick={fermerPopup}>J'ai compris</button>
+</Dialogue>
+
+<Dialogue ouvert={popupExiste} titre="Tu as déjà un compte" onfermer={versConnexion}>
+  {#snippet icone()}
+    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4.5 20c.8-4 3.7-6 7.5-6s6.7 2 7.5 6" /></svg>
+  {/snippet}
+  <p class="pop-texte">L'adresse <span class="pop-email">{email}</span> est déjà inscrite sur Coach IA.</p>
+  <p class="pop-note">Connecte-toi avec ton mot de passe. Tu l'as oublié ? On t'envoie un lien pour en choisir un nouveau.</p>
+  <button type="button" class="pop-bouton" onclick={versConnexion}>Me connecter</button>
+  <button type="button" class="pop-lien" onclick={versOubli}>Mot de passe oublié ?</button>
 </Dialogue>
 
 <style>
@@ -232,6 +259,24 @@
     filter: brightness(1.25);
   }
   .pop-bouton:focus-visible {
+    outline: 3px solid var(--sport-course);
+    outline-offset: 2px;
+  }
+  .pop-email {
+    word-break: break-all;
+    color: #e85d0c;
+  }
+  .pop-lien {
+    min-height: 44px;
+    border: 0;
+    background: none;
+    color: var(--dossard-texte);
+    font: inherit;
+    font-size: 14px;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .pop-lien:focus-visible {
     outline: 3px solid var(--sport-course);
     outline-offset: 2px;
   }

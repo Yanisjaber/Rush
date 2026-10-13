@@ -44,6 +44,8 @@ export async function connexion(email, motDePasse) {
     if (error.status === 400) return { ok: false, message: 'E-mail ou mot de passe incorrect.' };
     return { ok: false, message: 'Connexion impossible pour le moment. Vérifie ta connexion internet.' };
   }
+  // Avec « Confirm email », Supabase renvoie un faux utilisateur sans aucune identité quand l'adresse a déjà un compte confirmé
+  if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) return { ok: true, existe: true };
   return { ok: true };
 }
 
@@ -100,15 +102,15 @@ async function completerProfilInscription(user) {
 
 /**
  * « Créer un compte » : inscription par e-mail et mot de passe, avec confirmation par e-mail.
- * La réponse est toujours la même, que l'adresse existe déjà ou non (Supabase renvoie un faux succès dans ce cas) :
- * on ne révèle jamais qui a un compte.
+ * Si l'adresse a déjà un compte, on le dit (`existe: true`) pour proposer de se connecter. Choix assumé : cela permet de
+ * tester si une adresse est inscrite, limité par les quotas d'inscription de Supabase.
  */
 export async function inscription({ prenom, nom, email, motDePasse, consentement }) {
   const adresse = String(email || '').trim();
   if (!FORMAT_EMAIL.test(adresse)) return { ok: false, champ: 'email', message: 'Saisis une adresse e-mail valide.' };
   const v = validerInscription({ prenom, nom, motDePasse, email: adresse, consentement });
   if (!v.ok) return v;
-  const { error } = await sb.auth.signUp({
+  const { data, error } = await sb.auth.signUp({
     email: adresse,
     password: motDePasse,
     options: {
