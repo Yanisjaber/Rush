@@ -6,7 +6,8 @@
   import CadreEdition from '../lib/widgets/CadreEdition.svelte';
   import BibliothequeWidgets from '../lib/widgets/BibliothequeWidgets.svelte';
   import { COMPOSANTS } from '../lib/widgets/composants.js';
-  import { disponibles, composerOnglet } from '../lib/widgets/registre.js';
+  import { disponibles, disponiblesOnglet, composerOnglet, ONGLETS_PERSONNALISABLES } from '../lib/widgets/registre.js';
+  import { SPORTS } from '../lib/sports.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
   import {
@@ -135,7 +136,22 @@
 
   // Widgets affichés : tous ceux de ta disposition sur l'onglet « Tout » (et pendant l'édition) ; sur un onglet de sport,
   // la composition de ce sport (muscu et Hyrox ont la leur, voir registre.js).
-  const widgetsAffiches = $derived(filtreActif === 'tout' || disposition.enEdition ? disposition.widgets : composerOnglet(disposition.widgets, filtreActif));
+  // Pendant l'édition, on voit la liste qu'on modifie : celle de l'onglet « Tout », ou la composition propre d'un onglet Muscu / Hyrox.
+  const listeEnEdition = $derived(
+    disposition.ongletEdition !== 'tout' && disposition.onglets[disposition.ongletEdition] ? disposition.onglets[disposition.ongletEdition] : disposition.widgets,
+  );
+  const widgetsAffiches = $derived(
+    disposition.enEdition
+      ? listeEnEdition
+      : filtreActif === 'tout'
+        ? disposition.widgets
+        : composerOnglet(disposition.widgets, filtreActif, disposition.onglets),
+  );
+  const ongletRiche = $derived(ONGLETS_PERSONNALISABLES.includes(filtreActif));
+  const nomOngletEdition = $derived(disposition.ongletEdition !== 'tout' ? (SPORTS[disposition.ongletEdition] || SPORTS.autre).court : ''); // « Muscu », « Hyrox »
+  const idsBibliotheque = $derived(
+    disposition.ongletEdition !== 'tout' ? disponiblesOnglet(listeEnEdition, disposition.ongletEdition) : disponibles(disposition, familles),
+  );
   const accrocheSport = $derived.by(() => {
     if (filtreActif === 'muscu') {
       return accrocheMuscu({
@@ -166,16 +182,20 @@
     {#each familles as f}
       <ChipSport sport={f} actif={filtreActif === f} onclick={() => (filtre = f)} />
     {/each}
+    {#if !disposition.enEdition && !etat.chargement}
+      <span class="espace"></span>
+      <Bouton variante="discret" onclick={() => demarrerEdition(filtreActif)}>{ongletRiche ? `Personnaliser l'onglet ${(SPORTS[filtreActif] || SPORTS.autre).court}` : "Personnaliser l'accueil"}</Bouton>
+    {/if}
   </nav>
 
   {#if disposition.enEdition}
     <section class="bandeau-edition" aria-label="Mode édition">
       <div class="texte">
-        <div class="titre">Mode édition</div>
+        <div class="titre">Mode édition{nomOngletEdition ? ` : onglet ${nomOngletEdition}` : ''}</div>
         <p>Monte, descends, redimensionne ou retire les widgets. Ajoute-en depuis la bibliothèque en bas.</p>
       </div>
       <div class="actions">
-        <Bouton variante="texte" onclick={reinitialiserAuto}>Revenir à l'accueil automatique</Bouton>
+        <Bouton variante="texte" onclick={reinitialiserAuto}>{nomOngletEdition ? 'Revenir à la composition par défaut de cet onglet' : "Revenir à l'accueil automatique"}</Bouton>
         <Bouton variante="discret" onclick={annulerEdition}>Annuler</Bouton>
         <Bouton variante="sur-dossard" onclick={terminerEdition}>Terminer</Bouton>
       </div>
@@ -216,7 +236,7 @@
                 id={w.id}
                 taille={w.taille}
                 index={i}
-                total={disposition.widgets.length}
+                total={widgetsAffiches.length}
                 onDeplacer={deplacer}
                 onTaille={changerTaille}
                 onRetirer={retirer}
@@ -235,7 +255,7 @@
 
     {#if disposition.enEdition}
       <div class="bibliotheque">
-        <BibliothequeWidgets ids={disponibles(disposition, familles)} {familles} onAjouter={ajouter} />
+        <BibliothequeWidgets ids={idsBibliotheque} {familles} onAjouter={ajouter} />
       </div>
     {/if}
   {/if}
@@ -245,8 +265,13 @@
   .puces {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 6px;
     margin-bottom: 8px;
+  }
+  /* pousse le bouton « Personnaliser » à droite des puces de sport */
+  .espace {
+    flex: 1;
   }
 
   .bandeau-edition {

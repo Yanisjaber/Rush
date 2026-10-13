@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { WIDGETS, ORDRE_ONGLET, existe, estPertinent, compositionAuto, composerOnglet, normaliser, disponibles } from '../src/lib/widgets/registre.js';
+import { WIDGETS, ORDRE_ONGLET, existe, estPertinent, compositionAuto, composerOnglet, normaliser, disponibles, disponiblesOnglet, ONGLETS_PERSONNALISABLES } from '../src/lib/widgets/registre.js';
 
 test("existe : seuls les vrais widgets sont reconnus (pas les propriétés héritées d'un objet)", () => {
   assert.equal(existe('objectif'), true);
@@ -100,4 +100,38 @@ test('onglet d\'un autre sport : widgets du sport d\'abord, puis ceux valables p
   assert.ok(o.includes('predictions'));
   assert.equal(o.includes('puissance'), false); // vélo seulement
   assert.ok(o.indexOf('predictions') < o.indexOf('charge'));
+});
+
+test("onglets personnalisables : Muscu et Hyrox ont leur propre composition, normalisée comme le reste", () => {
+  assert.deepEqual([...ONGLETS_PERSONNALISABLES].sort(), ['hyrox', 'muscu']);
+  const brut = {
+    v: 1, auto: false, widgets: [{ id: 'charge', taille: 'l' }],
+    onglets: {
+      muscu: [{ id: 'tonnage', taille: 'l' }, { id: 'inconnu', taille: 'm' }, { id: 'tonnage', taille: 'm' }, { id: 'records', taille: 'zzz' }],
+      course: [{ id: 'forme', taille: 's' }], // onglet sans composition propre : ignoré
+      hyrox: 'pas une liste', // invalide : ignoré
+    },
+  };
+  const n = normaliser(brut);
+  assert.deepEqual(n.onglets.muscu, [{ id: 'tonnage', taille: 'l' }, { id: 'records', taille: WIDGETS.records.taille }]); // inconnu et doublon retirés, taille invalide remise par défaut
+  assert.ok(!('course' in n.onglets) && !('hyrox' in n.onglets));
+  assert.equal(normaliser({ v: 1, auto: true, widgets: [] }).onglets, undefined); // pas d'onglets enregistrés : rien d'inventé
+});
+
+test("composerOnglet : la composition personnalisée prime, sinon la composition par défaut", () => {
+  const widgets = compositionAuto(['muscu']).widgets;
+  const defaut = composerOnglet(widgets, 'muscu').map((w) => w.id);
+  assert.deepEqual(defaut, ORDRE_ONGLET.muscu);
+  const perso = { muscu: [{ id: 'records', taille: 'l' }, { id: 'tonnage', taille: 'm' }] };
+  assert.deepEqual(composerOnglet(widgets, 'muscu', perso), perso.muscu);
+  assert.notEqual(composerOnglet(widgets, 'muscu', perso)[0], perso.muscu[0]); // une copie : modifier le résultat ne modifie pas la source
+  assert.deepEqual(composerOnglet(widgets, 'muscu', { muscu: null }).map((w) => w.id), ORDRE_ONGLET.muscu);
+  assert.deepEqual(composerOnglet(widgets, 'hyrox', perso).map((w) => w.id), ORDRE_ONGLET.hyrox); // la composition d'un autre onglet ne le touche pas
+});
+
+test("disponiblesOnglet : seulement les widgets du sport (ou de tous les sports) qui ne sont pas déjà là", () => {
+  const dispo = disponiblesOnglet([{ id: 'tonnage', taille: 'l' }, { id: 'semaine', taille: 'l' }], 'muscu');
+  assert.ok(dispo.includes('records') && dispo.includes('avenir') && dispo.includes('dernieres')); // muscu + tous sports
+  assert.ok(!dispo.includes('tonnage') && !dispo.includes('semaine')); // déjà présents
+  assert.ok(!dispo.includes('hyroxtest') && !dispo.includes('predictions')); // d'autres sports
 });

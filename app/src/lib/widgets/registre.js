@@ -271,8 +271,11 @@ export function compositionAuto(familles = []) {
  * Widgets d'un onglet de sport. Muscu et Hyrox : composition fixe (ORDRE_ONGLET), en gardant la taille choisie par l'utilisateur.
  * Autres sports : les widgets de la disposition qui concernent ce sport, ceux du sport d'abord.
  */
-export function composerOnglet(widgets, sport) {
+export function composerOnglet(widgets, sport, onglets = null) {
   if (Object.hasOwn(ORDRE_ONGLET, sport)) {
+    // Composition personnalisée de cet onglet (mode édition), sinon la composition par défaut
+    const perso = onglets && Array.isArray(onglets[sport]) ? onglets[sport] : null;
+    if (perso) return perso.map((w) => ({ ...w }));
     const tailles = new Map(widgets.map((w) => [w.id, w.taille]));
     return ORDRE_ONGLET[sport].map((id) => ({ id, taille: tailleValide(id, tailles.get(id)) }));
   }
@@ -291,15 +294,41 @@ function tailleValide(id, souhaitee) {
  */
 export function normaliser(brut) {
   if (!brut || typeof brut !== 'object' || !Array.isArray(brut.widgets)) return null;
+  const resultat = { v: 1, auto: brut.auto === true, widgets: normaliserListe(brut.widgets) };
+  // Compositions propres aux onglets Muscu et Hyrox (facultatif) : seuls les onglets connus sont gardés
+  if (brut.onglets && typeof brut.onglets === 'object') {
+    const onglets = {};
+    for (const sport of Object.keys(ORDRE_ONGLET)) {
+      if (Array.isArray(brut.onglets[sport])) onglets[sport] = normaliserListe(brut.onglets[sport]);
+    }
+    if (Object.keys(onglets).length) resultat.onglets = onglets;
+  }
+  return resultat;
+}
+
+/** Nettoie une liste de widgets : identifiants inconnus et doublons retirés, tailles invalides remises par défaut. */
+export function normaliserListe(brut) {
   const vus = new Set();
   const widgets = [];
-  for (const w of brut.widgets.slice(0, 40)) {
+  for (const w of (Array.isArray(brut) ? brut : []).slice(0, 40)) {
     if (!w || !existe(w.id) || vus.has(w.id)) continue;
     vus.add(w.id);
     const def = WIDGETS[w.id];
     widgets.push({ id: w.id, taille: def.tailles.includes(w.taille) ? w.taille : def.taille });
   }
-  return { v: 1, auto: brut.auto === true, widgets };
+  return widgets;
+}
+
+/** Les onglets de sport qui ont leur propre composition modifiable (Muscu, Hyrox). */
+export const ONGLETS_PERSONNALISABLES = Object.keys(ORDRE_ONGLET);
+
+/**
+ * Widgets qu'on peut encore ajouter à la liste d'un onglet : ceux qui concernent ce sport (ou tous les sports)
+ * et ne sont pas déjà dans la liste.
+ */
+export function disponiblesOnglet(liste, sport) {
+  const presents = new Set(liste.map((w) => w.id));
+  return Object.keys(WIDGETS).filter((id) => !presents.has(id) && estPertinent(id, [sport]));
 }
 
 /** Widgets absents de la disposition (ceux qu'on peut encore ajouter), pertinents d'abord. */

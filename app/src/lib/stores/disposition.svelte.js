@@ -7,12 +7,14 @@
 // Tant que l'utilisateur n'a rien modifié, la disposition est « automatique » : elle se recompose
 // toute seule quand ses sports changent. Dès qu'il édite, elle devient la sienne.
 import { sb } from '../supabase.js';
-import { WIDGETS, compositionAuto, existe, normaliser } from '../widgets/registre.js';
+import { WIDGETS, compositionAuto, composerOnglet, existe, normaliser, ONGLETS_PERSONNALISABLES } from '../widgets/registre.js';
 
 export const disposition = $state({
   pret: false,
   auto: true,
   widgets: [],
+  onglets: { muscu: null, hyrox: null }, // composition propre à chaque onglet riche (null = composition par défaut)
+  ongletEdition: 'tout', // liste modifiée pendant l'édition : 'tout' ou un onglet de ONGLETS_PERSONNALISABLES
   enEdition: false,
   editionDemandee: false, // posé depuis les paramètres : l'accueil ouvre le mode édition dès qu'il est chargé
   stockage: 'local', // 'base' ou 'local'
@@ -42,11 +44,19 @@ function ecrireLocal(uid, layout) {
   }
 }
 
-function appliquer(layout) {
+function appliquer(layout, garderOnglets = false) {
   const personnalisee = !!layout && !layout.auto;
   const base = personnalisee ? layout : compositionAuto(familles);
   disposition.auto = !personnalisee;
   disposition.widgets = base.widgets.map((w) => ({ ...w }));
+  // Les compositions propres aux onglets (Muscu, Hyrox) sont lues dès qu'une disposition existe, même si l'onglet « Tout » est automatique
+  if (!garderOnglets) {
+    disposition.onglets = { muscu: null, hyrox: null };
+    for (const sport of ONGLETS_PERSONNALISABLES) {
+      const liste = layout?.onglets?.[sport];
+      disposition.onglets[sport] = liste ? liste.map((w) => ({ ...w })) : null;
+    }
+  }
   disposition.pret = true;
 }
 
@@ -71,14 +81,19 @@ export async function chargerDisposition(uid, famillesPresentes) {
   appliquer(layout);
 }
 
-/** Recompose l'accueil automatique quand la liste des sports change (sans toucher à une disposition personnalisée). */
+/** Recompose l'accueil automatique quand la liste des sports change (sans toucher à une disposition personnalisée ni aux onglets). */
 export function mettreAJourSports(famillesPresentes) {
   familles = famillesPresentes;
-  if (disposition.auto && !disposition.enEdition) appliquer(null);
+  if (disposition.auto && !disposition.enEdition) appliquer(null, true);
 }
 
 async function enregistrer() {
   const layout = { v: 1, auto: disposition.auto, widgets: disposition.widgets.map((w) => ({ id: w.id, taille: w.taille })) };
+  const onglets = {};
+  for (const sport of ONGLETS_PERSONNALISABLES) {
+    if (disposition.onglets[sport]) onglets[sport] = disposition.onglets[sport].map((w) => ({ id: w.id, taille: w.taille }));
+  }
+  if (Object.keys(onglets).length) layout.onglets = onglets;
   ecrireLocal(utilisateur, layout);
   if (utilisateur === 'demo' || disposition.stockage !== 'base') {
     disposition.message = 'Enregistré sur cet appareil.';
@@ -97,9 +112,36 @@ async function enregistrer() {
 }
 
 // --- Édition ---
+// On modifie toujours UNE liste : celle de l'onglet « Tout », ou celle d'un onglet riche (Muscu, Hyrox) qui a sa propre composition.
 
-export function demarrerEdition() {
-  instantane = { auto: disposition.auto, widgets: disposition.widgets.map((w) => ({ ...w })) };
+const copie = (liste) => liste.map((w) => ({ ...w }));
+const estOngletRiche = (onglet) => ONGLETS_PERSONNALISABLES.includes(onglet);
+
+/** La liste en cours de modification. */
+function listeEnEdition() {
+  const o = disposition.ongletEdition;
+  return estOngletRiche(o) && disposition.onglets[o] ? disposition.onglets[o] : disposition.widgets;
+}
+
+function remplacerListe(liste) {
+  const o = disposition.ongletEdition;
+  if (estOngletRiche(o) && disposition.onglets[o]) disposition.onglets[o] = liste;
+  else disposition.widgets = liste;
+}
+
+/**
+ * Ouvre le mode édition. `onglet` : 'tout' ou un onglet riche ; un onglet riche qui n'avait pas encore sa composition
+ * part de la composition par défaut, qu'on peut alors modifier.
+ */
+export function demarrerEdition(onglet = 'tout') {
+  const cible = estOngletRiche(onglet) ? onglet : 'tout';
+  instantane = {
+    auto: disposition.auto,
+    widgets: copie(disposition.widgets),
+    onglets: Object.fromEntries(ONGLETS_PERSONNALISABLES.map((sport) => [sport, disposition.onglets[sport] ? copie(disposition.onglets[sport]) : null])),
+  };
+  if (estOngletRiche(cible) && !disposition.onglets[cible]) disposition.onglets[cible] = composerOnglet(disposition.widgets, cible);
+  disposition.ongletEdition = cible;
   disposition.message = '';
   disposition.enEdition = true;
 }
@@ -113,52 +155,63 @@ export function annulerEdition() {
   if (instantane) {
     disposition.auto = instantane.auto;
     disposition.widgets = instantane.widgets;
+    disposition.onglets = instantane.onglets;
   }
   instantane = null;
+  disposition.ongletEdition = 'tout';
   disposition.enEdition = false;
 }
 
 export async function terminerEdition() {
   disposition.enEdition = false;
+  disposition.ongletEdition = 'tout';
   instantane = null;
   await enregistrer();
 }
 
+/**
+ * « Revenir à la composition automatique » : sur un onglet Muscu ou Hyrox, seul cet onglet est remis par défaut ;
+ * sur l'onglet « Tout », tout l'accueil (onglets compris) est recomposé automatiquement.
+ */
 export async function reinitialiserAuto() {
-  appliquer(null);
+  if (estOngletRiche(disposition.ongletEdition)) disposition.onglets[disposition.ongletEdition] = null;
+  else appliquer(null);
   disposition.enEdition = false;
+  disposition.ongletEdition = 'tout';
   instantane = null;
   await enregistrer();
 }
 
+/** Une modification de l'onglet « Tout » rend l'accueil « personnalisé » ; celle d'un onglet riche ne touche pas à l'onglet « Tout ». */
 function personnaliser() {
-  disposition.auto = false;
+  if (!estOngletRiche(disposition.ongletEdition)) disposition.auto = false;
 }
 
 export function deplacer(index, sens) {
+  const w = listeEnEdition();
   const cible = index + sens;
-  if (cible < 0 || cible >= disposition.widgets.length) return;
-  const w = disposition.widgets;
+  if (cible < 0 || cible >= w.length) return;
   [w[index], w[cible]] = [w[cible], w[index]];
   personnaliser();
 }
 
 export function retirer(id) {
-  disposition.widgets = disposition.widgets.filter((w) => w.id !== id);
+  remplacerListe(listeEnEdition().filter((w) => w.id !== id));
   personnaliser();
 }
 
 export function ajouter(id) {
-  if (!existe(id) || disposition.widgets.some((w) => w.id === id)) return;
+  const liste = listeEnEdition();
+  if (!existe(id) || liste.some((w) => w.id === id)) return;
   const def = WIDGETS[id];
-  disposition.widgets = [...disposition.widgets, { id, taille: def.taille }];
+  remplacerListe([...liste, { id, taille: def.taille }]);
   personnaliser();
 }
 
 export function changerTaille(id, taille) {
   if (!existe(id)) return;
   const def = WIDGETS[id];
-  const w = disposition.widgets.find((x) => x.id === id);
+  const w = listeEnEdition().find((x) => x.id === id);
   if (!w || !def.tailles.includes(taille)) return;
   w.taille = taille;
   personnaliser();
