@@ -28,9 +28,14 @@ export function pagesMenu(familles = []) {
   return [page('accueil'), page('calendrier'), page('plan'), ...pagesDeSports(familles), page('competitions'), page('bilan'), page('sommeil')];
 }
 
-/** Menu « Plus » de l'ordinateur : les pages de sports pratiqués (Muscu, Hyrox), puis Compétitions, Bilan, Sommeil. */
-export function pagesPlus(familles = []) {
-  return [...pagesDeSports(familles), page('competitions'), page('bilan'), page('sommeil')];
+/** Menu « Plus » de l'ordinateur : Compétitions, Bilan, Sommeil (Muscu et Hyrox sont des sports : ils ont leur pastille). */
+export function pagesPlus() {
+  return [page('competitions'), page('bilan'), page('sommeil')];
+}
+
+/** Famille de sport → page dédiée (muscu → Muscu, hyrox → Hyrox), sinon null : la pastille filtre alors l'accueil. */
+export function pageDuSport(famille) {
+  return PAGE_DU_SPORT[famille] ? page(PAGE_DU_SPORT[famille]) : null;
 }
 
 /**

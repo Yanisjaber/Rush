@@ -1,6 +1,6 @@
 <script>
   import { menu, choisirFiltre } from '../stores/menu.svelte.js';
-  import { page, pagesPlus } from '../data/menu.js';
+  import { page, pagesPlus, pageDuSport } from '../data/menu.js';
   import { SPORTS, couleurSport } from '../sports.js';
   import { aller } from '../routeur.svelte.js';
 
@@ -15,9 +15,10 @@
 
   const principaux = [page('accueil'), page('calendrier'), page('plan')];
   const familles = $derived(menu.familles);
-  const plus = $derived(pagesPlus(menu.familles));
+  const plus = pagesPlus();
   const plusActif = $derived(plus.some((l) => l.cle === actif));
   const filtreSur = $derived(actif === 'accueil' ? menu.filtre : 'tout'); // le sport surligné (seulement sur l'accueil)
+  const sportsPageActive = $derived(familles.some((f) => pageDuSport(f)?.cle === actif));
   const nomSport = (f) => (SPORTS[f] || SPORTS.autre).court;
 
   let compact = $state(false);
@@ -32,7 +33,6 @@
   $effect(() => {
     if (!nav || !mesureComplet || !mesureCompact) return;
     void familles;
-    void plus;
     const calculer = () => {
       const dispo = nav.clientWidth;
       const complet = mesureComplet.scrollWidth <= dispo;
@@ -81,20 +81,27 @@
   <span class="logo titre" aria-hidden="true">CI</span>
   <nav class="liens" class:defile aria-label="Navigation principale" bind:this={nav}>
     {#each principaux as l (l.cle)}
-      <a href={l.href} aria-current={actif === l.cle ? 'page' : undefined}>{l.nom}</a>
+      <a href={l.href} aria-current={actif === l.cle && !(l.cle === 'accueil' && filtreSur !== 'tout') ? 'page' : undefined}>{l.nom}</a>
     {/each}
     {#if familles.length}
       <span class="sep" aria-hidden="true"></span>
       {#if compact}
-        <button class="menu-deroulant" class:courant={filtreSur !== 'tout'} type="button" aria-haspopup="true" aria-expanded={ouvert === 'sports'} onclick={(e) => basculer('sports', e)}>
+        <button class="menu-deroulant" class:courant={filtreSur !== 'tout' || sportsPageActive} type="button" aria-haspopup="true" aria-expanded={ouvert === 'sports'} onclick={(e) => basculer('sports', e)}>
           {filtreSur !== 'tout' ? nomSport(filtreSur) : 'Sports'}
           {@render fleche()}
         </button>
       {:else}
         {#each familles as f (f)}
-          <button class="sport" class:courant={filtreSur === f} type="button" aria-pressed={filtreSur === f} onclick={() => choisir(f)}>
-            <span class="point" style:background={couleurSport(f)}></span>{nomSport(f)}
-          </button>
+          {@const pg = pageDuSport(f)}
+          {#if pg}
+            <a class="sport" class:courant={actif === pg.cle} href={pg.href} aria-current={actif === pg.cle ? 'page' : undefined}>
+              <span class="point" style:background={couleurSport(f)}></span>{nomSport(f)}
+            </a>
+          {:else}
+            <button class="sport" class:courant={filtreSur === f} type="button" aria-pressed={filtreSur === f} onclick={() => choisir(f)}>
+              <span class="point" style:background={couleurSport(f)}></span>{nomSport(f)}
+            </button>
+          {/if}
         {/each}
       {/if}
     {/if}
@@ -131,10 +138,17 @@
         <button type="button" class:courant={filtreSur === 'tout'} onclick={() => choisir('tout')}>Tous les sports</button>
       </li>
       {#each familles as f (f)}
+        {@const pg = pageDuSport(f)}
         <li>
-          <button type="button" class:courant={filtreSur === f} onclick={() => choisir(f)}>
-            <span class="point" style:background={couleurSport(f)}></span>{(SPORTS[f] || SPORTS.autre).nom}
-          </button>
+          {#if pg}
+            <a href={pg.href} aria-current={actif === pg.cle ? 'page' : undefined} onclick={() => (ouvert = null)}>
+              <span class="point" style:background={couleurSport(f)}></span>{(SPORTS[f] || SPORTS.autre).nom}
+            </a>
+          {:else}
+            <button type="button" class:courant={filtreSur === f} onclick={() => choisir(f)}>
+              <span class="point" style:background={couleurSport(f)}></span>{(SPORTS[f] || SPORTS.autre).nom}
+            </button>
+          {/if}
         </li>
       {/each}
     {:else}
