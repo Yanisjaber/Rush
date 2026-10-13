@@ -7,14 +7,9 @@
 // URLs vers lesquelles on peut renvoyer l'utilisateur après l'OAuth
 // (liste blanche exacte : évite l'open redirect).
 export const ALLOWED_RETURN_URLS = [
-  "http://localhost:8000/",
-  "http://localhost:8000/index.html",
-  "http://localhost:5173/", // v2 en développement local
+  "http://localhost:5173/", // développement local
   "https://yanisjaber.github.io/coach-ia/",
   "https://yanisjaber.github.io/coach-ia/index.html",
-  // La v1, gardée en secours dans /v1/ depuis que la v2 est à la racine
-  "https://yanisjaber.github.io/coach-ia/v1/",
-  "https://yanisjaber.github.io/coach-ia/v1/index.html",
 ];
 export const FALLBACK_REDIRECT = Deno.env.get("APP_REDIRECT_URL") || "https://yanisjaber.github.io/coach-ia/";
 

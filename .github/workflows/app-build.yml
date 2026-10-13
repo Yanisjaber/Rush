@@ -1,0 +1,42 @@
+name: Vérifier l'app
+
+# Vérifie que l'app (Svelte + Vite) compile, que ses tests passent et que ses dépendances de production n'ont pas de faille grave.
+# Ne déploie rien : le déploiement est fait par pages.yml.
+on:
+  push:
+    branches: [main]
+    paths: ['app/**', '.github/workflows/app-build.yml']
+  pull_request:
+    paths: ['app/**']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      # npm ci : installe EXACTEMENT ce qui est dans package-lock.json (jamais de version « flottante »).
+      # --ignore-scripts : aucun script d'installation n'est exécuté (même règle que app/.npmrc).
+      - name: Installer les dépendances
+        run: npm ci --ignore-scripts
+
+      - name: Audit de sécurité (dépendances de production)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Tests
+        run: npm test
+
+      - name: Compiler
+        run: npm run build

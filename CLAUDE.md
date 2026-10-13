@@ -11,64 +11,52 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Pose des questions** dès que quelque chose est flou, avant de coder. Si la demande a plusieurs interprétations, liste-les et demande.
 - Si une idée de Yanis est risquée ou bancale, dis-le franchement (gentiment), propose mieux, puis fais ce qu'il décide.
 - Code, noms de fichiers et de variables : comme dans le projet. Commentaires en français.
+- On ne parle plus de « v1 » ni de « v2 » : il n'y a qu'**une seule app**. (L'ancienne version est archivée, voir plus bas.)
 
 ## Vue d'ensemble
 
-Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon) avec un Coach IA (assistant d'analyse et de planification). Mono-utilisateur : le système de coaching humain (coach ↔ athlète) a été supprimé le 2026-10-11. Front **vanilla JS en modules ES** (pas de bundler, pas de framework), backend **Supabase** (Postgres + RLS + Edge Functions Deno), déployé sur GitHub Pages (`https://yanisjaber.github.io/coach-ia/`), utilisable en PWA (plus d'app Capacitor ni de domaine perso).
+Coach IA : app d'entraînement et de récupération pour **tout sport de performance lié à un entraînement physique et une forme** (pas de sports collectifs). Accueil composé de widgets selon les sports de l'utilisateur, mode édition, deux coques (mobile simple, desktop complet). Front **Svelte 5 + Vite 8** (dossier `app/`), backend **Supabase** (Postgres + RLS + Edge Functions Deno), publié sur GitHub Pages (`https://yanisjaber.github.io/coach-ia/`), utilisable en PWA. Inscription ouverte (confirmation par e-mail, SMTP Brevo).
 
 ## Commandes
 
-- Dev local : `python3 serve.py [port]` (défaut 8000) puis ouvrir `http://localhost:8000/index.html`. Vérifie que le port est libre (`lsof -nP -iTCP:8000 -sTCP:LISTEN`) : un autre serveur (Revise) tourne souvent dessus et `serve.py` échoue en silence. Le login Supabase n'autorise que `localhost:8000`.
-- Lint (CI `.github/workflows/lint.yml`) : `for f in $(find src -name '*.js'); do node --check "$f"; done` puis `npx eslint src/` (ESLint 9, installé à la volée en CI : `npm install --no-save eslint@9`). La config n'active que des règles « vrais bugs » (pas de style, `no-undef`/`no-unused-vars` désactivés car les globals sont croisés via `window.*`). Le `node --check` sert de filet contre les fichiers tronqués/corrompus par un Edit.
-- Pas de suite de tests.
-- Edge Functions : `supabase functions deploy <nom>` (`strava-oauth-callback` et `strava-webhook` se déploient avec `--no-verify-jwt`). Les migrations SQL (`supabase/migrations/`) s'appliquent à la main dans le SQL Editor Supabase et doivent rester idempotentes.
-- Garmin : **plus aucune intégration active** (décision du 2026-10-13). L'ancien Raspberry Pi (`tools/garmin_sync.py`, supprimé du dépôt, visible dans l'historique git) ne servait qu'à Yanis ; la connexion Garmin, ses jetons et ses demandes de synchro ont été supprimés de la base. La carte « Garmin » de Paramètres › Connexions reste en « Bientôt disponible » : l'intégration passera par l'accès officiel de Garmin (programme développeur), à demander plus tard. Les 18 nuits de sommeil déjà importées (`garmin_sleep`) restent affichées dans Sommeil.
+- Dev local : `cd app && npm ci` puis `npm run dev` → http://localhost:5173 (le catalogue du design system est sur `#/catalogue`). Mode démo sans compte : `?demo`.
+- Vérifications : `npm test` (tests de calcul, `node --test`) et `npm run build`. La CI (`.github/workflows/app-build.yml` et `pages.yml`) fait `npm ci --ignore-scripts`, l'audit des dépendances de production, les tests et le build.
+- Edge Functions : `supabase functions deploy <nom>` (`strava-oauth-callback` et `strava-webhook` avec `--no-verify-jwt`). Les migrations SQL (`supabase/migrations/`, nommées `AAAA-MM-JJ_nom.sql`, idempotentes) s'appliquent avec `supabase db query --linked -f <fichier>`. **Tests de base en local** : Postgres jetable via `supabase/proposals/db-v2/tests/local_pg.sh start|reset|psql` (jamais la vraie base).
+- Garmin : **aucune intégration active** (décision du 2026-10-13). La carte « Garmin » de Paramètres › Connexions reste en « Bientôt disponible » (accès officiel à demander plus tard) ; les nuits déjà importées (`garmin_sleep`) restent affichées dans Sommeil.
 
 ## Architecture
 
-### Front (`index.html` + `src/` + `styles/`)
-- `index.html` est l'unique page de l'app. `src/app.js` est le **point d'entrée** : il importe les modules puis appelle leurs `bootXxx()` dans l'ordre d'origine (ne pas réordonner : le câblage DOM en dépend). `core/ui/mobile-nav`, `features/coach/*` et `features/sleep/garmin-sleep` sont chargés à part en `type="module"` dans `index.html`.
-- `src/core/` : briques partagées (client Supabase, stockage, chargement des données, utils, `state.js`, dialogues, catalogue de sports). `core/` ne dépend pas de `features/`.
-- `src/features/<sujet>/` : un sujet par dossier (auth, profile, settings, integrations, coach = Coach IA uniquement, training, plan, calendar, competitions, dashboard, sessions, streams, gpx, sleep, bilan, opendossard…). `src/routing/tabs.js` gère les onglets et les ancres (`#calendrier`…).
-- **État partagé** : `appState` (`src/core/state.js`) remplace les anciennes variables de la grosse fonction d'`app.js` (données, `today`, modes du calendrier, graphiques, éléments DOM). Lire/écrire `appState.xxx`, ne pas recréer de variable globale.
-- Chaque module issu d'`app.js` expose une fonction `bootXxx()` (câblage des écouteurs, premiers rendus) appelée depuis `app.js`. Les dépendances circulaires entre modules sont normales (tout était une seule fermeture) et sans risque tant qu'aucune constante n'en lit une autre **au chargement du module**.
-- Les autres modules (auth, bilan…) communiquent surtout via `window.*` (notamment `window.DASHBOARD_DATA`), d'où la config ESLint permissive. Chart.js, flatpickr, Leaflet sont chargés par CDN, pas via npm.
-- Flux de données : **tout vient de Supabase** (migration « Supabase-only » terminée). `auth.js` → login → `supabase-data-loader.js` injecte les données dans `window.DASHBOARD_DATA`. `data-loader.js` fournit un dataset de 90 jours vides au boot. Les streams sont chargés à la demande (colonne `streams_gz`). `cloud-sync.js`/`storage-adapter.js` gèrent la persistance.
-- Les zones (FTP/LTHR) sont recalculées à l'affichage, jamais stockées.
-- Config client : `supabase-config.js`, `strava-config.js` à la racine (clés publiques).
-- `styles/` : `core/` (base, cartes, onglets, formulaires, modales), `features/` (un fichier par sujet), `mobile/` (surcharges mobiles). **L'ordre des `<link>` dans `index.html` fait la cascade** (`mobile/*` doit rester après le reste, `mobile/mobile.css` écrase des règles de `features/` et `core/modals.css`) : ne le change pas.
+### Front (`app/`)
+- **Stack** : Svelte 5 + Vite 8. Polices hébergées via `@fontsource` (aucun appel à Google Fonts). Routage par ancres (`#/calendrier`…), voir `app/src/lib/routeur.svelte.js`.
+- `app/src/routes/` : un écran par fichier (Accueil, Calendrier, Plan, Force, Hyrox, Compétitions, Bilan, Sommeil, Paramètres, Confidentialité…). `app/src/lib/components/` : briques réutilisables. `app/src/lib/stores/` : état partagé (`auth`, `profil`, `disposition`, `theme`, `connexions`). `app/src/lib/data/` : accès Supabase et calculs purs (testés dans `app/tests/`).
+- **Chaîne d'approvisionnement** : versions **exactes** (`save-exact`), `ignore-scripts=true` dans `app/.npmrc`, `package-lock.json` commité, `npm ci` en CI. Choisir des versions publiées il y a plus de deux semaines. Peu de dépendances : en ajouter une est une décision à discuter.
+- **Sécurité front** : les templates Svelte échappent le HTML (jamais `{@html}` avec des données externes). Le build injecte une CSP stricte (voir `app/vite.config.js`) : si une nouvelle origine est nécessaire (Supabase, Strava…), l'ajouter explicitement.
+- **Design system** (`app/src/lib/design/tokens.css`) : **la couleur désigne le sport**, pas le profil (course orange, vélo bleu, natation cyan, muscu corail, hybride jaune). Fond sombre par défaut, thème clair en option (suit le compte via `user_preferences`). Titres et chiffres en Bricolage Grotesque, texte en Instrument Sans. Le **dossard** (bloc clair avec quatre points d'attache) est la signature visuelle. Cibles tactiles d'au moins 44 px, focus visible, contraste vérifié.
+- **Données** : tout vient de Supabase (RLS `auth.uid() = user_id`). Charge d'entraînement universelle : TSS (puissance), sinon TRIMP (cardio), sinon effort ressenti × durée. Les zones (FTP/LTHR) sont recalculées à l'affichage, jamais stockées.
+- Clés de stockage navigateur `coachia-v2-*` (thème, brouillons…) : nom historique **gardé volontairement** (le renommer ferait perdre ces réglages aux appareils).
 
 ### Backend (`supabase/`)
-- `supabase/functions/` : Edge Functions Deno — ingestion (`strava-ingest`, `strava-webhook`, `strava-streams`), `oauth-start` (crée un `state` aléatoire à usage unique dans `oauth_states`, aucun JWT dans l'URL OAuth), callback OAuth (`strava-oauth-callback`, qui consomme ce `state`), helpers communs dans `functions/_shared/`, `coach-ai` (chat IA), `opendossard`, `disconnect-integration`.
-- Les tokens OAuth (`strava_connections`, etc.) sont masqués au rôle `authenticated` par révocation de colonnes : le navigateur ne doit jamais les lire, tout passe par les Edge Functions (service role).
-- Modèle de données : voir `MODELE_DONNEES.md`. Tables clés : `activities` (réalisé, Strava/Garmin/manuel), `activity_planned` (prévu), `activity_template`, `user_profiles` (réglages ; extras en JSONB `extras`), `connexions_app` (OAuth Strava/Garmin, tokens masqués au navigateur), `oauth_states` (état OAuth à usage unique, service_role seulement). RLS : chaque utilisateur n'accède qu'à ses lignes (`auth.uid() = user_id`) ; aucun accès `anon`.
-- `supabase/migrations/` est le journal officiel des changements de schéma, nommé `AAAA-MM-JJ_nom.sql`. Toutes les migrations sont dans ce dossier.
+- `supabase/functions/` : Edge Functions Deno — ingestion (`strava-ingest`, `strava-webhook`, `strava-streams`, `strava-laps`), `oauth-start` (crée un `state` aléatoire à usage unique dans `oauth_states`, aucun JWT dans l'URL OAuth), callback OAuth (`strava-oauth-callback`), `delete-account` (suppression en 3 étapes : préparer, purger par lots, supprimer), `opendossard`, `disconnect-integration`, `coach-ai`. Helpers communs dans `functions/_shared/` (dont `jetons.ts` pour les jetons et `cors.ts`).
+- **Jetons OAuth** : chiffrés dans Supabase Vault (`connexions_app.secret_id`), jamais en colonne ; lus seulement par les Edge Functions (service role) via `rpc_connection_secrets`. Le navigateur ne voit que le statut de la connexion. Voir `docs/db/JETONS_VAULT.md`.
+- Modèle de données : voir `MODELE_DONNEES.md`. Tables clés : `activities`, `activity_planned`, `activity_template`, `user_profiles` (réglages ; extras en JSONB `extras`), `user_preferences` (disposition de l'accueil et thème), `connexions_app`, `oauth_states` (service_role seulement), tables de force et Hyrox. RLS : chaque utilisateur n'accède qu'à ses lignes (`auth.uid() = user_id`) ; aucun accès `anon`.
+- `supabase/migrations/` est le journal officiel des changements de schéma. `supabase/proposals/` contient la proposition d'une future base remaniée (non appliquée). `supabase/email-templates/` : les modèles d'e-mails d'authentification (à coller dans Supabase). Audit et plans : `docs/db/`.
 
-## v2 (nouvelle app, dossier `v2/`)
-
-La v2 est une refonte complète construite **à côté** de la v1 (même dépôt, même Supabase). Elle vise **tout sport de performance lié à un entraînement physique et une forme** (pas de sports collectifs), avec un accueil composé de widgets selon les sports de l'utilisateur, un mode édition, un onboarding, et deux coques (mobile simple, desktop complet). La v1 ne doit jamais être cassée.
-
-**Officialisation (faite le 2026-10-13)** : la v2 est l'app en ligne (racine du site, `https://yanisjaber.github.io/coach-ia/`) et la v1 reste en secours dans `/v1/`. Le site est publié par `.github/workflows/pages.yml` : tests, audit et build de la v2, assemblage (v2 compilée à la racine + v1 dans `v1/`, rien d'autre du dépôt n'est servi), puis déploiement. La source de GitHub Pages est « GitHub Actions » et la variable de dépôt `DEPLOY_PAGES` vaut `true` : **un push sur `main` met donc la v2 en ligne**. Retour arrière d'urgence : repasser la source de Pages en « Deploy from a branch » (main, `/`), la v1 revient à la racine. Ne change ni ce réglage ni cette variable sans que Yanis le demande.
-
-- **Stack** : Svelte 5 + Vite 8 (le « pas de bundler » ne vaut que pour la v1). Polices hébergées via `@fontsource` (aucun appel à Google Fonts).
-- **Commandes** : `cd v2 && npm ci` puis `npm run dev` (http://localhost:5173) ou `npm run build`. Le catalogue du design system est la page d'accueil de `v2/`.
-- **Chaîne d'approvisionnement** : versions **exactes** (`save-exact`), `ignore-scripts=true` dans `v2/.npmrc`, `package-lock.json` commité, `npm ci` en CI. Choisir des versions publiées il y a plus de deux semaines. Peu de dépendances : en ajouter une est une décision à discuter.
-- **Sécurité** : les templates Svelte échappent le HTML (jamais `{@html}` avec des données externes). Le build injecte une CSP stricte (voir `v2/vite.config.js`) : si une nouvelle origine est nécessaire (Supabase, Strava…), l'ajouter explicitement.
-- **Design system** (`v2/src/lib/design/tokens.css`) : **la couleur désigne le sport**, pas le profil (course orange, vélo bleu, natation cyan, muscu corail, hybride jaune). Fond sombre par défaut, thème clair en option. Titres et chiffres en Bricolage Grotesque, texte en Instrument Sans. Le **dossard** (bloc clair avec quatre points d'attache) est la signature visuelle. Cibles tactiles d'au moins 44 px, focus visible, contraste vérifié.
-- **Données** : tout vient de Supabase (RLS `auth.uid() = user_id`). Charge d'entraînement universelle : TSS (puissance), sinon TRIMP (cardio), sinon effort ressenti × durée.
+### Archive
+- `archive-v1/` : l'ancienne version de l'app (code source) et le schéma de la base de l'époque, sans données. **Ne sert plus à rien**, ne pas y toucher ni la mentionner. Le tag git `v1-avant-refonte` marque cette époque.
 
 ## Pièges
 
-- `.env`, `.garmin_tokens.json`, `.strava_tokens.json` sont ignorés par git. Le dépôt est public : tout ce qui est commité l'est (jetons, clés secrètes, fichiers perso : jamais). GitHub Pages ne sert que ce que `pages.yml` assemble (pas `tools/`, `supabase/`, `.env`…).
-- Ne pas casser le format des fichiers `src/**/*.js` lors d'éditions volumineuses (incident de troncature en juin) : relancer `node --check` après modification.
+- `.env`, `.strava_tokens.json`, `.whoop_tokens.json`, `.garmin_tokens.json` sont ignorés par git. Le dépôt est public : tout ce qui est commité l'est (jetons, clés secrètes, fichiers perso : jamais). GitHub Pages ne sert que ce que `pages.yml` assemble (le build de `app/`).
+- Un push sur `main` met l'app en ligne : le déploiement est piloté par `.github/workflows/pages.yml` (source Pages = « GitHub Actions », variable de dépôt `DEPLOY_PAGES=true`). Ne change ni ce réglage ni cette variable sans que Yanis le demande.
+- Les e-mails envoyés par Brevo avec un expéditeur Gmail finissent souvent en spams (un domaine à lui réglerait ça).
 
 ## Sécurité — toujours, sur tout ce que tu écris
 
 - Pense sécurité **dès la conception** : avant chaque ajout, « qui peut lire ou modifier ça ? ».
 - Toute nouvelle table a la RLS activée, avec des policies limitées à `auth.uid() = user_id`.
-- Les clés publiques (`anon`, `*-config.js`) sont OK dans le front. Ne mets **jamais** la clé `service_role`, un `client_secret`, un mot de passe ou un token dans le code, un commit, une réponse ou un log.
-- Échappe tout texte venant de Strava, de la base ou de l'utilisateur avant de l'insérer dans du HTML : `escapeHtml()` de `src/core/utils.js`. Pas de `innerHTML` avec des données non échappées, pas de `eval`. Test dynamique de référence : mettre `<img src=x onerror=...>` dans les noms d'activités (en mémoire, via `window.DASHBOARD_DATA`), parcourir les écrans et vérifier que rien ne s'exécute.
-- Edge Functions appelées par le navigateur : CORS via `_shared/cors.ts` (GitHub Pages + localhost), jamais `*`. `supabase-js` et les scripts CDN sont figés (version exacte, SRI dans `index.html`) : si tu changes une version, recalcule l'empreinte `sha384`.
+- Les clés publiques (`anon`/« publishable », `app/src/lib/config.js`) sont OK dans le front. Ne mets **jamais** la clé `service_role`, un `client_secret`, un mot de passe ou un token dans le code, un commit, une réponse ou un log.
+- N'insère jamais de texte venant de Strava, de la base ou de l'utilisateur dans du HTML sans l'échapper (les templates Svelte le font ; pas de `{@html}` sur des données externes, pas d'`innerHTML`, pas d'`eval`). Test dynamique de référence : mettre `<img src=x onerror=...>` dans les noms d'activités, parcourir les écrans et vérifier que rien ne s'exécute.
+- Edge Functions appelées par le navigateur : CORS via `_shared/cors.ts` (GitHub Pages + localhost), jamais `*`.
 - Valide les entrées (formulaires, fichiers GPX/imports : type et taille) côté client **et** compte sur la RLS côté base.
 - Si tu repères une faille existante, dis-le à Yanis tout de suite, même si ce n'est pas ce qu'il a demandé.
 - Ne lance jamais de SQL sur la base Supabase ni de déploiement d'Edge Function sans que Yanis le demande.
@@ -76,16 +64,16 @@ La v2 est une refonte complète construite **à côté** de la v1 (même dépôt
 ## Design — pas de look « IA générique »
 
 - Interdit : dégradés violet/bleu, cartes arrondies toutes identiques avec ombre douce, emojis partout, hero centré générique, palette « SaaS ».
-- Pars de l'identité existante de l'app (`styles/core/base.css`) et pousse-la : choix assumés, cohérents sur toutes les pages.
+- Pars de l'identité existante (`app/src/lib/design/tokens.css`) et pousse-la : choix assumés, cohérents sur toutes les pages.
 - Avant de refaire un visuel, propose 2 ou 3 directions en quelques mots et demande laquelle il veut.
 - Garde le clair/sombre, le mobile d'abord (usage PWA sur téléphone), l'accessibilité.
 
 ## Git
 
 - Branche `main`, remote `origin` : `https://github.com/Yanisjaber/coach-ia.git`. Un push met le site en ligne (GitHub Pages via `pages.yml`).
-- **Nom de code du push : `yallah`** (ou `yalah`, `yala`, `YALLAH`). Tu ne fais **jamais** `git push` tant que Yanis n'a pas écrit ce mot dans le chat. « Pousse », « c'est bon » ou « ok » ne suffisent pas. Tu peux préparer les commits, mais tu t'arrêtes là.
-- **Pas de push à chaque modif.** On travaille d'abord en local (`python3 serve.py`) : tu modifies, tu testes, tu peux commiter, mais tu ne parles pas de push et tu ne rappelles pas le mot de passe après chaque changement.
-- Avant le push : montre un résumé (`git status`, commits à envoyer) et vérifie que le site tourne en local.
+- **Nom de code du push : `yallah`** (ou `yalah`, `yala`, `YALLAH`). Tu ne fais **jamais** `git push` tant que Yanis n'a pas écrit ce mot dans le chat. « Pousse », « go », « c'est bon » ou « ok » ne suffisent pas. Tu peux préparer les commits, mais tu t'arrêtes là.
+- **Pas de push à chaque modif.** On travaille d'abord en local : tu modifies, tu testes, tu peux commiter, mais tu ne parles pas de push et tu ne rappelles pas le mot de passe après chaque changement.
+- Avant le push : montre un résumé (`git status`, commits à envoyer) et vérifie que tests et build passent.
 - Commits en français, courts, un sujet par commit (ex. : `Ajoute le calendrier de nuits dans l'onglet Sommeil`). Jamais de `--force`, jamais de `--no-verify`, jamais de réécriture d'historique déjà poussé.
 - Ne commite jamais de secret ni de fichier perso.
 

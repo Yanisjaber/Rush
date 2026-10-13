@@ -1,6 +1,6 @@
 # Modèles d'e-mails Coach IA (Supabase Auth)
 
-Un fichier HTML par e-mail, au style « Tous tes sports » (bannière `v2/public/_mail/hero-2.png`, servie par le site à
+Un fichier HTML par e-mail, au style « Tous tes sports » (bannière `app/public/_mail/hero-2.png`, servie par le site à
 `https://yanisjaber.github.io/coach-ia/_mail/hero-2.png`). L'objet de chaque e-mail est dans `sujets.json`.
 
 À copier dans Supabase : Authentication > Emails > Templates (objet + corps, onglet « Source »).
