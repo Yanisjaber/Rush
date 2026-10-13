@@ -1,6 +1,7 @@
 <script>
   import Champ from '../lib/components/Champ.svelte';
   import Bouton from '../lib/components/Bouton.svelte';
+  import Panneau from '../lib/components/Panneau.svelte';
   import { auth, connexion, demanderReinitialisation, inscription } from '../lib/stores/auth.svelte.js';
 
   let email = $state('');
@@ -14,18 +15,33 @@
   let nom = $state('');
   let consentement = $state(false);
   let infoCreation = $state('');
+  let popup = $state(false); // pop-up « e-mail envoyé » après une inscription réussie
+  let erreurs = $state({}); // erreur par champ : prenom, nom, email, mdp, consentement
 
   async function creerCompte(evenement) {
     evenement.preventDefault();
     if (enCours) return;
     message = '';
-    infoCreation = '';
+    erreurs = {};
     enCours = true;
     const r = await inscription({ prenom, nom, email, motDePasse, consentement });
     enCours = false;
     motDePasse = ''; // le mot de passe ne reste jamais dans le champ
-    if (r.ok) infoCreation = r.message;
+    if (r.ok) {
+      infoCreation = r.message;
+      popup = true;
+      prenom = '';
+      nom = '';
+      consentement = false;
+    } else if (r.champ) erreurs = { [r.champ]: r.message };
     else message = r.message;
+  }
+
+  /** Ferme la pop-up et revient à l'écran de connexion (l'e-mail reste rempli). */
+  function fermerPopup() {
+    popup = false;
+    creer = false;
+    infoCreation = '';
   }
 
   async function reinitialiser(evenement) {
@@ -68,18 +84,18 @@
   {#if creer}
     <form class="formulaire" onsubmit={creerCompte}>
       <h2 class="titre">Créer un compte</h2>
-      <Champ id="prenom" label="Prénom" autocomplete="given-name" maxlength={60} bind:valeur={prenom} requis />
-      <Champ id="nom" label="Nom" autocomplete="family-name" maxlength={60} bind:valeur={nom} requis />
-      <Champ id="email-creation" label="Adresse e-mail" type="email" autocomplete="email" bind:valeur={email} requis />
-      <Champ id="mdp-creation" label="Mot de passe (10 caractères minimum)" type="password" autocomplete="new-password" bind:valeur={motDePasse} requis />
+      <Champ id="prenom" label="Prénom" autocomplete="given-name" maxlength={60} bind:valeur={prenom} erreur={erreurs.prenom} requis />
+      <Champ id="nom" label="Nom" autocomplete="family-name" maxlength={60} bind:valeur={nom} erreur={erreurs.nom} requis />
+      <Champ id="email-creation" label="Adresse e-mail" type="email" autocomplete="email" bind:valeur={email} erreur={erreurs.email} requis />
+      <Champ id="mdp-creation" label="Mot de passe (10 caractères minimum)" type="password" autocomplete="new-password" bind:valeur={motDePasse} erreur={erreurs.mdp} requis />
       <label class="consentement">
         <input type="checkbox" bind:checked={consentement} required />
         <span>J'ai lu la <a href="#/confidentialite" target="_blank" rel="noopener">politique de confidentialité</a> et je l'accepte.</span>
       </label>
+      {#if erreurs.consentement}<p class="erreur-champ" role="alert">{erreurs.consentement}</p>{/if}
       {#if message}<p class="erreur" role="alert">{message}</p>{/if}
-      {#if infoCreation}<p class="info ok" role="status">{infoCreation}</p>{/if}
       <Bouton type="submit">{enCours ? 'Création…' : 'Créer mon compte'}</Bouton>
-      <Bouton variante="texte" onclick={() => { creer = false; message = ''; infoCreation = ''; }}>J'ai déjà un compte</Bouton>
+      <Bouton variante="texte" onclick={() => { creer = false; message = ''; erreurs = {}; }}>J'ai déjà un compte</Bouton>
     </form>
   {:else if oubli}
     <form class="formulaire" onsubmit={reinitialiser}>
@@ -108,6 +124,11 @@
     </form>
   {/if}
 </main>
+
+<Panneau ouvert={popup} titre="Vérifie ta boîte mail" onfermer={fermerPopup}>
+  <p class="info">{infoCreation}</p>
+  <Bouton onclick={fermerPopup}>J'ai compris</Bouton>
+</Panneau>
 
 <style>
   .connexion {
@@ -185,6 +206,11 @@
     font-size: 14px;
     line-height: 1.5;
     color: var(--texte-doux);
+  }
+  .erreur-champ {
+    margin: -8px 0 0;
+    font-size: 13px;
+    color: var(--danger);
   }
   .consentement {
     display: flex;

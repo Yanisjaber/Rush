@@ -63,16 +63,18 @@ const NOM_MAX = 60;
 
 /**
  * Valide le formulaire « Créer un compte » (hors format de l'e-mail, vérifié par le store).
- * Renvoie { ok: true, prenom, nom } (valeurs nettoyées) ou { ok: false, message }.
+ * Renvoie { ok: true, prenom, nom } (valeurs nettoyées) ou { ok: false, champ, message } :
+ * `champ` (prenom, nom, mdp, consentement) dit sous quel champ afficher l'erreur.
  */
 export function validerInscription({ prenom, nom, motDePasse, email = '', consentement }) {
   const p = nettoyerNom(prenom);
   const n = nettoyerNom(nom);
-  if (!p) return { ok: false, message: 'Saisis ton prénom.' };
-  if (!n) return { ok: false, message: 'Saisis ton nom.' };
-  if (p.length > NOM_MAX || n.length > NOM_MAX) return { ok: false, message: `${NOM_MAX} caractères maximum pour le prénom et le nom.` };
+  if (!p) return { ok: false, champ: 'prenom', message: 'Saisis ton prénom.' };
+  if (p.length > NOM_MAX) return { ok: false, champ: 'prenom', message: `${NOM_MAX} caractères maximum.` };
+  if (!n) return { ok: false, champ: 'nom', message: 'Saisis ton nom.' };
+  if (n.length > NOM_MAX) return { ok: false, champ: 'nom', message: `${NOM_MAX} caractères maximum.` };
   const v = validerMotDePasse(motDePasse, motDePasse, email);
-  if (!v.ok) return v;
-  if (consentement !== true) return { ok: false, message: 'Coche la case pour accepter la politique de confidentialité.' };
+  if (!v.ok) return { ok: false, champ: 'mdp', message: v.message };
+  if (consentement !== true) return { ok: false, champ: 'consentement', message: 'Coche la case pour accepter la politique de confidentialité.' };
   return { ok: true, prenom: p, nom: n };
 }

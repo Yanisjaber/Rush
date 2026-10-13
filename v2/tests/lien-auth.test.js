@@ -58,6 +58,11 @@ test('inscription : prénom, nom, mot de passe et consentement sont exigés', ()
   assert.equal(validerInscription({ ...bon, motDePasse: 'lea-mon-mot-de-passe' }).ok, false); // contient l'e-mail
   assert.equal(validerInscription({ ...bon, consentement: false }).ok, false);
   assert.equal(validerInscription({ ...bon, consentement: 'oui' }).ok, false);
+  // chaque erreur dit sous quel champ l'afficher
+  assert.equal(validerInscription({ ...bon, prenom: '' }).champ, 'prenom');
+  assert.equal(validerInscription({ ...bon, nom: '' }).champ, 'nom');
+  assert.equal(validerInscription({ ...bon, motDePasse: 'court' }).champ, 'mdp');
+  assert.equal(validerInscription({ ...bon, consentement: false }).champ, 'consentement');
 });
 
 test('nettoyerNom : retire chevrons, contrôles et espaces en trop', () => {

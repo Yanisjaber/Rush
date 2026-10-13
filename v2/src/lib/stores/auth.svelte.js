@@ -105,7 +105,7 @@ async function completerProfilInscription(user) {
  */
 export async function inscription({ prenom, nom, email, motDePasse, consentement }) {
   const adresse = String(email || '').trim();
-  if (!FORMAT_EMAIL.test(adresse)) return { ok: false, message: 'Saisis une adresse e-mail valide.' };
+  if (!FORMAT_EMAIL.test(adresse)) return { ok: false, champ: 'email', message: 'Saisis une adresse e-mail valide.' };
   const v = validerInscription({ prenom, nom, motDePasse, email: adresse, consentement });
   if (!v.ok) return v;
   const { error } = await sb.auth.signUp({
@@ -117,9 +117,11 @@ export async function inscription({ prenom, nom, email, motDePasse, consentement
     },
   });
   if (error) {
+    // `champ` dit sous quel champ afficher l'erreur ; sans champ, c'est un message général
     if (error.status === 429) return { ok: false, message: "Trop d'inscriptions en peu de temps. Réessaie dans quelques minutes." };
-    if (error.code === 'weak_password') return { ok: false, message: 'Le serveur trouve ce mot de passe trop faible. Allonge-le ou varie les caractères.' };
-    if (error.status === 422 || error.status === 400) return { ok: false, message: "Inscription refusée. Vérifie l'adresse e-mail et le mot de passe." };
+    if (error.code === 'weak_password') return { ok: false, champ: 'mdp', message: 'Le serveur trouve ce mot de passe trop faible. Allonge-le ou varie les caractères.' };
+    if (error.code === 'email_address_invalid') return { ok: false, champ: 'email', message: "Cette adresse e-mail n'est pas acceptée. Vérifie-la." };
+    if (error.status === 422 || error.status === 400) return { ok: false, champ: 'email', message: "Inscription refusée. Vérifie l'adresse e-mail et le mot de passe." };
     return { ok: false, message: "Inscription impossible pour le moment. Vérifie ta connexion internet." };
   }
   return { ok: true, message: "Si cette adresse n'a pas encore de compte, un e-mail de confirmation vient de partir : clique sur le lien dedans (regarde aussi les indésirables). Si tu as déjà un compte, aucun e-mail n'est envoyé : connecte-toi, ou utilise « Mot de passe oublié »." };
