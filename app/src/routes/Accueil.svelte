@@ -34,10 +34,6 @@
     chargerSeriesForce, chargerProgrammes, chargerExercicesPerso, chargerTestsHyrox, chargerObjectifHyrox,
   } from '../lib/data/api.js';
   import { donneesDemo, programmesDemo, seriesForceDemo, testsHyroxDemo, objectifHyroxDemo } from '../lib/data/demo.js';
-  import { chargeParSemaine, formeActuelle, seancesForce } from '../lib/data/synthese.js';
-  import { programmeDuJour } from '../lib/data/force.js';
-  import { accrocheMuscu, accrocheHyrox } from '../lib/data/accroche.js';
-  import { familleSport } from '../lib/data/familles.js';
   import { dateIsoLocale } from '../lib/utils/format.js';
   import { familleAffichage } from '../lib/data/familles.js';
 
@@ -189,27 +185,6 @@
   const idsBibliotheque = $derived(
     disposition.ongletEdition !== 'tout' ? disponiblesOnglet(listeEnEdition, disposition.ongletEdition) : disponibles(disposition, familles),
   );
-  const accrocheSport = $derived.by(() => {
-    if (filtreActif === 'muscu') {
-      return accrocheMuscu({
-        serie: seancesForce(etat.seances).serie,
-        series: etat.force.series,
-        programme: programmeDuJour(etat.force.programmes, etat.seances),
-      });
-    }
-    if (filtreActif === 'hyrox') {
-      return accrocheHyrox({
-        objectif: etat.objectifs.find((o) => familleSport(o.sport) === 'hyrox') || null,
-        test: etat.hyrox.tests[0] || null,
-        cible: etat.hyrox.objectif,
-      });
-    }
-    return '';
-  });
-  const forme = $derived(formeActuelle(etat.metriques));
-  const chargeSemaine = $derived(
-    chargeParSemaine(seancesVisibles).series.reduce((s, serie) => s + (serie.valeurs[serie.valeurs.length - 1] || 0), 0),
-  );
 </script>
 
 <main class="page">
@@ -245,14 +220,6 @@
 
     <section class="accroche">
       <h1 class="titre">Salut{prenom ? ` ${prenom}` : ''}.</h1>
-      {#if accrocheSport}
-        <p>{accrocheSport}</p>
-      {:else if forme}
-        <p>
-          Ta forme est de <strong class="ok">{forme.tsb > 0 ? '+' : ''}{forme.tsb}</strong> ({forme.libelle.toLowerCase()}).
-          {#if chargeSemaine}Tu as encaissé <strong>{chargeSemaine} points de charge</strong> ces 7 derniers jours.{/if}
-        </p>
-      {/if}
     </section>
 
     {#if sportAvecDetail && !disposition.enEdition}
@@ -388,20 +355,6 @@
   h1 {
     font-size: clamp(36px, 6vw, 52px);
     line-height: 1;
-  }
-  .accroche p {
-    margin-top: 12px;
-    max-width: 720px;
-    font-size: 18px;
-    line-height: 1.5;
-    color: var(--texte-doux);
-  }
-  .accroche strong {
-    color: var(--texte);
-    font-weight: 600;
-  }
-  .accroche .ok {
-    color: var(--ok);
   }
 
   .info,
