@@ -8,6 +8,7 @@
   import { disponibles, disponiblesOnglet, composerOnglet, ONGLETS_PERSONNALISABLES } from '../lib/widgets/registre.js';
   import { SPORTS } from '../lib/sports.js';
   import SelecteurSport from '../lib/components/SelecteurSport.svelte';
+  import Ecran from '../lib/components/Ecran.svelte';
   import ParcoursDemarrage from '../lib/components/ParcoursDemarrage.svelte';
   import Onboarding from '../lib/components/Onboarding.svelte';
   import { sportsChoisis, chargerSportsChoisis } from '../lib/stores/sports.svelte.js';
@@ -174,6 +175,15 @@
   const widgetsVisibles = $derived(
     compteVide && !disposition.enEdition ? widgetsAffiches.filter((w) => ['objectif', 'semaine', 'avenir'].includes(w.id)) : widgetsAffiches,
   );
+  // Muscu et Hyrox n'ont pas de page à eux : sur leur filtre, l'accueil a deux vues, « Vue d'ensemble » (widgets) et le détail
+  // (programmes, journal, exercices pour la muscu ; tests et objectif pour Hyrox).
+  const sportAvecDetail = $derived(filtreActif === 'muscu' || filtreActif === 'hyrox');
+  let vue = $state('ensemble');
+  $effect(() => {
+    void filtreActif; // changer de sport revient à la vue d'ensemble
+    vue = 'ensemble';
+  });
+  const enDetail = $derived(sportAvecDetail && vue === 'detail' && !disposition.enEdition);
   const ongletRiche = $derived(ONGLETS_PERSONNALISABLES.includes(filtreActif));
   const nomOngletEdition = $derived(disposition.ongletEdition !== 'tout' ? (SPORTS[disposition.ongletEdition] || SPORTS.autre).court : ''); // « Muscu », « Hyrox »
   const idsBibliotheque = $derived(
@@ -209,7 +219,7 @@
   {:else}
   <div class="outils">
     <SelecteurSport />
-    {#if !disposition.enEdition && !etat.chargement}
+    {#if !disposition.enEdition && !etat.chargement && !enDetail}
       <Bouton variante="discret" onclick={() => demarrerEdition(filtreActif)}>{ongletRiche ? `Personnaliser l'onglet ${(SPORTS[filtreActif] || SPORTS.autre).court}` : "Personnaliser l'accueil"}</Bouton>
     {/if}
   </div>
@@ -252,8 +262,23 @@
       {/if}
     </section>
 
+    {#if sportAvecDetail && !disposition.enEdition}
+      <nav class="vues" aria-label="Vues {(SPORTS[filtreActif] || SPORTS.autre).court}">
+        <button type="button" aria-current={vue === 'ensemble' ? 'page' : undefined} onclick={() => (vue = 'ensemble')}>Vue d'ensemble</button>
+        <button type="button" aria-current={vue === 'detail' ? 'page' : undefined} onclick={() => (vue = 'detail')}>
+          {filtreActif === 'muscu' ? 'Programmes, journal, exercices' : 'Tests et objectif'}
+        </button>
+      </nav>
+    {/if}
+
     {#if compteVide && !disposition.enEdition}<ParcoursDemarrage />{/if}
-    {#if widgetsVisibles.length}
+    {#if enDetail}
+      {#if filtreActif === 'muscu'}
+        <Ecran charger={() => import('./Force.svelte')} {demo} integre={true} />
+      {:else}
+        <Ecran charger={() => import('./Hyrox.svelte')} {demo} integre={true} />
+      {/if}
+    {:else if widgetsVisibles.length}
       <div class="grille">
         {#each widgetsVisibles as w, i (w.id)}
           {@const Composant = COMPOSANTS[w.id]}
@@ -290,6 +315,29 @@
 </main>
 
 <style>
+  .vues {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+  .vues button {
+    min-height: var(--cible);
+    padding: 0 16px;
+    border: 1px solid var(--trait);
+    border-radius: var(--rayon-rond);
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--texte-doux);
+    cursor: pointer;
+  }
+  .vues button[aria-current='page'] {
+    background: var(--surface-2);
+    border-color: var(--trait-fort);
+    color: var(--texte);
+  }
   .outils {
     display: flex;
     flex-wrap: wrap;

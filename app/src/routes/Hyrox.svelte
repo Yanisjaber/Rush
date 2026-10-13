@@ -14,7 +14,8 @@
   import { formatDateCourte } from '../lib/utils/format.js';
 
   // Page Hyrox : tes tests et courses (16 segments), ton objectif de temps et l'évolution segment par segment.
-  let { demo = false } = $props();
+  // integre : affiché DANS l'accueil (filtre Hyrox) : pas d'en-tête ni de titre
+  let { demo = false, integre = false } = $props();
 
   let etat = $state({ chargement: true, erreur: '', tests: [], objectif: null });
   let panneauTest = $state({ ouvert: false, test: null });
@@ -73,11 +74,11 @@
   const delta = (i) => (resume.dernier && resume.precedent ? Number(resume.dernier.segments[i]) - Number(resume.precedent.segments[i]) : null);
 </script>
 
-<main class="page">
-  <EnTete actif="hyrox" {demo} />
+<svelte:element this={integre ? 'div' : 'main'} class={integre ? 'integre' : 'page'}>
+  {#if !integre}<EnTete actif="hyrox" {demo} />{/if}
 
   <header class="titre-page">
-    <h1 class="titre">Hyrox</h1>
+    {#if !integre}<h1 class="titre">Hyrox</h1>{/if}
     <div class="actions">
       <Bouton variante="discret" onclick={() => (panneauObjectif = { ouvert: true })}>{etat.objectif ? 'Mon objectif' : 'Fixer un objectif'}</Bouton>
       <Bouton onclick={() => ouvrirTest(null)}>Nouveau test</Bouton>
@@ -160,7 +161,7 @@
       </ul>
     </Bloc>
   {/if}
-</main>
+</svelte:element>
 
 <PanneauTestHyrox ouvert={panneauTest.ouvert} test={panneauTest.test} {demo} {userId} onenregistrer={enregistrerTest} onsupprimer={supprimerTest} onfermer={fermerTest} />
 <PanneauObjectifHyrox ouvert={panneauObjectif.ouvert} objectif={etat.objectif} onenregistrer={enregistrerObjectif} onfermer={() => (panneauObjectif = { ouvert: false })} />

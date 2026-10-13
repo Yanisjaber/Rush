@@ -14,7 +14,10 @@
 
   // Page « Force » : programmes (séances types), journal des séances de force, exercices et records.
   // onglet : 'programmes' | 'journal' | 'exercices'
-  let { demo = false, onglet = 'programmes' } = $props();
+  // integre : affiché DANS l'accueil (filtre Muscu) : pas d'en-tête ni de titre, sections choisies par des boutons (onglet local).
+  let { demo = false, onglet: ongletRoute = 'programmes', integre = false } = $props();
+  let ongletLocal = $state('programmes');
+  const onglet = $derived(integre ? ongletLocal : ongletRoute);
 
   let etat = $state({ chargement: true, erreur: '', seances: [], series: [], programmes: [], exercicesPerso: [] });
   let panneau = $state({ ouvert: false, programme: null });
@@ -107,11 +110,11 @@
   ];
 </script>
 
-<main class="page">
-  <EnTete actif="force" {demo} />
+<svelte:element this={integre ? 'div' : 'main'} class={integre ? 'integre' : 'page'}>
+  {#if !integre}<EnTete actif="force" {demo} />{/if}
 
   <header class="titre-page">
-    <h1 class="titre">Muscu</h1>
+    {#if !integre}<h1 class="titre">Muscu</h1>{/if}
     <div class="actions">
       <Bouton variante="discret" href="#/force/apres/libre">Ajouter une séance passée</Bouton>
       <Bouton href="#/force/seance/libre">Séance libre</Bouton>
@@ -120,7 +123,11 @@
 
   <nav class="onglets" aria-label="Sections de la force">
     {#each onglets as o (o.cle)}
-      <a href={o.href} aria-current={onglet === o.cle ? 'page' : undefined}>{o.nom}</a>
+      {#if integre}
+        <button type="button" aria-current={onglet === o.cle ? 'page' : undefined} onclick={() => (ongletLocal = o.cle)}>{o.nom}</button>
+      {:else}
+        <a href={o.href} aria-current={onglet === o.cle ? 'page' : undefined}>{o.nom}</a>
+      {/if}
     {/each}
   </nav>
 
@@ -224,7 +231,7 @@
       <button type="button" class="nouveau" onclick={() => ouvrirProgramme(null)}>+ Nouveau programme</button>
     </div>
   {/if}
-</main>
+</svelte:element>
 
 <PanneauProgramme
   ouvert={panneau.ouvert}
@@ -260,7 +267,8 @@
     gap: 6px;
     margin: 12px 0 20px;
   }
-  .onglets a {
+  .onglets a,
+  .onglets button {
     display: inline-flex;
     align-items: center;
     min-height: var(--cible);
@@ -272,7 +280,13 @@
     font-weight: 600;
     text-decoration: none;
   }
-  .onglets a[aria-current='page'] {
+  .onglets button {
+    background: transparent;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .onglets a[aria-current='page'],
+  .onglets button[aria-current='page'] {
     background: var(--texte);
     border-color: var(--texte);
     color: var(--fond);

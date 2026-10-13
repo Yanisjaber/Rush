@@ -1,12 +1,12 @@
 <script>
   import { menu } from '../stores/menu.svelte.js';
-  import { page, pagesDeSports } from '../data/menu.js';
+  import { page } from '../data/menu.js';
   import { SPORTS, couleurSport } from '../sports.js';
 
   // En-tête commun, sur ordinateur et tablette (sur téléphone il n'existe pas : voir BarreBas.svelte).
   // Deux groupes complémentaires :
-  //   à gauche, les PAGES : Accueil · Calendrier · Plan · Compétitions · Bilan · Sommeil (+ « Plus ▾ » : écrans Muscu / Hyrox si pratiqués) ;
-  //   à droite, les SPORTS : Tous · Course · Vélo… Le sport choisi est un filtre global : il reste quand on change de page
+  //   d'abord les PAGES : Accueil · Calendrier · Plan · Compétitions · Bilan · Sommeil ;
+  //   puis les SPORTS : Tous · Course · Vélo… (Muscu et Hyrox n'ont pas de page : leur écran est l'accueil filtré). Le sport choisi est un filtre global : il reste quand on change de page
   //   (sauf Sommeil, qui l'ignore). Page courante et sport choisi sont surlignés en même temps.
   // Selon la place disponible :
   //   1. tout à plat ;
@@ -19,7 +19,6 @@
   const debut = [page('accueil'), page('calendrier'), page('plan')];
   const fin = [page('competitions'), page('bilan'), page('sommeil')];
   const familles = $derived(menu.familles);
-  const pagesSport = $derived(pagesDeSports(menu.familles)); // Muscu, Hyrox : leurs écrans vivent dans « Plus »
   const nomSport = (f) => (SPORTS[f] || SPORTS.autre).court;
 
   let pagesEnPlus = $state(false);
@@ -32,8 +31,8 @@
   let ouvert = $state(null); // null | 'sports' | 'plus'
   let posMenu = $state({ top: 0, left: 0 });
 
-  // Contenu du menu « Plus » : les écrans de sports, et (si la place manque) les dernières pages
-  const listePlus = $derived([...pagesSport, ...(pagesEnPlus ? fin : [])]);
+  // Contenu du menu « Plus » : les dernières pages, seulement quand la place manque
+  const listePlus = $derived(pagesEnPlus ? fin : []);
   const plusActif = $derived(listePlus.some((l) => l.cle === actif));
 
   // On mesure la largeur dont chaque version a besoin (copies invisibles) et on la compare à la place de la barre.
@@ -47,7 +46,7 @@
       compact = !toutPlat;
       pagesEnPlus = !toutPlat && !sportsRanges;
       defile = pagesEnPlus && mesureCompact.scrollWidth > dispo;
-      if (!pagesEnPlus && !pagesSport.length && ouvert === 'plus') ouvert = null;
+      if (!pagesEnPlus && ouvert === 'plus') ouvert = null;
       if (!compact && ouvert === 'sports') ouvert = null;
     };
     calculer();
@@ -97,7 +96,6 @@
       </button>
     {/if}
     {#if familles.length}
-      <span class="espace" aria-hidden="true"></span>
       <div class="sports" class:neutre={actif === 'sommeil'} role="group" aria-label="Filtrer par sport" title={actif === 'sommeil' ? 'Le sommeil ne dépend pas du sport' : undefined}>
         {#if compact}
           <button class="menu-deroulant" class:courant={menu.filtre !== 'tout'} type="button" aria-haspopup="true" aria-expanded={ouvert === 'sports'} onclick={(e) => basculer('sports', e)}>
@@ -125,12 +123,10 @@
   <!-- Copies invisibles, uniquement pour mesurer la place nécessaire (tout à plat / « Sports » seul / « Sports » et « Plus ») -->
   <div class="mesure" aria-hidden="true" bind:this={mesureComplet}>
     {#each [...debut, ...fin] as l (l.cle)}<span>{l.nom}</span>{/each}
-    {#if pagesSport.length}<span>Plus&nbsp;&nbsp;&nbsp;&nbsp;</span>{/if}
     {#if familles.length}<span>Tous</span>{#each familles as f (f)}<span class="m-sport">{nomSport(f)}</span>{/each}{/if}
   </div>
   <div class="mesure" aria-hidden="true" bind:this={mesureMilieu}>
     {#each [...debut, ...fin] as l (l.cle)}<span>{l.nom}</span>{/each}
-    {#if pagesSport.length}<span>Plus&nbsp;&nbsp;&nbsp;&nbsp;</span>{/if}
     {#if familles.length}<span>Sports&nbsp;&nbsp;&nbsp;&nbsp;</span>{/if}
   </div>
   <div class="mesure" aria-hidden="true" bind:this={mesureCompact}>
@@ -250,15 +246,11 @@
     height: 9px;
     border-radius: 50%;
   }
-  /* pousse le groupe des sports à droite de la ligne */
-  .espace {
-    flex: 1;
-    min-width: 16px;
-  }
   .sports {
     display: flex;
     flex: none;
     gap: 4px;
+    margin-left: 8px;
     padding-left: 16px;
     border-left: 1px solid var(--trait-fort);
   }
@@ -325,7 +317,7 @@
   }
   .mesure {
     gap: 4px;
-    padding-right: 52px; /* + le trait de séparation et l'espace entre les deux groupes */
+    padding-right: 40px; /* + le trait de séparation entre les deux groupes */
   }
   /* Téléphone : pas d'en-tête, la navigation est la barre du bas (BarreBas.svelte) : le contenu commence tout en haut */
   @media (max-width: 760px) {
