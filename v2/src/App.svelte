@@ -14,6 +14,7 @@
   import ForceSeance from './routes/ForceSeance.svelte';
   import Hyrox from './routes/Hyrox.svelte';
   import DefinirMotDePasse from './routes/DefinirMotDePasse.svelte';
+  import Confidentialite from './routes/Confidentialite.svelte';
   import PanneauSeance from './lib/components/PanneauSeance.svelte';
   import PanneauReel from './lib/components/PanneauReel.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
@@ -63,6 +64,8 @@
 
 {#if route.chemin === '/catalogue'}
   <Catalogue />
+{:else if route.chemin === '/confidentialite'}
+  <Confidentialite />
 {:else if demo}
   {#if paramOnglet}
     <Parametres demo={true} onglet={paramOnglet} />

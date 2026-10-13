@@ -69,6 +69,7 @@
       <Bouton type="submit">{enCours ? 'Connexion…' : 'Se connecter'}</Bouton>
       <Bouton variante="texte" onclick={() => { oubli = true; message = ''; auth.erreurLien = ''; }}>Mot de passe oublié ?</Bouton>
       <Bouton variante="texte" href="?demo">Voir la démo, sans compte</Bouton>
+      <Bouton variante="texte" href="#/confidentialite">Confidentialité</Bouton>
     </form>
   {/if}
 </main>

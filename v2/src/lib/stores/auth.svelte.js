@@ -3,6 +3,7 @@
 import { sb } from '../supabase.js';
 import { route } from '../routeur.svelte.js';
 import { lireLienAuth, messageLienErreur, validerMotDePasse } from '../data/lien-auth.js';
+import { appeler } from '../data/integrations.js';
 
 // definirMdp : true quand l'utilisateur arrive par un lien d'invitation ou de réinitialisation : il doit choisir un mot de passe.
 // erreurLien : message à afficher si ce lien est expiré ou refusé.
@@ -99,4 +100,26 @@ export async function demanderReinitialisation(email) {
   const { error } = await sb.auth.resetPasswordForEmail(adresse, { redirectTo: `${location.origin}${location.pathname}` });
   if (error?.status === 429) return { ok: false, message: "Un e-mail vient déjà de partir. Attends quelques minutes avant d'en redemander un." };
   return { ok: true, message: 'Si ce compte existe, un e-mail vient de partir. Clique sur le lien dedans (valable une heure).' };
+}
+
+/**
+ * Supprime définitivement le compte et toutes les données (fonction serveur delete-account).
+ * `confirmation` doit valoir exactement « SUPPRIMER ». Renvoie { ok: true } ou { ok: false, message }.
+ * En cas de succès : on efface aussi ce que la v2 garde dans ce navigateur, puis on ferme la session.
+ */
+export async function supprimerCompte(confirmation) {
+  if (confirmation !== 'SUPPRIMER') return { ok: false, message: 'Tape exactement SUPPRIMER pour confirmer.' };
+  const r = await appeler('delete-account', { confirmation });
+  if (!r.ok) {
+    if (r.statut === 404) return { ok: false, message: "La suppression n'est pas encore activée sur le serveur. Demande à Yanis." };
+    return { ok: false, message: 'La suppression a échoué. Rien n\'a été supprimé : réessaie, ou demande à Yanis.' };
+  }
+  try {
+    for (const cle of Object.keys(localStorage)) if (cle.startsWith('coachia-v2-')) localStorage.removeItem(cle);
+  } catch (_e) {
+    /* stockage indisponible : rien à effacer */
+  }
+  await sb.auth.signOut({ scope: 'local' });
+  auth.session = null;
+  return { ok: true };
 }
