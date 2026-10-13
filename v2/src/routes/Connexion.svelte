@@ -129,9 +129,12 @@
 
       <Bouton type="submit">{enCours ? 'Connexion…' : 'Se connecter'}</Bouton>
       <Bouton variante="discret" onclick={() => { creer = true; message = ''; auth.erreurLien = ''; }}>Créer un compte</Bouton>
-      <Bouton variante="texte" onclick={() => { oubli = true; message = ''; auth.erreurLien = ''; }}>Mot de passe oublié ?</Bouton>
+      <!-- deux liens côte à côte quand il y a la place, l'un sous l'autre sinon -->
+      <div class="liens">
+        <Bouton variante="texte" onclick={() => { oubli = true; message = ''; auth.erreurLien = ''; }}>Mot de passe oublié ?</Bouton>
+        <Bouton variante="texte" href="#/confidentialite">Confidentialité</Bouton>
+      </div>
       <Bouton variante="texte" href="?demo">Voir la démo, sans compte</Bouton>
-      <Bouton variante="texte" href="#/confidentialite">Confidentialité</Bouton>
     </form>
   {/if}
 </main>
@@ -216,6 +219,12 @@
     font-size: 24px;
     letter-spacing: 0;
     font-weight: 700;
+  }
+  .liens {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0 4px;
   }
   .erreur {
     margin: 0;
