@@ -7,8 +7,9 @@
   import VuePrevue from './VuePrevue.svelte';
   import ChampGpx from './ChampGpx.svelte';
   import { SPORTS, couleurSport } from '../sports.js';
+  import { menu } from '../stores/menu.svelte.js';
   import { familleAffichage } from '../data/familles.js';
-  import { SPORTS_PREVUE, formulaireVide, formulaireDepuisLigne, validerPrevue, versLigne, estimerTss } from '../data/prevue.js';
+  import { SPORTS_PREVUE, sportsTries, sportDefaut, formulaireVide, formulaireDepuisLigne, validerPrevue, versLigne, estimerTss } from '../data/prevue.js';
   import { sportAvecStructure } from '../data/structure.js';
   import { donneesDemo } from '../data/demo.js';
   import { creerPlanifiee, modifierPlanifiee, supprimerPlanifiee, chargerProfil, creerModele, chargerGpx } from '../data/api.js';
@@ -65,7 +66,7 @@
     const depart = modele;
     const jour = dateInitiale;
     untrack(() => {
-      f = cible ? formulaireDepuisLigne(cible) : depart ? formulaireDepuisModele(depart, jour) : formulaireVide(jour);
+      f = cible ? formulaireDepuisLigne(cible) : depart ? formulaireDepuisModele(depart, jour) : { ...formulaireVide(jour), sport: sportDefaut(menu.filtre) }; // nouvelle séance : le sport filtré d'abord
       retourModele = { texte: '', erreur: false };
       erreurs = {};
       erreurGlobale = '';
@@ -164,7 +165,7 @@
     <div class="champ">
       <label for="prevue-sport">Sport</label>
       <select id="prevue-sport" bind:value={f.sport} aria-invalid={erreurs.sport ? 'true' : undefined}>
-        {#each SPORTS_PREVUE as s (s.type)}
+        {#each sportsTries(menu.filtre) as s (s.type)}
           <option value={s.type}>{nomSport(s.type)}</option>
         {/each}
       </select>

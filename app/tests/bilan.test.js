@@ -13,7 +13,9 @@ test('famille de bilan et normalisation', () => {
   assert.equal(familleBilan('WeightTraining'), 'musculation');
   assert.equal(familleBilan('Yoga'), 'autre');
   const n = normaliser({ id: '1', name: 'Sortie', sport: 'Ride', start_date_local: '2026-10-01T08:00:00+00:00', moving_time: 3600, distance_km: '40.5', total_elevation_gain: null, tss: 55 });
-  assert.deepEqual(n, { id: '1', name: 'Sortie', iso: '2026-10-01', sport: 'cyclisme', duree_min: 60, distance_km: 40.5, d_plus: 0, tss: 55 });
+  assert.deepEqual(n, { id: '1', name: 'Sortie', iso: '2026-10-01', sport: 'cyclisme', famille: 'velo', duree_min: 60, distance_km: 40.5, d_plus: 0, tss: 55 });
+  assert.equal(normaliser({ sport: 'MountainBikeRide' }).famille, 'velo'); // le VTT compte avec le vélo pour le filtre
+  assert.equal(normaliser({ sport: 'WeightTraining' }).famille, 'muscu');
 });
 
 test('année en cours = jusqu\'à aujourd\'hui ; année précédente = jusqu\'au même jour', () => {
@@ -115,4 +117,13 @@ test('validerObjectif : cible positive, saisie seulement pour un objectif manuel
   assert.equal(ok.valeurs.current_manual, null); // ignoré : objectif calculé
   const manuel = validerObjectif({ sport: 'cyclisme', template: 'cyc_ftp', cible: '280', actuel: '255,5' });
   assert.equal(manuel.valeurs.current_manual, 255.5);
+});
+
+test('familleBilanDuFiltre : filtre global de sport → famille de bilan', async () => {
+  const { familleBilanDuFiltre } = await import('../src/lib/data/bilan.js');
+  assert.equal(familleBilanDuFiltre('tout'), null);
+  assert.equal(familleBilanDuFiltre('velo'), 'cyclisme');
+  assert.equal(familleBilanDuFiltre('muscu'), 'musculation');
+  assert.equal(familleBilanDuFiltre('course'), 'course');
+  assert.equal(familleBilanDuFiltre('hyrox'), 'autre');
 });

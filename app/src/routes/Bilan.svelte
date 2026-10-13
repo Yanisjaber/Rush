@@ -6,6 +6,8 @@
   import ChipSport from '../lib/components/ChipSport.svelte';
   import PanneauObjectif from '../lib/components/PanneauObjectif.svelte';
   import GrapheNuits from '../lib/components/charts/GrapheNuits.svelte';
+  import { menu } from '../lib/stores/menu.svelte.js';
+  import SelecteurSport from '../lib/components/SelecteurSport.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
   import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
@@ -13,7 +15,7 @@
   import { activitesBilanDemo, objectifsAnnuelsDemo } from '../lib/data/demo.js';
   import {
     normaliser, activitesAnnee, activitesAnneePrecedente, sommer, ecartPct, anneesDisponibles, avancement, recordsVolume, recordRecent,
-    cumulParAnnee, volumeMensuel, repartitionSport, NOM_SPORT_BILAN, SPORTS_BILAN,
+    cumulParAnnee, volumeMensuel, repartitionSport, NOM_SPORT_BILAN, SPORTS_BILAN, familleBilanDuFiltre,
   } from '../lib/data/bilan.js';
   import { formatDateLongue } from '../lib/utils/format.js';
   import { texteHM } from '../lib/data/score-sommeil.js';
@@ -22,7 +24,6 @@
 
   const maintenant = new Date();
   let annee = $state(maintenant.getFullYear());
-  let filtre = $state('tous'); // famille de bilan, ou 'tous' (concerne les chiffres, records et graphiques ; pas les objectifs)
   let metrique = $state('distance_km'); // graphique de cumul : distance ou dénivelé
   let etat = $state({ chargement: true, erreur: '', brutes: [], objectifs: [] });
   let panneau = $state({ ouvert: false, objectif: null });
@@ -47,7 +48,8 @@
   const toutes = $derived(etat.brutes.map(normaliser));
   const parId = $derived(new Map(etat.brutes.map((l) => [l.id, l])));
   const annees = $derived(anneesDisponibles(toutes, maintenant));
-  const filtrees = $derived(filtre === 'tous' ? toutes : toutes.filter((a) => a.sport === filtre));
+  // Filtre global de sport (en-tête) : concerne les chiffres, records et graphiques ; pas les objectifs annuels
+  const filtrees = $derived(menu.filtre === 'tout' ? toutes : toutes.filter((a) => a.famille === menu.filtre));
 
   // --- Chiffres de l'année contre l'an dernier à la même date ---
   const courant = $derived(sommer(activitesAnnee(filtrees, annee, maintenant)));
@@ -61,7 +63,9 @@
   ]);
 
   // --- Objectifs de l'année ---
-  const objectifsAnnee = $derived(etat.objectifs.filter((o) => o.annee === annee));
+  // Objectifs annuels du sport filtré, plus ceux qui valent pour « tous sports »
+  const familleFiltre = $derived(familleBilanDuFiltre(menu.filtre));
+  const objectifsAnnee = $derived(etat.objectifs.filter((o) => o.annee === annee && (!familleFiltre || o.sport === 'tous' || o.sport === familleFiltre)));
   const avancements = $derived(objectifsAnnee.map((o) => ({ objectif: o, av: avancement(o, toutes, annee, maintenant) })).filter((x) => x.av));
 
   // --- Records, graphiques ---
@@ -103,12 +107,7 @@
     </label>
   </header>
 
-  <nav class="puces" aria-label="Filtrer par sport">
-    <ChipSport label="Tout" sport="autre" actif={filtre === 'tous'} onclick={() => (filtre = 'tous')} />
-    {#each SPORTS_BILAN.filter(([cle]) => cle !== 'autre') as [cle, nom] (cle)}
-      <ChipSport sport={chipSport[cle]} label={nom} actif={filtre === cle} onclick={() => (filtre = cle)} />
-    {/each}
-  </nav>
+  <SelecteurSport />
 
   {#if etat.chargement}
     <p class="info" role="status">Chargement du bilan…</p>

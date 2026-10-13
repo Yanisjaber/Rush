@@ -2,6 +2,7 @@
 // Fonctions pures : aucune écriture ici, tout est vérifié avant d'envoyer quoi que ce soit.
 import { normaliser, resume, sportAvecStructure } from './structure.js';
 import { TAILLE_MAX_GPX } from './gpx.js';
+import { familleAffichage } from './familles.js';
 
 /**
  * Vérifie le parcours GPX d'un formulaire : undefined = inchangé (on n'écrit rien), null = à retirer, { nom, contenu } = nouveau parcours.
@@ -28,6 +29,19 @@ export const SPORTS_PREVUE = [
   { cle: 'combat', type: 'MartialArts' },
   { cle: 'autre', type: 'Workout' },
 ];
+
+/** La liste des sports proposés, avec ceux du sport filtré (« course », « muscu »…, ou « tout ») en premier. */
+export function sportsTries(filtre = 'tout') {
+  if (filtre === 'tout') return SPORTS_PREVUE;
+  const du = SPORTS_PREVUE.filter((s) => familleAffichage(s.type) === filtre);
+  return [...du, ...SPORTS_PREVUE.filter((s) => !du.includes(s))];
+}
+
+/** Le sport proposé d'office pour une création : le premier du sport filtré, sinon la course. */
+export function sportDefaut(filtre = 'tout') {
+  const du = filtre === 'tout' ? null : SPORTS_PREVUE.find((s) => familleAffichage(s.type) === filtre);
+  return du ? du.type : 'Run';
+}
 
 const TYPES = new Set(SPORTS_PREVUE.map((s) => s.type));
 

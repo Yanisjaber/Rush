@@ -7,8 +7,9 @@
   import ChampGpx from './ChampGpx.svelte';
   import ParcoursGpx from './ParcoursGpx.svelte';
   import { SPORTS } from '../sports.js';
+  import { menu } from '../stores/menu.svelte.js';
   import { familleAffichage } from '../data/familles.js';
-  import { SPORTS_PREVUE } from '../data/prevue.js';
+  import { sportsTries, sportDefaut } from '../data/prevue.js';
   import { PRIORITES, formulaireVide, formulaireDepuisLigne, validerCompetition, versLigne, nomPriorite } from '../data/competitions.js';
   import { creerPlanifiee, modifierPlanifiee, supprimerPlanifiee, chargerGpx, COLONNES_COMPETITION } from '../data/api.js';
   import { formatDateLongue, formatKm, joursAvant } from '../utils/format.js';
@@ -55,7 +56,7 @@
     const cible = competition;
     const jour = dateInitiale;
     untrack(() => {
-      f = cible ? formulaireDepuisLigne(cible) : formulaireVide(jour);
+      f = cible ? formulaireDepuisLigne(cible) : { ...formulaireVide(jour), sport: sportDefaut(menu.filtre) }; // nouvelle compétition : le sport filtré d'abord
       erreurs = {};
       erreurGlobale = '';
       envoi = false;
@@ -179,7 +180,7 @@
       <div class="champ">
         <label for="comp-sport">Sport</label>
         <select id="comp-sport" bind:value={f.sport}>
-          {#each SPORTS_PREVUE as s (s.type)}<option value={s.type}>{nomSport(s.type)}</option>{/each}
+          {#each sportsTries(menu.filtre) as s (s.type)}<option value={s.type}>{nomSport(s.type)}</option>{/each}
         </select>
       </div>
 

@@ -7,8 +7,9 @@
   import { edition, fermerEdition, rafraichir } from '../stores/edition.svelte.js';
   import { modeDemo } from '../routeur.svelte.js';
   import { SPORTS, couleurSport } from '../sports.js';
+  import { menu } from '../stores/menu.svelte.js';
   import { familleAffichage } from '../data/familles.js';
-  import { SPORTS_PREVUE, estimerTss } from '../data/prevue.js';
+  import { SPORTS_PREVUE, sportsTries, sportDefaut, estimerTss } from '../data/prevue.js';
   import {
     estManuelle, cleRetouche, formulaireVide, formulaireDepuisSortie, validerSortie, versLigneManuelle, retoucheDepuis, appliquer,
   } from '../data/retouches.js';
@@ -48,7 +49,7 @@
       confirmer = false;
       if (!cible) {
         sortie = null;
-        f = formulaireVide(jour);
+        f = { ...formulaireVide(jour), sport: sportDefaut(menu.filtre) }; // nouvelle sortie : le sport filtré d'abord
         return;
       }
       chargement = true;
@@ -156,7 +157,7 @@
       <div class="champ">
         <label for="reel-sport">Sport</label>
         <select id="reel-sport" bind:value={f.sport}>
-          {#each SPORTS_PREVUE as s (s.type)}<option value={s.type}>{nomSport(s.type)}</option>{/each}
+          {#each sportsTries(menu.filtre) as s (s.type)}<option value={s.type}>{nomSport(s.type)}</option>{/each}
           {#if !SPORTS_PREVUE.some((s) => s.type === f.sport)}<option value={f.sport}>{f.sport}</option>{/if}
         </select>
       </div>

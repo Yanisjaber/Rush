@@ -3,6 +3,8 @@
   import EnTete from '../lib/components/EnTete.svelte';
   import PanneauPrevue from '../lib/components/PanneauPrevue.svelte';
   import PanneauCompetition from '../lib/components/PanneauCompetition.svelte';
+  import { menu } from '../lib/stores/menu.svelte.js';
+  import SelecteurSport from '../lib/components/SelecteurSport.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
@@ -58,9 +60,18 @@
     untrack(() => charger(u));
   });
 
-  const semaines = $derived(construirePlan(lundi, etat, maintenant, 4));
+  // Filtre global de sport : seules les séances et compétitions de ce sport sont affichées (la forme reste globale)
+  const garder = (x) => menu.filtre === 'tout' || familleAffichage(x.sport) === menu.filtre;
+  const etatFiltre = $derived({
+    ...etat,
+    planifiees: etat.planifiees.filter(garder),
+    objectifs: etat.objectifs.filter(garder),
+    seances: etat.seances.filter(garder),
+    prochains: etat.prochains.filter(garder),
+  });
+  const semaines = $derived(construirePlan(lundi, etatFiltre, maintenant, 4));
   // La phase de préparation regarde la prochaine compétition, même au-delà des 4 semaines affichées
-  const prochain = $derived(prochainObjectif([...etat.prochains].sort((a, b) => a.date.localeCompare(b.date)).filter((o) => o.date >= dateIsoLocale(maintenant))));
+  const prochain = $derived(prochainObjectif([...etatFiltre.prochains].sort((a, b) => a.date.localeCompare(b.date)).filter((o) => o.date >= dateIsoLocale(maintenant))));
   const jours = $derived(prochain ? joursAvant(prochain.date) : null);
   const phase = $derived(phaseDepuis(jours, etat.tsb));
   const forme = $derived(formeDepuisTsb(etat.tsb));
@@ -87,6 +98,7 @@
   <header class="entete-page">
     <h1 class="titre">Plan</h1>
   </header>
+  <SelecteurSport />
 
   {#if etat.chargement}
     <p class="info" role="status">Chargement du plan…</p>

@@ -9,6 +9,8 @@
   import PanneauLicence from '../lib/components/PanneauLicence.svelte';
   import { palmares, initialiserPalmares, lierLicence } from '../lib/stores/palmares.svelte.js';
   import { fusionner, resultatsManuels, resultatDuJour, texteClassement, nomLicence } from '../lib/data/opendossard.js';
+  import { menu } from '../lib/stores/menu.svelte.js';
+  import SelecteurSport from '../lib/components/SelecteurSport.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
   import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
@@ -59,7 +61,11 @@
   });
 
   // À venir et passées. Les compétitions prévues dont la date est passée restent listées avec les passées (sans résultat).
-  const reparties = $derived(repartir(etat.prevues, aujourdhui));
+  // Filtre global de sport : on ne garde que les compétitions de ce sport (les résultats Open Dossard restent rapprochés par date)
+  const garder = (c) => menu.filtre === 'tout' || familleAffichage(c.sport) === menu.filtre;
+  const prevuesF = $derived(etat.prevues.filter(garder));
+  const couruesF = $derived(etat.courues.filter(garder));
+  const reparties = $derived(repartir(prevuesF, aujourdhui));
   const aVenir = $derived(reparties.aVenir);
   const passeesPrevues = $derived(reparties.passees);
   const prochain = $derived(prochainObjectif(aVenir));
@@ -95,6 +101,7 @@
     <h1 class="titre">Compétitions</h1>
     <Bouton onclick={nouvelle}>Nouvelle compétition</Bouton>
   </header>
+  <SelecteurSport />
 
   {#if etat.chargement}
     <p class="info" role="status">Chargement…</p>
@@ -161,9 +168,9 @@
 
     <section aria-labelledby="titre-passees">
       <h2 class="titre" id="titre-passees">Déjà courues</h2>
-      {#if etat.courues.length || passeesPrevues.length}
+      {#if couruesF.length || passeesPrevues.length}
         <ul class="liste">
-          {#each etat.courues as c (c.id)}
+          {#each couruesF as c (c.id)}
             <li>
               <button type="button" class="ligne" onclick={() => ouvrirApercu(c)}>
                 <span class="date"><b>{new Date(String(c.start_date_local).slice(0, 10) + 'T12:00:00').getDate()}</b><i>{formatDateCourte(String(c.start_date_local).slice(0, 10)).replace(/^\d+\s*/, '')}</i></span>

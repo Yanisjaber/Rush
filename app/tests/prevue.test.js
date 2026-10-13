@@ -77,3 +77,15 @@ test('GPX : inchangé = rien d\'écrit, retrait = colonnes à null, nouveau parc
   assert.ok(validerPrevue({ ...base, gpx: 'pas un objet' }).erreurs.gpx);
   assert.ok(validerPrevue({ ...base, gpx: { nom: 'x', contenu: 'a'.repeat(5 * 1024 * 1024 + 1) } }).erreurs.gpx);
 });
+
+test('sportsTries et sportDefaut : le sport filtré passe en premier et devient le sport proposé', async () => {
+  const { sportsTries, sportDefaut, SPORTS_PREVUE } = await import('../src/lib/data/prevue.js');
+  assert.deepEqual(sportsTries('tout'), SPORTS_PREVUE);
+  assert.deepEqual(sportsTries('velo').slice(0, 1).map((s) => s.type), ['Ride']);
+  assert.equal(sportsTries('course')[1].type, 'TrailRun'); // course et trail ensemble
+  assert.equal(sportsTries('muscu').length, SPORTS_PREVUE.length); // rien ne disparaît
+  assert.equal(sportDefaut('muscu'), 'WeightTraining');
+  assert.equal(sportDefaut('hyrox'), 'Hyrox');
+  assert.equal(sportDefaut('tout'), 'Run');
+  assert.equal(sportDefaut('escalade'), 'Run'); // sport sans type prévu : la course par défaut
+});
