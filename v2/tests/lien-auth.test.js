@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { lireLienAuth, messageLienErreur, validerMotDePasse, validerInscription, nettoyerNom, MDP_MIN, MDP_MAX } from '../src/lib/data/lien-auth.js';
+import { lireLienAuth, messageLienErreur, validerMotDePasse, validerInscription, nettoyerNom, adresseDejaInscrite, MDP_MIN, MDP_MAX } from '../src/lib/data/lien-auth.js';
 
 const JWT = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3OCJ9.c2lnbmF0dXJlX2JpZW5fbG9uZ3VlXzEyMw';
 
@@ -68,4 +68,11 @@ test('inscription : prénom, nom, mot de passe et consentement sont exigés', ()
 test('nettoyerNom : retire chevrons, contrôles et espaces en trop', () => {
   assert.equal(nettoyerNom('  Jean\u0000   <b>Pierre</b> '), 'Jean bPierre/b');
   assert.equal(nettoyerNom(null), '');
+});
+
+test('adresseDejaInscrite : identités vides = compte existant', () => {
+  assert.equal(adresseDejaInscrite({ id: 'x', identities: [] }), true);
+  assert.equal(adresseDejaInscrite({ id: 'x', identities: [{ provider: 'email' }] }), false);
+  assert.equal(adresseDejaInscrite({ id: 'x' }), false);
+  assert.equal(adresseDejaInscrite(null), false);
 });

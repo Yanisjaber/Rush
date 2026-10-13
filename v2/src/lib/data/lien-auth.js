@@ -78,3 +78,11 @@ export function validerInscription({ prenom, nom, motDePasse, email = '', consen
   if (consentement !== true) return { ok: false, champ: 'consentement', message: 'Coche la case pour accepter la politique de confidentialité.' };
   return { ok: true, prenom: p, nom: n };
 }
+
+/**
+ * Vrai si la réponse d'inscription de Supabase correspond à une adresse qui a déjà un compte confirmé :
+ * avec « Confirm email », Supabase renvoie alors un faux utilisateur dont la liste d'identités est vide.
+ */
+export function adresseDejaInscrite(user) {
+  return !!user && Array.isArray(user.identities) && user.identities.length === 0;
+}

@@ -2,7 +2,7 @@
 // `auth.pret` passe à true une fois la session (éventuelle) lue ; `auth.session` est null si déconnecté.
 import { sb } from '../supabase.js';
 import { route } from '../routeur.svelte.js';
-import { lireLienAuth, messageLienErreur, validerMotDePasse, validerInscription } from '../data/lien-auth.js';
+import { lireLienAuth, messageLienErreur, validerMotDePasse, validerInscription, adresseDejaInscrite } from '../data/lien-auth.js';
 import { appeler } from '../data/integrations.js';
 import { chargerProfilComplet, enregistrerProfil } from '../data/api.js';
 
@@ -44,8 +44,6 @@ export async function connexion(email, motDePasse) {
     if (error.status === 400) return { ok: false, message: 'E-mail ou mot de passe incorrect.' };
     return { ok: false, message: 'Connexion impossible pour le moment. Vérifie ta connexion internet.' };
   }
-  // Avec « Confirm email », Supabase renvoie un faux utilisateur sans aucune identité quand l'adresse a déjà un compte confirmé
-  if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) return { ok: true, existe: true };
   return { ok: true };
 }
 
@@ -126,6 +124,7 @@ export async function inscription({ prenom, nom, email, motDePasse, consentement
     if (error.status === 422 || error.status === 400) return { ok: false, champ: 'email', message: "Inscription refusée. Vérifie l'adresse e-mail et le mot de passe." };
     return { ok: false, message: "Inscription impossible pour le moment. Vérifie ta connexion internet." };
   }
+  if (adresseDejaInscrite(data?.user)) return { ok: true, existe: true };
   return { ok: true };
 }
 
