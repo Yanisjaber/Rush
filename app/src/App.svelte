@@ -26,6 +26,7 @@
     Competitions: () => import('./routes/Competitions.svelte'),
     Bilan: () => import('./routes/Bilan.svelte'),
     Plan: () => import('./routes/Plan.svelte'),
+    Analyse: () => import('./routes/Analyse.svelte'),
     ForceSeance: () => import('./routes/ForceSeance.svelte'),
     Seance: () => import('./routes/Seance.svelte'),
   };
@@ -120,6 +121,8 @@
     <Ecran charger={ecrans.Bilan} demo={true} />
   {:else if route.chemin === '/plan'}
     <Ecran charger={ecrans.Plan} demo={true} />
+  {:else if route.chemin === '/analyse'}
+    {#key route.sous}<Ecran charger={ecrans.Analyse} id={route.sous} demo={true} />{/key}
   {:else if forceSeance}
     {#key route.chemin}<Ecran charger={ecrans.ForceSeance} demo={true} mode={forceSeance.mode} cible={forceSeance.cible} />{/key}
   {:else if idSeance}
@@ -145,6 +148,8 @@
   <Ecran charger={ecrans.Bilan} />
 {:else if route.chemin === '/plan'}
   <Ecran charger={ecrans.Plan} />
+{:else if route.chemin === '/analyse'}
+  {#key route.sous}<Ecran charger={ecrans.Analyse} id={route.sous} />{/key}
 {:else if forceSeance}
   {#key route.chemin}<Ecran charger={ecrans.ForceSeance} mode={forceSeance.mode} cible={forceSeance.cible} />{/key}
 {:else if idSeance}

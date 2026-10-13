@@ -41,7 +41,7 @@ export function cleDePage(chemin) {
   const c = String(chemin || '/');
   if (c === '/' || c === '') return 'accueil';
   const premier = c.split('/')[1];
-  if (premier === 'force') return 'accueil'; // la séance de force en direct se rattache à l'accueil Muscu
+  if (premier === 'force' || premier === 'analyse') return 'accueil'; // la séance de force en direct et les analyses se rattachent à l'accueil
   if (Object.hasOwn(PAGES, premier)) return premier;
   return null;
 }

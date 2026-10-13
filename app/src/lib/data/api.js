@@ -129,6 +129,29 @@ export async function chargerSeancesPeriode(userId, debutIso, finIso) {
   return res;
 }
 
+/**
+ * Séances réalisées sur une longue période (les analyses ont besoin d'un an et plus) : on lit par pages de 500 (4 pages au plus,
+ * soit 2 000 séances), de la plus ancienne à la plus récente.
+ */
+export async function chargerSeancesLongue(userId, debutIso, finIso) {
+  const toutes = [];
+  for (let page = 0; page < 4; page++) {
+    const r = await sb
+      .from('activities')
+      .select(COLONNES_SEANCE)
+      .eq('user_id', userId)
+      .gte('start_date_local', debutIso)
+      .lt('start_date_local', `${finIso}T23:59:59`)
+      .order('start_date_local', { ascending: true })
+      .range(page * 500, page * 500 + 499);
+    const res = resultat(r, 'Impossible de charger tes séances.');
+    if (res.erreur) return { data: null, erreur: res.erreur };
+    toutes.push(...res.data);
+    if (res.data.length < 500) break;
+  }
+  return { data: await avecRetouches(userId, toutes), erreur: '' };
+}
+
 /** Séances et compétitions prévues entre deux dates ISO incluses. */
 export async function chargerPlanifiees(userId, debutIso, finIso) {
   const r = await sb

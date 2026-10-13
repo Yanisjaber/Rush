@@ -14,7 +14,7 @@ export const ajoutsDemo = {
   objectifHyrox: undefined, // undefined = exemple ; null = effacé
 };
 
-export function donneesDemo(aujourdhui = new Date()) {
+export function donneesDemo(aujourdhui = new Date(), nbJours = 84) {
   const seances = [];
   const quotidien = {}; // date ISO → points de charge du jour
 
@@ -29,7 +29,7 @@ export function donneesDemo(aujourdhui = new Date()) {
     0: { sport: 'Ride', nom: 'Sortie longue', min: 150, tss: 95 },
   };
 
-  for (let i = 83; i >= 0; i--) {
+  for (let i = nbJours - 1; i >= 0; i--) {
     const d = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - i);
     const base = modele[d.getDay()];
     const m = base && d.getDay() === 5 && Math.floor(i / 7) % 2 === 1 ? { ...base, nom: 'Legs' } : base;
@@ -40,7 +40,7 @@ export function donneesDemo(aujourdhui = new Date()) {
     const tss = Math.round(m.tss * variation);
     quotidien[iso] = (quotidien[iso] || 0) + tss;
     // La vitesse en course progresse doucement sur 12 semaines (de 10,6 à 11,8 km/h) : de quoi montrer l'efficacité
-    const vitesseCourse = 10.6 + ((83 - i) / 83) * 1.2;
+    const vitesseCourse = 10.6 + ((83 - Math.min(i, 83)) / 83) * 1.2;
     const distance = m.sport === 'Run' ? (m.min / 60) * vitesseCourse : m.sport === 'Ride' ? (m.min / 60) * 27 : null;
     seances.push({
       id: `demo-${iso}`,

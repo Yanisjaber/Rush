@@ -4,6 +4,7 @@
 //   #/                       Accueil, tous sports        #/course              Accueil Course
 //   #/calendrier             Calendrier, tous sports     #/velo/calendrier/2026-09   Calendrier Vélo, mois de septembre 2026
 //   #/plan  #/competitions   (idem, avec ou sans sport)  #/muscu/bilan/2025          Bilan Muscu 2025
+//   #/course/analyse/charge?periode=sem26   Analyse détaillée d'un widget (charge, forme, predictions…)
 //   #/muscu/programmes|journal|exercices   Accueil Muscu, vue détaillée           #/hyrox/tests   Accueil Hyrox, tests et objectif
 //   #/sommeil  #/parametres/…  #/seance/<id>  #/force/seance/…   pages sans sport : inchangées
 // Complément après « ? » : ce qui est ouvert sur la page (panneaux, mode édition…), pour retrouver la même vue après un rechargement.
@@ -13,7 +14,7 @@
 import { SPORTS } from '../sports.js';
 
 /** Pages qui dépendent du sport choisi (le reste, comme Sommeil ou Paramètres, l'ignore). */
-export const PAGES_SPORT = ['calendrier', 'plan', 'competitions', 'bilan'];
+export const PAGES_SPORT = ['calendrier', 'plan', 'competitions', 'bilan', 'analyse'];
 
 /** Vues détaillées de l'accueil des sports qui en ont une. */
 export const SOUS_ACCUEIL = { muscu: ['programmes', 'journal', 'exercices'], hyrox: ['tests'] };
@@ -24,10 +25,10 @@ export const SOUS_ACCUEIL = { muscu: ['programmes', 'journal', 'exercices'], hyr
  */
 export const CLES_Q = {
   prevue: 'id', sortie: 'id', apercu: 'id', competition: 'id', marquage: 'id', modele: 'id', objectif: 'id', programme: 'id', test: 'id',
-  date: 'date', nuit: 'date', jour: 'date', metrique: 'mot', feuille: 'mot',
+  date: 'date', nuit: 'date', jour: 'date', metrique: 'mot', feuille: 'mot', periode: 'mot',
   modeles: 'drapeau', objectifhyrox: 'drapeau', licence: 'drapeau', edition: 'drapeau', fc: 'drapeau',
 };
-const FORMES = { id: /^[A-Za-z0-9_-]{1,64}$/, date: /^\d{4}-\d{2}-\d{2}$/, mot: /^[a-z_]{1,30}$/, drapeau: /^1?$/ };
+const FORMES = { id: /^[A-Za-z0-9_-]{1,64}$/, date: /^\d{4}-\d{2}-\d{2}$/, mot: /^[a-z0-9_]{1,30}$/, drapeau: /^1?$/ };
 
 /** Lit un complément d'adresse (« a=1&b=x » ou un objet) et ne garde que les clés connues aux valeurs bien formées. */
 export function nettoyerQ(brut) {

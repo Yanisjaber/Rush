@@ -16,6 +16,8 @@
   import { menu, chargerMenu } from '../lib/stores/menu.svelte.js';
   import { route, ouvrirPanneau, fermerPanneau } from '../lib/routeur.svelte.js';
   import { construireAdresse, SOUS_ACCUEIL } from '../lib/data/adresses.js';
+  import { ANALYSE_DU_WIDGET } from '../lib/analyse/registre.js';
+  import { WIDGETS } from '../lib/widgets/registre.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
   import {
@@ -267,6 +269,11 @@
               </CadreEdition>
             {:else}
               <Composant {contexte} taille={w.taille} />
+              {#if ANALYSE_DU_WIDGET[w.id]}
+                <!-- Le widget entier est une porte vers sa page d'analyse (les liens et boutons du widget restent au-dessus) -->
+                <a class="porte" href={construireAdresse({ sport: filtreActif, page: '/analyse', sous: ANALYSE_DU_WIDGET[w.id] })} aria-label="Ouvrir l'analyse : {WIDGETS[w.id]?.nom || w.id}"></a>
+                <span class="indice" aria-hidden="true">Analyse ›</span>
+              {/if}
             {/if}
           </div>
         {/each}
@@ -291,6 +298,49 @@
 </main>
 
 <style>
+  /* Un widget qui a une page d'analyse est cliquable en entier */
+  .cellule {
+    position: relative;
+  }
+  .porte {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: var(--rayon);
+  }
+  .porte:hover + .indice,
+  .porte:focus-visible + .indice {
+    opacity: 1;
+  }
+  .porte:focus-visible {
+    outline: 3px solid var(--texte);
+    outline-offset: 2px;
+  }
+  .cellule :global(a:not(.porte)),
+  .cellule :global(button) {
+    position: relative;
+    z-index: 2;
+  }
+  .indice {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    z-index: 2;
+    padding: 3px 10px;
+    border-radius: var(--rayon-rond);
+    background: var(--texte);
+    color: var(--fond);
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
+  }
+  @media (hover: none) {
+    .indice {
+      opacity: 0.85; /* sur téléphone, pas de survol : l'indication reste visible */
+    }
+  }
   .vues {
     display: flex;
     flex-wrap: wrap;
