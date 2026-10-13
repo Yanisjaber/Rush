@@ -22,7 +22,7 @@
       {/each}
     </ol>
   {:else}
-    <p class="vide">Aucun programme pour l'instant. <a href="#/force">Crée ton premier programme</a>.</p>
+    <p class="vide">Aucun programme pour l'instant. <a href="#/muscu/programmes">Crée ton premier programme</a>.</p>
   {/if}
 </Bloc>
 

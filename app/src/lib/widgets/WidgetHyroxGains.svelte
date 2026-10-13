@@ -31,7 +31,7 @@
     </ul>
   {:else}
     <p class="vide">
-      {test ? "Fixe un objectif de temps dans " : "Saisis un test et fixe un objectif dans "}<a href="#/hyrox">ta page Hyrox</a> pour voir où gagner du temps.
+      {test ? "Fixe un objectif de temps dans " : "Saisis un test et fixe un objectif dans "}<a href="#/hyrox/tests">tes tests Hyrox</a> pour voir où gagner du temps.
     </p>
   {/if}
 </Bloc>

@@ -1,6 +1,7 @@
 <script>
   import { menu } from '../stores/menu.svelte.js';
-  import { page } from '../data/menu.js';
+  import { page, lienPage } from '../data/menu.js';
+  import { changerSport } from '../routeur.svelte.js';
   import { SPORTS, couleurSport } from '../sports.js';
 
   // En-tête commun, sur ordinateur et tablette (sur téléphone il n'existe pas : voir BarreBas.svelte).
@@ -70,9 +71,9 @@
   function touche(e) {
     if (e.key === 'Escape' && ouvert) ouvert = null;
   }
-  // Un sport = un filtre global (« tout » = tous les sports) ; recliquer sur le sport choisi revient à « Tous »
+  // Un sport = un filtre global (« tout » = tous les sports), écrit dans l'adresse ; recliquer sur le sport choisi revient à « Tous »
   function choisir(f) {
-    menu.filtre = f === 'tout' || menu.filtre === f ? 'tout' : f;
+    changerSport(f === 'tout' || menu.filtre === f ? 'tout' : f);
     ouvert = null;
   }
 </script>
@@ -87,7 +88,7 @@
   <span class="logo titre" aria-hidden="true">CI</span>
   <nav class="liens" class:defile aria-label="Navigation principale" bind:this={nav}>
     {#each pagesEnPlus ? debut : [...debut, ...fin] as l (l.cle)}
-      <a href={l.href} aria-current={actif === l.cle ? 'page' : undefined}>{l.nom}</a>
+      <a href={lienPage(l.cle, menu.filtre)} aria-current={actif === l.cle ? 'page' : undefined}>{l.nom}</a>
     {/each}
     {#if listePlus.length}
       <button class="menu-deroulant" class:courant={plusActif} type="button" aria-haspopup="true" aria-expanded={ouvert === 'plus'} onclick={(e) => basculer('plus', e)}>
@@ -149,7 +150,7 @@
       {/each}
     {:else}
       {#each listePlus as l (l.cle)}
-        <li><a href={l.href} aria-current={actif === l.cle ? 'page' : undefined} onclick={() => (ouvert = null)}>{l.nom}</a></li>
+        <li><a href={lienPage(l.cle, menu.filtre)} aria-current={actif === l.cle ? 'page' : undefined} onclick={() => (ouvert = null)}>{l.nom}</a></li>
       {/each}
     {/if}
   </ul>

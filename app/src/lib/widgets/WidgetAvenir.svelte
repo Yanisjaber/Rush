@@ -1,4 +1,5 @@
 <script>
+  import { lienPage } from '../data/menu.js';
   import Bloc from '../components/Bloc.svelte';
   import { prochainesPrevues } from '../data/synthese.js';
   import { familleAffichage } from '../data/familles.js';
@@ -23,7 +24,7 @@
     <ul class="seances">
       {#each prochaines as p (p.id)}
         <li>
-          <a class="ligne" href="#/calendrier">
+          <a class="ligne" href={lienPage('calendrier', contexte.filtre)}>
             <span class="barre" style:background={couleurSport(familleAffichage(p.sport))}></span>
             <div class="infos">
               <div class="nom">{p.name || nomFamille(p.sport)}</div>
@@ -34,7 +35,7 @@
       {/each}
     </ul>
   {:else}
-    <p class="vide">Aucune séance prévue. <a href="#/calendrier">Planifie la prochaine depuis le calendrier</a>.</p>
+    <p class="vide">Aucune séance prévue. <a href={lienPage('calendrier', contexte.filtre)}>Planifie la prochaine depuis le calendrier</a>.</p>
   {/if}
 </Bloc>
 

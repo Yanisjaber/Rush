@@ -31,9 +31,9 @@
       <div><dt>Stations</dt><dd class="titre">{ecrireTemps(analyse.stations)}</dd></div>
       <div><dt>Écart objectif</dt><dd class="titre" class:perdu={ecart > 0} class:gagne={ecart != null && ecart <= 0}>{ecart != null ? formatEcartLong(ecart) : '—'}</dd></div>
     </dl>
-    {#if !cibles}<p class="note">Fixe un objectif de temps dans <a href="#/hyrox">ta page Hyrox</a> pour voir l'écart.</p>{/if}
+    {#if !cibles}<p class="note">Fixe un objectif de temps dans <a href="#/hyrox/tests">tes tests Hyrox</a> pour voir l'écart.</p>{/if}
   {:else}
-    <p class="vide">Pas encore de test enregistré. <a href="#/hyrox">Saisis ta première simulation</a> pour voir tes 16 segments.</p>
+    <p class="vide">Pas encore de test enregistré. <a href="#/hyrox/tests">Saisis ta première simulation</a> pour voir tes 16 segments.</p>
   {/if}
 </Bloc>
 

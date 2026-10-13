@@ -14,6 +14,8 @@
   import { sportsChoisis, chargerSportsChoisis } from '../lib/stores/sports.svelte.js';
   import { onboardingNecessaire, fusionnerFamilles } from '../lib/data/sports-choisis.js';
   import { menu, chargerMenu } from '../lib/stores/menu.svelte.js';
+  import { route } from '../lib/routeur.svelte.js';
+  import { construireAdresse, SOUS_ACCUEIL } from '../lib/data/adresses.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
   import {
@@ -173,13 +175,10 @@
   );
   // Muscu et Hyrox n'ont pas de page à eux : sur leur filtre, l'accueil a deux vues, « Vue d'ensemble » (widgets) et le détail
   // (programmes, journal, exercices pour la muscu ; tests et objectif pour Hyrox).
-  const sportAvecDetail = $derived(filtreActif === 'muscu' || filtreActif === 'hyrox');
-  let vue = $state('ensemble');
-  $effect(() => {
-    void filtreActif; // changer de sport revient à la vue d'ensemble
-    vue = 'ensemble';
-  });
-  const enDetail = $derived(sportAvecDetail && vue === 'detail' && !disposition.enEdition);
+  const sportAvecDetail = $derived(Object.hasOwn(SOUS_ACCUEIL, filtreActif));
+  // La vue détaillée est dans l'adresse (#/muscu/journal, #/hyrox/tests) : l'adresse décide, rien n'est retenu en local
+  const sousDetail = $derived(sportAvecDetail && route.chemin === '/' && SOUS_ACCUEIL[filtreActif].includes(route.sous) ? route.sous : '');
+  const enDetail = $derived(!!sousDetail && !disposition.enEdition);
   const ongletRiche = $derived(ONGLETS_PERSONNALISABLES.includes(filtreActif));
   const nomOngletEdition = $derived(disposition.ongletEdition !== 'tout' ? (SPORTS[disposition.ongletEdition] || SPORTS.autre).court : ''); // « Muscu », « Hyrox »
   const idsBibliotheque = $derived(
@@ -224,17 +223,17 @@
 
     {#if sportAvecDetail && !disposition.enEdition}
       <nav class="vues" aria-label="Vues {(SPORTS[filtreActif] || SPORTS.autre).court}">
-        <button type="button" aria-current={vue === 'ensemble' ? 'page' : undefined} onclick={() => (vue = 'ensemble')}>Vue d'ensemble</button>
-        <button type="button" aria-current={vue === 'detail' ? 'page' : undefined} onclick={() => (vue = 'detail')}>
+        <a href={construireAdresse({ sport: filtreActif })} aria-current={!sousDetail ? 'page' : undefined}>Vue d'ensemble</a>
+        <a href={construireAdresse({ sport: filtreActif, sous: SOUS_ACCUEIL[filtreActif][0] })} aria-current={sousDetail ? 'page' : undefined}>
           {filtreActif === 'muscu' ? 'Programmes, journal, exercices' : 'Tests et objectif'}
-        </button>
+        </a>
       </nav>
     {/if}
 
     {#if compteVide && !disposition.enEdition}<ParcoursDemarrage />{/if}
     {#if enDetail}
       {#if filtreActif === 'muscu'}
-        <Ecran charger={() => import('./Force.svelte')} {demo} integre={true} />
+        <Ecran charger={() => import('./Force.svelte')} {demo} integre={true} onglet={sousDetail} />
       {:else}
         <Ecran charger={() => import('./Hyrox.svelte')} {demo} integre={true} />
       {/if}
@@ -287,7 +286,7 @@
     gap: 4px;
     margin-bottom: 16px;
   }
-  .vues button {
+  .vues a {
     min-height: var(--cible);
     padding: 0 16px;
     border: 1px solid var(--trait);
@@ -297,9 +296,10 @@
     font-size: 14px;
     font-weight: 600;
     color: var(--texte-doux);
-    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
   }
-  .vues button[aria-current='page'] {
+  .vues a[aria-current='page'] {
     background: var(--surface-2);
     border-color: var(--trait-fort);
     color: var(--texte);

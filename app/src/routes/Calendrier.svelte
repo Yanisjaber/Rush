@@ -10,6 +10,8 @@
   import Dialogue from '../lib/components/Dialogue.svelte';
   import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
   import { ouvrirCreation, donnees } from '../lib/stores/edition.svelte.js';
+  import { route, aller } from '../lib/routeur.svelte.js';
+  import { construireAdresse, moisDepuisAdresse, moisVersAdresse } from '../lib/data/adresses.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { chargerSeancesPeriode, chargerPlanifiees, chargerAnnotations, chargerModeles } from '../lib/data/api.js';
   import { joursDe, versLigneNote } from '../lib/data/annotations.js';
@@ -22,7 +24,8 @@
   let { demo = false } = $props();
 
   const maintenant = new Date();
-  let cible = $state({ annee: maintenant.getFullYear(), mois: maintenant.getMonth() });
+  // Le mois affiché est dans l'adresse (#/course/calendrier/2026-09) ; sans mois, c'est le mois en cours
+  const cible = $derived(moisDepuisAdresse(route.sous) || { annee: maintenant.getFullYear(), mois: maintenant.getMonth() });
   let etat = $state({ chargement: true, erreur: '', seances: [], planifiees: [], objectifs: [], notes: [], repos: [] });
   // En démo, les notes et repos vivent en mémoire (ils survivent au changement de mois, pas au rechargement de la page)
   const jourDemo = (delta) => dateIsoLocale(new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate() + delta));
@@ -98,9 +101,10 @@
   const titre = $derived(grille.titre.charAt(0).toUpperCase() + grille.titre.slice(1));
 
   const nomFamille = (sport) => (SPORTS[familleAffichage(sport)] || SPORTS.autre).court;
-  function precedent() { cible = decalerMois(cible.annee, cible.mois, -1); }
-  function suivant() { cible = decalerMois(cible.annee, cible.mois, 1); }
-  function aujourdhui() { cible = { annee: maintenant.getFullYear(), mois: maintenant.getMonth() }; }
+  const versMois = (c) => aller(construireAdresse({ sport: menu.filtre, page: '/calendrier', sous: moisVersAdresse(c) }));
+  function precedent() { versMois(decalerMois(cible.annee, cible.mois, -1)); }
+  function suivant() { versMois(decalerMois(cible.annee, cible.mois, 1)); }
+  function aujourdhui() { aller(construireAdresse({ sport: menu.filtre, page: '/calendrier' })); }
 
   // --- Séances prévues : panneau de création / modification ---
   let panneau = $state({ ouvert: false, seance: null, modele: null, date: dateIsoLocale(maintenant) });

@@ -1,6 +1,7 @@
 <script>
   import { menu } from '../stores/menu.svelte.js';
   import { SPORTS } from '../sports.js';
+  import { changerSport } from '../routeur.svelte.js';
 
   // Filtre de sport pour le TÉLÉPHONE (sur ordinateur, les sports sont dans l'en-tête). Même filtre global que l'en-tête.
   const nom = (f) => (SPORTS[f] || SPORTS.autre).nom;
@@ -9,7 +10,7 @@
 {#if menu.familles.length}
   <label class="voir">
     <span>Sport</span>
-    <select value={menu.filtre} onchange={(e) => (menu.filtre = e.currentTarget.value)}>
+    <select value={menu.filtre} onchange={(e) => changerSport(e.currentTarget.value)}>
       <option value="tout">Tous</option>
       {#each menu.familles as f (f)}<option value={f}>{nom(f)}</option>{/each}
     </select>

@@ -1,4 +1,5 @@
 <script>
+  import { lienPage } from '../data/menu.js';
   import Bloc from '../components/Bloc.svelte';
   import { ouvrirApercu } from '../stores/apercu.svelte.js';
   import { semaineCourante } from '../data/synthese.js';
@@ -30,7 +31,7 @@
           {/each}
           {#if j.seances.length > 2}<span class="plus">+{j.seances.length - 2}</span>{/if}
           {#each j.prevues.slice(0, 2) as p (p.id)}
-            <a class="seance prevue" href="#/calendrier" style:border-color={couleurSport(familleAffichage(p.sport))} title="Séance prévue : {p.name || nomFamille(familleAffichage(p.sport))}" aria-label="Séance prévue : {p.name || nomFamille(familleAffichage(p.sport))}">
+            <a class="seance prevue" href={lienPage('calendrier', contexte.filtre)} style:border-color={couleurSport(familleAffichage(p.sport))} title="Séance prévue : {p.name || nomFamille(familleAffichage(p.sport))}" aria-label="Séance prévue : {p.name || nomFamille(familleAffichage(p.sport))}">
               <span class="type">{nomFamille(familleAffichage(p.sport))}</span>
               {#if p.duration}<span class="duree">{formatDuree(p.duration * 60)}</span>{/if}
             </a>

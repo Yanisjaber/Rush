@@ -5,6 +5,7 @@
   import Bouton from '../lib/components/Bouton.svelte';
   import PanneauProgramme from '../lib/components/PanneauProgramme.svelte';
   import CourbeLissee from '../lib/components/charts/CourbeLissee.svelte';
+  import { construireAdresse } from '../lib/data/adresses.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees, rafraichir } from '../lib/stores/edition.svelte.js';
   import { lireForce, sauverProgramme, retirerProgramme, ajouterExercicePerso, retirerExercicePerso } from '../lib/data/force-acces.js';
@@ -14,10 +15,8 @@
 
   // Page « Force » : programmes (séances types), journal des séances de force, exercices et records.
   // onglet : 'programmes' | 'journal' | 'exercices'
-  // integre : affiché DANS l'accueil (filtre Muscu) : pas d'en-tête ni de titre, sections choisies par des boutons (onglet local).
-  let { demo = false, onglet: ongletRoute = 'programmes', integre = false } = $props();
-  let ongletLocal = $state('programmes');
-  const onglet = $derived(integre ? ongletLocal : ongletRoute);
+  // integre : affiché DANS l'accueil (filtre Muscu) : pas d'en-tête ni de titre ; la section est dans l'adresse (#/muscu/journal).
+  let { demo = false, onglet = 'programmes', integre = false } = $props();
 
   let etat = $state({ chargement: true, erreur: '', seances: [], series: [], programmes: [], exercicesPerso: [] });
   let panneau = $state({ ouvert: false, programme: null });
@@ -104,9 +103,9 @@
   }
 
   const onglets = [
-    { cle: 'programmes', nom: 'Programmes', href: '#/force' },
-    { cle: 'journal', nom: 'Journal', href: '#/force/journal' },
-    { cle: 'exercices', nom: 'Exercices et records', href: '#/force/exercices' },
+    { cle: 'programmes', nom: 'Programmes', href: construireAdresse({ sport: 'muscu', sous: 'programmes' }) },
+    { cle: 'journal', nom: 'Journal', href: construireAdresse({ sport: 'muscu', sous: 'journal' }) },
+    { cle: 'exercices', nom: 'Exercices et records', href: construireAdresse({ sport: 'muscu', sous: 'exercices' }) },
   ];
 </script>
 
@@ -123,11 +122,7 @@
 
   <nav class="onglets" aria-label="Sections de la force">
     {#each onglets as o (o.cle)}
-      {#if integre}
-        <button type="button" aria-current={onglet === o.cle ? 'page' : undefined} onclick={() => (ongletLocal = o.cle)}>{o.nom}</button>
-      {:else}
-        <a href={o.href} aria-current={onglet === o.cle ? 'page' : undefined}>{o.nom}</a>
-      {/if}
+      <a href={o.href} aria-current={onglet === o.cle ? 'page' : undefined}>{o.nom}</a>
     {/each}
   </nav>
 

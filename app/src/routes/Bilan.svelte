@@ -8,6 +8,8 @@
   import GrapheNuits from '../lib/components/charts/GrapheNuits.svelte';
   import { menu } from '../lib/stores/menu.svelte.js';
   import SelecteurSport from '../lib/components/SelecteurSport.svelte';
+  import { route, aller } from '../lib/routeur.svelte.js';
+  import { construireAdresse, anneeDepuisAdresse } from '../lib/data/adresses.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
   import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
@@ -23,7 +25,9 @@
   let { demo = false } = $props();
 
   const maintenant = new Date();
-  let annee = $state(maintenant.getFullYear());
+  // L'année affichée est dans l'adresse (#/course/bilan/2025) ; sans année, c'est l'année en cours
+  const annee = $derived(anneeDepuisAdresse(route.sous) ?? maintenant.getFullYear());
+  const choisirAnnee = (a) => aller(construireAdresse({ sport: menu.filtre, page: '/bilan', sous: Number(a) === maintenant.getFullYear() ? '' : String(a) }));
   let metrique = $state('distance_km'); // graphique de cumul : distance ou dénivelé
   let etat = $state({ chargement: true, erreur: '', brutes: [], objectifs: [] });
   let panneau = $state({ ouvert: false, objectif: null });
@@ -101,7 +105,7 @@
     <h1 class="titre">Bilan {annee}</h1>
     <label class="annee">
       <span>Année</span>
-      <select bind:value={annee} aria-label="Choisir l'année du bilan">
+      <select value={annee} onchange={(e) => choisirAnnee(e.currentTarget.value)} aria-label="Choisir l'année du bilan">
         {#each annees as y (y)}<option value={y}>{y}</option>{/each}
       </select>
     </label>

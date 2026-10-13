@@ -2,7 +2,9 @@
   import Panneau from './Panneau.svelte';
   import { menu } from '../stores/menu.svelte.js';
   import { route } from '../routeur.svelte.js';
-  import { barreBas, cleDePage, ouvertureActive } from '../data/menu.js';
+  import { barreBas, cleDePage, ouvertureActive, lienPage } from '../data/menu.js';
+  import { changerSport } from '../routeur.svelte.js';
+  import { SPORTS, couleurSport } from '../sports.js';
 
   // Barre de navigation fixe en bas du téléphone (au pouce). Sur ordinateur elle n'existe pas : le menu est en haut.
   // « Sports » et « Plus » ouvrent une feuille qui monte du bas avec les pages qu'ils regroupent.
@@ -10,9 +12,13 @@
 
   const b = $derived(barreBas(menu.familles));
   const courante = $derived(cleDePage(route.chemin));
-  const surligne = $derived(ouvertureActive(courante, menu.familles));
+  const surligne = $derived(ouvertureActive(courante));
   let feuille = $state(null); // null | 'sports' | 'plus'
-  const pagesFeuille = $derived(feuille === 'sports' ? b.sports : feuille === 'plus' ? b.plus : []);
+  const pagesFeuille = $derived(feuille === 'plus' ? b.plus : []);
+  const choisir = (f) => {
+    changerSport(f);
+    feuille = null;
+  };
 </script>
 
 {#snippet icone(cle)}
@@ -29,14 +35,14 @@
 
 <nav class="bas" aria-label="Navigation principale">
   {#each b.items as it (it.cle)}
-    {@const actif = it.ouvre ? surligne === it.ouvre : courante === it.cle}
+    {@const actif = it.ouvre === 'sports' ? menu.filtre !== 'tout' : it.ouvre ? surligne === it.ouvre : courante === it.cle}
     {#if it.ouvre}
       <button type="button" class="btn" class:actif aria-haspopup="dialog" onclick={() => (feuille = it.ouvre)}>
         {@render icone(it.cle)}
-        <span>{it.nom}</span>
+        <span>{it.cle === 'sports' && menu.filtre !== 'tout' ? (SPORTS[menu.filtre] || SPORTS.autre).court : it.nom}</span>
       </button>
     {:else}
-      <a class="btn" class:actif href={it.href} aria-current={actif ? 'page' : undefined}>
+      <a class="btn" class:actif href={lienPage(it.cle, menu.filtre)} aria-current={actif ? 'page' : undefined}>
         {@render icone(it.cle)}
         <span>{it.nom}</span>
       </a>
@@ -44,10 +50,20 @@
   {/each}
 </nav>
 
-<Panneau ouvert={feuille !== null} titre={feuille === 'sports' ? 'Mes sports' : 'Plus'} onfermer={() => (feuille = null)}>
+<Panneau ouvert={feuille !== null} titre={feuille === 'sports' ? 'Sport affiché' : 'Plus'} onfermer={() => (feuille = null)}>
   <ul class="liste">
+    {#if feuille === 'sports'}
+      <li><button type="button" class:courant={menu.filtre === 'tout'} onclick={() => choisir('tout')}>Tous les sports</button></li>
+      {#each menu.familles as f (f)}
+        <li>
+          <button type="button" class:courant={menu.filtre === f} onclick={() => choisir(menu.filtre === f ? 'tout' : f)}>
+            <span class="point" style:background={couleurSport(f)}></span>{(SPORTS[f] || SPORTS.autre).nom}
+          </button>
+        </li>
+      {/each}
+    {/if}
     {#each pagesFeuille as p (p.cle)}
-      <li><a href={p.href} aria-current={courante === p.cle ? 'page' : undefined} onclick={() => (feuille = null)}>{p.nom}</a></li>
+      <li><a href={lienPage(p.cle, menu.filtre)} aria-current={courante === p.cle ? 'page' : undefined} onclick={() => (feuille = null)}>{p.nom}</a></li>
     {/each}
     {#if feuille === 'plus' && demo}
       <li><a href="./" onclick={() => (feuille = null)}>Quitter la démo</a></li>
@@ -111,7 +127,15 @@
   .liste li + li {
     border-top: 1px solid var(--trait);
   }
-  .liste a {
+  .liste a,
+  .liste button {
+    width: 100%;
+    gap: 10px;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
     display: flex;
     align-items: center;
     min-height: 52px;
@@ -119,6 +143,13 @@
     font-weight: 600;
     color: var(--texte);
   }
+  .point {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .liste button.courant,
   .liste a[aria-current='page'] {
     color: var(--texte);
     text-decoration: underline;

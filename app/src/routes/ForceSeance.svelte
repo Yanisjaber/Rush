@@ -178,11 +178,11 @@
     if (r.erreur) return (erreur = r.erreur);
     effacerBrouillon();
     rafraichir();
-    location.hash = '#/force/journal';
+    location.hash = '#/muscu/journal';
   }
   function abandonner() {
     effacerBrouillon();
-    location.hash = '#/force';
+    location.hash = '#/muscu/programmes';
   }
   async function supprimer() {
     if (envoi || !existante) return;
@@ -195,7 +195,7 @@
       return;
     }
     rafraichir();
-    location.hash = '#/force/journal';
+    location.hash = '#/muscu/journal';
   }
 
   const titre = $derived(mode === 'direct' ? 'Séance en cours' : mode === 'apres' ? 'Séance passée' : 'Modifier la séance');
@@ -206,7 +206,7 @@
 
   <header class="titre-page">
     <div>
-      <p class="surtitre"><a href="#/force">← Force</a></p>
+      <p class="surtitre"><a href="#/muscu/programmes">← Muscu</a></p>
       <h1 class="titre">{titre}</h1>
     </div>
     {#if mode === 'direct' && !chargement}
@@ -299,7 +299,7 @@
               <Bouton variante="texte" onclick={() => (confirmer = 'abandon')}>Abandonner</Bouton>
             {/if}
           {:else}
-            <Bouton variante="discret" href={mode === 'modifier' ? '#/force/journal' : '#/force'}>Annuler</Bouton>
+            <Bouton variante="discret" href={mode === 'modifier' ? '#/muscu/journal' : '#/muscu/programmes'}>Annuler</Bouton>
           {/if}
         </div>
       </div>

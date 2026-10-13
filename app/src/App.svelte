@@ -24,9 +24,7 @@
     Competitions: () => import('./routes/Competitions.svelte'),
     Bilan: () => import('./routes/Bilan.svelte'),
     Plan: () => import('./routes/Plan.svelte'),
-    Force: () => import('./routes/Force.svelte'),
     ForceSeance: () => import('./routes/ForceSeance.svelte'),
-    Hyrox: () => import('./routes/Hyrox.svelte'),
     Seance: () => import('./routes/Seance.svelte'),
   };
 
@@ -47,11 +45,8 @@
     return m[1] === 'graphiques' || m[1] === 'conseils' ? m[1] : 'apercu';
   });
 
-  // Force : #/force, #/force/journal, #/force/exercices (pages) ; #/force/seance|apres/<programme|libre> et #/force/modifier/<id> (saisie d'une séance)
-  const forceOnglet = $derived.by(() => {
-    const m = /^\/force(?:\/(journal|exercices))?$/.exec(route.chemin);
-    return m ? m[1] || 'programmes' : null;
-  });
+  // Séance de force en direct ou saisie après coup : #/force/seance|apres/<programme|libre> et #/force/modifier/<id>
+  // (les programmes, le journal et les exercices vivent dans l'accueil Muscu : #/muscu/programmes… ; l'ancien #/force y renvoie)
   const forceSeance = $derived.by(() => {
     const m = /^\/force\/(seance|apres|modifier)\/([A-Za-z0-9_-]{1,64})$/.exec(route.chemin);
     if (!m) return null;
@@ -111,12 +106,8 @@
     <Ecran charger={ecrans.Bilan} demo={true} />
   {:else if route.chemin === '/plan'}
     <Ecran charger={ecrans.Plan} demo={true} />
-  {:else if forceOnglet}
-    <Ecran charger={ecrans.Force} demo={true} onglet={forceOnglet} />
   {:else if forceSeance}
     {#key route.chemin}<Ecran charger={ecrans.ForceSeance} demo={true} mode={forceSeance.mode} cible={forceSeance.cible} />{/key}
-  {:else if route.chemin === '/hyrox'}
-    <Ecran charger={ecrans.Hyrox} demo={true} />
   {:else if idSeance}
     <Ecran charger={ecrans.Seance} id={idSeance} demo={true} />
   {:else}
@@ -140,12 +131,8 @@
   <Ecran charger={ecrans.Bilan} />
 {:else if route.chemin === '/plan'}
   <Ecran charger={ecrans.Plan} />
-{:else if forceOnglet}
-  <Ecran charger={ecrans.Force} onglet={forceOnglet} />
 {:else if forceSeance}
   {#key route.chemin}<Ecran charger={ecrans.ForceSeance} mode={forceSeance.mode} cible={forceSeance.cible} />{/key}
-{:else if route.chemin === '/hyrox'}
-  <Ecran charger={ecrans.Hyrox} />
 {:else if idSeance}
   <Ecran charger={ecrans.Seance} id={idSeance} />
 {:else}
