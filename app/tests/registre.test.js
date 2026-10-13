@@ -135,3 +135,13 @@ test("disponiblesOnglet : seulement les widgets du sport (ou de tous les sports)
   assert.ok(!dispo.includes('tonnage') && !dispo.includes('semaine')); // déjà présents
   assert.ok(!dispo.includes('hyroxtest') && !dispo.includes('predictions')); // d'autres sports
 });
+
+test("onglet d'un sport : le dossard d'objectif reste en premier, puis les widgets du sport, puis les autres", () => {
+  const widgets = compositionAuto(['course']).widgets;
+  const ids = composerOnglet(widgets, 'course').map((w) => w.id);
+  assert.equal(ids[0], 'objectif');
+  const iPred = ids.indexOf('predictions');
+  const iCharge = ids.indexOf('charge');
+  assert.ok(iPred > 0 && iPred < iCharge, 'les widgets de course passent avant les widgets généraux');
+  assert.deepEqual([...ids].sort(), widgets.map((w) => w.id).sort()); // rien d'oublié ni ajouté
+});

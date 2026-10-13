@@ -16,7 +16,7 @@
   {#if objectif}
     <Dossard etiquette="Prochain objectif" nom={objectif.name} valeur={`J-${jours}`} {detail} />
   {:else}
-    <Dossard etiquette="Prochain objectif" nom="Aucun objectif" valeur="—" {detail} />
+    <Dossard compact etiquette="Prochain objectif" nom="Aucun objectif" valeur="" {detail} />
   {/if}
 </div>
 

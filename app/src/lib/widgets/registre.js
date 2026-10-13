@@ -280,7 +280,13 @@ export function composerOnglet(widgets, sport, onglets = null) {
     return ORDRE_ONGLET[sport].map((id) => ({ id, taille: tailleValide(id, tailles.get(id)) }));
   }
   const pertinents = widgets.filter((w) => estPertinent(w.id, [sport]));
-  return [...pertinents.filter((w) => WIDGETS[w.id].sports !== 'tous'), ...pertinents.filter((w) => WIDGETS[w.id].sports === 'tous')];
+  const universels = pertinents.filter((w) => WIDGETS[w.id].sports === 'tous');
+  // Le dossard d'objectif reste toujours en premier ; viennent ensuite les widgets du sport, puis les autres.
+  return [
+    ...universels.filter((w) => w.id === 'objectif'),
+    ...pertinents.filter((w) => WIDGETS[w.id].sports !== 'tous'),
+    ...universels.filter((w) => w.id !== 'objectif'),
+  ];
 }
 
 function tailleValide(id, souhaitee) {

@@ -4,11 +4,12 @@
   // Le dossard : la signature visuelle de l'app. Un bloc clair avec quatre points d'attache,
   // un grand nombre (J-63, PUSH…) et le contexte de l'objectif.
   // Tout le texte est affiché en texte brut : Svelte échappe automatiquement le HTML.
-  let { etiquette = '', nom = '', valeur = '', detail = '', taille = 'l', children } = $props();
+  // compact : dossard réduit (sans grand chiffre) pour un état vide, comme « aucun objectif »
+  let { etiquette = '', nom = '', valeur = '', detail = '', taille = 'l', compact = false, children } = $props();
   const tailleMax = $derived(taille === 'm' ? 112 : 150);
 </script>
 
-<section class="dossard {taille}" aria-label={etiquette || nom || 'Objectif'}>
+<section class="dossard {taille}" class:compact aria-label={etiquette || nom || 'Objectif'}>
   <span class="attache haut-gauche" aria-hidden="true"></span>
   <span class="attache haut-droite" aria-hidden="true"></span>
   <span class="attache bas-gauche" aria-hidden="true"></span>
@@ -19,7 +20,9 @@
     {#if nom}<div class="nom titre">{nom}</div>{/if}
   </div>
 
-  <div class="valeur titre" use:ajusterTexte={{ max: tailleMax, valeur }}>{valeur}</div>
+  {#if valeur}
+    <div class="valeur titre" use:ajusterTexte={{ max: tailleMax, valeur }}>{valeur}</div>
+  {/if}
 
   <div class="pied">
     {#if detail}<div class="detail">{detail}</div>{/if}
@@ -45,6 +48,13 @@
   .dossard.m {
     padding: 18px 20px;
     min-height: 0;
+  }
+  /* état vide : juste le titre et le détail, sans grand espace ni gros chiffre */
+  .dossard.compact {
+    min-height: 0;
+    padding: 18px 20px;
+    justify-content: flex-start;
+    gap: 14px;
   }
 
   .attache {
