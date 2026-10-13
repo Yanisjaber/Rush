@@ -123,6 +123,7 @@
   // Compte neuf (aucune donnée, sports jamais demandés) : on propose de choisir ses sports avant d'afficher l'accueil
   const afficherOnboarding = $derived(
     !etat.chargement &&
+      !etat.erreur && // si le chargement a échoué, un compte existant ressemblerait à un compte vide : on ne propose rien
       onboardingNecessaire({
         demo,
         sportsEnregistres: sportsChoisis.liste,
