@@ -1,8 +1,14 @@
 // Les sports choisis par l'utilisateur (onboarding et Préférences) : fonctions pures, sans réseau.
-// Stockage : colonne `sports` de user_preferences (tableau JSON de clés). `null` = jamais demandé.
+// Stockage : colonne `sports` de user_preferences (tableau JSON de clés de lib/sports.js). `null` = jamais demandé.
 
-/** Ce qu'on propose de cocher : les cinq familles qui ont leurs widgets et leurs onglets, plus « Autre ». */
-export const SPORTS_A_CHOISIR = ['course', 'velo', 'natation', 'muscu', 'hyrox', 'autre'];
+/** Les cinq sports qui ont leurs widgets et leurs onglets sur l'accueil. */
+export const SPORTS_PRINCIPAUX = ['course', 'velo', 'natation', 'muscu', 'hyrox'];
+
+/** Les autres sports de performance : ils ont leur pastille de couleur et leurs séances, sans widgets dédiés. */
+export const SPORTS_AUTRES = ['trail', 'vtt', 'triathlon', 'crossfit', 'aviron', 'ski', 'combat', 'rando', 'escalade', 'pagaie'];
+
+/** Tout ce qu'on peut cocher, dans l'ordre de l'écran. */
+export const SPORTS_A_CHOISIR = [...SPORTS_PRINCIPAUX, ...SPORTS_AUTRES];
 
 /**
  * Nettoie une liste venue du stockage : on ne garde que des clés connues, une seule fois chacune, dans l'ordre de l'écran.
@@ -22,10 +28,15 @@ export function onboardingNecessaire({ demo = false, sportsEnregistres = null, n
   return !demo && sportsEnregistres === null && nbSeances === 0 && !aForce && !aHyrox;
 }
 
-/** Les familles de sport de l'accueil : celles déduites des données, plus celles que l'utilisateur a choisies (« Autre » n'a pas d'onglet). */
+/** Les familles de l'accueil qu'un sport choisi fait apparaître : le trail est de la course, le VTT du vélo, le triathlon les trois disciplines. */
+const FAMILLES_DU_SPORT = { trail: ['course'], vtt: ['velo'], triathlon: ['course', 'velo', 'natation'] };
+
+/** Les familles de sport de l'accueil : celles déduites des données, plus celles des sports choisis (« autre » n'a pas d'onglet). */
 export function fusionnerFamilles(deDonnees = [], choisis = []) {
   const f = new Set(deDonnees);
-  for (const s of choisis || []) f.add(s);
+  for (const s of choisis || []) {
+    for (const famille of Object.hasOwn(FAMILLES_DU_SPORT, s) ? FAMILLES_DU_SPORT[s] : [s]) f.add(famille);
+  }
   f.delete('autre');
   return [...f];
 }

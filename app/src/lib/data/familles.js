@@ -29,6 +29,12 @@ const FAMILLES = {
   // Combat
   Boxing: 'combat',
   MartialArts: 'combat',
+  // Autres sports de performance
+  Hike: 'rando',
+  RockClimbing: 'escalade',
+  Canoeing: 'pagaie',
+  Kayaking: 'pagaie',
+  StandUpPaddling: 'pagaie',
 };
 
 /** Famille d'un type de sport brut. Tout ce qui est inconnu (marche, foot, « Workout »…) devient « autre ». */

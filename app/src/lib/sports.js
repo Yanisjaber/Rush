@@ -15,6 +15,9 @@ export const SPORTS = {
   aviron: { nom: 'Aviron', court: 'Aviron', couleur: 'var(--sport-natation)' },
   ski: { nom: 'Ski de fond', court: 'Ski', couleur: 'var(--sport-neutre)' },
   combat: { nom: 'Sports de combat', court: 'Combat', couleur: 'var(--sport-neutre)' },
+  rando: { nom: 'Randonnée', court: 'Rando', couleur: 'var(--sport-neutre)' },
+  escalade: { nom: 'Escalade', court: 'Escalade', couleur: 'var(--sport-neutre)' },
+  pagaie: { nom: 'Canoë-kayak', court: 'Pagaie', couleur: 'var(--sport-natation)' },
   autre: { nom: 'Autre sport', court: 'Autre', couleur: 'var(--sport-neutre)' },
 };
 
