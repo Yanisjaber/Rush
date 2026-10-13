@@ -104,16 +104,12 @@ Deno.serve(async (req) => {
       return redirectToApp(returnUrl, { strava_error: "token_save_failed" });
     }
 
-    // ===== 4) Mettre à jour aussi user_profiles avec FTP / weight / strava_athlete_id =====
-    await sbAdmin
-      .from("user_profiles")
-      .upsert({
-        user_id: user.id,
-        display_name: `${athlete.firstname || ""} ${athlete.lastname || ""}`.trim() || null,
-        strava_athlete_id: athlete.id,
-        ftp: athlete.ftp || null,
-        weight: athlete.weight || null,
-      }, { onConflict: "user_id" });
+    // ===== 4) Compléter le profil avec le FTP / le poids connus de Strava, SANS jamais écraser ce que l'utilisateur a saisi =====
+    // (l'identifiant d'athlète est dans connexions_app.external_id ; le prénom du profil reste celui que l'utilisateur a choisi)
+    const profilStrava: Record<string, unknown> = { user_id: user.id };
+    if (athlete.ftp) profilStrava.ftp = athlete.ftp;
+    if (athlete.weight) profilStrava.weight = athlete.weight;
+    await sbAdmin.from("user_profiles").upsert(profilStrava, { onConflict: "user_id" });
 
     // ===== 5) Redirection vers l'app avec flag de succès =====
     return redirectToApp(returnUrl, { strava_connected: "1" });

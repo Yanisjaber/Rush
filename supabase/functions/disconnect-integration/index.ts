@@ -11,7 +11,7 @@
 //   (connexions_app). Les données importées restent.
 // wipe=true (déconnexion + suppression) :
 //   provider=strava → supprime power_profile, daily_metrics, activities,
-//     strava_connections, et remet à zéro strava_athlete_id/ftp/weight dans user_profiles.
+//     strava_connections, et remet à zéro ftp/weight (issus de Strava) dans user_profiles.
 //
 // Utilise la service_role (bypass RLS) mais ne touche QUE les lignes de
 // l'utilisateur identifié par le JWT → un user ne peut effacer que ses données.
@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     if (only) {
       if (only === "user_profiles_reset") {
         if (provider === "strava") {
-          await sb.from("user_profiles").update({ strava_athlete_id: null, ftp: null, weight: null }).eq("user_id", uid);
+          await sb.from("user_profiles").update({ ftp: null, weight: null }).eq("user_id", uid);
         }
         return json({ ok: true, step: only });
       }
@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
     // En mode wipe Strava, on remet aussi à zéro les infos athlète issues de Strava.
     if (wipe && provider === "strava") {
       await sb.from("user_profiles").update({
-        strava_athlete_id: null, ftp: null, weight: null,
+        ftp: null, weight: null,
       }).eq("user_id", uid);
       deleted["user_profiles_reset"] = true;
     }

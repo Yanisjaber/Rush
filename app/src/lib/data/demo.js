@@ -83,7 +83,7 @@ export function donneesDemo(aujourdhui = new Date()) {
   }
 
   return {
-    profil: { display_name: 'Yanis', ftp: null, hr_max: 196, lthr: null, weight: null, extras: { cp: 245, wprime: 19 } },
+    profil: { ftp: null, hr_max: 196, lthr: null, weight: null, extras: { first_name: 'Yanis', last_name: 'Jaber', cp: 245, wprime: 19 } },
     metriques,
     seances,
     puissance: [

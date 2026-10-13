@@ -16,8 +16,8 @@ test('chaque champ a une clé unique par section et un type connu', () => {
 });
 
 test('valeursDepuis : colonnes, extras, champs absents vides, extras hérités ignorés', () => {
-  const v = valeursDepuis({ display_name: 'Yanis', weight: 71.5, extras: { city: 'Toulouse', sex: 'M' } }, identite);
-  assert.equal(v.first_name, 'Yanis'); // ancien profil : le prénom vient du nom affiché
+  const v = valeursDepuis({ weight: 71.5, extras: { first_name: 'Yanis', city: 'Toulouse', sex: 'M' } }, identite);
+  assert.equal(v.first_name, 'Yanis');
   assert.equal(v.last_name, '');
   assert.equal(v.weight, '71.5');
   assert.equal(v.city, 'Toulouse');
@@ -58,9 +58,10 @@ test('versPayload : colonnes séparées des extras, extras des autres sections c
   assert.equal(extras.pr_p_5s, 900);
   assert.ok(!('ftp' in extras));
   const { colonnes: c2, extras: e2 } = versPayload(identite, validerSection(identite, { first_name: 'Yanis', last_name: 'Jaber' }).propres, {});
-  assert.deepEqual(Object.keys(c2).sort(), ['display_name', 'weight']);
-  assert.equal(c2.display_name, 'Yanis'); // l'accueil lit encore le nom affiché
-  assert.equal(e2.full_name, 'Yanis Jaber');
+  assert.deepEqual(Object.keys(c2).sort(), ['weight']);
+  assert.equal(e2.first_name, 'Yanis');
+  assert.equal(e2.last_name, 'Jaber');
+  assert.ok(!('full_name' in e2)); // plus de nom complet recopié ailleurs
 });
 
 test('zones : puissance (FTP 250), allure avec min/km, référence absente = null', () => {
@@ -96,13 +97,14 @@ test('avatarSur : accepte data:image et https, refuse le reste', () => {
   assert.equal(avatarSur('http://exemple.fr/a.png'), false);
 });
 
-test('prénom et nom : relus depuis l\'ancien nom complet, ou depuis les nouveaux champs', () => {
-  const ancien = valeursDepuis({ display_name: 'Yanis', extras: { full_name: 'Yanis Jaber Martin' } }, identite);
-  assert.equal(ancien.first_name, 'Yanis');
-  assert.equal(ancien.last_name, 'Jaber Martin');
-  const nouveau = valeursDepuis({ display_name: 'Yanis', extras: { first_name: 'Yan', last_name: 'J', full_name: 'autre chose' } }, identite);
-  assert.equal(nouveau.first_name, 'Yan');
-  assert.equal(nouveau.last_name, 'J');
-  const sansNom = versPayload(identite, validerSection(identite, { first_name: 'Yanis' }).propres, {});
-  assert.equal(sansNom.extras.full_name, 'Yanis');
+test('prénom et nom : lus et écrits dans extras.first_name et extras.last_name seulement', () => {
+  const v = valeursDepuis({ weight: 70, extras: { first_name: 'Yan', last_name: 'J', full_name: 'ignoré' } }, identite);
+  assert.equal(v.first_name, 'Yan');
+  assert.equal(v.last_name, 'J');
+  const vide = valeursDepuis({ extras: {} }, identite);
+  assert.equal(vide.first_name, '');
+  assert.equal(vide.last_name, '');
+  const ecrit = versPayload(identite, validerSection(identite, { first_name: 'Yanis' }).propres, {});
+  assert.equal(ecrit.extras.first_name, 'Yanis');
+  assert.ok(!('full_name' in ecrit.extras));
 });

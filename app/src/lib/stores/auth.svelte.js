@@ -4,7 +4,6 @@ import { sb } from '../supabase.js';
 import { route } from '../routeur.svelte.js';
 import { lireLienAuth, messageLienErreur, validerMotDePasse, validerInscription, adresseDejaInscrite } from '../data/lien-auth.js';
 import { appeler } from '../data/integrations.js';
-import { chargerProfilComplet, enregistrerProfil } from '../data/api.js';
 
 // definirMdp : true quand l'utilisateur arrive par un lien d'invitation ou de réinitialisation : il doit choisir un mot de passe.
 // erreurLien : message à afficher si ce lien est expiré ou refusé.
@@ -73,29 +72,8 @@ async function traiterLien() {
     auth.erreurLien = messageLienErreur('invalide');
     return;
   }
-  if (lien.type === 'signup') {
-    // Compte tout juste confirmé : il a déjà choisi son mot de passe, on recopie seulement son prénom et son nom dans le profil.
-    await completerProfilInscription(verif.data.user);
-    return;
-  }
+  if (lien.type === 'signup') return; // compte tout juste confirmé : il a déjà choisi son mot de passe (prénom et nom sont déjà dans son profil)
   auth.definirMdp = true;
-}
-
-/** Recopie prénom et nom (saisis à l'inscription, gardés dans les métadonnées du compte) dans user_profiles, une seule fois. */
-async function completerProfilInscription(user) {
-  try {
-    const m = user?.user_metadata || {};
-    const prenom = typeof m.first_name === 'string' ? m.first_name.slice(0, 60) : '';
-    const nom = typeof m.last_name === 'string' ? m.last_name.slice(0, 60) : '';
-    if (!prenom && !nom) return;
-    const { data } = await chargerProfilComplet(user.id);
-    const extras = data?.extras && typeof data.extras === 'object' ? data.extras : {};
-    if (extras.first_name || extras.last_name) return;
-    const complet = [prenom, nom].filter(Boolean).join(' ');
-    await enregistrerProfil(user.id, { display_name: prenom || complet }, { ...extras, first_name: prenom, last_name: nom, full_name: complet });
-  } catch (_e) {
-    /* non bloquant : il pourra remplir son profil à la main */
-  }
 }
 
 /**
@@ -113,7 +91,7 @@ export async function inscription({ prenom, nom, email, motDePasse, consentement
     password: motDePasse,
     options: {
       emailRedirectTo: `${location.origin}${location.pathname}`,
-      data: { first_name: v.prenom, last_name: v.nom, display_name: v.prenom },
+      data: { first_name: v.prenom, last_name: v.nom },
     },
   });
   if (error) {

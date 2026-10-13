@@ -1,11 +1,11 @@
 // Profil de l'athlète : définition des champs, validation, calculs (zones, estimations). Fonctions pures, sans réseau.
 //
 // STOCKAGE (table user_profiles), format stable pour que les profils déjà enregistrés restent lisibles :
-//   - colonnes : display_name, weight, ftp, hr_max, lthr
+//   - colonnes : weight, ftp, hr_max, lthr
 //   - tout le reste dans la colonne JSON `extras` (clés sans le préfixe « x_ »)
 // Les zones ne sont JAMAIS stockées : on les recalcule à l'affichage à partir de la FTP, de la LTHR et de la vitesse seuil.
 
-const COLONNES = ['display_name', 'weight', 'ftp', 'hr_max', 'lthr'];
+const COLONNES = ['weight', 'ftp', 'hr_max', 'lthr'];
 
 // --- Définition des champs --------------------------------------------------------------------------------------
 // type : 'texte' | 'nombre' | 'date' | 'choix' | 'case' | 'temps' | 'paragraphe'
@@ -15,17 +15,12 @@ const temps = (cle, label, exemple) => ({ cle, label, type: 'temps', exemple });
 const choix = (cle, label, options) => ({ cle, label, type: 'choix', options });
 const colonne = (champ) => ({ ...champ, colonne: true });
 
-// Prénom et nom : nouveaux champs, mais les anciens profils n'ont que `display_name` (colonne) et `full_name` (extras).
-// On relit donc ces anciennes valeurs tant que les nouvelles n'existent pas.
-function lirePrenom(ligne, extras) {
-  if (typeof extras.first_name === 'string') return extras.first_name;
-  const complet = String(extras.full_name ?? '').trim();
-  return complet ? complet.split(/\s+/)[0] : String(ligne?.display_name ?? '');
+// Prénom et nom : stockés dans `extras.first_name` et `extras.last_name` (rien d'autre : pas de nom complet recopié ailleurs).
+function lirePrenom(_ligne, extras) {
+  return typeof extras.first_name === 'string' ? extras.first_name : '';
 }
-function lireNom(ligne, extras) {
-  if (typeof extras.last_name === 'string') return extras.last_name;
-  const complet = String(extras.full_name ?? '').trim();
-  return complet ? complet.split(/\s+/).slice(1).join(' ') : '';
+function lireNom(_ligne, extras) {
+  return typeof extras.last_name === 'string' ? extras.last_name : '';
 }
 
 export const SECTIONS = [
@@ -182,11 +177,6 @@ export function versPayload(section, propres, extrasActuels = {}) {
       if (!COLONNES.includes(c.cle)) continue;
       colonnes[c.cle] = propres[c.cle];
     } else extras[c.cle] = propres[c.cle];
-  }
-  if (Object.hasOwn(propres, 'first_name')) {
-    // L'accueil lit encore `display_name` et `full_name` : on les tient à jour
-    colonnes.display_name = propres.first_name;
-    extras.full_name = [propres.first_name, propres.last_name].filter(Boolean).join(' ') || null;
   }
   return { colonnes, extras };
 }

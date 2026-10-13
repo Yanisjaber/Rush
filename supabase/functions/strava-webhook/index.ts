@@ -163,7 +163,7 @@ async function handleEvent(event: any) {
     return;
   }
 
-  // Récupère TOUTES les connections liées à ce strava_athlete_id (peut être >1 user)
+  // Récupère TOUTES les connections liées à cet athlète Strava (external_id ; peut être >1 user)
   const { data: conns } = await sb
     .from("connexions_app")
     .select("*")

@@ -110,7 +110,7 @@
   });
 
   // --- Données dérivées ---
-  const prenom = $derived(etat.profil?.display_name || auth.session?.user?.email?.split('@')[0] || '');
+  const prenom = $derived(etat.profil?.extras?.first_name || auth.session?.user?.email?.split('@')[0] || '');
   const familles = $derived(famillesDe(etat.seances, etat.force, etat.hyrox, etat.objectifs));
   // Le filtre doit rester un sport que l'utilisateur pratique (sinon on revient sur « Tout »)
   const filtreActif = $derived(filtre === 'tout' || familles.includes(filtre) ? filtre : 'tout');
