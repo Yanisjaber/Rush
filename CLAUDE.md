@@ -48,7 +48,7 @@ Coach IA : dashboard d'entraînement/récupération (cyclisme, course, triathlon
 
 La v2 est une refonte complète construite **à côté** de la v1 (même dépôt, même Supabase). Elle vise **tout sport de performance lié à un entraînement physique et une forme** (pas de sports collectifs), avec un accueil composé de widgets selon les sports de l'utilisateur, un mode édition, un onboarding, et deux coques (mobile simple, desktop complet). La v1 ne doit jamais être cassée.
 
-**Officialisation (décidée par Yanis le 2026-10-13)** : la v2 devient l'app en ligne (racine du site) et la v1 reste en secours dans `/v1/`. Le site est publié par `.github/workflows/pages.yml` (v2 compilée à la racine + v1 dans `v1/`, rien d'autre du dépôt). Son job `deploy` ne tourne que si la variable de dépôt `DEPLOY_PAGES` vaut `true` ; elle se pose à la bascule, en même temps que Réglages → Pages → Source : « GitHub Actions ». **Tant que la bascule n'est pas faite, GitHub Pages sert encore la racine de `main` (la v1) : ne change aucun réglage Pages ni cette variable sans que Yanis le demande.** Après la bascule, mets cette section à jour.
+**Officialisation (faite le 2026-10-13)** : la v2 est l'app en ligne (racine du site, `https://yanisjaber.github.io/coach-ia/`) et la v1 reste en secours dans `/v1/`. Le site est publié par `.github/workflows/pages.yml` : tests, audit et build de la v2, assemblage (v2 compilée à la racine + v1 dans `v1/`, rien d'autre du dépôt n'est servi), puis déploiement. La source de GitHub Pages est « GitHub Actions » et la variable de dépôt `DEPLOY_PAGES` vaut `true` : **un push sur `main` met donc la v2 en ligne**. Retour arrière d'urgence : repasser la source de Pages en « Deploy from a branch » (main, `/`), la v1 revient à la racine. Ne change ni ce réglage ni cette variable sans que Yanis le demande.
 
 - **Stack** : Svelte 5 + Vite 8 (le « pas de bundler » ne vaut que pour la v1). Polices hébergées via `@fontsource` (aucun appel à Google Fonts).
 - **Commandes** : `cd v2 && npm ci` puis `npm run dev` (http://localhost:5173) ou `npm run build`. Le catalogue du design system est la page d'accueil de `v2/`.
@@ -59,7 +59,7 @@ La v2 est une refonte complète construite **à côté** de la v1 (même dépôt
 
 ## Pièges
 
-- `.env`, `.garmin_tokens.json`, `.strava_tokens.json` sont ignorés par git. Le dépôt est public : tout ce qui est commité l'est (jetons, clés secrètes, fichiers perso : jamais). Avant la bascule, GitHub Pages publie la racine de `main` ; après, seulement ce que `pages.yml` assemble.
+- `.env`, `.garmin_tokens.json`, `.strava_tokens.json` sont ignorés par git. Le dépôt est public : tout ce qui est commité l'est (jetons, clés secrètes, fichiers perso : jamais). GitHub Pages ne sert que ce que `pages.yml` assemble (pas `tools/`, `supabase/`, `.env`…).
 - Ne pas casser le format des fichiers `src/**/*.js` lors d'éditions volumineuses (incident de troncature en juin) : relancer `node --check` après modification.
 
 ## Sécurité — toujours, sur tout ce que tu écris
@@ -82,7 +82,7 @@ La v2 est une refonte complète construite **à côté** de la v1 (même dépôt
 
 ## Git
 
-- Branche `main`, remote `origin` : `https://github.com/Yanisjaber/coach-ia.git`. Un push peut mettre le site en ligne (GitHub Pages : directement avant la bascule, via `pages.yml` après).
+- Branche `main`, remote `origin` : `https://github.com/Yanisjaber/coach-ia.git`. Un push met le site en ligne (GitHub Pages via `pages.yml`).
 - **Nom de code du push : `yallah`** (ou `yalah`, `yala`, `YALLAH`). Tu ne fais **jamais** `git push` tant que Yanis n'a pas écrit ce mot dans le chat. « Pousse », « c'est bon » ou « ok » ne suffisent pas. Tu peux préparer les commits, mais tu t'arrêtes là.
 - **Pas de push à chaque modif.** On travaille d'abord en local (`python3 serve.py`) : tu modifies, tu testes, tu peux commiter, mais tu ne parles pas de push et tu ne rappelles pas le mot de passe après chaque changement.
 - Avant le push : montre un résumé (`git status`, commits à envoyer) et vérifie que le site tourne en local.
