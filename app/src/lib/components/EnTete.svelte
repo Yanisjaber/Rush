@@ -7,9 +7,10 @@
   // En-tête commun, sur ordinateur et tablette (sur téléphone il n'existe pas : voir BarreBas.svelte).
   //   Accueil · Calendrier · Plan | pastilles des sports pratiqués | Compétitions · Bilan · Sommeil
   // Selon la place disponible :
+  // Deux groupes complémentaires : les pages de base, puis les sports (qui servent de filtre à l'accueil).
   //   1. tout à plat ;
-  //   2. Compétitions, Bilan, Sommeil rangés dans « Plus ▾ » ;
-  //   3. en plus, les sports rangés dans « Sports ▾ » ;
+  //   2. les sports rangés dans « Sports ▾ » ;
+  //   3. en plus, Compétitions, Bilan, Sommeil rangés dans « Plus ▾ » ;
   //   4. même comme ça ça ne tient pas : la ligne se fait glisser à l'horizontale.
   // actif : 'accueil' | 'calendrier' | 'plan' | 'force' | 'hyrox' | 'competitions' | 'bilan' | 'sommeil' | 'parametres'.
   let { actif = 'accueil', demo = false } = $props();
@@ -38,9 +39,11 @@
     void familles;
     const calculer = () => {
       const dispo = nav.clientWidth;
-      pagesEnPlus = mesureComplet.scrollWidth > dispo;
-      compact = pagesEnPlus && mesureMilieu.scrollWidth > dispo && familles.length > 0;
-      defile = pagesEnPlus && (compact ? mesureCompact : mesureMilieu).scrollWidth > dispo;
+      const toutPlat = mesureComplet.scrollWidth <= dispo;
+      const sportsRanges = familles.length > 0 && mesureMilieu.scrollWidth <= dispo; // seuls les sports sont rangés
+      compact = !toutPlat && familles.length > 0;
+      pagesEnPlus = !toutPlat && !sportsRanges;
+      defile = pagesEnPlus && mesureCompact.scrollWidth > dispo;
       if (!pagesEnPlus && ouvert === 'plus') ouvert = null;
       if (!compact && ouvert === 'sports') ouvert = null;
     };
@@ -128,7 +131,7 @@
     </a>
   </div>
 
-  <!-- Copies invisibles, uniquement pour mesurer la place nécessaire (à plat / avec « Plus » / avec « Plus » et « Sports ») -->
+  <!-- Copies invisibles, uniquement pour mesurer la place nécessaire (tout à plat / « Sports » seul / « Sports » et « Plus ») -->
   <div class="mesure" aria-hidden="true" bind:this={mesureComplet}>
     {#each principaux as l (l.cle)}<span>{l.nom}</span>{/each}
     {#each familles as f (f)}<span class="m-sport">{nomSport(f)}</span>{/each}
@@ -136,8 +139,8 @@
   </div>
   <div class="mesure" aria-hidden="true" bind:this={mesureMilieu}>
     {#each principaux as l (l.cle)}<span>{l.nom}</span>{/each}
-    {#each familles as f (f)}<span class="m-sport">{nomSport(f)}</span>{/each}
-    <span>Plus&nbsp;&nbsp;&nbsp;&nbsp;</span>
+    {#if familles.length}<span>Sports&nbsp;&nbsp;&nbsp;&nbsp;</span>{/if}
+    {#each plus as l (l.cle)}<span>{l.nom}</span>{/each}
   </div>
   <div class="mesure" aria-hidden="true" bind:this={mesureCompact}>
     {#each principaux as l (l.cle)}<span>{l.nom}</span>{/each}
