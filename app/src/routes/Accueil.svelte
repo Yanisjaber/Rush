@@ -217,12 +217,7 @@
   {#if afficherOnboarding}
     <Onboarding userId={userId} onTermine={() => { mettreAJourSports(familles); chargerMenu(userId); }} />
   {:else}
-  <div class="outils">
-    <SelecteurSport />
-    {#if !disposition.enEdition && !etat.chargement && !enDetail}
-      <Bouton variante="discret" onclick={() => demarrerEdition(filtreActif)}>{ongletRiche ? `Personnaliser l'onglet ${(SPORTS[filtreActif] || SPORTS.autre).court}` : "Personnaliser l'accueil"}</Bouton>
-    {/if}
-  </div>
+  <SelecteurSport />
 
   {#if disposition.enEdition}
     <section class="bandeau-edition" aria-label="Mode édition">
@@ -310,6 +305,12 @@
         <BibliothequeWidgets ids={idsBibliotheque} {familles} onAjouter={ajouter} />
       </div>
     {/if}
+
+    {#if !disposition.enEdition && !etat.chargement && !enDetail}
+      <div class="pied">
+        <Bouton variante="discret" onclick={() => demarrerEdition(filtreActif)}>{ongletRiche ? `Personnaliser l'onglet ${(SPORTS[filtreActif] || SPORTS.autre).court}` : "Personnaliser l'accueil"}</Bouton>
+      </div>
+    {/if}
   {/if}
   {/if}
 </main>
@@ -338,16 +339,11 @@
     border-color: var(--trait-fort);
     color: var(--texte);
   }
-  .outils {
+  /* le bouton « Personnaliser » est en bas de page, aligné à droite */
+  .pied {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
     justify-content: flex-end;
-    gap: 8px 16px;
-    margin-bottom: 8px;
-  }
-  .outils :global(.voir) {
-    margin: 0 auto 0 0;
+    margin-top: 24px;
   }
   .bandeau-edition {
     display: flex;
