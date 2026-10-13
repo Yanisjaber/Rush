@@ -5,7 +5,7 @@
 export const SPORTS_PRINCIPAUX = ['course', 'velo', 'natation', 'muscu', 'hyrox'];
 
 /** Les autres sports de performance : ils ont leur pastille de couleur et leurs séances, sans widgets dédiés. */
-export const SPORTS_AUTRES = ['trail', 'vtt', 'triathlon', 'crossfit', 'aviron', 'ski', 'combat', 'rando', 'escalade', 'pagaie'];
+export const SPORTS_AUTRES = ['athletisme', 'trail', 'vtt', 'triathlon', 'duathlon', 'crossfit', 'aviron', 'ski', 'combat', 'rando', 'escalade', 'pagaie'];
 
 /** Tout ce qu'on peut cocher, dans l'ordre de l'écran. */
 export const SPORTS_A_CHOISIR = [...SPORTS_PRINCIPAUX, ...SPORTS_AUTRES];
@@ -28,8 +28,8 @@ export function onboardingNecessaire({ demo = false, sportsEnregistres = null, n
   return !demo && sportsEnregistres === null && nbSeances === 0 && !aForce && !aHyrox;
 }
 
-/** Les familles de l'accueil qu'un sport choisi fait apparaître : le trail est de la course, le VTT du vélo, le triathlon les trois disciplines. */
-const FAMILLES_DU_SPORT = { trail: ['course'], vtt: ['velo'], triathlon: ['course', 'velo', 'natation'] };
+/** Les familles de l'accueil qu'un sport choisi fait apparaître : le trail est de la course, le VTT du vélo, le triathlon les trois disciplines, le duathlon course et vélo. */
+const FAMILLES_DU_SPORT = { trail: ['course'], vtt: ['velo'], triathlon: ['course', 'velo', 'natation'], duathlon: ['course', 'velo'] };
 
 /** Les familles de sport de l'accueil : celles déduites des données, plus celles des sports choisis (« autre » n'a pas d'onglet). */
 export function fusionnerFamilles(deDonnees = [], choisis = []) {

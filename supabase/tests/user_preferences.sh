@@ -24,6 +24,8 @@ bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_
 bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_sports.sql
 bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_sports_liste.sql
 bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_sports_liste.sql
+bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_disciplines.sql
+bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_disciplines.sql
 bash $H psql -d coachia -v ON_ERROR_STOP=1 <<'SQL'
 -- comme le navigateur : rôle authenticated + identité de l'utilisateur A
 select 'ancienne table renommée' as controle, to_regclass('public.user_dashboard') is null and to_regclass('public.user_preferences') is not null as ok
@@ -63,6 +65,14 @@ do $$ begin
   exception when check_violation then null; end;
   update public.user_preferences set sports = null where user_id='00000000-0000-4000-8000-000000000002'; -- null = jamais demandé : autorisé
   update public.user_preferences set sports = '[]' where user_id='00000000-0000-4000-8000-000000000002'; -- vide = demandé sans rien choisir : autorisé
+  -- disciplines : un objet par sport ; un tableau ou un texte sont refusés, ainsi qu'un objet trop gros
+  update public.user_preferences set disciplines = '{"athletisme":["100m","hauteur"]}' where user_id='00000000-0000-4000-8000-000000000002';
+  begin update public.user_preferences set disciplines = '["100m"]' where user_id='00000000-0000-4000-8000-000000000002'; raise exception 'devait échouer (tableau)';
+  exception when check_violation then null; end;
+  begin update public.user_preferences set disciplines = jsonb_build_object('athletisme', to_jsonb(repeat('x', 2200))) where user_id='00000000-0000-4000-8000-000000000002'; raise exception 'devait échouer (trop gros)';
+  exception when check_violation then null; end;
+  update public.user_preferences set disciplines = null where user_id='00000000-0000-4000-8000-000000000002';
+  raise notice 'ok : disciplines (objet) acceptées, tableau et trop gros refusés';
   raise notice 'ok : sports invalides refusés (objet, plus de 20, trop gros), les 15 sports acceptés, null et [] acceptés';
 end $$;
 reset role;

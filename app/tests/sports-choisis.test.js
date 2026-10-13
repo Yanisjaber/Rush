@@ -5,7 +5,7 @@ import { SPORTS_PRINCIPAUX, SPORTS_AUTRES, SPORTS_A_CHOISIR, nettoyerSports, onb
 
 test('sports proposés : les 5 sports de l\'accueil, puis les autres sports de performance (plus de case « Autre »)', () => {
   assert.deepEqual(SPORTS_PRINCIPAUX, ['course', 'velo', 'natation', 'muscu', 'hyrox']);
-  assert.deepEqual(SPORTS_AUTRES, ['trail', 'vtt', 'triathlon', 'crossfit', 'aviron', 'ski', 'combat', 'rando', 'escalade', 'pagaie']);
+  assert.deepEqual(SPORTS_AUTRES, ['athletisme', 'trail', 'vtt', 'triathlon', 'duathlon', 'crossfit', 'aviron', 'ski', 'combat', 'rando', 'escalade', 'pagaie']);
   assert.deepEqual(SPORTS_A_CHOISIR, [...SPORTS_PRINCIPAUX, ...SPORTS_AUTRES]);
   assert.ok(!SPORTS_A_CHOISIR.includes('autre'));
   assert.ok(SPORTS_A_CHOISIR.length <= 20); // la base refuse plus de 20 sports (voir la migration)
@@ -13,7 +13,7 @@ test('sports proposés : les 5 sports de l\'accueil, puis les autres sports de p
 });
 
 test('nettoyerSports : clés connues seulement, sans doublon, dans l\'ordre de l\'écran ; pas un tableau = jamais demandé', () => {
-  assert.deepEqual(nettoyerSports(['muscu', 'course', 'course', 'inconnu', 42, null, '__proto__', 'constructor', 'autre', 'aviron']), ['course', 'muscu', 'aviron']); // l'ancienne valeur « autre » disparaît
+  assert.deepEqual(nettoyerSports(['muscu', 'course', 'course', 'inconnu', 42, null, '__proto__', 'constructor', 'autre', 'aviron', 'athletisme']), ['course', 'muscu', 'athletisme', 'aviron']); // l'ancienne valeur « autre » disparaît
   assert.deepEqual(nettoyerSports([]), []);
   assert.equal(nettoyerSports(null), null);
   assert.equal(nettoyerSports(undefined), null);
@@ -36,6 +36,8 @@ test('fusionnerFamilles : données + sports choisis, sans doublon et sans « aut
   assert.deepEqual(fusionnerFamilles([], ['trail']), ['course']); // le trail est de la course
   assert.deepEqual(fusionnerFamilles([], ['vtt']), ['velo']);
   assert.deepEqual(fusionnerFamilles([], ['triathlon']).sort(), ['course', 'natation', 'velo']);
+  assert.deepEqual(fusionnerFamilles([], ['duathlon']).sort(), ['course', 'velo']); // course + vélo, sans natation
+  assert.deepEqual(fusionnerFamilles([], ['athletisme']), ['athletisme']); // pastille propre
   assert.deepEqual(fusionnerFamilles([], ['aviron', 'rando']).sort(), ['aviron', 'rando']); // pastille propre, sans widgets dédiés
   assert.deepEqual(fusionnerFamilles([], ['constructor']), ['constructor']); // une clé inconnue n'est pas interprétée (le nettoyage en amont l'a déjà retirée)
   assert.deepEqual(fusionnerFamilles([], ['muscu']), ['muscu']);

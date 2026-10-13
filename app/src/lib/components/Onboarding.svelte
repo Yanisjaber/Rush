@@ -6,14 +6,15 @@
   // Premier écran d'un compte neuf : on coche ses sports, l'accueil se compose ensuite tout seul.
   let { userId, onTermine } = $props();
   let selection = $state([]);
+  let disciplines = $state({});
   let enCours = $state(false);
   let message = $state('');
 
-  async function valider(liste) {
+  async function valider(liste, disc = disciplines) {
     if (enCours) return;
     enCours = true;
     message = '';
-    await enregistrerSportsChoisis(userId, liste);
+    await enregistrerSportsChoisis(userId, liste, disc);
     enCours = false;
     onTermine?.();
   }
@@ -26,11 +27,11 @@
     Coche tout ce que tu pratiques : ton accueil se compose tout seul avec les bons widgets et les bons onglets.
     Triathlon ? Coche course, vélo et natation. Tu pourras changer ça quand tu veux dans Paramètres › Préférences.
   </p>
-  <ChoixSports bind:selection desactive={enCours} />
+  <ChoixSports bind:selection bind:disciplines desactive={enCours} />
   {#if message}<p class="erreur" role="alert">{message}</p>{/if}
   <div class="actions">
     <Bouton onclick={() => valider(selection)}>{enCours ? 'Enregistrement…' : selection.length ? 'Continuer' : 'Continuer sans choisir'}</Bouton>
-    {#if selection.length}<Bouton variante="texte" onclick={() => valider([])}>Passer</Bouton>{/if}
+    {#if selection.length}<Bouton variante="texte" onclick={() => valider([], {})}>Passer</Bouton>{/if}
   </div>
 </section>
 

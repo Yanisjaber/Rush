@@ -1,4 +1,5 @@
 <script>
+  import { untrack } from 'svelte';
   import Bloc from '../components/Bloc.svelte';
   import Bouton from '../components/Bouton.svelte';
   import { theme, choisirTheme } from '../stores/theme.svelte.js';
@@ -16,16 +17,22 @@
   // « Mes sports » : change les sports qui composent l'accueil et ses onglets
   const uid = modeDemo() ? 'demo' : auth.session?.user?.id;
   let choix = $state([]);
+  let disciplines = $state({});
   let sportsEnCours = $state(false);
   let sportsMessage = $state('');
   $effect(() => {
-    chargerSportsChoisis(uid).then(() => (choix = [...(sportsChoisis.liste || [])]));
+    const id = uid;
+    // `untrack` : seul l'identifiant de l'utilisateur doit relancer le chargement, jamais ce qu'il lit ou écrit dans le store
+    untrack(() => chargerSportsChoisis(id)).then(() => {
+      choix = [...(sportsChoisis.liste || [])];
+      disciplines = JSON.parse(JSON.stringify(sportsChoisis.disciplines || {}));
+    });
   });
   async function enregistrerSports() {
     if (sportsEnCours) return;
     sportsEnCours = true;
     sportsMessage = '';
-    const r = await enregistrerSportsChoisis(uid, choix);
+    const r = await enregistrerSportsChoisis(uid, choix, disciplines);
     sportsEnCours = false;
     sportsMessage = r.local && uid !== 'demo' ? 'Enregistré sur cet appareil (la sauvegarde en ligne a échoué).' : 'Sports enregistrés : ton accueil s\'adapte à ton prochain passage.';
   }
@@ -38,7 +45,7 @@
 <div class="onglet">
   <Bloc titre="Mes sports">
     <p class="aide">Les sports que tu pratiques composent ton accueil et ses onglets. Triathlon : coche course, vélo et natation.</p>
-    <ChoixSports bind:selection={choix} desactive={sportsEnCours} />
+    <ChoixSports bind:selection={choix} bind:disciplines desactive={sportsEnCours} />
     <div class="actions" style="margin-top: 14px">
       <Bouton onclick={enregistrerSports}>{sportsEnCours ? 'Enregistrement…' : 'Enregistrer mes sports'}</Bouton>
     </div>
