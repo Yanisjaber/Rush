@@ -73,9 +73,10 @@
     text-transform: uppercase;
     color: var(--texte-doux);
   }
+  /* auto-fit : les cartes s'étirent pour remplir toute la largeur disponible */
   .sports {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     gap: 8px;
   }
   .sport {
@@ -114,13 +115,19 @@
     opacity: 0.6;
     cursor: default;
   }
+  /* les familles d'épreuves se rangent en colonnes pour occuper la largeur */
   .disciplines {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 14px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px 24px;
+    align-items: start;
+    padding: 16px;
     border: 1px dashed var(--trait-fort);
     border-radius: var(--rayon-l);
+  }
+  .disciplines .sous-titre {
+    grid-column: 1 / -1;
+    margin: 0;
   }
   .famille {
     display: flex;

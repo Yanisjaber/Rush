@@ -40,8 +40,7 @@
     display: flex;
     flex-direction: column;
     gap: 18px;
-    max-width: 760px;
-    padding: 28px 0 40px;
+    padding: 28px 0 40px; /* pleine largeur : seuls les paragraphes sont limités pour rester lisibles */
   }
   .sur-titre {
     margin: 0;
@@ -58,6 +57,7 @@
   }
   .aide {
     margin: 0;
+    max-width: 820px;
     font-size: 16px;
     line-height: 1.5;
     color: var(--texte-doux);
