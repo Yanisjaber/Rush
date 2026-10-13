@@ -16,7 +16,7 @@ export const PAGES = {
 /** Les pages propres à un sport : famille de sport → clé de page. */
 const PAGE_DU_SPORT = { muscu: 'force', hyrox: 'hyrox' };
 
-const page = (cle) => ({ cle, ...PAGES[cle] });
+export const page = (cle) => ({ cle, ...PAGES[cle] });
 
 /** Pages dédiées aux sports pratiqués (Muscu, Hyrox), dans l'ordre du menu. */
 export function pagesDeSports(familles = []) {
@@ -26,6 +26,11 @@ export function pagesDeSports(familles = []) {
 /** Menu de l'ordinateur : une seule ligne, tout visible. */
 export function pagesMenu(familles = []) {
   return [page('accueil'), page('calendrier'), page('plan'), ...pagesDeSports(familles), page('competitions'), page('bilan'), page('sommeil')];
+}
+
+/** Menu « Plus » de l'ordinateur : les pages de sports pratiqués (Muscu, Hyrox), puis Compétitions, Bilan, Sommeil. */
+export function pagesPlus(familles = []) {
+  return [...pagesDeSports(familles), page('competitions'), page('bilan'), page('sommeil')];
 }
 
 /**

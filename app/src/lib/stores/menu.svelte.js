@@ -4,7 +4,12 @@
 import { sb } from '../supabase.js';
 import { fusionnerFamilles, nettoyerSports } from '../data/sports-choisis.js';
 
-export const menu = $state({ familles: [], pret: false });
+export const menu = $state({ familles: [], pret: false, filtre: 'tout' }); // filtre : sport affiché à l'accueil ('tout' ou une famille)
+
+/** Choisit le sport affiché à l'accueil ; recliquer sur le sport déjà choisi revient à « Tout ». */
+export function choisirFiltre(famille) {
+  menu.filtre = famille === 'tout' || menu.filtre === famille ? 'tout' : famille;
+}
 
 const cleCache = (uid) => `coachia-v2-menu-${uid}`;
 

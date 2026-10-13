@@ -1,41 +1,44 @@
 <script>
-  import { menu } from '../stores/menu.svelte.js';
-  import { pagesMenu, pagesDeSports } from '../data/menu.js';
+  import { menu, choisirFiltre } from '../stores/menu.svelte.js';
+  import { page, pagesPlus } from '../data/menu.js';
+  import { SPORTS, couleurSport } from '../sports.js';
+  import { aller } from '../routeur.svelte.js';
 
   // En-tête commun, sur ordinateur et tablette (sur téléphone il n'existe pas : voir BarreBas.svelte).
-  // Trois états selon la place disponible :
-  //   1. complet : tous les liens à plat ;
-  //   2. compact : Muscu / Hyrox rangés dans un menu déroulant « Sports » ;
+  //   Accueil · Calendrier · Plan | pastilles des sports pratiqués (filtrent l'accueil) | Plus ▾ (Muscu, Hyrox, Compétitions, Bilan, Sommeil)
+  // Selon la place disponible :
+  //   1. complet : les sports en pastilles ;
+  //   2. compact : les sports rangés dans un menu déroulant « Sports » ;
   //   3. défilant : même en compact ça ne tient pas, la ligne se fait glisser à l'horizontale.
   // actif : 'accueil' | 'calendrier' | 'plan' | 'force' | 'hyrox' | 'competitions' | 'bilan' | 'sommeil' | 'parametres'.
   let { actif = 'accueil', demo = false } = $props();
 
-  const tous = $derived(pagesMenu(menu.familles));
-  const sports = $derived(pagesDeSports(menu.familles));
-  const cles = $derived(new Set(sports.map((s) => s.cle)));
-  const sansSports = $derived(tous.filter((l) => !cles.has(l.cle)));
+  const principaux = [page('accueil'), page('calendrier'), page('plan')];
+  const familles = $derived(menu.familles);
+  const plus = $derived(pagesPlus(menu.familles));
+  const plusActif = $derived(plus.some((l) => l.cle === actif));
+  const filtreSur = $derived(actif === 'accueil' ? menu.filtre : 'tout'); // le sport surligné (seulement sur l'accueil)
+  const nomSport = (f) => (SPORTS[f] || SPORTS.autre).court;
 
   let compact = $state(false);
   let defile = $state(false);
   let nav = $state();
   let mesureComplet = $state();
   let mesureCompact = $state();
-  let bouton = $state();
-  let ouvert = $state(false);
+  let ouvert = $state(null); // null | 'sports' | 'plus'
   let posMenu = $state({ top: 0, left: 0 });
-
-  const sportActif = $derived(sports.some((s) => s.cle === actif));
 
   // On mesure la largeur dont chaque version a besoin (deux copies invisibles) et on la compare à la place de la barre.
   $effect(() => {
     if (!nav || !mesureComplet || !mesureCompact) return;
-    void tous; // se relance quand les pages changent
+    void familles;
+    void plus;
     const calculer = () => {
       const dispo = nav.clientWidth;
       const complet = mesureComplet.scrollWidth <= dispo;
-      compact = !complet && sports.length > 0;
+      compact = !complet && familles.length > 0;
       defile = !complet && mesureCompact.scrollWidth > dispo;
-      if (!compact) ouvert = false;
+      if (!compact && ouvert === 'sports') ouvert = null;
     };
     calculer();
     const obs = new ResizeObserver(calculer);
@@ -43,46 +46,63 @@
     return () => obs.disconnect();
   });
 
-  function basculer() {
-    if (!ouvert && bouton) {
-      const r = bouton.getBoundingClientRect();
-      posMenu = { top: r.bottom + 6, left: Math.max(8, Math.min(r.left, window.innerWidth - 188)) };
+  function basculer(nom, e) {
+    if (ouvert === nom) {
+      ouvert = null;
+      return;
     }
-    ouvert = !ouvert;
+    const r = e.currentTarget.getBoundingClientRect();
+    posMenu = { top: r.bottom + 6, left: Math.max(8, Math.min(r.left, window.innerWidth - 200)) };
+    ouvert = nom;
   }
   function fermerSiDehors(e) {
-    if (ouvert && !e.target.closest?.('.menu-sports, .liste-sports')) ouvert = false;
+    if (ouvert && !e.target.closest?.('.menu-deroulant, .liste-deroulante')) ouvert = null;
   }
   function touche(e) {
-    if (e.key === 'Escape' && ouvert) {
-      ouvert = false;
-      bouton?.focus();
-    }
+    if (e.key === 'Escape' && ouvert) ouvert = null;
+  }
+  // Un sport = un filtre de l'accueil : depuis une autre page, on revient d'abord à l'accueil
+  function choisir(f) {
+    if (actif !== 'accueil') {
+      menu.filtre = f;
+      aller('/');
+    } else choisirFiltre(f);
+    ouvert = null;
   }
 </script>
 
-<svelte:window onclick={fermerSiDehors} onkeydown={touche} onresize={() => (ouvert = false)} />
+<svelte:window onclick={fermerSiDehors} onkeydown={touche} onresize={() => (ouvert = null)} />
+
+{#snippet fleche()}
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4l4 4 4-4" /></svg>
+{/snippet}
 
 <header class="barre">
   <span class="logo titre" aria-hidden="true">CI</span>
   <nav class="liens" class:defile aria-label="Navigation principale" bind:this={nav}>
-    {#each compact ? sansSports : tous as l, i (l.cle)}
+    {#each principaux as l (l.cle)}
       <a href={l.href} aria-current={actif === l.cle ? 'page' : undefined}>{l.nom}</a>
-      {#if compact && i === 2}
-        <button
-          class="menu-sports"
-          class:courant={sportActif}
-          type="button"
-          aria-haspopup="true"
-          aria-expanded={ouvert}
-          bind:this={bouton}
-          onclick={basculer}
-        >
-          Sports
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4l4 4 4-4" /></svg>
-        </button>
-      {/if}
     {/each}
+    {#if familles.length}
+      <span class="sep" aria-hidden="true"></span>
+      {#if compact}
+        <button class="menu-deroulant" class:courant={filtreSur !== 'tout'} type="button" aria-haspopup="true" aria-expanded={ouvert === 'sports'} onclick={(e) => basculer('sports', e)}>
+          {filtreSur !== 'tout' ? nomSport(filtreSur) : 'Sports'}
+          {@render fleche()}
+        </button>
+      {:else}
+        {#each familles as f (f)}
+          <button class="sport" class:courant={filtreSur === f} type="button" aria-pressed={filtreSur === f} onclick={() => choisir(f)}>
+            <span class="point" style:background={couleurSport(f)}></span>{nomSport(f)}
+          </button>
+        {/each}
+      {/if}
+    {/if}
+    <span class="sep" aria-hidden="true"></span>
+    <button class="menu-deroulant" class:courant={plusActif} type="button" aria-haspopup="true" aria-expanded={ouvert === 'plus'} onclick={(e) => basculer('plus', e)}>
+      Plus
+      {@render fleche()}
+    </button>
   </nav>
   <div class="droite">
     {#if demo}<span class="etiquette-demo">Mode démo</span>{/if}
@@ -93,18 +113,35 @@
 
   <!-- Copies invisibles, uniquement pour mesurer la place nécessaire -->
   <div class="mesure" aria-hidden="true" bind:this={mesureComplet}>
-    {#each tous as l (l.cle)}<span>{l.nom}</span>{/each}
+    {#each principaux as l (l.cle)}<span>{l.nom}</span>{/each}
+    {#each familles as f (f)}<span class="m-sport">{nomSport(f)}</span>{/each}
+    <span>Plus&nbsp;&nbsp;&nbsp;&nbsp;</span>
   </div>
   <div class="mesure" aria-hidden="true" bind:this={mesureCompact}>
-    {#each sansSports as l (l.cle)}<span>{l.nom}</span>{/each}{#if sports.length}<span>Sports&nbsp;&nbsp;&nbsp;&nbsp;</span>{/if}
+    {#each principaux as l (l.cle)}<span>{l.nom}</span>{/each}
+    {#if familles.length}<span>Sports&nbsp;&nbsp;&nbsp;&nbsp;</span>{/if}
+    <span>Plus&nbsp;&nbsp;&nbsp;&nbsp;</span>
   </div>
 </header>
 
 {#if ouvert}
-  <ul class="liste-sports" style:top="{posMenu.top}px" style:left="{posMenu.left}px">
-    {#each sports as s (s.cle)}
-      <li><a href={s.href} aria-current={actif === s.cle ? 'page' : undefined} onclick={() => (ouvert = false)}>{s.nom}</a></li>
-    {/each}
+  <ul class="liste-deroulante" style:top="{posMenu.top}px" style:left="{posMenu.left}px">
+    {#if ouvert === 'sports'}
+      <li>
+        <button type="button" class:courant={filtreSur === 'tout'} onclick={() => choisir('tout')}>Tous les sports</button>
+      </li>
+      {#each familles as f (f)}
+        <li>
+          <button type="button" class:courant={filtreSur === f} onclick={() => choisir(f)}>
+            <span class="point" style:background={couleurSport(f)}></span>{(SPORTS[f] || SPORTS.autre).nom}
+          </button>
+        </li>
+      {/each}
+    {:else}
+      {#each plus as l (l.cle)}
+        <li><a href={l.href} aria-current={actif === l.cle ? 'page' : undefined} onclick={() => (ouvert = null)}>{l.nom}</a></li>
+      {/each}
+    {/if}
   </ul>
 {/if}
 
@@ -152,7 +189,8 @@
     display: none;
   }
   .liens a,
-  .menu-sports {
+  .menu-deroulant,
+  .sport {
     display: inline-flex;
     align-items: center;
     min-height: var(--cible);
@@ -163,22 +201,25 @@
     color: var(--texte-doux);
     white-space: nowrap;
   }
-  .menu-sports {
-    gap: 6px;
+  .menu-deroulant,
+  .sport {
+    gap: 7px;
     border: 0;
     background: none;
     font-family: inherit;
     cursor: pointer;
   }
-  .menu-sports:hover,
-  .menu-sports[aria-expanded='true'] {
+  .menu-deroulant:hover,
+  .menu-deroulant[aria-expanded='true'],
+  .sport:hover {
     color: var(--texte);
   }
-  .menu-sports.courant {
+  .menu-deroulant.courant,
+  .sport.courant {
     background: var(--surface-2);
     color: var(--texte);
   }
-  .liste-sports {
+  .liste-deroulante {
     position: fixed;
     z-index: 50;
     min-width: 180px;
@@ -189,7 +230,32 @@
     border: 1px solid var(--trait-fort);
     border-radius: var(--rayon);
   }
-  .liste-sports a {
+  .point {
+    flex: none;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+  /* trait fin entre les trois groupes : pages · sports · plus */
+  .sep {
+    flex: none;
+    align-self: center;
+    width: 1px;
+    height: 22px;
+    margin: 0 8px;
+    background: var(--trait-fort);
+  }
+  .liste-deroulante button,
+  .liste-deroulante a {
+    width: 100%;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    text-align: left;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .liste-deroulante a {
     display: flex;
     align-items: center;
     min-height: var(--cible);
@@ -199,8 +265,20 @@
     font-weight: 600;
     color: var(--texte-doux);
   }
-  .liste-sports a:hover,
-  .liste-sports a[aria-current='page'] {
+  .liste-deroulante button {
+    display: flex;
+    align-items: center;
+    min-height: var(--cible);
+    padding: 0 12px;
+    border-radius: var(--rayon-s);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--texte-doux);
+  }
+  .liste-deroulante button:hover,
+  .liste-deroulante button.courant,
+  .liste-deroulante a:hover,
+  .liste-deroulante a[aria-current='page'] {
     background: var(--surface-2);
     color: var(--texte);
   }
@@ -220,6 +298,13 @@
   }
   .mesure span {
     padding: 0 14px;
+  }
+  .mesure .m-sport {
+    padding: 0 14px 0 30px; /* + la pastille de couleur */
+  }
+  .mesure {
+    gap: 4px;
+    padding-right: 36px; /* + les deux traits de séparation */
   }
   /* Téléphone : pas d'en-tête, la navigation est la barre du bas (BarreBas.svelte) : le contenu commence tout en haut */
   @media (max-width: 760px) {

@@ -11,7 +11,7 @@
   import Onboarding from '../lib/components/Onboarding.svelte';
   import { sportsChoisis, chargerSportsChoisis } from '../lib/stores/sports.svelte.js';
   import { onboardingNecessaire, fusionnerFamilles } from '../lib/data/sports-choisis.js';
-  import { chargerMenu } from '../lib/stores/menu.svelte.js';
+  import { menu, chargerMenu } from '../lib/stores/menu.svelte.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
   import {
@@ -47,7 +47,7 @@
     chargement: true, erreur: '', erreurSport: '', profil: null, metriques: [], seances: [], objectifs: [], puissance: [], planifiees: [],
     force: forceVide, hyrox: hyroxVide,
   });
-  let filtre = $state('tout');
+  const filtre = $derived(menu.filtre); // le choix se fait dans l'en-tête (ordinateur) ou le sélecteur « Voir » (téléphone)
 
   // Sports de l'utilisateur : ceux de ses séances, plus la muscu s'il a un programme ou des séries, plus Hyrox s'il a un test ou un objectif Hyrox
   const famillesDe = (seances, force = forceVide, hyrox = hyroxVide, objectifs = []) => {
@@ -136,7 +136,7 @@
   const prenom = $derived(etat.profil?.extras?.first_name || auth.session?.user?.email?.split('@')[0] || '');
   const familles = $derived(famillesDe(etat.seances, etat.force, etat.hyrox, etat.objectifs));
   // Le filtre doit rester un sport que l'utilisateur pratique (sinon on revient sur « Tout »)
-  const filtreActif = $derived(filtre === 'tout' || familles.includes(filtre) ? filtre : 'tout');
+  const filtreActif = $derived(filtre === 'tout' || familles.includes(filtre) || menu.familles.includes(filtre) ? filtre : 'tout');
   const seancesVisibles = $derived(filtreActif === 'tout' ? etat.seances : etat.seances.filter((s) => familleAffichage(s.sport) === filtreActif));
   // Ce que reçoit chaque widget : toujours la même enveloppe, filtrée par le sport choisi
   const contexte = $derived({
@@ -210,7 +210,7 @@
     {#if familles.length > 1}
       <label class="voir">
         <span>Voir</span>
-        <select value={filtreActif} onchange={(e) => (filtre = e.currentTarget.value)}>
+        <select value={filtreActif} onchange={(e) => (menu.filtre = e.currentTarget.value)}>
           <option value="tout">Tout</option>
           {#each familles as f}
             <option value={f}>{(SPORTS[f] || SPORTS.autre).nom}</option>
@@ -308,6 +308,12 @@
     margin-bottom: 8px;
   }
   /* sélecteur « Voir : Tout / un sport » (remplace les puces) */
+  /* Sur ordinateur le choix du sport est dans l'en-tête : le sélecteur ne sert que sur téléphone */
+  @media (min-width: 761px) {
+    .voir {
+      display: none !important;
+    }
+  }
   .voir {
     display: inline-flex;
     align-items: center;
