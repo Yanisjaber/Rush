@@ -252,8 +252,6 @@
           Ta forme est de <strong class="ok">{forme.tsb > 0 ? '+' : ''}{forme.tsb}</strong> ({forme.libelle.toLowerCase()}).
           {#if chargeSemaine}Tu as encaissé <strong>{chargeSemaine} points de charge</strong> ces 7 derniers jours.{/if}
         </p>
-      {:else}
-        <p>Dès que tes séances sont synchronisées, ta forme et ta charge s'affichent ici.</p>
       {/if}
     </section>
 
