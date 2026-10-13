@@ -124,7 +124,7 @@ export async function inscription({ prenom, nom, email, motDePasse, consentement
     if (error.status === 422 || error.status === 400) return { ok: false, champ: 'email', message: "Inscription refusée. Vérifie l'adresse e-mail et le mot de passe." };
     return { ok: false, message: "Inscription impossible pour le moment. Vérifie ta connexion internet." };
   }
-  return { ok: true, message: "Si cette adresse n'a pas encore de compte, un e-mail de confirmation vient de partir : clique sur le lien dedans (regarde aussi les indésirables). Si tu as déjà un compte, aucun e-mail n'est envoyé : connecte-toi, ou utilise « Mot de passe oublié »." };
+  return { ok: true };
 }
 
 /** Enregistre un nouveau mot de passe pour l'utilisateur connecté. Renvoie { ok: true } ou { ok: false, message }. */

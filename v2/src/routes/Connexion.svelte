@@ -1,7 +1,7 @@
 <script>
   import Champ from '../lib/components/Champ.svelte';
   import Bouton from '../lib/components/Bouton.svelte';
-  import Panneau from '../lib/components/Panneau.svelte';
+  import Dialogue from '../lib/components/Dialogue.svelte';
   import { auth, connexion, demanderReinitialisation, inscription } from '../lib/stores/auth.svelte.js';
 
   let email = $state('');
@@ -14,7 +14,6 @@
   let prenom = $state('');
   let nom = $state('');
   let consentement = $state(false);
-  let infoCreation = $state('');
   let popup = $state(false); // pop-up « e-mail envoyé » après une inscription réussie
   let erreurs = $state({}); // erreur par champ : prenom, nom, email, mdp, consentement
 
@@ -28,7 +27,6 @@
     enCours = false;
     motDePasse = ''; // le mot de passe ne reste jamais dans le champ
     if (r.ok) {
-      infoCreation = r.message;
       popup = true;
       prenom = '';
       nom = '';
@@ -41,7 +39,6 @@
   function fermerPopup() {
     popup = false;
     creer = false;
-    infoCreation = '';
   }
 
   async function reinitialiser(evenement) {
@@ -82,7 +79,7 @@
   </div>
 
   {#if creer}
-    <form class="formulaire" onsubmit={creerCompte}>
+    <form class="formulaire" novalidate onsubmit={creerCompte}>
       <h2 class="titre">Créer un compte</h2>
       <Champ id="prenom" label="Prénom" autocomplete="given-name" maxlength={60} bind:valeur={prenom} erreur={erreurs.prenom} requis />
       <Champ id="nom" label="Nom" autocomplete="family-name" maxlength={60} bind:valeur={nom} erreur={erreurs.nom} requis />
@@ -98,7 +95,7 @@
       <Bouton variante="texte" onclick={() => { creer = false; message = ''; erreurs = {}; }}>J'ai déjà un compte</Bouton>
     </form>
   {:else if oubli}
-    <form class="formulaire" onsubmit={reinitialiser}>
+    <form class="formulaire" novalidate onsubmit={reinitialiser}>
       <h2 class="titre">Mot de passe oublié</h2>
       <p class="info">Saisis ton adresse e-mail : on t'envoie un lien pour choisir un nouveau mot de passe.</p>
       <Champ id="email-oubli" label="Adresse e-mail" type="email" autocomplete="email" bind:valeur={email} requis />
@@ -108,7 +105,7 @@
       <Bouton variante="texte" onclick={() => { oubli = false; message = ''; infoOubli = ''; }}>Retour à la connexion</Bouton>
     </form>
   {:else}
-    <form class="formulaire" onsubmit={envoyer}>
+    <form class="formulaire" novalidate onsubmit={envoyer}>
       <h2 class="titre">Connexion</h2>
       {#if auth.erreurLien}<p class="erreur" role="alert">{auth.erreurLien}</p>{/if}
       <Champ id="email" label="Adresse e-mail" type="email" autocomplete="email" bind:valeur={email} requis />
@@ -125,10 +122,14 @@
   {/if}
 </main>
 
-<Panneau ouvert={popup} titre="Vérifie ta boîte mail" onfermer={fermerPopup}>
-  <p class="info">{infoCreation}</p>
-  <Bouton onclick={fermerPopup}>J'ai compris</Bouton>
-</Panneau>
+<Dialogue ouvert={popup} titre="Vérifie ta boîte mail" onfermer={fermerPopup}>
+  {#snippet icone()}
+    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="M3.5 7.5l8.5 6 8.5-6" /></svg>
+  {/snippet}
+  <p class="pop-texte">Un e-mail de confirmation vient de partir. Clique sur le lien dedans pour activer ton compte.</p>
+  <p class="pop-note">Rien dans ta boîte ? Regarde dans les indésirables. Si tu as déjà un compte, aucun e-mail n'est envoyé : connecte-toi, ou utilise « Mot de passe oublié ».</p>
+  <button type="button" class="pop-bouton" onclick={fermerPopup}>J'ai compris</button>
+</Dialogue>
 
 <style>
   .connexion {
@@ -211,6 +212,33 @@
     margin: -8px 0 0;
     font-size: 13px;
     color: var(--danger);
+  }
+  .pop-texte {
+    margin: 0;
+    font-weight: 600;
+  }
+  .pop-bouton {
+    min-height: 48px;
+    margin-top: 6px;
+    border: 0;
+    border-radius: var(--rayon-l);
+    background: var(--dossard-texte);
+    color: var(--dossard-fond);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .pop-bouton:hover {
+    filter: brightness(1.25);
+  }
+  .pop-bouton:focus-visible {
+    outline: 3px solid var(--sport-course);
+    outline-offset: 2px;
+  }
+  .pop-note {
+    margin: 0;
+    font-size: 14px;
+    color: #4a4f5a;
   }
   .consentement {
     display: flex;
