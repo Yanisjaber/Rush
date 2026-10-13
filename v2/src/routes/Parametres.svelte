@@ -32,7 +32,7 @@
   const besoinProfil = $derived(!['preferences', 'connexions', 'confidentialite'].includes(onglet));
 </script>
 
-<div class="page">
+<main class="page">
   <EnTete actif="parametres" {demo} />
 
   <h1 class="titre">Paramètres</h1>
@@ -64,7 +64,7 @@
       {/if}
     </div>
   </div>
-</div>
+</main>
 
 <style>
   h1 {

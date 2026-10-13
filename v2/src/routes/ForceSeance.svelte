@@ -201,7 +201,7 @@
   const titre = $derived(mode === 'direct' ? 'Séance en cours' : mode === 'apres' ? 'Séance passée' : 'Modifier la séance');
 </script>
 
-<div class="page">
+<main class="page">
   <EnTete actif="force" {demo} />
 
   <header class="titre-page">
@@ -319,7 +319,7 @@
       {/if}
     </form>
   {/if}
-</div>
+</main>
 
 <style>
   .titre-page {
@@ -437,7 +437,7 @@
   .entete-series,
   .serie {
     display: grid;
-    grid-template-columns: 38px 1fr 1fr 52px 40px;
+    grid-template-columns: 34px 1fr 1fr 52px 44px;
     align-items: center;
     gap: 8px;
   }
@@ -488,7 +488,7 @@
     border-color: var(--sport-muscu);
   }
   .x {
-    width: 40px;
+    width: 44px;
     height: 48px;
     background: transparent;
     border: 0;
@@ -545,7 +545,6 @@
   }
   .repos strong {
     font-variant-numeric: tabular-nums;
-    color: var(--sport-muscu);
   }
   .actions {
     display: flex;

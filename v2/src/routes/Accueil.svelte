@@ -155,7 +155,7 @@
   );
 </script>
 
-<div class="page">
+<main class="page">
   <EnTete actif="accueil" {demo} />
   <nav class="puces" aria-label="Filtrer par sport">
     <ChipSport label="Tout" sport="autre" actif={filtreActif === 'tout'} onclick={() => (filtre = 'tout')} />
@@ -235,7 +235,7 @@
       </div>
     {/if}
   {/if}
-</div>
+</main>
 
 <style>
   .puces {

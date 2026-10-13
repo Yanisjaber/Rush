@@ -172,7 +172,7 @@
   }
 </script>
 
-<div class="page">
+<main class="page">
   <EnTete actif="calendrier" {demo} />
 
   <nav class="puces" aria-label="Filtrer par sport">
@@ -253,7 +253,7 @@
       </div>
     {/each}
   </div>
-</div>
+</main>
 
 <PanneauModeles
   ouvert={modeles.ouvert}
@@ -441,7 +441,7 @@
     white-space: nowrap;
   }
   .duree {
-    opacity: 0.85;
+    font-weight: 500;
   }
   .marque {
     display: flex;
@@ -464,6 +464,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  @media (max-width: 760px) {
+    .marque {
+      min-height: 44px; /* cible tactile */
+    }
   }
   .marque.repos {
     --c: var(--texte-muet);

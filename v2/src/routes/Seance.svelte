@@ -159,7 +159,7 @@
   const teinte = (i, n) => `color-mix(in srgb, ${couleur} ${Math.round(22 + (i / (n - 1)) * 78)}%, var(--surface-2))`;
 </script>
 
-<div class="page">
+<main class="page">
   <EnTete actif="" {demo} />
 
   <a class="retour" href="#/calendrier">
@@ -274,7 +274,7 @@
       {/if}
     {/if}
   {/if}
-</div>
+</main>
 
 <style>
   .page {

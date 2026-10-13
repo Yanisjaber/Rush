@@ -312,7 +312,7 @@
     color: var(--texte-doux);
   }
   .pastille.ok {
-    color: var(--succes, #5fb87a);
+    color: var(--ok);
     border-color: currentColor;
   }
   .pastille.erreur {

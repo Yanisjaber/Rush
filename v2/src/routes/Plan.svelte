@@ -81,7 +81,7 @@
   };
 </script>
 
-<div class="page">
+<main class="page">
   <EnTete actif="plan" {demo} />
 
   <header class="entete-page">
@@ -155,7 +155,7 @@
       </section>
     {/each}
   {/if}
-</div>
+</main>
 
 <PanneauPrevue
   ouvert={panneau.ouvert}
@@ -311,7 +311,7 @@
   }
   .chip .d {
     font-size: 11.5px;
-    color: var(--texte-doux);
+    color: var(--texte);
   }
   .chip.objectif {
     background: var(--dossard-fond, #f3f2ee);
@@ -373,6 +373,9 @@
   }
   /* Téléphone : une ligne par jour (les jours passés vides sont masqués) */
   @media (max-width: 760px) {
+    .ajouter {
+      min-height: 44px; /* cible tactile */
+    }
     .jours {
       grid-template-columns: 1fr;
     }

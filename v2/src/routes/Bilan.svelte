@@ -90,7 +90,7 @@
   }
 </script>
 
-<div class="page">
+<main class="page">
   <EnTete actif="bilan" {demo} />
 
   <header class="entete-page">
@@ -235,7 +235,7 @@
       </Bloc>
     </div>
   {/if}
-</div>
+</main>
 
 <PanneauObjectif
   ouvert={panneau.ouvert}

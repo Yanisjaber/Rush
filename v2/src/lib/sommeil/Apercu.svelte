@@ -403,6 +403,16 @@
     grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 4px;
   }
+  /* Petit téléphone : sept colonnes sans espace pour que chaque nuit mesure au moins 44 px de large ;
+     le liseré de la couleur du fond redonne l'impression d'un espace entre les cases. */
+  @media (max-width: 460px) {
+    .calendrier {
+      gap: 0;
+    }
+    .calendrier .jour {
+      box-shadow: inset 0 0 0 2px var(--surface-2);
+    }
+  }
   .dow {
     text-align: center;
     font-size: 11px;
@@ -411,7 +421,7 @@
   .jour {
     display: grid;
     place-items: center;
-    min-height: 40px;
+    min-height: 44px;
     border: 0;
     border-radius: var(--rayon-s);
     background: color-mix(in srgb, var(--ton) 28%, var(--surface-2));
@@ -429,7 +439,7 @@
   .jour.choisi {
     outline: 2px solid var(--texte);
     outline-offset: 1px;
-    background: color-mix(in srgb, var(--ton) 55%, var(--surface-2));
+    background: color-mix(in srgb, var(--ton) 38%, var(--surface-2));
   }
   .legende {
     display: flex;

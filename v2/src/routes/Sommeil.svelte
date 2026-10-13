@@ -54,7 +54,7 @@
   }
 </script>
 
-<div class="page">
+<main class="page">
   <EnTete actif="sommeil" {demo} />
 
   <header class="entete-page">
@@ -84,7 +84,7 @@
   {:else}
     <Apercu {nuits} {choisie} onchoisir={(d) => (choisie = d)} {userId} {demo} />
   {/if}
-</div>
+</main>
 
 <style>
   .entete-page {

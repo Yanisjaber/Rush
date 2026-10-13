@@ -73,7 +73,7 @@
   const delta = (i) => (resume.dernier && resume.precedent ? Number(resume.dernier.segments[i]) - Number(resume.precedent.segments[i]) : null);
 </script>
 
-<div class="page">
+<main class="page">
   <EnTete actif="hyrox" {demo} />
 
   <header class="titre-page">
@@ -96,7 +96,7 @@
   {:else}
     <section class="chiffres">
       <StatCle etiquette="Dernier test" valeur={ecrireTemps(resume.dernier.total_s)} note={`${resume.dernier.label} · ${formatDateCourte(resume.dernier.date)}`} />
-      <StatCle etiquette="Meilleur" valeur={ecrireTemps(resume.meilleur.total_s)} note={formatDateCourte(resume.meilleur.date)} couleur="var(--sport-hybride)" />
+      <StatCle etiquette="Meilleur" valeur={ecrireTemps(resume.meilleur.total_s)} note={formatDateCourte(resume.meilleur.date)} couleur="var(--sport-hybride-texte)" />
       <StatCle etiquette="Objectif" valeur={etat.objectif ? ecrireTemps(etat.objectif.total_s) : '—'} note={etat.objectif ? '' : 'Fixe-en un pour voir l\'écart'} />
       <StatCle
         etiquette="Écart"
@@ -160,7 +160,7 @@
       </ul>
     </Bloc>
   {/if}
-</div>
+</main>
 
 <PanneauTestHyrox ouvert={panneauTest.ouvert} test={panneauTest.test} {demo} {userId} onenregistrer={enregistrerTest} onsupprimer={supprimerTest} onfermer={fermerTest} />
 <PanneauObjectifHyrox ouvert={panneauObjectif.ouvert} objectif={etat.objectif} onenregistrer={enregistrerObjectif} onfermer={() => (panneauObjectif = { ouvert: false })} />
@@ -282,7 +282,7 @@
     color: var(--ok);
   }
   .moins {
-    color: var(--sport-course);
+    color: var(--alerte);
   }
   .tests {
     list-style: none;

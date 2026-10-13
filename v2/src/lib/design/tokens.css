@@ -19,7 +19,7 @@
   --trait-fort: #3a3f4c;
   --texte: #f3f2ee;
   --texte-doux: #a2a7b3;   /* 7:1 sur --surface */
-  --texte-muet: #747a88;   /* réservé au décor et aux placeholders */
+  --texte-muet: #868c9a;   /* 4,9:1 sur les fonds : lisible même pour du petit texte */
   --encre-sur-couleur: #0c0d10; /* texte posé sur un aplat de couleur de sport */
 
   /* --- Dossard (identité visuelle) : clair en thème sombre, inversé en thème clair --- */
@@ -32,6 +32,7 @@
   --sport-natation: #22d3ee;
   --sport-muscu: #ff5a4f;
   --sport-hybride: #ffd60a;
+  --sport-hybride-texte: #ffd60a; /* version pour du TEXTE (en clair, plus foncée) */
   --sport-neutre: #a2a7b3;
 
   /* --- États --- */
@@ -68,7 +69,7 @@
   --trait-fort: #c9c6bc;
   --texte: #14151a;
   --texte-doux: #5b606c;
-  --texte-muet: #8a8f9b;
+  --texte-muet: #656a76;   /* 4,6:1 sur les fonds clairs */
 
   /* Le dossard devient sombre sur fond clair */
   --dossard-fond: #14151a;
@@ -77,9 +78,13 @@
   /* Variantes de couleurs de sport lisibles sur fond clair (texte et traits) */
   --sport-course: #e85d0c;
   --sport-velo: #2f6fe8;
-  --sport-natation: #0aa6c4;
+  --sport-natation: #0788a0;
   --sport-muscu: #e63b30;
   --sport-hybride: #c99a00;
+  --sport-hybride-texte: #7d5e00;
   --sport-neutre: #5b606c;
-  --ok: #1f9d55;
+  --ok: #127336;
+  --alerte: #a8420a;
+  --encre-sur-couleur: #000000; /* noir pur sur les aplats de couleur de sport (plus lisible que l'encre douce) */
+  --danger: #b91c1c;
 }

@@ -107,7 +107,7 @@
   ];
 </script>
 
-<div class="page">
+<main class="page">
   <EnTete actif="force" {demo} />
 
   <header class="titre-page">
@@ -224,7 +224,7 @@
       <button type="button" class="nouveau" onclick={() => ouvrirProgramme(null)}>+ Nouveau programme</button>
     </div>
   {/if}
-</div>
+</main>
 
 <PanneauProgramme
   ouvert={panneau.ouvert}

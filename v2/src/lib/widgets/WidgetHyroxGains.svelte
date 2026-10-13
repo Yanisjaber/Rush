@@ -90,7 +90,7 @@
     color: var(--texte-doux);
   }
   .valeur.perdu {
-    color: var(--sport-course);
+    color: var(--alerte);
   }
   .valeur.gagne {
     color: var(--ok);

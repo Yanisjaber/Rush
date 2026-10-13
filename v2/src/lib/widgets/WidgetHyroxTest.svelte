@@ -100,7 +100,6 @@
   }
   .temps {
     font-variant-numeric: tabular-nums;
-    opacity: 0.85;
   }
   .totaux {
     display: grid;

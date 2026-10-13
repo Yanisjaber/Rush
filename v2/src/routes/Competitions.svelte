@@ -88,7 +88,7 @@
   }
 </script>
 
-<div class="page">
+<main class="page">
   <EnTete actif="competitions" {demo} />
 
   <header class="entete-page">
@@ -193,7 +193,7 @@
       {/if}
     </section>
   {/if}
-</div>
+</main>
 
 <PanneauLicence ouvert={licence.ouvert} {demo} onfermer={() => (licence.ouvert = false)} onchoisir={choisirLicence} />
 
@@ -264,7 +264,7 @@
     font-weight: 700;
   }
   .ton.bon {
-    color: var(--succes, #5fb87a);
+    color: var(--ok);
   }
   .ton.mauvais {
     color: var(--danger);
