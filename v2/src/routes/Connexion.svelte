@@ -26,11 +26,11 @@
     enCours = true;
     const r = await inscription({ prenom, nom, email, motDePasse, consentement });
     enCours = false;
-    motDePasse = ''; // le mot de passe ne reste jamais dans le champ
     if (r.ok && r.existe) {
       popupExiste = true;
     } else if (r.ok) {
       popup = true;
+      motDePasse = ''; // inscription réussie : on ne garde pas le mot de passe en mémoire
       prenom = '';
       nom = '';
       consentement = false;
@@ -77,10 +77,7 @@
     enCours = true;
     const r = await connexion(email, motDePasse);
     enCours = false;
-    if (!r.ok) {
-      message = r.message;
-      motDePasse = ''; // on ne garde jamais un mot de passe refusé dans le champ
-    }
+    if (!r.ok) message = r.message; // on garde la saisie pour que tu puisses la corriger (l'œil sert à vérifier)
     // En cas de succès, le store d'authentification change et l'app affiche l'accueil toute seule.
   }
 </script>
