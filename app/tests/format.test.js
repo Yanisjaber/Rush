@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatDuree, formatKm, joursAvant, dateIsoLocale } from '../src/lib/utils/format.js';
+import { formatDuree, formatKm, joursAvant, dateIsoLocale, formatAllureDepuisKmh } from '../src/lib/utils/format.js';
 
 test('formatDuree : minutes seules, puis heures et minutes', () => {
   assert.equal(formatDuree(2400), '40 min');
@@ -24,4 +24,13 @@ test('joursAvant : jours calendaires, J-62 le 12 octobre pour le 13 décembre', 
 
 test('dateIsoLocale : AAAA-MM-JJ avec zéros', () => {
   assert.equal(dateIsoLocale(new Date(2026, 0, 5)), '2026-01-05');
+});
+
+test('formatAllureDepuisKmh : min/km en course, min/100 m en natation, vitesse nulle = tiret', () => {
+  assert.equal(formatAllureDepuisKmh(12), '5:00');
+  assert.equal(formatAllureDepuisKmh(10), '6:00');
+  assert.equal(formatAllureDepuisKmh(11.5), '5:13');
+  assert.equal(formatAllureDepuisKmh(3.6, true), '1:40'); // 3,6 km/h = 1 m/s = 100 s les 100 m
+  assert.equal(formatAllureDepuisKmh(0), '—');
+  assert.equal(formatAllureDepuisKmh(null), '—');
 });

@@ -59,6 +59,17 @@ export function formatAllure(secondesParKm) {
   return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"/km`;
 }
 
+/**
+ * Allure « m:ss » à partir d'une vitesse en km/h : course (secondes par km) ou natation (secondes par 100 m).
+ * Vitesse nulle ou absente : « — ».
+ */
+export function formatAllureDepuisKmh(kmh, parCentMetres = false) {
+  const v = Number(kmh);
+  if (!(v > 0)) return '—';
+  const secondes = Math.round(parCentMetres ? 360 / v : 3600 / v);
+  return `${Math.floor(secondes / 60)}:${String(secondes % 60).padStart(2, '0')}`;
+}
+
 /** 82.5 → « 82,5 », 100 → « 100 » (virgule française, une décimale seulement si utile). */
 export function formatKg(kg) {
   if (kg == null || Number.isNaN(Number(kg))) return '—';

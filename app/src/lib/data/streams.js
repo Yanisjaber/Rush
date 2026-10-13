@@ -70,7 +70,7 @@ export function statistiques(valeurs) {
 }
 
 // --- Zones d'intensité ---------------------------------------------------------------------------------------------
-// Les zones ne sont jamais stockées : elles sont recalculées à l'affichage à partir de la FTP et de la FC max.
+// Les zones ne sont jamais stockées : elles sont recalculées à l'affichage à partir de la FTP et de la FC au seuil (zones cardio : voir profil.js).
 
 /** Zones de puissance (modèle de Coggan) en pourcentage de la FTP : [borne basse incluse, borne haute exclue]. */
 export const ZONES_PUISSANCE = [
@@ -83,17 +83,8 @@ export const ZONES_PUISSANCE = [
   { nom: 'Z7 Sprint', min: 1.5, max: Infinity },
 ];
 
-/** Zones de fréquence cardiaque en pourcentage de la FC max. */
-export const ZONES_CARDIO = [
-  { nom: 'Z1 Récupération', min: 0, max: 0.6 },
-  { nom: 'Z2 Endurance', min: 0.6, max: 0.7 },
-  { nom: 'Z3 Tempo', min: 0.7, max: 0.8 },
-  { nom: 'Z4 Seuil', min: 0.8, max: 0.9 },
-  { nom: 'Z5 Maximale', min: 0.9, max: Infinity },
-];
-
 /**
- * Temps passé dans chaque zone. `valeurs` : une valeur par seconde ; `reference` : FTP ou FC max.
+ * Temps passé dans chaque zone. `valeurs` : une valeur par seconde ; `reference` : FTP ou FC au seuil.
  * Renvoie [{ nom, secondes, part }] (part entre 0 et 1), ou null sans données ni référence.
  */
 export function tempsParZone(valeurs, reference, zones) {

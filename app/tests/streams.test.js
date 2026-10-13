@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import zlib from 'node:zlib';
-import { decoderStreams, extraireStream, reduire, statistiques, tempsParZone, ZONES_PUISSANCE, ZONES_CARDIO } from '../src/lib/data/streams.js';
+import { decoderStreams, extraireStream, reduire, statistiques, tempsParZone, ZONES_PUISSANCE } from '../src/lib/data/streams.js';
+import { referenceCardio, zonesCardioTemps } from '../src/lib/data/profil.js';
 
 const encoder = (objet) => zlib.gzipSync(Buffer.from(JSON.stringify(objet))).toString('base64');
 
@@ -46,11 +47,24 @@ test('tempsParZone : puissance en pourcentage de la FTP', () => {
   assert.ok(Math.abs(z.reduce((a, b) => a + b.part, 0) - 1) < 1e-9);
 });
 
-test('tempsParZone : cardio, valeurs absentes ignorées, sans référence → null', () => {
-  const z = tempsParZone([100, 130, 150, 170, 190, null], 200, ZONES_CARDIO);
-  assert.equal(z.length, 5);
-  assert.deepEqual(z.map((x) => x.secondes), [1, 1, 1, 1, 1]);
-  assert.equal(tempsParZone([100], 0, ZONES_CARDIO), null);
-  assert.equal(tempsParZone([100], null, ZONES_CARDIO), null);
-  assert.equal(tempsParZone([], 200, ZONES_CARDIO), null);
+test('tempsParZone : cardio (zones de Paramètres, en % de la LTHR), valeurs absentes ignorées, sans référence → null', () => {
+  const zones = zonesCardioTemps();
+  const z = tempsParZone([70, 85, 91, 97, 101, 105, 110, null], 100, zones);
+  assert.equal(z.length, 7);
+  assert.deepEqual(z.map((x) => x.secondes), [1, 1, 1, 1, 1, 1, 1]);
+  assert.deepEqual(z.map((x) => x.nom.slice(0, 2)), ['Z1', 'Z2', 'Z3', 'Z4', 'Z5', 'Z5', 'Z5']);
+  assert.equal(tempsParZone([100], 0, zones), null);
+  assert.equal(tempsParZone([100], null, zones), null);
+  assert.equal(tempsParZone([], 100, zones), null);
+});
+
+test('zones cardio : la référence est la LTHR saisie, sinon 92 % de la FC max, sinon rien', () => {
+  assert.deepEqual(referenceCardio({ lthr: 170, hr_max: 190 }), { bpm: 170, estimee: false });
+  assert.deepEqual(referenceCardio({ lthr: null, hr_max: 200 }), { bpm: 184, estimee: true });
+  assert.equal(referenceCardio({ lthr: null, hr_max: null }), null);
+  assert.equal(referenceCardio(null), null);
+  const zones = zonesCardioTemps();
+  assert.equal(zones[0].min, 0);
+  assert.ok(zones.every((z, i) => i === 0 || z.min === zones[i - 1].max)); // aucune zone ne laisse de trou
+  assert.equal(zones.at(-1).max, Infinity);
 });

@@ -14,9 +14,10 @@
   import { donneesDemo, streamsDemo, prevueDemo } from '../lib/data/demo.js';
   import { chargeSeance } from '../lib/data/synthese.js';
   import { familleAffichage } from '../lib/data/familles.js';
-  import { extraireStream, reduire, tempsParZone, ZONES_PUISSANCE, ZONES_CARDIO } from '../lib/data/streams.js';
+  import { extraireStream, reduire, tempsParZone, ZONES_PUISSANCE } from '../lib/data/streams.js';
+  import { referenceCardio, zonesCardioTemps } from '../lib/data/profil.js';
   import { SPORTS, couleurSport } from '../lib/sports.js';
-  import { formatDuree, formatKm, formatAllure, formatDateLongue } from '../lib/utils/format.js';
+  import { formatDuree, formatKm, formatAllure, formatAllureDepuisKmh, formatDateLongue } from '../lib/utils/format.js';
 
   let { id, demo = false } = $props();
 
@@ -130,7 +131,9 @@
 
   const ftp = $derived(etat.profil?.ftp || s?.ftp_at_time || null);
   const zonesP = $derived(watts && ftp ? tempsParZone(watts, ftp, ZONES_PUISSANCE) : null);
-  const zonesC = $derived(cardio && etat.profil?.hr_max ? tempsParZone(cardio, etat.profil.hr_max, ZONES_CARDIO) : null);
+  // Zones cardio : les mêmes que dans Paramètres › Zones (en % de la FC au seuil ; estimée depuis la FC max si elle n'est pas saisie)
+  const refCardio = $derived(referenceCardio(etat.profil));
+  const zonesC = $derived(cardio && refCardio ? tempsParZone(cardio, refCardio.bpm, zonesCardioTemps()) : null);
 
   const lectureCurseur = $derived.by(() => {
     if (curseur === null || !tempsR.length) return '';
@@ -232,7 +235,14 @@
               {/if}
             {/if}
             {#if vitesseR.length}
-              <GraphiqueStream titre="Vitesse" valeurs={vitesseR} {couleur} unite="km/h" formater={(v) => v.toFixed(1).replace('.', ',')} {curseur} onsurvol={(i) => (curseur = i)} min={0} />
+              <!-- Course : allure en min/km, natation : min/100 m (la courbe reste « plus haut = plus rapide »), autres sports : km/h -->
+              {#if estCourse}
+                <GraphiqueStream titre="Allure" valeurs={vitesseR} {couleur} unite="/km" formater={(v) => formatAllureDepuisKmh(v)} {curseur} onsurvol={(i) => (curseur = i)} min={0} />
+              {:else if famille === 'natation'}
+                <GraphiqueStream titre="Allure" valeurs={vitesseR} {couleur} unite="/100 m" formater={(v) => formatAllureDepuisKmh(v, true)} {curseur} onsurvol={(i) => (curseur = i)} min={0} />
+              {:else}
+                <GraphiqueStream titre="Vitesse" valeurs={vitesseR} {couleur} unite="km/h" formater={(v) => v.toFixed(1).replace('.', ',')} {curseur} onsurvol={(i) => (curseur = i)} min={0} />
+              {/if}
             {/if}
             {#if altitudeR.length}
               <GraphiqueStream titre="Altitude" valeurs={altitudeR} couleur="var(--sport-neutre)" unite="m" {curseur} onsurvol={(i) => (curseur = i)} hauteur={90} />
@@ -242,7 +252,7 @@
       </div>
 
       <div class="zones">
-        {#each [{ titre: 'Zones de puissance', donnees: zonesP, absent: watts && !ftp ? 'Renseigne ta FTP dans ton profil pour voir les zones de puissance.' : '' }, { titre: 'Zones cardio', donnees: zonesC, absent: cardio && !etat.profil?.hr_max ? 'Renseigne ta fréquence cardiaque max dans ton profil pour voir les zones cardio.' : '' }] as bloc (bloc.titre)}
+        {#each [{ titre: 'Zones de puissance', donnees: zonesP, absent: watts && !ftp ? 'Renseigne ta FTP dans ton profil pour voir les zones de puissance.' : '' }, { titre: 'Zones cardio', donnees: zonesC, absent: cardio && !refCardio ? 'Renseigne ta fréquence cardiaque max (ou ta FC au seuil) dans ton profil pour voir les zones cardio.' : '', note: zonesC && refCardio ? `Calculées sur ta FC au seuil : ${refCardio.bpm} bpm${refCardio.estimee ? ' (estimée à 92 % de ta FC max)' : ''}.` : '' }] as bloc (bloc.titre)}
           {#if bloc.donnees || bloc.absent}
             <Bloc titre={bloc.titre}>
               {#if bloc.donnees}
@@ -261,6 +271,7 @@
                     </li>
                   {/each}
                 </ul>
+                {#if bloc.note}<p class="info">{bloc.note}</p>{/if}
               {:else}
                 <p class="info">{bloc.absent}</p>
               {/if}

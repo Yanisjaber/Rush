@@ -246,6 +246,26 @@ export function estimerFtp(courbe) {
 /** LTHR estimée : 92 % de la FC max. */
 export const estimerLthr = (hrMax) => (Number(hrMax) > 0 ? Math.round(Number(hrMax) * 0.92) : null);
 
+/**
+ * Référence des zones cardio : la FC au seuil (LTHR) saisie, sinon estimée depuis la FC max, sinon null.
+ * `estimee` vaut true quand elle ne vient pas d'une valeur saisie.
+ */
+export function referenceCardio(profil) {
+  const saisie = Number(profil?.lthr);
+  if (saisie > 0) return { bpm: saisie, estimee: false };
+  const estimee = estimerLthr(profil?.hr_max);
+  return estimee ? { bpm: estimee, estimee: true } : null;
+}
+
+/**
+ * Les zones cardio de Paramètres › Zones, en proportion de la LTHR et sans trou entre elles, pour calculer le temps passé
+ * dans chacune (voir `tempsParZone` de streams.js). Une seule définition des zones pour tous les écrans.
+ */
+export function zonesCardioTemps() {
+  const z = MODELES_ZONES.cardio.zones;
+  return z.map(([nom, bas], i) => ({ nom, min: bas / 100, max: i < z.length - 1 ? z[i + 1][1] / 100 : Infinity }));
+}
+
 /** Watts par kilo, arrondi à 2 décimales, ou null. */
 export function wattsParKg(ftp, poids) {
   const f = Number(ftp);

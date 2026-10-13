@@ -6,6 +6,7 @@
   import PanneauPrevue from '../lib/components/PanneauPrevue.svelte';
   import PanneauMarquage from '../lib/components/PanneauMarquage.svelte';
   import PanneauModeles from '../lib/components/PanneauModeles.svelte';
+  import Dialogue from '../lib/components/Dialogue.svelte';
   import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
   import { ouvrirCreation, donnees } from '../lib/stores/edition.svelte.js';
   import { auth } from '../lib/stores/auth.svelte.js';
@@ -15,7 +16,7 @@
   import { grilleMois, bornesGrille, decalerMois, JOURS_SEMAINE } from '../lib/data/calendrier.js';
   import { familleAffichage } from '../lib/data/familles.js';
   import { SPORTS, couleurSport } from '../lib/sports.js';
-  import { formatDuree, dateIsoLocale } from '../lib/utils/format.js';
+  import { formatDuree, dateIsoLocale, formatDateLongue } from '../lib/utils/format.js';
 
   let { demo = false } = $props();
 
@@ -103,8 +104,8 @@
 
   // --- Séances prévues : panneau de création / modification ---
   let panneau = $state({ ouvert: false, seance: null, modele: null, date: dateIsoLocale(maintenant) });
-  function nouvelle() {
-    panneau = { ouvert: true, seance: null, modele: null, date: dateIsoLocale(maintenant) };
+  function nouvelle(date = dateIsoLocale(maintenant)) {
+    panneau = { ouvert: true, seance: null, modele: null, date };
   }
   function modifier(p) {
     panneau = { ouvert: true, seance: p, modele: null, date: p.date };
@@ -126,7 +127,9 @@
 
   // --- Modèles de séances ---
   let modeles = $state({ ouvert: false, charge: false, chargement: false, erreur: '', liste: [] });
-  async function ouvrirModeles() {
+  let dateModele = dateIsoLocale(maintenant); // jour pour lequel on choisit un modèle (aujourd'hui, ou le jour touché dans la grille)
+  async function ouvrirModeles(date = dateIsoLocale(maintenant)) {
+    dateModele = date;
     modeles.ouvert = true;
     if (modeles.charge) return;
     if (demo) {
@@ -142,9 +145,17 @@
   }
   function utiliserModele(m) {
     modeles.ouvert = false;
-    panneau = { ouvert: true, seance: null, modele: m, date: dateIsoLocale(maintenant) };
+    panneau = { ouvert: true, seance: null, modele: m, date: dateModele };
   }
   const modeleAjoute = (m) => (modeles.liste = [...modeles.liste.filter((x) => x.id !== m.id), m]);
+
+  // --- Menu d'un jour : toucher une case de la grille propose quoi y ajouter ---
+  let menuJour = $state({ ouvert: false, iso: '' });
+  const choisir = (action) => {
+    const iso = menuJour.iso;
+    menuJour = { ouvert: false, iso: '' };
+    action(iso);
+  };
 
   // --- Repos, notes, maladies, blessures ---
   let panneauMarquage = $state({ ouvert: false, marquage: null, date: dateIsoLocale(maintenant) });
@@ -196,9 +207,9 @@
       <span class="resume">{seancesDuMois.length} séance{seancesDuMois.length > 1 ? 's' : ''} · {formatDuree(tempsDuMois)}</span>
       <Bouton variante="discret" onclick={aujourdhui}>Aujourd'hui</Bouton>
       <Bouton variante="discret" onclick={() => ouvrirCreation(dateIsoLocale(maintenant))}>Sortie réalisée</Bouton>
-      <Bouton variante="discret" onclick={ouvrirModeles}>Modèles</Bouton>
+      <Bouton variante="discret" onclick={() => ouvrirModeles()}>Modèles</Bouton>
       <Bouton variante="discret" onclick={() => nouveauMarquage()}>Repos ou note</Bouton>
-      <Bouton onclick={nouvelle}>Nouvelle séance</Bouton>
+      <Bouton onclick={() => nouvelle()}>Nouvelle séance</Bouton>
     </div>
   </div>
 
@@ -212,6 +223,8 @@
       <div class="semaine">
         {#each semaine as j (j.iso)}
           <div class="jour" class:hors={!j.dansMois} class:aujourdhui={j.aujourdhui} class:vide={vide(j) && !j.aujourdhui}>
+            <!-- Toucher une zone libre de la case ouvre le menu du jour ; les séances et notes restent cliquables par-dessus -->
+            <button type="button" class="ajout" aria-label="Ajouter pour le {formatDateLongue(j.iso)}" onclick={() => (menuJour = { ouvert: true, iso: j.iso })}></button>
             <div class="entete-jour">
               <span class="nomjour">{JOURS_SEMAINE[(new Date(j.iso + 'T12:00:00').getDay() + 6) % 7]}</span>
               <span class="num titre">{j.num}</span>
@@ -254,6 +267,17 @@
     {/each}
   </div>
 </main>
+
+<Dialogue ouvert={menuJour.ouvert} titre={menuJour.iso ? formatDateLongue(menuJour.iso) : ''} onfermer={() => (menuJour = { ouvert: false, iso: '' })}>
+  <p class="menu-aide">Que veux-tu ajouter ce jour-là ?</p>
+  <div class="menu-choix">
+    <button type="button" onclick={() => choisir((iso) => nouvelle(iso))}>Nouvelle séance prévue</button>
+    <button type="button" onclick={() => choisir((iso) => ouvrirCreation(iso))}>Sortie réalisée</button>
+    <button type="button" onclick={() => choisir((iso) => nouveauMarquage(iso))}>Repos ou note</button>
+    <button type="button" onclick={() => choisir((iso) => ouvrirModeles(iso))}>Modèle de séance</button>
+  </div>
+  <button type="button" class="menu-annuler" onclick={() => (menuJour = { ouvert: false, iso: '' })}>Annuler</button>
+</Dialogue>
 
 <PanneauModeles
   ouvert={modeles.ouvert}
@@ -374,6 +398,7 @@
     margin-bottom: 6px;
   }
   .jour {
+    position: relative;
     min-height: 118px;
     min-width: 0;
     box-sizing: border-box;
@@ -383,6 +408,70 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+  }
+  /* Zone cliquable qui couvre toute la case ; l'en-tête et les pastilles passent par-dessus, seules leurs parties actives captent le toucher */
+  .ajout {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: var(--rayon);
+    background: transparent;
+    cursor: pointer;
+  }
+  .ajout:hover {
+    background: rgb(255 255 255 / 0.04);
+  }
+  .ajout:focus-visible {
+    outline: 2px solid var(--texte);
+    outline-offset: -2px;
+  }
+  .jour :global(.entete-jour),
+  .jour :global(.contenu) {
+    position: relative;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .jour :global(.contenu) :global(a),
+  .jour :global(.contenu) :global(button) {
+    pointer-events: auto;
+  }
+  .menu-aide {
+    margin: 0;
+    color: #4a4f5a;
+    font-size: 15px;
+  }
+  .menu-choix {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .menu-choix button {
+    min-height: 48px;
+    border: 0;
+    border-radius: var(--rayon-l);
+    background: #0c0d10;
+    color: #f3f2ee;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .menu-choix button:focus-visible,
+  .menu-annuler:focus-visible {
+    outline: 3px solid var(--sport-course);
+    outline-offset: 2px;
+  }
+  .menu-annuler {
+    min-height: 44px;
+    border: 0;
+    background: none;
+    color: #0c0d10;
+    font: inherit;
+    font-size: 14px;
+    text-decoration: underline;
+    cursor: pointer;
   }
   .jour.hors {
     opacity: 0.45;
