@@ -56,12 +56,20 @@
     {#if demo}
       <Bouton variante="discret" href="./">Se connecter</Bouton>
     {:else}
-      <Bouton variante="discret" onclick={deconnexion}>Se déconnecter</Bouton>
+      <div class="actions-compte">
+        <Bouton variante="discret" href="#/mot-de-passe">Changer mon mot de passe</Bouton>
+        <Bouton variante="discret" onclick={deconnexion}>Se déconnecter</Bouton>
+      </div>
     {/if}
   </Bloc>
 </div>
 
 <style>
+  .actions-compte {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
   .onglet {
     display: flex;
     flex-direction: column;

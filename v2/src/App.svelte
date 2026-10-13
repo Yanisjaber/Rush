@@ -13,6 +13,7 @@
   import Force from './routes/Force.svelte';
   import ForceSeance from './routes/ForceSeance.svelte';
   import Hyrox from './routes/Hyrox.svelte';
+  import DefinirMotDePasse from './routes/DefinirMotDePasse.svelte';
   import PanneauSeance from './lib/components/PanneauSeance.svelte';
   import PanneauReel from './lib/components/PanneauReel.svelte';
   import { auth, initAuth } from './lib/stores/auth.svelte.js';
@@ -90,6 +91,8 @@
   <p class="attente" role="status">Chargement…</p>
 {:else if !auth.session}
   <Connexion />
+{:else if auth.definirMdp || route.chemin === '/mot-de-passe'}
+  <DefinirMotDePasse />
 {:else if paramOnglet}
   <Parametres onglet={paramOnglet} />
 {:else if route.chemin === '/calendrier'}

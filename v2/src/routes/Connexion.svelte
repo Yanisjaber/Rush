@@ -1,12 +1,26 @@
 <script>
   import Champ from '../lib/components/Champ.svelte';
   import Bouton from '../lib/components/Bouton.svelte';
-  import { connexion } from '../lib/stores/auth.svelte.js';
+  import { auth, connexion, demanderReinitialisation } from '../lib/stores/auth.svelte.js';
 
   let email = $state('');
   let motDePasse = $state('');
   let message = $state('');
   let enCours = $state(false);
+  let oubli = $state(false); // true : on demande un e-mail de réinitialisation au lieu de se connecter
+  let infoOubli = $state('');
+
+  async function reinitialiser(evenement) {
+    evenement.preventDefault();
+    if (enCours) return;
+    message = '';
+    infoOubli = '';
+    enCours = true;
+    const r = await demanderReinitialisation(email);
+    enCours = false;
+    if (r.ok) infoOubli = r.message;
+    else message = r.message;
+  }
 
   async function envoyer(evenement) {
     evenement.preventDefault();
@@ -33,16 +47,30 @@
     <p class="accroche">Charge, forme, objectifs et records, pour tous tes sports, au même endroit.</p>
   </div>
 
-  <form class="formulaire" onsubmit={envoyer}>
-    <h2 class="titre">Connexion</h2>
-    <Champ id="email" label="Adresse e-mail" type="email" autocomplete="email" bind:valeur={email} requis />
-    <Champ id="mdp" label="Mot de passe" type="password" autocomplete="current-password" bind:valeur={motDePasse} requis />
+  {#if oubli}
+    <form class="formulaire" onsubmit={reinitialiser}>
+      <h2 class="titre">Mot de passe oublié</h2>
+      <p class="info">Saisis ton adresse e-mail : on t'envoie un lien pour choisir un nouveau mot de passe.</p>
+      <Champ id="email-oubli" label="Adresse e-mail" type="email" autocomplete="email" bind:valeur={email} requis />
+      {#if message}<p class="erreur" role="alert">{message}</p>{/if}
+      {#if infoOubli}<p class="info ok" role="status">{infoOubli}</p>{/if}
+      <Bouton type="submit">{enCours ? 'Envoi…' : 'Envoyer le lien'}</Bouton>
+      <Bouton variante="texte" onclick={() => { oubli = false; message = ''; infoOubli = ''; }}>Retour à la connexion</Bouton>
+    </form>
+  {:else}
+    <form class="formulaire" onsubmit={envoyer}>
+      <h2 class="titre">Connexion</h2>
+      {#if auth.erreurLien}<p class="erreur" role="alert">{auth.erreurLien}</p>{/if}
+      <Champ id="email" label="Adresse e-mail" type="email" autocomplete="email" bind:valeur={email} requis />
+      <Champ id="mdp" label="Mot de passe" type="password" autocomplete="current-password" bind:valeur={motDePasse} requis />
 
-    {#if message}<p class="erreur" role="alert">{message}</p>{/if}
+      {#if message}<p class="erreur" role="alert">{message}</p>{/if}
 
-    <Bouton type="submit">{enCours ? 'Connexion…' : 'Se connecter'}</Bouton>
-    <Bouton variante="texte" href="?demo">Voir la démo, sans compte</Bouton>
-  </form>
+      <Bouton type="submit">{enCours ? 'Connexion…' : 'Se connecter'}</Bouton>
+      <Bouton variante="texte" onclick={() => { oubli = true; message = ''; auth.erreurLien = ''; }}>Mot de passe oublié ?</Bouton>
+      <Bouton variante="texte" href="?demo">Voir la démo, sans compte</Bouton>
+    </form>
+  {/if}
 </main>
 
 <style>
@@ -115,5 +143,14 @@
     color: var(--texte);
     font-size: 14px;
     border: 1px solid var(--danger);
+  }
+  .info {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--texte-doux);
+  }
+  .info.ok {
+    color: var(--ok);
   }
 </style>
