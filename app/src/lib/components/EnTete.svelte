@@ -5,11 +5,12 @@
   import { aller } from '../routeur.svelte.js';
 
   // En-tête commun, sur ordinateur et tablette (sur téléphone il n'existe pas : voir BarreBas.svelte).
-  //   Accueil · Calendrier · Plan | pastilles des sports pratiqués (filtrent l'accueil) | Plus ▾ (Muscu, Hyrox, Compétitions, Bilan, Sommeil)
+  //   Accueil · Calendrier · Plan | pastilles des sports pratiqués | Compétitions · Bilan · Sommeil
   // Selon la place disponible :
-  //   1. complet : les sports en pastilles ;
-  //   2. compact : les sports rangés dans un menu déroulant « Sports » ;
-  //   3. défilant : même en compact ça ne tient pas, la ligne se fait glisser à l'horizontale.
+  //   1. tout à plat ;
+  //   2. Compétitions, Bilan, Sommeil rangés dans « Plus ▾ » ;
+  //   3. en plus, les sports rangés dans « Sports ▾ » ;
+  //   4. même comme ça ça ne tient pas : la ligne se fait glisser à l'horizontale.
   // actif : 'accueil' | 'calendrier' | 'plan' | 'force' | 'hyrox' | 'competitions' | 'bilan' | 'sommeil' | 'parametres'.
   let { actif = 'accueil', demo = false } = $props();
 
@@ -21,23 +22,26 @@
   const sportsPageActive = $derived(familles.some((f) => pageDuSport(f)?.cle === actif));
   const nomSport = (f) => (SPORTS[f] || SPORTS.autre).court;
 
+  let pagesEnPlus = $state(false);
   let compact = $state(false);
   let defile = $state(false);
   let nav = $state();
   let mesureComplet = $state();
+  let mesureMilieu = $state();
   let mesureCompact = $state();
   let ouvert = $state(null); // null | 'sports' | 'plus'
   let posMenu = $state({ top: 0, left: 0 });
 
   // On mesure la largeur dont chaque version a besoin (deux copies invisibles) et on la compare à la place de la barre.
   $effect(() => {
-    if (!nav || !mesureComplet || !mesureCompact) return;
+    if (!nav || !mesureComplet || !mesureMilieu || !mesureCompact) return;
     void familles;
     const calculer = () => {
       const dispo = nav.clientWidth;
-      const complet = mesureComplet.scrollWidth <= dispo;
-      compact = !complet && familles.length > 0;
-      defile = !complet && mesureCompact.scrollWidth > dispo;
+      pagesEnPlus = mesureComplet.scrollWidth > dispo;
+      compact = pagesEnPlus && mesureMilieu.scrollWidth > dispo && familles.length > 0;
+      defile = pagesEnPlus && (compact ? mesureCompact : mesureMilieu).scrollWidth > dispo;
+      if (!pagesEnPlus && ouvert === 'plus') ouvert = null;
       if (!compact && ouvert === 'sports') ouvert = null;
     };
     calculer();
@@ -106,10 +110,16 @@
       {/if}
     {/if}
     <span class="sep" aria-hidden="true"></span>
-    <button class="menu-deroulant" class:courant={plusActif} type="button" aria-haspopup="true" aria-expanded={ouvert === 'plus'} onclick={(e) => basculer('plus', e)}>
-      Plus
-      {@render fleche()}
-    </button>
+    {#if pagesEnPlus}
+      <button class="menu-deroulant" class:courant={plusActif} type="button" aria-haspopup="true" aria-expanded={ouvert === 'plus'} onclick={(e) => basculer('plus', e)}>
+        Plus
+        {@render fleche()}
+      </button>
+    {:else}
+      {#each plus as l (l.cle)}
+        <a href={l.href} aria-current={actif === l.cle ? 'page' : undefined}>{l.nom}</a>
+      {/each}
+    {/if}
   </nav>
   <div class="droite">
     {#if demo}<span class="etiquette-demo">Mode démo</span>{/if}
@@ -118,8 +128,13 @@
     </a>
   </div>
 
-  <!-- Copies invisibles, uniquement pour mesurer la place nécessaire -->
+  <!-- Copies invisibles, uniquement pour mesurer la place nécessaire (à plat / avec « Plus » / avec « Plus » et « Sports ») -->
   <div class="mesure" aria-hidden="true" bind:this={mesureComplet}>
+    {#each principaux as l (l.cle)}<span>{l.nom}</span>{/each}
+    {#each familles as f (f)}<span class="m-sport">{nomSport(f)}</span>{/each}
+    {#each plus as l (l.cle)}<span>{l.nom}</span>{/each}
+  </div>
+  <div class="mesure" aria-hidden="true" bind:this={mesureMilieu}>
     {#each principaux as l (l.cle)}<span>{l.nom}</span>{/each}
     {#each familles as f (f)}<span class="m-sport">{nomSport(f)}</span>{/each}
     <span>Plus&nbsp;&nbsp;&nbsp;&nbsp;</span>
