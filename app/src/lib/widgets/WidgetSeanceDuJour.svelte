@@ -22,8 +22,8 @@
       <div class="action"><Bouton variante="sur-dossard" href={`#/force/seance/${prog.id}`}>Démarrer la séance</Bouton></div>
     </Dossard>
   {:else}
-    <Dossard etiquette="Séance du jour" nom={jour} valeur="—" detail="Crée un programme (Push, Pull, Legs…) pour voir ta séance du jour.">
-      <div class="action"><Bouton variante="sur-dossard" href="#/muscu/programmes">Créer un programme</Bouton></div>
+    <Dossard etiquette="Séance du jour" nom={jour} valeur="—" detail="Pas de programme à suivre ? Enregistre ta séance : chrono, exercices, séries et charges.">
+      <div class="action"><Bouton variante="sur-dossard" href="#/force/demarrer">Enregistrer une séance</Bouton></div>
     </Dossard>
   {/if}
 </div>

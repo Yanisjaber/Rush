@@ -28,6 +28,7 @@
     Bilan: () => import('./routes/Bilan.svelte'),
     Plan: () => import('./routes/Plan.svelte'),
     Analyse: () => import('./routes/Analyse.svelte'),
+    ForceDemarrer: () => import('./routes/ForceDemarrer.svelte'),
     ForceSeance: () => import('./routes/ForceSeance.svelte'),
     Seance: () => import('./routes/Seance.svelte'),
   };
@@ -124,6 +125,8 @@
     <Ecran charger={ecrans.Plan} demo={true} />
   {:else if route.chemin === '/analyse'}
     {#key route.sous}<Ecran charger={ecrans.Analyse} id={route.sous} demo={true} />{/key}
+  {:else if route.chemin === '/force/demarrer'}
+    <Ecran charger={ecrans.ForceDemarrer} demo={true} />
   {:else if forceSeance}
     {#key route.chemin}<Ecran charger={ecrans.ForceSeance} demo={true} mode={forceSeance.mode} cible={forceSeance.cible} />{/key}
   {:else if idSeance}
@@ -151,6 +154,8 @@
   <Ecran charger={ecrans.Plan} />
 {:else if route.chemin === '/analyse'}
   {#key route.sous}<Ecran charger={ecrans.Analyse} id={route.sous} />{/key}
+{:else if route.chemin === '/force/demarrer'}
+  <Ecran charger={ecrans.ForceDemarrer} />
 {:else if forceSeance}
   {#key route.chemin}<Ecran charger={ecrans.ForceSeance} mode={forceSeance.mode} cible={forceSeance.cible} />{/key}
 {:else if idSeance}
