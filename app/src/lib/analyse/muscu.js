@@ -4,6 +4,7 @@
 import { GROUPES, ORDRE_GROUPES, groupeValide } from '../data/exercices.js';
 import { tonnageSerie, progressionParExercice, unRmEstime } from '../data/force.js';
 import { dateIsoLocale, formatDateCourte, formatKg, formatNombre } from '../utils/format.js';
+import { rushTonnage } from './rush-tonnage.js';
 import { moyenne, arrondi, decalerJour, lundiDe, ecartJours, regression } from './maths.js';
 
 const ORDRE = { haute: 0, moyenne: 1, faible: 2, info: 3 };
@@ -118,7 +119,7 @@ export function analyserTonnage({ series, aujourdhui = new Date(), semaines = 26
   if (sauts >= 2) conseils.push({ priorite: 'faible', titre: 'Lisse tes semaines', texte: 'Des semaines très inégales rendent la progression difficile à lire. Garde un nombre de séries proche d\'une semaine à l\'autre.' });
   if (!conseils.length) conseils.push({ priorite: 'info', titre: 'Continue comme ça', texte: 'Ton volume est régulier et ton rythme tient. Le levier suivant : progresser en charge sur tes exercices principaux (voir l\'analyse des records).' });
 
-  return { id: 'tonnage', insuffisant: false, verdict, chiffres, graphiques, lectures, conseils: triConseils(conseils), methode: METHODE_TONNAGE, brut: { semaines: semainesListe, ecartPct, moyenneHebdo, trous, sauts } };
+  return { id: 'tonnage', insuffisant: false, verdict, chiffres, graphiques, lectures, conseils: triConseils(conseils), methode: METHODE_TONNAGE, rush: rushTonnage({ pleines, valides, debut, fin }), brut: { semaines: semainesListe, ecartPct, moyenneHebdo, trous, sauts } };
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

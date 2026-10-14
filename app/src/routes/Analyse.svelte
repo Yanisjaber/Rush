@@ -147,7 +147,21 @@
         <!-- L'analyse Rush : un seul bloc « coach » (constat, lecture des données, conseils), le détail du calcul reste replié -->
         <section class="rush" aria-labelledby="rush-titre">
           <p class="rush-marque">Analyse Rush</p>
-          <h2 id="rush-titre" class="rush-lead">{analyse.lectures[0]}</h2>
+          <h2 id="rush-titre" class="rush-lead">{analyse.rush ? analyse.rush.accroche : analyse.lectures[0]}</h2>
+          {#if analyse.rush}
+            <dl class="rush-profil">
+              {#each analyse.rush.profil as p (p.etiquette)}<div><dt>{p.etiquette}</dt><dd>{p.valeur}</dd></div>{/each}
+            </dl>
+            <ul class="rush-parties">
+              {#each analyse.rush.parties as p (p.titre)}
+                <li class="t-{p.ton}"><h3>{p.titre}</h3><p>{p.texte}</p></li>
+              {/each}
+            </ul>
+            <h3 class="rush-sous">Ton plan</h3>
+            <ol class="rush-plan">
+              {#each analyse.rush.plan as e (e.quand)}<li><strong>{e.quand}</strong><span>{e.action}</span></li>{/each}
+            </ol>
+          {:else}
           {#if analyse.conseils[0]}
             <p class="rush-prio"><span class="badge">{NOM_PRIORITE[analyse.conseils[0].priorite]}</span> {analyse.conseils[0].titre}</p>
           {/if}
@@ -171,6 +185,7 @@
               </ul>
             </div>
           </div>
+          {/if}
           <details class="rush-calcul">
             <summary>Comment Rush calcule</summary>
             <div class="methode">
@@ -391,6 +406,68 @@
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--texte-muet);
+  }
+  .rush-profil {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 36px;
+    margin: 20px 0 0;
+  }
+  .rush-profil dt {
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--texte-muet);
+  }
+  .rush-profil dd {
+    margin: 2px 0 0;
+    font-family: var(--police-titre);
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .rush-parties,
+  .rush-plan {
+    margin: 22px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .rush-parties li {
+    padding: 14px 0 14px 14px;
+    border-left: 3px solid var(--trait-fort);
+    margin-bottom: 4px;
+  }
+  .rush-parties li.t-attention {
+    border-left-color: var(--alerte);
+  }
+  .rush-parties li.t-ok {
+    border-left-color: var(--ok);
+  }
+  .rush-parties h3,
+  .rush-sous {
+    font-size: 16px;
+  }
+  .rush-parties p {
+    margin-top: 4px;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--texte-doux);
+  }
+  .rush-sous {
+    margin-top: 26px;
+  }
+  .rush-plan li {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 4px 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--trait);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  @media (max-width: 560px) {
+    .rush-plan li {
+      grid-template-columns: 1fr;
+    }
   }
   .rush-calcul {
     margin-top: 22px;
