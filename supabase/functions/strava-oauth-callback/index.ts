@@ -16,7 +16,7 @@
 // Secrets requis (à définir avant le deploy) :
 //   supabase secrets set STRAVA_CLIENT_ID=248376
 //   supabase secrets set STRAVA_CLIENT_SECRET=xxxx
-//   supabase secrets set APP_REDIRECT_URL=https://yanisjaber.github.io/rush/
+//   supabase secrets set APP_REDIRECT_URL=https://yanisjaber.github.io/Rush/
 //
 // Note : --no-verify-jwt car Strava appelle cette URL sans en-tête d'auth ;
 // l'identité vient de l'état à usage unique (oauth_states).

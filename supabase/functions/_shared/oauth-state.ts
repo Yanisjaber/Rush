@@ -8,10 +8,10 @@
 // (liste blanche exacte : évite l'open redirect).
 export const ALLOWED_RETURN_URLS = [
   "http://localhost:5173/", // développement local
-  "https://yanisjaber.github.io/rush/",
-  "https://yanisjaber.github.io/rush/index.html",
+  "https://yanisjaber.github.io/Rush/",
+  "https://yanisjaber.github.io/Rush/index.html",
 ];
-export const FALLBACK_REDIRECT = Deno.env.get("APP_REDIRECT_URL") || "https://yanisjaber.github.io/rush/";
+export const FALLBACK_REDIRECT = Deno.env.get("APP_REDIRECT_URL") || "https://yanisjaber.github.io/Rush/";
 
 export const STATE_TTL_MIN = 10;
 

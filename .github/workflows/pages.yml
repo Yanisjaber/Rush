@@ -1,6 +1,6 @@
 name: Publier le site
 
-# Publie l'app (Svelte + Vite, compilée) sur GitHub Pages : https://yanisjaber.github.io/rush/
+# Publie l'app (Svelte + Vite, compilée) sur GitHub Pages : https://yanisjaber.github.io/Rush/
 #
 # Le job « deploy » ne tourne que si la variable de dépôt DEPLOY_PAGES vaut « true » (Réglages → Pages → Source : « GitHub Actions »).
 on:
