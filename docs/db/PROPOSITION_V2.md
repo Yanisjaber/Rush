@@ -123,7 +123,7 @@ Bonne nouvelle : l'accès aux données est **déjà centralisé**.
 | Composant | Fichiers | Travail |
 |---|---|---|
 | **v2 (navigateur)** | `data/api.js`, `force-acces.js`, `integrations.js`, `export.js`, stores `disposition`/`profil` | Changer noms de colonnes et de tables. **Recommandé : une couche d'adaptation** qui renvoie aux écrans les mêmes champs qu'aujourd'hui (`moving_time`, `distance_km`…) : les 215 tests de calcul et les écrans ne bougent pas, on migre l'interface plus tard. |
-| **Edge Functions** (10 ; `coach-ai` devient inutile) | `strava-ingest` (écrit les activités), `strava-streams` (courbes, mesures, records → `rebuild_power_bests`), `strava-webhook`, `strava-oauth-callback` + `oauth-start` (jetons → `rpc_save_connection_secrets`), `disconnect-integration`, `strava-laps`, `delete-account` (inchangée) | Réécrire les lectures/écritures ; plus de calcul de forme (la base s'en charge). |
+| **Edge Functions** (10 ; l'ancienne fonction d'assistant IA est supprimée) | `strava-ingest` (écrit les activités), `strava-streams` (courbes, mesures, records → `rebuild_power_bests`), `strava-webhook`, `strava-oauth-callback` + `oauth-start` (jetons → `rpc_save_connection_secrets`), `disconnect-integration`, `strava-laps`, `delete-account` (inchangée) | Réécrire les lectures/écritures ; plus de calcul de forme (la base s'en charge). |
 | **Raspberry Pi** | `tools/garmin_sync.py` | Jetons via `rpc_connection_secrets`, `garmin_sleep` → `sleep_nights`, `garmin_sync_requests` → `sync_requests`. |
 | **Base** | `pg_cron` | Une tâche toutes les 5 min qui passe en erreur les demandes `pending` de plus de 15 min (règle OPS-2). |
 
