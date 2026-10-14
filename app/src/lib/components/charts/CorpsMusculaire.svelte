@@ -4,6 +4,7 @@
   // un groupe se décompose en ses muscles, un muscle montre les exercices qui le travaillent.
   // groupes : [{ groupe, nom, series, parSemaine, cible, etat, pct, exercices, muscles: [{ slug, nom, parSemaine, series, cible, etat, pct, exercices: [{ nom, series, role }] }] }]
   import SilhouetteCorps from './SilhouetteCorps.svelte';
+  import Camembert from './Camembert.svelte';
   let { groupes = [], etiquette = 'Corps humain', periode = 'la période' } = $props();
 
   let choisi = $state(null); // clé du groupe sélectionné
@@ -15,8 +16,6 @@
   const muscles = $derived(Object.fromEntries(groupes.flatMap((g) => g.muscles).map((m) => [m.slug, m])));
   const muscle = $derived(muscleChoisi ? muscles[muscleChoisi] || null : null);
 
-  const RAYON = 38;
-  const CIRCONF = 2 * Math.PI * RAYON;
   const choisirGroupe = (cle) => {
     muscleChoisi = null;
     choisi = choisi === cle && !muscle ? null : cle;
@@ -41,11 +40,7 @@
     {#each groupes as g (g.groupe)}
       <li>
         <button type="button" class:actif={choisi === g.groupe} aria-pressed={choisi === g.groupe} aria-label={`${g.nom} : ${g.pct} % de la zone visée`} onclick={() => choisirGroupe(g.groupe)}>
-          <svg viewBox="0 0 100 100" aria-hidden="true">
-            <circle cx="50" cy="50" r={RAYON} class="fond" />
-            {#if g.pct > 0}<circle cx="50" cy="50" r={RAYON} class="arc" class:plein={g.pct >= 100} stroke-dasharray={`${(CIRCONF * Math.min(Math.max(g.pct, 0), 100)) / 100} ${CIRCONF}`} transform="rotate(-90 50 50)" />{/if}
-            <text x="50" y="50" class="valeur" text-anchor="middle" dominant-baseline="central">{g.pct} %</text>
-          </svg>
+          <span class="anneau"><Camembert pct={g.pct} etiquette={`${g.nom} : ${g.pct} % de la zone visée`} /></span>
           <span class="nom">{g.nom}</span>
         </button>
       </li>
@@ -155,28 +150,9 @@
     outline: 2px solid var(--texte);
     outline-offset: 2px;
   }
-  .camemberts svg {
+  .anneau {
+    display: block;
     width: min(100%, 120px);
-    height: auto;
-  }
-  .fond,
-  .arc {
-    fill: none;
-    stroke-width: 12;
-  }
-  .fond {
-    stroke: var(--trait-fort);
-  }
-  .arc {
-    stroke: var(--sport-muscu);
-    stroke-linecap: round;
-    transition: stroke-dasharray 0.3s;
-  }
-  .valeur {
-    fill: var(--texte);
-    font-family: var(--police-titre);
-    font-size: 21px;
-    font-weight: 700;
   }
   .camemberts .nom {
     font-size: 14px;
