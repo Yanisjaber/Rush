@@ -5,6 +5,7 @@
   import StatCle from '../lib/components/StatCle.svelte';
   import BarresEmpilees from '../lib/components/charts/BarresEmpilees.svelte';
   import GraphiqueLignes from '../lib/components/charts/GraphiqueLignes.svelte';
+  import CarteChaleur from '../lib/components/charts/CarteChaleur.svelte';
   import SelecteurSport from '../lib/components/SelecteurSport.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { menu } from '../lib/stores/menu.svelte.js';
@@ -110,6 +111,12 @@
             </ul>
           {:else if g.type === 'lignes'}
             <GraphiqueLignes etiquettes={g.etiquettes} series={g.series} bandes={g.bandes || []} marqueurs={g.marqueurs || []} min={g.min} max={g.max} etiquette={g.titre} />
+          {:else if g.type === 'chaleur'}
+            <!-- cases plafonnées à ~30 px : sur 3 mois (12 colonnes) elles feraient des carrés énormes sur grand écran -->
+            <div style:max-width="{g.colonnes * 30}px"><CarteChaleur cases={g.cases} colonnes={g.colonnes} etiquette={g.titre} /></div>
+            <ul class="legende">
+              {#each g.sports as s (s.nom)}<li><span class="pastille" style:background={s.couleur}></span>{s.nom}</li>{/each}
+            </ul>
           {:else if g.type === 'repartition'}
             <div class="repartition" role="img" aria-label={g.segments.map((s) => `${s.nom} ${s.valeur} %`).join(', ')}>
               {#each g.segments.filter((s) => s.valeur > 0) as s (s.nom)}<span style:width="{s.valeur}%" style:background={s.couleur}></span>{/each}

@@ -2,6 +2,9 @@
 // Tout est déduit des jours où tu as au moins une séance (tous sports, ou le sport choisi). Fonctions pures.
 // Même format de sortie que les autres analyses : { verdict, chiffres, graphiques, lectures, conseils, methode }.
 import { dateIsoLocale, formatDateCourte } from '../utils/format.js';
+import { casesRegularite } from '../data/synthese.js';
+import { familleAffichage } from '../data/familles.js';
+import { SPORTS, couleurSport } from '../sports.js';
 import { moyenne, arrondi, decalerJour, lundiDe, ecartJours } from './maths.js';
 
 const CIBLE = 3; // jours d'entraînement par semaine : le seuil d'une semaine « tenue »
@@ -98,7 +101,17 @@ export function analyserRegularite({ seances, aujourdhui = new Date(), semaines 
     { etiquette: 'Cette semaine', valeur: String(courante.jours), unite: courante.jours > 1 ? 'jours' : 'jour', note: finie ? 'semaine terminée' : 'en cours' },
   ];
 
+  // Le calendrier : la même carte de chaleur que le widget, sur la période choisie
+  const sportsVus = [...new Set(seances.filter((s) => String(s.start_date_local).slice(0, 10) >= debut).map((s) => familleAffichage(s.sport)))];
   const graphiques = [
+    {
+      type: 'chaleur',
+      titre: 'Ton calendrier',
+      description: 'Une case par jour, une colonne par semaine (la dernière est la semaine en cours), du lundi en haut au dimanche en bas. La couleur est le sport ; plus elle est franche, plus la séance est chargée.',
+      cases: casesRegularite(seances, semaines, aujourdhui),
+      colonnes: semaines,
+      sports: sportsVus.map((f) => ({ nom: (SPORTS[f] || SPORTS.autre).court, couleur: couleurSport(f) })),
+    },
     {
       type: 'lignes',
       titre: 'Jours d\'entraînement par semaine',

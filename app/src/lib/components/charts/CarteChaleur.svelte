@@ -7,7 +7,7 @@
   const opacites = [1, 0.35, 0.6, 1];
 </script>
 
-<div class="grille" role="img" aria-label={etiquette} style:grid-template-columns="repeat({colonnes}, minmax(0, 1fr))">
+<div class="grille" class:dense={colonnes > 26} role="img" aria-label={etiquette} style:grid-template-columns="repeat({colonnes}, minmax(0, 1fr))">
   {#each cases as c}
     <span
       class="case"
@@ -25,5 +25,12 @@
   .case {
     aspect-ratio: 1;
     border-radius: 4px;
+  }
+  /* Beaucoup de semaines (6 ou 12 mois) : espacement et coins plus fins pour que les cases restent lisibles */
+  .dense {
+    gap: 2px;
+  }
+  .dense .case {
+    border-radius: 2px;
   }
 </style>

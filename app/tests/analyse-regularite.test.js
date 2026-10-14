@@ -5,7 +5,7 @@ import { decalerJour } from '../src/lib/analyse/maths.js';
 
 const AUJ = new Date(2026, 9, 14, 12); // mercredi 14 octobre 2026
 const ISO = '2026-10-14';
-const seance = (iso) => ({ start_date_local: `${iso}T08:00:00`, sport: 'Run' });
+const seance = (iso) => ({ start_date_local: `${iso}T08:00:00`, sport: 'Run', moving_time: 3600 }); // une heure : sans durée ni TSS, la charge (donc la case colorée) serait nulle
 
 /** `parSemaine` séances (lundi, mercredi, vendredi… dans cet ordre) pendant `semaines` semaines complètes avant la semaine en cours. */
 function rythme(semaines, parSemaine, saut = 0) {
@@ -36,7 +36,7 @@ test('régularité : 3 séances chaque semaine pendant 11 semaines → très ré
   assert.equal(a.brut.pct, 100);
   assert.equal(a.brut.vides, 0);
   assert.equal(a.brut.enCours, 11);
-  assert.equal(a.graphiques[0].series[0].valeurs.length, 11); // la semaine en cours n'est pas comptée
+  assert.equal(a.graphiques[1].series[0].valeurs.length, 11); // la semaine en cours n'est pas comptée
   assert.equal(a.conseils[0].priorite, 'info');
 });
 
@@ -74,8 +74,20 @@ test('régularité : la plus longue pause est trouvée, et des semaines sans rep
 
 test('régularité : le tableau des jours a 7 lignes et les parts font environ 100 %', () => {
   const a = analyserRegularite({ seances: rythme(8, 3), aujourdhui: AUJ, semaines: 12 });
-  const t = a.graphiques[1];
+  const t = a.graphiques[2];
   assert.equal(t.lignes.length, 7);
   const total = t.lignes.reduce((s, l) => s + parseInt(l[2], 10), 0);
   assert.ok(total >= 98 && total <= 102);
+});
+
+test('régularité : le calendrier est la carte de chaleur du widget (7 rangées × N semaines) avec la légende des sports', () => {
+  for (const semaines of [12, 26, 52]) {
+    const a = analyserRegularite({ seances: rythme(8, 3), aujourdhui: AUJ, semaines });
+    const g = a.graphiques[0];
+    assert.equal(g.type, 'chaleur');
+    assert.equal(g.colonnes, semaines);
+    assert.equal(g.cases.length, 7 * semaines);
+    assert.ok(g.cases.some((c) => c.intensite > 0));
+    assert.deepEqual(g.sports.map((x) => x.nom), ['Course']);
+  }
 });
