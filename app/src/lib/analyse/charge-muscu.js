@@ -223,7 +223,7 @@ export function analyserChargeMuscu({ series, aujourdhui = new Date(), semaines 
   if (calibres.length) {
     const plusFatigue = [...calibres].sort((x, y) => y.pct - x.pct)[0];
     chiffres.splice(2, 0, { etiquette: 'Groupe le plus fatigué', valeur: plusFatigue.nom, unite: '', note: `${plusFatigue.pct} % · ${texteDelai(plusFatigue.heures)}`, ton: plusFatigue.zone.ton === 'ok' || plusFatigue.zone.ton === 'info' ? '' : 'alerte' });
-    graphiques.splice(1, 0, { type: 'fatigue', titre: 'Fatigue de chaque groupe musculaire', groupes: fatigue.groupes, muscles: fatigue.muscles });
+    graphiques.splice(1, 0, { type: 'fatigue', titre: 'Fatigue de chaque groupe musculaire', groupes: fatigue.groupes });
   }
 
   const rush = rushChargeMuscu({ fatigue, recente, ratio, zone, intensites, intensiteMoy, groupes, ecartPct, sauts, cv, serieSansDecharge, moyenneHebdo, meilleure, pleines, chargeSeanceMoy, joursTotal, partEstimee, plusLourde });

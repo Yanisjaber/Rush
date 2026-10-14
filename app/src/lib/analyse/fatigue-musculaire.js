@@ -77,8 +77,26 @@ export function texteDelai(heures) {
 }
 
 /**
+ * La courbe d'un groupe : sa fatigue (en % d'une grosse journée) sur les `jours` derniers jours, puis sa projection sur `avenir` jours
+ * si tu ne refais aucune séance de ce groupe : [{ iso, pct }] pour le passé et pour le futur.
+ */
+export function courbeGroupe(parJour, ref, tau, jour, jours = 42, avenir = 7) {
+  const passe = [];
+  for (let i = jours - 1; i >= 0; i--) {
+    const j = decalerJour(jour, -i);
+    passe.push({ iso: j, pct: Math.round((fatigueBrute(parJour, j, tau) / ref) * 100) });
+  }
+  const futur = [];
+  for (let i = 1; i <= avenir; i++) {
+    const j = decalerJour(jour, i);
+    futur.push({ iso: j, pct: Math.round((fatigueBrute(parJour, j, tau) / ref) * 100) });
+  }
+  return { passe, futur };
+}
+
+/**
  * La fatigue de chaque groupe et de chaque muscle à la fin du jour `jour` (aujourd'hui).
- * Renvoie { groupes: [{ groupe, nom, pct, zone, heures, muscles: [...] }], muscles: { [slug]: { slug, nom, groupe, pct, zone, heures } } }.
+ * Renvoie { groupes: [{ groupe, nom, pct, zone, heures, courbe: { passe, futur } | null, muscles: [...] }], muscles: { [slug]: { slug, nom, groupe, pct, zone, heures } } }.
  * `pct` vaut null quand il n'y a pas assez de séances de ce groupe pour calibrer (au moins 5 journées).
  */
 export function fatigueMusculaire(sets, jour) {
@@ -95,7 +113,7 @@ export function fatigueMusculaire(sets, jour) {
     const parJour = somme((MUSCLES_PAR_GROUPE[g] || []).map((slug) => parMuscle[slug]));
     const ref = referenceGrosse(parJour);
     const pct = ref ? Math.round((fatigueBrute(parJour, jour, tau) / ref) * 100) : null;
-    return { groupe: g, nom: GROUPES[g].nom, pct, zone: zoneFatigue(pct), heures: heuresAvantPret(pct, tau), muscles: (MUSCLES_PAR_GROUPE[g] || []).map((s) => muscles[s]) };
+    return { groupe: g, nom: GROUPES[g].nom, pct, zone: zoneFatigue(pct), heures: heuresAvantPret(pct, tau), courbe: ref ? courbeGroupe(parJour, ref, tau, jour) : null, muscles: (MUSCLES_PAR_GROUPE[g] || []).map((s) => muscles[s]) };
   });
   return { groupes, muscles };
 }

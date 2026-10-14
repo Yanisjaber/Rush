@@ -120,7 +120,7 @@
           {:else if g.type === 'lignes'}
             <GraphiqueLignes etiquettes={g.etiquettes} series={g.series} bandes={g.bandes || []} marqueurs={g.marqueurs || []} min={g.min} max={g.max} etiquette={g.titre} />
           {:else if g.type === 'fatigue'}
-            <FatigueMusculaire groupes={g.groupes} muscles={g.muscles} />
+            <FatigueMusculaire groupes={g.groupes} />
           {:else if g.type === 'corps'}
             <CorpsMusculaire groupes={g.groupes} etiquette={g.titre} periode={g.periode} />
           {:else if g.type === 'exercices'}
