@@ -27,7 +27,7 @@ const complet = (a) => {
   assert.ok(a.methode.length > 0);
   for (const c of a.chiffres) assert.equal(typeof c.valeur, 'string');
   for (const c of a.conseils) assert.ok(['haute', 'moyenne', 'faible', 'info'].includes(c.priorite));
-  for (const g of a.graphiques) assert.ok(['lignes', 'tableau', 'repartition', 'exercices', 'chaleur'].includes(g.type));
+  for (const g of a.graphiques) assert.ok(['lignes', 'tableau', 'repartition', 'exercices', 'chaleur', 'historique'].includes(g.type));
 };
 
 test('muscu : sans séries, chaque analyse répond « pas assez de données » sans planter', () => {
@@ -144,4 +144,21 @@ test('records : deux exercices du même groupe → un seul onglet, le plus prati
   // les points d'un exercice sont dans l'ordre chronologique
   const dates = pecs[0].exercices[0].etiquettes;
   assert.deepEqual(dates, [...dates].sort());
+});
+
+test('records : l\'historique d\'un exercice = toutes ses séances (récente d\'abord) avec toutes les séries, record signalé une seule fois', () => {
+  const s = [];
+  // 3 séances de squat : 60, 70 (record), 65 kg ; la 2e séance a 3 séries dans le désordre, la 3e une série sans charge
+  s.push(serie('2026-10-01', 'squat', 'jambes', 5, 60), serie('2026-10-01', 'squat', 'jambes', 5, 60));
+  s.push({ ...serie('2026-10-05', 'squat', 'jambes', 5, 70), set_no: 2 }, { ...serie('2026-10-05', 'squat', 'jambes', 8, 60), set_no: 1 }, { ...serie('2026-10-05', 'squat', 'jambes', 3, 70), set_no: 3 });
+  s.push(serie('2026-10-10', 'squat', 'jambes', 5, 65), serie('2026-10-10', 'squat', 'jambes', 12, 0));
+  const a = analyserRecords({ series: s, aujourdhui: AUJ });
+  assert.ok(a.graphiques.some((g) => g.type === 'historique'));
+  const squat = a.graphiques.find((g) => g.type === 'exercices').groupes.find((g) => g.nom === 'Jambes').exercices.find((e) => e.cle === 'squat');
+  assert.deepEqual(squat.seances.map((x) => x.date), ['2026-10-10', '2026-10-05', '2026-10-01']);
+  assert.deepEqual(squat.seances[1].series, [{ reps: 8, poids: 60 }, { reps: 5, poids: 70 }, { reps: 3, poids: 70 }]); // dans l'ordre des séries
+  assert.equal(squat.seances[0].series.length, 2); // la série sans charge est gardée dans l'historique
+  assert.equal(squat.seances[1].tonnage, 8 * 60 + 5 * 70 + 3 * 70);
+  assert.equal(squat.seances.filter((x) => x.record).length, 1);
+  assert.equal(squat.seances[1].record, true);
 });

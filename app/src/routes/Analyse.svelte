@@ -6,6 +6,7 @@
   import GraphiqueLignes from '../lib/components/charts/GraphiqueLignes.svelte';
   import CarteChaleur from '../lib/components/charts/CarteChaleur.svelte';
   import GraphiqueExercice from '../lib/components/charts/GraphiqueExercice.svelte';
+  import HistoriqueExercice from '../lib/components/charts/HistoriqueExercice.svelte';
   import SelecteurSport from '../lib/components/SelecteurSport.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { menu } from '../lib/stores/menu.svelte.js';
@@ -25,6 +26,7 @@
   const userId = $derived(demo ? 'demo' : auth.session?.user?.id);
   const aujourdhui = new Date();
 
+  let exoVu = $state(null); // l'exercice affiché dans le bloc « Progression par exercice » (Records) : son historique est montré dessous
   let brut = $state({ chargement: true, erreur: '', seances: [], planifiees: [], objectifs: [], series: [], hrMax: null });
 
   async function charger(u) {
@@ -102,7 +104,7 @@
       {/if}
 
       {#each analyse.graphiques as g (g.titre)}
-        <Bloc titre={g.titre}>
+        <Bloc titre={g.type === 'historique' && exoVu ? `Historique : ${exoVu.exo.nom}` : g.titre}>
           {#if g.description}<p class="description">{g.description}</p>{/if}
           {#if g.type === 'barres'}
             <BarresEmpilees series={g.series} etiquettes={g.etiquettes} ligne={g.ligne} hauteur={240} etiquette={g.titre} />
@@ -113,7 +115,9 @@
           {:else if g.type === 'lignes'}
             <GraphiqueLignes etiquettes={g.etiquettes} series={g.series} bandes={g.bandes || []} marqueurs={g.marqueurs || []} min={g.min} max={g.max} etiquette={g.titre} />
           {:else if g.type === 'exercices'}
-            <GraphiqueExercice groupes={g.groupes} />
+            <GraphiqueExercice groupes={g.groupes} bind:selection={exoVu} />
+          {:else if g.type === 'historique'}
+            <HistoriqueExercice exo={exoVu?.exo} />
           {:else if g.type === 'chaleur'}
             <CarteChaleur cases={g.cases} colonnes={g.colonnes} etiquette={g.titre} reperes />
             <ul class="legende">

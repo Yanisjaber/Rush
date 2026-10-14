@@ -2,7 +2,7 @@
 // Tout est déduit des séries du carnet de force (table strength_sets). Fonctions pures, sans réseau ni écran.
 // Même format de sortie que les autres analyses : { verdict, chiffres, graphiques, lectures, conseils, methode }.
 import { GROUPES, ORDRE_GROUPES, groupeValide } from '../data/exercices.js';
-import { tonnageSerie, progressionParExercice } from '../data/force.js';
+import { tonnageSerie, progressionParExercice, unRmEstime } from '../data/force.js';
 import { dateIsoLocale, formatDateCourte, formatKg, formatNombre } from '../utils/format.js';
 import { moyenne, arrondi, decalerJour, lundiDe, ecartJours, regression } from './maths.js';
 
@@ -273,36 +273,45 @@ export function analyserRecords({ series, aujourdhui = new Date(), semaines = 26
 
   // Un seul bloc : des onglets pour choisir le groupe musculaire, un menu pour choisir l'exercice du groupe (le plus pratiqué est proposé d'abord).
   // Un point par séance (meilleur 1RM estimé du jour) : pas de trou quand on saute des semaines.
+  // Historique : toutes les séances où l'exercice a été fait (la plus récente d'abord), avec TOUTES les séries (même sans charge).
+  const historiqueDe = (e) => {
+    const parJour = new Map();
+    for (const s of valides) {
+      if (s.exercise_key !== e.cle) continue;
+      if (!parJour.has(iso(s))) parJour.set(iso(s), []);
+      parJour.get(iso(s)).push(s);
+    }
+    return [...parJour.entries()]
+      .map(([date, lignes]) => {
+        const series = lignes.sort((a, b) => (Number(a.set_no) || 0) - (Number(b.set_no) || 0)).map((l) => ({ reps: Number(l.reps), poids: Number(l.weight_kg) || 0 }));
+        const rms = lignes.map((l) => unRmEstime(l.weight_kg, l.reps)).filter((v) => v != null);
+        return { date, series, tonnage: Math.round(lignes.reduce((t, l) => t + tonnageSerie(l), 0)), rm: rms.length ? Math.max(...rms) : null, record: date === e.meilleur.date };
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
+  };
   const parGroupe = ORDRE_GROUPES.map((g) => ({
     groupe: g,
     nom: GROUPES[g].nom,
     exercices: exos
       .filter((e) => e.groupe === g)
-      .map((e) => ({ cle: e.cle, nom: e.nom, etiquettes: e.dansFenetre.map((p) => p.date), valeurs: e.dansFenetre.map((p) => p.rm), rm: e.rm, record: e.meilleurRm })),
+      .map((e) => ({ cle: e.cle, nom: e.nom, etiquettes: e.dansFenetre.map((p) => p.date), valeurs: e.dansFenetre.map((p) => p.rm), rm: e.rm, record: e.meilleurRm, seances: historiqueDe(e) })),
   })).filter((g) => g.exercices.length);
 
   const NOM_STATUT = { record: 'Record récent', plateau: 'Plateau', progres: 'En progression', stable: 'Stable' };
   const graphiques = [
     ...(parGroupe.length ? [{ type: 'exercices', titre: 'Progression par exercice', groupes: parGroupe }] : []),
-    {
-      type: 'tableau',
-      titre: 'Tes exercices, un par un',
-      description: 'Ton 1RM estimé à la dernière séance, ton record, et où tu en es.',
-      colonnes: ['Exercice', '1RM actuel', 'Record', 'Statut'],
-      lignes: suivis.map((e) => [e.nom, `${formatKg(e.rm)} kg`, `${formatKg(e.meilleurRm)} kg · ${formatDateCourte(e.meilleur.date)}`, NOM_STATUT[e.statut]]),
-    },
+    // Historique de l'exercice choisi dans le bloc du dessus (la page affiche les séances de l'exercice sélectionné)
+    ...(parGroupe.length ? [{ type: 'historique', titre: 'Historique' }] : []),
   ];
 
   const lectures = suivis.map((e) => {
     const g = e.dansFenetre.length;
-    return `${e.nom} : ${formatKg(e.rm)} kg estimés à la dernière séance (${e.reps} × ${formatKg(e.poids)} kg), record ${formatKg(e.meilleurRm)} kg le ${formatDateCourte(e.meilleur.date)}, ${sansPluriel(g, 'séance')} sur la période.`;
+    return `${e.nom} : ${formatKg(e.rm)} kg estimés à la dernière séance (${e.reps} × ${formatKg(e.poids)} kg), record ${formatKg(e.meilleurRm)} kg le ${formatDateCourte(e.meilleur.date)}, ${sansPluriel(g, 'séance')} au total.`;
   });
 
   const conseils = [];
   for (const e of plateaux) conseils.push({ priorite: 'haute', titre: `Casse le plateau : ${e.nom}`, texte: `Pas de record depuis ${Math.round(e.joursRecord / 7)} semaines. Essaie une semaine plus légère (60 à 70 % de ta charge), puis change le schéma : par exemple passe de 5 × 5 à 4 × 6, ou ajoute une série à charge égale.` });
   if (records.length) conseils.push({ priorite: 'faible', titre: 'Profite de la dynamique', texte: 'Quand un record tombe, vise des petits pas (+1 à +2,5 kg) plutôt qu\'un gros saut : c\'est ce qui fait durer la série de progrès.' });
-  const pasMesures = suivis.length < exos.length;
-  if (pasMesures) conseils.push({ priorite: 'info', titre: 'Seuls 6 exercices sont affichés', texte: 'On suit les 6 exercices que tu pratiques le plus sur la période. Les autres existent dans ton historique mais ne sont pas détaillés ici.' });
   if (!conseils.length) conseils.push({ priorite: 'info', titre: 'Continue de noter tes charges', texte: 'Plus tu enregistres de séances, plus le suivi des records est précis. Note chaque série avec sa charge réelle.' });
 
   return { id: 'records', insuffisant: false, verdict, chiffres, graphiques, lectures, conseils: triConseils(conseils), methode: METHODE_RECORDS, brut: { suivis, records, plateaux, progres } };

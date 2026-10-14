@@ -8,13 +8,19 @@
   // un seul bouton « Groupe ▾ » qui ouvre la liste. On mesure la place nécessaire avec une copie invisible.
   //  groupes : [{ groupe, nom, exercices: [{ cle, nom, etiquettes (dates), valeurs (1RM estimé par séance), rm (dernier), record }] }]
   //  Les exercices d'un groupe arrivent du plus pratiqué au moins pratiqué : le premier est proposé d'abord.
-  let { groupes = [] } = $props();
+  //  selection (à lier avec bind:) : l'exercice affiché, { groupe, exo }, pour que la page puisse montrer son historique à côté
+  let { groupes = [], selection = $bindable(null) } = $props();
 
   let groupeChoisi = $state('');
   let exoChoisi = $state({}); // exercice retenu pour chaque groupe (on le garde quand on change d'onglet)
   // Si le groupe ou l'exercice choisi n'existe plus (autre période, autre filtre), on retombe sur le premier
   const courant = $derived(groupes.find((g) => g.groupe === groupeChoisi) || groupes[0]);
   const exo = $derived(courant ? courant.exercices.find((e) => e.cle === exoChoisi[courant.groupe]) || courant.exercices[0] : null);
+
+  // On dit à la page quel exercice est affiché (elle en montre l'historique)
+  $effect(() => {
+    selection = courant && exo ? { groupe: courant.groupe, exo } : null;
+  });
 
   let ligne = $state(); // la ligne entière : les onglets des groupes + le sélecteur d'exercice à côté
   let exoZone = $state(); // le sélecteur d'exercice
