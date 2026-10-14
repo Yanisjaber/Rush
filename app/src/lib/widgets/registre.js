@@ -205,14 +205,18 @@ export const WIDGETS = {
  * Ces widgets n'apparaissent donc pas sur l'onglet « Tout », qui reste le tableau de bord général.
  */
 export const ORDRE_ONGLET = {
-  muscu: ['seancedujour', 'tonnage', 'regularite', 'records', 'programme', 'groupes', 'dernieres'],
+  // Accueil Muscu : séance du jour, tonnage et dernières séances en haut, les records en pleine largeur, puis séries par groupe, régularité et volume
+  muscu: ['seancedujour', 'tonnage', 'dernieres', 'records', 'groupes', 'regularite', 'volume'],
   hyrox: ['hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'semaine', 'chargeforce'],
 };
 
 // Widgets propres à un onglet riche (ceux qui ne sont pas des widgets « tous sports » réutilisés)
-const PROPRES_AUX_ONGLETS = new Set(
-  Object.values(ORDRE_ONGLET).flat().filter((id) => Object.hasOwn(WIDGETS, id) && WIDGETS[id].sports !== 'tous'),
-);
+// « Au programme » n'est plus dans la composition par défaut de Muscu (la carte « Séance du jour » montre déjà le programme),
+// mais il reste un widget propre à Muscu : disponible dans « Personnaliser », jamais composé d'office sur l'accueil général.
+const PROPRES_AUX_ONGLETS = new Set([
+  ...Object.values(ORDRE_ONGLET).flat().filter((id) => Object.hasOwn(WIDGETS, id) && WIDGETS[id].sports !== 'tous'),
+  'programme',
+]);
 
 /** Ordre de composition automatique de l'accueil. */
 const ORDRE_AUTO = [
