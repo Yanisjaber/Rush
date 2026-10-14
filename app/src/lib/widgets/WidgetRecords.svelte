@@ -3,7 +3,7 @@
   import CourbeLissee from '../components/charts/CourbeLissee.svelte';
   import { exercicesPhares, joursDepuisDate } from '../data/force.js';
   import NoteAncien from '../components/NoteAncien.svelte';
-  import { formatKg } from '../utils/format.js';
+  import { formatKg, formatDateCourte } from '../utils/format.js';
 
   // Les exercices que tu pratiques le plus : 1RM estimé, record éventuel et progression.
   let { contexte, taille = 'l' } = $props();
