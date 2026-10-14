@@ -100,7 +100,6 @@ export function analyserRegularite({ seances, aujourdhui = new Date(), semaines 
     {
       type: 'chaleur',
       titre: 'Ton calendrier',
-      description: 'Une case par jour, une colonne par semaine (la dernière est la semaine en cours), du lundi en haut au dimanche en bas. La couleur est le sport ; plus elle est franche, plus la séance est chargée.',
       cases: casesRegularite(seances, semaines, aujourdhui),
       colonnes: semaines,
       sports: sportsVus.map((f) => ({ nom: (SPORTS[f] || SPORTS.autre).court, couleur: couleurSport(f) })),

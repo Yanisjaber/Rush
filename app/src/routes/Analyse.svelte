@@ -104,7 +104,7 @@
 
       {#each analyse.graphiques as g (g.titre)}
         <Bloc titre={g.titre}>
-          <p class="description">{g.description}</p>
+          {#if g.description}<p class="description">{g.description}</p>{/if}
           {#if g.type === 'barres'}
             <BarresEmpilees series={g.series} etiquettes={g.etiquettes} ligne={g.ligne} hauteur={240} etiquette={g.titre} />
             <ul class="legende">
