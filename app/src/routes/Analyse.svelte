@@ -144,37 +144,58 @@
       {/each}
 
       {#if !analyse.insuffisant}
-        <div class="deux">
-          <Bloc titre="Ce que disent tes données">
-            <ul class="lectures">
-              {#each analyse.lectures as l, i (i)}<li>{l}</li>{/each}
-            </ul>
-          </Bloc>
-          <Bloc titre="Ce que je te conseille">
-            <ul class="conseils">
-              {#each analyse.conseils as c (c.titre)}
-                <li class="p-{c.priorite}">
-                  <span class="badge">{NOM_PRIORITE[c.priorite]}</span>
-                  <strong>{c.titre}</strong>
-                  <p>{c.texte}</p>
-                </li>
+        <!-- L'analyse Rush : un seul bloc « coach » (constat, lecture des données, conseils), le détail du calcul reste replié -->
+        <section class="rush" aria-labelledby="rush-titre">
+          <p class="rush-marque">Analyse Rush</p>
+          <h2 id="rush-titre" class="rush-lead">{analyse.lectures[0]}</h2>
+          {#if analyse.conseils[0]}
+            <p class="rush-prio"><span class="badge">{NOM_PRIORITE[analyse.conseils[0].priorite]}</span> {analyse.conseils[0].titre}</p>
+          {/if}
+          <div class="rush-colonnes">
+            <div>
+              <h3>Ce que je vois dans tes données</h3>
+              <ul class="lectures">
+                {#each analyse.lectures.slice(1) as l, i (i)}<li>{l}</li>{/each}
+              </ul>
+            </div>
+            <div>
+              <h3>Ce que je te conseille</h3>
+              <ul class="conseils">
+                {#each analyse.conseils as c (c.titre)}
+                  <li class="p-{c.priorite}">
+                    <span class="badge">{NOM_PRIORITE[c.priorite]}</span>
+                    <strong>{c.titre}</strong>
+                    <p>{c.texte}</p>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          </div>
+          <details class="rush-calcul">
+            <summary>Comment Rush calcule</summary>
+            <div class="methode">
+              {#each analyse.methode as m (m.titre)}
+                <details>
+                  <summary>{m.titre}</summary>
+                  <p>{m.texte}</p>
+                </details>
               {/each}
-            </ul>
-          </Bloc>
-        </div>
+            </div>
+            <p class="avertissement">Rush s'appuie sur tes séances et sur des repères reconnus en entraînement. Ce sont des estimations : elles aident à décider, elles ne remplacent ni ton ressenti ni l'avis d'un professionnel de santé.</p>
+          </details>
+        </section>
+      {:else}
+        <Bloc titre="Comment c'est calculé">
+          <div class="methode">
+            {#each analyse.methode as m (m.titre)}
+              <details>
+                <summary>{m.titre}</summary>
+                <p>{m.texte}</p>
+              </details>
+            {/each}
+          </div>
+        </Bloc>
       {/if}
-
-      <Bloc titre="Comment c'est calculé">
-        <div class="methode">
-          {#each analyse.methode as m (m.titre)}
-            <details>
-              <summary>{m.titre}</summary>
-              <p>{m.texte}</p>
-            </details>
-          {/each}
-        </div>
-        <p class="avertissement">Ces analyses sont des estimations déduites de tes séances : elles aident à décider, elles ne remplacent ni ton ressenti ni l'avis d'un professionnel de santé.</p>
-      </Bloc>
     {/if}
   {/if}
 </main>
@@ -335,6 +356,52 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 16px;
+  }
+  .rush {
+    padding: clamp(20px, 3vw, 32px);
+    border-radius: var(--rayon-l);
+    background: var(--surface);
+    border-left: 4px solid var(--texte);
+  }
+  .rush-marque {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--texte-doux);
+  }
+  .rush-lead {
+    margin-top: 8px;
+    font-size: clamp(22px, 3vw, 30px);
+    line-height: 1.2;
+  }
+  .rush-prio {
+    margin-top: 12px;
+    font-size: 15px;
+  }
+  .rush-colonnes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 8px 40px;
+    margin-top: 22px;
+  }
+  .rush-colonnes h3 {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--texte-muet);
+  }
+  .rush-calcul {
+    margin-top: 22px;
+    padding-top: 12px;
+    border-top: 1px solid var(--trait);
+  }
+  .rush-calcul > summary {
+    min-height: 32px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--texte-doux);
   }
   .lectures,
   .conseils {
