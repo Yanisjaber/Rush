@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { chargeParSerie, chargeMuscuRecente, analyserChargeMuscu, zoneRatio } from '../src/lib/analyse/charge-muscu.js';
 import { decalerJour } from '../src/lib/analyse/maths.js';
-import { chargeJambesParJour, fatigueBrute, referenceJambes, zoneJambes, sortiesAVenir, effetSurDiscipline } from '../src/lib/analyse/fatigue-jambes.js';
 
 const AUJ = new Date(2026, 9, 14, 12); // mercredi 14 octobre 2026
 const ISO = '2026-10-14';
@@ -62,58 +61,47 @@ test('charge muscu : analyse complète, forme habituelle et Rush', () => {
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Fatigue des jambes et effet sur l'endurance
+// Fatigue musculaire par groupe
 // ---------------------------------------------------------------------------------------------------------------------
+import { fatigueMusculaire, fatigueBrute, referenceGrosse, zoneFatigue, heuresAvantPret, texteDelai, TAU_GROUPE } from '../src/lib/analyse/fatigue-musculaire.js';
+
 const lancer = (date, cle, groupe, reps, kg) => chargeParSerie([serie(date, cle, groupe, reps, kg)])[0];
 
-test('fatigue des jambes : un squat compte presque en entier, un développé couché pas du tout', () => {
-  const j = chargeJambesParJour([lancer(ISO, 'squat', 'jambes', 5, 100), lancer(ISO, 'developpe-couche', 'pectoraux', 5, 100)]);
-  const squat = lancer(ISO, 'squat', 'jambes', 5, 100).charge;
-  // Squat : quadriceps et fessiers (1 chacun), ischios, adducteurs et lombaires (0,5 chacun) : les lombaires ne sont pas des jambes
-  assert.ok(Math.abs(j.get(ISO) - squat * (3 / 3.5)) < 1e-9);
-  assert.equal(chargeJambesParJour([lancer(ISO, 'developpe-couche', 'pectoraux', 5, 100)]).size, 0);
-});
-
-test('fatigue des jambes : elle retombe avec le temps (60 % le lendemain, 37 % après 2 jours)', () => {
+test('fatigue : elle retombe avec le temps (61 % le lendemain, 37 % après 2 jours, pour un gros groupe)', () => {
   const parJour = new Map([[ISO, 100]]);
-  assert.equal(Math.round(fatigueBrute(parJour, ISO, true)), 100);
-  assert.equal(Math.round(fatigueBrute(parJour, decalerJour(ISO, 1), false)), 61);
-  assert.equal(Math.round(fatigueBrute(parJour, decalerJour(ISO, 2), false)), 37);
-  assert.equal(fatigueBrute(parJour, ISO, false), 0); // le matin même, la séance du jour n'a pas encore eu lieu
+  assert.equal(Math.round(fatigueBrute(parJour, ISO, 2)), 100);
+  assert.equal(Math.round(fatigueBrute(parJour, decalerJour(ISO, 1), 2)), 61);
+  assert.equal(Math.round(fatigueBrute(parJour, decalerJour(ISO, 2), 2)), 37);
+  // un petit groupe récupère plus vite
+  assert.ok(fatigueBrute(parJour, decalerJour(ISO, 1), TAU_GROUPE.bras) < fatigueBrute(parJour, decalerJour(ISO, 1), TAU_GROUPE.jambes));
 });
 
-test('fatigue des jambes : référence, zones et sorties à venir', () => {
+test('fatigue : référence, zones et délai avant d\'être prêt', () => {
   const parJour = new Map();
-  for (let i = 1; i <= 8; i++) parJour.set(decalerJour(ISO, -i * 3), 60 + i); // 8 séances de jambes
-  const ref = referenceJambes(parJour);
+  for (let i = 1; i <= 8; i++) parJour.set(decalerJour(ISO, -i * 3), 60 + i);
+  const ref = referenceGrosse(parJour);
   assert.ok(ref > 60 && ref < 70);
-  assert.equal(referenceJambes(new Map([[ISO, 50]])), null); // pas assez de séances pour calibrer
-  assert.equal(zoneJambes(10).cle, 'fraiches');
-  assert.equal(zoneJambes(80).cle, 'forte');
-  // Une séance de jambes hier, une sortie vélo dure prévue demain
-  const j = new Map([[decalerJour(ISO, -1), 100]]);
-  const prevues = [{ id: 'p1', date: decalerJour(ISO, 1), sport: 'Ride', name: 'Sorties seuil', duration: 90, rpe: 8, category: 'entrainement' }];
-  const [x] = sortiesAVenir(prevues, j, 100, ISO, 7);
-  assert.equal(x.famille, 'velo');
-  assert.equal(x.dure, true);
-  assert.ok(x.pct >= 20 && x.pct < 45); // 37 % des 61 % restants → environ 37 %
+  assert.equal(referenceGrosse(new Map([[ISO, 50]])), null); // pas assez de journées pour calibrer
+  assert.equal(zoneFatigue(10).cle, 'frais');
+  assert.equal(zoneFatigue(80).cle, 'forte');
+  assert.equal(zoneFatigue(null).cle, 'inconnue');
+  assert.equal(heuresAvantPret(15, 2), 0);
+  // 100 % → 20 % avec une constante de 2 jours : 2 × ln(5) = 3,2 jours ≈ 77 h
+  assert.equal(heuresAvantPret(100, 2), Math.round(2 * Math.log(5) * 24));
+  assert.equal(texteDelai(0), 'prêt');
+  assert.equal(texteDelai(14), 'prêt dans 14 h');
+  assert.equal(texteDelai(77), 'prêt dans 3 jours');
 });
 
-test('effet sur l\'endurance : détecte une baisse d\'efficacité quand les jambes sont fatiguées', () => {
-  const parJour = new Map();
-  const seances = [];
-  // 6 mois de vélo, 1 sortie tous les 2 jours ; une séance de jambes lourde tous les 9 jours, la sortie suivante (lendemain) est 8 % moins efficace
-  for (let i = 90; i >= 1; i -= 1) {
-    if (i % 9 === 0) parJour.set(decalerJour(ISO, -i), 100);
-  }
-  for (let i = 90; i >= 1; i -= 2) {
-    const iso = decalerJour(ISO, -i);
-    const apresJambes = parJour.has(decalerJour(iso, -1));
-    const w = apresJambes ? 184 : 200;
-    seances.push({ sport: 'Ride', start_date_local: `${iso}T08:00:00`, moving_time: 5400, avg_heartrate: 140, avg_watts: w, np: w, category: 'entrainement' });
-  }
-  const e = effetSurDiscipline(seances, parJour, 100, 'velo');
-  assert.ok(e && e.delta != null, 'assez de sorties');
-  assert.ok(e.delta < -3, `écart attendu négatif, obtenu ${e.delta}`);
-  assert.equal(effetSurDiscipline(seances.slice(0, 5), parJour, 100, 'velo'), null); // trop peu de sorties
+test('fatigue : par groupe et par muscle d\'après les séries (un développé couché fatigue pectoraux, un peu les triceps)', () => {
+  const s = [];
+  // 6 séances de pectoraux, la dernière hier
+  for (let i = 0; i < 6; i++) for (let n = 0; n < 5; n++) s.push(lancer(decalerJour(ISO, -1 - i * 3), 'developpe-couche', 'pectoraux', 8, 80));
+  const f = fatigueMusculaire(s, ISO);
+  const pec = f.groupes.find((g) => g.groupe === 'pectoraux');
+  const jambes = f.groupes.find((g) => g.groupe === 'jambes');
+  assert.ok(pec.pct > 30 && pec.pct < 90, `pectoraux ${pec.pct}`);
+  assert.equal(jambes.pct, null); // jamais travaillées : pas de repère
+  assert.ok(f.muscles.chest.pct >= f.muscles.triceps.pct || f.muscles.triceps.pct == null);
+  assert.equal(f.groupes.length, 6);
 });

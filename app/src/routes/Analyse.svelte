@@ -5,6 +5,7 @@
   import BarresEmpilees from '../lib/components/charts/BarresEmpilees.svelte';
   import GraphiqueLignes from '../lib/components/charts/GraphiqueLignes.svelte';
   import CarteChaleur from '../lib/components/charts/CarteChaleur.svelte';
+  import FatigueMusculaire from '../lib/components/charts/FatigueMusculaire.svelte';
   import CorpsMusculaire from '../lib/components/charts/CorpsMusculaire.svelte';
   import GraphiqueExercice from '../lib/components/charts/GraphiqueExercice.svelte';
   import HistoriqueExercice from '../lib/components/charts/HistoriqueExercice.svelte';
@@ -51,7 +52,7 @@
   const semaines = $derived(periode.semaines ?? Math.ceil(periode.jours / 7));
   const seances = $derived(sport === 'tout' ? brut.seances : brut.seances.filter((s) => familleAffichage(s.sport) === sport));
 
-  const analyse = $derived(def && !brut.chargement && !brut.erreur ? def.calculer({ ...brut, toutes: brut.seances, seances }, { aujourdhui, semaines, jours: periode.jours, nomSport, famille: sport }) : null);
+  const analyse = $derived(def && !brut.chargement && !brut.erreur ? def.calculer({ ...brut, seances }, { aujourdhui, semaines, jours: periode.jours, nomSport, famille: sport }) : null);
 
   const retour = $derived(construireAdresse({ sport: menu.filtre }));
   const COULEUR_NIVEAU = { ok: 'var(--ok)', attention: 'var(--alerte)', danger: 'var(--danger)', info: 'var(--sport-velo)' };
@@ -118,6 +119,8 @@
             </ul>
           {:else if g.type === 'lignes'}
             <GraphiqueLignes etiquettes={g.etiquettes} series={g.series} bandes={g.bandes || []} marqueurs={g.marqueurs || []} min={g.min} max={g.max} etiquette={g.titre} />
+          {:else if g.type === 'fatigue'}
+            <FatigueMusculaire groupes={g.groupes} muscles={g.muscles} />
           {:else if g.type === 'corps'}
             <CorpsMusculaire groupes={g.groupes} etiquette={g.titre} periode={g.periode} />
           {:else if g.type === 'exercices'}

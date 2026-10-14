@@ -74,7 +74,7 @@ export const ANALYSES = {
     periodes: true,
     periodeDefaut: 'sem12',
     sportImpose: 'muscu', // l'analyse ne parle que de musculation, quel que soit le filtre
-    calculer: (d, o) => analyserChargeMuscu({ series: d.series, toutes: d.toutes, planifiees: d.planifiees, aujourdhui: o.aujourdhui, semaines: o.semaines }),
+    calculer: (d, o) => analyserChargeMuscu({ series: d.series, aujourdhui: o.aujourdhui, semaines: o.semaines }),
   },
   groupes: {
     titre: 'Équilibre musculaire',
