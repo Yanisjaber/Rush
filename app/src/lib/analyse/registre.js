@@ -47,7 +47,7 @@ export const ANALYSES = {
   },
   regularite: {
     titre: 'Régularité',
-    sousTitre: 'T\'entraînes-tu assez souvent, sans longues pauses ?',
+    sousTitre: '', // pas de phrase sous le titre
     periodes: true,
     periodeDefaut: 'sem12',
     calculer: (d, o) => analyserRegularite({ seances: d.seances, aujourdhui: o.aujourdhui, semaines: o.semaines }),

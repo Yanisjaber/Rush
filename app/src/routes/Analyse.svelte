@@ -67,7 +67,7 @@
     <header class="entete">
       <div>
         <h1 class="titre">{def.titre}</h1>
-        <p class="sous-titre">{def.sousTitre}{nomSport ? ` · ${nomSport}` : ''}</p>
+        {#if def.sousTitre}<p class="sous-titre">{def.sousTitre}{nomSport ? ` · ${nomSport}` : ''}</p>{/if}
       </div>
       {#if def.periodes}
         <div class="periodes" role="group" aria-label="Période analysée">
