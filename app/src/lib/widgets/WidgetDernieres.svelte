@@ -6,8 +6,9 @@
   import { SPORTS, couleurSport } from '../sports.js';
   import { formatDuree, formatKm, formatDateCourte } from '../utils/format.js';
 
+  // Les plus récentes, quelle que soit leur date (contexte.dernieres) : la liste ne se vide pas pendant une pause
   let { contexte, taille = 'm' } = $props();
-  const recentes = $derived(contexte.seances.slice(0, taille === 'l' ? 8 : 5));
+  const recentes = $derived(contexte.dernieres.slice(0, taille === 'l' ? 8 : 5));
   const nomFamille = (f) => (SPORTS[f] || SPORTS.autre).court;
 
   function detail(s) {

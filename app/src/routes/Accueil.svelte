@@ -33,7 +33,7 @@
     changerTaille,
   } from '../lib/stores/disposition.svelte.js';
   import {
-    chargerProfil, chargerMetriques, chargerSeances, chargerObjectifs, chargerPuissance, chargerPlanifiees,
+    chargerProfil, chargerMetriques, chargerSeances, chargerDernieresSeances, chargerObjectifs, chargerPuissance, chargerPlanifiees,
     chargerSeriesForce, chargerProgrammes, chargerExercicesPerso, chargerTestsHyrox, chargerObjectifHyrox,
   } from '../lib/data/api.js';
   import { donneesDemo, programmesDemo, seriesForceDemo, testsHyroxDemo, objectifHyroxDemo } from '../lib/data/demo.js';
@@ -45,7 +45,7 @@
   const forceVide = { series: [], programmes: [], exercicesPerso: [] };
   const hyroxVide = { tests: [], objectif: null };
   let etat = $state({
-    chargement: true, erreur: '', erreurSport: '', profil: null, metriques: [], seances: [], objectifs: [], puissance: [], planifiees: [],
+    chargement: true, erreur: '', erreurSport: '', profil: null, metriques: [], seances: [], dernieres: [], objectifs: [], puissance: [], planifiees: [],
     force: forceVide, hyrox: hyroxVide,
   });
   const filtre = $derived(menu.filtre); // le choix se fait dans l'en-tête (ordinateur) ou le sélecteur « Voir » (téléphone)
@@ -72,6 +72,7 @@
     etat.erreur = '';
     if (demo) {
       Object.assign(etat, donneesDemo());
+      etat.dernieres = etat.seances;
       etat.force = { series: seriesForceDemo(), programmes: programmesDemo(), exercicesPerso: [] };
       etat.hyrox = { tests: testsHyroxDemo(), objectif: objectifHyroxDemo() };
       etat.erreurSport = '';
@@ -82,7 +83,7 @@
     }
     if (!userId) return;
     await chargerSportsChoisis(userId); // avant la disposition : les sports choisis comptent pour composer l'accueil
-    const [profil, metriques, seances, objectifs, puissance, series, programmes, exercices, tests, objectifHyrox, prevues] = await Promise.all([
+    const [profil, metriques, seances, objectifs, puissance, series, programmes, exercices, tests, objectifHyrox, prevues, dernieres] = await Promise.all([
       chargerProfil(userId),
       chargerMetriques(userId),
       chargerSeances(userId),
@@ -94,10 +95,12 @@
       chargerTestsHyrox(userId),
       chargerObjectifHyrox(userId),
       chargerPlanifiees(userId, dateIsoLocale(), dateIsoLocale(new Date(Date.now() + 60 * 86400e3))), // séances prévues des 60 prochains jours
+      chargerDernieresSeances(userId), // sans limite de date : la liste « Dernières séances » ne se vide pas pendant une pause
     ]);
     etat.profil = profil.data;
     etat.metriques = metriques.data || [];
     etat.seances = seances.data || [];
+    etat.dernieres = dernieres.data || []; // non bloquant : sans elles, l'accueil s'affiche quand même
     etat.objectifs = objectifs.data || [];
     etat.puissance = puissance.data || [];
     etat.planifiees = prevues.data || []; // non bloquant : sans elles, l'accueil s'affiche quand même
@@ -142,6 +145,7 @@
   const contexte = $derived({
     seances: seancesVisibles,
     toutesSeances: etat.seances,
+    dernieres: filtreActif === 'tout' ? etat.dernieres : etat.dernieres.filter((s) => familleAffichage(s.sport) === filtreActif),
     metriques: etat.metriques,
     objectifs: etat.objectifs,
     planifiees: etat.planifiees.filter((p) => filtreActif === 'tout' || familleAffichage(p.sport) === filtreActif),

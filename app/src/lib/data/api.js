@@ -80,6 +80,23 @@ export async function chargerSeances(userId, jours = 84, limite = 600) {
   return res;
 }
 
+/**
+ * Les N séances les plus récentes, QUELLE QUE SOIT leur date (pour la liste « Dernières séances » : elle ne doit pas
+ * se vider parce qu'on n'a rien fait depuis 12 semaines). On en charge un peu plus que ce qu'on affiche : le filtre
+ * de sport se fait ensuite côté écran.
+ */
+export async function chargerDernieresSeances(userId, limite = 40) {
+  const r = await sb
+    .from('activities')
+    .select(COLONNES_SEANCE)
+    .eq('user_id', userId)
+    .order('start_date_local', { ascending: false })
+    .limit(limite);
+  const res = resultat(r, 'Impossible de charger tes dernières séances.');
+  if (res.data) res.data = await avecRetouches(userId, res.data);
+  return res;
+}
+
 /** Prochaines compétitions (objectifs), de la plus proche à la plus lointaine. */
 export async function chargerObjectifs(userId, limite = 3) {
   const r = await sb
