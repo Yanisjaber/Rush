@@ -8,7 +8,8 @@
   // La largeur du dessin suit celle du conteneur : les textes et les traits gardent leur taille réelle quel que soit l'écran
   let largeurMesuree = $state(760);
   const L = $derived(Math.max(300, Math.round(largeurMesuree)));
-  const MG = { g: 40, d: 12, h: 14, b: 26 };
+  // Marge gauche : s'adapte à la longueur des graduations (« 20000 » ne doit pas être coupé)
+  const MG = $derived({ g: Math.max(40, Math.max(...graduations.map((g) => String(g).length), 1) * 7.5 + 14), d: 12, h: 14, b: 26 });
   const nb = $derived(etiquettes.length);
   const valeurs = $derived(series.flatMap((s) => s.valeurs).filter((v) => v != null));
   const borne = $derived.by(() => {
