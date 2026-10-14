@@ -223,7 +223,7 @@ export function analyserGroupes({ series, aujourdhui = new Date() }) {
 const METHODE_RECORDS = [
   { titre: 'Le 1RM estimé', texte: 'Le 1RM est la charge que tu soulèverais une seule fois. On l\'estime avec la formule d\'Epley : charge × (1 + répétitions ÷ 30), sur la meilleure série de chaque séance. Au-delà de 12 répétitions l\'estimation n\'est plus fiable : ces séries sont ignorées.' },
   { titre: 'Record, plateau, progression', texte: 'Record : meilleur 1RM atteint il y a moins de 4 semaines. Plateau : au moins 4 séances sur les 8 dernières semaines sans aucun nouveau record depuis plus de 8 semaines. Progression : la courbe des 6 dernières séances monte.' },
-  { titre: 'Les données prises en compte', texte: 'Les records sont cherchés dans tout ton historique chargé (environ 18 mois). Seuls les exercices pratiqués au moins 3 fois sur la période choisie sont suivis.' },
+  { titre: 'Les données prises en compte', texte: 'Les records sont cherchés dans tout ton historique : il n\'y a pas de période à choisir. Seuls les exercices pratiqués au moins 3 fois (avec de la charge) sont suivis.' },
 ];
 
 export function analyserRecords({ series, aujourdhui = new Date(), semaines = 26 }) {
@@ -246,7 +246,7 @@ export function analyserRecords({ series, aujourdhui = new Date(), semaines = 26
     .filter((e) => e.dansFenetre.length >= 3)
     .sort((a, b) => b.dansFenetre.length - a.dansFenetre.length);
   if (!exos.length) {
-    return vide('records', 'Pas encore assez de séances par exercice', 'Il faut au moins 3 séances d\'un même exercice (avec de la charge, jusqu\'à 12 répétitions) sur la période pour suivre ta progression. Continue, l\'analyse se remplit toute seule.', METHODE_RECORDS);
+    return vide('records', 'Pas encore assez de séances par exercice', 'Il faut au moins 3 séances d\'un même exercice (avec de la charge, jusqu\'à 12 répétitions) pour suivre ta progression. Continue, l\'analyse se remplit toute seule.', METHODE_RECORDS);
   }
 
   const suivis = exos.slice(0, 6);
@@ -267,7 +267,7 @@ export function analyserRecords({ series, aujourdhui = new Date(), semaines = 26
     { etiquette: 'Records récents', valeur: String(records.length), unite: '', note: '4 dernières semaines', ton: records.length ? 'ok' : '' },
     { etiquette: 'Exercices suivis', valeur: String(suivis.length), unite: '', note: 'pratiqués au moins 3 fois' },
     { etiquette: '1RM le plus haut', valeur: formatKg(plusLourd.meilleurRm), unite: 'kg', note: plusLourd.nom },
-    { etiquette: 'Plus gros progrès', valeur: `${gain(meilleurGain) >= 0 ? '+' : ''}${formatKg(gain(meilleurGain))}`, unite: 'kg', note: `${meilleurGain.nom} sur la période` },
+    { etiquette: 'Plus gros progrès', valeur: `${gain(meilleurGain) >= 0 ? '+' : ''}${formatKg(gain(meilleurGain))}`, unite: 'kg', note: `${meilleurGain.nom}, depuis ta première séance` },
   ];
   if (plateaux.length) chiffres.push({ etiquette: 'Exercices en plateau', valeur: String(plateaux.length), unite: '', note: 'sans record depuis 8 semaines', ton: 'alerte' });
 

@@ -26,7 +26,7 @@ export async function chargerDonneesAnalyse({ userId, demo, aujourdhui = new Dat
     chargerPlanifiees(userId, fin, decalerJour(fin, 200)),
     chargerObjectifs(userId, 8),
     chargerProfil(userId),
-    chargerSeriesForce(userId, RECUL_JOURS, 8000), // si le carnet de force n'est pas disponible, les autres analyses marchent quand même
+    chargerSeriesForce(userId, 3650, 8000), // tout l'historique (les records n'ont pas de période) ; si le carnet de force n'est pas disponible, les autres analyses marchent quand même
   ]);
   if (s.erreur) return { seances: [], planifiees: [], objectifs: [], series: [], hrMax: null, erreur: s.erreur };
   return {

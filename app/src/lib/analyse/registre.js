@@ -14,6 +14,9 @@ export const PERIODES = [
   { cle: 'sem52', libelle: '12 mois', semaines: 52 },
 ];
 
+// Tout l'historique chargé (dix ans) pour les analyses qui n'ont pas de sélecteur de période, comme les records
+const HISTORIQUE_SEMAINES = 520;
+
 export const ANALYSES = {
   charge: {
     titre: 'Charge d\'entraînement',
@@ -63,10 +66,9 @@ export const ANALYSES = {
   },
   records: {
     titre: 'Records et progression',
-    periodes: true,
-    periodeDefaut: 'sem26',
+    periodes: false, // les records se cherchent dans tout l'historique : pas de sélecteur de période
     sportImpose: 'muscu',
-    calculer: (d, o) => analyserRecords({ series: d.series, aujourdhui: o.aujourdhui, semaines: o.semaines }),
+    calculer: (d, o) => analyserRecords({ series: d.series, aujourdhui: o.aujourdhui, semaines: HISTORIQUE_SEMAINES }),
   },
 };
 
