@@ -111,18 +111,25 @@ export function progressionParExercice(series) {
   return sortie.sort((a, b) => b.date.localeCompare(a.date) || b.nbSeries - a.nbSeries);
 }
 
+// Quand on n'a la place que pour quelques cartes, les groupes retenus en priorité (le tronc n'a presque jamais de 1RM parlant)
+const PRIORITE_GROUPES = ['jambes', 'pectoraux', 'dos', 'epaules', 'bras', 'tronc'];
+
 /**
- * Les N exercices à mettre en avant (cartes « records » de l'accueil), sur TOUT l'historique : un record ne dépend pas
- * de ta régularité récente. Les grands mouvements d'abord (squat, développé couché, soulevé de terre…), puis les plus pratiqués.
+ * Les cartes « records » de l'accueil : UN exercice par groupe musculaire, sur TOUT l'historique (un record ne dépend pas de
+ * ta régularité récente). L'exercice qui représente un groupe est son grand mouvement (squat, développé couché, soulevé de
+ * terre…), sinon le plus pratiqué. S'il y a moins de place que de groupes (n), on garde les groupes dans l'ordre de
+ * PRIORITE_GROUPES ; le résultat est toujours rangé dans l'ordre habituel (pectoraux, dos, jambes, épaules, bras, tronc).
  */
-export function exercicesPhares(series, n = 3) {
+export function recordsParGroupe(series, n = 5) {
   const rang = (cle) => {
     const i = GRANDS_MOUVEMENTS.indexOf(cle);
     return i === -1 ? GRANDS_MOUVEMENTS.length : i;
   };
-  return progressionParExercice(series)
-    .sort((a, b) => rang(a.cle) - rang(b.cle) || b.nbSeries - a.nbSeries)
-    .slice(0, n);
+  const parGroupe = new Map();
+  const exos = progressionParExercice(series.filter((s) => groupeValide(s.muscle_group))).sort((a, b) => rang(a.cle) - rang(b.cle) || b.nbSeries - a.nbSeries);
+  for (const e of exos) if (!parGroupe.has(e.groupe)) parGroupe.set(e.groupe, e);
+  const retenus = PRIORITE_GROUPES.filter((g) => parGroupe.has(g)).slice(0, n);
+  return ORDRE_GROUPES.filter((g) => retenus.includes(g)).map((g) => parGroupe.get(g));
 }
 
 // ---------------------------------------------------------------------------

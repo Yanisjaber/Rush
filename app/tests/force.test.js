@@ -6,7 +6,7 @@ import {
   tonnageParSemaine,
   seriesParGroupe,
   progressionParExercice,
-  exercicesPhares,
+  recordsParGroupe,
   resumeProgramme,
   programmeDuJour,
   brouillonDepuisProgramme,
@@ -121,31 +121,43 @@ test('progression : pas de record si la dernière séance est plus faible, ni de
   assert.equal(seule[0].delta, null);
 });
 
-test('exercices phares : grands mouvements d\'abord, puis les plus pratiqués', () => {
+test('records par groupe : un exercice par groupe musculaire, le grand mouvement du groupe d\'abord', () => {
+  const g = (groupe) => ({ muscle_group: groupe });
   const s = [
-    serie('2026-10-10', 'curl', 10, 20), serie('2026-10-10', 'curl', 10, 20), serie('2026-10-10', 'curl', 10, 20),
-    serie('2026-10-10', 'squat', 5, 100),
-    serie('2026-10-10', 'developpe-couche', 5, 80),
+    serie('2026-10-10', 'curl', 10, 20, g('bras')), serie('2026-10-10', 'curl', 10, 20, g('bras')), serie('2026-10-10', 'curl', 10, 20, g('bras')),
+    serie('2026-10-10', 'squat', 5, 100, g('jambes')),
+    serie('2026-10-10', 'leg-curl', 10, 40, g('jambes')), serie('2026-10-10', 'leg-curl', 10, 40, g('jambes')), // plus pratiqué que le squat, mais le squat est le grand mouvement
+    serie('2026-10-10', 'developpe-couche', 5, 80, g('pectoraux')),
+    serie('2026-10-10', 'ecartes', 12, 15, g('pectoraux')),
+    serie('2026-10-10', 'souleve-de-terre', 5, 120, g('dos')),
+    serie('2026-10-10', 'developpe-militaire', 5, 50, g('epaules')),
+    serie('2026-10-10', 'gainage', 10, 5, g('tronc')),
   ];
-  assert.deepEqual(exercicesPhares(s, 3).map((e) => e.cle), ['squat', 'developpe-couche', 'curl']);
+  // 5 cartes : un par groupe, rangés pectoraux, dos, jambes, épaules, bras (le tronc passe après : pas la place)
+  assert.deepEqual(recordsParGroupe(s, 5).map((e) => e.cle), ['developpe-couche', 'souleve-de-terre', 'squat', 'developpe-militaire', 'curl']);
+  // 2 cartes seulement : jambes et pectoraux en priorité, toujours rangés dans l'ordre habituel
+  assert.deepEqual(recordsParGroupe(s, 2).map((e) => e.cle), ['developpe-couche', 'squat']);
+  // 6 places : le tronc apparaît aussi
+  assert.equal(recordsParGroupe(s, 6).length, 6);
 });
 
-test('exercices phares : les plus pratiqués sur tout l\'historique, même sans séance récente', () => {
-  const s = [
-    serie('2026-10-10', 'a', 5, 100), serie('2026-10-10', 'a', 5, 100), serie('2026-10-10', 'a', 5, 100),
-    serie('2026-10-10', 'b', 5, 100),
-    serie('2026-10-10', 'c', 5, 100), serie('2026-10-10', 'c', 5, 100),
-    serie('2026-01-01', 'd', 5, 100), serie('2026-01-01', 'd', 5, 100), serie('2026-01-01', 'd', 5, 100), serie('2026-01-01', 'd', 5, 100),
-  ];
-  assert.deepEqual(exercicesPhares(s, 2).map((e) => e.cle), ['d', 'a']); // « d » date de janvier mais reste le plus pratiqué
+test('records par groupe : un groupe sans séance n\'a pas de carte, et le tronc remplit si on manque de groupes', () => {
+  const g = (groupe) => ({ muscle_group: groupe });
+  const s = [serie('2026-10-10', 'squat', 5, 100, g('jambes')), serie('2026-10-10', 'gainage', 10, 5, g('tronc'))];
+  assert.deepEqual(recordsParGroupe(s, 5).map((e) => e.cle), ['squat', 'gainage']);
+  assert.deepEqual(recordsParGroupe([], 5), []);
 });
 
-test('exercices phares : des séries vieilles de plusieurs mois donnent bien des records (rien depuis 90 jours)', () => {
-  const s = [serie('2026-05-06', 'squat', 5, 100), serie('2026-05-06', 'squat', 5, 110), serie('2026-04-20', 'curl', 10, 20)];
-  const e = exercicesPhares(s, 3);
+test('records par groupe : sur tout l\'historique, même sans séance récente (rien depuis 90 jours)', () => {
+  const s = [serie('2026-05-06', 'squat', 5, 100, { muscle_group: 'jambes' }), serie('2026-05-06', 'squat', 5, 110, { muscle_group: 'jambes' }), serie('2026-04-20', 'curl', 10, 20, { muscle_group: 'bras' })];
+  const e = recordsParGroupe(s, 5);
   assert.deepEqual(e.map((x) => x.cle), ['squat', 'curl']);
   assert.equal(e[0].meilleurRm, 128.3);
-  assert.deepEqual(exercicesPhares([], 3), []);
+});
+
+test('records par groupe : une série dont le groupe est invalide est ignorée (pas de « constructor »)', () => {
+  const s = [serie('2026-10-10', 'x', 5, 100, { muscle_group: 'constructor' }), serie('2026-10-10', 'y', 5, 100, { muscle_group: '' })];
+  assert.deepEqual(recordsParGroupe(s, 5), []);
 });
 
 const PUSH = { id: 'p1', name: 'PUSH', created_at: '2026-01-01', exercises: [

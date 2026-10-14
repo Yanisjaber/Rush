@@ -1,12 +1,13 @@
 <script>
   import Bloc from '../components/Bloc.svelte';
   import CourbeLissee from '../components/charts/CourbeLissee.svelte';
-  import { exercicesPhares } from '../data/force.js';
+  import { recordsParGroupe } from '../data/force.js';
   import { formatKg, formatDateCourte } from '../utils/format.js';
 
-  // Les exercices que tu pratiques le plus : 1RM estimé, record éventuel et progression.
+  // Un exercice par groupe musculaire (pectoraux, dos, jambes, épaules, bras) : 1RM estimé, record éventuel et progression.
+  // En taille moyenne il n'y a la place que pour 2 cartes (jambes et pectoraux en priorité).
   let { contexte, taille = 'l' } = $props();
-  const exos = $derived(exercicesPhares(contexte.force.series, taille === 'm' ? 2 : 3));
+  const exos = $derived(recordsParGroupe(contexte.force.series, taille === 'm' ? 2 : 5));
 </script>
 
 <Bloc titre="Tes records">
