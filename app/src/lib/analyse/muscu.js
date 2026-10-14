@@ -285,7 +285,8 @@ export function analyserRecords({ series, aujourdhui = new Date(), semaines = 26
       .map(([date, lignes]) => {
         const series = lignes.sort((a, b) => (Number(a.set_no) || 0) - (Number(b.set_no) || 0)).map((l) => ({ reps: Number(l.reps), poids: Number(l.weight_kg) || 0 }));
         const rms = lignes.map((l) => unRmEstime(l.weight_kg, l.reps)).filter((v) => v != null);
-        return { date, series, tonnage: Math.round(lignes.reduce((t, l) => t + tonnageSerie(l), 0)), rm: rms.length ? Math.max(...rms) : null, record: date === e.meilleur.date };
+        const id = lignes.map((l) => l.activity_id).find(Boolean) || null; // la séance (activité) à ouvrir au clic, s'il y en a une
+        return { id, date, series, tonnage: Math.round(lignes.reduce((t, l) => t + tonnageSerie(l), 0)), rm: rms.length ? Math.max(...rms) : null, record: date === e.meilleur.date };
       })
       .sort((a, b) => b.date.localeCompare(a.date));
   };

@@ -162,3 +162,13 @@ test('records : l\'historique d\'un exercice = toutes ses séances (récente d\'
   assert.equal(squat.seances.filter((x) => x.record).length, 1);
   assert.equal(squat.seances[1].record, true);
 });
+
+test('records : chaque séance de l\'historique porte l\'identifiant de la séance à ouvrir (null si les séries n\'ont pas de séance)', () => {
+  const s = [
+    { ...serie('2026-10-01', 'squat', 'jambes', 5, 60), activity_id: 'a1' }, { ...serie('2026-10-01', 'squat', 'jambes', 5, 60), activity_id: 'a1' },
+    { ...serie('2026-10-05', 'squat', 'jambes', 5, 70), activity_id: 'a2' },
+    serie('2026-10-10', 'squat', 'jambes', 5, 65), // sans séance rattachée
+  ];
+  const squat = analyserRecords({ series: s, aujourdhui: AUJ }).graphiques.find((g) => g.type === 'exercices').groupes[0].exercices[0];
+  assert.deepEqual(squat.seances.map((x) => x.id), [null, 'a2', 'a1']);
+});

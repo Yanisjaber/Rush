@@ -1,8 +1,10 @@
 <script>
   import { formatKg, formatNombre } from '../../utils/format.js';
+  import { ouvrirPanneau } from '../../routeur.svelte.js';
 
   // Historique d'UN exercice : toutes les séances où tu l'as fait (la plus récente d'abord), et pour chacune toutes ses séries.
-  //  exo : { nom, seances: [{ date, series: [{ reps, poids }], tonnage, rm, record }] }
+  //  exo : { nom, seances: [{ id (la séance à ouvrir, ou null), date, series: [{ reps, poids }], tonnage, rm, record }] }
+  // Cliquer sur une séance ouvre son résumé (le même panneau que le calendrier et les widgets : l'adresse porte ?apercu=<id>).
   let { exo } = $props();
 
   const date = (iso) => {
@@ -21,7 +23,10 @@
   <!-- La liste défile dans son cadre : la page ne s'allonge pas, même avec des années d'historique -->
   <div class="liste" tabindex="0" role="region" aria-label={`Historique des séances : ${exo.nom}`}>
     {#each exo.seances as s (s.date)}
-      <article class="seance">
+      <article class="seance" class:cliquable={!!s.id}>
+        {#if s.id}
+          <button type="button" class="ouvrir" aria-label={`Ouvrir la séance du ${date(s.date)}`} onclick={() => ouvrirPanneau({ apercu: s.id })}></button>
+        {/if}
         <header>
           <h3>{date(s.date)}</h3>
           {#if s.record}<span class="badge">Record</span>{/if}
@@ -55,8 +60,27 @@
     outline-offset: 2px;
   }
   .seance {
+    position: relative;
     padding: 14px 0;
     border-bottom: 1px solid var(--trait);
+  }
+  /* Toute la séance est cliquable : un bouton invisible la recouvre (le contenu dessous n'est que du texte) */
+  .ouvrir {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    border: 0;
+    border-radius: var(--rayon-s);
+    background: transparent;
+    cursor: pointer;
+  }
+  .cliquable:hover {
+    background: color-mix(in srgb, var(--texte) 4%, transparent);
+  }
+  .ouvrir:focus-visible {
+    outline: 2px solid var(--texte);
+    outline-offset: -2px;
   }
   header {
     display: flex;
