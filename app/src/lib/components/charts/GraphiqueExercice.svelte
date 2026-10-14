@@ -15,24 +15,28 @@
   // Si le groupe ou l'exercice choisi n'existe plus (autre période, autre filtre), on retombe sur le premier
   const courant = $derived(groupes.find((g) => g.groupe === groupeChoisi) || groupes[0]);
   const exo = $derived(courant ? courant.exercices.find((e) => e.cle === exoChoisi[courant.groupe]) || courant.exercices[0] : null);
-  const idMenu = `exo-${Math.random().toString(36).slice(2, 8)}`;
 
-  let zone = $state(); // la ligne qui reçoit les onglets
+  let ligne = $state(); // la ligne entière : les onglets des groupes + le sélecteur d'exercice à côté
+  let exoZone = $state(); // le sélecteur d'exercice
   let mesure = $state(); // copie invisible de tous les onglets à plat
   let compact = $state(false);
   let ouvert = $state(false);
   let posMenu = $state({ top: 0, left: 0 });
 
   $effect(() => {
-    if (!zone || !mesure) return;
+    if (!ligne || !mesure) return;
     void groupes; // les noms peuvent changer avec la période
     const calculer = () => {
-      compact = mesure.scrollWidth > zone.clientWidth;
+      // la place des onglets = la ligne moins le sélecteur d'exercice et l'écart entre les deux (on ne mesure pas les onglets
+      // eux-mêmes : en mode compact ils sont minuscules, ça ne dirait pas s'il y a la place de repasser à plat)
+      const place = ligne.clientWidth - (exoZone ? exoZone.offsetWidth + 12 : 0);
+      compact = mesure.scrollWidth > place;
       if (!compact) ouvert = false;
     };
     calculer();
     const obs = new ResizeObserver(calculer);
-    obs.observe(zone);
+    obs.observe(ligne);
+    if (exoZone) obs.observe(exoZone); // la largeur du sélecteur change avec le nom de l'exercice
     return () => obs.disconnect();
   });
 
@@ -57,40 +61,44 @@
 <svelte:window onclick={fermerSiDehors} onkeydown={(e) => e.key === 'Escape' && (ouvert = false)} onresize={() => (ouvert = false)} />
 
 {#if courant && exo}
-  {#if groupes.length > 1}
-    <div class="onglets" role="group" aria-label="Groupe musculaire" bind:this={zone}>
-      {#if compact}
-        <button type="button" class="onglet bouton-groupe courant" aria-haspopup="true" aria-expanded={ouvert} onclick={basculer}>
-          <span class="point" aria-hidden="true"></span>{courant.nom}
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4l4 4 4-4" /></svg>
-        </button>
-      {:else}
-        {#each groupes as g (g.groupe)}
-          <button type="button" class="onglet" class:courant={courant.groupe === g.groupe} aria-pressed={courant.groupe === g.groupe} onclick={() => (groupeChoisi = g.groupe)}><span class="point" aria-hidden="true"></span>{g.nom}</button>
-        {/each}
-      {/if}
-      <!-- Copie invisible de tous les onglets à plat, uniquement pour mesurer la place nécessaire -->
-      <div class="mesure" aria-hidden="true" bind:this={mesure}>{#each groupes as g (g.groupe)}<span>{g.nom}</span>{/each}</div>
-    </div>
-    {#if ouvert}
-      <ul class="liste-groupes" style:top="{posMenu.top}px" style:left="{posMenu.left}px">
-        {#each groupes as g (g.groupe)}
-          <li><button type="button" class:courant={courant.groupe === g.groupe} onclick={() => choisir(g)}><span class="point" aria-hidden="true"></span>{g.nom}</button></li>
-        {/each}
-      </ul>
-    {/if}
-  {/if}
-  <div class="barre">
-    {#if courant.exercices.length > 1}
-      <label for={idMenu}>Exercice</label>
-      <select id={idMenu} value={exo.cle} onchange={(e) => (exoChoisi[courant.groupe] = e.currentTarget.value)}>
-        {#each courant.exercices as e (e.cle)}<option value={e.cle}>{e.nom}</option>{/each}
-      </select>
+  <div class="ligne" bind:this={ligne}>
+    {#if groupes.length > 1}
+      <div class="onglets" role="group" aria-label="Groupe musculaire">
+        {#if compact}
+          <button type="button" class="onglet bouton-groupe courant" aria-haspopup="true" aria-expanded={ouvert} onclick={basculer}>
+            <span class="point" aria-hidden="true"></span>{courant.nom}
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4l4 4 4-4" /></svg>
+          </button>
+        {:else}
+          {#each groupes as g (g.groupe)}
+            <button type="button" class="onglet" class:courant={courant.groupe === g.groupe} aria-pressed={courant.groupe === g.groupe} onclick={() => (groupeChoisi = g.groupe)}><span class="point" aria-hidden="true"></span>{g.nom}</button>
+          {/each}
+        {/if}
+        <!-- Copie invisible de tous les onglets à plat, uniquement pour mesurer la place nécessaire -->
+        <div class="mesure" aria-hidden="true" bind:this={mesure}>{#each groupes as g (g.groupe)}<span>{g.nom}</span>{/each}</div>
+      </div>
     {:else}
-      <span class="seul">{exo.nom}</span>
+      <div class="mesure" aria-hidden="true" bind:this={mesure}></div>
     {/if}
-    <span class="chiffres">1RM estimé <strong>{formatKg(exo.rm)} kg</strong> · record <strong>{formatKg(exo.record)} kg</strong></span>
+    <!-- Le sélecteur d'exercice, juste à côté du groupe -->
+    <div class="exo" bind:this={exoZone}>
+      {#if courant.exercices.length > 1}
+        <select aria-label={`Exercice (${courant.nom})`} value={exo.cle} onchange={(e) => (exoChoisi[courant.groupe] = e.currentTarget.value)}>
+          {#each courant.exercices as e (e.cle)}<option value={e.cle}>{e.nom}</option>{/each}
+        </select>
+      {:else}
+        <span class="seul">{exo.nom}</span>
+      {/if}
+    </div>
   </div>
+  {#if ouvert}
+    <ul class="liste-groupes" style:top="{posMenu.top}px" style:left="{posMenu.left}px">
+      {#each groupes as g (g.groupe)}
+        <li><button type="button" class:courant={courant.groupe === g.groupe} onclick={() => choisir(g)}><span class="point" aria-hidden="true"></span>{g.nom}</button></li>
+      {/each}
+    </ul>
+  {/if}
+  <p class="chiffres">1RM estimé <strong>{formatKg(exo.rm)} kg</strong> · record <strong>{formatKg(exo.record)} kg</strong></p>
   <GraphiqueLignes
     etiquettes={exo.etiquettes}
     series={[{ nom: exo.nom, couleur: 'var(--sport-muscu)', valeurs: exo.valeurs }]}
@@ -99,11 +107,23 @@
 {/if}
 
 <style>
+  /* Une seule ligne : les groupes puis, juste à côté, le sélecteur d'exercice (ça passe à la ligne seulement si même le bouton compact + le sélecteur ne tiennent pas) */
+  .ligne {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin-bottom: 6px;
+  }
   .onglets {
     position: relative;
     display: flex;
     gap: 4px;
-    margin-bottom: 14px;
+  }
+  .exo {
+    display: flex;
+    align-items: center;
+    min-width: 0;
   }
   /* Même look que les liens du menu principal : sobre, le groupe choisi sur fond doux */
   .onglet {
@@ -190,17 +210,6 @@
   .mesure span {
     padding: 0 14px 0 30px; /* + le point de couleur (9 px) et son écart (7 px) */
   }
-  .barre {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 12px;
-    margin-bottom: 12px;
-  }
-  label {
-    font-size: 13px;
-    color: var(--texte-doux);
-  }
   select {
     min-height: 44px;
     max-width: 100%;
@@ -222,7 +231,7 @@
     font-weight: 600;
   }
   .chiffres {
-    margin-left: auto;
+    margin: 0 0 8px;
     font-size: 13px;
     color: var(--texte-doux);
   }
