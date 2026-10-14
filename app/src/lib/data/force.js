@@ -218,8 +218,8 @@ export function brouillonVide(date, heure = '18:00') {
 }
 
 /** Une série du brouillon : les valeurs restent du texte tant qu'on n'a pas validé (champs de formulaire). */
-export function serieVide(reps = '', poids = '') {
-  return { reps: String(reps), poids: String(poids), fait: false };
+export function serieVide(reps = '', poids = '', rir = '') {
+  return { reps: String(reps), poids: String(poids), rir: String(rir ?? ''), fait: false };
 }
 
 /** Brouillon prérempli depuis un programme : séries cibles, charges = dernière fois si connue, sinon charge du programme. */
@@ -260,7 +260,7 @@ export function brouillonDepuisSeance(seance, series) {
       index.set(clePos, ex);
       b.exercices.push(ex);
     }
-    ex.series.push(serieVide(s.reps, s.weight_kg));
+    ex.series.push(serieVide(s.reps, s.weight_kg, s.rir ?? ''));
     ex.series[ex.series.length - 1].fait = true;
   }
   return b;
@@ -309,8 +309,15 @@ export function validerSeance(b) {
         erreurs.exercices = `Charge invalide sur « ${ex.nom} » (0 à ${LIMITES.poids} kg).`;
         continue;
       }
+      // Répétitions en réserve (facultatif) : combien de répétitions il te restait, 0 = à l'échec
+      const rirTxt = String(s.rir ?? '').trim();
+      const rir = rirTxt === '' ? null : entier(rirTxt);
+      if (rir != null && !(rir >= 0 && rir <= 10)) {
+        erreurs.exercices = `Répétitions en réserve invalides sur « ${ex.nom} » (0 à 10, ou vide).`;
+        continue;
+      }
       numero += 1;
-      series.push({ exercise_key: ex.cle, exercise_name: ex.nom, muscle_group: groupeValide(ex.groupe) ? ex.groupe : 'tronc', position, set_no: numero, reps, weight_kg: poids });
+      series.push({ exercise_key: ex.cle, exercise_name: ex.nom, muscle_group: groupeValide(ex.groupe) ? ex.groupe : 'tronc', position, set_no: numero, reps, weight_kg: poids, ...(rir != null ? { rir } : {}) });
     }
   });
   if (!erreurs.exercices && !series.length) erreurs.exercices = 'Coche au moins une série faite.';

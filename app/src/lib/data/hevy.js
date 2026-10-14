@@ -272,8 +272,10 @@ export function lireExportHevy(texte) {
         continue;
       }
       e.n++;
-      series.push({ exercise_key: e.cle, exercise_name: e.nom, muscle_group: e.groupe, position: e.position, set_no: e.n, reps: Math.round(reps), weight_kg: kg });
       const r = iRpe >= 0 ? nombre(l[iRpe]) : null;
+      // L'effort de la série (RPE de Hevy, de 6 à 10) donne les répétitions en réserve : RPE 10 = à l'échec (0), 9 = 1 en réserve, etc.
+      const rir = r != null && r >= 6 && r <= 10 ? Math.round(10 - r) : null;
+      series.push({ exercise_key: e.cle, exercise_name: e.nom, muscle_group: e.groupe, position: e.position, set_no: e.n, reps: Math.round(reps), weight_kg: kg, ...(rir != null ? { rir } : {}) });
       if (r != null && r >= 1 && r <= 10) rpes.push(r);
     }
     if (!series.length) {

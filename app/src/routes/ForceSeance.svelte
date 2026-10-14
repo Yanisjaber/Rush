@@ -232,6 +232,10 @@
         {/if}
       </section>
 
+      {#if b.exercices.length}
+        <p class="aide-rir"><strong>RIR</strong> (facultatif) : les répétitions qu'il te restait en fin de série, 0 si tu étais à l'échec. Ça rend l'analyse de ta fatigue bien plus juste.</p>
+      {/if}
+
       {#each b.exercices as ex, i (i + ex.cle)}
         {@const dernier = derniers.get(ex.cle)}
         <section class="exercice" aria-label={ex.nom}>
@@ -242,12 +246,13 @@
             </div>
             <button type="button" class="texte" onclick={() => retirerExercice(i)} aria-label={`Retirer ${ex.nom} de la séance`}>Retirer</button>
           </header>
-          <div class="entete-series" aria-hidden="true"><span>Série</span><span>Reps</span><span>Charge (kg)</span><span></span><span></span></div>
+          <div class="entete-series" aria-hidden="true"><span>Série</span><span>Reps</span><span>Charge (kg)</span><span title="Répétitions en réserve : combien il t'en restait (0 = à l'échec)">RIR</span><span></span><span></span></div>
           {#each ex.series as s, k (k)}
             <div class="serie" class:fait={s.fait}>
               <span class="numero">{k + 1}</span>
               <input inputmode="numeric" bind:value={s.reps} aria-label={`${ex.nom}, série ${k + 1}, répétitions`} />
               <input inputmode="decimal" bind:value={s.poids} placeholder="corps" aria-label={`${ex.nom}, série ${k + 1}, charge en kilos`} />
+              <input class="rir" inputmode="numeric" maxlength="2" bind:value={s.rir} placeholder="–" aria-label={`${ex.nom}, série ${k + 1}, répétitions en réserve (facultatif)`} />
               <button type="button" class="coche" aria-pressed={s.fait} aria-label={`Série ${k + 1} de ${ex.nom} faite`} onclick={() => cocher(ex, s)}>
                 {s.fait ? '✓' : ''}
               </button>
@@ -435,7 +440,7 @@
   .entete-series,
   .serie {
     display: grid;
-    grid-template-columns: 34px 1fr 1fr 52px 44px;
+    grid-template-columns: 34px 1fr 1fr 56px 52px 44px;
     align-items: center;
     gap: 8px;
   }
@@ -466,6 +471,16 @@
     font-size: 18px;
     font-weight: 600;
     text-align: center;
+  }
+  .serie input.rir {
+    padding: 0 4px;
+    font-size: 16px;
+  }
+  .aide-rir {
+    margin: 0 0 4px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--texte-doux);
   }
   .serie.fait input {
     border-color: color-mix(in srgb, var(--sport-muscu) 70%, transparent);

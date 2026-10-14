@@ -16,7 +16,7 @@ const SOURCES = {
     parties: { 'Les muscles en retard': E, 'Les portions oubliées': E, 'Un souci de volume, pas d\'équilibre': E },
   },
   chargemuscu: {
-    chiffres: { 'Groupe le plus fatigué': E, 'Intensité moyenne': E },
+    chiffres: { 'Groupe le plus fatigué': E, 'Intensité moyenne': E, 'Séries avec RIR noté': M },
     graphiques: { 'Fatigue de chaque groupe musculaire': E },
     parties: { 'Où en est ta fatigue': E, 'La fatigue qui s\'accumule': E, 'L\'intensité de ton travail': E },
   },

@@ -385,6 +385,8 @@ export function seriesForceDemo(aujourdhui = new Date()) {
           set_no: n,
           reps: Math.max(1, e.reps - (n === e.sets ? 1 : 0)),
           weight_kg: poids,
+          // Les 5 dernières semaines ont le RIR noté (les séries plus anciennes non : de quoi voir une couverture partielle)
+          ...(jours < 35 ? { rir: n === e.sets ? 0 : 2 + (n % 2) } : {}),
         });
       }
     });

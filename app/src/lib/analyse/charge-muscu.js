@@ -21,6 +21,13 @@ const nombre = (v) => {
   return Number.isFinite(n) ? n : 0;
 };
 const epley = (poids, reps) => poids * (1 + reps / 30); // 1RM estimé (formule d'Epley), sans plafond de répétitions
+/**
+ * Effet de la proximité de l'échec sur la charge d'une série, quand tu as noté le RIR (répétitions en réserve).
+ * Une série qui s'arrête loin de l'échec fatigue et stimule moins : RIR 0 ou 1 = 100 %, puis −15 % par répétition en réserve en plus
+ * (RIR 2 : 85 %, RIR 3 : 70 %, RIR 4 : 55 %), plancher à 40 %. Sans RIR noté, aucune correction. Un repère de coaching, pas une loi.
+ */
+export const effortRir = (rir) => (rir == null ? 1 : rir <= 1 ? 1 : Math.max(0.4, 1 - 0.15 * (rir - 1)));
+const rirDe = (s) => (s.rir === null || s.rir === undefined || String(s.rir).trim() === '' || !Number.isFinite(Number(s.rir)) ? null : Math.min(10, Math.max(0, Math.round(Number(s.rir)))));
 
 /**
  * Charge de chaque série : [{ date, groupe, cle, reps, intensite, charge, estimee }]
@@ -64,7 +71,8 @@ export function chargeParSerie(series) {
         const ref = cache.get(d) || epley(p, r); // aucun 1RM connu (séries longues seulement) : on part de la série elle-même
         intensite = Math.min(1, p / ref);
       }
-      sortie.push({ date: d, groupe: s.muscle_group, cle: s.exercise_key, nom: s.exercise_name, reps: r, intensite, charge: r * intensite, estimee });
+      const rir = rirDe(s);
+      sortie.push({ date: d, groupe: s.muscle_group, cle: s.exercise_key, nom: s.exercise_name, reps: r, intensite, rir, charge: r * intensite * effortRir(rir), estimee });
     }
   }
   return sortie;
@@ -102,6 +110,7 @@ export function zoneRatio(r) {
 const METHODE = [
   { titre: 'Comment est calculée la charge', texte: 'Chaque série pèse « répétitions × intensité », où l\'intensité est ton poids divisé par ton 1RM estimé de cet exercice (ton meilleur des 90 derniers jours, formule d\'Epley). 10 répétitions à 75 % du 1RM valent 7,5 points. Un exercice au poids du corps sans charge notée compte pour 60 % d\'intensité. Le total d\'une période est la somme de ses séries.' },
   { titre: 'Pourquoi pas le tonnage', texte: 'Le tonnage (kg soulevés) ne se compare pas entre exercices : 5 000 kg au leg press n\'ont rien à voir avec 5 000 kg aux curls. En rapportant chaque série à ton 1RM, les exercices deviennent comparables.' },
+  { titre: 'Le RIR : jusqu\'où tu pousses', texte: 'Le RIR (répétitions en réserve) est le nombre de répétitions qu\'il te restait en fin de série : 0 = à l\'échec. Si tu le notes, la charge d\'une série est réduite quand tu t\'arrêtes loin de l\'échec (RIR 2 : −15 %, RIR 3 : −30 %, RIR 4 : −45 %, plancher −60 %), parce qu\'une série facile fatigue et stimule moins. Sans RIR noté, aucune correction : tes chiffres restent comparables d\'une séance à l\'autre.' },
   { titre: 'Le ratio récent / habituel', texte: 'Charge des 7 derniers jours divisée par ta moyenne hebdomadaire des 4 semaines d\'avant. Entre 0,8 et 1,3, tu progresses sans à-coup ; au-delà de 1,5, les blessures deviennent plus fréquentes dans les études (repère issu du sport en général, à prendre comme un garde-fou).' },
   { titre: 'Ce que cette charge n\'est pas', texte: 'Elle mesure le travail des muscles. Elle ne se compare pas à une charge de vélo ou de course (TSS), qui mesure surtout le cœur et l\'énergie : 100 points de muscu et 100 points de vélo ne fatiguent pas pareil. Les deux s\'additionnent dans ta récupération, pas dans la même unité.' },
 ];
@@ -218,6 +227,13 @@ export function analyserChargeMuscu({ series, aujourdhui = new Date(), semaines 
     },
   ];
 
+  // Le RIR noté : combien de séries en ont un, et à quelle distance de l'échec tu t'arrêtes
+  const avecRir = sets.filter((x) => x.rir != null);
+  const couvertureRir = Math.round((avecRir.length / sets.length) * 100);
+  const rirMoyen = avecRir.length ? moyenne(avecRir.map((x) => x.rir)) : null;
+  const procheEchec = avecRir.length ? Math.round((avecRir.filter((x) => x.rir <= 2).length / avecRir.length) * 100) : null;
+  if (avecRir.length) chiffres.push({ etiquette: 'Séries avec RIR noté', valeur: String(couvertureRir), unite: '%', note: `${procheEchec} % à 2 répétitions de l'échec ou moins`, ton: '' });
+
   // Fatigue de chaque groupe et de chaque muscle aujourd'hui (nécessite au moins 5 journées de travail d'un groupe pour le calibrer)
   const fatigue = fatigueMusculaire(tous, fin);
   const calibres = fatigue.groupes.filter((g) => g.pct != null);
@@ -238,7 +254,7 @@ export function analyserChargeMuscu({ series, aujourdhui = new Date(), semaines 
     graphiques.splice(2, 0, { type: 'tableau', titre: 'Le modèle de fatigue tient-il sur toi ?', colonnes: ['Groupe', 'Séances comparées', 'Écart de 1RM estimé', 'Fiabilité'], lignes });
   }
 
-  const rush = rushChargeMuscu({ fatigue, validation, recente, ratio, zone, intensites, intensiteMoy, groupes, ecartPct, sauts, cv, serieSansDecharge, moyenneHebdo, meilleure, pleines, chargeSeanceMoy, joursTotal, partEstimee, plusLourde });
+  const rush = rushChargeMuscu({ rirInfo: { couverture: couvertureRir, moyen: rirMoyen, proche: procheEchec, n: avecRir.length }, fatigue, validation, recente, ratio, zone, intensites, intensiteMoy, groupes, ecartPct, sauts, cv, serieSansDecharge, moyenneHebdo, meilleure, pleines, chargeSeanceMoy, joursTotal, partEstimee, plusLourde });
   const conseils = [];
   return { id: 'chargemuscu', insuffisant: false, verdict: null, chiffres, graphiques, lectures: [], conseils: triConseils(conseils), methode: METHODE, rush, brut: { recente, ratio, zone, intensites, groupes, semaines: semainesListe, moyenneHebdo, ecartPct } };
 }
@@ -249,7 +265,7 @@ export function analyserChargeMuscu({ series, aujourdhui = new Date(), semaines 
 function rushChargeMuscu(d) {
   const parties = [];
   const plan = [];
-  const { recente, ratio, intensites, groupes, fatigue, validation } = d;
+  const { recente, ratio, intensites, groupes, fatigue, validation, rirInfo } = d;
 
   // 1. Où tu en es
   if (ratio != null) {
@@ -298,6 +314,18 @@ function rushChargeMuscu(d) {
     else texte = `Quand un groupe est fatigué, ton 1RM estimé varie de ${g.delta >= 0 ? '+' : ''}${arrondi(g.delta, 1).toString().replace('.', ',')} % (fiabilité ${g.confiance}) : l'effet est faible ou va dans le sens inverse de ce que prédit le modèle.`;
     if (validation.tauSuggere) texte += ` Sur tes données, une récupération ${validation.tauSuggere.facteur < 1 ? 'plus rapide' : 'plus lente'} colle mieux (environ ${String(validation.tauSuggere.gros).replace('.', ',')} jours pour les gros groupes au lieu de 2) : indicatif, à confirmer avec plus de séances.`;
     parties.push({ titre: 'Ce que tes séances disent de la fatigue', ton, texte });
+  }
+
+  // 1 quater. Jusqu'où tu pousses tes séries (le RIR), ou l'invitation à le noter
+  if (rirInfo.n >= 10 && rirInfo.couverture >= 30) {
+    const m = rirInfo.moyen;
+    parties.push({
+      titre: 'Jusqu\'où tu pousses tes séries',
+      ton: m > 4 ? 'attention' : 'info',
+      texte: `Sur les ${rirInfo.couverture} % de séries où tu as noté le RIR, il te restait en moyenne ${String(Math.round(m * 10) / 10).replace('.', ',')} répétitions, et ${rirInfo.proche} % de ces séries s'arrêtent à 2 répétitions de l'échec ou moins. ${m > 4 ? 'Tu t\'arrêtes souvent très loin de l\'échec : ces séries fatiguent peu mais stimulent peu aussi. Monte la charge ou garde quelques répétitions de plus.' : m < 1 ? 'Tu vas presque toujours à l\'échec : très stimulant, mais ça fatigue beaucoup et ralentit la récupération. Garde 1 ou 2 répétitions en réserve sur la plupart des séries.' : m <= 3 ? 'Le bon créneau pour progresser : proche de l\'échec sans y aller à chaque série.' : 'Un peu loin de l\'échec : tu peux souvent pousser une ou deux répétitions de plus.'} La charge ci-dessus en tient compte.`,
+    });
+  } else {
+    parties.push({ titre: 'Note ton RIR pour une analyse plus juste', ton: 'info', texte: `Seulement ${rirInfo.couverture} % de tes séries ont un RIR noté (les répétitions qu'il te restait, 0 = à l'échec). C'est la mesure la plus fiable de la vraie difficulté d'une série : avec elle, la charge et la fatigue deviennent bien plus justes. Dans l'enregistrement d'une séance, le champ « RIR » est facultatif ; à l'import d'un export Hevy, l'effort (RPE) de chaque série est converti.` });
   }
 
   // 2. L'intensité

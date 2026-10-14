@@ -601,6 +601,10 @@ export async function chargerGpx(userId, id) {
 // ---------------------------------------------------------------------------
 
 const COLONNES_SERIE = 'id,activity_id,date,exercise_key,exercise_name,muscle_group,position,set_no,reps,weight_kg';
+// La colonne « rir » (répétitions en réserve) vient d'une migration : tant qu'elle n'est pas en base, on lit et on écrit sans elle.
+let rirDisponible = true;
+const colonnesSerie = () => COLONNES_SERIE + (rirDisponible ? ',rir' : '');
+const colonneRirAbsente = (e) => !!e && (e.code === '42703' || e.code === 'PGRST204' || /\brir\b/i.test(String(e.message || '')));
 const COLONNES_PROGRAMME = 'id,name,exercises,notes,created_at';
 
 /**
@@ -614,14 +618,18 @@ export async function chargerSeriesForce(userId, jours = 3650, limite = 5000) {
   const PAGE = 1000;
   const lignes = [];
   for (let debut = 0; debut < limite; debut += PAGE) {
-    const r = await sb
+    let r = await sb
       .from('strength_sets')
-      .select(COLONNES_SERIE)
+      .select(colonnesSerie())
       .eq('user_id', userId)
       .gte('date', dateIsoLocale(depuis))
       .order('date', { ascending: false })
       .order('id', { ascending: true })
       .range(debut, Math.min(debut + PAGE, limite) - 1);
+    if (r.error && rirDisponible && colonneRirAbsente(r.error)) {
+      rirDisponible = false; // pas encore de colonne rir : on relit sans
+      r = await sb.from('strength_sets').select(colonnesSerie()).eq('user_id', userId).gte('date', dateIsoLocale(depuis)).order('date', { ascending: false }).order('id', { ascending: true }).range(debut, Math.min(debut + PAGE, limite) - 1);
+    }
     if (r.error) return resultat(r, 'Impossible de charger ton carnet de force.');
     lignes.push(...(r.data || []));
     if ((r.data || []).length < PAGE) break; // dernière page
@@ -632,7 +640,12 @@ export async function chargerSeriesForce(userId, jours = 3650, limite = 5000) {
 /** Séries d'une séance précise. */
 export async function chargerSeriesSeance(userId, activiteId) {
   if (!UUID.test(String(activiteId))) return { data: [], erreur: '' };
-  const r = await sb.from('strength_sets').select(COLONNES_SERIE).eq('user_id', userId).eq('activity_id', activiteId).order('position', { ascending: true }).order('set_no', { ascending: true }).limit(1500);
+  const lire = () => sb.from('strength_sets').select(colonnesSerie()).eq('user_id', userId).eq('activity_id', activiteId).order('position', { ascending: true }).order('set_no', { ascending: true }).limit(1500);
+  let r = await lire();
+  if (r.error && rirDisponible && colonneRirAbsente(r.error)) {
+    rirDisponible = false;
+    r = await lire();
+  }
   return resultat(r, 'Impossible de charger les séries de cette séance.');
 }
 
@@ -678,8 +691,16 @@ export async function supprimerExercicePerso(userId, id) {
 /** Insère des séries par paquets (la base limite la taille d'une requête). */
 async function insererSeries(userId, activiteId, lignes) {
   for (let i = 0; i < lignes.length; i += 400) {
-    const paquet = lignes.slice(i, i + 400).map((l) => ({ ...l, user_id: userId, activity_id: activiteId }));
-    const r = await sb.from('strength_sets').insert(paquet);
+    const sansRir = (l) => {
+      const { rir, ...reste } = l; // eslint-disable-line no-unused-vars
+      return reste;
+    };
+    const paquet = lignes.slice(i, i + 400).map((l) => ({ ...(rirDisponible ? l : sansRir(l)), user_id: userId, activity_id: activiteId }));
+    let r = await sb.from('strength_sets').insert(paquet);
+    if (r.error && rirDisponible && colonneRirAbsente(r.error)) {
+      rirDisponible = false; // la colonne n'existe pas encore : on enregistre sans le RIR plutôt que de perdre la séance
+      r = await sb.from('strength_sets').insert(paquet.map(sansRir));
+    }
     if (r.error) {
       console.error('[app/api] séries', r.error.code || '');
       return false;

@@ -133,3 +133,47 @@ test('validation : pas assez de séances → null ; sinon détecte une vraie bai
   assert.ok(v.n >= 25);
   assert.ok(v.global.delta == null || v.global.delta <= 0, `écart attendu négatif ou absent, obtenu ${v.global.delta}`);
 });
+
+// ---------------------------------------------------------------------------------------------------------------------
+// RIR (répétitions en réserve)
+// ---------------------------------------------------------------------------------------------------------------------
+import { effortRir } from '../src/lib/analyse/charge-muscu.js';
+import { validerSeance, serieVide } from '../src/lib/data/force.js';
+import { lireExportHevy } from '../src/lib/data/hevy.js';
+
+test('RIR : l\'effort réduit la charge d\'une série qui s\'arrête loin de l\'échec', () => {
+  assert.equal(effortRir(null), 1); // pas noté : aucune correction
+  assert.equal(effortRir(0), 1);
+  assert.equal(effortRir(1), 1);
+  assert.ok(Math.abs(effortRir(2) - 0.85) < 1e-9);
+  assert.ok(Math.abs(effortRir(3) - 0.7) < 1e-9);
+  assert.equal(effortRir(9), 0.4); // plancher
+  const sans = chargeParSerie([serie(ISO, 'squat', 'jambes', 8, 100)])[0].charge;
+  const avec = chargeParSerie([{ ...serie(ISO, 'squat', 'jambes', 8, 100), rir: 3 }])[0].charge;
+  assert.ok(Math.abs(avec - sans * 0.7) < 1e-9);
+  assert.equal(chargeParSerie([{ ...serie(ISO, 'squat', 'jambes', 8, 100), rir: '' }])[0].rir, null);
+});
+
+test('RIR : la saisie d\'une séance accepte un RIR facultatif et refuse un RIR absurde', () => {
+  const b = { nom: 'Test', date: ISO, heure: '18:00', duree: '60', rpe: '', notes: '', exercices: [{ cle: 'squat', nom: 'Squat', groupe: 'jambes', series: [{ ...serieVide(5, 100, 2), fait: true }, { ...serieVide(5, 100), fait: true }] }] };
+  const ok = validerSeance(b);
+  assert.ok(ok.valeurs);
+  assert.equal(ok.valeurs.series[0].rir, 2);
+  assert.equal('rir' in ok.valeurs.series[1], false); // pas noté : pas de clé (la base reste intacte)
+  b.exercices[0].series[0].rir = '15';
+  assert.equal(validerSeance(b).valeurs, null);
+});
+
+test('RIR : l\'import Hevy convertit l\'effort (RPE) de chaque série en répétitions en réserve', () => {
+  const csv = [
+    'title,start_time,end_time,description,exercise_title,superset_id,exercise_notes,set_index,set_type,weight_kg,reps,distance_km,duration_seconds,rpe',
+    '"Push","14 Oct 2026, 18:00","14 Oct 2026, 19:00","","Bench Press (Barbell)","","",0,normal,80,8,,,9',
+    '"Push","14 Oct 2026, 18:00","14 Oct 2026, 19:00","","Bench Press (Barbell)","","",1,normal,80,7,,,10',
+    '"Push","14 Oct 2026, 18:00","14 Oct 2026, 19:00","","Bench Press (Barbell)","","",2,normal,80,6,,,',
+  ].join('\n');
+  const r = lireExportHevy(csv);
+  const s = r.seances[0].series;
+  assert.equal(s[0].rir, 1); // RPE 9
+  assert.equal(s[1].rir, 0); // RPE 10 = à l'échec
+  assert.equal('rir' in s[2], false); // pas de RPE
+});
