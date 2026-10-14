@@ -7,8 +7,15 @@
 
   const opacites = [1, 0.35, 0.6, 1];
   const JOURS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
-  // Beaucoup de semaines : un repère sur quelques-uns seulement (en comptant depuis la semaine en cours), pour ne pas les serrer
-  const pas = $derived(colonnes <= 12 ? 1 : colonnes <= 26 ? 3 : 4);
+  // Les repères de semaine s'adaptent à la place : un par semaine quand les colonnes sont larges, un sur 2, 3, 4… quand
+  // ça se serre (on compte depuis la semaine en cours, donc S0 est toujours affiché). Largeur d'un repère ≈ 36 px.
+  let largeur = $state(0);
+  const pas = $derived.by(() => {
+    if (!largeur) return colonnes <= 12 ? 1 : 4; // avant la première mesure
+    const ecart = colonnes > 26 ? 2 : 4;
+    const colonne = (largeur - 16 - ecart * colonnes) / colonnes;
+    return Math.max(1, Math.ceil(36 / Math.max(colonne, 1)));
+  });
   const repereSemaine = (i) => {
     const recul = colonnes - 1 - i;
     return recul % pas !== 0 ? '' : recul === 0 ? 'S0' : `S-${recul}`;
@@ -29,6 +36,7 @@
   class:large={reperes}
   role="img"
   aria-label={etiquette}
+  bind:clientWidth={largeur}
   style:grid-template-columns={reperes ? `16px repeat(${colonnes}, minmax(0, 1fr))` : `repeat(${colonnes}, minmax(0, 1fr))`}
 >
   {#if reperes}
