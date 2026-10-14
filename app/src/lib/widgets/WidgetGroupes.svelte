@@ -10,12 +10,16 @@
 </script>
 
 <Bloc titre="Séries par groupe · cette semaine">
-  <div class="corps"><SilhouetteCorps {muscles} etiquette="Muscles travaillés cette semaine" /></div>
+  <div class="cadre"><div class="corps"><SilhouetteCorps {muscles} etiquette="Muscles travaillés cette semaine" /></div></div>
 </Bloc>
 
 <style>
+  /* La hauteur suit la largeur de la carte (≈ 58 %) : la carte a ainsi la même hauteur que ses voisines (Régularité, Volume) */
+  .cadre {
+    container-type: inline-size;
+  }
   .corps {
-    height: 340px;
+    height: clamp(200px, 58cqw, 330px);
     padding: 12px 8px 8px;
     border-radius: var(--rayon-l);
     background: var(--surface-2);
