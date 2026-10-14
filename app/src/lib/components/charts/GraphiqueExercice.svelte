@@ -1,5 +1,7 @@
 <script>
+  import { untrack } from 'svelte';
   import GraphiqueLignes from './GraphiqueLignes.svelte';
+  import { regler } from '../../routeur.svelte.js';
   import { formatKg } from '../../utils/format.js';
 
   // Progression du 1RM estimé : des ONGLETS pour choisir le groupe musculaire, un menu déroulant pour choisir l'exercice de ce
@@ -9,13 +11,38 @@
   //  groupes : [{ groupe, nom, exercices: [{ cle, nom, etiquettes (dates), valeurs (1RM estimé par séance), rm (dernier), record }] }]
   //  Les exercices d'un groupe arrivent du plus pratiqué au moins pratiqué : le premier est proposé d'abord.
   //  selection (à lier avec bind:) : l'exercice affiché, { groupe, exo }, pour que la page puisse montrer son historique à côté
-  let { groupes = [], selection = $bindable(null) } = $props();
+  //  exoDemande : l'exercice demandé par l'adresse (?exo=squat) : on ouvre le bon groupe et le bon exercice. Quand tu choisis toi-même
+  //  un groupe ou un exercice, l'adresse suit (?exo=…) : un rechargement ou un lien rouvre la même vue.
+  let { groupes = [], selection = $bindable(null), exoDemande = '' } = $props();
 
   let groupeChoisi = $state('');
   let exoChoisi = $state({}); // exercice retenu pour chaque groupe (on le garde quand on change d'onglet)
   // Si le groupe ou l'exercice choisi n'existe plus (autre période, autre filtre), on retombe sur le premier
   const courant = $derived(groupes.find((g) => g.groupe === groupeChoisi) || groupes[0]);
   const exo = $derived(courant ? courant.exercices.find((e) => e.cle === exoChoisi[courant.groupe]) || courant.exercices[0] : null);
+
+  // L'adresse demande un exercice : on se place sur son groupe et sur lui (lecture seule des choix, pour ne pas boucler)
+  $effect(() => {
+    const cle = exoDemande;
+    const liste = groupes;
+    if (!cle) return;
+    untrack(() => {
+      const g = liste.find((x) => x.exercices.some((e) => e.cle === cle));
+      if (!g) return;
+      if (groupeChoisi !== g.groupe) groupeChoisi = g.groupe;
+      if (exoChoisi[g.groupe] !== cle) exoChoisi[g.groupe] = cle;
+    });
+  });
+
+  // Choix de l'utilisateur : on le range dans l'adresse (sans ajouter d'entrée à l'historique)
+  function choisirGroupe(g) {
+    groupeChoisi = g.groupe;
+    regler({ exo: exoChoisi[g.groupe] || g.exercices[0].cle });
+  }
+  function choisirExo(cle) {
+    exoChoisi[courant.groupe] = cle;
+    regler({ exo: cle });
+  }
 
   // On dit à la page quel exercice est affiché (elle en montre l'historique)
   $effect(() => {
@@ -58,7 +85,7 @@
     ouvert = true;
   }
   function choisir(g) {
-    groupeChoisi = g.groupe;
+    choisirGroupe(g);
     ouvert = false;
   }
   function fermerSiDehors(e) {
@@ -79,7 +106,7 @@
           </button>
         {:else}
           {#each groupes as g (g.groupe)}
-            <button type="button" class="onglet" class:courant={courant.groupe === g.groupe} aria-pressed={courant.groupe === g.groupe} onclick={() => (groupeChoisi = g.groupe)}><span class="point" aria-hidden="true"></span>{g.nom}</button>
+            <button type="button" class="onglet" class:courant={courant.groupe === g.groupe} aria-pressed={courant.groupe === g.groupe} onclick={() => choisirGroupe(g)}><span class="point" aria-hidden="true"></span>{g.nom}</button>
           {/each}
         {/if}
         <!-- Copie invisible de tous les onglets à plat, uniquement pour mesurer la place nécessaire -->
@@ -91,7 +118,7 @@
     <!-- Le sélecteur d'exercice, juste à côté du groupe -->
     <div class="exo" bind:this={exoZone}>
       {#if courant.exercices.length > 1}
-        <select aria-label={`Exercice (${courant.nom})`} value={exo.cle} onchange={(e) => (exoChoisi[courant.groupe] = e.currentTarget.value)}>
+        <select aria-label={`Exercice (${courant.nom})`} value={exo.cle} onchange={(e) => choisirExo(e.currentTarget.value)}>
           {#each courant.exercices as e (e.cle)}<option value={e.cle}>{e.nom}</option>{/each}
         </select>
       {:else}
@@ -108,11 +135,15 @@
       {/each}
     </ul>
   {/if}
-  <GraphiqueLignes
-    etiquettes={exo.etiquettes}
-    series={[{ nom: exo.nom, couleur: 'var(--sport-muscu)', valeurs: exo.valeurs }]}
-    etiquette={`Progression du 1RM estimé : ${exo.nom} (${courant.nom})`}
-  />
+  {#if exo.valeurs.length > 1}
+    <GraphiqueLignes
+      etiquettes={exo.etiquettes}
+      series={[{ nom: exo.nom, couleur: 'var(--sport-muscu)', valeurs: exo.valeurs }]}
+      etiquette={`Progression du 1RM estimé : ${exo.nom} (${courant.nom})`}
+    />
+  {:else}
+    <p class="une">Une seule séance pour cet exercice : la courbe apparaîtra dès la deuxième.</p>
+  {/if}
 {/if}
 
 <style>
@@ -235,6 +266,11 @@
   .liste-groupes button:focus-visible {
     outline: 2px solid var(--texte);
     outline-offset: 2px;
+  }
+  .une {
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: var(--texte-doux);
   }
   .seul {
     font-weight: 600;

@@ -2,11 +2,15 @@
   import Bloc from '../components/Bloc.svelte';
   import CourbeLissee from '../components/charts/CourbeLissee.svelte';
   import { recordsParGroupe } from '../data/force.js';
+  import { menu } from '../stores/menu.svelte.js';
+  import { construireAdresse } from '../data/adresses.js';
   import { formatKg, formatDateCourte } from '../utils/format.js';
 
   // Un exercice par groupe musculaire (pectoraux, dos, jambes, épaules, bras) : 1RM estimé, record éventuel et progression.
   // En taille moyenne il n'y a la place que pour 2 cartes (jambes et pectoraux en priorité).
   let { contexte, taille = 'l' } = $props();
+  // Cliquer sur une carte ouvre la page Records déjà placée sur cet exercice (le reste du widget ouvre la page Records telle quelle)
+  const lien = (cle) => construireAdresse({ sport: menu.filtre, page: '/analyse', sous: 'records', q: { exo: cle } });
   const exos = $derived(recordsParGroupe(contexte.force.series, taille === 'm' ? 2 : 5));
 </script>
 
@@ -14,7 +18,7 @@
   {#if exos.length}
     <div class="cartes">
       {#each exos as e (e.cle)}
-        <article class="carte">
+        <a class="carte" href={lien(e.cle)} aria-label={`Voir la progression : ${e.nom}`}>
           <header>
             <h3>{e.nom}</h3>
             {#if e.record}
@@ -30,7 +34,7 @@
             </div>
           {/if}
           <p class="pied">{formatDateCourte(e.date)} · {e.reps} × {formatKg(e.poids)} kg</p>
-        </article>
+        </a>
       {/each}
     </div>
   {:else}
@@ -45,10 +49,20 @@
     gap: 12px;
   }
   .carte {
+    display: block;
+    color: inherit;
+    text-decoration: none;
     padding: 16px 16px 14px;
     background: var(--surface-2);
     border-radius: var(--rayon);
     min-width: 0;
+  }
+  .carte:hover {
+    background: color-mix(in srgb, var(--texte) 7%, var(--surface-2));
+  }
+  .carte:focus-visible {
+    outline: 2px solid var(--texte);
+    outline-offset: 2px;
   }
   header {
     display: flex;

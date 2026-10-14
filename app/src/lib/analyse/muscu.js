@@ -223,13 +223,14 @@ export function analyserGroupes({ series, aujourdhui = new Date() }) {
 const METHODE_RECORDS = [
   { titre: 'Le 1RM estimé', texte: 'Le 1RM est la charge que tu soulèverais une seule fois. On l\'estime avec la formule d\'Epley : charge × (1 + répétitions ÷ 30), sur la meilleure série de chaque séance. Au-delà de 12 répétitions l\'estimation n\'est plus fiable : ces séries sont ignorées.' },
   { titre: 'Record, plateau, progression', texte: 'Record : meilleur 1RM atteint il y a moins de 4 semaines. Plateau : au moins 4 séances sur les 8 dernières semaines sans aucun nouveau record depuis plus de 8 semaines. Progression : la courbe des 6 dernières séances monte.' },
-  { titre: 'Les données prises en compte', texte: 'Les records sont cherchés dans tout ton historique : il n\'y a pas de période à choisir. Seuls les exercices pratiqués au moins 3 fois (avec de la charge) sont suivis.' },
+  { titre: 'Les données prises en compte', texte: 'Les records sont cherchés dans tout ton historique : il n\'y a pas de période à choisir. Les chiffres du haut et les statuts ne portent que sur les exercices pratiqués au moins 3 fois (avec de la charge) ; le menu et l\'historique proposent tous tes exercices.' },
 ];
 
 export function analyserRecords({ series, aujourdhui = new Date(), semaines = 26 }) {
   const { valides, fin } = reperes(series, aujourdhui);
   const debut = decalerJour(lundiDe(fin), -(semaines - 1) * 7);
-  const exos = progressionParExercice(valides)
+  // Tous les exercices (même faits une seule fois : le menu et l'historique les proposent, la carte du widget d'accueil aussi)
+  const tous = progressionParExercice(valides)
     .map((e) => {
       const dansFenetre = e.serie.filter((p) => p.date >= debut && p.date <= fin);
       const meilleur = e.serie.reduce((m, p) => (p.rm > m.rm ? p : m), e.serie[0]); // 1re date où le meilleur 1RM est atteint
@@ -243,8 +244,9 @@ export function analyserRecords({ series, aujourdhui = new Date(), semaines = 26
       else if (pente > 0.4) statut = 'progres';
       return { ...e, dansFenetre, meilleur, joursRecord, statut };
     })
-    .filter((e) => e.dansFenetre.length >= 3)
     .sort((a, b) => b.dansFenetre.length - a.dansFenetre.length);
+  // Les statuts, les chiffres du haut et les lectures ne portent que sur les exercices assez pratiqués (au moins 3 séances)
+  const exos = tous.filter((e) => e.dansFenetre.length >= 3);
   if (!exos.length) {
     return vide('records', 'Pas encore assez de séances par exercice', 'Il faut au moins 3 séances d\'un même exercice (avec de la charge, jusqu\'à 12 répétitions) pour suivre ta progression. Continue, l\'analyse se remplit toute seule.', METHODE_RECORDS);
   }
@@ -293,7 +295,7 @@ export function analyserRecords({ series, aujourdhui = new Date(), semaines = 26
   const parGroupe = ORDRE_GROUPES.map((g) => ({
     groupe: g,
     nom: GROUPES[g].nom,
-    exercices: exos
+    exercices: tous
       .filter((e) => e.groupe === g)
       .map((e) => ({ cle: e.cle, nom: e.nom, etiquettes: e.dansFenetre.map((p) => p.date), valeurs: e.dansFenetre.map((p) => p.rm), rm: e.rm, record: e.meilleurRm, seances: historiqueDe(e) })),
   })).filter((g) => g.exercices.length);

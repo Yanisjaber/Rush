@@ -129,3 +129,10 @@ test('compléments d\'adresse : nuit, jour et feuille du téléphone', () => {
   assert.deepEqual(nettoyerQ('nuit=hier'), {});
   assert.equal(construireAdresse({ page: '/sommeil', q: { nuit: '2026-10-13', fc: '1' } }), '#/sommeil?nuit=2026-10-13&fc=1');
 });
+
+test('adresse : ?exo= (exercice de la page Records) accepte une clé d\'exercice, ignore le reste', () => {
+  assert.equal(construireAdresse({ sport: 'muscu', page: '/analyse', sous: 'records', q: { exo: 'squat' } }), '#/muscu/analyse/records?exo=squat');
+  assert.equal(analyserAdresse('#/muscu/analyse/records?exo=perso-3f2a9c1e-0b7d-4c55-9a1e-6d2f8b4c7a10').q.exo, 'perso-3f2a9c1e-0b7d-4c55-9a1e-6d2f8b4c7a10');
+  assert.deepEqual(analyserAdresse('#/analyse/records?exo=<img src=x>').q, {}); // forme invalide : ignorée
+  assert.deepEqual(analyserAdresse('#/analyse/records?exo=a%20b').q, {});
+});

@@ -115,7 +115,7 @@
           {:else if g.type === 'lignes'}
             <GraphiqueLignes etiquettes={g.etiquettes} series={g.series} bandes={g.bandes || []} marqueurs={g.marqueurs || []} min={g.min} max={g.max} etiquette={g.titre} />
           {:else if g.type === 'exercices'}
-            <GraphiqueExercice groupes={g.groupes} bind:selection={exoVu} />
+            <GraphiqueExercice groupes={g.groupes} bind:selection={exoVu} exoDemande={route.q.exo || ''} />
           {:else if g.type === 'historique'}
             <HistoriqueExercice exo={exoVu?.exo} />
           {:else if g.type === 'chaleur'}

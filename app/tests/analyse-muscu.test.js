@@ -105,7 +105,7 @@ test('records : le squat qui monte chaque semaine → record récent ; tableau e
   assert.equal(blocs.length, 1);
   const { groupes } = blocs[0];
   assert.ok(groupes.length >= 1);
-  assert.ok(groupes.every((g) => g.exercices.length >= 1 && g.exercices.every((e) => e.etiquettes.length === e.valeurs.length && e.valeurs.length >= 3)));
+  assert.ok(groupes.every((g) => g.exercices.length >= 1 && g.exercices.every((e) => e.etiquettes.length === e.valeurs.length && e.valeurs.length >= 1)));
   assert.ok(groupes.find((g) => g.nom === 'Jambes').exercices.some((e) => e.cle === 'squat'));
 });
 
@@ -171,4 +171,16 @@ test('records : chaque séance de l\'historique porte l\'identifiant de la séan
   ];
   const squat = analyserRecords({ series: s, aujourdhui: AUJ }).graphiques.find((g) => g.type === 'exercices').groupes[0].exercices[0];
   assert.deepEqual(squat.seances.map((x) => x.id), [null, 'a2', 'a1']);
+});
+
+test('records : un exercice fait une seule fois est dans le menu et l\'historique (la carte du widget y mène), sans compter dans les statuts', () => {
+  const s = [];
+  for (let w = 0; w < 5; w++) s.push(serie(decalerJour(ISO, -w * 7 - 1), 'developpe-couche', 'pectoraux', 5, 60 + w));
+  s.push({ ...serie('2026-05-06', 'souleve-de-terre', 'dos', 5, 100), activity_id: 'x1' }); // une seule séance, ancienne
+  const a = analyserRecords({ series: s, aujourdhui: AUJ });
+  const dos = a.graphiques.find((g) => g.type === 'exercices').groupes.find((g) => g.nom === 'Dos');
+  assert.deepEqual(dos.exercices.map((e) => e.cle), ['souleve-de-terre']);
+  assert.equal(dos.exercices[0].seances.length, 1);
+  assert.equal(dos.exercices[0].seances[0].id, 'x1');
+  assert.equal(a.chiffres.find((c) => c.etiquette === 'Exercices suivis').valeur, '1'); // seul le développé couché (≥ 3 séances) est « suivi »
 });
