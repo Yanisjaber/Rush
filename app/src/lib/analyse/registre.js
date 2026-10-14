@@ -4,6 +4,7 @@ import { familleAffichage } from '../data/familles.js';
 import { analyserCharge } from './charge.js';
 import { analyserForme } from './forme.js';
 import { analyserPredictions } from './predictions.js';
+import { analyserTonnage, analyserGroupes, analyserRecords } from './muscu.js';
 
 const NOM_PERIODE = { sem12: '3 mois', sem26: '6 mois', sem52: '12 mois' };
 export const PERIODES = [
@@ -43,10 +44,33 @@ export const ANALYSES = {
     sportImpose: 'course', // l'analyse ne parle que de course à pied, quel que soit le filtre
     calculer: (d, o) => analyserPredictions({ seances: d.seances, objectifs: d.objectifs, hrMax: d.hrMax, aujourdhui: o.aujourdhui, nomSport: o.nomSport }),
   },
+  tonnage: {
+    titre: 'Tonnage et régularité',
+    sousTitre: 'Ton volume monte-t-il à un rythme sain ? T\'entraînes-tu assez souvent ?',
+    periodes: true,
+    periodeDefaut: 'sem26',
+    sportImpose: 'muscu', // l'analyse ne parle que de musculation, quel que soit le filtre
+    calculer: (d, o) => analyserTonnage({ series: d.series, aujourdhui: o.aujourdhui, semaines: o.semaines }),
+  },
+  groupes: {
+    titre: 'Équilibre musculaire',
+    sousTitre: 'Tous tes groupes musculaires reçoivent-ils le volume qu\'il leur faut ?',
+    periodes: false,
+    sportImpose: 'muscu',
+    calculer: (d, o) => analyserGroupes({ series: d.series, aujourdhui: o.aujourdhui }),
+  },
+  records: {
+    titre: 'Records et progression',
+    sousTitre: 'Où as-tu gagné en force, et où stagnes-tu ?',
+    periodes: true,
+    periodeDefaut: 'sem26',
+    sportImpose: 'muscu',
+    calculer: (d, o) => analyserRecords({ series: d.series, aujourdhui: o.aujourdhui, semaines: o.semaines }),
+  },
 };
 
 /** Widget de l'accueil → analyse ouverte quand on le touche. */
-export const ANALYSE_DU_WIDGET = { charge: 'charge', forme: 'forme', predictions: 'predictions' };
+export const ANALYSE_DU_WIDGET = { charge: 'charge', forme: 'forme', predictions: 'predictions', tonnage: 'tonnage', groupes: 'groupes', records: 'records' };
 
 export const estAnalyse = (id) => typeof id === 'string' && Object.hasOwn(ANALYSES, id);
 export const periodeValide = (cle, defaut = 'sem26') => (Object.hasOwn(NOM_PERIODE, cle) ? cle : defaut);

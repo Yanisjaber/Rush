@@ -24,7 +24,7 @@
   const userId = $derived(demo ? 'demo' : auth.session?.user?.id);
   const aujourdhui = new Date();
 
-  let brut = $state({ chargement: true, erreur: '', seances: [], planifiees: [], objectifs: [], hrMax: null });
+  let brut = $state({ chargement: true, erreur: '', seances: [], planifiees: [], objectifs: [], series: [], hrMax: null });
 
   async function charger(u) {
     if (!u) return;

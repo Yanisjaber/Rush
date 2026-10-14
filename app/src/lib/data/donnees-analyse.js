@@ -1,13 +1,13 @@
 // Chargement des données d'une page d'analyse : un an et demi de séances (les modèles de condition ont besoin de recul),
 // les séances prévues, les compétitions à venir et le profil. Les calculs eux-mêmes sont dans lib/analyse/.
-import { chargerSeancesLongue, chargerPlanifiees, chargerObjectifs, chargerProfil } from './api.js';
-import { donneesDemo } from './demo.js';
+import { chargerSeancesLongue, chargerPlanifiees, chargerObjectifs, chargerProfil, chargerSeriesForce } from './api.js';
+import { donneesDemo, seriesForceDemo } from './demo.js';
 import { dateIsoLocale } from '../utils/format.js';
 import { decalerJour } from '../analyse/maths.js';
 
 const RECUL_JOURS = 560; // ≈ 18 mois : 12 mois affichés + de quoi « chauffer » la condition
 
-/** Renvoie { seances, planifiees, objectifs, hrMax, erreur } (jamais d'exception). */
+/** Renvoie { seances, planifiees, objectifs, series (carnet de force), hrMax, erreur } (jamais d'exception). */
 export async function chargerDonneesAnalyse({ userId, demo, aujourdhui = new Date() }) {
   if (demo) {
     const d = donneesDemo(aujourdhui, RECUL_JOURS);
@@ -15,22 +15,25 @@ export async function chargerDonneesAnalyse({ userId, demo, aujourdhui = new Dat
       seances: [...d.seances].sort((a, b) => a.start_date_local.localeCompare(b.start_date_local)),
       planifiees: d.planifiees.filter((p) => p.category !== 'competition'),
       objectifs: d.objectifs,
+      series: seriesForceDemo(aujourdhui),
       hrMax: d.profil.hr_max,
       erreur: '',
     };
   }
   const fin = dateIsoLocale(aujourdhui);
-  const [s, p, o, pr] = await Promise.all([
+  const [s, p, o, pr, f] = await Promise.all([
     chargerSeancesLongue(userId, decalerJour(fin, -RECUL_JOURS), fin),
     chargerPlanifiees(userId, fin, decalerJour(fin, 200)),
     chargerObjectifs(userId, 8),
     chargerProfil(userId),
+    chargerSeriesForce(userId, RECUL_JOURS, 8000), // si le carnet de force n'est pas disponible, les autres analyses marchent quand même
   ]);
-  if (s.erreur) return { seances: [], planifiees: [], objectifs: [], hrMax: null, erreur: s.erreur };
+  if (s.erreur) return { seances: [], planifiees: [], objectifs: [], series: [], hrMax: null, erreur: s.erreur };
   return {
     seances: s.data || [],
     planifiees: (p.data || []).filter((x) => x.category !== 'competition'),
     objectifs: o.data || [],
+    series: f.data || [],
     hrMax: pr.data?.hr_max || null,
     erreur: p.erreur || o.erreur || '',
   };
