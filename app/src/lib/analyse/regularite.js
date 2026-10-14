@@ -85,8 +85,7 @@ export function analyserRegularite({ seances, aujourdhui = new Date(), semaines 
   const prefere = parJour.indexOf(Math.max(...parJour));
 
   let verdict;
-  if (pauseEnCours >= 14) verdict = { niveau: 'attention', titre: 'Tu as décroché', texte: `Aucune séance depuis ${pauseEnCours} jours (la dernière date du ${formatDateCourte(dates[dates.length - 1])}). Reprends doucement : une séance courte suffit pour relancer la machine.` };
-  else if (pct >= 25 && sansRepos >= 2 && sansRepos >= tenues * 0.6) verdict = { niveau: 'info', titre: 'Régulier, mais sans repos', texte: `Tu t'entraînes presque tous les jours : ${pluriel(sansRepos, 'semaine')} sur ${premiere.length} sans vrai jour de repos. La régularité est là, la récupération manque.` };
+  if (pct >= 25 && sansRepos >= 2 && sansRepos >= tenues * 0.6) verdict = { niveau: 'info', titre: 'Régulier, mais sans repos', texte: `Tu t'entraînes presque tous les jours : ${pluriel(sansRepos, 'semaine')} sur ${premiere.length} sans vrai jour de repos. La régularité est là, la récupération manque.` };
   else if (pct >= 75) verdict = { niveau: 'ok', titre: 'Très régulier', texte: `${tenues} semaines sur ${premiere.length} à ${CIBLE} jours d'entraînement ou plus : tu tiens un rythme solide.` };
   else if (pct >= 50) verdict = { niveau: 'ok', titre: 'Plutôt régulier', texte: `${tenues} semaines sur ${premiere.length} à ${CIBLE} jours ou plus. Quelques semaines plus creuses, mais le rythme est là.` };
   else if (pct >= 25) verdict = { niveau: 'info', titre: 'Irrégulier', texte: `Seulement ${tenues} semaines sur ${premiere.length} atteignent ${CIBLE} jours d'entraînement. La progression est plus lente quand le rythme saute.` };

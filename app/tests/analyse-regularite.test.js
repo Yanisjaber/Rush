@@ -54,9 +54,9 @@ test('régularité : 1 séance par semaine → peu régulier avec conseil de vis
   assert.ok(a.conseils.some((c) => /Vise 3 jours/.test(c.titre)));
 });
 
-test('régularité : pas de séance depuis plus de 14 jours → « Tu as décroché » et conseil prioritaire', () => {
+test('régularité : pas de séance depuis plus de 14 jours → pas de verdict « décroché », mais le conseil de reprise reste prioritaire', () => {
   const a = analyserRegularite({ seances: rythme(8, 3, 3), aujourdhui: AUJ, semaines: 12 }); // dernière séance il y a ~3 semaines
-  assert.equal(a.verdict.titre, 'Tu as décroché');
+  assert.notEqual(a.verdict.titre, 'Tu as décroché');
   assert.ok(a.brut.pauseEnCours >= 14);
   assert.equal(a.conseils[0].priorite, 'haute');
 });
