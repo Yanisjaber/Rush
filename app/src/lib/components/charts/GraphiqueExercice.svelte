@@ -18,6 +18,7 @@
 
   let ligne = $state(); // la ligne entière : les onglets des groupes + le sélecteur d'exercice à côté
   let exoZone = $state(); // le sélecteur d'exercice
+  let chiffresZone = $state(); // les chiffres (1RM, record), à droite de la ligne
   let mesure = $state(); // copie invisible de tous les onglets à plat
   let compact = $state(false);
   let ouvert = $state(false);
@@ -29,7 +30,7 @@
     const calculer = () => {
       // la place des onglets = la ligne moins le sélecteur d'exercice et l'écart entre les deux (on ne mesure pas les onglets
       // eux-mêmes : en mode compact ils sont minuscules, ça ne dirait pas s'il y a la place de repasser à plat)
-      const place = ligne.clientWidth - (exoZone ? exoZone.offsetWidth + 12 : 0);
+      const place = ligne.clientWidth - (exoZone ? exoZone.offsetWidth + 12 : 0) - (chiffresZone ? chiffresZone.offsetWidth + 12 : 0);
       compact = mesure.scrollWidth > place;
       if (!compact) ouvert = false;
     };
@@ -37,6 +38,7 @@
     const obs = new ResizeObserver(calculer);
     obs.observe(ligne);
     if (exoZone) obs.observe(exoZone); // la largeur du sélecteur change avec le nom de l'exercice
+    if (chiffresZone) obs.observe(chiffresZone); // et celle des chiffres avec l'exercice choisi
     return () => obs.disconnect();
   });
 
@@ -90,6 +92,8 @@
         <span class="seul">{exo.nom}</span>
       {/if}
     </div>
+    <!-- Les chiffres de l'exercice, tout à droite de la ligne -->
+    <p class="chiffres" bind:this={chiffresZone}>1RM estimé <strong>{formatKg(exo.rm)} kg</strong> · record <strong>{formatKg(exo.record)} kg</strong></p>
   </div>
   {#if ouvert}
     <ul class="liste-groupes" style:top="{posMenu.top}px" style:left="{posMenu.left}px">
@@ -98,7 +102,6 @@
       {/each}
     </ul>
   {/if}
-  <p class="chiffres">1RM estimé <strong>{formatKg(exo.rm)} kg</strong> · record <strong>{formatKg(exo.record)} kg</strong></p>
   <GraphiqueLignes
     etiquettes={exo.etiquettes}
     series={[{ nom: exo.nom, couleur: 'var(--sport-muscu)', valeurs: exo.valeurs }]}
@@ -113,7 +116,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 8px 12px;
-    margin-bottom: 6px;
+    margin-bottom: 12px;
   }
   .onglets {
     position: relative;
@@ -231,8 +234,9 @@
     font-weight: 600;
   }
   .chiffres {
-    margin: 0 0 8px;
+    margin: 0 0 0 auto;
     font-size: 13px;
+    white-space: nowrap;
     color: var(--texte-doux);
   }
   .chiffres strong {
