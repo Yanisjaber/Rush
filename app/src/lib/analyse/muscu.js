@@ -318,5 +318,5 @@ export function analyserRecords({ series, aujourdhui = new Date(), semaines = 26
   if (records.length) conseils.push({ priorite: 'faible', titre: 'Profite de la dynamique', texte: 'Quand un record tombe, vise des petits pas (+1 à +2,5 kg) plutôt qu\'un gros saut : c\'est ce qui fait durer la série de progrès.' });
   if (!conseils.length) conseils.push({ priorite: 'info', titre: 'Continue de noter tes charges', texte: 'Plus tu enregistres de séances, plus le suivi des records est précis. Note chaque série avec sa charge réelle.' });
 
-  return { id: 'records', insuffisant: false, verdict, chiffres, graphiques, lectures, conseils: triConseils(conseils), methode: METHODE_RECORDS, brut: { suivis, records, plateaux, progres } };
+  return { id: 'records', insuffisant: false, verdict, chiffres, graphiques, lectures, conseils: triConseils(conseils), methode: METHODE_RECORDS, brut: { suivis, records, plateaux, progres, exos, fin } };
 }

@@ -4,7 +4,7 @@
 // Les seuils viennent de repères courants en entraînement (ACWR, polarisation 80/20, volume hebdomadaire…) : ce sont des
 // repères statistiques, les textes le disent quand ça compte.
 import { formatKg, formatNombre } from '../utils/format.js';
-import { formatTemps, formatAllure } from './maths.js';
+import { formatTemps, formatAllure, ecartJours, moyenne } from './maths.js';
 
 const v1 = (v, n = 1) => String(Math.round(v * 10 ** n) / 10 ** n).replace('.', ',');
 const pts = (v) => `${formatNombre(Math.round(v))} pts`;
@@ -348,39 +348,176 @@ export function rushGroupes({ brut: b }) {
 // ---------------------------------------------------------------------------------------------------------------------
 // Records et plateaux
 // ---------------------------------------------------------------------------------------------------------------------
+
+/** Pente (kg de 1RM estimé par mois) d'une série de points { date, rm }, par moindres carrés sur les vraies dates. */
+function penteMois(points) {
+  if (points.length < 3) return null;
+  const t0 = points[0].date;
+  const xs = points.map((p) => ecartJours(t0, p.date) / 30);
+  const mx = moyenne(xs);
+  const my = moyenne(points.map((p) => p.rm));
+  let sxy = 0;
+  let sxx = 0;
+  points.forEach((p, i) => {
+    sxy += (xs[i] - mx) * (p.rm - my);
+    sxx += (xs[i] - mx) ** 2;
+  });
+  return sxx > 0.01 ? sxy / sxx : null;
+}
+
+/** Charge à mettre sur la barre pour viser un 1RM estimé donné en `reps` répétitions (formule d'Epley), arrondie à 2,5 kg. */
+const chargePour = (rm, reps) => Math.round(rm / (1 + reps / 30) / 2.5) * 2.5;
+
 export function rushRecords({ brut: b }) {
   const parties = [];
   const plan = [];
-  const { suivis, records, plateaux, progres } = b;
-  const stables = suivis.filter((e) => e.statut === 'stable');
+  const { records, plateaux, fin } = b;
 
-  if (records.length) parties.push({ titre: 'Tes records récents', ton: 'ok', texte: `${records.map((e) => `${e.nom} (${formatKg(e.meilleurRm)} kg)`).join(', ')} : record${records.length > 1 ? 's' : ''} battu${records.length > 1 ? 's' : ''} ces 4 dernières semaines. C'est la preuve que ton entraînement paie.` });
-  if (progres.length) parties.push({ titre: 'Ceux qui montent', ton: 'ok', texte: `${progres.map((e) => e.nom).join(', ')} : la courbe monte sur les dernières séances, même sans nouveau record. Continue sur cette lancée.` });
-  if (plateaux.length) parties.push({ titre: 'Ceux qui stagnent', ton: 'attention', texte: `${plateaux.map((e) => `${e.nom} (${Math.round(e.joursRecord / 7)} semaines sans record)`).join(', ')}. Les séances s'enchaînent sans progrès : le corps s'est habitué au même stimulus.` });
-  if (stables.length) parties.push({ titre: 'Ceux qui tiennent', ton: 'info', texte: `${stables.map((e) => e.nom).join(', ')} : charges stables, ni record récent ni plateau inquiétant.` });
+  // Métriques par exercice (tout l'historique de l'exercice)
+  const exos = b.exos.map((e) => {
+    const pts = e.serie;
+    const premier = pts[0];
+    const dernier = pts[pts.length - 1];
+    const span = Math.max(1, ecartJours(premier.date, dernier.date));
+    const gain = e.meilleurRm - premier.rm;
+    const gainPct = premier.rm > 0 ? (gain / premier.rm) * 100 : 0;
+    const recents = pts.filter((p) => ecartJours(p.date, fin) <= 90);
+    const precedents = pts.filter((p) => ecartJours(p.date, fin) > 90 && ecartJours(p.date, fin) <= 180);
+    const moitie = Math.floor(pts.length / 2);
+    return {
+      e,
+      nom: e.nom,
+      groupe: e.groupe,
+      premier,
+      dernier,
+      span,
+      gain,
+      gainPct,
+      pctMois: span >= 28 ? gainPct / (span / 30) : null,
+      kgMois: penteMois(recents),
+      kgMoisAvant: penteMois(precedents),
+      parMois: recents.length / 3,
+      forme: e.meilleurRm > 0 ? (dernier.rm / e.meilleurRm) * 100 : 100,
+      depuis: ecartJours(dernier.date, fin),
+      premiereMoitie: moitie >= 4 ? penteMois(pts.slice(0, moitie)) : null,
+      secondeMoitie: moitie >= 4 ? penteMois(pts.slice(moitie)) : null,
+    };
+  });
+  const avecRythme = exos.filter((x) => x.pctMois != null && x.span >= 56);
 
-  const gains = suivis.map((e) => ({ e, g: e.dansFenetre[e.dansFenetre.length - 1].rm - e.dansFenetre[0].rm }));
-  const top = gains.reduce((m, x) => (x.g > m.g ? x : m), gains[0]);
-  if (top.g > 0) parties.push({ titre: 'Ton plus gros progrès', ton: 'info', texte: `${top.e.nom} : +${formatKg(top.g)} kg de 1RM estimé depuis ta première séance de la période.` });
-
-  for (const e of plateaux.slice(0, 2)) {
-    plan.push({ quand: `Casser le plateau : ${e.nom}`, action: `Une semaine plus légère (60 à 70 % de ta charge), puis change le schéma : par exemple passe de 5 × 5 à 4 × 6, ou ajoute une série à charge égale.` });
+  // --- 1. Le bilan global : à quelle vitesse ta force progresse-t-elle ?
+  if (avecRythme.length) {
+    const m = moyenne(avecRythme.map((x) => x.pctMois));
+    const total = moyenne(avecRythme.map((x) => x.gainPct));
+    const mois = moyenne(avecRythme.map((x) => x.span / 30));
+    parties.push({
+      titre: 'Le rythme de ta force',
+      ton: m < 0.3 ? 'attention' : 'ok',
+      texte: `Sur ${pluriel(avecRythme.length, 'exercice')}, ton 1RM estimé a gagné en moyenne ${v1(total)} % en ${v1(mois)} mois, soit ${v1(m)} % par mois. ${m >= 3 ? 'C\'est un rythme de débutant : les premiers mois, le système nerveux s\'adapte vite. Il ralentira, c\'est normal.' : m >= 1 ? 'C\'est un bon rythme d\'intermédiaire : on progresse de façon régulière, mais il faut déjà du travail précis.' : m >= 0.3 ? 'Un rythme d\'avancé : chaque kilo se gagne lentement, la patience et la régularité comptent.' : 'Ta force n\'avance quasiment plus : il est temps de changer quelque chose (volume, schéma de séries, récupération).'}`,
+    });
   }
-  if (records.length || progres.length) plan.push({ quand: 'Pour ceux qui montent', action: 'Avance par petits pas (+1 à +2,5 kg) plutôt qu\'un gros saut : c\'est ce qui fait durer la série de progrès.' });
-  if (!plan.length) plan.push({ quand: 'Ce mois-ci', action: 'Choisis un exercice principal et vise +1 répétition à charge égale, ou +2,5 kg : un petit objectif concret relance la progression.' });
+
+  // --- 2. Qui avance vite, qui traîne (sur les 3 derniers mois, en kg par mois)
+  const rapides = exos.filter((x) => x.kgMois != null).sort((x, y) => y.kgMois - x.kgMois);
+  if (rapides.length >= 3) {
+    const top = rapides.slice(0, 2);
+    const bas = rapides.slice(-2).reverse().filter((x) => x.kgMois < top[top.length - 1].kgMois);
+    const fmt = (x) => `${x.nom} (${x.kgMois >= 0 ? '+' : ''}${v1(x.kgMois)} kg par mois)`;
+    parties.push({
+      titre: 'Qui avance vite, qui traîne',
+      ton: 'info',
+      texte: `Ces 3 derniers mois, tes plus gros moteurs : ${top.map(fmt).join(' et ')}.${bas.length ? ` Les plus lents : ${bas.map(fmt).join(' et ')}.` : ''} L'écart vient souvent de la fréquence et du volume réservés à chaque exercice, pas du talent.`,
+    });
+  }
+
+  // --- 3. Le ralentissement : tes premiers mois contre les derniers
+  const lents = exos.filter((x) => x.premiereMoitie != null && x.secondeMoitie != null && x.premiereMoitie > 0.2);
+  if (lents.length >= 2) {
+    const ralentis = lents.filter((x) => x.secondeMoitie < x.premiereMoitie * 0.6);
+    parties.push({
+      titre: 'Ce qui a changé depuis tes débuts',
+      ton: ralentis.length > lents.length / 2 ? 'info' : 'ok',
+      texte: ralentis.length > lents.length / 2
+        ? `${ralentis.length} exercices sur ${lents.length} progressent plus lentement qu'au début (par exemple ${ralentis[0].nom} : ${v1(ralentis[0].premiereMoitie)} kg par mois au début, ${v1(ralentis[0].secondeMoitie)} maintenant). C'est la règle des rendements décroissants : plus on est fort, plus chaque kilo coûte cher. La réponse, c'est de varier le stimulus, pas de s'acharner.`
+        : `Tu gardes un rythme de progrès proche de celui de tes débuts sur la plupart de tes exercices : un très bon signe, ta marge de progression est encore grande.`,
+    });
+  }
+
+  // --- 4. Fréquence et progrès
+  const freq = exos.filter((x) => x.kgMois != null && x.parMois >= 3);
+  const rare = exos.filter((x) => x.kgMois != null && x.parMois > 0 && x.parMois < 1.5);
+  if (freq.length && rare.length) {
+    const a = moyenne(freq.map((x) => x.kgMois));
+    const r = moyenne(rare.map((x) => x.kgMois));
+    if (a - r >= 0.4) {
+      parties.push({ titre: 'La fréquence paie', ton: 'info', texte: `Les exercices faits au moins 3 fois par mois progressent de ${v1(a)} kg par mois, ceux faits moins de 2 fois de ${v1(r)} kg. Pour progresser sur un mouvement, il faut le pratiquer assez souvent : une fois toutes les deux semaines ne suffit pas à ancrer le geste.` });
+    }
+  }
+
+  // --- 5. Ta forme du jour face à tes records
+  const enRetrait = exos.filter((x) => x.forme < 90 && x.depuis <= 21).sort((x, y) => x.forme - y.forme);
+  if (enRetrait.length) {
+    parties.push({
+      titre: 'Où tu es sous ton record',
+      ton: 'info',
+      texte: `À ta dernière séance, ${enRetrait.slice(0, 3).map((x) => `${x.nom} était à ${Math.round(x.forme)} % de son record`).join(', ')}. Une série légère ou une mauvaise journée ne veut rien dire, mais si c'est le cas séance après séance, regarde ton sommeil, ta récupération et ton volume.`,
+    });
+  }
+
+  // --- 6. Poussée contre tirage, en force pure
+  const meilleurDe = (groupes) => exos.filter((x) => groupes.includes(x.groupe)).sort((x, y) => y.e.meilleurRm - x.e.meilleurRm)[0];
+  const poussee = meilleurDe(['pectoraux', 'epaules']);
+  const tirage = meilleurDe(['dos']);
+  if (poussee && tirage) {
+    const r = tirage.e.meilleurRm / poussee.e.meilleurRm;
+    parties.push({
+      titre: 'Poussée contre tirage',
+      ton: r < 0.75 ? 'attention' : 'ok',
+      texte: `Ton meilleur mouvement de poussée est ${poussee.nom} (${formatKg(poussee.e.meilleurRm)} kg), ton meilleur de tirage ${tirage.nom} (${formatKg(tirage.e.meilleurRm)} kg) : le tirage vaut ${Math.round(r * 100)} % de la poussée. ${r < 0.75 ? 'Le dos est en retard : à la longue, ça fragilise les épaules. Un bon repère est d\'approcher 80 à 100 %.' : 'Un bon équilibre pour la santé des épaules.'}`,
+    });
+  }
+
+  // --- 7. Les exercices délaissés
+  const delaisses = exos.filter((x) => x.depuis > 42 && x.e.serie.length >= 6).sort((x, y) => y.depuis - x.depuis);
+  if (delaisses.length) {
+    parties.push({ titre: 'Ceux que tu as lâchés', ton: 'info', texte: `${delaisses.slice(0, 3).map((x) => `${x.nom} (pas fait depuis ${Math.round(x.depuis / 7)} semaines, ${pluriel(x.e.serie.length, 'séance')} avant)`).join(', ')}. Si ce n'est pas voulu, un mouvement qu'on lâche est un mouvement qu'on perd.` });
+  }
+
+  // --- 8. Records en grappe, plateaux
+  if (records.length >= 3) {
+    parties.push({ titre: 'Tu es dans un pic', ton: 'attention', texte: `${records.length} exercices battent leur record en même temps. C'est la marque d'un bon bloc d'entraînement, mais aussi d'un corps tendu : dans la plupart des cas, un plateau ou une baisse suit 3 à 6 semaines après. Mieux vaut le prévoir que le subir.` });
+    plan.push({ quand: 'Dans 3 à 4 semaines', action: 'Place une semaine de décharge (même mouvements, 60 à 70 % des charges, moins de séries) pour consolider ces records au lieu de les user.' });
+  }
+  if (plateaux.length) {
+    parties.push({ titre: 'Ceux qui stagnent', ton: 'attention', texte: `${plateaux.map((e) => `${e.nom} (${Math.round(e.joursRecord / 7)} semaines sans record)`).join(', ')}. Les séances s'enchaînent sans progrès : le corps est habitué au même stimulus, ou il manque de récupération.` });
+  }
+
+  // --- Plan : un objectif concret et chiffré par exercice moteur, puis les plateaux
+  const moteurs = [...exos].filter((x) => x.depuis <= 21 && x.e.serie.length >= 4).sort((x, y) => (y.kgMois ?? -99) - (x.kgMois ?? -99)).slice(0, 3);
+  for (const x of moteurs) {
+    const cible = x.e.meilleurRm * 1.02;
+    const w = chargePour(cible, 5);
+    plan.push({ quand: `Prochain record : ${x.nom}`, action: `Vise ${formatKg(Math.round(cible * 2) / 2)} kg de 1RM estimé (+2 %). Concrètement : 5 répétitions à ${formatKg(w)} kg, ou ${formatKg(chargePour(cible, 8))} kg sur 8 répétitions.${x.kgMois > 0.5 ? ` À ton rythme actuel (${v1(x.kgMois)} kg par mois), c'est possible dans environ ${Math.max(1, Math.round((x.e.meilleurRm * 0.02) / x.kgMois * 4))} semaines.` : ''}` });
+  }
+  for (const e of plateaux.slice(0, 2)) {
+    plan.push({ quand: `Casser le plateau : ${e.nom}`, action: 'Une semaine à 60-70 % de ta charge, puis change le schéma (5 × 5 vers 4 × 6, ou une série de plus à charge égale) et passe à 2 séances par semaine sur ce mouvement.' });
+  }
+  if (delaisses.length) plan.push({ quand: 'Ce mois-ci', action: `Remets ${delaisses[0].nom} au programme, une fois par semaine, à 70 % de ton ancienne charge.` });
+  if (!plan.length) plan.push({ quand: 'Ce mois-ci', action: 'Choisis un exercice principal et vise +1 répétition à charge égale : un petit objectif concret relance la progression.' });
   plan.push({ quand: 'Toujours', action: 'Note chaque série avec sa charge réelle : plus tes données sont précises, plus ce suivi est fiable.' });
 
-  const plusLourd = suivis.reduce((m, e) => (e.meilleurRm > m.meilleurRm ? e : m), suivis[0]);
-  const constat = `${pluriel(records.length, 'record')} récent${records.length > 1 ? 's' : ''}, ${pluriel(plateaux.length, 'plateau')}, ${suivis.length} exercices suivis.`;
+  const m = avecRythme.length ? moyenne(avecRythme.map((x) => x.pctMois)) : null;
+  const constat = `${pluriel(b.exos.length, 'exercice')} suivis${m != null ? `, ta force estimée progresse de ${v1(m)} % par mois en moyenne` : ''}, ${pluriel(records.length, 'record')} ces 4 dernières semaines.`;
+  const plusHaut = exos.reduce((x, y) => (y.e.meilleurRm > x.e.meilleurRm ? y : x), exos[0]);
   return {
-    accroche: accroche(constat, parties, { ok: 'ta progression est saine.', un: 'un exercice demande un changement de stratégie.', deux: 'plusieurs exercices demandent un changement de stratégie.' }),
+    accroche: accroche(constat, parties, { ok: 'ta progression est saine.', un: 'un point mérite ta stratégie.', deux: 'deux points demandent une stratégie.' }),
     parties,
     plan,
     profil: [
       { etiquette: 'Records récents', valeur: String(records.length) },
-      { etiquette: 'En progression', valeur: String(progres.length) },
+      { etiquette: 'Progrès moyen', valeur: m != null ? `${v1(m)} % / mois` : '—' },
       { etiquette: 'En plateau', valeur: String(plateaux.length) },
-      { etiquette: '1RM le plus haut', valeur: `${formatKg(plusLourd.meilleurRm)} kg` },
+      { etiquette: '1RM le plus haut', valeur: `${formatKg(plusHaut.e.meilleurRm)} kg` },
     ],
   };
 }
