@@ -26,6 +26,7 @@
 <div
   class="grille"
   class:dense={colonnes > 26}
+  class:large={reperes}
   role="img"
   aria-label={etiquette}
   style:grid-template-columns={reperes ? `16px repeat(${colonnes}, minmax(0, 1fr))` : `repeat(${colonnes}, minmax(0, 1fr))`}
@@ -59,6 +60,12 @@
   }
   .dense .case {
     border-radius: 2px;
+  }
+  /* Avec les repères (page d'analyse) : la grille prend toute la largeur, les cases sont des rectangles de hauteur fixe
+     (des carrés rempliraient l'écran en 3 mois) */
+  .large .case {
+    aspect-ratio: auto;
+    height: 28px;
   }
   .semaine,
   .jour {
