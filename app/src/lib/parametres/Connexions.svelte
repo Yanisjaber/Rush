@@ -1,5 +1,5 @@
 <script>
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, untrack } from 'svelte';
   import { route, ouvrirPanneau, fermerPanneau } from '../routeur.svelte.js';
   import LogoApp from '../components/LogoApp.svelte';
   import PanneauLicence from '../components/PanneauLicence.svelte';
