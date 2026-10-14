@@ -78,14 +78,6 @@ export const WIDGETS = {
     tailles: ['m', 'l'],
     taille: 'm',
   },
-  force: {
-    nom: 'Séances de force',
-    description: 'Combien de séances par semaine, et depuis combien de semaines tu tiens le rythme.',
-    categorie: 'Musculation',
-    sports: ['muscu'],
-    tailles: ['m', 'l'],
-    taille: 'm',
-  },
   seancedujour: {
     nom: 'Séance du jour',
     description: 'Le dossard de ta prochaine séance de force, avec un bouton pour la démarrer.',
@@ -117,14 +109,6 @@ export const WIDGETS = {
     sports: ['muscu'],
     tailles: ['m', 'l', 'xl'],
     taille: 'xl',
-  },
-  programme: {
-    nom: 'Au programme',
-    description: 'Les exercices de ta prochaine séance : séries, répétitions et charges.',
-    categorie: 'Musculation',
-    sports: ['muscu'],
-    tailles: ['m', 'l'],
-    taille: 'm',
   },
   groupes: {
     nom: 'Séries par groupe',
@@ -218,13 +202,10 @@ export const ORDRE_ONGLET = {
   hyrox: ['hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'semaine', 'chargeforce'],
 };
 
-// Widgets propres à un onglet riche (ceux qui ne sont pas des widgets « tous sports » réutilisés)
-// « Au programme » n'est plus dans la composition par défaut de Muscu (la carte « Séance du jour » montre déjà le programme),
-// mais il reste un widget propre à Muscu : disponible dans « Personnaliser », jamais composé d'office sur l'accueil général.
-const PROPRES_AUX_ONGLETS = new Set([
-  ...Object.values(ORDRE_ONGLET).flat().filter((id) => Object.hasOwn(WIDGETS, id) && WIDGETS[id].sports !== 'tous'),
-  'programme',
-]);
+// Widgets propres à un onglet riche (ceux qui ne sont pas des widgets « tous sports » réutilisés) : jamais composés d'office sur l'accueil général
+const PROPRES_AUX_ONGLETS = new Set(
+  Object.values(ORDRE_ONGLET).flat().filter((id) => Object.hasOwn(WIDGETS, id) && WIDGETS[id].sports !== 'tous'),
+);
 
 /** Ordre de composition automatique de l'accueil. */
 const ORDRE_AUTO = [
@@ -242,13 +223,11 @@ const ORDRE_AUTO = [
   'tonnage',
   'chargemuscu',
   'records',
-  'programme',
   'groupes',
   'hyroxtest',
   'hyroxallure',
   'hyroxgains',
   'chargeforce',
-  'force',
   'meilleures',
   'regularite',
   'dernieres',
@@ -340,6 +319,8 @@ export function normaliserListe(brut) {
 
 /** Les onglets de sport qui ont leur propre composition modifiable (Muscu, Hyrox). */
 export const ONGLETS_PERSONNALISABLES = Object.keys(ORDRE_ONGLET);
+/** Onglets dont la bibliothèque est limitée à leurs propres widgets (ceux de ORDRE_ONGLET). */
+const ONGLETS_FERMES = new Set(['muscu']);
 
 /**
  * Widgets qu'on peut encore ajouter à la liste d'un onglet : ceux qui concernent ce sport (ou tous les sports)
@@ -347,6 +328,8 @@ export const ONGLETS_PERSONNALISABLES = Object.keys(ORDRE_ONGLET);
  */
 export function disponiblesOnglet(liste, sport) {
   const presents = new Set(liste.map((w) => w.id));
+  // L'onglet Muscu n'a que ses propres widgets : on peut les réordonner, les redimensionner, les retirer et les remettre, rien d'autre
+  if (ONGLETS_FERMES.has(sport)) return ORDRE_ONGLET[sport].filter((id) => !presents.has(id));
   return Object.keys(WIDGETS).filter((id) => !presents.has(id) && estPertinent(id, [sport]));
 }
 

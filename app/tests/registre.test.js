@@ -66,18 +66,17 @@ test('disponibles : exclut les widgets déjà présents', () => {
   // à un sport restent disponibles dans la bibliothèque, mais pas composés d'office.
   const sportifs = disponibles(d, []).sort();
   assert.deepEqual(sportifs, [
-    'chargeforce', 'chargemuscu', 'efficacite', 'force', 'groupes', 'hyroxallure', 'hyroxdossard', 'hyroxgains', 'hyroxtest',
-    'meilleures', 'predictions', 'programme', 'puissance', 'records', 'seancedujour', 'tonnage',
+    'chargeforce', 'chargemuscu', 'efficacite', 'groupes', 'hyroxallure', 'hyroxdossard', 'hyroxgains', 'hyroxtest',
+    'meilleures', 'predictions', 'puissance', 'records', 'seancedujour', 'tonnage',
   ]);
   // Un coureur qui fait aussi du vélo voit ses widgets de course et de vélo composés automatiquement
   const coureur = compositionAuto(['course', 'velo']).widgets.map((w) => w.id);
   for (const id of ['predictions', 'efficacite', 'meilleures', 'puissance']) assert.ok(coureur.includes(id), id);
-  assert.equal(coureur.includes('force'), false);
 });
 
 test("onglets riches : muscu et Hyrox ont leur composition, absente de l'onglet « Tout »", () => {
   const general = compositionAuto(['muscu', 'hyrox']).widgets.map((w) => w.id);
-  for (const id of ['seancedujour', 'tonnage', 'chargemuscu', 'records', 'programme', 'groupes', 'hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'chargeforce']) {
+  for (const id of ['seancedujour', 'tonnage', 'chargemuscu', 'records', 'groupes', 'hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'chargeforce']) {
     assert.equal(general.includes(id), false, id);
     assert.ok(existe(id) && estPertinent(id, id.startsWith('hyrox') || id === 'chargeforce' ? ['hyrox'] : ['muscu']), id);
   }
@@ -130,10 +129,11 @@ test("composerOnglet : la composition personnalisée prime, sinon la composition
 });
 
 test("disponiblesOnglet : seulement les widgets du sport (ou de tous les sports) qui ne sont pas déjà là", () => {
-  const dispo = disponiblesOnglet([{ id: 'tonnage', taille: 'l' }, { id: 'semaine', taille: 'l' }], 'muscu');
-  assert.ok(dispo.includes('records') && dispo.includes('avenir') && dispo.includes('dernieres')); // muscu + tous sports
-  assert.ok(!dispo.includes('tonnage') && !dispo.includes('semaine')); // déjà présents
-  assert.ok(!dispo.includes('hyroxtest') && !dispo.includes('predictions')); // d'autres sports
+  // Hyrox : ses widgets et ceux de tous les sports. (L'onglet Muscu, lui, est limité à ses 7 widgets : voir le test dédié plus bas.)
+  const dispo = disponiblesOnglet([{ id: 'hyroxtest', taille: 'l' }, { id: 'semaine', taille: 'l' }], 'hyrox');
+  assert.ok(dispo.includes('hyroxdossard') && dispo.includes('avenir') && dispo.includes('dernieres')); // hyrox + tous sports
+  assert.ok(!dispo.includes('hyroxtest') && !dispo.includes('semaine')); // déjà présents
+  assert.ok(!dispo.includes('records') && !dispo.includes('predictions')); // d'autres sports
 });
 
 test("onglet d'un sport : le dossard d'objectif reste en premier, puis les widgets du sport, puis les autres", () => {
@@ -144,4 +144,17 @@ test("onglet d'un sport : le dossard d'objectif reste en premier, puis les widge
   const iCharge = ids.indexOf('charge');
   assert.ok(iPred > 0 && iPred < iCharge, 'les widgets de course passent avant les widgets généraux');
   assert.deepEqual([...ids].sort(), widgets.map((w) => w.id).sort()); // rien d'oublié ni ajouté
+});
+
+test('muscu : exactement les 7 widgets de la maquette, dans cet ordre, et rien d\'autre dans sa bibliothèque', () => {
+  const sept = ['seancedujour', 'tonnage', 'dernieres', 'records', 'groupes', 'regularite', 'chargemuscu'];
+  assert.deepEqual(ORDRE_ONGLET.muscu, sept);
+  assert.equal(existe('programme'), false); // « Au programme » et « Séances de force » n'existent plus
+  assert.equal(existe('force'), false);
+  assert.deepEqual(composerOnglet([], 'muscu').map((w) => w.id), sept);
+  // Bibliothèque de l'onglet Muscu : seulement ses propres widgets retirés (jamais Objectif, Charge, Forme, Volume…)
+  assert.deepEqual(disponiblesOnglet([], 'muscu').sort(), [...sept].sort());
+  assert.deepEqual(disponiblesOnglet(sept.slice(0, 5).map((id) => ({ id })), 'muscu').sort(), ['chargemuscu', 'regularite']);
+  // Les autres onglets gardent leur bibliothèque habituelle
+  assert.ok(disponiblesOnglet([], 'hyrox').includes('objectif'));
 });
