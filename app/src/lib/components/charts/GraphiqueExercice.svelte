@@ -126,8 +126,10 @@
   .onglet[aria-expanded='true'] {
     color: var(--texte);
   }
+  /* Dans le menu du haut la pastille est posée sur le fond de la page, très sombre, et ressort bien. Ici on est sur une carte plus
+     claire : le même fond (--surface-2) s'y noierait, donc on le renforce pour garder le même contraste que dans le menu. */
   .onglet.courant {
-    background: var(--surface-2);
+    background: color-mix(in srgb, var(--texte) 9%, var(--surface));
     color: var(--texte);
   }
   .liste-groupes {
