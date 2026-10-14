@@ -6,9 +6,24 @@
   import { SPORTS, couleurSport } from '../sports.js';
   import { formatDuree, formatKm, formatDateCourte } from '../utils/format.js';
 
-  // Les plus récentes, quelle que soit leur date (contexte.dernieres) : la liste ne se vide pas pendant une pause
+  // Les plus récentes, quelle que soit leur date (contexte.dernieres) : la liste ne se vide pas pendant une pause.
+  // Autant de lignes que la carte a de place : on mesure la hauteur disponible (la carte prend celle de sa rangée, la liste
+  // ne l'agrandit jamais) et on divise par la hauteur d'une ligne.
   let { contexte, taille = 'm' } = $props();
-  const recentes = $derived(contexte.dernieres.slice(0, taille === 'l' ? 8 : 5));
+  const HAUTEUR_LIGNE = 61; // 60 px mini + 1 px de séparation
+  let hauteur = $state(0);
+  let zone = $state(); // l'élément qui reçoit la liste
+  // Mesure explicite (et pas bind:clientHeight) : on relit la hauteur à chaque changement de taille de la zone
+  $effect(() => {
+    if (!zone) return;
+    const mesurer = () => (hauteur = zone.clientHeight);
+    mesurer();
+    const obs = new ResizeObserver(mesurer);
+    obs.observe(zone);
+    return () => obs.disconnect();
+  });
+  const nb = $derived(hauteur ? Math.max(1, Math.floor((hauteur + 1) / HAUTEUR_LIGNE)) : taille === 'l' ? 8 : 5); // avant la mesure : l'ancien nombre fixe
+  const recentes = $derived(contexte.dernieres.slice(0, nb));
   const nomFamille = (f) => (SPORTS[f] || SPORTS.autre).court;
 
   function detail(s) {
@@ -18,8 +33,10 @@
   }
 </script>
 
+<div class="cadre">
 <Bloc titre="Dernières séances">
   {#if recentes.length}
+    <div class="zone" bind:this={zone}>
     <ul class="seances">
       {#each recentes as s (s.id)}
         <li>
@@ -34,12 +51,37 @@
         </li>
       {/each}
     </ul>
+    </div>
   {:else}
     <p class="vide">Aucune séance à afficher.</p>
   {/if}
 </Bloc>
+</div>
 
 <style>
+  /* La carte remplit la rangée ; la zone de la liste prend tout l'espace restant sous le titre (au moins 4 lignes) et la liste,
+     posée dessus en absolu, ne peut pas l'agrandir : c'est la hauteur de la rangée qui décide du nombre de lignes. */
+  .cadre {
+    display: flex;
+  }
+  .cadre :global(.bloc) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .zone {
+    position: relative;
+    flex: 1;
+    min-height: 244px; /* 4 lignes : la carte ne dépasse jamais les autres, elle prend la hauteur de sa rangée et ajoute des lignes si elle est plus haute */
+  }
+  .seances {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
   .seances li {
     border-top: 1px solid var(--trait);
   }

@@ -82,10 +82,11 @@ export async function chargerSeances(userId, jours = 84, limite = 600) {
 
 /**
  * Les N séances les plus récentes, QUELLE QUE SOIT leur date (pour la liste « Dernières séances » : elle ne doit pas
- * se vider parce qu'on n'a rien fait depuis 12 semaines). On en charge un peu plus que ce qu'on affiche : le filtre
- * de sport se fait ensuite côté écran.
+ * se vider parce qu'on n'a rien fait depuis 12 semaines). On en charge beaucoup plus que ce qu'on affiche (la carte en montre
+ * autant que sa hauteur le permet) : le filtre de sport se fait ensuite côté écran, et il faut remonter assez loin
+ * pour trouver des séances d'un sport pratiqué moins souvent.
  */
-export async function chargerDernieresSeances(userId, limite = 40) {
+export async function chargerDernieresSeances(userId, limite = 200) {
   const r = await sb
     .from('activities')
     .select(COLONNES_SEANCE)
