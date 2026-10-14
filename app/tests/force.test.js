@@ -7,6 +7,7 @@ import {
   seriesParGroupe,
   progressionParExercice,
   exercicesPhares,
+  joursDepuisDate,
   resumeProgramme,
   programmeDuJour,
   brouillonDepuisProgramme,
@@ -279,4 +280,20 @@ test('regroupement par exercice : ordre de la séance, séries dans l\'ordre, to
   assert.equal(g[0].tonnage, 1040);
   assert.equal(g[1].tonnage, 0);
   assert.deepEqual(grouperParExercice([]), []);
+});
+
+test('exercices phares : rien depuis plus de 90 jours → on prend la dernière période d\'entraînement', () => {
+  const s = [
+    serie('2026-05-06', 'squat', 5, 100), serie('2026-05-06', 'squat', 5, 100),
+    serie('2026-04-20', 'curl', 10, 20),
+    serie('2025-12-01', 'a-trop-ancien', 5, 100), serie('2025-12-01', 'a-trop-ancien', 5, 100), serie('2025-12-01', 'a-trop-ancien', 5, 100),
+  ];
+  const e = exercicesPhares(s, 5, AUJ); // AUJ = octobre 2026 : la dernière série date de 5 mois
+  assert.deepEqual(e.map((x) => x.cle), ['squat', 'curl']); // 90 jours avant le 6 mai, pas avant
+  assert.equal(joursDepuisDate('2026-05-06', AUJ) > 90, true);
+});
+
+test('exercices phares : aucune série, ou séries dans le futur → liste vide', () => {
+  assert.deepEqual(exercicesPhares([], 3, AUJ), []);
+  assert.deepEqual(exercicesPhares([serie('2027-01-01', 'squat', 5, 100)], 3, AUJ), []);
 });
