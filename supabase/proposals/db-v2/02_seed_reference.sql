@@ -1,5 +1,5 @@
 -- =====================================================================================================================
--- Coach IA — Base V2 : DONNÉES DE RÉFÉRENCE (PROPOSITION, jamais appliquée)
+-- Rush — Base V2 : DONNÉES DE RÉFÉRENCE (PROPOSITION, jamais appliquée)
 -- Sports, correspondance avec les types des fournisseurs, bibliothèque d'exercices fournie. Relançable sans risque.
 -- =====================================================================================================================
 

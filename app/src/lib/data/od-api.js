@@ -28,7 +28,7 @@ export async function chargerPalmares(licenceId) {
 }
 
 // --- Licence liée et cache du palmarès : propres à CHAQUE compte (clé par utilisateur), jamais partagés d'un compte à l'autre ---
-const cle = (base, userId) => (userId ? `coachia-v2-od-${base}::${userId}` : null);
+const cle = (base, userId) => (userId ? `rush-od-${base}::${userId}` : null);
 
 function lire(base, userId) {
   const k = cle(base, userId);

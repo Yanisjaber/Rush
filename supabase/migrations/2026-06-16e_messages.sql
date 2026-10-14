@@ -1,4 +1,4 @@
--- Coach IA - Messagerie coach <-> athlete.
+-- Rush - Messagerie coach <-> athlete.
 -- Un fil par athlete ; le coach lie et l'athlete peuvent lire et ecrire.
 -- A executer dans Supabase SQL Editor apres les migrations precedentes. Idempotent.
 

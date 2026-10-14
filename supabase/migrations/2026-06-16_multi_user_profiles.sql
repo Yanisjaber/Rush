@@ -1,5 +1,5 @@
 -- ============================================================
---  Coach IA — Étape 1 du passage multi-utilisateur (cf. MODELE_DONNEES.md)
+--  Rush — Étape 1 du passage multi-utilisateur (cf. MODELE_DONNEES.md)
 --
 --  Crée 3 tables : profiles, coach_athlete (pivot), athlete_settings.
 --  + 1 helper SQL réutilisable : public.is_coach_of(athlete uuid)

@@ -3,7 +3,7 @@ import { sb } from '../supabase.js';
 // Thème de l'app (sombre par défaut, clair en option), mémorisé dans le navigateur.
 // La clé est la même que celle du catalogue : un seul réglage pour toute l'app.
 // Une fois connecté, le choix est aussi gardé dans le compte (table user_preferences) : il te suit d'un appareil à l'autre.
-const CLE = 'coachia-v2-theme';
+const CLE = 'rush-theme';
 
 function lire() {
   try {

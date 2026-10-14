@@ -33,7 +33,7 @@ supabase secrets set STRAVA_WEBHOOK_VERIFY_TOKEN=f3b8a2c1d9e4f7a6b5c8d3e2f1a4b7c
 ### 3. Déployer l'Edge Function
 
 ```bash
-cd ~/Documents/coach-ia
+cd ~/Documents/rush
 supabase functions deploy strava-webhook --no-verify-jwt
 ```
 

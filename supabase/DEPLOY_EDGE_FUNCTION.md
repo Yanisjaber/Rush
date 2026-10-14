@@ -13,7 +13,7 @@ Vérif : `supabase --version` doit afficher `1.x.x` ou plus.
 ## 2. Se logger
 
 ```bash
-cd ~/Documents/coach-ia
+cd ~/Documents/rush
 supabase login
 ```
 

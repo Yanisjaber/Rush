@@ -176,7 +176,7 @@ export async function supprimerCompte(confirmation, onProgres = () => {}) {
   }
   onProgres({ pct: 100, texte: 'Terminé' });
   try {
-    for (const cle of Object.keys(localStorage)) if (cle.startsWith('coachia-v2-')) localStorage.removeItem(cle);
+    for (const cle of Object.keys(localStorage)) if (cle.startsWith('rush-')) localStorage.removeItem(cle);
   } catch (_e) {
     /* stockage indisponible : rien à effacer */
   }

@@ -1,5 +1,5 @@
 -- ============================================================
--- Coach IA — Calque de modifications d'activités
+-- Rush — Calque de modifications d'activités
 -- Les activités Strava sont en lecture seule (re-synchronisées). Ce calque stocke
 -- les modifs manuelles (nom/type/sport/durée/distance/TSS/notes) et les masquages
 -- de métriques (puissance/cardio/distance) par activité, réappliqués après synchro.

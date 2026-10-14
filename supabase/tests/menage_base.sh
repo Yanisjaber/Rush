@@ -5,7 +5,7 @@ cd "$(dirname "$0")/../.."
 H=supabase/proposals/db-v2/tests/local_pg.sh
 bash $H start >/dev/null 2>&1 || true
 bash $H reset
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 <<'SQL'
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 <<'SQL'
 create table public.user_profiles (user_id uuid primary key references auth.users(id) on delete cascade, display_name text, created_at timestamptz default now(), updated_at timestamptz default now(),
   ftp int, hr_max int, lthr int, weight numeric, strava_athlete_id bigint, extras jsonb default '{}'::jsonb);
 create function public.handle_new_user() returns trigger language plpgsql security definer set search_path = public as $$
@@ -16,7 +16,7 @@ create table public.od_prefs (user_id uuid primary key, overrides jsonb);
 create table public.garmin_sync_requests (id uuid primary key default gen_random_uuid(), user_id uuid);
 create table public.connexions_app (id uuid primary key default gen_random_uuid(), user_id uuid, app text, external_id text);
 SQL
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 <<'SQL'
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 <<'SQL'
 insert into auth.users (id, email) select ('00000000-0000-4000-8000-00000000000'||i)::uuid, 'u'||i||'@test' from generate_series(1,6) i;
 -- 1 : first_name et last_name déjà là -> intouchés
 update public.user_profiles set display_name='Ancien', extras='{"first_name":"Lea","last_name":"Martin","full_name":"Lea Martin","sex":"F"}' where user_id='00000000-0000-4000-8000-000000000001';
@@ -33,9 +33,9 @@ update public.user_profiles set display_name=null, extras='{"cp":1}' where user_
 update public.user_profiles set strava_athlete_id = 123 where user_id='00000000-0000-4000-8000-000000000001';
 SQL
 echo "== étape 1, deux fois (idempotente)"
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_menage_base_1.sql
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_menage_base_1.sql
-bash $H psql -d coachia -v ON_ERROR_STOP=1 <<'SQL'
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_menage_base_1.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_menage_base_1.sql
+bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
 create function pg_temp.e(n int) returns jsonb language sql as $$ select extras from public.user_profiles where user_id = ('00000000-0000-4000-8000-00000000000'||n)::uuid $$;
 select 'noms déjà présents : intouchés' as controle, (pg_temp.e(1)->>'first_name')='Lea' and (pg_temp.e(1)->>'last_name')='Martin' and pg_temp.e(1)->>'sex'='F' as ok
 union all select 'full_name -> prénom et nom', pg_temp.e(2)->>'first_name'='Jean' and pg_temp.e(2)->>'last_name'='Dupont'
@@ -50,20 +50,20 @@ union all select 'display_name toujours là (retiré à l''étape 3)', exists (s
 SQL
 
 echo "== étape 2 (déclencheur d'inscription), deux fois"
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_menage_base_2_inscription.sql
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_menage_base_2_inscription.sql
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -c "insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-4000-8000-000000000007','nouveau@test','{\"first_name\":\"  Léa \",\"last_name\":\"Martin\",\"display_name\":\"Léa\"}'), ('00000000-0000-4000-8000-000000000008','invite@test', null), ('00000000-0000-4000-8000-000000000009','long@test', jsonb_build_object('first_name', repeat('x', 200)));"
-bash $H psql -d coachia -v ON_ERROR_STOP=1 <<'SQL'
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_menage_base_2_inscription.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_menage_base_2_inscription.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -c "insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-4000-8000-000000000007','nouveau@test','{\"first_name\":\"  Léa \",\"last_name\":\"Martin\",\"display_name\":\"Léa\"}'), ('00000000-0000-4000-8000-000000000008','invite@test', null), ('00000000-0000-4000-8000-000000000009','long@test', jsonb_build_object('first_name', repeat('x', 200)));"
+bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
 select 'inscription : prénom nettoyé et nom dans extras' as controle, (extras->>'first_name')='Léa' and (extras->>'last_name')='Martin' as ok from public.user_profiles where user_id='00000000-0000-4000-8000-000000000007'
 union all select 'inscription sans informations (invitation) : profil créé, extras vide', extras = '{}'::jsonb from public.user_profiles where user_id='00000000-0000-4000-8000-000000000008'
 union all select 'prénom trop long : coupé à 60 caractères', length(extras->>'first_name') = 60 from public.user_profiles where user_id='00000000-0000-4000-8000-000000000009'
 union all select 'display_name encore rempli à l''étape 2', display_name = 'Léa' from public.user_profiles where user_id='00000000-0000-4000-8000-000000000007';
 SQL
 echo "== étape 3 (fin), deux fois"
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_menage_base_3_fin.sql
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_menage_base_3_fin.sql
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -c "insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-4000-8000-000000000010','apres@test','{\"first_name\":\"Zoé\",\"last_name\":\"Roy\"}');"
-bash $H psql -d coachia -v ON_ERROR_STOP=1 <<'SQL'
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_menage_base_3_fin.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_menage_base_3_fin.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -c "insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-4000-8000-000000000010','apres@test','{\"first_name\":\"Zoé\",\"last_name\":\"Roy\"}');"
+bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
 select 'colonne display_name supprimée' as controle, not exists (select 1 from information_schema.columns where table_name='user_profiles' and column_name='display_name') as ok
 union all select 'full_name retiré de tous les extras', (select count(*) = 0 from public.user_profiles where extras ? 'full_name')
 union all select 'les prénoms et noms sont conservés', (select count(*) from public.user_profiles where extras ? 'first_name') >= 6

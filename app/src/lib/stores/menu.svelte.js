@@ -11,7 +11,7 @@ export function choisirFiltre(famille) {
   menu.filtre = famille === 'tout' || menu.filtre === famille ? 'tout' : famille;
 }
 
-const cleCache = (uid) => `coachia-v2-menu-${uid}`;
+const cleCache = (uid) => `rush-menu-${uid}`;
 
 function lireCache(uid) {
   try {

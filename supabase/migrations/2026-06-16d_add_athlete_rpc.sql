@@ -1,4 +1,4 @@
--- Coach IA - RPC : ajouter un athlete par email (modele lien direct).
+-- Rush - RPC : ajouter un athlete par email (modele lien direct).
 -- Un client ne peut pas lire auth.users ; cette fonction security definer
 -- resout l'email -> user et cree le lien coach_athlete actif.
 -- A executer dans Supabase SQL Editor. Idempotent.

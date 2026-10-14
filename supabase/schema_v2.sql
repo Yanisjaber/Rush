@@ -1,5 +1,5 @@
 -- ============================================================
--- schema_v2.sql — Schéma étendu Coach IA (multi-user Strava + Whoop)
+-- schema_v2.sql — Schéma étendu Rush (multi-user Strava + Whoop)
 --
 -- Ce schéma complète schema.sql en ajoutant :
 --   - strava_connections (tokens OAuth par user)
@@ -10,7 +10,7 @@
 --   - Extension de user_profiles : ftp, hr_max, lthr, weight, strava_athlete_id
 --
 -- ⚠ IMPORTANT : strava_athlete_id n'est PAS UNIQUE.
---   Un même compte Strava peut être lié à plusieurs utilisateurs Coach IA
+--   Un même compte Strava peut être lié à plusieurs utilisateurs Rush
 --   (ex : compte famille, comptes test). L'unicité est garantie par user_id
 --   uniquement (chaque user a au plus 1 connexion Strava).
 -- ============================================================

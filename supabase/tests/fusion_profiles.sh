@@ -5,7 +5,7 @@ cd "$(dirname "$0")/../.."
 H=supabase/proposals/db-v2/tests/local_pg.sh
 bash $H start >/dev/null 2>&1 || true
 bash $H reset
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 <<'SQL'
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 <<'SQL'
 create table public.profiles (id uuid primary key references auth.users(id) on delete cascade, role text default 'both', display_name text, avatar_url text, locale text default 'fr', created_at timestamptz default now(), updated_at timestamptz default now());
 create table public.user_profiles (user_id uuid primary key references auth.users(id) on delete cascade, display_name text, ftp int, extras jsonb default '{}'::jsonb, updated_at timestamptz default now());
 create function public.handle_new_user() returns trigger language plpgsql security definer set search_path = public as $$ begin insert into public.user_profiles (user_id, display_name) values (new.id, coalesce(new.raw_user_meta_data->>'display_name', split_part(new.email,'@',1))) on conflict do nothing; return new; end $$;
@@ -16,11 +16,11 @@ insert into auth.users (id, email) values ('00000000-0000-4000-8000-000000000001
 update public.user_profiles set extras = '{"cp":null,"sex":"M","rhr":null,"pace_5k":"4:30","tags":["a",null]}'::jsonb where user_id='00000000-0000-4000-8000-000000000001';
 SQL
 echo "== migration (deux fois : elle doit être idempotente)"
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_fusion_profiles.sql
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_fusion_profiles.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_fusion_profiles.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_fusion_profiles.sql
 echo "== une nouvelle inscription après la migration"
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -c "insert into auth.users (id, email) values ('00000000-0000-4000-8000-000000000003','c@test');"
-bash $H psql -d coachia -v ON_ERROR_STOP=1 <<'SQL'
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -c "insert into auth.users (id, email) values ('00000000-0000-4000-8000-000000000003','c@test');"
+bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
 select 'table profiles supprimée' as controle, to_regclass('public.profiles') is null as ok
 union all select 'fonction handle_new_profile supprimée', not exists(select 1 from pg_proc where proname='handle_new_profile')
 union all select 'déclencheur profiles supprimé', not exists(select 1 from pg_trigger where tgname='trg_auth_user_created')

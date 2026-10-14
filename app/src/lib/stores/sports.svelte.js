@@ -6,8 +6,8 @@ import { nettoyerDisciplines } from '../data/disciplines.js';
 
 export const sportsChoisis = $state({ pret: false, liste: null, disciplines: {}, stockage: 'local' });
 
-const cleSports = (uid) => `coachia-v2-sports-${uid}`;
-const cleDisciplines = (uid) => `coachia-v2-disciplines-${uid}`;
+const cleSports = (uid) => `rush-sports-${uid}`;
+const cleDisciplines = (uid) => `rush-disciplines-${uid}`;
 
 function lireLocal(cle) {
   try {

@@ -25,7 +25,7 @@ let utilisateur = 'demo';
 let familles = [];
 let instantane = null; // copie de la disposition avant l'édition, pour « Annuler »
 
-const cleLocale = (uid) => `coachia-v2-disposition-${uid}`;
+const cleLocale = (uid) => `rush-disposition-${uid}`;
 
 function lireLocal(uid) {
   try {

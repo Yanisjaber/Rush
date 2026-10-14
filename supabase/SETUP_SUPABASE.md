@@ -7,7 +7,7 @@
 1. Va sur https://supabase.com et crée un compte (Github / Google / email)
 2. Clique **New Project**
 3. Remplis :
-   - **Name** : `coach-ia`
+   - **Name** : `rush`
    - **Database password** : génère-le et **garde-le** quelque part en sécurité (tu en auras besoin si tu veux te connecter à la DB directement plus tard)
    - **Region** : `Europe West (Frankfurt)` ou `Europe West (London)` (le plus proche de toi)
    - **Pricing plan** : Free

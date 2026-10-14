@@ -2,8 +2,8 @@
 # Postgres 17 LOCAL et JETABLE pour tester la V2 : n'accède jamais à la vraie base (aucun mot de passe, aucun réseau).
 # Prérequis : brew install postgresql@17
 # Usage : tests/local_pg.sh start | stop | reset | psql [options psql…]
-DATA="${PGTEST_DATA:-$HOME/.cache/coachia-pgtest}"   # fichiers de la base de test (jetables)
-SOCK=/tmp/coachia-pg                                  # le chemin du socket doit rester COURT (limite de 103 caractères)
+DATA="${PGTEST_DATA:-$HOME/.cache/rush-pgtest}"   # fichiers de la base de test (jetables)
+SOCK=/tmp/rush-pg                                  # le chemin du socket doit rester COURT (limite de 103 caractères)
 PORT=54329
 export PATH="$(brew --prefix postgresql@17)/bin:$PATH" LC_ALL=en_US.UTF-8 PGTZ=UTC   # UTC comme Supabase : le fuseau change le « jour » d'une séance
 case "$1" in
@@ -13,8 +13,8 @@ case "$1" in
     pg_ctl -D "$DATA" -o "-c listen_addresses='' -c unix_socket_directories=$SOCK -c port=$PORT" -l "$DATA/pg.log" -w start ;;
   stop)  pg_ctl -D "$DATA" -m fast stop ;;
   reset) # base vide avec un décor minimal qui imite Supabase (rôles, auth.users, auth.uid(), Vault)
-    psql -h "$SOCK" -p $PORT -U postgres -q -c "drop database if exists coachia" -c "create database coachia" || exit 1
-    psql -h "$SOCK" -p $PORT -U postgres -d coachia -v ON_ERROR_STOP=1 -q -o /dev/null <<'SQL'
+    psql -h "$SOCK" -p $PORT -U postgres -q -c "drop database if exists rush" -c "create database rush" || exit 1
+    psql -h "$SOCK" -p $PORT -U postgres -d rush -v ON_ERROR_STOP=1 -q -o /dev/null <<'SQL'
 do $$ begin
   if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
   if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;

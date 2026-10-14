@@ -5,7 +5,7 @@ cd "$(dirname "$0")/../.."
 H=supabase/proposals/db-v2/tests/local_pg.sh
 bash $H start >/dev/null 2>&1 || true
 bash $H reset
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 <<'SQL'
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 <<'SQL'
 -- table d'origine + colonnes Garmin, comme en production avant le chantier Vault
 create table public.connexions_app (
   id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade,
@@ -16,12 +16,12 @@ insert into auth.users (id, email) values ('00000000-0000-4000-8000-000000000001
 insert into public.connexions_app (user_id, app, external_id, access_token, refresh_token, expires_at) values ('00000000-0000-4000-8000-000000000001','strava','42','ancien_acc','ancien_ref', now() + interval '1 hour');
 SQL
 for f in supabase/migrations/2026-10-14_jetons_vault_1_ajout.sql supabase/migrations/2026-10-14_jetons_vault_2a_purge_strava.sql supabase/migrations/2026-10-14_jetons_vault_2b_fin.sql; do
-  bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f $f >/dev/null
+  bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f $f >/dev/null
 done
 echo "== le retrait des colonnes (deux fois : idempotent)"
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_jetons_colonnes_mortes.sql
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_jetons_colonnes_mortes.sql
-bash $H psql -d coachia -v ON_ERROR_STOP=1 <<'SQL'
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_jetons_colonnes_mortes.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_jetons_colonnes_mortes.sql
+bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
 select public.rpc_save_connection_secrets('00000000-0000-4000-8000-000000000001', 'strava', '{"access_token":"nouveau_acc"}'::jsonb, now() + interval '2 hours');
 create temp table r as select public.rpc_connection_secrets('00000000-0000-4000-8000-000000000001', 'strava') as j;
 select 'les 4 colonnes en clair sont supprimées' as controle, not exists (select 1 from information_schema.columns where table_schema='public' and table_name='connexions_app' and column_name in ('access_token','refresh_token','oauth1_token','oauth1_secret')) as ok

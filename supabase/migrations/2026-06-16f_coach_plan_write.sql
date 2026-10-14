@@ -1,4 +1,4 @@
--- Coach IA - Le coach peut PLANIFIER pour ses athletes (ecriture sur les
+-- Rush - Le coach peut PLANIFIER pour ses athletes (ecriture sur les
 -- tables de planification uniquement). Les activites realisees, la forme,
 -- le profil, etc. restent en lecture seule cote coach.
 -- A executer dans Supabase SQL Editor apres les migrations precedentes. Idempotent.

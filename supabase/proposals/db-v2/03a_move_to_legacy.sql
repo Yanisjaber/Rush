@@ -1,5 +1,5 @@
 -- =====================================================================================================================
--- Coach IA — Base V2 : ÉTAPE 0 DE LA BASCULE — mise à l'abri de l'ancienne base (PROPOSITION, jamais appliquée)
+-- Rush — Base V2 : ÉTAPE 0 DE LA BASCULE — mise à l'abri de l'ancienne base (PROPOSITION, jamais appliquée)
 -- Déplace TOUTES les anciennes tables et fonctions de `public` vers le schéma `legacy` (non exposé par l'API) : rien n'est copié ni
 -- supprimé, c'est instantané (changement d'étiquette). `public` est alors libre pour la V2. À exécuter dans la même transaction que 01-03.
 -- =====================================================================================================================

@@ -10,10 +10,14 @@ import './lib/design/tokens.css';
 import './lib/design/global.css';
 
 import App from './App.svelte';
+import { migrerClesLocales } from './lib/stockage-local.js';
+
+// Les réglages du navigateur ont changé de nom avec l'app : on les recopie une fois sous leur nouveau nom, avant de les lire.
+migrerClesLocales();
 
 // Thème mémorisé (sombre par défaut), appliqué avant l'affichage pour éviter un éclair de mauvaise couleur.
 try {
-  document.documentElement.dataset.theme = localStorage.getItem('coachia-v2-theme') === 'clair' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = localStorage.getItem('rush-theme') === 'clair' ? 'light' : 'dark';
 } catch (e) {
   document.documentElement.dataset.theme = 'dark';
 }

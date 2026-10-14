@@ -1,5 +1,5 @@
 -- =====================================================================================================================
--- Coach IA — Base V2 : MIGRATION des données de `legacy` vers `public` (PROPOSITION, jamais appliquée)
+-- Rush — Base V2 : MIGRATION des données de `legacy` vers `public` (PROPOSITION, jamais appliquée)
 --
 -- Prérequis : les anciennes tables sont dans le schéma `legacy`, 01_schema.sql et 02_seed_reference.sql sont appliqués.
 -- Principes :

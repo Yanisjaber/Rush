@@ -1,5 +1,5 @@
 -- ============================================================
--- Coach IA — Notes typées sur plage de dates (maladie / blessure / texte)
+-- Rush — Notes typées sur plage de dates (maladie / blessure / texte)
 -- Remplace l'usage de day_notes (texte par jour) par des notes avec type,
 -- couleur et plage de dates. À exécuter dans Supabase → SQL Editor.
 -- Idempotent : ne casse rien si déjà appliqué.

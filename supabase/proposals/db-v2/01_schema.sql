@@ -1,5 +1,5 @@
 -- =====================================================================================================================
--- Coach IA — Base de données V2 : SCHÉMA (PROPOSITION, jamais appliquée)
+-- Rush — Base de données V2 : SCHÉMA (PROPOSITION, jamais appliquée)
 --
 -- Se lit avec docs/db/PROPOSITION_V2.md. Conçu pour être exécuté sur une base où les anciennes tables ont été déplacées
 -- dans le schéma `legacy` (voir 03_migrate_from_legacy.sql) ; il crée tout dans `public` (exposé à l'API) et `private`

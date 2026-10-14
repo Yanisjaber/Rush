@@ -1,4 +1,4 @@
--- Coach IA - Correctif handle_new_user + Etape 4 (lecture coach).
+-- Rush - Correctif handle_new_user + Etape 4 (lecture coach).
 -- A executer dans Supabase SQL Editor apres 2026-06-16_multi_user_profiles.sql.
 -- Idempotent.
 

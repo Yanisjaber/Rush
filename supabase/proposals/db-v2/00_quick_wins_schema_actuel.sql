@@ -1,5 +1,5 @@
 -- =====================================================================================================================
--- Coach IA — CORRECTIFS RAPIDES de la base ACTUELLE (PROPOSITION, non appliquée)
+-- Rush — CORRECTIFS RAPIDES de la base ACTUELLE (PROPOSITION, non appliquée)
 -- Indépendants de la V2 : ils améliorent la base d'aujourd'hui sans rien casser (v1 et v2 continuent de fonctionner).
 -- Relançable sans risque. Les parties B et C modifient des données : à lancer seulement après accord et une sauvegarde.
 -- =====================================================================================================================

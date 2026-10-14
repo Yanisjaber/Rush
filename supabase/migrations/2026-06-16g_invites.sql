@@ -1,4 +1,4 @@
--- Coach IA - Invitations avec acceptation + surnom coach.
+-- Rush - Invitations avec acceptation + surnom coach.
 -- - coach_label : surnom donne par le coach a l'athlete.
 -- - add_athlete_by_email cree desormais un lien 'pending' (en attente) et
 --   retourne l'id du lien (pour construire le lien d'invitation).

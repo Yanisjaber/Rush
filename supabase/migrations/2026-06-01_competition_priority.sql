@@ -1,5 +1,5 @@
 -- ============================================================
--- Coach IA — Priorité de compétition : nouvelles valeurs
+-- Rush — Priorité de compétition : nouvelles valeurs
 -- L'ancienne contrainte n'autorisait que 'A','B','C'. On passe à
 -- 'principal' / 'secondaire' (libellés affichés : Objectif / Préparation).
 -- On garde A/B/C tolérés pour les anciennes lignes.

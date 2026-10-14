@@ -15,7 +15,7 @@
   // --- Thème sombre / clair (mémorisé si le navigateur le permet) ---
   let theme = $state('sombre');
   try {
-    const memo = localStorage.getItem('coachia-v2-theme');
+    const memo = localStorage.getItem('rush-theme');
     if (memo === 'clair' || memo === 'sombre') theme = memo;
   } catch (e) {
     /* stockage indisponible : on garde le thème par défaut */
@@ -23,7 +23,7 @@
   $effect(() => {
     document.documentElement.dataset.theme = theme === 'clair' ? 'light' : 'dark';
     try {
-      localStorage.setItem('coachia-v2-theme', theme);
+      localStorage.setItem('rush-theme', theme);
     } catch (e) {
       /* ignoré */
     }

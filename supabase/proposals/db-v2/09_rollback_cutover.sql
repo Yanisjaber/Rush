@@ -1,5 +1,5 @@
 -- =====================================================================================================================
--- Coach IA — RETOUR ARRIÈRE de la bascule V2 (PROPOSITION, jamais appliquée)
+-- Rush — RETOUR ARRIÈRE de la bascule V2 (PROPOSITION, jamais appliquée)
 -- Remet l'ancienne base à sa place. ATTENTION : tout ce qui a été écrit dans la V2 APRÈS la bascule est perdu (à utiliser dans les premières heures).
 -- Utilisable seulement tant que le schéma `legacy` existe (on le supprime après une période de recul).
 -- =====================================================================================================================

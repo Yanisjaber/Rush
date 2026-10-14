@@ -1,4 +1,4 @@
--- Coach IA - Etape 3 : lecture coach sur les donnees d'entrainement.
+-- Rush - Etape 3 : lecture coach sur les donnees d'entrainement.
 -- Pour chaque table d'entrainement appartenant a un athlete (colonne user_id),
 -- ajoute une policy SELECT autorisant le coach lie et actif (is_coach_of).
 -- L'ecriture reste reservee a l'athlete (policies "manage own" inchangees).

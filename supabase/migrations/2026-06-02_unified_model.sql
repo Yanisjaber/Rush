@@ -1,5 +1,5 @@
 -- ============================================================
--- Coach IA — Modèle unifié activités / prévus
+-- Rush — Modèle unifié activités / prévus
 -- 1) activities = TOUTES les activités réalisées (Strava + manuelles),
 --    chacune avec source (strava|manual) et category (entrainement|competition).
 -- 2) planned_sessions = séances prévues, category (entrainement|competition).

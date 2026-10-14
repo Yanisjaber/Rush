@@ -1,5 +1,5 @@
 -- ============================================================
--- Coach IA — Schema Supabase
+-- Rush — Schema Supabase
 -- À exécuter dans Supabase Dashboard → SQL Editor → New query → Run
 -- ============================================================
 -- Convention :

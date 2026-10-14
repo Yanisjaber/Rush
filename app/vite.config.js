@@ -6,7 +6,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 // - scripts : uniquement ceux de notre origine
 // - styles : l'origine + attributs style (les composants posent des couleurs de sport en ligne)
 // - images : notre origine + les tuiles de carte OpenStreetMap (parcours GPX)
-// - connexions : notre origine + Supabase (le projet coach-ia)
+// - connexions : notre origine + Supabase (le projet Supabase de l'app)
 const CSP = [
   "default-src 'self'",
   "script-src 'self'",
@@ -22,7 +22,7 @@ const CSP = [
 
 function injecterCsp() {
   return {
-    name: 'coach-ia-csp',
+    name: 'rush-csp',
     transformIndexHtml: {
       order: 'post',
       handler(html, ctx) {

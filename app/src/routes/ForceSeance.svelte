@@ -37,7 +37,7 @@
   let maintenant = $state(Date.now());
   let reposFin = $state(0);
 
-  const cleBrouillon = $derived(`coachia-v2-force-brouillon-${userId}`);
+  const cleBrouillon = $derived(`rush-force-brouillon-${userId}`);
 
   // --- Chargement ---
   async function initialiser(u) {

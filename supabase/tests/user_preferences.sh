@@ -5,7 +5,7 @@ cd "$(dirname "$0")/../.."
 H=supabase/proposals/db-v2/tests/local_pg.sh
 bash $H start >/dev/null 2>&1 || true
 bash $H reset
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 <<'SQL'
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 <<'SQL'
 create table public.user_dashboard (user_id uuid primary key references auth.users(id) on delete cascade, layout jsonb not null default '{}'::jsonb, updated_at timestamptz not null default now(), constraint user_dashboard_layout_taille check (pg_column_size(layout) < 16384));
 alter table public.user_dashboard enable row level security;
 create policy user_dashboard_select_own on public.user_dashboard for select using (auth.uid() = user_id);
@@ -18,15 +18,15 @@ insert into auth.users (id, email) values ('00000000-0000-4000-8000-000000000001
 insert into public.user_dashboard (user_id, layout) values ('00000000-0000-4000-8000-000000000001', '{"v":1,"auto":false,"widgets":[{"id":"charge","taille":"m"}]}');
 SQL
 echo "== migration deux fois (idempotente), puis colonne sports deux fois"
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences.sql
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences.sql
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_sports.sql
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_sports.sql
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_sports_liste.sql
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_sports_liste.sql
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_disciplines.sql
-bash $H psql -d coachia -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_disciplines.sql
-bash $H psql -d coachia -v ON_ERROR_STOP=1 <<'SQL'
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_sports.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_sports.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_sports_liste.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_sports_liste.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_disciplines.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_user_preferences_disciplines.sql
+bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
 -- comme le navigateur : rôle authenticated + identité de l'utilisateur A
 select 'ancienne table renommée' as controle, to_regclass('public.user_dashboard') is null and to_regclass('public.user_preferences') is not null as ok
 union all select 'la disposition existante est conservée', (select layout->>'auto' = 'false' from public.user_preferences where user_id='00000000-0000-4000-8000-000000000001')
