@@ -271,7 +271,7 @@ export function analyserRecords({ series, aujourdhui = new Date(), semaines = 26
   ];
   if (plateaux.length) chiffres.push({ etiquette: 'Exercices en plateau', valeur: String(plateaux.length), unite: '', note: 'sans record depuis 8 semaines', ton: 'alerte' });
 
-  // Un graphique par groupe musculaire, avec un menu pour choisir l'exercice du groupe (le plus pratiqué est proposé d'abord).
+  // Un seul bloc : des onglets pour choisir le groupe musculaire, un menu pour choisir l'exercice du groupe (le plus pratiqué est proposé d'abord).
   // Un point par séance (meilleur 1RM estimé du jour) : pas de trou quand on saute des semaines.
   const parGroupe = ORDRE_GROUPES.map((g) => ({
     groupe: g,
@@ -283,7 +283,7 @@ export function analyserRecords({ series, aujourdhui = new Date(), semaines = 26
 
   const NOM_STATUT = { record: 'Record récent', plateau: 'Plateau', progres: 'En progression', stable: 'Stable' };
   const graphiques = [
-    ...parGroupe.map((g) => ({ type: 'exercices', titre: g.nom, exercices: g.exercices })),
+    ...(parGroupe.length ? [{ type: 'exercices', titre: 'Progression par exercice', groupes: parGroupe }] : []),
     {
       type: 'tableau',
       titre: 'Tes exercices, un par un',

@@ -100,11 +100,13 @@ test('records : le squat qui monte chaque semaine → record récent ; tableau e
   complet(a);
   assert.ok(a.brut.records.some((e) => e.cle === 'squat'));
   assert.equal(a.verdict.niveau, 'ok');
-  // un graphique par groupe musculaire, avec les exercices de ce groupe pour le menu déroulant
-  const groupes = a.graphiques.filter((g) => g.type === 'exercices');
+  // UN seul bloc « Progression par exercice » : des onglets par groupe musculaire, et pour chacun les exercices du menu déroulant
+  const blocs = a.graphiques.filter((g) => g.type === 'exercices');
+  assert.equal(blocs.length, 1);
+  const { groupes } = blocs[0];
   assert.ok(groupes.length >= 1);
   assert.ok(groupes.every((g) => g.exercices.length >= 1 && g.exercices.every((e) => e.etiquettes.length === e.valeurs.length && e.valeurs.length >= 3)));
-  assert.ok(groupes.find((g) => g.titre === 'Jambes').exercices.some((e) => e.cle === 'squat'));
+  assert.ok(groupes.find((g) => g.nom === 'Jambes').exercices.some((e) => e.cle === 'squat'));
 });
 
 test('records : même charge depuis plus de 8 semaines malgré des séances régulières → plateau', () => {
@@ -131,12 +133,12 @@ test('les trois analyses tournent sur les données de démo', () => {
   }
 });
 
-test('records : deux exercices du même groupe → un seul graphique, le plus pratiqué en premier dans le menu', () => {
+test('records : deux exercices du même groupe → un seul onglet, le plus pratiqué en premier dans le menu', () => {
   const s = [];
   for (let w = 0; w < 6; w++) s.push(serie(decalerJour(ISO, -w * 7 - 1), 'developpe-couche', 'pectoraux', 5, 60 + w), serie(decalerJour(ISO, -w * 7 - 3), 'developpe-couche', 'pectoraux', 5, 60 + w));
   for (let w = 0; w < 3; w++) s.push(serie(decalerJour(ISO, -w * 7 - 2), 'ecartes', 'pectoraux', 10, 20));
   const a = analyserRecords({ series: s, aujourdhui: AUJ, semaines: 12 });
-  const pecs = a.graphiques.filter((g) => g.type === 'exercices' && g.titre === 'Pectoraux');
+  const pecs = a.graphiques.find((g) => g.type === 'exercices').groupes.filter((g) => g.nom === 'Pectoraux');
   assert.equal(pecs.length, 1);
   assert.deepEqual(pecs[0].exercices.map((e) => e.cle), ['developpe-couche', 'ecartes']);
   // les points d'un exercice sont dans l'ordre chronologique

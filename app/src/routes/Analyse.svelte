@@ -113,7 +113,7 @@
           {:else if g.type === 'lignes'}
             <GraphiqueLignes etiquettes={g.etiquettes} series={g.series} bandes={g.bandes || []} marqueurs={g.marqueurs || []} min={g.min} max={g.max} etiquette={g.titre} />
           {:else if g.type === 'exercices'}
-            <GraphiqueExercice exercices={g.exercices} groupe={g.titre} />
+            <GraphiqueExercice groupes={g.groupes} />
           {:else if g.type === 'chaleur'}
             <CarteChaleur cases={g.cases} colonnes={g.colonnes} etiquette={g.titre} reperes />
             <ul class="legende">
