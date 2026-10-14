@@ -271,28 +271,19 @@ export function analyserRecords({ series, aujourdhui = new Date(), semaines = 26
   ];
   if (plateaux.length) chiffres.push({ etiquette: 'Exercices en plateau', valeur: String(plateaux.length), unite: '', note: 'sans record depuis 8 semaines', ton: 'alerte' });
 
-  // Courbe : meilleur 1RM de chaque semaine pour les 3 exercices les plus pratiqués
-  const lundis = [];
-  for (let i = 0; i < semaines; i++) lundis.push(decalerJour(debut, i * 7));
-  const COULEURS = ['var(--sport-muscu)', 'var(--texte)', 'var(--texte-doux)'];
-  const courbes = suivis.slice(0, 3).map((e, i) => {
-    const parSemaine = new Map();
-    for (const p of e.dansFenetre) {
-      const l = lundiDe(p.date);
-      parSemaine.set(l, Math.max(parSemaine.get(l) || 0, p.rm));
-    }
-    return { nom: e.nom, couleur: COULEURS[i], valeurs: lundis.map((l) => parSemaine.get(l) ?? null) };
-  });
+  // Un graphique par groupe musculaire, avec un menu pour choisir l'exercice du groupe (le plus pratiqué est proposé d'abord).
+  // Un point par séance (meilleur 1RM estimé du jour) : pas de trou quand on saute des semaines.
+  const parGroupe = ORDRE_GROUPES.map((g) => ({
+    groupe: g,
+    nom: GROUPES[g].nom,
+    exercices: exos
+      .filter((e) => e.groupe === g)
+      .map((e) => ({ cle: e.cle, nom: e.nom, etiquettes: e.dansFenetre.map((p) => p.date), valeurs: e.dansFenetre.map((p) => p.rm), rm: e.rm, record: e.meilleurRm })),
+  })).filter((g) => g.exercices.length);
 
   const NOM_STATUT = { record: 'Record récent', plateau: 'Plateau', progres: 'En progression', stable: 'Stable' };
   const graphiques = [
-    {
-      type: 'lignes',
-      titre: '1RM estimé par semaine',
-      description: 'Le meilleur 1RM de chaque semaine pour tes 3 exercices les plus pratiqués. Une courbe qui monte, c\'est de la force gagnée.',
-      etiquettes: lundis,
-      series: courbes,
-    },
+    ...parGroupe.map((g) => ({ type: 'exercices', titre: g.nom, exercices: g.exercices })),
     {
       type: 'tableau',
       titre: 'Tes exercices, un par un',

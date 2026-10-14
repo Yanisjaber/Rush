@@ -5,6 +5,7 @@
   import BarresEmpilees from '../lib/components/charts/BarresEmpilees.svelte';
   import GraphiqueLignes from '../lib/components/charts/GraphiqueLignes.svelte';
   import CarteChaleur from '../lib/components/charts/CarteChaleur.svelte';
+  import GraphiqueExercice from '../lib/components/charts/GraphiqueExercice.svelte';
   import SelecteurSport from '../lib/components/SelecteurSport.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { menu } from '../lib/stores/menu.svelte.js';
@@ -111,6 +112,8 @@
             </ul>
           {:else if g.type === 'lignes'}
             <GraphiqueLignes etiquettes={g.etiquettes} series={g.series} bandes={g.bandes || []} marqueurs={g.marqueurs || []} min={g.min} max={g.max} etiquette={g.titre} />
+          {:else if g.type === 'exercices'}
+            <GraphiqueExercice exercices={g.exercices} groupe={g.titre} />
           {:else if g.type === 'chaleur'}
             <CarteChaleur cases={g.cases} colonnes={g.colonnes} etiquette={g.titre} reperes />
             <ul class="legende">

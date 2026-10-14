@@ -27,7 +27,7 @@ const complet = (a) => {
   assert.ok(a.methode.length > 0);
   for (const c of a.chiffres) assert.equal(typeof c.valeur, 'string');
   for (const c of a.conseils) assert.ok(['haute', 'moyenne', 'faible', 'info'].includes(c.priorite));
-  for (const g of a.graphiques) assert.ok(['lignes', 'tableau', 'repartition'].includes(g.type));
+  for (const g of a.graphiques) assert.ok(['lignes', 'tableau', 'repartition', 'exercices', 'chaleur'].includes(g.type));
 };
 
 test('muscu : sans séries, chaque analyse répond « pas assez de données » sans planter', () => {
@@ -100,8 +100,11 @@ test('records : le squat qui monte chaque semaine → record récent ; tableau e
   complet(a);
   assert.ok(a.brut.records.some((e) => e.cle === 'squat'));
   assert.equal(a.verdict.niveau, 'ok');
-  assert.ok(a.graphiques[0].series.length >= 1);
-  assert.equal(a.graphiques[0].series[0].valeurs.length, 12);
+  // un graphique par groupe musculaire, avec les exercices de ce groupe pour le menu déroulant
+  const groupes = a.graphiques.filter((g) => g.type === 'exercices');
+  assert.ok(groupes.length >= 1);
+  assert.ok(groupes.every((g) => g.exercices.length >= 1 && g.exercices.every((e) => e.etiquettes.length === e.valeurs.length && e.valeurs.length >= 3)));
+  assert.ok(groupes.find((g) => g.titre === 'Jambes').exercices.some((e) => e.cle === 'squat'));
 });
 
 test('records : même charge depuis plus de 8 semaines malgré des séances régulières → plateau', () => {
@@ -126,4 +129,17 @@ test('les trois analyses tournent sur les données de démo', () => {
     const a = f({ series, aujourdhui: AUJ });
     complet(a);
   }
+});
+
+test('records : deux exercices du même groupe → un seul graphique, le plus pratiqué en premier dans le menu', () => {
+  const s = [];
+  for (let w = 0; w < 6; w++) s.push(serie(decalerJour(ISO, -w * 7 - 1), 'developpe-couche', 'pectoraux', 5, 60 + w), serie(decalerJour(ISO, -w * 7 - 3), 'developpe-couche', 'pectoraux', 5, 60 + w));
+  for (let w = 0; w < 3; w++) s.push(serie(decalerJour(ISO, -w * 7 - 2), 'ecartes', 'pectoraux', 10, 20));
+  const a = analyserRecords({ series: s, aujourdhui: AUJ, semaines: 12 });
+  const pecs = a.graphiques.filter((g) => g.type === 'exercices' && g.titre === 'Pectoraux');
+  assert.equal(pecs.length, 1);
+  assert.deepEqual(pecs[0].exercices.map((e) => e.cle), ['developpe-couche', 'ecartes']);
+  // les points d'un exercice sont dans l'ordre chronologique
+  const dates = pecs[0].exercices[0].etiquettes;
+  assert.deepEqual(dates, [...dates].sort());
 });
