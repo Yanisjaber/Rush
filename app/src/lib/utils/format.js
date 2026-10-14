@@ -81,3 +81,10 @@ export function formatNombre(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
   return Math.round(Number(n)).toLocaleString('fr-FR').replace(/[\u202f\u00a0]/g, '\u00a0');
 }
+
+/** Ancienneté en clair : 0 → « aujourd'hui », 1 → « hier », 20 → « il y a 20 jours », 150 → « il y a 5 mois ». */
+export function texteIlYa(jours) {
+  if (jours <= 0) return "aujourd'hui";
+  if (jours === 1) return 'hier';
+  return jours >= 60 ? `il y a ${Math.round(jours / 30)} mois` : `il y a ${jours} jours`;
+}

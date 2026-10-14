@@ -8,6 +8,7 @@ import {
   repartition7Jours,
   casesRegularite,
   joursActifs,
+  ancreSeances,
   semaineCourante,
   prochainesPrevues,
 } from '../src/lib/data/synthese.js';
@@ -223,4 +224,13 @@ test("séances prévues : sur la semaine à partir d'aujourd'hui seulement, et �
   assert.equal(prochainesPrevues(prevues, mercredi, 1).length, 1);
   assert.deepEqual(prochainesPrevues(null, mercredi), []);
   assert.deepEqual(semaineCourante([], mercredi).map((j) => j.prevues.length), [0, 0, 0, 0, 0, 0, 0]); // sans séances prévues : rien
+});
+
+test('ancreSeances : séance récente → aujourd\'hui ; carte vide → on recule à la dernière séance', () => {
+  assert.equal(ancreSeances([seance('2026-10-10', 'Run', 60)], 12, AUJ).ancien, false);
+  const a = ancreSeances([seance('2026-05-06', 'Run', 60)], 12, AUJ);
+  assert.equal(a.ancien, true);
+  assert.equal(a.derniere, '2026-05-06');
+  assert.equal(joursActifs([seance('2026-05-06', 'Run', 60)], 12, a.date), 1);
+  assert.equal(ancreSeances([], 12, AUJ).ancien, false);
 });

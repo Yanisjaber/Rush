@@ -56,6 +56,19 @@ export function tonnageParSemaine(series, nbSemaines = 12, aujourdhui = new Date
   return { parSemaine, derniere, moyenne: Math.round(moyenne), ecartPct };
 }
 
+/**
+ * Point de repère pour les widgets de muscu qui regardent « les 7 derniers jours » ou « les N dernières semaines » :
+ * si tu as une série dans les 7 derniers jours, c'est aujourd'hui ; sinon on recule jusqu'à ta dernière série
+ * (un widget vide alors que tu as des mois d'historique serait trompeur). `ancien` dit si on a reculé.
+ */
+export function ancreSeries(series, aujourdhui = new Date()) {
+  const dates = series.map((s) => String(s.date).slice(0, 10)).filter((d) => joursDepuis(d, aujourdhui) >= 0);
+  if (!dates.length) return { date: aujourdhui, ancien: false, derniere: null };
+  const derniere = dates.reduce((m, d) => (d > m ? d : m));
+  if (joursDepuis(derniere, aujourdhui) < 7) return { date: aujourdhui, ancien: false, derniere };
+  return { date: new Date(`${derniere}T12:00:00`), ancien: true, derniere };
+}
+
 /** Séries par groupe musculaire sur les 7 derniers jours, avec la zone cible de chaque groupe. */
 export function seriesParGroupe(series, aujourdhui = new Date()) {
   const compte = Object.fromEntries(ORDRE_GROUPES.map((g) => [g, 0]));

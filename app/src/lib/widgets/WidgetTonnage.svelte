@@ -1,22 +1,26 @@
 <script>
   import Bloc from '../components/Bloc.svelte';
-  import { tonnageParSemaine } from '../data/force.js';
+  import NoteAncien from '../components/NoteAncien.svelte';
+  import { tonnageParSemaine, ancreSeries } from '../data/force.js';
   import { formatNombre } from '../utils/format.js';
 
   let { contexte } = $props();
-  const t = $derived(tonnageParSemaine(contexte.force.series));
+  // Rien dans les 7 derniers jours : on regarde les 12 semaines qui précèdent ta dernière séance, en le disant
+  const ancre = $derived(ancreSeries(contexte.force.series));
+  const t = $derived(tonnageParSemaine(contexte.force.series, 12, ancre.date));
   const maximum = $derived(Math.max(1, ...t.parSemaine));
   const aDesDonnees = $derived(t.parSemaine.some((v) => v > 0));
 </script>
 
 <Bloc titre="Tonnage par semaine">
   {#if aDesDonnees}
+    {#if ancre.ancien}<NoteAncien derniere={ancre.derniere} suite="Voici les 12 semaines jusqu'à cette séance." />{/if}
     <div class="entete">
       <span class="valeur titre">{formatNombre(t.derniere)}<span class="unite">kg</span></span>
       {#if t.ecartPct != null}
         <span class="badge" class:mieux={t.ecartPct >= 0}>{t.ecartPct > 0 ? '+' : ''}{t.ecartPct} % vs moyenne</span>
       {/if}
-      <span class="periode">12 dernières semaines</span>
+      <span class="periode">{ancre.ancien ? '12 semaines avant cette séance' : '12 dernières semaines'}</span>
     </div>
     <div class="barres" role="img" aria-label="Tonnage soulevé par semaine sur 12 semaines">
       {#each t.parSemaine as v, i}

@@ -2,7 +2,8 @@
   import Bloc from '../components/Bloc.svelte';
   import CourbeLissee from '../components/charts/CourbeLissee.svelte';
   import { exercicesPhares, joursDepuisDate } from '../data/force.js';
-  import { formatKg, formatDateCourte } from '../utils/format.js';
+  import NoteAncien from '../components/NoteAncien.svelte';
+  import { formatKg } from '../utils/format.js';
 
   // Les exercices que tu pratiques le plus : 1RM estimé, record éventuel et progression.
   let { contexte, taille = 'l' } = $props();
@@ -10,15 +11,11 @@
   // Rien d'enregistré depuis plus de 90 jours : on montre ta dernière période d'entraînement, en le disant
   const ancien = $derived(exos.length ? Math.min(...exos.map((e) => joursDepuisDate(e.date))) > 90 : false);
   const derniere = $derived(exos.length ? exos.reduce((m, e) => (e.date > m ? e.date : m), '') : '');
-  const texteAncien = $derived.by(() => {
-    const j = joursDepuisDate(derniere);
-    return j >= 60 ? `il y a ${Math.round(j / 30)} mois` : `il y a ${j} jours`;
-  });
 </script>
 
 <Bloc titre="Tes records">
   {#if exos.length}
-    {#if ancien}<p class="ancien">Ta dernière séance date du {formatDateCourte(derniere)} ({texteAncien}). Voici tes records de cette période.</p>{/if}
+    {#if ancien}<NoteAncien {derniere} suite="Voici tes records de cette période." />{/if}
     <div class="cartes">
       {#each exos as e (e.cle)}
         <article class="carte">
@@ -46,11 +43,6 @@
 </Bloc>
 
 <style>
-  .ancien {
-    margin: -4px 0 14px;
-    font-size: 13px;
-    color: var(--texte-doux);
-  }
   .cartes {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
