@@ -4,6 +4,7 @@ import { familleAffichage } from '../data/familles.js';
 import { analyserCharge } from './charge.js';
 import { analyserForme } from './forme.js';
 import { analyserPredictions } from './predictions.js';
+import { analyserRegularite } from './regularite.js';
 import { analyserTonnage, analyserGroupes, analyserRecords } from './muscu.js';
 
 const NOM_PERIODE = { sem12: '3 mois', sem26: '6 mois', sem52: '12 mois' };
@@ -44,6 +45,13 @@ export const ANALYSES = {
     sportImpose: 'course', // l'analyse ne parle que de course à pied, quel que soit le filtre
     calculer: (d, o) => analyserPredictions({ seances: d.seances, objectifs: d.objectifs, hrMax: d.hrMax, aujourdhui: o.aujourdhui, nomSport: o.nomSport }),
   },
+  regularite: {
+    titre: 'Régularité',
+    sousTitre: 'T\'entraînes-tu assez souvent, sans longues pauses ?',
+    periodes: true,
+    periodeDefaut: 'sem12',
+    calculer: (d, o) => analyserRegularite({ seances: d.seances, aujourdhui: o.aujourdhui, semaines: o.semaines }),
+  },
   tonnage: {
     titre: 'Tonnage et régularité',
     sousTitre: 'Ton volume monte-t-il à un rythme sain ? T\'entraînes-tu assez souvent ?',
@@ -70,7 +78,7 @@ export const ANALYSES = {
 };
 
 /** Widget de l'accueil → analyse ouverte quand on le touche. */
-export const ANALYSE_DU_WIDGET = { charge: 'charge', forme: 'forme', predictions: 'predictions', tonnage: 'tonnage', groupes: 'groupes', records: 'records' };
+export const ANALYSE_DU_WIDGET = { charge: 'charge', forme: 'forme', predictions: 'predictions', tonnage: 'tonnage', groupes: 'groupes', records: 'records', regularite: 'regularite' };
 
 export const estAnalyse = (id) => typeof id === 'string' && Object.hasOwn(ANALYSES, id);
 export const periodeValide = (cle, defaut = 'sem26') => (Object.hasOwn(NOM_PERIODE, cle) ? cle : defaut);
