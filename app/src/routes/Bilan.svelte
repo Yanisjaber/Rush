@@ -1,6 +1,5 @@
 <script>
   import { untrack } from 'svelte';
-  import EnTete from '../lib/components/EnTete.svelte';
   import Bloc from '../lib/components/Bloc.svelte';
   import Bouton from '../lib/components/Bouton.svelte';
   import ChipSport from '../lib/components/ChipSport.svelte';
@@ -121,7 +120,6 @@
 </script>
 
 <main class="page">
-  <EnTete actif="bilan" {demo} />
 
   <header class="entete-page">
     <h1 class="titre">Bilan {annee}</h1>

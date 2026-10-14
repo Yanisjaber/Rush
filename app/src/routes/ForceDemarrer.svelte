@@ -1,6 +1,5 @@
 <script>
   import { untrack } from 'svelte';
-  import EnTete from '../lib/components/EnTete.svelte';
   import Bloc from '../lib/components/Bloc.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { lireForce } from '../lib/data/force-acces.js';
@@ -25,7 +24,6 @@
 </script>
 
 <main class="page">
-  <EnTete actif="accueil" {demo} />
 
   <p class="retour"><a href="#/muscu">← Retour à Muscu</a></p>
   <header class="entete">

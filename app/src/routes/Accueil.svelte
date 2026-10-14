@@ -1,6 +1,5 @@
 <script>
   import { untrack } from 'svelte';
-  import EnTete from '../lib/components/EnTete.svelte';
   import Bouton from '../lib/components/Bouton.svelte';
   import CadreEdition from '../lib/widgets/CadreEdition.svelte';
   import BibliothequeWidgets from '../lib/widgets/BibliothequeWidgets.svelte';
@@ -199,7 +198,6 @@
 </script>
 
 <main class="page">
-  <EnTete actif="accueil" {demo} />
   <h1 class="invisible">Accueil</h1> <!-- titre de la page pour les lecteurs d'écran, sans le montrer -->
   {#if afficherOnboarding}
     <Onboarding userId={userId} onTermine={() => { mettreAJourSports(familles); chargerMenu(userId); }} />

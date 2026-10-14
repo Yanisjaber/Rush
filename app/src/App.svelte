@@ -5,6 +5,8 @@
   import Accueil from './routes/Accueil.svelte';
   import Ecran from './lib/components/Ecran.svelte';
   import BarreBas from './lib/components/BarreBas.svelte';
+  import EnTete from './lib/components/EnTete.svelte';
+  import { cleDePage } from './lib/data/menu.js';
   import { chargerMenu, menuDemo, oublierMenu } from './lib/stores/menu.svelte.js';
   import PanneauSeance from './lib/components/PanneauSeance.svelte';
   import PanneauReel from './lib/components/PanneauReel.svelte';
@@ -104,7 +106,16 @@
   const avecBarreBas = $derived(
     route.chemin !== '/catalogue' && route.chemin !== '/confidentialite' && (demo || (auth.pret && !!auth.session && !auth.definirMdp && route.chemin !== '/mot-de-passe')),
   );
+
+  // Le lien du menu à surligner : la page courante (les séances de force en direct ne surlignent rien, comme avant)
+  const actifMenu = $derived(forceSeance ? 'force' : (cleDePage(route.chemin) ?? ''));
 </script>
+
+<!-- Le menu du haut est monté UNE SEULE fois ici (et non dans chaque page) : il ne se recrée plus, ne se re-mesure plus et ne disparaît plus
+     pendant le chargement d'une page. Même largeur et mêmes marges que les pages (.page). Sur téléphone il est caché (voir BarreBas). -->
+{#if avecBarreBas}
+  <div class="entete-fixe"><EnTete actif={actifMenu} {demo} /></div>
+{/if}
 
 {#if route.chemin === '/catalogue'}
   <Ecran charger={ecrans.Catalogue} />
@@ -172,6 +183,13 @@
 <PanneauImportHevy {demo} />
 
 <style>
+  .entete-fixe {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: var(--page-max);
+    margin: 0 auto;
+    padding: 0 var(--gouttiere);
+  }
   .attente {
     padding: 48px 32px;
     color: var(--texte-doux);

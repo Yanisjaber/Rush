@@ -2,7 +2,6 @@
   import { lienPage } from '../lib/data/menu.js';
   import { menu } from '../lib/stores/menu.svelte.js';
   import { untrack } from 'svelte';
-  import EnTete from '../lib/components/EnTete.svelte';
   import Bloc from '../lib/components/Bloc.svelte';
   import StatCle from '../lib/components/StatCle.svelte';
   import GraphiqueStream from '../lib/components/charts/GraphiqueStream.svelte';
@@ -165,7 +164,6 @@
 </script>
 
 <main class="page">
-  <EnTete actif="" {demo} />
 
   <a class="retour" href={lienPage('calendrier', menu.filtre)}>
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>

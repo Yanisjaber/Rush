@@ -1,6 +1,5 @@
 <script>
   import { untrack } from 'svelte';
-  import EnTete from '../lib/components/EnTete.svelte';
   import SelecteurSport from '../lib/components/SelecteurSport.svelte';
   import { menu } from '../lib/stores/menu.svelte.js';
   import Bouton from '../lib/components/Bouton.svelte';
@@ -269,7 +268,6 @@
 </script>
 
 <main class="page">
-  <EnTete actif="calendrier" {demo} />
 
   <SelecteurSport />
 

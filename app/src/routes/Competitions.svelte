@@ -1,6 +1,5 @@
 <script>
   import { untrack } from 'svelte';
-  import EnTete from '../lib/components/EnTete.svelte';
   import Bloc from '../lib/components/Bloc.svelte';
   import Bouton from '../lib/components/Bouton.svelte';
   import Dossard from '../lib/components/Dossard.svelte';
@@ -124,7 +123,6 @@
 </script>
 
 <main class="page">
-  <EnTete actif="competitions" {demo} />
 
   <header class="entete-page">
     <h1 class="titre">Compétitions</h1>

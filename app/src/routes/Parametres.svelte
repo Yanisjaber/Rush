@@ -1,6 +1,5 @@
 <script>
   import { untrack } from 'svelte';
-  import EnTete from '../lib/components/EnTete.svelte';
   import General from '../lib/parametres/General.svelte';
   import Physiologie from '../lib/parametres/Physiologie.svelte';
   import Zones from '../lib/parametres/Zones.svelte';
@@ -33,7 +32,6 @@
 </script>
 
 <main class="page">
-  <EnTete actif="parametres" {demo} />
 
   <h1 class="titre">Paramètres</h1>
 

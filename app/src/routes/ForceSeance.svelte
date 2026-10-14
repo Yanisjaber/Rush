@@ -1,6 +1,5 @@
 <script>
   import { untrack } from 'svelte';
-  import EnTete from '../lib/components/EnTete.svelte';
   import Bouton from '../lib/components/Bouton.svelte';
   import Champ from '../lib/components/Champ.svelte';
   import SelecteurExercice from '../lib/components/SelecteurExercice.svelte';
@@ -202,7 +201,6 @@
 </script>
 
 <main class="page">
-  <EnTete actif="force" {demo} />
 
   <header class="titre-page">
     <div>

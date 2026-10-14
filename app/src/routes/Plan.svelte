@@ -1,6 +1,5 @@
 <script>
   import { untrack } from 'svelte';
-  import EnTete from '../lib/components/EnTete.svelte';
   import PanneauPrevue from '../lib/components/PanneauPrevue.svelte';
   import PanneauCompetition from '../lib/components/PanneauCompetition.svelte';
   import { menu } from '../lib/stores/menu.svelte.js';
@@ -134,7 +133,6 @@
 </script>
 
 <main class="page">
-  <EnTete actif="plan" {demo} />
 
   <header class="entete-page">
     <h1 class="titre">Plan</h1>

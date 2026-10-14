@@ -1,7 +1,6 @@
 <script>
   import { untrack } from 'svelte';
   import { route, regler } from '../lib/routeur.svelte.js';
-  import EnTete from '../lib/components/EnTete.svelte';
   import Apercu from '../lib/sommeil/Apercu.svelte';
   import Graphiques from '../lib/sommeil/Graphiques.svelte';
   import Conseils from '../lib/sommeil/Conseils.svelte';
@@ -44,7 +43,6 @@
 </script>
 
 <main class="page">
-  <EnTete actif="sommeil" {demo} />
 
   <header class="entete-page">
     <h1 class="titre">Sommeil</h1>

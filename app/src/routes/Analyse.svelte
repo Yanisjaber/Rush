@@ -1,6 +1,5 @@
 <script>
   import { untrack } from 'svelte';
-  import EnTete from '../lib/components/EnTete.svelte';
   import Bloc from '../lib/components/Bloc.svelte';
   import StatCle from '../lib/components/StatCle.svelte';
   import BarresEmpilees from '../lib/components/charts/BarresEmpilees.svelte';
@@ -55,7 +54,6 @@
 </script>
 
 <main class="page">
-  <EnTete actif="accueil" {demo} />
   <SelecteurSport />
 
   <p class="retour"><a href={retour}>← Retour à l'accueil</a></p>
