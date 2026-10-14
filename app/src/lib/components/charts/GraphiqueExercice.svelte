@@ -61,12 +61,12 @@
     <div class="onglets" role="group" aria-label="Groupe musculaire" bind:this={zone}>
       {#if compact}
         <button type="button" class="onglet bouton-groupe courant" aria-haspopup="true" aria-expanded={ouvert} onclick={basculer}>
-          {courant.nom}
+          <span class="point" aria-hidden="true"></span>{courant.nom}
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4l4 4 4-4" /></svg>
         </button>
       {:else}
         {#each groupes as g (g.groupe)}
-          <button type="button" class="onglet" class:courant={courant.groupe === g.groupe} aria-pressed={courant.groupe === g.groupe} onclick={() => (groupeChoisi = g.groupe)}>{g.nom}</button>
+          <button type="button" class="onglet" class:courant={courant.groupe === g.groupe} aria-pressed={courant.groupe === g.groupe} onclick={() => (groupeChoisi = g.groupe)}><span class="point" aria-hidden="true"></span>{g.nom}</button>
         {/each}
       {/if}
       <!-- Copie invisible de tous les onglets à plat, uniquement pour mesurer la place nécessaire -->
@@ -75,7 +75,7 @@
     {#if ouvert}
       <ul class="liste-groupes" style:top="{posMenu.top}px" style:left="{posMenu.left}px">
         {#each groupes as g (g.groupe)}
-          <li><button type="button" class:courant={courant.groupe === g.groupe} onclick={() => choisir(g)}>{g.nom}</button></li>
+          <li><button type="button" class:courant={courant.groupe === g.groupe} onclick={() => choisir(g)}><span class="point" aria-hidden="true"></span>{g.nom}</button></li>
         {/each}
       </ul>
     {/if}
@@ -132,6 +132,14 @@
     background: color-mix(in srgb, var(--texte) 9%, var(--surface));
     color: var(--texte);
   }
+  /* Le point de couleur devant chaque nom, comme les sports du menu du haut. La couleur désigne le sport (ici la muscu), pas le groupe. */
+  .point {
+    flex: none;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--sport-muscu);
+  }
   .liste-groupes {
     position: fixed;
     z-index: 50;
@@ -146,6 +154,7 @@
   .liste-groupes button {
     display: flex;
     align-items: center;
+    gap: 8px;
     width: 100%;
     min-height: var(--cible);
     padding: 0 12px;
@@ -179,7 +188,7 @@
     font-weight: 600;
   }
   .mesure span {
-    padding: 0 14px;
+    padding: 0 14px 0 30px; /* + le point de couleur (9 px) et son écart (7 px) */
   }
   .barre {
     display: flex;
