@@ -111,6 +111,41 @@ export function progressionParExercice(series) {
   return sortie.sort((a, b) => b.date.localeCompare(a.date) || b.nbSeries - a.nbSeries);
 }
 
+/**
+ * Les records battus dans chaque séance. Un record = le meilleur 1RM estimé d'un exercice dans cette séance dépasse tout ce que tu
+ * avais fait avant sur le même exercice (la toute première séance d'un exercice n'est pas un record : rien à battre).
+ * Renvoie une Map : identifiant de la séance (activity_id des séries) → liste des noms d'exercices dont c'était un record.
+ * Les séries sans séance rattachée (activity_id vide) sont ignorées : il n'y a pas de séance où afficher le record.
+ */
+export function recordsParSeance(series) {
+  const parExo = new Map();
+  for (const s of series) {
+    const rm = unRmEstime(s.weight_kg, s.reps);
+    if (rm == null) continue;
+    const date = String(s.date).slice(0, 10);
+    let e = parExo.get(s.exercise_key);
+    if (!e) parExo.set(s.exercise_key, (e = { nom: s.exercise_name, jours: new Map() }));
+    const j = e.jours.get(date);
+    if (!j) e.jours.set(date, { rm, id: s.activity_id || null });
+    else {
+      if (rm > j.rm) j.rm = rm;
+      if (!j.id && s.activity_id) j.id = s.activity_id;
+    }
+  }
+  const sortie = new Map();
+  for (const e of parExo.values()) {
+    let meilleur = null;
+    for (const [, j] of [...e.jours.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+      if (meilleur != null && j.rm > meilleur && j.id) {
+        if (!sortie.has(j.id)) sortie.set(j.id, []);
+        sortie.get(j.id).push(e.nom);
+      }
+      if (meilleur == null || j.rm > meilleur) meilleur = j.rm;
+    }
+  }
+  return sortie;
+}
+
 // Quand on n'a la place que pour quelques cartes, les groupes retenus en priorité (le tronc n'a presque jamais de 1RM parlant)
 const PRIORITE_GROUPES = ['jambes', 'pectoraux', 'dos', 'epaules', 'bras', 'tronc'];
 

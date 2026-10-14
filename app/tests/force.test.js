@@ -7,6 +7,7 @@ import {
   seriesParGroupe,
   progressionParExercice,
   recordsParGroupe,
+  recordsParSeance,
   resumeProgramme,
   programmeDuJour,
   brouillonDepuisProgramme,
@@ -299,4 +300,27 @@ test('regroupement par exercice : ordre de la séance, séries dans l\'ordre, to
   assert.equal(g[0].tonnage, 1040);
   assert.equal(g[1].tonnage, 0);
   assert.deepEqual(grouperParExercice([]), []);
+});
+
+test('records par séance : un record = meilleur 1RM de la séance au-dessus de tout le passé de l\'exercice ; la 1re séance n\'en est pas un', () => {
+  const l = (date, cle, nom, reps, poids, id) => ({ ...serie(date, cle, reps, poids), exercise_name: nom, activity_id: id });
+  const s = [
+    l('2026-09-01', 'squat', 'Squat', 5, 100, 'a1'),                                   // 1re séance : pas de record
+    l('2026-09-08', 'squat', 'Squat', 5, 105, 'a2'), l('2026-09-08', 'developpe-couche', 'Développé couché', 5, 80, 'a2'), // squat : record ; dév. couché : 1re fois
+    l('2026-09-15', 'squat', 'Squat', 5, 100, 'a3'),                                   // moins bien : pas de record
+    l('2026-09-22', 'squat', 'Squat', 5, 110, 'a4'), l('2026-09-22', 'developpe-couche', 'Développé couché', 5, 85, 'a4'), // 2 records
+    l('2026-09-29', 'squat', 'Squat', 5, 110, 'a5'),                                   // égal : pas un record
+  ];
+  const r = recordsParSeance(s);
+  assert.equal(r.has('a1'), false);
+  assert.deepEqual(r.get('a2'), ['Squat']);
+  assert.equal(r.has('a3'), false);
+  assert.deepEqual(r.get('a4'), ['Squat', 'Développé couché']);
+  assert.equal(r.has('a5'), false);
+  assert.equal(recordsParSeance([]).size, 0);
+});
+
+test('records par séance : les séries sans séance rattachée et sans charge utilisable sont ignorées', () => {
+  const s = [serie('2026-09-01', 'squat', 5, 100), serie('2026-09-08', 'squat', 5, 120), { ...serie('2026-09-15', 'pompes', 20, 0), activity_id: 'z' }];
+  assert.equal(recordsParSeance(s).size, 0); // pas d'activity_id sur les séries de squat ; pompes sans charge / > 12 reps : pas de 1RM
 });

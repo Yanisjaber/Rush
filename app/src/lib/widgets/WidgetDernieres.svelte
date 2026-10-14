@@ -2,6 +2,7 @@
   import Bloc from '../components/Bloc.svelte';
   import { ouvrirApercu } from '../stores/apercu.svelte.js';
   import { chargeSeance } from '../data/synthese.js';
+  import { recordsParSeance } from '../data/force.js';
   import { familleAffichage } from '../data/familles.js';
   import { SPORTS, couleurSport } from '../sports.js';
   import { formatDuree, formatKm, formatDateCourte } from '../utils/format.js';
@@ -23,6 +24,8 @@
     return () => obs.disconnect();
   });
   const nb = $derived(hauteur ? Math.max(1, Math.floor((hauteur + 1) / HAUTEUR_LIGNE)) : taille === 'l' ? 8 : 5); // avant la mesure : l'ancien nombre fixe
+  // Les records battus dans chaque séance (sur tout l'historique de force) : une pastille « Record » ou « 2 records »
+  const records = $derived(recordsParSeance(contexte.force.series));
   const recentes = $derived(contexte.dernieres.slice(0, nb));
   const nomFamille = (f) => (SPORTS[f] || SPORTS.autre).court;
 
@@ -43,7 +46,13 @@
           <a class="ligne" href="#/seance/{s.id}" onclick={(e) => { e.preventDefault(); ouvrirApercu(s); }}>
             <span class="barre" style:background={couleurSport(familleAffichage(s.sport))}></span>
             <div class="infos">
-              <div class="nom">{s.name || nomFamille(familleAffichage(s.sport))}</div>
+              <div class="titre-ligne">
+                <div class="nom">{s.name || nomFamille(familleAffichage(s.sport))}</div>
+                {#if records.get(s.id)?.length}
+                  {@const n = records.get(s.id).length}
+                  <span class="record" title={records.get(s.id).join(', ')}>{n > 1 ? `${n} records` : 'Record'}</span>
+                {/if}
+              </div>
               <div class="detail">{detail(s)}</div>
             </div>
             <div class="points"><span class="titre">{chargeSeance(s)}</span><span class="petit">pts</span></div>
@@ -108,7 +117,25 @@
     flex: 1;
     min-width: 0;
   }
+  .titre-ligne {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .record {
+    flex: none;
+    padding: 2px 8px;
+    border-radius: var(--rayon-rond);
+    background: var(--sport-muscu);
+    color: var(--encre-sur-couleur);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
   .nom {
+    min-width: 0;
     font-size: 15px;
     font-weight: 600;
     overflow: hidden;
