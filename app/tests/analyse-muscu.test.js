@@ -27,7 +27,7 @@ const complet = (a) => {
   assert.ok(a.methode.length > 0);
   for (const c of a.chiffres) assert.equal(typeof c.valeur, 'string');
   for (const c of a.conseils) assert.ok(['haute', 'moyenne', 'faible', 'info'].includes(c.priorite));
-  for (const g of a.graphiques) assert.ok(['lignes', 'tableau', 'repartition', 'exercices', 'chaleur', 'historique'].includes(g.type));
+  for (const g of a.graphiques) assert.ok(['lignes', 'tableau', 'repartition', 'exercices', 'chaleur', 'historique', 'corps'].includes(g.type));
 };
 
 test('muscu : sans séries, chaque analyse répond « pas assez de données » sans planter', () => {
@@ -79,7 +79,12 @@ test('groupes : rien sur le dos → groupe oublié signalé en priorité haute',
   assert.equal(a.brut.groupes.find((g) => g.groupe === 'dos').etat, 'oublie');
   assert.equal(a.conseils[0].priorite, 'haute');
   assert.match(a.conseils[0].titre, /dos/i);
-  assert.equal(a.graphiques[0].segments.reduce((t, x) => t + x.valeur, 0) >= 98, true); // parts ≈ 100 %
+  // Le corps 3D reçoit pour chaque groupe un pourcentage de la zone visée et la liste de ses exercices
+  const corps = a.graphiques[0];
+  assert.equal(corps.type, 'corps');
+  assert.equal(corps.groupes.find((g) => g.groupe === 'dos').pct, 0);
+  assert.ok(corps.groupes.every((g) => Number.isFinite(g.pct) && Array.isArray(g.exercices)));
+  assert.ok(corps.groupes.some((g) => g.exercices.length > 0));
 });
 
 test('groupes : dos en retard sur les pectoraux → rapport sous 0,8 signalé', () => {

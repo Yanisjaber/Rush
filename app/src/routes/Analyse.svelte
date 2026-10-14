@@ -5,6 +5,7 @@
   import BarresEmpilees from '../lib/components/charts/BarresEmpilees.svelte';
   import GraphiqueLignes from '../lib/components/charts/GraphiqueLignes.svelte';
   import CarteChaleur from '../lib/components/charts/CarteChaleur.svelte';
+  import CorpsMusculaire from '../lib/components/charts/CorpsMusculaire.svelte';
   import GraphiqueExercice from '../lib/components/charts/GraphiqueExercice.svelte';
   import HistoriqueExercice from '../lib/components/charts/HistoriqueExercice.svelte';
   import SelecteurSport from '../lib/components/SelecteurSport.svelte';
@@ -114,6 +115,8 @@
             </ul>
           {:else if g.type === 'lignes'}
             <GraphiqueLignes etiquettes={g.etiquettes} series={g.series} bandes={g.bandes || []} marqueurs={g.marqueurs || []} min={g.min} max={g.max} etiquette={g.titre} />
+          {:else if g.type === 'corps'}
+            <CorpsMusculaire groupes={g.groupes} etiquette={g.titre} />
           {:else if g.type === 'exercices'}
             <GraphiqueExercice groupes={g.groupes} bind:selection={exoVu} exoDemande={route.q.exo || ''} />
           {:else if g.type === 'historique'}

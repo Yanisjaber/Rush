@@ -156,7 +156,12 @@ export function analyserGroupes({ series, aujourdhui = new Date() }) {
     const parSemaine = compte[g] / SEMAINES_GROUPES;
     const [bas, haut] = GROUPES[g].cible;
     const etat = compte[g] === 0 ? 'oublie' : parSemaine < bas ? 'sous' : parSemaine > haut ? 'au-dessus' : 'zone';
-    return { groupe: g, nom: GROUPES[g].nom, series: compte[g], parSemaine, cible: [bas, haut], etat, part: Math.round((compte[g] / total) * 100), couleur: teinte(i) };
+    // Les exercices faits sur ce groupe (le plus pratiqué d'abord) et le pourcentage de la zone visée (100 % = milieu de la zone)
+    const parExo = new Map();
+    for (const x of fenetre) if (x.muscle_group === g) parExo.set(x.exercise_name || x.exercise_key, (parExo.get(x.exercise_name || x.exercise_key) || 0) + 1);
+    const exercices = [...parExo.entries()].map(([nom, series]) => ({ nom, series })).sort((x, y) => y.series - x.series);
+    const pct = Math.round((parSemaine / ((bas + haut) / 2)) * 100);
+    return { groupe: g, nom: GROUPES[g].nom, series: compte[g], parSemaine, cible: [bas, haut], etat, part: Math.round((compte[g] / total) * 100), couleur: teinte(i), exercices, pct };
   });
   const oublies = groupes.filter((g) => g.etat === 'oublie');
   const sous = groupes.filter((g) => g.etat === 'sous');
@@ -187,10 +192,10 @@ export function analyserGroupes({ series, aujourdhui = new Date() }) {
   const NOM_ETAT = { oublie: 'Oublié', sous: 'Sous la zone', zone: 'Dans la zone', 'au-dessus': 'Au-dessus' };
   const graphiques = [
     {
-      type: 'repartition',
-      titre: 'Répartition de tes séries',
-      description: `La part de chaque groupe dans tes séries des ${SEMAINES_GROUPES} dernières semaines.`,
-      segments: groupes.map((g) => ({ nom: g.nom, valeur: g.part, couleur: g.couleur })),
+      type: 'corps',
+      titre: 'Ton corps, groupe par groupe',
+      description: `Plus la zone est foncée, plus tu l'as travaillée ces ${SEMAINES_GROUPES} dernières semaines. Le pourcentage compare tes séries par semaine à la zone visée (100 % = pile au milieu de la zone).`,
+      groupes,
     },
     {
       type: 'tableau',
