@@ -46,7 +46,7 @@
     min-height: 360px;
   }
   .dossard.m {
-    padding: 18px 20px;
+    padding: 30px 26px 18px; /* de l'air autour des points d'attache du haut */
     min-height: 0;
   }
   /* état vide : juste le titre et le détail, sans grand espace ni gros chiffre */

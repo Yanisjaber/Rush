@@ -181,6 +181,8 @@
   // La vue détaillée est dans l'adresse (#/muscu/journal, #/hyrox/tests) : l'adresse décide, rien n'est retenu en local
   const sousDetail = $derived(sportAvecDetail && route.chemin === '/' && SOUS_ACCUEIL[filtreActif].includes(route.sous) ? route.sous : '');
   const enDetail = $derived(!!sousDetail && !disposition.enEdition);
+  // Le bonjour se loge au-dessus du dossard de l'objectif (même colonne) quand il est en tête : les autres widgets remontent d'autant
+  const bonjourDansCarte = $derived(!disposition.enEdition && !enDetail && widgetsVisibles[0]?.id === 'objectif');
   const ongletRiche = $derived(ONGLETS_PERSONNALISABLES.includes(filtreActif));
   const nomOngletEdition = $derived(disposition.ongletEdition !== 'tout' ? (SPORTS[disposition.ongletEdition] || SPORTS.autre).court : ''); // « Muscu », « Hyrox »
   const idsBibliotheque = $derived(
@@ -230,9 +232,11 @@
     {#if etat.erreur}<p class="alerte" role="alert">{etat.erreur}</p>{/if}
     {#if etat.erreurSport && (filtreActif === 'muscu' || filtreActif === 'hyrox')}<p class="alerte" role="alert">{etat.erreurSport}</p>{/if}
 
-    <section class="accroche">
-      <h1 class="titre">Salut{prenom ? ` ${prenom}` : ''}.</h1>
-    </section>
+    {#if !bonjourDansCarte}
+      <section class="accroche">
+        <h1 class="titre">Bonjour{prenom ? ` ${prenom}` : ''}.</h1>
+      </section>
+    {/if}
 
     {#if sportAvecDetail && !disposition.enEdition}
       <nav class="vues" aria-label="Vues {(SPORTS[filtreActif] || SPORTS.autre).court}">
@@ -267,6 +271,11 @@
               >
                 <Composant {contexte} taille={w.taille} />
               </CadreEdition>
+            {:else if i === 0 && bonjourDansCarte}
+              <div class="colonne-objectif">
+                <h1 class="titre bonjour">Bonjour{prenom ? ` ${prenom}` : ''}.</h1>
+                <div class="carte-objectif"><Composant {contexte} taille="m" /></div>
+              </div>
             {:else}
               <Composant {contexte} taille={w.taille} />
               {#if ANALYSE_DU_WIDGET[w.id]}
@@ -409,6 +418,26 @@
     margin-bottom: 12px;
     font-size: 14px;
     color: var(--ok);
+  }
+  /* Colonne de gauche : « Bonjour Yanis. » puis le dossard de l'objectif, qui prend la hauteur qui reste */
+  .colonne-objectif {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .bonjour {
+    font-size: clamp(30px, 3.4vw, 44px);
+    line-height: 1;
+    padding-top: 4px;
+  }
+  .carte-objectif {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+  .carte-objectif > :global(*) {
+    flex: 1;
+    min-width: 0;
   }
   .accroche {
     padding: 20px 0 28px;
