@@ -234,7 +234,7 @@
 
     {#if !bonjourDansCarte}
       <section class="accroche">
-        <h1 class="titre">Bonjour{prenom ? ` ${prenom}` : ''}.</h1>
+        <h1 class="titre">Salut{prenom ? ` ${prenom}` : ''}.</h1>
       </section>
     {/if}
 
@@ -273,7 +273,7 @@
               </CadreEdition>
             {:else if i === 0 && bonjourDansCarte}
               <div class="colonne-objectif">
-                <h1 class="titre bonjour">Bonjour{prenom ? ` ${prenom}` : ''}.</h1>
+                <h1 class="titre bonjour">Salut{prenom ? ` ${prenom}` : ''}.</h1>
                 <div class="carte-objectif"><Composant {contexte} taille="m" /></div>
               </div>
             {:else}
