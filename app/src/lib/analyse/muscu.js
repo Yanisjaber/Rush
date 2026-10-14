@@ -123,6 +123,41 @@ export function analyserTonnage({ series, aujourdhui = new Date(), semaines = 26
   return { id: 'tonnage', insuffisant: false, verdict, chiffres, graphiques, lectures, conseils: triConseils(conseils), methode: METHODE_TONNAGE, rush: rushTonnage({ pleines, valides, debut, fin }), brut: { semaines: semainesListe, ecartPct, moyenneHebdo, trous, sauts } };
 }
 
+/**
+ * Muscle par muscle : chaque série est répartie entre les muscles qu'elle travaille (principal : 1, secondaire : 0,5).
+ * Renvoie une fonction slug → { nom, pct, parSemaine, etat, exercices, portions… } pour les séries données sur `semainesPeriode` semaines.
+ */
+export function muscleParMuscle(fenetre, semainesPeriode) {
+  const parMuscle = Object.fromEntries(Object.keys(MUSCLES).map((m) => [m, { series: 0, exos: new Map(), portions: Object.fromEntries((PORTIONS[m] || []).map((p) => [p.cle, 0])) }]));
+  for (const x of fenetre) {
+    const nomExo = x.exercise_name || x.exercise_key;
+    for (const { muscle, poids } of repartirSerie(x.exercise_key, x.exercise_name, x.muscle_group)) {
+      const m = parMuscle[muscle];
+      m.series += poids;
+      for (const { portion, part } of repartirPortions(x.exercise_key, x.exercise_name, muscle)) m.portions[portion] += poids * part;
+      const e = m.exos.get(nomExo) || { nom: nomExo, series: 0, role: 'secondaire' };
+      e.series += 1;
+      if (poids >= 1) e.role = 'principal';
+      m.exos.set(nomExo, e);
+    }
+  }
+  const muscleDe = (slug) => {
+    const def = MUSCLES[slug];
+    const par = parMuscle[slug].series / semainesPeriode;
+    const [bas, haut] = def.cible;
+    const etat = parMuscle[slug].series === 0 ? 'oublie' : par < bas ? 'sous' : par > haut ? 'au-dessus' : 'zone';
+    const exercices = [...parMuscle[slug].exos.values()].sort((a, b) => b.series - a.series);
+    const portions = (PORTIONS[slug] || []).map((p) => {
+      const parP = parMuscle[slug].portions[p.cle] / semainesPeriode;
+      const [pb, ph] = p.cible;
+      return { cle: p.cle, nom: p.nom, series: Math.round(parMuscle[slug].portions[p.cle] * 10) / 10, parSemaine: parP, cible: p.cible, pct: Math.round((parP / ((pb + ph) / 2)) * 100), etat: parMuscle[slug].portions[p.cle] === 0 ? 'oublie' : parP < pb ? 'sous' : parP > ph ? 'au-dessus' : 'zone', idee: p.idee };
+    });
+    return { slug, nom: def.nom, avec: def.avec || '', groupe: def.groupe, series: Math.round(parMuscle[slug].series * 10) / 10, parSemaine: par, cible: def.cible, etat, pct: Math.round((par / ((bas + haut) / 2)) * 100), exercices, idee: def.idee, portions };
+  };
+
+  return muscleDe;
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // 2. Équilibre entre groupes musculaires
 // ---------------------------------------------------------------------------------------------------------------------
@@ -156,33 +191,7 @@ export function analyserGroupes({ series, aujourdhui = new Date(), jours: nbJour
     return vide('groupes', 'Pas encore assez de séries', `Il faut au moins ${court ? '2 séances et 8 séries' : '4 séances et 20 séries'} sur ${sur} pour juger l'équilibre de ton entraînement. Enregistre quelques séances de plus.`, METHODE_GROUPES);
   }
 
-  // Muscle par muscle : chaque série est répartie entre les muscles qu'elle travaille (principal : 1, secondaire : 0,5)
-  const parMuscle = Object.fromEntries(Object.keys(MUSCLES).map((m) => [m, { series: 0, exos: new Map(), portions: Object.fromEntries((PORTIONS[m] || []).map((p) => [p.cle, 0])) }]));
-  for (const x of fenetre) {
-    const nomExo = x.exercise_name || x.exercise_key;
-    for (const { muscle, poids } of repartirSerie(x.exercise_key, x.exercise_name, x.muscle_group)) {
-      const m = parMuscle[muscle];
-      m.series += poids;
-      for (const { portion, part } of repartirPortions(x.exercise_key, x.exercise_name, muscle)) m.portions[portion] += poids * part;
-      const e = m.exos.get(nomExo) || { nom: nomExo, series: 0, role: 'secondaire' };
-      e.series += 1;
-      if (poids >= 1) e.role = 'principal';
-      m.exos.set(nomExo, e);
-    }
-  }
-  const muscleDe = (slug) => {
-    const def = MUSCLES[slug];
-    const par = parMuscle[slug].series / semainesPeriode;
-    const [bas, haut] = def.cible;
-    const etat = parMuscle[slug].series === 0 ? 'oublie' : par < bas ? 'sous' : par > haut ? 'au-dessus' : 'zone';
-    const exercices = [...parMuscle[slug].exos.values()].sort((a, b) => b.series - a.series);
-    const portions = (PORTIONS[slug] || []).map((p) => {
-      const parP = parMuscle[slug].portions[p.cle] / semainesPeriode;
-      const [pb, ph] = p.cible;
-      return { cle: p.cle, nom: p.nom, series: Math.round(parMuscle[slug].portions[p.cle] * 10) / 10, parSemaine: parP, cible: p.cible, pct: Math.round((parP / ((pb + ph) / 2)) * 100), etat: parMuscle[slug].portions[p.cle] === 0 ? 'oublie' : parP < pb ? 'sous' : parP > ph ? 'au-dessus' : 'zone', idee: p.idee };
-    });
-    return { slug, nom: def.nom, avec: def.avec || '', groupe: def.groupe, series: Math.round(parMuscle[slug].series * 10) / 10, parSemaine: par, cible: def.cible, etat, pct: Math.round((par / ((bas + haut) / 2)) * 100), exercices, idee: def.idee, portions };
-  };
+  const muscleDe = muscleParMuscle(fenetre, semainesPeriode);
 
   const groupes = ORDRE_GROUPES.map((g, i) => {
     const parSemaine = compte[g] / semainesPeriode;
@@ -356,4 +365,13 @@ export function analyserRecords({ series, aujourdhui = new Date(), semaines = 26
   if (!conseils.length) conseils.push({ priorite: 'info', titre: 'Continue de noter tes charges', texte: 'Plus tu enregistres de séances, plus le suivi des records est précis. Note chaque série avec sa charge réelle.' });
 
   return { id: 'records', insuffisant: false, verdict, chiffres, graphiques, lectures, conseils: triConseils(conseils), methode: METHODE_RECORDS, brut: { suivis, records, plateaux, progres, exos, fin } };
+}
+
+/** Les muscles (avec leur pourcentage de la zone visée) sur les `jours` derniers jours : pour le corps du widget de l'accueil. */
+export function musclesSurPeriode(series, aujourdhui = new Date(), jours = 7) {
+  const { valides, fin } = reperes(series, aujourdhui);
+  const debut = decalerJour(fin, -(jours - 1));
+  const fenetre = valides.filter((s) => iso(s) >= debut && iso(s) <= fin && groupeValide(s.muscle_group));
+  const muscleDe = muscleParMuscle(fenetre, jours / 7);
+  return Object.fromEntries(Object.keys(MUSCLES).map((slug) => [slug, muscleDe(slug)]));
 }

@@ -3,7 +3,7 @@
   // Tout est dessiné en SVG (aucune image). On touche un muscle (ou un groupe dans la liste) pour voir le détail :
   // un groupe se décompose en ses muscles, un muscle montre les exercices qui le travaillent.
   // groupes : [{ groupe, nom, series, parSemaine, cible, etat, pct, exercices, muscles: [{ slug, nom, parSemaine, series, cible, etat, pct, exercices: [{ nom, series, role }] }] }]
-  import { CORPS_SVG } from '../../data/corps-svg.js';
+  import SilhouetteCorps from './SilhouetteCorps.svelte';
   let { groupes = [], etiquette = 'Corps humain', periode = 'la période' } = $props();
 
   let choisi = $state(null); // clé du groupe sélectionné
@@ -33,26 +33,7 @@
     muscleChoisi = slug;
   };
 
-  // Du gris (jamais travaillé) au corail du muscu (130 % de la zone visée ou plus)
-  const teinte = (pct) => `color-mix(in srgb, var(--sport-muscu) ${Math.round((Math.min(Math.max(pct ?? 0, 0), 130) / 130) * 100)}%, var(--trait-fort))`;
-  // Les épaules : sur le dessin, l'avant du deltoïde se lit de face et l'arrière de dos (le faisceau latéral se lit dans le détail)
-  const FAISCEAU_DE_LA_VUE = { Face: 'avant', Dos: 'arriere' };
-  const pctPiece = (muscleSlug, vue) => {
-    const m = muscles[muscleSlug];
-    if (muscleSlug === 'deltoids') return m.portions?.find((p) => p.cle === FAISCEAU_DE_LA_VUE[vue])?.pct ?? m.pct;
-    return m.pct;
-  };
   const lumineux = (slug) => (muscleChoisi ? muscleChoisi === slug : choisi != null && muscles[slug]?.groupe === choisi);
-
-  // Les tracés du dessin portent le nom d'un muscle ; les tibias sont rattachés aux mollets, le reste (tête, mains, pieds…) ne compte pas.
-  const ALIAS = { tibialis: 'calves' };
-  const VUES = [
-    { nom: 'Face', ...CORPS_SVG.face },
-    { nom: 'Dos', ...CORPS_SVG.dos },
-  ].map((v) => ({
-    ...v,
-    pieces: v.zones.map((z) => ({ ...z, muscle: ALIAS[z.slug] || z.slug })),
-  }));
 </script>
 
 <div class="corps">
@@ -128,31 +109,8 @@
     </div>
 
     <div class="vues">
-    {#each VUES as v (v.nom)}
-      <figure>
-        <svg viewBox={v.viewBox} role="group" aria-label={`${etiquette}, vue de ${v.nom.toLowerCase()}`}>
-          <path d={v.contour} class="silhouette" />
-          {#each v.pieces.filter((z) => !muscles[z.muscle]) as z (z.slug)}<path d={z.d} class="neutre" />{/each}
-          {#each v.pieces.filter((z) => muscles[z.muscle]) as z (z.slug)}
-            <path
-              d={z.d}
-              class="zone"
-              class:choisie={lumineux(z.muscle)}
-              style:fill={teinte(pctPiece(z.muscle, v.nom))}
-              role="button"
-              tabindex="0"
-              aria-label={muscles[z.muscle].nom}
-              aria-pressed={muscleChoisi === z.muscle}
-              onclick={() => choisirMuscle(z.muscle)}
-              onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), choisirMuscle(z.muscle))}
-            />
-          {/each}
-        </svg>
-        <figcaption>{v.nom}</figcaption>
-      </figure>
-    {/each}
-  </div>
-
+      <SilhouetteCorps {muscles} actif={lumineux} onchoisir={choisirMuscle} {etiquette} />
+    </div>
   </div>
 </div>
 
@@ -239,66 +197,11 @@
     border: 1px solid var(--trait);
   }
   .vues {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
     order: -1; /* le corps à gauche, le détail à droite (et le corps en premier sur téléphone) */
     height: var(--hauteur);
     padding: 16px 8px 8px;
     border-radius: var(--rayon-l);
     background: var(--surface-2);
-  }
-  figure {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    margin: 0;
-    text-align: center;
-  }
-  figure svg {
-    display: block;
-    flex: 1;
-    width: 100%;
-    min-height: 0;
-  }
-  figcaption {
-    margin-top: 4px;
-    font-size: 12px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--texte-muet);
-  }
-  .neutre {
-    fill: color-mix(in srgb, var(--trait-fort) 40%, var(--surface-2));
-    stroke: var(--surface-2);
-    stroke-width: 3;
-  }
-  .silhouette {
-    fill: none;
-    stroke: var(--trait-fort);
-    stroke-width: 4;
-    stroke-linejoin: round;
-    pointer-events: none;
-  }
-  .zone {
-    stroke: var(--surface-2);
-    stroke-width: 3;
-    stroke-linejoin: round;
-    cursor: pointer;
-    outline: none;
-    transition: fill 0.2s;
-  }
-  .zone:hover {
-    stroke: var(--texte-doux);
-  }
-  .zone.choisie {
-    stroke: var(--texte);
-    stroke-width: 7;
-  }
-  .zone:focus-visible {
-    outline: none;
-    stroke: var(--texte);
-    stroke-width: 7;
   }
   .ligne {
     display: flex;
