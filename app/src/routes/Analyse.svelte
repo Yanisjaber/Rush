@@ -51,7 +51,7 @@
   const semaines = $derived(periode.semaines ?? Math.ceil(periode.jours / 7));
   const seances = $derived(sport === 'tout' ? brut.seances : brut.seances.filter((s) => familleAffichage(s.sport) === sport));
 
-  const analyse = $derived(def && !brut.chargement && !brut.erreur ? def.calculer({ ...brut, seances }, { aujourdhui, semaines, jours: periode.jours, nomSport, famille: sport }) : null);
+  const analyse = $derived(def && !brut.chargement && !brut.erreur ? def.calculer({ ...brut, toutes: brut.seances, seances }, { aujourdhui, semaines, jours: periode.jours, nomSport, famille: sport }) : null);
 
   const retour = $derived(construireAdresse({ sport: menu.filtre }));
   const COULEUR_NIVEAU = { ok: 'var(--ok)', attention: 'var(--alerte)', danger: 'var(--danger)', info: 'var(--sport-velo)' };

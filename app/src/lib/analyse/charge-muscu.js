@@ -7,6 +7,7 @@
 import { GROUPES, ORDRE_GROUPES, groupeValide } from '../data/exercices.js';
 import { dateIsoLocale, formatDateCourte } from '../utils/format.js';
 import { moyenne, arrondi, decalerJour, lundiDe, ecartJours, ecartType } from './maths.js';
+import { chargeJambesParJour, referenceJambes, courbeFatigue, zoneJambes, sortiesAVenir, effetSurDiscipline, fatigueBrute } from './fatigue-jambes.js';
 
 const FENETRE_RM = 90; // le 1RM de référence d'un exercice = ton meilleur des 90 derniers jours
 const INTENSITE_SANS_CHARGE = 0.6; // pompes, tractions au poids du corps… : pas de charge notée, on suppose un effort moyen
@@ -62,7 +63,7 @@ export function chargeParSerie(series) {
         const ref = cache.get(d) || epley(p, r); // aucun 1RM connu (séries longues seulement) : on part de la série elle-même
         intensite = Math.min(1, p / ref);
       }
-      sortie.push({ date: d, groupe: s.muscle_group, cle: s.exercise_key, reps: r, intensite, charge: r * intensite, estimee });
+      sortie.push({ date: d, groupe: s.muscle_group, cle: s.exercise_key, nom: s.exercise_name, reps: r, intensite, charge: r * intensite, estimee });
     }
   }
   return sortie;
@@ -106,7 +107,11 @@ const METHODE = [
 
 const triConseils = (c) => c.sort((a, b) => ORDRE[a.priorite] - ORDRE[b.priorite]);
 
-export function analyserChargeMuscu({ series, aujourdhui = new Date(), semaines = 12 } = {}) {
+/**
+ * Analyse de la charge de muscu. `toutes` : toutes tes séances (vélo, course… pour mesurer l'effet de la muscu sur elles),
+ * `planifiees` : tes séances prévues (pour savoir si tes jambes seront fraîches).
+ */
+export function analyserChargeMuscu({ series, toutes: seancesToutes = [], planifiees = [], aujourdhui = new Date(), semaines = 12 } = {}) {
   const fin = dateIsoLocale(aujourdhui);
   const debut = decalerJour(lundiDe(fin), -(semaines - 1) * 7);
   const tous = chargeParSerie(series).filter((s) => s.date <= fin);
@@ -214,7 +219,58 @@ export function analyserChargeMuscu({ series, aujourdhui = new Date(), semaines 
     },
   ];
 
-  const rush = rushChargeMuscu({ recente, ratio, zone, intensites, intensiteMoy, groupes, ecartPct, sauts, cv, serieSansDecharge, moyenneHebdo, meilleure, pleines, chargeSeanceMoy, joursTotal, partEstimee, plusLourde });
+  // Fatigue des jambes et effet sur le vélo / la course (nécessite assez de séances de jambes pour calibrer)
+  const parJourJambes = chargeJambesParJour(tous);
+  const refJambes = referenceJambes(parJourJambes);
+  let jambes = null;
+  if (refJambes) {
+    const debutCourbe = decalerJour(fin, -41);
+    const passe = courbeFatigue(parJourJambes, refJambes, debutCourbe, fin);
+    const futur = [];
+    for (let i = 1; i <= 7; i++) {
+      const j = decalerJour(fin, i);
+      futur.push({ iso: j, pct: Math.round((fatigueBrute(parJourJambes, j, true) / refJambes) * 100) });
+    }
+    const aujourdhuiPct = passe[passe.length - 1].pct;
+    const aVenir = sortiesAVenir(planifiees, parJourJambes, refJambes, fin, 7);
+    const effets = ['velo', 'course'].map((f) => effetSurDiscipline(seancesToutes, parJourJambes, refJambes, f)).filter(Boolean);
+    jambes = { passe, futur, pct: aujourdhuiPct, zone: zoneJambes(aujourdhuiPct), aVenir, effets, ref: refJambes };
+    chiffres.splice(2, 0, { etiquette: 'Fatigue des jambes', valeur: String(aujourdhuiPct), unite: '%', note: `${zoneJambes(aujourdhuiPct).libelle} aujourd'hui`, ton: zoneJambes(aujourdhuiPct).ton === 'ok' || zoneJambes(aujourdhuiPct).ton === 'info' ? '' : 'alerte' });
+    const nulPasse = passe.map(() => null);
+    graphiques.splice(1, 0, {
+      type: 'lignes',
+      titre: 'Fatigue des jambes (6 semaines et 7 jours à venir)',
+      etiquettes: [...passe.map((p) => p.iso), ...futur.map((p) => p.iso)],
+      series: [
+        { nom: 'Fatigue des jambes', couleur: 'var(--sport-muscu)', valeurs: [...passe.map((p) => p.pct), ...futur.map(() => null)] },
+        { nom: 'Prévue sans nouvelle séance', couleur: 'var(--sport-muscu)', pointille: true, valeurs: [...nulPasse.slice(0, -1), passe[passe.length - 1].pct, ...futur.map((p) => p.pct)] },
+      ],
+      bandes: [
+        { de: 0, a: 20, couleur: 'var(--ok)', libelle: 'Jambes fraîches' },
+        { de: 75, a: 200, couleur: 'var(--danger)', libelle: 'Jambes cuites' },
+      ],
+      min: 0,
+      max: Math.max(110, ...passe.map((p) => p.pct + 10)),
+    });
+    if (aVenir.length) {
+      graphiques.splice(2, 0, {
+        type: 'tableau',
+        titre: 'Tes prochaines sorties et tes jambes',
+        colonnes: ['Quand', 'Sortie', 'Jambes ce jour-là', 'Conseil'],
+        lignes: aVenir.map((x) => [formatDateCourte(x.date), `${x.nom} (${x.famille === 'velo' ? 'vélo' : 'course'})`, `${x.pct} %`, x.conseil]),
+      });
+    }
+    const lignesEffet = [];
+    for (const e of effets) {
+      const nom = e.famille === 'velo' ? 'Vélo' : 'Course';
+      if (e.delta == null) lignesEffet.push([nom, 'Pas assez de sorties', `${e.nFatigue} jambes fatiguées, ${e.nFraiches} fraîches`, 'insuffisant']);
+      else lignesEffet.push([nom, 'Jambes fatiguées vs fraîches', `${e.delta >= 0 ? '+' : ''}${arrondi(e.delta, 1).toString().replace('.', ',')} %`, e.confiance]);
+      for (const d of e.parDelai) lignesEffet.push([nom, d.nom, `${d.ecart >= 0 ? '+' : ''}${arrondi(d.ecart, 1).toString().replace('.', ',')} %`, `${d.n} sorties`]);
+    }
+    if (lignesEffet.length) graphiques.splice(graphiques.length - 2, 0, { type: 'tableau', titre: 'L\'effet de ta muscu sur ton endurance', colonnes: ['Discipline', 'Comparaison', 'Écart d\'efficacité', 'Fiabilité'], lignes: lignesEffet });
+  }
+
+  const rush = rushChargeMuscu({ jambes, recente, ratio, zone, intensites, intensiteMoy, groupes, ecartPct, sauts, cv, serieSansDecharge, moyenneHebdo, meilleure, pleines, chargeSeanceMoy, joursTotal, partEstimee, plusLourde });
   const conseils = [];
   return { id: 'chargemuscu', insuffisant: false, verdict: null, chiffres, graphiques, lectures: [], conseils: triConseils(conseils), methode: METHODE, rush, brut: { recente, ratio, zone, intensites, groupes, semaines: semainesListe, moyenneHebdo, ecartPct } };
 }
@@ -225,7 +281,7 @@ export function analyserChargeMuscu({ series, aujourdhui = new Date(), semaines 
 function rushChargeMuscu(d) {
   const parties = [];
   const plan = [];
-  const { recente, ratio, intensites, groupes } = d;
+  const { recente, ratio, intensites, groupes, jambes } = d;
 
   // 1. Où tu en es
   if (ratio != null) {
@@ -237,6 +293,47 @@ function rushChargeMuscu(d) {
     else if (r >= 0.8) texte = `Tes 7 derniers jours pèsent ${recente.derniere} points, ${Math.round(r * 100)} % de ton habitude (${recente.habituelle}) : dans la zone où l'on progresse sans à-coup.`;
     else { ton = 'info'; texte = `Tes 7 derniers jours pèsent ${recente.derniere} points, ${Math.round(r * 100)} % de ton habitude (${recente.habituelle}). Voulu (décharge), c'est bien. Subi, c'est le moment de remettre un créneau fixe.`; }
     parties.push({ titre: 'Ta semaine face à ton habitude', ton, texte });
+  }
+
+  // 1 bis. Les jambes : la fatigue d'aujourd'hui, tes prochaines sorties, l'effet mesuré sur ton endurance
+  if (jambes) {
+    const z = jambes.zone;
+    parties.push({
+      titre: 'Tes jambes aujourd\'hui',
+      ton: z.cle === 'forte' || z.cle === 'marquee' ? 'attention' : z.cle === 'fraiches' ? 'ok' : 'info',
+      texte: `Fatigue des jambes à ${jambes.pct} % d'une grosse séance de jambes (${z.libelle}). ${{
+        forte: 'Tes jambes sont cuites : une sortie dure aujourd\'hui serait de mauvaise qualité et plus risquée.',
+        marquee: 'Fatigue encore bien présente : garde le vélo et la course en endurance facile.',
+        legere: 'Un reste de fatigue : tu peux rouler normalement, mais évite une séance de qualité très dure.',
+        fraiches: 'Jambes prêtes : c\'est le bon moment pour une séance de qualité.',
+      }[z.cle]} Sans nouvelle séance de jambes, il en reste environ 60 % le lendemain et 37 % après 2 jours.`,
+    });
+    const aRisque = jambes.aVenir.filter((x) => x.pct >= 45 && x.dure);
+    if (jambes.aVenir.length) {
+      parties.push({
+        titre: 'Tes prochaines sorties',
+        ton: aRisque.length ? 'attention' : 'ok',
+        texte: aRisque.length
+          ? `${aRisque.map((x) => `« ${x.nom} » le ${formatDateCourte(x.date)} (jambes à ${x.pct} %)`).join(', ')} : tes jambes ne seront pas remises. Allège ces sorties ou décale-les d'un jour.`
+          : `Tes ${pluriel(jambes.aVenir.length, 'sortie')} de vélo ou de course des 7 prochains jours tombent quand tes jambes auront récupéré.`,
+      });
+      for (const x of aRisque.slice(0, 2)) plan.unshift({ quand: formatDateCourte(x.date), action: `« ${x.nom} » : tes jambes seront à ${x.pct} %. Fais-la en endurance facile, ou déplace-la d'un jour.` });
+    }
+    for (const e of jambes.effets) {
+      const nom = e.famille === 'velo' ? 'ton vélo' : 'ta course';
+      const efficacite = e.famille === 'velo' ? 'puissance par battement' : 'vitesse par battement';
+      if (e.delta == null) {
+        parties.push({ titre: `L'effet sur ${nom}`, ton: 'info', texte: `Pas encore assez de sorties pour le mesurer : il faut au moins 3 sorties avec les jambes fatiguées et 5 avec les jambes fraîches (tu en as ${e.nFatigue} et ${e.nFraiches}).` });
+        continue;
+      }
+      const baisse = e.delta < 0;
+      parties.push({
+        titre: `L'effet de ta muscu sur ${nom}`,
+        ton: baisse && e.confiance !== 'non concluante' && e.delta <= -3 ? 'attention' : 'info',
+        texte: `Quand tes jambes sont fatiguées, ton efficacité (${efficacite}) est ${e.delta >= 0 ? 'supérieure' : 'inférieure'} de ${Math.abs(Math.round(e.delta * 10) / 10).toString().replace('.', ',')} % à celle des jours où elles sont fraîches (${e.nFatigue} sorties contre ${e.nFraiches}). Fiabilité : ${e.confiance === 'nette' ? 'nette, l\'écart dépasse la marge d\'erreur' : e.confiance === 'indicative' ? 'indicative, à confirmer avec plus de sorties' : 'non concluante, l\'écart reste dans la marge d\'erreur'}.${e.parDelai.length ? ` Selon le délai : ${e.parDelai.map((x) => `${x.nom.toLowerCase()} ${x.ecart >= 0 ? '+' : ''}${Math.round(x.ecart * 10) / 10} %`.replace('.', ',')).join(', ')}.` : ''}`,
+      });
+      if (baisse && e.delta <= -3 && e.confiance !== 'non concluante') plan.push({ quand: 'Dans ta semaine type', action: `Garde 48 heures entre une grosse séance de jambes et ta sortie de qualité en ${e.famille === 'velo' ? 'vélo' : 'course'} : place plutôt la séance de jambes après la sortie dure, ou un jour d'endurance facile.` });
+    }
   }
 
   // 2. L'intensité
