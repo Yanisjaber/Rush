@@ -181,7 +181,7 @@ export function analyserGroupes({ series, aujourdhui = new Date(), jours: nbJour
       const [pb, ph] = p.cible;
       return { cle: p.cle, nom: p.nom, series: Math.round(parMuscle[slug].portions[p.cle] * 10) / 10, parSemaine: parP, cible: p.cible, pct: Math.round((parP / ((pb + ph) / 2)) * 100), etat: parMuscle[slug].portions[p.cle] === 0 ? 'oublie' : parP < pb ? 'sous' : parP > ph ? 'au-dessus' : 'zone', idee: p.idee };
     });
-    return { slug, nom: def.nom, groupe: def.groupe, series: Math.round(parMuscle[slug].series * 10) / 10, parSemaine: par, cible: def.cible, etat, pct: Math.round((par / ((bas + haut) / 2)) * 100), exercices, idee: def.idee, portions };
+    return { slug, nom: def.nom, avec: def.avec || '', groupe: def.groupe, series: Math.round(parMuscle[slug].series * 10) / 10, parSemaine: par, cible: def.cible, etat, pct: Math.round((par / ((bas + haut) / 2)) * 100), exercices, idee: def.idee, portions };
   };
 
   const groupes = ORDRE_GROUPES.map((g, i) => {

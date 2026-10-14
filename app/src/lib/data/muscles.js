@@ -7,7 +7,7 @@
 export const MUSCLES = {
   chest: { nom: 'Pectoraux', groupe: 'pectoraux', cible: [10, 20], idee: ['Développé couché', 'Développé incliné haltères'] },
   trapezius: { nom: 'Trapèzes', groupe: 'dos', cible: [4, 10], idee: ['Shrugs', 'Rowing barre'] },
-  'upper-back': { nom: 'Haut du dos', groupe: 'dos', cible: [10, 20], idee: ['Tractions', 'Tirage horizontal', 'Rowing haltère'] },
+  'upper-back': { nom: 'Grand dorsal', avec: 'Avec les rhomboïdes, le grand rond, le petit rond et le sous-épineux (la grande zone en V du dos et autour des omoplates).', groupe: 'dos', cible: [10, 20], idee: ['Tractions', 'Tirage horizontal', 'Rowing haltère'] },
   'lower-back': { nom: 'Lombaires', groupe: 'dos', cible: [3, 8], idee: ['Hyperextensions', 'Soulevé de terre roumain'] },
   deltoids: { nom: 'Deltoïdes', groupe: 'epaules', cible: [8, 16], idee: ['Élévations latérales', 'Développé militaire', 'Oiseau'] },
   biceps: { nom: 'Biceps', groupe: 'bras', cible: [8, 14], idee: ['Curl haltères', 'Curl marteau'] },

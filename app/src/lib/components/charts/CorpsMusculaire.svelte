@@ -77,6 +77,7 @@
         <button type="button" class="retour" onclick={() => (muscleChoisi = null)}>← {detail?.nom}</button>
         <h4>{muscle.nom}</h4>
         <p class="grand">{muscle.pct} % <span>de la zone visée</span></p>
+        {#if muscle.avec}<p class="note">{muscle.avec}</p>{/if}
         <p class="texte">{virgule(muscle.parSemaine)} séries par semaine (les séries où il aide comptent pour moitié) pour une zone de {muscle.cible[0]} à {muscle.cible[1]} : <strong>{NOM_ETAT[muscle.etat]}</strong>.</p>
         {#if muscle.portions?.length}
           <p class="mini">Les portions du muscle</p>
