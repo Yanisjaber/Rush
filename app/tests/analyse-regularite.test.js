@@ -32,7 +32,8 @@ test('régularité : moins de 4 jours → pas assez de séances', () => {
 test('régularité : 3 séances chaque semaine pendant 11 semaines → très régulier, 100 % de semaines tenues', () => {
   const a = analyserRegularite({ seances: rythme(11, 3), aujourdhui: AUJ, semaines: 12 });
   assert.equal(a.insuffisant, false);
-  assert.equal(a.verdict.titre, 'Très régulier');
+  assert.equal(a.verdict, null); // pas de phrase de jugement : seulement des chiffres
+  assert.equal(a.chiffres.find((c) => c.etiquette === 'Semaines tenues').valeur, '100');
   assert.equal(a.brut.pct, 100);
   assert.equal(a.brut.vides, 0);
   assert.equal(a.brut.enCours, 11);
@@ -49,16 +50,15 @@ test('régularité : deux séances le même jour comptent pour un seul jour acti
 
 test('régularité : 1 séance par semaine → peu régulier avec conseil de viser 3 jours', () => {
   const a = analyserRegularite({ seances: rythme(10, 1), aujourdhui: AUJ, semaines: 12 });
-  assert.equal(a.verdict.niveau, 'attention');
   assert.equal(a.brut.pct, 0);
   assert.ok(a.conseils.some((c) => /Vise 3 jours/.test(c.titre)));
 });
 
-test('régularité : pas de séance depuis plus de 14 jours → pas de verdict « décroché », mais le conseil de reprise reste prioritaire', () => {
+test('régularité : pas de séance depuis plus de 14 jours → aucune phrase « décroché / reprends », juste les chiffres', () => {
   const a = analyserRegularite({ seances: rythme(8, 3, 3), aujourdhui: AUJ, semaines: 12 }); // dernière séance il y a ~3 semaines
-  assert.notEqual(a.verdict.titre, 'Tu as décroché');
+  assert.equal(a.verdict, null);
   assert.ok(a.brut.pauseEnCours >= 14);
-  assert.equal(a.conseils[0].priorite, 'haute');
+  assert.equal(a.conseils.some((c) => /reprend/i.test(c.titre + c.texte)), false);
 });
 
 test('régularité : la plus longue pause est trouvée, et des semaines sans repos sont signalées', () => {
@@ -66,7 +66,6 @@ test('régularité : la plus longue pause est trouvée, et des semaines sans rep
   for (let w = 1; w <= 5; w++) for (let j = 0; j < 7; j++) s.push(seance(decalerJour('2026-10-12', -w * 7 + j))); // 7 jours sur 7
   const a = analyserRegularite({ seances: s, aujourdhui: AUJ, semaines: 12 });
   assert.equal(a.brut.sansRepos, 5);
-  assert.equal(a.verdict.titre, 'Régulier, mais sans repos'); // pas « Très régulier » : le verdict ne contredit pas le conseil
   assert.ok(a.conseils.some((c) => /repos/i.test(c.titre)));
   const b = analyserRegularite({ seances: [seance('2026-09-01'), seance('2026-09-02'), seance('2026-09-20'), seance('2026-09-22'), seance('2026-10-12')], aujourdhui: AUJ, semaines: 12 });
   assert.equal(b.brut.pauseMax, 19); // du 23 septembre au 11 octobre (plus longue que celle du 3 au 19 septembre, 17 jours)

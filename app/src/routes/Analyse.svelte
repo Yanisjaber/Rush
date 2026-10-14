@@ -87,10 +87,12 @@
     {:else if brut.erreur}
       <p class="alerte" role="alert">{brut.erreur}</p>
     {:else if analyse}
-      <section class="verdict" style:--c={COULEUR_NIVEAU[analyse.verdict.niveau]} aria-label="Verdict">
-        <h2 class="titre">{analyse.verdict.titre}</h2>
-        <p>{analyse.verdict.texte}</p>
-      </section>
+      {#if analyse.verdict}
+        <section class="verdict" style:--c={COULEUR_NIVEAU[analyse.verdict.niveau]} aria-label="Verdict">
+          <h2 class="titre">{analyse.verdict.titre}</h2>
+          <p>{analyse.verdict.texte}</p>
+        </section>
+      {/if}
 
       {#if analyse.chiffres.length}
         <section class="chiffres" aria-label="Chiffres clés">
