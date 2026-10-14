@@ -147,7 +147,7 @@
         <!-- L'analyse Rush : un seul bloc « coach » (constat, lecture des données, conseils), le détail du calcul reste replié -->
         <section class="rush" aria-labelledby="rush-titre">
           <p class="rush-marque">Analyse Rush</p>
-          <h2 id="rush-titre" class="rush-lead">{analyse.rush ? analyse.rush.accroche : analyse.lectures[0]}</h2>
+          <p id="rush-titre" class="rush-lead">{analyse.rush ? analyse.rush.accroche : analyse.lectures[0]}</p>
           {#if analyse.rush}
             <dl class="rush-profil">
               {#each analyse.rush.profil as p (p.etiquette)}<div><dt>{p.etiquette}</dt><dd>{p.valeur}</dd></div>{/each}
@@ -387,8 +387,10 @@
   }
   .rush-lead {
     margin-top: 8px;
-    font-size: clamp(22px, 3vw, 30px);
-    line-height: 1.2;
+    font-family: var(--police-texte);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.55;
   }
   .rush-prio {
     margin-top: 12px;

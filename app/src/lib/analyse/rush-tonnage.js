@@ -165,7 +165,7 @@ export function rushTonnage({ pleines, valides, debut, fin }) {
   else if (attention === 1) fin2 = 'ta base est solide, avec un point à surveiller.';
   else if (partDuPic != null && partDuPic < 60) fin2 = 'tu as de la marge pour retrouver ton niveau, sans te presser.';
   else fin2 = 'rien ne t\'alerte : le but est de tenir le rythme et de monter par paliers.';
-  const accroche = `${nSeances(seancesTotal)} sur la période, ${niveau} : ${fin2}`;
+  const accroche = `${nSeances(seancesTotal)} sur la période, ${niveau}. ${fin2[0].toUpperCase()}${fin2.slice(1)}`;
 
   return { accroche, parties, plan, profil };
 }
