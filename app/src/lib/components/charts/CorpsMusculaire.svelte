@@ -20,40 +20,53 @@
 
   // Moitié gauche du corps (côté gauche de l'image) ; la moitié droite est la même, en miroir.
   // Chaque forme : { g: groupe, d: tracé }. g = null pour les parties qui ne comptent pas (tête, mains, genoux, pieds…).
+  // Plusieurs muscles réels (trapèzes, deltoïdes, grand dorsal, quadriceps…) sont dessinés séparément mais colorés par groupe.
   const FACE = [
-    { g: null, d: 'M100 8 C88 8 80 18 80 32 C80 48 88 58 100 58 Z' }, // tête
-    { g: null, d: 'M100 56 L92 56 C92 64 90 70 86 76 L100 80 Z' }, // cou
-    { g: 'dos', d: 'M99 77 L88 74 C84 80 80 84 76 86 L96 92 Z' }, // trapèzes vus de face
-    { g: 'epaules', d: 'M78 84 C62 84 50 94 47 114 C46 122 50 128 57 126 C62 110 70 102 82 100 Z' },
-    { g: 'pectoraux', d: 'M99 94 L83 90 C74 94 72 106 76 118 C82 126 94 126 99 122 Z' },
-    { g: 'bras', d: 'M47 116 C42 136 42 152 44 168 L57 170 C59 154 59 138 58 124 Z' }, // haut du bras
-    { g: 'bras', d: 'M44 172 C40 194 36 212 34 228 L47 230 C51 212 55 194 57 172 Z' }, // avant-bras
-    { g: null, d: 'M34 232 C28 238 30 252 36 256 C42 254 48 244 47 232 Z' }, // main
-    { g: 'tronc', d: 'M99 128 L86 128 C82 146 82 168 86 190 C92 196 97 196 99 196 Z' }, // abdominaux
-    { g: 'tronc', d: 'M84 128 C75 138 73 162 77 188 L84 190 C80 168 80 146 84 128 Z' }, // obliques
-    { g: null, d: 'M99 198 L82 194 C78 204 80 214 86 220 L99 216 Z' }, // bassin
-    { g: 'jambes', d: 'M99 218 L84 222 C76 242 74 266 76 290 C80 296 92 296 96 290 C100 266 100 242 99 218 Z' }, // quadriceps
-    { g: null, d: 'M78 296 C77 304 82 310 90 310 C96 306 97 298 95 294 Z' }, // genou
-    { g: 'jambes', d: 'M78 312 C75 338 76 366 80 388 L92 388 C96 366 96 338 94 312 Z' }, // tibias et mollets
-    { g: null, d: 'M80 390 L93 390 L96 406 L74 406 Z' }, // pied
+    { g: null, d: 'M100 6 C88 6 80 16 80 30 C80 44 86 54 94 58 L100 60 Z' }, // tête
+    { g: null, d: 'M100 58 L93 56 C92 64 91 68 88 72 L100 76 Z' }, // cou
+    { g: 'dos', d: 'M100 74 L88 72 C80 76 72 80 64 84 C72 86 84 88 100 88 Z' }, // trapèzes
+    { g: 'epaules', d: 'M64 84 C52 86 44 96 42 110 C41 120 44 128 50 130 C54 118 60 108 70 100 C70 94 68 88 64 84 Z' }, // deltoïde
+    { g: 'pectoraux', d: 'M100 88 C88 88 76 92 70 100 C66 110 70 122 80 126 C88 128 96 126 100 124 Z' },
+    { g: 'tronc', d: 'M70 128 L80 130 L78 137 L70 135 Z' }, // dentelés
+    { g: 'tronc', d: 'M70 138 L79 140 L77 147 L69 145 Z' },
+    { g: 'tronc', d: 'M69 148 L78 150 L76 156 L69 154 Z' },
+    { g: 'tronc', d: 'M99 130 L90 130 C89 136 89 140 90 144 L99 144 Z' }, // abdominaux, 4 blocs
+    { g: 'tronc', d: 'M99 146 L90 146 C89 152 89 156 90 160 L99 160 Z' },
+    { g: 'tronc', d: 'M99 162 L91 162 C90 168 90 172 91 176 L99 176 Z' },
+    { g: 'tronc', d: 'M99 178 L92 178 C92 184 93 190 95 194 L99 196 Z' },
+    { g: 'tronc', d: 'M88 130 C82 140 78 156 79 172 C80 184 84 192 90 196 C89 180 89 150 88 130 Z' }, // obliques
+    { g: null, d: 'M99 198 L86 196 C80 200 76 208 76 218 C84 220 94 218 99 214 Z' }, // bassin
+    { g: 'bras', d: 'M50 132 C46 146 45 158 47 170 L58 172 C60 160 60 146 58 130 Z' }, // biceps
+    { g: 'bras', d: 'M47 174 C42 192 38 210 36 226 L47 230 C52 212 56 194 58 174 Z' }, // avant-bras
+    { g: null, d: 'M36 228 C30 236 30 252 36 260 C42 262 48 250 47 230 Z' }, // main
+    { g: 'jambes', d: 'M86 222 C78 238 74 262 75 288 C78 294 84 296 87 294 C86 268 88 244 92 224 Z' }, // quadriceps externe
+    { g: 'jambes', d: 'M92 224 C88 244 87 270 88 294 C92 298 98 296 99 292 L99 220 C97 222 94 223 92 224 Z' }, // quadriceps interne
+    { g: null, d: 'M78 296 C78 306 86 310 94 308 C98 304 98 298 96 294 Z' }, // genou
+    { g: 'jambes', d: 'M79 312 C76 336 77 364 81 388 L92 388 C96 364 96 338 94 312 Z' }, // tibia et mollet
+    { g: null, d: 'M80 390 L93 390 L96 408 L74 408 Z' }, // pied
   ];
   const DOS = [
-    { g: null, d: 'M100 8 C88 8 80 18 80 32 C80 48 88 58 100 58 Z' },
-    { g: null, d: 'M100 56 L92 56 C92 64 90 70 86 76 L100 80 Z' },
-    { g: 'dos', d: 'M99 76 L90 76 C82 80 78 84 78 92 C76 112 78 140 86 168 L99 176 Z' }, // trapèzes et grand dorsal
-    { g: 'epaules', d: 'M78 84 C62 84 50 94 47 114 C46 122 50 128 57 126 C62 110 70 102 82 100 Z' },
-    { g: 'bras', d: 'M47 116 C42 136 42 152 44 168 L57 170 C59 154 59 138 58 124 Z' }, // triceps
-    { g: 'bras', d: 'M44 172 C40 194 36 212 34 228 L47 230 C51 212 55 194 57 172 Z' },
-    { g: null, d: 'M34 232 C28 238 30 252 36 256 C42 254 48 244 47 232 Z' },
-    { g: 'tronc', d: 'M99 172 L86 168 C84 178 86 190 92 196 L99 198 Z' }, // lombaires
-    { g: 'jambes', d: 'M99 198 L82 196 C76 206 78 226 90 232 C96 232 99 228 99 224 Z' }, // fessiers
-    { g: 'jambes', d: 'M99 230 L80 234 C74 254 74 276 76 296 L94 296 C99 274 100 252 99 230 Z' }, // ischio-jambiers
-    { g: 'jambes', d: 'M77 300 C73 326 76 362 80 388 L93 388 C97 362 99 326 95 300 Z' }, // mollets
-    { g: null, d: 'M80 390 L93 390 L96 406 L74 406 Z' },
+    { g: null, d: 'M100 6 C88 6 80 16 80 30 C80 44 86 54 94 58 L100 60 Z' },
+    { g: null, d: 'M100 58 L93 56 C92 64 91 68 88 72 L100 76 Z' },
+    { g: 'dos', d: 'M100 74 L88 72 C80 76 72 82 66 86 C74 100 90 112 100 122 Z' }, // trapèzes
+    { g: 'epaules', d: 'M64 84 C52 86 44 96 42 110 C41 120 44 128 50 130 C54 118 60 108 70 100 C70 94 68 88 64 84 Z' }, // deltoïde arrière
+    { g: 'dos', d: 'M66 90 C60 98 62 108 70 112 C76 108 78 98 74 92 Z' }, // petit rond, sous-épineux
+    { g: 'dos', d: 'M100 124 C90 114 78 112 72 118 C70 134 74 152 84 168 L100 176 Z' }, // grand dorsal
+    { g: 'tronc', d: 'M100 178 L86 170 C84 180 86 190 92 198 L100 200 Z' }, // lombaires
+    { g: 'bras', d: 'M50 132 C46 146 45 158 47 170 L58 172 C60 160 60 146 58 130 Z' }, // triceps
+    { g: 'bras', d: 'M47 174 C42 192 38 210 36 226 L47 230 C52 212 56 194 58 174 Z' },
+    { g: null, d: 'M36 228 C30 236 30 252 36 260 C42 262 48 250 47 230 Z' },
+    { g: 'jambes', d: 'M100 202 L84 200 C76 208 76 226 86 234 C94 236 100 232 100 228 Z' }, // fessiers
+    { g: 'jambes', d: 'M100 234 L82 238 C76 256 76 278 78 296 L96 296 C100 278 101 256 100 234 Z' }, // ischio-jambiers
+    { g: 'jambes', d: 'M78 300 C72 322 76 350 82 372 C86 380 90 380 94 372 C98 350 98 322 94 300 Z' }, // mollets
+    { g: null, d: 'M80 380 L93 380 L96 408 L74 408 Z' }, // pied et talon
   ];
+  // Traits fins pour dessiner les séparations entre muscles (colonne vertébrale, ligne blanche…)
+  const TRAITS_FACE = ['M100 90 L100 196', 'M100 124 C92 128 86 128 82 126', 'M70 100 C76 104 82 108 86 112'];
+  const TRAITS_DOS = ['M100 74 L100 200', 'M100 124 C96 140 92 156 88 172', 'M88 240 C86 262 86 280 87 296'];
   const VUES = [
-    { nom: 'Face', formes: FACE },
-    { nom: 'Dos', formes: DOS },
+    { nom: 'Face', formes: FACE, traits: TRAITS_FACE },
+    { nom: 'Dos', formes: DOS, traits: TRAITS_DOS },
   ];
 </script>
 
@@ -61,7 +74,21 @@
   <div class="vues">
     {#each VUES as v (v.nom)}
       <figure>
-        <svg viewBox="20 0 160 414" role="group" aria-label={`${etiquette}, vue de ${v.nom.toLowerCase()}`}>
+        <svg viewBox="26 0 148 412" role="group" aria-label={`${etiquette}, vue de ${v.nom.toLowerCase()}`}>
+          <defs>
+            <!-- Léger ombrage : le haut et l'extérieur de chaque muscle sont plus clairs, ce qui donne du volume -->
+            <linearGradient id={`relief-${v.nom}`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#fff" stop-opacity="0.22" />
+              <stop offset="0.55" stop-color="#fff" stop-opacity="0" />
+              <stop offset="1" stop-color="#000" stop-opacity="0.3" />
+            </linearGradient>
+          </defs>
+          <!-- La « peau » : les mêmes formes en plus épais, derrière, pour combler les vides entre les muscles -->
+          {#each [false, true] as miroir (miroir)}
+            <g transform={miroir ? 'translate(200 0) scale(-1 1)' : ''}>
+              {#each v.formes as f, i (i)}<path d={f.d} class="peau" />{/each}
+            </g>
+          {/each}
           {#each [false, true] as miroir (miroir)}
             <g transform={miroir ? 'translate(200 0) scale(-1 1)' : ''}>
               {#each v.formes as f, i (i)}
@@ -78,10 +105,12 @@
                     onclick={() => basculer(f.g)}
                     onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), basculer(f.g))}
                   />
+                  <path d={f.d} class="relief" style:fill={`url(#relief-${v.nom})`} />
                 {:else}
                   <path d={f.d} class="neutre" />
                 {/if}
               {/each}
+              {#each v.traits as t (t)}<path d={t} class="trait" />{/each}
             </g>
           {/each}
         </svg>
@@ -154,9 +183,26 @@
     color: var(--texte-muet);
   }
   .neutre {
-    fill: color-mix(in srgb, var(--trait-fort) 55%, var(--surface-2));
+    fill: color-mix(in srgb, var(--trait-fort) 40%, var(--surface-2));
     stroke: var(--surface-2);
     stroke-width: 1.5;
+  }
+  .peau {
+    fill: color-mix(in srgb, var(--trait-fort) 40%, var(--surface-2));
+    stroke: color-mix(in srgb, var(--trait-fort) 40%, var(--surface-2));
+    stroke-width: 7;
+    stroke-linejoin: round;
+    pointer-events: none;
+  }
+  .relief {
+    pointer-events: none;
+  }
+  .trait {
+    fill: none;
+    stroke: var(--surface-2);
+    stroke-width: 1;
+    opacity: 0.7;
+    pointer-events: none;
   }
   .zone {
     stroke: var(--surface-2);
