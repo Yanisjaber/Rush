@@ -15,6 +15,8 @@
   const muscles = $derived(Object.fromEntries(groupes.flatMap((g) => g.muscles).map((m) => [m.slug, m])));
   const muscle = $derived(muscleChoisi ? muscles[muscleChoisi] || null : null);
 
+  const RAYON = 38;
+  const CIRCONF = 2 * Math.PI * RAYON;
   const choisirGroupe = (cle) => {
     muscleChoisi = null;
     choisi = choisi === cle && !muscle ? null : cle;
@@ -54,44 +56,22 @@
 </script>
 
 <div class="corps">
-  <div class="vues">
-    {#each VUES as v (v.nom)}
-      <figure>
-        <svg viewBox={v.viewBox} role="group" aria-label={`${etiquette}, vue de ${v.nom.toLowerCase()}`}>
-          <path d={v.contour} class="silhouette" />
-          {#each v.pieces.filter((z) => !muscles[z.muscle]) as z (z.slug)}<path d={z.d} class="neutre" />{/each}
-          {#each v.pieces.filter((z) => muscles[z.muscle]) as z (z.slug)}
-            <path
-              d={z.d}
-              class="zone"
-              class:choisie={lumineux(z.muscle)}
-              style:fill={teinte(pctPiece(z.muscle, v.nom))}
-              role="button"
-              tabindex="0"
-              aria-label={muscles[z.muscle].nom}
-              aria-pressed={muscleChoisi === z.muscle}
-              onclick={() => choisirMuscle(z.muscle)}
-              onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), choisirMuscle(z.muscle))}
-            />
-          {/each}
-        </svg>
-        <figcaption>{v.nom}</figcaption>
-      </figure>
+  <ul class="camemberts">
+    {#each groupes as g (g.groupe)}
+      <li>
+        <button type="button" class:actif={choisi === g.groupe} aria-pressed={choisi === g.groupe} aria-label={`${g.nom} : ${g.pct} % de la zone visée`} onclick={() => choisirGroupe(g.groupe)}>
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r={RAYON} class="fond" />
+            {#if g.pct > 0}<circle cx="50" cy="50" r={RAYON} class="arc" class:plein={g.pct >= 100} stroke-dasharray={`${(CIRCONF * Math.min(Math.max(g.pct, 0), 100)) / 100} ${CIRCONF}`} transform="rotate(-90 50 50)" />{/if}
+            <text x="50" y="50" class="valeur" text-anchor="middle" dominant-baseline="central">{g.pct} %</text>
+          </svg>
+          <span class="nom">{g.nom}</span>
+        </button>
+      </li>
     {/each}
-  </div>
+  </ul>
 
-  <div class="infos">
-    <ul class="liste">
-      {#each groupes as g (g.groupe)}
-        <li>
-          <button type="button" class:actif={choisi === g.groupe} aria-pressed={choisi === g.groupe} onclick={() => choisirGroupe(g.groupe)}>
-            <span class="ligne"><span class="nom">{g.nom}</span><span class="pct">{g.pct} %</span></span>
-            <span class="barre" aria-hidden="true"><span style:width="{Math.min(g.pct, 130) / 1.3}%"></span></span>
-          </button>
-        </li>
-      {/each}
-    </ul>
-
+  <div class="bas">
     <div class="detail" aria-live="polite">
       {#if muscle}
         <button type="button" class="retour" onclick={() => (muscleChoisi = null)}>← {detail?.nom}</button>
@@ -142,35 +122,142 @@
           <p class="texte">Aucun exercice sur ce groupe sur cette période.</p>
         {/if}
       {:else}
-        <p class="texte">Touche un muscle du corps (ou un groupe de la liste) pour voir le détail.</p>
+        <p class="texte">Touche un muscle du corps (ou un camembert) pour voir le détail.</p>
       {/if}
     </div>
+
+    <div class="vues">
+    {#each VUES as v (v.nom)}
+      <figure>
+        <svg viewBox={v.viewBox} role="group" aria-label={`${etiquette}, vue de ${v.nom.toLowerCase()}`}>
+          <path d={v.contour} class="silhouette" />
+          {#each v.pieces.filter((z) => !muscles[z.muscle]) as z (z.slug)}<path d={z.d} class="neutre" />{/each}
+          {#each v.pieces.filter((z) => muscles[z.muscle]) as z (z.slug)}
+            <path
+              d={z.d}
+              class="zone"
+              class:choisie={lumineux(z.muscle)}
+              style:fill={teinte(pctPiece(z.muscle, v.nom))}
+              role="button"
+              tabindex="0"
+              aria-label={muscles[z.muscle].nom}
+              aria-pressed={muscleChoisi === z.muscle}
+              onclick={() => choisirMuscle(z.muscle)}
+              onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), choisirMuscle(z.muscle))}
+            />
+          {/each}
+        </svg>
+        <figcaption>{v.nom}</figcaption>
+      </figure>
+    {/each}
+  </div>
+
   </div>
 </div>
 
 <style>
   .corps {
+    --hauteur: clamp(420px, 42vw, 560px);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  /* Les 6 groupes en rangée, un camembert chacun */
+  .camemberts {
     display: grid;
-    grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr);
-    gap: 20px 32px;
-    align-items: start;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .camemberts button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 8px;
+    border: 1px solid transparent;
+    border-radius: var(--rayon-l);
+    background: var(--surface-2);
+    color: var(--texte);
+    font: inherit;
+    cursor: pointer;
+  }
+  .camemberts button:hover {
+    border-color: var(--trait-fort);
+  }
+  .camemberts button.actif {
+    border-color: var(--sport-muscu);
+  }
+  .camemberts button:focus-visible {
+    outline: 2px solid var(--texte);
+    outline-offset: 2px;
+  }
+  .camemberts svg {
+    width: min(100%, 120px);
+    height: auto;
+  }
+  .fond,
+  .arc {
+    fill: none;
+    stroke-width: 12;
+  }
+  .fond {
+    stroke: var(--trait-fort);
+  }
+  .arc {
+    stroke: var(--sport-muscu);
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.3s;
+  }
+  .valeur {
+    fill: var(--texte);
+    font-family: var(--police-titre);
+    font-size: 21px;
+    font-weight: 700;
+  }
+  .camemberts .nom {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  /* Le détail (à gauche) et le corps (à droite) ont exactement la même hauteur : aucun décalage */
+  .bas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: stretch;
+  }
+  .detail {
+    height: var(--hauteur);
+    overflow: auto;
+    padding: 16px 18px;
+    border-radius: var(--rayon-l);
+    border: 1px solid var(--trait);
   }
   .vues {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
+    height: var(--hauteur);
     padding: 16px 8px 8px;
     border-radius: var(--rayon-l);
     background: var(--surface-2);
   }
   figure {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
     margin: 0;
     text-align: center;
   }
-  svg {
+  figure svg {
     display: block;
+    flex: 1;
     width: 100%;
-    max-height: 520px;
+    min-height: 0;
   }
   figcaption {
     margin-top: 4px;
@@ -211,50 +298,14 @@
     stroke: var(--texte);
     stroke-width: 7;
   }
-  .liste {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .liste button {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    width: 100%;
-    min-height: 44px;
-    padding: 8px 12px;
-    border: 1px solid transparent;
-    border-radius: var(--rayon-l);
-    background: var(--surface-2);
-    color: var(--texte);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-  }
-  .liste button:hover {
-    border-color: var(--trait-fort);
-  }
-  .liste button.actif {
-    border-color: var(--sport-muscu);
-  }
-  .liste button:focus-visible {
-    outline: 2px solid var(--texte);
-    outline-offset: 2px;
-  }
   .ligne {
     display: flex;
     justify-content: space-between;
+    gap: 12px;
     font-size: 15px;
   }
-  .nom {
-    font-weight: 600;
-  }
-  .pct {
+  .ligne b {
     font-family: var(--police-titre);
-    font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
   .barre {
@@ -268,12 +319,6 @@
     display: block;
     height: 100%;
     background: var(--sport-muscu);
-  }
-  .detail {
-    margin-top: 16px;
-    padding: 14px 16px;
-    border-radius: var(--rayon-l);
-    border: 1px solid var(--trait);
   }
   .detail h4 {
     font-size: 16px;
@@ -391,9 +436,15 @@
   .exos li:last-child {
     border-bottom: 0;
   }
-  @media (max-width: 640px) {
-    .corps {
+  @media (max-width: 760px) {
+    .camemberts {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .bas {
       grid-template-columns: 1fr;
+    }
+    .vues {
+      order: -1; /* sur téléphone, le corps passe avant le détail */
     }
   }
 </style>

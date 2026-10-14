@@ -226,7 +226,6 @@ export function analyserGroupes({ series, aujourdhui = new Date(), jours: nbJour
     {
       type: 'corps',
       titre: 'Ton corps, groupe par groupe',
-      description: `Plus la zone est foncée, plus tu l'as travaillée ces ${nbJours} derniers jours. Le pourcentage compare tes séries par semaine à la zone visée (100 % = pile au milieu de la zone).`,
       groupes,
       periode: `les ${nbJours} derniers jours`,
     },
