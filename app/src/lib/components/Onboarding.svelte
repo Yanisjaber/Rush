@@ -21,7 +21,7 @@
 </script>
 
 <section class="onboarding" aria-labelledby="titre-onboarding">
-  <p class="sur-titre">Bienvenue sur Coach IA</p>
+  <p class="sur-titre">Bienvenue sur Rush</p>
   <h1 id="titre-onboarding" class="titre">Quels sports pratiques-tu ?</h1>
   <p class="aide">
     Coche tout ce que tu pratiques : ton accueil se compose tout seul avec les bons widgets et les bons onglets.

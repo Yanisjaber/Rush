@@ -85,8 +85,8 @@
 <main class="connexion">
   <div class="gauche">
     <div class="marque">
-      <span class="logo titre">CI</span>
-      <span class="nom">Coach IA</span>
+      <span class="logo titre">R</span>
+      <span class="nom">Rush</span>
     </div>
     <h1 class="titre">Ton entraînement,<br />enfin lisible.</h1>
     <p class="accroche">Charge, forme, objectifs et records, pour tous tes sports, au même endroit.</p>
@@ -152,7 +152,7 @@
   {#snippet icone()}
     <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4.5 20c.8-4 3.7-6 7.5-6s6.7 2 7.5 6" /></svg>
   {/snippet}
-  <p class="pop-texte">L'adresse <span class="pop-email">{email}</span> est déjà inscrite sur Coach IA.</p>
+  <p class="pop-texte">L'adresse <span class="pop-email">{email}</span> est déjà inscrite sur Rush.</p>
   <p class="pop-note">Connecte-toi avec ton mot de passe. Tu l'as oublié ? On t'envoie un lien pour en choisir un nouveau.</p>
   <button type="button" class="pop-bouton" onclick={versConnexion}>Me connecter</button>
   <button type="button" class="pop-lien" onclick={versOubli}>Mot de passe oublié ?</button>

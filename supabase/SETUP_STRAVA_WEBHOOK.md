@@ -1,6 +1,6 @@
 # Setup Strava Webhooks
 
-Les webhooks Strava permettent de recevoir **en temps réel** les nouvelles activités, modifications et suppressions, au lieu de poller toutes les 15 min / 3h. Dès que tu termines une sortie et que ta montre uploade sur Strava, l'activité apparaît dans Coach IA en quelques secondes.
+Les webhooks Strava permettent de recevoir **en temps réel** les nouvelles activités, modifications et suppressions, au lieu de poller toutes les 15 min / 3h. Dès que tu termines une sortie et que ta montre uploade sur Strava, l'activité apparaît dans Rush en quelques secondes.
 
 ## Architecture
 
@@ -69,7 +69,7 @@ Fais une petite activité Strava (ou édite une existante depuis l'app Strava). 
 
 - Dans les logs Supabase (Dashboard → Edge Functions → strava-webhook → Logs) un message `[webhook] event: {...}`
 - Dans la table `activities` Supabase, la nouvelle ligne (ou la mise à jour)
-- Dans Coach IA, après un refresh, l'activité apparaît avec son TSS
+- Dans Rush, après un refresh, l'activité apparaît avec son TSS
 
 ## Désabonnement (si besoin)
 

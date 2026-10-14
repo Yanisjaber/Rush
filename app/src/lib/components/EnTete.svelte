@@ -85,7 +85,7 @@
 {/snippet}
 
 <header class="barre">
-  <span class="logo titre" aria-hidden="true">CI</span>
+  <span class="logo titre" aria-hidden="true">R</span>
   <nav class="liens" class:defile aria-label="Navigation principale" bind:this={nav}>
     {#each pagesEnPlus ? debut : [...debut, ...fin] as l (l.cle)}
       <a href={lienPage(l.cle, menu.filtre)} aria-current={actif === l.cle ? 'page' : undefined}>{l.nom}</a>

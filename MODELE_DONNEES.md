@@ -1,4 +1,4 @@
-# Coach IA — Modèle de données (Supabase)
+# Rush — Modèle de données (Supabase)
 
 Application **mono-utilisateur** : chaque ligne appartient à un compte (`user_id` → `auth.users`)
 et n'est lisible/modifiable que par lui (RLS `auth.uid() = user_id`). Le système de coaching

@@ -1,12 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Coach IA">
-  <!-- Mini-dossard : fond clair, quatre points d'attache, monogramme CI. Tout est tracé en formes (pas de police). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Rush">
+  <!-- Mini-dossard : fond clair, quatre points d'attache, monogramme R. Tout est tracé en formes (pas de police). -->
   <rect width="512" height="512" fill="#f3f2ee"/>
   <g fill="#0c0d10">
     <circle cx="110" cy="110" r="13"/>
     <circle cx="402" cy="110" r="13"/>
     <circle cx="110" cy="402" r="13"/>
     <circle cx="402" cy="402" r="13"/>
-    <rect x="346" y="147" width="50" height="218"/>
+    <rect x="168" y="147" width="50" height="218"/>
   </g>
-  <path d="M285.4 196.6 A84 84 0 1 0 285.4 315.4" fill="none" stroke="#0c0d10" stroke-width="50"/>
+  <g fill="none" stroke="#0c0d10" stroke-width="50">
+    <path d="M193 172 H262 A62 62 0 0 1 262 296 H193"/>
+    <path d="M238 296 L338 365"/>
+  </g>
 </svg>

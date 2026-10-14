@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Vue d'ensemble
 
-Coach IA : app d'entraînement et de récupération pour **tout sport de performance lié à un entraînement physique et une forme** (pas de sports collectifs). Accueil composé de widgets selon les sports de l'utilisateur, mode édition, deux coques (mobile simple, desktop complet). Front **Svelte 5 + Vite 8** (dossier `app/`), backend **Supabase** (Postgres + RLS + Edge Functions Deno), publié sur GitHub Pages (`https://yanisjaber.github.io/coach-ia/`), utilisable en PWA. Inscription ouverte (confirmation par e-mail, SMTP Brevo).
+Rush : app d'entraînement et de récupération pour **tout sport de performance lié à un entraînement physique et une forme** (pas de sports collectifs). Accueil composé de widgets selon les sports de l'utilisateur, mode édition, deux coques (mobile simple, desktop complet). Front **Svelte 5 + Vite 8** (dossier `app/`), backend **Supabase** (Postgres + RLS + Edge Functions Deno), publié sur GitHub Pages (`https://yanisjaber.github.io/coach-ia/`), utilisable en PWA. Inscription ouverte (confirmation par e-mail, SMTP Brevo).
 
 ## Commandes
 
@@ -33,6 +33,7 @@ Coach IA : app d'entraînement et de récupération pour **tout sport de perform
 - **Sécurité front** : les templates Svelte échappent le HTML (jamais `{@html}` avec des données externes). Le build injecte une CSP stricte (voir `app/vite.config.js`) : si une nouvelle origine est nécessaire (Supabase, Strava…), l'ajouter explicitement.
 - **Design system** (`app/src/lib/design/tokens.css`) : **la couleur désigne le sport**, pas le profil (course orange, vélo bleu, natation cyan, muscu corail, hybride jaune). Fond sombre par défaut, thème clair en option (suit le compte via `user_preferences`). Titres et chiffres en Bricolage Grotesque, texte en Instrument Sans. Le **dossard** (bloc clair avec quatre points d'attache) est la signature visuelle. Cibles tactiles d'au moins 44 px, focus visible, contraste vérifié.
 - **Données** : tout vient de Supabase (RLS `auth.uid() = user_id`). Charge d'entraînement universelle : TSS (puissance), sinon TRIMP (cardio), sinon effort ressenti × durée. Les zones (FTP/LTHR) sont recalculées à l'affichage, jamais stockées.
+- **Nom de l'app : Rush** (ancien nom « Coach IA », renommé le 15 oct). Volontairement gardés à l'ancien nom car invisibles ou techniques : l'adresse GitHub Pages et le dépôt (`coach-ia`), le nom du paquet npm, l'Edge Function `coach-ai`, le projet Supabase et les clés de stockage ci-dessous. Hors du code (à changer à la main) : modèles d'e-mails collés dans Supabase Auth, expéditeur Brevo, nom de l'app Strava.
 - Clés de stockage navigateur `coachia-v2-*` (thème, brouillons…) : nom historique **gardé volontairement** (le renommer ferait perdre ces réglages aux appareils).
 
 ### Backend (`supabase/`)

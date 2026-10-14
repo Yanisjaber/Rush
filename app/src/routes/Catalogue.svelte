@@ -68,7 +68,7 @@
 <div class="page">
   <header class="entete">
     <div>
-      <div class="sur-titre">Coach IA</div>
+      <div class="sur-titre">Rush</div>
       <h1 class="titre">Design system</h1>
       <p class="intro">Les briques de l'app. La couleur désigne le sport, partout.</p>
     </div>

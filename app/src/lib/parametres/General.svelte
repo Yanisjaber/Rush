@@ -37,7 +37,7 @@
     if (export_.enCours) return;
     export_ = { enCours: true, message: '' };
     const r = await exporterMesDonnees(auth.session?.user?.id, auth.session?.user?.email || '');
-    telechargerJson(r.contenu, `coach-ia-mes-donnees-${new Date().toISOString().slice(0, 10)}.json`);
+    telechargerJson(r.contenu, `rush-mes-donnees-${new Date().toISOString().slice(0, 10)}.json`);
     export_ = {
       enCours: false,
       message: r.avertissements.length ? `Fichier téléchargé. Ces parties n'ont pas pu être lues : ${r.avertissements.join(', ')}.` : 'Fichier téléchargé.',
@@ -127,7 +127,7 @@
     </div>
   {:else}
     <form class="suppr-form" onsubmit={supprimer}>
-      <p class="suppr-texte"><strong>Action définitive.</strong> Ton compte, tes séances, ton sommeil, tes programmes, tes tests et tous tes réglages seront effacés, et l'accès de Coach IA à ton compte Strava sera retiré. Il n'y a aucun retour en arrière : pense à exporter tes données avant.</p>
+      <p class="suppr-texte"><strong>Action définitive.</strong> Ton compte, tes séances, ton sommeil, tes programmes, tes tests et tous tes réglages seront effacés, et l'accès de Rush à ton compte Strava sera retiré. Il n'y a aucun retour en arrière : pense à exporter tes données avant.</p>
       <label class="suppr-label" for="confirmer-suppression">Pour confirmer, tape <strong>SUPPRIMER</strong></label>
       <input id="confirmer-suppression" class="suppr-champ" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" bind:value={suppression.texte} />
       {#if suppression.message}<p class="suppr-erreur" role="alert">{suppression.message}</p>{/if}

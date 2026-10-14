@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Coach IA : accueil par sport, moteur de widgets, design system (Svelte + Vite)",
+  "description": "Rush : accueil par sport, moteur de widgets, design system (Svelte + Vite)",
   "scripts": {
     "dev": "vite --port 5173",
     "build": "vite build",

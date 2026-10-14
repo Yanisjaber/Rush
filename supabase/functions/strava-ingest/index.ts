@@ -417,7 +417,7 @@ async function refreshStravaToken(refreshToken: string) {
   return await res.json();
 }
 
-// Mapping COMPLET Strava sport_type / type → catégorie Coach IA.
+// Mapping COMPLET Strava sport_type / type → catégorie Rush.
 // Source : https://developers.strava.com/docs/reference/#api-models-SportType
 const SPORT_TO_CAT: Record<string, string> = {
   // Cyclisme

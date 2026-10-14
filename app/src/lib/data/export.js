@@ -42,13 +42,13 @@ async function lireTable(userId, table, colonnes, avertissements) {
 /** Rassemble les données de l'utilisateur. Renvoie { contenu, avertissements } (contenu = objet prêt à sérialiser). */
 export async function exporterMesDonnees(userId, email = '') {
   const avertissements = [];
-  const contenu = { application: 'Coach IA', exporte_le: new Date().toISOString(), compte: { email } };
+  const contenu = { application: 'Rush', exporte_le: new Date().toISOString(), compte: { email } };
   for (const [cle, table, colonnes] of TABLES) contenu[cle] = await lireTable(userId, table, colonnes, avertissements);
   return { contenu, avertissements };
 }
 
 /** Télécharge le contenu comme fichier JSON (le fichier reste sur l'appareil : rien n'est envoyé ailleurs). */
-export function telechargerJson(contenu, nom = 'coach-ia-mes-donnees.json') {
+export function telechargerJson(contenu, nom = 'rush-mes-donnees.json') {
   const blob = new Blob([JSON.stringify(contenu, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

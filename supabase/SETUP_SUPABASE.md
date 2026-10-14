@@ -1,4 +1,4 @@
-# Setup Supabase pour Coach IA
+# Setup Supabase pour Rush
 
 5 étapes (15 min max). Pendant ce temps je code le reste.
 

@@ -30,7 +30,7 @@
 
 <main class="page-mdp">
   <form class="formulaire" onsubmit={envoyer}>
-    <div class="marque"><span class="logo titre">CI</span><span class="nom">Coach IA</span></div>
+    <div class="marque"><span class="logo titre">R</span><span class="nom">Rush</span></div>
     {#if fait}
       <h1 class="titre">C'est fait.</h1>
       <p class="aide" role="status">Ton mot de passe est enregistré. Tu pourras l'utiliser à ta prochaine connexion.</p>

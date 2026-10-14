@@ -1,5 +1,5 @@
 <script>
-  // Texte de la politique de confidentialité : ce que Coach IA enregistre, où, qui y accède, et comment récupérer ou
+  // Texte de la politique de confidentialité : ce que Rush enregistre, où, qui y accède, et comment récupérer ou
   // supprimer ses données. Utilisé dans Paramètres › Confidentialité et sur la page publique #/confidentialite.
   // La date de mise à jour est à changer à chaque modification du texte.
   export const DATE_MAJ = '13 octobre 2026';
@@ -11,7 +11,7 @@
 <div class="texte">
   <section>
     <h2>Qui est derrière l'app</h2>
-    <p>Coach IA est un projet personnel, géré par Yanis. Ce n'est pas une entreprise : pas de publicité, pas de revente de données, pas de suivi de ton comportement.</p>
+    <p>Rush est un projet personnel, géré par Yanis. Ce n'est pas une entreprise : pas de publicité, pas de revente de données, pas de suivi de ton comportement.</p>
   </section>
 
   <section>
