@@ -5,6 +5,7 @@ import { analyserCharge } from './charge.js';
 import { analyserForme } from './forme.js';
 import { analyserPredictions } from './predictions.js';
 import { analyserRegularite } from './regularite.js';
+import { rushCharge, rushForme, rushPredictions, rushRegularite, rushGroupes, rushRecords } from './rush.js';
 import { analyserTonnage, analyserGroupes, analyserRecords } from './muscu.js';
 
 const NOM_PERIODE = { sem12: '3 mois', sem26: '6 mois', sem52: '12 mois' };
@@ -71,6 +72,17 @@ export const ANALYSES = {
     calculer: (d, o) => analyserRecords({ series: d.series, aujourdhui: o.aujourdhui, semaines: HISTORIQUE_SEMAINES }),
   },
 };
+
+// L'analyse Rush (diagnostic croisé + plan) s'ajoute au résultat de chaque analyse qui a assez de données.
+// Le tonnage la fournit lui-même (rush-tonnage.js) ; les autres la déduisent de leur champ `brut`.
+const RUSH = { charge: rushCharge, forme: rushForme, predictions: rushPredictions, regularite: rushRegularite, groupes: rushGroupes, records: rushRecords };
+for (const [id, fabrique] of Object.entries(RUSH)) {
+  const calculer = ANALYSES[id].calculer;
+  ANALYSES[id].calculer = (d, o) => {
+    const a = calculer(d, o);
+    return a.insuffisant || !a.brut ? a : { ...a, rush: fabrique(a) };
+  };
+}
 
 /** Widget de l'accueil → analyse ouverte quand on le touche. */
 export const ANALYSE_DU_WIDGET = { charge: 'charge', forme: 'forme', predictions: 'predictions', tonnage: 'tonnage', groupes: 'groupes', records: 'records', regularite: 'regularite' };

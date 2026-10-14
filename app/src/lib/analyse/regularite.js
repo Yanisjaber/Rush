@@ -137,5 +137,5 @@ export function analyserRegularite({ seances, aujourdhui = new Date(), semaines 
   if (weekend >= 0.6 && dates.length >= 8) conseils.push({ priorite: 'faible', titre: 'Répartis tes séances', texte: `${Math.round(weekend * 100)} % de tes séances tombent le week-end. Une séance en semaine rend le rythme plus stable et la charge mieux répartie.` });
   if (!conseils.length) conseils.push({ priorite: 'info', titre: 'Continue comme ça', texte: 'Ton rythme est régulier et tu gardes des jours de repos. Le levier suivant : la qualité de tes séances (voir les analyses de charge et de forme).' });
 
-  return { id: 'regularite', insuffisant: false, verdict: null, chiffres, graphiques, lectures, conseils: triConseils(conseils), methode: METHODE, brut: { parSemaine, tenues, pct, moyenneHebdo, vides, sansRepos, pauseMax, pauseEnCours, enCours, meilleure, parJour, ecart } };
+  return { id: 'regularite', insuffisant: false, verdict: null, chiffres, graphiques, lectures, conseils: triConseils(conseils), methode: METHODE, brut: { nbSemaines: premiere.length, parSemaine, tenues, pct, moyenneHebdo, vides, sansRepos, pauseMax, pauseEnCours, enCours, meilleure, parJour, ecart } };
 }
