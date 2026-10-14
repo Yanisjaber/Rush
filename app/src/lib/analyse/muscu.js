@@ -101,13 +101,6 @@ export function analyserTonnage({ series, aujourdhui = new Date(), semaines = 26
       ],
       min: 0,
     },
-    {
-      type: 'tableau',
-      titre: 'Les dernières semaines',
-      description: 'Le détail semaine par semaine, de la plus récente à la plus ancienne.',
-      colonnes: ['Semaine du', 'Séances', 'Séries', 'Tonnage'],
-      lignes: [...semainesListe].reverse().slice(0, 8).map((w) => [formatDateCourte(w.iso), String(w.jours.size), String(w.series), `${formatNombre(w.tonnage)} kg`]),
-    },
   ];
 
   const lectures = [
