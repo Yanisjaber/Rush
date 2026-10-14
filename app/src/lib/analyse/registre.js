@@ -17,14 +17,12 @@ export const PERIODES = [
 export const ANALYSES = {
   charge: {
     titre: 'Charge d\'entraînement',
-    sousTitre: 'Monte-t-elle à un rythme sain ? Est-elle bien répartie ?',
     periodes: true,
     periodeDefaut: 'sem26',
     calculer: (d, o) => analyserCharge({ seances: d.seances, aujourdhui: o.aujourdhui, semaines: o.semaines, nomSport: o.nomSport }),
   },
   forme: {
     titre: 'Forme et fraîcheur',
-    sousTitre: 'Où en es-tu, et comment arriver frais à ta prochaine compétition ?',
     periodes: true,
     periodeDefaut: 'sem26',
     calculer: (d, o) =>
@@ -40,21 +38,18 @@ export const ANALYSES = {
   },
   predictions: {
     titre: 'Prédictions de temps',
-    sousTitre: 'Ton niveau, tes temps probables et tes allures d\'entraînement',
     periodes: false,
     sportImpose: 'course', // l'analyse ne parle que de course à pied, quel que soit le filtre
     calculer: (d, o) => analyserPredictions({ seances: d.seances, objectifs: d.objectifs, hrMax: d.hrMax, aujourdhui: o.aujourdhui, nomSport: o.nomSport }),
   },
   regularite: {
     titre: 'Régularité',
-    sousTitre: '', // pas de phrase sous le titre
     periodes: true,
     periodeDefaut: 'sem12',
     calculer: (d, o) => analyserRegularite({ seances: d.seances, aujourdhui: o.aujourdhui, semaines: o.semaines }),
   },
   tonnage: {
     titre: 'Tonnage et régularité',
-    sousTitre: 'Ton volume monte-t-il à un rythme sain ? T\'entraînes-tu assez souvent ?',
     periodes: true,
     periodeDefaut: 'sem26',
     sportImpose: 'muscu', // l'analyse ne parle que de musculation, quel que soit le filtre
@@ -62,14 +57,12 @@ export const ANALYSES = {
   },
   groupes: {
     titre: 'Équilibre musculaire',
-    sousTitre: 'Tous tes groupes musculaires reçoivent-ils le volume qu\'il leur faut ?',
     periodes: false,
     sportImpose: 'muscu',
     calculer: (d, o) => analyserGroupes({ series: d.series, aujourdhui: o.aujourdhui }),
   },
   records: {
     titre: 'Records et progression',
-    sousTitre: 'Où as-tu gagné en force, et où stagnes-tu ?',
     periodes: true,
     periodeDefaut: 'sem26',
     sportImpose: 'muscu',

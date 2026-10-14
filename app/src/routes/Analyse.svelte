@@ -65,7 +65,6 @@
     <header class="entete">
       <div>
         <h1 class="titre">{def.titre}</h1>
-        {#if def.sousTitre}<p class="sous-titre">{def.sousTitre}{nomSport ? ` · ${nomSport}` : ''}</p>{/if}
       </div>
       {#if def.periodes}
         <div class="periodes" role="group" aria-label="Période analysée">
@@ -192,11 +191,6 @@
   h1 {
     font-size: clamp(32px, 5vw, 48px);
     line-height: 1;
-  }
-  .sous-titre {
-    margin-top: 8px;
-    color: var(--texte-doux);
-    font-size: 16px;
   }
   .periodes {
     display: flex;
