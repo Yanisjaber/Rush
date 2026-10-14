@@ -15,6 +15,15 @@ export const PERIODES = [
   { cle: 'sem52', libelle: '12 mois', semaines: 52 },
 ];
 
+// Périodes de l'équilibre musculaire : on compte en jours (une semaine suffit pour voir ce qu'on a travaillé)
+const PERIODES_JOURS = [
+  { cle: 'j7', libelle: '7 jours', jours: 7 },
+  { cle: 'j30', libelle: '1 mois', jours: 30 },
+  { cle: 'j90', libelle: '3 mois', jours: 90 },
+  { cle: 'j180', libelle: '6 mois', jours: 180 },
+  { cle: 'j365', libelle: '12 mois', jours: 365 },
+];
+
 // Tout l'historique chargé (dix ans) pour les analyses qui n'ont pas de sélecteur de période, comme les records
 const HISTORIQUE_SEMAINES = 520;
 
@@ -61,9 +70,11 @@ export const ANALYSES = {
   },
   groupes: {
     titre: 'Équilibre musculaire',
-    periodes: false,
+    periodes: true,
+    choixPeriodes: PERIODES_JOURS,
+    periodeDefaut: 'j30',
     sportImpose: 'muscu',
-    calculer: (d, o) => analyserGroupes({ series: d.series, aujourdhui: o.aujourdhui }),
+    calculer: (d, o) => analyserGroupes({ series: d.series, aujourdhui: o.aujourdhui, jours: o.jours }),
   },
   records: {
     titre: 'Records et progression',

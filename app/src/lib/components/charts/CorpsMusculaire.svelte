@@ -3,7 +3,7 @@
   // Tout est dessiné en SVG (aucune image). On touche une zone (ou sa ligne dans la liste) pour voir le détail.
   // groupes : [{ groupe, nom, series, parSemaine, cible: [bas, haut], etat, pct, exercices: [{ nom, series }] }]
   import { CORPS_SVG } from '../../data/corps-svg.js';
-  let { groupes = [], etiquette = 'Corps humain' } = $props();
+  let { groupes = [], etiquette = 'Corps humain', periode = '4 semaines' } = $props();
 
   let choisi = $state(null); // clé du groupe sélectionné
 
@@ -93,12 +93,12 @@
         <p class="grand">{detail.pct} % <span>de la zone visée</span></p>
         <p class="texte">{virgule(detail.parSemaine)} séries par semaine pour une zone de {detail.cible[0]} à {detail.cible[1]} : <strong>{NOM_ETAT[detail.etat]}</strong>.</p>
         {#if detail.exercices.length}
-          <p class="mini">{detail.exercices.length} exercice{detail.exercices.length > 1 ? 's' : ''} sur 4 semaines</p>
+          <p class="mini">{detail.exercices.length} exercice{detail.exercices.length > 1 ? 's' : ''} sur {periode}</p>
           <ul class="exos">
             {#each detail.exercices.slice(0, 6) as x (x.nom)}<li><span>{x.nom}</span><b>{x.series}</b></li>{/each}
           </ul>
         {:else}
-          <p class="texte">Aucun exercice sur ce groupe ces 4 dernières semaines.</p>
+          <p class="texte">Aucun exercice sur ce groupe sur cette période.</p>
         {/if}
       {:else}
         <p class="texte">Touche une zone du corps (ou une ligne de la liste) pour voir le détail.</p>

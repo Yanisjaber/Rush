@@ -126,9 +126,9 @@ export function analyserTonnage({ series, aujourdhui = new Date(), semaines = 26
 // 2. Équilibre entre groupes musculaires
 // ---------------------------------------------------------------------------------------------------------------------
 
-const SEMAINES_GROUPES = 4;
+const JOURS_GROUPES = 28; // période par défaut (4 semaines) ; la page propose aussi 7 jours, 1, 3, 6 et 12 mois
 const METHODE_GROUPES = [
-  { titre: 'Les séries par semaine', texte: `On compte les séries (hors échauffement non enregistré) de chaque groupe sur les ${SEMAINES_GROUPES} dernières semaines, puis on divise par ${SEMAINES_GROUPES}. La zone visée vient des repères courants de volume hebdomadaire : 10 à 20 séries pour les gros groupes (pectoraux, dos, jambes), un peu moins pour les épaules, les bras et le tronc.` },
+  { titre: 'Les séries par semaine', texte: `On compte les séries (hors échauffement non enregistré) de chaque groupe sur la période choisie (7 jours, 1 mois, 3 mois…), puis on divise par le nombre de semaines de cette période. La zone visée vient des repères courants de volume hebdomadaire : 10 à 20 séries pour les gros groupes (pectoraux, dos, jambes), un peu moins pour les épaules, les bras et le tronc.` },
   { titre: 'Dos et pectoraux', texte: 'Le dos devrait recevoir au moins autant de séries que les pectoraux (rapport d\'au moins 0,8) : un déséquilibre vers les pectoraux arrondit les épaules avec le temps.' },
   { titre: 'Les jambes', texte: 'Les jambes sont les plus gros muscles du corps : elles devraient représenter environ 25 à 35 % de tes séries. En dessous de 20 %, on parle de jambes oubliées.' },
 ];
@@ -140,20 +140,23 @@ const DE = { pectoraux: 'des pectoraux', dos: 'du dos', jambes: 'des jambes', ep
 const TEINTES = [100, 82, 66, 52, 38, 26];
 const teinte = (i) => `color-mix(in srgb, var(--sport-muscu) ${TEINTES[i % TEINTES.length]}%, var(--surface-2))`;
 
-export function analyserGroupes({ series, aujourdhui = new Date() }) {
+export function analyserGroupes({ series, aujourdhui = new Date(), jours: nbJours = JOURS_GROUPES }) {
   const { valides, fin } = reperes(series, aujourdhui);
-  const debut = decalerJour(fin, -(SEMAINES_GROUPES * 7 - 1));
+  const debut = decalerJour(fin, -(nbJours - 1));
+  const semainesPeriode = nbJours / 7;
+  const sur = `les ${nbJours} derniers jours`;
+  const court = nbJours <= 7; // sur une seule semaine, on demande moins de séries pour juger
   const fenetre = valides.filter((s) => iso(s) >= debut && iso(s) <= fin && groupeValide(s.muscle_group));
   const compte = Object.fromEntries(ORDRE_GROUPES.map((g) => [g, 0]));
   for (const s of fenetre) compte[s.muscle_group] += 1;
   const total = fenetre.length;
   const jours = new Set(fenetre.map(iso)).size;
-  if (total < 20 || jours < 4) {
-    return vide('groupes', 'Pas encore assez de séries', `Il faut au moins 4 séances et 20 séries sur les ${SEMAINES_GROUPES} dernières semaines pour juger l'équilibre de ton entraînement. Enregistre quelques séances de plus.`, METHODE_GROUPES);
+  if (total < (court ? 8 : 20) || jours < (court ? 2 : 4)) {
+    return vide('groupes', 'Pas encore assez de séries', `Il faut au moins ${court ? '2 séances et 8 séries' : '4 séances et 20 séries'} sur ${sur} pour juger l'équilibre de ton entraînement. Enregistre quelques séances de plus.`, METHODE_GROUPES);
   }
 
   const groupes = ORDRE_GROUPES.map((g, i) => {
-    const parSemaine = compte[g] / SEMAINES_GROUPES;
+    const parSemaine = compte[g] / semainesPeriode;
     const [bas, haut] = GROUPES[g].cible;
     const etat = compte[g] === 0 ? 'oublie' : parSemaine < bas ? 'sous' : parSemaine > haut ? 'au-dessus' : 'zone';
     // Les exercices faits sur ce groupe (le plus pratiqué d'abord) et le pourcentage de la zone visée (100 % = milieu de la zone)
@@ -168,7 +171,7 @@ export function analyserGroupes({ series, aujourdhui = new Date() }) {
   const manques = [...oublies, ...sous];
   const dessus = groupes.filter((g) => g.etat === 'au-dessus');
   const liste = (t) => t.map((g) => g.nom.toLowerCase()).join(', ');
-  const parSemaineTotal = total / SEMAINES_GROUPES;
+  const parSemaineTotal = total / semainesPeriode;
   const pectoraux = compte.pectoraux;
   const rapportDos = pectoraux > 0 ? compte.dos / pectoraux : null;
   const partJambes = Math.round((compte.jambes / total) * 100);
@@ -178,11 +181,11 @@ export function analyserGroupes({ series, aujourdhui = new Date() }) {
   let verdict;
   if (!manques.length && !dessus.length) verdict = { niveau: 'ok', titre: 'Tous tes groupes sont dans la zone', texte: `Chaque groupe musculaire reçoit le volume visé : ton entraînement est bien réparti.` };
   else if (manques.length >= 3) verdict = { niveau: 'attention', titre: 'Ton entraînement est déséquilibré', texte: `Plusieurs groupes sont sous la zone visée : ${liste(manques)}. Le groupe le plus travaillé est ${plusTravaille.nom.toLowerCase()}, à ${virgule(plusTravaille.parSemaine)} séries par semaine.` };
-  else if (manques.length) verdict = { niveau: 'info', titre: `Il te manque du volume : ${liste(manques)}`, texte: `${manques.length > 1 ? 'Ces groupes sont' : 'Ce groupe est'} sous la zone visée sur les ${SEMAINES_GROUPES} dernières semaines.` };
+  else if (manques.length) verdict = { niveau: 'info', titre: `Il te manque du volume : ${liste(manques)}`, texte: `${manques.length > 1 ? 'Ces groupes sont' : 'Ce groupe est'} sous la zone visée sur ${sur}.` };
   else verdict = { niveau: 'info', titre: `Beaucoup de volume sur ${liste(dessus)}`, texte: `${dessus.length > 1 ? 'Ces groupes dépassent' : 'Ce groupe dépasse'} la zone visée : au-delà, la récupération devient le facteur limitant.` };
 
   const chiffres = [
-    { etiquette: 'Séries par semaine', valeur: virgule(parSemaineTotal), unite: '', note: `${sansPluriel(total, 'série')} en ${SEMAINES_GROUPES} semaines` },
+    { etiquette: 'Séries par semaine', valeur: virgule(parSemaineTotal), unite: '', note: `${sansPluriel(total, 'série')} en ${nbJours} jours` },
     { etiquette: 'Le plus travaillé', valeur: plusTravaille.nom, unite: '', note: `${virgule(plusTravaille.parSemaine)} séries par semaine` },
     { etiquette: 'Le moins travaillé', valeur: moinsTravaille.nom, unite: '', note: `${virgule(moinsTravaille.parSemaine)} séries par semaine`, ton: moinsTravaille.etat === 'zone' ? '' : 'alerte' },
     { etiquette: 'Part des jambes', valeur: String(partJambes), unite: '%', note: partJambes >= 20 ? 'au-dessus du seuil de 20 %' : 'sous le seuil de 20 %', ton: partJambes >= 20 ? 'ok' : 'alerte' },
@@ -194,8 +197,9 @@ export function analyserGroupes({ series, aujourdhui = new Date() }) {
     {
       type: 'corps',
       titre: 'Ton corps, groupe par groupe',
-      description: `Plus la zone est foncée, plus tu l'as travaillée ces ${SEMAINES_GROUPES} dernières semaines. Le pourcentage compare tes séries par semaine à la zone visée (100 % = pile au milieu de la zone).`,
+      description: `Plus la zone est foncée, plus tu l'as travaillée ces ${nbJours} derniers jours. Le pourcentage compare tes séries par semaine à la zone visée (100 % = pile au milieu de la zone).`,
       groupes,
+      periode: `${nbJours} derniers jours`,
     },
     {
       type: 'tableau',
@@ -206,13 +210,13 @@ export function analyserGroupes({ series, aujourdhui = new Date() }) {
     },
   ];
 
-  const lectures = [`Sur les ${SEMAINES_GROUPES} dernières semaines : ${sansPluriel(total, 'série')} en ${sansPluriel(jours, 'séance')}, soit ${virgule(parSemaineTotal)} séries par semaine.`];
+  const lectures = [`Sur ${sur} : ${sansPluriel(total, 'série')} en ${sansPluriel(jours, 'séance')}, soit ${virgule(parSemaineTotal)} séries par semaine.`];
   if (rapportDos != null) lectures.push(`Tu fais ${virgule(rapportDos, 2)} série de dos pour 1 de pectoraux${rapportDos < 0.8 ? ' : le dos est en retard' : ''}.`);
   lectures.push(`Les jambes représentent ${partJambes} % de tes séries.`);
   if (dessus.length) lectures.push(`Au-dessus de la zone : ${liste(dessus)}.`);
 
   const conseils = [];
-  for (const g of oublies) conseils.push({ priorite: 'haute', titre: `Ajoute du volume ${DE[g.groupe]}`, texte: `Aucune série de ${g.nom.toLowerCase()} sur ${SEMAINES_GROUPES} semaines. Commence par ${g.cible[0]} séries par semaine, réparties sur 2 séances.` });
+  for (const g of oublies) conseils.push({ priorite: 'haute', titre: `Ajoute du volume ${DE[g.groupe]}`, texte: `Aucune série de ${g.nom.toLowerCase()} sur ${nbJours} jours. Commence par ${g.cible[0]} séries par semaine, réparties sur 2 séances.` });
   for (const g of sous) conseils.push({ priorite: 'moyenne', titre: `Monte le volume ${DE[g.groupe]}`, texte: `Tu es à ${virgule(g.parSemaine)} séries par semaine pour une zone de ${g.cible[0]} à ${g.cible[1]}. Ajoute 2 ou 3 séries par semaine, pas plus d'un coup.` });
   if (rapportDos != null && rapportDos < 0.8) conseils.push({ priorite: 'moyenne', titre: 'Rééquilibre dos et pectoraux', texte: 'Ajoute des tirages (rowing, tractions) ou retire quelques séries de pectoraux, pour tendre vers autant de dos que de pectoraux.' });
   if (partJambes < 20 && compte.jambes > 0) conseils.push({ priorite: 'moyenne', titre: 'Donne plus de place aux jambes', texte: 'Elles sont sous 20 % de tes séries. Un squat ou une presse en plus, chaque semaine, rééquilibre vite.' });

@@ -16,7 +16,7 @@
   import { chargerDonneesAnalyse } from '../lib/data/donnees-analyse.js';
   import { construireAdresse } from '../lib/data/adresses.js';
   import { familleAffichage } from '../lib/data/familles.js';
-  import { ANALYSES, PERIODES, estAnalyse, periodeValide } from '../lib/analyse/registre.js';
+  import { ANALYSES, PERIODES, estAnalyse } from '../lib/analyse/registre.js';
   import { SPORTS } from '../lib/sports.js';
 
   // Page d'analyse d'un widget : verdict, chiffres clés, graphiques, lecture des données et conseils chiffrés.
@@ -44,11 +44,14 @@
 
   const sport = $derived(def?.sportImpose || menu.filtre);
   const nomSport = $derived(sport === 'tout' ? '' : (SPORTS[sport] || SPORTS.autre).nom);
-  const periodeCle = $derived(periodeValide(route.q.periode, def?.periodeDefaut));
-  const semaines = $derived((PERIODES.find((p) => p.cle === periodeCle) || PERIODES[1]).semaines);
+  // Chaque analyse peut proposer ses propres périodes (ex. 7 jours, 1 mois…) ; sinon 3, 6 ou 12 mois
+  const choixPeriodes = $derived(def?.choixPeriodes || PERIODES);
+  const periodeCle = $derived(choixPeriodes.some((p) => p.cle === route.q.periode) ? route.q.periode : (def?.periodeDefaut || 'sem26'));
+  const periode = $derived(choixPeriodes.find((p) => p.cle === periodeCle) || choixPeriodes[0]);
+  const semaines = $derived(periode.semaines ?? Math.ceil(periode.jours / 7));
   const seances = $derived(sport === 'tout' ? brut.seances : brut.seances.filter((s) => familleAffichage(s.sport) === sport));
 
-  const analyse = $derived(def && !brut.chargement && !brut.erreur ? def.calculer({ ...brut, seances }, { aujourdhui, semaines, nomSport, famille: sport }) : null);
+  const analyse = $derived(def && !brut.chargement && !brut.erreur ? def.calculer({ ...brut, seances }, { aujourdhui, semaines, jours: periode.jours, nomSport, famille: sport }) : null);
 
   const retour = $derived(construireAdresse({ sport: menu.filtre }));
   const COULEUR_NIVEAU = { ok: 'var(--ok)', attention: 'var(--alerte)', danger: 'var(--danger)', info: 'var(--sport-velo)' };
@@ -72,7 +75,7 @@
       </div>
       {#if def.periodes}
         <div class="periodes" role="group" aria-label="Période analysée">
-          {#each PERIODES as p (p.cle)}
+          {#each choixPeriodes as p (p.cle)}
             <button type="button" aria-pressed={periodeCle === p.cle} onclick={() => regler({ periode: p.cle })}>{p.libelle}</button>
           {/each}
         </div>
@@ -116,7 +119,7 @@
           {:else if g.type === 'lignes'}
             <GraphiqueLignes etiquettes={g.etiquettes} series={g.series} bandes={g.bandes || []} marqueurs={g.marqueurs || []} min={g.min} max={g.max} etiquette={g.titre} />
           {:else if g.type === 'corps'}
-            <CorpsMusculaire groupes={g.groupes} etiquette={g.titre} />
+            <CorpsMusculaire groupes={g.groupes} etiquette={g.titre} periode={g.periode} />
           {:else if g.type === 'exercices'}
             <GraphiqueExercice groupes={g.groupes} bind:selection={exoVu} exoDemande={route.q.exo || ''} />
           {:else if g.type === 'historique'}
