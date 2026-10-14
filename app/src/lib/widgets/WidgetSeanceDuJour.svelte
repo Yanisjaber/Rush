@@ -1,14 +1,14 @@
 <script>
   import Dossard from '../components/Dossard.svelte';
   import Bouton from '../components/Bouton.svelte';
-  import { menu } from '../stores/menu.svelte.js';
-  import { construireAdresse } from '../data/adresses.js';
+  import { ouvrirPanneau } from '../routeur.svelte.js';
   import { familleAffichage } from '../data/familles.js';
   import { programmeDuJour, resumeProgramme } from '../data/force.js';
   import { formatDateLongue, dateIsoLocale } from '../utils/format.js';
 
   // Le dossard de la séance de force du jour. Dans l'ordre :
   //  1. une séance de muscu PRÉVUE aujourd'hui au calendrier : on l'affiche, avec le programme qu'on lui a relié (s'il y en a un) ;
+  //     « Voir » ouvre un panneau par-dessus l'accueil (PanneauSeanceDuJour, monté dans l'accueil) ;
   //  2. sinon le programme qui suit celui de ta dernière séance (PUSH, PULL, LEGS, PUSH…) ;
   //  3. sinon on propose d'enregistrer une séance.
   let { contexte } = $props();
@@ -18,7 +18,8 @@
   // Séance de muscu prévue aujourd'hui (ni compétition, ni autre sport) et son programme relié
   const prevue = $derived(contexte.planifiees.find((p) => p.date === aujourdhui && p.category !== 'competition' && familleAffichage(p.sport) === 'muscu') || null);
   const programmeLie = $derived(prevue?.programme_id ? contexte.force.programmes.find((p) => p.id === prevue.programme_id) || null : null);
-  const voirPrevue = $derived(prevue ? construireAdresse({ sport: menu.filtre, page: '/calendrier', q: { prevue: prevue.id } }) : '');
+  // « Voir » ouvre un panneau PAR-DESSUS l'accueil (on ne change pas de page) : la séance prévue et son programme
+  const voir = () => ouvrirPanneau({ seancejour: prevue.id });
 
   const prog = $derived(programmeLie || programmeDuJour(contexte.force.programmes, contexte.toutesSeances));
   const resume = $derived(prog ? resumeProgramme(prog) : null);
@@ -27,7 +28,7 @@
 
 <div class="cadre">
   {#if prevue}
-    <!-- Séance prévue aujourd'hui : on la montre (avec son programme si elle en a un) ; « Voir » ouvre la séance prévue dans le calendrier -->
+    <!-- Séance prévue aujourd'hui : on la montre (avec son programme si elle en a un) ; « Voir » ouvre son panneau sur l'accueil -->
     <Dossard
       etiquette="Séance du jour · prévue"
       nom={jour}
@@ -36,7 +37,7 @@
     >
       <div class="actions">
         <Bouton variante="sur-dossard" href={programmeLie ? `#/force/seance/${programmeLie.id}` : '#/force/demarrer'}>{programmeLie ? 'Démarrer la séance' : 'Enregistrer la séance'}</Bouton>
-        <Bouton variante="sur-dossard-contour" href={voirPrevue}>Voir</Bouton>
+        <Bouton variante="sur-dossard-contour" onclick={voir}>Voir</Bouton>
       </div>
     </Dossard>
   {:else if prog}

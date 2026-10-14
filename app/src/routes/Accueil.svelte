@@ -14,6 +14,7 @@
   import { onboardingNecessaire, fusionnerFamilles } from '../lib/data/sports-choisis.js';
   import { menu, chargerMenu } from '../lib/stores/menu.svelte.js';
   import { route, ouvrirPanneau, fermerPanneau } from '../lib/routeur.svelte.js';
+  import PanneauSeanceDuJour from '../lib/components/PanneauSeanceDuJour.svelte';
   import { construireAdresse, SOUS_ACCUEIL } from '../lib/data/adresses.js';
   import { ANALYSE_DU_WIDGET } from '../lib/analyse/registre.js';
   import { WIDGETS } from '../lib/widgets/registre.js';
@@ -123,6 +124,15 @@
     const id = userId;
     void donnees.version; // se recharge quand une sortie est créée, retouchée ou supprimée
     untrack(() => charger(id));
+  });
+
+  // --- Séance du jour ouverte par-dessus l'accueil ---
+  const idSeanceDuJour = $derived(route.q.seancejour || '');
+  const prevueOuverte = $derived(idSeanceDuJour ? etat.planifiees.find((p) => p.id === idSeanceDuJour) || null : null);
+  const programmeOuvert = $derived(prevueOuverte?.programme_id ? etat.force.programmes.find((p) => p.id === prevueOuverte.programme_id) || null : null);
+  // Séance inconnue (supprimée, adresse trompeuse) : une fois les données chargées, on referme proprement l'adresse
+  $effect(() => {
+    if (!etat.chargement && idSeanceDuJour && !prevueOuverte) untrack(() => fermerPanneau('seancejour'));
   });
 
   // --- Données dérivées ---
@@ -295,6 +305,9 @@
     {/if}
   {/if}
   {/if}
+
+  <!-- La séance de muscu prévue aujourd'hui, ouverte par-dessus l'accueil (adresse ?seancejour=<id> : un rechargement la rouvre) -->
+  <PanneauSeanceDuJour ouvert={!!prevueOuverte} prevue={prevueOuverte} programme={programmeOuvert} onfermer={() => fermerPanneau('seancejour')} />
 </main>
 
 <style>

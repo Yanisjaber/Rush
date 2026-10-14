@@ -136,3 +136,9 @@ test('adresse : ?exo= (exercice de la page Records) accepte une clé d\'exercice
   assert.deepEqual(analyserAdresse('#/analyse/records?exo=<img src=x>').q, {}); // forme invalide : ignorée
   assert.deepEqual(analyserAdresse('#/analyse/records?exo=a%20b').q, {});
 });
+
+test('adresse : ?seancejour= (séance du jour ouverte sur l\'accueil) accepte un identifiant, ignore le reste', () => {
+  assert.equal(construireAdresse({ sport: 'muscu', q: { seancejour: 'demo-p0' } }), '#/muscu?seancejour=demo-p0');
+  assert.equal(analyserAdresse('#/muscu?seancejour=3f2a9c1e-0b7d-4c55-9a1e-6d2f8b4c7a10').q.seancejour, '3f2a9c1e-0b7d-4c55-9a1e-6d2f8b4c7a10');
+  assert.deepEqual(analyserAdresse('#/muscu?seancejour=<script>').q, {});
+});

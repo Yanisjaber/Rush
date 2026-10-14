@@ -25,6 +25,7 @@ export const SOUS_ACCUEIL = { muscu: ['programmes', 'journal', 'exercices'], hyr
  */
 export const CLES_Q = {
   prevue: 'id', sortie: 'id', apercu: 'id', competition: 'id', marquage: 'id', modele: 'id', objectif: 'id', programme: 'id', test: 'id',
+  seancejour: 'id', // la séance de muscu prévue aujourd'hui, ouverte par-dessus l'accueil (carte « Séance du jour »)
   exo: 'id', // l'exercice affiché sur la page Records (clé d'exercice : squat, perso-<uuid>…)
   date: 'date', nuit: 'date', jour: 'date', metrique: 'mot', feuille: 'mot', periode: 'mot',
   modeles: 'drapeau', hevy: 'drapeau', objectifhyrox: 'drapeau', licence: 'drapeau', edition: 'drapeau', fc: 'drapeau',
