@@ -126,3 +126,109 @@ export function repartirSerie(cle, nom, groupe) {
   const membres = MUSCLES_PAR_GROUPE[groupe] || [];
   return membres.map((muscle) => ({ muscle, poids: 1 / membres.length }));
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Portions de muscle : seulement là où elles ont un vrai rôle différent (épaules, trapèzes, triceps).
+// Les zones visées sont des repères de volume par portion (séries pondérées par semaine), pas des lois.
+// ---------------------------------------------------------------------------------------------------------------------
+export const PORTIONS = {
+  deltoids: [
+    { cle: 'avant', nom: 'Avant (faisceau antérieur)', cible: [4, 10], idee: ['Développé militaire'] },
+    { cle: 'lateral', nom: 'Côté (faisceau latéral)', cible: [6, 14], idee: ['Élévations latérales'] },
+    { cle: 'arriere', nom: 'Arrière (faisceau postérieur)', cible: [6, 14], idee: ['Oiseau', 'Face pull'] },
+  ],
+  trapezius: [
+    { cle: 'haut', nom: 'Haut', cible: [3, 8], idee: ['Shrugs'] },
+    { cle: 'milieu', nom: 'Milieu', cible: [4, 10], idee: ['Rowing barre', 'Tirage horizontal'] },
+    { cle: 'bas', nom: 'Bas', cible: [2, 6], idee: ['Face pull', 'Tractions'] },
+  ],
+  triceps: [
+    { cle: 'long', nom: 'Chef long', cible: [4, 9], idee: ['Barre au front', 'Extension triceps au-dessus de la tête'] },
+    { cle: 'courts', nom: 'Chefs latéral et médial', cible: [4, 9], idee: ['Extension triceps poulie', 'Dips sur banc'] },
+  ],
+};
+
+const D = (avant, lateral, arriere) => ({ avant, lateral, arriere });
+
+/** Pour un exercice et un muscle : comment la série se partage entre les portions du muscle (la somme fait 1). */
+const PARTS_DES_EXERCICES = {
+  deltoids: {
+    'developpe-militaire': D(0.6, 0.4, 0),
+    'developpe-epaules-halteres': D(0.6, 0.4, 0),
+    'elevations-laterales': D(0, 1, 0),
+    'elevations-frontales': D(1, 0, 0),
+    oiseau: D(0, 0, 1),
+    'face-pull': D(0, 0, 1),
+    'tirage-menton': D(0.4, 0.6, 0),
+    // Les développés de pectoraux sollicitent surtout l'avant de l'épaule
+    'developpe-couche': D(1, 0, 0),
+    'developpe-incline-halteres': D(1, 0, 0),
+    'developpe-incline-barre': D(1, 0, 0),
+    'developpe-halteres': D(1, 0, 0),
+    pompes: D(1, 0, 0),
+    dips: D(1, 0, 0),
+    'dips-banc': D(1, 0, 0),
+  },
+  trapezius: {
+    shrugs: { haut: 1, milieu: 0, bas: 0 },
+    'rowing-barre': { haut: 0, milieu: 1, bas: 0 },
+    'rowing-haltere': { haut: 0, milieu: 1, bas: 0 },
+    'tirage-horizontal': { haut: 0, milieu: 1, bas: 0 },
+    'tirage-menton': { haut: 0.7, milieu: 0.3, bas: 0 },
+    tractions: { haut: 0, milieu: 0.5, bas: 0.5 },
+    'souleve-de-terre': { haut: 0.6, milieu: 0.4, bas: 0 },
+    'developpe-militaire': { haut: 1, milieu: 0, bas: 0 },
+    'developpe-epaules-halteres': { haut: 1, milieu: 0, bas: 0 },
+    oiseau: { haut: 0, milieu: 0.5, bas: 0.5 },
+    'face-pull': { haut: 0, milieu: 0.5, bas: 0.5 },
+  },
+  triceps: {
+    'extension-triceps-poulie': { long: 0.3, courts: 0.7 },
+    'barre-au-front': { long: 0.6, courts: 0.4 },
+    kickback: { long: 0.5, courts: 0.5 },
+    dips: { long: 0.5, courts: 0.5 },
+    'dips-banc': { long: 0.5, courts: 0.5 },
+    'developpe-couche': { long: 0.3, courts: 0.7 },
+    'developpe-incline-halteres': { long: 0.3, courts: 0.7 },
+    'developpe-incline-barre': { long: 0.3, courts: 0.7 },
+    'developpe-halteres': { long: 0.3, courts: 0.7 },
+    pompes: { long: 0.3, courts: 0.7 },
+    'developpe-militaire': { long: 0.5, courts: 0.5 },
+    'developpe-epaules-halteres': { long: 0.5, courts: 0.5 },
+  },
+};
+
+// Exercices inconnus : on devine la portion d'après le nom (le premier motif qui correspond gagne).
+const REGLES_PORTION = {
+  deltoids: [
+    [/rear|reverse fly|oiseau|face pull|arriere|reverse pec/, D(0, 0, 1)],
+    [/lateral|side raise|laterale/, D(0, 1, 0)],
+    [/front raise|frontale/, D(1, 0, 0)],
+    [/upright|tirage menton/, D(0.4, 0.6, 0)],
+    [/overhead|military|shoulder press|arnold|epaule|\bohp\b/, D(0.6, 0.4, 0)],
+    [/bench|chest|push.?up|pompe|dip|incline|decline|developpe/, D(1, 0, 0)],
+  ],
+  trapezius: [
+    [/shrug/, { haut: 1, milieu: 0, bas: 0 }],
+    [/row|tirage|rowing/, { haut: 0, milieu: 1, bas: 0 }],
+    [/face pull|rear|reverse fly|oiseau|pull.?up|chin|traction/, { haut: 0, milieu: 0.5, bas: 0.5 }],
+    [/deadlift|souleve|overhead|military|upright/, { haut: 1, milieu: 0, bas: 0 }],
+  ],
+  triceps: [
+    [/overhead|skull|french|barre au front|jm press|au.?dessus/, { long: 0.7, courts: 0.3 }],
+    [/pushdown|push.?down|kickback|poulie|rope/, { long: 0.3, courts: 0.7 }],
+  ],
+};
+
+/** Partage d'une série entre les portions d'un muscle : [{ portion, part }] (la somme des parts fait 1). Sans portions : []. */
+export function repartirPortions(cle, nom, muscle) {
+  const portions = PORTIONS[muscle];
+  if (!portions) return [];
+  let parts = PARTS_DES_EXERCICES[muscle]?.[cle];
+  if (!parts) {
+    const n = sansAccent(nom || '');
+    parts = REGLES_PORTION[muscle]?.find(([motif]) => motif.test(n))?.[1];
+  }
+  if (!parts) return portions.map((p) => ({ portion: p.cle, part: 1 / portions.length })); // pas d'indice : à parts égales
+  return portions.filter((p) => parts[p.cle] > 0).map((p) => ({ portion: p.cle, part: parts[p.cle] }));
+}

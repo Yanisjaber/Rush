@@ -33,6 +33,13 @@
 
   // Du gris (jamais travaillé) au corail du muscu (130 % de la zone visée ou plus)
   const teinte = (pct) => `color-mix(in srgb, var(--sport-muscu) ${Math.round((Math.min(Math.max(pct ?? 0, 0), 130) / 130) * 100)}%, var(--trait-fort))`;
+  // Les épaules : sur le dessin, l'avant du deltoïde se lit de face et l'arrière de dos (le faisceau latéral se lit dans le détail)
+  const FAISCEAU_DE_LA_VUE = { Face: 'avant', Dos: 'arriere' };
+  const pctPiece = (muscleSlug, vue) => {
+    const m = muscles[muscleSlug];
+    if (muscleSlug === 'deltoids') return m.portions?.find((p) => p.cle === FAISCEAU_DE_LA_VUE[vue])?.pct ?? m.pct;
+    return m.pct;
+  };
   const lumineux = (slug) => (muscleChoisi ? muscleChoisi === slug : choisi != null && muscles[slug]?.groupe === choisi);
 
   // Les tracés du dessin portent le nom d'un muscle ; les tibias sont rattachés aux mollets, le reste (tête, mains, pieds…) ne compte pas.
@@ -58,7 +65,7 @@
               d={z.d}
               class="zone"
               class:choisie={lumineux(z.muscle)}
-              style:fill={teinte(muscles[z.muscle].pct)}
+              style:fill={teinte(pctPiece(z.muscle, v.nom))}
               role="button"
               tabindex="0"
               aria-label={muscles[z.muscle].nom}
@@ -91,6 +98,18 @@
         <h4>{muscle.nom}</h4>
         <p class="grand">{muscle.pct} % <span>de la zone visée</span></p>
         <p class="texte">{virgule(muscle.parSemaine)} séries par semaine (les séries où il aide comptent pour moitié) pour une zone de {muscle.cible[0]} à {muscle.cible[1]} : <strong>{NOM_ETAT[muscle.etat]}</strong>.</p>
+        {#if muscle.portions?.length}
+          <p class="mini">Les portions du muscle</p>
+          <ul class="portions">
+            {#each muscle.portions as p (p.cle)}
+              <li>
+                <span class="ligne"><span>{p.nom}</span><b>{p.pct} %</b></span>
+                <span class="barre" aria-hidden="true"><span style:width="{Math.min(p.pct, 130) / 1.3}%"></span></span>
+              </li>
+            {/each}
+          </ul>
+          {#if muscle.slug === 'deltoids'}<p class="note">Sur le dessin, l'avant de l'épaule se lit sur la vue de face et l'arrière sur la vue de dos.</p>{/if}
+        {/if}
         {#if muscle.exercices.length}
           <p class="mini">{muscle.exercices.length} exercice{muscle.exercices.length > 1 ? 's' : ''} sur {periode}</p>
           <ul class="exos">
@@ -280,6 +299,25 @@
   }
   .texte strong {
     color: var(--texte);
+  }
+  .portions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 14px;
+  }
+  .portions li {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .note {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: var(--texte-muet);
   }
   .retour {
     margin: 0 0 8px;

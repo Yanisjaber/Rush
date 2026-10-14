@@ -2,7 +2,7 @@
 // Tout est déduit des séries du carnet de force (table strength_sets). Fonctions pures, sans réseau ni écran.
 // Même format de sortie que les autres analyses : { verdict, chiffres, graphiques, lectures, conseils, methode }.
 import { GROUPES, ORDRE_GROUPES, groupeValide } from '../data/exercices.js';
-import { MUSCLES, MUSCLES_PAR_GROUPE, repartirSerie } from '../data/muscles.js';
+import { MUSCLES, MUSCLES_PAR_GROUPE, PORTIONS, repartirSerie, repartirPortions } from '../data/muscles.js';
 import { tonnageSerie, progressionParExercice, unRmEstime } from '../data/force.js';
 import { dateIsoLocale, formatDateCourte, formatKg, formatNombre } from '../utils/format.js';
 import { rushTonnage } from './rush-tonnage.js';
@@ -157,12 +157,13 @@ export function analyserGroupes({ series, aujourdhui = new Date(), jours: nbJour
   }
 
   // Muscle par muscle : chaque série est répartie entre les muscles qu'elle travaille (principal : 1, secondaire : 0,5)
-  const parMuscle = Object.fromEntries(Object.keys(MUSCLES).map((m) => [m, { series: 0, exos: new Map() }]));
+  const parMuscle = Object.fromEntries(Object.keys(MUSCLES).map((m) => [m, { series: 0, exos: new Map(), portions: Object.fromEntries((PORTIONS[m] || []).map((p) => [p.cle, 0])) }]));
   for (const x of fenetre) {
     const nomExo = x.exercise_name || x.exercise_key;
     for (const { muscle, poids } of repartirSerie(x.exercise_key, x.exercise_name, x.muscle_group)) {
       const m = parMuscle[muscle];
       m.series += poids;
+      for (const { portion, part } of repartirPortions(x.exercise_key, x.exercise_name, muscle)) m.portions[portion] += poids * part;
       const e = m.exos.get(nomExo) || { nom: nomExo, series: 0, role: 'secondaire' };
       e.series += 1;
       if (poids >= 1) e.role = 'principal';
@@ -175,7 +176,12 @@ export function analyserGroupes({ series, aujourdhui = new Date(), jours: nbJour
     const [bas, haut] = def.cible;
     const etat = parMuscle[slug].series === 0 ? 'oublie' : par < bas ? 'sous' : par > haut ? 'au-dessus' : 'zone';
     const exercices = [...parMuscle[slug].exos.values()].sort((a, b) => b.series - a.series);
-    return { slug, nom: def.nom, groupe: def.groupe, series: Math.round(parMuscle[slug].series * 10) / 10, parSemaine: par, cible: def.cible, etat, pct: Math.round((par / ((bas + haut) / 2)) * 100), exercices, idee: def.idee };
+    const portions = (PORTIONS[slug] || []).map((p) => {
+      const parP = parMuscle[slug].portions[p.cle] / semainesPeriode;
+      const [pb, ph] = p.cible;
+      return { cle: p.cle, nom: p.nom, series: Math.round(parMuscle[slug].portions[p.cle] * 10) / 10, parSemaine: parP, cible: p.cible, pct: Math.round((parP / ((pb + ph) / 2)) * 100), etat: parMuscle[slug].portions[p.cle] === 0 ? 'oublie' : parP < pb ? 'sous' : parP > ph ? 'au-dessus' : 'zone', idee: p.idee };
+    });
+    return { slug, nom: def.nom, groupe: def.groupe, series: Math.round(parMuscle[slug].series * 10) / 10, parSemaine: par, cible: def.cible, etat, pct: Math.round((par / ((bas + haut) / 2)) * 100), exercices, idee: def.idee, portions };
   };
 
   const groupes = ORDRE_GROUPES.map((g, i) => {

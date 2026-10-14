@@ -28,3 +28,16 @@ test('muscles : sans indice, la série est partagée à parts égales dans son g
   assert.equal(r.length, MUSCLES_PAR_GROUPE.jambes.length);
   assert.ok(Math.abs(r.reduce((t, x) => t + x.poids, 0) - 1) < 1e-9);
 });
+
+test('portions : chaque exercice partage ses séries entre les portions (somme = 1)', async () => {
+  const { repartirPortions, PORTIONS } = await import('../src/lib/data/muscles.js');
+  for (const e of BIBLIOTHEQUE) {
+    for (const muscle of Object.keys(PORTIONS)) {
+      const r = repartirPortions(e.cle, e.nom, muscle);
+      assert.ok(Math.abs(r.reduce((t, x) => t + x.part, 0) - 1) < 1e-9, `${e.cle} / ${muscle}`);
+    }
+  }
+  assert.deepEqual(repartirPortions('oiseau', 'Oiseau', 'deltoids'), [{ portion: 'arriere', part: 1 }]);
+  assert.deepEqual(repartirPortions('hevy-x', 'Rear Delt Fly', 'deltoids'), [{ portion: 'arriere', part: 1 }]);
+  assert.equal(repartirPortions('x', 'Truc', 'chest').length, 0);
+});

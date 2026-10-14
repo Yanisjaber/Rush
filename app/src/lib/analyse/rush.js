@@ -339,6 +339,22 @@ export function rushGroupes({ brut: b }) {
     for (const m of retard.slice(0, 2)) plan.push({ quand: `Réveiller : ${m.nom.toLowerCase()}`, action: `Ajoute ${m.idee[0]} (3 séries, une fois par semaine) : le plus simple pour faire monter ce muscle sans alourdir ta semaine.` });
   }
 
+  // Les portions en retard dans un muscle pourtant utilisé (ex. deltoïdes arrière à 10 % alors que l'avant est à 100 %)
+  const portionsEnRetard = (b.muscles || [])
+    .filter((m) => m.series > 0)
+    .flatMap((m) => (m.portions || []).map((p) => ({ ...p, muscle: m })))
+    .filter((p) => p.pct < 50 && p.muscle.pct >= 40)
+    .sort((x, y) => x.pct - y.pct)
+    .slice(0, 3);
+  if (portionsEnRetard.length) {
+    parties.push({
+      titre: 'Les portions oubliées',
+      ton: 'info',
+      texte: `${portionsEnRetard.map((p) => `${p.muscle.nom.toLowerCase()} : ${p.nom.toLowerCase()} à ${p.pct} %`).join(' ; ')}. Le muscle est travaillé, mais pas dans toutes ses parties : c'est ainsi que se creusent les déséquilibres (épaules enroulées, dos du haut faible…).`,
+    });
+    for (const p of portionsEnRetard.slice(0, 2)) plan.push({ quand: `Équilibrer : ${p.muscle.nom.toLowerCase()}`, action: `Ajoute ${p.idee[0]} (3 séries par semaine) pour la portion « ${p.nom.toLowerCase()} ».` });
+  }
+
   for (const g of manques.slice(0, 3)) {
     const manque = Math.max(1, Math.round(g.cible[0] - g.parSemaine));
     plan.push({ quand: `Cette semaine : ${nom(g)}`, action: `Ajoute ${pluriel(manque, 'série')} (tu es à ${v1(g.parSemaine)} pour une zone de ${g.cible[0]} à ${g.cible[1]}), sans monter de plus de 2 ou 3 séries d'un coup.` });
