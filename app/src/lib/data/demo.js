@@ -97,6 +97,7 @@ export function donneesDemo(aujourdhui = new Date(), nbJours = 84) {
       { duration_s: 3600, watts_90d: 205, watts_alltime: 245 },
     ],
     planifiees: [
+      { id: 'demo-p0', name: 'Legs', date: dateIsoLocale(aujourdhui), sport: 'WeightTraining', duration: 54, tss: 45, category: 'entrainement', km: null, programme_id: 'demo-prog-legs' }, // séance de muscu prévue aujourd'hui, reliée à un programme : la carte « Séance du jour » la montre
       { id: 'demo-p1', name: 'Fractionné 8 × 400 m', date: dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + 1)), sport: 'Run', duration: 55, tss: 70, category: 'entrainement', km: null },
       { id: 'demo-p2', name: 'Endurance vélo', date: dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + 2)), sport: 'Ride', duration: 90, tss: 62, category: 'entrainement', km: null },
       { id: 'demo-p3', name: 'Sortie longue', date: dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + 6)), sport: 'Ride', duration: 180, tss: 95, category: 'entrainement', km: null },

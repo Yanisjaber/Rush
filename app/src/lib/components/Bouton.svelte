@@ -1,7 +1,7 @@
 <script>
   // Un bouton ou un lien d'action. Toujours au moins 44 px de haut (cible tactile).
   // variante : 'principal' (aplat clair), 'discret' (contour), 'texte' (souligné),
-  // 'sur-dossard' (à poser sur le dossard).
+  // 'sur-dossard' et 'sur-dossard-contour' (à poser sur le dossard).
   let { variante = 'principal', href = '', type = 'button', onclick, children } = $props();
 </script>
 
@@ -34,6 +34,12 @@
   .sur-dossard {
     background: var(--dossard-texte);
     color: var(--dossard-fond);
+  }
+  /* Bouton secondaire à poser sur le dossard : un contour aux couleurs du dossard (le « discret » normal serait invisible sur fond clair) */
+  .sur-dossard-contour {
+    background: transparent;
+    color: var(--dossard-texte);
+    box-shadow: inset 0 0 0 2px var(--dossard-texte);
   }
   .discret {
     background: transparent;

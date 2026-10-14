@@ -11,8 +11,8 @@
   import { familleAffichage } from '../data/familles.js';
   import { SPORTS_PREVUE, sportsTries, sportDefaut, formulaireVide, formulaireDepuisLigne, validerPrevue, versLigne, estimerTss } from '../data/prevue.js';
   import { sportAvecStructure } from '../data/structure.js';
-  import { donneesDemo } from '../data/demo.js';
-  import { creerPlanifiee, modifierPlanifiee, supprimerPlanifiee, chargerProfil, creerModele, chargerGpx } from '../data/api.js';
+  import { donneesDemo, programmesDemo } from '../data/demo.js';
+  import { creerPlanifiee, modifierPlanifiee, supprimerPlanifiee, chargerProfil, creerModele, chargerGpx, chargerProgrammes, chargerLienProgramme, lierProgramme } from '../data/api.js';
   import { formulaireDepuisModele, modeleDepuisValeurs } from '../data/modeles.js';
 
   // Créer ou modifier une séance prévue.
@@ -31,6 +31,12 @@
   // 'voir' : affichage seul (clic sur une séance existante) · 'modifier' : formulaire (nouvelle séance ou bouton Modifier)
   let mode = $state('modifier');
   let retourModele = $state({ texte: '', erreur: false }); // résultat de « Enregistrer comme modèle »
+  // Programme de muscu relié à la séance (séances de muscu seulement) : la carte « Séance du jour » de l'accueil propose de le démarrer
+  let programmes = $state([]);
+  let lien = $state(''); // identifiant du programme choisi ('' = aucun)
+  let lienInitial = $state(''); // celui qui était enregistré à l'ouverture
+  const estMuscu = $derived(familleAffichage(f.sport) === 'muscu');
+  const programmeChoisi = $derived(estMuscu && lien ? programmes.find((p) => p.id === lien) || null : null);
   let contenuGpx = $state(''); // parcours de la séance affichée (chargé à la demande : colonne lourde)
 
   // Quand on affiche une séance qui a un parcours, on va chercher son contenu (jamais chargé avec les listes)
@@ -75,12 +81,27 @@
       avecStructure = f.structure.length > 0;
       mode = cible ? 'voir' : 'modifier';
       chargerReference();
+      chargerProgrammesEtLien(cible);
     });
   });
 
   async function chargerReference() {
     const p = demo ? donneesDemo().profil : userId ? (await chargerProfil(userId)).data : null;
     ref = { ftp: Number(p?.ftp) || 0, hrMax: Number(p?.hr_max) || 0 };
+  }
+
+  async function chargerProgrammesEtLien(cible) {
+    lien = '';
+    lienInitial = '';
+    if (demo) {
+      programmes = programmesDemo();
+      lien = cible?.programme_id || '';
+    } else if (userId) {
+      const [p, l] = await Promise.all([chargerProgrammes(userId), cible ? chargerLienProgramme(userId, cible.id) : Promise.resolve({ data: null })]);
+      programmes = p.data || [];
+      lien = l.data || cible?.programme_id || '';
+    }
+    lienInitial = lien;
   }
 
   const nomSport = (type) => (SPORTS[familleAffichage(type)] || SPORTS.autre).nom;
@@ -105,7 +126,16 @@
       erreurGlobale = r.erreur;
       return;
     }
-    enregistree?.(r.data);
+    // Le lien avec le programme s'enregistre à part (colonne ajoutée par une migration) : un échec n'efface pas la séance, on le dit
+    const voulu = estMuscu ? lien : '';
+    let lienErreur = '';
+    if (!demo && voulu !== lienInitial) lienErreur = (await lierProgramme(userId, r.data.id, voulu || null)).erreur;
+    if (!lienErreur) lienInitial = voulu;
+    enregistree?.({ ...r.data, programme_id: lienErreur ? lienInitial || null : voulu || null });
+    if (lienErreur) {
+      erreurGlobale = lienErreur;
+      return;
+    }
     if (!seance) onfermer?.(); // une séance modifiée se réaffiche (la page met `seance` à jour) ; une nouvelle séance ferme le panneau
   }
 
@@ -152,7 +182,7 @@
 
 <Panneau {ouvert} grand={mode === 'modifier' && peutStructurer && avecStructure} titre={!seance ? 'Nouvelle séance' : mode === 'voir' ? 'Séance prévue' : 'Modifier la séance'} {onfermer}>
   {#if mode === 'voir' && seance}
-    <VuePrevue {f} {ref} gpx={contenuGpx} erreur={erreurGlobale} {envoi} onmodifier={() => { erreurGlobale = ''; mode = 'modifier'; }} onsupprimer={supprimer} {onfermer} />
+    <VuePrevue {f} {ref} gpx={contenuGpx} programme={programmeChoisi} erreur={erreurGlobale} {envoi} onmodifier={() => { erreurGlobale = ''; mode = 'modifier'; }} onsupprimer={supprimer} {onfermer} />
   {:else}
   <form class="formulaire" onsubmit={enregistrer} novalidate>
     <Champ id="prevue-nom" label="Nom" bind:valeur={f.nom} erreur={erreurs.nom} maxlength={120} placeholder="Footing, sortie longue…" />
@@ -171,6 +201,17 @@
       </select>
       {#if erreurs.sport}<span class="erreur" role="alert">{erreurs.sport}</span>{/if}
     </div>
+
+    {#if estMuscu}
+      <div class="champ">
+        <label for="prevue-programme">Programme</label>
+        <select id="prevue-programme" bind:value={lien}>
+          <option value="">Aucun (séance libre)</option>
+          {#each programmes as p (p.id)}<option value={p.id}>{p.name}</option>{/each}
+        </select>
+        <span class="aide">Le programme relié s'affiche sur la carte « Séance du jour » de l'accueil pour être démarré en un clic.</span>
+      </div>
+    {/if}
 
     {#if peutStructurer}
       <section class="structure" aria-label="Structure de la séance">

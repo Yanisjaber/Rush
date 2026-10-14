@@ -11,7 +11,8 @@
   // Affichage (lecture seule) d'une séance prévue : résumé, profil, déroulé, notes.
   // Rien n'est modifié ici : « Modifier » ouvre le formulaire, « Supprimer » demande d'abord une confirmation.
   //  f : séance au format du formulaire (voir formulaireDepuisLigne) · ref : { ftp, hrMax } · erreur / envoi : état du parent
-  let { f, ref = {}, gpx = '', erreur = '', envoi = false, onmodifier, onsupprimer, onfermer } = $props();
+  //  programme : le programme de muscu relié à la séance ({ id, name }) ou null
+  let { f, ref = {}, gpx = '', programme = null, erreur = '', envoi = false, onmodifier, onsupprimer, onfermer } = $props();
 
   let confirmer = $state(false);
 
@@ -40,6 +41,9 @@
     <p class="sport"><span class="pastille" style:background={couleur}></span>{nomSport} · prévue</p>
     <h3 class="titre">{f.nom}</h3>
     <p class="quand">{formatDateLongue(f.date)} · {f.heure}</p>
+    {#if programme}
+      <p class="programme">Programme : <strong>{programme.name}</strong> · <a href={`#/force/seance/${programme.id}`}>Démarrer</a></p>
+    {/if}
   </header>
 
   <div class="tuiles">
@@ -129,6 +133,19 @@
     margin-top: 4px;
     font-size: 14px;
     color: var(--texte-doux);
+  }
+  .programme {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--texte-doux);
+  }
+  .programme strong {
+    color: var(--texte);
+  }
+  .programme a {
+    color: var(--texte);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
   .tuiles {
     display: flex;

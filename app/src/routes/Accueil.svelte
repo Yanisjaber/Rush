@@ -33,7 +33,7 @@
     changerTaille,
   } from '../lib/stores/disposition.svelte.js';
   import {
-    chargerProfil, chargerMetriques, chargerSeances, chargerDernieresSeances, chargerObjectifs, chargerPuissance, chargerPlanifiees,
+    chargerProfil, chargerMetriques, chargerSeances, chargerDernieresSeances, chargerObjectifs, chargerPuissance, chargerPlanifiees, chargerLiensProgrammes,
     chargerSeriesForce, chargerProgrammes, chargerExercicesPerso, chargerTestsHyrox, chargerObjectifHyrox,
   } from '../lib/data/api.js';
   import { donneesDemo, programmesDemo, seriesForceDemo, testsHyroxDemo, objectifHyroxDemo } from '../lib/data/demo.js';
@@ -83,7 +83,7 @@
     }
     if (!userId) return;
     await chargerSportsChoisis(userId); // avant la disposition : les sports choisis comptent pour composer l'accueil
-    const [profil, metriques, seances, objectifs, puissance, series, programmes, exercices, tests, objectifHyrox, prevues, dernieres] = await Promise.all([
+    const [profil, metriques, seances, objectifs, puissance, series, programmes, exercices, tests, objectifHyrox, prevues, liens, dernieres] = await Promise.all([
       chargerProfil(userId),
       chargerMetriques(userId),
       chargerSeances(userId),
@@ -95,6 +95,7 @@
       chargerTestsHyrox(userId),
       chargerObjectifHyrox(userId),
       chargerPlanifiees(userId, dateIsoLocale(), dateIsoLocale(new Date(Date.now() + 60 * 86400e3))), // séances prévues des 60 prochains jours
+      chargerLiensProgrammes(userId, dateIsoLocale(), dateIsoLocale(new Date(Date.now() + 60 * 86400e3))), // programme relié à chaque séance prévue (tolérant si la migration n'est pas appliquée)
       chargerDernieresSeances(userId), // sans limite de date : la liste « Dernières séances » ne se vide pas pendant une pause
     ]);
     etat.profil = profil.data;
@@ -103,7 +104,7 @@
     etat.dernieres = dernieres.data || []; // non bloquant : sans elles, l'accueil s'affiche quand même
     etat.objectifs = objectifs.data || [];
     etat.puissance = puissance.data || [];
-    etat.planifiees = prevues.data || []; // non bloquant : sans elles, l'accueil s'affiche quand même
+    etat.planifiees = (prevues.data || []).map((p) => (liens.data[p.id] ? { ...p, programme_id: liens.data[p.id] } : p)); // non bloquant : sans elles, l'accueil s'affiche quand même
     etat.erreur = [profil, metriques, seances, objectifs, puissance].map((r) => r.erreur).find(Boolean) || '';
     // Force et Hyrox : tables ajoutées par la migration 2026-10-13. Si elle n'est pas appliquée, on affiche l'accueil quand même.
     etat.force = { series: series.data || [], programmes: programmes.data || [], exercicesPerso: exercices.data || [] };

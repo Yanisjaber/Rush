@@ -183,6 +183,38 @@ export async function chargerPlanifiees(userId, debutIso, finIso) {
   return resultat(r, 'Impossible de charger les séances prévues.');
 }
 
+// Lien séance prévue → programme de muscu (colonne programme_id, ajoutée par la migration 2026-10-14_prevue_programme.sql).
+// Ces trois fonctions sont tolérantes : tant que la migration n'est pas appliquée, la colonne n'existe pas, la requête échoue
+// et on répond « pas de lien » : rien d'autre ne casse (les listes de séances prévues n'ont volontairement PAS cette colonne).
+const UUID_LIEN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Programmes reliés aux séances prévues d'une période : { identifiant de la séance prévue : identifiant du programme }. */
+export async function chargerLiensProgrammes(userId, debutIso, finIso) {
+  const r = await sb.from('activity_planned').select('id,programme_id').eq('user_id', userId).gte('date', debutIso).lte('date', finIso).not('programme_id', 'is', null).limit(300);
+  const liens = Object.create(null);
+  if (r.error) return { data: liens, erreur: '' };
+  for (const l of r.data || []) liens[String(l.id)] = String(l.programme_id);
+  return { data: liens, erreur: '' };
+}
+
+/** Programme relié à UNE séance prévue (identifiant, ou null). */
+export async function chargerLienProgramme(userId, id) {
+  if (!UUID_LIEN.test(String(id))) return { data: null, erreur: '' };
+  const r = await sb.from('activity_planned').select('programme_id').eq('user_id', userId).eq('id', id).maybeSingle();
+  return { data: r.error ? null : r.data?.programme_id || null, erreur: '' };
+}
+
+/** Relie une séance prévue à un programme (ou retire le lien avec null). La base refuse le programme d'un autre utilisateur. */
+export async function lierProgramme(userId, id, programmeId) {
+  if (!UUID_LIEN.test(String(id)) || (programmeId != null && !UUID_LIEN.test(String(programmeId)))) return { erreur: 'Programme introuvable.' };
+  const r = await sb.from('activity_planned').update({ programme_id: programmeId || null }).eq('user_id', userId).eq('id', id);
+  if (r.error) {
+    console.error('[app/api]', 'lien programme', r.error.code || '');
+    return { erreur: "La séance est enregistrée, mais son lien avec le programme n'a pas pu l'être." };
+  }
+  return { erreur: '' };
+}
+
 // ---------------------------------------------------------------------------
 // Détail d'une séance
 // ---------------------------------------------------------------------------
