@@ -107,7 +107,6 @@ export function analyserRegularite({ seances, aujourdhui = new Date(), semaines 
     {
       type: 'lignes',
       titre: 'Jours d\'entraînement par semaine',
-      description: `Le nombre de jours où tu t'es entraîné, semaine après semaine. La zone verte marque le rythme régulier : de ${CIBLE} à 5 jours.`,
       etiquettes: premiere.map((w) => w.iso),
       series: [{ nom: 'Jours actifs', couleur: 'var(--texte)', valeurs: premiere.map((w) => w.jours) }],
       bandes: [{ de: CIBLE, a: 5, couleur: 'var(--ok)', libelle: 'Rythme régulier' }],
@@ -117,7 +116,6 @@ export function analyserRegularite({ seances, aujourdhui = new Date(), semaines 
     {
       type: 'tableau',
       titre: 'Tes jours de la semaine',
-      description: 'Sur quels jours tu t\'entraînes le plus souvent.',
       colonnes: ['Jour', 'Séances', 'Part'],
       lignes: JOURS.map((nom, i) => [nom, String(parJour[i]), `${Math.round((parJour[i] / dates.length) * 100)} %`]),
     },
