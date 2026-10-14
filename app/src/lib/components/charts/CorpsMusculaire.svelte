@@ -241,6 +241,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
+    order: -1; /* le corps à gauche, le détail à droite (et le corps en premier sur téléphone) */
     height: var(--hauteur);
     padding: 16px 8px 8px;
     border-radius: var(--rayon-l);
@@ -442,9 +443,6 @@
     }
     .bas {
       grid-template-columns: 1fr;
-    }
-    .vues {
-      order: -1; /* sur téléphone, le corps passe avant le détail */
     }
   }
 </style>
