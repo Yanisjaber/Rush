@@ -39,7 +39,7 @@ supabase secrets set APP_REDIRECT_URL=http://localhost:8000/dashboard.html
 
 **Note** : Pour le `APP_REDIRECT_URL` :
 - En local : `http://localhost:8000/dashboard.html`
-- En prod : `https://yanisjaber.github.io/coach-ia/` (ou ton domaine custom)
+- En prod : `https://yanisjaber.github.io/rush/` (ou ton domaine custom)
 - Tu peux changer plus tard avec la même commande.
 
 Vérif : `supabase secrets list` doit montrer les 3 secrets.

@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Vue d'ensemble
 
-Rush : app d'entraînement et de récupération pour **tout sport de performance lié à un entraînement physique et une forme** (pas de sports collectifs). Accueil composé de widgets selon les sports de l'utilisateur, mode édition, deux coques (mobile simple, desktop complet). Front **Svelte 5 + Vite 8** (dossier `app/`), backend **Supabase** (Postgres + RLS + Edge Functions Deno), publié sur GitHub Pages (`https://yanisjaber.github.io/coach-ia/`), utilisable en PWA. Inscription ouverte (confirmation par e-mail, SMTP Brevo).
+Rush : app d'entraînement et de récupération pour **tout sport de performance lié à un entraînement physique et une forme** (pas de sports collectifs). Accueil composé de widgets selon les sports de l'utilisateur, mode édition, deux coques (mobile simple, desktop complet). Front **Svelte 5 + Vite 8** (dossier `app/`), backend **Supabase** (Postgres + RLS + Edge Functions Deno), publié sur GitHub Pages (`https://yanisjaber.github.io/rush/`), utilisable en PWA. Inscription ouverte (confirmation par e-mail, SMTP Brevo).
 
 ## Commandes
 
@@ -34,7 +34,7 @@ Rush : app d'entraînement et de récupération pour **tout sport de performance
 - **Design system** (`app/src/lib/design/tokens.css`) : **la couleur désigne le sport**, pas le profil (course orange, vélo bleu, natation cyan, muscu corail, hybride jaune). Fond sombre par défaut, thème clair en option (suit le compte via `user_preferences`). Titres et chiffres en Bricolage Grotesque, texte en Instrument Sans. Le **dossard** (bloc clair avec quatre points d'attache) est la signature visuelle. Cibles tactiles d'au moins 44 px, focus visible, contraste vérifié.
 - **Données** : tout vient de Supabase (RLS `auth.uid() = user_id`). Charge d'entraînement universelle : TSS (puissance), sinon TRIMP (cardio), sinon effort ressenti × durée. Les zones (FTP/LTHR) sont recalculées à l'affichage, jamais stockées.
 - **Nom de l'app : Rush** (ancien nom « Coach IA », abandonné le 15 oct : il ne doit plus apparaître nulle part, sauf dans `archive-v1/`). Clés de stockage navigateur : `rush-*` (thème, disposition, brouillons…) ; `app/src/lib/stockage-local.js` recopie une fois les anciennes clés de l'ancien nom au premier lancement, pour que personne ne perde ses réglages (fichier à retirer quand tous les appareils sont passés).
-- Restent à l'ancien nom tant que le dépôt GitHub n'est pas renommé : l'adresse GitHub Pages (`yanisjaber.github.io/coach-ia/`), l'adresse du dépôt, et ce qui en dépend (liste des redirections de `oauth-state.ts`, liens des e-mails, commentaire de `pages.yml`).
+- Adresse du site : `https://yanisjaber.github.io/rush/` (dépôt GitHub `Yanisjaber/rush`). Si elle change un jour, la mettre à jour aussi dans `supabase/functions/_shared/oauth-state.ts` (liste des redirections autorisées, puis redéployer `oauth-start` et `strava-oauth-callback`), dans le secret `APP_REDIRECT_URL`, dans les liens des modèles d'e-mails et dans la configuration d'authentification de Supabase.
 
 ### Backend (`supabase/`)
 - `supabase/functions/` : Edge Functions Deno — ingestion (`strava-ingest`, `strava-webhook`, `strava-streams`, `strava-laps`), `oauth-start` (crée un `state` aléatoire à usage unique dans `oauth_states`, aucun JWT dans l'URL OAuth), callback OAuth (`strava-oauth-callback`), `delete-account` (suppression en 3 étapes : préparer, purger par lots, supprimer), `opendossard`, `disconnect-integration`, `coach-ai`. Helpers communs dans `functions/_shared/` (dont `jetons.ts` pour les jetons et `cors.ts`).
@@ -71,7 +71,7 @@ Rush : app d'entraînement et de récupération pour **tout sport de performance
 
 ## Git
 
-- Branche `main`, remote `origin` : `https://github.com/Yanisjaber/coach-ia.git`. Un push met le site en ligne (GitHub Pages via `pages.yml`).
+- Branche `main`, remote `origin` : `https://github.com/Yanisjaber/rush.git`. Un push met le site en ligne (GitHub Pages via `pages.yml`).
 - **Nom de code du push : `yallah`** (ou `yalah`, `yala`, `YALLAH`). Tu ne fais **jamais** `git push` tant que Yanis n'a pas écrit ce mot dans le chat. « Pousse », « go », « c'est bon » ou « ok » ne suffisent pas. Tu peux préparer les commits, mais tu t'arrêtes là.
 - **Pas de push à chaque modif.** On travaille d'abord en local : tu modifies, tu testes, tu peux commiter, mais tu ne parles pas de push et tu ne rappelles pas le mot de passe après chaque changement.
 - Avant le push : montre un résumé (`git status`, commits à envoyer) et vérifie que tests et build passent.
