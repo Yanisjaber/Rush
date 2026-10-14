@@ -162,19 +162,6 @@ export function joursActifs(seances, nbSemaines = 12, aujourdhui = new Date()) {
   return new Set(seances.filter((s) => String(s.start_date_local).slice(0, 10) > iso).map((s) => String(s.start_date_local).slice(0, 10))).size;
 }
 
-/**
- * Point de repère de la carte de régularité : aujourd'hui, sauf si tu n'as AUCUNE séance sur les N dernières
- * semaines (carte entièrement vide) : on recule alors jusqu'à ta dernière séance. `ancien` dit si on a reculé.
- */
-export function ancreSeances(seances, nbSemaines = 12, aujourdhui = new Date()) {
-  const aujIso = dateIsoLocale(aujourdhui);
-  const dates = seances.map((s) => String(s.start_date_local).slice(0, 10)).filter((d) => d <= aujIso);
-  if (!dates.length) return { date: aujourdhui, ancien: false, derniere: null };
-  const derniere = dates.reduce((m, d) => (d > m ? d : m));
-  if (joursActifs(seances, nbSemaines, aujourdhui) > 0) return { date: aujourdhui, ancien: false, derniere };
-  return { date: new Date(`${derniere}T12:00:00`), ancien: true, derniere };
-}
-
 /** La semaine en cours (lundi → dimanche) : pour chaque jour, ses séances réalisées. */
 export function semaineCourante(seances, aujourdhui = new Date(), prevues = []) {
   const lundi = lundiDe(aujourdhui);

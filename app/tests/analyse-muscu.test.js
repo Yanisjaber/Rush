@@ -61,11 +61,14 @@ test('tonnage : une semaine blanche est comptée et conseillée', () => {
   assert.ok(a.brut.trous >= 1);
 });
 
-test('tonnage : après une longue pause on analyse la dernière période, en le disant', () => {
+test('tonnage : après une longue pause, la fenêtre finit toujours aujourd\'hui (rien dedans → pas assez de séances)', () => {
   const a = analyserTonnage({ series: histoire(10, 150), aujourdhui: AUJ, semaines: 12 });
-  assert.equal(a.insuffisant, false);
-  assert.match(a.verdict.texte, /Ta dernière séance date du/);
-  assert.ok(a.brut.moyenneHebdo > 0);
+  assert.equal(a.insuffisant, true);
+  // avec une fenêtre assez longue pour les contenir, les séances sont comptées et la semaine en cours reste vide
+  const b = analyserTonnage({ series: histoire(10, 150), aujourdhui: AUJ, semaines: 52 });
+  assert.equal(b.insuffisant, false);
+  assert.equal(b.brut.semaines[51].tonnage, 0);
+  assert.equal(b.chiffres[0].etiquette, 'Cette semaine');
 });
 
 test('groupes : rien sur le dos → groupe oublié signalé en priorité haute', () => {

@@ -7,8 +7,6 @@ import {
   seriesParGroupe,
   progressionParExercice,
   exercicesPhares,
-  joursDepuisDate,
-  ancreSeries,
   resumeProgramme,
   programmeDuJour,
   brouillonDepuisProgramme,
@@ -281,41 +279,4 @@ test('regroupement par exercice : ordre de la séance, séries dans l\'ordre, to
   assert.equal(g[0].tonnage, 1040);
   assert.equal(g[1].tonnage, 0);
   assert.deepEqual(grouperParExercice([]), []);
-});
-
-test('exercices phares : rien depuis plus de 90 jours → on prend la dernière période d\'entraînement', () => {
-  const s = [
-    serie('2026-05-06', 'squat', 5, 100), serie('2026-05-06', 'squat', 5, 100),
-    serie('2026-04-20', 'curl', 10, 20),
-    serie('2025-12-01', 'a-trop-ancien', 5, 100), serie('2025-12-01', 'a-trop-ancien', 5, 100), serie('2025-12-01', 'a-trop-ancien', 5, 100),
-  ];
-  const e = exercicesPhares(s, 5, AUJ); // AUJ = octobre 2026 : la dernière série date de 5 mois
-  assert.deepEqual(e.map((x) => x.cle), ['squat', 'curl']); // 90 jours avant le 6 mai, pas avant
-  assert.equal(joursDepuisDate('2026-05-06', AUJ) > 90, true);
-});
-
-test('exercices phares : aucune série, ou séries dans le futur → liste vide', () => {
-  assert.deepEqual(exercicesPhares([], 3, AUJ), []);
-  assert.deepEqual(exercicesPhares([serie('2027-01-01', 'squat', 5, 100)], 3, AUJ), []);
-});
-
-test('ancreSeries : série récente → aujourd\'hui ; sinon on recule à la dernière série ; rien → pas d\'ancien', () => {
-  const recent = ancreSeries([serie('2026-10-10', 'squat', 5, 100)], AUJ);
-  assert.equal(recent.ancien, false);
-  assert.equal(recent.date, AUJ);
-  const vieux = ancreSeries([serie('2026-05-06', 'squat', 5, 100), serie('2026-04-20', 'curl', 10, 20)], AUJ);
-  assert.equal(vieux.ancien, true);
-  assert.equal(vieux.derniere, '2026-05-06');
-  // la semaine reculée contient bien la dernière séance : le tonnage n'est plus vide
-  const t = tonnageParSemaine([serie('2026-05-06', 'squat', 5, 100)], 12, vieux.date);
-  assert.equal(t.derniere, 500);
-  assert.equal(ancreSeries([], AUJ).ancien, false);
-  assert.equal(ancreSeries([serie('2027-01-01', 'squat', 5, 100)], AUJ).derniere, null); // le futur est ignoré
-});
-
-test('séries par groupe : la semaine de la dernière séance, pas la semaine vide d\'aujourd\'hui', () => {
-  const s = [serie('2026-05-06', 'squat', 5, 100), serie('2026-05-06', 'squat', 5, 100)];
-  assert.equal(seriesParGroupe(s, AUJ).every((g) => g.series === 0), true);
-  const g = seriesParGroupe(s, ancreSeries(s, AUJ).date);
-  assert.equal(g.find((x) => x.groupe === 'pectoraux').series, 2);
 });

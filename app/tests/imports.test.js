@@ -5,7 +5,7 @@ import { join } from 'node:path';
 
 // Filet de sécurité : le build ne détecte pas un nom utilisé sans import (ReferenceError seulement à l'ouverture de la page).
 // On vérifie que les aides les plus utilisées sont bien importées ou déclarées partout où on s'en sert.
-const NOMS = ['untrack', 'onMount', 'onDestroy', 'tick', 'route', 'ouvrirPanneau', 'fermerPanneau', 'regler', 'aller', 'construireAdresse', 'changerSport', 'lienPage', 'menu', 'auth', 'donnees', 'rafraichir', 'SPORTS', 'couleurSport', 'familleAffichage', 'dateIsoLocale', 'estimerTss', 'formatDateCourte', 'formatKg', 'formatNombre', 'texteIlYa', 'joursDepuisDate'];
+const NOMS = ['untrack', 'onMount', 'onDestroy', 'tick', 'route', 'ouvrirPanneau', 'fermerPanneau', 'regler', 'aller', 'construireAdresse', 'changerSport', 'lienPage', 'menu', 'auth', 'donnees', 'rafraichir', 'SPORTS', 'couleurSport', 'familleAffichage', 'dateIsoLocale', 'estimerTss', 'formatDateCourte', 'formatKg', 'formatNombre'];
 
 function fichiers(dossier) {
   return readdirSync(dossier).flatMap((f) => {

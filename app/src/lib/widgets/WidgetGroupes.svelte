@@ -1,18 +1,14 @@
 <script>
   import Bloc from '../components/Bloc.svelte';
-  import NoteAncien from '../components/NoteAncien.svelte';
-  import { seriesParGroupe, ancreSeries } from '../data/force.js';
+  import { seriesParGroupe } from '../data/force.js';
 
   // Séries par groupe musculaire sur 7 jours, avec la zone cible (bande claire) de chaque groupe.
   let { contexte } = $props();
-  // Rien dans les 7 derniers jours : on montre la semaine de ta dernière séance, en le disant
-  const ancre = $derived(ancreSeries(contexte.force.series));
-  const groupes = $derived(seriesParGroupe(contexte.force.series, ancre.date));
+  const groupes = $derived(seriesParGroupe(contexte.force.series));
   const echelle = $derived(Math.max(20, ...groupes.map((g) => g.series)));
 </script>
 
-<Bloc titre={ancre.ancien ? 'Séries par groupe · dernière semaine' : 'Séries par groupe · cette semaine'}>
-  {#if ancre.ancien}<NoteAncien derniere={ancre.derniere} suite="Voici la semaine de cette séance." />{/if}
+<Bloc titre="Séries par groupe · cette semaine">
   <p class="legende">La bande claire marque la zone de 10 à 20 séries par groupe.</p>
   <ul class="liste">
     {#each groupes as g (g.groupe)}

@@ -6,21 +6,16 @@ import { tonnageSerie, progressionParExercice } from '../data/force.js';
 import { dateIsoLocale, formatDateCourte, formatKg, formatNombre } from '../utils/format.js';
 import { moyenne, arrondi, decalerJour, lundiDe, ecartJours, regression } from './maths.js';
 
-const PAUSE_JOURS = 28; // sans série depuis plus de 4 semaines : on analyse ta dernière période, pas le vide
 const ORDRE = { haute: 0, moyenne: 1, faible: 2, info: 3 };
 const virgule = (v, n = 1) => String(arrondi(v, n)).replace('.', ',');
 const iso = (s) => String(s.date).slice(0, 10);
 const sansPluriel = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''}`;
 
-/** Séries exploitables, dernière séance, et jour de fin de l'analyse (aujourd'hui, ou la dernière séance après une longue pause). */
+/** Séries exploitables (passées, avec au moins une répétition) et jour de fin de l'analyse : toujours aujourd'hui. */
 function reperes(series, aujourdhui) {
-  const auj = dateIsoLocale(aujourdhui);
-  const valides = series.filter((s) => iso(s) <= auj && Number(s.reps) > 0);
-  const derniere = valides.reduce((m, s) => (iso(s) > m ? iso(s) : m), '');
-  const recule = derniere !== '' && ecartJours(derniere, auj) > PAUSE_JOURS;
-  const fin = recule ? derniere : auj;
-  const phrasePause = recule ? `Ta dernière séance date du ${formatDateCourte(derniere)} : voici ta dernière période d'entraînement. ` : '';
-  return { valides, derniere, recule, fin, phrasePause };
+  const fin = dateIsoLocale(aujourdhui);
+  const valides = series.filter((s) => iso(s) <= fin && Number(s.reps) > 0);
+  return { valides, fin };
 }
 
 const triConseils = (c) => c.sort((a, b) => ORDRE[a.priorite] - ORDRE[b.priorite]);
@@ -40,7 +35,7 @@ const METHODE_TONNAGE = [
 ];
 
 export function analyserTonnage({ series, aujourdhui = new Date(), semaines = 26 }) {
-  const { valides, recule, fin, phrasePause } = reperes(series, aujourdhui);
+  const { valides, fin } = reperes(series, aujourdhui);
   const debut = decalerJour(lundiDe(fin), -(semaines - 1) * 7);
   const semainesListe = [];
   for (let i = 0; i < semaines; i++) semainesListe.push({ iso: decalerJour(debut, i * 7), tonnage: 0, series: 0, jours: new Set() });
@@ -79,15 +74,15 @@ export function analyserTonnage({ series, aujourdhui = new Date(), semaines = 26
   const courante = semainesListe[semainesListe.length - 1];
 
   let verdict;
-  if (ecartPct == null) verdict = { niveau: 'info', titre: `${formatNombre(moyenneHebdo)} kg par semaine`, texte: `${phrasePause}Tu soulèves en moyenne ${formatNombre(moyenneHebdo)} kg par semaine d'entraînement. Il faudra quelques semaines de plus pour dégager une tendance.` };
-  else if (ecartPct > 30) verdict = { niveau: 'attention', titre: 'Ton volume grimpe vite', texte: `${phrasePause}Ton tonnage des ${n} dernières semaines est ${ecartPct} % au-dessus des ${n} précédentes. Monter aussi vite fatigue les tendons et les articulations plus vite que les muscles.` };
-  else if (ecartPct > 10) verdict = { niveau: 'ok', titre: 'Ton volume monte', texte: `${phrasePause}+${ecartPct} % de tonnage sur les ${n} dernières semaines par rapport aux ${n} d'avant : une progression régulière.` };
-  else if (ecartPct >= -10) verdict = { niveau: 'ok', titre: 'Ton volume est stable', texte: `${phrasePause}Ton tonnage varie de ${ecartPct > 0 ? '+' : ''}${ecartPct} % entre les ${n} dernières semaines et les ${n} d'avant : tu tiens un rythme constant.` };
-  else if (ecartPct >= -40) verdict = { niveau: 'info', titre: 'Ton volume baisse', texte: `${phrasePause}${ecartPct} % de tonnage sur les ${n} dernières semaines. Si c'est une semaine de décharge voulue, c'est normal ; sinon regarde ce qui t'a freiné.` };
-  else verdict = { niveau: 'attention', titre: 'Ton volume s\'effondre', texte: `${phrasePause}${ecartPct} % de tonnage sur les ${n} dernières semaines : tu t'entraînes beaucoup moins qu'avant.` };
+  if (ecartPct == null) verdict = { niveau: 'info', titre: `${formatNombre(moyenneHebdo)} kg par semaine`, texte: `Tu soulèves en moyenne ${formatNombre(moyenneHebdo)} kg par semaine d'entraînement. Il faudra quelques semaines de plus pour dégager une tendance.` };
+  else if (ecartPct > 30) verdict = { niveau: 'attention', titre: 'Ton volume grimpe vite', texte: `Ton tonnage des ${n} dernières semaines est ${ecartPct} % au-dessus des ${n} précédentes. Monter aussi vite fatigue les tendons et les articulations plus vite que les muscles.` };
+  else if (ecartPct > 10) verdict = { niveau: 'ok', titre: 'Ton volume monte', texte: `+${ecartPct} % de tonnage sur les ${n} dernières semaines par rapport aux ${n} d'avant : une progression régulière.` };
+  else if (ecartPct >= -10) verdict = { niveau: 'ok', titre: 'Ton volume est stable', texte: `Ton tonnage varie de ${ecartPct > 0 ? '+' : ''}${ecartPct} % entre les ${n} dernières semaines et les ${n} d'avant : tu tiens un rythme constant.` };
+  else if (ecartPct >= -40) verdict = { niveau: 'info', titre: 'Ton volume baisse', texte: `${ecartPct} % de tonnage sur les ${n} dernières semaines. Si c'est une semaine de décharge voulue, c'est normal ; sinon regarde ce qui t'a freiné.` };
+  else verdict = { niveau: 'attention', titre: 'Ton volume s\'effondre', texte: `${ecartPct} % de tonnage sur les ${n} dernières semaines : tu t'entraînes beaucoup moins qu'avant.` };
 
   const chiffres = [
-    { etiquette: recule ? 'Dernière semaine' : 'Cette semaine', valeur: formatNombre(courante.tonnage), unite: 'kg', note: `${sansPluriel(courante.jours.size, 'séance')}, ${sansPluriel(courante.series, 'série')}` },
+    { etiquette: 'Cette semaine', valeur: formatNombre(courante.tonnage), unite: 'kg', note: `${sansPluriel(courante.jours.size, 'séance')}, ${sansPluriel(courante.series, 'série')}` },
     { etiquette: 'Moyenne par semaine', valeur: formatNombre(moyenneHebdo), unite: 'kg', note: `sur ${sansPluriel(actives.length, 'semaine')} d'entraînement` },
     { etiquette: 'Meilleure semaine', valeur: formatNombre(meilleure.tonnage), unite: 'kg', note: `semaine du ${formatDateCourte(meilleure.iso)}` },
     { etiquette: 'Séances par semaine', valeur: virgule(seancesParSemaine), unite: '', note: seancesParSemaine >= 2 ? 'un bon rythme' : 'sous les 2 séances conseillées', ton: seancesParSemaine >= 2 ? 'ok' : 'alerte' },
@@ -152,7 +147,7 @@ const TEINTES = [100, 82, 66, 52, 38, 26];
 const teinte = (i) => `color-mix(in srgb, var(--sport-muscu) ${TEINTES[i % TEINTES.length]}%, var(--surface-2))`;
 
 export function analyserGroupes({ series, aujourdhui = new Date() }) {
-  const { valides, recule, fin, phrasePause } = reperes(series, aujourdhui);
+  const { valides, fin } = reperes(series, aujourdhui);
   const debut = decalerJour(fin, -(SEMAINES_GROUPES * 7 - 1));
   const fenetre = valides.filter((s) => iso(s) >= debut && iso(s) <= fin && groupeValide(s.muscle_group));
   const compte = Object.fromEntries(ORDRE_GROUPES.map((g) => [g, 0]));
@@ -182,10 +177,10 @@ export function analyserGroupes({ series, aujourdhui = new Date() }) {
   const moinsTravaille = groupes.reduce((m, g) => (g.series < m.series ? g : m), groupes[0]);
 
   let verdict;
-  if (!manques.length && !dessus.length) verdict = { niveau: 'ok', titre: 'Tous tes groupes sont dans la zone', texte: `${phrasePause}Chaque groupe musculaire reçoit le volume visé : ton entraînement est bien réparti.` };
-  else if (manques.length >= 3) verdict = { niveau: 'attention', titre: 'Ton entraînement est déséquilibré', texte: `${phrasePause}Plusieurs groupes sont sous la zone visée : ${liste(manques)}. Le groupe le plus travaillé est ${plusTravaille.nom.toLowerCase()}, à ${virgule(plusTravaille.parSemaine)} séries par semaine.` };
-  else if (manques.length) verdict = { niveau: 'info', titre: `Il te manque du volume : ${liste(manques)}`, texte: `${phrasePause}${manques.length > 1 ? 'Ces groupes sont' : 'Ce groupe est'} sous la zone visée sur les ${SEMAINES_GROUPES} dernières semaines.` };
-  else verdict = { niveau: 'info', titre: `Beaucoup de volume sur ${liste(dessus)}`, texte: `${phrasePause}${dessus.length > 1 ? 'Ces groupes dépassent' : 'Ce groupe dépasse'} la zone visée : au-delà, la récupération devient le facteur limitant.` };
+  if (!manques.length && !dessus.length) verdict = { niveau: 'ok', titre: 'Tous tes groupes sont dans la zone', texte: `Chaque groupe musculaire reçoit le volume visé : ton entraînement est bien réparti.` };
+  else if (manques.length >= 3) verdict = { niveau: 'attention', titre: 'Ton entraînement est déséquilibré', texte: `Plusieurs groupes sont sous la zone visée : ${liste(manques)}. Le groupe le plus travaillé est ${plusTravaille.nom.toLowerCase()}, à ${virgule(plusTravaille.parSemaine)} séries par semaine.` };
+  else if (manques.length) verdict = { niveau: 'info', titre: `Il te manque du volume : ${liste(manques)}`, texte: `${manques.length > 1 ? 'Ces groupes sont' : 'Ce groupe est'} sous la zone visée sur les ${SEMAINES_GROUPES} dernières semaines.` };
+  else verdict = { niveau: 'info', titre: `Beaucoup de volume sur ${liste(dessus)}`, texte: `${dessus.length > 1 ? 'Ces groupes dépassent' : 'Ce groupe dépasse'} la zone visée : au-delà, la récupération devient le facteur limitant.` };
 
   const chiffres = [
     { etiquette: 'Séries par semaine', valeur: virgule(parSemaineTotal), unite: '', note: `${sansPluriel(total, 'série')} en ${SEMAINES_GROUPES} semaines` },
@@ -225,7 +220,7 @@ export function analyserGroupes({ series, aujourdhui = new Date() }) {
   for (const g of dessus) conseils.push({ priorite: 'faible', titre: `Beaucoup de volume ${DE[g.groupe]}`, texte: `${virgule(g.parSemaine)} séries par semaine, au-dessus de ${g.cible[1]}. Si tu stagnes sur ce groupe, c'est peut-être la récupération qui limite, pas le volume.` });
   if (!conseils.length) conseils.push({ priorite: 'info', titre: 'Garde cet équilibre', texte: 'Ton volume est bien réparti. Continue, et surveille que ça tienne quand ton programme change.' });
 
-  return { id: 'groupes', insuffisant: false, verdict, chiffres, graphiques, lectures, conseils: triConseils(conseils), methode: METHODE_GROUPES, brut: { groupes, rapportDos, partJambes, recule } };
+  return { id: 'groupes', insuffisant: false, verdict, chiffres, graphiques, lectures, conseils: triConseils(conseils), methode: METHODE_GROUPES, brut: { groupes, rapportDos, partJambes } };
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -239,7 +234,7 @@ const METHODE_RECORDS = [
 ];
 
 export function analyserRecords({ series, aujourdhui = new Date(), semaines = 26 }) {
-  const { valides, recule, fin, phrasePause } = reperes(series, aujourdhui);
+  const { valides, fin } = reperes(series, aujourdhui);
   const debut = decalerJour(lundiDe(fin), -(semaines - 1) * 7);
   const exos = progressionParExercice(valides)
     .map((e) => {
@@ -270,10 +265,10 @@ export function analyserRecords({ series, aujourdhui = new Date(), semaines = 26
   const plusLourd = suivis.reduce((m, e) => (e.meilleurRm > m.meilleurRm ? e : m), suivis[0]);
 
   let verdict;
-  if (records.length) verdict = { niveau: 'ok', titre: records.length > 1 ? `${records.length} records battus récemment` : 'Un record battu récemment', texte: `${phrasePause}${records.map((e) => `${e.nom} (${formatKg(e.meilleurRm)} kg)`).join(', ')} : tu as battu ${records.length > 1 ? 'tes records' : 'ton record'} ces 4 dernières semaines.` };
-  else if (plateaux.length) verdict = { niveau: 'attention', titre: plateaux.length > 1 ? `${plateaux.length} exercices stagnent` : 'Un exercice stagne', texte: `${phrasePause}${plateaux.map((e) => e.nom).join(', ')} : aucun record depuis plus de 8 semaines malgré des séances régulières.` };
-  else if (progres.length) verdict = { niveau: 'ok', titre: 'Tu progresses', texte: `${phrasePause}Pas de record ces 4 dernières semaines, mais la courbe monte sur ${progres.map((e) => e.nom).join(', ')}.` };
-  else verdict = { niveau: 'info', titre: 'Tes charges sont stables', texte: `${phrasePause}Pas de record récent, pas de stagnation inquiétante : tes charges tiennent. Pour repartir à la hausse, vois les conseils ci-dessous.` };
+  if (records.length) verdict = { niveau: 'ok', titre: records.length > 1 ? `${records.length} records battus récemment` : 'Un record battu récemment', texte: `${records.map((e) => `${e.nom} (${formatKg(e.meilleurRm)} kg)`).join(', ')} : tu as battu ${records.length > 1 ? 'tes records' : 'ton record'} ces 4 dernières semaines.` };
+  else if (plateaux.length) verdict = { niveau: 'attention', titre: plateaux.length > 1 ? `${plateaux.length} exercices stagnent` : 'Un exercice stagne', texte: `${plateaux.map((e) => e.nom).join(', ')} : aucun record depuis plus de 8 semaines malgré des séances régulières.` };
+  else if (progres.length) verdict = { niveau: 'ok', titre: 'Tu progresses', texte: `Pas de record ces 4 dernières semaines, mais la courbe monte sur ${progres.map((e) => e.nom).join(', ')}.` };
+  else verdict = { niveau: 'info', titre: 'Tes charges sont stables', texte: `Pas de record récent, pas de stagnation inquiétante : tes charges tiennent. Pour repartir à la hausse, vois les conseils ci-dessous.` };
 
   const chiffres = [
     { etiquette: 'Records récents', valeur: String(records.length), unite: '', note: '4 dernières semaines', ton: records.length ? 'ok' : '' },
@@ -326,5 +321,5 @@ export function analyserRecords({ series, aujourdhui = new Date(), semaines = 26
   if (pasMesures) conseils.push({ priorite: 'info', titre: 'Seuls 6 exercices sont affichés', texte: 'On suit les 6 exercices que tu pratiques le plus sur la période. Les autres existent dans ton historique mais ne sont pas détaillés ici.' });
   if (!conseils.length) conseils.push({ priorite: 'info', titre: 'Continue de noter tes charges', texte: 'Plus tu enregistres de séances, plus le suivi des records est précis. Note chaque série avec sa charge réelle.' });
 
-  return { id: 'records', insuffisant: false, verdict, chiffres, graphiques, lectures, conseils: triConseils(conseils), methode: METHODE_RECORDS, brut: { suivis, records, plateaux, progres, recule } };
+  return { id: 'records', insuffisant: false, verdict, chiffres, graphiques, lectures, conseils: triConseils(conseils), methode: METHODE_RECORDS, brut: { suivis, records, plateaux, progres } };
 }

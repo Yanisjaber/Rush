@@ -56,19 +56,6 @@ export function tonnageParSemaine(series, nbSemaines = 12, aujourdhui = new Date
   return { parSemaine, derniere, moyenne: Math.round(moyenne), ecartPct };
 }
 
-/**
- * Point de repère pour les widgets de muscu qui regardent « les 7 derniers jours » ou « les N dernières semaines » :
- * si tu as une série dans les 7 derniers jours, c'est aujourd'hui ; sinon on recule jusqu'à ta dernière série
- * (un widget vide alors que tu as des mois d'historique serait trompeur). `ancien` dit si on a reculé.
- */
-export function ancreSeries(series, aujourdhui = new Date()) {
-  const dates = series.map((s) => String(s.date).slice(0, 10)).filter((d) => joursDepuis(d, aujourdhui) >= 0);
-  if (!dates.length) return { date: aujourdhui, ancien: false, derniere: null };
-  const derniere = dates.reduce((m, d) => (d > m ? d : m));
-  if (joursDepuis(derniere, aujourdhui) < 7) return { date: aujourdhui, ancien: false, derniere };
-  return { date: new Date(`${derniere}T12:00:00`), ancien: true, derniere };
-}
-
 /** Séries par groupe musculaire sur les 7 derniers jours, avec la zone cible de chaque groupe. */
 export function seriesParGroupe(series, aujourdhui = new Date()) {
   const compte = Object.fromEntries(ORDRE_GROUPES.map((g) => [g, 0]));
@@ -124,23 +111,12 @@ export function progressionParExercice(series) {
   return sortie.sort((a, b) => b.date.localeCompare(a.date) || b.nbSeries - a.nbSeries);
 }
 
-/** Nombre de jours entre une date ISO et aujourd'hui (0 = aujourd'hui, négatif = dans le futur). */
-export function joursDepuisDate(dateIso, aujourdhui = new Date()) {
-  return joursDepuis(dateIso, aujourdhui);
-}
-
 /**
  * Les N exercices à mettre en avant (cartes « records » de l'accueil), sur les 90 derniers jours :
  * les grands mouvements d'abord (squat, développé couché, soulevé de terre…), puis les plus pratiqués.
- * Si tu n'as rien enregistré depuis plus de 90 jours, on prend les 90 jours qui précèdent ta DERNIÈRE séance
- * (un widget vide alors que tu as des mois d'historique serait trompeur) : le widget affiche alors la date.
  */
 export function exercicesPhares(series, n = 3, aujourdhui = new Date()) {
-  const valides = series.filter((s) => joursDepuis(s.date, aujourdhui) >= 0);
-  if (!valides.length) return [];
-  const recul = Math.min(...valides.map((s) => joursDepuis(s.date, aujourdhui))); // jours depuis la dernière série
-  const decalage = Math.max(0, recul); // 0 si tu as enregistré aujourd'hui, sinon on recule jusqu'à ta dernière séance
-  const recentes = valides.filter((s) => joursDepuis(s.date, aujourdhui) - decalage <= 90);
+  const recentes = series.filter((s) => joursDepuis(s.date, aujourdhui) <= 90);
   const rang = (cle) => {
     const i = GRANDS_MOUVEMENTS.indexOf(cle);
     return i === -1 ? GRANDS_MOUVEMENTS.length : i;

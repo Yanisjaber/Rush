@@ -1,21 +1,16 @@
 <script>
   import Bloc from '../components/Bloc.svelte';
   import CourbeLissee from '../components/charts/CourbeLissee.svelte';
-  import { exercicesPhares, joursDepuisDate } from '../data/force.js';
-  import NoteAncien from '../components/NoteAncien.svelte';
+  import { exercicesPhares } from '../data/force.js';
   import { formatKg, formatDateCourte } from '../utils/format.js';
 
   // Les exercices que tu pratiques le plus : 1RM estimé, record éventuel et progression.
   let { contexte, taille = 'l' } = $props();
   const exos = $derived(exercicesPhares(contexte.force.series, taille === 'm' ? 2 : 3));
-  // Rien d'enregistré depuis plus de 90 jours : on montre ta dernière période d'entraînement, en le disant
-  const ancien = $derived(exos.length ? Math.min(...exos.map((e) => joursDepuisDate(e.date))) > 90 : false);
-  const derniere = $derived(exos.length ? exos.reduce((m, e) => (e.date > m ? e.date : m), '') : '');
 </script>
 
 <Bloc titre="Tes records">
   {#if exos.length}
-    {#if ancien}<NoteAncien {derniere} suite="Voici tes records de cette période." />{/if}
     <div class="cartes">
       {#each exos as e (e.cle)}
         <article class="carte">
