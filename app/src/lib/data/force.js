@@ -112,16 +112,15 @@ export function progressionParExercice(series) {
 }
 
 /**
- * Les N exercices à mettre en avant (cartes « records » de l'accueil), sur les 90 derniers jours :
- * les grands mouvements d'abord (squat, développé couché, soulevé de terre…), puis les plus pratiqués.
+ * Les N exercices à mettre en avant (cartes « records » de l'accueil), sur TOUT l'historique : un record ne dépend pas
+ * de ta régularité récente. Les grands mouvements d'abord (squat, développé couché, soulevé de terre…), puis les plus pratiqués.
  */
-export function exercicesPhares(series, n = 3, aujourdhui = new Date()) {
-  const recentes = series.filter((s) => joursDepuis(s.date, aujourdhui) <= 90);
+export function exercicesPhares(series, n = 3) {
   const rang = (cle) => {
     const i = GRANDS_MOUVEMENTS.indexOf(cle);
     return i === -1 ? GRANDS_MOUVEMENTS.length : i;
   };
-  return progressionParExercice(recentes)
+  return progressionParExercice(series)
     .sort((a, b) => rang(a.cle) - rang(b.cle) || b.nbSeries - a.nbSeries)
     .slice(0, n);
 }

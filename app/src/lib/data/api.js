@@ -571,18 +571,30 @@ export async function chargerGpx(userId, id) {
 const COLONNES_SERIE = 'id,activity_id,date,exercise_key,exercise_name,muscle_group,position,set_no,reps,weight_kg';
 const COLONNES_PROGRAMME = 'id,name,exercises,notes,created_at';
 
-/** Séries des N derniers jours (les plus récentes d'abord). Plafonné : une séance fait rarement plus de 100 séries. */
-export async function chargerSeriesForce(userId, jours = 180, limite = 5000) {
+/**
+ * Séries des N derniers jours (les plus récentes d'abord), 10 ans par défaut : les records se cherchent dans tout l'historique.
+ * Supabase ne renvoie qu'un certain nombre de lignes par requête (1000 par défaut) : on lit par pages, jusqu'à `limite` séries.
+ * Le tri a un second critère (id) pour que les pages ne se chevauchent pas quand plusieurs séries ont la même date.
+ */
+export async function chargerSeriesForce(userId, jours = 3650, limite = 5000) {
   const depuis = new Date();
   depuis.setDate(depuis.getDate() - jours);
-  const r = await sb
-    .from('strength_sets')
-    .select(COLONNES_SERIE)
-    .eq('user_id', userId)
-    .gte('date', dateIsoLocale(depuis))
-    .order('date', { ascending: false })
-    .limit(limite);
-  return resultat(r, 'Impossible de charger ton carnet de force.');
+  const PAGE = 1000;
+  const lignes = [];
+  for (let debut = 0; debut < limite; debut += PAGE) {
+    const r = await sb
+      .from('strength_sets')
+      .select(COLONNES_SERIE)
+      .eq('user_id', userId)
+      .gte('date', dateIsoLocale(depuis))
+      .order('date', { ascending: false })
+      .order('id', { ascending: true })
+      .range(debut, Math.min(debut + PAGE, limite) - 1);
+    if (r.error) return resultat(r, 'Impossible de charger ton carnet de force.');
+    lignes.push(...(r.data || []));
+    if ((r.data || []).length < PAGE) break; // dernière page
+  }
+  return resultat({ data: lignes, error: null }, 'Impossible de charger ton carnet de force.');
 }
 
 /** Séries d'une séance précise. */

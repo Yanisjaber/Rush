@@ -127,17 +127,25 @@ test('exercices phares : grands mouvements d\'abord, puis les plus pratiqués', 
     serie('2026-10-10', 'squat', 5, 100),
     serie('2026-10-10', 'developpe-couche', 5, 80),
   ];
-  assert.deepEqual(exercicesPhares(s, 3, AUJ).map((e) => e.cle), ['squat', 'developpe-couche', 'curl']);
+  assert.deepEqual(exercicesPhares(s, 3).map((e) => e.cle), ['squat', 'developpe-couche', 'curl']);
 });
 
-test('exercices phares : les plus pratiqués sur 90 jours', () => {
+test('exercices phares : les plus pratiqués sur tout l\'historique, même sans séance récente', () => {
   const s = [
     serie('2026-10-10', 'a', 5, 100), serie('2026-10-10', 'a', 5, 100), serie('2026-10-10', 'a', 5, 100),
     serie('2026-10-10', 'b', 5, 100),
     serie('2026-10-10', 'c', 5, 100), serie('2026-10-10', 'c', 5, 100),
     serie('2026-01-01', 'd', 5, 100), serie('2026-01-01', 'd', 5, 100), serie('2026-01-01', 'd', 5, 100), serie('2026-01-01', 'd', 5, 100),
   ];
-  assert.deepEqual(exercicesPhares(s, 2, AUJ).map((e) => e.cle), ['a', 'c']);
+  assert.deepEqual(exercicesPhares(s, 2).map((e) => e.cle), ['d', 'a']); // « d » date de janvier mais reste le plus pratiqué
+});
+
+test('exercices phares : des séries vieilles de plusieurs mois donnent bien des records (rien depuis 90 jours)', () => {
+  const s = [serie('2026-05-06', 'squat', 5, 100), serie('2026-05-06', 'squat', 5, 110), serie('2026-04-20', 'curl', 10, 20)];
+  const e = exercicesPhares(s, 3);
+  assert.deepEqual(e.map((x) => x.cle), ['squat', 'curl']);
+  assert.equal(e[0].meilleurRm, 128.3);
+  assert.deepEqual(exercicesPhares([], 3), []);
 });
 
 const PUSH = { id: 'p1', name: 'PUSH', created_at: '2026-01-01', exercises: [
