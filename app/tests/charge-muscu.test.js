@@ -63,7 +63,7 @@ test('charge muscu : analyse complète, forme habituelle et Rush', () => {
 // ---------------------------------------------------------------------------------------------------------------------
 // Fatigue musculaire par groupe
 // ---------------------------------------------------------------------------------------------------------------------
-import { fatigueMusculaire, fatigueBrute, referenceGrosse, zoneFatigue, heuresAvantPret, texteDelai, TAU_GROUPE } from '../src/lib/analyse/fatigue-musculaire.js';
+import { arrondi5, fatigueMusculaire, fatigueBrute, referenceGrosse, zoneFatigue, heuresAvantPret, texteDelai, TAU_GROUPE } from '../src/lib/analyse/fatigue-musculaire.js';
 
 const lancer = (date, cle, groupe, reps, kg) => chargeParSerie([serie(date, cle, groupe, reps, kg)])[0];
 
@@ -89,8 +89,12 @@ test('fatigue : référence, zones et délai avant d\'être prêt', () => {
   // 100 % → 20 % avec une constante de 2 jours : 2 × ln(5) = 3,2 jours ≈ 77 h
   assert.equal(heuresAvantPret(100, 2), Math.round(2 * Math.log(5) * 24));
   assert.equal(texteDelai(0), 'prêt');
-  assert.equal(texteDelai(14), 'prêt dans 14 h');
-  assert.equal(texteDelai(77), 'prêt dans 3 jours');
+  assert.equal(texteDelai(4), 'prêt dans quelques heures');
+  assert.equal(texteDelai(14), 'prêt dans ~12 h');
+  assert.equal(texteDelai(30), 'prêt dans ~1,5 jours');
+  assert.equal(texteDelai(77), 'prêt dans ~3 jours');
+  assert.equal(arrondi5(37), 35);
+  assert.equal(arrondi5(null), null);
 });
 
 test('fatigue : par groupe et par muscle d\'après les séries (un développé couché fatigue pectoraux, un peu les triceps)', () => {
@@ -104,4 +108,28 @@ test('fatigue : par groupe et par muscle d\'après les séries (un développé c
   assert.equal(jambes.pct, null); // jamais travaillées : pas de repère
   assert.ok(f.muscles.chest.pct >= f.muscles.triceps.pct || f.muscles.triceps.pct == null);
   assert.equal(f.groupes.length, 6);
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Validation du modèle de fatigue sur tes séances
+// ---------------------------------------------------------------------------------------------------------------------
+import { validerFatigue, performances } from '../src/lib/analyse/validation-fatigue.js';
+
+test('validation : pas assez de séances → null ; sinon détecte une vraie baisse après fatigue', () => {
+  assert.equal(validerFatigue([], []), null);
+  // Une pratique de pectoraux tous les 3 jours sur 120 jours, un squat deux jours sur trois ; le développé couché est plus faible le lendemain
+  // d'une séance de pectoraux lourde (fatigue), plus fort s'il y a eu du repos.
+  const s = [];
+  for (let i = 120; i >= 1; i--) {
+    const d = decalerJour(ISO, -i);
+    if (i % 3 === 0) for (let n = 0; n < 6; n++) s.push(serie(d, 'developpe-couche', 'pectoraux', 8, 80));
+    if (i % 3 === 1) s.push(serie(d, 'developpe-couche', 'pectoraux', 8, 80 * 0.92)); // le lendemain d'une grosse séance
+    if (i % 3 === 2) s.push(serie(d, 'developpe-couche', 'pectoraux', 8, 80 * 1.0));
+  }
+  const sets = chargeParSerie(s);
+  assert.ok(performances(s).length > 30);
+  const v = validerFatigue(s, sets);
+  assert.ok(v, 'assez de séances');
+  assert.ok(v.n >= 25);
+  assert.ok(v.global.delta == null || v.global.delta <= 0, `écart attendu négatif ou absent, obtenu ${v.global.delta}`);
 });

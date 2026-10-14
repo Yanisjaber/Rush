@@ -3,7 +3,7 @@
   // elles la courbe du groupe choisi (6 semaines passées, puis 7 jours prévus si tu ne le retravailles pas).
   // groupes : [{ groupe, nom, pct, zone, heures, courbe: { passe: [{ iso, pct }], futur: [{ iso, pct }] } | null }]
   import GraphiqueLignes from './GraphiqueLignes.svelte';
-  import { texteDelai } from '../../analyse/fatigue-musculaire.js';
+  import { texteDelai, arrondi5 } from '../../analyse/fatigue-musculaire.js';
   let { groupes = [] } = $props();
 
   // Par défaut : le groupe le plus fatigué (sinon le premier qui a une courbe)
@@ -32,7 +32,7 @@
       <li>
         <button type="button" class="z-{g.zone.cle}" class:actif={actif?.groupe === g.groupe} aria-pressed={actif?.groupe === g.groupe} disabled={!g.courbe} onclick={() => (choix = g.groupe)}>
           <span class="nom">{g.nom}</span>
-          <span class="pct">{g.pct == null ? '—' : `${g.pct} %`}</span>
+          <span class="pct">{g.pct == null ? '—' : `≈ ${arrondi5(g.pct)} %`}</span>
           <span class="etat">{g.pct == null ? 'pas de repère' : texteDelai(g.heures)}</span>
         </button>
       </li>
@@ -51,7 +51,7 @@
       max={courbe.max}
       etiquette={`Fatigue : ${actif.nom}`}
     />
-    <p class="note">{actif.nom} · en pointillés : ce qui t'attend si tu ne le retravailles pas. Il faut au moins 5 journées de travail d'un groupe pour le calibrer.</p>
+    <p class="note">{actif.nom} · en pointillés : ce qui t'attend si tu ne le retravailles pas. Estimation : un ordre de grandeur arrondi à 5 %, pas une mesure. Il faut au moins 5 journées de travail d'un groupe pour le calibrer.</p>
   {:else}
     <p class="note">Pas encore assez de séances : il faut au moins 5 journées de travail d'un groupe pour mesurer sa fatigue.</p>
   {/if}

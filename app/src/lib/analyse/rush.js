@@ -334,7 +334,7 @@ export function rushGroupes({ brut: b }) {
     parties.push({
       titre: 'Les muscles en retard',
       ton: retard.some((m) => m.etat === 'oublie') ? 'attention' : 'info',
-      texte: `${retard.map((m) => `${m.nom} (${m.pct} % de la zone visée)`).join(', ')}. ${retard.some((m) => m.etat === 'oublie') ? 'Un muscle oublié devient vite un point faible : ' : ''}ce sont eux qui limitent le plus ton équilibre, bien plus que les gros groupes.`,
+      texte: `${retard.map((m) => `${m.nom} (environ ${Math.round(m.pct / 5) * 5} % de la zone visée)`).join(', ')}. ${retard.some((m) => m.etat === 'oublie') ? 'Un muscle oublié devient vite un point faible : ' : ''}ce sont eux qui limitent le plus ton équilibre, bien plus que les gros groupes.`,
     });
     for (const m of retard.slice(0, 2)) plan.push({ quand: `Réveiller : ${m.nom.toLowerCase()}`, action: `Ajoute ${m.idee[0]} (3 séries, une fois par semaine) : le plus simple pour faire monter ce muscle sans alourdir ta semaine.` });
   }
@@ -350,7 +350,7 @@ export function rushGroupes({ brut: b }) {
     parties.push({
       titre: 'Les portions oubliées',
       ton: 'info',
-      texte: `${portionsEnRetard.map((p) => `${p.muscle.nom.toLowerCase()} : ${p.nom.toLowerCase()} à ${p.pct} %`).join(' ; ')}. Le muscle est travaillé, mais pas dans toutes ses parties : c'est ainsi que se creusent les déséquilibres (épaules enroulées, dos du haut faible…).`,
+      texte: `${portionsEnRetard.map((p) => `${p.muscle.nom.toLowerCase()} : ${p.nom.toLowerCase()} à environ ${Math.round(p.pct / 5) * 5} %`).join(' ; ')}. Le muscle est travaillé, mais pas dans toutes ses parties : c'est ainsi que se creusent les déséquilibres (épaules enroulées, dos du haut faible…).`,
     });
     for (const p of portionsEnRetard.slice(0, 2)) plan.push({ quand: `Équilibrer : ${p.muscle.nom.toLowerCase()}`, action: `Ajoute ${p.idee[0]} (3 séries par semaine) pour la portion « ${p.nom.toLowerCase()} ».` });
   }

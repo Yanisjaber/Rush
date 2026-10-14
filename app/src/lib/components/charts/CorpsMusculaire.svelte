@@ -5,6 +5,7 @@
   // groupes : [{ groupe, nom, series, parSemaine, cible, etat, pct, exercices, muscles: [{ slug, nom, parSemaine, series, cible, etat, pct, exercices: [{ nom, series, role }] }] }]
   import SilhouetteCorps from './SilhouetteCorps.svelte';
   import Camembert from './Camembert.svelte';
+  const p5 = (v) => Math.round(v / 5) * 5; // les pourcentages par muscle et par portion sont des estimations : arrondis à 5 près
   let { groupes = [], etiquette = 'Corps humain', periode = 'la période' } = $props();
 
   let choisi = $state(null); // clé du groupe sélectionné
@@ -52,7 +53,7 @@
       {#if muscle}
         <button type="button" class="retour" onclick={() => (muscleChoisi = null)}>← {detail?.nom}</button>
         <h4>{muscle.nom}</h4>
-        <p class="grand">{muscle.pct} % <span>de la zone visée</span></p>
+        <p class="grand">≈ {p5(muscle.pct)} % <span>de la zone visée (estimation)</span></p>
         {#if muscle.avec}<p class="note">{muscle.avec}</p>{/if}
         <p class="texte">{virgule(muscle.parSemaine)} séries par semaine (les séries où il aide comptent pour moitié) pour une zone de {muscle.cible[0]} à {muscle.cible[1]} : <strong>{NOM_ETAT[muscle.etat]}</strong>.</p>
         {#if muscle.portions?.length}
@@ -60,7 +61,7 @@
           <ul class="portions">
             {#each muscle.portions as p (p.cle)}
               <li>
-                <span class="ligne"><span>{p.nom}</span><b>{p.pct} %</b></span>
+                <span class="ligne"><span>{p.nom}</span><b>≈ {p5(p.pct)} %</b></span>
                 <span class="barre" aria-hidden="true"><span style:width="{Math.min(p.pct, 130) / 1.3}%"></span></span>
               </li>
             {/each}
@@ -84,7 +85,7 @@
           {#each detail.muscles as m (m.slug)}
             <li>
               <button type="button" onclick={() => choisirMuscle(m.slug)}>
-                <span class="ligne"><span>{m.nom}</span><b>{m.pct} %</b></span>
+                <span class="ligne"><span>{m.nom}</span><b>≈ {p5(m.pct)} %</b></span>
                 <span class="barre" aria-hidden="true"><span style:width="{Math.min(m.pct, 130) / 1.3}%"></span></span>
               </button>
             </li>

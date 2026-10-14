@@ -1,6 +1,7 @@
 <script>
   import { untrack } from 'svelte';
   import Bloc from '../lib/components/Bloc.svelte';
+  import Source from '../lib/components/Source.svelte';
   import StatCle from '../lib/components/StatCle.svelte';
   import BarresEmpilees from '../lib/components/charts/BarresEmpilees.svelte';
   import GraphiqueLignes from '../lib/components/charts/GraphiqueLignes.svelte';
@@ -103,13 +104,14 @@
       {#if analyse.chiffres.length}
         <section class="chiffres" aria-label="Chiffres clés">
           {#each analyse.chiffres as c (c.etiquette)}
-            <StatCle etiquette={c.etiquette} valeur={c.valeur} unite={c.unite} note={c.note} couleur={COULEUR_TON[c.ton] || ''} />
+            <StatCle etiquette={c.etiquette} valeur={c.valeur} unite={c.unite} note={c.note} couleur={COULEUR_TON[c.ton] || ''} source={c.source || ''} />
           {/each}
         </section>
       {/if}
 
       {#each analyse.graphiques as g (g.titre)}
         <Bloc titre={g.type === 'historique' && exoVu ? `Historique : ${exoVu.exo.nom}` : g.titre}>
+          {#snippet actions()}{#if g.source}<Source type={g.source} />{/if}{/snippet}
           {#if g.description}<p class="description">{g.description}</p>{/if}
           {#if g.type === 'barres'}
             <BarresEmpilees series={g.series} etiquettes={g.etiquettes} ligne={g.ligne} hauteur={240} etiquette={g.titre} />
@@ -163,7 +165,7 @@
             </dl>
             <ul class="rush-parties">
               {#each analyse.rush.parties as p (p.titre)}
-                <li class="t-{p.ton}"><h3>{p.titre}</h3><p>{p.texte}</p></li>
+                <li class="t-{p.ton}"><h3>{p.titre}{#if p.source} <Source type={p.source} />{/if}</h3><p>{p.texte}</p></li>
               {/each}
             </ul>
             <h3 class="rush-sous">Ton plan</h3>
@@ -204,6 +206,12 @@
                   <p>{m.texte}</p>
                 </details>
               {/each}
+              {#if analyse.chiffres.some((c) => c.source)}
+                <details>
+                  <summary>Mesuré, calculé, estimé : que valent les chiffres ?</summary>
+                  <p><Source type="mesure" /> lu tel quel dans tes séances (comptages, dates, charges notées). <Source type="calcul" /> une formule connue appliquée à tes données (tonnage, 1RM estimé, moyennes, ratios). <Source type="estimation" /> un modèle avec des hypothèses (fatigue, répartition entre muscles, zones visées) : prends-le comme un ordre de grandeur, pas comme une mesure.</p>
+                </details>
+              {/if}
             </div>
             <p class="avertissement">Rush s'appuie sur tes séances et sur des repères reconnus en entraînement. Ce sont des estimations : elles aident à décider, elles ne remplacent ni ton ressenti ni l'avis d'un professionnel de santé.</p>
           </details>

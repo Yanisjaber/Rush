@@ -5,6 +5,7 @@ import { analyserCharge } from './charge.js';
 import { analyserForme } from './forme.js';
 import { analyserPredictions } from './predictions.js';
 import { analyserRegularite } from './regularite.js';
+import { appliquerSources } from './sources.js';
 import { rushCharge, rushForme, rushPredictions, rushRegularite, rushGroupes, rushRecords } from './rush.js';
 import { analyserChargeMuscu } from './charge-muscu.js';
 import { analyserTonnage, analyserGroupes, analyserRecords } from './muscu.js';
@@ -101,6 +102,12 @@ for (const [id, fabrique] of Object.entries(RUSH)) {
     const a = calculer(d, o);
     return a.insuffisant || !a.brut ? a : { ...a, rush: fabrique(a) };
   };
+}
+
+// Appliqué en dernier : il étiquette aussi les parties de l'analyse Rush ajoutées juste au-dessus
+for (const id of ['tonnage', 'groupes', 'chargemuscu', 'records']) {
+  const calculer = ANALYSES[id].calculer;
+  ANALYSES[id].calculer = (d, o) => appliquerSources(calculer(d, o)); // chaque indicateur de muscu dit s'il est mesuré, calculé ou estimé
 }
 
 /** Widget de l'accueil → analyse ouverte quand on le touche. */

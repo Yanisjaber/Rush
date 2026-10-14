@@ -1,10 +1,11 @@
 <script>
   // Un chiffre clé : étiquette, grande valeur, unité et note optionnelle.
-  let { etiquette = '', valeur = '', unite = '', note = '', couleur = '' } = $props();
+  import Source from './Source.svelte';
+  let { etiquette = '', valeur = '', unite = '', note = '', couleur = '', source = '' } = $props();
 </script>
 
 <div class="stat">
-  <div class="etiquette">{etiquette}</div>
+  <div class="etiquette">{etiquette}{#if source} <Source type={source} />{/if}</div>
   <div class="valeur titre" style:color={couleur || null}>
     {valeur}{#if unite}<span class="unite">{unite}</span>{/if}
   </div>

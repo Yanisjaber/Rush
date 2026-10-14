@@ -7,7 +7,8 @@
 import { GROUPES, ORDRE_GROUPES, groupeValide } from '../data/exercices.js';
 import { dateIsoLocale, formatDateCourte } from '../utils/format.js';
 import { moyenne, arrondi, decalerJour, lundiDe, ecartJours, ecartType } from './maths.js';
-import { fatigueMusculaire, texteDelai } from './fatigue-musculaire.js';
+import { fatigueMusculaire, texteDelai, arrondi5 } from './fatigue-musculaire.js';
+import { validerFatigue } from './validation-fatigue.js';
 
 const FENETRE_RM = 90; // le 1RM de référence d'un exercice = ton meilleur des 90 derniers jours
 const INTENSITE_SANS_CHARGE = 0.6; // pompes, tractions au poids du corps… : pas de charge notée, on suppose un effort moyen
@@ -183,7 +184,7 @@ export function analyserChargeMuscu({ series, aujourdhui = new Date(), semaines 
   const chiffres = [
     { etiquette: '7 derniers jours', valeur: String(recente.derniere), unite: 'pts', note: ratio == null ? 'pas encore de repère' : `${ratio >= 1 ? '+' : ''}${Math.round((ratio - 1) * 100)} % vs ton habitude`, ton: zone.ton === 'danger' || zone.ton === 'alerte' ? 'alerte' : '' },
     { etiquette: 'Habitude par semaine', valeur: String(recente.habituelle), unite: 'pts', note: 'moyenne des 4 semaines d\'avant' },
-    { etiquette: 'Ratio récent / habituel', valeur: ratio == null ? '—' : virgule(ratio, 2), unite: '', note: zone.libelle, ton: zone.ton === 'ok' ? 'ok' : zone.ton === 'neutre' || zone.ton === 'info' ? '' : 'alerte' },
+    { etiquette: 'Ratio récent / habituel', valeur: ratio == null ? '—' : virgule(ratio, 1), unite: '', note: zone.libelle, ton: zone.ton === 'ok' ? 'ok' : zone.ton === 'neutre' || zone.ton === 'info' ? '' : 'alerte' },
     { etiquette: 'Intensité moyenne', valeur: String(Math.round(intensiteMoy * 100)), unite: '% du 1RM', note: `${intensites.lourde} % de la charge au-dessus de 80 %` },
     { etiquette: 'Par séance', valeur: String(arrondiPts(chargeSeanceMoy)), unite: 'pts', note: `${pluriel(joursTotal, 'séance')} sur la période` },
     { etiquette: 'Meilleure semaine', valeur: String(meilleure.charge), unite: 'pts', note: `semaine du ${formatDateCourte(meilleure.iso)}` },
@@ -222,11 +223,22 @@ export function analyserChargeMuscu({ series, aujourdhui = new Date(), semaines 
   const calibres = fatigue.groupes.filter((g) => g.pct != null);
   if (calibres.length) {
     const plusFatigue = [...calibres].sort((x, y) => y.pct - x.pct)[0];
-    chiffres.splice(2, 0, { etiquette: 'Groupe le plus fatigué', valeur: plusFatigue.nom, unite: '', note: `${plusFatigue.pct} % · ${texteDelai(plusFatigue.heures)}`, ton: plusFatigue.zone.ton === 'ok' || plusFatigue.zone.ton === 'info' ? '' : 'alerte' });
+    chiffres.splice(2, 0, { etiquette: 'Groupe le plus fatigué', valeur: plusFatigue.nom, unite: '', note: `≈ ${arrondi5(plusFatigue.pct)} % · ${texteDelai(plusFatigue.heures)}`, ton: plusFatigue.zone.ton === 'ok' || plusFatigue.zone.ton === 'info' ? '' : 'alerte' });
     graphiques.splice(1, 0, { type: 'fatigue', titre: 'Fatigue de chaque groupe musculaire', groupes: fatigue.groupes });
   }
 
-  const rush = rushChargeMuscu({ fatigue, recente, ratio, zone, intensites, intensiteMoy, groupes, ecartPct, sauts, cv, serieSansDecharge, moyenneHebdo, meilleure, pleines, chargeSeanceMoy, joursTotal, partEstimee, plusLourde });
+  // Le modèle de fatigue tient-il sur tes séances ? (ta performance baisse-t-elle quand le groupe est fatigué ?)
+  const validation = validerFatigue(series.filter((x) => String(x.date).slice(0, 10) <= fin), tous);
+  if (validation) {
+    const f = (v) => `${v >= 0 ? '+' : ''}${arrondi(v, 1).toString().replace('.', ',')} %`;
+    const lignes = [];
+    if (validation.global.delta != null) lignes.push(['Tous les groupes', `${validation.global.nFatigue} fatigué · ${validation.global.nFraiches} frais`, f(validation.global.delta), validation.global.confiance]);
+    else lignes.push(['Tous les groupes', `${validation.global.nFatigue} fatigué · ${validation.global.nFraiches} frais`, '—', 'pas assez de séances']);
+    for (const g of validation.parGroupe) lignes.push([g.nom, `${g.nFatigue} fatigué · ${g.nFraiches} frais`, g.delta == null ? '—' : f(g.delta), g.delta == null ? 'pas assez de séances' : g.confiance]);
+    graphiques.splice(2, 0, { type: 'tableau', titre: 'Le modèle de fatigue tient-il sur toi ?', colonnes: ['Groupe', 'Séances comparées', 'Écart de 1RM estimé', 'Fiabilité'], lignes });
+  }
+
+  const rush = rushChargeMuscu({ fatigue, validation, recente, ratio, zone, intensites, intensiteMoy, groupes, ecartPct, sauts, cv, serieSansDecharge, moyenneHebdo, meilleure, pleines, chargeSeanceMoy, joursTotal, partEstimee, plusLourde });
   const conseils = [];
   return { id: 'chargemuscu', insuffisant: false, verdict: null, chiffres, graphiques, lectures: [], conseils: triConseils(conseils), methode: METHODE, rush, brut: { recente, ratio, zone, intensites, groupes, semaines: semainesListe, moyenneHebdo, ecartPct } };
 }
@@ -237,7 +249,7 @@ export function analyserChargeMuscu({ series, aujourdhui = new Date(), semaines 
 function rushChargeMuscu(d) {
   const parties = [];
   const plan = [];
-  const { recente, ratio, intensites, groupes, fatigue } = d;
+  const { recente, ratio, intensites, groupes, fatigue, validation } = d;
 
   // 1. Où tu en es
   if (ratio != null) {
@@ -260,19 +272,32 @@ function rushChargeMuscu(d) {
       titre: 'Où en est ta fatigue',
       ton: cuits.some((g) => g.pct >= 75) ? 'attention' : cuits.length ? 'info' : 'ok',
       texte: cuits.length
-        ? `${cuits.map((g) => `${g.nom} (${g.pct} %, ${texteDelai(g.heures)})`).join(', ')} : ${cuits.length > 1 ? 'ces groupes sont encore fatigués' : 'ce groupe est encore fatigué'}, évite de ${cuits.length > 1 ? 'les' : 'le'} retravailler fort tant que la fatigue n'est pas retombée.${frais.length ? ` Frais et prêts : ${frais.map((g) => g.nom.toLowerCase()).join(', ')}.` : ''}`
+        ? `${cuits.map((g) => `${g.nom} (environ ${arrondi5(g.pct)} %, ${texteDelai(g.heures)})`).join(', ')} : ${cuits.length > 1 ? 'ces groupes sont encore fatigués' : 'ce groupe est encore fatigué'}, évite de ${cuits.length > 1 ? 'les' : 'le'} retravailler fort tant que la fatigue n'est pas retombée.${frais.length ? ` Frais et prêts : ${frais.map((g) => g.nom.toLowerCase()).join(', ')}.` : ''}`
         : `Tous tes groupes calibrés sont frais ou à peine fatigués : tu peux t'entraîner fort sur n'importe lequel.`,
     });
     // Que travailler aujourd'hui : un groupe frais ET en retard sur ton habitude (ou jamais travaillé cette semaine)
     const retard = frais
       .map((g) => ({ g, charge: groupes.find((x) => x.groupe === g.groupe) }))
-      .filter((x) => x.charge && x.charge.habitude > 0)
+      .filter((x) => x.charge && x.charge.habitude > 0 && x.charge.recent < x.charge.habitude) // frais ET en retard sur ton habitude
       .sort((a, b) => a.charge.recent / a.charge.habitude - b.charge.recent / b.charge.habitude)
       .slice(0, 2);
     if (retard.length) {
       plan.unshift({ quand: 'Aujourd\'hui', action: `Tes meilleurs groupes à travailler : ${retard.map((x) => `${x.g.nom.toLowerCase()} (frais, ${x.charge.recent} points cette semaine pour ${x.charge.habitude} d'habitude)`).join(' et ')}. C'est là que tu peux t'entraîner fort sans empiler la fatigue.` });
     }
-    for (const g of cuits.filter((x) => x.pct >= 75).slice(0, 2)) plan.push({ quand: `Ménager : ${g.nom.toLowerCase()}`, action: `${g.nom} est à ${g.pct} % de fatigue : ${texteDelai(g.heures)}. Reporte-le ou travaille-le en léger (moitié de ta charge habituelle).` });
+    for (const g of cuits.filter((x) => x.pct >= 75).slice(0, 2)) plan.push({ quand: `Ménager : ${g.nom.toLowerCase()}`, action: `${g.nom} est à environ ${arrondi5(g.pct)} % de fatigue : ${texteDelai(g.heures)}. Reporte-le ou travaille-le en léger (moitié de ta charge habituelle).` });
+  }
+
+  // 1 ter. Le modèle de fatigue collé à tes données
+  if (validation) {
+    const g = validation.global;
+    let texte;
+    let ton = 'info';
+    if (g.delta == null) texte = `Sur ${validation.n} séances comparées, il n'y a pas encore assez de cas où un groupe était vraiment fatigué (${g.nFatigue}) ou frais (${g.nFraiches}) pour tester si le modèle de fatigue est juste pour toi.`;
+    else if (g.delta <= -3 && g.confiance !== 'non concluante') texte = `Bonne nouvelle pour le modèle : quand un groupe est fatigué avant la séance, ton 1RM estimé est ${arrondi(Math.abs(g.delta), 1).toString().replace('.', ',')} % plus bas que d'habitude (${g.nFatigue} séances contre ${g.nFraiches} fraîches), fiabilité ${g.confiance}. La fatigue prédite correspond à un vrai recul de performance.`;
+    else if (g.confiance === 'non concluante' || Math.abs(g.delta) < 2) { texte = `Sur ${validation.n} séances, ta performance ne baisse pas de façon visible quand un groupe est fatigué selon le modèle (${g.delta >= 0 ? '+' : ''}${arrondi(g.delta, 1).toString().replace('.', ',')} %, marge d'erreur trop grande pour conclure). Soit tu récupères très vite, soit le modèle n'est pas fait pour toi : ne le prends que comme un ordre de grandeur.`; ton = 'attention'; }
+    else texte = `Quand un groupe est fatigué, ton 1RM estimé varie de ${g.delta >= 0 ? '+' : ''}${arrondi(g.delta, 1).toString().replace('.', ',')} % (fiabilité ${g.confiance}) : l'effet est faible ou va dans le sens inverse de ce que prédit le modèle.`;
+    if (validation.tauSuggere) texte += ` Sur tes données, une récupération ${validation.tauSuggere.facteur < 1 ? 'plus rapide' : 'plus lente'} colle mieux (environ ${String(validation.tauSuggere.gros).replace('.', ',')} jours pour les gros groupes au lieu de 2) : indicatif, à confirmer avec plus de séances.`;
+    parties.push({ titre: 'Ce que tes séances disent de la fatigue', ton, texte });
   }
 
   // 2. L'intensité
@@ -292,9 +317,9 @@ function rushChargeMuscu(d) {
   const surcharge = [...avecRatio].sort((a, b) => b.rapport - a.rapport)[0];
   if (surcharge && surcharge.rapport >= 1.3) {
     parties.push({
-      titre: 'Où ta fatigue se concentre',
+      titre: 'Où ta charge se concentre',
       ton: surcharge.rapport > 1.5 ? 'attention' : 'info',
-      texte: `${surcharge.nom} : ${surcharge.recent} points cette semaine contre ${surcharge.habitude} d'habitude (${surcharge.rapport >= 1 ? '+' : ''}${Math.round((surcharge.rapport - 1) * 100)} %). ${surcharge.groupe === 'jambes' ? 'Des jambes très chargées pèsent sur le vélo et la course des 48 heures suivantes : évite d\'enchaîner une séance de jambes lourde et une sortie dure.' : 'Ce groupe est plus fatigué que les autres : laisse-lui 48 heures avant de le retravailler fort.'}`,
+      texte: `${surcharge.nom} : ${surcharge.recent} points cette semaine contre ${surcharge.habitude} d'habitude (${surcharge.rapport >= 1 ? '+' : ''}${Math.round((surcharge.rapport - 1) * 100)} %). ${surcharge.groupe === 'jambes' ? 'Des jambes très chargées mettent du temps à récupérer : évite d\'enchaîner deux séances de jambes lourdes ou une séance de jambes et un autre sport exigeant.' : 'Ce groupe est plus chargé que d\'habitude : regarde sa fatigue plus haut avant de le retravailler fort.'}`,
     });
   }
   const lachees = avecRatio.filter((g) => g.rapport < 0.4);

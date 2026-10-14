@@ -29,6 +29,12 @@ export function chargeParMuscleEtJour(sets) {
   return sortie;
 }
 
+/** Charge de chaque groupe et de chaque jour : { [groupe]: Map(ISO → points) } (la somme de ses muscles). */
+export function chargeParGroupeEtJour(sets) {
+  const parMuscle = chargeParMuscleEtJour(sets);
+  return Object.fromEntries(ORDRE_GROUPES.map((g) => [g, somme((MUSCLES_PAR_GROUPE[g] || []).map((slug) => parMuscle[slug]))]));
+}
+
 /** Somme de plusieurs « charge par jour ». */
 function somme(cartes) {
   const total = new Map();
@@ -68,12 +74,16 @@ export function heuresAvantPret(pct, tau) {
   return Math.round(tau * Math.log(pct / 100 / SEUIL_PRET) * 24);
 }
 
-/** Texte « prêt dans 2 jours », « prêt dans 14 h », « prêt ». */
+/** Arrondit à 5 près : « 37 % » donnerait une précision que ce modèle n'a pas, « 35 % » est plus honnête. */
+export const arrondi5 = (pct) => (pct == null ? null : Math.round(pct / 5) * 5);
+
+/** Texte approximatif : « prêt », « prêt dans quelques heures », « prêt dans ~12 h », « prêt dans ~1,5 jours ». */
 export function texteDelai(heures) {
   if (heures <= 0) return 'prêt';
-  if (heures < 24) return `prêt dans ${heures} h`;
-  const j = Math.round(heures / 24);
-  return `prêt dans ${j} jour${j > 1 ? 's' : ''}`;
+  if (heures <= 6) return 'prêt dans quelques heures';
+  if (heures < 24) return `prêt dans ~${Math.round(heures / 6) * 6} h`;
+  const j = Math.round(heures / 12) / 2; // au demi-jour près
+  return `prêt dans ~${String(j).replace('.', ',')} jour${j > 1 ? 's' : ''}`;
 }
 
 /**
