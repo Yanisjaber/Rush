@@ -1,50 +1,48 @@
 <script>
-  // Corps humain en 2D (de face et de dos) découpé en groupes musculaires : plus la zone est foncée, plus tu l'as travaillée.
-  // Tout est dessiné en SVG (aucune image). On touche une zone (ou sa ligne dans la liste) pour voir le détail.
-  // groupes : [{ groupe, nom, series, parSemaine, cible: [bas, haut], etat, pct, exercices: [{ nom, series }] }]
+  // Corps humain en 2D (de face et de dos) découpé en muscles : plus un muscle est foncé, plus tu l'as travaillé.
+  // Tout est dessiné en SVG (aucune image). On touche un muscle (ou un groupe dans la liste) pour voir le détail :
+  // un groupe se décompose en ses muscles, un muscle montre les exercices qui le travaillent.
+  // groupes : [{ groupe, nom, series, parSemaine, cible, etat, pct, exercices, muscles: [{ slug, nom, parSemaine, series, cible, etat, pct, exercices: [{ nom, series, role }] }] }]
   import { CORPS_SVG } from '../../data/corps-svg.js';
-  let { groupes = [], etiquette = 'Corps humain', periode = '4 semaines' } = $props();
+  let { groupes = [], etiquette = 'Corps humain', periode = 'la période' } = $props();
 
   let choisi = $state(null); // clé du groupe sélectionné
+  let muscleChoisi = $state(null); // slug du muscle sélectionné (dans ce groupe), sinon null
 
   const NOM_ETAT = { oublie: 'Oublié', sous: 'Sous la zone visée', zone: 'Dans la zone visée', 'au-dessus': 'Au-dessus de la zone visée' };
-  const detail = $derived(groupes.find((g) => g.groupe === choisi) || null);
   const virgule = (v) => String(Math.round(v * 10) / 10).replace('.', ',');
-  const basculer = (cle) => (choisi = choisi === cle ? null : cle);
+  const detail = $derived(groupes.find((g) => g.groupe === choisi) || null);
+  const muscles = $derived(Object.fromEntries(groupes.flatMap((g) => g.muscles).map((m) => [m.slug, m])));
+  const muscle = $derived(muscleChoisi ? muscles[muscleChoisi] || null : null);
+
+  const choisirGroupe = (cle) => {
+    muscleChoisi = null;
+    choisi = choisi === cle && !muscle ? null : cle;
+  };
+  const choisirMuscle = (slug) => {
+    const m = muscles[slug];
+    if (!m) return;
+    if (muscleChoisi === slug) {
+      muscleChoisi = null;
+      choisi = null;
+      return;
+    }
+    choisi = m.groupe;
+    muscleChoisi = slug;
+  };
 
   // Du gris (jamais travaillé) au corail du muscu (130 % de la zone visée ou plus)
-  const remplissage = (cle) => {
-    const g = groupes.find((x) => x.groupe === cle);
-    const t = g ? Math.round((Math.min(Math.max(g.pct, 0), 130) / 130) * 100) : 0;
-    return `color-mix(in srgb, var(--sport-muscu) ${t}%, var(--trait-fort))`;
-  };
+  const teinte = (pct) => `color-mix(in srgb, var(--sport-muscu) ${Math.round((Math.min(Math.max(pct ?? 0, 0), 130) / 130) * 100)}%, var(--trait-fort))`;
+  const lumineux = (slug) => (muscleChoisi ? muscleChoisi === slug : choisi != null && muscles[slug]?.groupe === choisi);
 
-  // Les muscles réels de chaque vue sont rattachés à nos 6 groupes ; le reste (tête, mains, pieds, genoux…) ne compte pas.
-  const GROUPE_DU_MUSCLE = {
-    chest: 'pectoraux',
-    trapezius: 'dos',
-    'upper-back': 'dos',
-    deltoids: 'epaules',
-    biceps: 'bras',
-    triceps: 'bras',
-    forearm: 'bras',
-    abs: 'tronc',
-    obliques: 'tronc',
-    'lower-back': 'tronc',
-    quadriceps: 'jambes',
-    adductors: 'jambes',
-    tibialis: 'jambes',
-    calves: 'jambes',
-    hamstring: 'jambes',
-    gluteal: 'jambes',
-  };
+  // Les tracés du dessin portent le nom d'un muscle ; les tibias sont rattachés aux mollets, le reste (tête, mains, pieds…) ne compte pas.
+  const ALIAS = { tibialis: 'calves' };
   const VUES = [
     { nom: 'Face', ...CORPS_SVG.face },
     { nom: 'Dos', ...CORPS_SVG.dos },
   ].map((v) => ({
     ...v,
-    muscles: v.zones.filter((z) => GROUPE_DU_MUSCLE[z.slug]).map((z) => ({ ...z, g: GROUPE_DU_MUSCLE[z.slug] })),
-    reste: v.zones.filter((z) => !GROUPE_DU_MUSCLE[z.slug]),
+    pieces: v.zones.map((z) => ({ ...z, muscle: ALIAS[z.slug] || z.slug })),
   }));
 </script>
 
@@ -54,19 +52,19 @@
       <figure>
         <svg viewBox={v.viewBox} role="group" aria-label={`${etiquette}, vue de ${v.nom.toLowerCase()}`}>
           <path d={v.contour} class="silhouette" />
-          {#each v.reste as z (z.slug)}<path d={z.d} class="neutre" />{/each}
-          {#each v.muscles as z (z.slug)}
+          {#each v.pieces.filter((z) => !muscles[z.muscle]) as z (z.slug)}<path d={z.d} class="neutre" />{/each}
+          {#each v.pieces.filter((z) => muscles[z.muscle]) as z (z.slug)}
             <path
               d={z.d}
               class="zone"
-              class:choisie={choisi === z.g}
-              style:fill={remplissage(z.g)}
+              class:choisie={lumineux(z.muscle)}
+              style:fill={teinte(muscles[z.muscle].pct)}
               role="button"
               tabindex="0"
-              aria-label={groupes.find((x) => x.groupe === z.g)?.nom || z.g}
-              aria-pressed={choisi === z.g}
-              onclick={() => basculer(z.g)}
-              onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), basculer(z.g))}
+              aria-label={muscles[z.muscle].nom}
+              aria-pressed={muscleChoisi === z.muscle}
+              onclick={() => choisirMuscle(z.muscle)}
+              onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), choisirMuscle(z.muscle))}
             />
           {/each}
         </svg>
@@ -79,7 +77,7 @@
     <ul class="liste">
       {#each groupes as g (g.groupe)}
         <li>
-          <button type="button" class:actif={choisi === g.groupe} aria-pressed={choisi === g.groupe} onclick={() => basculer(g.groupe)}>
+          <button type="button" class:actif={choisi === g.groupe} aria-pressed={choisi === g.groupe} onclick={() => choisirGroupe(g.groupe)}>
             <span class="ligne"><span class="nom">{g.nom}</span><span class="pct">{g.pct} %</span></span>
             <span class="barre" aria-hidden="true"><span style:width="{Math.min(g.pct, 130) / 1.3}%"></span></span>
           </button>
@@ -88,10 +86,34 @@
     </ul>
 
     <div class="detail" aria-live="polite">
-      {#if detail}
+      {#if muscle}
+        <button type="button" class="retour" onclick={() => (muscleChoisi = null)}>← {detail?.nom}</button>
+        <h4>{muscle.nom}</h4>
+        <p class="grand">{muscle.pct} % <span>de la zone visée</span></p>
+        <p class="texte">{virgule(muscle.parSemaine)} séries par semaine (les séries où il aide comptent pour moitié) pour une zone de {muscle.cible[0]} à {muscle.cible[1]} : <strong>{NOM_ETAT[muscle.etat]}</strong>.</p>
+        {#if muscle.exercices.length}
+          <p class="mini">{muscle.exercices.length} exercice{muscle.exercices.length > 1 ? 's' : ''} sur {periode}</p>
+          <ul class="exos">
+            {#each muscle.exercices.slice(0, 8) as x (x.nom)}<li><span>{x.nom} <em>{x.role}</em></span><b>{x.series}</b></li>{/each}
+          </ul>
+        {:else}
+          <p class="texte">Aucun exercice ne l'a travaillé sur cette période.{#if muscle.idee?.length} Pour le réveiller : {muscle.idee.join(', ')}.{/if}</p>
+        {/if}
+      {:else if detail}
         <h4>{detail.nom}</h4>
         <p class="grand">{detail.pct} % <span>de la zone visée</span></p>
         <p class="texte">{virgule(detail.parSemaine)} séries par semaine pour une zone de {detail.cible[0]} à {detail.cible[1]} : <strong>{NOM_ETAT[detail.etat]}</strong>.</p>
+        <p class="mini">Les muscles de ce groupe</p>
+        <ul class="muscles">
+          {#each detail.muscles as m (m.slug)}
+            <li>
+              <button type="button" onclick={() => choisirMuscle(m.slug)}>
+                <span class="ligne"><span>{m.nom}</span><b>{m.pct} %</b></span>
+                <span class="barre" aria-hidden="true"><span style:width="{Math.min(m.pct, 130) / 1.3}%"></span></span>
+              </button>
+            </li>
+          {/each}
+        </ul>
         {#if detail.exercices.length}
           <p class="mini">{detail.exercices.length} exercice{detail.exercices.length > 1 ? 's' : ''} sur {periode}</p>
           <ul class="exos">
@@ -101,7 +123,7 @@
           <p class="texte">Aucun exercice sur ce groupe sur cette période.</p>
         {/if}
       {:else}
-        <p class="texte">Touche une zone du corps (ou une ligne de la liste) pour voir le détail.</p>
+        <p class="texte">Touche un muscle du corps (ou un groupe de la liste) pour voir le détail.</p>
       {/if}
     </div>
   </div>
@@ -258,6 +280,55 @@
   }
   .texte strong {
     color: var(--texte);
+  }
+  .retour {
+    margin: 0 0 8px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--texte-doux);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .retour:hover {
+    color: var(--texte);
+  }
+  .muscles {
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .muscles button {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+    min-height: 44px;
+    padding: 6px 4px;
+    border: 0;
+    border-bottom: 1px solid var(--trait);
+    background: none;
+    color: var(--texte);
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .muscles button:hover {
+    background: var(--surface-2);
+  }
+  .muscles button:focus-visible {
+    outline: 2px solid var(--texte);
+    outline-offset: -2px;
+  }
+  .exos em {
+    margin-left: 6px;
+    font-size: 11px;
+    font-style: normal;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--texte-muet);
   }
   .mini {
     margin: 12px 0 4px;

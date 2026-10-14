@@ -328,6 +328,17 @@ export function rushGroupes({ brut: b }) {
     texte: `Les jambes représentent ${b.partJambes} % de tes séries. ${b.partJambes < 20 ? 'Ce sont les plus gros muscles du corps : en dessous de 20 %, on parle de jambes oubliées.' : b.partJambes > 40 ? 'Beaucoup de jambes : assure-toi que le haut du corps ne passe pas à la trappe.' : 'Une bonne part.'}`,
   });
 
+  // Les muscles les plus en retard, quel que soit leur groupe (un groupe peut sembler correct et cacher un muscle oublié)
+  const retard = [...(b.muscles || [])].filter((m) => m.pct < 60).sort((x, y) => x.pct - y.pct).slice(0, 3);
+  if (retard.length) {
+    parties.push({
+      titre: 'Les muscles en retard',
+      ton: retard.some((m) => m.etat === 'oublie') ? 'attention' : 'info',
+      texte: `${retard.map((m) => `${m.nom} (${m.pct} % de la zone visée)`).join(', ')}. ${retard.some((m) => m.etat === 'oublie') ? 'Un muscle oublié devient vite un point faible : ' : ''}ce sont eux qui limitent le plus ton équilibre, bien plus que les gros groupes.`,
+    });
+    for (const m of retard.slice(0, 2)) plan.push({ quand: `Réveiller : ${m.nom.toLowerCase()}`, action: `Ajoute ${m.idee[0]} (3 séries, une fois par semaine) : le plus simple pour faire monter ce muscle sans alourdir ta semaine.` });
+  }
+
   for (const g of manques.slice(0, 3)) {
     const manque = Math.max(1, Math.round(g.cible[0] - g.parSemaine));
     plan.push({ quand: `Cette semaine : ${nom(g)}`, action: `Ajoute ${pluriel(manque, 'série')} (tu es à ${v1(g.parSemaine)} pour une zone de ${g.cible[0]} à ${g.cible[1]}), sans monter de plus de 2 ou 3 séries d'un coup.` });

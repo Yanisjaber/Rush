@@ -2,6 +2,7 @@
 // Tout est déduit des séries du carnet de force (table strength_sets). Fonctions pures, sans réseau ni écran.
 // Même format de sortie que les autres analyses : { verdict, chiffres, graphiques, lectures, conseils, methode }.
 import { GROUPES, ORDRE_GROUPES, groupeValide } from '../data/exercices.js';
+import { MUSCLES, MUSCLES_PAR_GROUPE, repartirSerie } from '../data/muscles.js';
 import { tonnageSerie, progressionParExercice, unRmEstime } from '../data/force.js';
 import { dateIsoLocale, formatDateCourte, formatKg, formatNombre } from '../utils/format.js';
 import { rushTonnage } from './rush-tonnage.js';
@@ -155,6 +156,28 @@ export function analyserGroupes({ series, aujourdhui = new Date(), jours: nbJour
     return vide('groupes', 'Pas encore assez de séries', `Il faut au moins ${court ? '2 séances et 8 séries' : '4 séances et 20 séries'} sur ${sur} pour juger l'équilibre de ton entraînement. Enregistre quelques séances de plus.`, METHODE_GROUPES);
   }
 
+  // Muscle par muscle : chaque série est répartie entre les muscles qu'elle travaille (principal : 1, secondaire : 0,5)
+  const parMuscle = Object.fromEntries(Object.keys(MUSCLES).map((m) => [m, { series: 0, exos: new Map() }]));
+  for (const x of fenetre) {
+    const nomExo = x.exercise_name || x.exercise_key;
+    for (const { muscle, poids } of repartirSerie(x.exercise_key, x.exercise_name, x.muscle_group)) {
+      const m = parMuscle[muscle];
+      m.series += poids;
+      const e = m.exos.get(nomExo) || { nom: nomExo, series: 0, role: 'secondaire' };
+      e.series += 1;
+      if (poids >= 1) e.role = 'principal';
+      m.exos.set(nomExo, e);
+    }
+  }
+  const muscleDe = (slug) => {
+    const def = MUSCLES[slug];
+    const par = parMuscle[slug].series / semainesPeriode;
+    const [bas, haut] = def.cible;
+    const etat = parMuscle[slug].series === 0 ? 'oublie' : par < bas ? 'sous' : par > haut ? 'au-dessus' : 'zone';
+    const exercices = [...parMuscle[slug].exos.values()].sort((a, b) => b.series - a.series);
+    return { slug, nom: def.nom, groupe: def.groupe, series: Math.round(parMuscle[slug].series * 10) / 10, parSemaine: par, cible: def.cible, etat, pct: Math.round((par / ((bas + haut) / 2)) * 100), exercices, idee: def.idee };
+  };
+
   const groupes = ORDRE_GROUPES.map((g, i) => {
     const parSemaine = compte[g] / semainesPeriode;
     const [bas, haut] = GROUPES[g].cible;
@@ -164,7 +187,7 @@ export function analyserGroupes({ series, aujourdhui = new Date(), jours: nbJour
     for (const x of fenetre) if (x.muscle_group === g) parExo.set(x.exercise_name || x.exercise_key, (parExo.get(x.exercise_name || x.exercise_key) || 0) + 1);
     const exercices = [...parExo.entries()].map(([nom, series]) => ({ nom, series })).sort((x, y) => y.series - x.series);
     const pct = Math.round((parSemaine / ((bas + haut) / 2)) * 100);
-    return { groupe: g, nom: GROUPES[g].nom, series: compte[g], parSemaine, cible: [bas, haut], etat, part: Math.round((compte[g] / total) * 100), couleur: teinte(i), exercices, pct };
+    return { groupe: g, nom: GROUPES[g].nom, series: compte[g], parSemaine, cible: [bas, haut], etat, part: Math.round((compte[g] / total) * 100), couleur: teinte(i), exercices, pct, muscles: (MUSCLES_PAR_GROUPE[g] || []).map(muscleDe) };
   });
   const oublies = groupes.filter((g) => g.etat === 'oublie');
   const sous = groupes.filter((g) => g.etat === 'sous');
@@ -199,7 +222,7 @@ export function analyserGroupes({ series, aujourdhui = new Date(), jours: nbJour
       titre: 'Ton corps, groupe par groupe',
       description: `Plus la zone est foncée, plus tu l'as travaillée ces ${nbJours} derniers jours. Le pourcentage compare tes séries par semaine à la zone visée (100 % = pile au milieu de la zone).`,
       groupes,
-      periode: `${nbJours} derniers jours`,
+      periode: `les ${nbJours} derniers jours`,
     },
     {
       type: 'tableau',
@@ -223,7 +246,7 @@ export function analyserGroupes({ series, aujourdhui = new Date(), jours: nbJour
   for (const g of dessus) conseils.push({ priorite: 'faible', titre: `Beaucoup de volume ${DE[g.groupe]}`, texte: `${virgule(g.parSemaine)} séries par semaine, au-dessus de ${g.cible[1]}. Si tu stagnes sur ce groupe, c'est peut-être la récupération qui limite, pas le volume.` });
   if (!conseils.length) conseils.push({ priorite: 'info', titre: 'Garde cet équilibre', texte: 'Ton volume est bien réparti. Continue, et surveille que ça tienne quand ton programme change.' });
 
-  return { id: 'groupes', insuffisant: false, verdict, chiffres, graphiques, lectures, conseils: triConseils(conseils), methode: METHODE_GROUPES, brut: { groupes, rapportDos, partJambes } };
+  return { id: 'groupes', insuffisant: false, verdict, chiffres, graphiques, lectures, conseils: triConseils(conseils), methode: METHODE_GROUPES, brut: { groupes, muscles: groupes.flatMap((g) => g.muscles), rapportDos, partJambes } };
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
