@@ -85,7 +85,8 @@
     {:else if brut.erreur}
       <p class="alerte" role="alert">{brut.erreur}</p>
     {:else if analyse}
-      {#if analyse.verdict}
+      <!-- Pas de bandeau de verdict : seulement le message « pas assez de données » quand il n'y a rien à analyser -->
+      {#if analyse.verdict && analyse.insuffisant}
         <section class="verdict" style:--c={COULEUR_NIVEAU[analyse.verdict.niveau]} aria-label="Verdict">
           <h2 class="titre">{analyse.verdict.titre}</h2>
           <p>{analyse.verdict.texte}</p>
