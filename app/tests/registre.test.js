@@ -66,7 +66,7 @@ test('disponibles : exclut les widgets déjà présents', () => {
   // à un sport restent disponibles dans la bibliothèque, mais pas composés d'office.
   const sportifs = disponibles(d, []).sort();
   assert.deepEqual(sportifs, [
-    'chargeforce', 'efficacite', 'force', 'groupes', 'hyroxallure', 'hyroxdossard', 'hyroxgains', 'hyroxtest',
+    'chargeforce', 'chargemuscu', 'efficacite', 'force', 'groupes', 'hyroxallure', 'hyroxdossard', 'hyroxgains', 'hyroxtest',
     'meilleures', 'predictions', 'programme', 'puissance', 'records', 'seancedujour', 'tonnage',
   ]);
   // Un coureur qui fait aussi du vélo voit ses widgets de course et de vélo composés automatiquement
@@ -77,7 +77,7 @@ test('disponibles : exclut les widgets déjà présents', () => {
 
 test("onglets riches : muscu et Hyrox ont leur composition, absente de l'onglet « Tout »", () => {
   const general = compositionAuto(['muscu', 'hyrox']).widgets.map((w) => w.id);
-  for (const id of ['seancedujour', 'tonnage', 'records', 'programme', 'groupes', 'hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'chargeforce']) {
+  for (const id of ['seancedujour', 'tonnage', 'chargemuscu', 'records', 'programme', 'groupes', 'hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'chargeforce']) {
     assert.equal(general.includes(id), false, id);
     assert.ok(existe(id) && estPertinent(id, id.startsWith('hyrox') || id === 'chargeforce' ? ['hyrox'] : ['muscu']), id);
   }

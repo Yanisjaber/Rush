@@ -102,6 +102,14 @@ export const WIDGETS = {
     tailles: ['m', 'l'],
     taille: 'm',
   },
+  chargemuscu: {
+    nom: 'Charge musculation',
+    description: 'Ta charge de muscu sur 7 jours (répétitions × intensité par rapport à ton 1RM), comparée à ton habitude.',
+    categorie: 'Musculation',
+    sports: ['muscu'],
+    tailles: ['m', 'l'],
+    taille: 'm',
+  },
   records: {
     nom: 'Tes records',
     description: 'Tes exercices les plus pratiqués : 1RM estimé, record battu et courbe de progression.',
@@ -205,8 +213,8 @@ export const WIDGETS = {
  * Ces widgets n'apparaissent donc pas sur l'onglet « Tout », qui reste le tableau de bord général.
  */
 export const ORDRE_ONGLET = {
-  // Accueil Muscu : séance du jour, tonnage et dernières séances en haut, les records en pleine largeur, puis séries par groupe, régularité et volume
-  muscu: ['seancedujour', 'tonnage', 'dernieres', 'records', 'groupes', 'regularite', 'volume'],
+  // Accueil Muscu : séance du jour, tonnage et dernières séances en haut, les records en pleine largeur, puis séries par groupe, régularité et charge musculation (la carte « Volume » reste disponible dans Personnaliser)
+  muscu: ['seancedujour', 'tonnage', 'dernieres', 'records', 'groupes', 'regularite', 'chargemuscu'],
   hyrox: ['hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'semaine', 'chargeforce'],
 };
 
@@ -232,6 +240,7 @@ const ORDRE_AUTO = [
   'semaine',
   'avenir',
   'tonnage',
+  'chargemuscu',
   'records',
   'programme',
   'groupes',

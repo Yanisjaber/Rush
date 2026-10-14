@@ -14,6 +14,7 @@ import WidgetPuissance from './WidgetPuissance.svelte';
 import WidgetForce from './WidgetForce.svelte';
 import WidgetSeanceDuJour from './WidgetSeanceDuJour.svelte';
 import WidgetTonnage from './WidgetTonnage.svelte';
+import WidgetChargeMuscu from './WidgetChargeMuscu.svelte';
 import WidgetRecords from './WidgetRecords.svelte';
 import WidgetProgramme from './WidgetProgramme.svelte';
 import WidgetGroupes from './WidgetGroupes.svelte';
@@ -39,6 +40,7 @@ export const COMPOSANTS = {
   force: WidgetForce,
   seancedujour: WidgetSeanceDuJour,
   tonnage: WidgetTonnage,
+  chargemuscu: WidgetChargeMuscu,
   records: WidgetRecords,
   programme: WidgetProgramme,
   groupes: WidgetGroupes,

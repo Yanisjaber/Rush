@@ -6,6 +6,7 @@ import { analyserForme } from './forme.js';
 import { analyserPredictions } from './predictions.js';
 import { analyserRegularite } from './regularite.js';
 import { rushCharge, rushForme, rushPredictions, rushRegularite, rushGroupes, rushRecords } from './rush.js';
+import { analyserChargeMuscu } from './charge-muscu.js';
 import { analyserTonnage, analyserGroupes, analyserRecords } from './muscu.js';
 
 const NOM_PERIODE = { sem12: '3 mois', sem26: '6 mois', sem52: '12 mois' };
@@ -68,6 +69,13 @@ export const ANALYSES = {
     sportImpose: 'muscu', // l'analyse ne parle que de musculation, quel que soit le filtre
     calculer: (d, o) => analyserTonnage({ series: d.series, aujourdhui: o.aujourdhui, semaines: o.semaines }),
   },
+  chargemuscu: {
+    titre: 'Charge musculation',
+    periodes: true,
+    periodeDefaut: 'sem12',
+    sportImpose: 'muscu', // l'analyse ne parle que de musculation, quel que soit le filtre
+    calculer: (d, o) => analyserChargeMuscu({ series: d.series, aujourdhui: o.aujourdhui, semaines: o.semaines }),
+  },
   groupes: {
     titre: 'Équilibre musculaire',
     periodes: true,
@@ -96,7 +104,7 @@ for (const [id, fabrique] of Object.entries(RUSH)) {
 }
 
 /** Widget de l'accueil → analyse ouverte quand on le touche. */
-export const ANALYSE_DU_WIDGET = { charge: 'charge', forme: 'forme', predictions: 'predictions', tonnage: 'tonnage', groupes: 'groupes', records: 'records', regularite: 'regularite' };
+export const ANALYSE_DU_WIDGET = { charge: 'charge', forme: 'forme', predictions: 'predictions', tonnage: 'tonnage', chargemuscu: 'chargemuscu', groupes: 'groupes', records: 'records', regularite: 'regularite' };
 
 export const estAnalyse = (id) => typeof id === 'string' && Object.hasOwn(ANALYSES, id);
 export const periodeValide = (cle, defaut = 'sem26') => (Object.hasOwn(NOM_PERIODE, cle) ? cle : defaut);
