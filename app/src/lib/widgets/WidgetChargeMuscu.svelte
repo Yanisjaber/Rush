@@ -11,7 +11,7 @@
   const pct = $derived(c.ratio == null ? null : Math.round((c.ratio - 1) * 100));
 </script>
 
-<Bloc titre="Charge musculation">
+<Bloc titre="Charge musculation" remplir>
   {#if aDesDonnees}
     <div class="entete">
       <span class="valeur titre">{c.derniere}<span class="unite">pts</span></span>
@@ -78,7 +78,8 @@
     display: flex;
     align-items: flex-end;
     gap: 6px;
-    height: 120px;
+    flex: 1; /* le graphique prend toute la hauteur disponible de la carte */
+    min-height: 120px;
     border-bottom: 1px solid var(--trait);
   }
   .colonne {

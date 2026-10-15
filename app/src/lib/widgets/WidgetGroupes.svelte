@@ -9,17 +9,21 @@
   const muscles = $derived(musclesSurPeriode(contexte.force.series));
 </script>
 
-<Bloc titre="Séries par groupe · cette semaine">
+<Bloc titre="Séries par groupe · cette semaine" remplir>
   <div class="cadre"><div class="corps"><SilhouetteCorps {muscles} etiquette="Muscles travaillés cette semaine" /></div></div>
 </Bloc>
 
 <style>
-  /* La hauteur suit la largeur de la carte (≈ 58 %) : la carte a ainsi la même hauteur que ses voisines (Régularité, Volume) */
+  /* Les corps remplissent la carte, quelle que soit sa hauteur : elle est fixée par la rangée (Régularité grandit avec l'écran),
+     pas par eux. Minimum 220 px quand la rangée est basse. */
   .cadre {
-    container-type: inline-size;
+    position: relative;
+    flex: 1;
+    min-height: 220px;
   }
   .corps {
-    height: clamp(200px, 58cqw, 330px);
+    position: absolute;
+    inset: 0;
     padding: 12px 8px 8px;
     border-radius: var(--rayon-l);
     background: var(--surface-2);

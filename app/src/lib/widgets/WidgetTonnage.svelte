@@ -9,7 +9,7 @@
   const aDesDonnees = $derived(t.parSemaine.some((v) => v > 0));
 </script>
 
-<Bloc titre="Tonnage par semaine">
+<Bloc titre="Tonnage par semaine" remplir>
   {#if aDesDonnees}
     <div class="entete">
       <span class="valeur titre">{formatNombre(t.derniere)}<span class="unite">kg</span></span>
@@ -72,7 +72,8 @@
     display: flex;
     align-items: flex-end;
     gap: 6px;
-    height: 120px;
+    flex: 1; /* le graphique prend toute la hauteur disponible de la carte */
+    min-height: 120px;
     border-bottom: 1px solid var(--trait);
   }
   .colonne {
