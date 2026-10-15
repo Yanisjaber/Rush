@@ -1,16 +1,29 @@
 <script>
   import Bloc from '../components/Bloc.svelte';
+  import Tuile from '../components/Tuile.svelte';
+  import MiniBarres from '../components/MiniBarres.svelte';
   import { chargeMuscuRecente } from '../analyse/charge-muscu.js';
 
   // Charge de musculation : répétitions × (poids ÷ ton 1RM de l'exercice), sur 7 jours glissants.
   // Le badge compare à ton habitude ; la barre en couleur est la semaine en cours.
-  let { contexte } = $props();
+  // compact : tuile pour téléphone (chiffre clé + mini histogramme), le grand graphique est dans l'analyse
+  let { contexte, compact = false } = $props();
   const c = $derived(chargeMuscuRecente(contexte.force.series));
   const maximum = $derived(Math.max(1, ...c.parSemaine));
   const aDesDonnees = $derived(c.parSemaine.some((v) => v > 0));
   const pct = $derived(c.ratio == null ? null : Math.round((c.ratio - 1) * 100));
 </script>
 
+{#if compact}
+  <Tuile
+    titre="Charge muscu"
+    valeur={aDesDonnees ? String(c.derniere) : '—'}
+    unite={aDesDonnees ? 'pts' : ''}
+    note={aDesDonnees ? (pct != null ? `${pct > 0 ? '+' : ''}${pct} % vs habitude` : '7 derniers jours') : 'Aucune série récente'}
+  >
+    {#if aDesDonnees}<MiniBarres valeurs={c.parSemaine.slice(-8)} etiquette="Charge de musculation par semaine sur 8 semaines" />{/if}
+  </Tuile>
+{:else}
 <Bloc titre="Charge musculation" remplir>
   {#if aDesDonnees}
     <div class="entete">
@@ -32,6 +45,7 @@
     <p class="vide">Aucune série sur les 12 dernières semaines. Enregistre une séance pour voir ta charge.</p>
   {/if}
 </Bloc>
+{/if}
 
 <style>
   .entete {

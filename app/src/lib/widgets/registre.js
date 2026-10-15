@@ -86,6 +86,14 @@ export const WIDGETS = {
     tailles: ['m', 'l'],
     taille: 'm',
   },
+  programmes: {
+    nom: 'Programmes',
+    description: 'Tes programmes de musculation (PUSH, PULL, LEGS…) : les ouvrir, en créer un. Se place à côté de la séance du jour.',
+    categorie: 'Musculation',
+    sports: ['muscu'],
+    tailles: ['s'], // sa largeur est fixée à côté de la séance du jour (voir Accueil.svelte) : pas de choix de taille
+    taille: 's',
+  },
   tonnage: {
     nom: 'Tonnage par semaine',
     description: 'Le poids total soulevé chaque semaine (répétitions × charge), sur 12 semaines.',
@@ -197,8 +205,8 @@ export const WIDGETS = {
  * Ces widgets n'apparaissent donc pas sur l'onglet « Tout », qui reste le tableau de bord général.
  */
 export const ORDRE_ONGLET = {
-  // Accueil Muscu : séance du jour, tonnage et dernières séances en haut, les records en pleine largeur, puis séries par groupe, régularité et charge musculation (la carte « Volume » reste disponible dans Personnaliser)
-  muscu: ['seancedujour', 'tonnage', 'dernieres', 'records', 'groupes', 'regularite', 'chargemuscu'],
+  // Accueil Muscu : séance du jour (3/4) et programmes (1/4) en haut, puis tonnage et dernières séances, les records en pleine largeur, puis séries par groupe, régularité et charge musculation (la carte « Volume » reste disponible dans Personnaliser)
+  muscu: ['seancedujour', 'programmes', 'tonnage', 'dernieres', 'records', 'groupes', 'regularite', 'chargemuscu'],
   hyrox: ['hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'semaine', 'chargeforce'],
 };
 
@@ -210,6 +218,7 @@ const PROPRES_AUX_ONGLETS = new Set(
 /** Ordre de composition automatique de l'accueil. */
 const ORDRE_AUTO = [
   'seancedujour',
+  'programmes',
   'hyroxdossard',
   'objectif',
   'charge',

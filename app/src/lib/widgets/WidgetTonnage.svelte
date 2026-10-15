@@ -1,14 +1,27 @@
 <script>
   import Bloc from '../components/Bloc.svelte';
+  import Tuile from '../components/Tuile.svelte';
+  import MiniBarres from '../components/MiniBarres.svelte';
   import { tonnageParSemaine } from '../data/force.js';
   import { formatNombre } from '../utils/format.js';
 
-  let { contexte } = $props();
+  // compact : tuile pour téléphone (chiffre clé + mini histogramme), le grand graphique est dans l'analyse
+  let { contexte, compact = false } = $props();
   const t = $derived(tonnageParSemaine(contexte.force.series));
   const maximum = $derived(Math.max(1, ...t.parSemaine));
   const aDesDonnees = $derived(t.parSemaine.some((v) => v > 0));
 </script>
 
+{#if compact}
+  <Tuile
+    titre="Tonnage / semaine"
+    valeur={aDesDonnees ? formatNombre(t.derniere) : '—'}
+    unite={aDesDonnees ? 'kg' : ''}
+    note={aDesDonnees ? (t.ecartPct != null ? `${t.ecartPct > 0 ? '+' : ''}${t.ecartPct} % vs moyenne` : '12 dernières semaines') : 'Pas encore de séries'}
+  >
+    {#if aDesDonnees}<MiniBarres valeurs={t.parSemaine.slice(-8)} etiquette="Tonnage par semaine sur 8 semaines" />{/if}
+  </Tuile>
+{:else}
 <Bloc titre="Tonnage par semaine" remplir>
   {#if aDesDonnees}
     <div class="entete">
@@ -30,6 +43,7 @@
     <p class="vide">Pas encore de séries enregistrées. Démarre une séance pour voir ton tonnage.</p>
   {/if}
 </Bloc>
+{/if}
 
 <style>
   .entete {

@@ -79,8 +79,23 @@
     });
   });
 
+  // --- Recherche : filtre la liste de la page (séances du journal, programmes, ou exercices), sans tenir compte des accents ni des majuscules ---
+  let recherche = $state('');
+  const normaliser = (t) => String(t ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
+  const q = $derived(normaliser(recherche));
+  const contient = (nom) => !q || normaliser(nom).includes(q);
+  $effect(() => {
+    void onglet; // on change de page : la recherche repart de zéro
+    untrack(() => (recherche = ''));
+  });
+  const journalFiltre = $derived(journal.filter((s) => contient(s.name || 'Séance de force')));
+  const programmesFiltres = $derived(etat.programmes.filter((p) => contient(p.name)));
+  const persoFiltres = $derived(etat.exercicesPerso.filter((l) => contient(l.name)));
+  const textePlaceholder = $derived(onglet === 'programmes' ? 'Rechercher un programme' : onglet === 'exercices' ? 'Rechercher un exercice' : 'Rechercher une séance');
+
   // --- Exercices : records et exercices perso ---
   const records = $derived(progressionParExercice(etat.series).sort((a, b) => a.nom.localeCompare(b.nom, 'fr')));
+  const recordsFiltres = $derived(records.filter((e) => contient(e.nom)));
 
   async function ajouterPerso(e) {
     e.preventDefault();
@@ -106,7 +121,6 @@
 
   const onglets = [
     { cle: 'programmes', nom: 'Programmes', href: construireAdresse({ sport: 'muscu', sous: 'programmes' }) },
-    { cle: 'journal', nom: 'Journal', href: construireAdresse({ sport: 'muscu', sous: 'journal' }) },
     { cle: 'exercices', nom: 'Exercices et records', href: construireAdresse({ sport: 'muscu', sous: 'exercices' }) },
   ];
 
@@ -135,29 +149,38 @@
 <svelte:element this={integre ? 'div' : 'main'} class={integre ? 'integre' : 'page'}>
   {#if !integre}<EnTete actif="force" {demo} />{/if}
 
+  {#if integre}
+    <!-- Ouvert depuis l'accueil Muscu (un widget : Programmes, Records, Dernières séances) : un retour et le nom de la page -->
+    <p class="retour-journal"><a href={construireAdresse({ sport: 'muscu' })}>← Retour à Muscu</a></p>
+    <h2 class="titre-sous-page titre">{onglet === 'programmes' ? 'Programmes' : onglet === 'exercices' ? 'Exercices et records' : 'Journal'}</h2>
+  {/if}
+
   <header class="titre-page">
     {#if !integre}<h1 class="titre">Muscu</h1>{/if}
-    <div class="actions">
-      <Bouton variante="discret" onclick={() => ouvrirPanneau({ hevy: '1' })}>Importer depuis Hevy</Bouton>
-      <Bouton variante="discret" href="#/force/apres/libre">Ajouter une séance passée</Bouton>
-      <Bouton href="#/force/seance/libre">Séance libre</Bouton>
+    <div class="outils">
+      <label class="recherche">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+        <input type="search" bind:value={recherche} maxlength="80" placeholder={textePlaceholder} aria-label={textePlaceholder} autocomplete="off" />
+      </label>
     </div>
   </header>
 
-  <nav class="onglets" aria-label="Sections de la force">
-    {#each onglets as o (o.cle)}
-      <a href={o.href} aria-current={onglet === o.cle ? 'page' : undefined}>{o.nom}</a>
-    {/each}
-  </nav>
+  {#if !integre}
+    <nav class="onglets" aria-label="Sections de la force">
+      {#each onglets as o (o.cle)}
+        <a href={o.href} aria-current={onglet === o.cle ? 'page' : undefined}>{o.nom}</a>
+      {/each}
+    </nav>
+  {/if}
 
   {#if etat.erreur}<p class="alerte" role="alert">{etat.erreur}</p>{/if}
 
   {#if etat.chargement}
     <p class="info" role="status">Chargement…</p>
   {:else if onglet === 'journal'}
-    {#if journal.length}
+    {#if journalFiltre.length}
       <ul class="journal">
-        {#each journal as s (s.id)}
+        {#each journalFiltre as s (s.id)}
           <li>
             <a href={`#/force/modifier/${s.id}`}>
               <span class="date">{formatDateCourte(s.start_date_local)}</span>
@@ -170,15 +193,17 @@
           </li>
         {/each}
       </ul>
+    {:else if journal.length}
+      <Bloc><p class="vide">Aucune séance ne correspond à « {recherche.trim()} ».</p></Bloc>
     {:else}
       <Bloc><p class="vide">Aucune séance de force sur les 12 derniers mois. Démarre une séance ou ajoute-en une passée.</p></Bloc>
     {/if}
   {:else if onglet === 'exercices'}
     <div class="deux">
       <Bloc titre="Tes records par exercice">
-        {#if records.length}
+        {#if recordsFiltres.length}
           <ul class="records">
-            {#each records as e (e.cle)}
+            {#each recordsFiltres as e (e.cle)}
               <li>
                 <span class="nom">{e.nom}{#if e.record} <span class="badge">Record</span>{/if}</span>
                 <span class="rm titre">{formatKg(e.rm)}<small> kg</small></span>
@@ -190,15 +215,17 @@
             {/each}
           </ul>
           <p class="note">1RM estimé (formule d'Epley) sur la meilleure série de la dernière séance, jusqu'à 12 répétitions.</p>
+        {:else if records.length}
+          <p class="vide">Aucun exercice ne correspond à « {recherche.trim()} ».</p>
         {:else}
           <p class="vide">Tes records apparaîtront dès que tu auras enregistré des séries avec une charge.</p>
         {/if}
       </Bloc>
 
       <Bloc titre="Tes exercices">
-        {#if perso.length}
+        {#if persoFiltres.length}
           <ul class="perso">
-            {#each etat.exercicesPerso as l (l.id)}
+            {#each persoFiltres as l (l.id)}
               <li>
                 <span>{l.name} <span class="groupe">{GROUPES[l.muscle_group]?.nom}</span></span>
                 {#if aSupprimer === l.id}
@@ -212,6 +239,8 @@
               </li>
             {/each}
           </ul>
+        {:else if perso.length}
+          <p class="vide">Aucun de tes exercices ne correspond à « {recherche.trim()} ».</p>
         {:else}
           <p class="vide">Tu n'as pas encore créé d'exercice. La bibliothèque contient déjà une cinquantaine d'exercices classiques.</p>
         {/if}
@@ -229,7 +258,7 @@
     </div>
   {:else}
     <div class="programmes">
-      {#each etat.programmes as p (p.id)}
+      {#each programmesFiltres as p (p.id)}
         {@const r = resumeProgramme(p)}
         <Bloc titre={p.name}>
           <p class="resume">{r.exercices} exercice{r.exercices > 1 ? 's' : ''} · {r.series} séries · environ {r.minutes} min</p>
@@ -243,9 +272,10 @@
           </div>
         </Bloc>
       {:else}
-        <Bloc titre="Aucun programme">
-          <p class="vide">Un programme, c'est une séance type : Push, Pull, Legs… avec ses exercices, ses séries et ses charges. Ton accueil Muscu s'en sert pour te proposer la séance du jour.</p>
-        </Bloc>
+        <!-- Aucun programme : rien à afficher, le bouton « + Nouveau programme » suffit ; seule une recherche sans résultat le dit -->
+        {#if etat.programmes.length}
+          <Bloc titre="Aucun résultat"><p class="vide">Aucun programme ne correspond à « {recherche.trim()} ».</p></Bloc>
+        {/if}
       {/each}
       <button type="button" class="nouveau" onclick={() => ouvrirProgramme(null)}>+ Nouveau programme</button>
     </div>
@@ -279,6 +309,68 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+  }
+  /* La recherche et le bouton Créer, sur une ligne (la recherche prend la place restante) */
+  .outils {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .recherche {
+    flex: 1 1 220px;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: var(--cible);
+    padding: 0 14px;
+    background: var(--surface);
+    border: 1px solid var(--trait-fort);
+    border-radius: var(--rayon);
+    color: var(--texte-doux);
+  }
+  .recherche:focus-within {
+    border-color: var(--texte);
+  }
+  .recherche input {
+    flex: 1;
+    min-width: 0;
+    height: 42px;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: none;
+    font: inherit;
+    font-size: 16px; /* 16 px minimum : sinon l'iPhone zoome quand on touche le champ */
+    color: var(--texte);
+  }
+  .recherche input::placeholder {
+    color: var(--texte-muet);
+  }
+  /* Page ouverte depuis l'accueil : « Retour », titre et recherche suivent le même rythme (≈ 14 px entre chaque).
+     Le lien « Retour » fait 44 px de haut (cible tactile) : son texte est au milieu, donc ~14 px d'air en dessous sans marge. */
+  .titre-sous-page {
+    margin: 0 0 8px;
+    font-size: 28px;
+    line-height: 1.1;
+  }
+  .integre .titre-page {
+    padding: 6px 0 12px;
+  }
+  .retour-journal {
+    margin: 0;
+  }
+  .retour-journal a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible);
+    font-size: 14px;
+    color: var(--texte-doux);
+  }
+  .retour-journal a:hover {
+    color: var(--texte);
   }
   .onglets {
     display: flex;

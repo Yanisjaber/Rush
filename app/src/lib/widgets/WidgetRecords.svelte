@@ -8,14 +8,32 @@
 
   // Un exercice par groupe musculaire (pectoraux, dos, jambes, épaules, bras) : 1RM estimé, record éventuel et progression.
   // En taille moyenne il n'y a la place que pour 2 cartes (jambes et pectoraux en priorité).
-  let { contexte, taille = 'l' } = $props();
+  // compact : liste courte pour téléphone (3 exercices, une ligne chacun) ; la progression complète est dans l'analyse
+  let { contexte, taille = 'l', compact = false } = $props();
   // Cliquer sur une carte ouvre la page Records déjà placée sur cet exercice (le reste du widget ouvre la page Records telle quelle)
   const lien = (cle) => construireAdresse({ sport: menu.filtre, page: '/analyse', sous: 'records', q: { exo: cle } });
-  const exos = $derived(recordsParGroupe(contexte.force.series, taille === 'm' ? 2 : 5));
+  const pageExercices = construireAdresse({ sport: 'muscu', sous: 'exercices' });
+  const exos = $derived(recordsParGroupe(contexte.force.series, compact ? 3 : taille === 'm' ? 2 : 5));
 </script>
 
-<Bloc titre="Tes records">
-  {#if exos.length}
+<Bloc titre="Tes records" {compact}>
+  {#if exos.length && compact}
+    <ul class="lignes">
+      {#each exos as e (e.cle)}
+        <li>
+          <a class="ligne-record" href={lien(e.cle)} aria-label={`Voir la progression : ${e.nom}`}>
+            <span class="nom-record">{e.nom}</span>
+            {#if e.record}
+              <span class="badge record">Record</span>
+            {:else if e.delta != null && e.delta !== 0}
+              <span class="badge">{e.delta > 0 ? '+' : '−'}{formatKg(Math.abs(e.delta))} kg</span>
+            {/if}
+            <span class="rm-record titre">{formatKg(e.rm)}<span class="unite">kg</span></span>
+          </a>
+        </li>
+      {/each}
+    </ul>
+  {:else if exos.length}
     <div class="cartes">
       {#each exos as e (e.cle)}
         <a class="carte" href={lien(e.cle)} aria-label={`Voir la progression : ${e.nom}`}>
@@ -40,9 +58,57 @@
   {:else}
     <p class="vide">Tes records apparaîtront dès que tu auras enregistré quelques séries.</p>
   {/if}
+  <!-- Le widget entier ouvre l'analyse des records ; ce lien-ci ouvre la liste de tous tes exercices (records, exercices perso) -->
+  <a class="lien-exos" href={pageExercices}>Tous mes exercices et records ›</a>
 </Bloc>
 
 <style>
+  .lien-exos {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible);
+    margin-top: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--texte-doux);
+  }
+  .lien-exos:hover {
+    color: var(--texte);
+  }
+  .lignes {
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lignes li + li {
+    border-top: 1px solid var(--trait);
+  }
+  .ligne-record {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+  }
+  .nom-record {
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rm-record {
+    font-size: 20px;
+    line-height: 1;
+  }
+  .rm-record .unite {
+    margin-left: 3px;
+    font-family: var(--police-texte);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--texte-doux);
+  }
   .cartes {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));

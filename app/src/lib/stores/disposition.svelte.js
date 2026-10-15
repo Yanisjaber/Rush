@@ -96,7 +96,7 @@ async function enregistrer() {
   if (Object.keys(onglets).length) layout.onglets = onglets;
   ecrireLocal(utilisateur, layout);
   if (utilisateur === 'demo' || disposition.stockage !== 'base') {
-    disposition.message = 'Enregistré sur cet appareil.';
+    disposition.message = ''; // enregistré sur l'appareil : rien à dire, ça n'a pas besoin d'un message
     return;
   }
   const r = await sb
@@ -107,7 +107,7 @@ async function enregistrer() {
     disposition.stockage = 'local';
     disposition.message = "Enregistré sur cet appareil (la sauvegarde en ligne a échoué).";
   } else {
-    disposition.message = 'Accueil enregistré.';
+    disposition.message = ''; // enregistré en ligne : rien à dire (seule une erreur de sauvegarde mérite un message)
   }
 }
 
@@ -192,6 +192,15 @@ export function deplacer(index, sens) {
   const cible = index + sens;
   if (cible < 0 || cible >= w.length) return;
   [w[index], w[cible]] = [w[cible], w[index]];
+  personnaliser();
+}
+
+/** Déplace le widget d'une position à une autre (glisser-déposer au doigt) : les autres se décalent d'un cran. */
+export function deplacerVers(de, vers) {
+  const w = listeEnEdition();
+  if (de === vers || de < 0 || vers < 0 || de >= w.length || vers >= w.length) return;
+  const [bouge] = w.splice(de, 1);
+  w.splice(vers, 0, bouge);
   personnaliser();
 }
 

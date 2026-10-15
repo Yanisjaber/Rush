@@ -12,6 +12,7 @@ import WidgetEfficacite from './WidgetEfficacite.svelte';
 import WidgetMeilleures from './WidgetMeilleures.svelte';
 import WidgetPuissance from './WidgetPuissance.svelte';
 import WidgetSeanceDuJour from './WidgetSeanceDuJour.svelte';
+import WidgetProgrammes from './WidgetProgrammes.svelte';
 import WidgetTonnage from './WidgetTonnage.svelte';
 import WidgetChargeMuscu from './WidgetChargeMuscu.svelte';
 import WidgetRecords from './WidgetRecords.svelte';
@@ -36,6 +37,7 @@ export const COMPOSANTS = {
   meilleures: WidgetMeilleures,
   puissance: WidgetPuissance,
   seancedujour: WidgetSeanceDuJour,
+  programmes: WidgetProgrammes,
   tonnage: WidgetTonnage,
   chargemuscu: WidgetChargeMuscu,
   records: WidgetRecords,

@@ -10,7 +10,8 @@
   // Les plus récentes, quelle que soit leur date (contexte.dernieres) : la liste ne se vide pas pendant une pause.
   // Autant de lignes que la carte a de place : on mesure la hauteur disponible (la carte prend celle de sa rangée, la liste
   // ne l'agrandit jamais) et on divise par la hauteur d'une ligne.
-  let { contexte, taille = 'm' } = $props();
+  // compact : liste courte pour téléphone (3 lignes, sans mesure de hauteur) ; le journal complet s'ouvre en touchant la carte
+  let { contexte, taille = 'm', compact = false } = $props();
   const HAUTEUR_LIGNE = 61; // 60 px mini + 1 px de séparation
   let hauteur = $state(0);
   let zone = $state(); // l'élément qui reçoit la liste
@@ -23,7 +24,7 @@
     obs.observe(zone);
     return () => obs.disconnect();
   });
-  const nb = $derived(hauteur ? Math.max(1, Math.floor((hauteur + 1) / HAUTEUR_LIGNE)) : taille === 'l' ? 8 : 5); // avant la mesure : l'ancien nombre fixe
+  const nb = $derived(compact ? 3 : hauteur ? Math.max(1, Math.floor((hauteur + 1) / HAUTEUR_LIGNE)) : taille === 'l' ? 8 : 5); // avant la mesure : l'ancien nombre fixe
   // Les records battus dans chaque séance (sur tout l'historique de force) : une pastille « Record » ou « 2 records »
   const records = $derived(recordsParSeance(contexte.force.series));
   const recentes = $derived(contexte.dernieres.slice(0, nb));
@@ -37,9 +38,9 @@
 </script>
 
 <div class="cadre">
-<Bloc titre="Dernières séances">
+<Bloc titre="Dernières séances" {compact}>
   {#if recentes.length}
-    <div class="zone" bind:this={zone}>
+    <div class="zone" class:plat={compact} bind:this={zone}>
     <ul class="seances">
       {#each recentes as s (s.id)}
         <li>
@@ -82,6 +83,15 @@
     position: relative;
     flex: 1;
     min-height: 244px; /* 4 lignes : la carte ne dépasse jamais les autres, elle prend la hauteur de sa rangée et ajoute des lignes si elle est plus haute */
+  }
+  .zone.plat {
+    min-height: 0;
+  }
+  .zone.plat .seances {
+    position: static;
+  }
+  .zone.plat .ligne {
+    min-height: 52px;
   }
   .seances {
     position: absolute;
