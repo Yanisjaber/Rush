@@ -21,6 +21,8 @@ export const SPORTS_PREVUE = [
   { cle: 'velo', type: 'Ride' },
   { cle: 'vtt', type: 'MountainBikeRide' },
   { cle: 'natation', type: 'Swim' },
+  { cle: 'triathlon', type: 'Triathlon' },
+  { cle: 'duathlon', type: 'Duathlon' },
   { cle: 'muscu', type: 'WeightTraining' },
   { cle: 'crossfit', type: 'Crossfit' },
   { cle: 'hyrox', type: 'Hyrox' },

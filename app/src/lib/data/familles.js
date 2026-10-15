@@ -27,6 +27,8 @@ const FAMILLES = {
   // « Other » : type interne de l'app pour une séance prévue « Autre sport » (ce n'est pas un type Strava) : il reste dans « autre »
   Crossfit: 'crossfit',
   Hyrox: 'hyrox', // type propre à l'app : Strava n'a pas de sport Hyrox
+  Triathlon: 'triathlon', // types propres à l'app (Strava n'a pas de séance « triathlon ») : un sport à part, pas la somme de course, vélo et natation
+  Duathlon: 'duathlon',
   HighIntensityIntervalTraining: 'crossfit',
   // Ski et glisse
   NordicSki: 'ski',

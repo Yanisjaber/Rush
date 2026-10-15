@@ -6,7 +6,9 @@
   import { disposition, demanderEdition, reinitialiserAuto } from '../stores/disposition.svelte.js';
   import { aller, modeDemo } from '../routeur.svelte.js';
   import ChoixSports from '../components/ChoixSports.svelte';
-  import { chargerMenu } from '../stores/menu.svelte.js';
+  import { SPORTS, couleurSport } from '../sports.js';
+  import { menu, chargerMenu } from '../stores/menu.svelte.js';
+  import { sportsCoches } from '../data/sports-choisis.js';
   import { auth } from '../stores/auth.svelte.js';
   import { sportsChoisis, chargerSportsChoisis, enregistrerSportsChoisis } from '../stores/sports.svelte.js';
 
@@ -25,10 +27,18 @@
     const id = uid;
     // `untrack` : seul l'identifiant de l'utilisateur doit relancer le chargement, jamais ce qu'il lit ou écrit dans le store
     untrack(() => chargerSportsChoisis(id)).then(() => {
-      choix = [...(sportsChoisis.liste || [])];
+      choix = sportsCoches(sportsChoisis.liste, menu.familles); // les sports de la barre sont cochés, y compris ceux que les séances révèlent
       disciplines = JSON.parse(JSON.stringify(sportsChoisis.disciplines || {}));
     });
   });
+  // Ordre d'affichage : la barre des sports suit l'ordre de cette liste (on la règle avec ↑ ↓, puis « Enregistrer mes sports »)
+  function deplacerSport(i, sens) {
+    const j = i + sens;
+    if (j < 0 || j >= choix.length) return;
+    const copie = [...choix];
+    [copie[i], copie[j]] = [copie[j], copie[i]];
+    choix = copie;
+  }
   async function enregistrerSports() {
     if (sportsEnCours) return;
     sportsEnCours = true;
@@ -48,6 +58,27 @@
   <Bloc titre="Mes sports">
     <p class="aide">Les sports que tu pratiques composent ton accueil et ses onglets. Triathlon : coche course, vélo et natation.</p>
     <ChoixSports bind:selection={choix} bind:disciplines desactive={sportsEnCours} />
+    {#if choix.length > 1}
+      <div class="ordre">
+        <h3 class="titre-ordre titre">Ordre d'affichage</h3>
+        <p class="aide">Dans la barre des sports, du premier au dernier. N'oublie pas d'enregistrer.</p>
+        <ol class="liste-ordre">
+          {#each choix as cle, i (cle)}
+            <li>
+              <span class="rang titre" aria-hidden="true">{i + 1}</span>
+              <span class="point" style:background={couleurSport(cle)} aria-hidden="true"></span>
+              <span class="nom-sport">{(SPORTS[cle] || SPORTS.autre).nom}</span>
+              <button type="button" aria-label="Monter {(SPORTS[cle] || SPORTS.autre).nom}" disabled={i === 0 || sportsEnCours} onclick={() => deplacerSport(i, -1)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6" /></svg>
+              </button>
+              <button type="button" aria-label="Descendre {(SPORTS[cle] || SPORTS.autre).nom}" disabled={i === choix.length - 1 || sportsEnCours} onclick={() => deplacerSport(i, 1)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+              </button>
+            </li>
+          {/each}
+        </ol>
+      </div>
+    {/if}
     <div class="actions" style="margin-top: 14px">
       <Bouton onclick={enregistrerSports}>{sportsEnCours ? 'Enregistrement…' : 'Enregistrer mes sports'}</Bouton>
     </div>
@@ -75,6 +106,67 @@
 </div>
 
 <style>
+  .ordre {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--trait);
+  }
+  .titre-ordre {
+    margin: 0 0 4px;
+    font-size: 17px;
+  }
+  .liste-ordre {
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .liste-ordre li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: var(--cible);
+    border-top: 1px solid var(--trait);
+  }
+  .liste-ordre li:first-child {
+    border-top: 0;
+  }
+  /* Le numéro de place (1, 2, 3…) : la liste est une <ol>, les lecteurs d'écran annoncent déjà la position */
+  .rang {
+    flex: none;
+    width: 22px;
+    font-size: 17px;
+    line-height: 1;
+    text-align: center;
+    color: var(--texte-doux);
+  }
+  .liste-ordre .point {
+    flex: none;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+  .nom-sport {
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .liste-ordre button {
+    flex: none;
+    width: var(--cible);
+    height: var(--cible);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: none;
+    color: var(--texte);
+    cursor: pointer;
+  }
+  .liste-ordre button:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
   .onglet {
     display: flex;
     flex-direction: column;

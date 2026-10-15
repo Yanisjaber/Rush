@@ -20,13 +20,33 @@ export const GROUPES_SPORTS = [
 ];
 
 /**
- * Nettoie une liste venue du stockage : on ne garde que des clés connues, une seule fois chacune, dans l'ordre de l'écran.
+ * Nettoie une liste venue du stockage : on ne garde que des clés connues, une seule fois chacune, DANS L'ORDRE DE L'UTILISATEUR
+ * (c'est l'ordre d'affichage des pastilles, réglable dans Paramètres › Préférences).
  * Renvoie null si ce n'est pas un tableau (= « jamais demandé »).
  */
 export function nettoyerSports(brut) {
   if (!Array.isArray(brut)) return null;
-  const choisis = new Set(brut.filter((s) => typeof s === 'string'));
-  return SPORTS_A_CHOISIR.filter((s) => choisis.has(s));
+  const connus = new Set(SPORTS_A_CHOISIR);
+  const vus = new Set();
+  const liste = [];
+  for (const s of brut) {
+    if (typeof s === 'string' && connus.has(s) && !vus.has(s)) {
+      vus.add(s);
+      liste.push(s);
+    }
+  }
+  return liste;
+}
+
+/**
+ * Les sports à montrer COCHÉS : ceux que l'utilisateur a choisis (dans son ordre), plus les sports principaux que ses données
+ * font déjà apparaître dans la barre (muscu, Hyrox… révélés par ses séances) même s'il ne les a jamais cochés.
+ * Sans cette règle commune, un sport visible dans la barre pourrait apparaître décoché dans Préférences.
+ */
+export function sportsCoches(liste, familles) {
+  const base = Array.isArray(liste) ? liste : [];
+  const revelesParLesDonnees = SPORTS_PRINCIPAUX.filter((s) => (familles || []).includes(s) && !base.includes(s));
+  return [...base, ...revelesParLesDonnees];
 }
 
 /**
@@ -37,15 +57,23 @@ export function onboardingNecessaire({ demo = false, sportsEnregistres = null, n
   return !demo && sportsEnregistres === null && nbSeances === 0 && !aForce && !aHyrox;
 }
 
-/** Les familles de l'accueil qu'un sport choisi fait apparaître : le trail est de la course, le VTT du vélo, le triathlon les trois disciplines, le duathlon course et vélo. */
-const FAMILLES_DU_SPORT = { trail: ['course'], vtt: ['velo'], triathlon: ['course', 'velo', 'natation'], duathlon: ['course', 'velo'] };
+/**
+ * Les familles de l'accueil qu'un sport choisi fait apparaître : le trail est de la course, le VTT du vélo.
+ * Le triathlon et le duathlon sont des sports à part entière : cocher l'un n'ajoute ni course, ni vélo, ni natation
+ * (on les coche à part, en plus si on les pratique aussi seuls).
+ */
+const FAMILLES_DU_SPORT = { trail: ['course'], vtt: ['velo'] };
 
-/** Les familles de sport de l'accueil : celles déduites des données, plus celles des sports choisis (« autre » n'a pas d'onglet). */
+/**
+ * Les familles de sport de l'accueil, dans l'ordre d'affichage : d'abord les sports choisis (dans l'ordre de l'utilisateur),
+ * puis ceux que ses données révèlent sans qu'il les ait cochés (« autre » n'a pas d'onglet).
+ */
 export function fusionnerFamilles(deDonnees = [], choisis = []) {
-  const f = new Set(deDonnees);
+  const f = new Set();
   for (const s of choisis || []) {
     for (const famille of Object.hasOwn(FAMILLES_DU_SPORT, s) ? FAMILLES_DU_SPORT[s] : [s]) f.add(famille);
   }
+  for (const famille of deDonnees || []) f.add(famille);
   f.delete('autre');
   return [...f];
 }
