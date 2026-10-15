@@ -3,7 +3,6 @@
   import PanneauPrevue from '../lib/components/PanneauPrevue.svelte';
   import PanneauCompetition from '../lib/components/PanneauCompetition.svelte';
   import { menu } from '../lib/stores/menu.svelte.js';
-  import SelecteurSport from '../lib/components/SelecteurSport.svelte';
   import { route, ouvrirPanneau, fermerPanneau } from '../lib/routeur.svelte.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { ouvrirApercu } from '../lib/stores/apercu.svelte.js';
@@ -137,7 +136,6 @@
   <header class="entete-page">
     <h1 class="titre">Plan</h1>
   </header>
-  <SelecteurSport />
 
   {#if etat.chargement}
     <p class="info" role="status">Chargement du plan…</p>

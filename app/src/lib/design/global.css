@@ -8,6 +8,8 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Comme une appli : ni zoom (pincement, double-tap), seul le défilement est permis */
+  touch-action: pan-x pan-y;
 }
 
 body {
@@ -18,6 +20,17 @@ body {
   font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  /* Comme une appli : un appui long ne sélectionne pas le texte et n'ouvre pas le menu de l'iPhone (aperçu de lien, copier…) */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+/* On garde la saisie : dans un champ, on doit pouvoir sélectionner, coller et corriger son texte */
+input,
+textarea,
+[contenteditable='true'] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 h1,
@@ -98,7 +111,30 @@ textarea {
 /* Téléphone : la barre du bas est fixe, on laisse sa place sous le contenu ; le contenu commence tout en haut (plus d'en-tête) */
 @media (max-width: 760px) {
   .page {
-    padding-top: 16px;
-    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+    /* Jamais plus courte que l'écran (même pendant « Chargement… ») : sinon Safari remet sa barre en place et le menu du bas saute */
+    min-height: 100lvh;
+    /* PWA iPhone : la page passe sous l'heure et l'encoche, on décale du haut de la zone de sécurité */
+    padding-top: calc(16px + env(safe-area-inset-top));
+    padding-bottom: calc(84px + env(safe-area-inset-bottom)); /* la barre du bas est 12 px plus basse */
   }
+  /* Hauteur du menu du bas (6 de marge + 46 de bouton + 1 de trait + le bas de l'iPhone) : sert à poser une barre juste au-dessus */
+  :root {
+    --hauteur-barre-bas: calc(53px + max(6px, env(safe-area-inset-bottom) - 12px));
+  }
+  /* Personnaliser sur téléphone : la barre d'outils du widget choisi prend ~52 px au-dessus du menu, on laisse la place sous la page */
+  body:has(.barre-edition-tel) .page {
+    padding-bottom: calc(84px + 56px + env(safe-area-inset-bottom));
+  }
+  /* Barre Sport figée en haut (SelecteurSport) : 47 px de barre (44 de pastille + 2 de marge + 1 de trait) + la zone de l'encoche, puis un peu d'air.
+     Les pastilles sont remontées de 8 px dans la barre, qui garde la même hauteur : le total ne change pas. */
+  body:has(.barre-sport) .page {
+    padding-top: calc(47px + 12px + env(safe-area-inset-top));
+  }
+}
+
+/* Changement de contenu : fondu enchaîné court (déclenché par routeur.svelte.js). Les barres fixes ont leur propre nom et ne bougent pas. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.2s;
+  animation-timing-function: ease;
 }

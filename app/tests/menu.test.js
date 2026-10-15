@@ -10,14 +10,12 @@ test('menu ordinateur : les six pages, dans l\'ordre (Muscu et Hyrox sont des sp
   assert.equal(PAGES.hyrox, undefined);
 });
 
-test('barre du bas : « Sports » seulement si on a des sports, « Plus » toujours, jamais plus de cinq boutons', () => {
-  assert.deepEqual(cles(barreBas([]).items), ['accueil', 'calendrier', 'plan', 'plus']);
-  const b = barreBas(['course', 'muscu']);
-  assert.deepEqual(cles(b.items), ['accueil', 'calendrier', 'plan', 'sports', 'plus']);
-  assert.equal(b.items[3].ouvre, 'sports');
+test('barre du bas : Accueil, Calendrier, Plan et Plus (le sport se choisit dans la barre du haut)', () => {
+  const b = barreBas();
+  assert.deepEqual(cles(b.items), ['accueil', 'calendrier', 'plan', 'plus']);
+  assert.equal(b.items[3].ouvre, 'plus');
   assert.deepEqual(cles(b.plus), ['competitions', 'bilan', 'sommeil', 'parametres']);
   assert.ok(b.items.length <= 5);
-  assert.deepEqual(cles(barreBas(null).items), cles(barreBas([]).items));
 });
 
 test('lienPage : le sport est écrit dans l\'adresse sauf pour Sommeil et Paramètres', () => {

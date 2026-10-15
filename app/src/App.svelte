@@ -6,6 +6,7 @@
   import Ecran from './lib/components/Ecran.svelte';
   import BarreBas from './lib/components/BarreBas.svelte';
   import EnTete from './lib/components/EnTete.svelte';
+  import SelecteurSport from './lib/components/SelecteurSport.svelte';
   import { cleDePage } from './lib/data/menu.js';
   import { chargerMenu, menuDemo, oublierMenu } from './lib/stores/menu.svelte.js';
   import PanneauSeance from './lib/components/PanneauSeance.svelte';
@@ -107,6 +108,11 @@
     route.chemin !== '/catalogue' && route.chemin !== '/confidentialite' && (demo || (auth.pret && !!auth.session && !auth.definirMdp && route.chemin !== '/mot-de-passe')),
   );
 
+  // La barre des sports (téléphone) ne s'affiche que sur Accueil, Calendrier, Plan, Compétitions et Bilan.
+  // Une page ouverte depuis un widget (analyse, journal) la recouvre entièrement : son bouton « Retour » la remet.
+  const PAGES_AVEC_BARRE_SPORT = ['/', '/calendrier', '/plan', '/competitions', '/bilan'];
+  const avecBarreSport = $derived(avecBarreBas && PAGES_AVEC_BARRE_SPORT.includes(route.chemin) && !(route.chemin === '/' && route.sous === 'journal'));
+
   // Le lien du menu à surligner : la page courante (les séances de force en direct ne surlignent rien, comme avant)
   const actifMenu = $derived(forceSeance ? 'force' : (cleDePage(route.chemin) ?? ''));
 </script>
@@ -175,6 +181,7 @@
   <Accueil />
 {/if}
 
+{#if avecBarreSport}<SelecteurSport />{/if}
 {#if avecBarreBas}<BarreBas {demo} />{/if}
 
 <!-- Résumé d'une séance réalisée : ouvert depuis le calendrier ou les widgets -->
@@ -184,6 +191,7 @@
 
 <style>
   .entete-fixe {
+    view-transition-name: entete; /* le menu d'ordinateur reste fixe pendant le fondu entre deux pages */
     box-sizing: border-box;
     width: 100%;
     max-width: var(--page-max);

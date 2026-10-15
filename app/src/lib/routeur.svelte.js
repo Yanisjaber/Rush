@@ -1,5 +1,6 @@
 // Routeur minimal à base de hash (#/course/calendrier/2026-09). Suffisant pour GitHub Pages, sans configuration serveur.
 // L'adresse est la source de vérité : page, sport choisi et détail (mois, année, vue) y sont écrits (voir data/adresses.js).
+import { tick } from 'svelte';
 import { analyserAdresse, construireAdresse, estPageSport } from './data/adresses.js';
 import { menu } from './stores/menu.svelte.js';
 
@@ -13,6 +14,37 @@ function lire() {
 const depart = lire();
 export const route = $state({ chemin: depart.chemin, sport: depart.sport, sous: depart.sous, q: depart.q });
 
+function appliquerEtat(a) {
+  route.chemin = a.chemin;
+  route.sport = a.sport;
+  route.sous = a.sous;
+  if (JSON.stringify(a.q) !== JSON.stringify(route.q)) route.q = a.q; // inchangé : on ne réveille personne
+  // Une page qui suit le sport lit son choix dans l'adresse (sans sport = tous) ; Sommeil, Paramètres… gardent le dernier choix
+  if (estPageSport(a.chemin)) menu.filtre = a.sport || 'tout';
+}
+
+// Fondu enchaîné quand le contenu change (API « View Transitions », absente des vieux navigateurs : alors le changement reste instantané)
+const peutAnimer = () =>
+  typeof document !== 'undefined' && typeof document.startViewTransition === 'function' && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// On attend que l'écran qui arrive soit chargé (plus de « Chargement… » au milieu du fondu), sans dépasser 600 ms.
+// setTimeout et pas requestAnimationFrame : le rendu est suspendu pendant que le navigateur prépare la transition.
+function ecranPret() {
+  return new Promise((resolve) => {
+    const debut = performance.now();
+    const verifier = () => {
+      if (!document.querySelector('.attente') || performance.now() - debut > 600) resolve();
+      else setTimeout(verifier, 16);
+    };
+    verifier();
+  });
+}
+
+// Un changement d'adresse déclenche souvent DEUX événements (popstate puis hashchange) : sans cette garde, le second lancerait
+// un deuxième fondu qui annule le premier, et le changement paraîtrait sec. On retient l'adresse du fondu en cours.
+const cle = (a) => JSON.stringify([a.chemin, a.sport, a.sous, a.q]);
+let enCours = null;
+
 function appliquer() {
   const a = lire();
   if (a.redirection) {
@@ -20,12 +52,24 @@ function appliquer() {
     location.replace(location.pathname + location.search + a.redirection);
     return;
   }
-  route.chemin = a.chemin;
-  route.sport = a.sport;
-  route.sous = a.sous;
-  if (JSON.stringify(a.q) !== JSON.stringify(route.q)) route.q = a.q; // inchangé : on ne réveille personne
-  // Une page qui suit le sport lit son choix dans l'adresse (sans sport = tous) ; Sommeil, Paramètres… gardent le dernier choix
-  if (estPageSport(a.chemin)) menu.filtre = a.sport || 'tout';
+  // Animé : tout changement de contenu (page, sport choisi, sous-vue : mois, onglet, journal…).
+  // Pas animé : ouvrir ou fermer un panneau, changer un réglage (période, métrique…) : ils ont leur propre mouvement et ne touchent pas à ces trois champs.
+  const contenuChange = a.chemin !== route.chemin || a.sport !== route.sport || a.sous !== route.sous;
+  if (contenuChange && peutAnimer()) {
+    if (cle(a) === enCours) return; // le même changement est déjà en train de se fondre (second événement de la même navigation)
+    enCours = cle(a);
+    const transition = document.startViewTransition(async () => {
+      appliquerEtat(a);
+      await tick();
+      await ecranPret();
+    });
+    transition.ready.catch(() => {}); // un fondu interrompu rejette ces promesses : sans importance, on évite l'erreur en console
+    transition.finished
+      .catch(() => {})
+      .finally(() => {
+        enCours = null;
+      });
+  } else appliquerEtat(a);
 }
 
 if (typeof window !== 'undefined') {

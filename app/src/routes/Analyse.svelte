@@ -10,7 +10,6 @@
   import CorpsMusculaire from '../lib/components/charts/CorpsMusculaire.svelte';
   import GraphiqueExercice from '../lib/components/charts/GraphiqueExercice.svelte';
   import HistoriqueExercice from '../lib/components/charts/HistoriqueExercice.svelte';
-  import SelecteurSport from '../lib/components/SelecteurSport.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { menu } from '../lib/stores/menu.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
@@ -63,7 +62,6 @@
 </script>
 
 <main class="page">
-  <SelecteurSport />
 
   <p class="retour"><a href={retour}>← Retour à l'accueil</a></p>
 

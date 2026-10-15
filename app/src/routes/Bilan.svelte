@@ -6,7 +6,6 @@
   import PanneauObjectif from '../lib/components/PanneauObjectif.svelte';
   import GrapheNuits from '../lib/components/charts/GrapheNuits.svelte';
   import { menu } from '../lib/stores/menu.svelte.js';
-  import SelecteurSport from '../lib/components/SelecteurSport.svelte';
   import { route, aller, ouvrirPanneau, fermerPanneau, regler } from '../lib/routeur.svelte.js';
   import { construireAdresse, anneeDepuisAdresse } from '../lib/data/adresses.js';
   import { auth } from '../lib/stores/auth.svelte.js';
@@ -131,7 +130,6 @@
     </label>
   </header>
 
-  <SelecteurSport />
 
   {#if etat.chargement}
     <p class="info" role="status">Chargement du bilan…</p>

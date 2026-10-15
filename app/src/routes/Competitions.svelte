@@ -9,7 +9,6 @@
   import { palmares, initialiserPalmares, lierLicence } from '../lib/stores/palmares.svelte.js';
   import { fusionner, resultatsManuels, resultatDuJour, texteClassement, nomLicence } from '../lib/data/opendossard.js';
   import { menu } from '../lib/stores/menu.svelte.js';
-  import SelecteurSport from '../lib/components/SelecteurSport.svelte';
   import { route, ouvrirPanneau, fermerPanneau } from '../lib/routeur.svelte.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { donnees } from '../lib/stores/edition.svelte.js';
@@ -128,7 +127,6 @@
     <h1 class="titre">Compétitions</h1>
     <Bouton onclick={nouvelle}>Nouvelle compétition</Bouton>
   </header>
-  <SelecteurSport />
 
   {#if etat.chargement}
     <p class="info" role="status">Chargement…</p>

@@ -26,12 +26,12 @@ export function pagesMenu() {
 }
 
 /**
- * Barre du bas du téléphone : Accueil, Calendrier, Plan, « Sports » (la feuille pour choisir le sport, seulement si l'on en a)
- * puis « Plus » (le reste, réglages compris). Renvoie { items, plus } : `items` pour la barre, `plus` pour la feuille « Plus ».
+ * Barre du bas du téléphone : Accueil, Calendrier, Plan puis « Plus » (le reste, réglages compris).
+ * Le choix du sport n'est plus ici : c'est la barre fixe du haut (SelecteurSport).
+ * Renvoie { items, plus } : `items` pour la barre, `plus` pour la feuille « Plus ».
  */
-export function barreBas(familles = []) {
+export function barreBas() {
   const items = [page('accueil'), page('calendrier'), page('plan')];
-  if ((familles || []).length) items.push({ cle: 'sports', nom: 'Sports', ouvre: 'sports' });
   items.push({ cle: 'plus', nom: 'Plus', ouvre: 'plus' });
   return { items, plus: ['competitions', 'bilan', 'sommeil', 'parametres'].map(page) };
 }
@@ -48,5 +48,5 @@ export function cleDePage(chemin) {
 
 /** La page courante est-elle l'une de celles qu'on cache derrière « Plus » ? Sert à surligner ce bouton. */
 export function ouvertureActive(cle) {
-  return cle && barreBas([]).plus.some((p) => p.cle === cle) ? 'plus' : null;
+  return cle && barreBas().plus.some((p) => p.cle === cle) ? 'plus' : null;
 }

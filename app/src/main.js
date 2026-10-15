@@ -12,6 +12,11 @@ import './lib/design/global.css';
 import App from './App.svelte';
 import { migrerClesLocales } from './lib/stockage-local.js';
 
+// Pas de zoom au pincement : Safari sur iPhone ignore parfois la balise viewport, ses gestes de zoom sont donc bloqués ici aussi.
+for (const geste of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(geste, (e) => e.preventDefault());
+}
+
 // Les réglages du navigateur ont changé de nom avec l'app : on les recopie une fois sous leur nouveau nom, avant de les lire.
 migrerClesLocales();
 

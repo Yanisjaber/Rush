@@ -19,4 +19,11 @@
     padding: 48px 32px;
     color: var(--texte-doux);
   }
+  /* Téléphone : la page ne se réduit pas pendant le chargement, le menu du bas reste en place sur iPhone */
+  @media (max-width: 760px) {
+    .attente {
+      box-sizing: border-box;
+      min-height: 100lvh;
+    }
+  }
 </style>

@@ -2,24 +2,19 @@
   import Panneau from './Panneau.svelte';
   import { menu } from '../stores/menu.svelte.js';
   import { barreBas, cleDePage, ouvertureActive, lienPage } from '../data/menu.js';
-  import { route, changerSport, ouvrirPanneau, fermerPanneau } from '../routeur.svelte.js';
-  import { SPORTS, couleurSport } from '../sports.js';
+  import { route, ouvrirPanneau, fermerPanneau } from '../routeur.svelte.js';
 
   // Barre de navigation fixe en bas du téléphone (au pouce). Sur ordinateur elle n'existe pas : le menu est en haut.
-  // « Sports » et « Plus » ouvrent une feuille qui monte du bas avec les pages qu'ils regroupent.
+  // « Plus » ouvre une feuille qui monte du bas avec les pages qu'il regroupe. Le choix du sport est dans la barre du haut.
   let { demo = false } = $props();
 
-  const b = $derived(barreBas(menu.familles));
+  const b = barreBas();
   const courante = $derived(cleDePage(route.chemin));
   const surligne = $derived(ouvertureActive(courante));
-  // La feuille ouverte (« sports » ou « plus ») est dans l'adresse (?feuille=plus)
-  const feuille = $derived(route.q.feuille === 'sports' || route.q.feuille === 'plus' ? route.q.feuille : null);
+  // La feuille « Plus » est dans l'adresse (?feuille=plus)
+  const feuille = $derived(route.q.feuille === 'plus' ? 'plus' : null);
   const fermerFeuille = () => fermerPanneau('feuille');
   const pagesFeuille = $derived(feuille === 'plus' ? b.plus : []);
-  const choisir = (f) => {
-    changerSport(f);
-    fermerFeuille();
-  };
 </script>
 
 {#snippet icone(cle)}
@@ -29,18 +24,17 @@
     {:else if cle === 'plan'}<path d="M4 6h16M4 12h16M4 18h10" />
     {:else if cle === 'force'}<path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11" />
     {:else if cle === 'hyrox'}<path d="M13 2L4 14h7l-1 8 9-12h-7z" />
-    {:else if cle === 'sports'}<circle cx="12" cy="12" r="9" /><path d="M12 3v18M3 12h18" />
     {:else}<circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" />{/if}
   </svg>
 {/snippet}
 
 <nav class="bas" aria-label="Navigation principale">
   {#each b.items as it (it.cle)}
-    {@const actif = it.ouvre === 'sports' ? menu.filtre !== 'tout' : it.ouvre ? surligne === it.ouvre : courante === it.cle}
+    {@const actif = it.ouvre ? surligne === it.ouvre : courante === it.cle}
     {#if it.ouvre}
       <button type="button" class="btn" class:actif aria-haspopup="dialog" onclick={() => ouvrirPanneau({ feuille: it.ouvre })}>
         {@render icone(it.cle)}
-        <span>{it.cle === 'sports' && menu.filtre !== 'tout' ? (SPORTS[menu.filtre] || SPORTS.autre).court : it.nom}</span>
+        <span>{it.nom}</span>
       </button>
     {:else}
       <a class="btn" class:actif href={lienPage(it.cle, menu.filtre)} aria-current={actif ? 'page' : undefined}>
@@ -51,18 +45,8 @@
   {/each}
 </nav>
 
-<Panneau ouvert={feuille !== null} titre={feuille === 'sports' ? 'Sport affiché' : 'Plus'} onfermer={fermerFeuille}>
+<Panneau ouvert={feuille !== null} titre="Plus" onfermer={fermerFeuille}>
   <ul class="liste">
-    {#if feuille === 'sports'}
-      <li><button type="button" class:courant={menu.filtre === 'tout'} onclick={() => choisir('tout')}>Tous les sports</button></li>
-      {#each menu.familles as f (f)}
-        <li>
-          <button type="button" class:courant={menu.filtre === f} onclick={() => choisir(menu.filtre === f ? 'tout' : f)}>
-            <span class="point" style:background={couleurSport(f)}></span>{(SPORTS[f] || SPORTS.autre).nom}
-          </button>
-        </li>
-      {/each}
-    {/if}
     {#each pagesFeuille as p (p.cle)}
       <li><a href={lienPage(p.cle, menu.filtre)} aria-current={courante === p.cle ? 'page' : undefined} onclick={fermerFeuille}>{p.nom}</a></li>
     {/each}
@@ -84,14 +68,17 @@
       right: 0;
       bottom: 0;
       z-index: 40;
+      view-transition-name: barre-bas; /* reste fixe pendant le fondu entre deux pages */
       display: flex;
       justify-content: space-around;
-      padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+      /* on descend les boutons : seulement une partie de la zone de l'indicateur d'accueil (34 px sur iPhone) est laissée sous eux */
+      padding: 6px 4px max(6px, calc(env(safe-area-inset-bottom) - 12px));
       background: var(--fond);
       border-top: 1px solid var(--trait);
     }
   }
   .btn {
+    -webkit-tap-highlight-color: transparent; /* pas de flash gris d'iOS quand on touche un onglet */
     flex: 1;
     min-width: 0;
     min-height: var(--cible);
@@ -112,9 +99,11 @@
   }
   .btn.actif {
     color: var(--texte);
+    font-weight: 800; /* l'onglet où l'on est ressort : texte plus gras */
   }
   .btn.actif svg {
     color: var(--texte);
+    stroke-width: 2.6; /* icône plus épaisse, comme le texte */
   }
   .btn:focus-visible {
     outline: 2px solid var(--texte);
@@ -128,15 +117,9 @@
   .liste li + li {
     border-top: 1px solid var(--trait);
   }
-  .liste a,
-  .liste button {
+  .liste a {
     width: 100%;
     gap: 10px;
-    border: 0;
-    background: none;
-    font-family: inherit;
-    text-align: left;
-    cursor: pointer;
     display: flex;
     align-items: center;
     min-height: 52px;
@@ -144,13 +127,6 @@
     font-weight: 600;
     color: var(--texte);
   }
-  .point {
-    flex: none;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-  }
-  .liste button.courant,
   .liste a[aria-current='page'] {
     color: var(--texte);
     text-decoration: underline;

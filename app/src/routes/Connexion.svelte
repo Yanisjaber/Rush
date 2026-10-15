@@ -316,4 +316,36 @@
   .info.ok {
     color: var(--ok);
   }
+
+  /* Téléphone : on respecte l'encoche et la barre du bas, et on resserre pour que tout tienne sans défiler */
+  @media (max-width: 760px) {
+    /* Écran figé : aucun défilement ni rebond (la page entière est verrouillée tant que cet écran est affiché) */
+    :global(html:has(.connexion)),
+    :global(body:has(.connexion)) {
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+    .connexion {
+      height: 100dvh;
+      overflow: hidden;
+      gap: 20px;
+      padding: calc(16px + env(safe-area-inset-top)) 20px calc(16px + env(safe-area-inset-bottom));
+    }
+    .marque {
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 34px;
+    }
+    .accroche {
+      margin-top: 10px;
+      font-size: 16px;
+    }
+    /* Pas de case : le formulaire est posé directement sur le fond noir */
+    .formulaire {
+      gap: 12px;
+      padding: 0;
+      background: none;
+    }
+  }
 </style>

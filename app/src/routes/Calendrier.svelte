@@ -1,6 +1,5 @@
 <script>
   import { untrack } from 'svelte';
-  import SelecteurSport from '../lib/components/SelecteurSport.svelte';
   import { menu } from '../lib/stores/menu.svelte.js';
   import Bouton from '../lib/components/Bouton.svelte';
   import PanneauPrevue from '../lib/components/PanneauPrevue.svelte';
@@ -269,7 +268,6 @@
 
 <main class="page">
 
-  <SelecteurSport />
 
   <div class="navigation">
     <div class="mois">
