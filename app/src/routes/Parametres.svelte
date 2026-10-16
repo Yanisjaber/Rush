@@ -13,6 +13,13 @@
   // Le profil est chargé une seule fois ici, puis partagé par les onglets (voir stores/profil.svelte.js).
   let { demo = false, onglet = 'general' } = $props();
 
+  // Sur téléphone la ligne d'onglets défile : on recentre l'onglet actif (ne modifie aucun état)
+  let barreOnglets;
+  $effect(() => {
+    onglet;
+    barreOnglets?.querySelector('[aria-current="page"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+  });
+
   const ONGLETS = [
     { cle: 'general', nom: 'Général' },
     { cle: 'physiologie', nom: 'Physiologie' },
@@ -36,7 +43,7 @@
   <h1 class="titre">Paramètres</h1>
 
   <div class="disposition">
-    <nav class="onglets" aria-label="Sections des paramètres">
+    <nav class="onglets" aria-label="Sections des paramètres" bind:this={barreOnglets}>
       {#each ONGLETS as o (o.cle)}
         <a href="#/parametres/{o.cle}" aria-current={onglet === o.cle ? 'page' : undefined}>{o.nom}</a>
       {/each}
@@ -121,10 +128,19 @@
     .onglets {
       position: static;
       flex-direction: row;
-      flex-wrap: wrap;
+      flex-wrap: nowrap; /* une seule ligne qui défile sur le côté, comme la barre des sports */
       gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      margin-inline: calc(-1 * var(--gouttiere));
+      padding-inline: var(--gouttiere);
+    }
+    .onglets::-webkit-scrollbar {
+      display: none;
     }
     .onglets a {
+      flex: none;
+      white-space: nowrap;
       border: 1px solid var(--trait-fort);
       border-radius: 999px;
     }
