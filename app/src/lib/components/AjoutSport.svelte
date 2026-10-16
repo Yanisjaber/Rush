@@ -9,7 +9,8 @@
 
   // Le bouton « + » fixe à droite de la barre des sports (téléphone) : un menu déroulant avec tous les sports, coché pour ceux qu'on pratique.
   // Toucher un sport l'ajoute ou le retire tout de suite (même enregistrement que Préférences › Mes sports).
-  let { demo = false } = $props();
+  // `pc` : le bouton est dans l'en-tête de l'ordinateur (le menu se pose alors sous le bouton, pas sous la barre fixe du téléphone)
+  let { demo = false, pc = false } = $props();
 
   const uid = $derived(demo || modeDemo() ? 'demo' : auth.session?.user?.id);
   let ouvert = $state(false);
@@ -75,7 +76,7 @@
 
 <svelte:window onpointerdown={dehors} onkeydown={touche} />
 
-<div class="ajout">
+<div class="ajout" class:pc>
   <button
     bind:this={bouton}
     type="button"
@@ -90,7 +91,7 @@
   </button>
 
   {#if ouvert}
-    <div class="menu" bind:this={liste} role="menu" aria-label="Tes sports">
+    <div class="menu" class:pc bind:this={liste} role="menu" aria-label="Tes sports">
       {#each GROUPES_SPORTS as groupe (groupe.titre)}
         <div class="groupe" role="group" aria-label={groupe.titre}>
           <p class="titre-groupe">{groupe.titre}</p>
@@ -166,6 +167,15 @@
     padding-left: 8px;
     margin-left: 4px;
     border-left: 1px solid var(--trait);
+  }
+  .ajout.pc {
+    position: relative;
+    padding-left: 0;
+    margin-left: 0;
+    border-left: 0;
+  }
+  .menu.pc {
+    right: 0;
   }
   .plus {
     -webkit-tap-highlight-color: transparent;
