@@ -25,7 +25,7 @@
     {#if premier.series > 0}<MiniBarres valeurs={groupes.map((g) => g.series)} max={premier.series} etiquette="Séries par groupe musculaire cette semaine" />{/if}
   </Tuile>
 {:else}
-<Bloc titre="Séries par groupe · cette semaine" remplir>
+<Bloc titre="Séries par groupe" remplir>
   <div class="cadre"><div class="corps"><SilhouetteCorps {muscles} etiquette="Muscles travaillés cette semaine" /></div></div>
 </Bloc>
 {/if}
