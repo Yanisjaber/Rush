@@ -29,6 +29,9 @@ export const DISCIPLINES = { athletisme: DISCIPLINES_ATHLE };
 
 const clesDe = (sport) => (Object.hasOwn(DISCIPLINES, sport) ? DISCIPLINES[sport].flatMap((g) => g.disciplines.map((d) => d.cle)) : []);
 
+/** Cette clé est-elle une vraie discipline de ce sport ? (sert à refuser tout texte venu d'ailleurs avant de l'écrire en base) */
+export const disciplineValide = (sport, cle) => typeof cle === 'string' && clesDe(sport).includes(cle);
+
 /** Nom lisible d'une discipline (ou la clé si elle est inconnue). */
 export function nomDiscipline(sport, cle) {
   if (!Object.hasOwn(DISCIPLINES, sport)) return cle;

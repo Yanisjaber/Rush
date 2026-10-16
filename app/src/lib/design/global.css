@@ -130,6 +130,10 @@ textarea {
   body:has(.barre-sport) .page {
     padding-top: calc(47px + 12px + env(safe-area-inset-top));
   }
+  /* Athlé : la barre des disciplines (53 px) s'ajoute sous celle des sports */
+  body:has(.barre-discipline) .page {
+    padding-top: calc(47px + 53px + 12px + env(safe-area-inset-top));
+  }
 }
 
 /* Changement de contenu : fondu enchaîné court (déclenché par routeur.svelte.js). Les barres fixes ont leur propre nom et ne bougent pas. */

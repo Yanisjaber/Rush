@@ -15,7 +15,7 @@
   import { joursDe, versLigneNote } from '../lib/data/annotations.js';
   import { donneesDemo, modelesDemo } from '../lib/data/demo.js';
   import { grilleMois, bornesGrille, decalerMois, JOURS_SEMAINE } from '../lib/data/calendrier.js';
-  import { familleAffichage } from '../lib/data/familles.js';
+  import { familleAffichage, garderSeance } from '../lib/data/familles.js';
   import { SPORTS, couleurSport } from '../lib/sports.js';
   import { formatDuree, dateIsoLocale, formatDateLongue } from '../lib/utils/format.js';
 
@@ -82,11 +82,11 @@
   });
 
   // --- Dérivés ---
-  const garder = (sport) => filtre === 'tout' || familleAffichage(sport) === filtre;
+  const garder = (seance) => garderSeance(seance, filtre, menu.discipline);
   const grille = $derived(
     grilleMois(cible.annee, cible.mois, {
-      seances: etat.seances.filter((s) => garder(s.sport)),
-      planifiees: etat.planifiees.filter((p) => garder(p.sport)),
+      seances: etat.seances.filter(garder),
+      planifiees: etat.planifiees.filter(garder),
       objectifs: etat.objectifs,
       notes: etat.notes,
       repos: etat.repos,

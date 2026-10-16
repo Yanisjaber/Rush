@@ -7,6 +7,7 @@
   import BarreBas from './lib/components/BarreBas.svelte';
   import EnTete from './lib/components/EnTete.svelte';
   import SelecteurSport from './lib/components/SelecteurSport.svelte';
+  import SelecteurDiscipline from './lib/components/SelecteurDiscipline.svelte';
   import { cleDePage } from './lib/data/menu.js';
   import { chargerMenu, menuDemo, oublierMenu } from './lib/stores/menu.svelte.js';
   import PanneauSeance from './lib/components/PanneauSeance.svelte';
@@ -181,7 +182,7 @@
   <Accueil />
 {/if}
 
-{#if avecBarreSport}<SelecteurSport />{/if}
+{#if avecBarreSport}<SelecteurSport /><SelecteurDiscipline />{/if}
 {#if avecBarreBas}<BarreBas {demo} />{/if}
 
 <!-- Résumé d'une séance réalisée : ouvert depuis le calendrier ou les widgets -->

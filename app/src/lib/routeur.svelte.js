@@ -20,7 +20,11 @@ function appliquerEtat(a) {
   route.sous = a.sous;
   if (JSON.stringify(a.q) !== JSON.stringify(route.q)) route.q = a.q; // inchangé : on ne réveille personne
   // Une page qui suit le sport lit son choix dans l'adresse (sans sport = tous) ; Sommeil, Paramètres… gardent le dernier choix
-  if (estPageSport(a.chemin)) menu.filtre = a.sport || 'tout';
+  if (estPageSport(a.chemin)) {
+    const sport = a.sport || 'tout';
+    if (sport !== menu.filtre) menu.discipline = 'tout'; // un autre sport : la discipline choisie n'a plus de sens
+    menu.filtre = sport;
+  }
 }
 
 // Fondu enchaîné quand le contenu change (API « View Transitions », absente des vieux navigateurs : alors le changement reste instantané)

@@ -4,7 +4,9 @@
 import { sb } from '../supabase.js';
 import { fusionnerFamilles, nettoyerSports } from '../data/sports-choisis.js';
 
-export const menu = $state({ familles: [], pret: false, filtre: 'tout' }); // filtre : sport affiché à l'accueil ('tout' ou une famille)
+// filtre : sport affiché à l'accueil ('tout' ou une famille) ; discipline : sous-filtre de l'athlétisme ('tout' ou une clé de discipline),
+// remis à 'tout' quand on change de sport (voir routeur.svelte.js)
+export const menu = $state({ familles: [], pret: false, filtre: 'tout', discipline: 'tout' });
 
 /** Choisit le sport affiché à l'accueil ; recliquer sur le sport déjà choisi revient à « Tout ». */
 export function choisirFiltre(famille) {

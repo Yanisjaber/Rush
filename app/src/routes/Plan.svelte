@@ -11,7 +11,7 @@
   import { donneesDemo } from '../lib/data/demo.js';
   import { lundiDe, bornesPlan, construirePlan, jourVide } from '../lib/data/plan.js';
   import { phaseDepuis, NOM_PHASE, formeDepuisTsb, conseilPreparation, nomPriorite, prochainObjectif } from '../lib/data/competitions.js';
-  import { familleAffichage } from '../lib/data/familles.js';
+  import { familleAffichage, garderSeance } from '../lib/data/familles.js';
   import { SPORTS, couleurSport } from '../lib/sports.js';
   import { formatDuree, formatKm, joursAvant, dateIsoLocale } from '../lib/utils/format.js';
 
@@ -60,7 +60,7 @@
   });
 
   // Filtre global de sport : seules les séances et compétitions de ce sport sont affichées (la forme reste globale)
-  const garder = (x) => menu.filtre === 'tout' || familleAffichage(x.sport) === menu.filtre;
+  const garder = (x) => garderSeance(x, menu.filtre, menu.discipline);
   const etatFiltre = $derived({
     ...etat,
     planifiees: etat.planifiees.filter(garder),

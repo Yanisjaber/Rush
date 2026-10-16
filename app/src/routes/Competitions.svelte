@@ -16,7 +16,7 @@
   import { chargerCompetitions, chargerMetriques } from '../lib/data/api.js';
   import { competitionsDemo, donneesDemo } from '../lib/data/demo.js';
   import { repartir, prochainObjectif, prioriteDe, nomPriorite, phaseDepuis, NOM_PHASE, formeDepuisTsb, conseilPreparation } from '../lib/data/competitions.js';
-  import { familleAffichage } from '../lib/data/familles.js';
+  import { familleAffichage, garderSeance } from '../lib/data/familles.js';
   import { SPORTS, couleurSport } from '../lib/sports.js';
   import { formatDateLongue, formatDateCourte, formatKm, formatDuree, joursAvant, dateIsoLocale } from '../lib/utils/format.js';
   import { texteObjectif } from '../lib/data/competitions.js';
@@ -61,7 +61,7 @@
 
   // À venir et passées. Les compétitions prévues dont la date est passée restent listées avec les passées (sans résultat).
   // Filtre global de sport : on ne garde que les compétitions de ce sport (les résultats Open Dossard restent rapprochés par date)
-  const garder = (c) => menu.filtre === 'tout' || familleAffichage(c.sport) === menu.filtre;
+  const garder = (c) => garderSeance(c, menu.filtre, menu.discipline);
   const prevuesF = $derived(etat.prevues.filter(garder));
   const couruesF = $derived(etat.courues.filter(garder));
   const reparties = $derived(repartir(prevuesF, aujourdhui));

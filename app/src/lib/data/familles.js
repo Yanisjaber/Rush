@@ -29,6 +29,7 @@ const FAMILLES = {
   Hyrox: 'hyrox', // type propre à l'app : Strava n'a pas de sport Hyrox
   Triathlon: 'triathlon', // types propres à l'app (Strava n'a pas de séance « triathlon ») : un sport à part, pas la somme de course, vélo et natation
   Duathlon: 'duathlon',
+  Athletics: 'athletisme', // idem : séance d'athlétisme (100 m, saut en hauteur…), rattachée à une discipline
   HighIntensityIntervalTraining: 'crossfit',
   // Ski et glisse
   NordicSki: 'ski',
@@ -62,4 +63,14 @@ export function familleSport(typeBrut) {
 export function familleAffichage(typeBrut) {
   const f = familleSport(typeBrut);
   return f === 'trail' ? 'course' : f;
+}
+
+/**
+ * Une séance passe-t-elle le filtre de l'accueil ? Le sport (la famille), puis, pour l'athlétisme, la discipline choisie dans la
+ * deuxième barre ('tout' = toutes). Une séance d'athlétisme sans discipline n'apparaît que sous « Tout ».
+ */
+export function garderSeance(seance, filtre = 'tout', discipline = 'tout') {
+  if (filtre === 'tout') return true;
+  if (familleAffichage(seance?.sport) !== filtre) return false;
+  return filtre !== 'athletisme' || discipline === 'tout' || seance?.discipline === discipline;
 }

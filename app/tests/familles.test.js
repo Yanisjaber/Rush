@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { familleSport, familleAffichage } from '../src/lib/data/familles.js';
+import { familleSport, familleAffichage, garderSeance } from '../src/lib/data/familles.js';
 import { SPORTS } from '../src/lib/sports.js';
 
 test('types Strava courants rangés dans une vraie famille (pas « autre »)', () => {
@@ -29,4 +29,22 @@ test('toutes les familles de la table existent dans le catalogue des sports', ()
 test('« Other » (autre sport prévu dans l\'app) reste « autre », « Workout » (Strava) est de la muscu', () => {
   assert.equal(familleSport('Other'), 'autre');
   assert.equal(familleSport('Workout'), 'muscu');
+});
+
+test('garderSeance : le sport, puis la discipline pour l\'athlétisme', () => {
+  const run = { sport: 'Run' };
+  const quatre = { sport: 'Athletics', discipline: '400m' };
+  const haut = { sport: 'Athletics', discipline: 'hauteur' };
+  const sans = { sport: 'Athletics' };
+  assert.equal(garderSeance(run, 'tout'), true);
+  assert.equal(garderSeance(run, 'course'), true);
+  assert.equal(garderSeance(run, 'athletisme'), false); // une sortie de course n'est pas de l'athlé
+  assert.equal(garderSeance(quatre, 'athletisme', 'tout'), true);
+  assert.equal(garderSeance(quatre, 'athletisme', '400m'), true);
+  assert.equal(garderSeance(haut, 'athletisme', '400m'), false);
+  assert.equal(garderSeance(sans, 'athletisme', 'tout'), true);
+  assert.equal(garderSeance(sans, 'athletisme', '400m'), false); // sans discipline : seulement sous « Tout »
+  assert.equal(garderSeance(quatre, 'course', '400m'), false);
+  assert.equal(garderSeance(run, 'course', '400m'), true); // la discipline ne concerne que l'athlétisme
+  assert.equal(garderSeance(null, 'tout'), true);
 });

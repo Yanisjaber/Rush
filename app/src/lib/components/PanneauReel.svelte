@@ -8,6 +8,7 @@
   import { modeDemo } from '../routeur.svelte.js';
   import { SPORTS, couleurSport } from '../sports.js';
   import { menu } from '../stores/menu.svelte.js';
+  import ChampDiscipline from './ChampDiscipline.svelte';
   import { familleAffichage } from '../data/familles.js';
   import { SPORTS_PREVUE, sportsTries, sportDefaut, estimerTss } from '../data/prevue.js';
   import {
@@ -161,6 +162,10 @@
           {#if !SPORTS_PREVUE.some((s) => s.type === f.sport)}<option value={f.sport}>{f.sport}</option>{/if}
         </select>
       </div>
+
+      {#if f.sport === 'Athletics'}
+        <ChampDiscipline id="reel-discipline" bind:valeur={f.discipline} erreur={erreurs.discipline} />
+      {/if}
 
       <div class="ligne">
         <Champ id="reel-duree" label="Durée (min)" inputmode="numeric" bind:valeur={f.duree} erreur={erreurs.duree} />
