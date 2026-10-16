@@ -183,7 +183,7 @@
 {/if}
 
 {#if avecBarreSport}<SelecteurSport /><SelecteurDiscipline />{/if}
-{#if avecBarreBas}<BarreBas {demo} />{/if}
+{#if avecBarreBas}<BarreBas />{/if}
 
 <!-- Résumé d'une séance réalisée : ouvert depuis le calendrier ou les widgets -->
 <PanneauSeance />
@@ -193,6 +193,8 @@
 <style>
   .entete-fixe {
     view-transition-name: entete; /* le menu d'ordinateur reste fixe pendant le fondu entre deux pages */
+    position: relative;
+    z-index: 45; /* ce nom isole l'en-tête dans sa propre couche : sans z-index ici, ses menus (+, Sports, Plus) passent derrière les widgets */
     box-sizing: border-box;
     width: 100%;
     max-width: var(--page-max);

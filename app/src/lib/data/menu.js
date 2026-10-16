@@ -9,6 +9,7 @@ export const PAGES = {
   competitions: { nom: 'Compétitions', chemin: '/competitions' },
   bilan: { nom: 'Bilan', chemin: '/bilan' },
   sommeil: { nom: 'Sommeil', chemin: '/sommeil' },
+  sante: { nom: 'Santé', chemin: '/sommeil' }, // même page que Sommeil : seul le nom change, dans la barre du bas du téléphone
   parametres: { nom: 'Paramètres', chemin: '/parametres' },
 };
 
@@ -26,14 +27,13 @@ export function pagesMenu() {
 }
 
 /**
- * Barre du bas du téléphone : Accueil, Calendrier, Plan puis « Plus » (le reste, réglages compris).
+ * Barre du bas du téléphone : Accueil, Calendrier, Bilan, Santé, Paramètres.
+ * Le Plan s'ouvre depuis le Calendrier ; les Compétitions ne sont plus au menu du téléphone.
  * Le choix du sport n'est plus ici : c'est la barre fixe du haut (SelecteurSport).
- * Renvoie { items, plus } : `items` pour la barre, `plus` pour la feuille « Plus ».
+ * Renvoie { items } : les boutons de la barre.
  */
 export function barreBas() {
-  const items = [page('accueil'), page('calendrier'), page('plan')];
-  items.push({ cle: 'plus', nom: 'Plus', ouvre: 'plus' });
-  return { items, plus: ['competitions', 'bilan', 'sommeil', 'parametres'].map(page) };
+  return { items: ['accueil', 'calendrier', 'bilan', 'sante', 'parametres'].map(page) };
 }
 
 /** Quelle page correspond au chemin courant (sans le sport) pour surligner le bon bouton ? null si aucune. */
@@ -42,11 +42,8 @@ export function cleDePage(chemin) {
   if (c === '/' || c === '') return 'accueil';
   const premier = c.split('/')[1];
   if (premier === 'force' || premier === 'analyse') return 'accueil'; // la séance de force en direct et les analyses se rattachent à l'accueil
+  if (premier === 'plan') return 'calendrier'; // le Plan s'ouvre depuis le Calendrier
+  if (premier === 'sommeil') return 'sante';
   if (Object.hasOwn(PAGES, premier)) return premier;
   return null;
-}
-
-/** La page courante est-elle l'une de celles qu'on cache derrière « Plus » ? Sert à surligner ce bouton. */
-export function ouvertureActive(cle) {
-  return cle && barreBas().plus.some((p) => p.cle === cle) ? 'plus' : null;
 }

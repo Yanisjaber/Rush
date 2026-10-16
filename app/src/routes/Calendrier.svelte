@@ -283,6 +283,7 @@
       <span class="resume">{seancesDuMois.length} séance{seancesDuMois.length > 1 ? 's' : ''} · {formatDuree(tempsDuMois)}</span>
       <Bouton variante="discret" onclick={aujourdhui}>Aujourd'hui</Bouton>
       <Bouton variante="discret" onclick={() => ouvrirCreation(dateIsoLocale(maintenant))}>Sortie réalisée</Bouton>
+      <Bouton variante="discret" href={construireAdresse({ sport: menu.filtre, page: '/plan' })}>Plan</Bouton>
       <Bouton variante="discret" onclick={() => ouvrirModeles()}>Modèles</Bouton>
       <Bouton variante="discret" onclick={() => nouveauMarquage()}>Repos ou note</Bouton>
       <Bouton onclick={() => nouvelle()}>Nouvelle séance</Bouton>

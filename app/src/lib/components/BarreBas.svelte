@@ -1,20 +1,11 @@
 <script>
-  import Panneau from './Panneau.svelte';
-  import { menu } from '../stores/menu.svelte.js';
-  import { barreBas, cleDePage, ouvertureActive, lienPage } from '../data/menu.js';
-  import { route, ouvrirPanneau, fermerPanneau } from '../routeur.svelte.js';
+    import { menu } from '../stores/menu.svelte.js';
+  import { barreBas, cleDePage, lienPage } from '../data/menu.js';
+  import { route } from '../routeur.svelte.js';
 
   // Barre de navigation fixe en bas du téléphone (au pouce). Sur ordinateur elle n'existe pas : le menu est en haut.
-  // « Plus » ouvre une feuille qui monte du bas avec les pages qu'il regroupe. Le choix du sport est dans la barre du haut.
-  let { demo = false } = $props();
-
   const b = barreBas();
   const courante = $derived(cleDePage(route.chemin));
-  const surligne = $derived(ouvertureActive(courante));
-  // La feuille « Plus » est dans l'adresse (?feuille=plus)
-  const feuille = $derived(route.q.feuille === 'plus' ? 'plus' : null);
-  const fermerFeuille = () => fermerPanneau('feuille');
-  const pagesFeuille = $derived(feuille === 'plus' ? b.plus : []);
 </script>
 
 {#snippet icone(cle)}
@@ -24,37 +15,21 @@
     {:else if cle === 'plan'}<path d="M4 6h16M4 12h16M4 18h10" />
     {:else if cle === 'force'}<path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11" />
     {:else if cle === 'hyrox'}<path d="M13 2L4 14h7l-1 8 9-12h-7z" />
-    {:else}<circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" />{/if}
+    {:else if cle === 'bilan'}<path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+    {:else if cle === 'sante'}<path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 0 0-7.1 7.1L12 21.5l8.8-8.8a5 5 0 0 0 0-7.1z" />
+    {:else}<circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" />{/if}
   </svg>
 {/snippet}
 
 <nav class="bas" aria-label="Navigation principale">
   {#each b.items as it (it.cle)}
-    {@const actif = it.ouvre ? surligne === it.ouvre : courante === it.cle}
-    {#if it.ouvre}
-      <button type="button" class="btn" class:actif aria-haspopup="dialog" onclick={() => ouvrirPanneau({ feuille: it.ouvre })}>
-        {@render icone(it.cle)}
-        <span>{it.nom}</span>
-      </button>
-    {:else}
-      <a class="btn" class:actif href={lienPage(it.cle, menu.filtre)} aria-current={actif ? 'page' : undefined}>
-        {@render icone(it.cle)}
-        <span>{it.nom}</span>
-      </a>
-    {/if}
+    {@const actif = courante === it.cle}
+    <a class="btn" class:actif href={lienPage(it.cle, menu.filtre)} aria-current={actif ? 'page' : undefined}>
+      {@render icone(it.cle)}
+      <span>{it.nom}</span>
+    </a>
   {/each}
 </nav>
-
-<Panneau ouvert={feuille !== null} titre="Plus" onfermer={fermerFeuille}>
-  <ul class="liste">
-    {#each pagesFeuille as p (p.cle)}
-      <li><a href={lienPage(p.cle, menu.filtre)} aria-current={courante === p.cle ? 'page' : undefined} onclick={fermerFeuille}>{p.nom}</a></li>
-    {/each}
-    {#if feuille === 'plus' && demo}
-      <li><a href="./" onclick={fermerFeuille}>Quitter la démo</a></li>
-    {/if}
-  </ul>
-</Panneau>
 
 <style>
   /* Pas de barre sur ordinateur : le menu est en haut de page */
@@ -108,28 +83,5 @@
   .btn:focus-visible {
     outline: 2px solid var(--texte);
     outline-offset: -2px;
-  }
-  .liste {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .liste li + li {
-    border-top: 1px solid var(--trait);
-  }
-  .liste a {
-    width: 100%;
-    gap: 10px;
-    display: flex;
-    align-items: center;
-    min-height: 52px;
-    font-size: 17px;
-    font-weight: 600;
-    color: var(--texte);
-  }
-  .liste a[aria-current='page'] {
-    color: var(--texte);
-    text-decoration: underline;
-    text-underline-offset: 5px;
   }
 </style>
