@@ -15,6 +15,8 @@ const depart = lire();
 export const route = $state({ chemin: depart.chemin, sport: depart.sport, sous: depart.sous, q: depart.q });
 
 function appliquerEtat(a) {
+  // Nouvelle page : on repart tout en haut (sinon on garde le défilement de la page d'avant). Le sport, le mois ou un panneau qui change sur la même page ne bougent pas.
+  if (a.chemin !== route.chemin && typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   route.chemin = a.chemin;
   route.sport = a.sport;
   route.sous = a.sous;
