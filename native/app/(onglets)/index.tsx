@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { donneesDemo, seriesForceDemo } from '@/data/demo';
 import { espace } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
@@ -12,13 +11,12 @@ import { WidgetDernieres } from '@/widgets/WidgetDernieres';
 // Pour l'instant : « Dernières séances » et « À venir ». Les autres widgets arrivent un par un.
 export default function Accueil() {
   const p = usePalette();
-  const haut = useSafeAreaInsets().top;
   const aujourdhui = useMemo(() => new Date(), []);
   const donnees = useMemo(() => donneesDemo(aujourdhui), [aujourdhui]);
   const series = useMemo(() => seriesForceDemo(aujourdhui), [aujourdhui]);
 
   return (
-    <ScrollView style={{ backgroundColor: p.fond }} contentContainerStyle={[styles.contenu, { paddingTop: haut + espace.e4 }]}>
+    <ScrollView style={{ backgroundColor: p.fond }} contentContainerStyle={styles.contenu} contentInsetAdjustmentBehavior="automatic">
       <View style={styles.entete}>
         <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>
           Accueil
@@ -32,6 +30,6 @@ export default function Accueil() {
 }
 
 const styles = StyleSheet.create({
-  contenu: { paddingHorizontal: espace.e4, paddingBottom: espace.e7, gap: espace.e4 },
+  contenu: { paddingHorizontal: espace.e4, paddingTop: espace.e4, paddingBottom: espace.e4, gap: espace.e4 },
   entete: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
 });
