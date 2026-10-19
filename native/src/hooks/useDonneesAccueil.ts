@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { donneesDemoAccueil, famillesDe, type DonneesAccueil } from '@/data/accueil';
 import { chargerAccueil } from '@/data/chargement';
+import { fusionnerFamilles } from '@/data/sports-choisis';
 import { definirFamilles } from '@/stores/menu';
+import { useSportsEtat } from '@/stores/sports';
 import { useAuth } from '@/stores/auth';
 
 // Les données de l'Accueil : la démo (générée, sans compte) ou celles du compte connecté (lecture seule, via Supabase).
@@ -15,6 +17,7 @@ export function useDonneesAccueil(): {
 } {
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
+  const sports = useSportsEtat();
   const donneesDemo = useMemo(() => (demo ? donneesDemoAccueil(new Date()) : null), [demo]);
   const [reel, setReel] = useState<{ userId: string; donnees: DonneesAccueil } | null>(null);
   const [actualisation, setActualisation] = useState(false);
@@ -31,17 +34,18 @@ export function useDonneesAccueil(): {
     }
   }, [userId]);
 
+  // `sports.version` change quand on coche ou décoche un sport : on recharge pour recomposer l'Accueil
   useEffect(() => {
     if (!demo) void charger();
-  }, [demo, charger]);
+  }, [demo, charger, sports.version]);
 
   // Les données d'un autre compte ne doivent jamais s'afficher : on ne garde que celles de l'utilisateur courant
   const donnees = demo ? donneesDemo : reel && reel.userId === userId ? reel.donnees : null;
 
   useEffect(() => {
     // La démo garde l'ordre fixe du site (course, vélo, muscu, hyrox) ; un vrai compte suit ses sports choisis puis ses données
-    if (donnees) definirFamilles(demo ? ['course', 'velo', 'muscu', 'hyrox'] : famillesDe(donnees));
-  }, [donnees, demo]);
+    if (donnees) definirFamilles(demo ? fusionnerFamilles(['course', 'velo', 'muscu', 'hyrox'], sports.demo) : famillesDe(donnees));
+  }, [donnees, demo, sports.demo]);
 
   const recharger = useCallback(async () => {
     setActualisation(true);

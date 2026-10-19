@@ -2,8 +2,10 @@ import { useMemo } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarreSports } from '@/components/BarreSports';
+import { Onboarding } from '@/components/Onboarding';
 import { construireContexte } from '@/data/contexte';
 import { compositionAuto, composerOnglet, grouperTuiles, type WidgetPlace } from '@/data/registre';
+import { onboardingNecessaire } from '@/data/sports-choisis';
 import { useDonneesAccueil } from '@/hooks/useDonneesAccueil';
 import { useMenu } from '@/stores/menu';
 import { espace, rayon } from '@/theme/couleurs';
@@ -42,6 +44,18 @@ export default function Accueil() {
     !donnees.force.programmes.length &&
     !donnees.hyrox.tests.length;
 
+  // Compte neuf qui n'a jamais choisi ses sports : on les lui demande d'abord (voir onboardingNecessaire)
+  const onboarding =
+    !!donnees &&
+    !donnees.erreur &&
+    onboardingNecessaire({
+      demo,
+      sportsEnregistres: donnees.sportsChoisis,
+      nbSeances: donnees.seances.length + donnees.dernieres.length,
+      aForce: donnees.force.series.length > 0 || donnees.force.programmes.length > 0,
+      aHyrox: donnees.hyrox.tests.length > 0,
+    });
+
   const widgets = useMemo(() => {
     const auto = compositionAuto(familles);
     const liste = filtre === 'tout' ? auto : composerOnglet(auto, filtre);
@@ -58,6 +72,8 @@ export default function Accueil() {
     const Composant = COMPOSANTS[w.id];
     return Composant ? <Composant key={w.id} contexte={contexte} taille={w.taille} compact={compactDe(w.id)} /> : <WidgetBientot key={w.id} id={w.id} />;
   };
+
+  if (onboarding) return <Onboarding />;
 
   return (
     <View style={[styles.page, { backgroundColor: p.fond }]}>

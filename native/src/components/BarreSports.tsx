@@ -1,8 +1,12 @@
-import { ScrollView, StyleSheet, Text, Pressable, View } from 'react-native';
+import { useState } from 'react';
+import { Modal, ScrollView, StyleSheet, Text, Pressable, View } from 'react-native';
+import { Bouton } from '@/components/Bouton';
+import { SelecteurSports } from '@/components/SelecteurSports';
+import { useSportsChoisis } from '@/hooks/useSportsChoisis';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { choisirFiltre, useMenu } from '@/stores/menu';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
-import { police } from '@/theme/typo';
+import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La barre des sports, fixe en haut de l'écran : « Tous » puis un sport par pastille (point de sa couleur).
@@ -13,11 +17,13 @@ export function BarreSports() {
   const p = usePalette();
   const haut = useSafeAreaInsets().top;
   const { familles, filtre } = useMenu();
+  const [ouvert, setOuvert] = useState(false);
+  // Compte neuf sans aucun sport : pas de barre, c'est l'onboarding de l'Accueil qui propose d'en choisir
   if (!familles.length) return null;
 
   return (
     <View style={[styles.barre, { backgroundColor: p.fond, borderBottomColor: p.trait, paddingTop: haut }]}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rangee} accessibilityRole="tablist">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={styles.rangee} accessibilityRole="tablist">
         <Pastille libelle="Tous" actif={filtre === 'tout'} onPress={() => choisirFiltre('tout')} />
         {familles.map((f) => (
           <Pastille
@@ -29,7 +35,40 @@ export function BarreSports() {
           />
         ))}
       </ScrollView>
+      <Pressable
+        onPress={() => setOuvert(true)}
+        accessibilityRole="button"
+        accessibilityLabel="Ajouter ou retirer un sport"
+        style={({ pressed }) => [styles.plus, { backgroundColor: p.fond, borderLeftColor: p.trait, opacity: pressed ? 0.7 : 1 }]}
+      >
+        <Text style={[styles.plusTexte, { color: p.texte }]}>+</Text>
+      </Pressable>
+      <ChoixSportsModal ouvert={ouvert} onFermer={() => setOuvert(false)} />
     </View>
+  );
+}
+
+// Le « + » : tous les sports, cochés pour ceux qu'on pratique. Chaque touche enregistre tout de suite (comme sur le site).
+function ChoixSportsModal({ ouvert, onFermer }: { ouvert: boolean; onFermer: () => void }) {
+  const p = usePalette();
+  const { choisis, erreur, envoi, appliquer } = useSportsChoisis();
+  const basculer = (cle: string) => {
+    if (!choisis) return;
+    void appliquer(choisis.includes(cle) ? choisis.filter((s) => s !== cle) : [...choisis, cle]);
+  };
+  return (
+    <Modal visible={ouvert} animationType="slide" presentationStyle="pageSheet" onRequestClose={onFermer}>
+      <View style={{ flex: 1, backgroundColor: p.fond }}>
+        <View style={styles.enteteModal}>
+          <Text accessibilityRole="header" style={[typo.titre2, { color: p.texte, flex: 1 }]}>Mes sports</Text>
+          <Bouton variante="discret" onPress={onFermer}>Fermer</Bouton>
+        </View>
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
+          {erreur ? <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger, marginBottom: 12 }]}>{erreur}</Text> : null}
+          {choisis ? <SelecteurSports choisis={choisis} onBasculer={basculer} desactive={envoi} /> : null}
+        </ScrollView>
+      </View>
+    </Modal>
   );
 }
 
@@ -51,7 +90,10 @@ function Pastille({ libelle, point, actif, onPress }: { libelle: string; point?:
 }
 
 const styles = StyleSheet.create({
-  barre: { borderBottomWidth: StyleSheet.hairlineWidth },
+  barre: { borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'flex-end' },
+  plus: { width: 52, height: 44, alignItems: 'center', justifyContent: 'center', borderLeftWidth: StyleSheet.hairlineWidth },
+  plusTexte: { fontFamily: police.titre600, fontSize: 28, lineHeight: 32 },
+  enteteModal: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
   rangee: { paddingHorizontal: 8, alignItems: 'center' },
   // 44 pt de haut : la cible tactile minimale
   pastille: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 12, borderRadius: 999 },
