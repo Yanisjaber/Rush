@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Bouton } from '@/components/Bouton';
 import { EcranSection } from '@/components/EcranSection';
 import { SelecteurSports } from '@/components/SelecteurSports';
+import { basculerSport } from '@/data/sports-choisis';
 import { useSportsChoisis } from '@/hooks/useSportsChoisis';
 import { espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
@@ -32,8 +33,9 @@ export default function MesSports() {
   const sale = etatActuel !== reference;
 
   const basculer = (cle: string) => {
-    setMessage('');
-    setChoisis(choisis.includes(cle) ? choisis.filter((s) => s !== cle) : [...choisis, cle]);
+    const suite = basculerSport(choisis ?? [], cle);
+    setMessage(suite ? '' : 'Garde au moins un sport.');
+    if (suite) setChoisis(suite);
   };
 
   async function enregistrer() {
@@ -63,7 +65,7 @@ export default function MesSports() {
         />
         <Bouton onPress={() => void enregistrer()}>{envoi ? 'Enregistrement…' : sale ? 'Enregistrer' : 'Enregistré'}</Bouton>
         {message ? (
-          <Text accessibilityLiveRegion="polite" style={[typo.petit, { color: p.ok }]}>
+          <Text accessibilityLiveRegion="polite" style={[typo.petit, { color: message.startsWith('Garde') ? p.alerte : p.ok }]}>
             {message}
           </Text>
         ) : null}

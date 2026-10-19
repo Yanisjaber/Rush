@@ -83,3 +83,12 @@ export function fusionnerFamilles(deDonnees: string[] = [], choisis: string[] | 
   f.delete('autre');
   return [...f];
 }
+
+/**
+ * La liste après avoir touché un sport (coché ↔ décoché). On ne peut pas décocher le dernier : renvoie null dans ce cas
+ * (sinon la barre retomberait sur les sports que les séances révèlent, ce qui surprend).
+ */
+export function basculerSport(liste: string[], cle: string): string[] | null {
+  if (!liste.includes(cle)) return [...liste, cle];
+  return liste.length > 1 ? liste.filter((s) => s !== cle) : null;
+}

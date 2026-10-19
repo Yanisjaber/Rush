@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, Pressable, View } from 'react-native';
 import { Bouton } from '@/components/Bouton';
 import { SelecteurSports } from '@/components/SelecteurSports';
+import { basculerSport } from '@/data/sports-choisis';
 import { useSportsChoisis } from '@/hooks/useSportsChoisis';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { choisirFiltre, useMenu } from '@/stores/menu';
@@ -52,9 +53,12 @@ export function BarreSports() {
 function ChoixSportsModal({ ouvert, onFermer }: { ouvert: boolean; onFermer: () => void }) {
   const p = usePalette();
   const { choisis, disciplines, disciplinesApres, erreur, envoi, appliquer } = useSportsChoisis();
+  const [dernier, setDernier] = useState(false);
   const basculer = (cle: string) => {
     if (!choisis) return;
-    void appliquer(choisis.includes(cle) ? choisis.filter((s) => s !== cle) : [...choisis, cle]);
+    const suite = basculerSport(choisis, cle);
+    setDernier(suite === null);
+    if (suite) void appliquer(suite);
   };
   return (
     <Modal visible={ouvert} animationType="slide" presentationStyle="pageSheet" onRequestClose={onFermer}>
@@ -64,6 +68,7 @@ function ChoixSportsModal({ ouvert, onFermer }: { ouvert: boolean; onFermer: () 
           <Bouton variante="discret" onPress={onFermer}>Fermer</Bouton>
         </View>
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
+          {dernier ? <Text accessibilityRole="alert" style={[typo.petit, { color: p.alerte, marginBottom: 12 }]}>Garde au moins un sport.</Text> : null}
           {erreur ? <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger, marginBottom: 12 }]}>{erreur}</Text> : null}
           {choisis ? (
             <SelecteurSports
