@@ -1,0 +1,34 @@
+import type { Palette } from './couleurs';
+
+// Catalogue des sports : mêmes clés, noms et couleurs que app/src/lib/sports.js.
+// La couleur est une clé de palette : elle change toute seule en thème clair.
+type CleCouleur = 'sportCourse' | 'sportVelo' | 'sportNatation' | 'sportMuscu' | 'sportHybride' | 'sportNeutre';
+
+export const SPORTS = {
+  course: { nom: 'Course à pied', court: 'Course', couleur: 'sportCourse' },
+  trail: { nom: 'Trail', court: 'Trail', couleur: 'sportCourse' },
+  velo: { nom: 'Vélo route', court: 'Vélo', couleur: 'sportVelo' },
+  vtt: { nom: 'VTT / Gravel', court: 'VTT', couleur: 'sportVelo' },
+  natation: { nom: 'Natation', court: 'Natation', couleur: 'sportNatation' },
+  triathlon: { nom: 'Triathlon', court: 'Triathlon', couleur: 'sportVelo' },
+  duathlon: { nom: 'Duathlon', court: 'Duathlon', couleur: 'sportVelo' },
+  athletisme: { nom: 'Athlétisme', court: 'Athlé', couleur: 'sportCourse' },
+  hyrox: { nom: 'Hyrox', court: 'Hyrox', couleur: 'sportHybride' },
+  crossfit: { nom: 'CrossFit', court: 'CrossFit', couleur: 'sportHybride' },
+  muscu: { nom: 'Musculation', court: 'Muscu', couleur: 'sportMuscu' },
+  aviron: { nom: 'Aviron', court: 'Aviron', couleur: 'sportNatation' },
+  ski: { nom: 'Ski de fond', court: 'Ski', couleur: 'sportNeutre' },
+  combat: { nom: 'Sports de combat', court: 'Combat', couleur: 'sportNeutre' },
+  rando: { nom: 'Randonnée', court: 'Rando', couleur: 'sportNeutre' },
+  escalade: { nom: 'Escalade', court: 'Escalade', couleur: 'sportNeutre' },
+  pagaie: { nom: 'Canoë-kayak', court: 'Pagaie', couleur: 'sportNeutre' },
+  autre: { nom: 'Autre sport', court: 'Autre', couleur: 'sportNeutre' },
+} as const satisfies Record<string, { nom: string; court: string; couleur: CleCouleur }>;
+
+export type CleSport = keyof typeof SPORTS;
+
+/** Couleur d'un sport dans la palette courante (repli neutre si le sport est inconnu ou absent). */
+export function couleurSport(palette: Palette, cle?: string): string {
+  const sport = cle && Object.hasOwn(SPORTS, cle) ? SPORTS[cle as CleSport] : SPORTS.autre;
+  return palette[sport.couleur];
+}
