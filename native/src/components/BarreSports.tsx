@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, Pressable, View } from 'react-native';
 import { MenuSports } from '@/components/MenuSports';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { sportsDeLaFamille } from '@/data/sports-choisis';
 import { choisirFiltre, useMenu } from '@/stores/menu';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
 import { police } from '@/theme/typo';
@@ -15,7 +14,7 @@ import { usePalette } from '@/theme/usePalette';
 export function BarreSports() {
   const p = usePalette();
   const haut = useSafeAreaInsets().top;
-  const { familles, filtre, choisis } = useMenu();
+  const { familles, filtre } = useMenu();
   const [ouvert, setOuvert] = useState(false);
   // Compte neuf sans aucun sport : pas de barre, c'est l'onboarding de l'Accueil qui propose d'en choisir
   if (!familles.length) return null;
@@ -27,7 +26,7 @@ export function BarreSports() {
         {familles.map((f) => (
           <Pastille
             key={f}
-            libelle={sportsDeLaFamille(f, choisis).map((c) => SPORTS[c as CleSport]?.court ?? SPORTS.autre.court).join(' · ')}
+            libelle={SPORTS[f as CleSport]?.court ?? SPORTS.autre.court}
             point={couleurSport(p, f)}
             actif={filtre === f}
             onPress={() => choisirFiltre(f)}

@@ -9,15 +9,13 @@ import { fusionnerFamilles } from '@/data/sports-choisis';
 interface EtatMenu {
   familles: string[];
   filtre: string;
-  /** Les sports cochés (null : jamais choisis) : sert à nommer les pastilles (Course, Trail, Course · Trail). */
-  choisis: string[] | null;
 }
 
 // Les deux sources de la liste : les sports que les données révèlent, et les sports que l'utilisateur a cochés.
 // On les garde pour pouvoir recomposer la barre tout de suite quand il coche un sport, sans attendre un rechargement.
 let deDonnees: string[] = [];
 let choisis: string[] | null = null;
-let etat: EtatMenu = { familles: [], filtre: 'tout', choisis: null };
+let etat: EtatMenu = { familles: [], filtre: 'tout' };
 const ecouteurs = new Set<() => void>();
 
 function abonner(fn: () => void) {
@@ -29,10 +27,8 @@ function abonner(fn: () => void) {
 
 /** Remplace la liste des sports du menu (après chargement des données). Sans changement réel, rien ne se redessine. */
 export function definirFamilles(familles: string[]) {
-  const memes = familles.length === etat.familles.length && familles.every((f, i) => f === etat.familles[i]);
-  const memesChoisis = JSON.stringify(choisis) === JSON.stringify(etat.choisis);
-  if (memes && memesChoisis) return;
-  etat = { ...etat, familles, choisis };
+  if (familles.length === etat.familles.length && familles.every((f, i) => f === etat.familles[i])) return;
+  etat = { ...etat, familles };
   ecouteurs.forEach((fn) => fn());
 }
 
@@ -64,7 +60,7 @@ export function choisirFiltre(famille: string) {
 }
 
 /** Le menu courant ; le filtre est déjà vérifié (un sport retiré du menu donne « tout »). */
-export function useMenu(): Omit<EtatMenu, 'choisis'> & { choisis: string[] | null } {
+export function useMenu(): EtatMenu {
   const e = useSyncExternalStore(abonner, () => etat, () => etat);
-  return { familles: e.familles, filtre: filtreValide(e.filtre, e.familles), choisis: e.choisis };
+  return { familles: e.familles, filtre: filtreValide(e.filtre, e.familles) };
 }
