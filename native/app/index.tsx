@@ -1,26 +1,39 @@
-import { StyleSheet, Text, View, useColorScheme } from 'react-native';
-import { clair, cibleTactile, espace, rayon, sombre } from '@/theme/couleurs';
+import { ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { clair, espace, sombre } from '@/theme/couleurs';
+import { typo, type NomTypo } from '@/theme/typo';
 
-// Écran de test : prouve que le thème et la structure marchent avant de refaire l'Accueil.
+// Écran de test : montre l'échelle typographique de la charte avant de refaire l'Accueil.
+const lignes: { nom: NomTypo; exemple: string }[] = [
+  { nom: 'display', exemple: '42,2' },
+  { nom: 'titre1', exemple: 'Séance de seuil' },
+  { nom: 'titre2', exemple: 'Charge 7 jours' },
+  { nom: 'titre3', exemple: 'Séries par groupe' },
+  { nom: 'corps', exemple: 'Dix kilomètres à allure marathon, puis retour au calme.' },
+  { nom: 'corpsFort', exemple: 'Valider la séance' },
+  { nom: 'petit', exemple: 'Dernière synchronisation il y a 4 min' },
+  { nom: 'micro', exemple: 'Distance totale' },
+];
+
 export default function Accueil() {
   const p = useColorScheme() === 'light' ? clair : sombre;
 
   return (
-    <View style={[styles.page, { backgroundColor: p.fond }]}>
-      <Text style={[styles.titre, { color: p.texte }]}>Rush</Text>
-      <View style={styles.sports}>
-        {[p.sportCourse, p.sportVelo, p.sportNatation, p.sportMuscu, p.sportHybride].map((c) => (
-          <View key={c} style={[styles.pastille, { backgroundColor: c }]} />
-        ))}
-      </View>
-      <Text style={{ color: p.texteDoux }}>Squelette React Native prêt.</Text>
-    </View>
+    <ScrollView
+      style={{ backgroundColor: p.fond }}
+      contentContainerStyle={styles.contenu}
+      contentInsetAdjustmentBehavior="automatic"
+    >
+      {lignes.map(({ nom, exemple }) => (
+        <View key={nom} style={[styles.ligne, { borderBottomColor: p.trait }]}>
+          <Text style={[typo.micro, { color: p.texteMuet }]}>{nom}</Text>
+          <Text style={[typo[nom], { color: p.texte }]}>{exemple}</Text>
+        </View>
+      ))}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: espace.e4 },
-  titre: { fontSize: 40, fontWeight: '800' },
-  sports: { flexDirection: 'row', gap: espace.e2 },
-  pastille: { width: cibleTactile, height: cibleTactile, borderRadius: rayon.l },
+  contenu: { paddingHorizontal: espace.e4, paddingTop: 72, paddingBottom: espace.e7, gap: espace.e2 },
+  ligne: { paddingVertical: espace.e3, borderBottomWidth: StyleSheet.hairlineWidth, gap: espace.e1 },
 });
