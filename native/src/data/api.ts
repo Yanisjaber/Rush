@@ -367,7 +367,9 @@ export async function enregistrerSportsChoisis(userId: string, sports: string[],
   const r = await sb.from('user_preferences').upsert({ user_id: userId, sports, disciplines }, { onConflict: 'user_id' });
   if (r.error) {
     console.error('[app/api] sports', r.error.code || '');
-    return { erreur: "Impossible d'enregistrer tes sports." };
+    // Le code d'erreur (5 caractères, ex. 23514) aide à comprendre sans exposer le texte brut de la base
+    const code = /^[A-Za-z0-9]{3,8}$/.test(r.error.code ?? '') ? ` (code ${r.error.code})` : '';
+    return { erreur: `Impossible d'enregistrer tes sports${code}.` };
   }
   return { erreur: '' };
 }
