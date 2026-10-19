@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { donneesDemoAccueil, famillesDe, type DonneesAccueil } from '@/data/accueil';
 import { chargerAccueil } from '@/data/chargement';
-import { fusionnerFamilles } from '@/data/sports-choisis';
-import { definirFamilles } from '@/stores/menu';
+import { definirSources } from '@/stores/menu';
 import { useSportsEtat } from '@/stores/sports';
 import { useAuth } from '@/stores/auth';
 
@@ -44,7 +43,9 @@ export function useDonneesAccueil(): {
 
   useEffect(() => {
     // La démo garde l'ordre fixe du site (course, vélo, muscu, hyrox) ; un vrai compte suit ses sports choisis puis ses données
-    if (donnees) definirFamilles(demo ? fusionnerFamilles(['course', 'velo', 'muscu', 'hyrox'], sports.demo) : famillesDe(donnees));
+    if (!donnees) return;
+    if (demo) definirSources(['course', 'velo', 'muscu', 'hyrox'], sports.demo);
+    else definirSources(famillesDe({ ...donnees, sportsChoisis: null }), donnees.sportsChoisis);
   }, [donnees, demo, sports.demo]);
 
   const recharger = useCallback(async () => {

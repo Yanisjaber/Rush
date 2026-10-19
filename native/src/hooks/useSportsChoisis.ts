@@ -3,7 +3,7 @@ import { chargerDisciplinesChoisies, chargerSportsChoisis, enregistrerSportsChoi
 import { nettoyerDisciplines, type DisciplinesChoisies } from '@/data/disciplines';
 import { nettoyerSports, sportsCoches } from '@/data/sports-choisis';
 import { useAuth } from '@/stores/auth';
-import { useMenu } from '@/stores/menu';
+import { definirSportsCoches, useMenu } from '@/stores/menu';
 import { definirSportsDemo, sportsModifies, useSportsEtat } from '@/stores/sports';
 
 // Les sports cochés du compte (sports choisis + sports que les séances révèlent) et leur enregistrement.
@@ -12,7 +12,7 @@ export function useSportsChoisis() {
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
   const { familles } = useMenu();
-  const { demo: sportsDemo, demoDisciplines } = useSportsEtat();
+  const { demo: sportsDemo, demoDisciplines, version } = useSportsEtat();
   const sportsEtatDemoDisciplines = useRef(demoDisciplines);
   sportsEtatDemoDisciplines.current = demoDisciplines;
   const [choisis, setChoisis] = useState<string[] | null>(null);
@@ -35,9 +35,10 @@ export function useSportsChoisis() {
     return () => {
       annule = true;
     };
-    // sportsDemo : relu seulement au chargement, pour ne pas écraser une saisie en cours
+    // `version` : on relit après chaque changement de sports (fait ici ou depuis un autre écran), sinon cette copie serait périmée.
+    // sportsDemo : relu à ces moments seulement, pour ne pas écraser une saisie en cours.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [demo, userId]);
+  }, [demo, userId, version]);
 
   /** Les disciplines après avoir touché `cle` (ajoutée ou retirée) pour ce sport. */
   const disciplinesApres = useCallback(
@@ -58,6 +59,7 @@ export function useSportsChoisis() {
       setErreur('');
       if (demo) {
         definirSportsDemo(propre, propres);
+        definirSportsCoches(propre);
         setChoisis(propre);
         setDisciplines(propres);
         return true;
@@ -72,6 +74,7 @@ export function useSportsChoisis() {
       }
       setChoisis(propre);
       setDisciplines(propres);
+      definirSportsCoches(propre); // la barre change tout de suite ; l'Accueil se recharge ensuite en arrière-plan
       sportsModifies();
       return true;
     },

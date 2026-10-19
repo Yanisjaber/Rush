@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { filtreApres, filtreValide } from '@/data/menu';
+import { fusionnerFamilles } from '@/data/sports-choisis';
 
 // État du menu des sports : les sports proposés et le filtre choisi. Partagé par tous les écrans
 // (on choisit « Course » sur l'Accueil, le Calendrier reste sur « Course »).
@@ -10,6 +11,10 @@ interface EtatMenu {
   filtre: string;
 }
 
+// Les deux sources de la liste : les sports que les données révèlent, et les sports que l'utilisateur a cochés.
+// On les garde pour pouvoir recomposer la barre tout de suite quand il coche un sport, sans attendre un rechargement.
+let deDonnees: string[] = [];
+let choisis: string[] | null = null;
 let etat: EtatMenu = { familles: [], filtre: 'tout' };
 const ecouteurs = new Set<() => void>();
 
@@ -25,6 +30,19 @@ export function definirFamilles(familles: string[]) {
   if (familles.length === etat.familles.length && familles.every((f, i) => f === etat.familles[i])) return;
   etat = { ...etat, familles };
   ecouteurs.forEach((fn) => fn());
+}
+
+/** Après le chargement des données : mémorise les deux sources et recompose la barre. */
+export function definirSources(donnees: string[], coches: string[] | null) {
+  deDonnees = donnees;
+  choisis = coches;
+  definirFamilles(fusionnerFamilles(deDonnees, choisis));
+}
+
+/** L'utilisateur vient de cocher ou décocher un sport : la barre se recompose immédiatement. */
+export function definirSportsCoches(coches: string[]) {
+  choisis = coches;
+  definirFamilles(fusionnerFamilles(deDonnees, choisis));
 }
 
 /** Choisit le sport affiché ; recliquer sur le sport déjà choisi revient à « Tous ». */
