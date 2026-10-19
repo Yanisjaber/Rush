@@ -79,3 +79,9 @@ export const clair: Palette = {
 export const espace = { e1: 4, e2: 8, e3: 12, e4: 16, e5: 24, e6: 32, e7: 48 } as const;
 export const rayon = { s: 5, base: 6, l: 8, rond: 999 } as const;
 export const cibleTactile = 44;
+
+/** Une couleur hexadécimale (#rrggbb) avec de la transparence : avecAlpha('#ff7a33', 0.12). */
+export function avecAlpha(hex: string, alpha: number): string {
+  const a = Math.round(Math.min(1, Math.max(0, alpha)) * 255);
+  return `${hex}${a.toString(16).padStart(2, '0')}`;
+}

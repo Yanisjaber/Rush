@@ -4,18 +4,12 @@ import { LigneSeance } from '@/components/LigneSeance';
 import { familleAffichage } from '@/data/familles';
 import { formatDateCourte, formatDuree } from '@/data/format';
 import { prochainesPrevues } from '@/data/synthese';
-import type { Prevue } from '@/data/types';
+import type { Prevue, WidgetProps } from '@/data/types';
 import { SPORTS, type CleSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Les prochaines séances que tu as prévues (les compétitions sont dans le dossard d'objectif).
-interface Props {
-  planifiees: Prevue[];
-  aujourdhui?: Date;
-  nombre?: number;
-}
-
 function detail(p: Prevue): string {
   const morceaux = [formatDateCourte(p.date)];
   if (p.duration) morceaux.push(formatDuree(p.duration * 60));
@@ -23,9 +17,9 @@ function detail(p: Prevue): string {
   return morceaux.join(' · ');
 }
 
-export function WidgetAvenir({ planifiees, aujourdhui = new Date(), nombre = 3 }: Props) {
+export function WidgetAvenir({ contexte, taille = 'm' }: WidgetProps) {
   const palette = usePalette();
-  const prochaines = prochainesPrevues(planifiees, aujourdhui, nombre);
+  const prochaines = prochainesPrevues(contexte.planifiees, new Date(), taille === 'l' ? 5 : 3);
 
   return (
     <Bloc titre="À venir">

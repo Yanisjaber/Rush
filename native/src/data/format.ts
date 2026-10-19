@@ -27,3 +27,57 @@ export function dateIsoLocale(d: Date = new Date()): string {
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
+
+/** Date ISO → « Dimanche 13 décembre ». */
+export function formatDateLongue(iso: string): string {
+  const d = new Date(`${String(iso).slice(0, 10)}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return '';
+  const t = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+/** Nombre de jours entre aujourd'hui et une date ISO (négatif si passée). */
+export function joursAvant(iso: string, aujourdhui: Date = new Date()): number {
+  const cible = new Date(`${String(iso).slice(0, 10)}T12:00:00`);
+  const base = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate(), 12);
+  return Math.round((cible.getTime() - base.getTime()) / 86400000);
+}
+
+/** Chronomètre : 2472 s → « 41'12" », 5500 s → « 1h31'40" ». */
+export function formatChrono(secondes: number | null | undefined): string {
+  const s = Math.max(0, Math.round(secondes || 0));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const r = s % 60;
+  const sec = String(r).padStart(2, '0');
+  return h > 0 ? `${h}h${String(m).padStart(2, '0')}'${sec}"` : `${m}'${sec}"`;
+}
+
+/** Allure : 252 s/km → « 4'12"/km ». */
+export function formatAllure(secondesParKm: number | null | undefined): string {
+  const s = Math.round(secondesParKm || 0);
+  return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"/km`;
+}
+
+/**
+ * Allure « m:ss » à partir d'une vitesse en km/h : course (secondes par km) ou natation (secondes par 100 m).
+ * Vitesse nulle ou absente : « — ».
+ */
+export function formatAllureDepuisKmh(kmh: unknown, parCentMetres = false): string {
+  const v = Number(kmh);
+  if (!(v > 0)) return '—';
+  const secondes = Math.round(parCentMetres ? 360 / v : 3600 / v);
+  return `${Math.floor(secondes / 60)}:${String(secondes % 60).padStart(2, '0')}`;
+}
+
+/** 82.5 → « 82,5 », 100 → « 100 » (virgule française, une décimale seulement si utile). */
+export function formatKg(kg: unknown): string {
+  if (kg == null || Number.isNaN(Number(kg))) return '—';
+  return String(Math.round(Number(kg) * 10) / 10).replace('.', ',');
+}
+
+/** 14820 → « 14 820 » (espace insécable entre les milliers). */
+export function formatNombre(n: unknown): string {
+  if (n == null || Number.isNaN(Number(n))) return '—';
+  return Math.round(Number(n)).toLocaleString('fr-FR').replace(/[\u202f\u00a0]/g, '\u00a0');
+}

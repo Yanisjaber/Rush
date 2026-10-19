@@ -6,32 +6,24 @@ import { familleAffichage } from '@/data/familles';
 import { recordsParSeance } from '@/data/force';
 import { formatDateCourte, formatDuree, formatKm } from '@/data/format';
 import { chargeSeance } from '@/data/synthese';
-import type { Seance, SerieForce } from '@/data/types';
+import type { Seance, WidgetProps } from '@/data/types';
 import { SPORTS, type CleSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Les séances les plus récentes, quelle que soit leur date : la liste ne se vide pas pendant une pause.
 // Sur téléphone : 3 lignes. Une pastille « Record » signale les records de force battus pendant la séance.
-interface Props {
-  /** Séances, de la plus récente à la plus ancienne. */
-  seances: Seance[];
-  /** Séries de force : sert seulement à repérer les records. */
-  series: SerieForce[];
-  nombre?: number;
-}
-
 function detail(s: Seance): string {
   const morceaux = [formatDateCourte(s.start_date_local), formatDuree(s.moving_time)];
   if (s.distance_km) morceaux.push(`${formatKm(s.distance_km)} km`);
   return morceaux.join(' · ');
 }
 
-export function WidgetDernieres({ seances, series, nombre = 3 }: Props) {
+export function WidgetDernieres({ contexte, taille = 'm' }: WidgetProps) {
   const p = usePalette();
   // Les records battus dans chaque séance (sur tout l'historique de force)
-  const records = useMemo(() => recordsParSeance(series), [series]);
-  const recentes = seances.slice(0, nombre);
+  const records = useMemo(() => recordsParSeance(contexte.force.series), [contexte.force.series]);
+  const recentes = contexte.dernieres.slice(0, taille === 'l' ? 5 : 3);
 
   return (
     <Bloc titre="Dernières séances">

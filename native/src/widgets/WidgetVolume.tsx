@@ -3,20 +3,15 @@ import { Anneau } from '@/components/Anneau';
 import { Bloc } from '@/components/Bloc';
 import { formatDuree } from '@/data/format';
 import { repartition7Jours } from '@/data/synthese';
-import type { Seance } from '@/data/types';
+import type { WidgetProps } from '@/data/types';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Le temps passé sur chaque sport pendant les 7 derniers jours : un anneau et sa légende.
-interface Props {
-  seances: Seance[];
-  aujourdhui?: Date;
-}
-
-export function WidgetVolume({ seances, aujourdhui = new Date() }: Props) {
+export function WidgetVolume({ contexte }: WidgetProps) {
   const p = usePalette();
-  const rep = repartition7Jours(seances, aujourdhui);
+  const rep = repartition7Jours(contexte.seances, new Date());
   const nom = (f: string) => SPORTS[f as CleSport]?.court ?? SPORTS.autre.court;
   const resume = rep.segments.map((s) => `${nom(s.famille)} ${formatDuree(s.secondes)}`).join(', ');
 

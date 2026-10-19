@@ -3,7 +3,7 @@ import { Bloc } from '@/components/Bloc';
 import { familleAffichage } from '@/data/familles';
 import { formatDuree } from '@/data/format';
 import { semaineCourante } from '@/data/synthese';
-import type { Prevue, Seance } from '@/data/types';
+import type { WidgetProps } from '@/data/types';
 import { rayon } from '@/theme/couleurs';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
@@ -12,16 +12,12 @@ import { usePalette } from '@/theme/usePalette';
 // La semaine en cours, du lundi au dimanche. Sur le web, sept colonnes côte à côte ; sur téléphone,
 // une ligne par jour (sept colonnes de 46 pt seraient illisibles). Mêmes calculs, autre mise en page.
 // Séance faite : aplat de la couleur du sport. Séance prévue : simple contour.
-interface Props {
-  seances: Seance[];
-  planifiees: Prevue[];
-  aujourdhui?: Date;
-}
-
 const nom = (sport: string) => SPORTS[familleAffichage(sport) as CleSport]?.court ?? SPORTS.autre.court;
 
-export function WidgetSemaine({ seances, planifiees, aujourdhui = new Date() }: Props) {
+export function WidgetSemaine({ contexte }: WidgetProps) {
   const p = usePalette();
+  const { seances, planifiees } = contexte;
+  const aujourdhui = new Date();
   const jours = semaineCourante(seances, aujourdhui, planifiees);
   const nbSeances = jours.reduce((n, j) => n + j.seances.length, 0);
 

@@ -1,0 +1,33 @@
+import { StyleSheet, Text } from 'react-native';
+import { Bloc } from '@/components/Bloc';
+import { seancesForce } from '@/data/synthese';
+import type { WidgetProps } from '@/data/types';
+import { police, typo } from '@/theme/typo';
+import { usePalette } from '@/theme/usePalette';
+
+// La force qui soutient le Hyrox (sled, farmers, lunges, wall balls) : combien de séances par semaine.
+export function WidgetChargeForce({ contexte }: WidgetProps) {
+  const p = usePalette();
+  const force = seancesForce(contexte.toutesSeances, 4);
+  const note = force.total
+    ? `${force.total} séance${force.total > 1 ? 's' : ''} de force sur les 4 dernières semaines.`
+    : 'Aucune séance de force sur les 4 dernières semaines.';
+
+  return (
+    <Bloc couleur={p.sportHybride}>
+      <Text style={[typo.micro, styles.etiquette, { color: p.encreSurCouleur }]}>Charge de force</Text>
+      <Text style={[styles.valeur, { color: p.encreSurCouleur }]}>
+        {String(force.moyenne).replace('.', ',')}
+        <Text style={styles.unite}> /sem.</Text>
+      </Text>
+      <Text style={[typo.petit, styles.note, { color: p.encreSurCouleur }]}>{note}</Text>
+    </Bloc>
+  );
+}
+
+const styles = StyleSheet.create({
+  etiquette: { fontFamily: police.texte600 },
+  valeur: { fontFamily: police.titre800, fontSize: 72, lineHeight: 66, marginTop: 8 },
+  unite: { fontFamily: police.titre700, fontSize: 24 },
+  note: { marginTop: 12 },
+});

@@ -1,29 +1,51 @@
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BarreSports } from '@/components/BarreSports';
+import { construireContexte } from '@/data/contexte';
 import { donneesDemo, seriesForceDemo } from '@/data/demo';
-import { garderSeance } from '@/data/familles';
+import { compositionAuto, composerOnglet, type WidgetPlace } from '@/data/registre';
 import { useMenu } from '@/stores/menu';
 import { espace } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
-import { WidgetAvenir } from '@/widgets/WidgetAvenir';
-import { WidgetDernieres } from '@/widgets/WidgetDernieres';
-import { WidgetForme } from '@/widgets/WidgetForme';
-import { WidgetSemaine } from '@/widgets/WidgetSemaine';
-import { WidgetVolume } from '@/widgets/WidgetVolume';
+import { COMPOSANTS, WidgetBientot } from '@/widgets/composants';
+
+// Sur l'onglet Muscu, ces widgets passent en tuiles de deux par ligne (comme sur le web, voir Accueil.svelte)
+const TUILES = new Set(['tonnage', 'regularite']);
+// Ces widgets ne se comprennent que grâce à leur graphique (le corps, la courbe de charge) : ils gardent leur version complète
+const GRANDS = new Set(['groupes', 'chargemuscu']);
 
 // Accueil en mode démo : des données d'exemple générées (les mêmes que le ?demo du site), sans compte.
-// La barre des sports filtre les séances et les séances prévues ; la forme, elle, reste globale (comme sur le web).
+// Les widgets affichés dépendent du sport choisi dans la barre du haut (composition du registre).
 export default function Accueil() {
   const p = usePalette();
-  const { filtre } = useMenu();
+  const { filtre, familles } = useMenu();
   const aujourdhui = useMemo(() => new Date(), []);
   const donnees = useMemo(() => donneesDemo(aujourdhui), [aujourdhui]);
   const series = useMemo(() => seriesForceDemo(aujourdhui), [aujourdhui]);
+  const contexte = useMemo(() => construireContexte(donnees, series, filtre), [donnees, series, filtre]);
 
-  const seances = useMemo(() => donnees.seances.filter((s) => garderSeance(s, filtre)), [donnees, filtre]);
-  const planifiees = useMemo(() => donnees.planifiees.filter((x) => garderSeance(x, filtre)), [donnees, filtre]);
+  const widgets = useMemo(() => {
+    const auto = compositionAuto(familles);
+    return filtre === 'tout' ? auto : composerOnglet(auto, filtre);
+  }, [familles, filtre]);
+
+  const compactMuscu = filtre === 'muscu';
+  const compactDe = (id: string) => compactMuscu && !GRANDS.has(id);
+
+  // Les tuiles se rangent deux par deux ; les autres widgets prennent toute la largeur
+  const blocs: (WidgetPlace | WidgetPlace[])[] = [];
+  for (const w of widgets) {
+    const dernier = blocs[blocs.length - 1];
+    if (compactMuscu && TUILES.has(w.id) && Array.isArray(dernier) && dernier.length < 2) dernier.push(w);
+    else if (compactMuscu && TUILES.has(w.id)) blocs.push([w]);
+    else blocs.push(w);
+  }
+
+  const rendre = (w: WidgetPlace) => {
+    const Composant = COMPOSANTS[w.id];
+    return Composant ? <Composant key={w.id} contexte={contexte} taille={w.taille} compact={compactDe(w.id)} /> : <WidgetBientot key={w.id} id={w.id} />;
+  };
 
   return (
     <View style={[styles.page, { backgroundColor: p.fond }]}>
@@ -35,11 +57,16 @@ export default function Accueil() {
           </Text>
           <Text style={[typo.micro, { color: p.texteMuet }]}>Mode démo</Text>
         </View>
-        <WidgetSemaine seances={seances} planifiees={planifiees} aujourdhui={aujourdhui} />
-        <WidgetForme metriques={donnees.metriques} />
-        <WidgetVolume seances={seances} aujourdhui={aujourdhui} />
-        <WidgetDernieres seances={seances} series={series} />
-        <WidgetAvenir planifiees={planifiees} aujourdhui={aujourdhui} />
+        {blocs.map((b) =>
+          Array.isArray(b) ? (
+            <View key={b.map((w) => w.id).join('+')} style={styles.tuiles}>
+              {b.map(rendre)}
+              {b.length === 1 ? <View style={styles.vide} /> : null}
+            </View>
+          ) : (
+            rendre(b)
+          ),
+        )}
       </ScrollView>
     </View>
   );
@@ -49,4 +76,6 @@ const styles = StyleSheet.create({
   page: { flex: 1 },
   contenu: { paddingHorizontal: espace.e4, paddingTop: espace.e4, paddingBottom: espace.e4, gap: espace.e4 },
   entete: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  tuiles: { flexDirection: 'row', gap: espace.e3 },
+  vide: { flex: 1 },
 });

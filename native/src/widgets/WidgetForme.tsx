@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/Bloc';
 import { StatCle } from '@/components/StatCle';
 import { formeActuelle } from '@/data/synthese';
-import type { Metrique } from '@/data/types';
+import type { WidgetProps } from '@/data/types';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -10,9 +10,9 @@ import { usePalette } from '@/theme/usePalette';
 // Forme = condition − fatigue : positive quand on est frais, négative quand on est fatigué.
 const signe = (n: number) => `${n > 0 ? '+' : ''}${n}`;
 
-export function WidgetForme({ metriques }: { metriques: Metrique[] }) {
+export function WidgetForme({ contexte }: WidgetProps) {
   const p = usePalette();
-  const forme = formeActuelle(metriques);
+  const forme = formeActuelle(contexte.metriques);
 
   return (
     <Bloc titre="Forme">

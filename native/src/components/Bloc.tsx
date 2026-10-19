@@ -6,17 +6,19 @@ import { usePalette } from '@/theme/usePalette';
 
 // Un bloc de contenu : une surface, un titre, du contenu. C'est la carte de base des widgets.
 // Hiérarchie par la surface (pas d'ombre), rayon de 6 : comme sur le web.
+// Avec `couleur` (par exemple la couleur d'un sport), c'est un aplat de couleur : les enfants écrivent en encre foncée.
 interface Props {
   titre?: string;
+  couleur?: string;
   children?: ReactNode;
 }
 
-export function Bloc({ titre, children }: Props) {
+export function Bloc({ titre, couleur, children }: Props) {
   const p = usePalette();
   return (
-    <View style={[styles.bloc, { backgroundColor: p.surface }]}>
+    <View style={[styles.bloc, { backgroundColor: couleur ?? p.surface }]}>
       {titre ? (
-        <Text accessibilityRole="header" style={[typo.titre3, styles.titre, { color: p.texte }]}>
+        <Text accessibilityRole="header" style={[typo.titre3, styles.titre, { color: couleur ? p.encreSurCouleur : p.texte }]}>
           {titre}
         </Text>
       ) : null}

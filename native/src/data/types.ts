@@ -68,3 +68,40 @@ export interface Metrique {
   duration_min: number;
   activity_count: number;
 }
+
+/** Taille d'un widget : petit, moyen, large, pleine largeur. */
+export type Taille = 's' | 'm' | 'l' | 'xl';
+
+/** Réglages de l'athlète (table user_profiles). */
+export interface Profil {
+  ftp: number | null;
+  hr_max: number | null;
+  lthr: number | null;
+  weight: number | null;
+  extras: Record<string, unknown>;
+}
+
+/**
+ * Ce que reçoit chaque widget : toujours la même enveloppe, filtrée par le sport choisi
+ * (`seances`, `dernieres`, `planifiees`), plus les données qui ne se filtrent pas (`toutesSeances`, `metriques`).
+ */
+export interface Contexte {
+  seances: Seance[];
+  toutesSeances: Seance[];
+  dernieres: Seance[];
+  metriques: Metrique[];
+  objectifs: Objectif[];
+  planifiees: Prevue[];
+  profil: Profil | null;
+  hrMax: number | null;
+  filtre: string;
+  force: { series: SerieForce[] };
+}
+
+/** Les propriétés que reçoit chaque composant de widget. */
+export interface WidgetProps {
+  contexte: Contexte;
+  taille?: Taille;
+  /** Version compacte pour téléphone (tuile de 2 par ligne). */
+  compact?: boolean;
+}
