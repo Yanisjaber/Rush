@@ -2,7 +2,7 @@
 // Elles servent à montrer et à tester l'interface sans être connecté. Port de app/src/lib/data/demo.js
 // (sans les retouches faites en démo, ni la puissance, le sommeil, Hyrox… qui viendront avec leurs écrans).
 import { dateIsoLocale } from './format.ts';
-import type { Metrique, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Seance, SerieForce, TestHyrox } from './types.ts';
+import type { Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Seance, SerieForce, TestHyrox } from './types.ts';
 
 interface ModeleJour {
   sport: string;
@@ -207,4 +207,13 @@ export function testsHyroxDemo(aujourdhui: Date = new Date()): TestHyrox[] {
 /** Objectif Hyrox d'exemple : 1h10'00" au total. */
 export function objectifHyroxDemo(): ObjectifHyrox {
   return { total_s: 4200, segments: null };
+}
+
+/** Notes et jours de repos d'exemple du calendrier (une blessure récente, deux jours de repos). */
+export function annotationsDemo(aujourdhui: Date = new Date()): { notes: Note[]; repos: string[] } {
+  const jour = (delta: number) => dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + delta));
+  return {
+    notes: [{ id: 'demo-n1', type: 'blessure', text: 'Genou gauche : on lève le pied', color: '#fb923c', from_date: jour(-3), to_date: jour(-1) }],
+    repos: [jour(-6), jour(3)],
+  };
 }

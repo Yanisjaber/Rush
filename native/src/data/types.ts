@@ -123,6 +123,16 @@ export interface ObjectifHyrox {
   segments: number[] | null;
 }
 
+/** Une note du calendrier (table day_notes) : sur une plage de dates, avec un type et une couleur. */
+export interface Note {
+  id: string;
+  type: 'texte' | 'maladie' | 'blessure' | string;
+  text: string | null;
+  color: string | null;
+  from_date: string;
+  to_date: string;
+}
+
 /** Taille d'un widget : petit, moyen, large, pleine largeur. */
 export type Taille = 's' | 'm' | 'l' | 'xl';
 

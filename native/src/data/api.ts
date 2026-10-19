@@ -11,7 +11,7 @@
 import { appliquerTout } from './retouches';
 import { dateIsoLocale } from './format';
 import { sb } from './supabase';
-import type { Metrique, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Profil, Seance, SerieForce, TestHyrox } from './types';
+import type { Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Profil, Seance, SerieForce, TestHyrox } from './types';
 
 export interface Resultat<T> {
   data: T | null;
@@ -220,4 +220,38 @@ export async function chargerSportsChoisis(userId: string): Promise<Resultat<unk
   const r = await sb.from('user_preferences').select('sports').eq('user_id', userId).maybeSingle();
   if (r.error) return { data: null, erreur: '' }; // tolérant : sans préférences, la barre se déduit des séances
   return { data: (r.data as { sports?: unknown } | null)?.sports ?? null, erreur: '' };
+}
+
+// ---------------------------------------------------------------------------
+// Calendrier : séances réalisées, séances prévues et annotations d'une période
+// ---------------------------------------------------------------------------
+
+/** Séances réalisées entre deux dates ISO incluses (le calendrier d'un mois). */
+export async function chargerSeancesPeriode(userId: string, debutIso: string, finIso: string): Promise<Resultat<Seance[]>> {
+  const r = await sb
+    .from('activities')
+    .select(COLONNES_SEANCE)
+    .eq('user_id', userId)
+    .gte('start_date_local', debutIso)
+    .lt('start_date_local', `${finIso}T23:59:59`)
+    .order('start_date_local', { ascending: true })
+    .limit(500);
+  const res = resultat<Seance[]>(r, 'Impossible de charger les séances de ce mois.');
+  if (res.data) res.data = await avecRetouches(userId, res.data);
+  return res;
+}
+
+const COLONNES_NOTE = 'id,type,text,color,from_date,to_date';
+
+/** Notes qui recouvrent la période et jours de repos de la période. */
+export async function chargerAnnotations(userId: string, debutIso: string, finIso: string): Promise<Resultat<{ notes: Note[]; repos: string[] }>> {
+  const [notes, repos] = await Promise.all([
+    sb.from('day_notes').select(COLONNES_NOTE).eq('user_id', userId).lte('from_date', finIso).gte('to_date', debutIso).order('from_date', { ascending: true }).limit(300),
+    sb.from('rest_day').select('iso_date').eq('user_id', userId).gte('iso_date', debutIso).lte('iso_date', finIso).limit(400),
+  ]);
+  if (notes.error || repos.error) {
+    console.error('[app/api] annotations', notes.error?.code || repos.error?.code || '');
+    return { data: null, erreur: 'Impossible de charger tes notes.' };
+  }
+  return { data: { notes: (notes.data as unknown as Note[]) || [], repos: ((repos.data as { iso_date: string }[]) || []).map((r) => r.iso_date) }, erreur: '' };
 }
