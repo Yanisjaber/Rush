@@ -51,7 +51,7 @@ export function BarreSports() {
 // Le « + » : tous les sports, cochés pour ceux qu'on pratique. Chaque touche enregistre tout de suite (comme sur le site).
 function ChoixSportsModal({ ouvert, onFermer }: { ouvert: boolean; onFermer: () => void }) {
   const p = usePalette();
-  const { choisis, erreur, envoi, appliquer } = useSportsChoisis();
+  const { choisis, disciplines, disciplinesApres, erreur, envoi, appliquer } = useSportsChoisis();
   const basculer = (cle: string) => {
     if (!choisis) return;
     void appliquer(choisis.includes(cle) ? choisis.filter((s) => s !== cle) : [...choisis, cle]);
@@ -65,7 +65,15 @@ function ChoixSportsModal({ ouvert, onFermer }: { ouvert: boolean; onFermer: () 
         </View>
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
           {erreur ? <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger, marginBottom: 12 }]}>{erreur}</Text> : null}
-          {choisis ? <SelecteurSports choisis={choisis} onBasculer={basculer} desactive={envoi} /> : null}
+          {choisis ? (
+            <SelecteurSports
+              choisis={choisis}
+              onBasculer={basculer}
+              disciplines={disciplines}
+              onBasculerDiscipline={(sport, cle) => void appliquer(choisis, disciplinesApres(sport, cle))}
+              desactive={envoi}
+            />
+          ) : null}
         </ScrollView>
       </View>
     </Modal>

@@ -12,7 +12,7 @@ import { usePalette } from '@/theme/usePalette';
 // Les sports que tes séances révèlent (muscu, Hyrox…) apparaissent déjà cochés. L'ordre des pastilles = l'ordre où tu coches.
 export default function MesSports() {
   const p = usePalette();
-  const { choisis, setChoisis, erreur, envoi, appliquer, demo } = useSportsChoisis();
+  const { choisis, setChoisis, disciplines, setDisciplines, disciplinesApres, erreur, envoi, appliquer, demo } = useSportsChoisis();
   const [initial, setInitial] = useState<string | null>(null);
   const [message, setMessage] = useState('');
 
@@ -26,9 +26,10 @@ export default function MesSports() {
     );
   }
   // La référence « enregistré » est la liste telle qu'elle était au premier affichage de l'écran
-  const reference = initial ?? JSON.stringify(choisis);
+  const etatActuel = JSON.stringify([choisis, disciplines]);
+  const reference = initial ?? etatActuel;
   if (initial === null) setInitial(reference);
-  const sale = JSON.stringify(choisis) !== reference;
+  const sale = etatActuel !== reference;
 
   const basculer = (cle: string) => {
     setMessage('');
@@ -36,8 +37,8 @@ export default function MesSports() {
   };
 
   async function enregistrer() {
-    if (await appliquer(choisis ?? [])) {
-      setInitial(JSON.stringify(choisis));
+    if (await appliquer(choisis ?? [], disciplines)) {
+      setInitial(etatActuel);
       setMessage(demo ? 'Mode démo : gardé en mémoire seulement.' : 'Enregistré. Ton Accueil se met à jour.');
     }
   }
@@ -51,7 +52,15 @@ export default function MesSports() {
             <Text style={[typo.petit, { color: p.texte }]}>{erreur}</Text>
           </View>
         ) : null}
-        <SelecteurSports choisis={choisis} onBasculer={basculer} />
+        <SelecteurSports
+          choisis={choisis}
+          onBasculer={basculer}
+          disciplines={disciplines}
+          onBasculerDiscipline={(sport, cle) => {
+            setMessage('');
+            setDisciplines(disciplinesApres(sport, cle));
+          }}
+        />
         <Bouton onPress={() => void enregistrer()}>{envoi ? 'Enregistrement…' : sale ? 'Enregistrer' : 'Enregistré'}</Bouton>
         {message ? (
           <Text accessibilityLiveRegion="polite" style={[typo.petit, { color: p.ok }]}>

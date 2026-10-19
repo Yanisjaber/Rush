@@ -355,9 +355,16 @@ export async function enregistrerProfil(userId: string, colonnes: Record<string,
   return resultat<LigneProfil>(r as Reponse, "Impossible d'enregistrer ton profil.");
 }
 
-/** Enregistre les sports choisis (déjà nettoyés). N'écrit que la colonne `sports`, jamais le thème ni les disciplines. */
-export async function enregistrerSportsChoisis(userId: string, sports: string[]): Promise<{ erreur: string }> {
-  const r = await sb.from('user_preferences').upsert({ user_id: userId, sports }, { onConflict: 'user_id' });
+/** Les disciplines choisies du compte (objet brut : à nettoyer avec nettoyerDisciplines). */
+export async function chargerDisciplinesChoisies(userId: string): Promise<Resultat<unknown>> {
+  const r = await sb.from('user_preferences').select('disciplines').eq('user_id', userId).maybeSingle();
+  if (r.error) return { data: null, erreur: '' };
+  return { data: (r.data as { disciplines?: unknown } | null)?.disciplines ?? null, erreur: '' };
+}
+
+/** Enregistre les sports choisis et leurs disciplines (déjà nettoyés). N'écrit ni le thème ni autre chose. */
+export async function enregistrerSportsChoisis(userId: string, sports: string[], disciplines: Record<string, string[]> = {}): Promise<{ erreur: string }> {
+  const r = await sb.from('user_preferences').upsert({ user_id: userId, sports, disciplines }, { onConflict: 'user_id' });
   if (r.error) {
     console.error('[app/api] sports', r.error.code || '');
     return { erreur: "Impossible d'enregistrer tes sports." };

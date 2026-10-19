@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { chargerSportsChoisis, enregistrerSportsChoisis } from '@/data/api';
+import { chargerDisciplinesChoisies, chargerSportsChoisis, enregistrerSportsChoisis } from '@/data/api';
+import { nettoyerDisciplines, type DisciplinesChoisies } from '@/data/disciplines';
 import { nettoyerSports, sportsCoches } from '@/data/sports-choisis';
 import { useAuth } from '@/stores/auth';
 import { useMenu } from '@/stores/menu';
@@ -11,8 +12,11 @@ export function useSportsChoisis() {
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
   const { familles } = useMenu();
-  const { demo: sportsDemo } = useSportsEtat();
+  const { demo: sportsDemo, demoDisciplines } = useSportsEtat();
+  const sportsEtatDemoDisciplines = useRef(demoDisciplines);
+  sportsEtatDemoDisciplines.current = demoDisciplines;
   const [choisis, setChoisis] = useState<string[] | null>(null);
+  const [disciplines, setDisciplines] = useState<DisciplinesChoisies>({});
   const [erreur, setErreur] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const famillesRef = useRef(familles);
@@ -22,7 +26,11 @@ export function useSportsChoisis() {
     let annule = false;
     (async () => {
       const liste = demo ? sportsDemo : userId ? nettoyerSports((await chargerSportsChoisis(userId)).data) : null;
-      if (!annule) setChoisis(sportsCoches(liste, famillesRef.current));
+      const brutes = demo ? sportsEtatDemoDisciplines.current : userId ? (await chargerDisciplinesChoisies(userId)).data : null;
+      if (annule) return;
+      const coches = sportsCoches(liste, famillesRef.current);
+      setChoisis(coches);
+      setDisciplines(nettoyerDisciplines(brutes, coches));
     })();
     return () => {
       annule = true;
@@ -31,31 +39,44 @@ export function useSportsChoisis() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [demo, userId]);
 
+  /** Les disciplines après avoir touché `cle` (ajoutée ou retirée) pour ce sport. */
+  const disciplinesApres = useCallback(
+    (sport: string, cle: string): DisciplinesChoisies => {
+      const actuelles = disciplines[sport] ?? [];
+      return { ...disciplines, [sport]: actuelles.includes(cle) ? actuelles.filter((c) => c !== cle) : [...actuelles, cle] };
+    },
+    [disciplines],
+  );
+
   /** Enregistre la liste. Renvoie true si c'est fait. */
   const appliquer = useCallback(
-    async (liste: string[]): Promise<boolean> => {
+    async (liste: string[], discs: DisciplinesChoisies = disciplines): Promise<boolean> => {
       if (envoi) return false;
       const propre = nettoyerSports(liste) ?? [];
+      // Les disciplines d'un sport décoché disparaissent
+      const propres = nettoyerDisciplines(discs, propre);
       setErreur('');
       if (demo) {
-        definirSportsDemo(propre);
+        definirSportsDemo(propre, propres);
         setChoisis(propre);
+        setDisciplines(propres);
         return true;
       }
       if (!userId) return false;
       setEnvoi(true);
-      const r = await enregistrerSportsChoisis(userId, propre);
+      const r = await enregistrerSportsChoisis(userId, propre, propres);
       setEnvoi(false);
       if (r.erreur) {
         setErreur(r.erreur);
         return false;
       }
       setChoisis(propre);
+      setDisciplines(propres);
       sportsModifies();
       return true;
     },
-    [demo, userId, envoi],
+    [demo, userId, envoi, disciplines],
   );
 
-  return { choisis, setChoisis, erreur, envoi, appliquer, demo };
+  return { choisis, setChoisis, disciplines, setDisciplines, disciplinesApres, erreur, envoi, appliquer, demo };
 }
