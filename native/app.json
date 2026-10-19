@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Rush",
+    "slug": "rush",
+    "version": "0.1.0",
+    "scheme": "rush",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "TODO.rush",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "TODO.rush",
+      "allowBackup": false
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
