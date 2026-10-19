@@ -12,7 +12,7 @@ import { appliquerTout } from './retouches';
 import { dateIsoLocale } from './format';
 import { sb } from './supabase';
 import type { ObjectifAnnuel } from './bilan.ts';
-import type { Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Profil, Seance, SerieForce, TestHyrox } from './types';
+import type { Nuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Profil, Seance, SerieForce, TestHyrox } from './types';
 
 export interface Resultat<T> {
   data: T | null;
@@ -302,4 +302,27 @@ export async function chargerObjectifsAnnuels(userId: string): Promise<Resultat<
   const r = await sb.from('yearly_goals').select(COLONNES_OBJECTIF_ANNUEL).eq('user_id', userId).order('year', { ascending: false }).limit(500);
   const res = resultat<Parameters<typeof versObjectif>[0][]>(r, 'Impossible de charger tes objectifs.');
   return { data: res.data ? res.data.map(versObjectif) : null, erreur: res.erreur };
+}
+
+// ---------------------------------------------------------------------------
+// Sommeil (nuits Garmin déjà importées)
+// ---------------------------------------------------------------------------
+
+// Colonnes de garmin_sleep, sans `hr_stream` (gros JSON, chargé seulement à l'ouverture d'une nuit)
+const COLONNES_SOMMEIL =
+  'date,bedtime,wake_time,total_sec,deep_sec,light_sec,rem_sec,awake_sec,awake_count,restless_count,avg_stress,avg_heart_rate,resting_heart_rate,body_battery_change,hrv_avg,hrv_status,resp_avg,resp_min,resp_max,spo2_avg,score,score_qualifier,segments';
+
+/** Nuits Garmin des N derniers jours (la plus récente d'abord). */
+export async function chargerSommeil(userId: string, jours = 90): Promise<Resultat<Nuit[]>> {
+  const r = await sb.from('garmin_sleep').select(COLONNES_SOMMEIL).eq('user_id', userId).order('date', { ascending: false }).limit(jours);
+  return resultat<Nuit[]>(r as Reponse, 'Impossible de charger ton sommeil.');
+}
+
+/** FC minute par minute d'UNE nuit ([minute, bpm]) : colonne lourde, chargée seulement quand on ouvre le détail. */
+export async function chargerFcNuit(userId: string, date: string): Promise<Resultat<[number, number][]>> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date))) return { data: null, erreur: 'Date invalide.' };
+  const r = await sb.from('garmin_sleep').select('hr_stream').eq('user_id', userId).eq('date', date).maybeSingle();
+  const res = resultat<{ hr_stream?: unknown }>(r as Reponse, 'Impossible de charger la FC de cette nuit.');
+  const flux = res.data?.hr_stream;
+  return { data: Array.isArray(flux) ? (flux as [number, number][]) : null, erreur: res.erreur };
 }

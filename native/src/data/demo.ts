@@ -3,7 +3,7 @@
 // (sans les retouches faites en démo, ni la puissance, le sommeil, Hyrox… qui viendront avec leurs écrans).
 import { dateIsoLocale } from './format.ts';
 import type { ObjectifAnnuel } from './bilan.ts';
-import type { Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Seance, SerieForce, TestHyrox } from './types.ts';
+import type { Nuit, SegmentNuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Seance, SerieForce, TestHyrox } from './types.ts';
 
 interface ModeleJour {
   sport: string;
@@ -268,4 +268,74 @@ export function objectifsAnnuelsDemo(maintenant: Date = new Date()): ObjectifAnn
     { id: 'demo-g3', annee, sport: 'tous', template: 'all_hours', target: 380 },
     { id: 'demo-g4', annee, sport: 'course', template: 'run_10k', target: 40, currentManual: 42.5 },
   ];
+}
+
+/** Segments d'une nuit d'exemple : [début_min, fin_min, niveau] (0 profond, 1 léger, 2 paradoxal, 3 éveillé). */
+function segmentsDemo(totalMin: number, i: number): SegmentNuit[] {
+  const segs: SegmentNuit[] = [];
+  let t = 0;
+  const ajoute = (duree: number, niveau: number) => {
+    const fin = Math.min(totalMin, t + duree);
+    if (fin > t) segs.push([t, fin, niveau]);
+    t = fin;
+  };
+  ajoute(6 + (i % 5) * 4, 3); // endormissement
+  let cycle = 0;
+  while (t < totalMin) {
+    ajoute(18 + ((i + cycle) % 4) * 3, 1);
+    ajoute(Math.max(8, 38 - cycle * 8), 0);
+    ajoute(15 + ((i * 3 + cycle) % 5) * 3, 1);
+    ajoute(8 + cycle * 7, 2);
+    if ((i + cycle) % 3 === 0) ajoute(3, 3);
+    cycle++;
+  }
+  return segs;
+}
+
+/** FC minute par minute d'une nuit d'exemple ([minute, bpm]). */
+export function fcNuitDemo(nuit: Partial<Nuit> | null): [number, number][] {
+  const total = Math.round(((nuit?.total_sec || 25000) + (nuit?.awake_sec || 0)) / 60);
+  const base = Number(nuit?.avg_heart_rate) || 54;
+  const graine = String(nuit?.date || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  return Array.from({ length: total }, (_, m) => [m, Math.round(base + 6 * Math.exp(-m / 90) + 3 * Math.sin((m + graine) / 22) + ((m * 7 + graine) % 5) / 2)] as [number, number]);
+}
+
+/** Nuits d'exemple (la plus récente d'abord), même forme que les lignes de garmin_sleep. */
+export function sommeilDemo(aujourdhui: Date = new Date(), nombre = 45): Nuit[] {
+  const nuits: Nuit[] = [];
+  for (let i = 0; i < nombre; i++) {
+    const d = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - i);
+    const veille = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
+    const total = 6 * 3600 + 20 * 60 + ((i * 37) % 11) * 360; // 6h20 à 7h56
+    const eveille = 900 + ((i * 7) % 5) * 240;
+    const couche = 22 * 60 + 40 + ((i * 17) % 9) * 8 + (i % 7 === 5 || i % 7 === 6 ? 50 : 0); // coucher plus tard le week-end
+    const leve = (couche + (total + eveille) / 60) % 1440;
+    const hm = (m: number) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(Math.round(m % 60)).padStart(2, '0')}`;
+    nuits.push({
+      date: dateIsoLocale(d),
+      bedtime: `${dateIsoLocale(veille)} ${hm(couche)}`,
+      wake_time: `${dateIsoLocale(d)} ${hm(leve)}`,
+      total_sec: total,
+      deep_sec: Math.round(total * (0.12 + ((i * 5) % 7) / 100)),
+      rem_sec: Math.round(total * (0.18 + ((i * 3) % 6) / 100)),
+      light_sec: Math.round(total * 0.62),
+      awake_sec: eveille,
+      awake_count: 1 + (i % 5),
+      restless_count: 20 + ((i * 11) % 40),
+      avg_stress: 18 + (i % 9) + (i % 6 === 0 ? 14 : 0),
+      avg_heart_rate: 52 + (i % 5),
+      resting_heart_rate: 48 + (i % 4),
+      body_battery_change: 48 + ((i * 5) % 30),
+      hrv_avg: 58 + ((i * 3) % 14) - (i > 20 ? 4 : 0) - (i === 0 ? 9 : 0),
+      hrv_status: 'BALANCED',
+      resp_avg: 14 + (i % 4) * 0.5,
+      resp_min: 11 + (i % 3),
+      resp_max: 18 + (i % 3),
+      spo2_avg: 94 + (i % 4),
+      score: 66 + ((i * 11) % 24),
+      score_qualifier: 'GOOD',
+      segments: segmentsDemo(Math.round((total + eveille) / 60), i),
+    });
+  }
+  return nuits;
 }

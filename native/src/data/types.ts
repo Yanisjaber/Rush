@@ -133,6 +133,36 @@ export interface Note {
   to_date: string;
 }
 
+/** Segment d'une nuit : [début en minutes, fin en minutes, niveau] (0 profond, 1 léger, 2 paradoxal, 3 éveillé). */
+export type SegmentNuit = [number, number, number];
+
+/** Une nuit de sommeil (une ligne de garmin_sleep). Les valeurs absentes sont null. */
+export interface Nuit {
+  date: string;
+  bedtime: string | null; // « AAAA-MM-JJ HH:MM »
+  wake_time: string | null;
+  total_sec: number | null;
+  deep_sec: number | null;
+  light_sec: number | null;
+  rem_sec: number | null;
+  awake_sec: number | null;
+  awake_count: number | null;
+  restless_count: number | null;
+  avg_stress: number | null;
+  avg_heart_rate: number | null;
+  resting_heart_rate: number | null;
+  body_battery_change: number | null;
+  hrv_avg: number | null;
+  hrv_status: string | null;
+  resp_avg: number | null;
+  resp_min: number | null;
+  resp_max: number | null;
+  spo2_avg: number | null;
+  score: number | null; // score de Garmin : jamais utilisé, on recalcule le nôtre
+  score_qualifier: string | null;
+  segments: SegmentNuit[] | null;
+}
+
 /** Taille d'un widget : petit, moyen, large, pleine largeur. */
 export type Taille = 's' | 'm' | 'l' | 'xl';
 
