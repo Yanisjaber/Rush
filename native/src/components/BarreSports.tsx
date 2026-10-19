@@ -1,13 +1,10 @@
 import { useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, Pressable, View } from 'react-native';
-import { Bouton } from '@/components/Bouton';
-import { SelecteurSports } from '@/components/SelecteurSports';
-import { basculerSport } from '@/data/sports-choisis';
-import { useSportsChoisis } from '@/hooks/useSportsChoisis';
+import { ScrollView, StyleSheet, Text, Pressable, View } from 'react-native';
+import { MenuSports } from '@/components/MenuSports';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { choisirFiltre, useMenu } from '@/stores/menu';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
-import { police, typo } from '@/theme/typo';
+import { police } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La barre des sports, fixe en haut de l'écran : « Tous » puis un sport par pastille (point de sa couleur).
@@ -44,44 +41,8 @@ export function BarreSports() {
       >
         <Text style={[styles.plusTexte, { color: p.texte }]}>+</Text>
       </Pressable>
-      <ChoixSportsModal ouvert={ouvert} onFermer={() => setOuvert(false)} />
+      <MenuSports ouvert={ouvert} onFermer={() => setOuvert(false)} haut={haut} />
     </View>
-  );
-}
-
-// Le « + » : tous les sports, cochés pour ceux qu'on pratique. Chaque touche enregistre tout de suite (comme sur le site).
-function ChoixSportsModal({ ouvert, onFermer }: { ouvert: boolean; onFermer: () => void }) {
-  const p = usePalette();
-  const { choisis, disciplines, disciplinesApres, erreur, envoi, appliquer } = useSportsChoisis();
-  const [dernier, setDernier] = useState(false);
-  const basculer = (cle: string) => {
-    if (!choisis) return;
-    const suite = basculerSport(choisis, cle);
-    setDernier(suite === null);
-    if (suite) void appliquer(suite);
-  };
-  return (
-    <Modal visible={ouvert} animationType="slide" presentationStyle="pageSheet" onRequestClose={onFermer}>
-      <View style={{ flex: 1, backgroundColor: p.fond }}>
-        <View style={styles.enteteModal}>
-          <Text accessibilityRole="header" style={[typo.titre2, { color: p.texte, flex: 1 }]}>Mes sports</Text>
-          <Bouton variante="discret" onPress={onFermer}>Fermer</Bouton>
-        </View>
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
-          {dernier ? <Text accessibilityRole="alert" style={[typo.petit, { color: p.alerte, marginBottom: 12 }]}>Garde au moins un sport.</Text> : null}
-          {erreur ? <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger, marginBottom: 12 }]}>{erreur}</Text> : null}
-          {choisis ? (
-            <SelecteurSports
-              choisis={choisis}
-              onBasculer={basculer}
-              disciplines={disciplines}
-              onBasculerDiscipline={(sport, cle) => void appliquer(choisis, disciplinesApres(sport, cle))}
-              desactive={envoi}
-            />
-          ) : null}
-        </ScrollView>
-      </View>
-    </Modal>
   );
 }
 
@@ -106,7 +67,6 @@ const styles = StyleSheet.create({
   barre: { borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'flex-end' },
   plus: { width: 52, height: 44, alignItems: 'center', justifyContent: 'center', borderLeftWidth: StyleSheet.hairlineWidth },
   plusTexte: { fontFamily: police.titre600, fontSize: 28, lineHeight: 32 },
-  enteteModal: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
   rangee: { paddingHorizontal: 8, alignItems: 'center' },
   // 44 pt de haut : la cible tactile minimale
   pastille: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 12, borderRadius: 999 },
