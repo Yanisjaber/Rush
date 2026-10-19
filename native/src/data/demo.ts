@@ -2,7 +2,7 @@
 // Elles servent à montrer et à tester l'interface sans être connecté. Port de app/src/lib/data/demo.js
 // (sans les retouches faites en démo, ni la puissance, le sommeil, Hyrox… qui viendront avec leurs écrans).
 import { dateIsoLocale } from './format.ts';
-import type { Metrique, Objectif, PointPuissance, Prevue, ProgrammeForce, Seance, SerieForce } from './types.ts';
+import type { Metrique, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Seance, SerieForce, TestHyrox } from './types.ts';
 
 interface ModeleJour {
   sport: string;
@@ -186,4 +186,25 @@ export function seriesForceDemo(aujourdhui: Date = new Date()): SerieForce[] {
     });
   }
   return lignes.sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+/** Tests Hyrox d'exemple : trois simulations qui progressent (runs plus rapides, stations mieux tenues), du plus récent au plus ancien. */
+export function testsHyroxDemo(aujourdhui: Date = new Date()): TestHyrox[] {
+  const jour = (delta: number) => dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + delta));
+  // runs puis stations, dans l'ordre : run1, ski, run2, push, run3, pull, run4, bbj, run5, row, run6, farm, run7, lunge, run8, wall
+  const fabriquer = (id: string, delta: number, label: string, runs: number[], stations: number[]): TestHyrox => {
+    const segments: number[] = [];
+    runs.forEach((r, k) => segments.push(r, stations[k]));
+    return { id, date: jour(delta), label, kind: 'test', segments, total_s: segments.reduce((a, b) => a + b, 0), source: 'manuel', activity_id: null, notes: null };
+  };
+  return [
+    fabriquer('demo-hx-3', -4, 'Simulation 8 × (1 km + station)', [285, 296, 305, 315, 322, 330, 336, 342], [235, 248, 236, 252, 245, 215, 220, 240]),
+    fabriquer('demo-hx-2', -32, 'Simulation 8 × (1 km + station)', [298, 314, 326, 340, 352, 360, 368, 376], [262, 280, 268, 284, 276, 240, 246, 305]),
+    fabriquer('demo-hx-1', -60, 'Premier test', [305, 322, 336, 352, 366, 378, 388, 398], [270, 292, 280, 298, 288, 250, 258, 322]),
+  ];
+}
+
+/** Objectif Hyrox d'exemple : 1h10'00" au total. */
+export function objectifHyroxDemo(): ObjectifHyrox {
+  return { total_s: 4200, segments: null };
 }

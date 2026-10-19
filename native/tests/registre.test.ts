@@ -90,3 +90,13 @@ test('grouperTuiles : sans tuile, rien ne change', () => {
   const w = (id: string) => ({ id, taille: 'm' as const });
   assert.deepEqual(grouperTuiles([w('a'), w('b')], () => false), [w('a'), w('b')]);
 });
+
+import { readFileSync } from 'node:fs';
+
+test('chaque widget du registre a son composant (et inversement)', () => {
+  // composants.tsx importe React Native : on lit le fichier comme du texte plutôt que de l'importer
+  const source = readFileSync(new URL('../src/widgets/composants.tsx', import.meta.url), 'utf8');
+  const bloc = source.slice(source.indexOf('export const COMPOSANTS'), source.indexOf('};', source.indexOf('export const COMPOSANTS')));
+  const ids = [...bloc.matchAll(/^\s+([a-z]+):\s+Widget[A-Za-z]+,/gm)].map((m) => m[1]).sort();
+  assert.deepEqual(ids, Object.keys(WIDGETS).sort());
+});

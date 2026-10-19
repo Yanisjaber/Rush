@@ -27,7 +27,7 @@ export default function Accueil() {
   const aujourdhui = useMemo(() => new Date(), []);
   const donnees = useMemo(() => donneesDemo(aujourdhui), [aujourdhui]);
   const series = useMemo(() => seriesForceDemo(aujourdhui), [aujourdhui]);
-  const contexte = useMemo(() => construireContexte(donnees, series, filtre), [donnees, series, filtre]);
+  const contexte = useMemo(() => construireContexte(donnees, series, filtre, 'tout', aujourdhui), [donnees, series, filtre, aujourdhui]);
 
   const widgets = useMemo(() => {
     const auto = compositionAuto(familles);

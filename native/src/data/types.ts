@@ -95,6 +95,25 @@ export interface ProgrammeForce {
   exercises: ExerciceProgramme[];
 }
 
+/** Un test ou une course Hyrox (table hyrox_tests) : 16 segments dans l'ordre officiel (run, station, run, station…). */
+export interface TestHyrox {
+  id: string;
+  date: string;
+  label: string;
+  kind: 'test' | 'course';
+  segments: number[]; // 16 temps en secondes
+  total_s: number;
+  source: string;
+  activity_id: string | null;
+  notes: string | null;
+}
+
+/** L'objectif de temps Hyrox : un total et, facultatif, 16 temps visés (table hyrox_objectif). */
+export interface ObjectifHyrox {
+  total_s: number;
+  segments: number[] | null;
+}
+
 /** Taille d'un widget : petit, moyen, large, pleine largeur. */
 export type Taille = 's' | 'm' | 'l' | 'xl';
 
@@ -123,6 +142,7 @@ export interface Contexte {
   filtre: string;
   puissance: PointPuissance[];
   force: { series: SerieForce[]; programmes: ProgrammeForce[] };
+  hyrox: { tests: TestHyrox[]; objectif: ObjectifHyrox | null };
 }
 
 /** Les propriétés que reçoit chaque composant de widget. */

@@ -13,6 +13,10 @@ import { WidgetDernieres } from './WidgetDernieres';
 import { WidgetEfficacite } from './WidgetEfficacite';
 import { WidgetForme } from './WidgetForme';
 import { WidgetGroupes } from './WidgetGroupes';
+import { WidgetHyroxAllure } from './WidgetHyroxAllure';
+import { WidgetHyroxDossard } from './WidgetHyroxDossard';
+import { WidgetHyroxGains } from './WidgetHyroxGains';
+import { WidgetHyroxTest } from './WidgetHyroxTest';
 import { WidgetMeilleures } from './WidgetMeilleures';
 import { WidgetObjectif } from './WidgetObjectif';
 import { WidgetPredictions } from './WidgetPredictions';
@@ -46,6 +50,10 @@ export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   chargemuscu: WidgetChargeMuscu,
   records: WidgetRecords,
   groupes: WidgetGroupes,
+  hyroxdossard: WidgetHyroxDossard,
+  hyroxtest: WidgetHyroxTest,
+  hyroxallure: WidgetHyroxAllure,
+  hyroxgains: WidgetHyroxGains,
   chargeforce: WidgetChargeForce,
 };
 
