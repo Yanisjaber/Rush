@@ -32,6 +32,14 @@ export function MenuSports({ ouvert, onFermer, haut }: { ouvert: boolean; onFerm
     setDernier(sports.length === 0);
     if (sports.length) void appliquer(sports, { ...disciplines, [cle]: apres });
   };
+  // « Général » : le sport coché sans aucune discipline précise (cocher une discipline le décoche, et inversement)
+  const general = (cle: string) => {
+    if (!choisis) return;
+    const estGeneral = choisis.includes(cle) && (disciplines[cle] ?? []).length === 0;
+    if (estGeneral) return retirerAvecDisciplines(cle);
+    setDernier(false);
+    void appliquer(choisis.includes(cle) ? choisis : [...choisis, cle], { ...disciplines, [cle]: [] });
+  };
   const retirerAvecDisciplines = (cle: string) => {
     if (!choisis) return;
     const sports = choisis.filter((s) => s !== cle);
@@ -99,6 +107,19 @@ export function MenuSports({ ouvert, onFermer, haut }: { ouvert: boolean; onFerm
                               <View style={[styles.chevron, { borderColor: p.texteDoux, transform: [{ rotate: ouverte ? '-45deg' : '135deg' }] }]} />
                             </Pressable>
                           </View>
+                          {ouverte ? (
+                            <Pressable
+                              disabled={envoi}
+                              onPress={() => general(cle)}
+                              accessibilityRole="checkbox"
+                              accessibilityState={{ checked: actif && (disciplines[cle] ?? []).length === 0 }}
+                              accessibilityLabel={`${nom} en général, sans discipline précise`}
+                              style={[styles.ligne, { paddingLeft: 28 }]}
+                            >
+                              <Text style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>Général</Text>
+                              <Case coche={actif && (disciplines[cle] ?? []).length === 0} couleur={couleur} />
+                            </Pressable>
+                          ) : null}
                           {ouverte
                             ? DISCIPLINES[cle].map((famille) => (
                                 <View key={famille.titre}>
