@@ -76,6 +76,25 @@ export interface PointPuissance {
   watts_alltime: number;
 }
 
+/** Un exercice d'un programme de musculation. */
+export interface ExerciceProgramme {
+  key: string;
+  name: string;
+  group: string;
+  sets: number;
+  reps: number;
+  weight: number;
+}
+
+/** Un programme de musculation (table strength_programs) : PUSH, PULL, LEGS… */
+export interface ProgrammeForce {
+  id: string;
+  name: string;
+  created_at: string;
+  notes: string | null;
+  exercises: ExerciceProgramme[];
+}
+
 /** Taille d'un widget : petit, moyen, large, pleine largeur. */
 export type Taille = 's' | 'm' | 'l' | 'xl';
 
@@ -103,7 +122,7 @@ export interface Contexte {
   hrMax: number | null;
   filtre: string;
   puissance: PointPuissance[];
-  force: { series: SerieForce[] };
+  force: { series: SerieForce[]; programmes: ProgrammeForce[] };
 }
 
 /** Les propriétés que reçoit chaque composant de widget. */

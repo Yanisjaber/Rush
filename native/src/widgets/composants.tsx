@@ -8,15 +8,21 @@ import { usePalette } from '@/theme/usePalette';
 import { WidgetAvenir } from './WidgetAvenir';
 import { WidgetCharge } from './WidgetCharge';
 import { WidgetChargeForce } from './WidgetChargeForce';
+import { WidgetChargeMuscu } from './WidgetChargeMuscu';
 import { WidgetDernieres } from './WidgetDernieres';
 import { WidgetEfficacite } from './WidgetEfficacite';
 import { WidgetForme } from './WidgetForme';
+import { WidgetGroupes } from './WidgetGroupes';
 import { WidgetMeilleures } from './WidgetMeilleures';
 import { WidgetObjectif } from './WidgetObjectif';
 import { WidgetPredictions } from './WidgetPredictions';
+import { WidgetProgrammes } from './WidgetProgrammes';
 import { WidgetPuissance } from './WidgetPuissance';
+import { WidgetRecords } from './WidgetRecords';
 import { WidgetRegularite } from './WidgetRegularite';
+import { WidgetSeanceDuJour } from './WidgetSeanceDuJour';
 import { WidgetSemaine } from './WidgetSemaine';
+import { WidgetTonnage } from './WidgetTonnage';
 import { WidgetVolume } from './WidgetVolume';
 
 // Correspondance entre l'identifiant d'un widget (voir data/registre.ts) et son composant.
@@ -34,6 +40,12 @@ export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   efficacite: WidgetEfficacite,
   meilleures: WidgetMeilleures,
   puissance: WidgetPuissance,
+  seancedujour: WidgetSeanceDuJour,
+  programmes: WidgetProgrammes,
+  tonnage: WidgetTonnage,
+  chargemuscu: WidgetChargeMuscu,
+  records: WidgetRecords,
+  groupes: WidgetGroupes,
   chargeforce: WidgetChargeForce,
 };
 

@@ -2,7 +2,7 @@
 // Elles servent à montrer et à tester l'interface sans être connecté. Port de app/src/lib/data/demo.js
 // (sans les retouches faites en démo, ni la puissance, le sommeil, Hyrox… qui viendront avec leurs écrans).
 import { dateIsoLocale } from './format.ts';
-import type { Metrique, Objectif, PointPuissance, Prevue, Seance, SerieForce } from './types.ts';
+import type { Metrique, Objectif, PointPuissance, Prevue, ProgrammeForce, Seance, SerieForce } from './types.ts';
 
 interface ModeleJour {
   sport: string;
@@ -122,22 +122,8 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84): Donnee
 // Force (mode démo)
 // ---------------------------------------------------------------------------
 
-interface ExerciceProgramme {
-  key: string;
-  name: string;
-  group: string;
-  sets: number;
-  reps: number;
-  weight: number;
-}
-interface ProgrammeDemo {
-  id: string;
-  name: string;
-  exercises: ExerciceProgramme[];
-}
-
-const PROGRAMMES_BASE: ProgrammeDemo[] = [
-  { id: 'demo-prog-push', name: 'PUSH', exercises: [
+const PROGRAMMES_BASE: ProgrammeForce[] = [
+  { id: 'demo-prog-push', name: 'PUSH', created_at: '2026-01-01T10:00:00Z', notes: null, exercises: [
     { key: 'developpe-couche', name: 'Développé couché', group: 'pectoraux', sets: 4, reps: 8, weight: 82.5 },
     { key: 'developpe-incline-halteres', name: 'Développé incliné haltères', group: 'pectoraux', sets: 3, reps: 10, weight: 26 },
     { key: 'developpe-militaire', name: 'Développé militaire', group: 'epaules', sets: 4, reps: 8, weight: 50 },
@@ -145,14 +131,14 @@ const PROGRAMMES_BASE: ProgrammeDemo[] = [
     { key: 'extension-triceps-poulie', name: 'Extension triceps poulie', group: 'bras', sets: 4, reps: 12, weight: 25 },
     { key: 'dips', name: 'Dips', group: 'pectoraux', sets: 4, reps: 10, weight: 0 },
   ] },
-  { id: 'demo-prog-pull', name: 'PULL', exercises: [
+  { id: 'demo-prog-pull', name: 'PULL', created_at: '2026-01-02T10:00:00Z', notes: null, exercises: [
     { key: 'souleve-de-terre', name: 'Soulevé de terre', group: 'dos', sets: 3, reps: 5, weight: 140 },
     { key: 'tractions', name: 'Tractions', group: 'dos', sets: 4, reps: 8, weight: 0 },
     { key: 'rowing-barre', name: 'Rowing barre', group: 'dos', sets: 4, reps: 8, weight: 70 },
     { key: 'tirage-vertical', name: 'Tirage vertical', group: 'dos', sets: 3, reps: 10, weight: 60 },
     { key: 'curl-barre', name: 'Curl barre', group: 'bras', sets: 3, reps: 10, weight: 30 },
   ] },
-  { id: 'demo-prog-legs', name: 'LEGS', exercises: [
+  { id: 'demo-prog-legs', name: 'LEGS', created_at: '2026-01-03T10:00:00Z', notes: null, exercises: [
     { key: 'squat', name: 'Squat', group: 'jambes', sets: 4, reps: 6, weight: 120 },
     { key: 'presse-a-cuisses', name: 'Presse à cuisses', group: 'jambes', sets: 3, reps: 10, weight: 200 },
     { key: 'fentes', name: 'Fentes', group: 'jambes', sets: 3, reps: 10, weight: 30 },
@@ -160,6 +146,11 @@ const PROGRAMMES_BASE: ProgrammeDemo[] = [
     { key: 'mollets-debout', name: 'Mollets debout', group: 'jambes', sets: 4, reps: 15, weight: 60 },
   ] },
 ];
+
+/** Programmes de démo (PUSH, PULL, LEGS). */
+export function programmesDemo(): ProgrammeForce[] {
+  return PROGRAMMES_BASE.map((p) => ({ ...p, exercises: p.exercises.map((e) => ({ ...e })) }));
+}
 
 /** Séries d'exemple : les séances Push/Pull/Legs des 12 dernières semaines, avec des charges qui montent doucement. */
 export function seriesForceDemo(aujourdhui: Date = new Date()): SerieForce[] {

@@ -1,6 +1,6 @@
 // L'enveloppe de données que reçoit chaque widget. Port de la construction de `contexte` dans routes/Accueil.svelte :
 // toujours la même forme, filtrée par le sport choisi.
-import type { DonneesDemo } from './demo.ts';
+import { programmesDemo, type DonneesDemo } from './demo.ts';
 import { garderSeance } from './familles.ts';
 import type { Contexte, SerieForce } from './types.ts';
 
@@ -18,6 +18,6 @@ export function construireContexte(donnees: DonneesDemo, series: SerieForce[], f
     puissance: donnees.puissance,
     hrMax: donnees.profil?.hr_max || null,
     filtre,
-    force: { series },
+    force: { series, programmes: programmesDemo() },
   };
 }

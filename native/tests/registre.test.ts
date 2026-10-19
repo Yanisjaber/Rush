@@ -70,3 +70,23 @@ test('construireContexte : « Tous » ne filtre rien, un sport filtre séances e
   assert.equal(course.hrMax, 196);
   assert.equal(course.filtre, 'course');
 });
+
+import { grouperTuiles } from '../src/data/registre.ts';
+
+test('grouperTuiles : deux tuiles éloignées sont rangées ensemble, à la place de la première', () => {
+  const w = (id: string) => ({ id, taille: 'm' as const });
+  const r = grouperTuiles([w('a'), w('tonnage'), w('b'), w('c'), w('regularite'), w('d')], (id) => id === 'tonnage' || id === 'regularite');
+  assert.deepEqual(r.map((x) => (Array.isArray(x) ? x.map((y) => y.id) : x.id)), ['a', ['tonnage', 'regularite'], 'b', 'c', 'd']);
+});
+
+test('grouperTuiles : une tuile seule reste seule ; trois tuiles donnent une paire puis une seule', () => {
+  const w = (id: string) => ({ id, taille: 'm' as const });
+  const est = (id: string) => id.startsWith('t');
+  assert.deepEqual(grouperTuiles([w('a'), w('t1')], est).map((x) => (Array.isArray(x) ? x.length : 'w')), ['w', 1]);
+  assert.deepEqual(grouperTuiles([w('t1'), w('t2'), w('t3')], est).map((x) => (Array.isArray(x) ? x.length : 'w')), [2, 1]);
+});
+
+test('grouperTuiles : sans tuile, rien ne change', () => {
+  const w = (id: string) => ({ id, taille: 'm' as const });
+  assert.deepEqual(grouperTuiles([w('a'), w('b')], () => false), [w('a'), w('b')]);
+});

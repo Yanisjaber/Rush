@@ -1,0 +1,46 @@
+import type { ReactNode } from 'react';
+import { Pressable, StyleSheet, Text } from 'react-native';
+import { rayon } from '@/theme/couleurs';
+import { police } from '@/theme/typo';
+import { usePalette } from '@/theme/usePalette';
+
+// Un bouton. Toujours au moins 44 pt de haut (cible tactile).
+// variante : 'principal' (aplat clair), 'discret' (contour), 'sur-dossard' et 'sur-dossard-contour' (à poser sur le dossard).
+interface Props {
+  variante?: 'principal' | 'discret' | 'sur-dossard' | 'sur-dossard-contour';
+  onPress: () => void;
+  children: ReactNode;
+  accessibilityLabel?: string;
+}
+
+export function Bouton({ variante = 'principal', onPress, children, accessibilityLabel }: Props) {
+  const p = usePalette();
+  const styles = {
+    principal: { fond: p.texte, texte: p.fond, contour: undefined },
+    discret: { fond: 'transparent', texte: p.texte, contour: p.traitFort },
+    // À poser sur le dossard : inverse des couleurs du dossard, donc toujours lisible
+    'sur-dossard': { fond: p.dossardTexte, texte: p.dossardFond, contour: undefined },
+    // Bouton secondaire sur le dossard : un contour aux couleurs du dossard (le « discret » serait invisible sur fond clair)
+    'sur-dossard-contour': { fond: 'transparent', texte: p.dossardTexte, contour: p.dossardTexte },
+  }[variante];
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      style={({ pressed }) => [
+        base.bouton,
+        { backgroundColor: styles.fond, opacity: pressed ? 0.7 : 1 },
+        styles.contour ? { borderColor: styles.contour, borderWidth: variante === 'sur-dossard-contour' ? 2 : 1 } : null,
+      ]}
+    >
+      <Text style={[base.texte, { color: styles.texte }]}>{children}</Text>
+    </Pressable>
+  );
+}
+
+const base = StyleSheet.create({
+  bouton: { minHeight: 44, paddingHorizontal: 20, borderRadius: rayon.base, alignItems: 'center', justifyContent: 'center' },
+  texte: { fontFamily: police.texte600, fontSize: 14, lineHeight: 20 },
+});

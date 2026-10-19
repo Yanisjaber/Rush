@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarreSports } from '@/components/BarreSports';
 import { construireContexte } from '@/data/contexte';
 import { donneesDemo, seriesForceDemo } from '@/data/demo';
-import { compositionAuto, composerOnglet, type WidgetPlace } from '@/data/registre';
+import { compositionAuto, composerOnglet, grouperTuiles, type WidgetPlace } from '@/data/registre';
 import { useMenu } from '@/stores/menu';
 import { espace } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
@@ -14,11 +15,14 @@ import { COMPOSANTS, WidgetBientot } from '@/widgets/composants';
 const TUILES = new Set(['tonnage', 'regularite']);
 // Ces widgets ne se comprennent que grâce à leur graphique (le corps, la courbe de charge) : ils gardent leur version complète
 const GRANDS = new Set(['groupes', 'chargemuscu']);
+// Hauteur de la barre d'onglets flottante (Liquid Glass) à réserver en bas de la liste, pour que le dernier widget ne passe pas dessous
+const BARRE_ONGLETS = 72;
 
 // Accueil en mode démo : des données d'exemple générées (les mêmes que le ?demo du site), sans compte.
 // Les widgets affichés dépendent du sport choisi dans la barre du haut (composition du registre).
 export default function Accueil() {
   const p = usePalette();
+  const bas = useSafeAreaInsets().bottom;
   const { filtre, familles } = useMenu();
   const aujourdhui = useMemo(() => new Date(), []);
   const donnees = useMemo(() => donneesDemo(aujourdhui), [aujourdhui]);
@@ -34,13 +38,7 @@ export default function Accueil() {
   const compactDe = (id: string) => compactMuscu && !GRANDS.has(id);
 
   // Les tuiles se rangent deux par deux ; les autres widgets prennent toute la largeur
-  const blocs: (WidgetPlace | WidgetPlace[])[] = [];
-  for (const w of widgets) {
-    const dernier = blocs[blocs.length - 1];
-    if (compactMuscu && TUILES.has(w.id) && Array.isArray(dernier) && dernier.length < 2) dernier.push(w);
-    else if (compactMuscu && TUILES.has(w.id)) blocs.push([w]);
-    else blocs.push(w);
-  }
+  const blocs = compactMuscu ? grouperTuiles(widgets, (id) => TUILES.has(id)) : widgets;
 
   const rendre = (w: WidgetPlace) => {
     const Composant = COMPOSANTS[w.id];
@@ -50,7 +48,7 @@ export default function Accueil() {
   return (
     <View style={[styles.page, { backgroundColor: p.fond }]}>
       <BarreSports />
-      <ScrollView contentContainerStyle={styles.contenu} contentInsetAdjustmentBehavior="automatic">
+      <ScrollView contentContainerStyle={[styles.contenu, { paddingBottom: bas + BARRE_ONGLETS }]} contentInsetAdjustmentBehavior="automatic">
         <View style={styles.entete}>
           <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>
             Accueil
@@ -74,7 +72,7 @@ export default function Accueil() {
 
 const styles = StyleSheet.create({
   page: { flex: 1 },
-  contenu: { paddingHorizontal: espace.e4, paddingTop: espace.e4, paddingBottom: espace.e4, gap: espace.e4 },
+  contenu: { paddingHorizontal: espace.e4, paddingTop: espace.e4, gap: espace.e4 },
   entete: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   tuiles: { flexDirection: 'row', gap: espace.e3 },
   vide: { flex: 1 },

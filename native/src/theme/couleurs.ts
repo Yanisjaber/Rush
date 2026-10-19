@@ -85,3 +85,14 @@ export function avecAlpha(hex: string, alpha: number): string {
   const a = Math.round(Math.min(1, Math.max(0, alpha)) * 255);
   return `${hex}${a.toString(16).padStart(2, '0')}`;
 }
+
+/**
+ * Mélange deux couleurs hexadécimales (#rrggbb) comme le ferait `color-mix(in srgb, a pctA%, b)` en CSS :
+ * melange(a, b, 30) = 30 % de a et 70 % de b.
+ */
+export function melange(a: string, b: string, pctA: number): string {
+  const t = Math.min(100, Math.max(0, pctA)) / 100;
+  const canaux = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [ca, cb] = [canaux(a), canaux(b)];
+  return `#${ca.map((v, i) => Math.round(v * t + cb[i] * (1 - t)).toString(16).padStart(2, '0')).join('')}`;
+}

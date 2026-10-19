@@ -307,3 +307,21 @@ export function composerOnglet(widgets: WidgetPlace[], sport: string): WidgetPla
     ...universels.filter((w) => w.id !== 'objectif'),
   ];
 }
+
+/**
+ * Range les tuiles deux par deux (comme la grille « dense » du web) : une paire prend la place de la première tuile,
+ * la deuxième n'est plus répétée plus loin. Les autres widgets gardent leur place et leur pleine largeur.
+ */
+export function grouperTuiles(widgets: WidgetPlace[], estTuile: (id: string) => boolean): (WidgetPlace | WidgetPlace[])[] {
+  const tuiles = widgets.filter((w) => estTuile(w.id));
+  const sortie: (WidgetPlace | WidgetPlace[])[] = [];
+  for (const w of widgets) {
+    if (!estTuile(w.id)) {
+      sortie.push(w);
+      continue;
+    }
+    const i = tuiles.indexOf(w);
+    if (i % 2 === 0) sortie.push(tuiles.slice(i, i + 2));
+  }
+  return sortie;
+}
