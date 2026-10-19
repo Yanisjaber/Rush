@@ -7,7 +7,8 @@
     "start": "expo start",
     "ios": "expo run:ios",
     "android": "expo run:android",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --no-warnings --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
     "@expo-google-fonts/bricolage-grotesque": "0.4.1",
