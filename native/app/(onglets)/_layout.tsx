@@ -1,14 +1,18 @@
 import { NativeTabs } from 'expo-router/native-tabs';
 import { police } from '@/theme/typo';
+import { useMenu } from '@/stores/menu';
+import { couleurSport } from '@/theme/sports';
 import { usePalette } from '@/theme/usePalette';
 
 // Barre du bas native (iOS 26 : Liquid Glass ; Android : barre Material). Cinq onglets comme sur le web :
 // Accueil, Calendrier, Bilan, Santé, Paramètres. Le Plan s'ouvrira depuis le Calendrier.
-// Teinte active : la couleur du texte (elle passera à la couleur du sport actif quand le filtre par sport existera).
+// Teinte active : la couleur du sport choisi dans la barre du haut, sinon la couleur du texte (charte §7).
 export default function OngletsLayout() {
   const p = usePalette();
+  const { filtre } = useMenu();
+  const teinte = filtre === 'tout' ? p.texte : couleurSport(p, filtre);
   return (
-    <NativeTabs tintColor={p.texte} labelStyle={{ fontFamily: police.texte600 }}>
+    <NativeTabs tintColor={teinte} labelStyle={{ fontFamily: police.texte600 }}>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Accueil</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />

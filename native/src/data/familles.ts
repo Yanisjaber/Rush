@@ -63,3 +63,13 @@ export function familleAffichage(typeBrut: unknown): string {
   const f = familleSport(typeBrut);
   return f === 'trail' ? 'course' : f;
 }
+
+/**
+ * Une séance passe-t-elle le filtre de l'accueil ? Le sport (la famille), puis, pour l'athlétisme, la discipline choisie dans la
+ * deuxième barre ('tout' = toutes). Une séance d'athlétisme sans discipline n'apparaît que sous « Tout ».
+ */
+export function garderSeance(seance: { sport?: string; discipline?: string } | null | undefined, filtre = 'tout', discipline = 'tout'): boolean {
+  if (filtre === 'tout') return true;
+  if (familleAffichage(seance?.sport) !== filtre) return false;
+  return filtre !== 'athletisme' || discipline === 'tout' || seance?.discipline === discipline;
+}
