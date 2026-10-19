@@ -366,10 +366,12 @@ export async function chargerDisciplinesChoisies(userId: string): Promise<Result
 export async function enregistrerSportsChoisis(userId: string, sports: string[], disciplines: Record<string, string[]> = {}): Promise<{ erreur: string }> {
   const r = await sb.from('user_preferences').upsert({ user_id: userId, sports, disciplines }, { onConflict: 'user_id' });
   if (r.error) {
-    console.error('[app/api] sports', r.error.code || '');
-    // Le code d'erreur (5 caractères, ex. 23514) aide à comprendre sans exposer le texte brut de la base
-    const code = /^[A-Za-z0-9]{3,8}$/.test(r.error.code ?? '') ? ` (code ${r.error.code})` : '';
-    return { erreur: `Impossible d'enregistrer tes sports${code}.` };
+    const e = r.error as { code?: string; message?: string };
+    console.error('[app/api] sports', r.status, e.code || '', String(e.message || '').slice(0, 120));
+    // Pour comprendre une panne : le code SQL s'il y en a un, le statut HTTP et le début du message technique (jamais de données)
+    const code = /^[A-Za-z0-9]{3,8}$/.test(e.code ?? '') ? ` (code ${e.code})` : '';
+    const technique = String(e.message || '').replace(/[^\w .:/-]/g, '').slice(0, 60);
+    return { erreur: `Impossible d'enregistrer tes sports${code} [${r.status}${technique ? ` ${technique}` : ''}].` };
   }
   return { erreur: '' };
 }
