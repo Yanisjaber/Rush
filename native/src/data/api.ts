@@ -12,6 +12,7 @@ import { appliquerTout } from './retouches';
 import { dateIsoLocale } from './format';
 import { sb } from './supabase';
 import type { ObjectifAnnuel } from './bilan.ts';
+import type { LigneProfil } from './profil.ts';
 import type { Nuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Profil, Seance, SerieForce, TestHyrox } from './types';
 
 export interface Resultat<T> {
@@ -325,4 +326,67 @@ export async function chargerFcNuit(userId: string, date: string): Promise<Resul
   const res = resultat<{ hr_stream?: unknown }>(r as Reponse, 'Impossible de charger la FC de cette nuit.');
   const flux = res.data?.hr_stream;
   return { data: Array.isArray(flux) ? (flux as [number, number][]) : null, erreur: res.erreur };
+}
+
+// ---------------------------------------------------------------------------
+// Paramètres : profil et sports choisis
+// ---------------------------------------------------------------------------
+
+const COLONNES_PROFIL_COMPLET = 'weight,ftp,hr_max,lthr,extras';
+
+/** Le profil complet (colonnes + extras), ou null si aucune ligne n'existe encore. */
+export async function chargerProfilComplet(userId: string): Promise<Resultat<LigneProfil>> {
+  const r = await sb.from('user_profiles').select(COLONNES_PROFIL_COMPLET).eq('user_id', userId).maybeSingle();
+  return resultat<LigneProfil>(r as Reponse, 'Impossible de charger ton profil.');
+}
+
+/**
+ * Enregistre une section du profil. `colonnes` : colonnes à mettre à jour ; `extras` : objet COMPLET (les clés des autres
+ * sections sont déjà conservées par versPayload). Ne touche que la ligne de l'utilisateur connecté.
+ */
+export async function enregistrerProfil(userId: string, colonnes: Record<string, unknown>, extras: Record<string, unknown>): Promise<Resultat<LigneProfil>> {
+  const r = await sb
+    .from('user_profiles')
+    .update({ ...colonnes, extras, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .select(COLONNES_PROFIL_COMPLET)
+    .maybeSingle();
+  if (!r.error && !r.data) return { data: null, erreur: 'Profil introuvable : reconnecte-toi puis réessaie.' };
+  return resultat<LigneProfil>(r as Reponse, "Impossible d'enregistrer ton profil.");
+}
+
+/** Enregistre les sports choisis (déjà nettoyés). N'écrit que la colonne `sports`, jamais le thème ni les disciplines. */
+export async function enregistrerSportsChoisis(userId: string, sports: string[]): Promise<{ erreur: string }> {
+  const r = await sb.from('user_preferences').upsert({ user_id: userId, sports }, { onConflict: 'user_id' });
+  if (r.error) {
+    console.error('[app/api] sports', r.error.code || '');
+    return { erreur: "Impossible d'enregistrer tes sports." };
+  }
+  return { erreur: '' };
+}
+
+// ---------------------------------------------------------------------------
+// Connexions (statut seulement : les jetons restent dans le Vault, lus par les Edge Functions)
+// ---------------------------------------------------------------------------
+
+export interface ConnexionStrava {
+  external_id: string | null;
+  athlete_name: string | null;
+  last_sync_at: string | null;
+  last_sync_status: string | null;
+  first_connected_at: string | null;
+}
+
+/** Statut Strava + compteurs (activités, nuits de sommeil déjà importées). */
+export async function chargerConnexions(userId: string): Promise<Resultat<{ strava: ConnexionStrava | null; nbActivites: number; nbNuits: number }>> {
+  const [strava, activites, nuits] = await Promise.all([
+    sb.from('connexions_app').select('external_id,athlete_name,last_sync_at,last_sync_status,first_connected_at').eq('user_id', userId).eq('app', 'strava').maybeSingle(),
+    sb.from('activities').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+    sb.from('garmin_sleep').select('date', { count: 'exact', head: true }).eq('user_id', userId),
+  ]);
+  if (strava.error) {
+    console.error('[app/api] connexions', strava.error.code || '');
+    return { data: null, erreur: 'Impossible de charger tes connexions.' };
+  }
+  return { data: { strava: strava.data as ConnexionStrava | null, nbActivites: activites.count || 0, nbNuits: nuits.count || 0 }, erreur: '' };
 }
