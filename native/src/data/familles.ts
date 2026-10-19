@@ -58,6 +58,18 @@ export function familleSport(typeBrut: unknown): string {
   return typeof typeBrut === 'string' && Object.hasOwn(FAMILLES, typeBrut) ? FAMILLES[typeBrut] : 'autre';
 }
 
+/**
+ * La pastille de la barre des sports pour un type brut : Trail et VTT / Gravel sont des sports à part entière (leur propre pastille
+ * et leur propre filtre), alors que les graphiques les regroupent avec la course et le vélo (voir familleAffichage).
+ */
+export function familleBarre(typeBrut: unknown): string {
+  if (typeBrut === 'MountainBikeRide' || typeBrut === 'EMountainBikeRide' || typeBrut === 'GravelRide') return 'vtt';
+  return familleSport(typeBrut);
+}
+
+/** Les widgets ne connaissent que course, vélo… : trail → course, vtt → vélo pour savoir lesquels afficher. */
+export const familleDesWidgets = (famille: string): string => (famille === 'trail' ? 'course' : famille === 'vtt' ? 'velo' : famille);
+
 /** Regroupe les familles proches pour les graphiques (trail compte comme de la course). */
 export function familleAffichage(typeBrut: unknown): string {
   const f = familleSport(typeBrut);
@@ -65,11 +77,11 @@ export function familleAffichage(typeBrut: unknown): string {
 }
 
 /**
- * Une séance passe-t-elle le filtre de l'accueil ? Le sport (la famille), puis, pour l'athlétisme, la discipline choisie dans la
+ * Une séance passe-t-elle le filtre de l'accueil ? Le sport (la pastille : Trail et VTT ont la leur), puis, pour l'athlétisme, la discipline choisie dans la
  * deuxième barre ('tout' = toutes). Une séance d'athlétisme sans discipline n'apparaît que sous « Tout ».
  */
 export function garderSeance(seance: { sport?: string; discipline?: string | null } | null | undefined, filtre = 'tout', discipline = 'tout'): boolean {
   if (filtre === 'tout') return true;
-  if (familleAffichage(seance?.sport) !== filtre) return false;
+  if (familleBarre(seance?.sport) !== filtre) return false;
   return filtre !== 'athletisme' || discipline === 'tout' || seance?.discipline === discipline;
 }

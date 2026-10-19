@@ -36,9 +36,9 @@ test('famillesDe : les sports se déduisent des séances, de la force et du Hyro
   assert.deepEqual(new Set(famillesDe(demo)), new Set(['course', 'velo', 'muscu', 'hyrox']));
 });
 
-test('famillesDe : un trail compte comme de la course, « autre » n\'a pas d\'onglet', () => {
-  const d = { ...vide(), seances: [{ sport: 'TrailRun' }, { sport: 'Tennis' }] as Seance[] };
-  assert.deepEqual(famillesDe(d), ['course']);
+test('famillesDe : le trail et le VTT ont leur pastille, « autre » n\'a pas d\'onglet', () => {
+  const d = { ...vide(), seances: [{ sport: 'TrailRun' }, { sport: 'MountainBikeRide' }, { sport: 'Run' }, { sport: 'Tennis' }] as Seance[] };
+  assert.deepEqual(famillesDe(d), ['trail', 'vtt', 'course']);
 });
 
 test('famillesDe : un programme ou un objectif Hyrox révèle ses sports', () => {
@@ -64,8 +64,8 @@ test('nettoyerSports : clés connues, une fois chacune, dans l\'ordre ; null si 
   assert.deepEqual(nettoyerSports([]), []);
 });
 
-test('fusionnerFamilles : trail = course, vtt = vélo, triathlon à part, « autre » retiré', () => {
-  assert.deepEqual(fusionnerFamilles([], ['trail', 'vtt']), ['course', 'velo']);
+test('fusionnerFamilles : trail et vtt à part, triathlon à part, « autre » retiré', () => {
+  assert.deepEqual(fusionnerFamilles([], ['trail', 'vtt']), ['trail', 'vtt']);
   assert.deepEqual(fusionnerFamilles([], ['triathlon']), ['triathlon']);
   assert.deepEqual(fusionnerFamilles(['autre', 'muscu'], []), ['muscu']);
   assert.deepEqual(fusionnerFamilles(['course'], ['velo']), ['velo', 'course']);

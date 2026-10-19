@@ -64,21 +64,13 @@ export function onboardingNecessaire({
 }
 
 /**
- * Les familles de l'accueil qu'un sport choisi fait apparaître : le trail est de la course, le VTT du vélo.
- * Le triathlon et le duathlon sont des sports à part entière : cocher l'un n'ajoute ni course, ni vélo, ni natation
- * (on les coche à part, en plus si on les pratique aussi seuls).
- */
-const FAMILLES_DU_SPORT: Record<string, string[]> = { trail: ['course'], vtt: ['velo'] };
-
-/**
- * Les familles de sport de l'accueil, dans l'ordre d'affichage : d'abord les sports choisis (dans l'ordre de l'utilisateur),
+ * Les pastilles de la barre, dans l'ordre d'affichage : d'abord les sports choisis (dans l'ordre de l'utilisateur),
  * puis ceux que ses données révèlent sans qu'il les ait cochés (« autre » n'a pas d'onglet).
  */
 export function fusionnerFamilles(deDonnees: string[] = [], choisis: string[] | null = []): string[] {
   const f = new Set<string>();
-  for (const s of choisis || []) {
-    for (const famille of Object.hasOwn(FAMILLES_DU_SPORT, s) ? FAMILLES_DU_SPORT[s] : [s]) f.add(famille);
-  }
+  // Chaque sport choisi a sa pastille (Trail et VTT aussi : ce ne sont pas de la course ni du vélo)
+  for (const s of choisis || []) f.add(s);
   for (const famille of deDonnees || []) f.add(famille);
   f.delete('autre');
   return [...f];

@@ -4,6 +4,7 @@
 // `sports` : 'tous' (utile quel que soit le sport) ou une liste de sports (clés de theme/sports.ts) pour lesquels il est
 // proposé en priorité et composé automatiquement.
 // `tailles` : tailles possibles, de la plus petite à la plus grande ; `taille` est celle par défaut.
+import { familleDesWidgets } from './familles.ts';
 import type { Taille } from './types.ts';
 
 export const TAILLES: Record<Taille, { nom: string; court: string }> = {
@@ -276,7 +277,8 @@ export function estPertinent(id: string, familles: readonly string[]): boolean {
   if (!existe(id)) return false;
   const def = definition(id);
   if (def.sports === 'tous') return true;
-  return def.sports.some((s) => familles.includes(s));
+  const dessous = familles.map(familleDesWidgets); // un onglet Trail montre les widgets de course, un onglet VTT ceux du vélo
+  return def.sports.some((s) => dessous.includes(s));
 }
 
 /** Composition automatique de l'accueil à partir des sports pratiqués. */

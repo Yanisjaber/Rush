@@ -100,3 +100,10 @@ test('chaque widget du registre a son composant (et inversement)', () => {
   const ids = [...bloc.matchAll(/^\s+([a-z]+):\s+Widget[A-Za-z]+,/gm)].map((m) => m[1]).sort();
   assert.deepEqual(ids, Object.keys(WIDGETS).sort());
 });
+
+test('un onglet Trail montre les widgets de course, un onglet VTT ceux du vélo', () => {
+  assert.equal(estPertinent('predictions', ['trail']), true);
+  assert.equal(estPertinent('predictions', ['vtt']), false);
+  assert.ok(compositionAuto(['trail']).length > 0);
+  assert.deepEqual(compositionAuto(['vtt']).map((w) => w.id), compositionAuto(['velo']).map((w) => w.id));
+});

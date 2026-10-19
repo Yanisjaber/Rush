@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { familleAffichage, familleSport, garderSeance } from '../src/data/familles.ts';
+import { familleAffichage, familleBarre, familleDesWidgets, familleSport, garderSeance } from '../src/data/familles.ts';
 
 test('familleSport : les types Strava courants', () => {
   assert.equal(familleSport('Run'), 'course');
@@ -46,6 +46,22 @@ test('garderSeance : le sport, puis la discipline pour l\'athlétisme', () => {
   assert.equal(garderSeance(null, 'tout'), true);
 });
 
-test('garderSeance : le trail passe le filtre « course »', () => {
-  assert.equal(garderSeance({ sport: 'TrailRun' }, 'course'), true);
+test('garderSeance : Trail et Course sont deux filtres différents (idem VTT et vélo)', () => {
+  assert.equal(garderSeance({ sport: 'TrailRun' }, 'course'), false);
+  assert.equal(garderSeance({ sport: 'TrailRun' }, 'trail'), true);
+  assert.equal(garderSeance({ sport: 'Run' }, 'trail'), false);
+  assert.equal(garderSeance({ sport: 'Run' }, 'course'), true);
+  assert.equal(garderSeance({ sport: 'MountainBikeRide' }, 'vtt'), true);
+  assert.equal(garderSeance({ sport: 'GravelRide' }, 'velo'), false);
+  assert.equal(garderSeance({ sport: 'Ride' }, 'velo'), true);
+  assert.equal(garderSeance({ sport: 'TrailRun' }, 'tout'), true);
+});
+
+test('familleBarre et familleDesWidgets', () => {
+  assert.equal(familleBarre('TrailRun'), 'trail');
+  assert.equal(familleBarre('MountainBikeRide'), 'vtt');
+  assert.equal(familleBarre('Swim'), 'natation');
+  assert.equal(familleDesWidgets('trail'), 'course');
+  assert.equal(familleDesWidgets('vtt'), 'velo');
+  assert.equal(familleDesWidgets('muscu'), 'muscu');
 });
