@@ -401,3 +401,27 @@ export async function chargerConnexions(userId: string): Promise<Resultat<{ stra
   }
   return { data: { strava: strava.data as ConnexionStrava | null, nbActivites: activites.count || 0, nbNuits: nuits.count || 0 }, erreur: '' };
 }
+
+// ---------------------------------------------------------------------------
+// Disposition de l'accueil (user_preferences.layout)
+// ---------------------------------------------------------------------------
+
+/** La disposition enregistrée (brute : à nettoyer avec normaliser). `data` vaut null si aucune ligne ; `erreur` non vide si la lecture échoue. */
+export async function chargerLayout(userId: string): Promise<Resultat<unknown>> {
+  const r = await sb.from('user_preferences').select('layout').eq('user_id', userId).maybeSingle();
+  if (r.error) {
+    console.error('[app/api] layout', r.error.code || '');
+    return { data: null, erreur: 'Impossible de charger ta disposition.' };
+  }
+  return { data: (r.data as { layout?: unknown } | null)?.layout ?? null, erreur: '' };
+}
+
+/** Enregistre la disposition (déjà normalisée). N'écrit que la colonne `layout` de la ligne de l'utilisateur. */
+export async function enregistrerLayout(userId: string, layout: unknown): Promise<{ erreur: string }> {
+  const r = await sb.from('user_preferences').upsert({ user_id: userId, layout, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+  if (r.error) {
+    console.error('[app/api] layout', r.error.code || '');
+    return { erreur: "Impossible d'enregistrer ta disposition." };
+  }
+  return { erreur: '' };
+}

@@ -295,8 +295,11 @@ function tailleValide(id: string, souhaitee: Taille | undefined): Taille {
  * Widgets d'un onglet de sport. Muscu et Hyrox : composition fixe (ORDRE_ONGLET), en gardant la taille choisie par l'utilisateur.
  * Autres sports : les widgets de la disposition qui concernent ce sport, ceux du sport d'abord.
  */
-export function composerOnglet(widgets: WidgetPlace[], sport: string): WidgetPlace[] {
+export function composerOnglet(widgets: WidgetPlace[], sport: string, onglets: Onglets | null = null): WidgetPlace[] {
   if (Object.hasOwn(ORDRE_ONGLET, sport)) {
+    // Composition personnalisée de cet onglet (mode édition), sinon la composition par défaut
+    const perso = onglets && Array.isArray(onglets[sport]) ? onglets[sport] : null;
+    if (perso) return perso.map((w) => ({ ...w }));
     const tailles = new Map(widgets.map((w) => [w.id, w.taille]));
     return ORDRE_ONGLET[sport].map((id) => ({ id, taille: tailleValide(id, tailles.get(id)) }));
   }
@@ -308,6 +311,70 @@ export function composerOnglet(widgets: WidgetPlace[], sport: string): WidgetPla
     ...pertinents.filter((w) => definition(w.id).sports !== 'tous'),
     ...universels.filter((w) => w.id !== 'objectif'),
   ];
+}
+
+/** Compositions propres aux onglets riches (Muscu, Hyrox) : une liste par sport, ou rien (= composition par défaut). */
+export type Onglets = Record<string, WidgetPlace[] | null | undefined>;
+
+/** La disposition de l'accueil telle qu'elle est enregistrée (user_preferences.layout). `auto` : elle suit les sports. */
+export interface Disposition {
+  v: 1;
+  auto: boolean;
+  widgets: WidgetPlace[];
+  onglets?: Record<string, WidgetPlace[]>;
+}
+
+/** Nettoie une liste de widgets : identifiants inconnus et doublons retirés, tailles invalides remises par défaut. */
+export function normaliserListe(brut: unknown): WidgetPlace[] {
+  const vus = new Set<string>();
+  const widgets: WidgetPlace[] = [];
+  for (const w of (Array.isArray(brut) ? brut : []).slice(0, 40)) {
+    if (!w || !existe(w.id) || vus.has(w.id)) continue;
+    vus.add(w.id);
+    const def = definition(w.id);
+    widgets.push({ id: w.id, taille: def.tailles.includes(w.taille) ? w.taille : def.taille });
+  }
+  return widgets;
+}
+
+/**
+ * Nettoie une disposition venue du stockage : on ne fait jamais confiance à son contenu.
+ * Renvoie null si elle est inutilisable.
+ */
+export function normaliser(brut: unknown): Disposition | null {
+  const b = brut as { auto?: unknown; widgets?: unknown; onglets?: Record<string, unknown> } | null;
+  if (!b || typeof b !== 'object' || !Array.isArray(b.widgets)) return null;
+  const resultat: Disposition = { v: 1, auto: b.auto === true, widgets: normaliserListe(b.widgets) };
+  // Compositions propres aux onglets Muscu et Hyrox (facultatif) : seuls les onglets connus sont gardés
+  if (b.onglets && typeof b.onglets === 'object') {
+    const onglets: Record<string, WidgetPlace[]> = {};
+    for (const sport of Object.keys(ORDRE_ONGLET)) {
+      if (Array.isArray(b.onglets[sport])) onglets[sport] = normaliserListe(b.onglets[sport]);
+    }
+    if (Object.keys(onglets).length) resultat.onglets = onglets;
+  }
+  return resultat;
+}
+
+/** Les onglets de sport qui ont leur propre composition modifiable (Muscu, Hyrox). */
+export const ONGLETS_PERSONNALISABLES: string[] = Object.keys(ORDRE_ONGLET);
+/** Onglets dont la bibliothèque est limitée à leurs propres widgets (ceux de ORDRE_ONGLET). */
+const ONGLETS_FERMES = new Set(['muscu']);
+
+/** Widgets qu'on peut encore ajouter à la liste d'un onglet : ceux qui concernent ce sport (ou tous) et ne sont pas déjà dedans. */
+export function disponiblesOnglet(liste: WidgetPlace[], sport: string): string[] {
+  const presents = new Set(liste.map((w) => w.id));
+  // L'onglet Muscu n'a que ses propres widgets : on peut les réordonner, les redimensionner, les retirer et les remettre, rien d'autre
+  if (ONGLETS_FERMES.has(sport)) return ORDRE_ONGLET[sport].filter((id) => !presents.has(id));
+  return Object.keys(WIDGETS).filter((id) => !presents.has(id) && estPertinent(id, [sport]));
+}
+
+/** Widgets absents de la disposition (ceux qu'on peut encore ajouter), pertinents d'abord. */
+export function disponibles(disposition: { widgets: WidgetPlace[] }, familles: readonly string[] = []): string[] {
+  const presents = new Set(disposition.widgets.map((w) => w.id));
+  return Object.keys(WIDGETS)
+    .filter((id) => !presents.has(id))
+    .sort((a, b) => Number(estPertinent(b, familles)) - Number(estPertinent(a, familles)));
 }
 
 /**
