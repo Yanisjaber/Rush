@@ -92,3 +92,13 @@ export function basculerSport(liste: string[], cle: string): string[] | null {
   if (!liste.includes(cle)) return [...liste, cle];
   return liste.length > 1 ? liste.filter((s) => s !== cle) : null;
 }
+
+/**
+ * Les sports choisis qui se cachent derrière une pastille de la barre : « course » peut être Course, Trail (ou les deux),
+ * « velo » Vélo, VTT. Sans cette liste, cocher Trail alors que Course l'est déjà ne changerait rien à l'écran.
+ * Renvoie [famille] si aucun sport choisi ne correspond (pastille venue des séances).
+ */
+export function sportsDeLaFamille(famille: string, choisis: string[] | null | undefined): string[] {
+  const liste = (choisis || []).filter((s) => (Object.hasOwn(FAMILLES_DU_SPORT, s) ? FAMILLES_DU_SPORT[s] : [s]).includes(famille));
+  return liste.length ? liste : [famille];
+}
