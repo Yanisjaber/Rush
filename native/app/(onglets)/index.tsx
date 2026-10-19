@@ -1,18 +1,19 @@
-import { useEffect, useMemo } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
+import { ActivityIndicator, Dimensions, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BandeauEdition } from '@/components/BandeauEdition';
 import { BarreSports } from '@/components/BarreSports';
 import { BibliothequeWidgets } from '@/components/BibliothequeWidgets';
 import { Bouton } from '@/components/Bouton';
-import { CadreEdition } from '@/components/CadreEdition';
+import { BarreSelection } from '@/components/BarreSelection';
+import { ListeTriable } from '@/components/ListeTriable';
 import { Onboarding } from '@/components/Onboarding';
 import { construireContexte } from '@/data/contexte';
-import { disponibles, disponiblesOnglet, ONGLETS_PERSONNALISABLES, composerOnglet, compositionAuto, grouperTuiles, type WidgetPlace } from '@/data/registre';
+import { disponibles, disponiblesOnglet, ONGLETS_PERSONNALISABLES, WIDGETS, type IdWidget, composerOnglet, compositionAuto, grouperTuiles, type WidgetPlace } from '@/data/registre';
 import { onboardingNecessaire } from '@/data/sports-choisis';
 import { useDonneesAccueil } from '@/hooks/useDonneesAccueil';
 import { useAuth } from '@/stores/auth';
-import { ajouter, annulerEdition, changerTaille, chargerDisposition, demarrerEdition, deplacer, listeEnEdition, reinitialiserAuto, retirer, terminerEdition, useDisposition } from '@/stores/disposition';
+import { ajouter, annulerEdition, changerTaille, chargerDisposition, deplacer, deplacerWidget, demarrerEdition, listeEnEdition, reinitialiserAuto, retirer, terminerEdition, useDisposition } from '@/stores/disposition';
 import { useMenu } from '@/stores/menu';
 import { espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
@@ -74,6 +75,15 @@ export default function Accueil() {
   }, [!!donnees, uid, cleFamilles]);
 
   const enEdition = disp.enEdition;
+  const [selection, setSelection] = useState('');
+  const [enGlisse, setEnGlisse] = useState(false);
+  const defile = useRef<ComponentRef<typeof ScrollView>>(null);
+  const decalageDefilement = useRef(0);
+  const hauteurEcran = Dimensions.get('window').height;
+  // En quittant l'édition (Terminer, Annuler, retour à l'automatique), plus rien n'est sélectionné
+  useEffect(() => {
+    if (!enEdition) setSelection('');
+  }, [enEdition]);
   const base = disp.pret ? disp.widgets : compositionAuto(familles);
   const widgets = useMemo(() => {
     if (enEdition) return listeEnEdition(disp);
@@ -91,27 +101,25 @@ export default function Accueil() {
   const blocs = compactMuscu ? grouperTuiles(widgets, (id) => TUILES.has(id)) : widgets;
   const nomPersonnaliser = ONGLETS_PERSONNALISABLES.includes(filtre) ? `Personnaliser l'onglet ${filtre === 'muscu' ? 'Muscu' : 'Hyrox'}` : "Personnaliser l'accueil";
 
-  const rendre = (w: WidgetPlace, index = 0) => {
+  const rendre = (w: WidgetPlace) => {
     if (!contexte) return null;
     const Composant = COMPOSANTS[w.id];
-    const widget = Composant ? <Composant key={w.id} contexte={contexte} taille={w.taille} compact={compactDe(w.id)} /> : <WidgetBientot key={w.id} id={w.id} />;
-    if (!enEdition) return widget;
-    return (
-      <CadreEdition key={w.id} id={w.id} taille={w.taille} index={index} total={widgets.length} onDeplacer={deplacer} onTaille={changerTaille} onRetirer={retirer}>
-        {widget}
-      </CadreEdition>
-    );
+    return Composant ? <Composant key={w.id} contexte={contexte} taille={w.taille} compact={compactDe(w.id)} /> : <WidgetBientot key={w.id} id={w.id} />;
   };
-
-  if (onboarding) return <Onboarding />;
 
   return (
     <View style={[styles.page, { backgroundColor: p.fond }]}>
       <BarreSports />
       <ScrollView
-        contentContainerStyle={[styles.contenu, { paddingBottom: bas + BARRE_ONGLETS }]}
+        ref={defile}
+        scrollEnabled={!enGlisse}
+        scrollEventThrottle={16}
+        onScroll={(e) => {
+          decalageDefilement.current = e.nativeEvent.contentOffset.y;
+        }}
+        contentContainerStyle={[styles.contenu, { paddingBottom: bas + BARRE_ONGLETS + (enEdition ? 120 : 0) }]}
         contentInsetAdjustmentBehavior="automatic"
-        refreshControl={<RefreshControl refreshing={actualisation} onRefresh={recharger} tintColor={p.texteDoux} />}
+        refreshControl={enEdition ? undefined : <RefreshControl refreshing={actualisation} onRefresh={recharger} tintColor={p.texteDoux} />}
       >
         <View style={styles.entete}>
           <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>
@@ -134,14 +142,26 @@ export default function Accueil() {
             ) : null}
             {enEdition ? <BandeauEdition onglet={disp.ongletEdition} onTerminer={() => void terminerEdition()} onAnnuler={annulerEdition} onAuto={() => void reinitialiserAuto()} /> : null}
             {disp.message && !enEdition ? <Avis texte={disp.message} /> : null}
-            {blocs.map((b, i) =>
+            {enEdition ? (
+              <ListeTriable
+                ids={widgets.map((w) => w.id)}
+                selection={selection}
+                onSelection={setSelection}
+                onDeplacer={deplacerWidget}
+                onGlisse={setEnGlisse}
+                defilement={{ decalage: decalageDefilement, vers: (y) => defile.current?.scrollTo({ y, animated: false }), haut: 140, bas: hauteurEcran - 120 }}
+                nom={(id) => WIDGETS[id as IdWidget]?.nom ?? id}
+                rendre={(id) => rendre(widgets.find((w) => w.id === id) as WidgetPlace)}
+              />
+            ) : null}
+            {(enEdition ? [] : blocs).map((b, i) =>
               Array.isArray(b) ? (
                 <View key={b.map((w) => w.id).join('+')} style={styles.tuiles}>
                   {b.map(rendre)}
                   {b.length === 1 ? <View style={styles.vide} /> : null}
                 </View>
               ) : (
-                rendre(b, i)
+                rendre(b)
               ),
             )}
             {enEdition ? <BibliothequeWidgets ids={aAjouter} onAjouter={ajouter} /> : null}
@@ -153,6 +173,20 @@ export default function Accueil() {
           </>
         )}
       </ScrollView>
+      {enEdition && selection && widgets.some((w) => w.id === selection) ? (
+        <BarreSelection
+          id={selection}
+          index={widgets.findIndex((w) => w.id === selection)}
+          total={widgets.length}
+          taille={(widgets.find((w) => w.id === selection) as WidgetPlace).taille}
+          onDeplacer={deplacer}
+          onTaille={changerTaille}
+          onRetirer={(id) => {
+            setSelection('');
+            retirer(id);
+          }}
+        />
+      ) : null}
     </View>
   );
 }

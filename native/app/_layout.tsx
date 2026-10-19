@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
 // On importe chaque graisse par son chemin : ça n'embarque que les 6 fichiers utiles.
 import { BricolageGrotesque_600SemiBold } from '@expo-google-fonts/bricolage-grotesque/600SemiBold';
@@ -43,7 +44,7 @@ export default function RootLayout() {
   const connecte = !!session || demo;
 
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar style={palette === clair ? 'dark' : 'light'} />
       <Stack
         screenOptions={{
@@ -59,6 +60,6 @@ export default function RootLayout() {
           <Stack.Screen name="connexion" />
         </Stack.Protected>
       </Stack>
-    </>
+    </GestureHandlerRootView>
   );
 }

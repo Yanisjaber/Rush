@@ -14,7 +14,7 @@ export function BandeauEdition({ onglet, onTerminer, onAnnuler, onAuto }: { ongl
       <Text accessibilityRole="header" style={[typo.titre3, { color: p.dossardTexte }]}>
         Mode édition{nomOnglet ? ` : onglet ${nomOnglet}` : ''}
       </Text>
-      <Text style={[typo.petit, { color: p.dossardTexte }]}>Monte, descends, redimensionne ou retire les widgets, puis ajoute-en depuis la liste en bas.</Text>
+      <Text style={[typo.petit, { color: p.dossardTexte }]}>Maintiens un widget et glisse-le pour le déplacer. Touche-le pour le redimensionner ou le retirer. Ajoute-en depuis la liste en bas.</Text>
       <View style={styles.actions}>
         <Bouton variante="sur-dossard" onPress={onTerminer}>
           Terminer
