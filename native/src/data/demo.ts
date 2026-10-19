@@ -2,7 +2,7 @@
 // Elles servent à montrer et à tester l'interface sans être connecté. Port de app/src/lib/data/demo.js
 // (sans les retouches faites en démo, ni la puissance, le sommeil, Hyrox… qui viendront avec leurs écrans).
 import { dateIsoLocale } from './format.ts';
-import type { Metrique, Objectif, Prevue, Seance, SerieForce } from './types.ts';
+import type { Metrique, Objectif, PointPuissance, Prevue, Seance, SerieForce } from './types.ts';
 
 interface ModeleJour {
   sport: string;
@@ -14,6 +14,7 @@ interface ModeleJour {
 export interface DonneesDemo {
   profil: { ftp: number | null; hr_max: number; lthr: number | null; weight: number | null; extras: Record<string, unknown> };
   metriques: Metrique[];
+  puissance: PointPuissance[];
   seances: Seance[];
   planifiees: Prevue[];
   objectifs: Objectif[];
@@ -92,6 +93,16 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84): Donnee
     profil: { ftp: null, hr_max: 196, lthr: null, weight: null, extras: { first_name: 'Yanis', last_name: 'Jaber', cp: 245, wprime: 19 } },
     metriques,
     seances,
+    puissance: [
+      { duration_s: 5, watts_90d: 674, watts_alltime: 790 },
+      { duration_s: 15, watts_90d: 560, watts_alltime: 640 },
+      { duration_s: 30, watts_90d: 470, watts_alltime: 520 },
+      { duration_s: 60, watts_90d: 380, watts_alltime: 430 },
+      { duration_s: 300, watts_90d: 290, watts_alltime: 330 },
+      { duration_s: 600, watts_90d: 255, watts_alltime: 290 },
+      { duration_s: 1200, watts_90d: 232, watts_alltime: 270 },
+      { duration_s: 3600, watts_90d: 205, watts_alltime: 245 },
+    ],
     planifiees: [
       // séance de muscu prévue aujourd'hui, reliée à un programme : la carte « Séance du jour » la montrera
       { id: 'demo-p0', name: 'Legs', date: plusJours(0), sport: 'WeightTraining', duration: 54, tss: 45, category: 'entrainement', km: null, programme_id: 'demo-prog-legs' },

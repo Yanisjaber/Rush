@@ -14,6 +14,7 @@ import { WidgetForme } from './WidgetForme';
 import { WidgetMeilleures } from './WidgetMeilleures';
 import { WidgetObjectif } from './WidgetObjectif';
 import { WidgetPredictions } from './WidgetPredictions';
+import { WidgetPuissance } from './WidgetPuissance';
 import { WidgetRegularite } from './WidgetRegularite';
 import { WidgetSemaine } from './WidgetSemaine';
 import { WidgetVolume } from './WidgetVolume';
@@ -32,6 +33,7 @@ export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   predictions: WidgetPredictions,
   efficacite: WidgetEfficacite,
   meilleures: WidgetMeilleures,
+  puissance: WidgetPuissance,
   chargeforce: WidgetChargeForce,
 };
 

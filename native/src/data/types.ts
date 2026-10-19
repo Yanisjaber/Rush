@@ -69,6 +69,13 @@ export interface Metrique {
   activity_count: number;
 }
 
+/** Meilleure puissance moyenne sur une durée : sur 90 jours et sur toute la vie (watts). */
+export interface PointPuissance {
+  duration_s: number;
+  watts_90d: number;
+  watts_alltime: number;
+}
+
 /** Taille d'un widget : petit, moyen, large, pleine largeur. */
 export type Taille = 's' | 'm' | 'l' | 'xl';
 
@@ -95,6 +102,7 @@ export interface Contexte {
   profil: Profil | null;
   hrMax: number | null;
   filtre: string;
+  puissance: PointPuissance[];
   force: { series: SerieForce[] };
 }
 

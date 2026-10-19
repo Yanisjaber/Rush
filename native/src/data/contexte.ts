@@ -15,6 +15,7 @@ export function construireContexte(donnees: DonneesDemo, series: SerieForce[], f
     objectifs: donnees.objectifs,
     planifiees: donnees.planifiees.filter(garde),
     profil: donnees.profil,
+    puissance: donnees.puissance,
     hrMax: donnees.profil?.hr_max || null,
     filtre,
     force: { series },
