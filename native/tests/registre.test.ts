@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { compositionAuto, composerOnglet, estPertinent, existe, ORDRE_ONGLET, WIDGETS } from '../src/data/registre.ts';
 import { construireContexte } from '../src/data/contexte.ts';
-import { donneesDemo, seriesForceDemo } from '../src/data/demo.ts';
+import { donneesDemoAccueil } from '../src/data/accueil.ts';
 
 test('existe : seuls les vrais widgets, pas les propriétés héritées', () => {
   assert.equal(existe('objectif'), true);
@@ -57,18 +57,18 @@ test('composerOnglet : un autre sport met l\'objectif en premier, puis les widge
 });
 
 test('construireContexte : « Tous » ne filtre rien, un sport filtre séances et séances prévues', () => {
-  const date = new Date(2026, 9, 19);
-  const donnees = donneesDemo(date);
-  const series = seriesForceDemo(date);
-  const tout = construireContexte(donnees, series, 'tout');
+  const donnees = donneesDemoAccueil(new Date(2026, 9, 19));
+  const tout = construireContexte(donnees, 'tout');
   assert.equal(tout.seances.length, donnees.seances.length);
-  const course = construireContexte(donnees, series, 'course');
+  const course = construireContexte(donnees, 'course');
   assert.ok(course.seances.length > 0 && course.seances.length < donnees.seances.length);
   assert.ok(course.seances.every((s) => s.sport === 'Run'));
   assert.equal(course.toutesSeances.length, donnees.seances.length); // les calculs globaux gardent tout
   assert.ok(course.planifiees.every((p) => p.sport === 'Run'));
   assert.equal(course.hrMax, 196);
   assert.equal(course.filtre, 'course');
+  assert.equal(course.hyrox.tests.length, 3);
+  assert.equal(course.force.programmes.length, 3);
 });
 
 import { grouperTuiles } from '../src/data/registre.ts';

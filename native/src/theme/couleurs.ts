@@ -9,6 +9,8 @@ export interface Palette {
   surface2: string;
   trait: string;
   traitFort: string;
+  /** Contour d'un champ de saisie ou d'un bouton : au moins 3:1 sur le fond et la surface (les traits décoratifs sont plus pâles). */
+  contourChamp: string;
   texte: string;
   texteDoux: string;
   texteMuet: string;
@@ -33,6 +35,7 @@ export const sombre: Palette = {
   surface2: '#1b1e25',
   trait: '#272b35',
   traitFort: '#3a3f4c',
+  contourChamp: '#6b7280',
   texte: '#f3f2ee',
   texteDoux: '#a2a7b3',
   texteMuet: '#868c9a',
@@ -57,6 +60,7 @@ export const clair: Palette = {
   surface2: '#edece6',
   trait: '#e2e0d9',
   traitFort: '#c9c6bc',
+  contourChamp: '#7a7f8a',
   texte: '#14151a',
   texteDoux: '#5b606c',
   texteMuet: '#656a76',

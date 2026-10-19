@@ -10,11 +10,18 @@ import { BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-gr
 import { InstrumentSans_400Regular } from '@expo-google-fonts/instrument-sans/400Regular';
 import { InstrumentSans_500Medium } from '@expo-google-fonts/instrument-sans/500Medium';
 import { InstrumentSans_600SemiBold } from '@expo-google-fonts/instrument-sans/600SemiBold';
+import { initAuth, useAuth } from '@/stores/auth';
 import { clair, sombre } from '@/theme/couleurs';
 
 export default function RootLayout() {
   // Pour l'instant le thème suit le téléphone ; plus tard il suivra le compte (user_preferences).
   const palette = useColorScheme() === 'light' ? clair : sombre;
+  const { pret, session, demo } = useAuth();
+
+  // Lit la session gardée dans le Trousseau, puis suit ses changements
+  useEffect(() => {
+    void initAuth();
+  }, []);
 
   const [policesPretes, erreurPolices] = useFonts({
     BricolageGrotesque_600SemiBold,
@@ -31,7 +38,9 @@ export default function RootLayout() {
     if (erreurPolices) console.warn('[polices] chargement impossible :', erreurPolices.message);
   }, [erreurPolices]);
 
-  if (!policesPretes && !erreurPolices) return null;
+  // On attend les polices et la lecture de la session : sinon l'écran de connexion clignoterait avant l'Accueil
+  if ((!policesPretes && !erreurPolices) || !pret) return null;
+  const connecte = !!session || demo;
 
   return (
     <>
@@ -41,7 +50,15 @@ export default function RootLayout() {
           headerShown: false,
           contentStyle: { backgroundColor: palette.fond },
         }}
-      />
+      >
+        {/* Sans compte (ni démo), seul l'écran de connexion existe : aucune autre adresse de l'app n'est atteignable */}
+        <Stack.Protected guard={connecte}>
+          <Stack.Screen name="(onglets)" />
+        </Stack.Protected>
+        <Stack.Protected guard={!connecte}>
+          <Stack.Screen name="connexion" />
+        </Stack.Protected>
+      </Stack>
     </>
   );
 }

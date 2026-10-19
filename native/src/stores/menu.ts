@@ -3,14 +3,14 @@ import { filtreApres, filtreValide } from '@/data/menu';
 
 // État du menu des sports : les sports proposés et le filtre choisi. Partagé par tous les écrans
 // (on choisit « Course » sur l'Accueil, le Calendrier reste sur « Course »).
-// Pour l'instant : les sports de la démo. Plus tard : les sports choisis dans le compte (user_preferences)
-// plus ceux que les données révèlent (une séance de muscu, un programme, un test Hyrox…).
+// Les sports viennent des données chargées : les sports choisis dans le compte (user_preferences) plus ceux que les séances
+// révèlent (une séance de muscu, un programme, un test Hyrox…). Voir famillesDe (data/accueil.ts).
 interface EtatMenu {
   familles: string[];
   filtre: string;
 }
 
-let etat: EtatMenu = { familles: ['course', 'velo', 'muscu', 'hyrox'], filtre: 'tout' };
+let etat: EtatMenu = { familles: [], filtre: 'tout' };
 const ecouteurs = new Set<() => void>();
 
 function abonner(fn: () => void) {
@@ -18,6 +18,13 @@ function abonner(fn: () => void) {
   return () => {
     ecouteurs.delete(fn);
   };
+}
+
+/** Remplace la liste des sports du menu (après chargement des données). Sans changement réel, rien ne se redessine. */
+export function definirFamilles(familles: string[]) {
+  if (familles.length === etat.familles.length && familles.every((f, i) => f === etat.familles[i])) return;
+  etat = { ...etat, familles };
+  ecouteurs.forEach((fn) => fn());
 }
 
 /** Choisit le sport affiché ; recliquer sur le sport déjà choisi revient à « Tous ». */
