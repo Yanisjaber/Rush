@@ -1,12 +1,18 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BandeauEdition } from '@/components/BandeauEdition';
 import { BarreSports } from '@/components/BarreSports';
+import { BibliothequeWidgets } from '@/components/BibliothequeWidgets';
+import { Bouton } from '@/components/Bouton';
+import { CadreEdition } from '@/components/CadreEdition';
 import { Onboarding } from '@/components/Onboarding';
 import { construireContexte } from '@/data/contexte';
-import { compositionAuto, composerOnglet, grouperTuiles, type WidgetPlace } from '@/data/registre';
+import { disponibles, disponiblesOnglet, ONGLETS_PERSONNALISABLES, composerOnglet, compositionAuto, grouperTuiles, type WidgetPlace } from '@/data/registre';
 import { onboardingNecessaire } from '@/data/sports-choisis';
 import { useDonneesAccueil } from '@/hooks/useDonneesAccueil';
+import { useAuth } from '@/stores/auth';
+import { ajouter, annulerEdition, changerTaille, chargerDisposition, demarrerEdition, deplacer, listeEnEdition, reinitialiserAuto, retirer, terminerEdition, useDisposition } from '@/stores/disposition';
 import { useMenu } from '@/stores/menu';
 import { espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
@@ -56,21 +62,45 @@ export default function Accueil() {
       aHyrox: donnees.hyrox.tests.length > 0,
     });
 
-  const widgets = useMemo(() => {
-    const auto = compositionAuto(familles);
-    const liste = filtre === 'tout' ? auto : composerOnglet(auto, filtre);
-    return compteVide ? liste.filter((w) => COMPTE_VIDE.has(w.id)) : liste;
-  }, [familles, filtre, compteVide]);
+  // La disposition (celle de l'utilisateur ou l'automatique) se charge une fois les données là, et se recompose quand ses sports changent
+  const { session } = useAuth();
+  const disp = useDisposition();
+  const cleFamilles = familles.join(',');
+  const uid = demo ? 'demo' : session?.user.id ?? null;
+  useEffect(() => {
+    if (donnees && uid && familles.length) void chargerDisposition(uid, familles);
+    // cleFamilles : la liste change d'identité à chaque rendu du store, son contenu seul compte
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!donnees, uid, cleFamilles]);
 
-  const compactMuscu = filtre === 'muscu';
+  const enEdition = disp.enEdition;
+  const base = disp.pret ? disp.widgets : compositionAuto(familles);
+  const widgets = useMemo(() => {
+    if (enEdition) return listeEnEdition(disp);
+    const liste = filtre === 'tout' ? base : composerOnglet(base, filtre, disp.onglets);
+    return compteVide ? liste.filter((w) => COMPTE_VIDE.has(w.id)) : liste;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disp, base, filtre, compteVide, enEdition]);
+  // Onglet qu'on modifie : Muscu ou Hyrox ont leur propre composition ; ailleurs on modifie l'onglet « Tout »
+  const ongletAModifier = ONGLETS_PERSONNALISABLES.includes(filtre) ? filtre : 'tout';
+  const aAjouter = enEdition ? (disp.ongletEdition !== 'tout' ? disponiblesOnglet(widgets, disp.ongletEdition) : disponibles({ widgets }, familles)) : [];
+
+  const compactMuscu = filtre === 'muscu' && !enEdition;
   const compactDe = (id: string) => compactMuscu && !GRANDS.has(id);
   // Les tuiles se rangent deux par deux ; les autres widgets prennent toute la largeur
   const blocs = compactMuscu ? grouperTuiles(widgets, (id) => TUILES.has(id)) : widgets;
+  const nomPersonnaliser = ONGLETS_PERSONNALISABLES.includes(filtre) ? `Personnaliser l'onglet ${filtre === 'muscu' ? 'Muscu' : 'Hyrox'}` : "Personnaliser l'accueil";
 
-  const rendre = (w: WidgetPlace) => {
+  const rendre = (w: WidgetPlace, index = 0) => {
     if (!contexte) return null;
     const Composant = COMPOSANTS[w.id];
-    return Composant ? <Composant key={w.id} contexte={contexte} taille={w.taille} compact={compactDe(w.id)} /> : <WidgetBientot key={w.id} id={w.id} />;
+    const widget = Composant ? <Composant key={w.id} contexte={contexte} taille={w.taille} compact={compactDe(w.id)} /> : <WidgetBientot key={w.id} id={w.id} />;
+    if (!enEdition) return widget;
+    return (
+      <CadreEdition key={w.id} id={w.id} taille={w.taille} index={index} total={widgets.length} onDeplacer={deplacer} onTaille={changerTaille} onRetirer={retirer}>
+        {widget}
+      </CadreEdition>
+    );
   };
 
   if (onboarding) return <Onboarding />;
@@ -102,16 +132,24 @@ export default function Accueil() {
             {compteVide ? (
               <Avis texte="Ton compte est neuf : rien à afficher pour l'instant. Tes séances arriveront dès que tu auras connecté Strava ou saisi une séance." info />
             ) : null}
-            {blocs.map((b) =>
+            {enEdition ? <BandeauEdition onglet={disp.ongletEdition} onTerminer={() => void terminerEdition()} onAnnuler={annulerEdition} onAuto={() => void reinitialiserAuto()} /> : null}
+            {disp.message && !enEdition ? <Avis texte={disp.message} /> : null}
+            {blocs.map((b, i) =>
               Array.isArray(b) ? (
                 <View key={b.map((w) => w.id).join('+')} style={styles.tuiles}>
                   {b.map(rendre)}
                   {b.length === 1 ? <View style={styles.vide} /> : null}
                 </View>
               ) : (
-                rendre(b)
+                rendre(b, i)
               ),
             )}
+            {enEdition ? <BibliothequeWidgets ids={aAjouter} onAjouter={ajouter} /> : null}
+            {!enEdition && !compteVide && disp.pret ? (
+              <Bouton variante="discret" onPress={() => demarrerEdition(ongletAModifier)}>
+                {nomPersonnaliser}
+              </Bouton>
+            ) : null}
           </>
         )}
       </ScrollView>
