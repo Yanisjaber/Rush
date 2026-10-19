@@ -6,9 +6,12 @@ import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 import { WidgetAvenir } from '@/widgets/WidgetAvenir';
 import { WidgetDernieres } from '@/widgets/WidgetDernieres';
+import { WidgetForme } from '@/widgets/WidgetForme';
+import { WidgetSemaine } from '@/widgets/WidgetSemaine';
+import { WidgetVolume } from '@/widgets/WidgetVolume';
 
 // Accueil en mode démo : des données d'exemple générées (les mêmes que le ?demo du site), sans compte.
-// Pour l'instant : « Dernières séances » et « À venir ». Les autres widgets arrivent un par un.
+// Les widgets arrivent un par un.
 export default function Accueil() {
   const p = usePalette();
   const aujourdhui = useMemo(() => new Date(), []);
@@ -23,6 +26,9 @@ export default function Accueil() {
         </Text>
         <Text style={[typo.micro, { color: p.texteMuet }]}>Mode démo</Text>
       </View>
+      <WidgetSemaine seances={donnees.seances} planifiees={donnees.planifiees} aujourdhui={aujourdhui} />
+      <WidgetForme metriques={donnees.metriques} />
+      <WidgetVolume seances={donnees.seances} aujourdhui={aujourdhui} />
       <WidgetDernieres seances={donnees.seances} series={series} />
       <WidgetAvenir planifiees={donnees.planifiees} aujourdhui={aujourdhui} />
     </ScrollView>
