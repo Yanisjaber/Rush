@@ -81,3 +81,9 @@ export function formatNombre(n: unknown): string {
   if (n == null || Number.isNaN(Number(n))) return '—';
   return Math.round(Number(n)).toLocaleString('fr-FR').replace(/[\u202f\u00a0]/g, '\u00a0');
 }
+
+/** « 7h42 » à partir de minutes. */
+export const texteHM = (min: number): string => `${Math.floor(min / 60)}h${String(Math.round(min % 60)).padStart(2, '0')}`;
+
+/** Un nombre à la française, avec au plus `decimales` décimales : 1234.5 → « 1 234,5 ». */
+export const formatNum = (v: number, decimales = 0): string => Number(v).toLocaleString('fr-FR', { maximumFractionDigits: decimales });

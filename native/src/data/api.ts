@@ -11,6 +11,7 @@
 import { appliquerTout } from './retouches';
 import { dateIsoLocale } from './format';
 import { sb } from './supabase';
+import type { ObjectifAnnuel } from './bilan.ts';
 import type { Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Profil, Seance, SerieForce, TestHyrox } from './types';
 
 export interface Resultat<T> {
@@ -254,4 +255,51 @@ export async function chargerAnnotations(userId: string, debutIso: string, finIs
     return { data: null, erreur: 'Impossible de charger tes notes.' };
   }
   return { data: { notes: (notes.data as unknown as Note[]) || [], repos: ((repos.data as { iso_date: string }[]) || []).map((r) => r.iso_date) }, erreur: '' };
+}
+
+// ---------------------------------------------------------------------------
+// Bilan annuel : activités des 3 dernières années et objectifs annuels
+// ---------------------------------------------------------------------------
+
+const COLONNES_BILAN = 'id,strava_id,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,tss';
+const TAILLE_PAGE = 1000; // l'API renvoie au plus 1000 lignes par requête : on lit par pages
+
+/** Activités de l'année et des deux précédentes (colonnes légères), par pages de 1000. */
+export async function chargerActivitesBilan(userId: string, annee: number): Promise<Resultat<Seance[]>> {
+  const toutes: Seance[] = [];
+  for (let page = 0; page < 12; page++) {
+    const r = await sb
+      .from('activities')
+      .select(COLONNES_BILAN)
+      .eq('user_id', userId)
+      .gte('start_date_local', `${annee - 2}-01-01`)
+      .lte('start_date_local', `${annee}-12-31T23:59:59`)
+      .order('start_date_local', { ascending: true })
+      .range(page * TAILLE_PAGE, (page + 1) * TAILLE_PAGE - 1);
+    if (r.error) {
+      console.error('[app/api] bilan', r.error.code || '');
+      return { data: null, erreur: 'Impossible de charger tes activités.' };
+    }
+    const lignes = (r.data as unknown as Seance[]) || [];
+    toutes.push(...lignes);
+    if (lignes.length < TAILLE_PAGE) break;
+  }
+  return { data: await avecRetouches(userId, toutes), erreur: '' };
+}
+
+const COLONNES_OBJECTIF_ANNUEL = 'id,year,sport,template,target,current_manual';
+const versObjectif = (l: { id: string; year: number; sport: string; template: string; target: unknown; current_manual: number | null }): ObjectifAnnuel => ({
+  id: l.id,
+  annee: l.year,
+  sport: l.sport,
+  template: l.template,
+  target: Number(l.target),
+  currentManual: l.current_manual ?? undefined,
+});
+
+/** Tous les objectifs annuels de l'utilisateur (toutes années). */
+export async function chargerObjectifsAnnuels(userId: string): Promise<Resultat<ObjectifAnnuel[]>> {
+  const r = await sb.from('yearly_goals').select(COLONNES_OBJECTIF_ANNUEL).eq('user_id', userId).order('year', { ascending: false }).limit(500);
+  const res = resultat<Parameters<typeof versObjectif>[0][]>(r, 'Impossible de charger tes objectifs.');
+  return { data: res.data ? res.data.map(versObjectif) : null, erreur: res.erreur };
 }
