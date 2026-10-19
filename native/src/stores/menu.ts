@@ -32,17 +32,23 @@ export function definirFamilles(familles: string[]) {
   ecouteurs.forEach((fn) => fn());
 }
 
+// Règle : si l'utilisateur a choisi des sports, SA liste décide (ce qui est coché = ce qui est affiché, il peut tout décocher).
+// Ses séances ne décident que tant qu'il n'a rien choisi (compte jamais configuré, ou « Passer »).
+function composer(): string[] {
+  return choisis && choisis.length ? fusionnerFamilles([], choisis) : fusionnerFamilles(deDonnees, choisis);
+}
+
 /** Après le chargement des données : mémorise les deux sources et recompose la barre. */
 export function definirSources(donnees: string[], coches: string[] | null) {
   deDonnees = donnees;
   choisis = coches;
-  definirFamilles(fusionnerFamilles(deDonnees, choisis));
+  definirFamilles(composer());
 }
 
 /** L'utilisateur vient de cocher ou décocher un sport : la barre se recompose immédiatement. */
 export function definirSportsCoches(coches: string[]) {
   choisis = coches;
-  definirFamilles(fusionnerFamilles(deDonnees, choisis));
+  definirFamilles(composer());
 }
 
 /** Choisit le sport affiché ; recliquer sur le sport déjà choisi revient à « Tous ». */

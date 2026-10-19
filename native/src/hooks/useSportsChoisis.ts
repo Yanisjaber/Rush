@@ -28,7 +28,8 @@ export function useSportsChoisis() {
       const liste = demo ? sportsDemo : userId ? nettoyerSports((await chargerSportsChoisis(userId)).data) : null;
       const brutes = demo ? sportsEtatDemoDisciplines.current : userId ? (await chargerDisciplinesChoisies(userId)).data : null;
       if (annule) return;
-      const coches = sportsCoches(liste, famillesRef.current);
+      // Une liste choisie est la vérité ; sinon on montre cochés les sports que les séances font apparaître
+      const coches = liste && liste.length ? liste : sportsCoches(liste, famillesRef.current);
       setChoisis(coches);
       setDisciplines(nettoyerDisciplines(brutes, coches));
     })();

@@ -22,7 +22,8 @@ export function SelecteurSports({ choisis, onBasculer, disciplines = {}, onBascu
   return (
     <View style={{ gap: espace.e4 }}>
       {GROUPES_SPORTS.map((g) => (
-        <Bloc key={g.titre} titre={g.titre}>
+        <View key={g.titre} style={{ gap: espace.e4 }}>
+        <Bloc titre={g.titre}>
           <View style={styles.puces}>
             {g.sports.map((cle) => {
               const actif = choisis.includes(cle);
@@ -43,41 +44,43 @@ export function SelecteurSports({ choisis, onBasculer, disciplines = {}, onBascu
             })}
           </View>
         </Bloc>
-      ))}
-      {onBasculerDiscipline
-        ? Object.keys(DISCIPLINES)
-            .filter((sport) => choisis.includes(sport))
-            .map((sport) => {
-              const couleur = couleurSport(p, sport);
-              return (
-                <Bloc key={sport} titre={`Tes disciplines : ${(SPORTS[sport as CleSport]?.nom ?? sport).toLowerCase()}`}>
-                  {DISCIPLINES[sport].map((groupe) => (
-                    <View key={groupe.titre} style={{ marginTop: espace.e2 }}>
-                      <Text style={[typo.micro, { color: p.texteDoux, marginBottom: 6 }]}>{groupe.titre}</Text>
-                      <View style={styles.puces}>
-                        {groupe.disciplines.map((d) => {
-                          const actif = (disciplines[sport] ?? []).includes(d.cle);
-                          return (
-                            <Pressable
-                              key={d.cle}
-                              disabled={desactive}
-                              onPress={() => onBasculerDiscipline(sport, d.cle)}
-                              accessibilityRole="checkbox"
-                              accessibilityState={{ checked: actif, disabled: desactive }}
-                              accessibilityLabel={d.nom}
-                              style={[styles.puce, actif ? { backgroundColor: couleur, borderColor: couleur } : { borderColor: p.contourChamp }, desactive && { opacity: 0.6 }]}
-                            >
-                              <Text style={[typo.petit, { color: actif ? p.encreSurCouleur : p.texte }]}>{d.nom}</Text>
-                            </Pressable>
-                          );
-                        })}
+        {/* Les disciplines d'un sport coché se déplient juste sous son groupe */}
+        {onBasculerDiscipline
+          ? g.sports
+              .filter((sport) => Object.hasOwn(DISCIPLINES, sport) && choisis.includes(sport))
+              .map((sport) => {
+                const couleur = couleurSport(p, sport);
+                return (
+                  <Bloc key={sport} titre={`Tes disciplines : ${(SPORTS[sport as CleSport]?.nom ?? sport).toLowerCase()}`}>
+                    {DISCIPLINES[sport].map((groupe) => (
+                      <View key={groupe.titre} style={{ marginTop: espace.e2 }}>
+                        <Text style={[typo.micro, { color: p.texteDoux, marginBottom: 6 }]}>{groupe.titre}</Text>
+                        <View style={styles.puces}>
+                          {groupe.disciplines.map((d) => {
+                            const actif = (disciplines[sport] ?? []).includes(d.cle);
+                            return (
+                              <Pressable
+                                key={d.cle}
+                                disabled={desactive}
+                                onPress={() => onBasculerDiscipline(sport, d.cle)}
+                                accessibilityRole="checkbox"
+                                accessibilityState={{ checked: actif, disabled: desactive }}
+                                accessibilityLabel={d.nom}
+                                style={[styles.puce, actif ? { backgroundColor: couleur, borderColor: couleur } : { borderColor: p.contourChamp }, desactive && { opacity: 0.6 }]}
+                              >
+                                <Text style={[typo.petit, { color: actif ? p.encreSurCouleur : p.texte }]}>{d.nom}</Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
                       </View>
-                    </View>
-                  ))}
-                </Bloc>
-              );
-            })
-        : null}
+                    ))}
+                  </Bloc>
+                );
+              })
+          : null}
+        </View>
+      ))}
     </View>
   );
 }
