@@ -5,6 +5,7 @@
     "version": "0.1.0",
     "scheme": "rush",
     "orientation": "portrait",
+    "icon": "./assets/icone/icone-rush-1024.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
