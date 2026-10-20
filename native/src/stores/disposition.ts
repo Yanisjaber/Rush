@@ -7,7 +7,7 @@ import type { Taille } from '@/data/types';
 
 // Disposition de l'accueil (quels widgets, dans quel ordre, quelle taille). Port de stores/disposition.svelte.js.
 //
-// Stockage : colonne `layout` de user_preferences (une ligne par utilisateur, protégée par la RLS). En démo, ou si la lecture échoue,
+// Stockage : colonne `layout_mobile` de user_preferences (le site a la sienne, `layout`) (une ligne par utilisateur, protégée par la RLS). En démo, ou si la lecture échoue,
 // la disposition reste en mémoire : l'app marche dans tous les cas.
 // Tant que l'utilisateur n'a rien modifié, la disposition est « automatique » : elle se recompose toute seule quand ses sports changent.
 // Dès qu'il édite, elle devient la sienne.

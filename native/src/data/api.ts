@@ -403,22 +403,22 @@ export async function chargerConnexions(userId: string): Promise<Resultat<{ stra
 }
 
 // ---------------------------------------------------------------------------
-// Disposition de l'accueil (user_preferences.layout)
+// Disposition de l'accueil de l'app mobile (user_preferences.layout_mobile). Le site a la sienne (`layout`) : les tailles ne sont pas les mêmes.
 // ---------------------------------------------------------------------------
 
 /** La disposition enregistrée (brute : à nettoyer avec normaliser). `data` vaut null si aucune ligne ; `erreur` non vide si la lecture échoue. */
 export async function chargerLayout(userId: string): Promise<Resultat<unknown>> {
-  const r = await sb.from('user_preferences').select('layout').eq('user_id', userId).maybeSingle();
+  const r = await sb.from('user_preferences').select('layout_mobile').eq('user_id', userId).maybeSingle();
   if (r.error) {
     console.error('[app/api] layout', r.error.code || '');
     return { data: null, erreur: 'Impossible de charger ta disposition.' };
   }
-  return { data: (r.data as { layout?: unknown } | null)?.layout ?? null, erreur: '' };
+  return { data: (r.data as { layout_mobile?: unknown } | null)?.layout_mobile ?? null, erreur: '' };
 }
 
-/** Enregistre la disposition (déjà normalisée). N'écrit que la colonne `layout` de la ligne de l'utilisateur. */
+/** Enregistre la disposition (déjà normalisée). N'écrit que la colonne `layout_mobile` de la ligne de l'utilisateur (jamais `layout`, celle du site). */
 export async function enregistrerLayout(userId: string, layout: unknown): Promise<{ erreur: string }> {
-  const r = await sb.from('user_preferences').upsert({ user_id: userId, layout, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+  const r = await sb.from('user_preferences').upsert({ user_id: userId, layout_mobile: layout, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
   if (r.error) {
     console.error('[app/api] layout', r.error.code || '');
     return { erreur: "Impossible d'enregistrer ta disposition." };
