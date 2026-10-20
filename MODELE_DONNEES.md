@@ -18,6 +18,7 @@ humain (coach ↔ athlète, messagerie) a été supprimé le 2026-10-11 ; le rô
 | `rest_day`, `training_phases`, `day_notes`, `yearly_goals`, `preferences` | Jours de repos, périodisation, notes de jour, objectifs annuels, préférences |
 | `daily_metrics` | Charge calculée par jour (CTL/ATL/TSB), recalculée par trigger |
 | `power_profile`, `power_profile_sport` | Records de puissance par durée (global et par sport) |
+| `health_metrics` | Données de santé d'un compte, une ligne par jour, mesure et source (`manual`, `garmin`, `apple_sante`, `whoop`, `strava`) : ressenti du matin, événements (malade, blessé, alcool, voyage), corps, nutrition, cycle, mesures d'appareils. Données **sensibles** : RLS `auth.uid() = user_id`, aucun accès anonyme, plafond de 50 000 lignes par compte, supprimées avec le compte (cascade). Le catalogue des mesures est dans `native/src/data/sante-catalogue.ts` |
 | `garmin_sleep` | Nuits de sommeil Garmin (phases, score, HRV, stress, FC nocturne) |
 | `garmin_sync_requests` | **Inutilisée** (ancien pont vers le Raspberry Pi, supprimé le 2026-10-13) ; vide |
 | `strength_exercises`, `strength_programs`, `strength_sets` | Carnet de force : exercices perso, programmes (séances types, exercices en JSONB) et séries réalisées (rattachées à une ligne `activities`, supprimées avec elle). La bibliothèque d'exercices de base est dans le code de la v2 |

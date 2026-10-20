@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { CONFIANCE_MINI, indiceCharge, indiceContreReference, indiceDepuisEcart, indicateurs, lecture, niveauDe, phi, POIDS_FORME, serieEtatDeForme } from '../src/data/forme-sante.ts';
+import { CONFIANCE_MINI, indiceCharge, indiceContreReference, indiceDepuisEcart, indiceRessenti, indiceTemperature, indicateurs, lecture, niveauDe, phi, POIDS_FORME, precisionDe, serieEtatDeForme } from '../src/data/forme-sante.ts';
 import type { Metrique, Nuit } from '../src/data/types.ts';
 
 const proche = (a: number, b: number, eps = 0.002) => assert.ok(Math.abs(a - b) <= eps, `${a} ≠ ${b}`);
@@ -62,7 +62,9 @@ test('serieEtatDeForme : une nuit comme les précédentes est « comme d\'habitu
   assert.equal(par('charge'), 50);
   assert.ok((par('sommeil') ?? 0) > 60); // 7 h 30 bien dormies : le score absolu est bon
   assert.ok(dernier.indice != null && dernier.indice >= 50 && dernier.indice <= 70);
-  assert.equal(dernier.confiance, 1);
+  assert.equal(dernier.confiance, 0.75); // HRV, sommeil, FC, stress et charge : 75 % du poids total
+  assert.equal(dernier.precision, 'bonne');
+  assert.deepEqual(dernier.manquants.map((m) => m.cle).sort(), ['resp', 'ressenti', 'temperature']);
 });
 
 test('serieEtatDeForme : la référence ne contient jamais le futur, et les premières nuits n\'ont pas de HRV comparée', () => {
@@ -88,7 +90,8 @@ test('serieEtatDeForme : trop de données manquantes = pas d\'indice ; les poids
   assert.ok(seul[39].confiance < CONFIANCE_MINI);
   // Sans la charge (poids 0,10), le reste est renormalisé : l'indice existe quand même
   const sansCharge = serieEtatDeForme(nuits(40), []);
-  assert.equal(sansCharge[39].confiance, 0.9);
+  assert.equal(sansCharge[39].confiance, 0.67);
+  assert.equal(sansCharge[39].precision, 'basique');
   assert.notEqual(sansCharge[39].indice, null);
   assert.deepEqual(serieEtatDeForme(null, null), []);
 });
@@ -107,4 +110,72 @@ test('niveauDe, lecture et indicateurs : seuils 65 et 40, point faible sous 45',
   const ind = indicateurs(point);
   assert.deepEqual(ind.map((i) => i.cle), ['sommeil', 'recuperation', 'forme']);
   assert.equal(ind[2].indice, 50);
+});
+
+test('indiceRessenti : les cinq réponses du matin, de 0 à 100, au moins deux réponses', () => {
+  assert.equal(indiceRessenti(undefined), null);
+  assert.equal(indiceRessenti({ ressenti_fatigue: 1 }), null); // une seule réponse ne suffit pas
+  // Tout au mieux : fatigue 1, courbatures 1, humeur 5, motivation 5, stress 1
+  assert.equal(indiceRessenti({ ressenti_fatigue: 1, ressenti_courbatures: 1, ressenti_humeur: 5, ressenti_motivation: 5, ressenti_stress: 1 }), 100);
+  // Tout au pire
+  assert.equal(indiceRessenti({ ressenti_fatigue: 5, ressenti_courbatures: 5, ressenti_humeur: 1, ressenti_motivation: 1, ressenti_stress: 5 }), 0);
+  // Tout au milieu : 50, et deux réponses suffisent
+  assert.equal(indiceRessenti({ ressenti_fatigue: 3, ressenti_humeur: 3 }), 50);
+});
+
+test('indiceTemperature : 100 sans écart, 0 à 1,5 °C d\'écart (dans les deux sens)', () => {
+  assert.equal(indiceTemperature(0), 100);
+  assert.equal(indiceTemperature(0.75), 50);
+  assert.equal(indiceTemperature(1.5), 0);
+  assert.equal(indiceTemperature(-1.5), 0);
+  assert.equal(indiceTemperature(4), 0);
+});
+
+test('precisionDe : 55 % basique, 75 % bonne, 90 % élevée, en dessous rien', () => {
+  assert.equal(precisionDe(0.5), null);
+  assert.equal(precisionDe(CONFIANCE_MINI), 'basique');
+  assert.equal(precisionDe(0.75), 'bonne');
+  assert.equal(precisionDe(0.9), 'elevee');
+});
+
+test('serieEtatDeForme avec des mesures : le ressenti et les appareils s\'ajoutent, la précision monte', () => {
+  const date = nuit(39).date;
+  const base = serieEtatDeForme(nuits(40), [metrique(date, 0)])[39];
+  const avec = serieEtatDeForme(nuits(40), [metrique(date, 0)], {
+    [date]: { ressenti_fatigue: 1, ressenti_courbatures: 1, ressenti_humeur: 5, ressenti_motivation: 5, ressenti_stress: 1, temp_cutanee_ecart: 0 },
+  })[39];
+  assert.equal(avec.composantes.find((c) => c.cle === 'ressenti')?.indice, 100);
+  assert.equal(avec.composantes.find((c) => c.cle === 'temperature')?.indice, 100);
+  assert.equal(avec.confiance, 0.95); // 0,75 + ressenti 0,15 + température 0,05
+  assert.equal(avec.precision, 'elevee');
+  assert.ok((avec.indice as number) > (base.indice as number)); // un ressenti excellent tire l'indice vers le haut
+  assert.deepEqual(avec.manquants.map((m) => m.cle), ['resp']);
+});
+
+test('freins : malade plafonne à 35, blessé à 50, le plus bas gagne ; l\'alcool et le voyage sont du contexte', () => {
+  const date = nuit(39).date;
+  const sain = serieEtatDeForme(nuits(40), [metrique(date, 0)])[39];
+  assert.ok((sain.indice as number) > 35);
+  const malade = serieEtatDeForme(nuits(40), [metrique(date, 0)], { [date]: { evt_malade: 1 } })[39];
+  assert.equal(malade.indice, 35);
+  assert.equal(malade.freins.length, 1);
+  const blesse = serieEtatDeForme(nuits(40), [metrique(date, 0)], { [date]: { evt_blesse: 1 } })[39];
+  assert.equal(blesse.indice, Math.min(sain.indice as number, 50));
+  const deux = serieEtatDeForme(nuits(40), [metrique(date, 0)], { [date]: { evt_malade: 1, evt_blesse: 1 } })[39];
+  assert.equal(deux.indice, 35);
+  assert.equal(deux.freins.length, 2);
+  const contexte = serieEtatDeForme(nuits(40), [metrique(date, 0)], { [date]: { alcool_verres: 3, evt_voyage: 1 } })[39];
+  assert.equal(contexte.indice, sain.indice); // aucun effet numérique
+  assert.equal(contexte.contexte.length, 2);
+  assert.deepEqual(sain.freins, []);
+});
+
+test('un jour avec seulement une saisie (sans nuit) existe dans la série, sans indice si les données ne suffisent pas', () => {
+  const serie = serieEtatDeForme([], [], { '2026-03-01': { ressenti_fatigue: 2, ressenti_humeur: 4 } });
+  assert.equal(serie.length, 1);
+  assert.equal(serie[0].indice, null);
+  assert.equal(serie[0].precision, null);
+  assert.equal(serie[0].composantes.find((c) => c.cle === 'ressenti')?.indice, 75);
+  // malade sans assez de données : pas d'indice à plafonner, mais le frein est signalé
+  assert.equal(serieEtatDeForme([], [], { '2026-03-01': { evt_malade: 1 } })[0].freins.length, 1);
 });

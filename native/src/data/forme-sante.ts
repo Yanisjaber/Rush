@@ -9,17 +9,44 @@
 //  - Stress de nuit : même méthode, signe inversé.
 //  - Sommeil : le score de sommeil déjà calculé (durée, efficacité, réveils, latence, architecture ; repères de la National Sleep Foundation, 2015).
 //  - Charge : la « fraîcheur » (forme = condition − fatigue) du modèle fitness-fatigue de Banister (1975), que l'app calcule déjà.
+//  - Ressenti : les cinq questions du matin (fatigue, courbatures, humeur, motivation, stress), de 1 à 5, dans l'esprit de l'indice de Hooper (1995) ;
+//    les mesures subjectives sont souvent plus sensibles que les mesures objectives (Saw et coll., 2016).
+//  - Respiration de nuit : même méthode que la FC de repos. Température cutanée : plus l'écart à ta normale est grand, plus l'indice baisse.
 // Un écart à la référence (z) devient un centile de 0 à 100 : 50 = comme d'habitude, au-dessus = mieux que d'habitude.
-// L'indice est la moyenne pondérée des sous-indices disponibles ; si trop de données manquent, il vaut null (on n'invente rien).
+// L'indice est la moyenne pondérée des sous-indices DISPONIBLES (les poids se renormalisent sur ce qui existe) ; si trop de données manquent,
+// il vaut null (on n'invente rien). Deux événements sont des FREINS qui plafonnent l'indice quoi que disent les autres chiffres : malade (35) et blessé (50).
+// Le reste (alcool, voyage) n'a pas d'effet numérique : il est signalé comme contexte, parce qu'il peut fausser les mesures de la nuit.
 import { scoreNuit } from './score-sommeil.ts';
+import type { MesuresParJour } from './sante-catalogue.ts';
 import type { Metrique, Nuit } from './types.ts';
 
-export type CleComposante = 'hrv' | 'fc' | 'sommeil' | 'stress' | 'charge';
+export type CleComposante = 'hrv' | 'fc' | 'sommeil' | 'ressenti' | 'charge' | 'stress' | 'resp' | 'temperature';
 
 /** Poids de chaque pilier dans l'indice. La HRV pèse le plus : c'est le marqueur de récupération le plus sensible (Plews 2013, Buchheit 2014). */
-export const POIDS_FORME: Record<CleComposante, number> = { hrv: 0.35, sommeil: 0.25, fc: 0.2, stress: 0.1, charge: 0.1 };
+export const POIDS_FORME: Record<CleComposante, number> = { hrv: 0.25, sommeil: 0.2, fc: 0.15, ressenti: 0.15, charge: 0.08, stress: 0.07, resp: 0.05, temperature: 0.05 };
 
-export const NOM_COMPOSANTE: Record<CleComposante, string> = { hrv: 'HRV', fc: 'FC de repos', sommeil: 'Sommeil', stress: 'Stress de nuit', charge: 'Charge d\'entraînement' };
+export const NOM_COMPOSANTE: Record<CleComposante, string> = {
+  hrv: 'HRV',
+  fc: 'FC de repos',
+  sommeil: 'Sommeil',
+  ressenti: 'Ressenti du matin',
+  charge: 'Charge d\'entraînement',
+  stress: 'Stress de nuit',
+  resp: 'Respiration de nuit',
+  temperature: 'Température cutanée',
+};
+
+/** Comment obtenir un pilier qui manque (affiché sous « Pour être plus précis »). */
+export const COMMENT_AJOUTER: Record<CleComposante, string> = {
+  hrv: 'Porte ta montre la nuit pour mesurer ta HRV.',
+  fc: 'Porte ta montre la nuit pour mesurer ta FC de repos.',
+  sommeil: 'Porte ta montre la nuit pour suivre ton sommeil.',
+  ressenti: 'Réponds aux 5 questions du ressenti du matin.',
+  charge: 'Enregistre tes séances pour calculer ta charge.',
+  stress: 'Porte ta montre la nuit pour mesurer ton stress.',
+  resp: 'Connecte une source qui mesure la respiration de nuit (Whoop, Apple Santé).',
+  temperature: 'Connecte une source qui mesure la température cutanée (Whoop, Apple Santé).',
+};
 
 /** Nombre de nuits qui forment ta référence personnelle, et minimum de valeurs pour qu'elle compte. */
 export const NUITS_REFERENCE = 28;
@@ -35,13 +62,24 @@ export interface Composante {
   indice: number | null;
 }
 
+/** La précision de l'estimation : la part du poids total réellement disponible. */
+export type Precision = 'basique' | 'bonne' | 'elevee';
+
 export interface PointForme {
   date: string;
   /** L'état de forme du jour, de 0 à 100, ou null si les données ne suffisent pas. */
   indice: number | null;
   /** Part du poids total réellement disponible (0 à 1). */
   confiance: number;
+  /** « elevee » à partir de 90 % du poids, « bonne » à partir de 75 %, « basique » à partir de 55 % ; null en dessous (pas d'indice). */
+  precision: Precision | null;
   composantes: Composante[];
+  /** Les événements qui plafonnent l'indice (malade, blessé), en toutes lettres. */
+  freins: string[];
+  /** Le contexte qui peut fausser les mesures de la nuit (alcool, voyage), sans effet sur le chiffre. */
+  contexte: string[];
+  /** Les piliers sans donnée ce jour-là, avec le moyen de les obtenir : ce qui rendrait l'estimation plus précise. */
+  manquants: { cle: CleComposante; nom: string; comment: string }[];
 }
 
 // --- Petits outils statistiques ---------------------------------------------------------------------------------------------
@@ -91,16 +129,48 @@ function fraicheurDu(metriques: Metrique[], date: string): number | null {
   return trouve && Number.isFinite(Number(trouve.tsb)) ? Number(trouve.tsb) : null;
 }
 
+/** Une échelle de 1 à 5 ramenée à 0-100 ; `hautMieux` = false : 1 est la meilleure valeur (fatigue, courbatures, stress). */
+const echelle100 = (v: number, hautMieux: boolean): number => Math.round(((hautMieux ? v - 1 : 5 - v) / 4) * 100);
+
+const RESSENTI: { cle: string; hautMieux: boolean }[] = [
+  { cle: 'ressenti_fatigue', hautMieux: false },
+  { cle: 'ressenti_courbatures', hautMieux: false },
+  { cle: 'ressenti_humeur', hautMieux: true },
+  { cle: 'ressenti_motivation', hautMieux: true },
+  { cle: 'ressenti_stress', hautMieux: false },
+];
+
+/** Le sous-indice du ressenti : la moyenne des réponses du matin (au moins deux), de 0 à 100 ; null sinon. */
+export function indiceRessenti(mesures: Record<string, number> | undefined): number | null {
+  const v = RESSENTI.map((q) => (mesures && Number.isFinite(mesures[q.cle]) ? echelle100(mesures[q.cle], q.hautMieux) : null)).filter((x): x is number => x != null);
+  return v.length >= 2 ? Math.round(moyenne(v)) : null;
+}
+
+/** Le sous-indice de la température cutanée : 100 à l'écart nul, 0 à 1,5 °C d'écart (au-dessus comme en dessous). */
+export function indiceTemperature(ecart: number): number {
+  return Math.round(100 * (1 - borner(Math.abs(ecart) / 1.5, 0, 1)));
+}
+
+export const precisionDe = (confiance: number): Precision | null => (confiance >= 0.9 ? 'elevee' : confiance >= 0.75 ? 'bonne' : confiance >= CONFIANCE_MINI ? 'basique' : null);
+
 /**
- * L'état de forme de chaque nuit connue (de la plus ancienne à la plus récente). La référence d'une nuit est faite des 28 nuits qui la précèdent :
- * on ne compare jamais une nuit à son propre futur. Les premières nuits n'ont pas assez d'historique : leur indice est null.
+ * L'état de forme de chaque jour où l'on a une donnée (une nuit ou une mesure saisie), de la plus ancienne à la plus récente.
+ * La référence d'une nuit est faite des 28 nuits qui la précèdent : on ne compare jamais une nuit à son propre futur.
+ * Les piliers sans donnée sont simplement absents (leur poids est réparti sur les autres) et listés dans `manquants`.
  */
-export function serieEtatDeForme(nuits: Nuit[] | null | undefined, metriques: Metrique[] | null | undefined): PointForme[] {
+export function serieEtatDeForme(nuits: Nuit[] | null | undefined, metriques: Metrique[] | null | undefined, mesures: MesuresParJour | null | undefined = {}): PointForme[] {
   const chrono = [...(nuits || [])].sort((a, b) => String(a.date).localeCompare(String(b.date)));
-  const mesures = metriques || [];
-  return chrono.map((n, i) => {
-    const avant = chrono.slice(Math.max(0, i - NUITS_REFERENCE), i);
-    const n3 = chrono.slice(Math.max(0, i - 2), i + 1);
+  const indexNuit = new Map(chrono.map((n, i) => [n.date, i]));
+  const mesuresDuJour = mesures || {};
+  const dates = [...new Set([...chrono.map((n) => n.date), ...Object.keys(mesuresDuJour)])].sort();
+  const charges = metriques || [];
+
+  return dates.map((date) => {
+    const i = indexNuit.get(date);
+    const n = i != null ? chrono[i] : null;
+    const jour = mesuresDuJour[date];
+    const avant = i != null ? chrono.slice(Math.max(0, i - NUITS_REFERENCE), i) : [];
+    const n3 = i != null ? chrono.slice(Math.max(0, i - 2), i + 1) : [];
 
     // HRV : le logarithme de la moyenne des 3 dernières nuits, contre la référence des nuits précédentes
     const hrv3 = n3.map((x) => x.hrv_avg).filter(valide).map((x) => Math.log(Number(x)));
@@ -109,21 +179,44 @@ export function serieEtatDeForme(nuits: Nuit[] | null | undefined, metriques: Me
 
     // FC de repos et stress de nuit : la valeur de la nuit, contre la référence, sens inversé
     const fcRef = avant.map((x) => x.resting_heart_rate).filter(valide).map(Number);
-    const fc = valide(n.resting_heart_rate) ? indiceContreReference(Number(n.resting_heart_rate), fcRef, -1, 1) : null;
+    const fc = n && valide(n.resting_heart_rate) ? indiceContreReference(Number(n.resting_heart_rate), fcRef, -1, 1) : null;
     const stressRef = avant.map((x) => x.avg_stress).filter(valide).map(Number);
-    const stress = valide(n.avg_stress) ? indiceContreReference(Number(n.avg_stress), stressRef, -1, 2) : null;
+    const stress = n && valide(n.avg_stress) ? indiceContreReference(Number(n.avg_stress), stressRef, -1, 2) : null;
 
-    const score = scoreNuit(n);
-    const sommeil = score && (n.total_sec ?? 0) > 0 ? score.total : null;
-    const tsb = fraicheurDu(mesures, n.date);
+    const score = n ? scoreNuit(n) : null;
+    const sommeil = score && (n?.total_sec ?? 0) > 0 ? score.total : null;
+    const tsb = fraicheurDu(charges, date);
     const charge = tsb != null ? indiceCharge(tsb) : null;
+    const ressenti = indiceRessenti(jour);
 
-    const valeurs: Record<CleComposante, number | null> = { hrv, fc, sommeil, stress, charge };
+    // Respiration de nuit : contre la référence des jours précédents qui en ont une (sens inversé) ; température : l'écart à ta normale
+    const respRef = dates.filter((d) => d < date).slice(-NUITS_REFERENCE).map((d) => mesuresDuJour[d]?.resp_nuit).filter(valide).map(Number);
+    const resp = valide(jour?.resp_nuit) ? indiceContreReference(Number(jour?.resp_nuit), respRef, -1, 0.5) : null;
+    const temperature = jour && Number.isFinite(jour.temp_cutanee_ecart) ? indiceTemperature(jour.temp_cutanee_ecart) : null;
+
+    const valeurs: Record<CleComposante, number | null> = { hrv, fc, sommeil, ressenti, charge, stress, resp, temperature };
     const composantes: Composante[] = (Object.keys(POIDS_FORME) as CleComposante[]).map((cle) => ({ cle, nom: NOM_COMPOSANTE[cle], poids: POIDS_FORME[cle], indice: valeurs[cle] }));
     const dispo = composantes.filter((c) => c.indice != null);
-    const confiance = dispo.reduce((s, c) => s + c.poids, 0);
-    const indice = confiance >= CONFIANCE_MINI ? Math.round(dispo.reduce((s, c) => s + c.poids * (c.indice as number), 0) / confiance) : null;
-    return { date: n.date, indice, confiance: Math.round(confiance * 100) / 100, composantes };
+    const confiance = Math.round(dispo.reduce((s, c) => s + c.poids, 0) * 100) / 100;
+    let indice = confiance >= CONFIANCE_MINI ? Math.round(dispo.reduce((s, c) => s + c.poids * (c.indice as number), 0) / confiance) : null;
+
+    // Les freins : malade et blessé plafonnent l'indice, quels que soient les autres chiffres
+    const freins: string[] = [];
+    if (jour?.evt_malade === 1) {
+      freins.push('Malade : ton état de forme est plafonné à 35.');
+      if (indice != null) indice = Math.min(indice, 35);
+    }
+    if (jour?.evt_blesse === 1) {
+      freins.push('Blessé : ton état de forme est plafonné à 50.');
+      if (indice != null) indice = Math.min(indice, 50);
+    }
+    // Le contexte : il peut fausser les mesures de la nuit, sans toucher au chiffre
+    const contexte: string[] = [];
+    if ((jour?.alcool_verres ?? 0) >= 1) contexte.push("De l'alcool hier peut avoir abaissé ta HRV et ton sommeil.");
+    if (jour?.evt_voyage === 1) contexte.push('Un voyage ou un décalage horaire peut fausser tes mesures de la nuit.');
+
+    const manquants = composantes.filter((c) => c.indice == null).map((c) => ({ cle: c.cle, nom: c.nom, comment: COMMENT_AJOUTER[c.cle] }));
+    return { date, indice, confiance, precision: precisionDe(confiance), composantes, freins, contexte, manquants };
   });
 }
 

@@ -178,7 +178,16 @@ function Courbe({ valeurs, etiquette }: { valeurs: number[]; etiquette: string }
   return <CourbeLissee valeurs={valeurs} couleur={p.texte} hauteur={50} aire={false} pointFinal etiquette={etiquette} />;
 }
 
-const SOUS_TITRE_FAIBLE: Record<string, string> = { hrv: 'ta HRV', fc: 'ta FC de repos', sommeil: 'ton sommeil', stress: 'ton stress de nuit', charge: 'ta charge d\'entraînement' };
+const SOUS_TITRE_FAIBLE: Record<string, string> = {
+  hrv: 'ta HRV',
+  fc: 'ta FC de repos',
+  sommeil: 'ton sommeil',
+  ressenti: 'ton ressenti du matin',
+  stress: 'ton stress de nuit',
+  charge: 'ta charge d\'entraînement',
+  resp: 'ta respiration de nuit',
+  temperature: 'ta température cutanée',
+};
 
 /** L'état du jour : l'indice de forme (0 à 100), une phrase de lecture et trois indicateurs (sommeil, récupération, forme). */
 export function WidgetEtatDuJour({ serie, tuile = false }: PropsSante) {
