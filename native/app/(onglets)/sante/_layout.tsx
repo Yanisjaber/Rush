@@ -19,6 +19,7 @@ export default function SanteLayout() {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="sommeil" options={{ title: 'Sommeil' }} />
       <Stack.Screen name="forme" options={{ title: 'État de forme' }} />
+      <Stack.Screen name="pilier" options={{ title: 'Détail' }} />
       <Stack.Screen name="checkin" options={{ title: 'Check-in du matin' }} />
       <Stack.Screen name="corps" options={{ title: 'Corps' }} />
       <Stack.Screen name="nutrition" options={{ title: 'Nutrition' }} />

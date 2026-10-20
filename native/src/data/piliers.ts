@@ -1,0 +1,182 @@
+// Les piliers de l'écran Santé : une vue uniforme (valeur du jour, écart à TA moyenne, niveau, mini courbe) pour chaque facteur de l'état de forme.
+// Fonctions pures, sans réseau, testées. Les piliers sont triés du plus bas au plus haut : on lit d'abord ce qui tire l'état de forme vers le bas.
+import { COMMENT_AJOUTER, indiceRessenti, niveauDe, NOM_COMPOSANTE, POIDS_FORME, type CleComposante, type Niveau, type PointForme } from './forme-sante.ts';
+import type { MesuresParJour } from './sante-catalogue.ts';
+import { lisser, moyenneSur, proteinesParKg, serieDe, variationHebdo } from './suivi-corps.ts';
+import { scoreNuit } from './score-sommeil.ts';
+import { formeActuelle } from './synthese.ts';
+import type { Metrique, Nuit } from './types.ts';
+
+export interface PilierVue {
+  cle: CleComposante;
+  nom: string;
+  /** La valeur du jour, en texte (« 85 », « +7 », « — »). */
+  valeur: string;
+  unite: string;
+  /** L'écart à TA moyenne des nuits précédentes (« −14 vs ta moyenne »), ou une courte note ; null sans référence. */
+  ecart: string | null;
+  niveau: Niveau | null;
+  indice: number | null;
+  poids: number;
+  /** Les 14 dernières valeurs, de la plus ancienne à la plus récente (vide sans donnée). */
+  courbe: number[];
+  /** L'écran de détail qu'ouvre un appui. */
+  vers: string;
+  /** Ce qu'il faut faire pour avoir ce pilier, quand il manque. */
+  manquant: string | null;
+}
+
+const NB_COURBE = 14;
+const MOINS = '−';
+const signe = (n: number) => (n > 0 ? '+' : n < 0 ? MOINS : '');
+
+/** « +4 vs ta moyenne » : la dernière valeur contre la moyenne des 28 valeurs précédentes (au moins 10). */
+export function ecartTexte(valeur: number, precedentes: number[]): string | null {
+  const ref = precedentes.slice(-28).filter((x) => Number.isFinite(x) && x > 0);
+  if (!Number.isFinite(valeur) || ref.length < 10) return null;
+  const ecart = Math.round(valeur - ref.reduce((a, b) => a + b, 0) / ref.length);
+  return ecart === 0 ? 'Comme ta moyenne' : `${signe(ecart)}${Math.abs(ecart)} vs ta moyenne`;
+}
+
+const POINT: Record<CleComposante, { unite: string; vers: string; decimales?: number; signee?: boolean }> = {
+  sommeil: { unite: '/100', vers: '/sante/sommeil' },
+  hrv: { unite: 'ms', vers: '/sante/pilier?cle=hrv' },
+  fc: { unite: 'bpm', vers: '/sante/pilier?cle=fc' },
+  ressenti: { unite: '/100', vers: '/sante/checkin' },
+  charge: { unite: '', vers: '/sante/pilier?cle=charge', signee: true },
+  stress: { unite: '/100', vers: '/sante/pilier?cle=stress' },
+  resp: { unite: 'resp/min', vers: '/sante/pilier?cle=resp', decimales: 1 },
+  temperature: { unite: '°C', vers: '/sante/pilier?cle=temperature', decimales: 1, signee: true },
+};
+
+/**
+ * L'historique d'un pilier, de la plus ancienne valeur à la plus récente : le score de sommeil, la HRV, la FC de repos, le stress de nuit (par nuit),
+ * le ressenti (par jour saisi), la fraîcheur d'entraînement, la respiration et la température (par jour mesuré). Sert aux cartes et aux écrans de détail.
+ */
+export function historiquePilier(cle: CleComposante, nuits: Nuit[] | null | undefined, metriques: Metrique[] | null | undefined, mesures: MesuresParJour | null | undefined): number[] {
+  const chrono = [...(nuits || [])].sort((a, b) => a.date.localeCompare(b.date));
+  const mes = mesures || {};
+  const jours = Object.keys(mes).sort();
+  const nombres = (v: (number | null | undefined)[]) => v.filter((x): x is number => x != null && Number.isFinite(x));
+  const parNuit = (champ: keyof Nuit) => nombres(chrono.map((n) => Number(n[champ]))).filter((x) => x > 0);
+  switch (cle) {
+    case 'sommeil':
+      return nombres(chrono.map((n) => scoreNuit(n)?.total)).filter((x) => x > 0);
+    case 'hrv':
+      return parNuit('hrv_avg');
+    case 'fc':
+      return parNuit('resting_heart_rate');
+    case 'stress':
+      return parNuit('avg_stress');
+    case 'ressenti':
+      return nombres(jours.map((d) => indiceRessenti(mes[d])));
+    case 'charge':
+      return nombres([...(metriques || [])].sort((a, b) => a.iso_date.localeCompare(b.iso_date)).map((m) => Number(m.tsb)));
+    case 'resp':
+      return nombres(jours.map((d) => mes[d]?.resp_nuit));
+    case 'temperature':
+      return nombres(jours.map((d) => mes[d]?.temp_cutanee_ecart));
+  }
+}
+
+/** Une valeur du jour en texte : « 85 », « +7 », « 14,2 », « −0,3 ». */
+export function texteValeur(cle: CleComposante, v: number): string {
+  const { decimales = 0, signee = false } = POINT[cle];
+  const abs = Math.abs(v).toFixed(decimales).replace('.', ',');
+  return signee ? `${signe(v)}${abs}` : abs;
+}
+
+/**
+ * Les piliers du dernier jour de la série, du plus bas au plus haut ; ceux sans donnée à la fin, avec la consigne pour les obtenir.
+ * La respiration et la température (qui demandent une source externe) n'apparaissent que si on a une valeur.
+ */
+export function construirePiliers(nuits: Nuit[] | null | undefined, metriques: Metrique[] | null | undefined, mesures: MesuresParJour | null | undefined, serie: PointForme[]): PilierVue[] {
+  const point = serie[serie.length - 1];
+  if (!point) return [];
+  const fraicheur = formeActuelle([...(metriques || [])].sort((a, b) => a.iso_date.localeCompare(b.iso_date)));
+
+  const vues: PilierVue[] = point.composantes.map((c) => {
+    const histo = historiquePilier(c.cle, nuits, metriques, mesures);
+    const dernier = histo[histo.length - 1];
+    const aDonnee = dernier != null;
+    // La charge n'a pas d'« écart à la moyenne » : on affiche son libellé (« Frais », « Fatigué »)
+    const ecart = !aDonnee ? null : c.cle === 'charge' ? (fraicheur?.libelle ?? null) : c.cle === 'temperature' ? 'Écart à ta normale' : c.cle === 'ressenti' ? null : ecartTexte(dernier, histo.slice(0, -1));
+    return {
+      cle: c.cle,
+      nom: NOM_COMPOSANTE[c.cle],
+      valeur: aDonnee ? texteValeur(c.cle, dernier) : '—',
+      unite: aDonnee ? POINT[c.cle].unite : '',
+      ecart,
+      niveau: niveauDe(c.indice),
+      indice: c.indice,
+      poids: POIDS_FORME[c.cle],
+      courbe: histo.slice(-NB_COURBE),
+      vers: POINT[c.cle].vers,
+      manquant: c.indice == null ? COMMENT_AJOUTER[c.cle] : null,
+    };
+  });
+
+  // La respiration et la température sans valeur n'ont rien à montrer : on n'affiche pas de ligne vide pour une source qu'on n'a pas
+  const visibles = vues.filter((v) => !((v.cle === 'resp' || v.cle === 'temperature') && v.indice == null));
+  const avecDonnee = visibles.filter((v) => v.indice != null).sort((a, b) => (a.indice as number) - (b.indice as number));
+  const sans = visibles.filter((v) => v.indice == null);
+  return [...avecDonnee, ...sans];
+}
+
+/** Les consignes des piliers masqués (respiration, température) : une ligne « pour être plus précis » à la fin de la liste. */
+export function consignesMasquees(piliers: PilierVue[], point: PointForme | undefined): string[] {
+  if (!point) return [];
+  const affiches = new Set(piliers.map((p) => p.cle));
+  return point.manquants.filter((m) => !affiches.has(m.cle)).map((m) => m.comment);
+}
+
+/** Un suivi lent (corps, nutrition) : la même forme de carte qu'un pilier, sans niveau ni poids (il ne bouge pas l'état de forme du jour). */
+export interface SuiviVue {
+  cle: 'corps' | 'nutrition';
+  nom: string;
+  valeur: string;
+  unite: string;
+  ecart: string | null;
+  courbe: number[];
+  vers: string;
+  /** Ce qu'il faut faire pour avoir ce suivi, quand il n'y a encore rien. */
+  manquant: string | null;
+}
+
+const virgule = (n: number, d = 1) => n.toFixed(d).replace('.', ',');
+
+/** Les suivis du corps et de la nutrition : poids lissé et tendance par semaine ; calories moyennes de la semaine et protéines par kilo. */
+export function construireSuivis(mesures: MesuresParJour | null | undefined, finIso: string): SuiviVue[] {
+  const lisses = lisser(serieDe(mesures, 'poids_kg'));
+  const dernierPoids = lisses[lisses.length - 1];
+  const variation = variationHebdo(lisses);
+  const corps: SuiviVue = dernierPoids
+    ? {
+        cle: 'corps',
+        nom: 'Corps',
+        valeur: virgule(dernierPoids.lisse),
+        unite: 'kg',
+        ecart: variation ? (variation.pctParSemaine === 0 ? 'Stable' : `${signe(variation.parSemaine)}${virgule(Math.abs(variation.parSemaine), 2)} kg par semaine`) : 'Tendance dans une semaine',
+        courbe: lisses.slice(-NB_COURBE).map((p) => p.lisse),
+        vers: '/sante/corps',
+        manquant: null,
+      }
+    : { cle: 'corps', nom: 'Corps', valeur: '—', unite: '', ecart: null, courbe: [], vers: '/sante/corps', manquant: 'Saisis ton poids pour suivre ta tendance.' };
+
+  const kcal = moyenneSur(mesures, 'calories_kcal', 7, finIso);
+  const prot = moyenneSur(mesures, 'proteines_g', 7, finIso);
+  const parKg = proteinesParKg(prot?.moyenne, dernierPoids?.lisse);
+  const nutrition: SuiviVue = kcal
+    ? {
+        cle: 'nutrition',
+        nom: 'Nutrition',
+        valeur: String(Math.round(kcal.moyenne)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '),
+        unite: 'kcal par jour',
+        ecart: parKg ? `${virgule(parKg.gParKg, 2)} g/kg de protéines` : `Sur ${kcal.n} jour${kcal.n > 1 ? 's' : ''}`,
+        courbe: serieDe(mesures, 'calories_kcal').slice(-NB_COURBE).map((p) => p.valeur),
+        vers: '/sante/nutrition',
+        manquant: null,
+      }
+    : { cle: 'nutrition', nom: 'Nutrition', valeur: '—', unite: '', ecart: null, courbe: [], vers: '/sante/nutrition', manquant: 'Note tes calories pour suivre tes apports.' };
+  return [corps, nutrition];
+}
