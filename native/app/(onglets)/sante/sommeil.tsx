@@ -28,7 +28,6 @@ const couleurTon = (p: Palette, ton: string) => (ton === 'bon' ? p.ok : ton === 
 export default function Sante() {
   const p = usePalette();
   const bas = useSafeAreaInsets().bottom;
-  const haut = useSafeAreaInsets().top;
   const { nuits, chargement, erreur, actualisation, demo, recharger } = useDonneesSommeil();
   const [vue, setVue] = useState<Vue>('Aperçu');
   const triees = useMemo(() => preparer(nuits), [nuits]);
@@ -37,13 +36,10 @@ export default function Sante() {
   return (
     <View style={[styles.page, { backgroundColor: p.fond }]}>
       <ScrollView
-        contentContainerStyle={[styles.contenu, { paddingTop: haut + espace.e4, paddingBottom: bas + BARRE_ONGLETS }]}
+        contentContainerStyle={[styles.contenu, { paddingTop: espace.e3, paddingBottom: bas + BARRE_ONGLETS }]}
         refreshControl={<RefreshControl refreshing={actualisation} onRefresh={recharger} tintColor={p.texteDoux} />}
       >
-        <View style={styles.entete}>
-          <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>Sommeil</Text>
-          {demo ? <Text style={[typo.micro, { color: p.texteMuet }]}>Mode démo</Text> : null}
-        </View>
+        {demo ? <Text style={[typo.micro, { color: p.texteMuet }]}>Mode démo</Text> : null}
 
         <View accessibilityRole="tablist" style={[styles.segments, { backgroundColor: p.surface }]}>
           {VUES.map((v) => (
@@ -328,7 +324,6 @@ function Conseils({ nuits, pro }: { nuits: NuitPreparee[]; pro: ReturnType<typeo
 const styles = StyleSheet.create({
   page: { flex: 1 },
   contenu: { paddingHorizontal: espace.e4, gap: espace.e4 },
-  entete: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   segments: { flexDirection: 'row', borderRadius: rayon.base, padding: 3, gap: 3 },
   segment: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: rayon.base },
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
