@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Dossard } from '@/components/Dossard';
+import { CadreWidget } from '@/components/CadreWidget';
+import { GrandChiffre } from '@/components/GrandChiffre';
 import { Tuile } from '@/components/Tuile';
 import { familleAffichage } from '@/data/familles';
 import { formatDateLongue, joursAvant } from '@/data/format';
@@ -10,50 +11,49 @@ import { police } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Compte à rebours de ta prochaine compétition Hyrox, avec ton dernier test et ton objectif de temps.
-// tuile : le compte à rebours en gros, le nom de la course en note.
-export function WidgetHyroxDossard({ contexte, taille = 'm', tuile = false }: WidgetProps) {
-  const p = usePalette();
+export function WidgetHyroxDossard({ contexte, tuile = false }: WidgetProps) {
   const objectif = contexte.objectifs.find((o) => familleAffichage(o.sport) === 'hyrox') ?? null;
-  const dernier = contexte.hyrox.tests[0] ?? null;
-  const cible = contexte.hyrox.objectif;
-  // Barre de progression : plus le test se rapproche de l'objectif, plus elle se remplit
-  const avancement = dernier && cible ? Math.max(0, Math.min(100, (cible.total_s / dernier.total_s) * 100)) : 0;
+  const jours = objectif ? `J-${joursAvant(objectif.date)}` : '—';
 
-  if (tuile) return <Tuile titre="Prochain Hyrox" valeur={objectif ? `J-${joursAvant(objectif.date)}` : '—'} note={objectif ? objectif.name : 'Aucune compétition'} />;
+  if (tuile) return <Tuile titre="Prochain Hyrox" valeur={jours} note={objectif ? objectif.name : 'Aucune compétition'} />;
 
   return (
-    <Dossard
-      taille={taille === 'l' ? 'l' : 'm'}
-      sport="hyrox"
-      etiquette="Prochain objectif"
-      nom={objectif ? objectif.name : 'Hyrox'}
-      valeur={objectif ? `J-${joursAvant(objectif.date)}` : '—'}
-      detail={objectif ? formatDateLongue(objectif.date) : "Ajoute ta compétition Hyrox dans l'onglet Compétitions."}
-    >
-      {dernier || cible ? (
-        <>
-          <View style={styles.temps}>
-            <Text style={[styles.tempsTexte, { color: p.dossardTexte }]}>{dernier ? `Dernier test ${ecrireTemps(dernier.total_s)}` : 'Aucun test'}</Text>
-            <Text style={[styles.tempsTexte, { color: p.dossardTexte }]}>{cible ? `Objectif ${ecrireTemps(cible.total_s)}` : "Pas d'objectif"}</Text>
-          </View>
-          {dernier && cible ? (
-            <View
-              accessible
-              accessibilityRole="progressbar"
-              accessibilityLabel={`Ton dernier test atteint ${Math.round(avancement)} % de ton objectif`}
-              style={[styles.barre, { backgroundColor: avecAlpha(p.dossardTexte, 0.18) }]}
-            >
-              <View style={[styles.rempli, { width: `${avancement}%`, backgroundColor: p.dossardTexte }]} />
-            </View>
-          ) : null}
-        </>
+    <CadreWidget titre="Prochain Hyrox">
+      <GrandChiffre
+        valeur={jours}
+        nom={objectif ? objectif.name : 'Hyrox'}
+        detail={objectif ? formatDateLongue(objectif.date) : "Ajoute ta compétition Hyrox dans l'onglet Compétitions."}
+      >
+        <Progression contexte={contexte} />
+      </GrandChiffre>
+    </CadreWidget>
+  );
+}
+
+// Ton dernier test face à ton objectif : plus il s'en rapproche, plus la barre se remplit
+function Progression({ contexte }: { contexte: WidgetProps['contexte'] }) {
+  const p = usePalette();
+  const dernier = contexte.hyrox.tests[0] ?? null;
+  const cible = contexte.hyrox.objectif;
+  if (!dernier && !cible) return null;
+  const avancement = dernier && cible ? Math.max(0, Math.min(100, (cible.total_s / dernier.total_s) * 100)) : 0;
+  return (
+    <>
+      <View style={styles.temps}>
+        <Text style={[styles.tempsTexte, { color: p.texte }]}>{dernier ? `Dernier test ${ecrireTemps(dernier.total_s)}` : 'Aucun test'}</Text>
+        <Text style={[styles.tempsTexte, { color: p.texte }]}>{cible ? `Objectif ${ecrireTemps(cible.total_s)}` : "Pas d'objectif"}</Text>
+      </View>
+      {dernier && cible ? (
+        <View accessible accessibilityRole="progressbar" accessibilityLabel={`Ton dernier test atteint ${Math.round(avancement)} % de ton objectif`} style={[styles.barre, { backgroundColor: avecAlpha(p.texte, 0.18) }]}>
+          <View style={[styles.rempli, { width: `${avancement}%`, backgroundColor: p.texte }]} />
+        </View>
       ) : null}
-    </Dossard>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  temps: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 8 },
+  temps: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 4 },
   tempsTexte: { fontFamily: police.texte600, fontSize: 14, lineHeight: 20 },
   barre: { height: 6, borderRadius: 3, overflow: 'hidden' },
   rempli: { height: '100%', borderRadius: 3 },

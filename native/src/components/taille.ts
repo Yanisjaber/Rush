@@ -15,3 +15,9 @@ export const ContexteTaille = createContext<Taille | null>(null);
 export function useRemplir(): { height: '100%' } | undefined {
   return useContext(ContexteTaille) ? { height: '100%' } : undefined;
 }
+
+/**
+ * Le premier widget d'une page prend le look « dossard » (fond clair, liseré de la couleur du sport de la page, points d'attache).
+ * Null : widget ordinaire. `couleur` : celle du liseré.
+ */
+export const ContexteHeros = createContext<{ couleur: string } | null>(null);

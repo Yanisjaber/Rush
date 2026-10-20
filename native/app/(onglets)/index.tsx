@@ -18,12 +18,11 @@ import { useAuth } from '@/stores/auth';
 import { ajouter, annulerEdition, changerTaille, chargerDisposition, deplacerWidget, demarrerEdition, listeEnEdition, reinitialiserAuto, retirer, terminerEdition, useDisposition } from '@/stores/disposition';
 import { useMenu } from '@/stores/menu';
 import { espace, rayon } from '@/theme/couleurs';
+import { couleurSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 import { COMPOSANTS, WidgetBientot } from '@/widgets/composants';
 
-// En taille M, ces widgets ont leur propre ligne (bandeau, bouton) ; tous les autres prennent la tuile large (voir Tuile). En XS et S, tous ont une tuile
-const LIGNE_PROPRE = new Set(['objectif', 'hyroxdossard', 'seancedujour', 'programmes']);
 // Un compte neuf (aucune donnée) ne voit que l'essentiel
 const COMPTE_VIDE = new Set(['objectif', 'semaine', 'avenir']);
 // Hauteur de la barre d'onglets flottante (Liquid Glass) à réserver en bas de la liste, pour que le dernier widget ne passe pas dessous
@@ -101,12 +100,16 @@ export default function Accueil() {
   // Un S seul sur sa ligne est centré (voir solitaires)
   const seuls = solitaires(widgets.map((w) => w.taille));
 
+  // Le premier widget de la page prend le look dossard, avec le liseré de la couleur du sport de la page (neutre sur « Tous »)
+  const herosDePage = { couleur: couleurSport(p, filtre === 'tout' ? undefined : filtre) };
+
   const rendre = (w: WidgetPlace) => {
     if (!contexte) return null;
     const Composant = COMPOSANTS[w.id];
     return (
-      <Boite key={w.id} taille={w.taille}>
-        {Composant ? <Composant contexte={contexte} taille={w.taille} tuile={w.taille === 's' || w.taille === 'xs' || (w.taille === 'm' && !LIGNE_PROPRE.has(w.id))} /> : <WidgetBientot id={w.id} />}
+      <Boite key={w.id} taille={w.taille} heros={widgets[0]?.id === w.id ? herosDePage : null}>
+        {/* XS, S et M : la tuile (chiffre clé) ; L : le grand format du widget */}
+        {Composant ? <Composant contexte={contexte} taille={w.taille} tuile={w.taille !== 'l'} /> : <WidgetBientot id={w.id} />}
       </Boite>
     );
   };

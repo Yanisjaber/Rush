@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { StatCle } from '@/components/StatCle';
 import { Tuile } from '@/components/Tuile';
 import { formeActuelle } from '@/data/synthese';
@@ -27,7 +27,7 @@ export function WidgetForme({ contexte, tuile = false }: WidgetProps) {
   }
 
   return (
-    <Bloc titre="Forme">
+    <CadreWidget titre="Forme">
       {forme ? (
         <View style={styles.stats}>
           <StatCle etiquette="Forme" valeur={signe(forme.tsb)} note={forme.libelle} couleur={forme.tsb >= 5 ? p.ok : undefined} />
@@ -37,7 +37,7 @@ export function WidgetForme({ contexte, tuile = false }: WidgetProps) {
       ) : (
         <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de données de forme.</Text>
       )}
-    </Bloc>
+    </CadreWidget>
   );
 }
 

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Text } from 'react-native';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { Tuile } from '@/components/Tuile';
 import { LigneSeance, Points } from '@/components/LigneSeance';
 import { familleAffichage } from '@/data/familles';
@@ -40,7 +40,7 @@ export function WidgetDernieres({ contexte, tuile = false }: WidgetProps) {
   }
 
   return (
-    <Bloc titre="Dernières séances">
+    <CadreWidget titre="Dernières séances">
       {recentes.length ? (
         recentes.map((s, i) => {
           const famille = familleAffichage(s.sport);
@@ -60,6 +60,6 @@ export function WidgetDernieres({ contexte, tuile = false }: WidgetProps) {
       ) : (
         <Text style={[typo.corps, { color: p.texteDoux }]}>Aucune séance à afficher.</Text>
       )}
-    </Bloc>
+    </CadreWidget>
   );
 }

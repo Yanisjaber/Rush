@@ -1,6 +1,6 @@
 import { StyleSheet, Text as TexteRN, View } from 'react-native';
 import Svg, { Circle, Path, Text } from 'react-native-svg';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { MiniBarres } from '@/components/MiniBarres';
 import { Tuile } from '@/components/Tuile';
 import { analyserTest, ciblesSegments, ecrireTemps } from '@/data/hyrox';
@@ -38,7 +38,7 @@ export function WidgetHyroxAllure({ contexte, tuile = false }: WidgetProps) {
   }
 
   return (
-    <Bloc titre="Allure des 8 runs">
+    <CadreWidget titre="Allure des 8 runs">
       {runs.length ? (
         <>
           <View style={styles.legende}>
@@ -84,7 +84,7 @@ export function WidgetHyroxAllure({ contexte, tuile = false }: WidgetProps) {
       ) : (
         <TexteRN style={[typo.corps, { color: p.texteDoux }]}>Saisis un test pour voir l'allure de tes 8 runs.</TexteRN>
       )}
-    </Bloc>
+    </CadreWidget>
   );
 }
 

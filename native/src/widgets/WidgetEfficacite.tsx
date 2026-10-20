@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { Tuile } from '@/components/Tuile';
 import { CourbeLissee } from '@/components/CourbeLissee';
 import { formatAllure } from '@/data/format';
@@ -31,7 +31,7 @@ export function WidgetEfficacite({ contexte, tuile = false }: WidgetProps) {
   }
 
   return (
-    <Bloc titre="Allure à cardio égal">
+    <CadreWidget titre="Allure à cardio égal">
       {eff ? (
         <>
           <View style={styles.entete}>
@@ -49,7 +49,7 @@ export function WidgetEfficacite({ contexte, tuile = false }: WidgetProps) {
       ) : (
         <Text style={[typo.corps, { color: p.texteDoux }]}>Il faut au moins trois semaines de sorties faciles avec cardio pour tracer ton efficacité.</Text>
       )}
-    </Bloc>
+    </CadreWidget>
   );
 }
 

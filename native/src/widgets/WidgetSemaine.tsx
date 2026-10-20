@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { MiniBarres } from '@/components/MiniBarres';
 import { Tuile } from '@/components/Tuile';
 import { familleAffichage } from '@/data/familles';
@@ -41,7 +41,7 @@ export function WidgetSemaine({ contexte, tuile = false }: WidgetProps) {
 
   // Sept colonnes (lundi → dimanche) : le jour, puis un carré par séance (plein : faite, contour : prévue)
   return (
-    <Bloc titre="Cette semaine">
+    <CadreWidget titre="Cette semaine">
       <View accessible accessibilityLabel={`${nbSeances} séance${nbSeances > 1 ? 's' : ''} cette semaine`} style={styles.semaine}>
         {jours.map((j) => {
           const libelle = [
@@ -68,7 +68,7 @@ export function WidgetSemaine({ contexte, tuile = false }: WidgetProps) {
       <Text style={[typo.petit, { color: p.texteDoux, marginTop: 12 }]}>
         {nbSeances} séance{nbSeances > 1 ? 's' : ''} · {formatDuree(jours.reduce((t, j) => t + j.seances.reduce((n, s) => n + s.moving_time, 0), 0))} cette semaine. Plein : fait, contour : prévu.
       </Text>
-    </Bloc>
+    </CadreWidget>
   );
 }
 

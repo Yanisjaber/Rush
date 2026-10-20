@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
-import { ContexteTaille, ECART_LIGNES, HAUTEURS } from '@/components/taille';
+import { ContexteHeros, ContexteTaille, ECART_LIGNES, HAUTEURS } from '@/components/taille';
 import type { Taille } from '@/data/types';
 
 // La grille de l'accueil : deux colonnes. Un widget S prend une demi-ligne, M et L une ligne entière.
@@ -19,10 +19,12 @@ export function GrilleWidgets({ children }: { children: ReactNode }) {
 }
 
 /** La boîte d'un widget : sa taille en points est fixe (voir taille.ts), le contenu s'y adapte et ce qui dépasse est coupé. */
-export function Boite({ taille, children }: { taille: Taille; children: ReactNode }) {
+export function Boite({ taille, heros = null, children }: { taille: Taille; /** Look dossard (premier widget de la page) et couleur du liseré. */ heros?: { couleur: string } | null; children: ReactNode }) {
   return (
     <ContexteTaille.Provider value={taille}>
-      <View style={{ height: HAUTEURS[taille], overflow: 'hidden' }}>{children}</View>
+      <ContexteHeros.Provider value={heros}>
+        <View style={{ height: HAUTEURS[taille], overflow: 'hidden' }}>{children}</View>
+      </ContexteHeros.Provider>
     </ContexteTaille.Provider>
   );
 }

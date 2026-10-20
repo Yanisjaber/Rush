@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { BarresHebdo } from '@/components/BarresHebdo';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { MiniBarres } from '@/components/MiniBarres';
 import { Tuile } from '@/components/Tuile';
 import { tonnageParSemaine } from '@/data/force';
@@ -32,7 +32,7 @@ export function WidgetTonnage({ contexte, tuile = false }: WidgetProps) {
 
   const mieux = t.ecartPct != null && t.ecartPct >= 0;
   return (
-    <Bloc titre="Tonnage par semaine">
+    <CadreWidget titre="Tonnage par semaine">
       {aDesDonnees ? (
         <>
           <View style={styles.entete}>
@@ -56,7 +56,7 @@ export function WidgetTonnage({ contexte, tuile = false }: WidgetProps) {
       ) : (
         <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de séries enregistrées. Démarre une séance pour voir ton tonnage.</Text>
       )}
-    </Bloc>
+    </CadreWidget>
   );
 }
 

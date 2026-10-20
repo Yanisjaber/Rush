@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { MiniBarres } from '@/components/MiniBarres';
 import { SilhouetteCorps } from '@/components/SilhouetteCorps';
 import { Tuile } from '@/components/Tuile';
@@ -30,14 +30,14 @@ export function WidgetGroupes({ contexte, tuile = false }: WidgetProps) {
   }
 
   return (
-    <Bloc titre="Séries par groupe">
+    <CadreWidget titre="Séries par groupe">
       <View style={[styles.corps, { backgroundColor: p.surface2 }]}>
         {/* Largeur fixée pour que les deux silhouettes (hautes du double de leur largeur) tiennent dans la boîte L */}
         <View style={styles.silhouettes}>
           <SilhouetteCorps muscles={musclesSurPeriode(contexte.force.series)} etiquette="Muscles travaillés cette semaine" />
         </View>
       </View>
-    </Bloc>
+    </CadreWidget>
   );
 }
 

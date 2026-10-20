@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import { Text } from 'react-native';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import type { WidgetProps } from '@/data/types';
 import { WIDGETS, type DefinitionWidget } from '@/data/registre';
 import { typo } from '@/theme/typo';
@@ -62,8 +62,8 @@ export function WidgetBientot({ id }: { id: string }) {
   const p = usePalette();
   const def = (WIDGETS as Record<string, DefinitionWidget>)[id];
   return (
-    <Bloc titre={def?.nom ?? id}>
+    <CadreWidget titre={def?.nom ?? id}>
       <Text style={[typo.petit, { color: p.texteDoux }]}>{def?.description ?? ''} Bientôt.</Text>
-    </Bloc>
+    </CadreWidget>
   );
 }

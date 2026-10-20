@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { recordsParGroupe, type ProgressionExercice } from '@/data/force';
 import { Tuile } from '@/components/Tuile';
 import { formatKg } from '@/data/format';
@@ -33,7 +33,7 @@ export function WidgetRecords({ contexte, tuile = false }: WidgetProps) {
   }
 
   return (
-    <Bloc titre="Tes records">
+    <CadreWidget titre="Tes records">
       {exos.length ? (
         exos.map((e, i) => (
           <View
@@ -55,7 +55,7 @@ export function WidgetRecords({ contexte, tuile = false }: WidgetProps) {
       ) : (
         <Text style={[typo.corps, { color: p.texteDoux }]}>Tes records apparaîtront dès que tu auras enregistré quelques séries.</Text>
       )}
-    </Bloc>
+    </CadreWidget>
   );
 }
 

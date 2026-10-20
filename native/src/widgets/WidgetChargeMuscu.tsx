@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { BarresHebdo } from '@/components/BarresHebdo';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { MiniBarres } from '@/components/MiniBarres';
 import { Tuile } from '@/components/Tuile';
 import { chargeMuscuRecente } from '@/data/charge-muscu';
@@ -34,7 +34,7 @@ export function WidgetChargeMuscu({ contexte, tuile = false }: WidgetProps) {
   const haut = c.zone.cle === 'attention' || c.zone.cle === 'danger';
   const mieux = c.zone.cle === 'ok';
   return (
-    <Bloc titre="Charge musculation">
+    <CadreWidget titre="Charge musculation">
       {aDesDonnees ? (
         <>
           <View style={styles.entete}>
@@ -60,7 +60,7 @@ export function WidgetChargeMuscu({ contexte, tuile = false }: WidgetProps) {
       ) : (
         <Text style={[typo.corps, { color: p.texteDoux }]}>Aucune série sur les 12 dernières semaines. Enregistre une séance pour voir ta charge.</Text>
       )}
-    </Bloc>
+    </CadreWidget>
   );
 }
 

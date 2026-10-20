@@ -1,5 +1,5 @@
 import { Text } from 'react-native';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { Tuile } from '@/components/Tuile';
 import { LigneSeance } from '@/components/LigneSeance';
 import { familleAffichage } from '@/data/familles';
@@ -36,7 +36,7 @@ export function WidgetAvenir({ contexte, tuile = false }: WidgetProps) {
   }
 
   return (
-    <Bloc titre="À venir">
+    <CadreWidget titre="À venir">
       {prochaines.length ? (
         prochaines.map((p, i) => {
           const famille = familleAffichage(p.sport);
@@ -53,6 +53,6 @@ export function WidgetAvenir({ contexte, tuile = false }: WidgetProps) {
       ) : (
         <Text style={[typo.corps, { color: palette.texteDoux }]}>Aucune séance prévue. Planifie la prochaine depuis le calendrier.</Text>
       )}
-    </Bloc>
+    </CadreWidget>
   );
 }

@@ -1,12 +1,15 @@
 import { useContext, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { CadreWidget, TitreWidget } from '@/components/CadreWidget';
 import { ContexteTaille } from '@/components/taille';
-import { rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Tuile compacte : un titre, un chiffre clé, une note et (en dessous) une mini visualisation.
-// Deux tuiles tiennent côte à côte sur un iPhone. Port de components/Tuile.svelte.
+// Le contenu « chiffre clé » d'un widget en taille XS, S ou M : un titre, un gros chiffre, une note et (en dessous ou à droite) une mini visualisation.
+// Le cadre (arrondi, marges, titre en pastille) est celui de tous les widgets : voir CadreWidget. Port de components/Tuile.svelte.
+//  - S : une demi-ligne (160 pt de haut) : le chiffre, la note, puis le visuel en bas.
+//  - M : toute la largeur, une ligne : le chiffre et la note à gauche, le visuel à droite.
+//  - XS : une ligne fine (60 pt) : titre et chiffre à gauche, la note à droite, pas de visuel.
 interface Props {
   titre: string;
   valeur: string;
@@ -16,22 +19,33 @@ interface Props {
 }
 
 export function Tuile({ titre, valeur, unite, note, children }: Props) {
-  const p = usePalette();
-  // Taille M : la même tuile sur toute la largeur et une seule ligne de haut, le texte à gauche et le visuel à droite
   const taille = useContext(ContexteTaille);
-  const ligne = taille === 'm';
-  // Taille XS : une ligne fine de 60 pt, le titre et le chiffre à gauche, la note à droite, pas de visuel
+  return (
+    <CadreWidget titre={taille === 'xs' ? undefined : titre} serre>
+      <Contenu titre={titre} valeur={valeur} unite={unite} note={note}>
+        {children}
+      </Contenu>
+    </CadreWidget>
+  );
+}
+
+// Dans un composant à part : il lit la palette fournie par le cadre (inversée quand le widget est en look dossard)
+function Contenu({ titre, valeur, unite, note, children }: Props) {
+  const p = usePalette();
+  const taille = useContext(ContexteTaille);
+  const chiffre = (
+    <Text numberOfLines={1} style={[styles.valeur, taille === 'xs' && styles.valeurFine, { color: p.texte }]}>
+      {valeur}
+      {unite ? <Text style={[typo.petit, { color: p.texteDoux }]}> {unite}</Text> : null}
+    </Text>
+  );
+
   if (taille === 'xs') {
     return (
-      <View accessible accessibilityLabel={[titre, valeur, unite, note].filter(Boolean).join(' ')} style={[styles.tuile, styles.fine, { backgroundColor: p.surface }]}>
-        <View style={styles.texteLigne}>
-          <Text numberOfLines={1} style={[typo.micro, { color: p.texteDoux }]}>
-            {titre}
-          </Text>
-          <Text numberOfLines={1} style={[styles.valeur, styles.valeurFine, { color: p.texte }]}>
-            {valeur}
-            {unite ? <Text style={[typo.petit, { color: p.texteDoux }]}> {unite}</Text> : null}
-          </Text>
+      <View accessible accessibilityLabel={[titre, valeur, unite, note].filter(Boolean).join(' ')} style={styles.fine}>
+        <View style={styles.gauche}>
+          <TitreWidget titre={titre} serre petit />
+          {chiffre}
         </View>
         {note ? (
           <Text numberOfLines={2} style={[typo.petit, styles.noteFine, { color: p.texteDoux }]}>
@@ -41,17 +55,10 @@ export function Tuile({ titre, valeur, unite, note, children }: Props) {
       </View>
     );
   }
+
   const texte = (
-    <View style={ligne ? styles.texteLigne : undefined}>
-      <View style={[styles.pastille, { backgroundColor: p.surface2 }]}>
-        <Text numberOfLines={1} style={[typo.micro, { color: p.texteDoux }]}>
-          {titre}
-        </Text>
-      </View>
-      <Text numberOfLines={1} style={[styles.valeur, { color: p.texte }]}>
-        {valeur}
-        {unite ? <Text style={[typo.petit, { color: p.texteDoux }]}> {unite}</Text> : null}
-      </Text>
+    <View style={taille === 'm' ? styles.gauche : undefined}>
+      {chiffre}
       {note ? (
         <Text numberOfLines={2} style={[typo.petit, { color: p.texteDoux }]}>
           {note}
@@ -59,29 +66,24 @@ export function Tuile({ titre, valeur, unite, note, children }: Props) {
       ) : null}
     </View>
   );
+
   return (
-    <View
-      accessible
-      accessibilityLabel={[titre, valeur, unite, note].filter(Boolean).join(' ')}
-      style={[styles.tuile, ligne && styles.ligne, { backgroundColor: p.surface }]}
-    >
+    <View accessible accessibilityLabel={[titre, valeur, unite, note].filter(Boolean).join(' ')} style={taille === 'm' ? styles.ligne : styles.colonne}>
       {texte}
-      {children ? <View style={ligne ? styles.visuelLigne : styles.visuel}>{children}</View> : null}
+      {children ? <View style={taille === 'm' ? styles.visuelLigne : styles.visuel}>{children}</View> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  tuile: { flex: 1, borderRadius: rayon.bloc, paddingHorizontal: 16, paddingVertical: 14, overflow: 'hidden' },
-  // Le titre est dans une pastille ovale (comme les filtres de Strava)
-  pastille: { alignSelf: 'flex-start', maxWidth: '100%', borderRadius: rayon.rond, paddingHorizontal: 10, paddingVertical: 3 },
   valeur: { fontFamily: police.titre700, fontSize: 28, lineHeight: 32, marginTop: 6 },
-  fine: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 },
   // 60 pt de haut : le chiffre est plus petit que dans les autres tailles
   valeurFine: { marginTop: 0, fontSize: 22, lineHeight: 26 },
+  fine: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  gauche: { flex: 1, minWidth: 0 },
   noteFine: { flexShrink: 1, maxWidth: '42%', textAlign: 'right' },
-  ligne: { flexDirection: 'row', alignItems: 'center', gap: 16, },
-  texteLigne: { flex: 1, minWidth: 0 },
+  colonne: { flex: 1 },
+  ligne: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 16 },
   visuelLigne: { width: '42%', justifyContent: 'center' },
   visuel: { marginTop: 'auto', paddingTop: 8 },
 });

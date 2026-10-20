@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { Tuile } from '@/components/Tuile';
 import { ciblesSegments, ecartsParSegment, formatEcart } from '@/data/hyrox';
 import type { WidgetProps } from '@/data/types';
@@ -28,7 +28,7 @@ export function WidgetHyroxGains({ contexte, tuile = false }: WidgetProps) {
   }
 
   return (
-    <Bloc titre="Où gagner du temps">
+    <CadreWidget titre="Où gagner du temps">
       {ecarts.length ? (
         <>
           <View style={styles.liste}>
@@ -54,7 +54,7 @@ export function WidgetHyroxGains({ contexte, tuile = false }: WidgetProps) {
           tes tests Hyrox pour voir où gagner du temps.
         </Text>
       )}
-    </Bloc>
+    </CadreWidget>
   );
 }
 

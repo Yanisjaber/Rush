@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Anneau } from '@/components/Anneau';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { Tuile } from '@/components/Tuile';
 import { formatDuree } from '@/data/format';
 import { repartition7Jours } from '@/data/synthese';
@@ -32,7 +32,7 @@ export function WidgetVolume({ contexte, tuile = false }: WidgetProps) {
   }
 
   return (
-    <Bloc titre="Volume, 7 derniers jours">
+    <CadreWidget titre="Volume, 7 derniers jours">
       {rep.totalSecondes ? (
         <>
           <View style={styles.corps}>
@@ -58,7 +58,7 @@ export function WidgetVolume({ contexte, tuile = false }: WidgetProps) {
       ) : (
         <Text style={[typo.corps, { color: p.texteDoux }]}>Aucune séance sur les 7 derniers jours.</Text>
       )}
-    </Bloc>
+    </CadreWidget>
   );
 }
 

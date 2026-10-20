@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { Tuile } from '@/components/Tuile';
 import { formatAllure, formatDateCourte, formatDuree, formatKm } from '@/data/format';
 import { meilleuresSortiesCourse } from '@/data/synthese';
@@ -30,7 +30,7 @@ export function WidgetMeilleures({ contexte, tuile = false }: WidgetProps) {
   }
 
   return (
-    <Bloc titre="Meilleures sorties">
+    <CadreWidget titre="Meilleures sorties">
       {lignes.length ? (
         <>
           {lignes.map((l, i) => (
@@ -53,7 +53,7 @@ export function WidgetMeilleures({ contexte, tuile = false }: WidgetProps) {
       ) : (
         <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de sortie de course sur les 12 dernières semaines.</Text>
       )}
-    </Bloc>
+    </CadreWidget>
   );
 }
 

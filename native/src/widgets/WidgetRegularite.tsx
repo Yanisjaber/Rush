@@ -1,5 +1,5 @@
 import { Text } from 'react-native';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { CarteChaleur } from '@/components/CarteChaleur';
 import { MiniBarres } from '@/components/MiniBarres';
 import { Tuile } from '@/components/Tuile';
@@ -34,9 +34,9 @@ export function WidgetRegularite({ contexte, tuile = false }: WidgetProps) {
     );
   }
   return (
-    <Bloc titre="Régularité">
+    <CadreWidget titre="Régularité">
       <CarteChaleur cases={cases} etiquette="Carte des jours d'entraînement sur 12 semaines" />
       <Text style={[typo.petit, { color: p.texteDoux, marginTop: 10 }]}>La couleur est celle du sport du jour ; plus elle est vive, plus la charge est forte.</Text>
-    </Bloc>
+    </CadreWidget>
   );
 }

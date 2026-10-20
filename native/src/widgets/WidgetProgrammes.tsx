@@ -1,9 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { bientot } from '@/actions/bientot';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { Bouton } from '@/components/Bouton';
 import { Tuile } from '@/components/Tuile';
-import { useRemplir } from '@/components/taille';
 import { resumeProgramme } from '@/data/force';
 import type { WidgetProps } from '@/data/types';
 import { rayon } from '@/theme/couleurs';
@@ -11,11 +10,9 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Tes programmes de musculation (PUSH, PULL, LEGS…).
-// compact : sur téléphone, un simple bouton qui ouvre la page Programmes (qui arrive plus tard : le bouton le dit).
-export function WidgetProgrammes({ contexte, taille = 'm', tuile = false }: WidgetProps) {
+// XS, S, M : le nombre de programmes. L : la liste des programmes (jusqu'à 4).
+export function WidgetProgrammes({ contexte, tuile = false }: WidgetProps) {
   const p = usePalette();
-  const remplir = useRemplir();
-  const compact = taille === 'm'; // M : un simple bouton ; L : la liste des programmes
   const programmes = contexte.force.programmes;
   const detail = (prog: (typeof programmes)[number]) => {
     const r = resumeProgramme(prog);
@@ -26,27 +23,8 @@ export function WidgetProgrammes({ contexte, taille = 'm', tuile = false }: Widg
     return <Tuile titre="Programmes" valeur={String(programmes.length)} note={programmes.length > 1 ? 'programmes de force' : 'programme de force'} />;
   }
 
-  if (compact) {
-    return (
-      <Pressable
-        onPress={() => bientot('La page des programmes')}
-        accessibilityRole="button"
-        accessibilityLabel={`Programmes, ${programmes.length}`}
-        style={({ pressed }) => [styles.bouton, { backgroundColor: p.surface, opacity: pressed ? 0.7 : 1 }, remplir]}
-      >
-        <Text style={[styles.nom, { color: p.texte }]}>Programmes</Text>
-        {programmes.length ? (
-          <View style={[styles.nombre, { backgroundColor: p.surface2 }]}>
-            <Text style={[typo.petit, styles.nombreTexte, { color: p.texteDoux }]}>{programmes.length}</Text>
-          </View>
-        ) : null}
-        <View style={[styles.fleche, { borderColor: p.texteDoux }]} />
-      </Pressable>
-    );
-  }
-
   return (
-    <Bloc titre="Programmes">
+    <CadreWidget titre="Programmes">
       {programmes.length ? (
         programmes.slice(0, 4).map((prog, i) => (
           <Pressable
@@ -70,7 +48,7 @@ export function WidgetProgrammes({ contexte, taille = 'm', tuile = false }: Widg
           + Nouveau programme
         </Bouton>
       </View>
-    </Bloc>
+    </CadreWidget>
   );
 }
 

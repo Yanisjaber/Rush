@@ -1,6 +1,6 @@
 import { StyleSheet, Text as TexteRN, View } from 'react-native';
 import Svg, { Circle, Line, Path, Text } from 'react-native-svg';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { Tuile } from '@/components/Tuile';
 import { CADRE, geometriePuissance, LIBELLES_CLES } from '@/data/puissance';
 import type { WidgetProps } from '@/data/types';
@@ -22,7 +22,7 @@ export function WidgetPuissance({ contexte, taille = 'm', tuile = false }: Widge
   }
 
   return (
-    <Bloc titre="Courbe de puissance">
+    <CadreWidget titre="Courbe de puissance">
       {g ? (
         <>
           <View style={styles.legende}>
@@ -69,7 +69,7 @@ export function WidgetPuissance({ contexte, taille = 'm', tuile = false }: Widge
       ) : (
         <TexteRN style={[typo.corps, { color: p.texteDoux }]}>Pas encore assez de sorties avec puissance pour tracer ta courbe.</TexteRN>
       )}
-    </Bloc>
+    </CadreWidget>
   );
 }
 

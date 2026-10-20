@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { Tuile } from '@/components/Tuile';
 import { formatDateCourte } from '@/data/format';
 import { analyserTest, ciblesSegments, ecrireTemps, formatEcartLong, SEGMENTS } from '@/data/hyrox';
@@ -29,7 +29,7 @@ export function WidgetHyroxTest({ contexte, tuile = false }: WidgetProps) {
   }
 
   return (
-    <Bloc titre="Ton dernier test, course par course">
+    <CadreWidget titre="Ton dernier test, course par course">
       {test && analyse ? (
         <>
           <Text style={[typo.petit, { color: p.texteDoux, marginTop: -8, marginBottom: 12 }]}>
@@ -68,7 +68,7 @@ export function WidgetHyroxTest({ contexte, tuile = false }: WidgetProps) {
       ) : (
         <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de test enregistré. Saisis ta première simulation pour voir tes 16 segments.</Text>
       )}
-    </Bloc>
+    </CadreWidget>
   );
 }
 

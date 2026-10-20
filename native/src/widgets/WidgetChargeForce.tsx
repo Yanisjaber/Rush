@@ -1,5 +1,5 @@
 import { StyleSheet, Text } from 'react-native';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { Tuile } from '@/components/Tuile';
 import { seancesForce } from '@/data/synthese';
 import type { WidgetProps } from '@/data/types';
@@ -20,14 +20,14 @@ export function WidgetChargeForce({ contexte, tuile = false }: WidgetProps) {
   }
 
   return (
-    <Bloc couleur={p.sportHybride}>
+    <CadreWidget couleur={p.sportHybride}>
       <Text style={[typo.micro, styles.etiquette, { color: p.encreSurCouleur }]}>Charge de force</Text>
       <Text style={[styles.valeur, { color: p.encreSurCouleur }]}>
         {String(force.moyenne).replace('.', ',')}
         <Text style={styles.unite}> /sem.</Text>
       </Text>
       <Text style={[typo.petit, styles.note, { color: p.encreSurCouleur }]}>{note}</Text>
-    </Bloc>
+    </CadreWidget>
   );
 }
 

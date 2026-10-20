@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { Tuile } from '@/components/Tuile';
 import { formatChrono } from '@/data/format';
 import { predictionsCourse } from '@/data/synthese';
@@ -32,7 +32,7 @@ export function WidgetPredictions({ contexte, taille = 'm', tuile = false }: Wid
   }
 
   return (
-    <Bloc titre="Prédictions de temps">
+    <CadreWidget titre="Prédictions de temps">
       {predictions.length ? (
         <>
           {predictions.map((pr, i) => {
@@ -71,7 +71,7 @@ export function WidgetPredictions({ contexte, taille = 'm', tuile = false }: Wid
       ) : (
         <Text style={[typo.corps, { color: p.texteDoux }]}>Il faut au moins une sortie de 5 km sur les 4 derniers mois pour estimer tes temps.</Text>
       )}
-    </Bloc>
+    </CadreWidget>
   );
 }
 

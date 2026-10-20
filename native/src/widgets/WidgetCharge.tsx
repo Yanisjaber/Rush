@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { BarresEmpilees } from '@/components/BarresEmpilees';
-import { Bloc } from '@/components/Bloc';
+import { CadreWidget } from '@/components/CadreWidget';
 import { MiniBarres } from '@/components/MiniBarres';
 import { Tuile } from '@/components/Tuile';
 import { chargeParSemaine, conditionHebdo } from '@/data/synthese';
@@ -27,7 +27,7 @@ export function WidgetCharge({ contexte, tuile = false }: WidgetProps) {
       <Tuile
         titre="Charge, 7 jours"
         valeur={totaux.length ? String(derniere) : '—'}
-        note={totaux.length ? (ecart != null ? `${ecart > 0 ? '+' : ''}${ecart} % vs sem. d'avant` : 'Charge de la semaine') : 'Pas encore de séance'}
+        note={totaux.length ? (ecart != null ? `${ecart > 0 ? '+' : ''}${ecart} %` : 'cette semaine') : 'Pas encore de séance'}
       >
         {totaux.length ? <MiniBarres valeurs={totaux.slice(-8)} couleur={p.sportNeutre} etiquette="Charge par semaine sur 8 semaines" /> : null}
       </Tuile>
@@ -35,7 +35,7 @@ export function WidgetCharge({ contexte, tuile = false }: WidgetProps) {
   }
 
   return (
-    <Bloc titre="Charge d'entraînement">
+    <CadreWidget titre="Charge d'entraînement">
       {charge.series.length ? (
         <>
           <BarresEmpilees
@@ -63,7 +63,7 @@ export function WidgetCharge({ contexte, tuile = false }: WidgetProps) {
       ) : (
         <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de séance sur les 12 dernières semaines.</Text>
       )}
-    </Bloc>
+    </CadreWidget>
   );
 }
 
