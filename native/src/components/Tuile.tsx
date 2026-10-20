@@ -15,14 +15,16 @@ interface Props {
   valeur: string;
   unite?: string;
   note?: string;
+  /** Un chiffre plus gros (écrans qui mettent leurs chiffres clés en avant, comme Santé). */
+  gros?: boolean;
   children?: ReactNode;
 }
 
-export function Tuile({ titre, valeur, unite, note, children }: Props) {
+export function Tuile({ titre, valeur, unite, note, gros, children }: Props) {
   const taille = useContext(ContexteTaille);
   return (
     <CadreWidget titre={taille === 'xs' ? undefined : titre} serre>
-      <Contenu titre={titre} valeur={valeur} unite={unite} note={note}>
+      <Contenu titre={titre} valeur={valeur} unite={unite} note={note} gros={gros}>
         {children}
       </Contenu>
     </CadreWidget>
@@ -30,11 +32,11 @@ export function Tuile({ titre, valeur, unite, note, children }: Props) {
 }
 
 // Dans un composant à part : il lit la palette fournie par le cadre (inversée quand le widget est en look dossard)
-function Contenu({ titre, valeur, unite, note, children }: Props) {
+function Contenu({ titre, valeur, unite, note, gros, children }: Props) {
   const p = usePalette();
   const taille = useContext(ContexteTaille);
   const chiffre = (
-    <Text numberOfLines={1} style={[styles.valeur, taille === 'xs' && styles.valeurFine, { color: p.texte }]}>
+    <Text numberOfLines={1} style={[styles.valeur, gros && styles.valeurGrosse, taille === 'xs' && styles.valeurFine, { color: p.texte }]}>
       {valeur}
       {unite ? <Text style={[typo.petit, { color: p.texteDoux }]}> {unite}</Text> : null}
     </Text>
@@ -77,6 +79,7 @@ function Contenu({ titre, valeur, unite, note, children }: Props) {
 
 const styles = StyleSheet.create({
   valeur: { fontFamily: police.titre700, fontSize: 28, lineHeight: 32, marginTop: 6 },
+  valeurGrosse: { fontSize: 38, lineHeight: 42 },
   // 60 pt de haut : le chiffre est plus petit que dans les autres tailles
   valeurFine: { marginTop: 0, fontSize: 22, lineHeight: 26 },
   fine: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
