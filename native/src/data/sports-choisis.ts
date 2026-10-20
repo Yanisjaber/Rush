@@ -5,7 +5,13 @@
 export const SPORTS_PRINCIPAUX: string[] = ['course', 'velo', 'natation', 'muscu', 'hyrox'];
 
 /** Les autres sports de performance : ils ont leur pastille de couleur et leurs séances, sans widgets dédiés. */
-export const SPORTS_AUTRES: string[] = ['athletisme', 'trail', 'vtt', 'triathlon', 'duathlon', 'crossfit', 'aviron', 'ski', 'combat', 'rando', 'escalade', 'pagaie'];
+export const SPORTS_AUTRES: string[] = ['athletisme', 'trail', 'vtt', 'triathlon', 'duathlon', 'crossfit', 'ski'];
+
+/**
+ * Des activités qui comptent dans la charge, le volume et les listes de séances, mais qui n'ont PAS de page : on ne les propose pas à
+ * cocher et elles n'ont jamais de pastille dans la barre du haut, même si les séances les révèlent. (Décision du 20 oct.)
+ */
+export const SPORTS_SANS_PAGE: string[] = ['rando', 'combat', 'escalade', 'aviron', 'pagaie'];
 
 /** Tout ce qu'on peut cocher, dans l'ordre de l'écran. */
 export const SPORTS_A_CHOISIR: string[] = [...SPORTS_PRINCIPAUX, ...SPORTS_AUTRES];
@@ -14,9 +20,9 @@ export const SPORTS_A_CHOISIR: string[] = [...SPORTS_PRINCIPAUX, ...SPORTS_AUTRE
 export const GROUPES_SPORTS: { titre: string; sports: string[] }[] = [
   { titre: 'Course & athlé', sports: ['course', 'trail', 'athletisme'] },
   { titre: 'Vélo & multisport', sports: ['velo', 'vtt', 'triathlon', 'duathlon'] },
-  { titre: 'Eau', sports: ['natation', 'aviron', 'pagaie'] },
-  { titre: 'Force & hybride', sports: ['muscu', 'hyrox', 'crossfit', 'combat'] },
-  { titre: 'Nature', sports: ['rando', 'escalade', 'ski'] },
+  { titre: 'Eau', sports: ['natation'] },
+  { titre: 'Force & hybride', sports: ['muscu', 'hyrox', 'crossfit'] },
+  { titre: 'Nature', sports: ['ski'] },
 ];
 
 /**
@@ -65,7 +71,7 @@ export function onboardingNecessaire({
 
 /**
  * Les pastilles de la barre, dans l'ordre d'affichage : d'abord les sports choisis (dans l'ordre de l'utilisateur),
- * puis ceux que ses données révèlent sans qu'il les ait cochés (« autre » n'a pas d'onglet).
+ * puis ceux que ses données révèlent sans qu'il les ait cochés (« autre » et les sports sans page n'ont pas d'onglet).
  */
 export function fusionnerFamilles(deDonnees: string[] = [], choisis: string[] | null = []): string[] {
   const f = new Set<string>();
@@ -73,6 +79,7 @@ export function fusionnerFamilles(deDonnees: string[] = [], choisis: string[] | 
   for (const s of choisis || []) f.add(s);
   for (const famille of deDonnees || []) f.add(famille);
   f.delete('autre');
+  for (const s of SPORTS_SANS_PAGE) f.delete(s);
   return [...f];
 }
 

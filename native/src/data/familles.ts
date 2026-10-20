@@ -44,7 +44,7 @@ const FAMILLES: Record<string, string> = {
   MartialArts: 'combat',
   // Autres sports de performance
   Hike: 'rando',
-  Walk: 'rando', // la marche rejoint la randonnée
+  Walk: 'rando', // la marche reste classée avec la randonnée (calendrier, bilan) ; l'accueil l'écarte, voir sansMarche (api.ts)
   Snowshoe: 'rando',
   RockClimbing: 'escalade',
   Canoeing: 'pagaie',

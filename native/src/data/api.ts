@@ -83,6 +83,14 @@ export async function chargerMetriques(userId: string, jours = 90): Promise<Resu
   return resultat(r, 'Impossible de charger ta forme.');
 }
 
+/**
+ * La marche quotidienne (`Walk`) ne compte pas dans la charge, le volume ni les listes de l'accueil : elle les polluerait sans rien dire de la forme.
+ * Elle reste visible dans le calendrier et le bilan (l'historique complet). La randonnée (`Hike`) compte, elle.
+ */
+function sansMarche(seances: Seance[]): Seance[] {
+  return seances.filter((s) => s.sport !== 'Walk');
+}
+
 /** Séances réalisées depuis N jours (les plus récentes d'abord). */
 export async function chargerSeances(userId: string, jours = 84, limite = 600): Promise<Resultat<Seance[]>> {
   const depuis = new Date();
@@ -95,7 +103,7 @@ export async function chargerSeances(userId: string, jours = 84, limite = 600): 
     .order('start_date_local', { ascending: false })
     .limit(limite);
   const res = resultat<Seance[]>(r, 'Impossible de charger tes séances.');
-  if (res.data) res.data = await avecRetouches(userId, res.data);
+  if (res.data) res.data = sansMarche(await avecRetouches(userId, res.data));
   return res;
 }
 
@@ -107,7 +115,7 @@ export async function chargerSeances(userId: string, jours = 84, limite = 600): 
 export async function chargerDernieresSeances(userId: string, limite = 200): Promise<Resultat<Seance[]>> {
   const r = await sb.from('activities').select(COLONNES_SEANCE).eq('user_id', userId).order('start_date_local', { ascending: false }).limit(limite);
   const res = resultat<Seance[]>(r, 'Impossible de charger tes dernières séances.');
-  if (res.data) res.data = await avecRetouches(userId, res.data);
+  if (res.data) res.data = sansMarche(await avecRetouches(userId, res.data));
   return res;
 }
 
