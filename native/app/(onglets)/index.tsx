@@ -9,7 +9,7 @@ import { BarreSelection } from '@/components/BarreSelection';
 import { ListeTriable } from '@/components/ListeTriable';
 import { Onboarding } from '@/components/Onboarding';
 import { construireContexte } from '@/data/contexte';
-import { disponibles, disponiblesOnglet, ONGLETS_PERSONNALISABLES, WIDGETS, type IdWidget, composerOnglet, compositionAuto, grouperTuiles, type WidgetPlace } from '@/data/registre';
+import { disponibles, disponiblesOnglet, ONGLETS_PERSONNALISABLES, WIDGETS, type IdWidget, composerOnglet, compositionAuto, grouperTuiles, TUILES_ACCUEIL, type WidgetPlace } from '@/data/registre';
 import { onboardingNecessaire } from '@/data/sports-choisis';
 import { useDonneesAccueil } from '@/hooks/useDonneesAccueil';
 import { useAuth } from '@/stores/auth';
@@ -96,15 +96,19 @@ export default function Accueil() {
   const aAjouter = enEdition ? (disp.ongletEdition !== 'tout' ? disponiblesOnglet(widgets, disp.ongletEdition) : disponibles({ widgets }, familles)) : [];
 
   const compactMuscu = filtre === 'muscu' && !enEdition;
+  // Un widget en taille S qui a une version tuile (voir TUILES_ACCUEIL) s'affiche en tuile, partout sauf sur Muscu qui a ses propres règles
+  const tailleDe = (id: string) => widgets.find((w) => w.id === id)?.taille;
+  const tuileS = (id: string) => TUILES_ACCUEIL.has(id) && tailleDe(id) === 's';
   const compactDe = (id: string) => compactMuscu && !GRANDS.has(id);
   // Les tuiles se rangent deux par deux ; les autres widgets prennent toute la largeur
-  const blocs = compactMuscu ? grouperTuiles(widgets, (id) => TUILES.has(id)) : widgets;
+  const estTuile = (id: string) => tuileS(id) || (compactMuscu && TUILES.has(id));
+  const blocs = grouperTuiles(widgets, estTuile);
   const nomPersonnaliser = ONGLETS_PERSONNALISABLES.includes(filtre) ? `Personnaliser l'onglet ${filtre === 'muscu' ? 'Muscu' : 'Hyrox'}` : "Personnaliser l'accueil";
 
   const rendre = (w: WidgetPlace) => {
     if (!contexte) return null;
     const Composant = COMPOSANTS[w.id];
-    return Composant ? <Composant key={w.id} contexte={contexte} taille={w.taille} compact={compactDe(w.id)} /> : <WidgetBientot key={w.id} id={w.id} />;
+    return Composant ? <Composant key={w.id} contexte={contexte} taille={w.taille} compact={compactDe(w.id)} tuile={tuileS(w.id)} /> : <WidgetBientot key={w.id} id={w.id} />;
   };
 
   return (

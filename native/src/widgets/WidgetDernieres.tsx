@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Text } from 'react-native';
 import { Bloc } from '@/components/Bloc';
+import { Tuile } from '@/components/Tuile';
 import { LigneSeance, Points } from '@/components/LigneSeance';
 import { familleAffichage } from '@/data/familles';
 import { recordsParSeance } from '@/data/force';
@@ -19,11 +20,24 @@ function detail(s: Seance): string {
   return morceaux.join(' · ');
 }
 
-export function WidgetDernieres({ contexte, taille = 'm' }: WidgetProps) {
+// tuile : la dernière séance (sa durée en gros, son nom et sa date en note).
+export function WidgetDernieres({ contexte, taille = 'm', tuile = false }: WidgetProps) {
   const p = usePalette();
   // Les records battus dans chaque séance (sur tout l'historique de force)
   const records = useMemo(() => recordsParSeance(contexte.force.series), [contexte.force.series]);
   const recentes = contexte.dernieres.slice(0, taille === 'l' ? 5 : 3);
+
+  if (tuile) {
+    const derniere = contexte.dernieres[0];
+    const famille = derniere ? familleAffichage(derniere.sport) : '';
+    return (
+      <Tuile
+        titre="Dernière séance"
+        valeur={derniere ? formatDuree(derniere.moving_time) : '—'}
+        note={derniere ? `${derniere.name || SPORTS[famille as CleSport]?.court || SPORTS.autre.court} · ${formatDateCourte(derniere.start_date_local)}` : 'Aucune séance'}
+      />
+    );
+  }
 
   return (
     <Bloc titre="Dernières séances">

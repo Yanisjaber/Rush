@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/Bloc';
 import { CourbeLissee } from '@/components/CourbeLissee';
 import { recordsParGroupe, type ProgressionExercice } from '@/data/force';
+import { Tuile } from '@/components/Tuile';
 import { formatDateCourte, formatKg } from '@/data/format';
 import type { WidgetProps } from '@/data/types';
 import { rayon } from '@/theme/couleurs';
@@ -10,8 +11,9 @@ import { usePalette } from '@/theme/usePalette';
 
 // Un exercice par groupe musculaire (pectoraux, dos, jambes, épaules, bras) : 1RM estimé, record éventuel et progression.
 // En taille moyenne il n'y a la place que pour 2 cartes (jambes et pectoraux en priorité).
+// tuile : le premier record en gros, l'exercice en note.
 // compact : liste courte pour téléphone (3 exercices, une ligne chacun) ; la progression complète sera dans l'analyse.
-export function WidgetRecords({ contexte, taille = 'l', compact = false }: WidgetProps) {
+export function WidgetRecords({ contexte, taille = 'l', compact = false, tuile = false }: WidgetProps) {
   const p = usePalette();
   const exos = recordsParGroupe(contexte.force.series, compact ? 3 : taille === 'm' ? 2 : 5);
 
@@ -28,6 +30,11 @@ export function WidgetRecords({ contexte, taille = 'l', compact = false }: Widge
         </Text>
       </View>
     ) : null;
+
+  if (tuile) {
+    const e = exos[0];
+    return <Tuile titre="Tes records" valeur={e ? formatKg(e.rm) : '—'} unite={e ? 'kg' : ''} note={e ? `${e.nom}${e.record ? ' · record' : ''}` : 'Pas encore de séries'} />;
+  }
 
   return (
     <Bloc titre="Tes records">

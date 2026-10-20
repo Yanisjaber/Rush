@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Dossard } from '@/components/Dossard';
+import { Tuile } from '@/components/Tuile';
 import { familleAffichage } from '@/data/familles';
 import { formatDateLongue, joursAvant } from '@/data/format';
 import { ecrireTemps } from '@/data/hyrox';
@@ -9,13 +10,16 @@ import { police } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Compte à rebours de ta prochaine compétition Hyrox, avec ton dernier test et ton objectif de temps.
-export function WidgetHyroxDossard({ contexte }: WidgetProps) {
+// tuile : le compte à rebours en gros, le nom de la course en note.
+export function WidgetHyroxDossard({ contexte, tuile = false }: WidgetProps) {
   const p = usePalette();
   const objectif = contexte.objectifs.find((o) => familleAffichage(o.sport) === 'hyrox') ?? null;
   const dernier = contexte.hyrox.tests[0] ?? null;
   const cible = contexte.hyrox.objectif;
   // Barre de progression : plus le test se rapproche de l'objectif, plus elle se remplit
   const avancement = dernier && cible ? Math.max(0, Math.min(100, (cible.total_s / dernier.total_s) * 100)) : 0;
+
+  if (tuile) return <Tuile titre="Prochain Hyrox" valeur={objectif ? `J-${joursAvant(objectif.date)}` : '—'} note={objectif ? objectif.name : 'Aucune compétition'} />;
 
   return (
     <Dossard

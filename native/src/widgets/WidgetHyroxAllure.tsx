@@ -1,6 +1,8 @@
 import { StyleSheet, Text as TexteRN, View } from 'react-native';
 import Svg, { Circle, Path, Text } from 'react-native-svg';
 import { Bloc } from '@/components/Bloc';
+import { MiniBarres } from '@/components/MiniBarres';
+import { Tuile } from '@/components/Tuile';
 import { analyserTest, ciblesSegments, ecrireTemps } from '@/data/hyrox';
 import type { WidgetProps } from '@/data/types';
 import { police, typo } from '@/theme/typo';
@@ -11,7 +13,8 @@ const H = 170;
 const MARGE = 14;
 
 // Le temps de chacun des 8 runs d'1 km : ton dernier test (trait plein) et ton objectif (pointillés).
-export function WidgetHyroxAllure({ contexte }: WidgetProps) {
+// tuile : le temps moyen d'un run en gros + les 8 runs en barres.
+export function WidgetHyroxAllure({ contexte, tuile = false }: WidgetProps) {
   const p = usePalette();
   const test = contexte.hyrox.tests[0] ?? null;
   const runs = test ? analyserTest(test.segments).allures : [];
@@ -24,6 +27,15 @@ export function WidgetHyroxAllure({ contexte }: WidgetProps) {
   const x = (i: number) => MARGE + (i * (L - 2 * MARGE)) / 7;
   const y = (v: number) => MARGE + ((v - mini) / Math.max(1, maxi - mini)) * (H - 2 * MARGE); // plus lent = plus bas
   const trace = (vals: number[]) => vals.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+
+  if (tuile) {
+    const moyenne = runs.length ? runs.reduce((a, b) => a + b, 0) / runs.length : 0;
+    return (
+      <Tuile titre="Allure des 8 runs" valeur={runs.length ? ecrireTemps(moyenne) : '—'} note={runs.length ? 'par km en moyenne' : 'Aucun test'}>
+        {runs.length ? <MiniBarres valeurs={runs} couleur={p.sportHybride} etiquette="Temps de chacun des 8 runs du dernier test" /> : null}
+      </Tuile>
+    );
+  }
 
   return (
     <Bloc titre="Allure des 8 runs">

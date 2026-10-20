@@ -18,7 +18,7 @@ export function BarresHebdo({ valeurs, couleur, hauteur = 120, etiquette }: Prop
     <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.barres, { height: hauteur, borderBottomColor: p.trait }]}>
       {valeurs.map((v, i) => (
         <View key={i} style={[styles.colonne, { opacity: i === valeurs.length - 1 ? 1 : 0.55 }]}>
-          <View style={{ height: `${(v / maximum) * 100}%`, minHeight: 2, backgroundColor: couleur, borderTopLeftRadius: 3, borderTopRightRadius: 3 }} />
+          <View style={{ height: `${(v / maximum) * 100}%`, minHeight: 2, backgroundColor: couleur, borderRadius: 6 }} />
         </View>
       ))}
     </View>

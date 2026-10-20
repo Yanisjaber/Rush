@@ -8,7 +8,7 @@ import { usePalette } from '@/theme/usePalette';
 // Le dossard : la signature visuelle de l'app (IDENTITE.md §3).
 // Un bloc clair avec un liseré de sport en haut, quatre points d'attache, un grand nombre
 // (J-63, PUSH…) et le contexte. Tout est du texte brut : React Native n'interprète aucun HTML.
-// taille : 'l' (grand, avec place pour le chiffre) ou 'm' (réduit, sans les deux points du bas).
+// taille : 'l' (grand, avec place pour le chiffre) ou 'm' (bandeau bas comme celui de Muscu : le texte à gauche, le chiffre à droite).
 // compact : état vide (« aucun objectif »), juste le titre et le détail.
 // Règle d'usage : un dossard par widget au maximum, jamais de dossard dans un dossard.
 interface Props {
@@ -24,7 +24,7 @@ interface Props {
 }
 
 const LISERE = 4;
-const TAILLE_MAX = { l: 112, m: 84 } as const;
+const TAILLE_MAX = { l: 112, m: 44 } as const;
 const TAILLE_MIN = 28;
 
 export function Dossard({ etiquette, nom, valeur, detail, sport, taille = 'l', compact = false, children }: Props) {
@@ -34,6 +34,36 @@ export function Dossard({ etiquette, nom, valeur, detail, sport, taille = 'l', c
 
   // VoiceOver lit le dossard comme un seul bloc, dans l'ordre logique.
   const libelle = [etiquette, nom, valeur, detail].filter(Boolean).join('. ');
+
+  // Bandeau (taille m) : une rangée basse, texte à gauche, grand chiffre à droite
+  if (taille === 'm' && !compact) {
+    return (
+      <View accessible accessibilityLabel={libelle || 'Objectif'} style={[styles.bandeau, { backgroundColor: p.dossardFond }]}>
+        <View style={[styles.lisere, { backgroundColor: couleurSport(p, sport) }]} />
+        <View style={[styles.attache, styles.petiteAttache, styles.hautGauche, attache]} />
+        <View style={[styles.attache, styles.petiteAttache, styles.hautDroite, attache]} />
+        <View style={styles.bandeauTexte}>
+          {etiquette ? <Text style={[typo.micro, { color: p.dossardTexte }]}>{etiquette}</Text> : null}
+          {nom ? (
+            <Text numberOfLines={1} style={[typo.titre3, styles.nom, { color: p.dossardTexte }]}>
+              {nom}
+            </Text>
+          ) : null}
+          {detail ? (
+            <Text numberOfLines={2} style={[typo.petit, styles.detail, { color: p.dossardTexte }]}>
+              {detail}
+            </Text>
+          ) : null}
+          {children}
+        </View>
+        {valeur ? (
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1.3} style={[styles.valeurBandeau, { color: p.dossardTexte }]}>
+            {valeur}
+          </Text>
+        ) : null}
+      </View>
+    );
+  }
 
   return (
     <View
@@ -101,6 +131,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   grand: { minHeight: 300 },
+  bandeau: { overflow: 'hidden', flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: rayon.base, paddingLeft: 26, paddingRight: 22, paddingTop: 22 + LISERE, paddingBottom: 18 },
+  bandeauTexte: { flex: 1, minWidth: 0, gap: 4 },
+  valeurBandeau: { fontFamily: police.titre800, fontSize: 44, lineHeight: 46, letterSpacing: -1, maxWidth: '40%' },
+  petiteAttache: { width: 7, height: 7, borderRadius: 3.5 },
   // 28 pt à gauche et à droite : le texte démarre après les points d'attache (ils finissent à 21 pt)
   compact: { paddingHorizontal: 28, paddingTop: 20 + LISERE, paddingBottom: 18, justifyContent: 'flex-start', gap: 14 },
   lisere: { position: 'absolute', top: 0, left: 0, right: 0, height: LISERE },

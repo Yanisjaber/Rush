@@ -18,9 +18,11 @@ export function Tuile({ titre, valeur, unite, note, children }: Props) {
   const p = usePalette();
   return (
     <View accessible accessibilityLabel={[titre, valeur, unite, note].filter(Boolean).join(' ')} style={[styles.tuile, { backgroundColor: p.surface }]}>
-      <Text numberOfLines={1} style={[typo.micro, { color: p.texteDoux }]}>
-        {titre}
-      </Text>
+      <View style={[styles.pastille, { backgroundColor: p.surface2 }]}>
+        <Text numberOfLines={1} style={[typo.micro, { color: p.texteDoux }]}>
+          {titre}
+        </Text>
+      </View>
       <Text numberOfLines={1} style={[styles.valeur, { color: p.texte }]}>
         {valeur}
         {unite ? <Text style={[typo.petit, { color: p.texteDoux }]}> {unite}</Text> : null}
@@ -32,7 +34,9 @@ export function Tuile({ titre, valeur, unite, note, children }: Props) {
 }
 
 const styles = StyleSheet.create({
-  tuile: { flex: 1, minHeight: 118, borderRadius: rayon.base, paddingHorizontal: 14, paddingVertical: 12, overflow: 'hidden' },
+  tuile: { flex: 1, minHeight: 118, borderRadius: rayon.bloc, paddingHorizontal: 16, paddingVertical: 14, overflow: 'hidden' },
+  // Le titre est dans une pastille ovale (comme les filtres de Strava)
+  pastille: { alignSelf: 'flex-start', maxWidth: '100%', borderRadius: rayon.rond, paddingHorizontal: 10, paddingVertical: 3 },
   valeur: { fontFamily: police.titre700, fontSize: 28, lineHeight: 32, marginTop: 6 },
   visuel: { marginTop: 'auto', paddingTop: 8 },
 });

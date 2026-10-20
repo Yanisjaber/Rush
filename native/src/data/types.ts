@@ -200,4 +200,6 @@ export interface WidgetProps {
   taille?: Taille;
   /** Version compacte pour téléphone (tuile de 2 par ligne). */
   compact?: boolean;
+  /** Taille S : version tuile (deux par ligne), disponible pour tous les widgets. */
+  tuile?: boolean;
 }

@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/Bloc';
+import { MiniBarres } from '@/components/MiniBarres';
+import { Tuile } from '@/components/Tuile';
 import { familleAffichage } from '@/data/familles';
 import { formatDuree } from '@/data/format';
 import { semaineCourante } from '@/data/synthese';
@@ -14,12 +16,28 @@ import { usePalette } from '@/theme/usePalette';
 // Séance faite : aplat de la couleur du sport. Séance prévue : simple contour.
 const nom = (sport: string) => SPORTS[familleAffichage(sport) as CleSport]?.court ?? SPORTS.autre.court;
 
-export function WidgetSemaine({ contexte }: WidgetProps) {
+// tuile : le nombre de séances de la semaine + une barre par jour (lundi → dimanche).
+export function WidgetSemaine({ contexte, tuile = false }: WidgetProps) {
   const p = usePalette();
   const { seances, planifiees } = contexte;
   const aujourdhui = new Date();
   const jours = semaineCourante(seances, aujourdhui, planifiees);
   const nbSeances = jours.reduce((n, j) => n + j.seances.length, 0);
+
+  if (tuile) {
+    const parJour = jours.map((j) => j.seances.length);
+    const prevues = jours.reduce((n, j) => n + j.prevues.length, 0);
+    return (
+      <Tuile
+        titre="Cette semaine"
+        valeur={String(nbSeances)}
+        unite={nbSeances > 1 ? 'séances' : 'séance'}
+        note={prevues ? `${prevues} prévue${prevues > 1 ? 's' : ''} à venir` : 'faites'}
+      >
+        <MiniBarres valeurs={parJour} max={Math.max(2, ...parJour)} couleur={p.sportNeutre} etiquette="Séances par jour cette semaine, du lundi au dimanche" />
+      </Tuile>
+    );
+  }
 
   return (
     <Bloc titre="Cette semaine">

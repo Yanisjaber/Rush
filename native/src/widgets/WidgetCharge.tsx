@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { BarresEmpilees } from '@/components/BarresEmpilees';
 import { Bloc } from '@/components/Bloc';
+import { MiniBarres } from '@/components/MiniBarres';
+import { Tuile } from '@/components/Tuile';
 import { chargeParSemaine, conditionHebdo } from '@/data/synthese';
 import type { WidgetProps } from '@/data/types';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
@@ -8,11 +10,29 @@ import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La charge d'entraînement par semaine et par sport sur 12 semaines, avec la courbe de condition par-dessus.
-export function WidgetCharge({ contexte, taille = 'l' }: WidgetProps) {
+// tuile : tuile (charge des 7 derniers jours + les 8 dernières semaines en barres).
+export function WidgetCharge({ contexte, taille = 'l', tuile = false }: WidgetProps) {
   const p = usePalette();
   const charge = chargeParSemaine(contexte.seances);
   const condition = conditionHebdo(contexte.metriques);
   const nom = (f: string) => SPORTS[f as CleSport]?.court ?? SPORTS.autre.court;
+
+  if (tuile) {
+    // Charge totale de chaque semaine, tous sports confondus (la dernière = les 7 derniers jours)
+    const totaux = charge.etiquettes.map((_, i) => Math.round(charge.series.reduce((somme, s) => somme + (s.valeurs[i] ?? 0), 0)));
+    const derniere = totaux[totaux.length - 1] ?? 0;
+    const avant = totaux[totaux.length - 2] ?? 0;
+    const ecart = avant > 0 ? Math.round(((derniere - avant) / avant) * 100) : null;
+    return (
+      <Tuile
+        titre="Charge, 7 jours"
+        valeur={totaux.length ? String(derniere) : '—'}
+        note={totaux.length ? (ecart != null ? `${ecart > 0 ? '+' : ''}${ecart} % vs semaine d'avant` : 'Charge de la semaine') : 'Pas encore de séance'}
+      >
+        {totaux.length ? <MiniBarres valeurs={totaux.slice(-8)} couleur={p.sportNeutre} etiquette="Charge par semaine sur 8 semaines" /> : null}
+      </Tuile>
+    );
+  }
 
   return (
     <Bloc titre="Charge d'entraînement">

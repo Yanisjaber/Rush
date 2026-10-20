@@ -81,7 +81,8 @@ export const clair: Palette = {
 
 // Espacements (échelle de 4 px), rayons et cible tactile minimale.
 export const espace = { e1: 4, e2: 8, e3: 12, e4: 16, e5: 24, e6: 32, e7: 48 } as const;
-export const rayon = { s: 5, base: 6, l: 8, rond: 999 } as const;
+// bloc : les blocs de widgets et les tuiles, plus doux que le reste (le dossard garde son rayon de 6, c'est sa signature)
+export const rayon = { s: 5, base: 6, l: 8, bloc: 20, rond: 999 } as const;
 export const cibleTactile = 44;
 
 /** Une couleur hexadécimale (#rrggbb) avec de la transparence : avecAlpha('#ff7a33', 0.12). */

@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/Bloc';
+import { Tuile } from '@/components/Tuile';
 import { formatAllure, formatDateCourte, formatDuree, formatKm } from '@/data/format';
 import { meilleuresSortiesCourse } from '@/data/synthese';
 import type { WidgetProps } from '@/data/types';
@@ -7,7 +8,8 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La sortie la plus longue et les sorties les plus rapides sur 5 et 10 km.
-export function WidgetMeilleures({ contexte }: WidgetProps) {
+// tuile : tuile (la sortie la plus longue en gros, l'allure de la plus rapide en note).
+export function WidgetMeilleures({ contexte, tuile = false }: WidgetProps) {
   const p = usePalette();
   const m = meilleuresSortiesCourse(contexte.toutesSeances);
   const lignes = [
@@ -15,6 +17,17 @@ export function WidgetMeilleures({ contexte }: WidgetProps) {
     m.rapide5 && { cle: 'r5', nom: 'Plus rapide (≥ 5 km)', valeur: formatAllure(m.rapide5.valeur.allure), detail: `${formatKm(m.rapide5.valeur.km)} km · ${formatDateCourte(m.rapide5.date)}` },
     m.rapide10 && { cle: 'r10', nom: 'Plus rapide (≥ 10 km)', valeur: formatAllure(m.rapide10.valeur.allure), detail: `${formatKm(m.rapide10.valeur.km)} km · ${formatDateCourte(m.rapide10.date)}` },
   ].filter((l): l is NonNullable<typeof l> => !!l);
+
+  if (tuile) {
+    return (
+      <Tuile
+        titre="Plus longue sortie"
+        valeur={m.plusLongue ? formatKm(m.plusLongue.valeur.km) : '—'}
+        unite={m.plusLongue ? 'km' : ''}
+        note={m.rapide5 ? `Record 5 km+ : ${formatAllure(m.rapide5.valeur.allure)}` : m.plusLongue ? '12 dernières semaines' : 'Pas encore de sortie'}
+      />
+    );
+  }
 
   return (
     <Bloc titre="Meilleures sorties">

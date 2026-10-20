@@ -5,7 +5,7 @@ import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Un bloc de contenu : une surface, un titre, du contenu. C'est la carte de base des widgets.
-// Hiérarchie par la surface (pas d'ombre), rayon de 6 : comme sur le web.
+// Hiérarchie par la surface (pas d'ombre), rayon de 20 : plus doux que le web, pour l'app native.
 // Avec `couleur` (par exemple la couleur d'un sport), c'est un aplat de couleur : les enfants écrivent en encre foncée.
 interface Props {
   titre?: string;
@@ -28,6 +28,6 @@ export function Bloc({ titre, couleur, children }: Props) {
 }
 
 const styles = StyleSheet.create({
-  bloc: { borderRadius: rayon.base, paddingHorizontal: 18, paddingVertical: 16 },
+  bloc: { borderRadius: rayon.bloc, paddingHorizontal: 18, paddingVertical: 16 },
   titre: { marginBottom: 12 },
 });

@@ -1,16 +1,25 @@
 import { StyleSheet, Text as TexteRN, View } from 'react-native';
 import Svg, { Circle, Line, Path, Text } from 'react-native-svg';
 import { Bloc } from '@/components/Bloc';
+import { Tuile } from '@/components/Tuile';
 import { CADRE, geometriePuissance, LIBELLES_CLES } from '@/data/puissance';
 import type { WidgetProps } from '@/data/types';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Tes meilleures puissances de 5 secondes à 1 heure, sur 90 jours (trait plein) et sur toute la vie (tirets).
-export function WidgetPuissance({ contexte, taille = 'm' }: WidgetProps) {
+// tuile : tuile (ta meilleure puissance sur 20 minutes ; à défaut, la plus longue durée connue).
+export function WidgetPuissance({ contexte, taille = 'm', tuile = false }: WidgetProps) {
   const p = usePalette();
   const g = geometriePuissance(contexte.puissance);
   const { largeur, hauteur, gauche, droite } = CADRE;
+
+  if (tuile) {
+    const cle = g?.points.find((pt) => pt.label === '20 min') ?? g?.points[g.points.length - 1];
+    return (
+      <Tuile titre={cle ? `Puissance ${cle.label}` : 'Puissance'} valeur={cle ? String(cle.watts) : '—'} unite={cle ? 'W' : ''} note={cle ? 'Meilleure sur 90 jours' : 'Pas encore de sortie avec puissance'} />
+    );
+  }
 
   return (
     <Bloc titre="Courbe de puissance">

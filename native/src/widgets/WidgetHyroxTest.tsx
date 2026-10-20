@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/Bloc';
+import { Tuile } from '@/components/Tuile';
 import { formatDateCourte } from '@/data/format';
 import { analyserTest, ciblesSegments, ecrireTemps, formatEcartLong, SEGMENTS } from '@/data/hyrox';
 import type { WidgetProps } from '@/data/types';
@@ -8,13 +9,24 @@ import { usePalette } from '@/theme/usePalette';
 
 // Ton dernier test, segment par segment : chaque case de la bande est large comme le temps passé dessus.
 // Sur téléphone, les 16 temps ne tiennent pas dans les cases (9 px sur le web) : ils sont dans un tableau juste dessous.
-export function WidgetHyroxTest({ contexte }: WidgetProps) {
+// tuile : le temps total du dernier test en gros, l'objectif en note.
+export function WidgetHyroxTest({ contexte, tuile = false }: WidgetProps) {
   const p = usePalette();
   const test = contexte.hyrox.tests[0] ?? null;
   const objectif = contexte.hyrox.objectif;
   const analyse = test ? analyserTest(test.segments) : null;
   const cibles = ciblesSegments(objectif, test);
   const ecart = objectif && test ? test.total_s - objectif.total_s : null;
+
+  if (tuile) {
+    return (
+      <Tuile
+        titre="Dernier test Hyrox"
+        valeur={test ? ecrireTemps(test.total_s) : '—'}
+        note={test ? (objectif ? `Objectif ${ecrireTemps(objectif.total_s)}` : formatDateCourte(test.date)) : 'Aucun test'}
+      />
+    );
+  }
 
   return (
     <Bloc titre="Ton dernier test, course par course">

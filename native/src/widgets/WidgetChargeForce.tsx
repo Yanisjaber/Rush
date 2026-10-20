@@ -1,17 +1,23 @@
 import { StyleSheet, Text } from 'react-native';
 import { Bloc } from '@/components/Bloc';
+import { Tuile } from '@/components/Tuile';
 import { seancesForce } from '@/data/synthese';
 import type { WidgetProps } from '@/data/types';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La force qui soutient le Hyrox (sled, farmers, lunges, wall balls) : combien de séances par semaine.
-export function WidgetChargeForce({ contexte }: WidgetProps) {
+// tuile : tuile (séances de force par semaine, en moyenne).
+export function WidgetChargeForce({ contexte, tuile = false }: WidgetProps) {
   const p = usePalette();
   const force = seancesForce(contexte.toutesSeances, 4);
   const note = force.total
     ? `${force.total} séance${force.total > 1 ? 's' : ''} de force sur les 4 dernières semaines.`
     : 'Aucune séance de force sur les 4 dernières semaines.';
+
+  if (tuile) {
+    return <Tuile titre="Charge de force" valeur={String(force.moyenne).replace('.', ',')} unite="/sem." note={`${force.total} séance${force.total > 1 ? 's' : ''} en 4 semaines`} />;
+  }
 
   return (
     <Bloc couleur={p.sportHybride}>

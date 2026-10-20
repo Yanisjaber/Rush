@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { bientot } from '@/actions/bientot';
 import { Bouton } from '@/components/Bouton';
 import { Dossard } from '@/components/Dossard';
+import { Tuile } from '@/components/Tuile';
 import { familleAffichage } from '@/data/familles';
 import { programmeDuJour, resumeProgramme } from '@/data/force';
 import { dateIsoLocale, formatDateLongue } from '@/data/format';
@@ -14,9 +15,10 @@ import { usePalette } from '@/theme/usePalette';
 //  1. une séance de muscu PRÉVUE aujourd'hui au calendrier : on l'affiche, avec le programme qu'on lui a relié (s'il y en a un) ;
 //  2. sinon le programme qui suit celui de ta dernière séance (PUSH, PULL, LEGS, PUSH…) ;
 //  3. sinon on propose d'enregistrer une séance.
+// tuile : le nom du programme en gros, le détail en note.
 // compact : bandeau dossard pour téléphone (le nom du programme en gros, un seul bouton).
 // Les écrans « démarrer une séance » et « voir » arrivent plus tard : les boutons le disent pour l'instant.
-export function WidgetSeanceDuJour({ contexte, compact = false }: WidgetProps) {
+export function WidgetSeanceDuJour({ contexte, compact = false, tuile = false }: WidgetProps) {
   const p = usePalette();
   const aujourdhui = dateIsoLocale();
 
@@ -39,6 +41,8 @@ export function WidgetSeanceDuJour({ contexte, compact = false }: WidgetProps) {
     : prog
       ? { etiquette: 'Séance du jour', valeur: prog.name, detail: detailProgramme, action: 'Démarrer' }
       : { etiquette: 'Séance du jour', valeur: '—', detail: 'Enregistre ta séance : chrono, exercices, séries.', action: 'Enregistrer' };
+
+  if (tuile) return <Tuile titre={bandeau.etiquette} valeur={bandeau.valeur || '—'} note={bandeau.detail} />;
 
   if (compact) {
     return (

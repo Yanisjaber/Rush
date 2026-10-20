@@ -29,7 +29,7 @@ export const WIDGETS = {
     description: "Le compte à rebours de ta prochaine compétition.",
     categorie: "Objectifs",
     sports: 'tous',
-    tailles: ['m', 'l'],
+    tailles: ['s', 'm', 'l'],
     taille: 'm',
   },
   charge: {
@@ -37,7 +37,7 @@ export const WIDGETS = {
     description: "Ta charge par semaine et par sport, avec la courbe de condition.",
     categorie: "Charge et forme",
     sports: 'tous',
-    tailles: ['l', 'xl'],
+    tailles: ['s', 'l', 'xl'],
     taille: 'l',
   },
   forme: {
@@ -46,7 +46,7 @@ export const WIDGETS = {
     categorie: "Charge et forme",
     sports: 'tous',
     tailles: ['s', 'm'],
-    taille: 'm',
+    taille: 's',
   },
   volume: {
     nom: "Volume, 7 derniers jours",
@@ -54,7 +54,7 @@ export const WIDGETS = {
     categorie: "Volume",
     sports: 'tous',
     tailles: ['s', 'm'],
-    taille: 'm',
+    taille: 's',
   },
   predictions: {
     nom: "Prédictions de temps",
@@ -62,38 +62,38 @@ export const WIDGETS = {
     categorie: "Course à pied",
     sports: ['course'],
     tailles: ['s', 'm'],
-    taille: 'm',
+    taille: 's',
   },
   efficacite: {
     nom: "Allure à cardio égal",
     description: "Ton allure en endurance semaine après semaine : elle baisse quand ta condition monte.",
     categorie: "Course à pied",
     sports: ['course'],
-    tailles: ['m', 'l'],
-    taille: 'm',
+    tailles: ['s', 'm', 'l'],
+    taille: 's',
   },
   meilleures: {
     nom: "Meilleures sorties",
     description: "Ta sortie la plus longue et tes sorties les plus rapides sur 5 et 10 km.",
     categorie: "Course à pied",
     sports: ['course'],
-    tailles: ['m', 'l'],
-    taille: 'm',
+    tailles: ['s', 'm', 'l'],
+    taille: 's',
   },
   puissance: {
     nom: "Courbe de puissance",
     description: "Tes meilleures puissances de 5 secondes à 1 heure, sur 90 jours et sur toute la vie.",
     categorie: "Vélo",
     sports: ['velo'],
-    tailles: ['m', 'l'],
-    taille: 'm',
+    tailles: ['s', 'm', 'l'],
+    taille: 's',
   },
   seancedujour: {
     nom: "Séance du jour",
     description: "Le dossard de ta prochaine séance de force, avec un bouton pour la démarrer.",
     categorie: "Musculation",
     sports: ['muscu'],
-    tailles: ['m', 'l'],
+    tailles: ['s', 'm', 'l'],
     taille: 'm',
   },
   programmes: {
@@ -109,7 +109,7 @@ export const WIDGETS = {
     description: "Le poids total soulevé chaque semaine (répétitions × charge), sur 12 semaines.",
     categorie: "Musculation",
     sports: ['muscu'],
-    tailles: ['m', 'l'],
+    tailles: ['s', 'm', 'l'],
     taille: 'm',
   },
   chargemuscu: {
@@ -117,7 +117,7 @@ export const WIDGETS = {
     description: "Ta charge de muscu sur 7 jours (répétitions × intensité par rapport à ton 1RM), comparée à ton habitude.",
     categorie: "Musculation",
     sports: ['muscu'],
-    tailles: ['m', 'l'],
+    tailles: ['s', 'm', 'l'],
     taille: 'm',
   },
   records: {
@@ -125,7 +125,7 @@ export const WIDGETS = {
     description: "Tes exercices les plus pratiqués : 1RM estimé, record battu et courbe de progression.",
     categorie: "Musculation",
     sports: ['muscu'],
-    tailles: ['m', 'l', 'xl'],
+    tailles: ['s', 'm', 'l', 'xl'],
     taille: 'xl',
   },
   groupes: {
@@ -133,7 +133,7 @@ export const WIDGETS = {
     description: "Combien de séries tu as faites cette semaine sur chaque groupe musculaire.",
     categorie: "Musculation",
     sports: ['muscu'],
-    tailles: ['m', 'l'],
+    tailles: ['s', 'm', 'l'],
     taille: 'm',
   },
   hyroxdossard: {
@@ -141,7 +141,7 @@ export const WIDGETS = {
     description: "Compte à rebours de ta compétition Hyrox, avec ton dernier test et ton objectif de temps.",
     categorie: "Hyrox",
     sports: ['hyrox'],
-    tailles: ['m', 'l'],
+    tailles: ['s', 'm', 'l'],
     taille: 'm',
   },
   hyroxtest: {
@@ -149,7 +149,7 @@ export const WIDGETS = {
     description: "Tes 16 segments (8 runs et 8 stations) avec le temps passé sur chacun.",
     categorie: "Hyrox",
     sports: ['hyrox'],
-    tailles: ['l', 'xl'],
+    tailles: ['s', 'l', 'xl'],
     taille: 'l',
   },
   hyroxallure: {
@@ -157,7 +157,7 @@ export const WIDGETS = {
     description: "Le temps de chacun de tes 8 kilomètres, comparé à ton objectif.",
     categorie: "Hyrox",
     sports: ['hyrox'],
-    tailles: ['m', 'l'],
+    tailles: ['s', 'm', 'l'],
     taille: 'm',
   },
   hyroxgains: {
@@ -165,7 +165,7 @@ export const WIDGETS = {
     description: "L'écart par station entre ton dernier test et ton objectif.",
     categorie: "Hyrox",
     sports: ['hyrox'],
-    tailles: ['m', 'l'],
+    tailles: ['s', 'm', 'l'],
     taille: 'm',
   },
   chargeforce: {
@@ -181,36 +181,43 @@ export const WIDGETS = {
     description: "Les sept jours de la semaine, séance par séance.",
     categorie: "Séances",
     sports: 'tous',
-    tailles: ['l', 'xl'],
-    taille: 'l',
+    tailles: ['s', 'l', 'xl'],
+    taille: 's',
   },
   avenir: {
     nom: "À venir",
     description: "Tes prochaines séances prévues, de la plus proche à la plus lointaine.",
     categorie: "Séances",
     sports: 'tous',
-    tailles: ['m', 'l'],
-    taille: 'm',
+    tailles: ['s', 'm', 'l'],
+    taille: 's',
   },
   regularite: {
     nom: "Régularité",
     description: "Une case par jour sur 12 semaines, à la couleur du sport.",
     categorie: "Séances",
     sports: 'tous',
-    tailles: ['m', 'l'],
-    taille: 'm',
+    tailles: ['s', 'm', 'l'],
+    taille: 's',
   },
   dernieres: {
     nom: "Dernières séances",
     description: "Tes cinq dernières séances avec leur charge.",
     categorie: "Séances",
     sports: 'tous',
-    tailles: ['m', 'l'],
+    tailles: ['s', 'm', 'l'],
     taille: 'm',
   },
 } as const satisfies Record<string, DefinitionWidget>;
 
 export type IdWidget = keyof typeof WIDGETS;
+
+// Widgets qui ont une version « tuile » (deux par ligne) : ils la prennent quand leur taille est S. Tous, sauf Programmes (déjà un simple bouton).
+export const TUILES_ACCUEIL: ReadonlySet<string> = new Set([
+  'objectif', 'charge', 'forme', 'volume', 'semaine', 'avenir', 'dernieres', 'predictions', 'efficacite', 'meilleures', 'puissance',
+  'seancedujour', 'tonnage', 'chargemuscu', 'records', 'groupes', 'regularite',
+  'hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'chargeforce',
+]);
 
 /** Un widget placé sur l'accueil : son identifiant et sa taille. */
 export interface WidgetPlace {
@@ -234,31 +241,34 @@ const PROPRES_AUX_ONGLETS = new Set(
     .filter((id) => Object.hasOwn(WIDGETS, id) && (WIDGETS as Record<string, DefinitionWidget>)[id].sports !== 'tous'),
 );
 
-/** Ordre de composition automatique de l'accueil. */
+/**
+ * Ordre de composition automatique de l'accueil, dans l'esprit de l'onglet Muscu : le bandeau (séance, objectif) en haut,
+ * puis les tuiles à la suite pour qu'elles se rangent deux par deux, puis les grands graphiques et les listes.
+ */
 const ORDRE_AUTO = [
   'seancedujour',
   'programmes',
   'hyroxdossard',
   'objectif',
-  'charge',
   'forme',
-  'predictions',
-  'puissance',
-  'efficacite',
   'volume',
   'semaine',
   'avenir',
+  'predictions',
+  'puissance',
+  'efficacite',
+  'meilleures',
+  'regularite',
+  'chargeforce',
   'tonnage',
   'chargemuscu',
-  'records',
+  'charge',
   'groupes',
+  'records',
+  'dernieres',
   'hyroxtest',
   'hyroxallure',
   'hyroxgains',
-  'chargeforce',
-  'meilleures',
-  'regularite',
-  'dernieres',
 ];
 
 const definition = (id: string): DefinitionWidget => (WIDGETS as Record<string, DefinitionWidget>)[id];

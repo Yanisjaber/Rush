@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/Bloc';
+import { Tuile } from '@/components/Tuile';
 import { formatChrono } from '@/data/format';
 import { predictionsCourse } from '@/data/synthese';
 import type { WidgetProps } from '@/data/types';
@@ -8,7 +9,8 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // 5 km, 10 km et semi estimés d'après les sorties récentes (formule de Riegel), avec l'écart à l'objectif.
-export function WidgetPredictions({ contexte, taille = 'm' }: WidgetProps) {
+// tuile : tuile (la distance de l'objectif, sinon la première, en gros ; les autres en note).
+export function WidgetPredictions({ contexte, taille = 'm', tuile = false }: WidgetProps) {
   const p = usePalette();
   const predictions = predictionsCourse(contexte.toutesSeances);
 
@@ -19,6 +21,14 @@ export function WidgetPredictions({ contexte, taille = 'm' }: WidgetProps) {
     const km = objectif.km;
     const proche = predictions.reduce<(typeof predictions)[number] | null>((a, b) => (a && Math.abs(a.km - km) <= Math.abs(b.km - km) ? a : b), null);
     if (proche && Math.abs(proche.km - km) <= 1.5) ecart = { cle: proche.cle, secondes: proche.secondes - objectif.duration * 60 };
+  }
+
+  if (tuile) {
+    const vedette = predictions.find((pr) => pr.cle === ecart?.cle) ?? predictions[predictions.length > 1 ? 1 : 0];
+    const autres = predictions.filter((pr) => pr !== vedette).map((pr) => `${pr.label} ${formatChrono(pr.secondes)}`).join(' · ');
+    return (
+      <Tuile titre={vedette ? `Prédiction ${vedette.label}` : 'Prédictions'} valeur={vedette ? formatChrono(vedette.secondes) : '—'} note={vedette ? autres : 'Il faut une sortie de 5 km'} />
+    );
   }
 
   return (

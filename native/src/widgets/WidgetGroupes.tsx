@@ -12,12 +12,12 @@ import { usePalette } from '@/theme/usePalette';
 // Le corps de face et de dos : chaque muscle est teinté selon ses séries des 7 derniers jours
 // (plus c'est foncé, plus il a travaillé par rapport à sa zone visée). Le détail viendra avec la page d'analyse.
 // compact : tuile pour téléphone (le groupe le plus travaillé + les séries de chaque groupe en barres).
-export function WidgetGroupes({ contexte, compact = false }: WidgetProps) {
+export function WidgetGroupes({ contexte, compact = false, tuile = false }: WidgetProps) {
   const p = usePalette();
   const groupes = [...seriesParGroupe(contexte.force.series)].sort((a, b) => b.series - a.series);
   const [premier, second] = groupes;
 
-  if (compact) {
+  if (compact || tuile) {
     return (
       <Tuile
         titre="Séries / semaine"

@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Anneau } from '@/components/Anneau';
 import { Bloc } from '@/components/Bloc';
+import { Tuile } from '@/components/Tuile';
 import { formatDuree } from '@/data/format';
 import { repartition7Jours } from '@/data/synthese';
 import type { WidgetProps } from '@/data/types';
@@ -9,11 +10,26 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Le temps passé sur chaque sport pendant les 7 derniers jours : un anneau et sa légende.
-export function WidgetVolume({ contexte }: WidgetProps) {
+// tuile : tuile (le temps total + une barre découpée par sport).
+export function WidgetVolume({ contexte, tuile = false }: WidgetProps) {
   const p = usePalette();
   const rep = repartition7Jours(contexte.seances, new Date());
   const nom = (f: string) => SPORTS[f as CleSport]?.court ?? SPORTS.autre.court;
   const resume = rep.segments.map((s) => `${nom(s.famille)} ${formatDuree(s.secondes)}`).join(', ');
+
+  if (tuile) {
+    return (
+      <Tuile titre="Volume, 7 jours" valeur={rep.totalSecondes ? formatDuree(rep.totalSecondes) : '—'} note={rep.totalSecondes ? 'cette semaine' : 'Aucune séance'}>
+        {rep.totalSecondes ? (
+          <View accessible accessibilityRole="image" accessibilityLabel={`Répartition du temps sur 7 jours : ${resume}`} style={styles.repartition}>
+            {rep.segments.map((s) => (
+              <View key={s.famille} style={{ flex: s.secondes, backgroundColor: couleurSport(p, s.famille) }} />
+            ))}
+          </View>
+        ) : null}
+      </Tuile>
+    );
+  }
 
   return (
     <Bloc titre="Volume, 7 derniers jours">
@@ -51,4 +67,5 @@ const styles = StyleSheet.create({
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 36 },
   pastille: { width: 10, height: 10, borderRadius: 5 },
   nom: { flex: 1 },
+  repartition: { flexDirection: 'row', height: 10, gap: 2, borderRadius: 3, overflow: 'hidden' },
 });

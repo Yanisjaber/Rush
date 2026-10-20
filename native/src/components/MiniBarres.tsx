@@ -16,7 +16,7 @@ export function MiniBarres({ valeurs, max = 0, couleur, etiquette }: Props) {
     <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={styles.mini}>
       {valeurs.map((v, i) => (
         <View key={i} style={[styles.col, i === valeurs.length - 1 ? null : styles.attenuee]}>
-          <View style={{ width: '100%', height: `${Math.max(v > 0 ? 6 : 2, (v / maximum) * 100)}%`, backgroundColor: couleur, borderTopLeftRadius: 2, borderTopRightRadius: 2 }} />
+          <View style={{ width: '100%', height: `${Math.max(v > 0 ? 6 : 2, (v / maximum) * 100)}%`, backgroundColor: couleur, borderRadius: 3 }} />
         </View>
       ))}
     </View>

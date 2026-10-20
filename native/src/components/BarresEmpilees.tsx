@@ -53,7 +53,7 @@ export function BarresEmpilees({ series, etiquettes, ligne = [], hauteur = 200, 
                     height: `${((serie.valeurs[i] || 0) / plafond) * 100}%`,
                     backgroundColor: serie.couleur,
                     marginTop: 2,
-                    ...(k === series.length - 1 ? { borderTopLeftRadius: 4, borderTopRightRadius: 4 } : null),
+                    ...(k === series.length - 1 ? { borderTopLeftRadius: 6, borderTopRightRadius: 6 } : null),
                   }}
                 />
               ))}

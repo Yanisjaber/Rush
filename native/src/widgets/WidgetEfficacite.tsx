@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/Bloc';
+import { Tuile } from '@/components/Tuile';
 import { CourbeLissee } from '@/components/CourbeLissee';
 import { formatAllure } from '@/data/format';
 import { efficaciteCourse } from '@/data/synthese';
@@ -9,12 +10,25 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Allure moyenne des sorties faciles, semaine après semaine : elle baisse quand la condition monte.
-export function WidgetEfficacite({ contexte, taille = 'm' }: WidgetProps) {
+// tuile : tuile (l'allure du moment + la courbe sur 12 semaines).
+export function WidgetEfficacite({ contexte, taille = 'm', tuile = false }: WidgetProps) {
   const p = usePalette();
   const eff = efficaciteCourse(contexte.toutesSeances, contexte.hrMax);
   // Une allure plus basse (en s/km) est plus rapide : on inverse pour que « mieux » monte sur le graphique
   const valeurs = eff ? eff.points.map((pt) => -pt.allure) : [];
   const mieux = !!eff && eff.amelioration > 0;
+
+  if (tuile) {
+    return (
+      <Tuile
+        titre="Allure à cardio égal"
+        valeur={eff ? formatAllure(eff.allureActuelle) : '—'}
+        note={eff ? `${mieux ? '+' : ''}${eff.amelioration.toString().replace('.', ',')} % en 12 sem.` : 'Pas assez de sorties'}
+      >
+        {eff ? <CourbeLissee valeurs={valeurs} couleur={p.sportCourse} hauteur={34} aire={false} pointFinal={false} etiquette="Allure en endurance à cardio égal sur 12 semaines" /> : null}
+      </Tuile>
+    );
+  }
 
   return (
     <Bloc titre="Allure à cardio égal">

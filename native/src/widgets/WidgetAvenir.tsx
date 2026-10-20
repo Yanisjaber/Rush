@@ -1,5 +1,6 @@
 import { Text } from 'react-native';
 import { Bloc } from '@/components/Bloc';
+import { Tuile } from '@/components/Tuile';
 import { LigneSeance } from '@/components/LigneSeance';
 import { familleAffichage } from '@/data/familles';
 import { formatDateCourte, formatDuree } from '@/data/format';
@@ -17,9 +18,22 @@ function detail(p: Prevue): string {
   return morceaux.join(' · ');
 }
 
-export function WidgetAvenir({ contexte, taille = 'm' }: WidgetProps) {
+// tuile : la prochaine séance prévue (la date en gros, son nom en note).
+export function WidgetAvenir({ contexte, taille = 'm', tuile = false }: WidgetProps) {
   const palette = usePalette();
   const prochaines = prochainesPrevues(contexte.planifiees, new Date(), taille === 'l' ? 5 : 3);
+
+  if (tuile) {
+    const prochaine = prochaines[0];
+    const famille = prochaine ? familleAffichage(prochaine.sport) : '';
+    return (
+      <Tuile
+        titre="Prochaine séance"
+        valeur={prochaine ? formatDateCourte(prochaine.date) : '—'}
+        note={prochaine ? `${prochaine.name || SPORTS[famille as CleSport]?.court || SPORTS.autre.court}${prochaine.duration ? ` · ${formatDuree(prochaine.duration * 60)}` : ''}` : 'Rien de prévu'}
+      />
+    );
+  }
 
   return (
     <Bloc titre="À venir">

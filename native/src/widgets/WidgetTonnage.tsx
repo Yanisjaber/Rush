@@ -12,12 +12,12 @@ import { usePalette } from '@/theme/usePalette';
 
 // Le tonnage (répétitions × charge) soulevé chaque semaine, sur 12 semaines.
 // compact : tuile pour téléphone (chiffre clé + mini histogramme).
-export function WidgetTonnage({ contexte, compact = false }: WidgetProps) {
+export function WidgetTonnage({ contexte, compact = false, tuile = false }: WidgetProps) {
   const p = usePalette();
   const t = tonnageParSemaine(contexte.force.series);
   const aDesDonnees = t.parSemaine.some((v) => v > 0);
 
-  if (compact) {
+  if (compact || tuile) {
     return (
       <Tuile
         titre="Tonnage / semaine"
