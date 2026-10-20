@@ -240,23 +240,30 @@ function Triable({ id, index, total, nom, taille, seul, leve, pousse, anime, tx,
   }));
 
   return (
-    <GestureDetector gesture={pan}>
-      <Animated.View
+    <Animated.View
         onLayout={(e) => onMesure({ x: 0, y: 0, w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
         style={[styleEmplacement(taille, seul), style]}
         accessible
         accessibilityLabel={`${nom}, position ${index + 1} sur ${total}`}
-        accessibilityHint="Glisse pour déplacer. Le bouton Modifier ouvre la taille et la suppression."
+        accessibilityHint="Glisse pour déplacer. L'action Modifier ouvre la taille et la suppression."
         accessibilityActions={[
           ...(index > 0 ? [{ name: 'moveUp', label: 'Monter' }] : []),
           ...(index < total - 1 ? [{ name: 'moveDown', label: 'Descendre' }] : []),
+          // Le crayon est dans un élément déjà « accessible » : VoiceOver ne le voit pas seul, on l'expose comme action
+          { name: 'modifier', label: 'Modifier la taille ou supprimer' },
         ]}
         onAccessibilityAction={(e) => {
           if (e.nativeEvent.actionName === 'moveUp') onDeplacer(index, index - 1);
           if (e.nativeEvent.actionName === 'moveDown') onDeplacer(index, index + 1);
+          if (e.nativeEvent.actionName === 'modifier') onModifier(id);
         }}
       >
-        <View style={styles.inerte}>{children}</View>
+        {/* Seul le corps du widget déclenche le glisser : le crayon est à côté, un appui lent dessus ne lance jamais un déplacement */}
+        <GestureDetector gesture={pan}>
+          <View collapsable={false} style={styles.zone}>
+            <View style={styles.inerte}>{children}</View>
+          </View>
+        </GestureDetector>
         {/* Le contour est dessiné par-dessus : il ne prend pas de place, le widget garde exactement sa taille et sa position de l'accueil */}
         <View pointerEvents="none" style={[styles.contour, { borderColor: p.texte }]} />
         {/* Le crayon : entouré comme un bouton sélectionné, il ouvre la fenêtre de modification */}
@@ -269,13 +276,13 @@ function Triable({ id, index, total, nom, taille, seul, leve, pousse, anime, tx,
         >
           <Text style={[styles.glyphe, { color: p.texte }]}>✎</Text>
         </Pressable>
-      </Animated.View>
-    </GestureDetector>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   // Le contenu d'un widget est inerte en édition : un appui ne l'atteint pas, seul le crayon répond
+  zone: { flex: 1 },
   inerte: { flex: 1, pointerEvents: 'none' },
   // À cheval sur le coin haut droit : il ne cache pas le contenu du widget
   crayon: { position: 'absolute', top: -6, right: 0, width: 24, height: 24, borderRadius: 12, zIndex: 5, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
