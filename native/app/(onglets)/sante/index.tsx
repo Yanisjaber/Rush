@@ -2,11 +2,13 @@ import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Boite } from '@/components/GrilleWidgets';
-import { CartePilier } from '@/components/CartePilier';
+import { Boite, Emplacement, GrilleWidgets } from '@/components/GrilleWidgets';
+import { CourbeLissee } from '@/components/CourbeLissee';
+import { JaugePilier } from '@/components/JaugePilier';
+import { Tuile } from '@/components/Tuile';
 import { serieEtatDeForme } from '@/data/forme-sante';
 import { dateIsoLocale } from '@/data/format';
-import { consignesMasquees, construirePiliers, construireSuivis } from '@/data/piliers';
+import { construirePiliers, construireSuivis } from '@/data/piliers';
 import { useDonneesSommeil } from '@/hooks/useDonneesSommeil';
 import { useMesuresSante } from '@/hooks/useMesuresSante';
 import { useMetriques } from '@/hooks/useMetriques';
@@ -18,12 +20,15 @@ import { WidgetEtatDuJour } from '@/widgets/WidgetsSante';
 
 const BARRE_ONGLETS = 72;
 const QUESTIONS = ['ressenti_fatigue', 'ressenti_courbatures', 'ressenti_humeur', 'ressenti_motivation', 'ressenti_stress'];
+// Les noms courts sous les jauges
+const COURT: Record<string, string> = { hrv: 'HRV', fc: 'FC', sommeil: 'Sommeil', ressenti: 'Ressenti', charge: 'Charge', stress: 'Stress', resp: 'Respi.', temperature: 'Temp.' };
 
-// Santé : l'écran principal, lu de haut en bas dans un seul ordre.
-//   1. Comment je vais ?  L'état du jour, en une ligne (un indice de 0 à 100, une phrase, la précision) ; un appui ouvre la courbe et le calcul.
-//   2. À faire.           Le check-in du matin, 10 secondes.
-//   3. Pourquoi ?         Les piliers qui expliquent l'état, du plus bas au plus haut : une carte identique pour chacun.
-//   4. Tes suivis.        Le corps et la nutrition, avec la même carte. Un appui sur une carte ouvre son détail.
+// Santé : l'écran du matin, fait pour se lire d'un coup d'œil, sans phrase.
+//   1. L'état du jour : un anneau qui se remplit, l'indice au centre, un mot.
+//   2. Les piliers : une jauge ronde chacun, du plus bas au plus haut (la première est ce qui tire le plus vers le bas).
+//   3. Le check-in : cinq points, pleins quand tu as répondu.
+//   4. Les suivis : le corps et la nutrition.
+// Un appui sur n'importe quel élément ouvre son détail.
 export default function Sante() {
   const p = usePalette();
   const haut = useSafeAreaInsets().top;
@@ -34,10 +39,11 @@ export default function Sante() {
   const { mesures, recharger: rechargerMesures } = useMesuresSante();
   const serie = useMemo(() => serieEtatDeForme(nuits, metriques, mesures), [nuits, metriques, mesures]);
   const piliers = useMemo(() => construirePiliers(nuits, metriques, mesures, serie), [nuits, metriques, mesures, serie]);
-  const suivis = useMemo(() => construireSuivis(mesures, dateIsoLocale(new Date())), [mesures]);
-  const aPlus = consignesMasquees(piliers, serie[serie.length - 1]);
-  const reponses = QUESTIONS.filter((c) => mesures[dateIsoLocale(new Date())]?.[c] != null).length;
+  const aujourdhui = dateIsoLocale(new Date());
+  const suivis = useMemo(() => construireSuivis(mesures, aujourdhui), [mesures, aujourdhui]);
+  const reponses = QUESTIONS.filter((c) => mesures[aujourdhui]?.[c] != null).length;
   const aller = (vers: string) => router.push(vers as never);
+  const date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
     <View style={[styles.page, { backgroundColor: p.fond }]}>
@@ -49,7 +55,7 @@ export default function Sante() {
           <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>
             Santé
           </Text>
-          {demo ? <Text style={[typo.micro, { color: p.texteMuet }]}>Mode démo</Text> : null}
+          <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'capitalize' }]}>{demo ? 'Mode démo' : date}</Text>
         </View>
 
         {erreur ? (
@@ -64,57 +70,55 @@ export default function Sante() {
           </View>
         ) : (
           <>
-            <Pressable onPress={() => aller('/sante/forme')} accessibilityRole="button" accessibilityLabel="État de forme du jour. Ouvrir la courbe et le calcul." style={{ marginHorizontal: 0 }}>
-              <Boite taille="m" heros={{ couleur: couleurSport(p) }}>
-                <WidgetEtatDuJour serie={serie} compact />
+            <Pressable onPress={() => aller('/sante/forme')} accessibilityRole="button" accessibilityLabel="État de forme du jour. Ouvrir la courbe et le calcul.">
+              <Boite taille="l" heros={{ couleur: couleurSport(p) }}>
+                <WidgetEtatDuJour serie={serie} />
               </Boite>
             </Pressable>
 
-            <Section titre="À faire" />
+            <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte, marginTop: espace.e2 }]}>
+              Piliers
+            </Text>
+            <View style={styles.jauges}>
+              {piliers.map((x) => (
+                <JaugePilier key={x.cle} nom={COURT[x.cle] ?? x.nom} indice={x.indice} onPress={() => aller(x.vers)} />
+              ))}
+            </View>
+
             <Pressable
               onPress={() => aller('/sante/checkin')}
               accessibilityRole="button"
-              accessibilityLabel={reponses === 5 ? 'Check-in du matin fait. Le modifier.' : 'Faire le check-in du matin, dix secondes'}
+              accessibilityLabel={reponses === 5 ? 'Check-in du matin fait. Le modifier.' : `Check-in du matin : ${reponses} réponse${reponses > 1 ? 's' : ''} sur 5. Le faire.`}
               style={[styles.checkin, { backgroundColor: p.surface }]}
             >
-              <View style={[styles.pastille, { backgroundColor: reponses === 5 ? p.ok : p.alerte }]} />
-              <View style={{ flex: 1 }}>
-                <Text style={[typo.corpsFort, { color: p.texte }]}>Check-in du matin</Text>
-                <Text style={[typo.petit, { color: p.texteDoux }]}>
-                  {reponses === 5 ? "Fait aujourd'hui. Touche pour le modifier." : reponses > 0 ? `${reponses} réponse${reponses > 1 ? 's' : ''} sur 5. Touche pour finir.` : 'Pas encore fait : 10 secondes pour une estimation plus précise.'}
-                </Text>
+              <Text style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>Check-in</Text>
+              <View style={styles.pointsCheckin}>
+                {QUESTIONS.map((q, i) => (
+                  <View key={q} style={[styles.pointCheckin, { backgroundColor: i < reponses ? p.ok : p.traitFort }]} />
+                ))}
               </View>
               <View style={[styles.fleche, { borderColor: p.texteDoux }]} />
             </Pressable>
 
-            <Section titre="Ce qui explique ton état" sous="Du pilier le plus bas au plus haut. Le point dit où tu en es par rapport à ta norme." />
-            {piliers.map((x) => (
-              <CartePilier key={x.cle} nom={x.nom} valeur={x.valeur} unite={x.unite} ecart={x.ecart} niveau={x.niveau} courbe={x.courbe} manquant={x.manquant} onPress={() => aller(x.vers)} />
-            ))}
-            {aPlus.length ? (
-              <Text style={[typo.petit, { color: p.texteDoux }]}>Pour être encore plus précis : {aPlus.join(' ')}</Text>
-            ) : null}
-
-            <Section titre="Tes suivis" sous="Des tendances lentes : elles ne changent pas l'état du jour." />
-            {suivis.map((x) => (
-              <CartePilier key={x.cle} nom={x.nom} valeur={x.valeur} unite={x.unite} ecart={x.ecart} courbe={x.courbe} manquant={x.manquant} onPress={() => aller(x.vers)} />
-            ))}
+            <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte, marginTop: espace.e2 }]}>
+              Suivis
+            </Text>
+            <GrilleWidgets>
+              {suivis.map((x) => (
+                <Emplacement key={x.cle} taille="s">
+                  <Pressable onPress={() => aller(x.vers)} accessibilityRole="button" accessibilityLabel={`${x.nom} : ${x.valeur} ${x.unite} ${x.ecart ?? ''}`.trim()} accessibilityHint="Ouvre le détail">
+                    <Boite taille="s">
+                      <Tuile gros titre={x.nom} valeur={x.valeur} unite={x.unite.replace(' par jour', '/j')} note={x.ecart ?? x.manquant ?? undefined}>
+                        {x.courbe.length > 1 ? <CourbeLissee valeurs={x.courbe} couleur={p.texteDoux} largeur={100} hauteur={36} aire={false} pointFinal={false} epaisseur={2.2} etiquette={`${x.nom} sur ${x.courbe.length} jours`} /> : null}
+                      </Tuile>
+                    </Boite>
+                  </Pressable>
+                </Emplacement>
+              ))}
+            </GrilleWidgets>
           </>
         )}
       </ScrollView>
-    </View>
-  );
-}
-
-// Le titre d'une section : toujours le même, avec une ligne d'explication facultative
-function Section({ titre, sous }: { titre: string; sous?: string }) {
-  const p = usePalette();
-  return (
-    <View style={{ marginTop: espace.e3 }}>
-      <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte }]}>
-        {titre}
-      </Text>
-      {sous ? <Text style={[typo.petit, { color: p.texteDoux }]}>{sous}</Text> : null}
     </View>
   );
 }
@@ -125,7 +129,9 @@ const styles = StyleSheet.create({
   entete: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
   avis: { borderRadius: 6, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
-  checkin: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, borderRadius: rayon.bloc, paddingHorizontal: 18, paddingVertical: 12 },
-  pastille: { width: 12, height: 12, borderRadius: 6 },
+  jauges: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -espace.e2 },
+  checkin: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, borderRadius: rayon.bloc, paddingHorizontal: 18 },
+  pointsCheckin: { flexDirection: 'row', gap: 6 },
+  pointCheckin: { width: 10, height: 10, borderRadius: 5 },
   fleche: { width: 8, height: 8, borderTopWidth: 2, borderRightWidth: 2, transform: [{ rotate: '45deg' }] },
 });

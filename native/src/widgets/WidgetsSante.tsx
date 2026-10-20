@@ -1,127 +1,86 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { CadreWidget, TitreWidget } from '@/components/CadreWidget';
-import { GrandChiffre } from '@/components/GrandChiffre';
+import Svg, { Path } from 'react-native-svg';
+import { AnneauJauge } from '@/components/AnneauJauge';
+import { CadreWidget } from '@/components/CadreWidget';
 import { Tuile } from '@/components/Tuile';
-import { lecture, type PointForme } from '@/data/forme-sante';
+import { lecture, niveauDe, type PointForme } from '@/data/forme-sante';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Le widget de l'écran principal de Santé : l'état du jour. Même cadre que ceux de l'Accueil (CadreWidget) ; comme premier bloc de la page,
-// il prend le look dossard. Les piliers qui l'expliquent sont dessous, sous forme de cartes identiques (CartePilier).
+// Le widget de l'écran principal de Santé : l'état du jour, en une image. Un anneau qui se remplit, l'indice au centre, un mot, la variation depuis hier,
+// et de petits points pour la précision. Aucune phrase : la forme et la couleur disent l'essentiel. Même cadre que les widgets de l'Accueil
+// (CadreWidget) ; comme premier bloc de la page, il prend le look dossard.
 export interface PropsSante {
   /** L'état de forme jour par jour (de la plus ancienne à la plus récente), voir forme-sante.ts. */
   serie: PointForme[];
-  /** XS, S ou M : la version tuile (chiffre clé) ; L : le grand format. */
+  /** XS, S ou M : la version tuile (chiffre clé) ; L : le grand format avec l'anneau. */
   tuile?: boolean;
-  /** Une seule ligne de 160 pt : le chiffre à gauche, le libellé et la phrase à droite (l'écran principal de Santé). */
-  compact?: boolean;
 }
 
 const MOT_PRECISION = { basique: 'basique', bonne: 'bonne', elevee: 'élevée' } as const;
 
-const SOUS_TITRE_FAIBLE: Record<string, string> = {
-  hrv: 'ta HRV',
-  fc: 'ta FC de repos',
-  sommeil: 'ton sommeil',
-  ressenti: 'ton ressenti du matin',
-  stress: 'ton stress de nuit',
-  charge: "ta charge d'entraînement",
-  resp: 'ta respiration de nuit',
-  temperature: 'ta température cutanée',
-};
-
-// La précision de l'estimation (combien de piliers sur 8 ont une donnée), puis le frein (malade, blessé) ou ce qui pèse le plus
-function LignePrecision({ point, faible }: { point: PointForme; faible?: string }) {
-  const p = usePalette();
-  const dispo = point.composantes.filter((c) => c.indice != null).length;
+/** L'état du jour : l'anneau de l'indice (0 à 100), le mot, la variation depuis hier, la précision en points. */
+export function WidgetEtatDuJour({ serie, tuile = false }: PropsSante) {
+  const point = serie[serie.length - 1] ?? null;
+  const l = lecture(point);
+  if (tuile) {
+    return <Tuile gros titre="État de forme" valeur={l ? String(l.indice) : '—'} unite={l ? '/100' : undefined} note={l ? l.mot : 'Pas assez de données'} />;
+  }
+  const veille = serie[serie.length - 2]?.indice ?? null;
   return (
-    <View style={{ marginTop: 4, gap: 2 }}>
-      <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>
-        Précision {point.precision ? MOT_PRECISION[point.precision] : 'insuffisante'} · {dispo} piliers sur {point.composantes.length}
-      </Text>
-      {point.freins.slice(0, 1).map((f) => (
-        <Text key={f} numberOfLines={1} style={[typo.petit, { color: p.texte }]}>
-          {f}
+    <CadreWidget titre="État du jour" serre>
+      <ContenuAnneau point={point} veille={veille} />
+    </CadreWidget>
+  );
+}
+
+// Dans un composant à part : il doit lire la palette du cadre (inversée quand le widget est en look dossard), pas celle de l'écran
+function ContenuAnneau({ point, veille }: { point: PointForme | null; veille: number | null }) {
+  const p = usePalette();
+  const l = lecture(point);
+  const niveau = niveauDe(point?.indice);
+  const couleur = niveau === 'bon' ? p.ok : niveau === 'moyen' ? p.alerte : niveau === 'faible' ? p.danger : p.traitFort;
+  const dispo = point ? point.composantes.filter((c) => c.indice != null).length : 0;
+  const total = point ? point.composantes.length : 8;
+  const ecart = l && veille != null ? l.indice - veille : null;
+  return (
+    <View style={styles.scene}>
+      <AnneauJauge
+        valeur={l ? l.indice : null}
+        taille={196}
+        epaisseur={18}
+        couleur={couleur}
+        piste={p.surface2}
+        reperes={[40, 65].map((valeur) => ({ valeur, couleur: p.traitFort }))}
+        etiquette={l ? `État de forme ${l.indice} sur 100, ${l.mot}` : 'État de forme indisponible'}
+      >
+        <Text style={[styles.chiffre, { color: l ? p.texte : p.texteMuet }]}>{l ? l.indice : '—'}</Text>
+        <Text numberOfLines={1} style={[styles.mot, { color: p.texte }]}>
+          {l ? l.mot : 'Pas assez de données'}
         </Text>
-      ))}
-      {!point.freins.length && faible ? (
-        <Text numberOfLines={1} style={[typo.petit, { color: p.texte }]}>
-          Ce qui pèse le plus : {SOUS_TITRE_FAIBLE[faible]}.
-        </Text>
-      ) : null}
-      <Text style={[typo.petit, { color: p.texteDoux, marginTop: 4 }]}>Voir la courbe et le calcul ›</Text>
+        {ecart != null && ecart !== 0 ? (
+          <View style={styles.variation} accessible accessibilityLabel={`${ecart > 0 ? 'Plus' : 'Moins'} ${Math.abs(ecart)} point${Math.abs(ecart) > 1 ? 's' : ''} depuis hier`}>
+            <Svg width={10} height={8} viewBox="0 0 10 8">
+              <Path d={ecart > 0 ? 'M5 0 L10 8 L0 8 Z' : 'M0 0 L10 0 L5 8 Z'} fill={ecart > 0 ? p.ok : p.danger} />
+            </Svg>
+            <Text style={[typo.petit, { color: p.texteDoux }]}>{Math.abs(ecart)}</Text>
+          </View>
+        ) : null}
+      </AnneauJauge>
+      <View accessible accessibilityLabel={`Précision ${point?.precision ? MOT_PRECISION[point.precision] : 'insuffisante'}, ${dispo} piliers sur ${total}`} style={styles.points}>
+        {Array.from({ length: total }, (_, i) => (
+          <View key={i} style={[styles.point, { backgroundColor: i < dispo ? p.texte : p.traitFort }]} />
+        ))}
+      </View>
     </View>
   );
 }
 
-/** L'état du jour : l'indice de forme (0 à 100), une phrase de lecture, la précision et ce qui pèse le plus. */
-export function WidgetEtatDuJour({ serie, tuile = false, compact = false }: PropsSante) {
-  const point = serie[serie.length - 1] ?? null;
-  const l = lecture(point);
-  if (compact) return <EtatCompact point={point} />;
-  if (tuile) {
-    return <Tuile gros titre="État de forme" valeur={l ? String(l.indice) : '—'} unite={l ? '/100' : undefined} note={l ? l.libelle : 'Pas assez de données'} />;
-  }
-  const detail = l ? l.phrase : 'Il faut quelques semaines de nuits (HRV, FC de repos, sommeil) pour calibrer ta référence personnelle.';
-  return (
-    <CadreWidget titre="État du jour">
-      <GrandChiffre reduit valeur={l ? String(l.indice) : '—'} nom={l ? l.libelle : 'Pas assez de données'} detail={detail}>
-        {point ? <LignePrecision point={point} faible={l?.pointFaible?.cle} /> : null}
-      </GrandChiffre>
-    </CadreWidget>
-  );
-}
-
-// La version en une ligne : en haut le titre et la précision, dessous le chiffre à gauche, le libellé, la phrase et ce qui pèse le plus à droite.
-// Le contenu est un composant à part : il doit lire la palette du cadre (inversée quand le widget est en look dossard), pas celle de l'écran.
-function EtatCompact({ point }: { point: PointForme | null }) {
-  return (
-    <CadreWidget>
-      <ContenuCompact point={point} />
-    </CadreWidget>
-  );
-}
-
-function ContenuCompact({ point }: { point: PointForme | null }) {
-  const p = usePalette();
-  const l = lecture(point);
-  const dispo = point ? point.composantes.filter((c) => c.indice != null).length : 0;
-  const ligne = point?.freins[0] ?? (l?.pointFaible ? `Pèse le plus : ${SOUS_TITRE_FAIBLE[l.pointFaible.cle]}.` : null);
-  return (
-    <>
-      <View style={styles.tete}>
-        <TitreWidget titre="État du jour" serre />
-        {point ? (
-          <Text numberOfLines={1} style={[typo.petit, styles.precision, { color: p.texteDoux }]}>
-            Précision {point.precision ? MOT_PRECISION[point.precision] : 'insuffisante'} · {dispo}/{point.composantes.length}
-          </Text>
-        ) : null}
-      </View>
-      <View style={styles.corps}>
-        <Text accessibilityLabel={l ? `État de forme ${l.indice} sur 100` : 'État de forme indisponible'} style={[styles.chiffre, { color: p.texte }]}>
-          {l ? l.indice : '—'}
-        </Text>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text numberOfLines={1} style={[typo.titre3, { color: p.texte }]}>
-            {l ? l.libelle : 'Pas assez de données'}
-          </Text>
-          <Text numberOfLines={2} style={[typo.petit, { color: p.texteDoux }]}>
-            {l ? l.phrase : 'Il faut quelques semaines de nuits pour calibrer ta référence.'}
-          </Text>
-          {ligne ? (
-            <Text numberOfLines={1} style={[typo.petit, { color: p.texte }]}>
-              {ligne}
-            </Text>
-          ) : null}
-        </View>
-      </View>
-    </>
-  );
-}
-
 const styles = StyleSheet.create({
-  tete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 },
-  precision: { flexShrink: 1 },
-  corps: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 14 },
-  chiffre: { fontFamily: police.titre800, fontSize: 56, lineHeight: 60, letterSpacing: -1, minWidth: 74 },
+  scene: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
+  chiffre: { fontFamily: police.titre800, fontSize: 64, lineHeight: 68, letterSpacing: -1 },
+  mot: { fontFamily: police.texte600, fontSize: 16, lineHeight: 20 },
+  variation: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+  points: { flexDirection: 'row', gap: 6 },
+  point: { width: 8, height: 8, borderRadius: 4 },
 });

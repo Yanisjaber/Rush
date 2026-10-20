@@ -231,15 +231,17 @@ export interface Lecture {
   indice: number;
   niveau: Niveau;
   libelle: string;
+  /** Le mot court (« Récupéré », « Moyen », « À ménager ») pour les écrans qui ne gardent aucune phrase. */
+  mot: string;
   phrase: string;
   /** Le pilier le plus bas s'il est sous 45 (ce qui tire l'état de forme vers le bas), sinon null. */
   pointFaible: Composante | null;
 }
 
-const LIBELLES: Record<Niveau, { libelle: string; phrase: string }> = {
-  bon: { libelle: 'Bien récupéré', phrase: 'Tes chiffres sont meilleurs que d\'habitude : tu peux faire une séance exigeante.' },
-  moyen: { libelle: 'Récupération moyenne', phrase: 'Tes chiffres sont dans ta norme : une séance modérée est adaptée.' },
-  faible: { libelle: 'À ménager', phrase: 'Tes chiffres sont sous ta norme : privilégie le repos ou une séance facile.' },
+const LIBELLES: Record<Niveau, { libelle: string; mot: string; phrase: string }> = {
+  bon: { libelle: 'Bien récupéré', mot: 'Récupéré', phrase: 'Tes chiffres sont meilleurs que d\'habitude : tu peux faire une séance exigeante.' },
+  moyen: { libelle: 'Récupération moyenne', mot: 'Moyen', phrase: 'Tes chiffres sont dans ta norme : une séance modérée est adaptée.' },
+  faible: { libelle: 'À ménager', mot: 'À ménager', phrase: 'Tes chiffres sont sous ta norme : privilégie le repos ou une séance facile.' },
 };
 
 /** La lecture d'un point (ou null si l'indice n'est pas calculable). */

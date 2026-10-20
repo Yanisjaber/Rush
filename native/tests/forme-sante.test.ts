@@ -179,3 +179,10 @@ test('un jour avec seulement une saisie (sans nuit) existe dans la série, sans 
   // malade sans assez de données : pas d'indice à plafonner, mais le frein est signalé
   assert.equal(serieEtatDeForme([], [], { '2026-03-01': { evt_malade: 1 } })[0].freins.length, 1);
 });
+
+test('lecture : un mot court par niveau pour les écrans sans phrase', () => {
+  const point = (indice: number) => ({ date: '2026-01-01', indice, confiance: 1, precision: 'elevee' as const, composantes: [], freins: [], contexte: [], manquants: [] });
+  assert.equal(lecture(point(80))?.mot, 'Récupéré');
+  assert.equal(lecture(point(50))?.mot, 'Moyen');
+  assert.equal(lecture(point(20))?.mot, 'À ménager');
+});
