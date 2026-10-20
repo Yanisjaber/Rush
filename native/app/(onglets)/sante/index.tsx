@@ -20,7 +20,7 @@ const BARRE_ONGLETS = 72;
 const QUESTIONS = ['ressenti_fatigue', 'ressenti_courbatures', 'ressenti_humeur', 'ressenti_motivation', 'ressenti_stress'];
 
 // Santé : l'écran principal, lu de haut en bas dans un seul ordre.
-//   1. Comment je vais ?  L'état du jour (un indice de 0 à 100, une phrase, la précision).
+//   1. Comment je vais ?  L'état du jour, en une ligne (un indice de 0 à 100, une phrase, la précision) ; un appui ouvre la courbe et le calcul.
 //   2. À faire.           Le check-in du matin, 10 secondes.
 //   3. Pourquoi ?         Les piliers qui expliquent l'état, du plus bas au plus haut : une carte identique pour chacun.
 //   4. Tes suivis.        Le corps et la nutrition, avec la même carte. Un appui sur une carte ouvre son détail.
@@ -65,8 +65,8 @@ export default function Sante() {
         ) : (
           <>
             <Pressable onPress={() => aller('/sante/forme')} accessibilityRole="button" accessibilityLabel="État de forme du jour. Ouvrir la courbe et le calcul." style={{ marginHorizontal: 0 }}>
-              <Boite taille="l" heros={{ couleur: couleurSport(p) }}>
-                <WidgetEtatDuJour serie={serie} />
+              <Boite taille="m" heros={{ couleur: couleurSport(p) }}>
+                <WidgetEtatDuJour serie={serie} compact />
               </Boite>
             </Pressable>
 
