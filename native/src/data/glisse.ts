@@ -1,33 +1,18 @@
-// Calculs du glisser-déposer d'une liste verticale (mode édition de l'accueil). Fonctions pures, sans écran.
-export interface Boite {
-  y: number; // position du haut, dans la liste
-  h: number; // hauteur (marge comprise)
+// Calculs du glisser-déposer de la grille de l'accueil (mode édition). Fonctions pures, sans écran.
+/** Boîte d'un élément d'une grille (liste qui passe à la ligne) : position du coin haut-gauche et taille. */
+export interface BoiteGrille {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 /**
- * Où va tomber l'élément `de` si on le lâche maintenant : son centre est à `centre` (dans le repère de la liste).
- * On compte les AUTRES éléments dont le milieu est au-dessus de ce centre : c'est le nouvel index.
+ * Quel élément de la grille (hors `exclu`, celui qu'on glisse) est sous le point (cx, cy) ? Renvoie son index, ou -1 si le point
+ * est entre deux éléments. `boites` donne la place ACTUELLE de chacun (celle de l'aperçu, pas celle de départ).
  */
-export function indiceCible(boites: Boite[], de: number, centre: number): number {
-  let vers = 0;
-  boites.forEach((b, i) => {
-    if (i !== de && b.y + b.h / 2 < centre) vers++;
-  });
-  return vers;
-}
-
-/**
- * De combien chaque élément se pousse pour faire de la place (celui qu'on glisse ne compte pas : il suit le doigt).
- * Vers le bas (de < vers) : les éléments entre les deux montent ; vers le haut : ils descendent.
- */
-export function decalages(boites: Boite[], de: number, vers: number): number[] {
-  const hauteur = boites[de]?.h ?? 0;
-  return boites.map((_, i) => {
-    if (i === de) return 0;
-    if (de < vers && i > de && i <= vers) return -hauteur;
-    if (de > vers && i >= vers && i < de) return hauteur;
-    return 0;
-  });
+export function elementSousPoint(boites: readonly BoiteGrille[], exclu: number, cx: number, cy: number): number {
+  return boites.findIndex((b, i) => i !== exclu && cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h);
 }
 
 /** Déplace un élément d'une position à une autre ; renvoie la même liste si rien ne change. */

@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Bloc } from '@/components/Bloc';
 import { MiniBarres } from '@/components/MiniBarres';
 import { SilhouetteCorps } from '@/components/SilhouetteCorps';
@@ -11,13 +11,13 @@ import { usePalette } from '@/theme/usePalette';
 
 // Le corps de face et de dos : chaque muscle est teinté selon ses séries des 7 derniers jours
 // (plus c'est foncé, plus il a travaillé par rapport à sa zone visée). Le détail viendra avec la page d'analyse.
-// compact : tuile pour téléphone (le groupe le plus travaillé + les séries de chaque groupe en barres).
-export function WidgetGroupes({ contexte, compact = false, tuile = false }: WidgetProps) {
+// tuile (taille S, M ou XS) : la version tuile, voir Tuile.
+export function WidgetGroupes({ contexte, tuile = false }: WidgetProps) {
   const p = usePalette();
   const groupes = [...seriesParGroupe(contexte.force.series)].sort((a, b) => b.series - a.series);
   const [premier, second] = groupes;
 
-  if (compact || tuile) {
+  if (tuile) {
     return (
       <Tuile
         titre="Séries / semaine"
@@ -32,12 +32,16 @@ export function WidgetGroupes({ contexte, compact = false, tuile = false }: Widg
   return (
     <Bloc titre="Séries par groupe">
       <View style={[styles.corps, { backgroundColor: p.surface2 }]}>
-        <SilhouetteCorps muscles={musclesSurPeriode(contexte.force.series)} etiquette="Muscles travaillés cette semaine" />
+        {/* Largeur fixée pour que les deux silhouettes (hautes du double de leur largeur) tiennent dans la boîte L */}
+        <View style={styles.silhouettes}>
+          <SilhouetteCorps muscles={musclesSurPeriode(contexte.force.series)} etiquette="Muscles travaillés cette semaine" />
+        </View>
       </View>
     </Bloc>
   );
 }
 
 const styles = StyleSheet.create({
+  silhouettes: { width: 200, alignSelf: 'center' },
   corps: { paddingHorizontal: 8, paddingTop: 12, paddingBottom: 8, borderRadius: rayon.l },
 });

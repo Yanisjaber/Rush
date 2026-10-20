@@ -35,12 +35,14 @@ export function Bouton({ variante = 'principal', onPress, children, accessibilit
         styles.contour ? { borderColor: styles.contour, borderWidth: variante === 'sur-dossard-contour' ? 2 : 1 } : null,
       ]}
     >
-      <Text style={[base.texte, { color: styles.texte }]}>{children}</Text>
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[base.texte, { color: styles.texte }]}>
+        {children}
+      </Text>
     </Pressable>
   );
 }
 
 const base = StyleSheet.create({
-  bouton: { minHeight: 44, paddingHorizontal: 20, borderRadius: rayon.base, alignItems: 'center', justifyContent: 'center' },
+  bouton: { minHeight: 44, paddingHorizontal: 12, borderRadius: rayon.base, alignItems: 'center', justifyContent: 'center' },
   texte: { fontFamily: police.texte600, fontSize: 14, lineHeight: 20 },
 });

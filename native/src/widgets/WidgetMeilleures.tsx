@@ -21,7 +21,7 @@ export function WidgetMeilleures({ contexte, tuile = false }: WidgetProps) {
   if (tuile) {
     return (
       <Tuile
-        titre="Plus longue sortie"
+        titre="Sortie longue"
         valeur={m.plusLongue ? formatKm(m.plusLongue.valeur.km) : '—'}
         unite={m.plusLongue ? 'km' : ''}
         note={m.rapide5 ? `Record 5 km+ : ${formatAllure(m.rapide5.valeur.allure)}` : m.plusLongue ? '12 dernières semaines' : 'Pas encore de sortie'}

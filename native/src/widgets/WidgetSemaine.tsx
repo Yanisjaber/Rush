@@ -32,68 +32,52 @@ export function WidgetSemaine({ contexte, tuile = false }: WidgetProps) {
         titre="Cette semaine"
         valeur={String(nbSeances)}
         unite={nbSeances > 1 ? 'séances' : 'séance'}
-        note={prevues ? `${prevues} prévue${prevues > 1 ? 's' : ''} à venir` : 'faites'}
+        note={prevues ? `${prevues} prévue${prevues > 1 ? 's' : ''} à venir` : nbSeances > 1 ? 'faites' : 'faite'}
       >
         <MiniBarres valeurs={parJour} max={Math.max(2, ...parJour)} couleur={p.sportNeutre} etiquette="Séances par jour cette semaine, du lundi au dimanche" />
       </Tuile>
     );
   }
 
+  // Sept colonnes (lundi → dimanche) : le jour, puis un carré par séance (plein : faite, contour : prévue)
   return (
     <Bloc titre="Cette semaine">
-      <View accessible accessibilityLabel={`${nbSeances} séance${nbSeances > 1 ? 's' : ''} cette semaine`} accessibilityElementsHidden={false}>
-        {jours.map((j, i) => {
+      <View accessible accessibilityLabel={`${nbSeances} séance${nbSeances > 1 ? 's' : ''} cette semaine`} style={styles.semaine}>
+        {jours.map((j) => {
           const libelle = [
             `${j.jour} ${j.num}`,
             ...j.seances.map((s) => `${nom(s.sport)} ${formatDuree(s.moving_time)}`),
             ...j.prevues.map((x) => `prévu : ${nom(x.sport)}`),
           ].join(', ');
           return (
-            <View
-              key={j.iso}
-              accessible
-              accessibilityLabel={libelle}
-              style={[styles.jour, i > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }]}
-            >
+            <View key={j.iso} accessible accessibilityLabel={libelle} style={styles.colonne}>
               <View style={[styles.date, j.aujourdhui && { backgroundColor: p.texte }]}>
                 <Text style={[typo.micro, { color: j.aujourdhui ? p.fond : p.texteDoux }]}>{j.jour}</Text>
                 <Text style={[styles.num, { color: j.aujourdhui ? p.fond : p.texte }]}>{j.num}</Text>
               </View>
-              <View style={styles.contenu}>
-                {j.seances.map((s) => (
-                  <View key={s.id} style={[styles.puce, { backgroundColor: couleurSport(p, familleAffichage(s.sport)) }]}>
-                    <Text style={[typo.petit, styles.puceTexte, { color: p.encreSurCouleur }]}>
-                      {nom(s.sport)} · {formatDuree(s.moving_time)}
-                    </Text>
-                  </View>
-                ))}
-                {j.prevues.map((x) => (
-                  <View key={x.id} style={[styles.puce, styles.prevue, { borderColor: couleurSport(p, familleAffichage(x.sport)) }]}>
-                    <Text style={[typo.petit, styles.puceTexte, { color: p.texte }]}>
-                      {nom(x.sport)}
-                      {x.duration ? ` · ${formatDuree(x.duration * 60)}` : ''}
-                    </Text>
-                  </View>
-                ))}
-                {!j.seances.length && !j.prevues.length && !j.futur ? (
-                  <Text style={[typo.petit, { color: p.texteMuet }]}>Repos</Text>
-                ) : null}
-              </View>
+              {j.seances.map((s) => (
+                <View key={s.id} style={[styles.carre, { backgroundColor: couleurSport(p, familleAffichage(s.sport)) }]} />
+              ))}
+              {j.prevues.map((x) => (
+                <View key={x.id} style={[styles.carre, styles.prevue, { borderColor: couleurSport(p, familleAffichage(x.sport)) }]} />
+              ))}
             </View>
           );
         })}
       </View>
+      <Text style={[typo.petit, { color: p.texteDoux, marginTop: 12 }]}>
+        {nbSeances} séance{nbSeances > 1 ? 's' : ''} · {formatDuree(jours.reduce((t, j) => t + j.seances.reduce((n, s) => n + s.moving_time, 0), 0))} cette semaine. Plein : fait, contour : prévu.
+      </Text>
     </Bloc>
   );
 }
 
 const styles = StyleSheet.create({
-  jour: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, paddingVertical: 6 },
-  // Le bloc de date : fixe, pour que les pastilles s'alignent d'un jour à l'autre
-  date: { width: 52, alignItems: 'center', borderRadius: rayon.base, paddingVertical: 4 },
-  num: { fontFamily: police.titre700, fontSize: 20, lineHeight: 22 },
-  contenu: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
-  puce: { borderRadius: rayon.base, paddingHorizontal: 10, paddingVertical: 4 },
-  puceTexte: { fontFamily: police.texte600 },
-  prevue: { borderWidth: 1.5 },
+  semaine: { flexDirection: 'row', gap: 4 },
+  colonne: { flex: 1, alignItems: 'center', gap: 6 },
+  // Le bloc de date : le jour en dessous de la lettre, aujourd'hui en inversé
+  date: { alignSelf: 'stretch', alignItems: 'center', borderRadius: rayon.base, paddingVertical: 4 },
+  num: { fontFamily: police.titre700, fontSize: 18, lineHeight: 22 },
+  carre: { width: 20, height: 20, borderRadius: 6 },
+  prevue: { backgroundColor: 'transparent', borderWidth: 2 },
 });

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { chargerLayout, enregistrerLayout } from '@/data/api';
-import { ajouterA, deplacerDans, retirerDe, taillerDans } from '@/data/disposition-edition';
+import { ajouterA, retirerDe, taillerDans } from '@/data/disposition-edition';
 import { deplacerVers } from '@/data/glisse';
 import { compositionAuto, composerOnglet, normaliser, ONGLETS_PERSONNALISABLES, type Disposition, type WidgetPlace } from '@/data/registre';
 import type { Taille } from '@/data/types';
@@ -154,11 +154,6 @@ export async function reinitialiserAuto() {
   changer({ enEdition: false, ongletEdition: 'tout' });
   instantane = null;
   await enregistrer();
-}
-
-export function deplacer(index: number, sens: -1 | 1) {
-  remplacerListe(deplacerDans(listeEnEdition(), index, sens));
-  personnaliser();
 }
 
 /** Déplace un widget d'une position à une autre (glisser-déposer) : les autres se décalent d'un cran. */

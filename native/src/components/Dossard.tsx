@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
+import { useRemplir } from '@/components/taille';
 import { usePalette } from '@/theme/usePalette';
 
 // Le dossard : la signature visuelle de l'app (IDENTITE.md §3).
@@ -29,6 +30,7 @@ const TAILLE_MIN = 28;
 
 export function Dossard({ etiquette, nom, valeur, detail, sport, taille = 'l', compact = false, children }: Props) {
   const p = usePalette();
+  const remplir = useRemplir();
   const max = TAILLE_MAX[taille];
   const attache = { backgroundColor: p.dossardTexte };
 
@@ -38,7 +40,7 @@ export function Dossard({ etiquette, nom, valeur, detail, sport, taille = 'l', c
   // Bandeau (taille m) : une rangée basse, texte à gauche, grand chiffre à droite
   if (taille === 'm' && !compact) {
     return (
-      <View accessible accessibilityLabel={libelle || 'Objectif'} style={[styles.bandeau, { backgroundColor: p.dossardFond }]}>
+      <View accessible accessibilityLabel={libelle || 'Objectif'} style={[styles.bandeau, { backgroundColor: p.dossardFond }, remplir]}>
         <View style={[styles.lisere, { backgroundColor: couleurSport(p, sport) }]} />
         <View style={[styles.attache, styles.petiteAttache, styles.hautGauche, attache]} />
         <View style={[styles.attache, styles.petiteAttache, styles.hautDroite, attache]} />
@@ -74,6 +76,7 @@ export function Dossard({ etiquette, nom, valeur, detail, sport, taille = 'l', c
         taille === 'l' && !compact && styles.grand,
         compact && styles.compact,
         { backgroundColor: p.dossardFond },
+        remplir,
       ]}
     >
       <View style={[styles.lisere, { backgroundColor: couleurSport(p, sport) }]} />
@@ -88,9 +91,15 @@ export function Dossard({ etiquette, nom, valeur, detail, sport, taille = 'l', c
       )}
 
       <View style={styles.entete}>
-        {etiquette ? <Text style={[typo.micro, { color: p.dossardTexte }]}>{etiquette}</Text> : null}
+        {etiquette ? (
+          <Text numberOfLines={1} style={[typo.micro, { color: p.dossardTexte }]}>
+            {etiquette}
+          </Text>
+        ) : null}
         {nom ? (
-          <Text style={[taille === 'l' ? typo.titre2 : typo.titre3, styles.nom, { color: p.dossardTexte }]}>{nom}</Text>
+          <Text numberOfLines={2} style={[taille === 'l' ? typo.titre2 : typo.titre3, styles.nom, { color: p.dossardTexte }]}>
+            {nom}
+          </Text>
         ) : null}
       </View>
 
@@ -113,7 +122,11 @@ export function Dossard({ etiquette, nom, valeur, detail, sport, taille = 'l', c
       ) : null}
 
       <View style={styles.pied}>
-        {detail ? <Text style={[typo.petit, styles.detail, { color: p.dossardTexte }]}>{detail}</Text> : null}
+        {detail ? (
+          <Text numberOfLines={3} style={[typo.petit, styles.detail, { color: p.dossardTexte }]}>
+            {detail}
+          </Text>
+        ) : null}
         {children}
       </View>
     </View>
@@ -123,15 +136,15 @@ export function Dossard({ etiquette, nom, valeur, detail, sport, taille = 'l', c
 const styles = StyleSheet.create({
   dossard: {
     overflow: 'hidden', // le liseré épouse les coins arrondis
-    borderRadius: rayon.base,
+    borderRadius: rayon.bloc,
     paddingHorizontal: 24,
     paddingTop: 30 + LISERE, // de l'air autour des points d'attache du haut
     paddingBottom: 22,
     gap: espace.e3,
     justifyContent: 'space-between',
   },
-  grand: { minHeight: 300 },
-  bandeau: { overflow: 'hidden', flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: rayon.base, paddingLeft: 26, paddingRight: 22, paddingTop: 22 + LISERE, paddingBottom: 18 },
+  grand: {},
+  bandeau: { overflow: 'hidden', flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: rayon.bloc, paddingLeft: 26, paddingRight: 22, paddingTop: 22 + LISERE, paddingBottom: 18 },
   bandeauTexte: { flex: 1, minWidth: 0, gap: 4 },
   valeurBandeau: { fontFamily: police.titre800, fontSize: 44, lineHeight: 46, letterSpacing: -1, maxWidth: '40%' },
   petiteAttache: { width: 7, height: 7, borderRadius: 3.5 },

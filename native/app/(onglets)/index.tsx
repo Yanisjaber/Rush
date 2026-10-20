@@ -5,25 +5,25 @@ import { BandeauEdition } from '@/components/BandeauEdition';
 import { BarreSports } from '@/components/BarreSports';
 import { BibliothequeWidgets } from '@/components/BibliothequeWidgets';
 import { Bouton } from '@/components/Bouton';
-import { BarreSelection } from '@/components/BarreSelection';
+import { FeuilleWidget } from '@/components/FeuilleWidget';
+import { Boite, Emplacement, GrilleWidgets } from '@/components/GrilleWidgets';
+import { solitaires } from '@/data/grille';
 import { ListeTriable } from '@/components/ListeTriable';
 import { Onboarding } from '@/components/Onboarding';
 import { construireContexte } from '@/data/contexte';
-import { disponibles, disponiblesOnglet, ONGLETS_PERSONNALISABLES, WIDGETS, type IdWidget, composerOnglet, compositionAuto, grouperTuiles, TUILES_ACCUEIL, type WidgetPlace } from '@/data/registre';
+import { disponibles, disponiblesOnglet, ONGLETS_PERSONNALISABLES, WIDGETS, type IdWidget, composerOnglet, compositionAuto, type WidgetPlace } from '@/data/registre';
 import { onboardingNecessaire } from '@/data/sports-choisis';
 import { useDonneesAccueil } from '@/hooks/useDonneesAccueil';
 import { useAuth } from '@/stores/auth';
-import { ajouter, annulerEdition, changerTaille, chargerDisposition, deplacer, deplacerWidget, demarrerEdition, listeEnEdition, reinitialiserAuto, retirer, terminerEdition, useDisposition } from '@/stores/disposition';
+import { ajouter, annulerEdition, changerTaille, chargerDisposition, deplacerWidget, demarrerEdition, listeEnEdition, reinitialiserAuto, retirer, terminerEdition, useDisposition } from '@/stores/disposition';
 import { useMenu } from '@/stores/menu';
 import { espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 import { COMPOSANTS, WidgetBientot } from '@/widgets/composants';
 
-// Sur l'onglet Muscu, ces widgets passent en tuiles de deux par ligne (comme sur le web, voir Accueil.svelte)
-const TUILES = new Set(['tonnage', 'regularite']);
-// Ces widgets ne se comprennent que grâce à leur graphique (le corps, la courbe de charge) : ils gardent leur version complète
-const GRANDS = new Set(['groupes', 'chargemuscu']);
+// En taille M, ces widgets ont leur propre ligne (bandeau, bouton) ; tous les autres prennent la tuile large (voir Tuile). En XS et S, tous ont une tuile
+const LIGNE_PROPRE = new Set(['objectif', 'hyroxdossard', 'seancedujour', 'programmes']);
 // Un compte neuf (aucune donnée) ne voit que l'essentiel
 const COMPTE_VIDE = new Set(['objectif', 'semaine', 'avenir']);
 // Hauteur de la barre d'onglets flottante (Liquid Glass) à réserver en bas de la liste, pour que le dernier widget ne passe pas dessous
@@ -75,14 +75,15 @@ export default function Accueil() {
   }, [!!donnees, uid, cleFamilles]);
 
   const enEdition = disp.enEdition;
-  const [selection, setSelection] = useState('');
+  // Le widget dont la fenêtre de modification (crayon) est ouverte
+  const [modif, setModif] = useState('');
   const [enGlisse, setEnGlisse] = useState(false);
   const defile = useRef<ComponentRef<typeof ScrollView>>(null);
   const decalageDefilement = useRef(0);
   const hauteurEcran = Dimensions.get('window').height;
-  // En quittant l'édition (Terminer, Annuler, retour à l'automatique), plus rien n'est sélectionné
+  // En quittant l'édition (Terminer, Annuler, réinitialisation), la fenêtre de modification se ferme
   useEffect(() => {
-    if (!enEdition) setSelection('');
+    if (!enEdition) setModif('');
   }, [enEdition]);
   const base = disp.pret ? disp.widgets : compositionAuto(familles);
   const widgets = useMemo(() => {
@@ -95,21 +96,23 @@ export default function Accueil() {
   const ongletAModifier = ONGLETS_PERSONNALISABLES.includes(filtre) ? filtre : 'tout';
   const aAjouter = enEdition ? (disp.ongletEdition !== 'tout' ? disponiblesOnglet(widgets, disp.ongletEdition) : disponibles({ widgets }, familles)) : [];
 
-  const compactMuscu = filtre === 'muscu' && !enEdition;
-  // Un widget en taille S qui a une version tuile (voir TUILES_ACCUEIL) s'affiche en tuile, partout sauf sur Muscu qui a ses propres règles
-  const tailleDe = (id: string) => widgets.find((w) => w.id === id)?.taille;
-  const tuileS = (id: string) => TUILES_ACCUEIL.has(id) && tailleDe(id) === 's';
-  const compactDe = (id: string) => compactMuscu && !GRANDS.has(id);
-  // Les tuiles se rangent deux par deux ; les autres widgets prennent toute la largeur
-  const estTuile = (id: string) => tuileS(id) || (compactMuscu && TUILES.has(id));
-  const blocs = grouperTuiles(widgets, estTuile);
   const nomPersonnaliser = ONGLETS_PERSONNALISABLES.includes(filtre) ? `Personnaliser l'onglet ${filtre === 'muscu' ? 'Muscu' : 'Hyrox'}` : "Personnaliser l'accueil";
+
+  // Un S seul sur sa ligne est centré (voir solitaires)
+  const seuls = solitaires(widgets.map((w) => w.taille));
 
   const rendre = (w: WidgetPlace) => {
     if (!contexte) return null;
     const Composant = COMPOSANTS[w.id];
-    return Composant ? <Composant key={w.id} contexte={contexte} taille={w.taille} compact={compactDe(w.id)} tuile={tuileS(w.id)} /> : <WidgetBientot key={w.id} id={w.id} />;
+    return (
+      <Boite key={w.id} taille={w.taille}>
+        {Composant ? <Composant contexte={contexte} taille={w.taille} tuile={w.taille === 's' || w.taille === 'xs' || (w.taille === 'm' && !LIGNE_PROPRE.has(w.id))} /> : <WidgetBientot id={w.id} />}
+      </Boite>
+    );
   };
+
+  // Compte neuf qui n'a jamais choisi ses sports : on les lui demande d'abord
+  if (onboarding) return <Onboarding />;
 
   return (
     <View style={[styles.page, { backgroundColor: p.fond }]}>
@@ -121,7 +124,7 @@ export default function Accueil() {
         onScroll={(e) => {
           decalageDefilement.current = e.nativeEvent.contentOffset.y;
         }}
-        contentContainerStyle={[styles.contenu, { paddingBottom: bas + BARRE_ONGLETS + (enEdition ? 120 : 0) }]}
+        contentContainerStyle={[styles.contenu, { paddingBottom: bas + BARRE_ONGLETS + (enEdition ? 100 : 0) }]}
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={enEdition ? undefined : <RefreshControl refreshing={actualisation} onRefresh={recharger} tintColor={p.texteDoux} />}
       >
@@ -144,29 +147,27 @@ export default function Accueil() {
             {compteVide ? (
               <Avis texte="Ton compte est neuf : rien à afficher pour l'instant. Tes séances arriveront dès que tu auras connecté Strava ou saisi une séance." info />
             ) : null}
-            {enEdition ? <BandeauEdition onglet={disp.ongletEdition} onTerminer={() => void terminerEdition()} onAnnuler={annulerEdition} onAuto={() => void reinitialiserAuto()} /> : null}
             {disp.message && !enEdition ? <Avis texte={disp.message} /> : null}
             {enEdition ? (
               <ListeTriable
                 ids={widgets.map((w) => w.id)}
-                selection={selection}
-                onSelection={setSelection}
+                onModifier={setModif}
                 onDeplacer={deplacerWidget}
                 onGlisse={setEnGlisse}
                 defilement={{ decalage: decalageDefilement, vers: (y) => defile.current?.scrollTo({ y, animated: false }), haut: 140, bas: hauteurEcran - 120 }}
                 nom={(id) => WIDGETS[id as IdWidget]?.nom ?? id}
+                taille={(id) => widgets.find((w) => w.id === id)?.taille ?? 'm'}
                 rendre={(id) => rendre(widgets.find((w) => w.id === id) as WidgetPlace)}
               />
             ) : null}
-            {(enEdition ? [] : blocs).map((b, i) =>
-              Array.isArray(b) ? (
-                <View key={b.map((w) => w.id).join('+')} style={styles.tuiles}>
-                  {b.map(rendre)}
-                  {b.length === 1 ? <View style={styles.vide} /> : null}
-                </View>
-              ) : (
-                rendre(b)
-              ),
+            {enEdition ? null : (
+              <GrilleWidgets>
+                {widgets.map((w, i) => (
+                  <Emplacement key={w.id} taille={w.taille} seul={seuls[i]}>
+                    {rendre(w)}
+                  </Emplacement>
+                ))}
+              </GrilleWidgets>
             )}
             {enEdition ? <BibliothequeWidgets ids={aAjouter} onAjouter={ajouter} /> : null}
             {!enEdition && !compteVide && disp.pret ? (
@@ -177,20 +178,22 @@ export default function Accueil() {
           </>
         )}
       </ScrollView>
-      {enEdition && selection && widgets.some((w) => w.id === selection) ? (
-        <BarreSelection
-          id={selection}
-          index={widgets.findIndex((w) => w.id === selection)}
-          total={widgets.length}
-          taille={(widgets.find((w) => w.id === selection) as WidgetPlace).taille}
-          onDeplacer={deplacer}
-          onTaille={changerTaille}
-          onRetirer={(id) => {
-            setSelection('');
-            retirer(id);
-          }}
-        />
+      {enEdition ? (
+        // En bas, au-dessus du menu : Terminer, Annuler, Réinitialiser
+        <View pointerEvents="box-none" style={[styles.bas, { bottom: bas + 16 }]}>
+          <BandeauEdition onTerminer={() => void terminerEdition()} onAnnuler={annulerEdition} onAuto={() => void reinitialiserAuto()} />
+        </View>
       ) : null}
+      <FeuilleWidget
+        id={enEdition && widgets.some((w) => w.id === modif) ? modif : null}
+        taille={widgets.find((w) => w.id === modif)?.taille ?? 'm'}
+        onTaille={changerTaille}
+        onSupprimer={(id) => {
+          setModif('');
+          retirer(id);
+        }}
+        onFermer={() => setModif('')}
+      />
     </View>
   );
 }
@@ -207,10 +210,9 @@ function Avis({ texte, info = false }: { texte: string; info?: boolean }) {
 
 const styles = StyleSheet.create({
   page: { flex: 1 },
+  bas: { position: 'absolute', left: 12, right: 12, gap: 8 },
   contenu: { paddingHorizontal: espace.e4, paddingTop: espace.e4, gap: espace.e4 },
   entete: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   attente: { alignItems: 'center', gap: espace.e3, paddingVertical: espace.e7 },
-  tuiles: { flexDirection: 'row', gap: espace.e3 },
-  vide: { flex: 1 },
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
 });

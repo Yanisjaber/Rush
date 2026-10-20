@@ -8,7 +8,7 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Ton dernier test, segment par segment : chaque case de la bande est large comme le temps passé dessus.
-// Sur téléphone, les 16 temps ne tiennent pas dans les cases (9 px sur le web) : ils sont dans un tableau juste dessous.
+// Sur téléphone, les 16 temps ne tiennent pas dans la boîte : la bande donne la forme du test, les totaux le résumé.
 // tuile : le temps total du dernier test en gros, l'objectif en note.
 export function WidgetHyroxTest({ contexte, tuile = false }: WidgetProps) {
   const p = usePalette();
@@ -53,33 +53,6 @@ export function WidgetHyroxTest({ contexte, tuile = false }: WidgetProps) {
             ))}
           </View>
 
-          {/* Le tableau : une ligne par manche (run puis station) */}
-          <View style={styles.tableau}>
-            {Array.from({ length: 8 }, (_, k) => {
-              const run = SEGMENTS[2 * k];
-              const station = SEGMENTS[2 * k + 1];
-              return (
-                <View
-                  key={k}
-                  accessible
-                  accessibilityLabel={`${run.nom} ${ecrireTemps(test.segments[run.i])}, ${station.nom} ${ecrireTemps(test.segments[station.i])}`}
-                  style={[styles.ligne, k > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }]}
-                >
-                  <View style={styles.moitie}>
-                    <Text style={[typo.petit, { color: p.texteDoux }]}>{run.court}</Text>
-                    <Text style={[styles.temps, { color: p.texte }]}>{ecrireTemps(test.segments[run.i])}</Text>
-                  </View>
-                  <View style={styles.moitie}>
-                    <Text numberOfLines={1} style={[typo.petit, styles.nomStation, { color: p.texteDoux }]}>
-                      {station.nom}
-                    </Text>
-                    <Text style={[styles.temps, { color: p.texte }]}>{ecrireTemps(test.segments[station.i])}</Text>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-
           <View style={styles.totaux}>
             <Total etiquette="Temps total" valeur={ecrireTemps(analyse.total)} />
             <Total etiquette="Runs" valeur={ecrireTemps(analyse.runs)} />
@@ -113,11 +86,6 @@ const styles = StyleSheet.create({
   legende: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   pastille: { width: 9, height: 9, borderRadius: 2 },
   bande: { flexDirection: 'row', gap: 3, height: 44 },
-  tableau: { marginTop: 14 },
-  ligne: { flexDirection: 'row', alignItems: 'center', minHeight: 40, gap: 12 },
-  moitie: { flex: 1, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
-  nomStation: { flex: 1 },
-  temps: { fontFamily: police.texte600, fontSize: 16, lineHeight: 22, fontVariant: ['tabular-nums'] },
   totaux: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 16, columnGap: 14, marginTop: 20 },
   total: { width: '47%' },
   valeur: { fontFamily: police.titre700, fontSize: 28, lineHeight: 32, marginTop: 4, fontVariant: ['tabular-nums'] },

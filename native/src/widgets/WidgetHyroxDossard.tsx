@@ -11,7 +11,7 @@ import { usePalette } from '@/theme/usePalette';
 
 // Compte à rebours de ta prochaine compétition Hyrox, avec ton dernier test et ton objectif de temps.
 // tuile : le compte à rebours en gros, le nom de la course en note.
-export function WidgetHyroxDossard({ contexte, tuile = false }: WidgetProps) {
+export function WidgetHyroxDossard({ contexte, taille = 'm', tuile = false }: WidgetProps) {
   const p = usePalette();
   const objectif = contexte.objectifs.find((o) => familleAffichage(o.sport) === 'hyrox') ?? null;
   const dernier = contexte.hyrox.tests[0] ?? null;
@@ -23,6 +23,7 @@ export function WidgetHyroxDossard({ contexte, tuile = false }: WidgetProps) {
 
   return (
     <Dossard
+      taille={taille === 'l' ? 'l' : 'm'}
       sport="hyrox"
       etiquette="Prochain objectif"
       nom={objectif ? objectif.name : 'Hyrox'}

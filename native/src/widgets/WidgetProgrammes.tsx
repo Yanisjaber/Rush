@@ -2,6 +2,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { bientot } from '@/actions/bientot';
 import { Bloc } from '@/components/Bloc';
 import { Bouton } from '@/components/Bouton';
+import { Tuile } from '@/components/Tuile';
+import { useRemplir } from '@/components/taille';
 import { resumeProgramme } from '@/data/force';
 import type { WidgetProps } from '@/data/types';
 import { rayon } from '@/theme/couleurs';
@@ -10,13 +12,19 @@ import { usePalette } from '@/theme/usePalette';
 
 // Tes programmes de musculation (PUSH, PULL, LEGS…).
 // compact : sur téléphone, un simple bouton qui ouvre la page Programmes (qui arrive plus tard : le bouton le dit).
-export function WidgetProgrammes({ contexte, compact = false }: WidgetProps) {
+export function WidgetProgrammes({ contexte, taille = 'm', tuile = false }: WidgetProps) {
   const p = usePalette();
+  const remplir = useRemplir();
+  const compact = taille === 'm'; // M : un simple bouton ; L : la liste des programmes
   const programmes = contexte.force.programmes;
   const detail = (prog: (typeof programmes)[number]) => {
     const r = resumeProgramme(prog);
     return `${r.exercices} exo${r.exercices > 1 ? 's' : ''}`;
   };
+
+  if (tuile) {
+    return <Tuile titre="Programmes" valeur={String(programmes.length)} note={programmes.length > 1 ? 'programmes de force' : 'programme de force'} />;
+  }
 
   if (compact) {
     return (
@@ -24,7 +32,7 @@ export function WidgetProgrammes({ contexte, compact = false }: WidgetProps) {
         onPress={() => bientot('La page des programmes')}
         accessibilityRole="button"
         accessibilityLabel={`Programmes, ${programmes.length}`}
-        style={({ pressed }) => [styles.bouton, { backgroundColor: p.surface, opacity: pressed ? 0.7 : 1 }]}
+        style={({ pressed }) => [styles.bouton, { backgroundColor: p.surface, opacity: pressed ? 0.7 : 1 }, remplir]}
       >
         <Text style={[styles.nom, { color: p.texte }]}>Programmes</Text>
         {programmes.length ? (
@@ -40,7 +48,7 @@ export function WidgetProgrammes({ contexte, compact = false }: WidgetProps) {
   return (
     <Bloc titre="Programmes">
       {programmes.length ? (
-        programmes.map((prog, i) => (
+        programmes.slice(0, 4).map((prog, i) => (
           <Pressable
             key={prog.id}
             onPress={() => bientot('La page des programmes')}
@@ -68,7 +76,7 @@ export function WidgetProgrammes({ contexte, compact = false }: WidgetProps) {
 
 const styles = StyleSheet.create({
   // Version téléphone : un bouton, pas une carte
-  bouton: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52, paddingHorizontal: 18, borderRadius: rayon.base },
+  bouton: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52, paddingHorizontal: 18, borderRadius: rayon.bloc },
   nom: { flex: 1, fontFamily: police.titre700, fontSize: 17, lineHeight: 22 },
   nombre: { minWidth: 24, paddingHorizontal: 8, paddingVertical: 1, borderRadius: 999, alignItems: 'center' },
   nombreTexte: { fontFamily: police.texte600 },

@@ -19,16 +19,16 @@ function detail(p: Prevue): string {
 }
 
 // tuile : la prochaine séance prévue (la date en gros, son nom en note).
-export function WidgetAvenir({ contexte, taille = 'm', tuile = false }: WidgetProps) {
+export function WidgetAvenir({ contexte, tuile = false }: WidgetProps) {
   const palette = usePalette();
-  const prochaines = prochainesPrevues(contexte.planifiees, new Date(), taille === 'l' ? 5 : 3);
+  const prochaines = prochainesPrevues(contexte.planifiees, new Date(), 4);
 
   if (tuile) {
     const prochaine = prochaines[0];
     const famille = prochaine ? familleAffichage(prochaine.sport) : '';
     return (
       <Tuile
-        titre="Prochaine séance"
+        titre="À venir"
         valeur={prochaine ? formatDateCourte(prochaine.date) : '—'}
         note={prochaine ? `${prochaine.name || SPORTS[famille as CleSport]?.court || SPORTS.autre.court}${prochaine.duration ? ` · ${formatDuree(prochaine.duration * 60)}` : ''}` : 'Rien de prévu'}
       />

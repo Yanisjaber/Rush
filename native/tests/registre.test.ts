@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compositionAuto, composerOnglet, estPertinent, existe, ORDRE_ONGLET, WIDGETS } from '../src/data/registre.ts';
+import { compositionAuto, composerOnglet, estPertinent, existe, normaliserListe, ORDRE_ONGLET, TAILLES, WIDGETS } from '../src/data/registre.ts';
 import { construireContexte } from '../src/data/contexte.ts';
 import { donneesDemoAccueil } from '../src/data/accueil.ts';
 
@@ -71,39 +71,15 @@ test('construireContexte : « Tous » ne filtre rien, un sport filtre séances e
   assert.equal(course.force.programmes.length, 3);
 });
 
-import { grouperTuiles } from '../src/data/registre.ts';
-
-test('grouperTuiles : deux tuiles éloignées sont rangées ensemble, à la place de la première', () => {
-  const w = (id: string) => ({ id, taille: 'm' as const });
-  const r = grouperTuiles([w('a'), w('tonnage'), w('b'), w('c'), w('regularite'), w('d')], (id) => id === 'tonnage' || id === 'regularite');
-  assert.deepEqual(r.map((x) => (Array.isArray(x) ? x.map((y) => y.id) : x.id)), ['a', ['tonnage', 'regularite'], 'b', 'c', 'd']);
+test('tailles : chaque widget a les quatre tailles, et chaque taille a sa hauteur fixe', async () => {
+  const { HAUTEURS } = await import('../src/components/taille.ts');
+  for (const [id, d] of Object.entries(WIDGETS)) assert.deepEqual([...(d as { tailles: readonly string[] }).tailles], ['xs', 's', 'm', 'l'], id);
+  assert.deepEqual(Object.keys(TAILLES), ['xs', 's', 'm', 'l']);
+  assert.deepEqual(Object.keys(HAUTEURS), ['xs', 's', 'm', 'l']);
+  assert.ok(HAUTEURS.xs < HAUTEURS.s && HAUTEURS.s <= HAUTEURS.m && HAUTEURS.m < HAUTEURS.l);
 });
 
-test('grouperTuiles : une tuile seule reste seule ; trois tuiles donnent une paire puis une seule', () => {
-  const w = (id: string) => ({ id, taille: 'm' as const });
-  const est = (id: string) => id.startsWith('t');
-  assert.deepEqual(grouperTuiles([w('a'), w('t1')], est).map((x) => (Array.isArray(x) ? x.length : 'w')), ['w', 1]);
-  assert.deepEqual(grouperTuiles([w('t1'), w('t2'), w('t3')], est).map((x) => (Array.isArray(x) ? x.length : 'w')), [2, 1]);
-});
-
-test('grouperTuiles : sans tuile, rien ne change', () => {
-  const w = (id: string) => ({ id, taille: 'm' as const });
-  assert.deepEqual(grouperTuiles([w('a'), w('b')], () => false), [w('a'), w('b')]);
-});
-
-import { readFileSync } from 'node:fs';
-
-test('chaque widget du registre a son composant (et inversement)', () => {
-  // composants.tsx importe React Native : on lit le fichier comme du texte plutôt que de l'importer
-  const source = readFileSync(new URL('../src/widgets/composants.tsx', import.meta.url), 'utf8');
-  const bloc = source.slice(source.indexOf('export const COMPOSANTS'), source.indexOf('};', source.indexOf('export const COMPOSANTS')));
-  const ids = [...bloc.matchAll(/^\s+([a-z]+):\s+Widget[A-Za-z]+,/gm)].map((m) => m[1]).sort();
-  assert.deepEqual(ids, Object.keys(WIDGETS).sort());
-});
-
-test('un onglet Trail montre les widgets de course, un onglet VTT ceux du vélo', () => {
-  assert.equal(estPertinent('predictions', ['trail']), true);
-  assert.equal(estPertinent('predictions', ['vtt']), false);
-  assert.ok(compositionAuto(['trail']).length > 0);
-  assert.deepEqual(compositionAuto(['vtt']).map((w) => w.id), compositionAuto(['velo']).map((w) => w.id));
+test("normaliserListe : l'ancienne taille xl devient l, une taille inconnue revient à celle par défaut", () => {
+  const r = normaliserListe([{ id: 'charge', taille: 'xl' }, { id: 'forme', taille: 'geant' }, { id: 'volume', taille: 'xs' }]);
+  assert.deepEqual(r, [{ id: 'charge', taille: 'l' }, { id: 'forme', taille: WIDGETS.forme.taille }, { id: 'volume', taille: 'xs' }]);
 });

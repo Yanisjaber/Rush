@@ -11,14 +11,14 @@ import { usePalette } from '@/theme/usePalette';
 
 // Charge de musculation : répétitions × (poids ÷ ton 1RM de l'exercice), sur 7 jours glissants.
 // Le badge compare à ton habitude ; la barre en couleur est la semaine en cours.
-// compact : tuile pour téléphone (chiffre clé + mini histogramme).
-export function WidgetChargeMuscu({ contexte, compact = false, tuile = false }: WidgetProps) {
+// tuile (taille S, M ou XS) : la version tuile, voir Tuile.
+export function WidgetChargeMuscu({ contexte, tuile = false }: WidgetProps) {
   const p = usePalette();
   const c = chargeMuscuRecente(contexte.force.series);
   const aDesDonnees = c.parSemaine.some((v) => v > 0);
   const pct = c.ratio == null ? null : Math.round((c.ratio - 1) * 100);
 
-  if (compact || tuile) {
+  if (tuile) {
     return (
       <Tuile
         titre="Charge muscu"

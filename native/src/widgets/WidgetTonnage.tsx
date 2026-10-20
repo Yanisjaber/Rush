@@ -11,13 +11,13 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Le tonnage (répétitions × charge) soulevé chaque semaine, sur 12 semaines.
-// compact : tuile pour téléphone (chiffre clé + mini histogramme).
-export function WidgetTonnage({ contexte, compact = false, tuile = false }: WidgetProps) {
+// tuile (taille S, M ou XS) : la version tuile, voir Tuile.
+export function WidgetTonnage({ contexte, tuile = false }: WidgetProps) {
   const p = usePalette();
   const t = tonnageParSemaine(contexte.force.series);
   const aDesDonnees = t.parSemaine.some((v) => v > 0);
 
-  if (compact || tuile) {
+  if (tuile) {
     return (
       <Tuile
         titre="Tonnage / semaine"
@@ -50,7 +50,7 @@ export function WidgetTonnage({ contexte, compact = false, tuile = false }: Widg
             ) : null}
             <Text style={[typo.petit, styles.periode, { color: p.texteDoux }]}>12 dernières semaines</Text>
           </View>
-          <BarresHebdo valeurs={t.parSemaine} couleur={p.sportMuscu} etiquette="Tonnage soulevé par semaine sur 12 semaines" />
+          <BarresHebdo valeurs={t.parSemaine} couleur={p.sportMuscu} etiquette="Tonnage soulevé par semaine sur 12 semaines" hauteur={105} />
           <Text style={[typo.petit, { color: p.texteDoux, marginTop: 12 }]}>Tonnage = répétitions × charge, additionné sur 7 jours glissants.</Text>
         </>
       ) : (

@@ -1,18 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { ajouterA, deplacerDans, retirerDe, taillerDans } from '../src/data/disposition-edition.ts';
+import { ajouterA, retirerDe, taillerDans } from '../src/data/disposition-edition.ts';
 import { compositionAuto, disponibles, disponiblesOnglet, normaliser, composerOnglet, WIDGETS } from '../src/data/registre.ts';
 
 const base = [{ id: 'objectif', taille: 'm' }, { id: 'semaine', taille: 'l' }, { id: 'avenir', taille: 's' }] as ReturnType<typeof compositionAuto>;
-
-test('deplacerDans : monte, descend, ne sort jamais des limites, ne modifie pas l\'original', () => {
-  assert.deepEqual(deplacerDans(base, 1, -1).map((w) => w.id), ['semaine', 'objectif', 'avenir']);
-  assert.deepEqual(deplacerDans(base, 1, 1).map((w) => w.id), ['objectif', 'avenir', 'semaine']);
-  assert.equal(deplacerDans(base, 0, -1), base);
-  assert.equal(deplacerDans(base, 2, 1), base);
-  assert.equal(deplacerDans(base, 9, 1), base);
-  assert.deepEqual(base.map((w) => w.id), ['objectif', 'semaine', 'avenir']);
-});
 
 test('retirerDe, ajouterA : doublon et inconnu ignorés, taille par défaut', () => {
   assert.deepEqual(retirerDe(base, 'semaine').map((w) => w.id), ['objectif', 'avenir']);

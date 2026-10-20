@@ -7,11 +7,11 @@
 import { familleDesWidgets } from './familles.ts';
 import type { Taille } from './types.ts';
 
-export const TAILLES: Record<Taille, { nom: string; court: string }> = {
-  s: { nom: 'Petit', court: 'S' },
-  m: { nom: 'Moyen', court: 'M' },
-  l: { nom: 'Large', court: 'L' },
-  xl: { nom: 'Pleine largeur', court: 'XL' },
+export const TAILLES: Record<Taille, { nom: string; court: string; description: string }> = {
+  xs: { nom: 'Très petit', court: 'XS', description: 'Une ligne fine' },
+  s: { nom: 'Petit', court: 'S', description: 'Une demi-ligne' },
+  m: { nom: 'Moyen', court: 'M', description: 'Une ligne entière' },
+  l: { nom: 'Large', court: 'L', description: 'Deux lignes de haut' },
 };
 
 export interface DefinitionWidget {
@@ -29,7 +29,7 @@ export const WIDGETS = {
     description: "Le compte à rebours de ta prochaine compétition.",
     categorie: "Objectifs",
     sports: 'tous',
-    tailles: ['s', 'm', 'l'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 'm',
   },
   charge: {
@@ -37,7 +37,7 @@ export const WIDGETS = {
     description: "Ta charge par semaine et par sport, avec la courbe de condition.",
     categorie: "Charge et forme",
     sports: 'tous',
-    tailles: ['s', 'l', 'xl'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 'l',
   },
   forme: {
@@ -45,7 +45,7 @@ export const WIDGETS = {
     description: "Forme, condition et fatigue du moment.",
     categorie: "Charge et forme",
     sports: 'tous',
-    tailles: ['s', 'm'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
   volume: {
@@ -53,7 +53,7 @@ export const WIDGETS = {
     description: "Le temps passé sur chaque sport cette semaine.",
     categorie: "Volume",
     sports: 'tous',
-    tailles: ['s', 'm'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
   predictions: {
@@ -61,7 +61,7 @@ export const WIDGETS = {
     description: "5 km, 10 km et semi, estimés d’après tes sorties récentes, avec l’écart à ton objectif.",
     categorie: "Course à pied",
     sports: ['course'],
-    tailles: ['s', 'm'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
   efficacite: {
@@ -69,7 +69,7 @@ export const WIDGETS = {
     description: "Ton allure en endurance semaine après semaine : elle baisse quand ta condition monte.",
     categorie: "Course à pied",
     sports: ['course'],
-    tailles: ['s', 'm', 'l'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
   meilleures: {
@@ -77,7 +77,7 @@ export const WIDGETS = {
     description: "Ta sortie la plus longue et tes sorties les plus rapides sur 5 et 10 km.",
     categorie: "Course à pied",
     sports: ['course'],
-    tailles: ['s', 'm', 'l'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
   puissance: {
@@ -85,7 +85,7 @@ export const WIDGETS = {
     description: "Tes meilleures puissances de 5 secondes à 1 heure, sur 90 jours et sur toute la vie.",
     categorie: "Vélo",
     sports: ['velo'],
-    tailles: ['s', 'm', 'l'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
   seancedujour: {
@@ -93,7 +93,7 @@ export const WIDGETS = {
     description: "Le dossard de ta prochaine séance de force, avec un bouton pour la démarrer.",
     categorie: "Musculation",
     sports: ['muscu'],
-    tailles: ['s', 'm', 'l'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 'm',
   },
   programmes: {
@@ -101,23 +101,23 @@ export const WIDGETS = {
     description: "Tes programmes de musculation (PUSH, PULL, LEGS…) : les ouvrir, en créer un. Se place à côté de la séance du jour.",
     categorie: "Musculation",
     sports: ['muscu'],
-    tailles: ['s'],
-    taille: 's',
+    tailles: ['xs', 's', 'm', 'l'],
+    taille: 'm',
   },
   tonnage: {
     nom: "Tonnage par semaine",
     description: "Le poids total soulevé chaque semaine (répétitions × charge), sur 12 semaines.",
     categorie: "Musculation",
     sports: ['muscu'],
-    tailles: ['s', 'm', 'l'],
-    taille: 'm',
+    tailles: ['xs', 's', 'm', 'l'],
+    taille: 's',
   },
   chargemuscu: {
     nom: "Charge musculation",
     description: "Ta charge de muscu sur 7 jours (répétitions × intensité par rapport à ton 1RM), comparée à ton habitude.",
     categorie: "Musculation",
     sports: ['muscu'],
-    tailles: ['s', 'm', 'l'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 'm',
   },
   records: {
@@ -125,15 +125,15 @@ export const WIDGETS = {
     description: "Tes exercices les plus pratiqués : 1RM estimé, record battu et courbe de progression.",
     categorie: "Musculation",
     sports: ['muscu'],
-    tailles: ['s', 'm', 'l', 'xl'],
-    taille: 'xl',
+    tailles: ['xs', 's', 'm', 'l'],
+    taille: 'l',
   },
   groupes: {
     nom: "Séries par groupe",
     description: "Combien de séries tu as faites cette semaine sur chaque groupe musculaire.",
     categorie: "Musculation",
     sports: ['muscu'],
-    tailles: ['s', 'm', 'l'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 'm',
   },
   hyroxdossard: {
@@ -141,7 +141,7 @@ export const WIDGETS = {
     description: "Compte à rebours de ta compétition Hyrox, avec ton dernier test et ton objectif de temps.",
     categorie: "Hyrox",
     sports: ['hyrox'],
-    tailles: ['s', 'm', 'l'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 'm',
   },
   hyroxtest: {
@@ -149,7 +149,7 @@ export const WIDGETS = {
     description: "Tes 16 segments (8 runs et 8 stations) avec le temps passé sur chacun.",
     categorie: "Hyrox",
     sports: ['hyrox'],
-    tailles: ['s', 'l', 'xl'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 'l',
   },
   hyroxallure: {
@@ -157,7 +157,7 @@ export const WIDGETS = {
     description: "Le temps de chacun de tes 8 kilomètres, comparé à ton objectif.",
     categorie: "Hyrox",
     sports: ['hyrox'],
-    tailles: ['s', 'm', 'l'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 'm',
   },
   hyroxgains: {
@@ -165,7 +165,7 @@ export const WIDGETS = {
     description: "L'écart par station entre ton dernier test et ton objectif.",
     categorie: "Hyrox",
     sports: ['hyrox'],
-    tailles: ['s', 'm', 'l'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 'm',
   },
   chargeforce: {
@@ -173,7 +173,7 @@ export const WIDGETS = {
     description: "Combien de séances de force par semaine soutiennent ton Hyrox.",
     categorie: "Hyrox",
     sports: ['hyrox'],
-    tailles: ['s', 'm'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
   semaine: {
@@ -181,7 +181,7 @@ export const WIDGETS = {
     description: "Les sept jours de la semaine, séance par séance.",
     categorie: "Séances",
     sports: 'tous',
-    tailles: ['s', 'l', 'xl'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
   avenir: {
@@ -189,7 +189,7 @@ export const WIDGETS = {
     description: "Tes prochaines séances prévues, de la plus proche à la plus lointaine.",
     categorie: "Séances",
     sports: 'tous',
-    tailles: ['s', 'm', 'l'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
   regularite: {
@@ -197,7 +197,7 @@ export const WIDGETS = {
     description: "Une case par jour sur 12 semaines, à la couleur du sport.",
     categorie: "Séances",
     sports: 'tous',
-    tailles: ['s', 'm', 'l'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
   dernieres: {
@@ -205,19 +205,13 @@ export const WIDGETS = {
     description: "Tes cinq dernières séances avec leur charge.",
     categorie: "Séances",
     sports: 'tous',
-    tailles: ['s', 'm', 'l'],
+    tailles: ['xs', 's', 'm', 'l'],
     taille: 'm',
   },
 } as const satisfies Record<string, DefinitionWidget>;
 
 export type IdWidget = keyof typeof WIDGETS;
 
-// Widgets qui ont une version « tuile » (deux par ligne) : ils la prennent quand leur taille est S. Tous, sauf Programmes (déjà un simple bouton).
-export const TUILES_ACCUEIL: ReadonlySet<string> = new Set([
-  'objectif', 'charge', 'forme', 'volume', 'semaine', 'avenir', 'dernieres', 'predictions', 'efficacite', 'meilleures', 'puissance',
-  'seancedujour', 'tonnage', 'chargemuscu', 'records', 'groupes', 'regularite',
-  'hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'chargeforce',
-]);
 
 /** Un widget placé sur l'accueil : son identifiant et sa taille. */
 export interface WidgetPlace {
@@ -230,7 +224,7 @@ export interface WidgetPlace {
  * Ces widgets n'apparaissent donc pas sur l'onglet « Tout », qui reste le tableau de bord général.
  */
 export const ORDRE_ONGLET: Record<string, readonly string[]> = {
-  muscu: ['seancedujour', 'programmes', 'tonnage', 'dernieres', 'records', 'groupes', 'regularite', 'chargemuscu'],
+  muscu: ['seancedujour', 'programmes', 'tonnage', 'regularite', 'dernieres', 'records', 'groupes', 'chargemuscu'],
   hyrox: ['hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'semaine', 'chargeforce'],
 };
 
@@ -342,7 +336,9 @@ export function normaliserListe(brut: unknown): WidgetPlace[] {
     if (!w || !existe(w.id) || vus.has(w.id)) continue;
     vus.add(w.id);
     const def = definition(w.id);
-    widgets.push({ id: w.id, taille: def.tailles.includes(w.taille) ? w.taille : def.taille });
+    // L'ancienne taille « pleine largeur » (xl) est devenue L
+    const souhaitee = (w.taille as string) === 'xl' ? 'l' : w.taille;
+    widgets.push({ id: w.id, taille: def.tailles.includes(souhaitee) ? souhaitee : def.taille });
   }
   return widgets;
 }
@@ -385,22 +381,4 @@ export function disponibles(disposition: { widgets: WidgetPlace[] }, familles: r
   return Object.keys(WIDGETS)
     .filter((id) => !presents.has(id))
     .sort((a, b) => Number(estPertinent(b, familles)) - Number(estPertinent(a, familles)));
-}
-
-/**
- * Range les tuiles deux par deux (comme la grille « dense » du web) : une paire prend la place de la première tuile,
- * la deuxième n'est plus répétée plus loin. Les autres widgets gardent leur place et leur pleine largeur.
- */
-export function grouperTuiles(widgets: WidgetPlace[], estTuile: (id: string) => boolean): (WidgetPlace | WidgetPlace[])[] {
-  const tuiles = widgets.filter((w) => estTuile(w.id));
-  const sortie: (WidgetPlace | WidgetPlace[])[] = [];
-  for (const w of widgets) {
-    if (!estTuile(w.id)) {
-      sortie.push(w);
-      continue;
-    }
-    const i = tuiles.indexOf(w);
-    if (i % 2 === 0) sortie.push(tuiles.slice(i, i + 2));
-  }
-  return sortie;
 }

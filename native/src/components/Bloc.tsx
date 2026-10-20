@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
+import { useRemplir } from '@/components/taille';
 import { usePalette } from '@/theme/usePalette';
 
 // Un bloc de contenu : une surface, un titre, du contenu. C'est la carte de base des widgets.
@@ -15,10 +16,11 @@ interface Props {
 
 export function Bloc({ titre, couleur, children }: Props) {
   const p = usePalette();
+  const remplir = useRemplir();
   return (
-    <View style={[styles.bloc, { backgroundColor: couleur ?? p.surface }]}>
+    <View style={[styles.bloc, { backgroundColor: couleur ?? p.surface }, remplir]}>
       {titre ? (
-        <Text accessibilityRole="header" style={[typo.titre3, styles.titre, { color: couleur ? p.encreSurCouleur : p.texte }]}>
+        <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, styles.titre, { color: couleur ? p.encreSurCouleur : p.texte }]}>
           {titre}
         </Text>
       ) : null}

@@ -3,6 +3,7 @@ import { bientot } from '@/actions/bientot';
 import { Bouton } from '@/components/Bouton';
 import { Dossard } from '@/components/Dossard';
 import { Tuile } from '@/components/Tuile';
+import { useRemplir } from '@/components/taille';
 import { familleAffichage } from '@/data/familles';
 import { programmeDuJour, resumeProgramme } from '@/data/force';
 import { dateIsoLocale, formatDateLongue } from '@/data/format';
@@ -16,10 +17,12 @@ import { usePalette } from '@/theme/usePalette';
 //  2. sinon le programme qui suit celui de ta dernière séance (PUSH, PULL, LEGS, PUSH…) ;
 //  3. sinon on propose d'enregistrer une séance.
 // tuile : le nom du programme en gros, le détail en note.
-// compact : bandeau dossard pour téléphone (le nom du programme en gros, un seul bouton).
+// M : bandeau dossard pour téléphone (le nom du programme en gros, un seul bouton).
 // Les écrans « démarrer une séance » et « voir » arrivent plus tard : les boutons le disent pour l'instant.
-export function WidgetSeanceDuJour({ contexte, compact = false, tuile = false }: WidgetProps) {
+export function WidgetSeanceDuJour({ contexte, taille = 'm', tuile = false }: WidgetProps) {
   const p = usePalette();
+  const remplir = useRemplir();
+  const compact = taille === 'm'; // M : bandeau ; L : le grand dossard
   const aujourdhui = dateIsoLocale();
 
   // Séance de muscu prévue aujourd'hui (ni compétition, ni autre sport) et son programme relié
@@ -46,16 +49,22 @@ export function WidgetSeanceDuJour({ contexte, compact = false, tuile = false }:
 
   if (compact) {
     return (
-      <View accessible accessibilityLabel={`${bandeau.etiquette}, ${bandeau.valeur}. ${bandeau.detail}`} style={[styles.bandeau, { backgroundColor: p.dossardFond }]}>
+      <View accessible accessibilityLabel={`${bandeau.etiquette}, ${bandeau.valeur}. ${bandeau.detail}`} style={[styles.bandeau, { backgroundColor: p.dossardFond }, remplir]}>
         {[styles.a, styles.b, styles.c, styles.d].map((pos, i) => (
           <View key={i} style={[styles.attache, pos, { backgroundColor: p.dossardTexte }]} />
         ))}
         <View style={styles.texte}>
-          <Text style={[typo.micro, { color: p.dossardTexte }]}>{bandeau.etiquette}</Text>
+          <Text numberOfLines={1} style={[typo.micro, { color: p.dossardTexte }]}>
+            {bandeau.etiquette}
+          </Text>
           <Text numberOfLines={1} style={[styles.valeur, { color: p.dossardTexte }]}>
             {bandeau.valeur}
           </Text>
-          {bandeau.detail ? <Text style={[typo.petit, { color: p.dossardTexte, opacity: 0.75 }]}>{bandeau.detail}</Text> : null}
+          {bandeau.detail ? (
+            <Text numberOfLines={2} style={[typo.petit, { color: p.dossardTexte, opacity: 0.75 }]}>
+              {bandeau.detail}
+            </Text>
+          ) : null}
         </View>
         <View style={styles.boutons}>
           <Bouton variante="sur-dossard" onPress={() => bientot('La saisie des séances de force')}>
@@ -95,7 +104,7 @@ export function WidgetSeanceDuJour({ contexte, compact = false, tuile = false }:
 }
 
 const styles = StyleSheet.create({
-  bandeau: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 22, paddingVertical: 18, borderRadius: rayon.base },
+  bandeau: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 22, paddingVertical: 18, borderRadius: rayon.bloc },
   attache: { position: 'absolute', width: 7, height: 7, borderRadius: 3.5 },
   a: { left: 8, top: 8 },
   b: { right: 8, top: 8 },

@@ -35,23 +35,25 @@ export function WidgetVolume({ contexte, tuile = false }: WidgetProps) {
     <Bloc titre="Volume, 7 derniers jours">
       {rep.totalSecondes ? (
         <>
-          <View style={styles.centre}>
+          <View style={styles.corps}>
             <Anneau
-              taille={170}
+              taille={130}
               etiquette={`Répartition du temps d'entraînement sur 7 jours, ${formatDuree(rep.totalSecondes)} au total : ${resume}`}
               segments={rep.segments.map((s) => ({ valeur: s.secondes, couleur: couleurSport(p, s.famille) }))}
             >
               <Text style={[styles.total, { color: p.texte }]}>{formatDuree(rep.totalSecondes)}</Text>
               <Text style={[typo.petit, { color: p.texteDoux }]}>cette semaine</Text>
             </Anneau>
-          </View>
-          {rep.segments.map((s) => (
-            <View key={s.famille} accessible accessibilityLabel={`${nom(s.famille)}, ${formatDuree(s.secondes)}`} style={styles.ligne}>
-              <View style={[styles.pastille, { backgroundColor: couleurSport(p, s.famille) }]} />
-              <Text style={[typo.corps, styles.nom, { color: p.texte }]}>{nom(s.famille)}</Text>
-              <Text style={[typo.corpsFort, { color: p.texte }]}>{formatDuree(s.secondes)}</Text>
+            <View style={styles.legende}>
+              {rep.segments.slice(0, 5).map((s) => (
+                <View key={s.famille} accessible accessibilityLabel={`${nom(s.famille)}, ${formatDuree(s.secondes)}`} style={styles.ligne}>
+                  <View style={[styles.pastille, { backgroundColor: couleurSport(p, s.famille) }]} />
+                  <Text style={[typo.corps, styles.nom, { color: p.texte }]}>{nom(s.famille)}</Text>
+                  <Text style={[typo.corpsFort, { color: p.texte }]}>{formatDuree(s.secondes)}</Text>
+                </View>
+              ))}
             </View>
-          ))}
+          </View>
         </>
       ) : (
         <Text style={[typo.corps, { color: p.texteDoux }]}>Aucune séance sur les 7 derniers jours.</Text>
@@ -61,10 +63,11 @@ export function WidgetVolume({ contexte, tuile = false }: WidgetProps) {
 }
 
 const styles = StyleSheet.create({
-  centre: { alignItems: 'center', marginBottom: 16 },
-  total: { fontFamily: police.titre700, fontSize: 30, lineHeight: 32 },
+  corps: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  legende: { flex: 1, minWidth: 0 },
+  total: { fontFamily: police.titre700, fontSize: 24, lineHeight: 28 },
   // 44 pt de haut : la ligne reste confortable même si elle n'est pas cliquable
-  ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 36 },
+  ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 30 },
   pastille: { width: 10, height: 10, borderRadius: 5 },
   nom: { flex: 1 },
   repartition: { flexDirection: 'row', height: 10, gap: 2, borderRadius: 3, overflow: 'hidden' },

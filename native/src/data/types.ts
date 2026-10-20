@@ -163,8 +163,8 @@ export interface Nuit {
   segments: SegmentNuit[] | null;
 }
 
-/** Taille d'un widget : petit, moyen, large, pleine largeur. */
-export type Taille = 's' | 'm' | 'l' | 'xl';
+/** Taille d'un widget : XS = une ligne fine (60 pt), S = une demi-ligne (tuile), M = une ligne entière, L = deux lignes de haut. */
+export type Taille = 'xs' | 's' | 'm' | 'l';
 
 /** Réglages de l'athlète (table user_profiles). */
 export interface Profil {
@@ -198,8 +198,6 @@ export interface Contexte {
 export interface WidgetProps {
   contexte: Contexte;
   taille?: Taille;
-  /** Version compacte pour téléphone (tuile de 2 par ligne). */
-  compact?: boolean;
   /** Taille S : version tuile (deux par ligne), disponible pour tous les widgets. */
   tuile?: boolean;
 }

@@ -22,7 +22,7 @@ Tout le reste (fonds, textes, traits) est neutre, pour que la couleur de sport s
 Le dossard est un bloc clair avec quatre points d'attache. Il porte **la donnée héros** d'un écran ou d'un widget (une distance, un temps, une charge).
 
 - Fond : `dossardFond` (clair en thème sombre, inversé en thème clair). Texte : `dossardTexte`.
-- Rayon : 6 px. Pas d'ombre portée (le contraste du fond suffit).
+- Rayon : 20 px, le même que tous les blocs et tuiles de l'app (`rayon.bloc`), pour qu'aucun widget ne détonne. Pas d'ombre portée (le contraste du fond suffit).
 - **Quatre points d'attache** : cercles de 8 px, couleur du fond de page (ils « percent » le dossard), à 10 px de chaque coin.
 - **Liseré de sport** : bande de 4 px collée en haut, couleur du sport concerné. Sans sport (ex. Sommeil) : `sportNeutre`.
 - Contenu : étiquette en micro-capitales en haut, chiffre héros en Bricolage 800 (`display`), unité en `petit`.

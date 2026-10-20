@@ -31,7 +31,6 @@ export function WidgetHyroxGains({ contexte, tuile = false }: WidgetProps) {
     <Bloc titre="Où gagner du temps">
       {ecarts.length ? (
         <>
-          <Text style={[typo.petit, { color: p.texteDoux, marginTop: -6, marginBottom: 14 }]}>Écart entre ton test et ton objectif, station par station.</Text>
           <View style={styles.liste}>
             {ecarts.map((e) => (
               <View key={e.cle} accessible accessibilityLabel={`${e.nom} : ${formatEcart(e.ecart)}`} style={styles.ligne}>
@@ -60,7 +59,7 @@ export function WidgetHyroxGains({ contexte, tuile = false }: WidgetProps) {
 }
 
 const styles = StyleSheet.create({
-  liste: { gap: 12 },
+  liste: { gap: 7 },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   nom: { width: 104 },
   piste: { flex: 1, height: 10 },

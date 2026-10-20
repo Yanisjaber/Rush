@@ -21,11 +21,11 @@ function detail(s: Seance): string {
 }
 
 // tuile : la dernière séance (sa durée en gros, son nom et sa date en note).
-export function WidgetDernieres({ contexte, taille = 'm', tuile = false }: WidgetProps) {
+export function WidgetDernieres({ contexte, tuile = false }: WidgetProps) {
   const p = usePalette();
   // Les records battus dans chaque séance (sur tout l'historique de force)
   const records = useMemo(() => recordsParSeance(contexte.force.series), [contexte.force.series]);
-  const recentes = contexte.dernieres.slice(0, taille === 'l' ? 5 : 3);
+  const recentes = contexte.dernieres.slice(0, 4);
 
   if (tuile) {
     const derniere = contexte.dernieres[0];

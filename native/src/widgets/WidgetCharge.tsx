@@ -11,7 +11,7 @@ import { usePalette } from '@/theme/usePalette';
 
 // La charge d'entraînement par semaine et par sport sur 12 semaines, avec la courbe de condition par-dessus.
 // tuile : tuile (charge des 7 derniers jours + les 8 dernières semaines en barres).
-export function WidgetCharge({ contexte, taille = 'l', tuile = false }: WidgetProps) {
+export function WidgetCharge({ contexte, tuile = false }: WidgetProps) {
   const p = usePalette();
   const charge = chargeParSemaine(contexte.seances);
   const condition = conditionHebdo(contexte.metriques);
@@ -27,7 +27,7 @@ export function WidgetCharge({ contexte, taille = 'l', tuile = false }: WidgetPr
       <Tuile
         titre="Charge, 7 jours"
         valeur={totaux.length ? String(derniere) : '—'}
-        note={totaux.length ? (ecart != null ? `${ecart > 0 ? '+' : ''}${ecart} % vs semaine d'avant` : 'Charge de la semaine') : 'Pas encore de séance'}
+        note={totaux.length ? (ecart != null ? `${ecart > 0 ? '+' : ''}${ecart} % vs sem. d'avant` : 'Charge de la semaine') : 'Pas encore de séance'}
       >
         {totaux.length ? <MiniBarres valeurs={totaux.slice(-8)} couleur={p.sportNeutre} etiquette="Charge par semaine sur 8 semaines" /> : null}
       </Tuile>
@@ -42,7 +42,7 @@ export function WidgetCharge({ contexte, taille = 'l', tuile = false }: WidgetPr
             series={charge.series.map((s) => ({ nom: s.nom, valeurs: s.valeurs, couleur: couleurSport(p, s.nom) }))}
             etiquettes={charge.etiquettes}
             ligne={condition}
-            hauteur={taille === 'xl' ? 260 : 220}
+            hauteur={150}
             etiquette="Charge par semaine et par sport sur 12 semaines, avec la courbe de condition"
           />
           <View style={styles.legende}>

@@ -11,7 +11,7 @@ import { usePalette } from '@/theme/usePalette';
 
 // Allure moyenne des sorties faciles, semaine après semaine : elle baisse quand la condition monte.
 // tuile : tuile (l'allure du moment + la courbe sur 12 semaines).
-export function WidgetEfficacite({ contexte, taille = 'm', tuile = false }: WidgetProps) {
+export function WidgetEfficacite({ contexte, tuile = false }: WidgetProps) {
   const p = usePalette();
   const eff = efficaciteCourse(contexte.toutesSeances, contexte.hrMax);
   // Une allure plus basse (en s/km) est plus rapide : on inverse pour que « mieux » monte sur le graphique
@@ -21,7 +21,7 @@ export function WidgetEfficacite({ contexte, taille = 'm', tuile = false }: Widg
   if (tuile) {
     return (
       <Tuile
-        titre="Allure à cardio égal"
+        titre="Allure cardio"
         valeur={eff ? formatAllure(eff.allureActuelle) : '—'}
         note={eff ? `${mieux ? '+' : ''}${eff.amelioration.toString().replace('.', ',')} % en 12 sem.` : 'Pas assez de sorties'}
       >
@@ -43,7 +43,7 @@ export function WidgetEfficacite({ contexte, taille = 'm', tuile = false }: Widg
               </Text>
             </View>
           </View>
-          <CourbeLissee valeurs={valeurs} couleur={p.sportCourse} hauteur={taille === 'l' ? 150 : 110} etiquette="Allure en endurance à cardio égal sur 12 semaines" />
+          <CourbeLissee valeurs={valeurs} couleur={p.sportCourse} hauteur={120} etiquette="Allure en endurance à cardio égal sur 12 semaines" />
           <Text style={[typo.petit, { color: p.texteDoux, marginTop: 12 }]}>Sorties de plus de 3 km à 60–80 % de ta fréquence cardiaque max, regroupées par semaine.</Text>
         </>
       ) : (

@@ -2,15 +2,6 @@
 import { existe, WIDGETS, type IdWidget, type WidgetPlace } from './registre.ts';
 import type { Taille } from './types.ts';
 
-/** Échange le widget `index` avec son voisin (sens -1 : monter, 1 : descendre). Hors limites : rien ne bouge. */
-export function deplacerDans(liste: WidgetPlace[], index: number, sens: -1 | 1): WidgetPlace[] {
-  const cible = index + sens;
-  if (index < 0 || index >= liste.length || cible < 0 || cible >= liste.length) return liste;
-  const copie = liste.map((w) => ({ ...w }));
-  [copie[index], copie[cible]] = [copie[cible], copie[index]];
-  return copie;
-}
-
 export const retirerDe = (liste: WidgetPlace[], id: string): WidgetPlace[] => liste.filter((w) => w.id !== id);
 
 /** Ajoute un widget à la fin, à sa taille par défaut ; un identifiant inconnu ou déjà présent est ignoré. */
