@@ -12,7 +12,7 @@ import { decoderStreams } from './streams.js';
 import { appliquerTout } from './retouches.js';
 
 const COLONNES_SEANCE =
-  'id,strava_id,source,name,sport,discipline,start_date_local,moving_time,distance_km,total_elevation_gain,avg_heartrate,avg_watts,np,tss,category';
+  'id,strava_id,source,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,avg_heartrate,avg_watts,np,tss,category';
 const COLONNES_METRIQUES = 'iso_date,tss,ctl,atl,tsb,duration_min,activity_count';
 const COLONNES_OBJECTIF = 'id,name,date,sport,km,d_plus,priority,duration,category';
 const COLONNES_PROFIL = 'ftp,hr_max,lthr,weight,extras';
@@ -64,6 +64,14 @@ export async function chargerMetriques(userId, jours = 90) {
   return resultat(r, 'Impossible de charger ta forme.');
 }
 
+/**
+ * La marche quotidienne (`Walk`) ne compte pas dans la charge, le volume ni les listes de l'accueil : elle les polluerait sans rien dire de la forme.
+ * Elle reste visible dans le calendrier et le bilan (l'historique complet). La randonnée (`Hike`) compte, elle.
+ */
+function sansMarche(seances) {
+  return seances.filter((s) => s.sport !== 'Walk');
+}
+
 /** Séances réalisées depuis N jours (les plus récentes d'abord). */
 export async function chargerSeances(userId, jours = 84, limite = 600) {
   const depuis = new Date();
@@ -76,7 +84,7 @@ export async function chargerSeances(userId, jours = 84, limite = 600) {
     .order('start_date_local', { ascending: false })
     .limit(limite);
   const res = resultat(r, 'Impossible de charger tes séances.');
-  if (res.data) res.data = await avecRetouches(userId, res.data);
+  if (res.data) res.data = sansMarche(await avecRetouches(userId, res.data));
   return res;
 }
 
@@ -94,7 +102,7 @@ export async function chargerDernieresSeances(userId, limite = 200) {
     .order('start_date_local', { ascending: false })
     .limit(limite);
   const res = resultat(r, 'Impossible de charger tes dernières séances.');
-  if (res.data) res.data = await avecRetouches(userId, res.data);
+  if (res.data) res.data = sansMarche(await avecRetouches(userId, res.data));
   return res;
 }
 
@@ -130,7 +138,7 @@ export async function chargerPuissance(userId) {
 // Calendrier : séances réalisées et prévues sur une période
 // ---------------------------------------------------------------------------
 
-const COLONNES_PLANIFIEE = 'id,name,date,sport,discipline,duration,tss,category,km,start_date_local,rpe,d_plus,notes,structure,gpx_name';
+const COLONNES_PLANIFIEE = 'id,name,date,sport,duration,tss,category,km,start_date_local,rpe,d_plus,notes,structure,gpx_name';
 
 /** Séances réalisées entre deux dates ISO incluses (le calendrier d'un mois). */
 export async function chargerSeancesPeriode(userId, debutIso, finIso) {
@@ -220,7 +228,7 @@ export async function lierProgramme(userId, id, programmeId) {
 // ---------------------------------------------------------------------------
 
 const COLONNES_DETAIL =
-  'id,strava_id,source,name,sport,discipline,start_date_local,elapsed_time,moving_time,distance_km,total_elevation_gain,avg_speed_kmh,max_speed_kmh,' +
+  'id,strava_id,source,name,sport,start_date_local,elapsed_time,moving_time,distance_km,total_elevation_gain,avg_speed_kmh,max_speed_kmh,' +
   'avg_heartrate,max_heartrate,avg_watts,max_watts,np,intensity,ftp_at_time,avg_cadence,kj,calories,tss,variability_index,' +
   'has_heartrate,has_power,user_notes,rpe,category,planned_id';
 

@@ -8,7 +8,6 @@
   import ChampGpx from './ChampGpx.svelte';
   import { SPORTS, couleurSport } from '../sports.js';
   import { menu } from '../stores/menu.svelte.js';
-  import ChampDiscipline from './ChampDiscipline.svelte';
   import { familleAffichage } from '../data/familles.js';
   import { SPORTS_PREVUE, sportsTries, sportDefaut, formulaireVide, formulaireDepuisLigne, validerPrevue, versLigne, estimerTss } from '../data/prevue.js';
   import { sportAvecStructure } from '../data/structure.js';
@@ -202,10 +201,6 @@
       </select>
       {#if erreurs.sport}<span class="erreur" role="alert">{erreurs.sport}</span>{/if}
     </div>
-
-    {#if f.sport === 'Athletics'}
-      <ChampDiscipline id="prevue-discipline" bind:valeur={f.discipline} erreur={erreurs.discipline} />
-    {/if}
 
     {#if estMuscu}
       <div class="champ">

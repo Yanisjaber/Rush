@@ -31,20 +31,13 @@ test('« Other » (autre sport prévu dans l\'app) reste « autre », « Workout
   assert.equal(familleSport('Workout'), 'muscu');
 });
 
-test('garderSeance : le sport, puis la discipline pour l\'athlétisme', () => {
+test('garderSeance : « tout » garde tout, sinon le sport de la pastille', () => {
   const run = { sport: 'Run' };
-  const quatre = { sport: 'Athletics', discipline: '400m' };
-  const haut = { sport: 'Athletics', discipline: 'hauteur' };
-  const sans = { sport: 'Athletics' };
+  const athle = { sport: 'Athletics' };
   assert.equal(garderSeance(run, 'tout'), true);
   assert.equal(garderSeance(run, 'course'), true);
-  assert.equal(garderSeance(run, 'athletisme'), false); // une sortie de course n'est pas de l'athlé
-  assert.equal(garderSeance(quatre, 'athletisme', 'tout'), true);
-  assert.equal(garderSeance(quatre, 'athletisme', '400m'), true);
-  assert.equal(garderSeance(haut, 'athletisme', '400m'), false);
-  assert.equal(garderSeance(sans, 'athletisme', 'tout'), true);
-  assert.equal(garderSeance(sans, 'athletisme', '400m'), false); // sans discipline : seulement sous « Tout »
-  assert.equal(garderSeance(quatre, 'course', '400m'), false);
-  assert.equal(garderSeance(run, 'course', '400m'), true); // la discipline ne concerne que l'athlétisme
+  assert.equal(garderSeance(run, 'velo'), false);
+  assert.equal(garderSeance(athle, 'tout'), true); // l'athlétisme n'a plus de page : il ne se voit que sous « Tout »
+  assert.equal(garderSeance(athle, 'course'), false);
   assert.equal(garderSeance(null, 'tout'), true);
 });

@@ -60,7 +60,7 @@
   });
 
   // Filtre global de sport : seules les séances et compétitions de ce sport sont affichées (la forme reste globale)
-  const garder = (x) => garderSeance(x, menu.filtre, menu.discipline);
+  const garder = (x) => garderSeance(x, menu.filtre);
   const etatFiltre = $derived({
     ...etat,
     planifiees: etat.planifiees.filter(garder),

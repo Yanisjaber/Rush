@@ -89,26 +89,3 @@ test('sportsTries et sportDefaut : le sport filtré passe en premier et devient 
   assert.equal(sportDefaut('tout'), 'Run');
   assert.equal(sportDefaut('escalade'), 'Run'); // sport sans type prévu : la course par défaut
 });
-
-test('discipline : seulement pour l\'athlétisme, seulement une vraie discipline, jamais du texte libre', () => {
-  const athle = { ...bon(), sport: 'Athletics', discipline: '400m' };
-  const r = validerPrevue(athle);
-  assert.equal(r.valeurs.discipline, '400m');
-  assert.equal(versLigne(r.valeurs).discipline, '400m');
-  // sans discipline choisie : null (la colonne reste vide)
-  assert.equal(validerPrevue({ ...athle, discipline: '' }).valeurs.discipline, null);
-  assert.equal(versLigne(validerPrevue({ ...athle, discipline: '' }).valeurs).discipline, null);
-  // une clé qui n'existe pas (ou du texte libre, ou une tentative d'injection) est refusée
-  for (const faux of ['100m-inconnu', 'DROP TABLE', "x'; --", '../..', '<img src=x onerror=1>']) {
-    const e = validerPrevue({ ...athle, discipline: faux });
-    assert.equal(e.valeurs, null, faux);
-    assert.ok(e.erreurs.discipline, faux);
-  }
-  // un autre sport ignore la discipline et n'envoie jamais la colonne
-  const course = validerPrevue({ ...bon(), sport: 'Run', discipline: '400m' });
-  assert.equal(course.valeurs.discipline, null);
-  assert.equal(Object.hasOwn(versLigne(course.valeurs), 'discipline'), false);
-  // relue depuis la base
-  assert.equal(formulaireDepuisLigne({ sport: 'Athletics', discipline: 'hauteur', name: 'x', date: '2026-10-20' }).discipline, 'hauteur');
-  assert.equal(formulaireDepuisLigne({ sport: 'Run', name: 'x', date: '2026-10-20' }).discipline, '');
-});

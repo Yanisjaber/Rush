@@ -20,7 +20,6 @@
   // « Mes sports » : change les sports qui composent l'accueil et ses onglets
   const uid = modeDemo() ? 'demo' : auth.session?.user?.id;
   let choix = $state([]);
-  let disciplines = $state({});
   let sportsEnCours = $state(false);
   let sportsMessage = $state('');
   $effect(() => {
@@ -28,7 +27,6 @@
     // `untrack` : seul l'identifiant de l'utilisateur doit relancer le chargement, jamais ce qu'il lit ou écrit dans le store
     untrack(() => chargerSportsChoisis(id)).then(() => {
       choix = sportsCoches(sportsChoisis.liste, menu.familles); // les sports de la barre sont cochés, y compris ceux que les séances révèlent
-      disciplines = JSON.parse(JSON.stringify(sportsChoisis.disciplines || {}));
     });
   });
   // Ordre d'affichage : la barre des sports suit l'ordre de cette liste (on la règle avec ↑ ↓, puis « Enregistrer mes sports »)
@@ -43,7 +41,7 @@
     if (sportsEnCours) return;
     sportsEnCours = true;
     sportsMessage = '';
-    const r = await enregistrerSportsChoisis(uid, choix, disciplines);
+    const r = await enregistrerSportsChoisis(uid, choix);
     sportsEnCours = false;
     if (uid !== 'demo') chargerMenu(uid); // le menu suit les sports choisis (Muscu, Hyrox)
     sportsMessage = r.local && uid !== 'demo' ? 'Enregistré sur cet appareil (la sauvegarde en ligne a échoué).' : 'Sports enregistrés : ton accueil s\'adapte à ton prochain passage.';
@@ -57,7 +55,7 @@
 <div class="onglet">
   <Bloc titre="Mes sports">
     <p class="aide">Les sports que tu pratiques composent ton accueil et ses onglets. Triathlon : coche course, vélo et natation.</p>
-    <ChoixSports bind:selection={choix} bind:disciplines desactive={sportsEnCours} />
+    <ChoixSports bind:selection={choix} desactive={sportsEnCours} />
     {#if choix.length > 1}
       <div class="ordre">
         <h3 class="titre-ordre titre">Ordre d'affichage</h3>

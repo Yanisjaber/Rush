@@ -5,18 +5,24 @@
 export const SPORTS_PRINCIPAUX = ['course', 'velo', 'natation', 'muscu', 'hyrox'];
 
 /** Les autres sports de performance : ils ont leur pastille de couleur et leurs séances, sans widgets dédiés. */
-export const SPORTS_AUTRES = ['athletisme', 'trail', 'vtt', 'triathlon', 'duathlon', 'crossfit', 'aviron', 'ski', 'combat', 'rando', 'escalade', 'pagaie'];
+export const SPORTS_AUTRES = ['trail', 'vtt', 'triathlon', 'duathlon', 'crossfit', 'ski'];
+
+/**
+ * Des activités qui comptent dans la charge, le volume et les listes de séances, mais qui n'ont PAS de page : on ne les propose pas à
+ * cocher et elles n'ont jamais de pastille dans la barre du haut, même si les séances les révèlent. (Décision du 20 oct.)
+ */
+export const SPORTS_SANS_PAGE = ['rando', 'combat', 'escalade', 'aviron', 'pagaie', 'athletisme'];
 
 /** Tout ce qu'on peut cocher, dans l'ordre de l'écran. */
 export const SPORTS_A_CHOISIR = [...SPORTS_PRINCIPAUX, ...SPORTS_AUTRES];
 
 /** Les sports rangés par thème pour l'écran de choix (chaque sport proposé apparaît dans un seul groupe). */
 export const GROUPES_SPORTS = [
-  { titre: 'Course & athlé', sports: ['course', 'trail', 'athletisme'] },
+  { titre: 'Course', sports: ['course', 'trail'] },
   { titre: 'Vélo & multisport', sports: ['velo', 'vtt', 'triathlon', 'duathlon'] },
-  { titre: 'Eau', sports: ['natation', 'aviron', 'pagaie'] },
-  { titre: 'Force & hybride', sports: ['muscu', 'hyrox', 'crossfit', 'combat'] },
-  { titre: 'Nature', sports: ['rando', 'escalade', 'ski'] },
+  { titre: 'Eau', sports: ['natation'] },
+  { titre: 'Force & hybride', sports: ['muscu', 'hyrox', 'crossfit'] },
+  { titre: 'Nature', sports: ['ski'] },
 ];
 
 /**
@@ -66,7 +72,7 @@ const FAMILLES_DU_SPORT = { trail: ['course'], vtt: ['velo'] };
 
 /**
  * Les familles de sport de l'accueil, dans l'ordre d'affichage : d'abord les sports choisis (dans l'ordre de l'utilisateur),
- * puis ceux que ses données révèlent sans qu'il les ait cochés (« autre » n'a pas d'onglet).
+ * puis ceux que ses données révèlent sans qu'il les ait cochés (« autre » et les sports sans page n'ont pas d'onglet).
  */
 export function fusionnerFamilles(deDonnees = [], choisis = []) {
   const f = new Set();
@@ -75,5 +81,6 @@ export function fusionnerFamilles(deDonnees = [], choisis = []) {
   }
   for (const famille of deDonnees || []) f.add(famille);
   f.delete('autre');
+  for (const s of SPORTS_SANS_PAGE) f.delete(s);
   return [...f];
 }

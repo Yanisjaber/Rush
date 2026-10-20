@@ -10,7 +10,7 @@ export const SPORTS = {
   natation: { nom: 'Natation', court: 'Natation', couleur: 'var(--sport-natation)' },
   triathlon: { nom: 'Triathlon', court: 'Triathlon', couleur: 'var(--sport-velo)' },
   duathlon: { nom: 'Duathlon', court: 'Duathlon', couleur: 'var(--sport-velo)' },
-  athletisme: { nom: 'Athlétisme', court: 'Athlé', couleur: 'var(--sport-course)' },
+  athletisme: { nom: 'Athlétisme', court: 'Athlé', couleur: 'var(--sport-neutre)' },
   hyrox: { nom: 'Hyrox', court: 'Hyrox', couleur: 'var(--sport-hybride)' },
   crossfit: { nom: 'CrossFit', court: 'CrossFit', couleur: 'var(--sport-hybride)' },
   muscu: { nom: 'Musculation', court: 'Muscu', couleur: 'var(--sport-muscu)' },

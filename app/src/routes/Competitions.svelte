@@ -61,7 +61,7 @@
 
   // À venir et passées. Les compétitions prévues dont la date est passée restent listées avec les passées (sans résultat).
   // Filtre global de sport : on ne garde que les compétitions de ce sport (les résultats Open Dossard restent rapprochés par date)
-  const garder = (c) => garderSeance(c, menu.filtre, menu.discipline);
+  const garder = (c) => garderSeance(c, menu.filtre);
   const prevuesF = $derived(etat.prevues.filter(garder));
   const couruesF = $derived(etat.courues.filter(garder));
   const reparties = $derived(repartir(prevuesF, aujourdhui));

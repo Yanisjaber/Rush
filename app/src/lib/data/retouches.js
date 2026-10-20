@@ -18,10 +18,9 @@ export function appliquer(ligne, retouche) {
   if (!retouche || typeof retouche !== 'object') return ligne;
   const r = { ...ligne };
   // On garde les valeurs d'origine (avant retouche) : elles servent à ne recalculer que ce qui a changé
-  r.origine = ligne.origine || { name: ligne.name, sport: ligne.sport, discipline: ligne.discipline, moving_time: ligne.moving_time, distance_km: ligne.distance_km, tss: ligne.tss, total_elevation_gain: ligne.total_elevation_gain, rpe: ligne.rpe, user_notes: ligne.user_notes };
+  r.origine = ligne.origine || { name: ligne.name, sport: ligne.sport, moving_time: ligne.moving_time, distance_km: ligne.distance_km, tss: ligne.tss, total_elevation_gain: ligne.total_elevation_gain, rpe: ligne.rpe, user_notes: ligne.user_notes };
   if (typeof retouche.name === 'string' && retouche.name) r.name = retouche.name;
   if (typeof retouche.sport === 'string' && retouche.sport) r.sport = retouche.sport;
-  if (typeof retouche.discipline === 'string') r.discipline = retouche.discipline || null;
   if (Number.isFinite(retouche.duration)) r.moving_time = retouche.duration * 60;
   if (Number.isFinite(retouche.distance_km)) r.distance_km = retouche.distance_km;
   if (Number.isFinite(retouche.tss)) r.tss = retouche.tss;
@@ -51,7 +50,6 @@ export function formulaireDepuisSortie(l) {
     nom: t(l.name),
     heure: heure ? heure[1] : '12:00',
     sport: l.sport || 'Workout',
-    discipline: t(l.discipline),
     duree: l.moving_time ? String(Math.round(l.moving_time / 60)) : '',
     tss: t(l.tss),
     rpe: t(l.rpe),
@@ -75,7 +73,6 @@ export function versLigneManuelle(v) {
     name: v.nom,
     start_date_local: `${v.date}T${v.heure}:00`,
     sport: v.sport,
-    ...(v.sport === 'Athletics' ? { discipline: v.discipline ?? null } : {}),
     moving_time: v.duree * 60,
     tss: v.tss,
     rpe: v.rpe,
@@ -94,7 +91,6 @@ export function retoucheDepuis(valeurs, ligne) {
   const data = {};
   if (valeurs.nom !== (o.name ?? '')) data.name = valeurs.nom;
   if (valeurs.sport !== o.sport) data.sport = valeurs.sport;
-  if (valeurs.sport === 'Athletics' && (valeurs.discipline ?? '') !== (o.discipline ?? '')) data.discipline = valeurs.discipline ?? '';
   if (valeurs.duree !== Math.round((o.moving_time || 0) / 60)) data.duration = valeurs.duree;
   if ((valeurs.km ?? null) !== (o.distance_km != null ? Number(o.distance_km) : null) && valeurs.km != null) data.distance_km = valeurs.km;
   if (valeurs.tss !== (o.tss != null ? Number(o.tss) : null)) data.tss = valeurs.tss;

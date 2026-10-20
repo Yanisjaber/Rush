@@ -1,6 +1,5 @@
 // Séance prévue : choix proposés, validation du formulaire, estimation de la charge, conversion vers la ligne de la base.
 // Fonctions pures : aucune écriture ici, tout est vérifié avant d'envoyer quoi que ce soit.
-import { disciplineValide } from './disciplines.js';
 import { normaliser, resume, sportAvecStructure } from './structure.js';
 import { TAILLE_MAX_GPX } from './gpx.js';
 import { familleAffichage } from './familles.js';
@@ -24,7 +23,6 @@ export const SPORTS_PREVUE = [
   { cle: 'natation', type: 'Swim' },
   { cle: 'triathlon', type: 'Triathlon' },
   { cle: 'duathlon', type: 'Duathlon' },
-  { cle: 'athletisme', type: 'Athletics' },
   { cle: 'muscu', type: 'WeightTraining' },
   { cle: 'crossfit', type: 'Crossfit' },
   { cle: 'hyrox', type: 'Hyrox' },
@@ -63,7 +61,7 @@ export function estimerTss(dureeMin, rpe) {
 
 /** Formulaire vide, avec la date (AAAA-MM-JJ) choisie. */
 export function formulaireVide(dateIso) {
-  return { nom: '', date: dateIso, heure: '12:00', sport: 'Run', duree: '60', tss: '', rpe: '', km: '', dPlus: '', notes: '', structure: [], discipline: '' };
+  return { nom: '', date: dateIso, heure: '12:00', sport: 'Run', duree: '60', tss: '', rpe: '', km: '', dPlus: '', notes: '', structure: [] };
 }
 
 /** Formulaire prérempli depuis une ligne de activity_planned. */
@@ -80,7 +78,6 @@ export function formulaireDepuisLigne(l) {
     rpe: texte(l.rpe),
     km: texte(l.km),
     dPlus: texte(l.d_plus),
-    discipline: texte(l.discipline),
     notes: texte(l.notes),
     structure: normaliser(l.structure, 'power'),
     gpxNom: texte(l.gpx_name), // nom du parcours déjà enregistré (le contenu se charge à part) ; `gpx` reste indéfini tant qu'on n'y touche pas
@@ -121,10 +118,6 @@ export function validerPrevue(entree, ref = {}) {
 
   if (!TYPES.has(f.sport)) erreurs.sport = 'Choisis un sport.';
 
-  // Discipline : seulement pour l'athlétisme, et seulement une vraie discipline de la liste (jamais du texte libre)
-  const discipline = f.sport === 'Athletics' && f.discipline ? String(f.discipline) : null;
-  if (discipline && !disciplineValide('athletisme', discipline)) erreurs.discipline = 'Choisis une discipline de la liste.';
-
   const duree = nombreOuNull(f.duree);
   if (duree == null || !Number.isInteger(duree) || duree < 1 || duree > 1440) erreurs.duree = 'Durée entre 1 et 1440 minutes.';
 
@@ -153,7 +146,6 @@ export function validerPrevue(entree, ref = {}) {
       date,
       heure,
       sport: f.sport,
-      discipline,
       duree,
       tss: tss ?? estimerTss(duree, rpe),
       rpe,
@@ -175,8 +167,6 @@ export function versLigne(v) {
     date: v.date,
     start_date_local: `${v.date}T${v.heure}:00`,
     sport: v.sport,
-    // La discipline n'est écrite que pour l'athlétisme : les autres sports n'envoient jamais cette colonne
-    ...(v.sport === 'Athletics' ? { discipline: v.discipline ?? null } : {}),
     duration: v.duree,
     tss: v.tss,
     rpe: v.rpe,

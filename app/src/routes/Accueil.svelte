@@ -153,15 +153,15 @@
   const familles = $derived(famillesDe(etat.seances, etat.force, etat.hyrox, etat.objectifs));
   // Le filtre doit rester un sport que l'utilisateur pratique (sinon on revient sur « Tout »)
   const filtreActif = $derived(filtre === 'tout' || familles.includes(filtre) || menu.familles.includes(filtre) ? filtre : 'tout');
-  const seancesVisibles = $derived(filtreActif === 'tout' ? etat.seances : etat.seances.filter((s) => garderSeance(s, filtreActif, menu.discipline)));
+  const seancesVisibles = $derived(filtreActif === 'tout' ? etat.seances : etat.seances.filter((s) => garderSeance(s, filtreActif)));
   // Ce que reçoit chaque widget : toujours la même enveloppe, filtrée par le sport choisi
   const contexte = $derived({
     seances: seancesVisibles,
     toutesSeances: etat.seances,
-    dernieres: filtreActif === 'tout' ? etat.dernieres : etat.dernieres.filter((s) => garderSeance(s, filtreActif, menu.discipline)),
+    dernieres: filtreActif === 'tout' ? etat.dernieres : etat.dernieres.filter((s) => garderSeance(s, filtreActif)),
     metriques: etat.metriques,
     objectifs: etat.objectifs,
-    planifiees: etat.planifiees.filter((p) => filtreActif === 'tout' || garderSeance(p, filtreActif, menu.discipline)),
+    planifiees: etat.planifiees.filter((p) => filtreActif === 'tout' || garderSeance(p, filtreActif)),
     profil: etat.profil,
     puissance: etat.puissance,
     hrMax: etat.profil?.hr_max || null,

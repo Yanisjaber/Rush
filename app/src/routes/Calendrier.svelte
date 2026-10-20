@@ -82,7 +82,7 @@
   });
 
   // --- Dérivés ---
-  const garder = (seance) => garderSeance(seance, filtre, menu.discipline);
+  const garder = (seance) => garderSeance(seance, filtre);
   const grille = $derived(
     grilleMois(cible.annee, cible.mois, {
       seances: etat.seances.filter(garder),

@@ -24,7 +24,6 @@ function appliquerEtat(a) {
   // Une page qui suit le sport lit son choix dans l'adresse (sans sport = tous) ; Sommeil, Paramètres… gardent le dernier choix
   if (estPageSport(a.chemin)) {
     const sport = a.sport || 'tout';
-    if (sport !== menu.filtre) menu.discipline = 'tout'; // un autre sport : la discipline choisie n'a plus de sens
     menu.filtre = sport;
   }
 }

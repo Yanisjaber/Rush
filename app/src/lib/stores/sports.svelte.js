@@ -1,13 +1,12 @@
-// Les sports choisis par l'utilisateur (et leurs sous-disciplines), réactifs. Stockés dans user_preferences (colonnes `sports` et `disciplines`) ;
-// en démo, ou si les colonnes n'existent pas encore, dans le navigateur (l'app marche dans tous les cas).
+// Les sports choisis par l'utilisateur, réactifs. Stockés dans user_preferences (colonne `sports`) ;
+// en démo, ou si la colonne n'existe pas encore, dans le navigateur (l'app marche dans tous les cas).
+// La colonne `disciplines` du compte n'est plus lue ni écrite (les disciplines ont été retirées de l'app, 20 oct.).
 import { sb } from '../supabase.js';
 import { nettoyerSports } from '../data/sports-choisis.js';
-import { nettoyerDisciplines } from '../data/disciplines.js';
 
-export const sportsChoisis = $state({ pret: false, liste: null, disciplines: {}, stockage: 'local' });
+export const sportsChoisis = $state({ pret: false, liste: null, stockage: 'local' });
 
 const cleSports = (uid) => `rush-sports-${uid}`;
-const cleDisciplines = (uid) => `rush-disciplines-${uid}`;
 
 function lireLocal(cle) {
   try {
@@ -26,41 +25,35 @@ function ecrireLocal(cle, valeur) {
   }
 }
 
-/** Charge les sports et disciplines choisis (base de données, sinon navigateur). `liste` reste null si on ne les a jamais demandés. */
+/** Charge les sports choisis (base de données, sinon navigateur). `liste` reste null si on ne les a jamais demandés. */
 export async function chargerSportsChoisis(uid) {
   sportsChoisis.stockage = 'local';
   if (uid && uid !== 'demo') {
-    const r = await sb.from('user_preferences').select('sports,disciplines').eq('user_id', uid).maybeSingle();
+    const r = await sb.from('user_preferences').select('sports').eq('user_id', uid).maybeSingle();
     if (!r.error) {
       // On calcule dans des variables locales : relire `sportsChoisis` juste après l'avoir écrit relancerait, à l'infini,
       // tout effet Svelte qui appelle cette fonction.
       const liste = nettoyerSports(r.data?.sports);
       sportsChoisis.stockage = 'base';
       sportsChoisis.liste = liste;
-      sportsChoisis.disciplines = nettoyerDisciplines(r.data?.disciplines, liste || []);
       sportsChoisis.pret = true;
       return;
     }
   }
-  const liste = nettoyerSports(lireLocal(cleSports(uid)));
-  sportsChoisis.liste = liste;
-  sportsChoisis.disciplines = nettoyerDisciplines(lireLocal(cleDisciplines(uid)), liste || []);
+  sportsChoisis.liste = nettoyerSports(lireLocal(cleSports(uid)));
   sportsChoisis.pret = true;
 }
 
 /**
- * Enregistre les sports choisis et leurs disciplines (celles d'un sport décoché disparaissent).
+ * Enregistre les sports choisis. N'écrit que la colonne `sports` (jamais le thème, la disposition ni les disciplines).
  * Renvoie { ok, local } ; en cas d'échec en ligne, le choix reste valable sur cet appareil.
  */
-export async function enregistrerSportsChoisis(uid, brut, disciplinesBrutes = {}) {
+export async function enregistrerSportsChoisis(uid, brut) {
   const liste = nettoyerSports(brut) || [];
-  const disciplines = nettoyerDisciplines(disciplinesBrutes, liste);
   ecrireLocal(cleSports(uid), liste);
-  ecrireLocal(cleDisciplines(uid), disciplines);
   sportsChoisis.liste = liste;
-  sportsChoisis.disciplines = disciplines;
   if (!uid || uid === 'demo' || sportsChoisis.stockage !== 'base') return { ok: true, local: true };
-  const r = await sb.from('user_preferences').upsert({ user_id: uid, sports: liste, disciplines }, { onConflict: 'user_id' });
+  const r = await sb.from('user_preferences').upsert({ user_id: uid, sports: liste }, { onConflict: 'user_id' });
   if (r.error) {
     console.error('[app/sports]', r.error.code || '');
     sportsChoisis.stockage = 'local';
