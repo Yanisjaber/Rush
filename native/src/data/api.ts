@@ -21,11 +21,11 @@ export interface Resultat<T> {
 }
 
 const COLONNES_SEANCE =
-  'id,strava_id,source,name,sport,discipline,start_date_local,moving_time,distance_km,total_elevation_gain,avg_heartrate,avg_watts,np,tss,category';
+  'id,strava_id,source,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,avg_heartrate,avg_watts,np,tss,category';
 const COLONNES_METRIQUES = 'iso_date,tss,ctl,atl,tsb,duration_min,activity_count';
 const COLONNES_OBJECTIF = 'id,name,date,sport,km,d_plus,priority,duration,category';
 const COLONNES_PROFIL = 'ftp,hr_max,lthr,weight,extras';
-const COLONNES_PLANIFIEE = 'id,name,date,sport,discipline,duration,tss,category,km,start_date_local,rpe,d_plus,notes,structure,gpx_name';
+const COLONNES_PLANIFIEE = 'id,name,date,sport,duration,tss,category,km,start_date_local,rpe,d_plus,notes,structure,gpx_name';
 const COLONNES_SERIE = 'id,activity_id,date,exercise_key,exercise_name,muscle_group,position,set_no,reps,weight_kg';
 const COLONNES_PROGRAMME = 'id,name,exercises,notes,created_at';
 const COLONNES_HYROX = 'id,date,label,kind,segments,total_s,source,activity_id,notes';
@@ -363,16 +363,9 @@ export async function enregistrerProfil(userId: string, colonnes: Record<string,
   return resultat<LigneProfil>(r as Reponse, "Impossible d'enregistrer ton profil.");
 }
 
-/** Les disciplines choisies du compte (objet brut : à nettoyer avec nettoyerDisciplines). */
-export async function chargerDisciplinesChoisies(userId: string): Promise<Resultat<unknown>> {
-  const r = await sb.from('user_preferences').select('disciplines').eq('user_id', userId).maybeSingle();
-  if (r.error) return { data: null, erreur: '' };
-  return { data: (r.data as { disciplines?: unknown } | null)?.disciplines ?? null, erreur: '' };
-}
-
-/** Enregistre les sports choisis et leurs disciplines (déjà nettoyés). N'écrit ni le thème ni autre chose. */
-export async function enregistrerSportsChoisis(userId: string, sports: string[], disciplines: Record<string, string[]> = {}): Promise<{ erreur: string }> {
-  const r = await sb.from('user_preferences').upsert({ user_id: userId, sports, disciplines }, { onConflict: 'user_id' });
+/** Enregistre les sports choisis (déjà nettoyés). N'écrit ni le thème, ni les disciplines du site, ni autre chose. */
+export async function enregistrerSportsChoisis(userId: string, sports: string[]): Promise<{ erreur: string }> {
+  const r = await sb.from('user_preferences').upsert({ user_id: userId, sports }, { onConflict: 'user_id' });
   if (r.error) {
     const e = r.error as { code?: string; message?: string };
     console.error('[app/api] sports', r.status, e.code || '', String(e.message || '').slice(0, 120));

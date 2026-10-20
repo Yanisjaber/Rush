@@ -6,10 +6,9 @@ import { useSyncExternalStore } from 'react';
 interface EtatSports {
   version: number;
   demo: string[] | null;
-  demoDisciplines: Record<string, string[]>;
 }
 
-let etat: EtatSports = { version: 0, demo: null, demoDisciplines: {} };
+let etat: EtatSports = { version: 0, demo: null };
 const ecouteurs = new Set<() => void>();
 
 function abonner(fn: () => void) {
@@ -28,6 +27,6 @@ function changer(suite: Partial<EtatSports>) {
 export const sportsModifies = () => changer({ version: etat.version + 1 });
 
 /** Démo : mémorise les sports choisis (rien n'est écrit nulle part). */
-export const definirSportsDemo = (liste: string[], disciplines: Record<string, string[]> = {}) => changer({ demo: liste, demoDisciplines: disciplines, version: etat.version + 1 });
+export const definirSportsDemo = (liste: string[]) => changer({ demo: liste, version: etat.version + 1 });
 
 export const useSportsEtat = (): EtatSports => useSyncExternalStore(abonner, () => etat, () => etat);

@@ -12,7 +12,7 @@ import { usePalette } from '@/theme/usePalette';
 export function Onboarding() {
   const p = usePalette();
   const insets = useSafeAreaInsets();
-  const { choisis, setChoisis, disciplines, setDisciplines, disciplinesApres, erreur, envoi, appliquer } = useSportsChoisis();
+  const { choisis, setChoisis, erreur, envoi, appliquer } = useSportsChoisis();
   const liste = choisis ?? [];
   const basculer = (cle: string) => setChoisis(liste.includes(cle) ? liste.filter((s) => s !== cle) : [...liste, cle]);
 
@@ -30,11 +30,11 @@ export function Onboarding() {
           {erreur}
         </Text>
       ) : null}
-      <SelecteurSports choisis={liste} onBasculer={basculer} disciplines={disciplines} onBasculerDiscipline={(sport, cle) => setDisciplines(disciplinesApres(sport, cle))} desactive={envoi} />
+      <SelecteurSports choisis={liste} onBasculer={basculer} desactive={envoi} />
       <View style={{ gap: espace.e3 }}>
-        <Bouton onPress={() => void appliquer(liste, disciplines)}>{envoi ? 'Enregistrement…' : liste.length ? 'Continuer' : 'Continuer sans choisir'}</Bouton>
+        <Bouton onPress={() => void appliquer(liste)}>{envoi ? 'Enregistrement…' : liste.length ? 'Continuer' : 'Continuer sans choisir'}</Bouton>
         {liste.length ? (
-          <Bouton variante="discret" onPress={() => void appliquer([], {})}>
+          <Bouton variante="discret" onPress={() => void appliquer([])}>
             Passer
           </Bouton>
         ) : null}

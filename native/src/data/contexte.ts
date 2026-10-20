@@ -4,8 +4,8 @@ import type { DonneesAccueil } from './accueil.ts';
 import { garderSeance } from './familles.ts';
 import type { Contexte } from './types.ts';
 
-export function construireContexte(donnees: DonneesAccueil, filtre: string, discipline = 'tout'): Contexte {
-  const garde = (x: { sport?: string; discipline?: string | null }) => filtre === 'tout' || garderSeance(x, filtre, discipline);
+export function construireContexte(donnees: DonneesAccueil, filtre: string): Contexte {
+  const garde = (x: { sport?: string }) => filtre === 'tout' || garderSeance(x, filtre);
   return {
     seances: donnees.seances.filter(garde),
     toutesSeances: donnees.seances,

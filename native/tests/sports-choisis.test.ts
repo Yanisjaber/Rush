@@ -10,7 +10,7 @@ test('basculerSport : ajoute, retire, mais jamais le dernier', async () => {
 
 test('sports sans page : jamais à cocher, jamais de pastille, même si les séances les révèlent', async () => {
   const { SPORTS_A_CHOISIR, SPORTS_SANS_PAGE, GROUPES_SPORTS, fusionnerFamilles, nettoyerSports } = await import('../src/data/sports-choisis.ts');
-  assert.deepEqual(SPORTS_SANS_PAGE, ['rando', 'combat', 'escalade', 'aviron', 'pagaie']);
+  assert.deepEqual(SPORTS_SANS_PAGE, ['rando', 'combat', 'escalade', 'aviron', 'pagaie', 'athletisme']);
   for (const s of SPORTS_SANS_PAGE) {
     assert.ok(!SPORTS_A_CHOISIR.includes(s), `${s} ne se coche plus`);
     assert.ok(!GROUPES_SPORTS.some((g) => g.sports.includes(s)), `${s} n'est dans aucun groupe`);
@@ -20,5 +20,5 @@ test('sports sans page : jamais à cocher, jamais de pastille, même si les séa
   assert.deepEqual([...proposes].sort(), [...SPORTS_A_CHOISIR].sort());
   // Les séances de rando ou d'aviron ne créent pas de pastille ; un ancien choix enregistré est ignoré
   assert.deepEqual(fusionnerFamilles(['course', 'rando', 'aviron'], ['velo', 'combat']), ['velo', 'course']);
-  assert.deepEqual(nettoyerSports(['course', 'escalade', 'pagaie', 'muscu']), ['course', 'muscu']);
+  assert.deepEqual(nettoyerSports(['course', 'escalade', 'pagaie', 'athletisme', 'muscu']), ['course', 'muscu']);
 });

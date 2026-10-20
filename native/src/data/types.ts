@@ -18,7 +18,6 @@ export interface Seance {
   // Colonnes présentes sur les vraies lignes de la base (absentes des données de démo)
   strava_id?: number | null;
   source?: string;
-  discipline?: string | null;
   rpe?: number | null;
   user_notes?: string | null;
   /** Valeurs d'origine quand la séance a été retouchée (voir retouches.ts). */

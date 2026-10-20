@@ -31,7 +31,7 @@ export default function Calendrier() {
   const { donnees, chargement, erreur, actualisation, recharger } = useDonneesCalendrier(cible.annee, cible.mois);
 
   const grille = useMemo(() => {
-    const garde = (x: { sport?: string; discipline?: string | null }) => garderSeance(x, filtre);
+    const garde = (x: { sport?: string }) => garderSeance(x, filtre);
     return grilleMois(
       cible.annee,
       cible.mois,

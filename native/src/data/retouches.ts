@@ -22,12 +22,11 @@ export function appliquer<T extends Seance>(ligne: T, retouche: unknown): T {
   const r = { ...ligne } as Ligne;
   // On garde les valeurs d'origine (avant retouche) : elles servent à ne recalculer que ce qui a changé
   r.origine = ligne.origine || {
-    name: ligne.name, sport: ligne.sport, discipline: ligne.discipline, moving_time: ligne.moving_time, distance_km: ligne.distance_km,
+    name: ligne.name, sport: ligne.sport, moving_time: ligne.moving_time, distance_km: ligne.distance_km,
     tss: ligne.tss, total_elevation_gain: ligne.total_elevation_gain, rpe: ligne.rpe, user_notes: ligne.user_notes,
   };
   if (typeof d.name === 'string' && d.name) r.name = d.name;
   if (typeof d.sport === 'string' && d.sport) r.sport = d.sport;
-  if (typeof d.discipline === 'string') r.discipline = d.discipline || null;
   if (Number.isFinite(d.duration)) r.moving_time = (d.duration as number) * 60;
   if (Number.isFinite(d.distance_km)) r.distance_km = d.distance_km as number;
   if (Number.isFinite(d.tss)) r.tss = d.tss as number;
