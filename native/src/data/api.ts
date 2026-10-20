@@ -13,6 +13,7 @@ import { dateIsoLocale } from './format';
 import { sb } from './supabase';
 import type { ObjectifAnnuel } from './bilan.ts';
 import type { LigneProfil } from './profil.ts';
+import { valeurValide, type LigneMesure } from './sante-catalogue';
 import type { Nuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Profil, Seance, SerieForce, TestHyrox } from './types';
 
 export interface Resultat<T> {
@@ -423,6 +424,46 @@ export async function enregistrerLayout(userId: string, layout: unknown): Promis
   if (r.error) {
     console.error('[app/api] layout', r.error.code || '');
     return { erreur: "Impossible d'enregistrer ta disposition." };
+  }
+  return { erreur: '' };
+}
+
+// ---------------------------------------------------------------------------
+// Données de santé (table health_metrics) : ressenti, événements, corps, nutrition, mesures d'appareils
+// ---------------------------------------------------------------------------
+
+/** Les mesures de santé des N derniers jours (toutes sources : la priorité se règle ensuite avec resoudreMesures). */
+export async function chargerMesuresSante(userId: string, jours = 120): Promise<Resultat<LigneMesure[]>> {
+  const depuis = new Date();
+  depuis.setDate(depuis.getDate() - jours);
+  const r = await sb
+    .from('health_metrics')
+    .select('date,metric,value,source')
+    .eq('user_id', userId)
+    .gte('date', dateIsoLocale(depuis))
+    .order('date', { ascending: false })
+    .limit(8000);
+  return resultat<LigneMesure[]>(r, 'Impossible de charger tes données de santé.');
+}
+
+/** Enregistre (ou remplace) une mesure saisie à la main pour un jour. La valeur est vérifiée avec le catalogue avant tout envoi. */
+export async function enregistrerMesureSante(userId: string, date: string, metric: string, brut: unknown): Promise<{ erreur: string }> {
+  const value = valeurValide(metric, brut);
+  if (value == null || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return { erreur: 'Valeur non valide.' };
+  const r = await sb.from('health_metrics').upsert({ user_id: userId, date, metric, value, source: 'manual' }, { onConflict: 'user_id,date,metric,source' });
+  if (r.error) {
+    console.error('[app/api] mesure', r.error.code || '');
+    return { erreur: "Impossible d'enregistrer cette donnée de santé." };
+  }
+  return { erreur: '' };
+}
+
+/** Efface une mesure saisie à la main (jamais celles d'un appareil). */
+export async function supprimerMesureSante(userId: string, date: string, metric: string): Promise<{ erreur: string }> {
+  const r = await sb.from('health_metrics').delete().eq('user_id', userId).eq('date', date).eq('metric', metric).eq('source', 'manual');
+  if (r.error) {
+    console.error('[app/api] mesure', r.error.code || '');
+    return { erreur: "Impossible d'effacer cette donnée." };
   }
   return { erreur: '' };
 }

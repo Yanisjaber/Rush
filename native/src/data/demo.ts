@@ -3,6 +3,7 @@
 // (sans les retouches faites en démo, ni la puissance, le sommeil, Hyrox… qui viendront avec leurs écrans).
 import { dateIsoLocale } from './format.ts';
 import type { ObjectifAnnuel } from './bilan.ts';
+import { valeurValide, type LigneMesure } from './sante-catalogue.ts';
 import type { Nuit, SegmentNuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Seance, SerieForce, TestHyrox } from './types.ts';
 
 interface ModeleJour {
@@ -298,6 +299,62 @@ export function fcNuitDemo(nuit: Partial<Nuit> | null): [number, number][] {
   const base = Number(nuit?.avg_heart_rate) || 54;
   const graine = String(nuit?.date || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   return Array.from({ length: total }, (_, m) => [m, Math.round(base + 6 * Math.exp(-m / 90) + 3 * Math.sin((m + graine) / 22) + ((m * 7 + graine) % 5) / 2)] as [number, number]);
+}
+
+/**
+ * Mesures de santé d'exemple (ressenti, événements, corps, nutrition, appareils) sur N jours, même forme que les lignes de `health_metrics`.
+ * Déterministe : le même jour donne les mêmes valeurs (rien d'aléatoire), pour des écrans stables et des tests fiables.
+ * Cohérent avec les nuits d'exemple : jour 0 = aujourd'hui. Une maladie (jours 27 à 29) et une blessure (jours 50 à 53) pour voir les freins.
+ */
+export function mesuresDemo(aujourdhui: Date = new Date(), nombre = 90): LigneMesure[] {
+  const lignes: LigneMesure[] = [];
+  const borne = (v: number, mini: number, maxi: number) => Math.min(maxi, Math.max(mini, v));
+  for (let i = 0; i < nombre; i++) {
+    const date = dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - i));
+    // Chaque valeur passe par la même validation que les vraies saisies : bornes et précision du catalogue
+    const ajouter = (metric: string, value: number, source = 'manual') => {
+      const v = valeurValide(metric, value);
+      if (v != null) lignes.push({ date, metric, value: v, source });
+    };
+    const malade = i >= 27 && i <= 29;
+    const blesse = i >= 50 && i <= 53;
+
+    // Ressenti du matin : sauté un jour sur neuf (la vraie vie)
+    if (i % 9 !== 4) {
+      ajouter('ressenti_fatigue', borne(1 + ((i * 5) % 4) + (malade ? 2 : 0), 1, 5));
+      ajouter('ressenti_courbatures', borne(1 + ((i * 7) % 4), 1, 5));
+      ajouter('ressenti_humeur', borne(3 + ((i * 2) % 3) - (malade ? 2 : 0), 1, 5));
+      ajouter('ressenti_motivation', borne(3 + (i % 3) - (malade || blesse ? 1 : 0), 1, 5));
+      ajouter('ressenti_stress', borne(2 + ((i * 11) % 3), 1, 5));
+    }
+    // Événements
+    if (malade) ajouter('evt_malade', 1);
+    if (blesse) ajouter('evt_blesse', 1);
+    if (i === 40 || i === 41) ajouter('evt_voyage', 1);
+    if (i % 7 === 6) ajouter('alcool_verres', 2 + (i % 3));
+
+    // Corps : le poids baisse doucement avec du bruit (une valeur sur deux vient d'Apple Santé, pour montrer la priorité des sources)
+    const poids = 71.5 + i * 0.012 + (((i * 13) % 7) - 3) * 0.12;
+    ajouter('poids_kg', poids, i % 2 === 0 ? 'apple_sante' : 'manual');
+    if (i % 3 === 0) ajouter('masse_grasse_pct', 14.5 + i * 0.01 + (((i * 7) % 5) - 2) * 0.15, 'apple_sante');
+    if (i % 3 === 0) ajouter('masse_musculaire_kg', 34.2 - i * 0.004 + (((i * 3) % 5) - 2) * 0.1, 'apple_sante');
+    if (i % 7 === 1) {
+      ajouter('tension_sys', 118 + ((i * 3) % 9) - 4);
+      ajouter('tension_dia', 74 + (i % 6) - 2);
+    }
+
+    // Nutrition : sautée un jour sur onze
+    if (i % 11 !== 3) {
+      ajouter('calories_kcal', 2650 + (((i * 37) % 9) - 4) * 70);
+      ajouter('proteines_g', 125 + (((i * 5) % 9) - 4) * 6);
+      ajouter('eau_l', 2.4 + (((i * 3) % 5) - 2) * 0.2);
+    }
+
+    // Appareils (Whoop) : la respiration et la température montent quand on est malade
+    ajouter('resp_nuit', 14.2 + (((i * 3) % 5) - 2) * 0.25 + (malade ? 1.5 : 0), 'whoop');
+    ajouter('temp_cutanee_ecart', (((i * 7) % 9) - 4) * 0.08 + (malade ? 0.9 : 0), 'whoop');
+  }
+  return lignes;
 }
 
 /** Nuits d'exemple (la plus récente d'abord), même forme que les lignes de garmin_sleep. */

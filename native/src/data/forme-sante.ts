@@ -237,9 +237,9 @@ export interface Lecture {
 }
 
 const LIBELLES: Record<Niveau, { libelle: string; phrase: string }> = {
-  bon: { libelle: 'Bien récupéré', phrase: 'Tes chiffres sont meilleurs que d\'habitude : ton corps peut encaisser une séance exigeante.' },
+  bon: { libelle: 'Bien récupéré', phrase: 'Tes chiffres sont meilleurs que d\'habitude : tu peux faire une séance exigeante.' },
   moyen: { libelle: 'Récupération moyenne', phrase: 'Tes chiffres sont dans ta norme : une séance modérée est adaptée.' },
-  faible: { libelle: 'À ménager', phrase: 'Tes chiffres sont en dessous de ta norme : privilégie le repos ou une séance facile.' },
+  faible: { libelle: 'À ménager', phrase: 'Tes chiffres sont sous ta norme : privilégie le repos ou une séance facile.' },
 };
 
 /** La lecture d'un point (ou null si l'indice n'est pas calculable). */

@@ -8,6 +8,7 @@ import { IndicateursEtat } from '@/components/IndicateursEtat';
 import { indicateurs, lecture, niveauDe, NOM_COMPOSANTE, serieEtatDeForme, type Composante } from '@/data/forme-sante';
 import type { Nuit } from '@/data/types';
 import { useDonneesSommeil } from '@/hooks/useDonneesSommeil';
+import { useMesuresSante } from '@/hooks/useMesuresSante';
 import { useMetriques } from '@/hooks/useMetriques';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
@@ -15,6 +16,7 @@ import { usePalette } from '@/theme/usePalette';
 
 const BARRE_ONGLETS = 72;
 const NB_JOURS = 60;
+const MOT_PRECISION = { basique: 'basique', bonne: 'bonne', elevee: 'élevée' } as const;
 
 const dateCourte = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -31,7 +33,8 @@ export default function EtatDeForme() {
   const bas = useSafeAreaInsets().bottom;
   const { nuits, chargement, actualisation, recharger } = useDonneesSommeil();
   const { metriques, recharger: rechargerMetriques } = useMetriques();
-  const serie = useMemo(() => serieEtatDeForme(nuits, metriques), [nuits, metriques]);
+  const { mesures, recharger: rechargerMesures } = useMesuresSante();
+  const serie = useMemo(() => serieEtatDeForme(nuits, metriques, mesures), [nuits, metriques, mesures]);
   // La courbe démarre au premier jour où l'indice existe (avant, la référence personnelle n'est pas encore assez fournie)
   const premier = serie.findIndex((pt) => pt.indice != null);
   const recente = (premier >= 0 ? serie.slice(premier) : serie).slice(-NB_JOURS);
@@ -43,7 +46,7 @@ export default function EtatDeForme() {
     <ScrollView
       style={{ backgroundColor: p.fond }}
       contentContainerStyle={[styles.contenu, { paddingBottom: bas + BARRE_ONGLETS }]}
-      refreshControl={<RefreshControl refreshing={actualisation} onRefresh={() => void Promise.all([recharger(), rechargerMetriques()])} tintColor={p.texteDoux} />}
+      refreshControl={<RefreshControl refreshing={actualisation} onRefresh={() => void Promise.all([recharger(), rechargerMetriques(), rechargerMesures()])} tintColor={p.texteDoux} />}
     >
       {chargement ? (
         <View accessible accessibilityLabel="Chargement" style={styles.attente}>
@@ -66,6 +69,21 @@ export default function EtatDeForme() {
               {l ? l.phrase : "Il faut quelques semaines de nuits (HRV, FC de repos, sommeil) pour calibrer ta référence personnelle."}
             </Text>
             <IndicateursEtat indicateurs={indicateurs(dernier)} />
+            {dernier ? (
+              <Text style={[typo.petit, { color: p.texteDoux, marginTop: 10 }]}>
+                Précision {dernier.precision ? MOT_PRECISION[dernier.precision] : 'insuffisante'} : {dernier.composantes.filter((c) => c.indice != null).length} piliers sur {dernier.composantes.length}.
+              </Text>
+            ) : null}
+            {dernier?.freins.map((f) => (
+              <Text key={f} style={[typo.petit, { color: p.alerte, marginTop: 6 }]}>
+                {f}
+              </Text>
+            ))}
+            {dernier?.contexte.map((c) => (
+              <Text key={c} style={[typo.petit, { color: p.texteDoux, marginTop: 6 }]}>
+                {c}
+              </Text>
+            ))}
           </Bloc>
 
           <Bloc titre={`Sur ${Math.min(NB_JOURS, recente.length)} jours`}>
@@ -88,6 +106,16 @@ export default function EtatDeForme() {
             ))}
           </Bloc>
 
+          {dernier && dernier.manquants.length ? (
+            <Bloc titre="Pour être plus précis">
+              {dernier.manquants.map((m) => (
+                <Text key={m.cle} style={[typo.petit, { color: p.texteDoux, marginBottom: 4 }]}>
+                  {m.comment}
+                </Text>
+              ))}
+            </Bloc>
+          ) : null}
+
           <Bloc titre="Tes chiffres">
             {TENDANCES.map((t, i) => (
               <Tendance key={t.cle} t={t} nuits={chrono} premiere={i === 0} />
@@ -102,10 +130,10 @@ export default function EtatDeForme() {
               Chaque pilier est comparé à TA référence (tes 28 nuits précédentes), pas à une moyenne de la population : un écart à ta norme devient un indice de 0 à 100, puis l'état de forme est la moyenne pondérée des piliers disponibles.
             </Text>
             <Text style={[typo.petit, { color: p.texteDoux, marginTop: 8 }]}>
-              HRV (35 %) : logarithme de la HRV de nuit, moyenne des 3 dernières nuits (Plews et coll., 2013 ; Buchheit, 2014). Sommeil (25 %) : ton score de sommeil, dans la logique des repères de 7 à 9 h de la National Sleep Foundation (2015). FC de repos (20 %) et stress de nuit (10 %) : écart à ta moyenne, inversé. Charge d'entraînement (10 %) : la fraîcheur « condition moins fatigue » du modèle de Banister (1975).
+              HRV (25 %) : logarithme de la HRV de nuit, moyenne des 3 dernières nuits (Plews et coll., 2013 ; Buchheit, 2014). Sommeil (20 %) : ton score de sommeil, dans la logique des repères de 7 à 9 h de la National Sleep Foundation (2015). FC de repos (15 %), stress de nuit (7 %) et respiration de nuit (5 %) : écart à ta moyenne, inversé. Ressenti du matin (15 %) : tes 5 réponses, dans l'esprit de l'indice de Hooper (1995). Charge d'entraînement (8 %) : la fraîcheur « condition moins fatigue » du modèle de Banister (1975). Température cutanée (5 %) : plus l'écart à ta normale est grand, plus l'indice baisse. Être malade ou blessé plafonne l'état de forme (35 et 50).
             </Text>
             <Text style={[typo.petit, { color: p.texteDoux, marginTop: 8 }]}>
-              Si trop de données manquent (moins de 55 % du poids total), l'indice n'est pas affiché plutôt qu'inventé.
+              Les piliers sans donnée sont simplement écartés et leur poids est réparti sur les autres : la précision indique combien il y en a. Si trop de données manquent (moins de 55 % du poids total), l'indice n'est pas affiché plutôt qu'inventé.
             </Text>
           </Bloc>
         </>

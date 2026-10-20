@@ -4,9 +4,11 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Boite, Emplacement, GrilleWidgets } from '@/components/GrilleWidgets';
 import { serieEtatDeForme } from '@/data/forme-sante';
+import { dateIsoLocale } from '@/data/format';
 import { preparer } from '@/data/score-sommeil';
 import type { Taille } from '@/data/types';
 import { useDonneesSommeil } from '@/hooks/useDonneesSommeil';
+import { useMesuresSante } from '@/hooks/useMesuresSante';
 import { useMetriques } from '@/hooks/useMetriques';
 import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
@@ -31,6 +33,9 @@ const WIDGETS: { id: string; titre: string; taille: Taille; Composant: (p: Props
 const DETAILS: { vers: string; titre: string; description: string }[] = [
   { vers: '/sante/forme', titre: "État de forme", description: 'La courbe sur 60 jours, ce qui la compose, et comment elle est calculée' },
   { vers: '/sante/sommeil', titre: 'Sommeil', description: 'Nuits, phases, graphiques et conseils' },
+  { vers: '/sante/checkin', titre: 'Check-in du matin', description: 'Ressenti, malade, blessé, alcool, voyage, cycle' },
+  { vers: '/sante/corps', titre: 'Corps', description: 'Poids, masse grasse, masse musculaire, tension' },
+  { vers: '/sante/nutrition', titre: 'Nutrition', description: 'Calories, protéines, eau, moyennes de la semaine' },
 ];
 
 // Santé : l'écran principal. En haut l'état du jour (un indice de forme et trois indicateurs), puis les chiffres importants en grand,
@@ -42,15 +47,19 @@ export default function Sante() {
   const router = useRouter();
   const { nuits, chargement, erreur, actualisation, demo, recharger } = useDonneesSommeil();
   const { metriques, recharger: rechargerMetriques } = useMetriques();
+  const { mesures, recharger: rechargerMesures } = useMesuresSante();
   const triees = useMemo(() => preparer(nuits), [nuits]);
-  const serie = useMemo(() => serieEtatDeForme(nuits, metriques), [nuits, metriques]);
+  const serie = useMemo(() => serieEtatDeForme(nuits, metriques, mesures), [nuits, metriques, mesures]);
+  const aujourdhui = dateIsoLocale(new Date());
+  const reponses = ['ressenti_fatigue', 'ressenti_courbatures', 'ressenti_humeur', 'ressenti_motivation', 'ressenti_stress'].filter((c) => mesures[aujourdhui]?.[c] != null).length;
+  const manquants = (serie[serie.length - 1]?.manquants ?? []).slice(0, 3);
   const heros = { couleur: couleurSport(p) };
 
   return (
     <View style={[styles.page, { backgroundColor: p.fond }]}>
       <ScrollView
         contentContainerStyle={[styles.contenu, { paddingTop: haut + espace.e4, paddingBottom: bas + BARRE_ONGLETS }]}
-        refreshControl={<RefreshControl refreshing={actualisation} onRefresh={() => void Promise.all([recharger(), rechargerMetriques()])} tintColor={p.texteDoux} />}
+        refreshControl={<RefreshControl refreshing={actualisation} onRefresh={() => void Promise.all([recharger(), rechargerMetriques(), rechargerMesures()])} tintColor={p.texteDoux} />}
       >
         <View style={styles.entete}>
           <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>
@@ -63,6 +72,24 @@ export default function Sante() {
           <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
             <Text style={[typo.petit, { color: p.texte }]}>{erreur}</Text>
           </View>
+        ) : null}
+
+        {!chargement ? (
+          <Pressable
+            onPress={() => router.push('/sante/checkin' as never)}
+            accessibilityRole="button"
+            accessibilityLabel={reponses === 5 ? 'Check-in du matin fait. Le modifier.' : 'Faire le check-in du matin, dix secondes'}
+            style={[styles.checkin, { backgroundColor: p.surface }]}
+          >
+            <View style={[styles.pastilleCheckin, { backgroundColor: reponses === 5 ? p.ok : p.alerte }]} />
+            <View style={{ flex: 1 }}>
+              <Text style={[typo.corpsFort, { color: p.texte }]}>Check-in du matin</Text>
+              <Text style={[typo.petit, { color: p.texteDoux }]}>
+                {reponses === 5 ? 'Fait aujourd\'hui. Touche pour le modifier.' : reponses > 0 ? `${reponses} réponse${reponses > 1 ? 's' : ''} sur 5. Touche pour finir.` : 'Pas encore fait : 10 secondes pour une estimation plus précise.'}
+              </Text>
+            </View>
+            <View style={[styles.fleche, { borderColor: p.texteDoux }]} />
+          </Pressable>
         ) : null}
 
         {chargement ? (
@@ -92,6 +119,19 @@ export default function Sante() {
           </GrilleWidgets>
         )}
 
+        {!chargement && manquants.length ? (
+          <View accessible style={[styles.precis, { backgroundColor: p.surface }]}>
+            <Text accessibilityRole="header" style={[typo.corpsFort, { color: p.texte }]}>
+              Pour être plus précis
+            </Text>
+            {manquants.map((m) => (
+              <Text key={m.cle} style={[typo.petit, { color: p.texteDoux }]}>
+                {m.comment}
+              </Text>
+            ))}
+          </View>
+        ) : null}
+
         {!chargement ? (
           <View style={styles.details}>
             <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte }]}>
@@ -118,6 +158,9 @@ const styles = StyleSheet.create({
   contenu: { paddingHorizontal: espace.e4, gap: espace.e4 },
   entete: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
+  checkin: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, borderRadius: rayon.bloc, paddingHorizontal: 18, paddingVertical: 12 },
+  pastilleCheckin: { width: 12, height: 12, borderRadius: 6 },
+  precis: { borderRadius: rayon.bloc, paddingHorizontal: 18, paddingVertical: 14, gap: 4 },
   details: { gap: espace.e3, marginTop: espace.e2 },
   ligneDetail: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, borderRadius: rayon.bloc, paddingHorizontal: 18, paddingVertical: 12 },
   fleche: { width: 8, height: 8, borderTopWidth: 2, borderRightWidth: 2, transform: [{ rotate: '45deg' }] },

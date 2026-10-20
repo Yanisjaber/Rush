@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { defMesure, FAMILLES, MESURES, mesuresDe, PRIORITE_SOURCES, resoudreMesures, valeurValide } from '../src/data/sante-catalogue.ts';
+import { defMesure, FAMILLES, MESURES, mesuresDe, PRIORITE_SOURCES, remplacerSaisie, resoudreMesures, valeurValide } from '../src/data/sante-catalogue.ts';
 
 test('catalogue : chaque mesure a des bornes cohérentes, une famille connue et une clé valide pour la base', () => {
   for (const [cle, m] of Object.entries(MESURES)) {
@@ -59,4 +59,20 @@ test('resoudreMesures : ignore ce qui est invalide (mesure inconnue, valeur hors
   assert.deepEqual(r, { '2026-10-20': { poids_kg: 70 } });
   assert.deepEqual(resoudreMesures(null), {});
   assert.deepEqual(resoudreMesures([]), {});
+});
+
+test('remplacerSaisie : la saisie remplace l\'ancienne, null l\'efface, un appareil n\'est jamais touché, une valeur invalide ne change rien', () => {
+  const base = [
+    { date: '2026-10-20', metric: 'poids_kg', value: 72, source: 'manual' },
+    { date: '2026-10-20', metric: 'poids_kg', value: 72.5, source: 'apple_sante' },
+    { date: '2026-10-19', metric: 'poids_kg', value: 73, source: 'manual' },
+  ];
+  const apres = remplacerSaisie(base, '2026-10-20', 'poids_kg', 71.26);
+  assert.equal(apres.filter((l) => l.date === '2026-10-20' && l.source === 'manual')[0].value, 71.3); // arrondi au pas de 0,1
+  assert.equal(apres.length, 3);
+  assert.ok(apres.some((l) => l.source === 'apple_sante' && l.value === 72.5)); // l'appareil reste
+  assert.equal(remplacerSaisie(base, '2026-10-20', 'poids_kg', null).length, 2);
+  assert.equal(remplacerSaisie(base, '2026-10-20', 'poids_kg', 700), base); // hors bornes : rien ne change
+  assert.equal(base.length, 3); // la liste d'origine n'est jamais modifiée
+  assert.equal(remplacerSaisie([], '2026-10-20', 'ressenti_humeur', 4).length, 1);
 });

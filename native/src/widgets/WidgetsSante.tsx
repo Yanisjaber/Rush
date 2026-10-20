@@ -178,6 +178,31 @@ function Courbe({ valeurs, etiquette }: { valeurs: number[]; etiquette: string }
   return <CourbeLissee valeurs={valeurs} couleur={p.texte} hauteur={50} aire={false} pointFinal etiquette={etiquette} />;
 }
 
+const MOT_PRECISION = { basique: 'basique', bonne: 'bonne', elevee: 'élevée' } as const;
+
+// La précision de l'estimation : combien de piliers sur 8 ont une donnée ce jour-là, et les freins éventuels (malade, blessé)
+function LignePrecision({ point, faible }: { point: PointForme; faible?: string }) {
+  const p = usePalette();
+  const dispo = point.composantes.filter((c) => c.indice != null).length;
+  return (
+    <View style={{ marginTop: 4 }}>
+      <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>
+        Précision {point.precision ? MOT_PRECISION[point.precision] : 'insuffisante'} · {dispo} piliers sur {point.composantes.length}
+      </Text>
+      {point.freins.slice(0, 1).map((f) => (
+        <Text key={f} numberOfLines={1} style={[typo.petit, { color: p.texte }]}>
+          {f}
+        </Text>
+      ))}
+      {!point.freins.length && faible ? (
+        <Text numberOfLines={1} style={[typo.petit, { color: p.texte }]}>
+          Ce qui pèse le plus : {SOUS_TITRE_FAIBLE[faible]}.
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
 const SOUS_TITRE_FAIBLE: Record<string, string> = {
   hrv: 'ta HRV',
   fc: 'ta FC de repos',
@@ -197,13 +222,12 @@ export function WidgetEtatDuJour({ serie, tuile = false }: PropsSante) {
   if (tuile) {
     return <Tuile gros titre="État de forme" valeur={l ? String(l.indice) : '—'} unite={l ? '/100' : undefined} note={l ? l.libelle : 'Pas assez de données'} />;
   }
-  const detail = l
-    ? `${l.phrase}${l.pointFaible ? ` Ce qui pèse le plus : ${SOUS_TITRE_FAIBLE[l.pointFaible.cle]}.` : ''}`
-    : "Il faut quelques semaines de nuits (HRV, FC de repos, sommeil) pour calibrer ta référence personnelle.";
+  const detail = l ? l.phrase : "Il faut quelques semaines de nuits (HRV, FC de repos, sommeil) pour calibrer ta référence personnelle.";
   return (
     <CadreWidget titre="État du jour">
-      <GrandChiffre valeur={l ? String(l.indice) : '—'} nom={l ? l.libelle : 'Pas assez de données'} detail={detail}>
+      <GrandChiffre reduit valeur={l ? String(l.indice) : '—'} nom={l ? l.libelle : 'Pas assez de données'} detail={detail}>
         <IndicateursEtat indicateurs={ind} />
+        {point ? <LignePrecision point={point} faible={l?.pointFaible?.cle} /> : null}
       </GrandChiffre>
     </CadreWidget>
   );

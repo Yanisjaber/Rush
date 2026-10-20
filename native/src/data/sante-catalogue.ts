@@ -127,3 +127,14 @@ export function resoudreMesures(lignes: LigneMesure[] | null | undefined): Mesur
   }
   return sortie;
 }
+
+/**
+ * Les lignes après une saisie à la main : la saisie du jour remplace l'ancienne (même jour, même mesure, source « manual »), `null` l'efface.
+ * Les valeurs venues d'appareils ne sont jamais touchées. Renvoie une nouvelle liste ; une valeur hors bornes laisse la liste inchangée.
+ */
+export function remplacerSaisie(lignes: LigneMesure[], date: string, metric: string, brut: number | null): LigneMesure[] {
+  const sans = lignes.filter((l) => !(l.date === date && l.metric === metric && l.source === 'manual'));
+  if (brut == null) return sans;
+  const value = valeurValide(metric, brut);
+  return value == null ? lignes : [...sans, { date, metric, value, source: 'manual' }];
+}
