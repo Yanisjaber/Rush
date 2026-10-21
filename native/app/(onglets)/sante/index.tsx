@@ -77,8 +77,9 @@ export default function Sante() {
               </Boite>
             </Pressable>
 
-            {motifs.length ? (
-              <View accessible accessibilityLabel={`Ce qui a bougé : ${motifs.map((m) => `${m.nom} ${m.delta}`).join(', ')}`} style={styles.motifs}>
+            {motifs.length || alertes.length ? (
+              // Une seule rangée de puces : ce qui a bougé, puis les alertes (elles ne changent pas le chiffre : elles signalent un écart marqué à ta norme)
+              <View style={styles.motifs}>
                 {motifs.map((m) => {
                   const couleur = m.niveau === 'bon' ? p.ok : m.niveau === 'moyen' ? p.alerte : m.niveau === 'faible' ? p.danger : p.texteMuet;
                   return (
@@ -90,12 +91,6 @@ export default function Sante() {
                     </Pressable>
                   );
                 })}
-              </View>
-            ) : null}
-
-            {alertes.length ? (
-              // Une alerte ne change pas le chiffre : elle signale un écart marqué à ta norme (début de maladie, surcharge)
-              <View accessible accessibilityRole="alert" accessibilityLabel={`Alerte : ${alertes.map((x) => `${x.nom} ${x.ecart ?? x.valeur}`).join(', ')}`} style={styles.motifs}>
                 {alertes.map((x) => (
                   <Pressable key={x.cle} onPress={() => aller(x.vers)} accessibilityRole="button" accessibilityLabel={`Alerte, ${x.nom} : ${x.valeur} ${x.unite}`} style={[styles.motif, { backgroundColor: p.surface, borderWidth: 1, borderColor: p.danger }]}>
                     <Text style={[typo.petit, { color: p.danger, fontFamily: police.texte600 }]}>!</Text>
@@ -112,7 +107,7 @@ export default function Sante() {
             </Text>
             <View style={styles.jauges}>
               {principaux.map((x) => (
-                <JaugePilier key={x.cle} nom={NOM_COURT[x.cle]} indice={x.indice} valeur={x.valeur} unite={x.unite} onPress={() => aller(x.vers)} />
+                <JaugePilier colonnes={5} key={x.cle} nom={NOM_COURT[x.cle]} indice={x.indice} valeur={x.valeur} unite={x.unite} onPress={() => aller(x.vers)} />
               ))}
             </View>
 
@@ -123,7 +118,7 @@ export default function Sante() {
                 </Text>
                 <View style={styles.jauges}>
                   {surveilles.map((x) => (
-                    <JaugePilier key={x.cle} nom={NOM_COURT[x.cle]} indice={x.indice} valeur={x.valeur} unite={x.unite} onPress={() => aller(x.vers)} />
+                    <JaugePilier colonnes={3} key={x.cle} nom={NOM_COURT[x.cle]} indice={x.indice} valeur={x.valeur} unite={x.unite} onPress={() => aller(x.vers)} />
                   ))}
                 </View>
               </>
