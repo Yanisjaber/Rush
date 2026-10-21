@@ -60,10 +60,10 @@ test('infosDuJour : durée, distance et exercices sur une ligne, ce qui manque e
 
 test('lignesDeLaBande : jusqu\'à 2 séances toutes montrées, au-delà la plus longue et le nombre des autres', () => {
   const s = (id: string, prevueMinutes: number | null) => ({ id, prevueMinutes });
-  assert.deepEqual(lignesDeLaBande([s('a', 60)]), { lignes: [s('a', 60)], autres: 0 });
-  assert.deepEqual(lignesDeLaBande([s('a', 60), s('b', 150)]), { lignes: [s('a', 60), s('b', 150)], autres: 0 });
-  assert.deepEqual(lignesDeLaBande([s('a', 54), s('b', 150), s('c', 45)]), { lignes: [s('b', 150)], autres: 2 });
-  assert.deepEqual(lignesDeLaBande([s('a', 54), s('b', 90), s('c', 45), s('d', 30)]), { lignes: [s('b', 90)], autres: 3 });
+  assert.deepEqual(lignesDeLaBande([s('a', 60)]), { lignes: [s('a', 60)], autres: 0, autresMinutes: 0 });
+  assert.deepEqual(lignesDeLaBande([s('a', 60), s('b', 150)]), { lignes: [s('a', 60), s('b', 150)], autres: 0, autresMinutes: 0 });
+  assert.deepEqual(lignesDeLaBande([s('a', 54), s('b', 150), s('c', 45)]), { lignes: [s('b', 150)], autres: 2, autresMinutes: 99 });
+  assert.deepEqual(lignesDeLaBande([s('a', 54), s('b', 90), s('c', 45), s('d', 30)]), { lignes: [s('b', 90)], autres: 3, autresMinutes: 129 });
   // durées inconnues : la première reste
-  assert.deepEqual(lignesDeLaBande([s('a', null), s('b', null), s('c', null)]), { lignes: [s('a', null)], autres: 2 });
+  assert.deepEqual(lignesDeLaBande([s('a', null), s('b', null), s('c', null)]), { lignes: [s('a', null)], autres: 2, autresMinutes: 0 });
 });

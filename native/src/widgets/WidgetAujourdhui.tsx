@@ -3,6 +3,7 @@ import { CadreWidget, TitreWidget } from '@/components/CadreWidget';
 import { IconeSport } from '@/components/IconeSport';
 import { elementsDuJour, infosDuJour, lignesDeLaBande, seancesDuJour, type ElementDuJour } from '@/data/aujourdhui';
 import { familleAffichage } from '@/data/familles';
+import { formatDuree } from '@/data/format';
 import { resumeProgramme } from '@/data/force';
 import type { WidgetProps } from '@/data/types';
 import { SPORTS, type CleSport } from '@/theme/sports';
@@ -11,8 +12,8 @@ import { usePalette } from '@/theme/usePalette';
 
 // La séance du jour, quel que soit le sport : ce qui est PRÉVU aujourd'hui et pas encore fait, empilé, chaque séance avec le logo de son sport.
 // Une seule séance : son nom à gauche, ses infos à droite (« EF z2 ··· 2h30 · 70 km », « Legs ··· 1h00 · 5 exos »).
-// Plusieurs : « 2 séances » à gauche, et à droite une ligne par sport avec sa durée seulement (« Vélo 2h30 », « Muscu 1h00 ») :
-// les km et les exercices ne s'affichent que pour une séance seule. Plus de 2 dans la bande fine : la plus longue, puis « + 2 séances ».
+// Plusieurs : « 2 séances » à gauche, et à droite une ligne par sport avec sa durée seulement (« Vélo · 2h30 », « Muscu · 1h00 ») :
+// les km et les exercices ne s'affichent que pour une séance seule. Plus de 2 dans la bande fine : la plus longue, puis « + 2 séances · 1h25 » (le nombre des autres et la somme de leurs durées).
 // Une séance faite disparaît d'ici (on la retrouve dans « Dernière séance » et « Cette semaine »).
 // Tout ce qui était prévu est fait : « Terminé ». Rien de prévu : « Repos ».
 const court = (sport: string) => SPORTS[familleAffichage(sport) as CleSport]?.court ?? SPORTS.autre.court;
@@ -36,7 +37,7 @@ export function WidgetAujourdhui({ contexte, taille }: WidgetProps) {
 
   // Les lignes de droite : une séance = ses infos seules ; plusieurs = le sport puis les infos
   const bande = lignesDeLaBande(aFaire);
-  const lignes = bande.lignes.map((e) => ({ cle: e.cle, sport: e.sport, texte: plusieurs ? `${court(e.sport)} ${infos(e)}`.trim() : infos(e) || court(e.sport) }));
+  const lignes = bande.lignes.map((e) => ({ cle: e.cle, sport: e.sport, texte: plusieurs ? [court(e.sport), infos(e)].filter(Boolean).join(' · ') : infos(e) || court(e.sport) }));
 
   if (taille === 'xs') {
     return (
@@ -61,6 +62,7 @@ export function WidgetAujourdhui({ contexte, taille }: WidgetProps) {
               {bande.autres > 0 ? (
                 <Text style={[styles.texteFin, styles.autres, { color: p.texteDoux }]}>
                   + {bande.autres} séance{bande.autres > 1 ? 's' : ''}
+                  {bande.autresMinutes > 0 ? ` · ${formatDuree(bande.autresMinutes * 60)}` : ''}
                 </Text>
               ) : null}
             </View>

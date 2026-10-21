@@ -76,10 +76,11 @@ export function infosDuJour(e: Pick<ElementDuJour, 'prevueMinutes' | 'km'>, exer
 
 /**
  * Les séances à montrer dans la bande fine : jusqu'à 2, toutes ; au-delà, seulement la plus longue (la première à égalité),
- * et `autres` donne le nombre de séances cachées (« + 2 séances »).
+ * `autres` donne le nombre de séances cachées et `autresMinutes` la somme de leurs durées (0 si on ne les connaît pas) : « + 2 séances · 1h25 ».
  */
-export function lignesDeLaBande<T extends { prevueMinutes: number | null }>(aFaire: T[]): { lignes: T[]; autres: number } {
-  if (aFaire.length <= 2) return { lignes: aFaire, autres: 0 };
+export function lignesDeLaBande<T extends { prevueMinutes: number | null }>(aFaire: T[]): { lignes: T[]; autres: number; autresMinutes: number } {
+  if (aFaire.length <= 2) return { lignes: aFaire, autres: 0, autresMinutes: 0 };
   const plusLongue = aFaire.reduce((a, b) => ((b.prevueMinutes ?? 0) > (a.prevueMinutes ?? 0) ? b : a));
-  return { lignes: [plusLongue], autres: aFaire.length - 1 };
+  const cachees = aFaire.filter((e) => e !== plusLongue);
+  return { lignes: [plusLongue], autres: cachees.length, autresMinutes: cachees.reduce((t, e) => t + (e.prevueMinutes ?? 0), 0) };
 }
