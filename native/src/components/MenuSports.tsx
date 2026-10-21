@@ -25,7 +25,7 @@ export function MenuSports({ ouvert, onFermer, haut }: { ouvert: boolean; onFerm
     <Modal visible={ouvert} transparent animationType="fade" onRequestClose={onFermer}>
       <Pressable style={StyleSheet.absoluteFill} onPress={onFermer} accessibilityLabel="Fermer le menu des sports" accessibilityRole="button" />
       <View accessibilityViewIsModal style={[styles.panneau, { top: haut + 46, backgroundColor: p.surface, borderColor: p.traitFort }]}>
-        <ScrollView contentContainerStyle={{ padding: 8 }} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ padding: 10 }} showsVerticalScrollIndicator={false}>
           {dernier ? (
             <Text accessibilityRole="alert" style={[typo.petit, { color: p.alerte, paddingHorizontal: 8, paddingBottom: 6 }]}>
               Garde au moins un sport.
@@ -53,7 +53,7 @@ export function MenuSports({ ouvert, onFermer, haut }: { ouvert: boolean; onFerm
                         accessibilityRole="checkbox"
                         accessibilityState={{ checked: actif }}
                         accessibilityLabel={nom}
-                        style={styles.ligne}
+                        style={({ pressed }) => [styles.ligne, pressed && { backgroundColor: p.surface2 }]}
                       >
                         <View style={[styles.point, { backgroundColor: couleur }]} />
                         <Text style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>{nom}</Text>
@@ -80,9 +80,9 @@ function Case({ coche, couleur }: { coche: boolean; couleur: string }) {
 }
 
 const styles = StyleSheet.create({
-  panneau: { position: 'absolute', right: 8, width: 300, maxHeight: '70%', borderWidth: 1, borderRadius: rayon.base, overflow: 'hidden' },
-  ligne: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, paddingHorizontal: 8 },
+  panneau: { position: 'absolute', right: 8, width: 300, maxHeight: '70%', borderWidth: 1, borderRadius: rayon.bloc, overflow: 'hidden' },
+  ligne: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, paddingHorizontal: 10, borderRadius: 12 },
   point: { width: 10, height: 10, borderRadius: 5 },
-  case: { width: 22, height: 22, borderWidth: 1.5, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
+  case: { width: 22, height: 22, borderWidth: 1.5, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   coche: { fontFamily: police.titre800, fontSize: 14, lineHeight: 16 },
 });
