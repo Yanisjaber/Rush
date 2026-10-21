@@ -12,7 +12,7 @@ import { solitaires } from '@/data/grille';
 import { ListeTriable } from '@/components/ListeTriable';
 import { Onboarding } from '@/components/Onboarding';
 import { construireContexte } from '@/data/contexte';
-import { disponibles, disponiblesOnglet, ONGLETS_PERSONNALISABLES, WIDGETS, type IdWidget, composerOnglet, compositionAuto, type WidgetPlace } from '@/data/registre';
+import { disponibles, disponiblesOnglet, ONGLETS_PERSONNALISABLES, WIDGETS, type IdWidget, composerOnglet, compositionAuto, compositionSport, type WidgetPlace } from '@/data/registre';
 import { onboardingNecessaire } from '@/data/sports-choisis';
 import { useDonneesAccueil } from '@/hooks/useDonneesAccueil';
 import { useAuth } from '@/stores/auth';
@@ -88,7 +88,9 @@ export default function Accueil() {
   const base = disp.pret ? disp.widgets : compositionAuto(familles);
   const widgets = useMemo(() => {
     if (enEdition) return listeEnEdition(disp);
-    const liste = filtre === 'tout' ? base : composerOnglet(base, filtre, disp.onglets);
+    // Un onglet de sport reçoit sa propre composition automatique (tout l'écran pour ce sport) tant que l'accueil n'est pas personnalisé ;
+    // sinon, ce que l'utilisateur a choisi, filtré pour ce sport
+    const liste = filtre === 'tout' ? base : disp.auto && !ONGLETS_PERSONNALISABLES.includes(filtre) ? compositionSport([filtre]) : composerOnglet(base, filtre, disp.onglets);
     return compteVide ? liste.filter((w) => COMPTE_VIDE.has(w.id)) : liste;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [disp, base, filtre, compteVide, enEdition]);

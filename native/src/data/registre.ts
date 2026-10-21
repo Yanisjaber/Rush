@@ -88,8 +88,40 @@ export const WIDGETS = {
     tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
-  seancedujour: {
+  natvolume: {
+    nom: "Natation par semaine",
+    description: "Les mètres nagés chaque semaine, sur 8 semaines.",
+    categorie: "Natation",
+    sports: ['natation'],
+    tailles: ['xs', 's', 'm', 'l'],
+    taille: 's',
+  },
+  natallure: {
+    nom: "Allure au 100 m",
+    description: "Ton allure de nage sur les 4 dernières semaines, comparée aux 4 d'avant.",
+    categorie: "Natation",
+    sports: ['natation'],
+    tailles: ['xs', 's', 'm', 'l'],
+    taille: 's',
+  },
+  natlongue: {
+    nom: "Meilleures natations",
+    description: "Ta séance de natation la plus longue et la plus rapide.",
+    categorie: "Natation",
+    sports: ['natation'],
+    tailles: ['xs', 's', 'm', 'l'],
+    taille: 's',
+  },
+  aujourdhui: {
     nom: "Séance du jour",
+    description: "Ce que tu as prévu aujourd'hui et pas encore fait, quel que soit le sport.",
+    categorie: "Séances",
+    sports: 'tous',
+    tailles: ['xs', 's', 'm', 'l'],
+    taille: 's',
+  },
+  seancedujour: {
+    nom: "Séance de force du jour",
     description: "Le dossard de ta prochaine séance de force, avec un bouton pour la démarrer.",
     categorie: "Musculation",
     sports: ['muscu'],
@@ -182,7 +214,7 @@ export const WIDGETS = {
     categorie: "Séances",
     sports: 'tous',
     tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
+    taille: 'm',
   },
   avenir: {
     nom: "À venir",
@@ -228,42 +260,25 @@ export const ORDRE_ONGLET: Record<string, readonly string[]> = {
   hyrox: ['hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'semaine', 'chargeforce'],
 };
 
-// Widgets propres à un onglet riche (ceux qui ne sont pas des widgets « tous sports » réutilisés) : jamais composés d'office sur l'accueil général
-const PROPRES_AUX_ONGLETS = new Set(
-  Object.values(ORDRE_ONGLET)
-    .flat()
-    .filter((id) => Object.hasOwn(WIDGETS, id) && (WIDGETS as Record<string, DefinitionWidget>)[id].sports !== 'tous'),
-);
-
 /**
- * Ordre de composition automatique de l'accueil, dans l'esprit de l'onglet Muscu : le bandeau (séance, objectif) en haut,
- * puis les tuiles à la suite pour qu'elles se rangent deux par deux, puis les grands graphiques et les listes.
+ * Les widgets « signature » de chaque sport : ceux qui disent le plus sur ce sport, du plus important au moins important.
+ * Un coureur veut sa prédiction de temps et son allure, pas sa courbe de watts ; un cycliste l'inverse.
+ * `taille` : la taille donnée sur l'accueil (par défaut, celle du registre).
  */
-const ORDRE_AUTO = [
-  'seancedujour',
-  'programmes',
-  'hyroxdossard',
-  'objectif',
-  'forme',
-  'volume',
-  'semaine',
-  'avenir',
-  'predictions',
-  'puissance',
-  'efficacite',
-  'meilleures',
-  'regularite',
-  'chargeforce',
-  'tonnage',
-  'chargemuscu',
-  'charge',
-  'groupes',
-  'records',
-  'dernieres',
-  'hyroxtest',
-  'hyroxallure',
-  'hyroxgains',
-];
+interface Signature {
+  id: string;
+  taille?: Taille;
+}
+export const SIGNATURES: Record<string, readonly Signature[]> = {
+  course: [{ id: 'predictions' }, { id: 'efficacite' }, { id: 'meilleures' }],
+  velo: [{ id: 'puissance' }],
+  natation: [{ id: 'natvolume' }, { id: 'natallure' }, { id: 'natlongue' }],
+  muscu: [{ id: 'seancedujour' }, { id: 'tonnage' }, { id: 'records', taille: 'm' }, { id: 'groupes' }],
+  hyrox: [{ id: 'hyroxallure' }, { id: 'chargeforce' }, { id: 'hyroxgains' }],
+};
+
+// Triathlon et duathlon : un sport à part sur la barre, mais ce sont des courses, du vélo et de la natation sur l'accueil
+const SPORTS_DE = (famille: string): string[] => (famille === 'triathlon' || famille === 'duathlon' ? ['course', 'velo', 'natation'] : [familleDesWidgets(famille)]);
 
 const definition = (id: string): DefinitionWidget => (WIDGETS as Record<string, DefinitionWidget>)[id];
 
@@ -285,9 +300,67 @@ export function estPertinent(id: string, familles: readonly string[]): boolean {
   return def.sports.some((s) => dessous.includes(s));
 }
 
-/** Composition automatique de l'accueil à partir des sports pratiqués. */
-export function compositionAuto(familles: readonly string[] = []): WidgetPlace[] {
-  return ORDRE_AUTO.filter((id) => !PROPRES_AUX_ONGLETS.has(id) && estPertinent(id, familles)).map((id) => ({ id, taille: definition(id).taille }));
+/**
+ * L'écran de base de l'onglet « Tous » : le même pour tout le monde, quels que soient les sports choisis.
+ * La semaine en héros, puis des bandes fines (séance du jour, forme, dernière séance) qui alternent avec des tuiles (objectif, charge).
+ * Chacun peut ensuite le modifier (mode édition) : les widgets des autres sports restent ajoutables.
+ */
+const BASE_TOUS: readonly WidgetPlace[] = [
+  { id: 'semaine', taille: 'm' },
+  { id: 'aujourdhui', taille: 'xs' },
+  { id: 'objectif', taille: 's' },
+  { id: 'charge', taille: 's' },
+  { id: 'forme', taille: 'xs' },
+  { id: 'dernieres', taille: 'xs' },
+  { id: 'regularite', taille: 'm' },
+];
+
+/** Composition automatique de l'onglet « Tous » : toujours l'écran de base (les sports ne la changent pas). */
+export function compositionAuto(_familles: readonly string[] = []): WidgetPlace[] {
+  return BASE_TOUS.map((w) => ({ ...w }));
+}
+
+/**
+ * Composition d'un onglet de sport (Course, Vélo, Natation…) à partir de ce sport : un socle commun, puis la part de chaque sport.
+ *  1. Le socle : la semaine en héros, la prochaine séance, l'objectif, la forme.
+ *  2. La part de chaque sport (ses widgets « signature », voir SIGNATURES) : un seul sport a toute la place (4), deux sports 2 chacun,
+ *     trois ou plus 1 chacun. Les widgets des sports qu'on ne pratique pas n'apparaissent pas (ils restent ajoutables à la main).
+ *  3. Les tuiles se rangent deux par deux (si le compte est impair, un complément : la répartition par sport quand il y en a plusieurs).
+ *  4. La charge d'entraînement (celle de la muscu quand on ne fait que de la muscu), puis les dernières séances.
+ */
+export function compositionSport(familles: readonly string[] = []): WidgetPlace[] {
+  const sports = [...new Set(familles.flatMap(SPORTS_DE))].filter((s) => Object.hasOwn(SIGNATURES, s));
+  const parts = sports.length <= 1 ? 4 : sports.length === 2 ? 2 : 1;
+  const vus = new Set<string>();
+  const signatures: Signature[] = [];
+  for (const sport of sports) {
+    for (const sig of SIGNATURES[sport].slice(0, parts)) {
+      if (vus.has(sig.id)) continue;
+      vus.add(sig.id);
+      signatures.push(sig);
+    }
+  }
+  const place = (id: string, taille?: Taille): WidgetPlace => ({ id, taille: taille ?? definition(id).taille });
+  const tailleDe = (sig: Signature): Taille => sig.taille ?? definition(sig.id).taille;
+  const grands = signatures.filter((sig) => tailleDe(sig) !== 's');
+  const tuiles = signatures.filter((sig) => tailleDe(sig) === 's').map((sig) => place(sig.id, 's'));
+
+  const socle = [...(vus.has('seancedujour') ? [] : [place('avenir', 's')]), place('objectif', 's'), place('forme', 's')];
+  const rangees = [...socle, ...tuiles];
+  // Compte impair : un complément, pour qu'aucune tuile ne reste seule sur sa ligne
+  if (rangees.length % 2 === 1) {
+    const complement = [...(sports.length >= 2 ? ['volume'] : []), 'regularite'].find((id) => !rangees.some((w) => w.id === id));
+    if (complement) rangees.push(place(complement, 's'));
+  }
+
+  const muscuSeule = sports.length > 0 && sports.every((s) => s === 'muscu');
+  return [
+    place('semaine', 'm'),
+    ...grands.map((sig) => place(sig.id, tailleDe(sig))),
+    ...rangees,
+    place(muscuSeule ? 'chargemuscu' : 'charge'),
+    place('dernieres'),
+  ];
 }
 
 function tailleValide(id: string, souhaitee: Taille | undefined): Taille {

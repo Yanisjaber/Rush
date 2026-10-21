@@ -5,6 +5,7 @@ import type { WidgetProps } from '@/data/types';
 import { WIDGETS, type DefinitionWidget } from '@/data/registre';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
+import { WidgetAujourdhui } from './WidgetAujourdhui';
 import { WidgetAvenir } from './WidgetAvenir';
 import { WidgetCharge } from './WidgetCharge';
 import { WidgetChargeForce } from './WidgetChargeForce';
@@ -18,6 +19,9 @@ import { WidgetHyroxDossard } from './WidgetHyroxDossard';
 import { WidgetHyroxGains } from './WidgetHyroxGains';
 import { WidgetHyroxTest } from './WidgetHyroxTest';
 import { WidgetMeilleures } from './WidgetMeilleures';
+import { WidgetNatAllure } from './WidgetNatAllure';
+import { WidgetNatLongue } from './WidgetNatLongue';
+import { WidgetNatVolume } from './WidgetNatVolume';
 import { WidgetObjectif } from './WidgetObjectif';
 import { WidgetPredictions } from './WidgetPredictions';
 import { WidgetProgrammes } from './WidgetProgrammes';
@@ -44,6 +48,10 @@ export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   efficacite: WidgetEfficacite,
   meilleures: WidgetMeilleures,
   puissance: WidgetPuissance,
+  natvolume: WidgetNatVolume,
+  natallure: WidgetNatAllure,
+  natlongue: WidgetNatLongue,
+  aujourdhui: WidgetAujourdhui,
   seancedujour: WidgetSeanceDuJour,
   programmes: WidgetProgrammes,
   tonnage: WidgetTonnage,

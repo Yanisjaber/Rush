@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compositionAuto, composerOnglet, estPertinent, existe, normaliserListe, ORDRE_ONGLET, TAILLES, WIDGETS } from '../src/data/registre.ts';
+import { compositionAuto, compositionSport, composerOnglet, estPertinent, existe, normaliserListe, ORDRE_ONGLET, TAILLES, WIDGETS } from '../src/data/registre.ts';
 import { construireContexte } from '../src/data/contexte.ts';
 import { donneesDemoAccueil } from '../src/data/accueil.ts';
 
@@ -12,9 +12,9 @@ test('existe : seuls les vrais widgets, pas les propriétés héritées', () => 
   assert.equal(existe(42), false);
 });
 
-test('registre : 23 widgets, chacun avec une taille par défaut permise', () => {
+test('registre : 27 widgets, chacun avec une taille par défaut permise', () => {
   const ids = Object.keys(WIDGETS);
-  assert.equal(ids.length, 23);
+  assert.equal(ids.length, 27);
   for (const id of ids) {
     const d = (WIDGETS as Record<string, { tailles: readonly string[]; taille: string }>)[id];
     assert.ok(d.tailles.includes(d.taille), id);
@@ -28,19 +28,75 @@ test('estPertinent : un widget « tous sports » l\'est toujours, un widget de s
   assert.equal(estPertinent('inconnu', ['course']), false);
 });
 
-test('compositionAuto : les widgets propres à Muscu et Hyrox ne sont jamais sur l\'onglet « Tout »', () => {
-  const ids = compositionAuto(['course', 'velo', 'muscu', 'hyrox']).map((w) => w.id);
-  for (const propre of ['seancedujour', 'programmes', 'hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'chargeforce']) {
-    assert.equal(ids.includes(propre), false, propre);
+const ids = (familles: string[]) => compositionSport(familles).map((w) => w.id);
+const nbTuiles = (familles: string[]) => compositionSport(familles).filter((w) => w.taille === 's').length;
+
+test('compositionAuto : l\'écran « Tous » est le même pour tout le monde, quels que soient les sports', () => {
+  const attendu = [['semaine', 'm'], ['aujourdhui', 'xs'], ['objectif', 's'], ['charge', 's'], ['forme', 'xs'], ['dernieres', 'xs'], ['regularite', 'm']];
+  for (const familles of [[], ['course'], ['velo', 'natation'], ['muscu', 'hyrox'], ['aviron']]) {
+    assert.deepEqual(compositionAuto(familles).map((w) => [w.id, w.taille]), attendu, familles.join());
   }
-  assert.ok(ids.includes('objectif'));
-  assert.ok(ids.includes('predictions'));
+  for (const w of compositionAuto()) assert.ok((WIDGETS as Record<string, { tailles: readonly string[] }>)[w.id].tailles.includes(w.taille), w.id);
 });
 
-test('compositionAuto : sans sport de course, pas de widgets de course', () => {
-  const ids = compositionAuto(['velo']).map((w) => w.id);
-  assert.equal(ids.includes('predictions'), false);
-  assert.equal(ids.includes('puissance'), true);
+test('compositionAuto : chaque appel renvoie une copie (modifier l\'écran ne change pas la base)', () => {
+  compositionAuto()[0].taille = 'l';
+  assert.equal(compositionAuto()[0].taille, 'm');
+});
+
+test('compositionSport : la semaine en héros en premier, les dernières séances en dernier, jamais de doublon', () => {
+  for (const familles of [[], ['course'], ['velo'], ['natation'], ['muscu'], ['course', 'natation'], ['course', 'velo', 'muscu', 'hyrox', 'natation'], ['triathlon']]) {
+    const liste = ids(familles);
+    assert.equal(liste[0], 'semaine', familles.join());
+    assert.equal(liste.at(-1), 'dernieres', familles.join());
+    assert.equal(new Set(liste).size, liste.length, `doublon pour ${familles.join()}`);
+    assert.equal(nbTuiles(familles) % 2, 0, `une tuile seule sur sa ligne pour ${familles.join()}`);
+  }
+});
+
+test('compositionSport : un coureur qui nage voit ses widgets de course et de natation, ni puissance ni muscu', () => {
+  const liste = ids(['course', 'natation']);
+  for (const voulu of ['predictions', 'efficacite', 'natvolume', 'natallure', 'volume']) assert.ok(liste.includes(voulu), voulu);
+  for (const interdit of ['puissance', 'tonnage', 'records', 'seancedujour', 'hyroxallure']) assert.equal(liste.includes(interdit), false, interdit);
+});
+
+test('compositionSport : un cycliste n\'a ni prédiction de course ni natation', () => {
+  const liste = ids(['velo']);
+  assert.ok(liste.includes('puissance'));
+  for (const interdit of ['predictions', 'efficacite', 'meilleures', 'natvolume', 'tonnage']) assert.equal(liste.includes(interdit), false, interdit);
+});
+
+test('compositionSport : la muscu seule a sa séance du jour, son tonnage, sa charge de muscu et pas de « À venir » en double', () => {
+  const liste = ids(['muscu']);
+  for (const voulu of ['seancedujour', 'tonnage', 'records', 'groupes', 'chargemuscu']) assert.ok(liste.includes(voulu), voulu);
+  assert.equal(liste.includes('charge'), false);
+  assert.equal(liste.includes('avenir'), false);
+});
+
+test('compositionSport : un seul sport a toute la place, trois sports ou plus n\'en ont qu\'un widget chacun', () => {
+  assert.ok(ids(['course']).includes('meilleures'));
+  const multi = ids(['course', 'natation', 'velo']);
+  assert.ok(multi.includes('predictions') && multi.includes('natvolume') && multi.includes('puissance'));
+  assert.equal(multi.includes('efficacite'), false);
+  assert.equal(multi.includes('natallure'), false);
+});
+
+test('compositionSport : trail et VTT comptent comme course et vélo, triathlon donne course, vélo et natation', () => {
+  assert.ok(ids(['trail']).includes('predictions'));
+  assert.ok(ids(['vtt']).includes('puissance'));
+  const tri = ids(['triathlon']);
+  assert.ok(tri.includes('predictions') && tri.includes('puissance') && tri.includes('natvolume'));
+});
+
+test('compositionSport : un sport sans widget propre (aviron, ski…) reçoit le socle', () => {
+  assert.deepEqual(ids(['aviron']), ids([]));
+  assert.deepEqual(ids([]).slice(0, 3), ['semaine', 'avenir', 'objectif']);
+});
+
+test('compositionSport : chaque taille donnée est permise pour le widget', () => {
+  for (const familles of [['course', 'muscu'], ['hyrox'], ['natation', 'velo']]) {
+    for (const w of compositionSport(familles)) assert.ok((WIDGETS as Record<string, { tailles: readonly string[] }>)[w.id].tailles.includes(w.taille), `${w.id} ${w.taille}`);
+  }
 });
 
 test('composerOnglet : Muscu et Hyrox ont leur composition fixe, en gardant la taille choisie', () => {
@@ -50,7 +106,7 @@ test('composerOnglet : Muscu et Hyrox ont leur composition fixe, en gardant la t
 });
 
 test('composerOnglet : un autre sport met l\'objectif en premier, puis les widgets de ce sport', () => {
-  const ids = composerOnglet(compositionAuto(['course', 'velo']), 'course').map((w) => w.id);
+  const ids = composerOnglet(compositionSport(['course', 'velo']), 'course').map((w) => w.id);
   assert.equal(ids[0], 'objectif');
   assert.ok(ids.indexOf('predictions') < ids.indexOf('forme'), 'les widgets de course passent avant les universels');
   assert.equal(ids.includes('puissance'), false);
