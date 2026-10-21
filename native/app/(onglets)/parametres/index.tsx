@@ -5,10 +5,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
 import { CadreWidget } from '@/components/CadreWidget';
 import { Boite, Emplacement, GrilleWidgets } from '@/components/GrilleWidgets';
+import { Pastille } from '@/components/Pastille';
 import { Tuile } from '@/components/Tuile';
 import type { Connexion, Tuile as ResumeTuile } from '@/data/parametres';
 import { useResumeParametres } from '@/hooks/useResumeParametres';
 import { deconnexion, quitterDemo, useAuth } from '@/stores/auth';
+import { definirPrevuesAujourdhui, PREVUES_AUJOURDHUI, useReglagesDemo } from '@/stores/reglagesDemo';
 import { espace } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
@@ -57,6 +59,8 @@ export default function Parametres() {
         </CadreWidget>
       </Boite>
 
+      {demo ? <ReglagesDemo /> : null}
+
       <GrilleWidgets>
         {tuile('/parametres/profil', 'Profil', resume.profil)}
         {tuile('/parametres/physiologie', 'Physiologie', resume.physiologie)}
@@ -87,6 +91,24 @@ export default function Parametres() {
       </View>
     </ScrollView>
     </View>
+  );
+}
+
+// Réglage de la démo (visible seulement en démo) : combien de séances sont prévues aujourd'hui, pour voir chaque cas de la « Séance du jour ».
+function ReglagesDemo() {
+  const p = usePalette();
+  const { prevuesAujourdhui } = useReglagesDemo();
+  return (
+    <Boite taille="m">
+      <CadreWidget titre="Réglage de la démo">
+        <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 10 }]}>Séances prévues aujourd'hui</Text>
+        <View style={styles.choix} accessibilityRole="radiogroup">
+          {PREVUES_AUJOURDHUI.map((n) => (
+            <Pastille key={n} nom={String(n)} couleur={p.texte} actif={prevuesAujourdhui === n} onPress={() => definirPrevuesAujourdhui(n)} aide={n === 0 ? "Rien de prévu aujourd'hui" : `${n} séance${n > 1 ? 's' : ''} prévue${n > 1 ? 's' : ''} aujourd'hui`} />
+          ))}
+        </View>
+      </CadreWidget>
+    </Boite>
   );
 }
 
@@ -132,4 +154,5 @@ const styles = StyleSheet.create({
   point: { width: 9, height: 9, borderRadius: 5 },
   pastille: { width: 28, height: 28, borderRadius: 14, alignSelf: 'flex-end' },
   actions: { flexDirection: 'row', gap: espace.e3 },
+  choix: { flexDirection: 'row', gap: espace.e2, flexWrap: 'wrap' },
 });

@@ -40,6 +40,19 @@ test('donneesDemo : toujours trois séances prévues aujourd\'hui, de trois spor
   }
 });
 
+test('donneesDemo : le réglage garde 0, 1, 2 ou 3 séances prévues aujourd\'hui (trois par défaut, valeurs absurdes bornées)', () => {
+  const iso = dateIsoLocale(date);
+  const aujourdhui = (n?: number) => donneesDemo(date, 84, n === undefined ? {} : { prevuesAujourdhui: n }).planifiees.filter((p) => p.date === iso).map((p) => p.sport);
+  assert.deepEqual(aujourdhui(), ['WeightTraining', 'Swim', 'Ride']);
+  assert.deepEqual(aujourdhui(0), []);
+  assert.deepEqual(aujourdhui(1), ['WeightTraining']);
+  assert.deepEqual(aujourdhui(2), ['WeightTraining', 'Swim']);
+  assert.deepEqual(aujourdhui(99), ['WeightTraining', 'Swim', 'Ride']);
+  assert.deepEqual(aujourdhui(-5), []);
+  // les séances des autres jours ne bougent pas
+  assert.equal(donneesDemo(date, 84, { prevuesAujourdhui: 0 }).planifiees.filter((p) => p.date !== iso).length, donneesDemo(date).planifiees.filter((p) => p.date !== iso).length);
+});
+
 test('seriesForceDemo : séries triées de la plus récente à la plus ancienne, avec des records à afficher', () => {
   const series = seriesForceDemo(date);
   assert.equal(series.length, 407);

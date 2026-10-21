@@ -35,8 +35,8 @@ export function famillesDe(d: Pick<DonneesAccueil, 'seances' | 'force' | 'hyrox'
 }
 
 /** Les données d'exemple : mêmes formes que celles de la base, sans compte. */
-export function donneesDemoAccueil(aujourdhui: Date = new Date()): DonneesAccueil {
-  const d = donneesDemo(aujourdhui);
+export function donneesDemoAccueil(aujourdhui: Date = new Date(), options: { prevuesAujourdhui?: number } = {}): DonneesAccueil {
+  const d = donneesDemo(aujourdhui, undefined, options);
   return {
     profil: d.profil,
     metriques: d.metriques,

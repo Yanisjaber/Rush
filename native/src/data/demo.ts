@@ -22,7 +22,7 @@ export interface DonneesDemo {
   objectifs: Objectif[];
 }
 
-export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84): DonneesDemo {
+export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options: { prevuesAujourdhui?: number } = {}): DonneesDemo {
   const seances: Seance[] = [];
   const quotidien: Record<string, number> = {}; // date ISO → points de charge du jour
 
@@ -123,11 +123,15 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84): Donnee
       { duration_s: 3600, watts_90d: 205, watts_alltime: 245 },
     ],
     planifiees: [
-      // séance de muscu prévue aujourd'hui, reliée à un programme : la carte « Séance du jour » la montrera
-      { id: 'demo-p0', name: 'Legs', date: plusJours(0), sport: 'WeightTraining', duration: 54, tss: 45, category: 'entrainement', km: null, programme_id: 'demo-prog-legs' },
-      // deux autres séances prévues aujourd'hui (toujours, quelle que soit la date) : la démo montre ainsi une journée à trois séances
-      { id: 'demo-p0b', name: 'Natation technique', date: plusJours(0), sport: 'Swim', duration: 40, tss: 30, category: 'entrainement', km: 1.5 },
-      { id: 'demo-p0c', name: 'Vélo en souplesse', date: plusJours(0), sport: 'Ride', duration: 45, tss: 28, category: 'entrainement', km: null },
+      // Les séances prévues aujourd'hui (toujours, quelle que soit la date) : trois par défaut, de trois sports ; le réglage de la démo
+      // (Paramètres) en garde 0, 1, 2 ou 3, pour montrer chaque cas de la « Séance du jour ». La première est reliée à un programme de force.
+      ...(
+        [
+          { id: 'demo-p0', name: 'Legs', date: plusJours(0), sport: 'WeightTraining', duration: 54, tss: 45, category: 'entrainement', km: null, programme_id: 'demo-prog-legs' },
+          { id: 'demo-p0b', name: 'Natation technique', date: plusJours(0), sport: 'Swim', duration: 40, tss: 30, category: 'entrainement', km: 1.5 },
+          { id: 'demo-p0c', name: 'Vélo en souplesse', date: plusJours(0), sport: 'Ride', duration: 45, tss: 28, category: 'entrainement', km: null },
+        ] satisfies Prevue[]
+      ).slice(0, Math.min(3, Math.max(0, options.prevuesAujourdhui ?? 3))),
       { id: 'demo-p1', name: 'Fractionné 8 × 400 m', date: plusJours(1), sport: 'Run', duration: 55, tss: 70, category: 'entrainement', km: null },
       { id: 'demo-p2', name: 'Endurance vélo', date: plusJours(2), sport: 'Ride', duration: 90, tss: 62, category: 'entrainement', km: null },
       { id: 'demo-p3', name: 'Sortie longue', date: plusJours(6), sport: 'Ride', duration: 180, tss: 95, category: 'entrainement', km: null },

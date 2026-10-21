@@ -52,3 +52,15 @@ export function IconeSport({ sport, taille = 18 }: Props) {
     </Svg>
   );
 }
+
+/** Le dessin du jour de repos : une lune et un petit « z ». Neutre (pas de sport, donc pas de couleur de sport). */
+export function IconeRepos({ taille = 30 }: { taille?: number }) {
+  const p = usePalette();
+  const trait = { stroke: p.texteMuet, strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' };
+  return (
+    <Svg width={taille} height={taille} viewBox="0 0 24 24" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Path d="M19.5 14.2 A8 8 0 1 1 9.8 4.5 A6.4 6.4 0 0 0 19.5 14.2 Z" {...trait} />
+      <Path d="M14.5 3.5 H18.5 L14.5 8 H18.5" {...trait} />
+    </Svg>
+  );
+}

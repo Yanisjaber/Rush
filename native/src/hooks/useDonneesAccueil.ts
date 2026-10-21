@@ -4,6 +4,7 @@ import { chargerAccueil } from '@/data/chargement';
 import { definirSources } from '@/stores/menu';
 import { useSportsEtat } from '@/stores/sports';
 import { useAuth } from '@/stores/auth';
+import { useReglagesDemo } from '@/stores/reglagesDemo';
 
 // Les données de l'Accueil : la démo (générée, sans compte) ou celles du compte connecté (lecture seule, via Supabase).
 // Au premier chargement `chargement` est vrai ; ensuite, `recharger` (tirer pour actualiser) garde les données affichées.
@@ -17,7 +18,8 @@ export function useDonneesAccueil(): {
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
   const sports = useSportsEtat();
-  const donneesDemo = useMemo(() => (demo ? donneesDemoAccueil(new Date()) : null), [demo]);
+  const { prevuesAujourdhui } = useReglagesDemo();
+  const donneesDemo = useMemo(() => (demo ? donneesDemoAccueil(new Date(), { prevuesAujourdhui }) : null), [demo, prevuesAujourdhui]);
   const [reel, setReel] = useState<{ userId: string; donnees: DonneesAccueil } | null>(null);
   const [actualisation, setActualisation] = useState(false);
 

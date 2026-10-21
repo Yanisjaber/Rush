@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { CadreWidget, TitreWidget } from '@/components/CadreWidget';
-import { IconeSport } from '@/components/IconeSport';
+import { IconeRepos, IconeSport } from '@/components/IconeSport';
 import { elementsDuJour, infosDuJour, lignesDeLaBande, seancesDuJour, type ElementDuJour } from '@/data/aujourdhui';
 import { familleAffichage } from '@/data/familles';
 import { formatHeuresMinutes } from '@/data/format';
@@ -15,7 +15,7 @@ import { usePalette } from '@/theme/usePalette';
 // Plusieurs : « 2 séances » à gauche, et à droite une ligne par sport avec sa durée seulement (« Vélo · 2h30 », « Muscu · 1h00 ») ; toutes les durées en 0h00, elles s'alignent :
 // les km et les exercices ne s'affichent que pour une séance seule. Plus de 2 dans la bande fine : la plus longue, puis « + 2 séances · 1h25 » (le nombre des autres et la somme de leurs durées).
 // Une séance faite disparaît d'ici (on la retrouve dans « Dernière séance » et « Cette semaine »).
-// Tout ce qui était prévu est fait : « Terminé ». Rien de prévu : « Repos ».
+// Tout ce qui était prévu est fait : « Terminé ». Rien de prévu : « Repos » et une petite lune à droite.
 const court = (sport: string) => SPORTS[familleAffichage(sport) as CleSport]?.court ?? SPORTS.autre.court;
 
 export function WidgetAujourdhui({ contexte, taille }: WidgetProps) {
@@ -68,10 +68,15 @@ export function WidgetAujourdhui({ contexte, taille }: WidgetProps) {
                 </View>
               ) : null}
             </View>
-          ) : (
+          ) : toutFait ? (
             <Text numberOfLines={2} style={[typo.petit, styles.noteVide, { color: p.texteDoux }]}>
               {vide}
             </Text>
+          ) : (
+            // Rien de prévu : un petit dessin de repos à droite
+            <View style={styles.repos}>
+              <IconeRepos taille={34} />
+            </View>
           )}
         </View>
       </CadreWidget>
@@ -109,6 +114,7 @@ const styles = StyleSheet.create({
   ligneFine: { flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'flex-end', marginRight: 9 },
   texteFin: { flexShrink: 1, fontFamily: police.texte600, fontSize: 13, lineHeight: 15, fontVariant: ['tabular-nums'] },
   pastille: { alignSelf: 'flex-end', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 1, marginTop: 2 },
+  repos: { paddingRight: 4 },
   noteVide: { flexShrink: 1, maxWidth: '42%', textAlign: 'right' },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
   nom: { flex: 1, minWidth: 0 },
