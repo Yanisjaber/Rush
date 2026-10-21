@@ -95,7 +95,7 @@ export default function Sante() {
             </Text>
             <View style={styles.jauges}>
               {piliers.map((x) => (
-                <JaugePilier key={x.cle} nom={NOM_COURT[x.cle]} indice={x.indice} onPress={() => aller(x.vers)} />
+                <JaugePilier key={x.cle} nom={NOM_COURT[x.cle]} indice={x.indice} valeur={x.valeur} unite={x.unite} onPress={() => aller(x.vers)} />
               ))}
             </View>
 

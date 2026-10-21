@@ -15,6 +15,8 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 const BARRE_ONGLETS = 72;
+// Les piliers où une valeur plus BASSE que d'habitude est une bonne nouvelle
+const SENS_INVERSE = new Set<CleComposante>(['fc', 'stress', 'resp']);
 const PERIODES = [7, 30, 60] as const;
 const MOT: Record<Niveau, string> = { bon: 'Bon', moyen: 'Moyen', faible: 'Faible' };
 
@@ -117,8 +119,14 @@ export default function Pilier() {
                   <Text style={[typo.corpsFort, { color: p.texte }]}>{MOT[niveau]}</Text>
                 </View>
                 {vue?.ecart ? (
+                  // L'écart prend la couleur du niveau : « Stress +8 » est rouge (monter est mauvais), « HRV +8 » serait vert
+                  <View style={[styles.puce, { borderColor: /^[+−]\d/.test(vue.ecart) ? couleur : p.traitFort }]}>
+                    <Text style={[typo.corps, { color: /^[+−]\d/.test(vue.ecart) ? couleur : p.texteDoux }]}>{vue.ecart}</Text>
+                  </View>
+                ) : null}
+                {SENS_INVERSE.has(cleValide) ? (
                   <View style={[styles.puce, { borderColor: p.traitFort }]}>
-                    <Text style={[typo.corps, { color: p.texteDoux }]}>{vue.ecart}</Text>
+                    <Text style={[typo.corps, { color: p.texteDoux }]}>plus bas = mieux</Text>
                   </View>
                 ) : null}
                 <View accessible accessibilityLabel={`Compte pour ${Math.round(POIDS_FORME[cleValide] * 100)} % de ton état de forme`} style={[styles.puce, { borderColor: p.traitFort }]}>
