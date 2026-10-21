@@ -46,5 +46,5 @@ export function SelecteurSports({ choisis, onBasculer, desactive = false }: Prop
 
 const styles = StyleSheet.create({
   puces: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  puce: { minHeight: 44, borderWidth: 1.5, borderRadius: rayon.base, paddingHorizontal: 14, justifyContent: 'center' },
+  puce: { minHeight: 44, borderWidth: 1.5, borderRadius: rayon.rond, paddingHorizontal: 16, justifyContent: 'center' },
 });

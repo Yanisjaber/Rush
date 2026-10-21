@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/Bloc';
-import { Bouton } from '@/components/Bouton';
 import { EcranSection } from '@/components/EcranSection';
+import { Pastille } from '@/components/Pastille';
 import { chargerConnexions, type ConnexionStrava } from '@/data/api';
 import { useAuth } from '@/stores/auth';
-import { espace } from '@/theme/couleurs';
-import { typo } from '@/theme/typo';
+import { espace, rayon } from '@/theme/couleurs';
+import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Adresse du site : la connexion à Strava passe encore par le web. Elle arrivera dans l'app avec l'ouverture du lien OAuth.
@@ -19,7 +19,7 @@ const texteDate = (iso: string | null): string => {
 };
 const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
 
-// Les connexions du compte, en lecture : le statut de Strava et les nuits Garmin déjà importées.
+// Les connexions du compte, en lecture : une pastille d'état (verte, rouge ou grise), un mot, et des puces avec les chiffres. Peu de phrases.
 export default function Connexions() {
   const p = usePalette();
   const { session, demo } = useAuth();
@@ -40,12 +40,12 @@ export default function Connexions() {
     };
   }, [demo, userId]);
 
-  const strava = etat?.strava ?? null;
-  const statut = !strava ? 'Non connecté' : strava.last_sync_status === 'error' ? 'Erreur de synchro' : 'Connecté';
-  const couleur = !strava ? p.texteDoux : strava.last_sync_status === 'error' ? p.danger : p.ok;
-  const detail = strava
-    ? [strava.athlete_name, pluriel(etat?.nbActivites ?? 0, 'activité'), texteDate(strava.last_sync_at) ? `synchro ${texteDate(strava.last_sync_at)}` : ''].filter(Boolean).join(' · ')
-    : 'Importe automatiquement tes activités, puissances et courbes.';
+  const strava = demo ? null : (etat?.strava ?? null);
+  const enErreur = strava?.last_sync_status === 'error';
+  const mot = !strava ? 'Non connecté' : enErreur ? 'Erreur de synchro' : 'Connecté';
+  const couleur = !strava ? p.traitFort : enErreur ? p.danger : p.ok;
+  const puces = strava ? [strava.athlete_name, pluriel(etat?.nbActivites ?? 0, 'activité'), texteDate(strava.last_sync_at) ? `synchro ${texteDate(strava.last_sync_at)}` : ''].filter((x): x is string => !!x) : [];
+  const nuits = etat?.nbNuits ?? 0;
 
   return (
     <EcranSection>
@@ -53,26 +53,53 @@ export default function Connexions() {
         {demo ? <Text style={[typo.petit, { color: p.texteMuet }]}>Mode démo : aucune connexion.</Text> : null}
         {erreur ? <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>{erreur}</Text> : null}
         <Bloc titre="Strava">
-          {!demo && !etat && !erreur ? <ActivityIndicator color={p.texteDoux} /> : (
+          {!demo && !etat && !erreur ? (
+            <ActivityIndicator color={p.texteDoux} />
+          ) : (
             <>
-              <Text style={[typo.corpsFort, { color: couleur }]}>{demo ? 'Non connecté' : statut}</Text>
-              <Text style={[typo.petit, { color: p.texteDoux, marginTop: 4 }]}>{demo ? 'Importe automatiquement tes activités, puissances et courbes.' : detail}</Text>
+              <View accessible accessibilityLabel={`Strava : ${mot}`} style={styles.statut}>
+                <View style={[styles.pastille, { backgroundColor: couleur }]} />
+                <Text style={[styles.mot, { color: strava ? p.texte : p.texteDoux }]}>{mot}</Text>
+              </View>
+              {puces.length ? (
+                <View style={styles.puces}>
+                  {puces.map((x) => (
+                    <View key={x} style={[styles.puce, { borderColor: p.traitFort }]}>
+                      <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>{x}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
               {!strava ? (
-                <View style={{ marginTop: espace.e3 }}>
-                  <Bouton variante="discret" onPress={() => void Linking.openURL(ADRESSE_SITE)}>Connecter depuis le site</Bouton>
+                <View style={{ marginTop: espace.e3, alignItems: 'flex-start' }}>
+                  <Pastille nom="Connecter depuis le site" actif={false} onPress={() => void Linking.openURL(ADRESSE_SITE)} aide="Ouvre le site dans le navigateur" />
                 </View>
               ) : null}
             </>
           )}
         </Bloc>
         <Bloc titre="Garmin">
-          <Text style={[typo.corpsFort, { color: p.texteDoux }]}>Bientôt disponible</Text>
-          <Text style={[typo.petit, { color: p.texteDoux, marginTop: 4 }]}>
-            La connexion officielle Garmin arrive plus tard.
-            {etat && etat.nbNuits > 0 ? ` ${pluriel(etat.nbNuits, 'nuit')} déjà importée${etat.nbNuits > 1 ? 's' : ''}, à retrouver dans Santé.` : ''}
-          </Text>
+          <View accessible accessibilityLabel="Garmin : bientôt disponible" style={styles.statut}>
+            <View style={[styles.pastille, { backgroundColor: p.traitFort }]} />
+            <Text style={[styles.mot, { color: p.texteDoux }]}>Bientôt</Text>
+          </View>
+          {nuits > 0 ? (
+            <View style={styles.puces}>
+              <View style={[styles.puce, { borderColor: p.traitFort }]}>
+                <Text style={[typo.petit, { color: p.texteDoux }]}>{pluriel(nuits, 'nuit')} importée{nuits > 1 ? 's' : ''}</Text>
+              </View>
+            </View>
+          ) : null}
         </Bloc>
       </View>
     </EcranSection>
   );
 }
+
+const styles = StyleSheet.create({
+  statut: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  pastille: { width: 22, height: 22, borderRadius: 11 },
+  mot: { fontSize: 26, lineHeight: 30, fontFamily: police.titre700 },
+  puces: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  puce: { borderWidth: 1, borderRadius: rayon.rond, paddingHorizontal: 12, minHeight: 32, justifyContent: 'center', maxWidth: '100%' },
+});

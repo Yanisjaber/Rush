@@ -6,7 +6,7 @@ import { SelecteurSports } from '@/components/SelecteurSports';
 import { basculerSport } from '@/data/sports-choisis';
 import { useSportsChoisis } from '@/hooks/useSportsChoisis';
 import { espace, rayon } from '@/theme/couleurs';
-import { typo } from '@/theme/typo';
+import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Les sports du compte : ils décident des onglets de la barre du haut et des widgets de l'Accueil.
@@ -48,7 +48,10 @@ export default function MesSports() {
   return (
     <EcranSection>
       <View style={{ gap: espace.e4 }}>
-        <Text style={[typo.corps, { color: p.texteDoux }]}>Coche les sports que tu pratiques : ils composent ton Accueil et la barre du haut.</Text>
+        <View accessible accessibilityLabel={`${choisis.length} sport${choisis.length > 1 ? 's' : ''} coché${choisis.length > 1 ? 's' : ''}. Ils composent ton Accueil et la barre du haut.`} style={styles.compteur}>
+          <Text style={[styles.nombre, { color: p.texte }]}>{choisis.length}</Text>
+          <Text style={[typo.corpsFort, { color: p.texteDoux }]}>{choisis.length > 1 ? 'sports' : 'sport'}</Text>
+        </View>
         {erreur ? (
           <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
             <Text style={[typo.petit, { color: p.texte }]}>{erreur}</Text>
@@ -68,5 +71,7 @@ export default function MesSports() {
 
 const styles = StyleSheet.create({
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
+  compteur: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  nombre: { fontFamily: police.titre800, fontSize: 56, lineHeight: 60, letterSpacing: -1 },
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
 });
