@@ -38,6 +38,9 @@ export default function Sante() {
   const piliers = useMemo(() => construirePiliers(nuits, metriques, mesures, serie), [nuits, metriques, mesures, serie]);
   const aujourdhui = dateIsoLocale(new Date());
   const motifs = useMemo(() => motifsDuJour(piliers), [piliers]);
+  const principaux = useMemo(() => piliers.filter((x) => !x.surveille), [piliers]);
+  const surveilles = useMemo(() => piliers.filter((x) => x.surveille), [piliers]);
+  const alertes = useMemo(() => surveilles.filter((x) => x.alerte), [surveilles]);
   const suivis = useMemo(() => construireSuivis(mesures, aujourdhui), [mesures, aujourdhui]);
   const reponses = QUESTIONS.filter((c) => mesures[aujourdhui]?.[c] != null).length;
   const aller = (vers: string) => router.push(vers as never);
@@ -90,14 +93,41 @@ export default function Sante() {
               </View>
             ) : null}
 
+            {alertes.length ? (
+              // Une alerte ne change pas le chiffre : elle signale un écart marqué à ta norme (début de maladie, surcharge)
+              <View accessible accessibilityRole="alert" accessibilityLabel={`Alerte : ${alertes.map((x) => `${x.nom} ${x.ecart ?? x.valeur}`).join(', ')}`} style={styles.motifs}>
+                {alertes.map((x) => (
+                  <Pressable key={x.cle} onPress={() => aller(x.vers)} accessibilityRole="button" accessibilityLabel={`Alerte, ${x.nom} : ${x.valeur} ${x.unite}`} style={[styles.motif, { backgroundColor: p.surface, borderWidth: 1, borderColor: p.danger }]}>
+                    <Text style={[typo.petit, { color: p.danger, fontFamily: police.texte600 }]}>!</Text>
+                    <Text style={[typo.petit, { color: p.texte }]}>
+                      {NOM_COURT[x.cle]} <Text style={{ fontFamily: police.texte600 }}>{/^[+−]\d/.test(x.ecart ?? '') ? (x.ecart as string).split(' ')[0] : x.valeur}</Text>
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+
             <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte, marginTop: espace.e2 }]}>
               Piliers
             </Text>
             <View style={styles.jauges}>
-              {piliers.map((x) => (
+              {principaux.map((x) => (
                 <JaugePilier key={x.cle} nom={NOM_COURT[x.cle]} indice={x.indice} valeur={x.valeur} unite={x.unite} onPress={() => aller(x.vers)} />
               ))}
             </View>
+
+            {surveilles.length ? (
+              <>
+                <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte, marginTop: espace.e2 }]}>
+                  Surveillés
+                </Text>
+                <View style={styles.jauges}>
+                  {surveilles.map((x) => (
+                    <JaugePilier key={x.cle} nom={NOM_COURT[x.cle]} indice={x.indice} valeur={x.valeur} unite={x.unite} onPress={() => aller(x.vers)} />
+                  ))}
+                </View>
+              </>
+            ) : null}
 
             <Pressable
               onPress={() => aller('/sante/checkin')}

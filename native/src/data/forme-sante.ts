@@ -1,17 +1,20 @@
-// « État de forme » : un indice de 0 à 100 qui combine les facteurs de santé du jour (HRV, fréquence cardiaque de repos, sommeil, stress de nuit,
-// charge d'entraînement). Fonctions pures, sans réseau, testées. C'est une ESTIMATION à partir de tes chiffres, pas un avis médical.
+// « État de forme » : un indice de 0 à 100 qui combine cinq piliers (HRV, fréquence cardiaque de repos, sommeil, ressenti du matin, charge
+// d'entraînement). Fonctions pures, sans réseau, testées. C'est une ESTIMATION à partir de tes chiffres, pas un avis médical.
+// Le stress de nuit, la respiration et la température ne comptent PAS dans le chiffre : ce sont des ALERTES (poids 0). Le stress de nuit est
+// dérivé de la HRV (il la compterait deux fois) ; la respiration et la température viennent d'appareils que tout le monde n'a pas, et ne servent
+// qu'à signaler un écart marqué (début de maladie, surcharge).
 //
 // Méthode (chaque pilier devient un sous-indice de 0 à 100) :
 //  - HRV : logarithme de la HRV de nuit (moyenne des 3 dernières nuits) comparé à TA PROPRE référence des 28 nuits précédentes, en écarts-types.
 //    Le logarithme et la comparaison à soi-même suivent Plews et coll. (2013), « Training adaptation and heart rate variability in elite endurance
 //    athletes », et Buchheit (2014), « Monitoring training status with HR measures ».
 //  - FC de repos : même méthode, signe inversé (une FC de repos plus haute que d'habitude signale de la fatigue ou du stress).
-//  - Stress de nuit : même méthode, signe inversé.
+//  - Stress de nuit (alerte) : même méthode, signe inversé.
 //  - Sommeil : le score de sommeil déjà calculé (durée, efficacité, réveils, latence, architecture ; repères de la National Sleep Foundation, 2015).
 //  - Charge : la « fraîcheur » (forme = condition − fatigue) du modèle fitness-fatigue de Banister (1975), que l'app calcule déjà.
 //  - Ressenti : les cinq questions du matin (fatigue, courbatures, humeur, motivation, stress), de 1 à 5, dans l'esprit de l'indice de Hooper (1995) ;
 //    les mesures subjectives sont souvent plus sensibles que les mesures objectives (Saw et coll., 2016).
-//  - Respiration de nuit : même méthode que la FC de repos. Température cutanée : plus l'écart à ta normale est grand, plus l'indice baisse.
+//  - Respiration de nuit (alerte) : même méthode que la FC de repos. Température cutanée (alerte) : plus l'écart à ta normale est grand, plus l'indice baisse.
 // Un écart à la référence (z) devient un centile de 0 à 100 : 50 = comme d'habitude, au-dessus = mieux que d'habitude.
 // L'indice est la moyenne pondérée des sous-indices DISPONIBLES (les poids se renormalisent sur ce qui existe) ; si trop de données manquent,
 // il vaut null (on n'invente rien). Deux événements sont des FREINS qui plafonnent l'indice quoi que disent les autres chiffres : malade (35) et blessé (50).
@@ -22,8 +25,20 @@ import type { Metrique, Nuit } from './types.ts';
 
 export type CleComposante = 'hrv' | 'fc' | 'sommeil' | 'ressenti' | 'charge' | 'stress' | 'resp' | 'temperature';
 
-/** Poids de chaque pilier dans l'indice. La HRV pèse le plus : c'est le marqueur de récupération le plus sensible (Plews 2013, Buchheit 2014). */
-export const POIDS_FORME: Record<CleComposante, number> = { hrv: 0.25, sommeil: 0.2, fc: 0.15, ressenti: 0.15, charge: 0.08, stress: 0.07, resp: 0.05, temperature: 0.05 };
+/**
+ * Poids de chaque pilier dans l'indice (ils font 1). La HRV pèse le plus : c'est le marqueur de récupération le plus sensible (Plews 2013, Buchheit 2014).
+ * Ces poids sont des choix raisonnés, pas ceux d'une étude. Le stress, la respiration et la température ont un poids de 0 : ce sont des alertes.
+ */
+export const POIDS_FORME: Record<CleComposante, number> = { hrv: 0.3, sommeil: 0.24, fc: 0.18, ressenti: 0.18, charge: 0.1, stress: 0, resp: 0, temperature: 0 };
+
+/** Un pilier compte dans le chiffre ; sinon c'est une alerte (stress de nuit, respiration, température). */
+export const estPilier = (cle: CleComposante): boolean => POIDS_FORME[cle] > 0;
+
+/** Sous cet indice, une alerte se déclenche : un écart marqué (plus d'environ 0,85 écart-type) à TA normale. La température a sa propre échelle (0,75 °C d'écart). */
+const SEUIL_ALERTE: Partial<Record<CleComposante, number>> = { stress: 20, resp: 20, temperature: 50 };
+
+/** Cette alerte est-elle déclenchée ? Faux pour un pilier (qui a un poids) ou sans donnée. */
+export const enAlerte = (cle: CleComposante, indice: number | null | undefined): boolean => indice != null && SEUIL_ALERTE[cle] != null && indice <= (SEUIL_ALERTE[cle] as number);
 
 export const NOM_COMPOSANTE: Record<CleComposante, string> = {
   hrv: 'HRV',
@@ -78,8 +93,16 @@ export interface PointForme {
   freins: string[];
   /** Le contexte qui peut fausser les mesures de la nuit (alcool, voyage), sans effet sur le chiffre. */
   contexte: string[];
-  /** Les piliers sans donnée ce jour-là, avec le moyen de les obtenir : ce qui rendrait l'estimation plus précise. */
+  /** Les piliers sans donnée ce jour-là, avec le moyen de les obtenir : ce qui rendrait l'estimation plus précise. Les alertes n'y figurent pas. */
   manquants: { cle: CleComposante; nom: string; comment: string }[];
+  /** Les alertes déclenchées ce jour-là (stress de nuit, respiration, température hors de ta norme). Elles ne changent pas le chiffre. */
+  alertes: { cle: CleComposante; nom: string; indice: number }[];
+}
+
+/** Combien de piliers (ceux qui comptent dans le chiffre) ont une donnée ce jour-là, sur combien. */
+export function piliersDispo(point: PointForme | null | undefined): { pris: number; total: number } {
+  const piliers = (point?.composantes ?? []).filter((c) => estPilier(c.cle));
+  return { pris: piliers.filter((c) => c.indice != null).length, total: Object.keys(POIDS_FORME).filter((k) => estPilier(k as CleComposante)).length };
 }
 
 // --- Petits outils statistiques ---------------------------------------------------------------------------------------------
@@ -215,8 +238,9 @@ export function serieEtatDeForme(nuits: Nuit[] | null | undefined, metriques: Me
     if ((jour?.alcool_verres ?? 0) >= 1) contexte.push("De l'alcool hier peut avoir abaissé ta HRV et ton sommeil.");
     if (jour?.evt_voyage === 1) contexte.push('Un voyage ou un décalage horaire peut fausser tes mesures de la nuit.');
 
-    const manquants = composantes.filter((c) => c.indice == null).map((c) => ({ cle: c.cle, nom: c.nom, comment: COMMENT_AJOUTER[c.cle] }));
-    return { date, indice, confiance, precision: precisionDe(confiance), composantes, freins, contexte, manquants };
+    const manquants = composantes.filter((c) => estPilier(c.cle) && c.indice == null).map((c) => ({ cle: c.cle, nom: c.nom, comment: COMMENT_AJOUTER[c.cle] }));
+    const alertes = composantes.filter((c) => enAlerte(c.cle, c.indice)).map((c) => ({ cle: c.cle, nom: c.nom, indice: c.indice as number }));
+    return { date, indice, confiance, precision: precisionDe(confiance), composantes, freins, contexte, manquants, alertes };
   });
 }
 
@@ -248,7 +272,7 @@ const LIBELLES: Record<Niveau, { libelle: string; mot: string; phrase: string }>
 export function lecture(point: PointForme | null | undefined): Lecture | null {
   if (!point || point.indice == null) return null;
   const niveau = niveauDe(point.indice) as Niveau;
-  const bas = point.composantes.filter((c) => c.indice != null).sort((a, b) => (a.indice as number) - (b.indice as number))[0];
+  const bas = point.composantes.filter((c) => estPilier(c.cle) && c.indice != null).sort((a, b) => (a.indice as number) - (b.indice as number))[0];
   return { indice: point.indice, niveau, ...LIBELLES[niveau], pointFaible: bas && (bas.indice as number) < 45 ? bas : null };
 }
 

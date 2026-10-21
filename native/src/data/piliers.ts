@@ -1,6 +1,6 @@
 // Les piliers de l'écran Santé : une vue uniforme (valeur du jour, écart à TA moyenne, niveau, mini courbe) pour chaque facteur de l'état de forme.
 // Fonctions pures, sans réseau, testées. Les piliers sont triés du plus bas au plus haut : on lit d'abord ce qui tire l'état de forme vers le bas.
-import { COMMENT_AJOUTER, indiceRessenti, niveauDe, NOM_COMPOSANTE, POIDS_FORME, type CleComposante, type Niveau, type PointForme } from './forme-sante.ts';
+import { COMMENT_AJOUTER, enAlerte, estPilier, indiceRessenti, niveauDe, NOM_COMPOSANTE, POIDS_FORME, type CleComposante, type Niveau, type PointForme } from './forme-sante.ts';
 import type { MesuresParJour } from './sante-catalogue.ts';
 import { lisser, moyenneSur, proteinesParKg, serieDe, variationHebdo } from './suivi-corps.ts';
 import { scoreNuit } from './score-sommeil.ts';
@@ -18,6 +18,10 @@ export interface PilierVue {
   niveau: Niveau | null;
   indice: number | null;
   poids: number;
+  /** Vrai pour le stress de nuit, la respiration et la température : surveillés, sans poids dans le chiffre. */
+  surveille: boolean;
+  /** Vrai si cette alerte est déclenchée (écart marqué à ta norme). Toujours faux pour un pilier. */
+  alerte: boolean;
   /** Les 14 dernières valeurs, de la plus ancienne à la plus récente (vide sans donnée). */
   courbe: number[];
   /** L'écran de détail qu'ouvre un appui. */
@@ -88,7 +92,7 @@ export function texteValeur(cle: CleComposante, v: number): string {
 
 /**
  * Les piliers du dernier jour de la série, du plus bas au plus haut ; ceux sans donnée à la fin, avec la consigne pour les obtenir.
- * La respiration et la température (qui demandent une source externe) n'apparaissent que si on a une valeur.
+ * Le stress de nuit, la respiration et la température (surveillés, sans poids) viennent après les piliers et n'apparaissent que si on a une valeur.
  */
 export function construirePiliers(nuits: Nuit[] | null | undefined, metriques: Metrique[] | null | undefined, mesures: MesuresParJour | null | undefined, serie: PointForme[]): PilierVue[] {
   const point = serie[serie.length - 1];
@@ -110,24 +114,20 @@ export function construirePiliers(nuits: Nuit[] | null | undefined, metriques: M
       niveau: niveauDe(c.indice),
       indice: c.indice,
       poids: POIDS_FORME[c.cle],
+      surveille: !estPilier(c.cle),
+      alerte: enAlerte(c.cle, c.indice),
       courbe: histo.slice(-NB_COURBE),
       vers: POINT[c.cle].vers,
       manquant: c.indice == null ? COMMENT_AJOUTER[c.cle] : null,
     };
   });
 
-  // La respiration et la température sans valeur n'ont rien à montrer : on n'affiche pas de ligne vide pour une source qu'on n'a pas
-  const visibles = vues.filter((v) => !((v.cle === 'resp' || v.cle === 'temperature') && v.indice == null));
-  const avecDonnee = visibles.filter((v) => v.indice != null).sort((a, b) => (a.indice as number) - (b.indice as number));
-  const sans = visibles.filter((v) => v.indice == null);
-  return [...avecDonnee, ...sans];
-}
-
-/** Les consignes des piliers masqués (respiration, température) : une ligne « pour être plus précis » à la fin de la liste. */
-export function consignesMasquees(piliers: PilierVue[], point: PointForme | undefined): string[] {
-  if (!point) return [];
-  const affiches = new Set(piliers.map((p) => p.cle));
-  return point.manquants.filter((m) => !affiches.has(m.cle)).map((m) => m.comment);
+  // Les piliers d'abord (du plus bas au plus haut, ceux sans donnée à la fin), puis les éléments surveillés qui ont une valeur
+  const piliers = vues.filter((v) => !v.surveille);
+  const surveilles = vues.filter((v) => v.surveille && v.indice != null).sort((a, b) => (a.indice as number) - (b.indice as number));
+  const avecDonnee = piliers.filter((v) => v.indice != null).sort((a, b) => (a.indice as number) - (b.indice as number));
+  const sans = piliers.filter((v) => v.indice == null);
+  return [...avecDonnee, ...sans, ...surveilles];
 }
 
 /** Un suivi lent (corps, nutrition) : la même forme de carte qu'un pilier, sans niveau ni poids (il ne bouge pas l'état de forme du jour). */
@@ -194,12 +194,12 @@ export interface Motif {
 }
 
 /**
- * Ce qui a le plus bougé aujourd'hui : les piliers dont on connaît l'écart à ta moyenne, classés par leur effet sur l'état de forme
+ * Ce qui a le plus bougé aujourd'hui : les piliers (pas les alertes) dont on connaît l'écart à ta moyenne, classés par leur effet sur l'état de forme
  * (à quel point leur indice s'éloigne de 50, multiplié par leur poids). Sert à rendre la lecture vérifiable : « HRV −14, Stress +8 ».
  */
 export function motifsDuJour(piliers: PilierVue[], max = 3): Motif[] {
   return piliers
-    .filter((p) => p.indice != null && p.ecart != null && /^[+−]\d/.test(p.ecart))
+    .filter((p) => !p.surveille && p.indice != null && p.ecart != null && /^[+−]\d/.test(p.ecart))
     .map((p) => ({ p, impact: Math.abs((p.indice as number) - 50) * p.poids }))
     .sort((a, b) => b.impact - a.impact)
     .slice(0, max)

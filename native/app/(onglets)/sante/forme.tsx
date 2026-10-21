@@ -8,8 +8,8 @@ import { AnneauZones } from '@/components/AnneauZones';
 import { BarresEcarts } from '@/components/BarresEcarts';
 import { Bloc } from '@/components/Bloc';
 import { CourbeForme } from '@/components/CourbeForme';
-import { accordAvecRessenti, JOURS_MINI_ACCORD, lecture, niveauDe, serieEtatDeForme } from '@/data/forme-sante';
-import { construirePiliers } from '@/data/piliers';
+import { accordAvecRessenti, JOURS_MINI_ACCORD, lecture, niveauDe, NOM_COMPOSANTE, serieEtatDeForme } from '@/data/forme-sante';
+import { construirePiliers, NOM_COURT } from '@/data/piliers';
 import { useDonneesSommeil } from '@/hooks/useDonneesSommeil';
 import { useMesuresSante } from '@/hooks/useMesuresSante';
 import { useMetriques } from '@/hooks/useMetriques';
@@ -93,6 +93,16 @@ export default function EtatDeForme() {
               ) : null}
             </AnneauZones>
             <Text style={[typo.micro, { color: p.texteMuet }]}>estimation</Text>
+            {dernier && dernier.alertes.length ? (
+              // Une alerte ne change pas le chiffre : elle signale un écart marqué à ta norme
+              <View accessible accessibilityRole="alert" accessibilityLabel={`Alerte : ${dernier.alertes.map((a) => a.nom).join(', ')}. Ça ne change pas le chiffre.`} style={styles.alertes}>
+                {dernier.alertes.map((a) => (
+                  <View key={a.cle} style={[styles.puceAlerte, { borderColor: p.danger }]}>
+                    <Text style={[typo.petit, { color: p.danger }]}>! {NOM_COMPOSANTE[a.cle]}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
           </View>
 
           <Bloc>
@@ -125,7 +135,7 @@ export default function EtatDeForme() {
           </Bloc>
 
           <Bloc titre="Ce qui le tire">
-            <BarresEcarts lignes={piliers.map((x) => ({ cle: x.cle, nom: x.nom, indice: x.indice, vers: x.vers }))} onOuvrir={(vers) => router.push(vers as never)} />
+            <BarresEcarts lignes={piliers.filter((x) => !x.surveille).map((x) => ({ cle: x.cle, nom: NOM_COURT[x.cle], indice: x.indice, vers: x.vers }))} onOuvrir={(vers) => router.push(vers as never)} />
           </Bloc>
 
           <Bloc titre="Fiable pour toi ?">
@@ -142,7 +152,10 @@ export default function EtatDeForme() {
                 Estimation à partir de tes chiffres : ce n'est pas un avis médical. Chaque pilier est comparé à TA référence (tes 28 nuits précédentes), puis l'état de forme est la moyenne pondérée des piliers disponibles.
               </Text>
               <Text style={[typo.petit, { color: p.texteDoux, marginTop: 8 }]}>
-                HRV (25 %) : Plews et coll., 2013 ; Buchheit, 2014. Sommeil (20 %) : repères de la National Sleep Foundation, 2015. FC de repos (15 %), stress de nuit (7 %) et respiration (5 %) : écart à ta moyenne, inversé. Ressenti (15 %) : indice de Hooper, 1995. Charge (8 %) : modèle de Banister, 1975. Température (5 %) : écart à ta normale. Malade ou blessé plafonne l'état (35 et 50).
+                Cinq piliers. HRV (30 %) : Plews et coll., 2013 ; Buchheit, 2014. Sommeil (24 %) : repères de la National Sleep Foundation, 2015. FC de repos (18 %) : écart à ta moyenne, inversé. Ressenti (18 %) : indice de Hooper, 1995. Charge (10 %) : modèle de Banister, 1975. Malade ou blessé plafonne l'état (35 et 50).
+              </Text>
+              <Text style={[typo.petit, { color: p.texteDoux, marginTop: 8 }]}>
+                Stress de nuit, respiration et température ne comptent pas dans le chiffre : ils signalent seulement un écart marqué à ta norme (le stress de nuit est dérivé de la HRV, il la compterait deux fois).
               </Text>
               <Text style={[typo.petit, { color: p.texteDoux, marginTop: 8 }]}>
                 Les poids sont des choix raisonnés, pas ceux d'une étude. Sans assez de données (moins de 55 % du poids), l'indice n'est pas affiché.
@@ -192,6 +205,8 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', gap: 10, paddingVertical: espace.e2 },
   mot: { fontFamily: police.titre800, fontSize: 30, lineHeight: 34, maxWidth: 140, textAlign: 'center' },
   detail: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 2 },
+  alertes: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
+  puceAlerte: { borderWidth: 1, borderRadius: rayon.rond, paddingHorizontal: 12, minHeight: 32, justifyContent: 'center' },
   variation: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   periodes: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   periode: { minHeight: 40, minWidth: 64, borderWidth: 1, borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },

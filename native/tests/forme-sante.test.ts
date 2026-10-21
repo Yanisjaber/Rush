@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { accordAvecRessenti, CONFIANCE_MINI, indiceCharge, indiceContreReference, indiceDepuisEcart, indiceRessenti, indiceTemperature, indicateurs, lecture, niveauDe, phi, POIDS_FORME, precisionDe, serieEtatDeForme } from '../src/data/forme-sante.ts';
+import { accordAvecRessenti, CONFIANCE_MINI, enAlerte, estPilier, piliersDispo, type CleComposante, indiceCharge, indiceContreReference, indiceDepuisEcart, indiceRessenti, indiceTemperature, indicateurs, lecture, niveauDe, phi, POIDS_FORME, precisionDe, serieEtatDeForme } from '../src/data/forme-sante.ts';
 import type { Metrique, Nuit } from '../src/data/types.ts';
 
 const proche = (a: number, b: number, eps = 0.002) => assert.ok(Math.abs(a - b) <= eps, `${a} ≠ ${b}`);
@@ -48,8 +48,20 @@ test('indiceCharge : la fraîcheur de Banister ramenée entre 0 et 100', () => {
   assert.equal(indiceCharge(100), 100);
 });
 
-test('les poids des piliers font 1', () => {
+test('les poids des piliers font 1 ; stress, respiration et température sont des alertes (poids 0)', () => {
   proche(Object.values(POIDS_FORME).reduce((a, b) => a + b, 0), 1, 1e-9);
+  assert.deepEqual((Object.keys(POIDS_FORME) as CleComposante[]).filter(estPilier).sort(), ['charge', 'fc', 'hrv', 'ressenti', 'sommeil']);
+  for (const cle of ['stress', 'resp', 'temperature'] as const) assert.equal(POIDS_FORME[cle], 0);
+});
+
+test('enAlerte : seulement pour stress, respiration et température, sous leur seuil', () => {
+  assert.equal(enAlerte('stress', 20), true);
+  assert.equal(enAlerte('stress', 21), false);
+  assert.equal(enAlerte('resp', 5), true);
+  assert.equal(enAlerte('temperature', 50), true); // 0,75 °C d'écart
+  assert.equal(enAlerte('temperature', 51), false);
+  assert.equal(enAlerte('hrv', 0), false); // un pilier n'est jamais une alerte
+  assert.equal(enAlerte('stress', null), false);
 });
 
 test('serieEtatDeForme : une nuit comme les précédentes est « comme d\'habitude » (indice des piliers à 50)', () => {
@@ -62,9 +74,10 @@ test('serieEtatDeForme : une nuit comme les précédentes est « comme d\'habitu
   assert.equal(par('charge'), 50);
   assert.ok((par('sommeil') ?? 0) > 60); // 7 h 30 bien dormies : le score absolu est bon
   assert.ok(dernier.indice != null && dernier.indice >= 50 && dernier.indice <= 70);
-  assert.equal(dernier.confiance, 0.75); // HRV, sommeil, FC, stress et charge : 75 % du poids total
+  assert.equal(dernier.confiance, 0.82); // HRV, sommeil, FC et charge : 82 % du poids total (le stress de nuit n'a pas de poids)
   assert.equal(dernier.precision, 'bonne');
-  assert.deepEqual(dernier.manquants.map((m) => m.cle).sort(), ['resp', 'ressenti', 'temperature']);
+  assert.deepEqual(dernier.manquants.map((m) => m.cle), ['ressenti']); // seuls les piliers manquent : la respiration et la température ne sont pas des piliers
+  assert.deepEqual(dernier.alertes, []); // une nuit comme d'habitude ne déclenche rien
 });
 
 test('serieEtatDeForme : la référence ne contient jamais le futur, et les premières nuits n\'ont pas de HRV comparée', () => {
@@ -84,13 +97,13 @@ test('serieEtatDeForme : une HRV plus haute et une FC plus basse font monter l\'
 });
 
 test('serieEtatDeForme : trop de données manquantes = pas d\'indice ; les poids disponibles sont renormalisés', () => {
-  // Rien d'autre que le sommeil (poids 0,25 < 0,55) : pas d'indice
+  // Rien d'autre que le sommeil (poids 0,24 < 0,55) : pas d'indice
   const seul = serieEtatDeForme(nuits(40, () => ({ hrv_avg: null, resting_heart_rate: null, avg_stress: null })), []);
   assert.equal(seul[39].indice, null);
   assert.ok(seul[39].confiance < CONFIANCE_MINI);
   // Sans la charge (poids 0,10), le reste est renormalisé : l'indice existe quand même
   const sansCharge = serieEtatDeForme(nuits(40), []);
-  assert.equal(sansCharge[39].confiance, 0.67);
+  assert.equal(sansCharge[39].confiance, 0.72); // HRV, sommeil, FC
   assert.equal(sansCharge[39].precision, 'basique');
   assert.notEqual(sansCharge[39].indice, null);
   assert.deepEqual(serieEtatDeForme(null, null), []);
@@ -146,10 +159,27 @@ test('serieEtatDeForme avec des mesures : le ressenti et les appareils s\'ajoute
   })[39];
   assert.equal(avec.composantes.find((c) => c.cle === 'ressenti')?.indice, 100);
   assert.equal(avec.composantes.find((c) => c.cle === 'temperature')?.indice, 100);
-  assert.equal(avec.confiance, 0.95); // 0,75 + ressenti 0,15 + température 0,05
+  assert.equal(avec.confiance, 1); // 0,82 + ressenti 0,18 : la température n'ajoute rien (alerte)
   assert.equal(avec.precision, 'elevee');
   assert.ok((avec.indice as number) > (base.indice as number)); // un ressenti excellent tire l'indice vers le haut
-  assert.deepEqual(avec.manquants.map((m) => m.cle), ['resp']);
+  assert.deepEqual(avec.manquants, []);
+});
+
+test('une alerte (température très hors de ta normale) se signale sans changer le chiffre', () => {
+  const date = nuit(39).date;
+  const calme = serieEtatDeForme(nuits(40), [metrique(date, 0)], { [date]: { temp_cutanee_ecart: 0 } })[39];
+  const fievre = serieEtatDeForme(nuits(40), [metrique(date, 0)], { [date]: { temp_cutanee_ecart: 1.2 } })[39];
+  assert.deepEqual(calme.alertes, []);
+  assert.deepEqual(fievre.alertes.map((a) => a.cle), ['temperature']);
+  assert.equal(fievre.indice, calme.indice); // l'alerte ne bouge pas l'état de forme
+  assert.equal(fievre.confiance, calme.confiance);
+});
+
+test('piliersDispo : compte les piliers qui ont une donnée, sur cinq (les alertes ne comptent pas)', () => {
+  const date = nuit(39).date;
+  const p = serieEtatDeForme(nuits(40), [metrique(date, 0)], { [date]: { temp_cutanee_ecart: 0 } })[39];
+  assert.deepEqual(piliersDispo(p), { pris: 4, total: 5 }); // HRV, sommeil, FC, charge
+  assert.deepEqual(piliersDispo(null), { pris: 0, total: 5 });
 });
 
 test('freins : malade plafonne à 35, blessé à 50, le plus bas gagne ; l\'alcool et le voyage sont du contexte', () => {
@@ -181,7 +211,7 @@ test('un jour avec seulement une saisie (sans nuit) existe dans la série, sans 
 });
 
 test('lecture : un mot court par niveau pour les écrans sans phrase', () => {
-  const point = (indice: number) => ({ date: '2026-01-01', indice, confiance: 1, precision: 'elevee' as const, composantes: [], freins: [], contexte: [], manquants: [] });
+  const point = (indice: number) => ({ date: '2026-01-01', indice, confiance: 1, precision: 'elevee' as const, composantes: [], freins: [], contexte: [], manquants: [], alertes: [] });
   assert.equal(lecture(point(80))?.mot, 'Récupéré');
   assert.equal(lecture(point(50))?.mot, 'Moyen');
   assert.equal(lecture(point(20))?.mot, 'À ménager');

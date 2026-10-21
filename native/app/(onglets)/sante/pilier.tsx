@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnneauJauge } from '@/components/AnneauJauge';
 import { Bloc } from '@/components/Bloc';
 import { CourbeLissee } from '@/components/CourbeLissee';
-import { NOM_COMPOSANTE, POIDS_FORME, niveauDe, serieEtatDeForme, type CleComposante, type Niveau } from '@/data/forme-sante';
+import { estPilier, NOM_COMPOSANTE, POIDS_FORME, niveauDe, serieEtatDeForme, type CleComposante, type Niveau } from '@/data/forme-sante';
 import { construirePiliers, historiquePilier, texteValeur } from '@/data/piliers';
 import { useDonneesSommeil } from '@/hooks/useDonneesSommeil';
 import { useMesuresSante } from '@/hooks/useMesuresSante';
@@ -34,7 +34,7 @@ const INFOS: Partial<Record<CleComposante, { veutDire: string; lecture: string; 
   },
   stress: {
     veutDire: 'Le stress moyen de la nuit mesuré par ta montre, de 0 à 100.',
-    lecture: "Comparé à TA moyenne : plus bas que d'habitude, tu as mieux récupéré ; plus haut, la nuit a été plus agitée.",
+    lecture: "Comparé à TA moyenne : plus bas que d'habitude, tu as mieux récupéré ; plus haut, la nuit a été plus agitée. Surveillé seulement : il est dérivé de la HRV, qui compte déjà dans l'état de forme.",
     source: 'Dérivé de la HRV par la montre ; même méthode de comparaison à ta propre référence.',
   },
   charge: {
@@ -129,9 +129,15 @@ export default function Pilier() {
                     <Text style={[typo.corps, { color: p.texteDoux }]}>plus bas = mieux</Text>
                   </View>
                 ) : null}
-                <View accessible accessibilityLabel={`Compte pour ${Math.round(POIDS_FORME[cleValide] * 100)} % de ton état de forme`} style={[styles.puce, { borderColor: p.traitFort }]}>
-                  <Text style={[typo.corps, { color: p.texteDoux }]}>{Math.round(POIDS_FORME[cleValide] * 100)} % de l'état</Text>
-                </View>
+                {estPilier(cleValide) ? (
+                  <View accessible accessibilityLabel={`Compte pour ${Math.round(POIDS_FORME[cleValide] * 100)} % de ton état de forme`} style={[styles.puce, { borderColor: p.traitFort }]}>
+                    <Text style={[typo.corps, { color: p.texteDoux }]}>{Math.round(POIDS_FORME[cleValide] * 100)} % de l'état</Text>
+                  </View>
+                ) : (
+                  <View accessible accessibilityLabel="Surveillé : ne change pas le chiffre de l'état de forme, signale seulement un écart marqué" style={[styles.puce, { borderColor: vue?.alerte ? p.danger : p.traitFort }]}>
+                    <Text style={[typo.corps, { color: vue?.alerte ? p.danger : p.texteDoux }]}>{vue?.alerte ? '! alerte · hors score' : 'surveillé · hors score'}</Text>
+                  </View>
+                )}
               </View>
             ) : (
               <Text style={[typo.petit, { color: p.texteDoux, textAlign: 'center' }]}>{vue?.manquant ?? 'Pas encore de donnée pour ce sujet.'}</Text>

@@ -3,7 +3,7 @@ import Svg, { Path } from 'react-native-svg';
 import { AnneauZones } from '@/components/AnneauZones';
 import { CadreWidget } from '@/components/CadreWidget';
 import { Tuile } from '@/components/Tuile';
-import { lecture, niveauDe, type PointForme } from '@/data/forme-sante';
+import { lecture, niveauDe, piliersDispo, type PointForme } from '@/data/forme-sante';
 import { avecAlpha } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -41,8 +41,7 @@ function ContenuAnneau({ point, veille }: { point: PointForme | null; veille: nu
   const l = lecture(point);
   const niveau = niveauDe(point?.indice);
   const couleur = niveau === 'bon' ? p.ok : niveau === 'moyen' ? p.alerte : niveau === 'faible' ? p.danger : p.traitFort;
-  const dispo = point ? point.composantes.filter((c) => c.indice != null).length : 0;
-  const total = point ? point.composantes.length : 8;
+  const { pris: dispo, total } = piliersDispo(point);
   const ecart = l && veille != null ? l.indice - veille : null;
   // Les trois zones de lecture, avec les seuils de l'état de forme : à ménager (0 à 40), moyen (40 à 65), récupéré (65 à 100)
   const zones = [

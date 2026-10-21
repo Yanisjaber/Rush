@@ -7,7 +7,7 @@ import { EcranSection } from '@/components/EcranSection';
 import { Pastille } from '@/components/Pastille';
 import { ReponseEchelle } from '@/components/ReponseEchelle';
 import { SelecteurJour } from '@/components/SelecteurJour';
-import { lecture, niveauDe, serieEtatDeForme } from '@/data/forme-sante';
+import { lecture, niveauDe, piliersDispo, serieEtatDeForme } from '@/data/forme-sante';
 import { dateIsoLocale } from '@/data/format';
 import { defMesure, mesuresDe } from '@/data/sante-catalogue';
 import { useDonneesSommeil } from '@/hooks/useDonneesSommeil';
@@ -40,8 +40,7 @@ export default function Checkin() {
     { de: 40, a: 65, couleur: avecAlpha(p.alerte, 0.45) },
     { de: 65, a: 100, couleur: avecAlpha(p.ok, 0.45) },
   ];
-  const piliersPris = point ? point.composantes.filter((c) => c.indice != null).length : 0;
-  const piliersTotal = point ? point.composantes.length : 8;
+  const { pris: piliersPris, total: piliersTotal } = piliersDispo(point);
 
   async function saisir(metric: string, valeur: number | null) {
     setMessage('');

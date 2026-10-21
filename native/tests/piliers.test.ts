@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { donneesDemo, mesuresDemo, sommeilDemo } from '../src/data/demo.ts';
 import { serieEtatDeForme } from '../src/data/forme-sante.ts';
-import { consignesMasquees, construirePiliers, construireSuivis, ecartTexte, historiquePilier, motifsDuJour, NOM_COURT, texteValeur } from '../src/data/piliers.ts';
+import { construirePiliers, construireSuivis, ecartTexte, historiquePilier, motifsDuJour, NOM_COURT, texteValeur } from '../src/data/piliers.ts';
 import { resoudreMesures } from '../src/data/sante-catalogue.ts';
 
 const AUJOURDHUI = new Date(2026, 9, 20);
@@ -23,8 +23,13 @@ test('ecartTexte : l\'écart à ta moyenne, signé, sans référence suffisante 
 test('construirePiliers : triés du plus bas au plus haut, une valeur et une courbe par pilier, un détail ouvrable', () => {
   const piliers = construirePiliers(nuits, metriques, mesures, serie);
   assert.deepEqual(piliers.map((p) => p.cle).sort(), ['charge', 'fc', 'hrv', 'resp', 'ressenti', 'sommeil', 'stress', 'temperature']);
-  const indices = piliers.map((p) => p.indice as number);
-  assert.deepEqual(indices, [...indices].sort((a, b) => a - b)); // du plus bas au plus haut
+  // Les cinq piliers d'abord, du plus bas au plus haut ; puis les trois éléments surveillés (stress, respiration, température), eux aussi du plus bas au plus haut
+  assert.deepEqual(piliers.slice(0, 5).map((p) => p.surveille), [false, false, false, false, false]);
+  assert.deepEqual(piliers.slice(5).map((p) => p.cle).sort(), ['resp', 'stress', 'temperature']);
+  for (const groupe of [piliers.slice(0, 5), piliers.slice(5)]) {
+    const indices = groupe.map((p) => p.indice as number);
+    assert.deepEqual(indices, [...indices].sort((a, b) => a - b));
+  }
   for (const p of piliers) {
     assert.notEqual(p.valeur, '—', p.cle);
     assert.ok(p.courbe.length > 1 && p.courbe.length <= 14, p.cle);
@@ -41,19 +46,21 @@ test('construirePiliers : triés du plus bas au plus haut, une valeur et une cou
   assert.ok(par.charge.valeur.startsWith('+') || par.charge.valeur.startsWith('−') || par.charge.valeur === '0');
 });
 
-test('construirePiliers : sans appareil, la respiration et la température sont masquées et leurs consignes listées à part', () => {
+test('construirePiliers : sans appareil, la respiration et la température sont masquées (surveillées, sans ligne vide)', () => {
   const sansAppareil = Object.fromEntries(Object.entries(mesures).map(([d, m]) => [d, Object.fromEntries(Object.entries(m).filter(([k]) => k !== 'resp_nuit' && k !== 'temp_cutanee_ecart'))]));
   const s = serieEtatDeForme(nuits, metriques, sansAppareil);
   const piliers = construirePiliers(nuits, metriques, sansAppareil, s);
   assert.ok(!piliers.some((p) => p.cle === 'resp' || p.cle === 'temperature'));
-  assert.equal(consignesMasquees(piliers, s[s.length - 1]).length, 2);
+  assert.ok(piliers.some((p) => p.cle === 'stress' && p.surveille)); // le stress de nuit vient de la montre : il reste
+  assert.deepEqual(s[s.length - 1].manquants, []); // ces deux-là ne sont pas des piliers : ils ne rendent pas l'estimation « moins précise »
 });
 
 test('construirePiliers : un pilier sans donnée passe à la fin avec sa consigne ; sans série, rien', () => {
   const sansRessenti = Object.fromEntries(Object.entries(mesures).map(([d, m]) => [d, Object.fromEntries(Object.entries(m).filter(([k]) => !k.startsWith('ressenti_')))]));
   const s = serieEtatDeForme(nuits, metriques, sansRessenti);
   const piliers = construirePiliers(nuits, metriques, sansRessenti, s);
-  const dernier = piliers[piliers.length - 1];
+  const principaux = piliers.filter((p) => !p.surveille);
+  const dernier = principaux[principaux.length - 1];
   assert.equal(dernier.cle, 'ressenti');
   assert.equal(dernier.valeur, '—');
   assert.ok(dernier.manquant && dernier.manquant.length > 5);
@@ -107,4 +114,6 @@ test('motifsDuJour : les écarts qui ont le plus d\'effet, signés, au plus troi
   assert.deepEqual(motifsDuJour([]), []);
   // un pilier sans écart connu (la charge dit « Équilibré », le ressenti n'a pas de référence) n'apparaît jamais
   assert.ok(!motifs.some((m) => m.cle === 'charge' || m.cle === 'ressenti'));
+  // les éléments surveillés (stress, respiration, température) ne comptent pas dans le chiffre : jamais dans les motifs
+  assert.ok(!motifs.some((m) => m.cle === 'stress' || m.cle === 'resp' || m.cle === 'temperature'));
 });
