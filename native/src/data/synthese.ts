@@ -30,7 +30,7 @@ export function prochainesPrevues(planifiees: Prevue[] | null | undefined, aujou
 }
 
 /** Numéro de la semaine glissante d'une séance : 0 = les 7 derniers jours, 1 = la semaine d'avant… */
-function indexSemaine(dateSeance: string, aujourdhui: Date): number {
+export function indexSemaine(dateSeance: string, aujourdhui: Date): number {
   const base = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate());
   const d = new Date(String(dateSeance).slice(0, 10) + 'T00:00:00');
   const jours = Math.floor((base.getTime() - d.getTime()) / JOUR);

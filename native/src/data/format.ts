@@ -87,3 +87,9 @@ export const texteHM = (min: number): string => `${Math.floor(min / 60)}h${Strin
 
 /** Un nombre à la française, avec au plus `decimales` décimales : 1234.5 → « 1 234,5 ». */
 export const formatNum = (v: number, decimales = 0): string => Number(v).toLocaleString('fr-FR', { maximumFractionDigits: decimales });
+
+/** Allure de natation : 102 s pour 100 m → « 1'42"/100 m ». */
+export function formatAllure100m(secondesPar100m: number | null | undefined): string {
+  const s = Math.round(secondesPar100m || 0);
+  return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"/100 m`;
+}
