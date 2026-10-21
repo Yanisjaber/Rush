@@ -10,9 +10,10 @@ test('donneesDemo : déterministe (deux appels, mêmes données)', () => {
   assert.deepEqual(donneesDemo(date), donneesDemo(date));
 });
 
-test('donneesDemo : 74 séances sur 84 jours, de la plus récente à la plus ancienne', () => {
+test('donneesDemo : 75 séances sur 84 jours (dont un footing fait ce matin), de la plus récente à la plus ancienne', () => {
   const { seances } = donneesDemo(date);
-  assert.equal(seances.length, 74);
+  assert.equal(seances.length, 75);
+  assert.ok(seances.some((s) => s.id === `demo-matin-${dateIsoLocale(date)}`));
   for (let i = 1; i < seances.length; i++) assert.ok(seances[i - 1].start_date_local >= seances[i].start_date_local);
 });
 
@@ -29,6 +30,14 @@ test('donneesDemo : la séance prévue du jour est une séance de muscu reliée 
   const aujourdhui = planifiees.find((p) => p.date === dateIsoLocale(date));
   assert.equal(aujourdhui?.sport, 'WeightTraining');
   assert.equal(aujourdhui?.programme_id, 'demo-prog-legs');
+});
+
+test('donneesDemo : toujours trois séances prévues aujourd\'hui, de trois sports différents', () => {
+  for (const jour of [date, new Date(2026, 11, 3), new Date(2027, 1, 14)]) {
+    const iso = dateIsoLocale(jour);
+    const prevues = donneesDemo(jour).planifiees.filter((p) => p.date === iso);
+    assert.deepEqual(prevues.map((p) => p.sport), ['WeightTraining', 'Swim', 'Ride'], iso);
+  }
 });
 
 test('seriesForceDemo : séries triées de la plus récente à la plus ancienne, avec des records à afficher', () => {

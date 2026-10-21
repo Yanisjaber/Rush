@@ -66,6 +66,23 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84): Donnee
       category: 'entrainement',
     });
   }
+  // Un footing déjà fait ce matin, en plus de la séance prévue du jour : la démo montre ainsi une journée à deux séances
+  const isoAujourdhui = dateIsoLocale(aujourdhui);
+  seances.push({
+    id: `demo-matin-${isoAujourdhui}`,
+    name: 'Footing du matin',
+    sport: 'Run',
+    start_date_local: `${isoAujourdhui}T07:30:00+00:00`,
+    moving_time: 2400,
+    distance_km: 7.4,
+    total_elevation_gain: 55,
+    avg_heartrate: 141,
+    ftp_at_time: null,
+    avg_watts: null,
+    np: null,
+    tss: 35,
+    category: 'entrainement',
+  });
   seances.sort((a, b) => (a.start_date_local < b.start_date_local ? 1 : -1));
 
   // CTL (42 jours) et ATL (7 jours) : moyennes exponentielles de la charge quotidienne
@@ -108,6 +125,9 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84): Donnee
     planifiees: [
       // séance de muscu prévue aujourd'hui, reliée à un programme : la carte « Séance du jour » la montrera
       { id: 'demo-p0', name: 'Legs', date: plusJours(0), sport: 'WeightTraining', duration: 54, tss: 45, category: 'entrainement', km: null, programme_id: 'demo-prog-legs' },
+      // deux autres séances prévues aujourd'hui (toujours, quelle que soit la date) : la démo montre ainsi une journée à trois séances
+      { id: 'demo-p0b', name: 'Natation technique', date: plusJours(0), sport: 'Swim', duration: 40, tss: 30, category: 'entrainement', km: 1.5 },
+      { id: 'demo-p0c', name: 'Vélo en souplesse', date: plusJours(0), sport: 'Ride', duration: 45, tss: 28, category: 'entrainement', km: null },
       { id: 'demo-p1', name: 'Fractionné 8 × 400 m', date: plusJours(1), sport: 'Run', duration: 55, tss: 70, category: 'entrainement', km: null },
       { id: 'demo-p2', name: 'Endurance vélo', date: plusJours(2), sport: 'Ride', duration: 90, tss: 62, category: 'entrainement', km: null },
       { id: 'demo-p3', name: 'Sortie longue', date: plusJours(6), sport: 'Ride', duration: 180, tss: 95, category: 'entrainement', km: null },
