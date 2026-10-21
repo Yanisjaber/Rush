@@ -47,8 +47,8 @@ function ContenuAnneau({ point, veille }: { point: PointForme | null; veille: nu
     <View style={styles.scene}>
       <AnneauJauge
         valeur={l ? l.indice : null}
-        taille={150}
-        epaisseur={15}
+        taille={120}
+        epaisseur={13}
         couleur={couleur}
         piste={p.surface2}
         reperes={[40, 65].map((valeur) => ({ valeur, couleur: p.traitFort }))}
@@ -78,9 +78,9 @@ function ContenuAnneau({ point, veille }: { point: PointForme | null; veille: nu
 
 const styles = StyleSheet.create({
   scene: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  chiffre: { fontFamily: police.titre800, fontSize: 50, lineHeight: 54, letterSpacing: -1 },
-  mot: { fontFamily: police.texte600, fontSize: 15, lineHeight: 18 },
-  variation: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+  chiffre: { fontFamily: police.titre800, fontSize: 40, lineHeight: 44, letterSpacing: -1 },
+  mot: { fontFamily: police.texte600, fontSize: 13, lineHeight: 16 },
+  variation: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   points: { flexDirection: 'row', gap: 6 },
   point: { width: 8, height: 8, borderRadius: 4 },
 });
