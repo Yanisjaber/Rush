@@ -20,7 +20,8 @@
     box-sizing: border-box;
     min-width: 0;
     padding: 24px 26px;
-    background: var(--surface);
+    background: color-mix(in srgb, var(--surface) var(--surface-verre), transparent); /* un peu translucide : le fond se devine derrière */
+    box-shadow: inset 0 0 0 1px var(--trait);
     border-radius: var(--rayon);
   }
   .bloc.remplir {

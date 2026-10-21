@@ -1,3 +1,9 @@
+@property --halo {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #a2a7b3;
+}
+
 /* ============================================================
    Jetons de design — Rush
    Règle centrale : la COULEUR DÉSIGNE LE SPORT, pas le profil.
@@ -57,6 +63,12 @@
 
   /* --- Tailles tactiles --- */
   --cible: 44px;
+
+  /* --- Fond en dégradé : un halo de la couleur du sport choisi (posé par App.svelte), qui s'éteint vers le bas --- */
+  --halo: var(--sport-neutre);
+  --halo-force: 24%;          /* intensité du halo (en %) */
+  --fond-haut: #181b23;       /* le haut de page, un peu plus clair que --fond */
+  --surface-verre: 78%;       /* part de --surface dans les cartes : le reste laisse voir le fond */
 }
 
 :root[data-theme='light'] {
@@ -87,4 +99,8 @@
   --alerte: #a8420a;
   --encre-sur-couleur: #000000; /* noir pur sur les aplats de couleur de sport (plus lisible que l'encre douce) */
   --danger: #b91c1c;
+
+  --halo-force: 16%;
+  --fond-haut: #ffffff;
+  --surface-verre: 86%;
 }

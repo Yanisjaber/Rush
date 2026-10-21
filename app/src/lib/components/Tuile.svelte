@@ -18,7 +18,8 @@
     flex-direction: column;
     min-height: 118px;
     padding: 12px 14px;
-    background: var(--surface);
+    background: color-mix(in srgb, var(--surface) var(--surface-verre), transparent);
+    box-shadow: inset 0 0 0 1px var(--trait);
     border-radius: var(--rayon);
     overflow: hidden;
   }

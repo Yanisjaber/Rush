@@ -8,7 +8,8 @@
   import EnTete from './lib/components/EnTete.svelte';
   import SelecteurSport from './lib/components/SelecteurSport.svelte';
   import { cleDePage } from './lib/data/menu.js';
-  import { chargerMenu, menuDemo, oublierMenu } from './lib/stores/menu.svelte.js';
+  import { chargerMenu, menuDemo, oublierMenu, menu } from './lib/stores/menu.svelte.js';
+  import { SPORTS } from './lib/sports.js';
   import PanneauSeance from './lib/components/PanneauSeance.svelte';
   import PanneauReel from './lib/components/PanneauReel.svelte';
   import PanneauImportHevy from './lib/components/PanneauImportHevy.svelte';
@@ -89,6 +90,12 @@
       else if (uid) chargerMenu(uid);
       else oublierMenu();
     });
+  });
+
+  // Le halo du fond prend la couleur du sport choisi (neutre sur « Tout »)
+  $effect(() => {
+    const sport = SPORTS[menu.filtre];
+    document.documentElement.style.setProperty('--halo', sport ? sport.couleur : 'var(--sport-neutre)');
   });
 
   // Les fenêtres globales (aperçu d'une séance, saisie d'une sortie) suivent l'adresse : un rechargement les rouvre au même endroit
