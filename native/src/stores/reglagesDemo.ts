@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react';
 
 // Les réglages du mode démo (en mémoire, jamais enregistrés) : de quoi montrer chaque cas de l'interface sans changer les données à la main.
-// Pour l'instant : combien de séances sont prévues aujourd'hui (0 : rien de prévu, 1, 2 ou 3).
-export const PREVUES_AUJOURDHUI = [0, 1, 2, 3] as const;
+// Pour l'instant : combien de séances sont prévues aujourd'hui (0 : rien de prévu, jusqu'à 5).
+export const PREVUES_AUJOURDHUI = [0, 1, 2, 3, 4, 5] as const;
 export type NbPrevues = (typeof PREVUES_AUJOURDHUI)[number];
 
 interface EtatReglagesDemo {

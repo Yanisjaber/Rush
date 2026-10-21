@@ -40,14 +40,17 @@ test('donneesDemo : toujours trois séances prévues aujourd\'hui, de trois spor
   }
 });
 
-test('donneesDemo : le réglage garde 0, 1, 2 ou 3 séances prévues aujourd\'hui (trois par défaut, valeurs absurdes bornées)', () => {
+test('donneesDemo : le réglage garde de 0 à 5 séances prévues aujourd\'hui (trois par défaut, valeurs absurdes bornées)', () => {
   const iso = dateIsoLocale(date);
   const aujourdhui = (n?: number) => donneesDemo(date, 84, n === undefined ? {} : { prevuesAujourdhui: n }).planifiees.filter((p) => p.date === iso).map((p) => p.sport);
   assert.deepEqual(aujourdhui(), ['WeightTraining', 'Swim', 'Ride']);
   assert.deepEqual(aujourdhui(0), []);
   assert.deepEqual(aujourdhui(1), ['WeightTraining']);
   assert.deepEqual(aujourdhui(2), ['WeightTraining', 'Swim']);
-  assert.deepEqual(aujourdhui(99), ['WeightTraining', 'Swim', 'Ride']);
+  assert.deepEqual(aujourdhui(5), ['WeightTraining', 'Swim', 'Ride', 'Hyrox', 'Rowing']);
+  assert.deepEqual(aujourdhui(4), ['WeightTraining', 'Swim', 'Ride', 'Hyrox']);
+  assert.deepEqual(aujourdhui(99), ['WeightTraining', 'Swim', 'Ride', 'Hyrox', 'Rowing']);
+  assert.deepEqual(aujourdhui(2.7), ['WeightTraining', 'Swim']);
   assert.deepEqual(aujourdhui(-5), []);
   // les séances des autres jours ne bougent pas
   assert.equal(donneesDemo(date, 84, { prevuesAujourdhui: 0 }).planifiees.filter((p) => p.date !== iso).length, donneesDemo(date).planifiees.filter((p) => p.date !== iso).length);

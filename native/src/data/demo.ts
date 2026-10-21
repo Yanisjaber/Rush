@@ -124,14 +124,17 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
     ],
     planifiees: [
       // Les séances prévues aujourd'hui (toujours, quelle que soit la date) : trois par défaut, de trois sports ; le réglage de la démo
-      // (Paramètres) en garde 0, 1, 2 ou 3, pour montrer chaque cas de la « Séance du jour ». La première est reliée à un programme de force.
+      // (Paramètres) en garde de 0 à 5, pour montrer chaque cas de la « Séance du jour ». La première est reliée à un programme de force.
       ...(
         [
           { id: 'demo-p0', name: 'Legs', date: plusJours(0), sport: 'WeightTraining', duration: 54, tss: 45, category: 'entrainement', km: null, programme_id: 'demo-prog-legs' },
           { id: 'demo-p0b', name: 'Natation technique', date: plusJours(0), sport: 'Swim', duration: 40, tss: 30, category: 'entrainement', km: 1.5 },
           { id: 'demo-p0c', name: 'Vélo en souplesse', date: plusJours(0), sport: 'Ride', duration: 45, tss: 28, category: 'entrainement', km: null },
+          // Pas de course ici : le footing du matin (déjà fait) la validerait et elle disparaîtrait de la « Séance du jour »
+          { id: 'demo-p0d', name: 'Hyrox, 4 stations', date: plusJours(0), sport: 'Hyrox', duration: 60, tss: 55, category: 'entrainement', km: null },
+          { id: 'demo-p0e', name: 'Rameur', date: plusJours(0), sport: 'Rowing', duration: 30, tss: 25, category: 'entrainement', km: null },
         ] satisfies Prevue[]
-      ).slice(0, Math.min(3, Math.max(0, options.prevuesAujourdhui ?? 3))),
+      ).slice(0, Math.min(5, Math.max(0, Math.trunc(options.prevuesAujourdhui ?? 3)))),
       { id: 'demo-p1', name: 'Fractionné 8 × 400 m', date: plusJours(1), sport: 'Run', duration: 55, tss: 70, category: 'entrainement', km: null },
       { id: 'demo-p2', name: 'Endurance vélo', date: plusJours(2), sport: 'Ride', duration: 90, tss: 62, category: 'entrainement', km: null },
       { id: 'demo-p3', name: 'Sortie longue', date: plusJours(6), sport: 'Ride', duration: 180, tss: 95, category: 'entrainement', km: null },
