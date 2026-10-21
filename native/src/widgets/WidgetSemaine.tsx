@@ -4,7 +4,7 @@ import { MiniBarres } from '@/components/MiniBarres';
 import { Tuile } from '@/components/Tuile';
 import { familleAffichage } from '@/data/familles';
 import { formatDuree } from '@/data/format';
-import { semaineCourante } from '@/data/synthese';
+import { carresDuJour, semaineCourante } from '@/data/synthese';
 import type { WidgetProps } from '@/data/types';
 import { rayon } from '@/theme/couleurs';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
@@ -74,6 +74,7 @@ function CorpsHero({ jours }: { jours: ReturnType<typeof semaineCourante> }) {
             ...j.seances.map((s) => `${nom(s.sport)} ${formatDuree(s.moving_time)}`),
             ...j.prevues.map((x) => `prévu : ${nom(x.sport)}`),
           ].join(', ');
+          const carres = carresDuJour(j, (f) => couleurSport(p, f));
           return (
             <View key={j.iso} accessible accessibilityLabel={libelle} style={styles.colonne}>
               <View style={[styles.date, j.aujourdhui && { backgroundColor: p.texte }]}>
@@ -81,12 +82,13 @@ function CorpsHero({ jours }: { jours: ReturnType<typeof semaineCourante> }) {
                 <Text style={[styles.num, { color: j.aujourdhui ? p.fond : p.texte }]}>{j.num}</Text>
               </View>
               <View style={styles.carres}>
-                {j.seances.slice(0, 2).map((s) => (
-                  <View key={s.id} style={[styles.carre, { backgroundColor: couleurSport(p, familleAffichage(s.sport)) }]} />
+                {/* Jusqu'à 3 séances : un carré chacune (plein : faite, contour : prévue). Au-delà : 2 carrés puis « +N » (la colonne ne fait que 44 pt) */}
+                {carres.visibles.map((c) => (
+                  <View key={c.cle} style={[styles.carre, c.fait ? { backgroundColor: c.couleur } : [styles.prevue, { borderColor: c.couleur }]]} />
                 ))}
-                {j.prevues.slice(0, 2).map((x) => (
-                  <View key={x.id} style={[styles.carre, styles.prevue, { borderColor: couleurSport(p, familleAffichage(x.sport)) }]} />
-                ))}
+                {carres.cachees > 0 ? (
+                  <Text style={[styles.plus, { color: p.texteDoux }]}>+{carres.cachees}</Text>
+                ) : null}
               </View>
             </View>
           );
@@ -109,5 +111,6 @@ const styles = StyleSheet.create({
   num: { fontFamily: police.titre700, fontSize: 15, lineHeight: 18 },
   carres: { height: 12, flexDirection: 'row', gap: 3 },
   carre: { width: 12, height: 12, borderRadius: 4 },
+  plus: { fontFamily: police.texte600, fontSize: 11, lineHeight: 12, alignSelf: 'center' },
   prevue: { backgroundColor: 'transparent', borderWidth: 2 },
 });

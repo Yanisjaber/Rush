@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chargeSeance, formeActuelle, prochainesPrevues, repartition7Jours, semaineCourante } from '../src/data/synthese.ts';
+import { carresDuJour, chargeSeance, formeActuelle, prochainesPrevues, repartition7Jours, semaineCourante } from '../src/data/synthese.ts';
 import type { Metrique, Prevue, Seance } from '../src/data/types.ts';
 
 test('chargeSeance : le TSS enregistré est utilisé tel quel', () => {
@@ -125,4 +125,22 @@ test('semaineCourante : range les séances faites par jour, et les prévues seul
   assert.deepEqual(jours[1].prevues, []); // prévue dans le passé : plus « à venir »
   assert.deepEqual(jours[2].prevues.map((p) => p.id), ['aujourdhui']);
   assert.deepEqual(jours[3].prevues.map((p) => p.id), ['demain']);
+});
+
+test('carresDuJour : jusqu\'à 3 séances un carré chacune (faites d\'abord), au-delà 2 carrés et le nombre des autres', () => {
+  const s = (id: string, sport: string) => ({ id, sport });
+  const jour = (faites: number, prevues: number) => ({
+    seances: Array.from({ length: faites }, (_, i) => s(`f${i}`, 'Run')),
+    prevues: Array.from({ length: prevues }, (_, i) => s(`p${i}`, 'Ride')),
+  });
+  assert.deepEqual(carresDuJour(jour(0, 0)), { visibles: [], cachees: 0 });
+  assert.deepEqual(carresDuJour(jour(1, 2)).visibles.map((c) => c.fait), [true, false, false]);
+  assert.equal(carresDuJour(jour(1, 2)).cachees, 0);
+  // 1 faite + 3 prévues : la faite et la première prévue, et « +2 »
+  const quatre = carresDuJour(jour(1, 3));
+  assert.deepEqual(quatre.visibles.map((c) => c.cle), ['sf0', 'pp0']);
+  assert.equal(quatre.cachees, 2);
+  assert.equal(carresDuJour(jour(1, 5)).cachees, 4);
+  // la couleur vient de la famille du sport (vélo virtuel = vélo, trail = course)
+  assert.deepEqual(carresDuJour({ seances: [s('a', 'TrailRun')], prevues: [s('b', 'VirtualRide')] }, (f) => `#${f}`).visibles.map((c) => c.couleur), ['#course', '#velo']);
 });

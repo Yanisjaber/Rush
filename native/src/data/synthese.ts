@@ -118,6 +118,30 @@ export function semaineCourante(seances: Seance[], aujourdhui: Date = new Date()
   });
 }
 
+/** Un carré d'un jour de la semaine : plein si la séance est faite, en contour si elle est prévue. */
+export interface CarreJour {
+  cle: string;
+  fait: boolean;
+  couleur: string;
+}
+
+const MAX_CARRES = 3;
+
+/**
+ * Les carrés d'un jour : les séances faites d'abord, puis les prévues. Jusqu'à 3, un carré chacune ; au-delà, les 2 premiers et le
+ * nombre de séances cachées (« +2 ») : une colonne de jour ne fait que 44 pt de large. `couleur` donne la couleur d'une famille de sport.
+ */
+export function carresDuJour(
+  j: { seances: { id: string; sport: string }[]; prevues: { id: string; sport: string }[] },
+  couleur: (famille: string) => string = (famille) => famille,
+): { visibles: CarreJour[]; cachees: number } {
+  const tous: CarreJour[] = [
+    ...j.seances.map((s) => ({ cle: `s${s.id}`, fait: true, couleur: couleur(familleAffichage(s.sport)) })),
+    ...j.prevues.map((x) => ({ cle: `p${x.id}`, fait: false, couleur: couleur(familleAffichage(x.sport)) })),
+  ];
+  return tous.length <= MAX_CARRES ? { visibles: tous, cachees: 0 } : { visibles: tous.slice(0, MAX_CARRES - 1), cachees: tous.length - (MAX_CARRES - 1) };
+}
+
 // ---------------------------------------------------------------------------
 // Charge par semaine, condition, régularité
 // ---------------------------------------------------------------------------
