@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AnneauJauge } from '@/components/AnneauJauge';
 import { Bloc } from '@/components/Bloc';
 import { CourbeLissee } from '@/components/CourbeLissee';
 import { NOM_COMPOSANTE, POIDS_FORME, niveauDe, serieEtatDeForme, type CleComposante, type Niveau } from '@/data/forme-sante';
@@ -9,12 +10,12 @@ import { construirePiliers, historiquePilier, texteValeur } from '@/data/piliers
 import { useDonneesSommeil } from '@/hooks/useDonneesSommeil';
 import { useMesuresSante } from '@/hooks/useMesuresSante';
 import { useMetriques } from '@/hooks/useMetriques';
-import { espace } from '@/theme/couleurs';
+import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 const BARRE_ONGLETS = 72;
-const NB_VALEURS = 60;
+const PERIODES = [7, 30, 60] as const;
 const MOT: Record<Niveau, string> = { bon: 'Bon', moyen: 'Moyen', faible: 'Faible' };
 
 // Ce que dit chaque pilier : comment le lire et d'où vient la méthode. Un seul modèle d'écran pour tous (voir plus bas).
@@ -56,6 +57,8 @@ export default function Pilier() {
   const p = usePalette();
   const bas = useSafeAreaInsets().bottom;
   const { cle } = useLocalSearchParams<{ cle: string }>();
+  const [periode, setPeriode] = useState<(typeof PERIODES)[number]>(60);
+  const [lecture, setLecture] = useState(false);
   const { nuits, chargement, actualisation, recharger } = useDonneesSommeil();
   const { metriques, recharger: rechargerMetriques } = useMetriques();
   const { mesures, recharger: rechargerMesures } = useMesuresSante();
@@ -74,7 +77,7 @@ export default function Pilier() {
 
   const vue = piliers.find((x) => x.cle === cleValide);
   const histo = historiquePilier(cleValide, nuits, metriques, mesures);
-  const recent = histo.slice(-NB_VALEURS);
+  const recent = histo.slice(-periode);
   const reference = histo.slice(-29, -1);
   const moyenne = reference.length >= 10 ? reference.reduce((a, b) => a + b, 0) / reference.length : null;
   const niveau = niveauDe(vue?.indice);
@@ -93,53 +96,74 @@ export default function Pilier() {
         </View>
       ) : (
         <>
-          <Bloc titre={`${NOM_COMPOSANTE[cleValide]} aujourd'hui`}>
-            {vue && vue.valeur !== '—' ? (
-              <>
-                <View style={styles.valeurLigne}>
-                  <Text accessibilityLabel={`${vue.valeur} ${vue.unite}`} style={[styles.valeur, { color: p.texte }]}>
-                    {vue.valeur}
-                  </Text>
-                  {vue.unite ? <Text style={[typo.corpsFort, { color: p.texteDoux }]}>{vue.unite}</Text> : null}
+          <View style={styles.hero}>
+            <AnneauJauge
+              valeur={vue?.indice ?? null}
+              taille={190}
+              epaisseur={18}
+              couleur={couleur}
+              piste={p.surface2}
+              etiquette={`${NOM_COMPOSANTE[cleValide]} : ${vue && vue.valeur !== '—' ? `${vue.valeur} ${vue.unite}, ${niveau ? MOT[niveau] : ''}` : 'pas de donnée'}`}
+            >
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={[styles.valeur, { color: vue && vue.valeur !== '—' ? p.texte : p.texteMuet }]}>
+                {vue && vue.valeur !== '—' ? vue.valeur : '—'}
+              </Text>
+              {vue?.unite && vue.valeur !== '—' ? <Text style={[typo.corpsFort, { color: p.texteDoux }]}>{vue.unite}</Text> : null}
+            </AnneauJauge>
+            {niveau ? (
+              <View style={styles.puces}>
+                <View style={[styles.puce, { borderColor: couleur }]}>
+                  <View style={[styles.point, { backgroundColor: couleur }]} />
+                  <Text style={[typo.corpsFort, { color: p.texte }]}>{MOT[niveau]}</Text>
                 </View>
-                {niveau ? (
-                  <View style={styles.niveau}>
-                    <View style={[styles.point, { backgroundColor: couleur }]} />
-                    <Text style={[typo.corpsFort, { color: p.texte }]}>{MOT[niveau]}</Text>
-                    {vue.ecart ? <Text style={[typo.corps, { color: p.texteDoux }]}> · {vue.ecart}</Text> : null}
+                {vue?.ecart ? (
+                  <View style={[styles.puce, { borderColor: p.traitFort }]}>
+                    <Text style={[typo.corps, { color: p.texteDoux }]}>{vue.ecart}</Text>
                   </View>
                 ) : null}
-                <Text style={[typo.petit, { color: p.texteDoux, marginTop: 8 }]}>Compte pour {Math.round(POIDS_FORME[cleValide] * 100)} % de ton état de forme.</Text>
-              </>
+                <View accessible accessibilityLabel={`Compte pour ${Math.round(POIDS_FORME[cleValide] * 100)} % de ton état de forme`} style={[styles.puce, { borderColor: p.traitFort }]}>
+                  <Text style={[typo.corps, { color: p.texteDoux }]}>{Math.round(POIDS_FORME[cleValide] * 100)} % de l'état</Text>
+                </View>
+              </View>
             ) : (
-              <Text style={[typo.corps, { color: p.texteDoux }]}>{vue?.manquant ?? 'Pas encore de donnée pour ce sujet.'}</Text>
+              <Text style={[typo.petit, { color: p.texteDoux, textAlign: 'center' }]}>{vue?.manquant ?? 'Pas encore de donnée pour ce sujet.'}</Text>
             )}
-          </Bloc>
+          </View>
 
-          <Bloc titre="Évolution">
+          <Bloc>
+            <View style={styles.periodes} accessibilityRole="tablist">
+              {PERIODES.map((n) => (
+                <Pressable key={n} onPress={() => setPeriode(n)} accessibilityRole="tab" accessibilityState={{ selected: n === periode }} accessibilityLabel={`${n} valeurs`} style={[styles.periode, { backgroundColor: n === periode ? p.surface2 : 'transparent', borderColor: n === periode ? p.traitFort : 'transparent' }]}>
+                  <Text style={[typo.corpsFort, { color: n === periode ? p.texte : p.texteDoux }]}>{n} j</Text>
+                </Pressable>
+              ))}
+            </View>
             {recent.length > 1 ? (
               <>
-                <CourbeLissee valeurs={recent} couleur={p.texte} hauteur={90} etiquette={`${NOM_COMPOSANTE[cleValide]} sur ${recent.length} valeurs`} />
+                <CourbeLissee valeurs={recent} couleur={p.texte} hauteur={100} etiquette={`${NOM_COMPOSANTE[cleValide]} sur ${recent.length} valeurs`} />
                 {moyenne != null ? (
-                  <Text style={[typo.petit, { color: p.texteDoux, marginTop: 8 }]}>
-                    Ta moyenne sur les {reference.length} valeurs précédentes : {texteValeur(cleValide, moyenne)} {vue?.unite ?? ''}.
+                  <Text accessibilityLabel={`Ta moyenne sur les ${reference.length} valeurs précédentes : ${texteValeur(cleValide, moyenne)} ${vue?.unite ?? ''}`} style={[typo.micro, { color: p.texteMuet, marginTop: 8 }]}>
+                    ta moyenne · {texteValeur(cleValide, moyenne)} {vue?.unite ?? ''}
                   </Text>
                 ) : null}
               </>
             ) : (
-              <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore assez de valeurs pour tracer une courbe.</Text>
+              <Text style={[typo.petit, { color: p.texteMuet }]}>—</Text>
             )}
           </Bloc>
 
-          <Bloc titre="Ce que ça veut dire">
-            <Text style={[typo.corps, { color: p.texte }]}>{infos.veutDire}</Text>
-            <Text style={[typo.petit, { color: p.texteDoux, marginTop: 8 }]}>{infos.lecture}</Text>
-          </Bloc>
-
-          <Bloc titre="D'où ça vient">
-            <Text style={[typo.petit, { color: p.texteDoux }]}>{infos.source}</Text>
-            <Text style={[typo.petit, { color: p.texteMuet, marginTop: 8 }]}>Estimation à partir de tes chiffres : ce n'est pas un avis médical.</Text>
-          </Bloc>
+          <Pressable onPress={() => setLecture((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: lecture }} accessibilityLabel="Comment lire ça" style={[styles.rangee, { backgroundColor: p.surface }]}>
+            <Text style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>Comment lire ça</Text>
+            <View style={[styles.fleche, { borderColor: p.texteDoux, transform: [{ rotate: lecture ? '-45deg' : '135deg' }] }]} />
+          </Pressable>
+          {lecture ? (
+            <Bloc>
+              <Text style={[typo.corps, { color: p.texte }]}>{infos.veutDire}</Text>
+              <Text style={[typo.petit, { color: p.texteDoux, marginTop: 8 }]}>{infos.lecture}</Text>
+              <Text style={[typo.petit, { color: p.texteDoux, marginTop: 8 }]}>{infos.source}</Text>
+              <Text style={[typo.petit, { color: p.texteMuet, marginTop: 8 }]}>Estimation à partir de tes chiffres : ce n'est pas un avis médical.</Text>
+            </Bloc>
+          ) : null}
         </>
       )}
     </ScrollView>
@@ -150,8 +174,13 @@ const styles = StyleSheet.create({
   page: { flex: 1 },
   contenu: { paddingHorizontal: espace.e4, paddingTop: espace.e3, gap: espace.e4 },
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
-  valeurLigne: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  valeur: { fontFamily: police.titre800, fontSize: 64, lineHeight: 68, letterSpacing: -1 },
-  niveau: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  hero: { alignItems: 'center', gap: 14, paddingVertical: espace.e2 },
+  valeur: { fontFamily: police.titre800, fontSize: 44, lineHeight: 48, letterSpacing: -1, maxWidth: 130, textAlign: 'center' },
+  puces: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
+  puce: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 36, borderWidth: 1, borderRadius: rayon.rond, paddingHorizontal: 14 },
   point: { width: 12, height: 12, borderRadius: 6 },
+  periodes: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  periode: { minHeight: 40, minWidth: 64, borderWidth: 1, borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
+  rangee: { flexDirection: 'row', alignItems: 'center', minHeight: 56, borderRadius: rayon.bloc, paddingHorizontal: 18 },
+  fleche: { width: 8, height: 8, borderTopWidth: 2, borderRightWidth: 2 },
 });
