@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { Bloc } from '@/components/Bloc';
 import { ChampMesure } from '@/components/ChampMesure';
 import { CourbeLissee } from '@/components/CourbeLissee';
@@ -9,15 +10,16 @@ import { dateIsoLocale } from '@/data/format';
 import { defMesure } from '@/data/sante-catalogue';
 import { alerteVariation, lisser, serieDe, variationHebdo } from '@/data/suivi-corps';
 import { useMesuresSante } from '@/hooks/useMesuresSante';
-import { espace } from '@/theme/couleurs';
+import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 const virgule = (n: number, d = 1) => n.toFixed(d).replace('.', ',');
-const signe = (n: number) => (n > 0 ? '+' : n < 0 ? '−' : '');
 
 // Le corps : poids, masse grasse, masse musculaire, tension. Ce sont des TENDANCES lentes : le poids varie de centaines de grammes d'un jour
 // à l'autre (eau, sel), donc on regarde la courbe lissée sur 7 jours, jamais la valeur du jour. Rien ici ne bouge l'état de forme du jour.
+// Même esprit que le reste de Santé : un gros chiffre, une flèche, une courbe, presque pas de phrases. Ici la flèche est NEUTRE (grise) :
+// perdre ou prendre du poids n'est ni bien ni mal en soi, seule une variation trop rapide s'affiche en alerte.
 export default function Corps() {
   const p = usePalette();
   const [date, setDate] = useState(dateIsoLocale(new Date()));
@@ -25,8 +27,9 @@ export default function Corps() {
   const { mesures, enregistrer, erreur, demo } = useMesuresSante();
   const jour = mesures[date] ?? {};
 
-  const poids = lisser(serieDe(mesures, 'poids_kg')).slice(-90);
-  const variation = variationHebdo(lisser(serieDe(mesures, 'poids_kg')));
+  const lisses = lisser(serieDe(mesures, 'poids_kg'));
+  const poids = lisses.slice(-90);
+  const variation = variationHebdo(lisses);
   const alerte = alerteVariation(variation);
   const dernierPoids = poids[poids.length - 1];
 
@@ -34,6 +37,10 @@ export default function Corps() {
     setMessage('');
     if (await enregistrer(date, metric, valeur)) setMessage('Enregistré');
   }
+
+  const sys = serieDe(mesures, 'tension_sys');
+  const dia = serieDe(mesures, 'tension_dia');
+  const tension = sys.length && dia.length ? `${sys[sys.length - 1].valeur}/${dia[dia.length - 1].valeur}` : null;
 
   return (
     <EcranSection>
@@ -47,50 +54,56 @@ export default function Corps() {
         ) : null}
 
         <Bloc titre="Poids">
-          {dernierPoids ? (
-            <>
-              <View style={styles.valeurLigne}>
-                <Text accessibilityLabel={`Poids lissé ${virgule(dernierPoids.lisse)} kilos`} style={[styles.valeur, { color: p.texte }]}>
-                  {virgule(dernierPoids.lisse)}
-                </Text>
-                <Text style={[typo.corpsFort, { color: p.texteDoux }]}>kg · tendance sur 7 jours</Text>
+          <View style={styles.valeurLigne}>
+            <Text accessibilityLabel={dernierPoids ? `Poids lissé ${virgule(dernierPoids.lisse)} kilos` : 'Pas encore de pesée'} style={[styles.valeur, { color: dernierPoids ? p.texte : p.texteMuet }]}>
+              {dernierPoids ? virgule(dernierPoids.lisse) : '—'}
+            </Text>
+            <Text style={[typo.corpsFort, { color: p.texteDoux }]}>kg</Text>
+          </View>
+          <View style={styles.puces}>
+            {variation && variation.pctParSemaine !== 0 ? (
+              <View accessible accessibilityLabel={`${variation.parSemaine > 0 ? 'Plus' : 'Moins'} ${virgule(Math.abs(variation.parSemaine), 2)} kilo par semaine`} style={styles.variation}>
+                <Fleche haut={variation.parSemaine > 0} couleur={alerte ? p.alerte : p.texteDoux} />
+                <Text style={[typo.corpsFort, { color: alerte ? p.alerte : p.texteDoux }]}>{virgule(Math.abs(variation.parSemaine), 2)} kg / sem.</Text>
               </View>
-              {variation ? (
-                <Text style={[typo.corps, { color: p.texteDoux }]}>
-                  {variation.pctParSemaine === 0 ? 'Stable' : `${signe(variation.parSemaine)}${virgule(Math.abs(variation.parSemaine), 2)} kg par semaine (${signe(variation.pctParSemaine)}${virgule(Math.abs(variation.pctParSemaine))} %)`}
-                </Text>
-              ) : (
-                <Text style={[typo.corps, { color: p.texteDoux }]}>Il faut au moins une semaine de pesées pour voir la tendance.</Text>
-              )}
-              {alerte ? (
-                <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface2, borderLeftColor: p.alerte, marginTop: 10 }]}>
-                  <Text style={[typo.petit, { color: p.texte }]}>
-                    {alerte === 'perte_rapide'
-                      ? "Perte rapide : plus de 1 % de ton poids par semaine. Si ce n'est pas voulu, vérifie ton apport d'énergie : c'est trop rapide pour un sportif."
-                      : 'Prise rapide : plus de 1 % de ton poids par semaine. Ça peut être de la rétention d\'eau ou un excès : regarde sur une ou deux semaines de plus.'}
-                  </Text>
-                </View>
-              ) : null}
-              {poids.length > 1 ? (
-                <View style={{ marginTop: 12 }}>
-                  <CourbeLissee valeurs={poids.map((pt) => pt.lisse)} couleur={p.texte} hauteur={80} etiquette={`Poids lissé sur ${poids.length} jours`} />
-                </View>
-              ) : null}
-              <Text style={[typo.petit, { color: p.texteMuet, marginTop: 8 }]}>Le poids du jour varie avec l'eau et le sel : on suit la tendance, pas la valeur du jour.</Text>
-            </>
-          ) : (
-            <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de pesée. Saisis ton poids ci-dessous.</Text>
-          )}
+            ) : null}
+            {alerte ? (
+              // L'explication complète (apport d'énergie, rétention d'eau) reste lue par VoiceOver
+              <View
+                accessible
+                accessibilityRole="alert"
+                accessibilityLabel={alerte === 'perte_rapide' ? "Perte rapide : plus de 1 % du poids par semaine. Si ce n'est pas voulu, vérifie ton apport d'énergie." : "Prise rapide : plus de 1 % du poids par semaine. Ça peut être de la rétention d'eau : regarde une ou deux semaines de plus."}
+                style={[styles.puce, { borderColor: p.alerte }]}
+              >
+                <Text style={[typo.micro, { color: p.alerte }]}>{alerte === 'perte_rapide' ? 'Perte rapide' : 'Prise rapide'} · plus de 1 % / sem.</Text>
+              </View>
+            ) : null}
+          </View>
+          {poids.length > 1 ? (
+            <View style={{ marginTop: 12 }}>
+              <CourbeLissee valeurs={poids.map((pt) => pt.lisse)} couleur={p.texte} hauteur={90} etiquette={`Poids lissé sur ${poids.length} jours`} />
+            </View>
+          ) : null}
+          <Text style={[typo.micro, { color: p.texteMuet, marginTop: 8 }]}>tendance sur 7 jours</Text>
         </Bloc>
 
-        <TendanceSimple titre="Masse grasse" metric="masse_grasse_pct" unite="%" decimales={1} />
-        <TendanceSimple titre="Masse musculaire" metric="masse_musculaire_kg" unite="kg" decimales={1} />
+        <View style={styles.tuiles}>
+          <Tuile titre="Gras" metric="masse_grasse_pct" unite="%" />
+          <Tuile titre="Muscle" metric="masse_musculaire_kg" unite="kg" />
+          <Tuile titre="Tension" metric="tension_sys" unite="mmHg" texte={tension} />
+        </View>
 
         <Bloc titre="Saisir ce jour-là">
-          {(['poids_kg', 'masse_grasse_pct', 'masse_musculaire_kg', 'tension_sys', 'tension_dia'] as const).map((cle) => {
-            const def = defMesure(cle);
-            return def ? <ChampMesure key={cle} def={def} valeur={jour[cle]} onChange={(v) => void saisir(cle, v)} /> : null;
-          })}
+          <View style={styles.champs}>
+            {(['poids_kg', 'masse_grasse_pct', 'masse_musculaire_kg', 'tension_sys', 'tension_dia'] as const).map((cle) => {
+              const def = defMesure(cle);
+              return def ? (
+                <View key={cle} style={styles.champ}>
+                  <ChampMesure def={def} valeur={jour[cle]} onChange={(v) => void saisir(cle, v)} aideVisible={false} />
+                </View>
+              ) : null;
+            })}
+          </View>
           <Text accessibilityLiveRegion="polite" style={[typo.petit, { color: p.ok, marginTop: 10, minHeight: 20 }]}>
             {message}
           </Text>
@@ -100,34 +113,55 @@ export default function Corps() {
   );
 }
 
-// Une mesure lente avec sa dernière valeur, son écart sur 30 jours et sa courbe
-function TendanceSimple({ titre, metric, unite, decimales }: { titre: string; metric: string; unite: string; decimales: number }) {
+// Un triangle neutre : haut = ça monte, bas = ça descend
+function Fleche({ haut, couleur }: { haut: boolean; couleur: string }) {
+  return (
+    <Svg width={11} height={9} viewBox="0 0 10 8">
+      <Path d={haut ? 'M5 0 L10 8 L0 8 Z' : 'M0 0 L10 0 L5 8 Z'} fill={couleur} />
+    </Svg>
+  );
+}
+
+// Une mesure lente en tuile : son nom, sa dernière valeur, l'écart sur 30 jours (flèche grise) et une mini-courbe.
+// Sans mesure, la tuile reste là avec un tiret : on voit ce qu'on peut suivre.
+function Tuile({ titre, metric, unite, texte }: { titre: string; metric: string; unite: string; texte?: string | null }) {
   const p = usePalette();
   const { mesures } = useMesuresSante();
   const serie = serieDe(mesures, metric).slice(-60);
-  if (!serie.length) return null;
   const derniere = serie[serie.length - 1];
-  const ancienne = [...serie].reverse().find((pt) => (new Date(`${derniere.date}T12:00:00`).getTime() - new Date(`${pt.date}T12:00:00`).getTime()) / 86400000 >= 28);
-  const ecart = ancienne ? derniere.valeur - ancienne.valeur : null;
+  const ancienne = derniere ? [...serie].reverse().find((pt) => (new Date(`${derniere.date}T12:00:00`).getTime() - new Date(`${pt.date}T12:00:00`).getTime()) / 86400000 >= 28) : undefined;
+  const ecart = derniere && ancienne ? derniere.valeur - ancienne.valeur : null;
+  const valeur = texte ?? (derniere ? virgule(derniere.valeur) : '—');
   return (
-    <Bloc titre={titre}>
+    <View accessible accessibilityLabel={derniere ? `${titre} : ${valeur} ${unite}${ecart ? `, ${ecart > 0 ? 'plus' : 'moins'} ${virgule(Math.abs(ecart))} sur 30 jours` : ''}` : `${titre} : pas de mesure`} style={[styles.tuile, { backgroundColor: p.surface }]}>
+      <Text numberOfLines={1} style={[typo.micro, { color: p.texteDoux }]}>{titre}</Text>
       <View style={styles.valeurLigne}>
-        <Text style={[styles.valeurMoyenne, { color: p.texte }]}>{virgule(derniere.valeur, decimales)}</Text>
-        <Text style={[typo.corpsFort, { color: p.texteDoux }]}>{unite}</Text>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={[styles.valeurTuile, { color: derniere ? p.texte : p.texteMuet }]}>{valeur}</Text>
+        <Text style={[typo.petit, { color: p.texteDoux }]}>{unite}</Text>
       </View>
-      {ecart != null ? <Text style={[typo.petit, { color: p.texteDoux }]}>{signe(ecart)}{virgule(Math.abs(ecart), decimales)} {unite} sur 30 jours</Text> : null}
-      {serie.length > 1 ? (
-        <View style={{ marginTop: 8 }}>
-          <CourbeLissee valeurs={serie.map((pt) => pt.valeur)} couleur={p.texte} hauteur={60} aire={false} etiquette={`${titre} sur ${serie.length} mesures`} />
-        </View>
-      ) : null}
-    </Bloc>
+      <View style={styles.variation}>
+        {ecart ? (
+          <>
+            <Fleche haut={ecart > 0} couleur={p.texteDoux} />
+            <Text style={[typo.petit, { color: p.texteDoux }]}>{virgule(Math.abs(ecart))}</Text>
+          </>
+        ) : null}
+      </View>
+      {serie.length > 1 ? <CourbeLissee valeurs={serie.map((pt) => pt.valeur)} couleur={p.texteDoux} hauteur={40} aire={false} epaisseur={2} etiquette={`${titre} sur ${serie.length} mesures`} /> : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   avis: { borderRadius: 6, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
-  valeurLigne: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  valeurLigne: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   valeur: { fontFamily: police.titre800, fontSize: 56, lineHeight: 60, letterSpacing: -1 },
-  valeurMoyenne: { fontFamily: police.titre700, fontSize: 32, lineHeight: 36 },
+  puces: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, minHeight: 4 },
+  variation: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 20 },
+  puce: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 },
+  tuiles: { flexDirection: 'row', gap: 10 },
+  tuile: { flex: 1, borderRadius: rayon.bloc, paddingHorizontal: 12, paddingVertical: 12, gap: 2 },
+  valeurTuile: { fontFamily: police.titre700, fontSize: 24, lineHeight: 28, flexShrink: 1 },
+  champs: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 12 },
+  champ: { width: '47%', flexGrow: 1 },
 });

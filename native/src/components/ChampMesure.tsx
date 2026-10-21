@@ -11,11 +11,13 @@ interface Props {
   def: DefMesure;
   valeur: number | undefined;
   onChange: (valeur: number | null) => void;
+  /** Écrit la phrase d'aide sous le champ (par défaut oui) ; sinon elle reste lue par VoiceOver. */
+  aideVisible?: boolean;
 }
 
 const enTexte = (v: number | undefined) => (v == null ? '' : String(v).replace('.', ','));
 
-export function ChampMesure({ def, valeur, onChange }: Props) {
+export function ChampMesure({ def, valeur, onChange, aideVisible = true }: Props) {
   const p = usePalette();
   const [texte, setTexte] = useState(enTexte(valeur));
   const [erreur, setErreur] = useState('');
@@ -63,7 +65,7 @@ export function ChampMesure({ def, valeur, onChange }: Props) {
         <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger, marginTop: 4 }]}>
           {erreur}
         </Text>
-      ) : def.aide ? (
+      ) : def.aide && aideVisible ? (
         <Text style={[typo.petit, { color: p.texteMuet, marginTop: 4 }]}>{def.aide}</Text>
       ) : null}
     </View>
