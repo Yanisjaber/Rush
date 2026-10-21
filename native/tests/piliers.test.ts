@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { donneesDemo, mesuresDemo, sommeilDemo } from '../src/data/demo.ts';
 import { serieEtatDeForme } from '../src/data/forme-sante.ts';
-import { consignesMasquees, construirePiliers, construireSuivis, ecartTexte, historiquePilier, texteValeur } from '../src/data/piliers.ts';
+import { consignesMasquees, construirePiliers, construireSuivis, ecartTexte, historiquePilier, motifsDuJour, NOM_COURT, texteValeur } from '../src/data/piliers.ts';
 import { resoudreMesures } from '../src/data/sante-catalogue.ts';
 
 const AUJOURDHUI = new Date(2026, 9, 20);
@@ -85,4 +85,26 @@ test('historiquePilier et texteValeur : les séries de chaque pilier et leur éc
   assert.equal(texteValeur('charge', -12), '−12');
   assert.equal(texteValeur('resp', 14.25), '14,3');
   assert.equal(texteValeur('temperature', -0.3), '−0,3');
+});
+
+test('motifsDuJour : les écarts qui ont le plus d\'effet, signés, au plus trois, classés par impact', () => {
+  const piliers = construirePiliers(nuits, metriques, mesures, serie);
+  const motifs = motifsDuJour(piliers);
+  assert.ok(motifs.length >= 1 && motifs.length <= 3);
+  for (const m of motifs) {
+    assert.ok(/^[+−]\d+$/.test(m.delta), m.delta);
+    assert.equal(m.nom, NOM_COURT[m.cle]);
+    assert.ok(m.vers.startsWith('/sante/'));
+  }
+  // classés du plus fort au plus faible impact
+  const impact = (cle: string) => {
+    const p = piliers.find((x) => x.cle === cle)!;
+    return Math.abs((p.indice as number) - 50) * p.poids;
+  };
+  const impacts = motifs.map((m) => impact(m.cle));
+  assert.deepEqual(impacts, [...impacts].sort((a, b) => b - a));
+  assert.equal(motifsDuJour(piliers, 1).length, 1);
+  assert.deepEqual(motifsDuJour([]), []);
+  // un pilier sans écart connu (la charge dit « Équilibré », le ressenti n'a pas de référence) n'apparaît jamais
+  assert.ok(!motifs.some((m) => m.cle === 'charge' || m.cle === 'ressenti'));
 });

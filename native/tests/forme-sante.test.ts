@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { CONFIANCE_MINI, indiceCharge, indiceContreReference, indiceDepuisEcart, indiceRessenti, indiceTemperature, indicateurs, lecture, niveauDe, phi, POIDS_FORME, precisionDe, serieEtatDeForme } from '../src/data/forme-sante.ts';
+import { accordAvecRessenti, CONFIANCE_MINI, indiceCharge, indiceContreReference, indiceDepuisEcart, indiceRessenti, indiceTemperature, indicateurs, lecture, niveauDe, phi, POIDS_FORME, precisionDe, serieEtatDeForme } from '../src/data/forme-sante.ts';
 import type { Metrique, Nuit } from '../src/data/types.ts';
 
 const proche = (a: number, b: number, eps = 0.002) => assert.ok(Math.abs(a - b) <= eps, `${a} ≠ ${b}`);
@@ -185,4 +185,39 @@ test('lecture : un mot court par niveau pour les écrans sans phrase', () => {
   assert.equal(lecture(point(80))?.mot, 'Récupéré');
   assert.equal(lecture(point(50))?.mot, 'Moyen');
   assert.equal(lecture(point(20))?.mot, 'À ménager');
+});
+
+test('accordAvecRessenti : trop peu de jours = pas de verdict ; un ressenti qui suit l\'état de forme = accord fort, un ressenti sans rapport = faible', () => {
+  const n = nuits(60, (i) => ({ hrv_avg: 60 + ((i * 7) % 20) - 10, resting_heart_rate: 50 + ((i * 5) % 8) - 4 }));
+  // Peu de jours de ressenti : pas de verdict
+  const peu = accordAvecRessenti(n, [], { [nuit(50).date]: { ressenti_fatigue: 2, ressenti_humeur: 4 } });
+  assert.equal(peu.r, null);
+  assert.equal(peu.accord, null);
+  assert.equal(peu.jours, 1);
+
+  // Un ressenti construit pour suivre l'état de forme calculé SANS ressenti : accord fort
+  const objectif = serieEtatDeForme(n, [], {});
+  const suit: Record<string, Record<string, number>> = {};
+  for (const pt of objectif) {
+    if (pt.indice == null) continue;
+    // indice 0-100 -> fatigue 5..1 et humeur 1..5 : la meilleure forme donne le meilleur ressenti
+    const note = Math.min(5, Math.max(1, Math.round(1 + (pt.indice / 100) * 4)));
+    suit[pt.date] = { ressenti_fatigue: 6 - note, ressenti_humeur: note };
+  }
+  const fort = accordAvecRessenti(n, [], suit);
+  assert.ok(fort.jours >= 14);
+  assert.ok(fort.r != null && fort.r >= 0.5, String(fort.r));
+  assert.equal(fort.accord, 'fort');
+
+  // Un ressenti qui va à l'envers de l'état de forme : accord faible (corrélation négative)
+  const contre: Record<string, Record<string, number>> = {};
+  for (const [d, m] of Object.entries(suit)) contre[d] = { ressenti_fatigue: m.ressenti_humeur, ressenti_humeur: 6 - m.ressenti_humeur };
+  const faible = accordAvecRessenti(n, [], contre);
+  assert.ok(faible.r != null && faible.r < 0);
+  assert.equal(faible.accord, 'faible');
+
+  // Un ressenti constant : pas de corrélation possible
+  const constant = Object.fromEntries(Object.keys(suit).map((d) => [d, { ressenti_fatigue: 3, ressenti_humeur: 3 }]));
+  assert.equal(accordAvecRessenti(n, [], constant).r, null);
+  assert.deepEqual(accordAvecRessenti(null, null, null), { jours: 0, r: null, accord: null });
 });

@@ -263,3 +263,42 @@ export function indicateurs(point: PointForme | null | undefined): { cle: string
     { cle: 'forme', nom: 'Forme', indice: val('charge'), niveau: niveauDe(val('charge')) },
   ];
 }
+
+// --- La vérification : l'état de forme calculé colle-t-il à ce que tu ressens ? --------------------------------------------------------------------
+
+export type Accord = 'fort' | 'moyen' | 'faible';
+
+export interface AccordRessenti {
+  /** Nombre de jours où l'on a à la fois l'état de forme (calculé SANS le ressenti) et ton ressenti du matin. */
+  jours: number;
+  /** Corrélation de Pearson entre les deux (de −1 à 1), ou null s'il y a trop peu de jours. */
+  r: number | null;
+  accord: Accord | null;
+}
+
+/** Il faut au moins ce nombre de jours pour juger l'accord (moins, le hasard décide). */
+export const JOURS_MINI_ACCORD = 14;
+
+/**
+ * L'état de forme calculé reflète-t-il TON ressenti ? On calcule l'état de forme sans le pilier « ressenti » (sinon on compare un chiffre à lui-même),
+ * puis on regarde, jour par jour, s'il monte et descend avec les cinq réponses du matin (corrélation de Pearson).
+ * Fort à partir de 0,5, moyen de 0,3 à 0,5, faible en dessous. C'est le seul vrai test de ce score : sans accord, il ne faut pas s'y fier.
+ */
+export function accordAvecRessenti(nuits: Nuit[] | null | undefined, metriques: Metrique[] | null | undefined, mesures: MesuresParJour | null | undefined): AccordRessenti {
+  const sansRessenti: MesuresParJour = Object.fromEntries(Object.entries(mesures || {}).map(([d, m]) => [d, Object.fromEntries(Object.entries(m).filter(([k]) => !k.startsWith('ressenti_')))]));
+  const objectif = serieEtatDeForme(nuits, metriques, sansRessenti);
+  const paires: [number, number][] = [];
+  for (const point of objectif) {
+    const ressenti = indiceRessenti((mesures || {})[point.date]);
+    if (point.indice != null && ressenti != null) paires.push([point.indice, ressenti]);
+  }
+  if (paires.length < JOURS_MINI_ACCORD) return { jours: paires.length, r: null, accord: null };
+  const mx = moyenne(paires.map((p) => p[0]));
+  const my = moyenne(paires.map((p) => p[1]));
+  const sxy = paires.reduce((s, [x, y]) => s + (x - mx) * (y - my), 0);
+  const sxx = paires.reduce((s, [x]) => s + (x - mx) ** 2, 0);
+  const syy = paires.reduce((s, [, y]) => s + (y - my) ** 2, 0);
+  if (sxx === 0 || syy === 0) return { jours: paires.length, r: null, accord: null }; // une des deux séries ne bouge pas : pas de corrélation possible
+  const r = Math.round((sxy / Math.sqrt(sxx * syy)) * 100) / 100;
+  return { jours: paires.length, r, accord: r >= 0.5 ? 'fort' : r >= 0.3 ? 'moyen' : 'faible' };
+}

@@ -8,21 +8,18 @@ import { JaugePilier } from '@/components/JaugePilier';
 import { Tuile } from '@/components/Tuile';
 import { serieEtatDeForme } from '@/data/forme-sante';
 import { dateIsoLocale } from '@/data/format';
-import { construirePiliers, construireSuivis } from '@/data/piliers';
+import { construirePiliers, construireSuivis, motifsDuJour, NOM_COURT } from '@/data/piliers';
 import { useDonneesSommeil } from '@/hooks/useDonneesSommeil';
 import { useMesuresSante } from '@/hooks/useMesuresSante';
 import { useMetriques } from '@/hooks/useMetriques';
 import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
-import { typo } from '@/theme/typo';
+import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 import { WidgetEtatDuJour } from '@/widgets/WidgetsSante';
 
 const BARRE_ONGLETS = 72;
 const QUESTIONS = ['ressenti_fatigue', 'ressenti_courbatures', 'ressenti_humeur', 'ressenti_motivation', 'ressenti_stress'];
-// Les noms courts sous les jauges
-const COURT: Record<string, string> = { hrv: 'HRV', fc: 'FC', sommeil: 'Sommeil', ressenti: 'Ressenti', charge: 'Charge', stress: 'Stress', resp: 'Respi.', temperature: 'Temp.' };
-
 // Santé : l'écran du matin, fait pour se lire d'un coup d'œil, sans phrase.
 //   1. L'état du jour : un anneau qui se remplit, l'indice au centre, un mot.
 //   2. Les piliers : une jauge ronde chacun, du plus bas au plus haut (la première est ce qui tire le plus vers le bas).
@@ -40,6 +37,7 @@ export default function Sante() {
   const serie = useMemo(() => serieEtatDeForme(nuits, metriques, mesures), [nuits, metriques, mesures]);
   const piliers = useMemo(() => construirePiliers(nuits, metriques, mesures, serie), [nuits, metriques, mesures, serie]);
   const aujourdhui = dateIsoLocale(new Date());
+  const motifs = useMemo(() => motifsDuJour(piliers), [piliers]);
   const suivis = useMemo(() => construireSuivis(mesures, aujourdhui), [mesures, aujourdhui]);
   const reponses = QUESTIONS.filter((c) => mesures[aujourdhui]?.[c] != null).length;
   const aller = (vers: string) => router.push(vers as never);
@@ -76,12 +74,28 @@ export default function Sante() {
               </Boite>
             </Pressable>
 
+            {motifs.length ? (
+              <View accessible accessibilityLabel={`Ce qui a bougé : ${motifs.map((m) => `${m.nom} ${m.delta}`).join(', ')}`} style={styles.motifs}>
+                {motifs.map((m) => {
+                  const couleur = m.niveau === 'bon' ? p.ok : m.niveau === 'moyen' ? p.alerte : m.niveau === 'faible' ? p.danger : p.texteMuet;
+                  return (
+                    <Pressable key={m.cle} onPress={() => aller(m.vers)} accessibilityRole="button" accessibilityLabel={`${m.nom} ${m.delta} par rapport à ta moyenne`} style={[styles.motif, { backgroundColor: p.surface }]}>
+                      <View style={[styles.pointMotif, { backgroundColor: couleur }]} />
+                      <Text style={[typo.petit, { color: p.texte }]}>
+                        {m.nom} <Text style={{ fontFamily: police.texte600 }}>{m.delta}</Text>
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+
             <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte, marginTop: espace.e2 }]}>
               Piliers
             </Text>
             <View style={styles.jauges}>
               {piliers.map((x) => (
-                <JaugePilier key={x.cle} nom={COURT[x.cle] ?? x.nom} indice={x.indice} onPress={() => aller(x.vers)} />
+                <JaugePilier key={x.cle} nom={NOM_COURT[x.cle]} indice={x.indice} onPress={() => aller(x.vers)} />
               ))}
             </View>
 
@@ -129,6 +143,9 @@ const styles = StyleSheet.create({
   entete: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
   avis: { borderRadius: 6, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
+  motifs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  motif: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 36, borderRadius: rayon.rond, paddingHorizontal: 14 },
+  pointMotif: { width: 9, height: 9, borderRadius: 5 },
   jauges: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -espace.e2 },
   checkin: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, borderRadius: rayon.bloc, paddingHorizontal: 18 },
   pointsCheckin: { flexDirection: 'row', gap: 6 },

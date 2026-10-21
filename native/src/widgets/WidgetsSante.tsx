@@ -1,9 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { AnneauJauge } from '@/components/AnneauJauge';
+import { AnneauZones } from '@/components/AnneauZones';
 import { CadreWidget } from '@/components/CadreWidget';
 import { Tuile } from '@/components/Tuile';
 import { lecture, niveauDe, type PointForme } from '@/data/forme-sante';
+import { avecAlpha } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -43,34 +44,45 @@ function ContenuAnneau({ point, veille }: { point: PointForme | null; veille: nu
   const dispo = point ? point.composantes.filter((c) => c.indice != null).length : 0;
   const total = point ? point.composantes.length : 8;
   const ecart = l && veille != null ? l.indice - veille : null;
+  // Les trois zones de lecture, avec les seuils de l'état de forme : à ménager (0 à 40), moyen (40 à 65), récupéré (65 à 100)
+  const zones = [
+    { de: 0, a: 40, couleur: avecAlpha(p.danger, 0.4) },
+    { de: 40, a: 65, couleur: avecAlpha(p.alerte, 0.4) },
+    { de: 65, a: 100, couleur: avecAlpha(p.ok, 0.4) },
+  ];
   return (
     <View style={styles.scene}>
-      <AnneauJauge
+      <AnneauZones
         valeur={l ? l.indice : null}
-        taille={120}
-        epaisseur={13}
-        couleur={couleur}
-        piste={p.surface2}
-        reperes={[40, 65].map((valeur) => ({ valeur, couleur: p.traitFort }))}
-        etiquette={l ? `État de forme ${l.indice} sur 100, ${l.mot}` : 'État de forme indisponible'}
+        taille={124}
+        epaisseur={14}
+        zones={zones}
+        couleurRepere={couleur}
+        contourRepere={p.fond}
+        etiquette={l ? `État de forme : ${l.mot}, ${l.indice} sur 100. C'est une estimation.` : 'État de forme indisponible'}
       >
-        <Text style={[styles.chiffre, { color: l ? p.texte : p.texteMuet }]}>{l ? l.indice : '—'}</Text>
-        <Text numberOfLines={1} style={[styles.mot, { color: p.texte }]}>
-          {l ? l.mot : 'Pas assez de données'}
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.mot, { color: l ? p.texte : p.texteMuet }]}>
+          {l ? l.mot : '—'}
         </Text>
-        {ecart != null && ecart !== 0 ? (
-          <View style={styles.variation} accessible accessibilityLabel={`${ecart > 0 ? 'Plus' : 'Moins'} ${Math.abs(ecart)} point${Math.abs(ecart) > 1 ? 's' : ''} depuis hier`}>
-            <Svg width={10} height={8} viewBox="0 0 10 8">
-              <Path d={ecart > 0 ? 'M5 0 L10 8 L0 8 Z' : 'M0 0 L10 0 L5 8 Z'} fill={ecart > 0 ? p.ok : p.danger} />
-            </Svg>
-            <Text style={[typo.petit, { color: p.texteDoux }]}>{Math.abs(ecart)}</Text>
+        {l ? (
+          <View style={styles.detail}>
+            <Text style={[typo.petit, { color: p.texteDoux }]}>{l.indice}</Text>
+            {ecart != null && ecart !== 0 ? (
+              <View style={styles.variation} accessible accessibilityLabel={`${ecart > 0 ? 'Plus' : 'Moins'} ${Math.abs(ecart)} point${Math.abs(ecart) > 1 ? 's' : ''} depuis hier`}>
+                <Svg width={9} height={7} viewBox="0 0 10 8">
+                  <Path d={ecart > 0 ? 'M5 0 L10 8 L0 8 Z' : 'M0 0 L10 0 L5 8 Z'} fill={ecart > 0 ? p.ok : p.danger} />
+                </Svg>
+                <Text style={[typo.petit, { color: p.texteDoux }]}>{Math.abs(ecart)}</Text>
+              </View>
+            ) : null}
           </View>
         ) : null}
-      </AnneauJauge>
+      </AnneauZones>
       <View accessible accessibilityLabel={`Précision ${point?.precision ? MOT_PRECISION[point.precision] : 'insuffisante'}, ${dispo} piliers sur ${total}`} style={styles.points}>
         {Array.from({ length: total }, (_, i) => (
           <View key={i} style={[styles.point, { backgroundColor: i < dispo ? p.texte : p.traitFort }]} />
         ))}
+        <Text style={[typo.micro, { color: p.texteMuet, marginLeft: 6 }]}>estimation</Text>
       </View>
     </View>
   );
@@ -78,9 +90,9 @@ function ContenuAnneau({ point, veille }: { point: PointForme | null; veille: nu
 
 const styles = StyleSheet.create({
   scene: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  chiffre: { fontFamily: police.titre800, fontSize: 40, lineHeight: 44, letterSpacing: -1 },
-  mot: { fontFamily: police.texte600, fontSize: 13, lineHeight: 16 },
+  mot: { fontFamily: police.titre800, fontSize: 21, lineHeight: 25, maxWidth: 90, textAlign: 'center' },
+  detail: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
   variation: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  points: { flexDirection: 'row', gap: 6 },
+  points: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   point: { width: 8, height: 8, borderRadius: 4 },
 });

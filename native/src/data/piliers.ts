@@ -180,3 +180,28 @@ export function construireSuivis(mesures: MesuresParJour | null | undefined, fin
     : { cle: 'nutrition', nom: 'Nutrition', valeur: '—', unite: '', ecart: null, courbe: [], vers: '/sante/nutrition', manquant: 'Note tes calories pour suivre tes apports.' };
   return [corps, nutrition];
 }
+
+/** Les noms courts des piliers, pour les endroits où la place manque (jauges, pastilles). */
+export const NOM_COURT: Record<CleComposante, string> = { hrv: 'HRV', fc: 'FC', sommeil: 'Sommeil', ressenti: 'Ressenti', charge: 'Charge', stress: 'Stress', resp: 'Respi.', temperature: 'Temp.' };
+
+export interface Motif {
+  cle: CleComposante;
+  nom: string;
+  /** L'écart à ta moyenne, signé (« −14 », « +8 »). */
+  delta: string;
+  niveau: Niveau | null;
+  vers: string;
+}
+
+/**
+ * Ce qui a le plus bougé aujourd'hui : les piliers dont on connaît l'écart à ta moyenne, classés par leur effet sur l'état de forme
+ * (à quel point leur indice s'éloigne de 50, multiplié par leur poids). Sert à rendre la lecture vérifiable : « HRV −14, Stress +8 ».
+ */
+export function motifsDuJour(piliers: PilierVue[], max = 3): Motif[] {
+  return piliers
+    .filter((p) => p.indice != null && p.ecart != null && /^[+−]\d/.test(p.ecart))
+    .map((p) => ({ p, impact: Math.abs((p.indice as number) - 50) * p.poids }))
+    .sort((a, b) => b.impact - a.impact)
+    .slice(0, max)
+    .map(({ p }) => ({ cle: p.cle, nom: NOM_COURT[p.cle], delta: (p.ecart as string).split(' ')[0], niveau: p.niveau, vers: p.vers }));
+}

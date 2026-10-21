@@ -3,9 +3,10 @@ import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bloc } from '@/components/Bloc';
 import { CourbeForme } from '@/components/CourbeForme';
+import { AnneauJauge } from '@/components/AnneauJauge';
 import { CourbeLissee } from '@/components/CourbeLissee';
 import { IndicateursEtat } from '@/components/IndicateursEtat';
-import { indicateurs, lecture, niveauDe, NOM_COMPOSANTE, serieEtatDeForme, type Composante } from '@/data/forme-sante';
+import { accordAvecRessenti, indicateurs, JOURS_MINI_ACCORD, lecture, niveauDe, NOM_COMPOSANTE, serieEtatDeForme, type Composante } from '@/data/forme-sante';
 import type { Nuit } from '@/data/types';
 import { useDonneesSommeil } from '@/hooks/useDonneesSommeil';
 import { useMesuresSante } from '@/hooks/useMesuresSante';
@@ -38,6 +39,7 @@ export default function EtatDeForme() {
   // La courbe démarre au premier jour où l'indice existe (avant, la référence personnelle n'est pas encore assez fournie)
   const premier = serie.findIndex((pt) => pt.indice != null);
   const recente = (premier >= 0 ? serie.slice(premier) : serie).slice(-NB_JOURS);
+  const accord = useMemo(() => accordAvecRessenti(nuits, metriques, mesures), [nuits, metriques, mesures]);
   const dernier = serie[serie.length - 1] ?? null;
   const l = lecture(dernier);
   const chrono = useMemo(() => [...nuits].sort((a, b) => a.date.localeCompare(b.date)), [nuits]);
@@ -120,6 +122,10 @@ export default function EtatDeForme() {
             {TENDANCES.map((t, i) => (
               <Tendance key={t.cle} t={t} nuits={chrono} premiere={i === 0} />
             ))}
+          </Bloc>
+
+          <Bloc titre="Fiable pour toi ?">
+            <Fiabilite accord={accord} />
           </Bloc>
 
           <Bloc titre="Comment c'est calculé">
@@ -205,4 +211,41 @@ const styles = StyleSheet.create({
   rempli: { height: '100%', borderRadius: rayon.rond },
   repere: { position: 'absolute', left: '50%', top: 0, bottom: 0, width: 2 },
   tendance: { paddingVertical: 12, gap: 6 },
+  progres: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  petitPoint: { width: 12, height: 12, borderRadius: 6 },
+  fiabilite: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  accordValeur: { fontFamily: police.titre700, fontSize: 16, lineHeight: 20 },
 });
+
+// Le verdict : l'état de forme calculé suit-il ton ressenti du matin ? Avant 14 jours de check-in, on ne dit rien (le hasard déciderait) ; on montre l'avancement.
+function Fiabilite({ accord }: { accord: ReturnType<typeof accordAvecRessenti> }) {
+  const p = usePalette();
+  if (accord.accord == null) {
+    return (
+      <View accessible accessibilityLabel={`${accord.jours} jours de check-in sur ${JOURS_MINI_ACCORD} pour savoir si l'état de forme colle à ton ressenti`}>
+        <View style={styles.progres}>
+          {Array.from({ length: JOURS_MINI_ACCORD }, (_, i) => (
+            <View key={i} style={[styles.petitPoint, { backgroundColor: i < accord.jours ? p.ok : p.traitFort }]} />
+          ))}
+        </View>
+        <Text style={[typo.petit, { color: p.texteDoux, marginTop: 8 }]}>
+          {accord.jours} sur {JOURS_MINI_ACCORD} jours de check-in. Il en faut {JOURS_MINI_ACCORD} pour savoir si ton état de forme colle à ce que tu ressens.
+        </Text>
+      </View>
+    );
+  }
+  const couleur = accord.accord === 'fort' ? p.ok : accord.accord === 'moyen' ? p.alerte : p.danger;
+  const phrase = accord.accord === 'fort' ? 'Il colle bien à ton ressenti : tu peux t\'y fier.' : accord.accord === 'moyen' ? 'Il suit en partie ton ressenti : à prendre avec recul.' : 'Il ne suit pas ton ressenti : ne t\'y fie pas pour décider.';
+  return (
+    <View style={styles.fiabilite}>
+      <AnneauJauge valeur={Math.max(0, Math.round((accord.r ?? 0) * 100))} taille={72} epaisseur={9} couleur={couleur} piste={p.surface2} etiquette={`Accord avec ton ressenti : ${accord.accord}`}>
+        <Text style={[styles.accordValeur, { color: p.texte }]}>{String(accord.r).replace('.', ',')}</Text>
+      </AnneauJauge>
+      <View style={{ flex: 1 }}>
+        <Text style={[typo.corpsFort, { color: p.texte }]}>Accord {accord.accord}</Text>
+        <Text style={[typo.petit, { color: p.texteDoux }]}>{phrase}</Text>
+        <Text style={[typo.petit, { color: p.texteMuet, marginTop: 4 }]}>Sur {accord.jours} jours avec ton ressenti.</Text>
+      </View>
+    </View>
+  );
+}
