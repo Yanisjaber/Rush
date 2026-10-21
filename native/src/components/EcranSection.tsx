@@ -1,3 +1,4 @@
+import { FondDegrade } from '@/components/FondDegrade';
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,7 +10,8 @@ export function EcranSection({ children }: { children: ReactNode }) {
   const p = usePalette();
   const bas = useSafeAreaInsets().bottom;
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: p.fond }}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: 'transparent' }}>
+      <FondDegrade />
       <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: espace.e4, paddingBottom: bas + 96 }}>
         {children}
       </ScrollView>

@@ -1,3 +1,4 @@
+import { FondDegrade } from '@/components/FondDegrade';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -59,13 +60,15 @@ export default function Bilan() {
   const repartition = repartitionSport(activitesAnnee(toutes, annee, maintenant));
 
   return (
-    <View style={[styles.page, { backgroundColor: p.fond }]}>
+    <View style={[styles.page, { backgroundColor: 'transparent' }]}>
+      <FondDegrade />
       <BarreSports />
       <ScrollView
         contentContainerStyle={[styles.contenu, { paddingBottom: bas + BARRE_ONGLETS }]}
         refreshControl={<RefreshControl refreshing={actualisation} onRefresh={recharger} tintColor={p.texteDoux} />}
       >
-        <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>
+        {/* Pas de titre à l'écran (l'onglet du bas et les pastilles d'année le disent déjà) ; VoiceOver le lit quand même */}
+        <Text accessibilityRole="header" style={styles.titreInvisible}>
           Bilan {annee}
         </Text>
         <View style={styles.annees} accessibilityRole="tablist">
@@ -275,6 +278,7 @@ export default function Bilan() {
 }
 
 const styles = StyleSheet.create({
+  titreInvisible: { position: 'absolute', width: 1, height: 1, opacity: 0 },
   page: { flex: 1 },
   contenu: { paddingHorizontal: espace.e4, paddingTop: espace.e4, gap: espace.e4 },
   annees: { flexDirection: 'row', flexWrap: 'wrap', gap: espace.e2 },

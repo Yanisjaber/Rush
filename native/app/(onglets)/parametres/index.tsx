@@ -1,3 +1,4 @@
+import { FondDegrade } from '@/components/FondDegrade';
 import { useRouter, type Href } from 'expo-router';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -43,7 +44,9 @@ export default function Parametres() {
   );
 
   return (
-    <ScrollView style={{ backgroundColor: p.fond }} contentContainerStyle={[styles.contenu, { paddingTop: insets.top + espace.e4, paddingBottom: insets.bottom + 72 }]}>
+    <View style={{ flex: 1 }}>
+      <FondDegrade />
+      <ScrollView style={{ backgroundColor: 'transparent' }} contentContainerStyle={[styles.contenu, { paddingTop: insets.top + espace.e4, paddingBottom: insets.bottom + 72 }]}>
       <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>
         Paramètres
       </Text>
@@ -83,6 +86,7 @@ export default function Parametres() {
         </View>
       </View>
     </ScrollView>
+    </View>
   );
 }
 

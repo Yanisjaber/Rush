@@ -1,3 +1,4 @@
+import { FondDegrade } from '@/components/FondDegrade';
 import { useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,7 +35,8 @@ export default function Connexion() {
   const champ = [styles.champ, typo.corps, { color: p.texte, backgroundColor: p.surface, borderColor: p.contourChamp }];
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.page, { backgroundColor: p.fond }]}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.page, { backgroundColor: 'transparent' }]}>
+      <FondDegrade />
       <ScrollView
         contentContainerStyle={[styles.contenu, { paddingTop: insets.top + 56, paddingBottom: insets.bottom + espace.e5 }]}
         keyboardShouldPersistTaps="handled"

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { rayon } from '@/theme/couleurs';
+import { avecAlpha, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { useRemplir } from '@/components/taille';
 import { usePalette } from '@/theme/usePalette';
@@ -18,7 +18,7 @@ export function Bloc({ titre, couleur, children }: Props) {
   const p = usePalette();
   const remplir = useRemplir();
   return (
-    <View style={[styles.bloc, { backgroundColor: couleur ?? p.surface }, remplir]}>
+    <View style={[styles.bloc, { backgroundColor: couleur ?? avecAlpha(p.surface, 0.78) }, remplir]}>
       {titre ? (
         <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, styles.titre, { color: couleur ? p.encreSurCouleur : p.texte }]}>
           {titre}

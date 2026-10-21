@@ -1,3 +1,4 @@
+import { FondDegrade } from '@/components/FondDegrade';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
@@ -71,7 +72,8 @@ export default function Pilier() {
   const infos = cleValide ? INFOS[cleValide] : undefined;
   if (!cleValide || !infos) {
     return (
-      <View style={[styles.page, { backgroundColor: p.fond }]}>
+      <View style={[styles.page, { backgroundColor: 'transparent' }]}>
+        <FondDegrade />
         <Text style={[typo.corps, { color: p.texteDoux, padding: espace.e4 }]}>Ce sujet n'existe pas.</Text>
       </View>
     );
@@ -86,8 +88,10 @@ export default function Pilier() {
   const couleur = niveau === 'bon' ? p.ok : niveau === 'moyen' ? p.alerte : niveau === 'faible' ? p.danger : p.texteMuet;
 
   return (
-    <ScrollView
-      style={{ backgroundColor: p.fond }}
+    <View style={{ flex: 1 }}>
+      <FondDegrade />
+      <ScrollView
+      style={{ backgroundColor: 'transparent' }}
       contentContainerStyle={[styles.contenu, { paddingBottom: bas + BARRE_ONGLETS }]}
       refreshControl={<RefreshControl refreshing={actualisation} onRefresh={() => void Promise.all([recharger(), rechargerMetriques(), rechargerMesures()])} tintColor={p.texteDoux} />}
     >
@@ -181,6 +185,7 @@ export default function Pilier() {
         </>
       )}
     </ScrollView>
+    </View>
   );
 }
 

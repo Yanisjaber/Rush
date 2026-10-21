@@ -1,3 +1,4 @@
+import { FondDegrade } from '@/components/FondDegrade';
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, Dimensions, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -118,7 +119,8 @@ export default function Accueil() {
   if (onboarding) return <Onboarding />;
 
   return (
-    <View style={[styles.page, { backgroundColor: p.fond }]}>
+    <View style={[styles.page, { backgroundColor: 'transparent' }]}>
+      <FondDegrade />
       <BarreSports />
       <ScrollView
         ref={defile}
@@ -131,12 +133,10 @@ export default function Accueil() {
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={enEdition ? undefined : <RefreshControl refreshing={actualisation} onRefresh={recharger} tintColor={p.texteDoux} />}
       >
-        <View style={styles.entete}>
-          <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>
-            Accueil
-          </Text>
-          {demo ? <Text style={[typo.micro, { color: p.texteMuet }]}>Mode démo</Text> : null}
-        </View>
+        {/* Pas de titre à l'écran (la barre des sports et l'onglet du bas disent déjà où on est) ; VoiceOver le lit quand même */}
+        <Text accessibilityRole="header" style={styles.titreInvisible}>
+          Accueil
+        </Text>
 
         {chargement ? (
           <View accessible accessibilityLabel="Chargement de tes données" style={styles.attente}>
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   page: { flex: 1 },
   bas: { position: 'absolute', left: 12, right: 12, gap: 8 },
   contenu: { paddingHorizontal: espace.e4, paddingTop: espace.e4, gap: espace.e4 },
-  entete: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  titreInvisible: { position: 'absolute', width: 1, height: 1, opacity: 0 },
   attente: { alignItems: 'center', gap: espace.e3, paddingVertical: espace.e7 },
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
 });

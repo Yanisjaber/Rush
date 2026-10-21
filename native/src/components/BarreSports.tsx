@@ -20,14 +20,14 @@ export function BarreSports() {
   if (!familles.length) return null;
 
   return (
-    <View style={[styles.barre, { backgroundColor: p.fond, borderBottomColor: p.trait, paddingTop: haut }]}>
+    <View style={[styles.barre, { borderBottomColor: p.trait, paddingTop: haut }]}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={styles.rangee} accessibilityRole="tablist">
-        <Pastille libelle="Tous" actif={filtre === 'tout'} onPress={() => choisirFiltre('tout')} />
+        <Onglet libelle="Tous" couleur={p.texte} actif={filtre === 'tout'} onPress={() => choisirFiltre('tout')} />
         {familles.map((f) => (
-          <Pastille
+          <Onglet
             key={f}
             libelle={SPORTS[f as CleSport]?.court ?? SPORTS.autre.court}
-            point={couleurSport(p, f)}
+            couleur={couleurSport(p, f)}
             actif={filtre === f}
             onPress={() => choisirFiltre(f)}
           />
@@ -37,7 +37,7 @@ export function BarreSports() {
         onPress={() => setOuvert(true)}
         accessibilityRole="button"
         accessibilityLabel="Ajouter ou retirer un sport"
-        style={({ pressed }) => [styles.plus, { backgroundColor: p.fond, borderLeftColor: p.trait, opacity: pressed ? 0.7 : 1 }]}
+        style={({ pressed }) => [styles.plus, { opacity: pressed ? 0.7 : 1 }]}
       >
         <Text style={[styles.plusTexte, { color: p.texte }]}>+</Text>
       </Pressable>
@@ -46,7 +46,9 @@ export function BarreSports() {
   );
 }
 
-function Pastille({ libelle, point, actif, onPress }: { libelle: string; point?: string; actif: boolean; onPress: () => void }) {
+// Un onglet de sport : le nom seul, et un trait épais de la couleur du sport sous l'onglet choisi.
+// Onglet choisi : texte plein et gras (le choix ne repose pas que sur la couleur du trait).
+function Onglet({ libelle, couleur, actif, onPress }: { libelle: string; couleur: string; actif: boolean; onPress: () => void }) {
   const p = usePalette();
   return (
     <Pressable
@@ -54,22 +56,24 @@ function Pastille({ libelle, point, actif, onPress }: { libelle: string; point?:
       accessibilityRole="button"
       accessibilityLabel={libelle}
       accessibilityState={{ selected: actif }}
-      hitSlop={{ top: 0, bottom: 0, left: 2, right: 2 }}
-      style={({ pressed }) => [styles.pastille, { backgroundColor: actif ? p.surface2 : 'transparent', opacity: pressed ? 0.7 : 1 }]}
+      hitSlop={{ top: 0, bottom: 0, left: 6, right: 6 }}
+      style={({ pressed }) => [styles.onglet, { opacity: pressed ? 0.7 : 1 }]}
     >
-      {point ? <View style={[styles.point, { backgroundColor: point }]} /> : null}
-      <Text style={[styles.texte, { color: actif ? p.texte : p.texteDoux }]}>{libelle}</Text>
+      <Text numberOfLines={1} style={[styles.texte, { color: actif ? p.texte : p.texteDoux }]}>
+        {libelle}
+      </Text>
+      {actif ? <View style={[styles.trait, { backgroundColor: couleur }]} /> : null}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   barre: { borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'flex-end' },
-  plus: { width: 52, height: 44, alignItems: 'center', justifyContent: 'center', borderLeftWidth: StyleSheet.hairlineWidth },
+  plus: { width: 48, height: 44, alignItems: 'center', justifyContent: 'center' },
   plusTexte: { fontFamily: police.titre600, fontSize: 28, lineHeight: 32 },
-  rangee: { paddingHorizontal: 8, alignItems: 'center' },
-  // 44 pt de haut : la cible tactile minimale
-  pastille: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 12, borderRadius: 999 },
-  point: { width: 9, height: 9, borderRadius: 4.5 },
-  texte: { fontFamily: police.texte600, fontSize: 14, lineHeight: 20 },
+  rangee: { gap: 22, paddingLeft: 18, paddingRight: 6 },
+  // 44 pt de haut : la cible tactile minimale ; le trait chevauche le filet de la barre
+  onglet: { height: 44, justifyContent: 'center' },
+  trait: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, borderTopLeftRadius: 3, borderTopRightRadius: 3 },
+  texte: { fontFamily: police.texte600, fontSize: 15, lineHeight: 20 },
 });

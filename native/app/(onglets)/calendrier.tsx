@@ -1,3 +1,4 @@
+import { FondDegrade } from '@/components/FondDegrade';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -69,7 +70,8 @@ export default function Calendrier() {
   }, [cible, chargement]);
 
   return (
-    <View style={[styles.page, { backgroundColor: p.fond }]}>
+    <View style={[styles.page, { backgroundColor: 'transparent' }]}>
+      <FondDegrade />
       <BarreSports />
       <ScrollView
         contentContainerStyle={[styles.contenu, { paddingBottom: bas + BARRE_ONGLETS }]}

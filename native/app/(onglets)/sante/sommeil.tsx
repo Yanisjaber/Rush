@@ -1,3 +1,4 @@
+import { FondDegrade } from '@/components/FondDegrade';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
@@ -37,7 +38,8 @@ export default function Sante() {
   const pro = useMemo(() => analyser(triees), [triees]);
 
   return (
-    <View style={[styles.page, { backgroundColor: p.fond }]}>
+    <View style={[styles.page, { backgroundColor: 'transparent' }]}>
+      <FondDegrade />
       <ScrollView
         contentContainerStyle={[styles.contenu, { paddingTop: espace.e3, paddingBottom: bas + BARRE_ONGLETS }]}
         refreshControl={<RefreshControl refreshing={actualisation} onRefresh={recharger} tintColor={p.texteDoux} />}

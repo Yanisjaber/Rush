@@ -1,3 +1,4 @@
+import { FondDegrade } from '@/components/FondDegrade';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
@@ -17,7 +18,9 @@ export function Onboarding() {
   const basculer = (cle: string) => setChoisis(liste.includes(cle) ? liste.filter((s) => s !== cle) : [...liste, cle]);
 
   return (
-    <ScrollView style={{ backgroundColor: p.fond }} contentContainerStyle={[styles.contenu, { paddingTop: insets.top + espace.e5, paddingBottom: insets.bottom + 96 }]}>
+    <View style={{ flex: 1 }}>
+      <FondDegrade />
+      <ScrollView style={{ backgroundColor: 'transparent' }} contentContainerStyle={[styles.contenu, { paddingTop: insets.top + espace.e5, paddingBottom: insets.bottom + 96 }]}>
       <Text style={[typo.micro, { color: p.sportCourse }]}>Bienvenue sur Rush</Text>
       <Text accessibilityRole="header" style={[styles.titre, { color: p.texte }]}>
         Quels sports pratiques-tu ?
@@ -40,6 +43,7 @@ export function Onboarding() {
         ) : null}
       </View>
     </ScrollView>
+    </View>
   );
 }
 

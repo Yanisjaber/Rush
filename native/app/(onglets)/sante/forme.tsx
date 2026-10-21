@@ -1,3 +1,4 @@
+import { FondDegrade } from '@/components/FondDegrade';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -53,8 +54,10 @@ export default function EtatDeForme() {
   ];
 
   return (
-    <ScrollView
-      style={{ backgroundColor: p.fond }}
+    <View style={{ flex: 1 }}>
+      <FondDegrade />
+      <ScrollView
+      style={{ backgroundColor: 'transparent' }}
       contentContainerStyle={[styles.contenu, { paddingBottom: bas + BARRE_ONGLETS }]}
       refreshControl={<RefreshControl refreshing={actualisation} onRefresh={() => void Promise.all([recharger(), rechargerMetriques(), rechargerMesures()])} tintColor={p.texteDoux} />}
     >
@@ -165,6 +168,7 @@ export default function EtatDeForme() {
         </>
       )}
     </ScrollView>
+    </View>
   );
 }
 

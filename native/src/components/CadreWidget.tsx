@@ -1,7 +1,7 @@
 import { useContext, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { ContexteHeros, ContexteTaille, useRemplir } from '@/components/taille';
-import { clair, rayon, sombre, type Palette } from '@/theme/couleurs';
+import { avecAlpha, clair, rayon, sombre, type Palette } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { ContextePalette, usePalette } from '@/theme/usePalette';
 
@@ -48,7 +48,7 @@ export function CadreWidget({ titre, couleur, serre = false, children }: Props) 
   const fin = taille === 'xs'; // 60 pt de haut : pas de points d'attache, des marges réduites
 
   return (
-    <View style={[styles.cadre, { backgroundColor: couleur ?? (dossard ? base.dossardFond : base.surface) }, fin && styles.cadreFin, dossard && !fin && styles.dossard, dossard && (fin ? styles.sousLisereFin : styles.sousLisere), remplir]}>
+    <View style={[styles.cadre, { backgroundColor: couleur ?? (dossard ? base.dossardFond : avecAlpha(base.surface, 0.78)) }, fin && styles.cadreFin, dossard && !fin && styles.dossard, dossard && (fin ? styles.sousLisereFin : styles.sousLisere), remplir]}>
       {dossard ? <View style={[styles.lisere, { backgroundColor: heros.couleur }]} /> : null}
       {dossard && !fin ? (
         <>

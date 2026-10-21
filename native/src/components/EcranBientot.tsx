@@ -1,3 +1,4 @@
+import { FondDegrade } from '@/components/FondDegrade';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarreSports } from '@/components/BarreSports';
@@ -17,7 +18,8 @@ export function EcranBientot({ titre, description, avecSports = false }: Props) 
   const p = usePalette();
   const haut = useSafeAreaInsets().top;
   return (
-    <View style={[styles.page, { backgroundColor: p.fond }]}>
+    <View style={[styles.page, { backgroundColor: 'transparent' }]}>
+      <FondDegrade />
       {avecSports ? <BarreSports /> : null}
       {/* Sans barre des sports, c'est le contenu qui réserve la place de l'heure et de l'encoche */}
       <View style={[styles.contenu, !avecSports && { paddingTop: haut + espace.e4 }]}>
