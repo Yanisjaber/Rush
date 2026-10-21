@@ -3,7 +3,7 @@ import { CadreWidget, TitreWidget } from '@/components/CadreWidget';
 import { IconeSport } from '@/components/IconeSport';
 import { elementsDuJour, infosDuJour, lignesDeLaBande, seancesDuJour, type ElementDuJour } from '@/data/aujourdhui';
 import { familleAffichage } from '@/data/familles';
-import { formatDuree } from '@/data/format';
+import { formatHeuresMinutes } from '@/data/format';
 import { resumeProgramme } from '@/data/force';
 import type { WidgetProps } from '@/data/types';
 import { SPORTS, type CleSport } from '@/theme/sports';
@@ -12,7 +12,7 @@ import { usePalette } from '@/theme/usePalette';
 
 // La séance du jour, quel que soit le sport : ce qui est PRÉVU aujourd'hui et pas encore fait, empilé, chaque séance avec le logo de son sport.
 // Une seule séance : son nom à gauche, ses infos à droite (« EF z2 ··· 2h30 · 70 km », « Legs ··· 1h00 · 5 exos »).
-// Plusieurs : « 2 séances » à gauche, et à droite une ligne par sport avec sa durée seulement (« Vélo · 2h30 », « Muscu · 1h00 ») :
+// Plusieurs : « 2 séances » à gauche, et à droite une ligne par sport avec sa durée seulement (« Vélo · 2h30 », « Muscu · 1h00 ») ; toutes les durées en 0h00, elles s'alignent :
 // les km et les exercices ne s'affichent que pour une séance seule. Plus de 2 dans la bande fine : la plus longue, puis « + 2 séances · 1h25 » (le nombre des autres et la somme de leurs durées).
 // Une séance faite disparaît d'ici (on la retrouve dans « Dernière séance » et « Cette semaine »).
 // Tout ce qui était prévu est fait : « Terminé ». Rien de prévu : « Repos ».
@@ -60,10 +60,12 @@ export function WidgetAujourdhui({ contexte, taille }: WidgetProps) {
                 </View>
               ))}
               {bande.autres > 0 ? (
-                <Text style={[styles.texteFin, styles.autres, { color: p.texteDoux }]}>
-                  + {bande.autres} séance{bande.autres > 1 ? 's' : ''}
-                  {bande.autresMinutes > 0 ? ` · ${formatDuree(bande.autresMinutes * 60)}` : ''}
-                </Text>
+                <View style={[styles.pastille, { backgroundColor: p.surface2 }]}>
+                  <Text style={[styles.texteFin, { color: p.texteDoux }]}>
+                    + {bande.autres} séance{bande.autres > 1 ? 's' : ''}
+                    {bande.autresMinutes > 0 ? ` · ${formatHeuresMinutes(bande.autresMinutes * 60)}` : ''}
+                  </Text>
+                </View>
               ) : null}
             </View>
           ) : (
@@ -103,9 +105,10 @@ const styles = StyleSheet.create({
   gauche: { flex: 1, minWidth: 0 },
   valeurFine: { fontFamily: police.titre700, fontSize: 22, lineHeight: 26 },
   pile: { flexShrink: 1, maxWidth: '55%', gap: 1 },
-  ligneFine: { flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'flex-end' },
-  texteFin: { flexShrink: 1, fontFamily: police.texte600, fontSize: 13, lineHeight: 15 },
-  autres: { textAlign: 'right' },
+  // 9 pt à droite = le remplissage de la pastille « + 2 séances » : les temps de toutes les lignes tombent les uns sous les autres
+  ligneFine: { flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'flex-end', marginRight: 9 },
+  texteFin: { flexShrink: 1, fontFamily: police.texte600, fontSize: 13, lineHeight: 15, fontVariant: ['tabular-nums'] },
+  pastille: { alignSelf: 'flex-end', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 1, marginTop: 2 },
   noteVide: { flexShrink: 1, maxWidth: '42%', textAlign: 'right' },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
   nom: { flex: 1, minWidth: 0 },

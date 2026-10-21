@@ -53,7 +53,7 @@ test('elementsDuJour : une séance faite non prévue s\'ajoute, un jour vide don
 test('infosDuJour : durée, distance et exercices sur une ligne, ce qui manque est absent', () => {
   assert.equal(infosDuJour({ prevueMinutes: 150, km: 70 }), '2h30 · 70 km');
   assert.equal(infosDuJour({ prevueMinutes: 60, km: null }, 5), '1h00 · 5 exos');
-  assert.equal(infosDuJour({ prevueMinutes: 40, km: 1.5 }), '40 min · 1,5 km');
+  assert.equal(infosDuJour({ prevueMinutes: 40, km: 1.5 }), '0h40 · 1,5 km');
   assert.equal(infosDuJour({ prevueMinutes: null, km: null }, 1), '1 exo');
   assert.equal(infosDuJour({ prevueMinutes: null, km: null }), '');
 });

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dateIsoLocale, formatDateCourte, formatDuree, formatKm } from '../src/data/format.ts';
+import { dateIsoLocale, formatDateCourte, formatDuree, formatHeuresMinutes, formatKm } from '../src/data/format.ts';
 
 test('formatDuree : minutes seules, puis heures et minutes sur deux chiffres', () => {
   assert.equal(formatDuree(2400), '40 min');
@@ -41,4 +41,12 @@ test('formatDateCourte : jour du mois et mois en français', () => {
 test('dateIsoLocale : AAAA-MM-JJ avec zéros', () => {
   assert.equal(dateIsoLocale(new Date(2026, 0, 5)), '2026-01-05');
   assert.equal(dateIsoLocale(new Date(2026, 11, 31)), '2026-12-31');
+});
+
+test('formatHeuresMinutes : toujours 0h00, pour que des durées empilées s\'alignent', () => {
+  assert.equal(formatHeuresMinutes(3240), '0h54');
+  assert.equal(formatHeuresMinutes(9000), '2h30');
+  assert.equal(formatHeuresMinutes(0), '0h00');
+  assert.equal(formatHeuresMinutes(null), '0h00');
+  assert.equal(formatHeuresMinutes(5100), '1h25');
 });

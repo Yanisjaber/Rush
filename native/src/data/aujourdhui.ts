@@ -1,6 +1,6 @@
 // La séance du jour, quel que soit le sport : ce qui est prévu aujourd'hui, et ce qui est déjà fait. Calculs purs (tests/aujourdhui.test.ts).
 import { familleAffichage } from './familles.ts';
-import { dateIsoLocale, formatDuree, formatKm } from './format.ts';
+import { dateIsoLocale, formatHeuresMinutes, formatKm } from './format.ts';
 import type { Prevue, Seance } from './types.ts';
 
 export interface SeancesDuJour {
@@ -63,12 +63,12 @@ export function elementsDuJour(jour: SeancesDuJour): ElementDuJour[] {
 }
 
 /**
- * Les infos d'une séance prévue sur une ligne : « 2h30 · 70 km », « 1h00 · 5 exos ». Ce qu'on ne connaît pas est simplement absent.
+ * Les infos d'une séance prévue sur une ligne : « 2h30 · 70 km », « 1h00 · 5 exos » (la durée toujours au format 0h00, pour que les lignes s'alignent). Ce qu'on ne connaît pas est simplement absent.
  * `exercices` : le nombre d'exercices du programme relié (muscu).
  */
 export function infosDuJour(e: Pick<ElementDuJour, 'prevueMinutes' | 'km'>, exercices: number | null = null): string {
   const morceaux: string[] = [];
-  if (e.prevueMinutes) morceaux.push(formatDuree(e.prevueMinutes * 60));
+  if (e.prevueMinutes) morceaux.push(formatHeuresMinutes(e.prevueMinutes * 60));
   if (e.km) morceaux.push(`${Number.isInteger(e.km) ? e.km : formatKm(e.km)} km`);
   if (exercices) morceaux.push(`${exercices} exo${exercices > 1 ? 's' : ''}`);
   return morceaux.join(' · ');
