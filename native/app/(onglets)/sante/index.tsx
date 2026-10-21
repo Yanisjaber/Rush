@@ -71,7 +71,7 @@ export default function Sante() {
         ) : (
           <>
             <Pressable onPress={() => aller('/sante/forme')} accessibilityRole="button" accessibilityLabel="État de forme du jour. Ouvrir la courbe et le calcul.">
-              <Boite taille="l" heros={{ couleur: couleurSport(p) }}>
+              <Boite taille="l" hauteur={240} heros={{ couleur: couleurSport(p) }}>
                 <WidgetEtatDuJour serie={serie} />
               </Boite>
             </Pressable>

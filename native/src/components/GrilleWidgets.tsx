@@ -19,11 +19,11 @@ export function GrilleWidgets({ children }: { children: ReactNode }) {
 }
 
 /** La boîte d'un widget : sa taille en points est fixe (voir taille.ts), le contenu s'y adapte et ce qui dépasse est coupé. */
-export function Boite({ taille, heros = null, children }: { taille: Taille; /** Look dossard (premier widget de la page) et couleur du liseré. */ heros?: { couleur: string } | null; children: ReactNode }) {
+export function Boite({ taille, heros = null, hauteur, children }: { taille: Taille; /** Look dossard (premier widget de la page) et couleur du liseré. */ heros?: { couleur: string } | null; /** Exception : une hauteur sur mesure en points, pour un bloc qui ne tient ni dans une ligne ni dans deux (l'état du jour de Santé). */ hauteur?: number; children: ReactNode }) {
   return (
     <ContexteTaille.Provider value={taille}>
       <ContexteHeros.Provider value={heros}>
-        <View style={{ height: HAUTEURS[taille], overflow: 'hidden' }}>{children}</View>
+        <View style={{ height: hauteur ?? HAUTEURS[taille], overflow: 'hidden' }}>{children}</View>
       </ContexteHeros.Provider>
     </ContexteTaille.Provider>
   );
