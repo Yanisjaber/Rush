@@ -215,11 +215,13 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
     { i: 27, nom: 'Natation technique', km: 1.4 }, { i: 30, nom: 'Séries 8 × 100 m', km: 1.8 }, { i: 37, nom: 'Natation endurance', km: 2.2 },
     { i: 44, nom: 'Natation technique', km: 1.5 }, { i: 51, nom: 'Séries 8 × 100 m', km: 1.7 }, { i: 58, nom: 'Natation endurance', km: 2.0 },
     { i: 65, nom: 'Natation technique', km: 1.4 }, { i: 72, nom: 'Natation endurance', km: 2.0 },
+    { i: 20, nom: 'Natation longue', km: 3.0 }, { i: 34, nom: 'Technique courte', km: 0.9 },
   ];
   for (const n of nageDemo) {
     if (n.i >= nbJours) continue;
     const iso = dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - n.i));
-    const allure100 = 112 + (Math.min(n.i, 83) / 83) * 13; // secondes pour 100 m
+    // Secondes pour 100 m : on nage un peu plus lentement sur les longues séances et plus vite sur les courtes
+    const allure100 = 112 + (Math.min(n.i, 83) / 83) * 13 + (n.km >= 2.5 ? 6 : n.km < 1.5 ? -4 : 0);
     const secondes = Math.round(n.km * 10 * allure100);
     const tss = Math.round(secondes / 60 * 0.75);
     quotidien[iso] = (quotidien[iso] || 0) + tss;
@@ -324,6 +326,7 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
       { id: 'demo-hyrox-open', name: 'Hyrox Open', date: plusJours(27), sport: 'Hyrox', km: null, d_plus: null, priority: 'A', duration: 70, category: 'competition' },
       { id: 'demo-ramonville', name: 'Ronde de Ramonville', date: '2026-12-13', sport: 'Run', km: 10.15, d_plus: 42, priority: 'A', duration: 40, category: 'competition' },
       { id: 'demo-vtt-cretes', name: 'Marathon VTT des Crêtes', date: plusJours(56), sport: 'MountainBikeRide', km: 60, d_plus: 1900, priority: 'B', duration: 330, category: 'competition' },
+      { id: 'demo-traversee', name: 'Traversée du lac d\'Annecy', date: plusJours(70), sport: 'Swim', km: 4, d_plus: null, priority: 'B', duration: 110, category: 'competition' },
       { id: 'demo-triathlon-gruissan', name: 'Triathlon M de Gruissan', date: plusJours(90), sport: 'Triathlon', km: 51.5, d_plus: null, priority: 'A', duration: 150, category: 'competition' },
       { id: 'demo-trail-cretes', name: 'Trail des Crêtes', date: plusJours(63), sport: 'TrailRun', km: 32, d_plus: 1800, priority: 'B', duration: 330, category: 'competition' },
     ],
