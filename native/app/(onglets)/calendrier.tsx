@@ -190,7 +190,7 @@ function marquesDe(j: JourGrille): { cle: string; type: 'fait' | 'prevu' | 'obje
 // (orange pour une blessure, rouge pour une maladie…). Un triangle plus sombre fait le pli. La case l'arrondit (overflow caché), il ne touche jamais le chiffre.
 function CoinPlie({ couleur }: { couleur: string }) {
   return (
-    <Svg width={16} height={16} viewBox="0 0 20 20" accessible={false}>
+    <Svg width={12} height={12} viewBox="0 0 20 20" accessible={false}>
       <Path d="M0 0H20V20Z" fill={couleur} />
       <Path d="M20 20L8 8H20Z" fill="rgba(0,0,0,0.28)" />
     </Svg>
