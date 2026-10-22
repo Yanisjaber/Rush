@@ -8,15 +8,9 @@ import { usePalette } from '@/theme/usePalette';
 import { WidgetAujourdhui } from './WidgetAujourdhui';
 import { WidgetAvenir } from './WidgetAvenir';
 import { WidgetCharge } from './WidgetCharge';
-import { WidgetCfHebdo } from './WidgetCfHebdo';
-import { WidgetCfIntensite } from './WidgetCfIntensite';
-import { WidgetCfMarquantes } from './WidgetCfMarquantes';
-import { WidgetCfMix } from './WidgetCfMix';
 import { WidgetChargeForce } from './WidgetChargeForce';
 import { WidgetChargeMuscu } from './WidgetChargeMuscu';
 import { WidgetDeniveleSki } from './WidgetDeniveleSki';
-import { WidgetDeniveleTrail } from './WidgetDeniveleTrail';
-import { WidgetDeniveleVtt } from './WidgetDeniveleVtt';
 import { WidgetDernieres } from './WidgetDernieres';
 import { WidgetDenivele } from './WidgetDenivele';
 import { WidgetEfficacite } from './WidgetEfficacite';
@@ -32,14 +26,10 @@ import { WidgetHyroxHebdo } from './WidgetHyroxHebdo';
 import { WidgetHyroxRunsStations } from './WidgetHyroxRunsStations';
 import { WidgetHyroxTest } from './WidgetHyroxTest';
 import { WidgetKmHebdo } from './WidgetKmHebdo';
-import { WidgetKmEffort } from './WidgetKmEffort';
 import { WidgetKmSki } from './WidgetKmSki';
 import { WidgetKmVelo } from './WidgetKmVelo';
-import { WidgetKmVtt } from './WidgetKmVtt';
 import { WidgetMeilleures } from './WidgetMeilleures';
 import { WidgetMeilleuresSki } from './WidgetMeilleuresSki';
-import { WidgetMeilleuresTrail } from './WidgetMeilleuresTrail';
-import { WidgetMeilleuresVtt } from './WidgetMeilleuresVtt';
 import { WidgetNatAllure } from './WidgetNatAllure';
 import { WidgetNatCourbe } from './WidgetNatCourbe';
 import { WidgetNatLongue } from './WidgetNatLongue';
@@ -49,8 +39,6 @@ import { WidgetNatRythmes } from './WidgetNatRythmes';
 import { WidgetNatVolume } from './WidgetNatVolume';
 import { WidgetObjectif } from './WidgetObjectif';
 import { WidgetPredictions } from './WidgetPredictions';
-import { WidgetPrepaTrail } from './WidgetPrepaTrail';
-import { WidgetPrepaVtt } from './WidgetPrepaVtt';
 import { WidgetProgrammes } from './WidgetProgrammes';
 import { WidgetPuissance } from './WidgetPuissance';
 import { WidgetRecords } from './WidgetRecords';
@@ -61,7 +49,6 @@ import { WidgetTonnage } from './WidgetTonnage';
 import { WidgetSkiIntensite } from './WidgetSkiIntensite';
 import { WidgetSkiPrepa } from './WidgetSkiPrepa';
 import { WidgetSkiSurfaces } from './WidgetSkiSurfaces';
-import { WidgetTerrainVtt } from './WidgetTerrainVtt';
 import { WidgetTriBricks } from './WidgetTriBricks';
 import { WidgetTriEquilibre } from './WidgetTriEquilibre';
 import { WidgetTriFraicheur } from './WidgetTriFraicheur';
@@ -92,27 +79,14 @@ export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   ftp: WidgetFtp,
   zonespuissance: WidgetZonesPuissance,
   wattscardio: WidgetWattsCardio,
-  deniveletrail: WidgetDeniveleTrail,
-  kmeffort: WidgetKmEffort,
-  prepatrail: WidgetPrepaTrail,
-  meilleurestrail: WidgetMeilleuresTrail,
   triequilibre: WidgetTriEquilibre,
   trifraicheur: WidgetTriFraicheur,
   tribricks: WidgetTriBricks,
   trireperes: WidgetTriReperes,
-  denivelevtt: WidgetDeniveleVtt,
-  kmvtt: WidgetKmVtt,
-  prepavtt: WidgetPrepaVtt,
-  meilleuresvtt: WidgetMeilleuresVtt,
-  vttterrain: WidgetTerrainVtt,
   natcourbe: WidgetNatCourbe,
   natmois: WidgetNatMois,
   natrythmes: WidgetNatRythmes,
   natprepa: WidgetNatPrepa,
-  cfhebdo: WidgetCfHebdo,
-  cfintensite: WidgetCfIntensite,
-  cfmix: WidgetCfMix,
-  cfmarquantes: WidgetCfMarquantes,
   kmski: WidgetKmSki,
   deniveleski: WidgetDeniveleSki,
   skisurfaces: WidgetSkiSurfaces,

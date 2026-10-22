@@ -144,38 +144,6 @@ export const WIDGETS = {
     tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
-  deniveletrail: {
-    nom: "Dénivelé par semaine (trail)",
-    description: "Le dénivelé positif que tu grimpes chaque semaine en trail, avec ta moyenne.",
-    categorie: "Trail",
-    sports: ['trail'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
-  kmeffort: {
-    nom: "Km-effort par semaine",
-    description: "Le volume réel de ton trail : 1 km-effort = 1 km + 100 m de dénivelé.",
-    categorie: "Trail",
-    sports: ['trail'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
-  prepatrail: {
-    nom: "Prépa dénivelé",
-    description: "Ton plus gros D+ en une sortie face au dénivelé de ta prochaine course.",
-    categorie: "Trail",
-    sports: ['trail'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
-  meilleurestrail: {
-    nom: "Meilleures sorties de trail",
-    description: "Ton plus gros dénivelé, ta plus longue sortie et ta plus longue durée en trail.",
-    categorie: "Trail",
-    sports: ['trail'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
   triequilibre: {
     nom: "Répartition par discipline",
     description: "Où passe ton temps entre natation, vélo et course, semaine après semaine.",
@@ -208,46 +176,6 @@ export const WIDGETS = {
     tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
-  denivelevtt: {
-    nom: "Dénivelé par semaine (VTT)",
-    description: "Le dénivelé positif que tu grimpes chaque semaine en VTT, avec ta moyenne.",
-    categorie: "VTT",
-    sports: ['vtt'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
-  kmvtt: {
-    nom: "Kilomètres de VTT par semaine",
-    description: "Les kilomètres que tu roules chaque semaine en VTT et en gravel, avec ta moyenne.",
-    categorie: "VTT",
-    sports: ['vtt'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
-  prepavtt: {
-    nom: "Prépa dénivelé (VTT)",
-    description: "Ton plus gros D+ en une sortie face au dénivelé de ta prochaine course de VTT.",
-    categorie: "VTT",
-    sports: ['vtt'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
-  meilleuresvtt: {
-    nom: "Meilleures sorties de VTT",
-    description: "Ton plus gros dénivelé, ta plus longue sortie et ta plus longue durée en VTT.",
-    categorie: "VTT",
-    sports: ['vtt'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
-  vttterrain: {
-    nom: "Profil des sorties",
-    description: "Le terrain de tes sorties de VTT : dénivelé par kilomètre, de roulant à montagneux.",
-    categorie: "VTT",
-    sports: ['vtt'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
   natcourbe: {
     nom: "Allure semaine après semaine",
     description: "Ton allure de natation au 100 m, semaine après semaine : elle baisse quand tu progresses.",
@@ -277,38 +205,6 @@ export const WIDGETS = {
     description: "Ta plus longue séance face à la distance de ta prochaine course de natation.",
     categorie: "Natation",
     sports: ['natation'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
-  cfhebdo: {
-    nom: "CrossFit par semaine",
-    description: "Le temps que tu passes chaque semaine en CrossFit, avec ta moyenne.",
-    categorie: "CrossFit",
-    sports: ['crossfit'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
-  cfintensite: {
-    nom: "Intensité",
-    description: "À quelle intensité tu t’entraînes : modérée, soutenue ou intense, d’après ton cardio.",
-    categorie: "CrossFit",
-    sports: ['crossfit'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
-  cfmix: {
-    nom: "Mix d’entraînement",
-    description: "Ton temps réparti entre WOD, force et endurance sur 4 semaines.",
-    categorie: "CrossFit",
-    sports: ['crossfit'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
-  cfmarquantes: {
-    nom: "Séances marquantes",
-    description: "Ta séance la plus longue, la plus lourde et la plus intense de CrossFit.",
-    categorie: "CrossFit",
-    sports: ['crossfit'],
     tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
@@ -565,7 +461,7 @@ export const ORDRE_ONGLET: Record<string, readonly string[]> = {
   hyrox: ['hyroxdossard', 'semaine', 'hyroxevolution', 'hyroxhebdo', 'hyroxtest', 'hyroxrunsstations', 'hyroxderive', 'hyroxallure', 'hyroxgains', 'chargeforce', 'dernieres'],
 };
 
-/** La liste par défaut d'un onglet de sport libre (Course, Trail, Vélo, VTT, Natation, Triathlon, Duathlon, CrossFit, Ski de fond) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course et Vélo : les dispositions de Yanis ; Trail, VTT, Natation, Triathlon, Duathlon, CrossFit et Ski de fond : pensées pour l'usage. */
+/** La liste par défaut d'un onglet de sport libre (Course, Vélo, Natation, Triathlon, Duathlon, Ski de fond) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course et Vélo : les dispositions de Yanis ; Natation, Triathlon, Duathlon et Ski de fond : pensées pour l'usage. */
 export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
   course: [
     { id: 'kmhebdo', taille: 'm' },
@@ -577,19 +473,6 @@ export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
     { id: 'avenir', taille: 's' },
     { id: 'forme', taille: 's' },
     { id: 'charge', taille: 'l' },
-    { id: 'dernieres', taille: 'm' },
-  ],
-  // Trail : la préparation au dénivelé de la course visée en héros, puis le contexte, le volume en dénivelé et en km-effort, la charge, les records
-  trail: [
-    { id: 'prepatrail', taille: 'm' },
-    { id: 'semaine', taille: 'xs' },
-    { id: 'objectif', taille: 'xs' },
-    { id: 'deniveletrail', taille: 's' },
-    { id: 'kmeffort', taille: 's' },
-    { id: 'charge', taille: 'l' },
-    { id: 'meilleurestrail', taille: 'm' },
-    { id: 'avenir', taille: 's' },
-    { id: 'forme', taille: 's' },
     { id: 'dernieres', taille: 'm' },
   ],
   // Triathlon et duathlon : la semaine (toutes disciplines) en héros, puis la prochaine course, ce qui est délaissé et les enchaînements, la répartition du temps, la charge, les repères
@@ -617,20 +500,6 @@ export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
     { id: 'forme', taille: 's' },
     { id: 'dernieres', taille: 'm' },
   ],
-  // VTT : la préparation au dénivelé de la course visée en héros, puis le contexte, le volume (D+ et km), le terrain, les records, la charge
-  vtt: [
-    { id: 'prepavtt', taille: 'm' },
-    { id: 'semaine', taille: 'xs' },
-    { id: 'objectif', taille: 'xs' },
-    { id: 'denivelevtt', taille: 's' },
-    { id: 'kmvtt', taille: 's' },
-    { id: 'vttterrain', taille: 'm' },
-    { id: 'meilleuresvtt', taille: 'm' },
-    { id: 'charge', taille: 'm' },
-    { id: 'avenir', taille: 's' },
-    { id: 'forme', taille: 's' },
-    { id: 'dernieres', taille: 'm' },
-  ],
   // Natation : les mètres par semaine en héros, puis le contexte, l'allure et le mois côte à côte, l'allure selon la distance, les records, la charge
   natation: [
     { id: 'natvolume', taille: 'm' },
@@ -640,20 +509,6 @@ export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
     { id: 'natmois', taille: 's' },
     { id: 'natrythmes', taille: 'm' },
     { id: 'natlongue', taille: 'm' },
-    { id: 'charge', taille: 'm' },
-    { id: 'avenir', taille: 's' },
-    { id: 'forme', taille: 's' },
-    { id: 'dernieres', taille: 'm' },
-  ],
-  // CrossFit : la semaine en héros, puis le temps et l'intensité côte à côte, le mix force / WOD / endurance, les records de force, les séances marquantes, la charge
-  crossfit: [
-    { id: 'semaine', taille: 'm' },
-    { id: 'objectif', taille: 'xs' },
-    { id: 'cfhebdo', taille: 's' },
-    { id: 'cfintensite', taille: 's' },
-    { id: 'cfmix', taille: 'm' },
-    { id: 'records', taille: 'm' },
-    { id: 'cfmarquantes', taille: 'm' },
     { id: 'charge', taille: 'm' },
     { id: 'avenir', taille: 's' },
     { id: 'forme', taille: 's' },
@@ -727,11 +582,8 @@ export function existe(id: unknown): id is IdWidget {
 
 /** Les onglets qui regroupent plusieurs sports : les widgets de tous ces sports leur conviennent. */
 const SPORTS_VOISINS: Record<string, readonly string[]> = {
-  trail: ['course', 'trail'],
   triathlon: ['triathlon', 'natation', 'velo', 'course'],
   duathlon: ['duathlon', 'velo', 'course'],
-  vtt: ['velo', 'vtt'],
-  crossfit: ['crossfit', 'muscu'],
 };
 
 /** Un widget est-il pertinent pour au moins un des sports de l'utilisateur ? */
@@ -739,7 +591,7 @@ export function estPertinent(id: string, familles: readonly string[]): boolean {
   if (!existe(id)) return false;
   const def = definition(id);
   if (def.sports === 'tous') return true;
-  // Un onglet Trail montre les widgets de course ET de trail, Triathlon et Duathlon ceux de leurs disciplines, VTT ceux du vélo ET de VTT, CrossFit ceux de CrossFit ET de musculation (records, tonnage…)
+  // Triathlon et Duathlon montrent les widgets de leurs disciplines (natation, vélo, course)
   const dessous = familles.flatMap((f) => SPORTS_VOISINS[f] ?? [familleDesWidgets(f)]);
   return def.sports.some((s) => dessous.includes(s));
 }
@@ -886,7 +738,7 @@ export function normaliser(brut: unknown): Disposition | null {
 }
 
 /** Les onglets de sport dont la bibliothèque reste ouverte : on peut y ajouter n'importe quel widget qui concerne le sport. */
-export const SPORTS_LIBRES: string[] = ['course', 'trail', 'velo', 'vtt', 'natation', 'triathlon', 'duathlon', 'crossfit', 'ski'];
+export const SPORTS_LIBRES: string[] = ['course', 'velo', 'natation', 'triathlon', 'duathlon', 'ski'];
 /** Les onglets de sport qui ont leur propre composition modifiable (Muscu, Hyrox, et les sports libres). */
 export const ONGLETS_PERSONNALISABLES: string[] = [...Object.keys(ORDRE_ONGLET), ...SPORTS_LIBRES];
 /** Onglets dont la bibliothèque est limitée à leurs propres widgets (ceux de ORDRE_ONGLET). */

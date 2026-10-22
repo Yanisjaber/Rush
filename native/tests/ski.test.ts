@@ -1,9 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { estSkiDeFond, minutesParSemaineSurfaces, repartitionSurfaces, surfaceDe } from '../src/data/ski.ts';
+import { deniveleSkiParSemaine, estSkiDeFond, kmSkiParSemaine, meilleuresSortiesSki, minutesParSemaineSurfaces, repartitionSurfaces, surfaceDe } from '../src/data/ski.ts';
 import { intensiteParZone } from '../src/data/hebdo.ts';
 import { prepaDistance } from '../src/data/natation.ts';
-import { deniveleParSemaineSport, kmParSemaineSport, meilleuresSorties } from '../src/data/trail.ts';
 import type { Seance } from '../src/data/types.ts';
 
 const AUJOURDHUI = new Date(2026, 9, 21); // 21 octobre 2026
@@ -43,12 +42,12 @@ test('minutesParSemaineSurfaces : une série par surface, de la plus ancienne se
 
 test('ski : les kilomètres et le dénivelé par semaine comptent le ski de fond et les roulettes, pas le ski alpin', () => {
   const seances = [sortie('n', 1, 'NordicSki', 20, 90, { total_elevation_gain: 300 }), sortie('r', 3, 'RollerSki', 15.5, 60, { total_elevation_gain: 200 }), sortie('a', 2, 'AlpineSki', 40, 120, { total_elevation_gain: 900 }), sortie('v', 9, 'NordicSki', 10, 45, { total_elevation_gain: 100 })];
-  assert.deepEqual(kmParSemaineSport(seances, 'ski', 4, AUJOURDHUI).parSemaine, [0, 0, 10, 35.5]);
-  assert.deepEqual(deniveleParSemaineSport(seances, 'ski', 4, AUJOURDHUI).parSemaine, [0, 0, 100, 500]);
+  assert.deepEqual(kmSkiParSemaine(seances, 4, AUJOURDHUI).parSemaine, [0, 0, 10, 35.5]);
+  assert.deepEqual(deniveleSkiParSemaine(seances, 4, AUJOURDHUI).parSemaine, [0, 0, 100, 500]);
 });
 
 test('ski : les meilleures sorties', () => {
-  const m = meilleuresSorties([sortie('a', 2, 'NordicSki', 30, 150, { total_elevation_gain: 400 }), sortie('b', 9, 'RollerSki', 45, 200, { total_elevation_gain: 900 }), sortie('alpin', 3, 'AlpineSki', 60, 300, { total_elevation_gain: 3000 })], 'ski', 12, AUJOURDHUI);
+  const m = meilleuresSortiesSki([sortie('a', 2, 'NordicSki', 30, 150, { total_elevation_gain: 400 }), sortie('b', 9, 'RollerSki', 45, 200, { total_elevation_gain: 900 }), sortie('alpin', 3, 'AlpineSki', 60, 300, { total_elevation_gain: 3000 })], 12, AUJOURDHUI);
   assert.equal(m.plusGrosDPlus?.id, 'b');
   assert.equal(m.plusLongue?.id, 'b');
   assert.deepEqual(m.top.map((s) => s.id), ['b', 'a']);

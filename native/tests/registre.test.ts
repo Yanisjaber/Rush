@@ -12,9 +12,9 @@ test('existe : seuls les vrais widgets, pas les propriétés héritées', () => 
   assert.equal(existe(42), false);
 });
 
-test('registre : 65 widgets, chacun avec une taille par défaut permise', () => {
+test('registre : 52 widgets, chacun avec une taille par défaut permise', () => {
   const ids = Object.keys(WIDGETS);
-  assert.equal(ids.length, 65);
+  assert.equal(ids.length, 52);
   for (const id of ids) {
     const d = (WIDGETS as Record<string, { tailles: readonly string[]; taille: string }>)[id];
     assert.ok(d.tailles.includes(d.taille), id);
@@ -112,23 +112,6 @@ test('composerOnglet : un sport sans onglet à lui (aviron) met l\'objectif en p
   assert.equal(ids[0], 'objectif');
   assert.ok(ids.includes('forme') && ids.includes('dernieres'));
   assert.equal(ids.includes('predictions') || ids.includes('puissance'), false, 'aucun widget d\'un autre sport');
-});
-
-test('estPertinent : l\'onglet Trail voit les widgets de trail ET de course, Course ne voit pas ceux de trail', () => {
-  assert.ok(estPertinent('prepatrail', ['trail']) && estPertinent('predictions', ['trail']));
-  assert.equal(estPertinent('prepatrail', ['course']), false);
-  assert.equal(estPertinent('prepatrail', ['velo']), false);
-});
-
-test('estPertinent : VTT voit les widgets de vélo ET de VTT, Vélo ne voit pas ceux de VTT', () => {
-  assert.ok(estPertinent('vttterrain', ['vtt']) && estPertinent('puissance', ['vtt']) && estPertinent('kmvelo', ['vtt']));
-  assert.equal(estPertinent('vttterrain', ['velo']), false);
-  assert.equal(estPertinent('vttterrain', ['course']), false);
-});
-
-test('estPertinent : CrossFit voit les widgets de CrossFit ET de musculation, Musculation ne voit pas ceux de CrossFit', () => {
-  assert.ok(estPertinent('cfmix', ['crossfit']) && estPertinent('records', ['crossfit']) && estPertinent('tonnage', ['crossfit']));
-  assert.equal(estPertinent('cfmix', ['muscu']), false);
 });
 
 test('estPertinent : Ski voit les widgets de ski, Course et Vélo non', () => {

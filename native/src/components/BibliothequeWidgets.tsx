@@ -12,14 +12,11 @@ import { usePalette } from '@/theme/usePalette';
 // puis ce qui vaut pour tous. Chaque widget : nom, description, bouton Ajouter.
 const COULEUR_RAYON: Record<string, 'sportCourse' | 'sportVelo' | 'sportNatation' | 'sportMuscu' | 'sportHybride' | 'sportNeutre'> = {
   'Course à pied': 'sportCourse',
-  Trail: 'sportCourse',
   Vélo: 'sportVelo',
-  VTT: 'sportVelo',
   Natation: 'sportNatation',
   'Triathlon et duathlon': 'sportVelo',
   Musculation: 'sportMuscu',
   Hyrox: 'sportHybride',
-  CrossFit: 'sportHybride',
   'Ski de fond': 'sportNeutre',
 };
 

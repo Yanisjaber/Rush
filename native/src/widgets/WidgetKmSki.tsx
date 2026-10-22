@@ -1,13 +1,13 @@
 import { SerieHebdo } from '@/components/SerieHebdo';
 import { formatKm } from '@/data/format';
-import { kmParSemaineSport } from '@/data/trail';
+import { kmSkiParSemaine } from '@/data/ski';
 import type { WidgetProps } from '@/data/types';
 import { usePalette } from '@/theme/usePalette';
 
 // Les kilomètres skiés chaque semaine (ski de fond, ski à roulettes, hors-piste), sur 12 semaines (voir SerieHebdo). Le ski alpin n'y compte pas.
 export function WidgetKmSki({ contexte, taille = 'm' }: WidgetProps) {
   const p = usePalette();
-  const k = kmParSemaineSport(contexte.toutesSeances, 'ski');
+  const k = kmSkiParSemaine(contexte.toutesSeances);
   return (
     <SerieHebdo
       taille={taille}
