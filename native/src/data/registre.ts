@@ -565,7 +565,7 @@ export const ORDRE_ONGLET: Record<string, readonly string[]> = {
   hyrox: ['hyroxdossard', 'semaine', 'hyroxevolution', 'hyroxhebdo', 'hyroxtest', 'hyroxrunsstations', 'hyroxderive', 'hyroxallure', 'hyroxgains', 'chargeforce', 'dernieres'],
 };
 
-/** La liste par défaut d'un onglet de sport libre (Course, Trail, Vélo, VTT, Natation, Triathlon, Duathlon, CrossFit) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course et Vélo : les dispositions de Yanis ; Trail, VTT, Natation, Triathlon, Duathlon et CrossFit : pensées pour l'usage. */
+/** La liste par défaut d'un onglet de sport libre (Course, Trail, Vélo, VTT, Natation, Triathlon, Duathlon, CrossFit, Ski de fond) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course et Vélo : les dispositions de Yanis ; Trail, VTT, Natation, Triathlon, Duathlon, CrossFit et Ski de fond : pensées pour l'usage. */
 export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
   course: [
     { id: 'kmhebdo', taille: 'm' },
@@ -654,6 +654,21 @@ export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
     { id: 'cfmix', taille: 'm' },
     { id: 'records', taille: 'm' },
     { id: 'cfmarquantes', taille: 'm' },
+    { id: 'charge', taille: 'm' },
+    { id: 'avenir', taille: 's' },
+    { id: 'forme', taille: 's' },
+    { id: 'dernieres', taille: 'm' },
+  ],
+  // Ski de fond : les kilomètres par semaine en héros, puis le contexte, le dénivelé et l'intensité côte à côte, la neige ou les roulettes, la préparation à la course, les records
+  ski: [
+    { id: 'kmski', taille: 'm' },
+    { id: 'semaine', taille: 'xs' },
+    { id: 'objectif', taille: 'xs' },
+    { id: 'deniveleski', taille: 's' },
+    { id: 'skiintensite', taille: 's' },
+    { id: 'skisurfaces', taille: 'm' },
+    { id: 'skiprepa', taille: 'm' },
+    { id: 'meilleuresski', taille: 'm' },
     { id: 'charge', taille: 'm' },
     { id: 'avenir', taille: 's' },
     { id: 'forme', taille: 's' },
@@ -871,7 +886,7 @@ export function normaliser(brut: unknown): Disposition | null {
 }
 
 /** Les onglets de sport dont la bibliothèque reste ouverte : on peut y ajouter n'importe quel widget qui concerne le sport. */
-export const SPORTS_LIBRES: string[] = ['course', 'trail', 'velo', 'vtt', 'natation', 'triathlon', 'duathlon', 'crossfit'];
+export const SPORTS_LIBRES: string[] = ['course', 'trail', 'velo', 'vtt', 'natation', 'triathlon', 'duathlon', 'crossfit', 'ski'];
 /** Les onglets de sport qui ont leur propre composition modifiable (Muscu, Hyrox, et les sports libres). */
 export const ONGLETS_PERSONNALISABLES: string[] = [...Object.keys(ORDRE_ONGLET), ...SPORTS_LIBRES];
 /** Onglets dont la bibliothèque est limitée à leurs propres widgets (ceux de ORDRE_ONGLET). */
