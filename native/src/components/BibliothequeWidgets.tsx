@@ -19,6 +19,7 @@ const COULEUR_RAYON: Record<string, 'sportCourse' | 'sportVelo' | 'sportNatation
   'Triathlon et duathlon': 'sportVelo',
   Musculation: 'sportMuscu',
   Hyrox: 'sportHybride',
+  CrossFit: 'sportHybride',
 };
 
 export function BibliothequeWidgets({ ids, onAjouter }: { ids: string[]; onAjouter: (id: string) => void }) {

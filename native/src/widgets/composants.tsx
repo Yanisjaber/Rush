@@ -8,6 +8,10 @@ import { usePalette } from '@/theme/usePalette';
 import { WidgetAujourdhui } from './WidgetAujourdhui';
 import { WidgetAvenir } from './WidgetAvenir';
 import { WidgetCharge } from './WidgetCharge';
+import { WidgetCfHebdo } from './WidgetCfHebdo';
+import { WidgetCfIntensite } from './WidgetCfIntensite';
+import { WidgetCfMarquantes } from './WidgetCfMarquantes';
+import { WidgetCfMix } from './WidgetCfMix';
 import { WidgetChargeForce } from './WidgetChargeForce';
 import { WidgetChargeMuscu } from './WidgetChargeMuscu';
 import { WidgetDeniveleTrail } from './WidgetDeniveleTrail';
@@ -99,6 +103,10 @@ export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   natmois: WidgetNatMois,
   natrythmes: WidgetNatRythmes,
   natprepa: WidgetNatPrepa,
+  cfhebdo: WidgetCfHebdo,
+  cfintensite: WidgetCfIntensite,
+  cfmix: WidgetCfMix,
+  cfmarquantes: WidgetCfMarquantes,
   puissance: WidgetPuissance,
   natvolume: WidgetNatVolume,
   natallure: WidgetNatAllure,
