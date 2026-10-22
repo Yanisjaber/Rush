@@ -18,6 +18,7 @@ import { WidgetHyroxAllure } from './WidgetHyroxAllure';
 import { WidgetHyroxDossard } from './WidgetHyroxDossard';
 import { WidgetHyroxGains } from './WidgetHyroxGains';
 import { WidgetHyroxTest } from './WidgetHyroxTest';
+import { WidgetKmHebdo } from './WidgetKmHebdo';
 import { WidgetMeilleures } from './WidgetMeilleures';
 import { WidgetNatAllure } from './WidgetNatAllure';
 import { WidgetNatLongue } from './WidgetNatLongue';
@@ -32,9 +33,10 @@ import { WidgetSeanceDuJour } from './WidgetSeanceDuJour';
 import { WidgetSemaine } from './WidgetSemaine';
 import { WidgetTonnage } from './WidgetTonnage';
 import { WidgetVolume } from './WidgetVolume';
+import { WidgetZonesAllure } from './WidgetZonesAllure';
 
 // Correspondance entre l'identifiant d'un widget (voir data/registre.ts) et son composant.
-// Les widgets pas encore refaits en natif ont un bloc « bientôt » (voir WidgetBientot).
+// Un identifiant sans composant (une vieille disposition sauvegardée) affiche un bloc « bientôt » (voir WidgetBientot).
 export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   objectif: WidgetObjectif,
   charge: WidgetCharge,
@@ -47,6 +49,8 @@ export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   predictions: WidgetPredictions,
   efficacite: WidgetEfficacite,
   meilleures: WidgetMeilleures,
+  kmhebdo: WidgetKmHebdo,
+  zonesallure: WidgetZonesAllure,
   puissance: WidgetPuissance,
   natvolume: WidgetNatVolume,
   natallure: WidgetNatAllure,

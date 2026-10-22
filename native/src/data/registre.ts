@@ -72,6 +72,22 @@ export const WIDGETS = {
     tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
+  kmhebdo: {
+    nom: "Kilomètres par semaine",
+    description: "Les kilomètres que tu cours chaque semaine, avec ta moyenne.",
+    categorie: "Course à pied",
+    sports: ['course'],
+    tailles: ['xs', 's', 'm', 'l'],
+    taille: 's',
+  },
+  zonesallure: {
+    nom: "Zones d'allure",
+    description: "Où passe ton temps de course sur 4 semaines, zone par zone (d'après ta vitesse seuil).",
+    categorie: "Course à pied",
+    sports: ['course'],
+    tailles: ['xs', 's', 'm', 'l'],
+    taille: 's',
+  },
   meilleures: {
     nom: "Meilleures sorties",
     description: "Ta sortie la plus longue et tes sorties les plus rapides sur 5 et 10 km.",

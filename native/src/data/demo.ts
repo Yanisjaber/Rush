@@ -109,7 +109,7 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
   const plusJours = (n: number) => dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + n));
 
   return {
-    profil: { ftp: null, hr_max: 196, lthr: null, weight: null, extras: { first_name: 'Yanis', last_name: 'Jaber', cp: 245, wprime: 19 } },
+    profil: { ftp: null, hr_max: 196, lthr: null, weight: null, extras: { first_name: 'Yanis', last_name: 'Jaber', cp: 245, wprime: 19, threshold_speed: 15 } },
     metriques,
     seances,
     puissance: [
