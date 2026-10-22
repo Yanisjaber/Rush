@@ -485,7 +485,7 @@ export const ORDRE_ONGLET: Record<string, readonly string[]> = {
   hyrox: ['hyroxdossard', 'semaine', 'hyroxevolution', 'hyroxhebdo', 'hyroxtest', 'hyroxrunsstations', 'hyroxderive', 'hyroxallure', 'hyroxgains', 'chargeforce', 'dernieres'],
 };
 
-/** La liste par défaut d'un onglet de sport libre (Course, Trail, Vélo, VTT, Natation, Triathlon, Duathlon) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course et Vélo : les dispositions de Yanis ; Trail, VTT, Triathlon et Duathlon : pensées pour l'usage. */
+/** La liste par défaut d'un onglet de sport libre (Course, Trail, Vélo, VTT, Natation, Triathlon, Duathlon) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course et Vélo : les dispositions de Yanis ; Trail, VTT, Natation, Triathlon et Duathlon : pensées pour l'usage. */
 export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
   course: [
     { id: 'kmhebdo', taille: 'm' },
@@ -546,6 +546,20 @@ export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
     { id: 'kmvtt', taille: 's' },
     { id: 'vttterrain', taille: 'm' },
     { id: 'meilleuresvtt', taille: 'm' },
+    { id: 'charge', taille: 'm' },
+    { id: 'avenir', taille: 's' },
+    { id: 'forme', taille: 's' },
+    { id: 'dernieres', taille: 'm' },
+  ],
+  // Natation : les mètres par semaine en héros, puis le contexte, l'allure et le mois côte à côte, l'allure selon la distance, les records, la charge
+  natation: [
+    { id: 'natvolume', taille: 'm' },
+    { id: 'semaine', taille: 'xs' },
+    { id: 'objectif', taille: 'xs' },
+    { id: 'natcourbe', taille: 's' },
+    { id: 'natmois', taille: 's' },
+    { id: 'natrythmes', taille: 'm' },
+    { id: 'natlongue', taille: 'm' },
     { id: 'charge', taille: 'm' },
     { id: 'avenir', taille: 's' },
     { id: 'forme', taille: 's' },
