@@ -107,17 +107,23 @@ test('composerOnglet : Muscu et Hyrox ont leur composition fixe, en gardant la t
   assert.deepEqual(composerOnglet(auto, 'hyrox').map((w) => w.id), [...ORDRE_ONGLET.hyrox]);
 });
 
-test('composerOnglet : un sport sans onglet à lui (VTT) met l\'objectif en premier, puis les widgets de ce sport', () => {
-  const ids = composerOnglet(compositionSport(['course', 'velo']), 'vtt').map((w) => w.id);
+test('composerOnglet : un sport sans onglet à lui (aviron) met l\'objectif en premier, puis les widgets valables pour tous', () => {
+  const ids = composerOnglet(compositionSport(['course', 'velo']), 'aviron').map((w) => w.id);
   assert.equal(ids[0], 'objectif');
-  assert.ok(ids.indexOf('puissance') < ids.indexOf('forme'), 'les widgets de vélo passent avant les universels');
-  assert.equal(ids.includes('predictions'), false);
+  assert.ok(ids.includes('forme') && ids.includes('dernieres'));
+  assert.equal(ids.includes('predictions') || ids.includes('puissance'), false, 'aucun widget d\'un autre sport');
 });
 
 test('estPertinent : l\'onglet Trail voit les widgets de trail ET de course, Course ne voit pas ceux de trail', () => {
   assert.ok(estPertinent('prepatrail', ['trail']) && estPertinent('predictions', ['trail']));
   assert.equal(estPertinent('prepatrail', ['course']), false);
   assert.equal(estPertinent('prepatrail', ['velo']), false);
+});
+
+test('estPertinent : VTT voit les widgets de vélo ET de VTT, Vélo ne voit pas ceux de VTT', () => {
+  assert.ok(estPertinent('vttterrain', ['vtt']) && estPertinent('puissance', ['vtt']) && estPertinent('kmvelo', ['vtt']));
+  assert.equal(estPertinent('vttterrain', ['velo']), false);
+  assert.equal(estPertinent('vttterrain', ['course']), false);
 });
 
 test('estPertinent : Triathlon voit natation, vélo et course, Duathlon pas la natation', () => {
