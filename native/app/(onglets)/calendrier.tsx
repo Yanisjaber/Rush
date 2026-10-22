@@ -8,6 +8,7 @@ import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
 import { Bloc } from '@/components/Bloc';
 import { Bouton } from '@/components/Bouton';
+import { ApercuCycle } from '@/components/ApercuCycle';
 import { FeuilleAjout } from '@/components/FeuilleAjout';
 import { FeuilleNote } from '@/components/FeuilleNote';
 import { SelecteurMois } from '@/components/SelecteurMois';
@@ -23,7 +24,7 @@ import { avecAlpha, espace, rayon } from '@/theme/couleurs';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
-import type { Note } from '@/data/types';
+import type { Cycle, Note } from '@/data/types';
 
 const nomSport = (sport: string) => SPORTS[familleAffichage(sport) as CleSport]?.court ?? SPORTS.autre.court;
 const BARRE_ONGLETS = 72;
@@ -382,6 +383,7 @@ function Detail({ jour }: { jour: JourGrille }) {
   const p = usePalette();
   const [ajout, setAjout] = useState(false); // la feuille du « + »
   const [noteOuverte, setNoteOuverte] = useState<Note | null>(null); // la note qu'on modifie
+  const [cycleOuvert, setCycleOuvert] = useState<Cycle | null>(null); // le cycle qu'on regarde
   const { basculerRepos } = useAjouts();
   const [erreurRepos, setErreurRepos] = useState('');
   // Ce que le jour pèse, d'un coup d'œil : temps fait, charge, temps prévu (en pastilles, comme le haut du calendrier)
@@ -493,9 +495,9 @@ function Detail({ jour }: { jour: JourGrille }) {
         return (
           <Pressable
             key={c.id}
-            onPress={() => router.push({ pathname: '/cycle', params: { id: c.id } })}
+            onPress={() => setCycleOuvert(c)}
             accessibilityRole="button"
-            accessibilityLabel={`Cycle ${c.name}, jour ${av.jour} sur ${av.total}`}
+            accessibilityLabel={`Cycle ${c.name}, jour ${av.jour} sur ${av.total}. Voir`}
             style={styles.cycleAvancement}
           >
             <View style={styles.cycleLigne}>
@@ -528,6 +530,15 @@ function Detail({ jour }: { jour: JourGrille }) {
           ))}
       <FeuilleAjout ouvert={ajout} jour={jour.iso} titre={dateLongue(jour.iso)} onFermer={() => setAjout(false)} />
       <FeuilleNote note={noteOuverte} onFermer={() => setNoteOuverte(null)} />
+      <ApercuCycle
+        cycle={cycleOuvert}
+        jour={jour.iso}
+        onFermer={() => setCycleOuvert(null)}
+        onModifier={(c) => {
+          setCycleOuvert(null);
+          router.push({ pathname: '/cycle', params: { id: c.id } });
+        }}
+      />
     </Bloc>
   );
 }

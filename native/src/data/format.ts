@@ -82,6 +82,12 @@ export function formatNombre(n: unknown): string {
   return Math.round(Number(n)).toLocaleString('fr-FR').replace(/[\u202f\u00a0]/g, '\u00a0');
 }
 
+/** « ven. 23 oct. » pour un jour, « du ven. 23 oct. au dim. 25 oct. » pour une période (dates AAAA-MM-JJ). */
+export function periodeCourte(de: string, a: string): string {
+  const court = (iso: string) => new Date(`${String(iso).slice(0, 10)}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+  return String(de).slice(0, 10) === String(a).slice(0, 10) ? court(de) : `du ${court(de)} au ${court(a)}`;
+}
+
 /** Une distance dans l'unité de son sport : en natation tout est en mètres (2.4 km → « 2 400 m »), ailleurs en kilomètres (7.4 → « 7,4 km »). */
 export function formatDistanceSport(km: number | null | undefined, famille: string): string {
   const v = Number(km);

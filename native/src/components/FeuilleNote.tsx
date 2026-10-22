@@ -6,6 +6,7 @@ import { ChoixCouleur, PastillesChoix } from '@/components/ChampsFeuille';
 import { SelecteurDate } from '@/components/SelecteurDate';
 import { PALETTE_NOTE, TEXTE_MAX_NOTE, TYPES_NOTE, validerNote, type FormulaireNote } from '@/data/ajouts';
 import { couleurNote, libelleNote } from '@/data/annotations';
+import { periodeCourte } from '@/data/format';
 import { useAjouts } from '@/hooks/useAjouts';
 import { espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
@@ -23,12 +24,6 @@ const versFormulaire = (n: Note): FormulaireNote => ({
 });
 
 const NOM_TYPE: Record<string, string> = { texte: 'Note', maladie: 'Maladie', blessure: 'Blessure' };
-
-/** « ven. 23 oct. » pour un jour, « du ven. 23 oct. au dim. 25 oct. » pour une période. */
-const periode = (de: string, a: string): string => {
-  const court = (iso: string) => new Date(`${String(iso).slice(0, 10)}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
-  return String(de).slice(0, 10) === String(a).slice(0, 10) ? court(de) : `du ${court(de)} au ${court(a)}`;
-};
 
 export function FeuilleNote({ note, onFermer }: { note: Note | null; onFermer: () => void }) {
   const p = usePalette();
@@ -95,7 +90,7 @@ export function FeuilleNote({ note, onFermer }: { note: Note | null; onFermer: (
                 {NOM_TYPE[note.type] ?? 'Note'}
               </Text>
             </View>
-            <Text style={[typo.petit, { color: p.texteDoux }]}>{periode(note.from_date, note.to_date)}</Text>
+            <Text style={[typo.petit, { color: p.texteDoux }]}>{periodeCourte(note.from_date, note.to_date)}</Text>
             <ScrollView style={{ maxHeight: 220, flexGrow: 0 }} showsVerticalScrollIndicator={false}>
               <Text selectable style={[typo.corps, { color: p.texte }]}>
                 {libelleNote(note)}
