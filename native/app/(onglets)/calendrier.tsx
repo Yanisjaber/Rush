@@ -182,12 +182,12 @@ function Fleche({ sens, onPress }: { sens: -1 | 1; onPress: () => void }) {
   );
 }
 
+// La légende ne s'affiche plus : elle sert seulement aux lecteurs d'écran (« 35 séances »)
 function Carte({ valeur, legende }: { valeur: string; legende: string }) {
   const p = usePalette();
   return (
     <View accessible accessibilityLabel={`${valeur} ${legende}`} style={[styles.carte, { backgroundColor: p.surface }]}>
       <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.carteValeur, { color: p.texte }]}>{valeur}</Text>
-      <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>{legende}</Text>
     </View>
   );
 }
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
   chevron: { width: 12, height: 12, borderTopWidth: 2.5, borderRightWidth: 2.5 },
   titreMois: { flex: 1, textAlign: 'center' },
   cartes: { flexDirection: 'row', gap: 6 },
-  carte: { flex: 1, borderRadius: rayon.base, paddingHorizontal: 10, paddingVertical: 10, gap: 2 },
+  carte: { flex: 1, minHeight: 56, borderRadius: rayon.base, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   carteValeur: { fontFamily: police.titre800, fontSize: 22, lineHeight: 26, letterSpacing: -0.4, fontVariant: ['tabular-nums'] },
   boutons: { flexDirection: 'row', gap: 8 },
   cycleLigne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
