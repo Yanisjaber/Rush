@@ -1,6 +1,6 @@
 import { FondDegrade } from '@/components/FondDegrade';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
 import { Bloc } from '@/components/Bloc';
 import { Bouton } from '@/components/Bouton';
+import { SelecteurMois } from '@/components/SelecteurMois';
 import { chargeJour, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
 import { couleurNote, libelleNote } from '@/data/annotations';
 import { familleAffichage, garderSeance } from '@/data/familles';
@@ -39,6 +40,15 @@ export default function Calendrier() {
   const aujourdhui = dateIsoLocale(maintenant);
   const [cible, setCible] = useState({ annee: maintenant.getFullYear(), mois: maintenant.getMonth() });
   const [choisi, setChoisi] = useState(aujourdhui);
+  const [moisOuvert, setMoisOuvert] = useState(false);
+  const [basTitre, setBasTitre] = useState(0);
+  const titreRef = useRef<ComponentRef<typeof View>>(null);
+  // On mesure où est le titre pour poser le panneau juste dessous
+  const ouvrirMois = () =>
+    titreRef.current?.measureInWindow((_x, y, _w, h) => {
+      setBasTitre(y + h);
+      setMoisOuvert(true);
+    });
   const { donnees, chargement, erreur, actualisation, recharger } = useDonneesCalendrier(cible.annee, cible.mois);
 
   const grille = useMemo(() => {
@@ -90,25 +100,30 @@ export default function Calendrier() {
       >
         <View style={styles.navigation}>
           <Fleche sens={-1} onPress={() => setCible((c) => decalerMois(c.annee, c.mois, -1))} />
-          {/* Sur un autre mois, le titre est aussi le bouton de retour à aujourd'hui (titre suivi de l'icône ↺) */}
+          {/* Le titre ouvre le calendrier des mois ; sur un autre mois, l'icône ↺ à côté ramène à aujourd'hui */}
           <View style={styles.titreZone}>
-            {estMoisCourant ? (
+            <Pressable
+              ref={titreRef}
+              onPress={ouvrirMois}
+              accessibilityRole="button"
+              accessibilityLabel={`${titre}. Choisir un mois`}
+              style={styles.titreBouton}
+            >
               <Text accessibilityRole="header" accessibilityLiveRegion="polite" style={[typo.titre2, { color: p.texte }]}>
                 {titre}
               </Text>
-            ) : (
+            </Pressable>
+            {!estMoisCourant ? (
               <Pressable
                 onPress={() => setCible({ annee: maintenant.getFullYear(), mois: maintenant.getMonth() })}
                 accessibilityRole="button"
-                accessibilityLabel={`${titre}. Revenir à aujourd'hui`}
-                style={styles.titreBouton}
+                accessibilityLabel="Revenir à aujourd'hui"
+                hitSlop={8}
+                style={[styles.retourIcone, { borderColor: p.contourChamp }]}
               >
-                <Text accessibilityLiveRegion="polite" style={[typo.titre2, { color: p.texte }]}>{titre}</Text>
-                <View style={[styles.retourIcone, { borderColor: p.contourChamp }]}>
-                  <Text style={[styles.retourFleche, { color: p.texteDoux }]}>↺</Text>
-                </View>
+                <Text style={[styles.retourFleche, { color: p.texteDoux }]}>↺</Text>
               </Pressable>
-            )}
+            ) : null}
           </View>
           <Fleche sens={1} onPress={() => setCible((c) => decalerMois(c.annee, c.mois, 1))} />
         </View>
@@ -164,6 +179,17 @@ export default function Calendrier() {
           </>
         )}
       </ScrollView>
+      <SelecteurMois
+        ouvert={moisOuvert}
+        onFermer={() => setMoisOuvert(false)}
+        affiche={cible}
+        aujourdhui={{ annee: maintenant.getFullYear(), mois: maintenant.getMonth() }}
+        haut={basTitre}
+        onChoisir={(annee, mois) => {
+          setCible({ annee, mois });
+          setMoisOuvert(false);
+        }}
+      />
     </View>
   );
 }
@@ -444,7 +470,7 @@ const styles = StyleSheet.create({
   navigation: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   fleche: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   chevron: { width: 12, height: 12, borderTopWidth: 2.5, borderRightWidth: 2.5 },
-  titreZone: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  titreZone: { flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   // Titre sur un autre mois : au moins 44 pt de haut pour le toucher, sans fond
   titreBouton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8 },
   retourIcone: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
