@@ -39,7 +39,7 @@ export function BarreSports() {
         accessibilityLabel="Ajouter ou retirer un sport"
         style={({ pressed }) => [styles.plus, { opacity: pressed ? 0.7 : 1 }]}
       >
-        <Text style={[styles.plusTexte, { color: p.texte }]}>+</Text>
+        <Text style={[styles.plusTexte, { color: p.texte }, ouvert && styles.plusOuvert]}>+</Text>
       </Pressable>
       <MenuSports ouvert={ouvert} onFermer={() => setOuvert(false)} haut={haut} />
     </View>
@@ -71,6 +71,8 @@ const styles = StyleSheet.create({
   barre: { borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'flex-end' },
   plus: { width: 48, height: 44, alignItems: 'center', justifyContent: 'center' },
   plusTexte: { fontFamily: police.titre600, fontSize: 28, lineHeight: 32 },
+  // Menu ouvert : le « + » tourne d'un huitième de tour et devient une croix
+  plusOuvert: { transform: [{ rotate: '45deg' }] },
   rangee: { gap: 22, paddingLeft: 18, paddingRight: 6 },
   // 44 pt de haut : la cible tactile minimale ; le trait chevauche le filet de la barre
   onglet: { height: 44, justifyContent: 'center' },
