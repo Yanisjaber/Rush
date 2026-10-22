@@ -12,8 +12,8 @@ const date = new Date(2026, 9, 19);
 
 test('donneesDemoAccueil : toutes les parties de l\'enveloppe sont présentes', () => {
   const d = donneesDemoAccueil(date);
-  assert.equal(d.seances.length, 150);
-  assert.equal(d.dernieres.length, 150);
+  assert.equal(d.seances.length, 162);
+  assert.equal(d.dernieres.length, 162);
   assert.equal(d.metriques.length, 90);
   assert.equal(d.puissance.length, 8);
   assert.equal(d.force.programmes.length, 3);
@@ -33,7 +33,7 @@ const vide = (): DonneesAccueil => ({
 test('famillesDe : les sports se déduisent des séances, de la force et du Hyrox', () => {
   assert.deepEqual(famillesDe(vide()), []);
   const demo = donneesDemoAccueil(date);
-  assert.deepEqual(new Set(famillesDe(demo)), new Set(['course', 'trail', 'velo', 'vtt', 'natation', 'triathlon', 'duathlon', 'muscu', 'hyrox', 'crossfit']));
+  assert.deepEqual(new Set(famillesDe(demo)), new Set(['course', 'trail', 'velo', 'vtt', 'natation', 'triathlon', 'duathlon', 'muscu', 'hyrox', 'crossfit', 'ski']));
 });
 
 test('famillesDe : le trail et le VTT ont leur pastille, « autre » n\'a pas d\'onglet', () => {

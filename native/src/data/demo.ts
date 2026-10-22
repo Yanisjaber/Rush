@@ -175,6 +175,42 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
       category: 'entrainement',
     });
   }
+  // Du ski à roulettes environ toutes les semaines (l'entraînement d'automne) et quelques séances en tunnel de ski de fond, qui a de la neige toute l'année
+  const skiDemo = [
+    { i: 6, nom: 'Roulettes classique', sport: 'RollerSki', km: 24, dPlus: 220, min: 95 },
+    { i: 13, nom: 'Roulettes skating', sport: 'RollerSki', km: 28, dPlus: 310, min: 105 },
+    { i: 20, nom: 'Roulettes intervalles', sport: 'RollerSki', km: 18, dPlus: 180, min: 70 },
+    { i: 27, nom: 'Roulettes longue', sport: 'RollerSki', km: 34, dPlus: 420, min: 125 },
+    { i: 35, nom: 'Roulettes classique', sport: 'RollerSki', km: 22, dPlus: 190, min: 90 },
+    { i: 42, nom: 'Roulettes skating', sport: 'RollerSki', km: 26, dPlus: 280, min: 100 },
+    { i: 49, nom: 'Roulettes côtes', sport: 'RollerSki', km: 20, dPlus: 450, min: 85 },
+    { i: 57, nom: 'Roulettes longue', sport: 'RollerSki', km: 32, dPlus: 380, min: 120 },
+    { i: 64, nom: 'Roulettes classique', sport: 'RollerSki', km: 21, dPlus: 200, min: 88 },
+    { i: 71, nom: 'Tunnel de ski de fond', sport: 'NordicSki', km: 14, dPlus: 90, min: 70 },
+    { i: 76, nom: 'Tunnel de ski de fond', sport: 'NordicSki', km: 12, dPlus: 70, min: 62 },
+    { i: 81, nom: 'Tunnel de ski de fond', sport: 'NordicSki', km: 16, dPlus: 110, min: 78 },
+  ];
+  for (const k of skiDemo) {
+    if (k.i >= nbJours) continue;
+    const iso = dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - k.i));
+    const tss = Math.round(k.min * 0.7);
+    quotidien[iso] = (quotidien[iso] || 0) + tss;
+    seances.push({
+      id: `demo-ski-${iso}`,
+      name: k.nom,
+      sport: k.sport,
+      start_date_local: `${iso}T17:30:00+00:00`,
+      moving_time: k.min * 60,
+      distance_km: k.km,
+      total_elevation_gain: k.dPlus,
+      avg_heartrate: 148 + ((k.i * 5) % 18),
+      ftp_at_time: null,
+      avg_watts: null,
+      np: null,
+      tss,
+      category: 'entrainement',
+    });
+  }
   // Des séances de CrossFit et de HIIT environ une et demie par semaine (de 25 à 60 minutes, cardio de 75 à 90 % de la FC max)
   const wodDemo = [
     { i: 1, nom: 'Fran', sport: 'Crossfit', min: 28, fc: 172 }, { i: 5, nom: 'AMRAP 20', sport: 'Crossfit', min: 45, fc: 160 },
@@ -357,6 +393,7 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
     objectifs: [
       { id: 'demo-hyrox-open', name: 'Hyrox Open', date: plusJours(27), sport: 'Hyrox', km: null, d_plus: null, priority: 'A', duration: 70, category: 'competition' },
       { id: 'demo-ramonville', name: 'Ronde de Ramonville', date: '2026-12-13', sport: 'Run', km: 10.15, d_plus: 42, priority: 'A', duration: 40, category: 'competition' },
+      { id: 'demo-transju', name: 'La Transjurassienne', date: plusJours(110), sport: 'NordicSki', km: 50, d_plus: 700, priority: 'A', duration: 300, category: 'competition' },
       { id: 'demo-crossfit-throwdown', name: 'Throwdown de Toulouse', date: plusJours(40), sport: 'Crossfit', km: null, d_plus: null, priority: 'B', duration: 180, category: 'competition' },
       { id: 'demo-vtt-cretes', name: 'Marathon VTT des Crêtes', date: plusJours(56), sport: 'MountainBikeRide', km: 60, d_plus: 1900, priority: 'B', duration: 330, category: 'competition' },
       { id: 'demo-traversee', name: 'Traversée du lac d\'Annecy', date: plusJours(70), sport: 'Swim', km: 4, d_plus: null, priority: 'B', duration: 110, category: 'competition' },
