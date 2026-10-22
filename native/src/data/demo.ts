@@ -87,6 +87,39 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
     tss: 35,
     category: 'entrainement',
   });
+  // Des séances Hyrox environ toutes les semaines (stations, demi-simulations, runs), pour que le suivi Hyrox ait quelque chose à montrer
+  const hyroxDemo = [
+    { i: 5, nom: 'Hyrox, stations', min: 60, tss: 55 },
+    { i: 12, nom: 'Hyrox, demi-simulation', min: 70, tss: 68 },
+    { i: 19, nom: 'Hyrox, runs et wall balls', min: 55, tss: 52 },
+    { i: 26, nom: 'Hyrox, stations', min: 60, tss: 55 },
+    { i: 33, nom: 'Hyrox, demi-simulation', min: 75, tss: 72 },
+    { i: 40, nom: 'Hyrox, stations', min: 55, tss: 50 },
+    { i: 47, nom: 'Hyrox, runs et wall balls', min: 50, tss: 48 },
+    { i: 54, nom: 'Hyrox, demi-simulation', min: 70, tss: 66 },
+    { i: 61, nom: 'Hyrox, stations', min: 55, tss: 52 },
+    { i: 68, nom: 'Hyrox, demi-simulation', min: 65, tss: 62 },
+  ];
+  for (const h of hyroxDemo) {
+    if (h.i >= nbJours) continue;
+    const iso = dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - h.i));
+    quotidien[iso] = (quotidien[iso] || 0) + h.tss;
+    seances.push({
+      id: `demo-hyrox-${iso}`,
+      name: h.nom,
+      sport: 'Hyrox',
+      start_date_local: `${iso}T19:00:00+00:00`,
+      moving_time: h.min * 60,
+      distance_km: null,
+      total_elevation_gain: null,
+      avg_heartrate: 148 + ((h.i * 3) % 12),
+      ftp_at_time: null,
+      avg_watts: null,
+      np: null,
+      tss: h.tss,
+      category: 'entrainement',
+    });
+  }
   seances.sort((a, b) => (a.start_date_local < b.start_date_local ? 1 : -1));
 
   // CTL (42 jours) et ATL (7 jours) : moyennes exponentielles de la charge quotidienne

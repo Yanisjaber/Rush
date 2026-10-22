@@ -18,7 +18,11 @@ import { WidgetForme } from './WidgetForme';
 import { WidgetGroupes } from './WidgetGroupes';
 import { WidgetHyroxAllure } from './WidgetHyroxAllure';
 import { WidgetHyroxDossard } from './WidgetHyroxDossard';
+import { WidgetHyroxDerive } from './WidgetHyroxDerive';
+import { WidgetHyroxEvolution } from './WidgetHyroxEvolution';
 import { WidgetHyroxGains } from './WidgetHyroxGains';
+import { WidgetHyroxHebdo } from './WidgetHyroxHebdo';
+import { WidgetHyroxRunsStations } from './WidgetHyroxRunsStations';
 import { WidgetHyroxTest } from './WidgetHyroxTest';
 import { WidgetKmHebdo } from './WidgetKmHebdo';
 import { WidgetKmVelo } from './WidgetKmVelo';
@@ -76,6 +80,10 @@ export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   hyroxtest: WidgetHyroxTest,
   hyroxallure: WidgetHyroxAllure,
   hyroxgains: WidgetHyroxGains,
+  hyroxhebdo: WidgetHyroxHebdo,
+  hyroxevolution: WidgetHyroxEvolution,
+  hyroxrunsstations: WidgetHyroxRunsStations,
+  hyroxderive: WidgetHyroxDerive,
   chargeforce: WidgetChargeForce,
 };
 
