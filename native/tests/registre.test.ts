@@ -120,6 +120,47 @@ test('estPertinent : l\'onglet Trail voit les widgets de trail ET de course, Cou
   assert.equal(estPertinent('prepatrail', ['velo']), false);
 });
 
+test('estPertinent : Triathlon voit natation, vélo et course, Duathlon pas la natation', () => {
+  for (const id of ['natvolume', 'puissance', 'predictions', 'tribricks']) assert.ok(estPertinent(id, ['triathlon']), `triathlon : ${id}`);
+  assert.equal(estPertinent('natvolume', ['duathlon']), false);
+  assert.ok(estPertinent('puissance', ['duathlon']) && estPertinent('predictions', ['duathlon']) && estPertinent('tribricks', ['duathlon']));
+  assert.equal(estPertinent('tribricks', ['course']), false);
+});
+
+test('LISTES_PAR_DEFAUT : chaque liste ne contient que des widgets du sport ou pour tous, des tailles permises, sans doublon', () => {
+  for (const [sport, liste] of Object.entries(LISTES_PAR_DEFAUT)) {
+    assert.equal(new Set(liste.map((w) => w.id)).size, liste.length, sport);
+    for (const w of liste) {
+      assert.ok(estPertinent(w.id, [sport]), `${sport} : ${w.id}`);
+      assert.ok((WIDGETS as Record<string, { tailles: readonly string[] }>)[w.id].tailles.includes(w.taille), `${sport} : ${w.id} ${w.taille}`);
+    }
+  }
+  // Une copie à chaque appel : modifier le résultat ne change pas la liste par défaut
+  composerOnglet([], 'course')[0].taille = 'xs';
+  assert.equal(LISTES_PAR_DEFAUT.course[0].taille, 'm');
+});
+
+test('TAILLES_ONGLET : chaque onglet fixe donne une taille permise à tous ses widgets', () => {
+  for (const sport of ['muscu', 'hyrox']) {
+    assert.deepEqual(Object.keys(TAILLES_ONGLET[sport]).sort(), [...ORDRE_ONGLET[sport]].sort(), sport);
+    for (const id of ORDRE_ONGLET[sport]) assert.ok((WIDGETS as Record<string, { tailles: readonly string[] }>)[id].tailles.includes(TAILLES_ONGLET[sport][id]), `${sport} : ${id}`);
+  }
+});
+
+test('Toutes les dispositions par défaut : les tuiles S vont par deux (aucune ne reste seule sur sa ligne)', () => {
+  for (const sport of ['muscu', 'hyrox', ...Object.keys(LISTES_PAR_DEFAUT)]) {
+    const tailles = composerOnglet([], sport).map((w) => w.taille);
+    let suite = 0;
+    for (const t of [...tailles, 'm']) {
+      if (t === 's') suite++;
+      else {
+        assert.equal(suite % 2, 0, `${sport} : une suite de tuiles S doit être paire`);
+        suite = 0;
+      }
+    }
+  }
+});
+
 test('construireContexte : « Tous » ne filtre rien, un sport filtre séances et séances prévues', () => {
   const donnees = donneesDemoAccueil(new Date(2026, 9, 19));
   const tout = construireContexte(donnees, 'tout');

@@ -413,7 +413,7 @@ export const ORDRE_ONGLET: Record<string, readonly string[]> = {
   hyrox: ['hyroxdossard', 'semaine', 'hyroxevolution', 'hyroxhebdo', 'hyroxtest', 'hyroxrunsstations', 'hyroxderive', 'hyroxallure', 'hyroxgains', 'chargeforce', 'dernieres'],
 };
 
-/** La liste par défaut d'un onglet de sport libre (Course, Trail, Vélo, Natation) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course et Vélo : les dispositions de Yanis ; Trail : pensée pour l'usage. */
+/** La liste par défaut d'un onglet de sport libre (Course, Trail, Vélo, Natation, Triathlon, Duathlon) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course et Vélo : les dispositions de Yanis ; Trail, Triathlon et Duathlon : pensées pour l'usage. */
 export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
   course: [
     { id: 'kmhebdo', taille: 'm' },
@@ -436,6 +436,31 @@ export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
     { id: 'kmeffort', taille: 's' },
     { id: 'charge', taille: 'l' },
     { id: 'meilleurestrail', taille: 'm' },
+    { id: 'avenir', taille: 's' },
+    { id: 'forme', taille: 's' },
+    { id: 'dernieres', taille: 'm' },
+  ],
+  // Triathlon et duathlon : la semaine (toutes disciplines) en héros, puis la prochaine course, ce qui est délaissé et les enchaînements, la répartition du temps, la charge, les repères
+  triathlon: [
+    { id: 'semaine', taille: 'm' },
+    { id: 'objectif', taille: 'xs' },
+    { id: 'trifraicheur', taille: 's' },
+    { id: 'tribricks', taille: 's' },
+    { id: 'triequilibre', taille: 'l' },
+    { id: 'charge', taille: 'm' },
+    { id: 'trireperes', taille: 'm' },
+    { id: 'avenir', taille: 's' },
+    { id: 'forme', taille: 's' },
+    { id: 'dernieres', taille: 'm' },
+  ],
+  duathlon: [
+    { id: 'semaine', taille: 'm' },
+    { id: 'objectif', taille: 'xs' },
+    { id: 'trifraicheur', taille: 's' },
+    { id: 'tribricks', taille: 's' },
+    { id: 'triequilibre', taille: 'l' },
+    { id: 'charge', taille: 'm' },
+    { id: 'trireperes', taille: 'm' },
     { id: 'avenir', taille: 's' },
     { id: 'forme', taille: 's' },
     { id: 'dernieres', taille: 'm' },
@@ -491,13 +516,20 @@ export function existe(id: unknown): id is IdWidget {
   return typeof id === 'string' && Object.hasOwn(WIDGETS, id);
 }
 
+/** Les onglets qui regroupent plusieurs sports : les widgets de tous ces sports leur conviennent. */
+const SPORTS_VOISINS: Record<string, readonly string[]> = {
+  trail: ['course', 'trail'],
+  triathlon: ['triathlon', 'natation', 'velo', 'course'],
+  duathlon: ['duathlon', 'velo', 'course'],
+};
+
 /** Un widget est-il pertinent pour au moins un des sports de l'utilisateur ? */
 export function estPertinent(id: string, familles: readonly string[]): boolean {
   if (!existe(id)) return false;
   const def = definition(id);
   if (def.sports === 'tous') return true;
-  // Un onglet Trail montre les widgets de course ET ceux de trail ; un onglet VTT ceux du vélo
-  const dessous = familles.flatMap((f) => (f === 'trail' ? ['course', 'trail'] : [familleDesWidgets(f)]));
+  // Un onglet Trail montre les widgets de course ET de trail, Triathlon et Duathlon ceux de leurs disciplines ; un onglet VTT ceux du vélo
+  const dessous = familles.flatMap((f) => SPORTS_VOISINS[f] ?? [familleDesWidgets(f)]);
   return def.sports.some((s) => dessous.includes(s));
 }
 
@@ -643,7 +675,7 @@ export function normaliser(brut: unknown): Disposition | null {
 }
 
 /** Les onglets de sport dont la bibliothèque reste ouverte : on peut y ajouter n'importe quel widget qui concerne le sport. */
-export const SPORTS_LIBRES: string[] = ['course', 'trail', 'velo', 'natation'];
+export const SPORTS_LIBRES: string[] = ['course', 'trail', 'velo', 'natation', 'triathlon', 'duathlon'];
 /** Les onglets de sport qui ont leur propre composition modifiable (Muscu, Hyrox, et les sports libres). */
 export const ONGLETS_PERSONNALISABLES: string[] = [...Object.keys(ORDRE_ONGLET), ...SPORTS_LIBRES];
 /** Onglets dont la bibliothèque est limitée à leurs propres widgets (ceux de ORDRE_ONGLET). */
