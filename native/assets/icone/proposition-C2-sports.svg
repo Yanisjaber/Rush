@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Rush — cinq sports">
+  <defs>
+    <!-- Coupures nettes (pas de fondu) : un segment de la courbe = un sport -->
+    <linearGradient id="sports" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1024" y2="0">
+      <stop offset="0" stop-color="#ff7a33"/><stop offset="0.3125" stop-color="#ff7a33"/>
+      <stop offset="0.3125" stop-color="#4f8cff"/><stop offset="0.4297" stop-color="#4f8cff"/>
+      <stop offset="0.4297" stop-color="#22d3ee"/><stop offset="0.6152" stop-color="#22d3ee"/>
+      <stop offset="0.6152" stop-color="#ff5a4f"/><stop offset="0.7129" stop-color="#ff5a4f"/>
+      <stop offset="0.7129" stop-color="#ffd60a"/><stop offset="1" stop-color="#ffd60a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="#0c0d10"/>
+  <polyline fill="none" stroke="url(#sports)" stroke-width="76" stroke-linejoin="miter" stroke-miterlimit="10"
+    points="140,790 320,560 440,650 630,330 730,450 890,230"/>
+</svg>

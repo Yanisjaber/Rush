@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Rush">
+  <!-- Fond : le noir de l'app, plein cadre, sans transparence (exigence App Store) -->
+  <rect width="1024" height="1024" fill="#0c0d10"/>
+  <defs>
+    <clipPath id="dossard"><rect x="202" y="162" width="620" height="700" rx="26"/></clipPath>
+  </defs>
+  <!-- Le dossard, incliné de 8° -->
+  <g transform="rotate(-8 512 512)">
+    <rect x="202" y="162" width="620" height="700" rx="26" fill="#f3f2ee"/>
+    <!-- Liseré : les cinq sports (course, vélo, natation, muscu, hybride) -->
+    <g clip-path="url(#dossard)">
+      <rect x="202" y="162" width="124" height="58" fill="#ff7a33"/>
+      <rect x="326" y="162" width="124" height="58" fill="#4f8cff"/>
+      <rect x="450" y="162" width="124" height="58" fill="#22d3ee"/>
+      <rect x="574" y="162" width="124" height="58" fill="#ff5a4f"/>
+      <rect x="698" y="162" width="124" height="58" fill="#ffd60a"/>
+    </g>
+    <!-- Quatre points d'attache : ils percent le dossard (couleur du fond) -->
+    <g fill="#0c0d10">
+      <circle cx="246" cy="266" r="21"/>
+      <circle cx="778" cy="266" r="21"/>
+      <circle cx="246" cy="818" r="21"/>
+      <circle cx="778" cy="818" r="21"/>
+    </g>
+    <!-- Le R (tracé, aucune police) -->
+    <path transform="translate(-19 0)" fill="#0c0d10" fill-rule="evenodd"
+      d="M340 300H560C650 300 716 358 716 440C716 506 676 552 616 570L722 760H606L510 584H452V760H340Z
+         M452 392V492H550C592 492 606 472 606 442C606 412 592 392 550 392Z"/>
+  </g>
+</svg>

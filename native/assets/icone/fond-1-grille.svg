@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Rush — grille">
+  <rect width="1024" height="1024" fill="#0c0d10"/>
+  <g stroke="#1b1e25" stroke-width="3">
+    <line x1="64" y1="0" x2="64" y2="1024"/><line x1="0" y1="64" x2="1024" y2="64"/>
+    <line x1="128" y1="0" x2="128" y2="1024"/><line x1="0" y1="128" x2="1024" y2="128"/>
+    <line x1="192" y1="0" x2="192" y2="1024"/><line x1="0" y1="192" x2="1024" y2="192"/>
+    <line x1="256" y1="0" x2="256" y2="1024"/><line x1="0" y1="256" x2="1024" y2="256"/>
+    <line x1="320" y1="0" x2="320" y2="1024"/><line x1="0" y1="320" x2="1024" y2="320"/>
+    <line x1="384" y1="0" x2="384" y2="1024"/><line x1="0" y1="384" x2="1024" y2="384"/>
+    <line x1="448" y1="0" x2="448" y2="1024"/><line x1="0" y1="448" x2="1024" y2="448"/>
+    <line x1="512" y1="0" x2="512" y2="1024"/><line x1="0" y1="512" x2="1024" y2="512"/>
+    <line x1="576" y1="0" x2="576" y2="1024"/><line x1="0" y1="576" x2="1024" y2="576"/>
+    <line x1="640" y1="0" x2="640" y2="1024"/><line x1="0" y1="640" x2="1024" y2="640"/>
+    <line x1="704" y1="0" x2="704" y2="1024"/><line x1="0" y1="704" x2="1024" y2="704"/>
+    <line x1="768" y1="0" x2="768" y2="1024"/><line x1="0" y1="768" x2="1024" y2="768"/>
+    <line x1="832" y1="0" x2="832" y2="1024"/><line x1="0" y1="832" x2="1024" y2="832"/>
+    <line x1="896" y1="0" x2="896" y2="1024"/><line x1="0" y1="896" x2="1024" y2="896"/>
+    <line x1="960" y1="0" x2="960" y2="1024"/><line x1="0" y1="960" x2="1024" y2="960"/>
+  </g>
+  <g transform="translate(78.8 82.8) scale(0.8403)">
+    <polygon fill="#ff7a33" stroke="#ff7a33" stroke-width="1.79" stroke-linejoin="round" points="181.0,822.0 329.6,632.2 310.4,487.8 99.0,758.0"/>
+    <polygon fill="#4f8cff" stroke="#4f8cff" stroke-width="1.79" stroke-linejoin="round" points="329.6,632.2 455.1,726.4 424.9,573.6 310.4,487.8"/>
+    <polygon fill="#22d3ee" stroke="#22d3ee" stroke-width="1.79" stroke-linejoin="round" points="455.1,726.4 637.2,419.8 622.8,240.2 424.9,573.6"/>
+    <polygon fill="#ff5a4f" stroke="#ff5a4f" stroke-width="1.79" stroke-linejoin="round" points="637.2,419.8 732.8,534.6 727.2,365.4 622.8,240.2"/>
+    <polygon fill="#ffd60a" stroke="#ffd60a" stroke-width="1.79" stroke-linejoin="round" points="732.8,534.6 932.1,260.6 847.9,199.4 727.2,365.4"/>
+  </g>
+</svg>

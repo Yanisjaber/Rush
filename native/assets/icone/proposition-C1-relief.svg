@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Rush — relief">
+  <rect width="1024" height="1024" fill="#0c0d10"/>
+  <!-- Profil d'élévation plein : un relief de sortie (trail, col, vélo), pas une courbe de bourse -->
+  <polygon fill="#ff7a33" points="0,800 170,640 300,720 470,380 610,560 720,470 880,250 1024,420 1024,1024 0,1024"/>
+</svg>

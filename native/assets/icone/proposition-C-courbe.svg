@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Rush — courbe de charge">
+  <rect width="1024" height="1024" fill="#0c0d10"/>
+  <!-- Ligne de base -->
+  <line x1="140" y1="840" x2="890" y2="840" stroke="#272b35" stroke-width="10"/>
+  <!-- Courbe de charge qui monte, en dents de scie : un entraînement, pas une promesse -->
+  <polyline fill="none" stroke="#ff7a33" stroke-width="58" stroke-linejoin="miter" stroke-miterlimit="10"
+    points="140,790 320,560 440,650 630,330 730,450 890,230"/>
+  <!-- Le point d'arrivée -->
+  <circle cx="890" cy="230" r="54" fill="#f3f2ee"/>
+</svg>

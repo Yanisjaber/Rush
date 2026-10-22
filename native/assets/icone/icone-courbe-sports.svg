@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Rush">
+  <rect width="1024" height="1024" fill="#0c0d10"/>
+  <!-- Courbe de charge : un segment par sport (course, vélo, natation, muscu, hybride).
+       Chaque segment est un polygone ; les jonctions suivent la bissectrice, sans coupure en biais. -->
+  <g transform="translate(78.8 82.8) scale(0.8403)">
+    <polygon fill="#ff7a33" stroke="#ff7a33" stroke-width="1.79" stroke-linejoin="round" points="181.0,822.0 329.6,632.2 310.4,487.8 99.0,758.0"/>
+    <polygon fill="#4f8cff" stroke="#4f8cff" stroke-width="1.79" stroke-linejoin="round" points="329.6,632.2 455.1,726.4 424.9,573.6 310.4,487.8"/>
+    <polygon fill="#22d3ee" stroke="#22d3ee" stroke-width="1.79" stroke-linejoin="round" points="455.1,726.4 637.2,419.8 622.8,240.2 424.9,573.6"/>
+    <polygon fill="#ff5a4f" stroke="#ff5a4f" stroke-width="1.79" stroke-linejoin="round" points="637.2,419.8 732.8,534.6 727.2,365.4 622.8,240.2"/>
+    <polygon fill="#ffd60a" stroke="#ffd60a" stroke-width="1.79" stroke-linejoin="round" points="732.8,534.6 932.1,260.6 847.9,199.4 727.2,365.4"/>
+  </g>
+</svg>

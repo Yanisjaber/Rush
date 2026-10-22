@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Rush — élan">
+  <rect width="1024" height="1024" fill="#0c0d10"/>
+  <!-- Deux chevrons qui avancent : celui de derrière est l'élan, celui de devant est le sport -->
+  <polygon fill="#f3f2ee" points="217,260 337,260 607,512 337,764 217,764 487,512"/>
+  <polygon fill="#ff7a33" points="417,260 537,260 807,512 537,764 417,764 687,512"/>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Rush — R d'un seul trait">
+  <rect width="1024" height="1024" fill="#0c0d10"/>
+  <!-- Un seul trait anguleux : c'est à la fois la lettre R et une courbe d'effort -->
+  <polyline transform="translate(-20 0)" fill="none" stroke="#ff7a33" stroke-width="76" stroke-linejoin="miter" stroke-miterlimit="10"
+    points="330,800 330,240 600,240 720,330 720,430 600,520 330,520"/>
+  <polyline transform="translate(-20 0)" fill="none" stroke="#ff7a33" stroke-width="76" stroke-linejoin="miter" stroke-miterlimit="10"
+    points="560,520 740,800"/>
+</svg>

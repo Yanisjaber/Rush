@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Rush — affiche">
+  <rect width="1024" height="1024" fill="#ff7a33"/>
+  <!-- R géant qui déborde du cadre, découpé dans l'encre -->
+  <path transform="translate(-816 -813) scale(2.5)" fill="#0c0d10" fill-rule="evenodd"
+    d="M340 300H560C650 300 716 358 716 440C716 506 676 552 616 570L722 760H606L510 584H452V760H340Z
+       M452 392V492H550C592 492 606 472 606 442C606 412 592 392 550 392Z"/>
+</svg>
