@@ -43,6 +43,10 @@ import { WidgetRegularite } from './WidgetRegularite';
 import { WidgetSeanceDuJour } from './WidgetSeanceDuJour';
 import { WidgetSemaine } from './WidgetSemaine';
 import { WidgetTonnage } from './WidgetTonnage';
+import { WidgetTriBricks } from './WidgetTriBricks';
+import { WidgetTriEquilibre } from './WidgetTriEquilibre';
+import { WidgetTriFraicheur } from './WidgetTriFraicheur';
+import { WidgetTriReperes } from './WidgetTriReperes';
 import { WidgetVolume } from './WidgetVolume';
 import { WidgetWattsCardio } from './WidgetWattsCardio';
 import { WidgetZonesAllure } from './WidgetZonesAllure';
@@ -73,6 +77,10 @@ export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   kmeffort: WidgetKmEffort,
   prepatrail: WidgetPrepaTrail,
   meilleurestrail: WidgetMeilleuresTrail,
+  triequilibre: WidgetTriEquilibre,
+  trifraicheur: WidgetTriFraicheur,
+  tribricks: WidgetTriBricks,
+  trireperes: WidgetTriReperes,
   puissance: WidgetPuissance,
   natvolume: WidgetNatVolume,
   natallure: WidgetNatAllure,

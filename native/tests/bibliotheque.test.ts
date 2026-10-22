@@ -17,7 +17,9 @@ test('rangerBibliotheque : sans recherche, tous les widgets, rangés par sport p
 });
 
 test('rangerBibliotheque : la recherche ignore accents et casse, et cherche dans le nom, la description et la catégorie', () => {
-  assert.deepEqual(rangerBibliotheque(TOUS, 'VELO').map((r) => r.categorie), ['Vélo']);
+  const velo = rangerBibliotheque(TOUS, 'VELO').map((r) => r.categorie);
+  assert.equal(velo[0], 'Vélo'); // le rayon du sport d'abord, puis les widgets d'autres rayons qui en parlent (triathlon)
+  assert.ok(!velo.includes('Musculation') && !velo.includes('Hyrox'));
   assert.ok(rangerBibliotheque(TOUS, 'kilometres').flatMap((r) => r.ids).includes('kmhebdo'));
   assert.equal(rangerBibliotheque(TOUS, 'zzzz').length, 0);
 });
