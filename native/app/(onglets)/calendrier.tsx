@@ -99,10 +99,10 @@ export default function Calendrier() {
 
         {/* Les chiffres du mois en cartes : séances, temps, charge et, pour un sport qui en a une, son info principale (kilomètres ou séries, comme la colonne « Sem. ») */}
         <View style={styles.cartes}>
-          <Carte valeur={String(seancesDuMois.length)} legende={seancesDuMois.length > 1 ? 'séances' : 'séance'} />
+          <Carte valeur={String(seancesDuMois.length)} unite={seancesDuMois.length > 1 ? 'séances' : 'séance'} legende={seancesDuMois.length > 1 ? 'séances' : 'séance'} />
           <Carte valeur={formatDuree(tempsDuMois)} legende="de sport" />
-          <Carte valeur={chargeDuMois.toLocaleString('fr-FR')} legende="charge" />
-          {principaleDuMois ? <Carte valeur={nombre(principaleDuMois.valeur)} legende={UNITES[principaleDuMois.unite].dit} /> : null}
+          <Carte valeur={chargeDuMois.toLocaleString('fr-FR')} unite="pts" legende="points de charge" />
+          {principaleDuMois ? <Carte valeur={nombre(principaleDuMois.valeur)} unite={UNITES[principaleDuMois.unite].court} legende={UNITES[principaleDuMois.unite].dit} /> : null}
         </View>
         <View style={styles.boutons}>
           {!estMoisCourant ? (
@@ -182,12 +182,15 @@ function Fleche({ sens, onPress }: { sens: -1 | 1; onPress: () => void }) {
   );
 }
 
-// La légende ne s'affiche plus : elle sert seulement aux lecteurs d'écran (« 35 séances »)
-function Carte({ valeur, legende }: { valeur: string; legende: string }) {
+// Un chiffre du mois dans sa carte, centré, avec son unité en plus petit juste à côté (« 102 km ») ; la légende complète sert aux lecteurs d'écran
+function Carte({ valeur, unite, legende }: { valeur: string; unite?: string; legende: string }) {
   const p = usePalette();
   return (
     <View accessible accessibilityLabel={`${valeur} ${legende}`} style={[styles.carte, { backgroundColor: p.surface }]}>
-      <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.carteValeur, { color: p.texte }]}>{valeur}</Text>
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.carteValeur, { color: p.texte }]}>
+        {valeur}
+        {unite ? <Text style={[styles.carteUnite, { color: p.texteDoux }]}> {unite}</Text> : null}
+      </Text>
     </View>
   );
 }
@@ -443,6 +446,7 @@ const styles = StyleSheet.create({
   titreMois: { flex: 1, textAlign: 'center' },
   cartes: { flexDirection: 'row', gap: 6 },
   carte: { flex: 1, minHeight: 56, borderRadius: rayon.base, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
+  carteUnite: { fontFamily: police.texte600, fontSize: 11, letterSpacing: 0 },
   carteValeur: { fontFamily: police.titre800, fontSize: 22, lineHeight: 26, letterSpacing: -0.4, fontVariant: ['tabular-nums'] },
   boutons: { flexDirection: 'row', gap: 8 },
   cycleLigne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
