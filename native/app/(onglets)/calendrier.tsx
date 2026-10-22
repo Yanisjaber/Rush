@@ -445,8 +445,8 @@ const styles = StyleSheet.create({
   enteteBande: { marginHorizontal: -8, marginTop: -10, paddingHorizontal: 8, paddingTop: 10 },
   fondSemaine: { position: 'absolute', top: 0, bottom: 0, right: 0, width: 62 },
   jours: { flex: 1, flexDirection: 'row' },
-  entete: { width: `${100 / 7}%`, textAlign: 'center', paddingBottom: 4 },
-  enteteSemaine: { width: 54, textAlign: 'right', paddingBottom: 4, paddingRight: 4 },
+  entete: { width: `${100 / 7}%`, textAlign: 'center', paddingBottom: 8 },
+  enteteSemaine: { width: 54, textAlign: 'right', paddingBottom: 8, paddingRight: 4 },
   // Le chiffre en haut, le profil en bas : la colonne a la hauteur des cases, ses deux blocs s'alignent sur leur haut et leur bas
   semaine: { width: 54, justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 4, paddingBottom: 2, paddingRight: 4 },
   chiffresSemaine: { alignItems: 'flex-end' },
