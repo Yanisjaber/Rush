@@ -69,6 +69,27 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
       tss,
       category: 'entrainement',
     });
+    // Une semaine sur deux, la sortie vélo est suivie d'une course dans la foulée (un enchaînement : le triathlon et le duathlon en ont besoin)
+    if (m.sport === 'Ride' && Math.floor(i / 7) % 2 === 0) {
+      const debut = 18 * 60 + Math.ceil((m.min * variation) ) + 8; // 8 minutes de transition après la fin du vélo
+      const heure = `${String(Math.floor(debut / 60)).padStart(2, '0')}:${String(debut % 60).padStart(2, '0')}`;
+      quotidien[iso] = (quotidien[iso] || 0) + 22;
+      seances.push({
+        id: `demo-brick-${iso}`,
+        name: 'Enchaînement course',
+        sport: 'Run',
+        start_date_local: `${iso}T${heure}:00+00:00`,
+        moving_time: 25 * 60,
+        distance_km: 4.7,
+        total_elevation_gain: 20,
+        avg_heartrate: 155,
+        ftp_at_time: null,
+        avg_watts: null,
+        np: null,
+        tss: 22,
+        category: 'entrainement',
+      });
+    }
   }
   // Un footing déjà fait ce matin, en plus de la séance prévue du jour : la démo montre ainsi une journée à deux séances
   const isoAujourdhui = dateIsoLocale(aujourdhui);
@@ -154,6 +175,61 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
       category: 'entrainement',
     });
   }
+  // De la natation environ deux fois par semaine, qui progresse doucement (de 2'05 à 1'52 au 100 m) ; la démo n'en avait pas
+  const nageDemo = [
+    { i: 2, nom: 'Natation technique', km: 1.5 }, { i: 6, nom: 'Séries 8 × 100 m', km: 1.8 }, { i: 9, nom: 'Natation endurance', km: 2.2 },
+    { i: 13, nom: 'Natation technique', km: 1.5 }, { i: 16, nom: 'Séries 8 × 100 m', km: 1.8 }, { i: 23, nom: 'Natation endurance', km: 2.4 },
+    { i: 27, nom: 'Natation technique', km: 1.4 }, { i: 30, nom: 'Séries 8 × 100 m', km: 1.8 }, { i: 37, nom: 'Natation endurance', km: 2.2 },
+    { i: 44, nom: 'Natation technique', km: 1.5 }, { i: 51, nom: 'Séries 8 × 100 m', km: 1.7 }, { i: 58, nom: 'Natation endurance', km: 2.0 },
+    { i: 65, nom: 'Natation technique', km: 1.4 }, { i: 72, nom: 'Natation endurance', km: 2.0 },
+  ];
+  for (const n of nageDemo) {
+    if (n.i >= nbJours) continue;
+    const iso = dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - n.i));
+    const allure100 = 112 + (Math.min(n.i, 83) / 83) * 13; // secondes pour 100 m
+    const secondes = Math.round(n.km * 10 * allure100);
+    const tss = Math.round(secondes / 60 * 0.75);
+    quotidien[iso] = (quotidien[iso] || 0) + tss;
+    seances.push({
+      id: `demo-nage-${iso}`,
+      name: n.nom,
+      sport: 'Swim',
+      start_date_local: `${iso}T12:30:00+00:00`,
+      moving_time: secondes,
+      distance_km: n.km,
+      total_elevation_gain: null,
+      avg_heartrate: 132 + ((n.i * 3) % 10),
+      ftp_at_time: null,
+      avg_watts: null,
+      np: null,
+      tss,
+      category: 'entrainement',
+    });
+  }
+  // Un triathlon et un duathlon déjà courus : ils font apparaître les deux onglets dans la démo
+  for (const c of [
+    { i: 22, nom: 'Triathlon S de Castres', sport: 'Triathlon', min: 82, km: 25.75, dPlus: 180, tss: 95 },
+    { i: 50, nom: 'Duathlon de Revel', sport: 'Duathlon', min: 95, km: 27, dPlus: 240, tss: 88 },
+  ]) {
+    if (c.i >= nbJours) continue;
+    const iso = dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - c.i));
+    quotidien[iso] = (quotidien[iso] || 0) + c.tss;
+    seances.push({
+      id: `demo-course-${iso}`,
+      name: c.nom,
+      sport: c.sport,
+      start_date_local: `${iso}T09:30:00+00:00`,
+      moving_time: c.min * 60,
+      distance_km: c.km,
+      total_elevation_gain: c.dPlus,
+      avg_heartrate: 163,
+      ftp_at_time: null,
+      avg_watts: null,
+      np: null,
+      tss: c.tss,
+      category: 'competition',
+    });
+  }
   seances.sort((a, b) => (a.start_date_local < b.start_date_local ? 1 : -1));
 
   // CTL (42 jours) et ATL (7 jours) : moyennes exponentielles de la charge quotidienne
@@ -214,6 +290,7 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
     objectifs: [
       { id: 'demo-hyrox-open', name: 'Hyrox Open', date: plusJours(27), sport: 'Hyrox', km: null, d_plus: null, priority: 'A', duration: 70, category: 'competition' },
       { id: 'demo-ramonville', name: 'Ronde de Ramonville', date: '2026-12-13', sport: 'Run', km: 10.15, d_plus: 42, priority: 'A', duration: 40, category: 'competition' },
+      { id: 'demo-triathlon-gruissan', name: 'Triathlon M de Gruissan', date: plusJours(90), sport: 'Triathlon', km: 51.5, d_plus: null, priority: 'A', duration: 150, category: 'competition' },
       { id: 'demo-trail-cretes', name: 'Trail des Crêtes', date: plusJours(63), sport: 'TrailRun', km: 32, d_plus: 1800, priority: 'B', duration: 330, category: 'competition' },
     ],
   };
