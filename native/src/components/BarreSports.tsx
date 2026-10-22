@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, Pressable, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, ScrollView, StyleSheet, Text, Pressable, View } from 'react-native';
 import { MenuSports } from '@/components/MenuSports';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { choisirFiltre, useMenu } from '@/stores/menu';
@@ -16,6 +16,12 @@ export function BarreSports() {
   const haut = useSafeAreaInsets().top;
   const { familles, filtre } = useMenu();
   const [ouvert, setOuvert] = useState(false);
+  // Le « + » pivote d'un huitième de tour (45°) en s'ouvrant et revient en se fermant : 0 = « + », 1 = croix
+  const pivot = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(pivot, { toValue: ouvert ? 1 : 0, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [ouvert, pivot]);
+  const rotation = pivot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] });
   // Compte neuf sans aucun sport : pas de barre, c'est l'onboarding de l'Accueil qui propose d'en choisir
   if (!familles.length) return null;
 
@@ -39,7 +45,7 @@ export function BarreSports() {
         accessibilityLabel="Ajouter ou retirer un sport"
         style={({ pressed }) => [styles.plus, { opacity: pressed ? 0.7 : 1 }]}
       >
-        <Text style={[styles.plusTexte, { color: p.texte }, ouvert && styles.plusOuvert]}>+</Text>
+        <Animated.Text style={[styles.plusTexte, { color: p.texte, transform: [{ rotate: rotation }] }]}>+</Animated.Text>
       </Pressable>
       <MenuSports ouvert={ouvert} onFermer={() => setOuvert(false)} haut={haut} />
     </View>
@@ -71,8 +77,6 @@ const styles = StyleSheet.create({
   barre: { borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'flex-end' },
   plus: { width: 48, height: 44, alignItems: 'center', justifyContent: 'center' },
   plusTexte: { fontFamily: police.titre600, fontSize: 28, lineHeight: 32 },
-  // Menu ouvert : le « + » tourne d'un huitième de tour et devient une croix
-  plusOuvert: { transform: [{ rotate: '45deg' }] },
   rangee: { gap: 22, paddingLeft: 18, paddingRight: 6 },
   // 44 pt de haut : la cible tactile minimale ; le trait chevauche le filet de la barre
   onglet: { height: 44, justifyContent: 'center' },
