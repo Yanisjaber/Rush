@@ -2,7 +2,7 @@ import { FondDegrade } from '@/components/FondDegrade';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Line, Path } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
@@ -177,7 +177,7 @@ function Chiffre({ valeur, unite }: { valeur: string; unite?: string }) {
 }
 
 // Les marques d'un jour (au plus cinq points) : séance faite = point plein de la couleur du sport, prévue = contour, compétition = carré.
-// Une note n'est pas un point : elle a son petit parchemin dans le coin de la case (voir Parchemin).
+// Une note n'est pas un point : elle plie le coin de la case (voir CoinPlie).
 function marquesDe(j: JourGrille): { cle: string; type: 'fait' | 'prevu' | 'objectif'; couleur?: string }[] {
   return [
     ...j.objectifs.map((o) => ({ cle: `o${o.id}`, type: 'objectif' as const })),
@@ -186,18 +186,13 @@ function marquesDe(j: JourGrille): { cle: string; type: 'fait' | 'prevu' | 'obje
   ];
 }
 
-// Un petit parchemin pour dire « il y a une note sur ce jour » : une feuille crème aux coins enroulés (en haut à gauche, en bas à droite), avec un petit sceau
-// de la couleur de la note (orange pour une blessure…). Placé dans le coin de la case, il ne touche pas le chiffre du jour.
-function Parchemin({ couleur }: { couleur: string }) {
-  const encre = '#6b5a3a';
+// Le coin plié : « il y a une note sur ce jour ». Le coin supérieur droit de la case se replie comme un coin de page, dans la couleur de la note
+// (orange pour une blessure, rouge pour une maladie…). Un triangle plus sombre fait le pli. La case l'arrondit (overflow caché), il ne touche jamais le chiffre.
+function CoinPlie({ couleur }: { couleur: string }) {
   return (
-    <Svg width={15} height={15} viewBox="0 0 20 20" accessible={false}>
-      <Path d="M6 3H16a1.2 1.2 0 0 1 1.2 1.2V14.2a2.3 2.3 0 0 1-2.3 2.3H5.2A2.2 2.2 0 0 1 3 14.3V6.5Z" fill="#f3ead2" stroke={encre} strokeWidth={1} />
-      <Path d="M3 6.5V5.2A2.2 2.2 0 0 1 5.2 3H6a1.7 1.7 0 0 1 0 3.5Z" fill="#e4d6ae" stroke={encre} strokeWidth={1} />
-      <Path d="M17.2 13.5H11.2a1.7 1.7 0 0 0 0 3.4H14.9a2.3 2.3 0 0 0 2.3-2.3Z" fill="#e4d6ae" stroke={encre} strokeWidth={1} />
-      <Line x1={7.6} y1={8.4} x2={14.4} y2={8.4} stroke={encre} strokeWidth={1.1} strokeLinecap="round" />
-      <Line x1={7.6} y1={11} x2={12} y2={11} stroke={encre} strokeWidth={1.1} strokeLinecap="round" />
-      <Circle cx={14.4} cy={6} r={2} fill={couleur} stroke={encre} strokeWidth={0.8} />
+    <Svg width={16} height={16} viewBox="0 0 20 20" accessible={false}>
+      <Path d="M0 0H20V20Z" fill={couleur} />
+      <Path d="M20 20L8 8H20Z" fill="rgba(0,0,0,0.28)" />
     </Svg>
   );
 }
@@ -227,7 +222,7 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
     >
       {jour.notes.length ? (
         <View style={styles.coin} pointerEvents="none">
-          <Parchemin couleur={couleurNote(jour.notes[0].color)} />
+          <CoinPlie couleur={couleurNote(jour.notes[0].color)} />
         </View>
       ) : null}
       <View style={[styles.numero, jour.aujourdhui && { backgroundColor: p.texte }]}>
@@ -375,13 +370,13 @@ const styles = StyleSheet.create({
   semaine: { width: 46, justifyContent: 'center', alignItems: 'flex-end', gap: 4, paddingRight: 4 },
   heures: { fontFamily: police.titre700, fontSize: 12, lineHeight: 15, fontVariant: ['tabular-nums'] },
   pisteSemaine: { flexDirection: 'row', gap: 1 },
-  case: { width: `${100 / 7}%`, minHeight: 58, alignItems: 'center', paddingTop: 4, borderRadius: rayon.base, borderWidth: 1, borderColor: 'transparent', gap: 4 },
+  case: { width: `${100 / 7}%`, minHeight: 58, alignItems: 'center', paddingTop: 4, borderRadius: rayon.base, borderWidth: 1, borderColor: 'transparent', gap: 4, overflow: 'hidden' },
   numero: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   numeroTexte: { fontFamily: police.titre700, fontSize: 16, lineHeight: 20, fontVariant: ['tabular-nums'] },
   points: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 10 },
   point: { width: 6, height: 6, borderRadius: 3 },
   carre: { width: 6, height: 6, borderRadius: 1.5, borderWidth: 1 },
-  coin: { position: 'absolute', top: -2, right: -1 },
+  coin: { position: 'absolute', top: 0, right: 0 },
   barre: { width: 10, height: 3, borderRadius: 2 },
   plus: { fontSize: 10, lineHeight: 10, fontFamily: police.texte600 },
   tiret: { fontSize: 28, lineHeight: 32 },
