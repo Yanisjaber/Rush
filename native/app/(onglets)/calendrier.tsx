@@ -146,7 +146,9 @@ export default function Calendrier() {
                 <View key={semaine[0].iso} style={styles.rangee}>
                   <View style={styles.jours}>
                     {semaine.map((j) => (
-                      <Case key={j.iso} jour={j} choisi={j.iso === choisi} onPress={() => setChoisi(j.iso)} />
+                      <View key={j.iso} style={styles.emplacement}>
+                        <Case jour={j} choisi={j.iso === choisi} onPress={() => setChoisi(j.iso)} />
+                      </View>
                     ))}
                   </View>
                   <ProfilSemaine semaine={semaine} maxi={maxiJour} mono={filtre === 'tout'} filtre={filtre} />
@@ -462,7 +464,9 @@ const styles = StyleSheet.create({
   unite: { fontFamily: police.texte600, fontSize: 9, lineHeight: 14 },
   profil: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: HAUTEUR_PROFIL },
   jourProfil: { width: 4, borderRadius: 2 },
-  case: { width: `${100 / 7}%`, minHeight: 58, alignItems: 'center', paddingTop: 4, borderRadius: rayon.base, borderWidth: 1, borderColor: 'transparent', gap: 2, overflow: 'hidden' },
+  // Un septième de la rangée, avec un petit vide de chaque côté : c'est lui qui espace les cases entre elles
+  emplacement: { width: `${100 / 7}%`, paddingHorizontal: 2 },
+  case: { width: '100%', minHeight: 58, alignItems: 'center', paddingTop: 4, borderRadius: rayon.base, borderWidth: 1, borderColor: 'transparent', gap: 2, overflow: 'hidden' },
   numero: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   // Aujourd'hui : un carré arrondi, serré autour du chiffre (la même hauteur totale que les autres jours : 22 + 2 × 2)
   aujourdhui: { width: 24, height: 22, borderRadius: 6, marginVertical: 2 },
