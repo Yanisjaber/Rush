@@ -26,8 +26,6 @@ import { COMPOSANTS, WidgetBientot } from '@/widgets/composants';
 
 // Un compte neuf (aucune donnée) ne voit que l'essentiel
 const COMPTE_VIDE = new Set(['objectif', 'semaine', 'avenir']);
-// Hauteur de la barre d'onglets flottante (Liquid Glass) à réserver en bas de la liste, pour que le dernier widget ne passe pas dessous
-const BARRE_ONGLETS = 72;
 
 // Accueil : les widgets du sport choisi dans la barre du haut, avec les données du compte (ou la démo).
 export default function Accueil() {
@@ -131,7 +129,7 @@ export default function Accueil() {
         onScroll={(e) => {
           decalageDefilement.current = e.nativeEvent.contentOffset.y;
         }}
-        contentContainerStyle={[styles.contenu, { paddingBottom: bas + BARRE_ONGLETS + (enEdition ? 100 : 0) }]}
+        contentContainerStyle={[styles.contenu, { paddingBottom: 16 + (enEdition ? 100 : 0) }]}
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
