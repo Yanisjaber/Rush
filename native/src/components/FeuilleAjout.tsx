@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
+import { ChoixCouleur, PastillesChoix } from '@/components/ChampsFeuille';
 import { SelecteurDate } from '@/components/SelecteurDate';
 import {
   distanceEnMetres,
@@ -107,24 +108,9 @@ export function FeuilleAjout({ ouvert, jour, titre, onFermer }: { ouvert: boolea
     setErreur('');
   };
 
-  const pastilles = <T extends string>(valeurs: { cle: T; nom: string; couleur?: string }[], actuel: T, choisir: (v: T) => void, etiquette: string) => (
-    <View style={styles.pastilles} accessibilityRole="radiogroup" accessibilityLabel={etiquette}>
-      {valeurs.map((v) => {
-        const actif = actuel === v.cle;
-        return (
-          <Pressable
-            key={v.cle}
-            onPress={() => modifie(() => choisir(v.cle))}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: actif }}
-            accessibilityLabel={v.nom}
-            style={[styles.pastille, { borderColor: actif ? p.texte : p.contourChamp, backgroundColor: actif ? p.texte : 'transparent' }]}
-          >
-            <Text numberOfLines={1} style={[typo.corpsFort, { color: actif ? p.fond : p.texte }]}>{v.nom}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
+  // Les pastilles et la ligne de couleurs : un choix efface l'erreur affichée
+  const pastilles = <T extends string>(valeurs: { cle: T; nom: string }[], actuel: T, choisir: (v: T) => void, etiquette: string) => (
+    <PastillesChoix valeurs={valeurs} actuel={actuel} onChoisir={(v) => modifie(() => choisir(v))} etiquette={etiquette} />
   );
 
   const ligneSports = (type: string, choisir: (t: string) => void) =>
@@ -136,18 +122,7 @@ export function FeuilleAjout({ ouvert, jour, titre, onFermer }: { ouvert: boolea
     );
 
   const couleurs = (liste: { hex: string; nom: string }[], actuelle: string, choisir: (hex: string) => void) => (
-    <View style={styles.couleurs} accessibilityRole="radiogroup" accessibilityLabel="Couleur">
-      {liste.map((c) => (
-        <Pressable
-          key={c.hex}
-          onPress={() => modifie(() => choisir(c.hex))}
-          accessibilityRole="radio"
-          accessibilityState={{ selected: actuelle === c.hex }}
-          accessibilityLabel={c.nom}
-          style={[styles.couleur, { backgroundColor: c.hex, borderColor: actuelle === c.hex ? p.texte : 'transparent' }]}
-        />
-      ))}
-    </View>
+    <ChoixCouleur couleurs={liste} actuelle={actuelle} onChoisir={(hex) => modifie(() => choisir(hex))} />
   );
 
   const etiquette = (texte: string) => <Text style={[typo.micro, { color: p.texteDoux }]}>{texte}</Text>;
@@ -274,10 +249,6 @@ const styles = StyleSheet.create({
   conteneur: { flex: 1, justifyContent: 'flex-end' },
   feuille: { maxHeight: '90%', borderTopWidth: 1, borderTopLeftRadius: rayon.bloc, borderTopRightRadius: rayon.bloc, padding: espace.e4, gap: espace.e3 },
   poignee: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2 },
-  pastilles: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  pastille: { minHeight: 44, minWidth: 44, borderWidth: 1.5, borderRadius: rayon.rond, paddingHorizontal: 11, alignItems: 'center', justifyContent: 'center' },
   champ: { minHeight: 48, borderWidth: 1.5, borderRadius: rayon.base, paddingHorizontal: 14 },
   ligne: { flexDirection: 'row', gap: 8 },
-  couleurs: { flexDirection: 'row', flexWrap: 'wrap', gap: espace.e3 },
-  couleur: { width: 44, height: 44, borderRadius: 22, borderWidth: 3 },
 });

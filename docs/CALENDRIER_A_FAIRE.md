@@ -10,9 +10,12 @@ Liste tenue à jour avec Yanis (écran `native/app/(onglets)/calendrier.tsx`). D
 4. **Saisir une sortie déjà faite à la main** (« Sortie réalisée » sur le site). L'app ne lit que ce qui vient de Strava.
 5. **La feuille du « + »** (séance prévue, compétition, note, cycle), à refaire en entier plus tard. La version actuelle (`FeuilleAjout.tsx`) fonctionne mais n'est pas définitive.
 
+## Fait récemment
+
+- **Notes et repos** (23 octobre) : toucher une note ouvre une feuille pour la modifier ou la supprimer (`FeuilleNote.tsx`) ; le bouton « Repos » du détail du jour pose ou retire un jour de repos d'un toucher. Démo en mémoire, compte dans `day_notes` et `rest_day`.
+
 ## Reste à faire (pas encore tranché)
 
-- **Modifier ou supprimer une note et poser/retirer un jour de repos** : on les voit dans le détail du jour, on ne peut pas les toucher (le site : `PanneauMarquage.svelte`). Les écritures de notes existent (`creerNoteJour`), pas encore la modification ni la suppression.
 - **Balayer pour changer de mois** : aujourd'hui seulement les flèches et le sélecteur de mois.
 - **Une légende des points** : couleur = sport, rond vide = prévu, carré = compétition. Rien ne l'explique à l'écran.
 - **Le thème clair** : jamais vérifié sur le calendrier (bandes teintées, colonne « Sem. », pastilles, jours des mois voisins).

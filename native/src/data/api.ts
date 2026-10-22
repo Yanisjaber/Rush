@@ -533,6 +533,35 @@ export async function creerNoteJour(userId: string, ligne: LigneNote): Promise<R
   return resultat(r, "Impossible d'enregistrer la note.");
 }
 
+/** Modifie une note qui t'appartient (ligne validée par validerNote). */
+export async function modifierNoteJour(userId: string, id: string, ligne: LigneNote): Promise<Resultat<Note>> {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Note introuvable.' };
+  const r = await sb.from('day_notes').update(ligne).eq('user_id', userId).eq('id', id).select(COLONNES_NOTE).maybeSingle();
+  const res = resultat<Note | null>(r, 'Impossible de modifier la note.');
+  return res.erreur ? { data: null, erreur: res.erreur } : res.data ? { data: res.data, erreur: '' } : { data: null, erreur: 'Note introuvable.' };
+}
+
+/** Supprime une note qui t'appartient. */
+export async function supprimerNoteJour(userId: string, id: string): Promise<{ erreur: string }> {
+  if (!UUID.test(String(id))) return { erreur: 'Note introuvable.' };
+  const r = await sb.from('day_notes').delete().eq('user_id', userId).eq('id', id);
+  return { erreur: resultat(r, 'Impossible de supprimer la note.').erreur };
+}
+
+/** Pose un jour de repos (table rest_day, un jour par ligne ; poser deux fois le même jour ne fait rien de plus). */
+export async function poserRepos(userId: string, iso: string): Promise<{ erreur: string }> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return { erreur: 'Date invalide.' };
+  const r = await sb.from('rest_day').upsert({ user_id: userId, iso_date: iso }, { onConflict: 'user_id,iso_date' });
+  return { erreur: resultat(r, "Impossible de poser ce jour de repos.").erreur };
+}
+
+/** Retire un jour de repos. */
+export async function retirerRepos(userId: string, iso: string): Promise<{ erreur: string }> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return { erreur: 'Date invalide.' };
+  const r = await sb.from('rest_day').delete().eq('user_id', userId).eq('iso_date', iso);
+  return { erreur: resultat(r, 'Impossible de retirer ce jour de repos.').erreur };
+}
+
 // --- Cycles d'entraînement (table training_cycles) : lecture et écriture ---------------------------------------------------------------
 // La RLS limite chacun à ses lignes ; on filtre quand même par user_id. La base refuse un troisième cycle le même jour (code 23514).
 const COLONNES_CYCLE = 'id,name,from_date,to_date,color';

@@ -6,6 +6,11 @@ import type { Note, Prevue } from '@/data/types';
 // Un numéro de version change à chaque ajout (démo ou compte) pour que le calendrier recharge ses données.
 let prevues: Prevue[] = [];
 let notes: Note[] = [];
+// Les notes de l'exemple modifiées ou supprimées, et les jours de repos posés ou retirés pendant la démo
+const notesRemplacees = new Map<string, Note>();
+const notesSupprimees = new Set<string>();
+const reposPoses = new Set<string>();
+const reposRetires = new Set<string>();
 let version = 0;
 const ecouteurs = new Set<() => void>();
 const prevenir = () => {
@@ -27,6 +32,13 @@ export const ajoutsChanges = (): void => prevenir();
 
 export const prevuesAjoutees = (): Prevue[] => prevues;
 export const notesAjoutees = (): Note[] => notes;
+
+/** Les notes de la démo : celles de l'exemple et celles ajoutées, avec les modifications et sans les suppressions. */
+export const notesDeLaDemo = (base: Note[]): Note[] =>
+  [...base, ...notes].filter((n) => !notesSupprimees.has(n.id)).map((n) => notesRemplacees.get(n.id) ?? n);
+
+/** Les jours de repos de la démo : ceux de l'exemple et ceux posés, sans ceux retirés. */
+export const reposDeLaDemo = (base: string[]): string[] => [...new Set([...base, ...reposPoses])].filter((iso) => !reposRetires.has(iso));
 
 const identifiant = (): string => `demo-ajout-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
@@ -52,4 +64,30 @@ export function ajouterNoteDemo(ligne: LigneNote): Note {
   notes = [...notes, n];
   prevenir();
   return n;
+}
+
+export function modifierNoteDemo(id: string, ligne: LigneNote): void {
+  const n: Note = { id, type: ligne.type, text: ligne.text, color: ligne.color, from_date: ligne.from_date, to_date: ligne.to_date };
+  if (notes.some((x) => x.id === id)) notes = notes.map((x) => (x.id === id ? n : x));
+  else notesRemplacees.set(id, n);
+  prevenir();
+}
+
+export function supprimerNoteDemo(id: string): void {
+  if (notes.some((x) => x.id === id)) notes = notes.filter((x) => x.id !== id);
+  else notesSupprimees.add(id);
+  notesRemplacees.delete(id);
+  prevenir();
+}
+
+export function poserReposDemo(iso: string): void {
+  reposRetires.delete(iso);
+  reposPoses.add(iso);
+  prevenir();
+}
+
+export function retirerReposDemo(iso: string): void {
+  reposPoses.delete(iso);
+  reposRetires.add(iso);
+  prevenir();
 }

@@ -9,18 +9,21 @@ import { BarreSports } from '@/components/BarreSports';
 import { Bloc } from '@/components/Bloc';
 import { Bouton } from '@/components/Bouton';
 import { FeuilleAjout } from '@/components/FeuilleAjout';
+import { FeuilleNote } from '@/components/FeuilleNote';
 import { SelecteurMois } from '@/components/SelecteurMois';
 import { chargeJour, chargeSeance, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
 import { couleurNote, libelleNote } from '@/data/annotations';
 import { avancementCycle } from '@/data/cycles';
 import { familleAffichage, garderSeance } from '@/data/familles';
 import { dateIsoLocale, formatDistanceSport, formatDuree, formatHeuresMinutes, formatNombre } from '@/data/format';
+import { useAjouts } from '@/hooks/useAjouts';
 import { useDonneesCalendrier } from '@/hooks/useDonneesCalendrier';
 import { useMenu } from '@/stores/menu';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
+import type { Note } from '@/data/types';
 
 const nomSport = (sport: string) => SPORTS[familleAffichage(sport) as CleSport]?.court ?? SPORTS.autre.court;
 const BARRE_ONGLETS = 72;
@@ -378,6 +381,9 @@ function Detail({ jour }: { jour: JourGrille }) {
   const router = useRouter();
   const p = usePalette();
   const [ajout, setAjout] = useState(false); // la feuille du « + »
+  const [noteOuverte, setNoteOuverte] = useState<Note | null>(null); // la note qu'on modifie
+  const { basculerRepos } = useAjouts();
+  const [erreurRepos, setErreurRepos] = useState('');
   // Ce que le jour pèse, d'un coup d'œil : temps fait, charge, temps prévu (en pastilles, comme le haut du calendrier)
   const faites = jour.seances.reduce((t, s) => t + (s.moving_time || 0), 0);
   const prevues = jour.planifiees.reduce((t, x) => t + (Number(x.duration) > 0 ? Number(x.duration) * 60 : 0), 0);
@@ -401,17 +407,31 @@ function Detail({ jour }: { jour: JourGrille }) {
           <Text style={[styles.detailPlusTexte, { color: p.fond }]}>+</Text>
         </Pressable>
       </View>
-      {pastilles.length ? (
-        <View style={styles.detailPastilles}>
-          {pastilles.map((x) => (
-            <View key={x.unite} accessible accessibilityLabel={x.dit} style={[styles.detailPastille, { backgroundColor: p.surface2 }]}>
-              <Text style={[styles.detailPastilleValeur, { color: p.texte }]}>
-                {x.valeur}
-                <Text style={[styles.carteUnite, { color: p.texteDoux }]}> {x.unite}</Text>
-              </Text>
-            </View>
-          ))}
-        </View>
+      <View style={styles.detailPastilles}>
+        {pastilles.map((x) => (
+          <View key={x.unite} accessible accessibilityLabel={x.dit} style={[styles.detailPastille, { backgroundColor: p.surface2 }]}>
+            <Text style={[styles.detailPastilleValeur, { color: p.texte }]}>
+              {x.valeur}
+              <Text style={[styles.carteUnite, { color: p.texteDoux }]}> {x.unite}</Text>
+            </Text>
+          </View>
+        ))}
+        {/* Un jour de repos se pose et se retire d'un toucher (réversible, donc sans confirmation) */}
+        <Pressable
+          onPress={() => void (async () => setErreurRepos(await basculerRepos(jour.iso, !jour.repos)))()}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: jour.repos }}
+          accessibilityLabel="Jour de repos"
+          hitSlop={{ top: 8, bottom: 8 }}
+          style={[styles.detailPastille, jour.repos ? { backgroundColor: p.texte } : { borderWidth: 1, borderStyle: 'dashed', borderColor: p.traitFort }]}
+        >
+          <Text style={[styles.detailPastilleValeur, { color: jour.repos ? p.fond : p.texteDoux }]}>Repos</Text>
+        </Pressable>
+      </View>
+      {erreurRepos ? (
+        <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger, marginBottom: 6 }]}>
+          {erreurRepos}
+        </Text>
       ) : null}
       {jourVide(jour) && !jour.cycles.length ? (
         <Text style={[styles.tiret, { color: p.texteMuet }]}>—</Text>
@@ -424,11 +444,6 @@ function Detail({ jour }: { jour: JourGrille }) {
               </Text>
             </View>
           ))}
-          {jour.repos ? (
-            <View style={[styles.etiquette, { borderColor: p.traitFort, marginTop: 8 }]}>
-              <Text style={[typo.petit, { color: p.texteDoux }]}>Repos</Text>
-            </View>
-          ) : null}
           {jour.seances.map((s) => {
             const nom = s.name || nomSport(s.sport);
             const detail = [formatDistanceSport(s.distance_km, familleAffichage(s.sport)), `${chargeSeance(s)} pts`, heureDe(s.start_date_local)].filter(Boolean).join(' · ');
@@ -499,13 +514,20 @@ function Detail({ jour }: { jour: JourGrille }) {
         );
       })}
           {jour.notes.map((n) => (
-            <View key={n.id} style={[styles.note, { borderLeftColor: couleurNote(n.color), backgroundColor: p.surface2, marginTop: 10 }]}>
+            <Pressable
+              key={n.id}
+              onPress={() => setNoteOuverte(n)}
+              accessibilityRole="button"
+              accessibilityLabel={`Note : ${libelleNote(n)}. Modifier`}
+              style={[styles.note, { borderLeftColor: couleurNote(n.color), backgroundColor: p.surface2, marginTop: 10, minHeight: 44, justifyContent: 'center' }]}
+            >
               <Text numberOfLines={2} style={[typo.petit, { color: p.texte }]}>
                 {libelleNote(n)}
               </Text>
-            </View>
+            </Pressable>
           ))}
       <FeuilleAjout ouvert={ajout} jour={jour.iso} titre={dateLongue(jour.iso)} onFermer={() => setAjout(false)} />
+      <FeuilleNote note={noteOuverte} onFermer={() => setNoteOuverte(null)} />
     </Bloc>
   );
 }
@@ -574,7 +596,6 @@ const styles = StyleSheet.create({
   seance: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, borderRadius: rayon.base, paddingHorizontal: 14 },
   objectif: { borderRadius: rayon.base, paddingHorizontal: 12, paddingVertical: 8 },
   objectifTexte: { fontFamily: police.titre800, fontSize: 15, lineHeight: 19 },
-  etiquette: { alignSelf: 'flex-start', borderRadius: rayon.rond, borderWidth: 1, borderStyle: 'dashed', paddingHorizontal: 12, paddingVertical: 6 },
   // Une note : une citation avec un trait de sa couleur à gauche
   note: { borderTopRightRadius: rayon.base, borderBottomRightRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 12, paddingVertical: 10 },
   // Un cycle du jour : son nom et « jour 22 sur 23 », sous une fine barre de progression

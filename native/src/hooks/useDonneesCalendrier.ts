@@ -4,7 +4,7 @@ import { chargerAnnotations, chargerCycles, chargerPlanifiees, chargerSeancesPer
 import { bornesGrille } from '@/data/calendrier';
 import { annotationsDemo, seriesForceDemo } from '@/data/demo';
 import { useAuth } from '@/stores/auth';
-import { notesAjoutees, prevuesAjoutees, useVersionAjouts } from '@/stores/ajouts';
+import { notesDeLaDemo, prevuesAjoutees, reposDeLaDemo, useVersionAjouts } from '@/stores/ajouts';
 import { cyclesDemo, useVersionCycles } from '@/stores/cycles';
 import type { Cycle, Note, Prevue, Seance } from '@/data/types';
 
@@ -48,8 +48,8 @@ export function useDonneesCalendrier(annee: number, mois: number): {
       seances: d.seances.filter((s) => dans(String(s.start_date_local).slice(0, 10))),
       planifiees: prevues.filter((p) => p.category !== 'competition'),
       objectifs: prevues.filter((p) => p.category === 'competition'),
-      notes: [...a.notes, ...notesAjoutees()].filter((n) => n.from_date <= fin && n.to_date >= debut),
-      repos: a.repos.filter((r) => dans(r)),
+      notes: notesDeLaDemo(a.notes).filter((n) => n.from_date <= fin && n.to_date >= debut),
+      repos: reposDeLaDemo(a.repos).filter((r) => dans(r)),
       cycles: cyclesDemo().filter((c) => c.from_date <= fin && c.to_date >= debut),
       series: seriesForceDemo(maintenant).filter((x) => dans(String(x.date).slice(0, 10))).map((x) => ({ date: x.date })),
     };
