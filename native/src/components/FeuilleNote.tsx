@@ -106,10 +106,15 @@ export function FeuilleNote({ note, onFermer }: { note: Note | null; onFermer: (
                 {erreur}
               </Text>
             ) : null}
-            <Bouton onPress={() => setMode('edition')}>Modifier</Bouton>
-            <Bouton variante="discret" onPress={confirmerSuppression}>
-              {enCours ? 'Suppression…' : 'Supprimer'}
-            </Bouton>
+            {/* Deux petits boutons côte à côte, à droite : la fenêtre reste légère */}
+            <View style={styles.popupBoutons}>
+              <Bouton petit variante="discret" onPress={confirmerSuppression}>
+                {enCours ? 'Suppression…' : 'Supprimer'}
+              </Bouton>
+              <Bouton petit onPress={() => setMode('edition')}>
+                Modifier
+              </Bouton>
+            </View>
           </View>
         </View>
       ) : null}
@@ -164,6 +169,7 @@ const styles = StyleSheet.create({
   conteneur: { flex: 1, justifyContent: 'flex-end' },
   centre: { ...StyleSheet.absoluteFill, justifyContent: 'center', paddingHorizontal: espace.e4 },
   popup: { borderWidth: 1, borderRadius: rayon.bloc, padding: espace.e4, gap: espace.e3 },
+  popupBoutons: { flexDirection: 'row', justifyContent: 'flex-end', gap: espace.e2 },
   popupTete: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   popupBarre: { width: 6, height: 26, borderRadius: 3 },
   feuille: { maxHeight: '92%', borderTopWidth: 1, borderTopLeftRadius: rayon.bloc, borderTopRightRadius: rayon.bloc, padding: espace.e4, gap: espace.e3 },
