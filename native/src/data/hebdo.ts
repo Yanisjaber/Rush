@@ -65,3 +65,26 @@ export function repartirParZone(entrees: { pct: number; temps: number }[], borne
   if (total <= 0) return null;
   return { zones: bornes.map(([nom], k) => ({ nom, temps: temps[k], pct: Math.round((temps[k] / total) * 100) })), total, dominante: temps.indexOf(Math.max(...temps)) };
 }
+
+/** Les trois niveaux d'intensité d'une séance, en % de la FC max (repères indicatifs) : moins de 75 % modérée, de 75 à 85 % soutenue, au-delà intense. */
+export const ZONES_INTENSITE: [string, number, number][] = [
+  ['Z1 Modérée', 0, 74],
+  ['Z2 Soutenue', 75, 84],
+  ['Z3 Intense', 85, 200],
+];
+
+/**
+ * Le temps des séances que `garde` accepte, rangé selon leur cardio moyen face à la FC max, sur les `nbSemaines` dernières semaines.
+ * Une séance est rangée tout entière dans un niveau : c'est une estimation. Null sans FC max ou sans séance avec cardio.
+ */
+export function intensiteParZone(seances: Seance[], hrMax: number | null, garde: (s: Seance) => boolean, nbSemaines = 4, aujourdhui: Date = new Date()): RepartitionZones | null {
+  if (!(Number(hrMax) > 0)) return null;
+  const entrees = seances
+    .filter((s) => {
+      const i = indexSemaine(s.start_date_local, aujourdhui);
+      return garde(s) && s.moving_time > 0 && Number(s.avg_heartrate) > 0 && i >= 0 && i < nbSemaines;
+    })
+    .map((s) => ({ pct: (Number(s.avg_heartrate) / Number(hrMax)) * 100, temps: s.moving_time }));
+  return repartirParZone(entrees, ZONES_INTENSITE);
+}
+

@@ -15,8 +15,8 @@ import { usePalette } from '@/theme/usePalette';
 export function PrepaDenivele({ contexte, taille = 'm', sport }: WidgetProps & { sport: SportDenivele }) {
   const p = usePalette();
   const prepa = prepaDenivele(contexte.toutesSeances, contexte.objectifs, sport);
-  const couleur = sport === 'vtt' ? p.sportVelo : p.sportCourse;
-  const nomSport = sport === 'vtt' ? 'VTT' : 'trail';
+  const couleur = sport === 'vtt' ? p.sportVelo : sport === 'ski' ? p.sportNeutre : p.sportCourse;
+  const nomSport = sport === 'vtt' ? 'VTT' : sport === 'ski' ? 'ski de fond' : 'trail';
   const { cible } = prepa;
   const aDesSorties = prepa.meilleureDPlus > 0 || prepa.dPlus4Semaines > 0;
 

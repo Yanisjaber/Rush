@@ -218,27 +218,35 @@ export interface CibleNatation {
 }
 
 export interface PrepaNatation {
-  /** La prochaine course ou traversée de natation avec sa distance ; null s'il n'y en a pas. */
+  /** La prochaine course ou traversée avec sa distance ; null s'il n'y en a pas. */
   cible: CibleNatation | null;
   /** Ta plus longue séance des 12 dernières semaines, en kilomètres. */
   plusLongue: number;
-  /** Ce que tu as nagé sur les 4 dernières semaines, en mètres, et par semaine. */
+  /** Ce que tu as parcouru sur les 4 dernières semaines, en mètres, et par semaine. */
   metres4Semaines: number;
   metresParSemaine: number;
   /** Ta plus longue séance en % de la distance de la course ; null sans cible. */
   pctDistance: number | null;
 }
 
-/** Où tu en es de ta préparation à la course de natation visée (une traversée, une course en eau libre). */
-export function prepaNatation(seances: Seance[], objectifs: { name: string; date: string; sport: string; km: number | null }[], aujourdhui: Date = new Date()): PrepaNatation {
-  const prochaine = objectifs
-    .filter((o) => familleAffichage(o.sport) === 'natation' && Number(o.km) > 0 && joursAvant(o.date, aujourdhui) >= 0)
-    .sort((a, b) => a.date.localeCompare(b.date))[0];
+/** Une séance ou un objectif qui a une distance : la forme minimale dont la préparation a besoin. */
+type ObjectifDistance = { name: string; date: string; sport: string; km: number | null };
+
+/**
+ * Où tu en es de ta préparation à une course définie par sa DISTANCE (une traversée à la nage, une course de ski de fond…) : `garde` choisit tes séances
+ * du sport, `estCible` les objectifs du sport. Ta plus longue séance des 12 dernières semaines est comparée à la distance de la course.
+ */
+export function prepaDistance(seances: Seance[], objectifs: ObjectifDistance[], garde: (s: Seance) => boolean, estCible: (o: ObjectifDistance) => boolean, aujourdhui: Date = new Date()): PrepaNatation {
+  const prochaine = objectifs.filter((o) => estCible(o) && Number(o.km) > 0 && joursAvant(o.date, aujourdhui) >= 0).sort((a, b) => a.date.localeCompare(b.date))[0];
   const cible: CibleNatation | null = prochaine ? { nom: prochaine.name, date: prochaine.date, km: Number(prochaine.km), joursRestants: joursAvant(prochaine.date, aujourdhui) } : null;
-  const nagees = nage(seances).filter((s) => indexSemaine(s.start_date_local, aujourdhui) >= 0);
-  const douze = nagees.filter((s) => indexSemaine(s.start_date_local, aujourdhui) < 12);
-  const quatre = nagees.filter((s) => indexSemaine(s.start_date_local, aujourdhui) < 4);
+  const faites = seances.filter((s) => garde(s) && Number(s.distance_km) > 0 && s.moving_time > 0 && indexSemaine(s.start_date_local, aujourdhui) >= 0);
+  const douze = faites.filter((s) => indexSemaine(s.start_date_local, aujourdhui) < 12);
+  const quatre = faites.filter((s) => indexSemaine(s.start_date_local, aujourdhui) < 4);
   const plusLongue = Math.max(0, ...douze.map((s) => Number(s.distance_km)));
   const metres4Semaines = Math.round(quatre.reduce((t, s) => t + Number(s.distance_km) * 1000, 0));
   return { cible, plusLongue: Math.round(plusLongue * 100) / 100, metres4Semaines, metresParSemaine: Math.round(metres4Semaines / 4), pctDistance: cible ? Math.round((plusLongue / cible.km) * 100) : null };
 }
+
+/** Où tu en es de ta préparation à la course de natation visée (une traversée, une course en eau libre). */
+export const prepaNatation = (seances: Seance[], objectifs: ObjectifDistance[], aujourdhui: Date = new Date()): PrepaNatation =>
+  prepaDistance(seances, objectifs, EST_NATATION, (o) => familleAffichage(o.sport) === 'natation', aujourdhui);

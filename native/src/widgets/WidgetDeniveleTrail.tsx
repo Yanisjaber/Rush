@@ -8,11 +8,11 @@ import { usePalette } from '@/theme/usePalette';
 export function DeniveleParSemaine({ contexte, taille = 'm', sport }: WidgetProps & { sport: SportDenivele }) {
   const p = usePalette();
   const d = deniveleParSemaineSport(contexte.toutesSeances, sport);
-  const nom = sport === 'vtt' ? 'VTT' : 'trail';
+  const nom = sport === 'vtt' ? 'VTT' : sport === 'ski' ? 'ski de fond' : 'trail';
   return (
     <SerieHebdo
       taille={taille}
-      couleur={sport === 'vtt' ? p.sportVelo : p.sportCourse}
+      couleur={sport === 'vtt' ? p.sportVelo : sport === 'ski' ? p.sportNeutre : p.sportCourse}
       titreTuile="D+ / semaine"
       titreL="Dénivelé par semaine"
       valeur={formatNombre(d.derniere)}

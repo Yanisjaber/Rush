@@ -1,7 +1,7 @@
 // CrossFit : le temps d'entraînement par semaine, l'intensité des séances, le mix force / WOD / endurance, les séances marquantes.
 // Calculs purs, sans écran (testés dans tests/crossfit.test.ts). On n'a pas le détail des WOD (temps, répétitions, charges) : seulement la durée, le cardio et la charge de chaque séance.
 import { familleAffichage } from './familles.ts';
-import { cumulParSemaine, repartirParZone, type CumulHebdo, type RepartitionZones } from './hebdo.ts';
+import { cumulParSemaine, intensiteParZone, type CumulHebdo, type RepartitionZones } from './hebdo.ts';
 import { indexSemaine } from './synthese.ts';
 import type { Seance } from './types.ts';
 
@@ -13,26 +13,15 @@ export function hebdoCrossfit(seances: Seance[], nbSemaines = 12, aujourdhui: Da
   return cumulParSemaine(seances, EST_WOD, (s) => s.moving_time / 60, nbSemaines, aujourdhui, 0);
 }
 
-/** Les trois niveaux d'intensité d'une séance, en % de la FC max (repères indicatifs) : moins de 75 % modérée, de 75 à 85 % soutenue, au-delà intense. */
-export const ZONES_INTENSITE: [string, number, number][] = [
-  ['Z1 Modérée', 0, 74],
-  ['Z2 Soutenue', 75, 84],
-  ['Z3 Intense', 85, 200],
-];
+/** L'intensité du CrossFit : voir intensiteParZone (hebdo.ts). */
+export { ZONES_INTENSITE } from './hebdo.ts';
 
 /**
  * Le temps de CrossFit selon l'intensité (cardio moyen de la séance rapporté à ta FC max), sur les 4 dernières semaines. Une séance est rangée tout entière
  * dans le niveau de son cardio moyen : c'est une estimation (un WOD alterne des pics et des pauses). Null sans FC max ou sans séance avec cardio.
  */
 export function intensiteCrossfit(seances: Seance[], hrMax: number | null, nbSemaines = 4, aujourdhui: Date = new Date()): RepartitionZones | null {
-  if (!(Number(hrMax) > 0)) return null;
-  const entrees = seances
-    .filter((s) => {
-      const i = indexSemaine(s.start_date_local, aujourdhui);
-      return EST_WOD(s) && Number(s.avg_heartrate) > 0 && i >= 0 && i < nbSemaines;
-    })
-    .map((s) => ({ pct: (Number(s.avg_heartrate) / Number(hrMax)) * 100, temps: s.moving_time }));
-  return repartirParZone(entrees, ZONES_INTENSITE);
+  return intensiteParZone(seances, hrMax, EST_WOD, nbSemaines, aujourdhui);
 }
 
 export type TypeEntrainement = 'wod' | 'force' | 'endurance';

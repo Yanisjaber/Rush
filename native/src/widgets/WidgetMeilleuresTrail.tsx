@@ -13,8 +13,8 @@ import { usePalette } from '@/theme/usePalette';
 export function MeilleuresSortiesDenivele({ contexte, taille = 'm', sport }: WidgetProps & { sport: SportDenivele }) {
   const p = usePalette();
   const m = meilleuresSorties(contexte.toutesSeances, sport);
-  const couleur = sport === 'vtt' ? p.sportVelo : p.sportCourse;
-  const nomSport = sport === 'vtt' ? 'VTT' : 'trail';
+  const couleur = sport === 'vtt' ? p.sportVelo : sport === 'ski' ? p.sportNeutre : p.sportCourse;
+  const nomSport = sport === 'vtt' ? 'VTT' : sport === 'ski' ? 'ski de fond' : 'trail';
   const lignes = [
     m.plusGrosDPlus && { cle: 'dplus', nom: 'Plus gros D+', valeur: `${formatNombre(m.plusGrosDPlus.dPlus)} m`, detail: `${formatKm(m.plusGrosDPlus.km)} km · ${formatDateCourte(m.plusGrosDPlus.date)}` },
     m.plusLongue && { cle: 'longue', nom: 'Plus longue', valeur: `${formatKm(m.plusLongue.km)} km`, detail: `${formatNombre(m.plusLongue.dPlus)} m de D+ · ${formatDateCourte(m.plusLongue.date)}` },

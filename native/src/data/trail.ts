@@ -2,17 +2,18 @@
 // Calculs purs, sans écran (testés dans tests/trail.test.ts et tests/vtt.test.ts). On ne regarde que les sorties du sport (TrailRun pour le trail,
 // VTT, gravel et VTT électrique pour le VTT), pas la course sur route ni le vélo de route.
 // Le km-effort est la mesure usuelle du trail : 1 km-effort = 1 km + 100 m de dénivelé positif.
-import { familleBarre, familleSport } from './familles.ts';
+import { familleBarre, familleSport, SKI_DE_FOND } from './familles.ts';
 import { joursAvant } from './format.ts';
 import { cumulParSemaine, type CumulHebdo } from './hebdo.ts';
 import { indexSemaine } from './synthese.ts';
 import type { Objectif, Seance } from './types.ts';
 
-/** Les deux sports de dénivelé qui ont leur onglet. */
-export type SportDenivele = 'trail' | 'vtt';
+/** Les sports de dénivelé qui ont leur onglet. */
+export type SportDenivele = 'trail' | 'vtt' | 'ski';
 
 const EST_TRAIL = (s: Seance): boolean => familleSport(s.sport) === 'trail' && s.moving_time > 0;
-const EST_SPORT = (sport: SportDenivele) => (s: Seance): boolean => s.moving_time > 0 && (sport === 'trail' ? familleSport(s.sport) === 'trail' : familleBarre(s.sport) === 'vtt');
+const EST_SPORT = (sport: SportDenivele) => (s: Seance): boolean =>
+  s.moving_time > 0 && (sport === 'trail' ? familleSport(s.sport) === 'trail' : sport === 'ski' ? SKI_DE_FOND.includes(s.sport) : familleBarre(s.sport) === 'vtt');
 const positif = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0;
 
 /** Les kilomètres-effort d'une sortie : distance + dénivelé positif ÷ 100. */
@@ -114,6 +115,7 @@ export function cibleDenivele(objectifs: Objectif[], sport: SportDenivele = 'tra
     const dPlus = Number(o.d_plus);
     if (!positif(dPlus)) return false;
     if (sport === 'vtt') return familleBarre(o.sport) === 'vtt';
+    if (sport === 'ski') return SKI_DE_FOND.includes(o.sport);
     const famille = familleSport(o.sport);
     return famille === 'trail' || (famille === 'course' && dPlus >= DPLUS_MINI_COURSE);
   };
