@@ -133,6 +133,8 @@ export default function Accueil() {
         }}
         contentContainerStyle={[styles.contenu, { paddingBottom: bas + BARRE_ONGLETS + (enEdition ? 100 : 0) }]}
         contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         refreshControl={enEdition ? undefined : <RefreshControl refreshing={actualisation} onRefresh={recharger} tintColor={p.texteDoux} />}
       >
         {/* Pas de titre à l'écran (la barre des sports et l'onglet du bas disent déjà où on est) ; VoiceOver le lit quand même */}
