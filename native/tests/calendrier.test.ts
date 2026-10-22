@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bornesGrille, decalerMois, grilleMois, jourAffiche, jourVide, nomJour, titreMois } from '../src/data/calendrier.ts';
+import { bornesGrille, chargeJour, chargeSeance, decalerMois, grilleMois, jourAffiche, jourVide, nomJour, resumeSemaine, teinteJour, titreMois } from '../src/data/calendrier.ts';
 import { couleurNote, libelleNote, notesDuJour } from '../src/data/annotations.ts';
 import { annotationsDemo, donneesDemo } from '../src/data/demo.ts';
 import type { Note, Prevue, Seance } from '../src/data/types.ts';
@@ -108,3 +108,41 @@ test('démo : octobre 2026 contient des séances, la blessure et deux repos', ()
   assert.ok(jours.some((j) => j.notes.length));
   assert.equal(jours.filter((j) => j.repos).length, 2);
 });
+
+const seanceCal = (id: string, jour: string, sport: string, minutes: number, tss: number | null): Seance => ({
+  id, name: id, sport, start_date_local: `${jour}T08:00:00`, moving_time: minutes * 60, distance_km: null,
+  total_elevation_gain: null, avg_heartrate: null, ftp_at_time: null, avg_watts: null, np: null, tss, category: 'workout',
+});
+const prevueCal = (id: string, jour: string, minutes: number | null): Prevue => ({ id, name: id, date: jour, sport: 'Run', duration: minutes, tss: null, category: 'entrainement', km: null });
+const jourDe = (g: ReturnType<typeof grilleMois>, iso: string) => g.semaines.flat().find((j) => j.iso === iso)!;
+
+test('chargeSeance : les points de la séance, sinon une estimation par la durée', () => {
+  assert.equal(chargeSeance(seanceCal('a', '2026-10-14', 'Run', 60, 70)), 70);
+  assert.equal(chargeSeance(seanceCal('b', '2026-10-14', 'Run', 60, null)), 42); // 0,7 point par minute
+});
+
+test('teinteJour : la couleur du sport de la séance la plus chargée, la force selon la charge du jour ; rien sans séance faite', () => {
+  const g = grilleMois(2026, 9, {
+    seances: [seanceCal('muscu', '2026-10-14', 'WeightTraining', 60, 30), seanceCal('velo', '2026-10-14', 'Ride', 90, 120), seanceCal('course', '2026-10-15', 'Run', 40, 45)],
+    planifiees: [prevueCal('p', '2026-10-16', 50)],
+  }, auj);
+  const t = teinteJour(jourDe(g, '2026-10-14'));
+  assert.equal(t?.famille, 'velo');
+  assert.equal(t?.force, 1); // 150 points : une grosse journée
+  assert.equal(teinteJour(jourDe(g, '2026-10-15'))?.force, 0.3);
+  assert.equal(teinteJour(jourDe(g, '2026-10-16')), null); // une séance seulement prévue ne teinte pas
+  assert.equal(teinteJour(jourDe(g, '2026-10-17')), null);
+});
+
+test('resumeSemaine : le temps fait, le temps prévu et la charge de la semaine', () => {
+  const g = grilleMois(2026, 9, {
+    seances: [seanceCal('a', '2026-10-19', 'Run', 60, 70), seanceCal('b', '2026-10-21', 'Ride', 90, null)],
+    planifiees: [prevueCal('p1', '2026-10-23', 55), prevueCal('p2', '2026-10-24', 180), prevueCal('p3', '2026-10-25', null)],
+  }, auj);
+  const semaine = g.semaines.find((s) => s.some((j) => j.iso === '2026-10-19'))!;
+  assert.deepEqual(resumeSemaine(semaine), { faites: 150 * 60, prevues: 235 * 60, charge: 133 }); // 70 + 63 (90 min estimées)
+  assert.equal(chargeJour(jourDe(g, '2026-10-19')), 70);
+  // Une semaine sans rien : des zéros
+  assert.deepEqual(resumeSemaine(g.semaines[0]), { faites: 0, prevues: 0, charge: 0 });
+});
+

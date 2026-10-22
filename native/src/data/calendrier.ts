@@ -1,5 +1,6 @@
 // Logique du calendrier : construit la grille d'un mois (semaines de lundi à dimanche)
 // et y range les séances réalisées, les séances prévues et les objectifs.
+import { familleAffichage } from './familles.ts';
 import { dateIsoLocale } from './format.ts';
 import type { Note, Objectif, Prevue, Seance } from './types.ts';
 
@@ -128,3 +129,49 @@ export function jourAffiche(j: JourGrille): boolean {
 
 /** Nom court du jour de la semaine d'une date ISO : « Lun », « Mar »… */
 export const nomJour = (iso: string): string => JOURS_SEMAINE[(new Date(`${iso}T12:00:00`).getDay() + 6) % 7];
+
+/** La charge d'une séance faite, en points : ses points de charge, à défaut une estimation par la durée (0,7 point par minute). */
+export const chargeSeance = (s: Seance): number => (Number(s.tss) > 0 ? Number(s.tss) : Math.round(((s.moving_time || 0) / 60) * 0.7));
+
+/** La charge du jour : celle de toutes ses séances faites. */
+export const chargeJour = (j: JourGrille): number => j.seances.reduce((t, s) => t + chargeSeance(s), 0);
+
+/** À partir de cette charge du jour (points), la teinte d'une case est à sa force maximale. */
+const CHARGE_JOUR_FORTE = 150;
+
+export interface TeinteJour {
+  /** La famille du sport de la séance la plus chargée du jour (course, vélo…) : c'est sa couleur qui teinte la case. */
+  famille: string;
+  /** De 0 à 1 : la charge du jour rapportée à une grosse journée (150 points). */
+  force: number;
+}
+
+/** De quelle couleur et avec quelle force teinter la case d'un jour : celle du sport de sa séance la plus chargée. Null sans séance faite. */
+export function teinteJour(j: JourGrille): TeinteJour | null {
+  if (!j.seances.length) return null;
+  const dominante = j.seances.reduce((a, b) => (chargeSeance(b) > chargeSeance(a) ? b : a));
+  return { famille: familleAffichage(dominante.sport), force: Math.min(1, chargeJour(j) / CHARGE_JOUR_FORTE) };
+}
+
+export interface ResumeSemaine {
+  /** Temps des séances faites, en secondes. */
+  faites: number;
+  /** Temps des séances prévues (hors compétitions), en secondes. */
+  prevues: number;
+  /** Charge des séances faites, en points. */
+  charge: number;
+}
+
+/** Le résumé d'une semaine de la grille (7 jours) : le temps fait, le temps prévu, la charge. Compte aussi les jours des mois voisins. */
+export function resumeSemaine(semaine: JourGrille[]): ResumeSemaine {
+  let faites = 0;
+  let prevues = 0;
+  let charge = 0;
+  for (const j of semaine) {
+    for (const s of j.seances) faites += s.moving_time || 0;
+    for (const x of j.planifiees) prevues += (Number(x.duration) > 0 ? Number(x.duration) : 0) * 60;
+    charge += chargeJour(j);
+  }
+  return { faites, prevues, charge };
+}
+
