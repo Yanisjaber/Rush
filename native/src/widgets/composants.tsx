@@ -34,7 +34,11 @@ import { WidgetMeilleures } from './WidgetMeilleures';
 import { WidgetMeilleuresTrail } from './WidgetMeilleuresTrail';
 import { WidgetMeilleuresVtt } from './WidgetMeilleuresVtt';
 import { WidgetNatAllure } from './WidgetNatAllure';
+import { WidgetNatCourbe } from './WidgetNatCourbe';
 import { WidgetNatLongue } from './WidgetNatLongue';
+import { WidgetNatMois } from './WidgetNatMois';
+import { WidgetNatPrepa } from './WidgetNatPrepa';
+import { WidgetNatRythmes } from './WidgetNatRythmes';
 import { WidgetNatVolume } from './WidgetNatVolume';
 import { WidgetObjectif } from './WidgetObjectif';
 import { WidgetPredictions } from './WidgetPredictions';
@@ -91,6 +95,10 @@ export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   prepavtt: WidgetPrepaVtt,
   meilleuresvtt: WidgetMeilleuresVtt,
   vttterrain: WidgetTerrainVtt,
+  natcourbe: WidgetNatCourbe,
+  natmois: WidgetNatMois,
+  natrythmes: WidgetNatRythmes,
+  natprepa: WidgetNatPrepa,
   puissance: WidgetPuissance,
   natvolume: WidgetNatVolume,
   natallure: WidgetNatAllure,
