@@ -20,9 +20,26 @@ export interface Seance {
   source?: string;
   rpe?: number | null;
   user_notes?: string | null;
+  // Colonnes de l'écran de détail d'une séance (voir chargerSeance)
+  elapsed_time?: number | null;
+  avg_speed_kmh?: number | null;
+  max_heartrate?: number | null;
+  max_watts?: number | null;
+  avg_cadence?: number | null;
+  kj?: number | null;
+  calories?: number | null;
   /** Valeurs d'origine quand la séance a été retouchée (voir retouches.ts). */
   origine?: Record<string, unknown>;
   retouchee?: boolean;
+}
+
+/** Un tour (lap) d'une séance, tel que le renvoie la fonction strava-laps : durées en secondes, distance en mètres. */
+export interface Tour {
+  index: number;
+  name: string;
+  elapsed_time: number;
+  moving_time: number;
+  distance: number;
 }
 
 /** Une séance prévue ou une compétition (table activity_planned). */

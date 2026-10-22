@@ -8,13 +8,15 @@
 //  - Toutes les fonctions renvoient { data, erreur } ; `erreur` est un message court en français,
 //    jamais le texte brut de l'erreur de la base.
 //  - Pour l'instant : lecture seule. Les écritures (séances, programmes, tests) arrivent avec leurs écrans.
+import { SUPABASE_URL } from '@/config';
 import { appliquerTout } from './retouches';
 import { dateIsoLocale } from './format';
 import { sb } from './supabase';
 import type { ObjectifAnnuel } from './bilan.ts';
 import type { LigneProfil } from './profil.ts';
 import { valeurValide, type LigneMesure } from './sante-catalogue';
-import type { Nuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Profil, Seance, SerieForce, TestHyrox } from './types';
+import { messageTours, toursValides } from './seance-detail';
+import type { Nuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Profil, Seance, SerieForce, TestHyrox, Tour } from './types';
 
 export interface Resultat<T> {
   data: T | null;
@@ -118,6 +120,45 @@ export async function chargerDernieresSeances(userId: string, limite = 200): Pro
   const res = resultat<Seance[]>(r, 'Impossible de charger tes dernières séances.');
   if (res.data) res.data = sansMarche(await avecRetouches(userId, res.data));
   return res;
+}
+
+// L'écran de détail d'une séance : les colonnes utiles (jamais les gros champs : flux, GPX…).
+const COLONNES_DETAIL =
+  'id,strava_id,source,name,sport,start_date_local,elapsed_time,moving_time,distance_km,total_elevation_gain,avg_speed_kmh,' +
+  'avg_heartrate,max_heartrate,avg_watts,max_watts,np,ftp_at_time,avg_cadence,kj,calories,tss,user_notes,rpe,category';
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Une séance de l'utilisateur, avec ses retouches. Un identifiant qui n'est pas un UUID n'existe pas (pas de requête). */
+export async function chargerSeance(userId: string, id: string): Promise<Resultat<Seance | null>> {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Séance introuvable.' };
+  const r = await sb.from('activities').select(COLONNES_DETAIL).eq('user_id', userId).eq('id', id).maybeSingle();
+  const res = resultat<Seance | null>(r, 'Impossible de charger cette séance.');
+  if (res.data) res.data = (await avecRetouches(userId, [res.data]))[0];
+  if (!res.erreur && !res.data) return { data: null, erreur: 'Séance introuvable.' };
+  return res;
+}
+
+/**
+ * Les tours (laps) d'une séance Strava, par la fonction « strava-laps » (elle seule parle à Strava : aucun jeton ne passe par l'app).
+ * La réponse est nettoyée avant usage.
+ */
+export async function chargerTours(id: string): Promise<Resultat<Tour[]>> {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Séance introuvable.' };
+  const { data: s } = await sb.auth.getSession();
+  const jeton = s.session?.access_token;
+  if (!jeton) return { data: null, erreur: 'Reconnecte-toi pour voir les tours.' };
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/strava-laps`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${jeton}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activity_id: id }),
+    });
+    const corps = (await res.json().catch(() => null)) as { error?: unknown; laps?: unknown } | null;
+    if (!res.ok) return { data: null, erreur: messageTours(res.status, corps?.error) };
+    return { data: toursValides(corps?.laps), erreur: '' };
+  } catch {
+    return { data: null, erreur: messageTours(0, null) };
+  }
 }
 
 /** Prochaines compétitions (objectifs), de la plus proche à la plus lointaine. */

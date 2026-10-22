@@ -1,10 +1,11 @@
 // Données d'exemple pour le mode démo : mêmes formes que les réponses de l'API, générées de façon déterministe.
 // Elles servent à montrer et à tester l'interface sans être connecté. Port de app/src/lib/data/demo.js
 // (sans les retouches faites en démo, ni la puissance, le sommeil, Hyrox… qui viendront avec leurs écrans).
+import { familleAffichage } from './familles.ts';
 import { dateIsoLocale } from './format.ts';
 import type { ObjectifAnnuel } from './bilan.ts';
 import { valeurValide, type LigneMesure } from './sante-catalogue.ts';
-import type { Nuit, SegmentNuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Seance, SerieForce, TestHyrox } from './types.ts';
+import type { Nuit, SegmentNuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Seance, SerieForce, TestHyrox, Tour } from './types.ts';
 
 interface ModeleJour {
   sport: string;
@@ -425,4 +426,25 @@ export function sommeilDemo(aujourdhui: Date = new Date(), nombre = 45): Nuit[] 
     });
   }
   return nuits;
+}
+
+/**
+ * Les tours d'une séance de démo : un tour par kilomètre (le dernier prend le reste) pour une sortie d'au moins 2 km, avec un rythme qui varie un peu ;
+ * pour Hyrox, les 16 segments d'un test (8 runs d'un kilomètre, 8 stations). Rien pour le reste (muscu…).
+ */
+export function toursDemo(s: Seance): Tour[] {
+  if (familleAffichage(s.sport) === 'hyrox') {
+    return testsHyroxDemo()[0].segments.map((t, i) => ({ index: i + 1, name: '', elapsed_time: t, moving_time: t, distance: i % 2 === 0 ? 1000 : 0 }));
+  }
+  const km = Number(s.distance_km);
+  if (!(km >= 2) || !(s.moving_time > 0)) return [];
+  const entiers = Math.min(30, Math.floor(km));
+  const bruts = Array.from({ length: entiers }, (_, i) => 1 + (((i * 7) % 5) - 2) * 0.03); // ±6 % autour de l'allure moyenne
+  const reste = km - entiers;
+  const poids = [...bruts, ...(reste > 0.05 ? [reste] : [])];
+  const somme = poids.reduce((a, b) => a + b, 0);
+  return poids.map((w, i) => {
+    const temps = Math.round((w / somme) * s.moving_time);
+    return { index: i + 1, name: '', elapsed_time: temps, moving_time: temps, distance: i < entiers ? 1000 : Math.round(reste * 1000) };
+  });
 }
