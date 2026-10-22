@@ -90,9 +90,26 @@ export default function Calendrier() {
       >
         <View style={styles.navigation}>
           <Fleche sens={-1} onPress={() => setCible((c) => decalerMois(c.annee, c.mois, -1))} />
-          <Text accessibilityRole="header" accessibilityLiveRegion="polite" style={[typo.titre2, styles.titreMois, { color: p.texte }]}>
-            {titre}
-          </Text>
+          {/* Sur un autre mois, le titre est aussi le bouton de retour à aujourd'hui (pastille avec l'icône ↺) */}
+          <View style={styles.titreZone}>
+            {estMoisCourant ? (
+              <Text accessibilityRole="header" accessibilityLiveRegion="polite" style={[typo.titre2, { color: p.texte }]}>
+                {titre}
+              </Text>
+            ) : (
+              <Pressable
+                onPress={() => setCible({ annee: maintenant.getFullYear(), mois: maintenant.getMonth() })}
+                accessibilityRole="button"
+                accessibilityLabel={`${titre}. Revenir à aujourd'hui`}
+                style={[styles.titreBouton, { backgroundColor: p.surface }]}
+              >
+                <Text accessibilityLiveRegion="polite" style={[typo.titre2, { color: p.texte }]}>{titre}</Text>
+                <View style={[styles.retourIcone, { borderColor: p.contourChamp }]}>
+                  <Text style={[styles.retourFleche, { color: p.texteDoux }]}>↺</Text>
+                </View>
+              </Pressable>
+            )}
+          </View>
           <Fleche sens={1} onPress={() => setCible((c) => decalerMois(c.annee, c.mois, 1))} />
         </View>
 
@@ -103,19 +120,6 @@ export default function Calendrier() {
           <Carte valeur={chargeDuMois.toLocaleString('fr-FR')} unite="pts" legende="points de charge" />
           {principaleDuMois ? <Carte valeur={nombre(principaleDuMois.valeur)} unite={UNITES[principaleDuMois.unite].court} legende={UNITES[principaleDuMois.unite].dit} /> : null}
         </View>
-        {/* Le retour à aujourd'hui, seulement quand on regarde un autre mois */}
-        {!estMoisCourant ? (
-          <View style={styles.boutons}>
-            <Pressable
-              onPress={() => setCible({ annee: maintenant.getFullYear(), mois: maintenant.getMonth() })}
-              accessibilityRole="button"
-              accessibilityLabel="Revenir à aujourd'hui"
-              style={[styles.retour, { borderColor: p.contourChamp }]}
-            >
-              <Text style={[typo.corpsFort, { color: p.texte }]}>Aujourd'hui</Text>
-            </Pressable>
-          </View>
-        ) : null}
 
         {erreur ? (
           <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
@@ -440,15 +444,17 @@ const styles = StyleSheet.create({
   navigation: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   fleche: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   chevron: { width: 12, height: 12, borderTopWidth: 2.5, borderRightWidth: 2.5 },
-  titreMois: { flex: 1, textAlign: 'center' },
+  titreZone: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  // Pastille du titre sur un autre mois : au moins 44 pt de haut pour le toucher
+  titreBouton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 10, borderRadius: rayon.rond },
+  retourIcone: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  retourFleche: { fontSize: 15, lineHeight: 18 },
   cartes: { flexDirection: 'row', gap: 6 },
   carte: { flex: 1, minHeight: 56, borderRadius: rayon.base, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   carteUnite: { fontFamily: police.texte600, fontSize: 11, letterSpacing: 0 },
   carteValeur: { fontFamily: police.titre800, fontSize: 22, lineHeight: 26, letterSpacing: -0.4, fontVariant: ['tabular-nums'] },
-  boutons: { flexDirection: 'row', gap: 8 },
   cycleLigne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
   cycleBande: { width: 6, height: 26, borderRadius: 3 },
-  retour: { flex: 1, minHeight: 44, borderWidth: 1.5, borderRadius: rayon.rond, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
   grille: { borderRadius: rayon.bloc, paddingHorizontal: 8, paddingVertical: 10, gap: 4, overflow: 'hidden' },
