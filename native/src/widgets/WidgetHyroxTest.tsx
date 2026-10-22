@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { CadreWidget } from '@/components/CadreWidget';
+import { ListeCompacte } from '@/components/ListeCompacte';
 import { Tuile } from '@/components/Tuile';
 import { formatDateCourte } from '@/data/format';
 import { analyserTest, ciblesSegments, ecrireTemps, formatEcartLong, SEGMENTS } from '@/data/hyrox';
@@ -9,8 +10,7 @@ import { usePalette } from '@/theme/usePalette';
 
 // Ton dernier test, segment par segment : chaque case de la bande est large comme le temps passé dessus.
 // Sur téléphone, les 16 temps ne tiennent pas dans la boîte : la bande donne la forme du test, les totaux le résumé.
-// tuile : le temps total du dernier test en gros, l'objectif en note.
-export function WidgetHyroxTest({ contexte, tuile = false }: WidgetProps) {
+export function WidgetHyroxTest({ contexte, taille = 'm' }: WidgetProps) {
   const p = usePalette();
   const test = contexte.hyrox.tests[0] ?? null;
   const objectif = contexte.hyrox.objectif;
@@ -18,13 +18,27 @@ export function WidgetHyroxTest({ contexte, tuile = false }: WidgetProps) {
   const cibles = ciblesSegments(objectif, test);
   const ecart = objectif && test ? test.total_s - objectif.total_s : null;
 
-  if (tuile) {
+  // XS : le temps total ; S : + l'objectif en note ; M : + la bande des 16 segments et les totaux runs / stations ; L : le grand format
+  if (taille !== 'l') {
     return (
       <Tuile
         titre="Dernier test Hyrox"
         valeur={test ? ecrireTemps(test.total_s) : '—'}
         note={test ? (objectif ? `Objectif ${ecrireTemps(objectif.total_s)}` : formatDateCourte(test.date)) : 'Aucun test'}
-      />
+        large
+      >
+        {taille === 'm' && test && analyse ? (
+          <View style={{ gap: 8 }}>
+            <Bande test={test} hauteur={30} />
+            <ListeCompacte
+              lignes={[
+                { cle: 'runs', nom: 'Runs', valeur: ecrireTemps(analyse.runs) },
+                { cle: 'stations', nom: 'Stations', valeur: ecrireTemps(analyse.stations) },
+              ]}
+            />
+          </View>
+        ) : null}
+      </Tuile>
     );
   }
 
@@ -36,22 +50,13 @@ export function WidgetHyroxTest({ contexte, tuile = false }: WidgetProps) {
             {test.label} · {formatDateCourte(test.date)}
           </Text>
           <View style={styles.legende}>
-            <View style={[styles.pastille, { backgroundColor: p.surface2, borderColor: p.traitFort, borderWidth: 1 }]} />
+            <View style={[styles.pastille, { backgroundColor: p.traitFort }]} />
             <Text style={[typo.petit, { color: p.texteDoux }]}>Run 1 km</Text>
             <View style={[styles.pastille, { backgroundColor: p.sportHybride, marginLeft: 8 }]} />
             <Text style={[typo.petit, { color: p.texteDoux }]}>Station</Text>
           </View>
 
-          <View
-            accessible
-            accessibilityRole="image"
-            accessibilityLabel={`Temps de chaque segment du test, ${SEGMENTS.map((s, i) => `${s.nom} ${ecrireTemps(test.segments[i])}`).join(', ')}`}
-            style={styles.bande}
-          >
-            {SEGMENTS.map((s, i) => (
-              <View key={s.i} style={{ flexGrow: test.segments[i], flexBasis: 0, minWidth: 0, borderRadius: 4, backgroundColor: s.type === 'run' ? p.surface2 : p.sportHybride }} />
-            ))}
-          </View>
+          <Bande test={test} hauteur={44} />
 
           <View style={styles.totaux}>
             <Total etiquette="Temps total" valeur={ecrireTemps(analyse.total)} />
@@ -72,6 +77,23 @@ export function WidgetHyroxTest({ contexte, tuile = false }: WidgetProps) {
   );
 }
 
+// La bande des 16 segments : chaque case est large comme le temps passé dessus (runs en gris, stations en jaune)
+function Bande({ test, hauteur }: { test: NonNullable<WidgetProps['contexte']['hyrox']['tests'][number]>; hauteur: number }) {
+  const p = usePalette();
+  return (
+    <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={`Temps de chaque segment du test, ${SEGMENTS.map((s, i) => `${s.nom} ${ecrireTemps(test.segments[i])}`).join(', ')}`}
+      style={[styles.bande, { height: hauteur }]}
+    >
+      {SEGMENTS.map((s, i) => (
+        <View key={s.i} style={{ flexGrow: test.segments[i], flexBasis: 0, minWidth: 0, borderRadius: 4, backgroundColor: s.type === 'run' ? p.traitFort : p.sportHybride }} />
+      ))}
+    </View>
+  );
+}
+
 function Total({ etiquette, valeur, couleur }: { etiquette: string; valeur: string; couleur?: string }) {
   const p = usePalette();
   return (
@@ -85,7 +107,7 @@ function Total({ etiquette, valeur, couleur }: { etiquette: string; valeur: stri
 const styles = StyleSheet.create({
   legende: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   pastille: { width: 9, height: 9, borderRadius: 2 },
-  bande: { flexDirection: 'row', gap: 3, height: 44 },
+  bande: { flexDirection: 'row', gap: 3 },
   totaux: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 16, columnGap: 14, marginTop: 20 },
   total: { width: '47%' },
   valeur: { fontFamily: police.titre700, fontSize: 28, lineHeight: 32, marginTop: 4, fontVariant: ['tabular-nums'] },

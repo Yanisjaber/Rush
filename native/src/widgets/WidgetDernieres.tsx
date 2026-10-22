@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Text } from 'react-native';
 import { CadreWidget } from '@/components/CadreWidget';
+import { ListeCompacte } from '@/components/ListeCompacte';
 import { Tuile } from '@/components/Tuile';
 import { LigneSeance, Points } from '@/components/LigneSeance';
 import { familleAffichage } from '@/data/familles';
@@ -8,7 +9,7 @@ import { recordsParSeance } from '@/data/force';
 import { formatDateCourte, formatDuree, formatKm } from '@/data/format';
 import { chargeSeance } from '@/data/synthese';
 import type { Seance, WidgetProps } from '@/data/types';
-import { SPORTS, type CleSport } from '@/theme/sports';
+import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -20,22 +21,28 @@ function detail(s: Seance): string {
   return morceaux.join(' · ');
 }
 
-// tuile : la dernière séance (sa durée en gros, son nom et sa date en note).
-export function WidgetDernieres({ contexte, tuile = false }: WidgetProps) {
+export function WidgetDernieres({ contexte, taille = 'm' }: WidgetProps) {
   const p = usePalette();
   // Les records battus dans chaque séance (sur tout l'historique de force)
   const records = useMemo(() => recordsParSeance(contexte.force.series), [contexte.force.series]);
   const recentes = contexte.dernieres.slice(0, 4);
 
-  if (tuile) {
+  // XS : la durée de la dernière ; S : + son nom et sa date ; M : + les trois dernières en liste (nom et charge) ; L : les quatre dernières avec détail et records
+  if (taille !== 'l') {
     const derniere = contexte.dernieres[0];
     const famille = derniere ? familleAffichage(derniere.sport) : '';
+    const nomDe = (x: Seance) => x.name || SPORTS[familleAffichage(x.sport) as CleSport]?.court || SPORTS.autre.court;
     return (
       <Tuile
         titre="Dernière séance"
         valeur={derniere ? formatDuree(derniere.moving_time) : '—'}
         note={derniere ? `${derniere.name || SPORTS[famille as CleSport]?.court || SPORTS.autre.court} · ${formatDateCourte(derniere.start_date_local)}` : 'Aucune séance'}
-      />
+        large
+      >
+        {taille === 'm' && contexte.dernieres.length > 1 ? (
+          <ListeCompacte lignes={contexte.dernieres.slice(0, 4).map((x) => ({ cle: x.id, nom: nomDe(x), valeur: `${chargeSeance(x)} pts`, point: couleurSport(p, familleAffichage(x.sport)) }))} />
+        ) : null}
+      </Tuile>
     );
   }
 

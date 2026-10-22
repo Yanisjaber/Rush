@@ -22,6 +22,7 @@ export default function ParametresLayout() {
       <Stack.Screen name="zones" options={{ title: 'Zones' }} />
       <Stack.Screen name="sports" options={{ title: 'Mes sports' }} />
       <Stack.Screen name="connexions" options={{ title: 'Connexions' }} />
+      <Stack.Screen name="widgets" options={{ title: 'Catalogue des widgets' }} />
     </Stack>
   );
 }

@@ -1,7 +1,9 @@
 import { StyleSheet, Text as TexteRN, View } from 'react-native';
 import Svg, { Circle, Path, Text } from 'react-native-svg';
 import { CadreWidget } from '@/components/CadreWidget';
+import { DeuxCourbes } from '@/components/DeuxCourbes';
 import { MiniBarres } from '@/components/MiniBarres';
+import { StatCle } from '@/components/StatCle';
 import { Tuile } from '@/components/Tuile';
 import { analyserTest, ciblesSegments, ecrireTemps } from '@/data/hyrox';
 import type { WidgetProps } from '@/data/types';
@@ -13,8 +15,7 @@ const H = 170;
 const MARGE = 14;
 
 // Le temps de chacun des 8 runs d'1 km : ton dernier test (trait plein) et ton objectif (pointillés).
-// tuile : le temps moyen d'un run en gros + les 8 runs en barres.
-export function WidgetHyroxAllure({ contexte, tuile = false }: WidgetProps) {
+export function WidgetHyroxAllure({ contexte, taille = 'm' }: WidgetProps) {
   const p = usePalette();
   const test = contexte.hyrox.tests[0] ?? null;
   const runs = test ? analyserTest(test.segments).allures : [];
@@ -28,11 +29,17 @@ export function WidgetHyroxAllure({ contexte, tuile = false }: WidgetProps) {
   const y = (v: number) => MARGE + ((v - mini) / Math.max(1, maxi - mini)) * (H - 2 * MARGE); // plus lent = plus bas
   const trace = (vals: number[]) => vals.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
 
-  if (tuile) {
+  // XS : l'allure moyenne ; S : + les 8 runs en barres ; M : + les 8 runs face à l'objectif en courbe ; L : le grand format avec ses repères
+  if (taille !== 'l') {
     const moyenne = runs.length ? runs.reduce((a, b) => a + b, 0) / runs.length : 0;
     return (
-      <Tuile titre="Allure des 8 runs" valeur={runs.length ? ecrireTemps(moyenne) : '—'} note={runs.length ? 'par km en moyenne' : 'Aucun test'}>
-        {runs.length ? <MiniBarres valeurs={runs} couleur={p.sportHybride} etiquette="Temps de chacun des 8 runs du dernier test" /> : null}
+      <Tuile titre="Allure des 8 runs" valeur={runs.length ? ecrireTemps(moyenne) : '—'} note={runs.length ? 'par km en moyenne' : 'Aucun test'} large>
+        {!runs.length ? null : taille === 's' ? (
+          <MiniBarres valeurs={runs} couleur={p.sportHybride} etiquette="Temps de chacun des 8 runs du dernier test" />
+        ) : taille === 'm' ? (
+          // Plus lent = plus bas, comme dans le grand format : on inverse les valeurs
+          <DeuxCourbes principale={runs.map((v) => -v)} secondaire={runsCibles.map((v) => -v)} couleur={p.sportHybride} largeur={220} hauteur={88} etiquette={`Temps des 8 runs : de ${ecrireTemps(runs[0])} à ${ecrireTemps(runs[runs.length - 1])}`} />
+        ) : null}
       </Tuile>
     );
   }
@@ -80,6 +87,11 @@ export function WidgetHyroxAllure({ contexte, tuile = false }: WidgetProps) {
             <TexteRN style={[typo.petit, { color: p.texteDoux }]}>Run 1</TexteRN>
             <TexteRN style={[typo.petit, { color: p.texteDoux }]}>Run 8</TexteRN>
           </View>
+          <View style={styles.reperes}>
+            <StatCle etiquette="Plus rapide" valeur={ecrireTemps(Math.min(...runs))} petit />
+            <StatCle etiquette="Moyenne" valeur={ecrireTemps(runs.reduce((a, b) => a + b, 0) / runs.length)} petit />
+            <StatCle etiquette="Plus lent" valeur={ecrireTemps(Math.max(...runs))} petit />
+          </View>
         </>
       ) : (
         <TexteRN style={[typo.corps, { color: p.texteDoux }]}>Saisis un test pour voir l'allure de tes 8 runs.</TexteRN>
@@ -94,4 +106,5 @@ const styles = StyleSheet.create({
   traitPlein: { width: 18, height: 3, borderRadius: 2 },
   traitTirets: { width: 18, height: 0, borderTopWidth: 2, borderStyle: 'dashed' },
   bas: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+  reperes: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 },
 });

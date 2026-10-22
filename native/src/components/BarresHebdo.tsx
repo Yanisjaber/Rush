@@ -7,11 +7,13 @@ interface Props {
   valeurs: number[];
   couleur: string;
   hauteur?: number;
+  /** Une ligne en pointillés à cette valeur (la moyenne, par exemple). */
+  repere?: number;
   /** Phrase lue par VoiceOver à la place du dessin. */
   etiquette: string;
 }
 
-export function BarresHebdo({ valeurs, couleur, hauteur = 120, etiquette }: Props) {
+export function BarresHebdo({ valeurs, couleur, hauteur = 120, repere, etiquette }: Props) {
   const p = usePalette();
   const maximum = Math.max(1, ...valeurs);
   return (
@@ -21,11 +23,13 @@ export function BarresHebdo({ valeurs, couleur, hauteur = 120, etiquette }: Prop
           <View style={{ height: `${(v / maximum) * 100}%`, minHeight: 2, backgroundColor: couleur, borderRadius: 6 }} />
         </View>
       ))}
+      {repere != null && repere > 0 ? <View pointerEvents="none" style={[styles.repere, { bottom: `${Math.min(100, (repere / maximum) * 100)}%`, borderTopColor: p.texteMuet }]} /> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   barres: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, borderBottomWidth: StyleSheet.hairlineWidth },
+  repere: { position: 'absolute', left: 0, right: 0, borderTopWidth: 1, borderStyle: 'dashed' },
   colonne: { flex: 1, height: '100%', justifyContent: 'flex-end' },
 });

@@ -1,12 +1,13 @@
 import { Text } from 'react-native';
 import { CadreWidget } from '@/components/CadreWidget';
+import { ListeCompacte } from '@/components/ListeCompacte';
 import { Tuile } from '@/components/Tuile';
 import { LigneSeance } from '@/components/LigneSeance';
 import { familleAffichage } from '@/data/familles';
 import { formatDateCourte, formatDuree } from '@/data/format';
 import { prochainesPrevues } from '@/data/synthese';
 import type { Prevue, WidgetProps } from '@/data/types';
-import { SPORTS, type CleSport } from '@/theme/sports';
+import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -18,20 +19,26 @@ function detail(p: Prevue): string {
   return morceaux.join(' · ');
 }
 
-// tuile : la prochaine séance prévue (la date en gros, son nom en note).
-export function WidgetAvenir({ contexte, tuile = false }: WidgetProps) {
+export function WidgetAvenir({ contexte, taille = 'm' }: WidgetProps) {
   const palette = usePalette();
   const prochaines = prochainesPrevues(contexte.planifiees, new Date(), 4);
 
-  if (tuile) {
+  // XS : la date de la prochaine ; S : + son nom ; M : + les trois suivantes en liste ; L : les quatre prochaines avec leur détail
+  if (taille !== 'l') {
     const prochaine = prochaines[0];
     const famille = prochaine ? familleAffichage(prochaine.sport) : '';
+    const nomDe = (x: Prevue) => x.name || SPORTS[familleAffichage(x.sport) as CleSport]?.court || SPORTS.autre.court;
     return (
       <Tuile
         titre="À venir"
         valeur={prochaine ? formatDateCourte(prochaine.date) : '—'}
         note={prochaine ? `${prochaine.name || SPORTS[famille as CleSport]?.court || SPORTS.autre.court}${prochaine.duration ? ` · ${formatDuree(prochaine.duration * 60)}` : ''}` : 'Rien de prévu'}
-      />
+        large
+      >
+        {taille === 'm' && prochaines.length > 1 ? (
+          <ListeCompacte lignes={prochaines.slice(0, 4).map((x) => ({ cle: x.id, nom: nomDe(x), valeur: formatDateCourte(x.date), point: couleurSport(palette, familleAffichage(x.sport)) }))} />
+        ) : null}
+      </Tuile>
     );
   }
 

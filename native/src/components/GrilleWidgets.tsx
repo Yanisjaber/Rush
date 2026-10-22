@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { paletteHeros } from '@/components/CadreWidget';
 import { ContexteHeros, ContexteTaille, ECART_LIGNES, HAUTEURS } from '@/components/taille';
 import type { Taille } from '@/data/types';
+import { ContextePalette, usePalette } from '@/theme/usePalette';
 
 // La grille de l'accueil : deux colonnes. Un widget S prend une demi-ligne, M et L une ligne entière.
 // Les widgets se rangent dans l'ordre, à la suite, et passent à la ligne tout seuls : deux S voisins se retrouvent côte à côte,
@@ -20,10 +22,15 @@ export function GrilleWidgets({ children }: { children: ReactNode }) {
 
 /** La boîte d'un widget : sa taille en points est fixe (voir taille.ts), le contenu s'y adapte et ce qui dépasse est coupé. */
 export function Boite({ taille, heros = null, hauteur, children }: { taille: Taille; /** Look dossard (premier widget de la page) et couleur du liseré. */ heros?: { couleur: string } | null; /** Exception : une hauteur sur mesure en points, pour un bloc qui ne tient ni dans une ligne ni dans deux (l'état du jour de Santé). */ hauteur?: number; children: ReactNode }) {
+  // En look dossard, le corps du widget lit déjà la palette inversée (texte foncé sur le fond clair) : sans ça, ce qu'il
+  // dessine avant son cadre (textes, listes, légendes) resterait blanc sur le crème. Le cadre garde la palette d'origine (`base`).
+  const base = usePalette();
   return (
     <ContexteTaille.Provider value={taille}>
-      <ContexteHeros.Provider value={heros}>
-        <View style={{ height: hauteur ?? HAUTEURS[taille], overflow: 'hidden' }}>{children}</View>
+      <ContexteHeros.Provider value={heros ? { ...heros, base } : null}>
+        <ContextePalette.Provider value={heros ? paletteHeros(base) : base}>
+          <View style={{ height: hauteur ?? HAUTEURS[taille], overflow: 'hidden' }}>{children}</View>
+        </ContextePalette.Provider>
       </ContexteHeros.Provider>
     </ContexteTaille.Provider>
   );

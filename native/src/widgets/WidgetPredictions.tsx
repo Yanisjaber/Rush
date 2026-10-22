@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { CadreWidget } from '@/components/CadreWidget';
+import { ListeCompacte } from '@/components/ListeCompacte';
 import { Tuile } from '@/components/Tuile';
 import { formatChrono } from '@/data/format';
 import { predictionsCourse } from '@/data/synthese';
@@ -9,8 +10,7 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // 5 km, 10 km et semi estimés d'après les sorties récentes (formule de Riegel), avec l'écart à l'objectif.
-// tuile : tuile (la distance de l'objectif, sinon la première, en gros ; les autres en note).
-export function WidgetPredictions({ contexte, taille = 'm', tuile = false }: WidgetProps) {
+export function WidgetPredictions({ contexte, taille = 'm' }: WidgetProps) {
   const p = usePalette();
   const predictions = predictionsCourse(contexte.toutesSeances);
 
@@ -23,11 +23,22 @@ export function WidgetPredictions({ contexte, taille = 'm', tuile = false }: Wid
     if (proche && Math.abs(proche.km - km) <= 1.5) ecart = { cle: proche.cle, secondes: proche.secondes - objectif.duration * 60 };
   }
 
-  if (tuile) {
+  // XS : la distance de l'objectif ; S : + les autres en note ; M : + les trois distances et l'écart à l'objectif en liste ; L : le grand format
+  if (taille !== 'l') {
     const vedette = predictions.find((pr) => pr.cle === ecart?.cle) ?? predictions[predictions.length > 1 ? 1 : 0];
     const autres = predictions.filter((pr) => pr !== vedette).map((pr) => `${pr.label} ${formatChrono(pr.secondes)}`).join(' · ');
+    const texteEcart = ecart ? `${ecart.secondes <= 0 ? '−' : '+'}${formatChrono(Math.abs(ecart.secondes))} vs objectif` : null;
+    const lignes = predictions.map((pr) => ({ cle: pr.cle, nom: pr.label, valeur: formatChrono(pr.secondes) }));
+    if (texteEcart && ecart) lignes.push({ cle: 'ecart', nom: 'Objectif', valeur: texteEcart, couleur: ecart.secondes <= 0 ? p.ok : p.alerte } as (typeof lignes)[number]);
     return (
-      <Tuile titre={vedette ? `Prédiction ${vedette.label}` : 'Prédictions'} valeur={vedette ? formatChrono(vedette.secondes) : '—'} note={vedette ? autres : 'Il faut une sortie de 5 km'} />
+      <Tuile
+        titre={vedette ? `Prédiction ${vedette.label}` : 'Prédictions'}
+        valeur={vedette ? formatChrono(vedette.secondes) : '—'}
+        note={vedette ? (taille === 'm' ? 'Estimée sur 4 mois' : autres) : 'Il faut une sortie de 5 km'}
+        large
+      >
+        {taille === 'm' && lignes.length ? <ListeCompacte lignes={lignes} /> : null}
+      </Tuile>
     );
   }
 
@@ -62,11 +73,9 @@ export function WidgetPredictions({ contexte, taille = 'm', tuile = false }: Wid
               </View>
             );
           })}
-          {taille !== 's' ? (
-            <Text style={[typo.petit, { color: p.texteDoux, marginTop: 14 }]}>
-              Estimées à partir de tes sorties des 4 derniers mois (formule de Riegel). Prudentes : une sortie d'entraînement n'est pas une course.
-            </Text>
-          ) : null}
+          <Text style={[typo.petit, { color: p.texteDoux, marginTop: 14 }]}>
+            Estimées à partir de tes sorties des 4 derniers mois (formule de Riegel). Prudentes : une sortie d'entraînement n'est pas une course.
+          </Text>
         </>
       ) : (
         <Text style={[typo.corps, { color: p.texteDoux }]}>Il faut au moins une sortie de 5 km sur les 4 derniers mois pour estimer tes temps.</Text>

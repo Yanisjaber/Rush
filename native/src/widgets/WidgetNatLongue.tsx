@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { CadreWidget } from '@/components/CadreWidget';
+import { ListeCompacte } from '@/components/ListeCompacte';
 import { Tuile } from '@/components/Tuile';
 import { formatAllure100m, formatDateCourte, formatDuree, formatNombre } from '@/data/format';
 import { meilleuresNatation } from '@/data/natation';
@@ -8,20 +9,30 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La séance de natation la plus longue et la plus rapide (au moins 500 m) sur la période chargée.
-// tuile (taille S, M ou XS) : la plus longue en gros, l'allure de la plus rapide en note.
-export function WidgetNatLongue({ contexte, tuile = false }: WidgetProps) {
+export function WidgetNatLongue({ contexte, taille = 'm' }: WidgetProps) {
   const p = usePalette();
   const m = meilleuresNatation(contexte.toutesSeances);
   const metres = (km: number) => formatNombre(Math.round(km * 1000));
 
-  if (tuile) {
+  // XS : la plus longue ; S : + le record d'allure en note ; M : + les deux records en liste ; L : le grand format
+  if (taille !== 'l') {
     return (
       <Tuile
         titre="Plus longue natation"
         valeur={m.plusLongue ? metres(m.plusLongue.km) : '—'}
         unite={m.plusLongue ? 'm' : ''}
-        note={m.plusRapide ? `Record : ${formatAllure100m(m.plusRapide.allure)}` : m.plusLongue ? '12 dernières semaines' : 'Pas encore de natation'}
-      />
+        note={taille === 'm' && m.plusLongue ? `${formatDuree(m.plusLongue.secondes)} · ${formatDateCourte(m.plusLongue.date)}` : m.plusRapide ? `Record : ${formatAllure100m(m.plusRapide.allure)}` : m.plusLongue ? '12 dernières semaines' : 'Pas encore de natation'}
+        large
+      >
+        {taille === 'm' && (m.plusLongue || m.plusRapide) ? (
+          <ListeCompacte
+            lignes={[
+              ...(m.plusLongue ? [{ cle: 'longue', nom: 'Plus longue', valeur: `${metres(m.plusLongue.km)} m` }] : []),
+              ...(m.plusRapide ? [{ cle: 'rapide', nom: 'Plus rapide', valeur: formatAllure100m(m.plusRapide.allure) }] : []),
+            ]}
+          />
+        ) : null}
+      </Tuile>
     );
   }
 

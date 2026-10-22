@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { CadreWidget } from '@/components/CadreWidget';
+import { ListeCompacte } from '@/components/ListeCompacte';
 import { Tuile } from '@/components/Tuile';
 import { ciblesSegments, ecartsParSegment, formatEcart } from '@/data/hyrox';
 import type { WidgetProps } from '@/data/types';
@@ -7,23 +8,27 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Pour chaque station : l'écart entre ton dernier test et ton objectif. Orange = temps à gagner, vert = déjà tenu.
-// tuile : le temps total à gagner sur les stations, la station la plus en retard en note.
-export function WidgetHyroxGains({ contexte, tuile = false }: WidgetProps) {
+export function WidgetHyroxGains({ contexte, taille = 'm' }: WidgetProps) {
   const p = usePalette();
   const test = contexte.hyrox.tests[0] ?? null;
   const cibles = ciblesSegments(contexte.hyrox.objectif, test);
   const ecarts = ecartsParSegment(test, cibles, 'station');
   const echelle = Math.max(10, ...ecarts.map((e) => Math.abs(e.ecart)));
 
-  if (tuile) {
+  // XS : le temps à gagner ; S : + la station la plus en retard ; M : + les trois stations où gagner le plus ; L : les 8 stations
+  if (taille !== 'l') {
     const aGagner = ecarts.filter((e) => e.ecart > 0);
     const pire = aGagner.reduce<(typeof ecarts)[number] | null>((a, b) => (a && a.ecart >= b.ecart ? a : b), null);
+    const premieres = [...aGagner].sort((a, b) => b.ecart - a.ecart).slice(0, 4);
     return (
       <Tuile
         titre="Où gagner du temps"
         valeur={ecarts.length ? formatEcart(aGagner.reduce((somme, e) => somme + e.ecart, 0)) : '—'}
-        note={pire ? `Surtout : ${pire.nom}` : ecarts.length ? 'Objectif tenu partout' : 'Fixe un objectif'}
-      />
+        note={pire ? (taille === 'm' ? 'à gagner sur les stations' : `Surtout : ${pire.nom}`) : ecarts.length ? 'Objectif tenu partout' : 'Fixe un objectif'}
+        large
+      >
+        {taille === 'm' && premieres.length ? <ListeCompacte lignes={premieres.map((e) => ({ cle: e.cle, nom: e.nom, valeur: formatEcart(e.ecart), couleur: p.alerte }))} /> : null}
+      </Tuile>
     );
   }
 

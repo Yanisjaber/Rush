@@ -17,26 +17,31 @@ interface Props {
   note?: string;
   /** Un chiffre plus gros (écrans qui mettent leurs chiffres clés en avant, comme Santé). */
   gros?: boolean;
+  /** En M : la partie visuelle prend 60 % de la largeur (un vrai graphique ou une liste détaillée) au lieu de 42 %. */
+  large?: boolean;
   children?: ReactNode;
 }
 
-export function Tuile({ titre, valeur, unite, note, gros, children }: Props) {
+export function Tuile({ titre, valeur, unite, note, gros, large, children }: Props) {
   const taille = useContext(ContexteTaille);
   return (
     <CadreWidget titre={taille === 'xs' ? undefined : titre} serre>
-      <Contenu titre={titre} valeur={valeur} unite={unite} note={note} gros={gros}>
+      <Contenu titre={titre} valeur={valeur} unite={unite} note={note} gros={gros} large={large}>
         {children}
       </Contenu>
     </CadreWidget>
   );
 }
 
+// Une note ne se coupe pas après une barre oblique (« 5'05"/km » restait coupé en « 5'05"/ » puis « km »)
+const sansCoupure = (texte: string) => texte.replace(/\/(?=\S)/g, '/\u2060');
+
 // Dans un composant à part : il lit la palette fournie par le cadre (inversée quand le widget est en look dossard)
-function Contenu({ titre, valeur, unite, note, gros, children }: Props) {
+function Contenu({ titre, valeur, unite, note, gros, large, children }: Props) {
   const p = usePalette();
   const taille = useContext(ContexteTaille);
   const chiffre = (
-    <Text numberOfLines={1} style={[styles.valeur, gros && styles.valeurGrosse, taille === 'xs' && styles.valeurFine, { color: p.texte }]}>
+    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={[styles.valeur, gros && styles.valeurGrosse, taille === 'xs' && styles.valeurFine, { color: p.texte }]}>
       {valeur}
       {unite ? <Text style={[typo.petit, { color: p.texteDoux }]}> {unite}</Text> : null}
     </Text>
@@ -51,7 +56,7 @@ function Contenu({ titre, valeur, unite, note, gros, children }: Props) {
         </View>
         {note ? (
           <Text numberOfLines={2} style={[typo.petit, styles.noteFine, { color: p.texteDoux }]}>
-            {note}
+            {sansCoupure(note)}
           </Text>
         ) : null}
       </View>
@@ -62,8 +67,9 @@ function Contenu({ titre, valeur, unite, note, gros, children }: Props) {
     <View style={taille === 'm' ? styles.gauche : undefined}>
       {chiffre}
       {note ? (
-        <Text numberOfLines={2} style={[typo.petit, { color: p.texteDoux }]}>
-          {note}
+        // En S avec un mini-graphique, une seule ligne de note : un titre sur deux lignes ne doit pas pousser le graphique hors du cadre
+        <Text numberOfLines={taille === 's' && children ? 1 : 2} style={[typo.petit, { color: p.texteDoux }]}>
+          {sansCoupure(note)}
         </Text>
       ) : null}
     </View>
@@ -72,7 +78,7 @@ function Contenu({ titre, valeur, unite, note, gros, children }: Props) {
   return (
     <View accessible accessibilityLabel={[titre, valeur, unite, note].filter(Boolean).join(' ')} style={taille === 'm' ? styles.ligne : styles.colonne}>
       {texte}
-      {children ? <View style={taille === 'm' ? styles.visuelLigne : styles.visuel}>{children}</View> : null}
+      {children ? <View style={taille === 'm' ? [styles.visuelLigne, large && styles.visuelLarge] : styles.visuel}>{children}</View> : null}
     </View>
   );
 }
@@ -88,5 +94,6 @@ const styles = StyleSheet.create({
   colonne: { flex: 1 },
   ligne: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 16 },
   visuelLigne: { width: '42%', justifyContent: 'center' },
+  visuelLarge: { width: '60%' },
   visuel: { marginTop: 'auto', paddingTop: 8 },
 });

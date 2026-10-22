@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CADRE, geometriePuissance, lignesValides } from '../src/data/puissance.ts';
+import { CADRE, CADRE_M, CADRE_S, geometriePuissance, lignesValides } from '../src/data/puissance.ts';
 import { donneesDemo } from '../src/data/demo.ts';
 
 const p = (d: number, w90: number, wTout: number) => ({ duration_s: d, watts_90d: w90, watts_alltime: wTout });
@@ -42,4 +42,17 @@ test('geometriePuissance : les points restent dans le cadre', () => {
 test('geometriePuissance : un libellé « n s » pour une durée hors catalogue', () => {
   const g = geometriePuissance([p(5, 700, 800), p(45, 500, 0), p(3600, 200, 240)]);
   assert.equal(g?.points[1].label, '45 s');
+});
+
+test('geometriePuissance : un cadre sur mesure (M, S) garde les points dans ce cadre', () => {
+  const lignes = [p(5, 700, 800), p(60, 400, 450), p(1200, 250, 280), p(3600, 200, 240)];
+  for (const cadre of [CADRE_M, CADRE_S]) {
+    const g = geometriePuissance(lignes, cadre);
+    assert.ok(g);
+    assert.equal(g.base, cadre.hauteur - cadre.bas);
+    for (const pt of g.points) {
+      assert.ok(pt.x >= cadre.gauche && pt.x <= cadre.largeur - cadre.droite);
+      assert.ok(pt.y >= cadre.haut && pt.y <= g.base);
+    }
+  }
 });

@@ -1,39 +1,32 @@
-import { StyleSheet, Text } from 'react-native';
-import { CadreWidget } from '@/components/CadreWidget';
-import { Tuile } from '@/components/Tuile';
+import { SerieHebdo } from '@/components/SerieHebdo';
 import { seancesForce } from '@/data/synthese';
 import type { WidgetProps } from '@/data/types';
-import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// La force qui soutient le Hyrox (sled, farmers, lunges, wall balls) : combien de séances par semaine.
-// tuile : tuile (séances de force par semaine, en moyenne).
-export function WidgetChargeForce({ contexte, tuile = false }: WidgetProps) {
+// La force qui soutient le Hyrox (sled, farmers, lunges, wall balls) : combien de séances par semaine. La valeur est la moyenne des
+// 4 dernières semaines ; les barres montrent les 12 dernières (mise en forme XS, S, M, L : voir SerieHebdo). Le jaune Hyrox est dans les barres.
+export function WidgetChargeForce({ contexte, taille = 'm' }: WidgetProps) {
   const p = usePalette();
-  const force = seancesForce(contexte.toutesSeances, 4);
-  const note = force.total
-    ? `${force.total} séance${force.total > 1 ? 's' : ''} de force sur les 4 dernières semaines.`
-    : 'Aucune séance de force sur les 4 dernières semaines.';
-
-  if (tuile) {
-    return <Tuile titre="Charge de force" valeur={String(force.moyenne).replace('.', ',')} unite="/sem." note={`${force.total} séance${force.total > 1 ? 's' : ''} en 4 semaines`} />;
-  }
-
+  const recent = seancesForce(contexte.toutesSeances, 4);
+  const long = seancesForce(contexte.toutesSeances, 12);
   return (
-    <CadreWidget couleur={p.sportHybride}>
-      <Text style={[typo.micro, styles.etiquette, { color: p.encreSurCouleur }]}>Charge de force</Text>
-      <Text style={[styles.valeur, { color: p.encreSurCouleur }]}>
-        {String(force.moyenne).replace('.', ',')}
-        <Text style={styles.unite}> /sem.</Text>
-      </Text>
-      <Text style={[typo.petit, styles.note, { color: p.encreSurCouleur }]}>{note}</Text>
-    </CadreWidget>
+    <SerieHebdo
+      taille={taille}
+      couleur={p.sportHybride}
+      titreTuile="Charge de force"
+      titreL="Charge de force"
+      valeur={String(recent.moyenne).replace('.', ',')}
+      unite="/sem."
+      parSemaine={long.parSemaine}
+      formater={(n) => String(n)}
+      decimale
+      uniteTotal="séances"
+      badge={long.serie > 0 ? { texte: `${long.serie} semaine${long.serie > 1 ? 's' : ''} d'affilée`, ton: 'ok' } : null}
+      periode={`${recent.total} séance${recent.total > 1 ? 's' : ''} en 4 semaines`}
+      pied={`${recent.total} séance${recent.total > 1 ? 's' : ''} de force sur les 4 dernières semaines. Pointillés : ta moyenne sur 12 semaines.`}
+      videTuile="Aucune séance de force"
+      videL="Aucune séance de force sur les 12 dernières semaines."
+      etiquette="Séances de force par semaine sur 12 semaines"
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  etiquette: { fontFamily: police.texte600 },
-  valeur: { fontFamily: police.titre800, fontSize: 72, lineHeight: 66, marginTop: 8 },
-  unite: { fontFamily: police.titre700, fontSize: 24 },
-  note: { marginTop: 12 },
-});

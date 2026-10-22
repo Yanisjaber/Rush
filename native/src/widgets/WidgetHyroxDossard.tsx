@@ -1,21 +1,39 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { CadreWidget } from '@/components/CadreWidget';
 import { GrandChiffre } from '@/components/GrandChiffre';
+import { ListeCompacte } from '@/components/ListeCompacte';
 import { Tuile } from '@/components/Tuile';
 import { familleAffichage } from '@/data/familles';
-import { formatDateLongue, joursAvant } from '@/data/format';
-import { ecrireTemps } from '@/data/hyrox';
+import { formatDateCourte, formatDateLongue, joursAvant } from '@/data/format';
+import { ecrireTemps, formatEcartLong } from '@/data/hyrox';
 import type { WidgetProps } from '@/data/types';
 import { avecAlpha } from '@/theme/couleurs';
 import { police } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Compte à rebours de ta prochaine compétition Hyrox, avec ton dernier test et ton objectif de temps.
-export function WidgetHyroxDossard({ contexte, tuile = false }: WidgetProps) {
+export function WidgetHyroxDossard({ contexte, taille = 'm' }: WidgetProps) {
+  const p = usePalette();
   const objectif = contexte.objectifs.find((o) => familleAffichage(o.sport) === 'hyrox') ?? null;
   const jours = objectif ? `J-${joursAvant(objectif.date)}` : '—';
 
-  if (tuile) return <Tuile titre="Prochain Hyrox" valeur={jours} note={objectif ? objectif.name : 'Aucune compétition'} />;
+  // XS : le compte à rebours ; S : + le nom ; M : + la date, ton dernier test, ton objectif et l'écart en liste ; L : le grand format et sa barre de progression
+  if (taille !== 'l') {
+    const dernier = contexte.hyrox.tests[0] ?? null;
+    const cible = contexte.hyrox.objectif;
+    const ecart = dernier && cible ? dernier.total_s - cible.total_s : null;
+    const lignes = [
+      ...(objectif ? [{ cle: 'date', nom: 'Date', valeur: formatDateCourte(objectif.date) }] : []),
+      ...(dernier ? [{ cle: 'test', nom: 'Dernier test', valeur: ecrireTemps(dernier.total_s) }] : []),
+      ...(cible ? [{ cle: 'obj', nom: 'Objectif', valeur: ecrireTemps(cible.total_s) }] : []),
+      ...(ecart != null ? [{ cle: 'ecart', nom: 'Écart', valeur: formatEcartLong(ecart), couleur: ecart > 0 ? p.alerte : p.ok }] : []),
+    ];
+    return (
+      <Tuile titre="Prochain Hyrox" valeur={jours} note={objectif ? objectif.name : 'Aucune compétition'} large>
+        {taille === 'm' && lignes.length ? <ListeCompacte lignes={lignes} /> : null}
+      </Tuile>
+    );
+  }
 
   return (
     <CadreWidget titre="Prochain Hyrox">

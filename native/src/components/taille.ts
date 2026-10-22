@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { Taille } from '@/data/types';
+import type { Palette } from '@/theme/couleurs';
 
 // La taille d'un widget est celle de sa BOÎTE, en points, quoi qu'il affiche :
 // XS = une ligne fine (60 pt), S = une demi-ligne (une demi-largeur), M = une ligne entière, L = deux lignes. Le contenu s'adapte à la boîte, jamais l'inverse.
@@ -18,6 +19,7 @@ export function useRemplir(): { height: '100%' } | undefined {
 
 /**
  * Le premier widget d'une page prend le look « dossard » (fond clair, liseré de la couleur du sport de la page, points d'attache).
- * Null : widget ordinaire. `couleur` : celle du liseré.
+ * Null : widget ordinaire. `couleur` : celle du liseré. `base` : la palette du thème (avant inversion), posée par la boîte :
+ * le cadre en tire le fond et les points d'attache du dossard.
  */
-export const ContexteHeros = createContext<{ couleur: string } | null>(null);
+export const ContexteHeros = createContext<{ couleur: string; base?: Palette } | null>(null);

@@ -31,7 +31,8 @@ export function TitreWidget({ titre, serre = false, petit = false }: { titre: st
   const p = usePalette();
   return (
     <View style={[styles.pastille, { backgroundColor: p.surface2 }, !serre && styles.espace, petit && styles.petite]}>
-      <Text numberOfLines={1} style={[typo.micro, { color: p.texteDoux }]}>
+      {/* Sur deux lignes si besoin (une tuile S est étroite) ; une seule dans la ligne fine XS (`petit`) */}
+      <Text numberOfLines={petit ? 1 : 2} style={[typo.micro, { color: p.texteDoux }]}>
         {titre}
       </Text>
     </View>
@@ -39,12 +40,13 @@ export function TitreWidget({ titre, serre = false, petit = false }: { titre: st
 }
 
 export function CadreWidget({ titre, couleur, serre = false, children }: Props) {
-  const base = usePalette();
+  const courante = usePalette();
   const taille = useContext(ContexteTaille);
   const heros = useContext(ContexteHeros);
+  const base = heros?.base ?? courante; // la palette du thème : celle de la boîte quand elle a déjà inversé la sienne
   const remplir = useRemplir();
   const dossard = !!heros && !couleur;
-  const palette = dossard ? paletteHeros(base) : null;
+  const palette = dossard ? paletteHeros(base) : base;
   const fin = taille === 'xs'; // 60 pt de haut : pas de points d'attache, des marges réduites
 
   return (
@@ -76,7 +78,7 @@ const styles = StyleSheet.create({
   attache: { position: 'absolute', top: 12 + LISERE, width: 7, height: 7, borderRadius: 3.5 },
   gauche: { left: 12 },
   droite: { right: 12 },
-  pastille: { alignSelf: 'flex-start', maxWidth: '100%', borderRadius: rayon.rond, paddingHorizontal: 10, paddingVertical: 3 },
+  pastille: { alignSelf: 'flex-start', maxWidth: '100%', borderRadius: 14, paddingHorizontal: 10, paddingVertical: 3 },
   espace: { marginBottom: 10 },
   petite: { paddingVertical: 1 },
   corps: { flex: 1 },

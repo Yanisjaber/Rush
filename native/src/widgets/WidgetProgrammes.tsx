@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { bientot } from '@/actions/bientot';
 import { CadreWidget } from '@/components/CadreWidget';
 import { Bouton } from '@/components/Bouton';
+import { ListeCompacte } from '@/components/ListeCompacte';
 import { Tuile } from '@/components/Tuile';
 import { resumeProgramme } from '@/data/force';
 import type { WidgetProps } from '@/data/types';
@@ -10,17 +11,23 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Tes programmes de musculation (PUSH, PULL, LEGS…).
-// XS, S, M : le nombre de programmes. L : la liste des programmes (jusqu'à 4).
-export function WidgetProgrammes({ contexte, tuile = false }: WidgetProps) {
+export function WidgetProgrammes({ contexte, taille = 'm' }: WidgetProps) {
   const p = usePalette();
   const programmes = contexte.force.programmes;
   const detail = (prog: (typeof programmes)[number]) => {
     const r = resumeProgramme(prog);
-    return `${r.exercices} exo${r.exercices > 1 ? 's' : ''}`;
+    return `${r.exercices} exo${r.exercices > 1 ? 's' : ''} · ${r.series} séries · ~${r.minutes} min`;
   };
 
-  if (tuile) {
-    return <Tuile titre="Programmes" valeur={String(programmes.length)} note={programmes.length > 1 ? 'programmes de force' : 'programme de force'} />;
+  // XS, S : le nombre de programmes ; M : + les trois premiers en liste ; L : la liste détaillée (exercices, séries, durée)
+  if (taille !== 'l') {
+    return (
+      <Tuile titre="Programmes" valeur={String(programmes.length)} note={programmes.length > 1 ? 'programmes de force' : 'programme de force'} large>
+        {taille === 'm' && programmes.length ? (
+          <ListeCompacte lignes={programmes.slice(0, 4).map((prog) => ({ cle: prog.id, nom: prog.name, valeur: `${resumeProgramme(prog).exercices} exos` }))} />
+        ) : null}
+      </Tuile>
+    );
   }
 
   return (

@@ -3,7 +3,19 @@
 import { lisse } from './courbes.ts';
 import type { PointPuissance } from './types.ts';
 
-export const CADRE = { largeur: 400, hauteur: 230, gauche: 18, droite: 18, haut: 28, bas: 34 } as const;
+export interface Cadre {
+  largeur: number;
+  hauteur: number;
+  gauche: number;
+  droite: number;
+  haut: number;
+  bas: number;
+}
+
+/** Le cadre de la grande courbe (L) ; les autres tailles passent le leur : M plus plat, S une simple forme sans libellés. */
+export const CADRE: Cadre = { largeur: 400, hauteur: 230, gauche: 18, droite: 18, haut: 28, bas: 34 };
+export const CADRE_M: Cadre = { largeur: 400, hauteur: 112, gauche: 18, droite: 18, haut: 24, bas: 22 };
+export const CADRE_S: Cadre = { largeur: 140, hauteur: 36, gauche: 5, droite: 5, haut: 6, bas: 5 };
 
 const LIBELLES: Record<number, string> = { 5: '5 s', 15: '15 s', 30: '30 s', 60: '1 min', 300: '5 min', 600: '10 min', 1200: '20 min', 3600: '1 h' };
 
@@ -23,10 +35,10 @@ export function lignesValides(puissance: PointPuissance[] | null | undefined): P
 }
 
 /** Abscisse logarithmique (de la plus courte à la plus longue durée) et ordonnée linéaire. Null s'il y a moins de 2 durées. */
-export function geometriePuissance(puissance: PointPuissance[] | null | undefined): GeometriePuissance | null {
+export function geometriePuissance(puissance: PointPuissance[] | null | undefined, cadre: Cadre = CADRE): GeometriePuissance | null {
   const lignes = lignesValides(puissance);
   if (lignes.length < 2) return null;
-  const { largeur, hauteur, gauche, droite, haut, bas } = CADRE;
+  const { largeur, hauteur, gauche, droite, haut, bas } = cadre;
   const dmin = Math.log(lignes[0].duration_s);
   const dmax = Math.log(lignes[lignes.length - 1].duration_s);
   const toutes = lignes.flatMap((l) => [l.watts_90d || 0, l.watts_alltime || 0]);

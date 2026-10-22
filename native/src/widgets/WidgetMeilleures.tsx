@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { CadreWidget } from '@/components/CadreWidget';
+import { ListeCompacte } from '@/components/ListeCompacte';
 import { Tuile } from '@/components/Tuile';
 import { formatAllure, formatDateCourte, formatDuree, formatKm } from '@/data/format';
 import { meilleuresSortiesCourse } from '@/data/synthese';
@@ -8,8 +9,7 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La sortie la plus longue et les sorties les plus rapides sur 5 et 10 km.
-// tuile : tuile (la sortie la plus longue en gros, l'allure de la plus rapide en note).
-export function WidgetMeilleures({ contexte, tuile = false }: WidgetProps) {
+export function WidgetMeilleures({ contexte, taille = 'm' }: WidgetProps) {
   const p = usePalette();
   const m = meilleuresSortiesCourse(contexte.toutesSeances);
   const lignes = [
@@ -18,14 +18,26 @@ export function WidgetMeilleures({ contexte, tuile = false }: WidgetProps) {
     m.rapide10 && { cle: 'r10', nom: 'Plus rapide (≥ 10 km)', valeur: formatAllure(m.rapide10.valeur.allure), detail: `${formatKm(m.rapide10.valeur.km)} km · ${formatDateCourte(m.rapide10.date)}` },
   ].filter((l): l is NonNullable<typeof l> => !!l);
 
-  if (tuile) {
+  // XS : la sortie la plus longue ; S : + le record d'allure en note ; M : + les trois records en liste ; L : le grand format
+  if (taille !== 'l') {
     return (
       <Tuile
         titre="Sortie longue"
         valeur={m.plusLongue ? formatKm(m.plusLongue.valeur.km) : '—'}
         unite={m.plusLongue ? 'km' : ''}
-        note={m.rapide5 ? `Record 5 km+ : ${formatAllure(m.rapide5.valeur.allure)}` : m.plusLongue ? '12 dernières semaines' : 'Pas encore de sortie'}
-      />
+        note={taille === 'm' && m.plusLongue ? `${formatDuree(m.plusLongue.valeur.secondes)} · ${formatDateCourte(m.plusLongue.date)}` : m.rapide5 ? `Record 5 km+ : ${formatAllure(m.rapide5.valeur.allure)}` : m.plusLongue ? '12 dernières semaines' : 'Pas encore de sortie'}
+        large
+      >
+        {taille === 'm' && lignes.length ? (
+          <ListeCompacte
+            lignes={[
+              ...(m.plusLongue ? [{ cle: 'longue', nom: 'Plus longue', valeur: `${formatKm(m.plusLongue.valeur.km)} km` }] : []),
+              ...(m.rapide5 ? [{ cle: 'r5', nom: 'Rapide 5 km+', valeur: formatAllure(m.rapide5.valeur.allure) }] : []),
+              ...(m.rapide10 ? [{ cle: 'r10', nom: 'Rapide 10 km+', valeur: formatAllure(m.rapide10.valeur.allure) }] : []),
+            ]}
+          />
+        ) : null}
+      </Tuile>
     );
   }
 
