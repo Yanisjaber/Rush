@@ -130,10 +130,10 @@ export default function Calendrier() {
 
         {/* Les chiffres du mois en cartes : séances, temps, charge et, pour un sport qui en a une, son info principale (kilomètres ou séries, comme la colonne « Sem. ») */}
         <View style={styles.cartes}>
-          <Carte valeur={String(seancesDuMois.length)} unite="séan." legende={seancesDuMois.length > 1 ? 'séances' : 'séance'} />
-          <Carte valeur={formatDuree(tempsDuMois)} legende="de sport" />
-          <Carte valeur={chargeDuMois.toLocaleString('fr-FR')} unite="pts" legende="points de charge" />
-          {principaleDuMois ? <Carte valeur={nombre(principaleDuMois.valeur)} unite={UNITES[principaleDuMois.unite].court} legende={UNITES[principaleDuMois.unite].dit} /> : null}
+          <Carte valeur={String(seancesDuMois.length)} unite="séan." legende={seancesDuMois.length > 1 ? 'séances' : 'séance'} serree={!!principaleDuMois} />
+          <Carte valeur={formatDuree(tempsDuMois)} legende="de sport" serree={!!principaleDuMois} />
+          <Carte valeur={chargeDuMois.toLocaleString('fr-FR')} unite="pts" legende="points de charge" serree={!!principaleDuMois} />
+          {principaleDuMois ? <Carte valeur={nombre(principaleDuMois.valeur)} unite={UNITES[principaleDuMois.unite].court} legende={UNITES[principaleDuMois.unite].dit} serree /> : null}
         </View>
 
         {erreur ? (
@@ -210,10 +210,10 @@ function Fleche({ sens, onPress }: { sens: -1 | 1; onPress: () => void }) {
 }
 
 // Un chiffre du mois dans sa carte, centré, avec son unité en plus petit juste à côté (« 102 km ») ; la légende complète sert aux lecteurs d'écran
-function Carte({ valeur, unite, legende }: { valeur: string; unite?: string; legende: string }) {
+function Carte({ valeur, unite, legende, serree }: { valeur: string; unite?: string; legende: string; serree?: boolean }) {
   const p = usePalette();
   return (
-    <View accessible accessibilityLabel={`${valeur} ${legende}`} style={[styles.carte, { backgroundColor: p.surface }]}>
+    <View accessible accessibilityLabel={`${valeur} ${legende}`} style={[styles.carte, serree && styles.carteSerree, { backgroundColor: p.surface }]}>
       <Text numberOfLines={1} style={[styles.carteValeur, { color: p.texte }]}>
         {valeur}
         {unite ? <Text style={[styles.carteUnite, { color: p.texteDoux }]}> {unite}</Text> : null}
@@ -477,9 +477,11 @@ const styles = StyleSheet.create({
   retourFleche: { fontSize: 15, lineHeight: 18 },
   cartes: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 8 },
   // Des pastilles compactes, centrées : leur largeur suit leur contenu
-  carte: { minHeight: 34, borderRadius: rayon.rond, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center' },
-  carteUnite: { fontFamily: police.texte600, fontSize: 10, letterSpacing: 0 },
-  carteValeur: { fontFamily: police.titre800, fontSize: 16, lineHeight: 20, letterSpacing: -0.2, fontVariant: ['tabular-nums'] },
+  carte: { minHeight: 40, borderRadius: rayon.rond, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
+  // Avec quatre pastilles, on resserre un peu pour que tout tienne sur une ligne
+  carteSerree: { paddingHorizontal: 11 },
+  carteUnite: { fontFamily: police.texte600, fontSize: 11, letterSpacing: 0 },
+  carteValeur: { fontFamily: police.titre800, fontSize: 18, lineHeight: 22, letterSpacing: -0.2, fontVariant: ['tabular-nums'] },
   cycleLigne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
   cycleBande: { width: 6, height: 26, borderRadius: 3 },
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
