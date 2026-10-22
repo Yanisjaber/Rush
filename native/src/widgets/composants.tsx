@@ -10,6 +10,7 @@ import { WidgetAvenir } from './WidgetAvenir';
 import { WidgetCharge } from './WidgetCharge';
 import { WidgetChargeForce } from './WidgetChargeForce';
 import { WidgetChargeMuscu } from './WidgetChargeMuscu';
+import { WidgetDeniveleTrail } from './WidgetDeniveleTrail';
 import { WidgetDernieres } from './WidgetDernieres';
 import { WidgetDenivele } from './WidgetDenivele';
 import { WidgetEfficacite } from './WidgetEfficacite';
@@ -25,13 +26,16 @@ import { WidgetHyroxHebdo } from './WidgetHyroxHebdo';
 import { WidgetHyroxRunsStations } from './WidgetHyroxRunsStations';
 import { WidgetHyroxTest } from './WidgetHyroxTest';
 import { WidgetKmHebdo } from './WidgetKmHebdo';
+import { WidgetKmEffort } from './WidgetKmEffort';
 import { WidgetKmVelo } from './WidgetKmVelo';
 import { WidgetMeilleures } from './WidgetMeilleures';
+import { WidgetMeilleuresTrail } from './WidgetMeilleuresTrail';
 import { WidgetNatAllure } from './WidgetNatAllure';
 import { WidgetNatLongue } from './WidgetNatLongue';
 import { WidgetNatVolume } from './WidgetNatVolume';
 import { WidgetObjectif } from './WidgetObjectif';
 import { WidgetPredictions } from './WidgetPredictions';
+import { WidgetPrepaTrail } from './WidgetPrepaTrail';
 import { WidgetProgrammes } from './WidgetProgrammes';
 import { WidgetPuissance } from './WidgetPuissance';
 import { WidgetRecords } from './WidgetRecords';
@@ -65,6 +69,10 @@ export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   ftp: WidgetFtp,
   zonespuissance: WidgetZonesPuissance,
   wattscardio: WidgetWattsCardio,
+  deniveletrail: WidgetDeniveleTrail,
+  kmeffort: WidgetKmEffort,
+  prepatrail: WidgetPrepaTrail,
+  meilleurestrail: WidgetMeilleuresTrail,
   puissance: WidgetPuissance,
   natvolume: WidgetNatVolume,
   natallure: WidgetNatAllure,
