@@ -99,7 +99,7 @@ export default function Calendrier() {
 
         {/* Les chiffres du mois en cartes : séances, temps, charge et, pour un sport qui en a une, son info principale (kilomètres ou séries, comme la colonne « Sem. ») */}
         <View style={styles.cartes}>
-          <Carte valeur={String(seancesDuMois.length)} unite={seancesDuMois.length > 1 ? 'séances' : 'séance'} legende={seancesDuMois.length > 1 ? 'séances' : 'séance'} />
+          <Carte valeur={String(seancesDuMois.length)} unite="séan." legende={seancesDuMois.length > 1 ? 'séances' : 'séance'} />
           <Carte valeur={formatDuree(tempsDuMois)} legende="de sport" />
           <Carte valeur={chargeDuMois.toLocaleString('fr-FR')} unite="pts" legende="points de charge" />
           {principaleDuMois ? <Carte valeur={nombre(principaleDuMois.valeur)} unite={UNITES[principaleDuMois.unite].court} legende={UNITES[principaleDuMois.unite].dit} /> : null}
