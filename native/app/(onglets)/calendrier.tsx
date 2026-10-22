@@ -217,9 +217,9 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
     ...jour.planifiees.map((x) => `séance prévue : ${x.name || nomSport(x.sport)}`),
   ].join(', ');
   if (!jour.dansMois) return <View style={styles.case} />;
-  // Le jour se teinte de la couleur de son sport dominant, d'autant plus fort que sa charge est grande (de 14 % à 50 % d'opacité)
+  // Le jour se teinte de gris, d'autant plus fort que sa charge est grande (de 10 % à 40 % d'opacité) : aucune couleur de sport sur les cases, les pastilles les portent
   const teinte = teinteJour(jour);
-  const fond = teinte ? avecAlpha(couleurSport(p, teinte.famille), 0.14 + 0.36 * teinte.force) : undefined;
+  const fond = teinte ? avecAlpha(p.sportNeutre, 0.1 + 0.3 * teinte.force) : undefined;
   return (
     <Pressable
       onPress={onPress}
@@ -420,8 +420,8 @@ const styles = StyleSheet.create({
   heures: { fontFamily: police.titre700, fontSize: 12, lineHeight: 15, fontVariant: ['tabular-nums'] },
   profil: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: HAUTEUR_PROFIL },
   jourProfil: { width: 4, borderRadius: 2 },
-  case: { width: `${100 / 7}%`, minHeight: 58, alignItems: 'center', paddingTop: 4, borderRadius: rayon.base, borderWidth: 1, borderColor: 'transparent', gap: 4, overflow: 'hidden' },
-  numero: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  case: { width: `${100 / 7}%`, minHeight: 58, alignItems: 'center', paddingTop: 4, borderRadius: rayon.base, borderWidth: 1, borderColor: 'transparent', gap: 2, overflow: 'hidden' },
+  numero: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   numeroTexte: { fontFamily: police.titre700, fontSize: 16, lineHeight: 20, fontVariant: ['tabular-nums'] },
   points: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 10 },
   point: { width: 6, height: 6, borderRadius: 3 },
