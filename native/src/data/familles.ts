@@ -87,9 +87,16 @@ export const DISCIPLINES_DU_FILTRE: Record<string, readonly string[]> = {
   crossfit: ['crossfit', 'muscu'],
 };
 
+/**
+ * Les types Strava de l'onglet « Ski de fond » : le ski de fond, le ski à roulettes (l'entraînement de l'été) et le ski hors-piste.
+ * Le ski alpin et le snowboard font partie de la famille « ski » mais pas de cet onglet : ils ne se voient que sous « Tout ».
+ */
+export const SKI_DE_FOND: readonly string[] = ['NordicSki', 'RollerSki', 'BackcountrySki'];
+
 /** Une séance passe-t-elle le filtre de l'accueil ? Le sport de la pastille (Trail et VTT ont la leur, Triathlon, Duathlon et CrossFit regroupent leurs disciplines) ; « tout » garde tout. */
 export function garderSeance(seance: { sport?: string } | null | undefined, filtre = 'tout'): boolean {
   if (filtre === 'tout') return true;
+  if (filtre === 'ski') return typeof seance?.sport === 'string' && SKI_DE_FOND.includes(seance.sport);
   const famille = familleBarre(seance?.sport);
   return Object.hasOwn(DISCIPLINES_DU_FILTRE, filtre) ? DISCIPLINES_DU_FILTRE[filtre].includes(famille) : famille === filtre;
 }

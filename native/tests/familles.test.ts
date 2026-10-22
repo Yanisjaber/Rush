@@ -76,3 +76,9 @@ test('garderSeance : CrossFit garde le CrossFit, le HIIT et la musculation (forc
   assert.equal(garderSeance({ sport: 'Crossfit' }, 'muscu'), false);
 });
 
+test('garderSeance : l\'onglet Ski garde le ski de fond, le ski à roulettes et le hors-piste, pas le ski alpin ni le snowboard', () => {
+  for (const sport of ['NordicSki', 'RollerSki', 'BackcountrySki']) assert.equal(garderSeance({ sport }, 'ski'), true, sport);
+  for (const sport of ['AlpineSki', 'Snowboard', 'Run']) assert.equal(garderSeance({ sport }, 'ski'), false, sport);
+  assert.equal(garderSeance({ sport: 'AlpineSki' }, 'tout'), true); // ils restent visibles sous « Tout »
+});
+
