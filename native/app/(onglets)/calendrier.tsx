@@ -33,6 +33,7 @@ const dateLongue = (iso: string) => {
 // Lecture seule pour l'instant : ajouter une séance, une note ou un repos arrive avec leurs panneaux.
 export default function Calendrier() {
   const p = usePalette();
+  const router = useRouter();
   const bas = useSafeAreaInsets().bottom;
   const { filtre } = useMenu();
   const maintenant = useMemo(() => new Date(), []);
@@ -52,6 +53,7 @@ export default function Calendrier() {
         objectifs: donnees.objectifs,
         notes: donnees.notes,
         repos: donnees.repos,
+        cycles: donnees.cycles,
       },
       maintenant,
     );
@@ -96,16 +98,21 @@ export default function Calendrier() {
             <Chiffre valeur={String(seancesDuMois.length)} unite={seancesDuMois.length > 1 ? 'séances' : 'séance'} />
             <Chiffre valeur={formatDuree(tempsDuMois)} />
           </View>
-          {!estMoisCourant ? (
-            <Pressable
-              onPress={() => setCible({ annee: maintenant.getFullYear(), mois: maintenant.getMonth() })}
-              accessibilityRole="button"
-              accessibilityLabel="Revenir à aujourd'hui"
-              style={[styles.retour, { borderColor: p.contourChamp }]}
-            >
-              <Text style={[typo.corpsFort, { color: p.texte }]}>Aujourd'hui</Text>
+          <View style={styles.boutons}>
+            {!estMoisCourant ? (
+              <Pressable
+                onPress={() => setCible({ annee: maintenant.getFullYear(), mois: maintenant.getMonth() })}
+                accessibilityRole="button"
+                accessibilityLabel="Revenir à aujourd'hui"
+                style={[styles.retour, { borderColor: p.contourChamp }]}
+              >
+                <Text style={[typo.corpsFort, { color: p.texte }]}>Aujourd'hui</Text>
+              </Pressable>
+            ) : null}
+            <Pressable onPress={() => router.push('/cycles')} accessibilityRole="button" accessibilityLabel="Mes cycles d'entraînement" style={[styles.retour, { borderColor: p.contourChamp }]}>
+              <Text style={[typo.corpsFort, { color: p.texte }]}>Cycles</Text>
             </Pressable>
-          ) : null}
+          </View>
         </View>
 
         {erreur ? (
@@ -204,6 +211,7 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
     dateLongue(jour.iso),
     ...jour.objectifs.map((o) => `compétition : ${o.name}`),
     ...(jour.repos ? ['repos'] : []),
+    ...jour.cycles.map((c) => `cycle : ${c.name}`),
     ...jour.notes.map(libelleNote),
     ...jour.seances.map((s) => `${s.name || nomSport(s.sport)}, ${formatDuree(s.moving_time)}`),
     ...jour.planifiees.map((x) => `séance prévue : ${x.name || nomSport(x.sport)}`),
@@ -220,6 +228,14 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
       accessibilityLabel={label}
       style={[styles.case, fond ? { backgroundColor: fond } : null, choisi && { borderColor: p.texte, borderWidth: 2 }]}
     >
+      {jour.cycles.length ? (
+        // Les cycles d'entraînement : une bande de la couleur du cycle au bas de la case, deux au plus (l'une au-dessus de l'autre)
+        <View style={styles.bandes} pointerEvents="none">
+          {jour.cycles.map((c) => (
+            <View key={c.id} style={[styles.bande, { backgroundColor: couleurNote(c.color) }]} />
+          ))}
+        </View>
+      ) : null}
       {jour.notes.length ? (
         <View style={styles.coin} pointerEvents="none">
           <CoinPlie couleur={couleurNote(jour.notes[0].color)} />
@@ -245,6 +261,7 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
   );
 }
 
+const courteDate = (iso: string) => new Date(`${String(iso).slice(0, 10)}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 const heures = (secondes: number) => String(Math.round((secondes / 3600) * 10) / 10).replace('.', ',');
 const HAUTEUR_PROFIL = 24;
 
@@ -293,6 +310,27 @@ function Detail({ jour }: { jour: JourGrille }) {
         <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 8 }]} accessibilityLabel={resume.etiquette}>
           {resume.texte}
         </Text>
+      ) : null}
+      {jour.cycles.length ? (
+        <View style={{ gap: 4, marginBottom: 8 }}>
+          {jour.cycles.map((c) => (
+            <Pressable
+              key={c.id}
+              onPress={() => router.push({ pathname: '/cycle', params: { id: c.id } })}
+              accessibilityRole="button"
+              accessibilityLabel={`Cycle ${c.name}, du ${courteDate(c.from_date)} au ${courteDate(c.to_date)}`}
+              style={styles.cycleLigne}
+            >
+              <View style={[styles.cycleBande, { backgroundColor: couleurNote(c.color) }]} />
+              <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flexShrink: 1 }]}>
+                {c.name}
+              </Text>
+              <Text style={[typo.petit, { color: p.texteDoux }]}>
+                {courteDate(c.from_date)} – {courteDate(c.to_date)}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       ) : null}
       {jourVide(jour) ? (
         <Text style={[styles.tiret, { color: p.texteMuet }]}>—</Text>
@@ -367,6 +405,9 @@ const styles = StyleSheet.create({
   chiffres: { flexDirection: 'row', alignItems: 'baseline', gap: espace.e5 },
   chiffre: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   chiffreValeur: { fontFamily: police.titre800, fontSize: 32, lineHeight: 36, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
+  boutons: { flexDirection: 'row', alignItems: 'center', gap: espace.e2 },
+  cycleLigne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
+  cycleBande: { width: 6, height: 26, borderRadius: 3 },
   retour: { minHeight: 44, borderWidth: 1.5, borderRadius: rayon.rond, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
@@ -386,6 +427,8 @@ const styles = StyleSheet.create({
   point: { width: 6, height: 6, borderRadius: 3 },
   carre: { width: 6, height: 6, borderRadius: 1.5, borderWidth: 1 },
   coin: { position: 'absolute', top: 0, right: 0 },
+  bandes: { position: 'absolute', left: 0, right: 0, bottom: 0, gap: 1 },
+  bande: { height: 4 },
   barre: { width: 10, height: 3, borderRadius: 2 },
   plus: { fontSize: 10, lineHeight: 10, fontFamily: police.texte600 },
   tiret: { fontSize: 28, lineHeight: 32 },

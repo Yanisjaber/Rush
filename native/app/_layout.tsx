@@ -75,6 +75,9 @@ export default function RootLayout() {
               headerShadowVisible: false,
             }}
           />
+          {/* Les cycles d'entraînement : la liste, puis le formulaire pour en créer ou en modifier un */}
+          <Stack.Screen name="cycles" options={{ headerShown: true, title: 'Cycles', headerStyle: { backgroundColor: palette.fond }, headerTintColor: palette.texte, headerTitleStyle: { fontFamily: 'BricolageGrotesque_700Bold' }, headerBackButtonDisplayMode: 'minimal', headerShadowVisible: false }} />
+          <Stack.Screen name="cycle" options={{ headerShown: true, title: 'Cycle', headerStyle: { backgroundColor: palette.fond }, headerTintColor: palette.texte, headerTitleStyle: { fontFamily: 'BricolageGrotesque_700Bold' }, headerBackButtonDisplayMode: 'minimal', headerShadowVisible: false }} />
         </Stack.Protected>
         <Stack.Protected guard={!connecte}>
           <Stack.Screen name="connexion" />
