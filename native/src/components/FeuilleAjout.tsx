@@ -17,7 +17,7 @@ import {
   validerNote,
   validerSeance,
 } from '@/data/ajouts';
-import { COULEURS_CYCLE, NOM_MAX_CYCLE, validerCycle } from '@/data/cycles';
+import { COULEURS_CYCLE, NOM_MAX_CYCLE, SPORTS_CYCLE, validerCycle } from '@/data/cycles';
 import { dateIsoLocale } from '@/data/format';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useCycles } from '@/hooks/useCycles';
@@ -54,7 +54,7 @@ export function FeuilleAjout({ ouvert, jour, titre, onFermer }: { ouvert: boolea
   const [seance, setSeance] = useState(formulaireSeanceVide());
   const [comp, setComp] = useState(formulaireCompetitionVide());
   const [note, setNote] = useState(formulaireNoteVide(jour));
-  const [cycle, setCycle] = useState({ nom: '', fin: decaler(jour, 27), couleur: COULEURS_CYCLE[0].hex });
+  const [cycle, setCycle] = useState<{ nom: string; fin: string; couleur: string; sport: string | null }>({ nom: '', fin: decaler(jour, 27), couleur: COULEURS_CYCLE[0].hex, sport: null });
 
   // À chaque ouverture, on repart d'un formulaire vide pour le jour choisi
   useEffect(() => {
@@ -65,7 +65,7 @@ export function FeuilleAjout({ ouvert, jour, titre, onFermer }: { ouvert: boolea
     setSeance(formulaireSeanceVide());
     setComp(formulaireCompetitionVide());
     setNote(formulaireNoteVide(jour));
-    setCycle({ nom: '', fin: decaler(jour, 27), couleur: COULEURS_CYCLE[0].hex });
+    setCycle({ nom: '', fin: decaler(jour, 27), couleur: COULEURS_CYCLE[0].hex, sport: null });
   }, [ouvert, jour]);
 
   const nomSport = (type: string) => {
@@ -92,7 +92,7 @@ export function FeuilleAjout({ ouvert, jour, titre, onFermer }: { ouvert: boolea
       setEnCours(true);
       message = await creerNote(r.ligne);
     } else {
-      const r = validerCycle({ name: cycle.nom, from_date: jour, to_date: cycle.fin, color: cycle.couleur }, cycles);
+      const r = validerCycle({ name: cycle.nom, from_date: jour, to_date: cycle.fin, color: cycle.couleur, sport: cycle.sport }, cycles);
       if (!r.ok) return setErreur(r.erreur);
       setEnCours(true);
       message = await creerCycle(r.valeur);
@@ -225,6 +225,13 @@ export function FeuilleAjout({ ouvert, jour, titre, onFermer }: { ouvert: boolea
                 {etiquette('Nom')}
                 <TextInput value={cycle.nom} onChangeText={(t) => modifie(() => setCycle({ ...cycle, nom: t }))} maxLength={NOM_MAX_CYCLE} placeholder="Bloc force, Prépa spécifique, Affûtage…" placeholderTextColor={p.texteMuet} autoCorrect={false} returnKeyType="done" accessibilityLabel="Nom du cycle" style={champ} />
                 <SelecteurDate etiquette="Fin du cycle (il commence ce jour)" date={cycle.fin} onChange={(iso) => modifie(() => setCycle({ ...cycle, fin: iso < jour ? jour : iso }))} />
+                {etiquette('Sport')}
+                {pastilles(
+                  [{ cle: 'tous', nom: 'Tous les sports' }, ...SPORTS_CYCLE.map((cle) => ({ cle, nom: SPORTS[cle as CleSport].court }))],
+                  cycle.sport ?? 'tous',
+                  (v) => setCycle({ ...cycle, sport: v === 'tous' ? null : v }),
+                  'Sport du cycle',
+                )}
                 {etiquette('Couleur')}
                 {couleurs(COULEURS_CYCLE, cycle.couleur, (hex) => setCycle({ ...cycle, couleur: hex }))}
               </>

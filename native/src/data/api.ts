@@ -564,7 +564,7 @@ export async function retirerRepos(userId: string, iso: string): Promise<{ erreu
 
 // --- Cycles d'entraînement (table training_cycles) : lecture et écriture ---------------------------------------------------------------
 // La RLS limite chacun à ses lignes ; on filtre quand même par user_id. La base refuse un troisième cycle le même jour (code 23514).
-const COLONNES_CYCLE = 'id,name,from_date,to_date,color';
+const COLONNES_CYCLE = 'id,name,from_date,to_date,color,sport';
 
 /** Le message d'une erreur d'écriture de cycle : on ne montre jamais le texte brut de la base, seulement une phrase claire. */
 export function messageCycle(code: unknown): string {

@@ -14,7 +14,7 @@ import { FeuilleNote } from '@/components/FeuilleNote';
 import { SelecteurMois } from '@/components/SelecteurMois';
 import { chargeJour, chargeSeance, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
 import { couleurNote, libelleNote } from '@/data/annotations';
-import { avancementCycle } from '@/data/cycles';
+import { avancementCycle, cycleVisible } from '@/data/cycles';
 import { familleAffichage, garderSeance } from '@/data/familles';
 import { dateIsoLocale, formatDistanceSport, formatDuree, formatHeuresMinutes, formatNombre } from '@/data/format';
 import { useAjouts } from '@/hooks/useAjouts';
@@ -68,7 +68,8 @@ export default function Calendrier() {
         objectifs: donnees.objectifs,
         notes: donnees.notes,
         repos: donnees.repos,
-        cycles: donnees.cycles,
+        // Sous un sport, on ne voit que les cycles de ce sport et ceux qui concernent tous les sports
+        cycles: donnees.cycles.filter((c) => cycleVisible(c, filtre)),
         // Les séries de force ne comptent que pour « Tous » et la musculation
         series: filtre === 'tout' || filtre === 'muscu' ? donnees.series : [],
       },

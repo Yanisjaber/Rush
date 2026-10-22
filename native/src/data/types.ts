@@ -50,6 +50,8 @@ export interface Cycle {
   to_date: string;
   /** #rrggbb */
   color: string;
+  /** Le sport du cycle (clé de theme/sports : course, velo, muscu…), ou null : le cycle concerne tous les sports. */
+  sport?: string | null;
 }
 
 /** Une séance prévue ou une compétition (table activity_planned). */

@@ -3,12 +3,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
-import { Bloc } from '@/components/Bloc';
-import { SelecteurDate } from '@/components/SelecteurDate';
-import { COULEURS_CYCLE, joursDuCycle, NOM_MAX_CYCLE, validerCycle } from '@/data/cycles';
+import { CalendrierPeriode } from '@/components/CalendrierPeriode';
+import { ChoixCouleur, PastillesChoix } from '@/components/ChampsFeuille';
+import { COULEURS_CYCLE, NOM_MAX_CYCLE, SPORTS_CYCLE, validerCycle } from '@/data/cycles';
 import { dateIsoLocale } from '@/data/format';
 import { useCycles } from '@/hooks/useCycles';
 import { espace, rayon } from '@/theme/couleurs';
+import { SPORTS, type CleSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -33,6 +34,7 @@ export default function EcranCycle() {
   const [debut, setDebut] = useState(aujourdhui);
   const [fin, setFin] = useState(decaler(aujourdhui, 27)); // quatre semaines : un cycle d'entraînement typique
   const [couleur, setCouleur] = useState(COULEURS_CYCLE[0].hex);
+  const [sport, setSport] = useState<string | null>(null); // null : tous les sports
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState(false);
 
@@ -44,24 +46,13 @@ export default function EcranCycle() {
       setDebut(String(existant.from_date).slice(0, 10));
       setFin(String(existant.to_date).slice(0, 10));
       setCouleur(existant.color);
+      setSport(existant.sport ?? null);
       setRempli(true);
     }
   }, [existant, rempli]);
 
-  const jours = fin >= debut ? joursDuCycle({ from_date: debut, to_date: fin }) : 0;
-  const changerDebut = (iso: string) => {
-    setDebut(iso);
-    if (fin < iso) setFin(iso); // la fin ne reste jamais avant le début
-    setErreur('');
-  };
-  const changerFin = (iso: string) => {
-    setFin(iso);
-    if (iso < debut) setDebut(iso);
-    setErreur('');
-  };
-
   async function enregistrer() {
-    const r = validerCycle({ name: nom, from_date: debut, to_date: fin, color: couleur }, cycles, existant?.id);
+    const r = validerCycle({ name: nom, from_date: debut, to_date: fin, color: couleur, sport }, cycles, existant?.id);
     if (!r.ok) return setErreur(r.erreur);
     setEnCours(true);
     const e = existant ? await modifier(existant.id, r.valeur) : await creer(r.valeur);
@@ -107,69 +98,79 @@ export default function EcranCycle() {
 
   return (
     <ScrollView contentContainerStyle={[styles.contenu, { paddingBottom: bas + espace.e5 }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-      <Bloc titre={existant ? 'Modifier le cycle' : 'Nouveau cycle'}>
-        <View style={{ gap: espace.e4 }}>
-          <View style={{ gap: 6 }}>
-            <Text style={[typo.micro, { color: p.texteDoux }]}>Nom</Text>
-            <TextInput
-              value={nom}
-              onChangeText={(t) => {
-                setNom(t);
-                setErreur('');
-              }}
-              maxLength={NOM_MAX_CYCLE}
-              placeholder="Bloc force, Prépa spécifique, Affûtage…"
-              placeholderTextColor={p.texteMuet}
-              autoCorrect={false}
-              returnKeyType="done"
-              accessibilityLabel="Nom du cycle"
-              style={[typo.corps, styles.champ, { color: p.texte, backgroundColor: p.surface2, borderColor: p.contourChamp }]}
-            />
-          </View>
-          <SelecteurDate etiquette="Début" date={debut} onChange={changerDebut} />
-          <SelecteurDate etiquette="Fin" date={fin} onChange={changerFin} />
-          <Text accessibilityLiveRegion="polite" style={[typo.petit, { color: p.texteDoux }]}>
-            {jours ? `${jours} jour${jours > 1 ? 's' : ''}` : ''}
-          </Text>
-          <View style={{ gap: 8 }}>
-            <Text style={[typo.micro, { color: p.texteDoux }]}>Couleur</Text>
-            <View style={styles.couleurs} accessibilityRole="radiogroup">
-              {COULEURS_CYCLE.map((c) => (
-                <Pressable
-                  key={c.hex}
-                  onPress={() => {
-                    setCouleur(c.hex);
-                    setErreur('');
-                  }}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: couleur === c.hex }}
-                  accessibilityLabel={c.nom}
-                  style={[styles.pastille, { backgroundColor: c.hex, borderColor: couleur === c.hex ? p.texte : 'transparent' }]}
-                />
-              ))}
-            </View>
-          </View>
-          {erreur ? (
-            <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>
-              {erreur}
-            </Text>
-          ) : null}
-          <Bouton onPress={() => void enregistrer()}>{enCours ? 'Enregistrement…' : existant ? 'Enregistrer' : 'Créer le cycle'}</Bouton>
-          {existant ? (
-            <Bouton variante="discret" onPress={confirmerSuppression}>
-              Supprimer ce cycle
-            </Bouton>
-          ) : null}
-        </View>
-      </Bloc>
+      <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte }]}>
+        {existant ? 'Modifier le cycle' : 'Nouveau cycle'}
+      </Text>
+      <View style={{ gap: 6 }}>
+        <Text style={[typo.micro, { color: p.texteDoux }]}>Nom</Text>
+        <TextInput
+          value={nom}
+          onChangeText={(t) => {
+            setNom(t);
+            setErreur('');
+          }}
+          maxLength={NOM_MAX_CYCLE}
+          placeholder="Bloc force, Prépa spécifique, Affûtage…"
+          placeholderTextColor={p.texteMuet}
+          autoCorrect={false}
+          returnKeyType="done"
+          accessibilityLabel="Nom du cycle"
+          style={[typo.corps, styles.champ, { color: p.texte, backgroundColor: p.surface2, borderColor: p.contourChamp }]}
+        />
+      </View>
+      <View style={{ gap: 6 }}>
+        <Text style={[typo.micro, { color: p.texteDoux }]}>Période</Text>
+        <CalendrierPeriode
+          debut={debut}
+          fin={fin}
+          couleur={couleur}
+          onChange={(d, f) => {
+            setDebut(d);
+            setFin(f);
+            setErreur('');
+          }}
+        />
+      </View>
+      <View style={{ gap: 6 }}>
+        <Text style={[typo.micro, { color: p.texteDoux }]}>Sport</Text>
+        <PastillesChoix
+          valeurs={[{ cle: 'tous', nom: 'Tous les sports' }, ...SPORTS_CYCLE.map((cle) => ({ cle, nom: SPORTS[cle as CleSport].court }))]}
+          actuel={sport ?? 'tous'}
+          onChoisir={(v) => {
+            setSport(v === 'tous' ? null : v);
+            setErreur('');
+          }}
+          etiquette="Sport du cycle"
+        />
+      </View>
+      <View style={{ gap: 6 }}>
+        <Text style={[typo.micro, { color: p.texteDoux }]}>Couleur</Text>
+        <ChoixCouleur
+          couleurs={COULEURS_CYCLE}
+          actuelle={couleur}
+          onChoisir={(hex) => {
+            setCouleur(hex);
+            setErreur('');
+          }}
+        />
+      </View>
+      {erreur ? (
+        <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>
+          {erreur}
+        </Text>
+      ) : null}
+      <Bouton onPress={() => void enregistrer()}>{enCours ? 'Enregistrement…' : existant ? 'Enregistrer' : 'Créer le cycle'}</Bouton>
+      {existant ? (
+        <Bouton variante="discret" onPress={confirmerSuppression}>
+          Supprimer ce cycle
+        </Bouton>
+      ) : null}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: espace.e5 },
-  contenu: { padding: espace.e4, gap: espace.e3 },
+  contenu: { padding: espace.e4, gap: espace.e4 },
   champ: { minHeight: 48, borderWidth: 1.5, borderRadius: rayon.base, paddingHorizontal: 14 },
-  couleurs: { flexDirection: 'row', flexWrap: 'wrap', gap: espace.e3 },
-  pastille: { width: 44, height: 44, borderRadius: 22, borderWidth: 3 },
 });

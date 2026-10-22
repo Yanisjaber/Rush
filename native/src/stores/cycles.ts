@@ -12,8 +12,8 @@ const jour = (delta: number): string => {
 };
 
 let demoCycles: Cycle[] = [
-  { id: 'demo-cycle-force', name: 'Bloc force', from_date: jour(-20), to_date: jour(2), color: '#9b6b9e' },
-  { id: 'demo-cycle-hyrox', name: 'Prépa Hyrox', from_date: jour(-6), to_date: jour(27), color: '#e0a458' },
+  { id: 'demo-cycle-force', name: 'Bloc force', from_date: jour(-20), to_date: jour(2), color: '#9b6b9e', sport: 'muscu' },
+  { id: 'demo-cycle-hyrox', name: 'Prépa Hyrox', from_date: jour(-6), to_date: jour(27), color: '#e0a458', sport: 'hyrox' },
   { id: 'demo-cycle-affutage', name: 'Affûtage', from_date: jour(20), to_date: jour(27), color: '#5ec2b7' },
   { id: 'demo-cycle-recup', name: 'Récupération', from_date: jour(28), to_date: jour(34), color: '#7fb069' },
 ];

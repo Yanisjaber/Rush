@@ -5,7 +5,8 @@
 -- Règles :
 --   - une période : de from_date à to_date (inclus), 366 jours au plus ;
 --   - AU PLUS DEUX cycles le même jour (le calendrier n'a la place que pour deux bandes) : un déclencheur le garantit, même si l'app est contournée ;
---   - couleur : #rrggbb ; nom : 1 à 60 caractères.
+--   - couleur : #rrggbb ; nom : 1 à 60 caractères ;
+--   - sport : facultatif (null = le cycle concerne tous les sports), sinon l'un des sports de l'app.
 --
 -- Sécurité :
 --   - RLS activée : chacun ne lit et n'écrit que ses propres lignes (auth.uid() = user_id). Aucun accès anonyme.
@@ -19,9 +20,16 @@ create table if not exists public.training_cycles (
   from_date date not null,
   to_date date not null,
   color text not null check (color ~ '^#[0-9a-fA-F]{6}$'),
+  sport text,
   created_at timestamptz not null default now(),
   constraint training_cycles_dates check (to_date >= from_date and to_date - from_date <= 366)
 );
+
+-- Le sport (colonne ajoutée aussi pour une table déjà créée sans lui) : null ou un sport connu de l'app
+alter table public.training_cycles add column if not exists sport text;
+alter table public.training_cycles drop constraint if exists training_cycles_sport;
+alter table public.training_cycles add constraint training_cycles_sport
+  check (sport is null or sport in ('course', 'velo', 'natation', 'muscu', 'hyrox', 'triathlon', 'duathlon', 'autre'));
 
 create index if not exists training_cycles_user_from_idx on public.training_cycles (user_id, from_date);
 

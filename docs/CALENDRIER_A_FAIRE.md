@@ -26,7 +26,7 @@ Liste tenue à jour avec Yanis (écran `native/app/(onglets)/calendrier.tsx`). D
 
 ## À débloquer côté base (Yanis, avec `!`)
 
-- **Appliquer `supabase/migrations/2026-10-22_training_cycles.sql`** : sans elle les cycles ne marchent pas sur un vrai compte (la démo marche). Commande : voir la mémoire « Accès Supabase via .env ».
+- **Appliquer `supabase/migrations/2026-10-22_training_cycles.sql`** : sans elle les cycles ne marchent pas sur un vrai compte (la démo marche). Elle contient aussi la colonne `sport` des cycles (facultative : sans sport, un cycle concerne tous les sports) ; relançable sans risque, y compris si la table existe déjà sans cette colonne (testé sur la base locale jetable). Commande : voir la mémoire « Accès Supabase via .env ».
 
 ## Autres chantiers ouverts (hors calendrier)
 

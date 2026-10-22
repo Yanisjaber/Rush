@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { COULEURS_CYCLE, joursDuCycle, validerCycle, type FormulaireCycle, avancementCycle } from '../src/data/cycles.ts';
+import { COULEURS_CYCLE, cycleVisible, joursDuCycle, SPORTS_CYCLE, validerCycle, type FormulaireCycle, avancementCycle, toucherJourPeriode } from '../src/data/cycles.ts';
 import { cyclesDuJour, grilleMois } from '../src/data/calendrier.ts';
 import type { Cycle } from '../src/data/types.ts';
 
@@ -81,4 +81,41 @@ test('avancementCycle : « jour 22 sur 23 », ramené dans les bornes du cycle',
   assert.equal(avancementCycle(c, '2026-09-01').jour, 1); // avant le début
   assert.equal(avancementCycle(c, '2026-12-01').jour, 23); // après la fin
   assert.equal(avancementCycle({ from_date: '2026-10-05', to_date: '2026-10-05' }, '2026-10-05').total, 1); // un cycle d'un jour
+});
+
+test('toucherJourPeriode : un premier toucher pose le début, le suivant la fin ; avant le début, on recommence', () => {
+  const premier = toucherJourPeriode({ debut: '2026-10-03', fin: '2026-10-25', attenteFin: false }, '2026-11-02');
+  assert.deepEqual(premier, { debut: '2026-11-02', fin: '2026-11-02', attenteFin: true });
+  const second = toucherJourPeriode(premier, '2026-11-20');
+  assert.deepEqual(second, { debut: '2026-11-02', fin: '2026-11-20', attenteFin: false });
+  // en attente de la fin, un jour avant le début devient le nouveau début
+  assert.deepEqual(toucherJourPeriode(premier, '2026-10-30'), { debut: '2026-10-30', fin: '2026-10-30', attenteFin: true });
+  // le même jour : un cycle d'un jour
+  assert.deepEqual(toucherJourPeriode(premier, '2026-11-02'), { debut: '2026-11-02', fin: '2026-11-02', attenteFin: false });
+  // une fois la période posée, un toucher recommence
+  assert.deepEqual(toucherJourPeriode(second, '2026-12-01'), { debut: '2026-12-01', fin: '2026-12-01', attenteFin: true });
+});
+
+test('cycle et sport : un sport de la liste ou aucun, rien d\'autre', () => {
+  const base = { name: 'Bloc', from_date: '2026-10-01', to_date: '2026-10-10', color: '#9b6b9e' };
+  const ok = validerCycle({ ...base, sport: 'muscu' }, []);
+  assert.ok(ok.ok);
+  if (ok.ok) assert.equal(ok.valeur.sport, 'muscu');
+  const sans = validerCycle({ ...base, sport: null }, []);
+  assert.ok(sans.ok);
+  if (sans.ok) assert.equal(sans.valeur.sport, null);
+  assert.equal(validerCycle({ ...base, sport: 'tennis' }, []).ok, false);
+  assert.equal(validerCycle({ ...base, sport: '' }, []).ok, false);
+  assert.ok(SPORTS_CYCLE.includes('hyrox') && SPORTS_CYCLE.includes('autre'));
+});
+
+test('cycleVisible : « Tous » les voit tous, un sport voit les siens et ceux sans sport, Triathlon voit ses disciplines', () => {
+  assert.equal(cycleVisible({ sport: 'muscu' }, 'tout'), true);
+  assert.equal(cycleVisible({ sport: 'muscu' }, 'muscu'), true);
+  assert.equal(cycleVisible({ sport: 'muscu' }, 'course'), false);
+  assert.equal(cycleVisible({ sport: null }, 'course'), true);
+  assert.equal(cycleVisible({}, 'hyrox'), true);
+  assert.equal(cycleVisible({ sport: 'natation' }, 'triathlon'), true);
+  assert.equal(cycleVisible({ sport: 'natation' }, 'duathlon'), false);
+  assert.equal(cycleVisible({ sport: 'velo' }, 'duathlon'), true);
 });

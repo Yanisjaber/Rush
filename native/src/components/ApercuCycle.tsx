@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Bouton } from '@/components/Bouton';
 import { avancementCycle, joursDuCycle } from '@/data/cycles';
@@ -5,9 +6,9 @@ import { couleurNote } from '@/data/annotations';
 import { periodeCourte } from '@/data/format';
 import { useCycles } from '@/hooks/useCycles';
 import { espace, rayon } from '@/theme/couleurs';
+import { SPORTS, type CleSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
-import { useState } from 'react';
 import type { Cycle } from '@/data/types';
 
 // Ce qui s'ouvre en touchant un cycle du détail d'un jour : une petite fenêtre qui l'AFFICHE (nom, période, avancement ce jour-là), avec « Modifier »
@@ -53,6 +54,7 @@ export function ApercuCycle({ cycle, jour, onFermer, onModifier }: { cycle: Cycl
             </View>
             <Text style={[typo.petit, { color: p.texteDoux }]}>
               {periodeCourte(cycle.from_date, cycle.to_date)} · {joursDuCycle(cycle)} jour{joursDuCycle(cycle) > 1 ? 's' : ''}
+              {cycle.sport && Object.hasOwn(SPORTS, cycle.sport) ? ` · ${SPORTS[cycle.sport as CleSport].nom}` : ' · Tous les sports'}
             </Text>
             <View accessible accessibilityLabel={`Jour ${av.jour} sur ${av.total}`} style={{ gap: 6 }}>
               <Text style={[typo.corpsFort, { color: p.texte }]}>

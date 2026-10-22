@@ -1,5 +1,6 @@
 // Cycles d'entraînement : la palette, la validation d'un cycle et la règle « deux cycles au plus le même jour ». Fonctions pures, sans réseau
 // (testées dans tests/cycles.test.ts). Le calendrier affiche chaque cycle en bande de couleur sous les jours qu'il couvre.
+import { DISCIPLINES_DU_FILTRE } from './familles.ts';
 import type { Cycle } from './types.ts';
 
 /** Au plus deux cycles le même jour : le calendrier n'a la place que pour deux bandes (la base le garantit aussi). */
@@ -7,6 +8,19 @@ export const CYCLES_MAX_PAR_JOUR = 2;
 /** Un cycle dure 366 jours au plus (la base le garantit aussi). */
 export const JOURS_MAX_CYCLE = 366;
 export const NOM_MAX_CYCLE = 60;
+
+/** Les sports auxquels un cycle peut être lié (clés de theme/sports) ; sans sport, un cycle concerne tous les sports. La base refait la même vérification. */
+export const SPORTS_CYCLE: string[] = ['course', 'velo', 'natation', 'muscu', 'hyrox', 'triathlon', 'duathlon', 'autre'];
+
+/**
+ * Un cycle se voit-il sous cette pastille de la barre des sports ? Sous « Tous », tous les cycles ; sous un sport, ceux de ce sport et ceux sans sport.
+ * Triathlon et Duathlon regroupent leurs disciplines : un cycle de natation, de vélo ou de course s'y voit aussi.
+ */
+export function cycleVisible(c: { sport?: string | null }, filtre: string): boolean {
+  if (filtre === 'tout' || !c.sport) return true;
+  const disciplines = DISCIPLINES_DU_FILTRE[filtre];
+  return disciplines ? disciplines.includes(c.sport) : c.sport === filtre;
+}
 
 /** Les couleurs proposées : des teintes terreuses, volontairement éloignées des couleurs des sports (orange, bleu, cyan, corail, jaune). */
 export const COULEURS_CYCLE: { nom: string; hex: string }[] = [
@@ -34,6 +48,22 @@ const deJours = (n: number): string => new Date(n * 86400000).toISOString().slic
 /** Le nombre de jours d'un cycle, bornes incluses. */
 export const joursDuCycle = (c: Pick<Cycle, 'from_date' | 'to_date'>): number => enJours(String(c.to_date).slice(0, 10)) - enJours(String(c.from_date).slice(0, 10)) + 1;
 
+/** L'état d'un choix de période sur un calendrier : le début, la fin, et si on attend maintenant le jour de fin. */
+export interface ChoixPeriode {
+  debut: string;
+  fin: string;
+  attenteFin: boolean;
+}
+
+/**
+ * Ce qui se passe quand on touche un jour du calendrier de période : le premier toucher pose le début (la fin le suit), le suivant pose la fin.
+ * Toucher un jour AVANT le début recommence la période à ce jour (on ne retourne jamais une période à l'envers).
+ */
+export function toucherJourPeriode(etat: ChoixPeriode, iso: string): ChoixPeriode {
+  if (!etat.attenteFin || iso < etat.debut) return { debut: iso, fin: iso, attenteFin: true };
+  return { debut: etat.debut, fin: iso, attenteFin: false };
+}
+
 /** Où en est un cycle un jour donné : « jour 22 sur 23 » et la part faite (de 0 à 1). Le jour est ramené dans les bornes du cycle. */
 export function avancementCycle(c: Pick<Cycle, 'from_date' | 'to_date'>, iso: string): { jour: number; total: number; part: number } {
   const total = Math.max(1, joursDuCycle(c));
@@ -46,6 +76,8 @@ export interface FormulaireCycle {
   from_date: string;
   to_date: string;
   color: string;
+  /** Le sport du cycle, ou null pour tous les sports. */
+  sport: string | null;
 }
 
 export type ResultatCycle = { ok: true; valeur: FormulaireCycle } | { ok: false; erreur: string };
@@ -64,6 +96,7 @@ export function validerCycle(f: FormulaireCycle, existants: Cycle[], idEnCours?:
   const jours = enJours(f.to_date) - enJours(f.from_date) + 1;
   if (jours > JOURS_MAX_CYCLE) return { ok: false, erreur: `Un cycle dure ${JOURS_MAX_CYCLE} jours au plus.` };
   if (!COULEUR_VALIDE.test(f.color)) return { ok: false, erreur: 'Choisis une couleur.' };
+  if (f.sport != null && !SPORTS_CYCLE.includes(f.sport)) return { ok: false, erreur: 'Choisis un sport de la liste, ou aucun.' };
   const autres = existants.filter((c) => c.id !== idEnCours);
   const debut = enJours(f.from_date);
   for (let n = debut; n < debut + jours; n++) {
@@ -74,5 +107,5 @@ export function validerCycle(f: FormulaireCycle, existants: Cycle[], idEnCours?:
       return { ok: false, erreur: `Le ${date}, tu as déjà deux cycles (${couvrent.map((c) => `« ${c.name} »`).join(' et ')}) : trois, c'est trop.` };
     }
   }
-  return { ok: true, valeur: { name, from_date: f.from_date, to_date: f.to_date, color: f.color } };
+  return { ok: true, valeur: { name, from_date: f.from_date, to_date: f.to_date, color: f.color, sport: f.sport ?? null } };
 }
