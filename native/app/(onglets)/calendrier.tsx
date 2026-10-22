@@ -143,7 +143,7 @@ export default function Calendrier() {
               ))}
             </View>
 
-            {detail ? <Detail jour={detail} mono={filtre === 'tout'} /> : null}
+            {detail ? <Detail jour={detail} /> : null}
           </>
         )}
       </ScrollView>
@@ -279,11 +279,9 @@ function ProfilSemaine({ semaine, maxi, mono }: { semaine: JourGrille[]; maxi: n
 }
 
 // Le détail du jour choisi : ses séances en pastilles pleines, ses séances prévues en pointillés, sa compétition, son repos, ses notes
-// Sur « Tous », le récap du jour est en gris : aucun sport n'est mis en avant ; la couleur revient quand on choisit un sport (mono = faux)
-function Detail({ jour, mono }: { jour: JourGrille; mono: boolean }) {
+function Detail({ jour }: { jour: JourGrille }) {
   const router = useRouter();
   const p = usePalette();
-  const coul = (sport: string) => (mono ? p.sportNeutre : couleurSport(p, familleAffichage(sport)));
   // « 2h14 faites · 110 pts · 54 min prévues » : ce que le jour pèse, d'un coup d'œil
   const faites = jour.seances.reduce((t, s) => t + (s.moving_time || 0), 0);
   const prevues = jour.planifiees.reduce((t, x) => t + (Number(x.duration) > 0 ? Number(x.duration) * 60 : 0), 0);
@@ -325,7 +323,7 @@ function Detail({ jour, mono }: { jour: JourGrille; mono: boolean }) {
               onPress={() => router.push({ pathname: '/seance', params: { id: s.id } })}
               accessibilityRole="button"
               accessibilityLabel={`${s.name || nomSport(s.sport)}, ${formatDuree(s.moving_time)}`}
-              style={[styles.seance, { backgroundColor: coul(s.sport) }]}
+              style={[styles.seance, { backgroundColor: couleurSport(p, familleAffichage(s.sport)) }]}
             >
               <Text numberOfLines={1} style={[typo.corpsFort, { color: p.encreSurCouleur, flex: 1 }]}>
                 {s.name || nomSport(s.sport)}
@@ -339,7 +337,7 @@ function Detail({ jour, mono }: { jour: JourGrille; mono: boolean }) {
               onPress={() => bientot('La modification de séance prévue')}
               accessibilityRole="button"
               accessibilityLabel={`Séance prévue : ${x.name || nomSport(x.sport)}`}
-              style={[styles.seance, { borderColor: coul(x.sport), borderWidth: 2, borderStyle: 'dashed' }]}
+              style={[styles.seance, { borderColor: couleurSport(p, familleAffichage(x.sport)), borderWidth: 2, borderStyle: 'dashed' }]}
             >
               <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>
                 {x.name || nomSport(x.sport)}
