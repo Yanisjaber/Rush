@@ -14,6 +14,7 @@ import { WidgetCfMarquantes } from './WidgetCfMarquantes';
 import { WidgetCfMix } from './WidgetCfMix';
 import { WidgetChargeForce } from './WidgetChargeForce';
 import { WidgetChargeMuscu } from './WidgetChargeMuscu';
+import { WidgetDeniveleSki } from './WidgetDeniveleSki';
 import { WidgetDeniveleTrail } from './WidgetDeniveleTrail';
 import { WidgetDeniveleVtt } from './WidgetDeniveleVtt';
 import { WidgetDernieres } from './WidgetDernieres';
@@ -32,9 +33,11 @@ import { WidgetHyroxRunsStations } from './WidgetHyroxRunsStations';
 import { WidgetHyroxTest } from './WidgetHyroxTest';
 import { WidgetKmHebdo } from './WidgetKmHebdo';
 import { WidgetKmEffort } from './WidgetKmEffort';
+import { WidgetKmSki } from './WidgetKmSki';
 import { WidgetKmVelo } from './WidgetKmVelo';
 import { WidgetKmVtt } from './WidgetKmVtt';
 import { WidgetMeilleures } from './WidgetMeilleures';
+import { WidgetMeilleuresSki } from './WidgetMeilleuresSki';
 import { WidgetMeilleuresTrail } from './WidgetMeilleuresTrail';
 import { WidgetMeilleuresVtt } from './WidgetMeilleuresVtt';
 import { WidgetNatAllure } from './WidgetNatAllure';
@@ -55,6 +58,9 @@ import { WidgetRegularite } from './WidgetRegularite';
 import { WidgetSeanceDuJour } from './WidgetSeanceDuJour';
 import { WidgetSemaine } from './WidgetSemaine';
 import { WidgetTonnage } from './WidgetTonnage';
+import { WidgetSkiIntensite } from './WidgetSkiIntensite';
+import { WidgetSkiPrepa } from './WidgetSkiPrepa';
+import { WidgetSkiSurfaces } from './WidgetSkiSurfaces';
 import { WidgetTerrainVtt } from './WidgetTerrainVtt';
 import { WidgetTriBricks } from './WidgetTriBricks';
 import { WidgetTriEquilibre } from './WidgetTriEquilibre';
@@ -107,6 +113,12 @@ export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   cfintensite: WidgetCfIntensite,
   cfmix: WidgetCfMix,
   cfmarquantes: WidgetCfMarquantes,
+  kmski: WidgetKmSki,
+  deniveleski: WidgetDeniveleSki,
+  skisurfaces: WidgetSkiSurfaces,
+  skiintensite: WidgetSkiIntensite,
+  skiprepa: WidgetSkiPrepa,
+  meilleuresski: WidgetMeilleuresSki,
   puissance: WidgetPuissance,
   natvolume: WidgetNatVolume,
   natallure: WidgetNatAllure,

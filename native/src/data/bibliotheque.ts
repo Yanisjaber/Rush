@@ -3,7 +3,7 @@
 import { WIDGETS, type IdWidget } from './registre.ts';
 
 /** L'ordre des rayons : les sports d'abord, puis ce qui vaut pour tous. Une catégorie absente de la liste passe après, par ordre alphabétique. */
-export const RAYONS = ['Course à pied', 'Trail', 'Vélo', 'VTT', 'Natation', 'Triathlon et duathlon', 'Musculation', 'Hyrox', 'CrossFit', 'Charge et forme', 'Séances', 'Objectifs', 'Volume'] as const;
+export const RAYONS = ['Course à pied', 'Trail', 'Vélo', 'VTT', 'Natation', 'Triathlon et duathlon', 'Musculation', 'Hyrox', 'CrossFit', 'Ski de fond', 'Charge et forme', 'Séances', 'Objectifs', 'Volume'] as const;
 
 /** Minuscules sans accents : « Vélo » et « velo » se valent dans la recherche. */
 export function normaliser(texte: string): string {

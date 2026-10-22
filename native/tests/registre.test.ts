@@ -12,9 +12,9 @@ test('existe : seuls les vrais widgets, pas les propriétés héritées', () => 
   assert.equal(existe(42), false);
 });
 
-test('registre : 59 widgets, chacun avec une taille par défaut permise', () => {
+test('registre : 65 widgets, chacun avec une taille par défaut permise', () => {
   const ids = Object.keys(WIDGETS);
-  assert.equal(ids.length, 59);
+  assert.equal(ids.length, 65);
   for (const id of ids) {
     const d = (WIDGETS as Record<string, { tailles: readonly string[]; taille: string }>)[id];
     assert.ok(d.tailles.includes(d.taille), id);
@@ -129,6 +129,12 @@ test('estPertinent : VTT voit les widgets de vélo ET de VTT, Vélo ne voit pas 
 test('estPertinent : CrossFit voit les widgets de CrossFit ET de musculation, Musculation ne voit pas ceux de CrossFit', () => {
   assert.ok(estPertinent('cfmix', ['crossfit']) && estPertinent('records', ['crossfit']) && estPertinent('tonnage', ['crossfit']));
   assert.equal(estPertinent('cfmix', ['muscu']), false);
+});
+
+test('estPertinent : Ski voit les widgets de ski, Course et Vélo non', () => {
+  assert.ok(estPertinent('skisurfaces', ['ski']) && estPertinent('charge', ['ski']));
+  assert.equal(estPertinent('skisurfaces', ['course']), false);
+  assert.equal(estPertinent('predictions', ['ski']), false);
 });
 
 test('estPertinent : Triathlon voit natation, vélo et course, Duathlon pas la natation', () => {

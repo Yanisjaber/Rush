@@ -10,7 +10,7 @@ import { usePalette } from '@/theme/usePalette';
 
 // Les widgets qu'on peut encore ajouter, comme une bibliothèque : une recherche, puis un rayon par sport (la couleur désigne le sport),
 // puis ce qui vaut pour tous. Chaque widget : nom, description, bouton Ajouter.
-const COULEUR_RAYON: Record<string, 'sportCourse' | 'sportVelo' | 'sportNatation' | 'sportMuscu' | 'sportHybride'> = {
+const COULEUR_RAYON: Record<string, 'sportCourse' | 'sportVelo' | 'sportNatation' | 'sportMuscu' | 'sportHybride' | 'sportNeutre'> = {
   'Course à pied': 'sportCourse',
   Trail: 'sportCourse',
   Vélo: 'sportVelo',
@@ -20,6 +20,7 @@ const COULEUR_RAYON: Record<string, 'sportCourse' | 'sportVelo' | 'sportNatation
   Musculation: 'sportMuscu',
   Hyrox: 'sportHybride',
   CrossFit: 'sportHybride',
+  'Ski de fond': 'sportNeutre',
 };
 
 export function BibliothequeWidgets({ ids, onAjouter }: { ids: string[]; onAjouter: (id: string) => void }) {
