@@ -214,7 +214,7 @@ function Carte({ valeur, unite, legende }: { valeur: string; unite?: string; leg
   const p = usePalette();
   return (
     <View accessible accessibilityLabel={`${valeur} ${legende}`} style={[styles.carte, { backgroundColor: p.surface }]}>
-      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.carteValeur, { color: p.texte }]}>
+      <Text numberOfLines={1} style={[styles.carteValeur, { color: p.texte }]}>
         {valeur}
         {unite ? <Text style={[styles.carteUnite, { color: p.texteDoux }]}> {unite}</Text> : null}
       </Text>
@@ -475,10 +475,11 @@ const styles = StyleSheet.create({
   titreBouton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8 },
   retourIcone: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   retourFleche: { fontSize: 15, lineHeight: 18 },
-  cartes: { flexDirection: 'row', gap: 6 },
-  carte: { flex: 1, minHeight: 56, borderRadius: rayon.base, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
-  carteUnite: { fontFamily: police.texte600, fontSize: 11, letterSpacing: 0 },
-  carteValeur: { fontFamily: police.titre800, fontSize: 22, lineHeight: 26, letterSpacing: -0.4, fontVariant: ['tabular-nums'] },
+  cartes: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 8 },
+  // Des pastilles compactes, centrées : leur largeur suit leur contenu
+  carte: { minHeight: 34, borderRadius: rayon.rond, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center' },
+  carteUnite: { fontFamily: police.texte600, fontSize: 10, letterSpacing: 0 },
+  carteValeur: { fontFamily: police.titre800, fontSize: 16, lineHeight: 20, letterSpacing: -0.2, fontVariant: ['tabular-nums'] },
   cycleLigne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
   cycleBande: { width: 6, height: 26, borderRadius: 3 },
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
