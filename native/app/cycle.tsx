@@ -10,6 +10,7 @@ import { COULEURS_CYCLE, NOM_MAX_CYCLE, validerCycle } from '@/data/cycles';
 import { dateIsoLocale } from '@/data/format';
 import { useCycles } from '@/hooks/useCycles';
 import { espace, rayon } from '@/theme/couleurs';
+import { couleurSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -137,6 +138,7 @@ export default function EcranCycle() {
           valeur={sport}
           onChoisir={(v) => {
             setSport(v);
+            if (v) setCouleur(couleurSport(p, v)); // un cycle de sport prend la couleur de son sport (on peut encore la changer)
             setErreur('');
           }}
           etiquette="Sport du cycle"

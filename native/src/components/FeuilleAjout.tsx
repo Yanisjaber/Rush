@@ -23,7 +23,7 @@ import { dateIsoLocale } from '@/data/format';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useCycles } from '@/hooks/useCycles';
 import { espace, rayon } from '@/theme/couleurs';
-import { SPORTS, type CleSport } from '@/theme/sports';
+import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -227,7 +227,7 @@ export function FeuilleAjout({ ouvert, jour, titre, onFermer }: { ouvert: boolea
                 <TextInput value={cycle.nom} onChangeText={(t) => modifie(() => setCycle({ ...cycle, nom: t }))} maxLength={NOM_MAX_CYCLE} placeholder="Bloc force, Prépa spécifique, Affûtage…" placeholderTextColor={p.texteMuet} autoCorrect={false} returnKeyType="done" accessibilityLabel="Nom du cycle" style={champ} />
                 <SelecteurDate etiquette="Fin du cycle (il commence ce jour)" date={cycle.fin} onChange={(iso) => modifie(() => setCycle({ ...cycle, fin: iso < jour ? jour : iso }))} />
                 {etiquette('Sport')}
-                <MenuDeroulantSport valeur={cycle.sport} onChoisir={(v) => modifie(() => setCycle({ ...cycle, sport: v }))} etiquette="Sport du cycle" />
+                <MenuDeroulantSport valeur={cycle.sport} onChoisir={(v) => modifie(() => setCycle({ ...cycle, sport: v, couleur: v ? couleurSport(p, v) : cycle.couleur }))} etiquette="Sport du cycle" />
                 {etiquette('Couleur')}
                 {couleurs(COULEURS_CYCLE, cycle.couleur, (hex) => setCycle({ ...cycle, couleur: hex }))}
               </>
