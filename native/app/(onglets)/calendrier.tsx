@@ -8,7 +8,7 @@ import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
 import { Bloc } from '@/components/Bloc';
 import { Bouton } from '@/components/Bouton';
-import { chargeJour, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, metriqueSemaine, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
+import { chargeJour, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
 import { couleurNote, libelleNote } from '@/data/annotations';
 import { familleAffichage, garderSeance } from '@/data/familles';
 import { dateIsoLocale, formatDuree } from '@/data/format';
@@ -147,7 +147,7 @@ export default function Calendrier() {
                       <Case key={j.iso} jour={j} choisi={j.iso === choisi} onPress={() => setChoisi(j.iso)} />
                     ))}
                   </View>
-                  <ProfilSemaine semaine={semaine} maxi={maxiJour} mono={filtre === 'tout'} />
+                  <ProfilSemaine semaine={semaine} maxi={maxiJour} mono={filtre === 'tout'} filtre={filtre} />
                 </View>
               ))}
             </View>
@@ -264,37 +264,48 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
 }
 
 const courteDate = (iso: string) => new Date(`${String(iso).slice(0, 10)}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-const HAUTEUR_PROFIL = 24;
+const HAUTEUR_PROFIL = 22;
 
-// Le chiffre de la semaine, avec son unité : les kilomètres quand il y en a, sinon les séries de force, sinon le dénivelé, sinon les heures (voir metriqueSemaine)
+// Les deux infos de la colonne de la semaine : le temps (toujours) et, pour un sport choisi, son info principale (voir METRIQUE_DU_SPORT : kilomètres, séries, dénivelé)
 const UNITES: Record<UniteSemaine, { court: string; dit: string }> = {
   km: { court: 'km', dit: 'kilomètres' },
   series: { court: 'sér.', dit: 'séries' },
   dplus: { court: 'D+', dit: 'mètres de dénivelé' },
-  h: { court: 'h', dit: 'heures' },
 };
 // Au-delà de 100, les décimales n'apportent rien et prennent de la place : 266 km, pas 266,4 km
 const nombre = (n: number) => String(n >= 100 ? Math.round(n) : n).replace('.', ',');
 
-// Le récap de la semaine : le chiffre en haut (à la hauteur du haut des cases) et, en bas (à la hauteur du bas des cases), le profil des sept jours :
+// Le récap de la semaine : le temps et l'info du sport en haut (à la hauteur du haut des cases) et, en bas (à la hauteur du bas des cases), le profil des sept jours :
 // une petite barre par jour, de lundi à dimanche, à la hauteur du temps du jour, de la couleur de son sport dominant, pâle quand il n'y a que du prévu.
-// Sur « Tous », ses barres sont grises (aucun sport n'est mis en avant) ; la couleur revient quand on choisit un sport (mono = faux).
-function ProfilSemaine({ semaine, maxi, mono }: { semaine: JourGrille[]; maxi: number; mono: boolean }) {
+// Sur « Tous », ses barres sont grises (aucun sport n'est mis en avant) et il n'y a que le temps ; la couleur et l'info du sport reviennent quand on choisit un sport.
+function ProfilSemaine({ semaine, maxi, mono, filtre }: { semaine: JourGrille[]; maxi: number; mono: boolean; filtre: string }) {
   const p = usePalette();
   const r = resumeSemaine(semaine);
   const total = r.faites + r.prevues;
   const jours = profilSemaine(semaine);
-  const m = metriqueSemaine(semaine);
+  const c = chiffresSemaine(semaine, filtre);
   return (
     <View
       accessible
-      accessibilityLabel={total ? `Semaine du ${dateLongue(semaine[0].iso)} : ${nombre(m.valeur)} ${UNITES[m.unite].dit}, ${formatDuree(r.faites)} faites${r.prevues ? `, ${formatDuree(r.prevues)} prévues` : ''}, ${r.charge} points de charge` : `Semaine du ${dateLongue(semaine[0].iso)} : rien`}
+      accessibilityLabel={
+        total
+          ? `Semaine du ${dateLongue(semaine[0].iso)} : ${formatDuree(r.faites)} faites${r.prevues ? `, ${formatDuree(r.prevues)} prévues` : ''}${c.principale ? `, ${nombre(c.principale.valeur)} ${UNITES[c.principale.unite].dit}` : ''}, ${r.charge} points de charge`
+          : `Semaine du ${dateLongue(semaine[0].iso)} : rien`
+      }
       style={styles.semaine}
     >
-      <Text style={[styles.chiffreSemaine, { color: total ? p.texteDoux : p.texteMuet }]}>
-        {total ? nombre(m.valeur) : '—'}
-        {total ? <Text style={styles.unite}> {UNITES[m.unite].court}</Text> : null}
-      </Text>
+      <View style={styles.chiffresSemaine}>
+        <Text style={[styles.chiffreSemaine, { color: total ? p.texteDoux : p.texteMuet }]}>
+          {total ? nombre(c.heures) : '—'}
+          {total ? <Text style={styles.unite}> h</Text> : null}
+        </Text>
+        {c.principale ? (
+          <Text style={[styles.chiffreSemaine, { color: p.texte }]}>
+            {nombre(c.principale.valeur)}
+            <Text style={styles.unite}> {UNITES[c.principale.unite].court}</Text>
+          </Text>
+        ) : null}
+      </View>
       <View style={styles.profil}>
         {jours.map((j) => (
           <View
@@ -432,9 +443,10 @@ const styles = StyleSheet.create({
   entete: { width: `${100 / 7}%`, textAlign: 'center', paddingBottom: 4 },
   enteteSemaine: { width: 54, textAlign: 'right', paddingBottom: 4, paddingRight: 4 },
   // Le chiffre en haut, le profil en bas : la colonne a la hauteur des cases, ses deux blocs s'alignent sur leur haut et leur bas
-  semaine: { width: 54, justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 6, paddingBottom: 2, paddingRight: 4 },
-  chiffreSemaine: { fontFamily: police.titre700, fontSize: 12, lineHeight: 15, fontVariant: ['tabular-nums'] },
-  unite: { fontFamily: police.texte600, fontSize: 9, lineHeight: 15 },
+  semaine: { width: 54, justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 4, paddingBottom: 2, paddingRight: 4 },
+  chiffresSemaine: { alignItems: 'flex-end' },
+  chiffreSemaine: { fontFamily: police.titre700, fontSize: 12, lineHeight: 14, fontVariant: ['tabular-nums'] },
+  unite: { fontFamily: police.texte600, fontSize: 9, lineHeight: 14 },
   profil: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: HAUTEUR_PROFIL },
   jourProfil: { width: 4, borderRadius: 2 },
   case: { width: `${100 / 7}%`, minHeight: 58, alignItems: 'center', paddingTop: 4, borderRadius: rayon.base, borderWidth: 1, borderColor: 'transparent', gap: 2, overflow: 'hidden' },
