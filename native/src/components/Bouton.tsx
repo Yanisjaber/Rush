@@ -11,9 +11,11 @@ interface Props {
   onPress: () => void;
   children: ReactNode;
   accessibilityLabel?: string;
+  /** Plus bas (32 pt) pour les petits widgets ; la zone tactile reste de 44 pt grâce à hitSlop. */
+  petit?: boolean;
 }
 
-export function Bouton({ variante = 'principal', onPress, children, accessibilityLabel }: Props) {
+export function Bouton({ variante = 'principal', onPress, children, accessibilityLabel, petit }: Props) {
   const p = usePalette();
   const styles = {
     principal: { fond: p.texte, texte: p.fond, contour: undefined },
@@ -29,8 +31,10 @@ export function Bouton({ variante = 'principal', onPress, children, accessibilit
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      hitSlop={petit ? { top: 6, bottom: 6 } : undefined}
       style={({ pressed }) => [
         base.bouton,
+        petit && base.petit,
         { backgroundColor: styles.fond, opacity: pressed ? 0.7 : 1 },
         styles.contour ? { borderColor: styles.contour, borderWidth: variante === 'sur-dossard-contour' ? 2 : 1 } : null,
       ]}
@@ -44,5 +48,6 @@ export function Bouton({ variante = 'principal', onPress, children, accessibilit
 
 const base = StyleSheet.create({
   bouton: { minHeight: 44, paddingHorizontal: 12, borderRadius: rayon.base, alignItems: 'center', justifyContent: 'center' },
+  petit: { minHeight: 32, paddingHorizontal: 10 },
   texte: { fontFamily: police.texte600, fontSize: 14, lineHeight: 20 },
 });

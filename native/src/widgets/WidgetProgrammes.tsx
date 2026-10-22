@@ -19,10 +19,10 @@ export function WidgetProgrammes({ contexte, taille = 'm' }: WidgetProps) {
     return `${r.exercices} exo${r.exercices > 1 ? 's' : ''} · ${r.series} séries · ~${r.minutes} min`;
   };
 
-  // XS, S : le nombre de programmes ; M : + les trois premiers en liste ; L : la liste détaillée (exercices, séries, durée)
+  // XS : le nombre de programmes ; S : + leurs noms ; M : + les quatre premiers en liste ; L : la liste détaillée (exercices, séries, durée)
   if (taille !== 'l') {
     return (
-      <Tuile titre="Programmes" valeur={String(programmes.length)} note={programmes.length > 1 ? 'programmes de force' : 'programme de force'} large>
+      <Tuile titre="Programmes" valeur={String(programmes.length)} note={taille === 's' && programmes.length ? programmes.map((prog) => prog.name).join(' · ') : programmes.length > 1 ? 'programmes de force' : 'programme de force'} large>
         {taille === 'm' && programmes.length ? (
           <ListeCompacte lignes={programmes.slice(0, 4).map((prog) => ({ cle: prog.id, nom: prog.name, valeur: `${resumeProgramme(prog).exercices} exos` }))} />
         ) : null}

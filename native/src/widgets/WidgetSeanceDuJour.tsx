@@ -38,22 +38,30 @@ export function WidgetSeanceDuJour({ contexte, taille = 'm', tuile = false }: Wi
       ? { etiquette: 'Séance du jour', valeur: prog.name, detail: detailProgramme, action: 'Démarrer' }
       : { etiquette: 'Séance du jour', valeur: '—', detail: 'Enregistre ta séance : chrono, exercices, séries.', action: 'Enregistrer' };
 
-  const actions = (
-    <View style={{ gap: 6 }}>
-      <Bouton onPress={() => bientot('La saisie des séances de force')}>{bandeau.action}</Bouton>
-      {prevue ? (
-        <Bouton variante="discret" onPress={() => bientot('Le détail de la séance prévue')}>
-          Voir
+  // petit : les deux boutons côte à côte, plus bas (pour la tuile S)
+  const actions = (petit = false) => (
+    <View style={petit ? { flexDirection: 'row', gap: 8, marginTop: 8 } : { gap: 6 }}>
+      <View style={petit ? { flex: 1 } : undefined}>
+        <Bouton petit={petit} onPress={() => bientot('La saisie des séances de force')}>
+          {bandeau.action}
         </Bouton>
+      </View>
+      {prevue ? (
+        <View style={petit ? { flex: 1 } : undefined}>
+          <Bouton petit={petit} variante="discret" onPress={() => bientot('Le détail de la séance prévue')}>
+            Voir
+          </Bouton>
+        </View>
       ) : null}
     </View>
   );
 
-  // XS, S : le nom du programme et son détail. M : en plus, les boutons à droite
+  // XS : le nom et la durée ; S : + le détail et les boutons en petit, en bas ; M : le détail et les boutons à droite
   if (tuile) {
+    const note = taille === 'xs' && resume ? `~${resume.minutes} min` : bandeau.detail;
     return (
-      <Tuile titre="Séance du jour" valeur={bandeau.valeur || '—'} note={bandeau.detail}>
-        {taille === 'm' ? actions : null}
+      <Tuile titre="Séance du jour" valeur={bandeau.valeur || '—'} note={note}>
+        {taille === 'm' ? actions() : taille === 's' ? actions(true) : null}
       </Tuile>
     );
   }
@@ -61,7 +69,7 @@ export function WidgetSeanceDuJour({ contexte, taille = 'm', tuile = false }: Wi
   return (
     <CadreWidget titre={bandeau.etiquette}>
       <GrandChiffre valeur={bandeau.valeur || '—'} nom={formatDateLongue(aujourdhui)} detail={bandeau.detail}>
-        {actions}
+        {actions()}
       </GrandChiffre>
     </CadreWidget>
   );
