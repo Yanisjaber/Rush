@@ -1,4 +1,5 @@
 import { FondDegrade } from '@/components/FondDegrade';
+import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -218,6 +219,7 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
 
 // Le détail du jour choisi : ses séances en pastilles pleines, ses séances prévues en pointillés, sa compétition, son repos, ses notes
 function Detail({ jour }: { jour: JourGrille }) {
+  const router = useRouter();
   const p = usePalette();
   return (
     <Bloc titre={dateLongue(jour.iso)}>
@@ -247,7 +249,7 @@ function Detail({ jour }: { jour: JourGrille }) {
           {jour.seances.map((s) => (
             <Pressable
               key={s.id}
-              onPress={() => bientot('Le détail de la séance')}
+              onPress={() => router.push({ pathname: '/seance', params: { id: s.id } })}
               accessibilityRole="button"
               accessibilityLabel={`${s.name || nomSport(s.sport)}, ${formatDuree(s.moving_time)}`}
               style={[styles.seance, { backgroundColor: couleurSport(p, familleAffichage(s.sport)) }]}

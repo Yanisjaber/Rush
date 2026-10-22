@@ -62,6 +62,19 @@ export default function RootLayout() {
         {/* Sans compte (ni démo), seul l'écran de connexion existe : aucune autre adresse de l'app n'est atteignable */}
         <Stack.Protected guard={connecte}>
           <Stack.Screen name="(onglets)" />
+          {/* Le détail d'une séance : un écran poussé par-dessus les onglets, avec son bouton retour */}
+          <Stack.Screen
+            name="seance"
+            options={{
+              headerShown: true,
+              title: 'Séance',
+              headerStyle: { backgroundColor: palette.fond },
+              headerTintColor: palette.texte,
+              headerTitleStyle: { fontFamily: 'BricolageGrotesque_700Bold' },
+              headerBackButtonDisplayMode: 'minimal',
+              headerShadowVisible: false,
+            }}
+          />
         </Stack.Protected>
         <Stack.Protected guard={!connecte}>
           <Stack.Screen name="connexion" />
