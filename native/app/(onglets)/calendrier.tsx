@@ -135,10 +135,10 @@ export default function Calendrier() {
                 <View key={semaine[0].iso} style={styles.rangee}>
                   <View style={styles.jours}>
                     {semaine.map((j) => (
-                      <Case key={j.iso} jour={j} choisi={j.iso === choisi} onPress={() => setChoisi(j.iso)} />
+                      <Case key={j.iso} jour={j} choisi={j.iso === choisi} onPress={() => setChoisi(j.iso)} mono={filtre === 'tout'} />
                     ))}
                   </View>
-                  <ProfilSemaine semaine={semaine} maxi={maxiJour} />
+                  <ProfilSemaine semaine={semaine} maxi={maxiJour} mono={filtre === 'tout'} />
                 </View>
               ))}
             </View>
@@ -197,8 +197,10 @@ function CoinPlie({ couleur }: { couleur: string }) {
   );
 }
 
-function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; onPress: () => void }) {
+// Sur « Tous », la grille est en gris : aucun sport n'est mis en avant ; la couleur revient quand on choisit un sport (mono = faux)
+function Case({ jour, choisi, onPress, mono }: { jour: JourGrille; choisi: boolean; onPress: () => void; mono: boolean }) {
   const p = usePalette();
+  const coul = (famille?: string) => (mono ? p.sportNeutre : couleurSport(p, famille));
   const marques = jour.dansMois ? marquesDe(jour) : [];
   const label = [
     dateLongue(jour.iso),
@@ -211,7 +213,7 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
   if (!jour.dansMois) return <View style={styles.case} />;
   // Le jour se teinte de la couleur de son sport dominant, d'autant plus fort que sa charge est grande (de 14 % à 50 % d'opacité)
   const teinte = teinteJour(jour);
-  const fond = teinte ? avecAlpha(couleurSport(p, teinte.famille), 0.14 + 0.36 * teinte.force) : undefined;
+  const fond = teinte ? avecAlpha(coul(teinte.famille), 0.14 + 0.36 * teinte.force) : undefined;
   return (
     <Pressable
       onPress={onPress}
@@ -231,9 +233,9 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
       <View style={styles.points}>
         {marques.slice(0, MAX_POINTS).map((m) =>
           m.type === 'fait' ? (
-            <View key={m.cle} style={[styles.point, { backgroundColor: couleurSport(p, m.couleur) }]} />
+            <View key={m.cle} style={[styles.point, { backgroundColor: coul(m.couleur) }]} />
           ) : m.type === 'prevu' ? (
-            <View key={m.cle} style={[styles.point, { borderColor: couleurSport(p, m.couleur), borderWidth: 1.5 }]} />
+            <View key={m.cle} style={[styles.point, { borderColor: coul(m.couleur), borderWidth: 1.5 }]} />
           ) : (
             <View key={m.cle} style={[styles.carre, { backgroundColor: p.dossardFond, borderColor: p.texte }]} />
           ),
@@ -250,7 +252,7 @@ const HAUTEUR_PROFIL = 24;
 
 // Le profil de la semaine : sept petites barres (une par jour, de lundi à dimanche) à la hauteur du temps du jour, de la couleur de son sport dominant,
 // pâles quand il n'y a que du prévu ; les heures de la semaine (faites + prévues) dessous.
-function ProfilSemaine({ semaine, maxi }: { semaine: JourGrille[]; maxi: number }) {
+function ProfilSemaine({ semaine, maxi, mono }: { semaine: JourGrille[]; maxi: number; mono: boolean }) {
   const p = usePalette();
   const r = resumeSemaine(semaine);
   const total = r.faites + r.prevues;
@@ -267,7 +269,7 @@ function ProfilSemaine({ semaine, maxi }: { semaine: JourGrille[]; maxi: number 
             key={j.iso}
             style={[
               styles.jourProfil,
-              { height: j.secondes ? Math.max(3, (j.secondes / maxi) * HAUTEUR_PROFIL) : 2, backgroundColor: j.famille ? couleurSport(p, j.famille) : p.traitFort, opacity: j.fait || !j.secondes ? 1 : 0.35 },
+              { height: j.secondes ? Math.max(3, (j.secondes / maxi) * HAUTEUR_PROFIL) : 2, backgroundColor: j.famille ? (mono ? p.sportNeutre : couleurSport(p, j.famille)) : p.traitFort, opacity: j.fait || !j.secondes ? 1 : 0.35 },
             ]}
           />
         ))}
