@@ -59,7 +59,8 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
       distance_km: distance ? Math.round(distance * variation * 100) / 100 : null,
       total_elevation_gain: m.sport === 'WeightTraining' ? null : Math.round(40 + ((i * 17) % 200)),
       avg_heartrate: 142 + ((i * 3) % 18),
-      ftp_at_time: m.sport === 'Ride' ? 250 : null,
+      // La FTP monte doucement sur 12 semaines (de 238 à 252 W), pour que son évolution se voie
+      ftp_at_time: m.sport === 'Ride' ? Math.round(238 + ((83 - Math.min(i, 83)) / 83) * 14) : null,
       avg_watts: m.sport === 'Ride' ? 135 + ((i * 5) % 40) : null,
       np: m.sport === 'Ride' ? 142 + ((i * 7) % 40) : null,
       tss,

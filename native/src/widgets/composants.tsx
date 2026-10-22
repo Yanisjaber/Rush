@@ -11,7 +11,9 @@ import { WidgetCharge } from './WidgetCharge';
 import { WidgetChargeForce } from './WidgetChargeForce';
 import { WidgetChargeMuscu } from './WidgetChargeMuscu';
 import { WidgetDernieres } from './WidgetDernieres';
+import { WidgetDenivele } from './WidgetDenivele';
 import { WidgetEfficacite } from './WidgetEfficacite';
+import { WidgetFtp } from './WidgetFtp';
 import { WidgetForme } from './WidgetForme';
 import { WidgetGroupes } from './WidgetGroupes';
 import { WidgetHyroxAllure } from './WidgetHyroxAllure';
@@ -19,6 +21,7 @@ import { WidgetHyroxDossard } from './WidgetHyroxDossard';
 import { WidgetHyroxGains } from './WidgetHyroxGains';
 import { WidgetHyroxTest } from './WidgetHyroxTest';
 import { WidgetKmHebdo } from './WidgetKmHebdo';
+import { WidgetKmVelo } from './WidgetKmVelo';
 import { WidgetMeilleures } from './WidgetMeilleures';
 import { WidgetNatAllure } from './WidgetNatAllure';
 import { WidgetNatLongue } from './WidgetNatLongue';
@@ -34,6 +37,7 @@ import { WidgetSemaine } from './WidgetSemaine';
 import { WidgetTonnage } from './WidgetTonnage';
 import { WidgetVolume } from './WidgetVolume';
 import { WidgetZonesAllure } from './WidgetZonesAllure';
+import { WidgetZonesPuissance } from './WidgetZonesPuissance';
 
 // Correspondance entre l'identifiant d'un widget (voir data/registre.ts) et son composant.
 // Un identifiant sans composant (une vieille disposition sauvegardée) affiche un bloc « bientôt » (voir WidgetBientot).
@@ -51,6 +55,10 @@ export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   meilleures: WidgetMeilleures,
   kmhebdo: WidgetKmHebdo,
   zonesallure: WidgetZonesAllure,
+  kmvelo: WidgetKmVelo,
+  denivele: WidgetDenivele,
+  ftp: WidgetFtp,
+  zonespuissance: WidgetZonesPuissance,
   puissance: WidgetPuissance,
   natvolume: WidgetNatVolume,
   natallure: WidgetNatAllure,
