@@ -130,6 +130,8 @@ export default function Calendrier() {
         ) : (
           <>
             <View style={[styles.grille, { backgroundColor: p.surface }]}>
+              {/* Le fond de la colonne « Sem. » : une bande un peu plus claire sur toute la hauteur, derrière les lignes */}
+              <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={[styles.fondSemaine, { backgroundColor: p.surface2 }]} />
               <View style={styles.rangee} accessible={false} importantForAccessibility="no-hide-descendants">
                 <View style={styles.jours}>
                   {JOURS_SEMAINE.map((n, i) => (
@@ -438,6 +440,7 @@ const styles = StyleSheet.create({
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
   grille: { borderRadius: rayon.bloc, paddingHorizontal: 8, paddingVertical: 10, gap: 4 },
   rangee: { flexDirection: 'row', alignItems: 'stretch' },
+  fondSemaine: { position: 'absolute', top: 4, bottom: 4, right: 4, width: 58, borderRadius: rayon.base },
   jours: { flex: 1, flexDirection: 'row' },
   entete: { width: `${100 / 7}%`, textAlign: 'center', paddingBottom: 4 },
   enteteSemaine: { width: 54, textAlign: 'right', paddingBottom: 4, paddingRight: 4 },
