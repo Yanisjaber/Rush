@@ -4,12 +4,12 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, Text
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
 import { CalendrierPeriode } from '@/components/CalendrierPeriode';
-import { ChoixCouleur, PastillesChoix } from '@/components/ChampsFeuille';
-import { COULEURS_CYCLE, NOM_MAX_CYCLE, SPORTS_CYCLE, validerCycle } from '@/data/cycles';
+import { ChoixCouleur } from '@/components/ChampsFeuille';
+import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
+import { COULEURS_CYCLE, NOM_MAX_CYCLE, validerCycle } from '@/data/cycles';
 import { dateIsoLocale } from '@/data/format';
 import { useCycles } from '@/hooks/useCycles';
 import { espace, rayon } from '@/theme/couleurs';
-import { SPORTS, type CleSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -133,11 +133,10 @@ export default function EcranCycle() {
       </View>
       <View style={{ gap: 6 }}>
         <Text style={[typo.micro, { color: p.texteDoux }]}>Sport</Text>
-        <PastillesChoix
-          valeurs={[{ cle: 'tous', nom: 'Tous les sports' }, ...SPORTS_CYCLE.map((cle) => ({ cle, nom: SPORTS[cle as CleSport].court }))]}
-          actuel={sport ?? 'tous'}
+        <MenuDeroulantSport
+          valeur={sport}
           onChoisir={(v) => {
-            setSport(v === 'tous' ? null : v);
+            setSport(v);
             setErreur('');
           }}
           etiquette="Sport du cycle"

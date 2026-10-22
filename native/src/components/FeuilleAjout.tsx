@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleShee
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
 import { ChoixCouleur, PastillesChoix } from '@/components/ChampsFeuille';
+import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
 import { SelecteurDate } from '@/components/SelecteurDate';
 import {
   distanceEnMetres,
@@ -17,7 +18,7 @@ import {
   validerNote,
   validerSeance,
 } from '@/data/ajouts';
-import { COULEURS_CYCLE, NOM_MAX_CYCLE, SPORTS_CYCLE, validerCycle } from '@/data/cycles';
+import { COULEURS_CYCLE, NOM_MAX_CYCLE, validerCycle } from '@/data/cycles';
 import { dateIsoLocale } from '@/data/format';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useCycles } from '@/hooks/useCycles';
@@ -226,12 +227,7 @@ export function FeuilleAjout({ ouvert, jour, titre, onFermer }: { ouvert: boolea
                 <TextInput value={cycle.nom} onChangeText={(t) => modifie(() => setCycle({ ...cycle, nom: t }))} maxLength={NOM_MAX_CYCLE} placeholder="Bloc force, Prépa spécifique, Affûtage…" placeholderTextColor={p.texteMuet} autoCorrect={false} returnKeyType="done" accessibilityLabel="Nom du cycle" style={champ} />
                 <SelecteurDate etiquette="Fin du cycle (il commence ce jour)" date={cycle.fin} onChange={(iso) => modifie(() => setCycle({ ...cycle, fin: iso < jour ? jour : iso }))} />
                 {etiquette('Sport')}
-                {pastilles(
-                  [{ cle: 'tous', nom: 'Tous les sports' }, ...SPORTS_CYCLE.map((cle) => ({ cle, nom: SPORTS[cle as CleSport].court }))],
-                  cycle.sport ?? 'tous',
-                  (v) => setCycle({ ...cycle, sport: v === 'tous' ? null : v }),
-                  'Sport du cycle',
-                )}
+                <MenuDeroulantSport valeur={cycle.sport} onChoisir={(v) => modifie(() => setCycle({ ...cycle, sport: v }))} etiquette="Sport du cycle" />
                 {etiquette('Couleur')}
                 {couleurs(COULEURS_CYCLE, cycle.couleur, (hex) => setCycle({ ...cycle, couleur: hex }))}
               </>
