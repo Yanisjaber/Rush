@@ -6,7 +6,7 @@ type CleCouleur = 'sportCourse' | 'sportVelo' | 'sportNatation' | 'sportMuscu' |
 
 export const SPORTS = {
   course: { nom: 'Course à pied', court: 'Course', couleur: 'sportCourse' },
-  velo: { nom: 'Vélo route', court: 'Vélo', couleur: 'sportVelo' },
+  velo: { nom: 'Cyclisme', court: 'Cyclisme', couleur: 'sportVelo' },
   natation: { nom: 'Natation', court: 'Natation', couleur: 'sportNatation' },
   triathlon: { nom: 'Triathlon', court: 'Triathlon', couleur: 'sportVelo' },
   duathlon: { nom: 'Duathlon', court: 'Duathlon', couleur: 'sportVelo' },

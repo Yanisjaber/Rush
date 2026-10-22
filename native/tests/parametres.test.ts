@@ -5,7 +5,7 @@ import { resumeParametres } from '../src/data/parametres.ts';
 const ligne = { weight: 72.5, ftp: 250, hr_max: 196, lthr: null, extras: { first_name: 'Yanis', birth_date: '2000-01-01', sex: 'M', height: 180, vma: 17.5, threshold_speed: 15 } };
 
 test('resumeParametres : un profil bien rempli donne âge, taille, poids, FC max, FTP et trois modèles de zones', () => {
-  const r = resumeParametres({ ligne, nbSports: 3, nomsSports: ['Course à pied', 'Vélo route', 'Hyrox'], strava: { last_sync_status: 'ok', athlete_name: 'Yanis J' } });
+  const r = resumeParametres({ ligne, nbSports: 3, nomsSports: ['Course à pied', 'Cyclisme', 'Hyrox'], strava: { last_sync_status: 'ok', athlete_name: 'Yanis J' } });
   assert.equal(r.prenom, 'Yanis');
   assert.equal(r.profil.unite, 'ans');
   assert.ok(Number(r.profil.valeur) >= 25);
@@ -17,7 +17,7 @@ test('resumeParametres : un profil bien rempli donne âge, taille, poids, FC max
   assert.equal(r.zones.valeur, '3/3'); // la FC au seuil est estimée depuis la FC max
   assert.equal(r.zones.note, 'Puissance · Cardio · Allure');
   assert.equal(r.sports.valeur, '3');
-  assert.equal(r.sports.note, 'Course à pied · Vélo route …');
+  assert.equal(r.sports.note, 'Course à pied · Cyclisme …');
   assert.deepEqual(r.connexions, { etat: 'connecte', note: 'Strava · Yanis J' });
 });
 
