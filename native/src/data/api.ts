@@ -18,6 +18,7 @@ import { valeurValide, type LigneMesure } from './sante-catalogue';
 import { messageTours, toursValides } from './seance-detail';
 import type { Cycle, Nuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Profil, Seance, SerieForce, TestHyrox, Tour } from './types';
 import type { FormulaireCycle } from './cycles';
+import type { LigneNote, LignePrevue } from './ajouts';
 
 export interface Resultat<T> {
   data: T | null;
@@ -514,6 +515,22 @@ export async function supprimerMesureSante(userId: string, date: string, metric:
 export async function chargerSeriesPeriode(userId: string, debutIso: string, finIso: string): Promise<Resultat<{ date: string }[]>> {
   const r = await sb.from('strength_sets').select('date').eq('user_id', userId).gte('date', debutIso).lte('date', finIso).limit(3000);
   return resultat(r, 'Impossible de charger tes séries de force.');
+}
+
+// --- Ajouts depuis le « + » du calendrier : séance prévue, compétition, note ---------------------------------------------------------------
+// La RLS limite chacun à ses lignes ; user_id vient toujours de la session. Les erreurs de la base ne sont jamais montrées telles quelles.
+
+/** Écrit une séance prévue ou une compétition (ligne validée par validerSeance / validerCompetition) dans activity_planned. */
+export async function creerPrevue(userId: string, ligne: LignePrevue): Promise<Resultat<Prevue>> {
+  const r = await sb.from('activity_planned').insert({ ...ligne, user_id: userId }).select(COLONNES_PLANIFIEE).single();
+  return resultat(r, ligne.category === 'competition' ? "Impossible d'enregistrer cette compétition." : "Impossible d'enregistrer cette séance.");
+}
+
+/** Écrit une note (ligne validée par validerNote) dans day_notes. */
+export async function creerNoteJour(userId: string, ligne: LigneNote): Promise<Resultat<Note>> {
+  const client_id = `app-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+  const r = await sb.from('day_notes').insert({ ...ligne, user_id: userId, client_id }).select(COLONNES_NOTE).single();
+  return resultat(r, "Impossible d'enregistrer la note.");
 }
 
 // --- Cycles d'entraînement (table training_cycles) : lecture et écriture ---------------------------------------------------------------

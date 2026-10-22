@@ -4,6 +4,7 @@ import { chargerAnnotations, chargerCycles, chargerPlanifiees, chargerSeancesPer
 import { bornesGrille } from '@/data/calendrier';
 import { annotationsDemo, seriesForceDemo } from '@/data/demo';
 import { useAuth } from '@/stores/auth';
+import { notesAjoutees, prevuesAjoutees, useVersionAjouts } from '@/stores/ajouts';
 import { cyclesDemo, useVersionCycles } from '@/stores/cycles';
 import type { Cycle, Note, Prevue, Seance } from '@/data/types';
 
@@ -31,7 +32,8 @@ export function useDonneesCalendrier(annee: number, mois: number): {
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
   const { debut, fin } = bornesGrille(annee, mois);
-  const version = useVersionCycles(); // change à chaque création, modification ou suppression de cycle : on recharge
+  // Change à chaque création, modification ou suppression de cycle, et à chaque ajout (séance prévue, compétition, note) : on recharge
+  const version = useVersionCycles() + useVersionAjouts();
   const cle = `${userId}|${debut}|${fin}`;
 
   const demoDonnees = useMemo((): DonneesCalendrier | null => {
@@ -40,12 +42,13 @@ export function useDonneesCalendrier(annee: number, mois: number): {
     const d = donneesDemoAccueil(maintenant);
     const a = annotationsDemo(maintenant);
     const dans = (iso: string) => iso >= debut && iso <= fin;
-    const prevues = d.planifiees.filter((p) => dans(p.date));
+    // Les séances prévues, compétitions et notes ajoutées pendant la démo s'ajoutent à celles de l'exemple
+    const prevues = [...d.planifiees, ...prevuesAjoutees()].filter((p) => dans(p.date));
     return {
       seances: d.seances.filter((s) => dans(String(s.start_date_local).slice(0, 10))),
       planifiees: prevues.filter((p) => p.category !== 'competition'),
       objectifs: prevues.filter((p) => p.category === 'competition'),
-      notes: a.notes.filter((n) => n.from_date <= fin && n.to_date >= debut),
+      notes: [...a.notes, ...notesAjoutees()].filter((n) => n.from_date <= fin && n.to_date >= debut),
       repos: a.repos.filter((r) => dans(r)),
       cycles: cyclesDemo().filter((c) => c.from_date <= fin && c.to_date >= debut),
       series: seriesForceDemo(maintenant).filter((x) => dans(String(x.date).slice(0, 10))).map((x) => ({ date: x.date })),

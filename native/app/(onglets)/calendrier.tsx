@@ -8,6 +8,7 @@ import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
 import { Bloc } from '@/components/Bloc';
 import { Bouton } from '@/components/Bouton';
+import { FeuilleAjout } from '@/components/FeuilleAjout';
 import { SelecteurMois } from '@/components/SelecteurMois';
 import { chargeJour, chargeSeance, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
 import { couleurNote, libelleNote } from '@/data/annotations';
@@ -376,6 +377,7 @@ function ProfilSemaine({ semaine, maxi, mono, filtre }: { semaine: JourGrille[];
 function Detail({ jour }: { jour: JourGrille }) {
   const router = useRouter();
   const p = usePalette();
+  const [ajout, setAjout] = useState(false); // la feuille du « + »
   // Ce que le jour pèse, d'un coup d'œil : temps fait, charge, temps prévu (en pastilles, comme le haut du calendrier)
   const faites = jour.seances.reduce((t, s) => t + (s.moving_time || 0), 0);
   const prevues = jour.planifiees.reduce((t, x) => t + (Number(x.duration) > 0 ? Number(x.duration) * 60 : 0), 0);
@@ -391,9 +393,9 @@ function Detail({ jour }: { jour: JourGrille }) {
           {dateLongue(jour.iso)}
         </Text>
         <Pressable
-          onPress={() => bientot('La planification de séance')}
+          onPress={() => setAjout(true)}
           accessibilityRole="button"
-          accessibilityLabel="Planifier une séance"
+          accessibilityLabel="Ajouter une séance, une compétition, une note ou un cycle"
           style={[styles.detailPlus, { backgroundColor: p.texte }]}
         >
           <Text style={[styles.detailPlusTexte, { color: p.fond }]}>+</Text>
@@ -503,6 +505,7 @@ function Detail({ jour }: { jour: JourGrille }) {
               </Text>
             </View>
           ))}
+      <FeuilleAjout ouvert={ajout} jour={jour.iso} titre={dateLongue(jour.iso)} onFermer={() => setAjout(false)} />
     </Bloc>
   );
 }
