@@ -6,13 +6,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
 import { Bloc } from '@/components/Bloc';
-import { decalerMois, grilleMois, JOURS_SEMAINE, jourVide, type JourGrille } from '@/data/calendrier';
+import { Bouton } from '@/components/Bouton';
+import { chargeJour, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, resumeSemaine, teinteJour, type JourGrille } from '@/data/calendrier';
 import { couleurNote, libelleNote } from '@/data/annotations';
 import { familleAffichage, garderSeance } from '@/data/familles';
 import { dateIsoLocale, formatDuree } from '@/data/format';
 import { useDonneesCalendrier } from '@/hooks/useDonneesCalendrier';
 import { useMenu } from '@/stores/menu';
-import { espace, rayon } from '@/theme/couleurs';
+import { avecAlpha, espace, rayon } from '@/theme/couleurs';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -61,6 +62,8 @@ export default function Calendrier() {
   const titre = grille.titre.charAt(0).toUpperCase() + grille.titre.slice(1);
   const estMoisCourant = cible.annee === maintenant.getFullYear() && cible.mois === maintenant.getMonth();
   const detail = jours.find((j) => j.iso === choisi) ?? null;
+  // La plus grosse semaine du mois (faites + prévues) : c'est elle qui donne la longueur d'une barre pleine dans la colonne des heures
+  const maxiSemaine = Math.max(1, ...grille.semaines.map((sem) => { const r = resumeSemaine(sem); return r.faites + r.prevues; }));
 
   // En changeant de mois, on choisit aujourd'hui (mois courant), sinon le premier jour qui a quelque chose, sinon le 1er
   useEffect(() => {
@@ -117,17 +120,23 @@ export default function Calendrier() {
           <>
             <View style={[styles.grille, { backgroundColor: p.surface }]}>
               <View style={styles.rangee} accessible={false} importantForAccessibility="no-hide-descendants">
-                {JOURS_SEMAINE.map((n, i) => (
-                  <Text key={i} style={[typo.micro, styles.entete, { color: p.texteMuet }]}>
-                    {n.charAt(0)}
-                  </Text>
-                ))}
+                <View style={styles.jours}>
+                  {JOURS_SEMAINE.map((n, i) => (
+                    <Text key={i} style={[typo.micro, styles.entete, { color: p.texteMuet }]}>
+                      {n.charAt(0)}
+                    </Text>
+                  ))}
+                </View>
+                <Text style={[typo.micro, styles.enteteSemaine, { color: p.texteMuet }]}>h</Text>
               </View>
               {grille.semaines.map((semaine) => (
                 <View key={semaine[0].iso} style={styles.rangee}>
-                  {semaine.map((j) => (
-                    <Case key={j.iso} jour={j} choisi={j.iso === choisi} onPress={() => setChoisi(j.iso)} />
-                  ))}
+                  <View style={styles.jours}>
+                    {semaine.map((j) => (
+                      <Case key={j.iso} jour={j} choisi={j.iso === choisi} onPress={() => setChoisi(j.iso)} />
+                    ))}
+                  </View>
+                  <HeuresSemaine semaine={semaine} maxi={maxiSemaine} />
                 </View>
               ))}
             </View>
@@ -187,13 +196,16 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
     ...jour.planifiees.map((x) => `séance prévue : ${x.name || nomSport(x.sport)}`),
   ].join(', ');
   if (!jour.dansMois) return <View style={styles.case} />;
+  // Le jour se teinte de la couleur de son sport dominant, d'autant plus fort que sa charge est grande (de 14 % à 50 % d'opacité)
+  const teinte = teinteJour(jour);
+  const fond = teinte ? avecAlpha(couleurSport(p, teinte.famille), 0.14 + 0.36 * teinte.force) : undefined;
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: choisi }}
       accessibilityLabel={label}
-      style={[styles.case, choisi && { backgroundColor: p.surface2, borderColor: p.traitFort, borderWidth: 1 }]}
+      style={[styles.case, fond ? { backgroundColor: fond } : null, choisi && { borderColor: p.texte, borderWidth: 2 }]}
     >
       <View style={[styles.numero, jour.aujourdhui && { backgroundColor: p.texte }]}>
         <Text style={[styles.numeroTexte, { color: jour.aujourdhui ? p.fond : jour.futur ? p.texteDoux : p.texte }]}>{jour.num}</Text>
@@ -217,12 +229,47 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
   );
 }
 
+const heures = (secondes: number) => String(Math.round((secondes / 3600) * 10) / 10).replace('.', ',');
+const LARGEUR_BARRE = 34;
+
+// Les heures de la semaine (faites + prévues), avec une petite barre : pleine pour ce qui est fait, pâle pour ce qui est prévu
+function HeuresSemaine({ semaine, maxi }: { semaine: JourGrille[]; maxi: number }) {
+  const p = usePalette();
+  const r = resumeSemaine(semaine);
+  const total = r.faites + r.prevues;
+  return (
+    <View
+      accessible
+      accessibilityLabel={total ? `Semaine du ${dateLongue(semaine[0].iso)} : ${formatDuree(r.faites)} faites${r.prevues ? `, ${formatDuree(r.prevues)} prévues` : ''}, ${r.charge} points de charge` : `Semaine du ${dateLongue(semaine[0].iso)} : rien`}
+      style={styles.semaine}
+    >
+      <Text style={[styles.heures, { color: total ? p.texteDoux : p.texteMuet }]}>{total ? heures(total) : '—'}</Text>
+      {total ? (
+        <View style={[styles.pisteSemaine, { width: LARGEUR_BARRE }]}>
+          <View style={{ width: Math.max(2, (r.faites / maxi) * LARGEUR_BARRE), height: 4, borderRadius: 2, backgroundColor: p.texteDoux }} />
+          {r.prevues ? <View style={{ width: Math.max(2, (r.prevues / maxi) * LARGEUR_BARRE), height: 4, borderRadius: 2, backgroundColor: avecAlpha(p.texteDoux, 0.3) }} /> : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 // Le détail du jour choisi : ses séances en pastilles pleines, ses séances prévues en pointillés, sa compétition, son repos, ses notes
 function Detail({ jour }: { jour: JourGrille }) {
   const router = useRouter();
   const p = usePalette();
+  // « 2h14 faites · 110 pts · 54 min prévues » : ce que le jour pèse, d'un coup d'œil
+  const faites = jour.seances.reduce((t, s) => t + (s.moving_time || 0), 0);
+  const prevues = jour.planifiees.reduce((t, x) => t + (Number(x.duration) > 0 ? Number(x.duration) * 60 : 0), 0);
+  const morceaux = [faites ? `${formatDuree(faites)} faites · ${chargeJour(jour)} pts` : '', prevues ? `${formatDuree(prevues)} prévues` : ''].filter(Boolean);
+  const resume = morceaux.length ? { texte: morceaux.join(' · '), etiquette: morceaux.join(', ').replace('pts', 'points de charge') } : null;
   return (
     <Bloc titre={dateLongue(jour.iso)}>
+      {resume ? (
+        <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 8 }]} accessibilityLabel={resume.etiquette}>
+          {resume.texte}
+        </Text>
+      ) : null}
       {jourVide(jour) ? (
         <Text style={[styles.tiret, { color: p.texteMuet }]}>—</Text>
       ) : (
@@ -276,6 +323,11 @@ function Detail({ jour }: { jour: JourGrille }) {
           ))}
         </View>
       )}
+      <View style={{ marginTop: 12 }}>
+        <Bouton variante="discret" onPress={() => bientot('La planification de séance')}>
+          + Planifier une séance
+        </Bouton>
+      </View>
     </Bloc>
   );
 }
@@ -295,8 +347,13 @@ const styles = StyleSheet.create({
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
   grille: { borderRadius: rayon.bloc, paddingHorizontal: 8, paddingVertical: 10, gap: 4 },
-  rangee: { flexDirection: 'row' },
+  rangee: { flexDirection: 'row', alignItems: 'stretch' },
+  jours: { flex: 1, flexDirection: 'row' },
   entete: { width: `${100 / 7}%`, textAlign: 'center', paddingBottom: 4 },
+  enteteSemaine: { width: 46, textAlign: 'right', paddingBottom: 4, paddingRight: 4 },
+  semaine: { width: 46, justifyContent: 'center', alignItems: 'flex-end', gap: 4, paddingRight: 4 },
+  heures: { fontFamily: police.titre700, fontSize: 12, lineHeight: 15, fontVariant: ['tabular-nums'] },
+  pisteSemaine: { flexDirection: 'row', gap: 1 },
   case: { width: `${100 / 7}%`, minHeight: 58, alignItems: 'center', paddingTop: 4, borderRadius: rayon.base, borderWidth: 1, borderColor: 'transparent', gap: 4 },
   numero: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   numeroTexte: { fontFamily: police.titre700, fontSize: 16, lineHeight: 20, fontVariant: ['tabular-nums'] },
