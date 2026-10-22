@@ -76,8 +76,18 @@ export function familleAffichage(typeBrut: unknown): string {
   return f === 'trail' ? 'course' : f;
 }
 
-/** Une séance passe-t-elle le filtre de l'accueil ? Le sport de la pastille (Trail et VTT ont la leur) ; « tout » garde tout. */
+/**
+ * Les pastilles qui regroupent plusieurs disciplines : un triathlète a ses séances en natation, vélo et course, pas en « triathlon »
+ * (type propre à l'app, pour une course ou une saisie à la main). Leur onglet garde donc toutes ses disciplines.
+ */
+export const DISCIPLINES_DU_FILTRE: Record<string, readonly string[]> = {
+  triathlon: ['triathlon', 'natation', 'velo', 'vtt', 'course', 'trail'],
+  duathlon: ['duathlon', 'velo', 'vtt', 'course', 'trail'],
+};
+
+/** Une séance passe-t-elle le filtre de l'accueil ? Le sport de la pastille (Trail et VTT ont la leur, Triathlon et Duathlon regroupent leurs disciplines) ; « tout » garde tout. */
 export function garderSeance(seance: { sport?: string } | null | undefined, filtre = 'tout'): boolean {
   if (filtre === 'tout') return true;
-  return familleBarre(seance?.sport) === filtre;
+  const famille = familleBarre(seance?.sport);
+  return Object.hasOwn(DISCIPLINES_DU_FILTRE, filtre) ? DISCIPLINES_DU_FILTRE[filtre].includes(famille) : famille === filtre;
 }
