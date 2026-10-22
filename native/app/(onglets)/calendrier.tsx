@@ -220,7 +220,16 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
     ...jour.seances.map((s) => `${s.name || nomSport(s.sport)}, ${formatDuree(s.moving_time)}`),
     ...jour.planifiees.map((x) => `séance prévue : ${x.name || nomSport(x.sport)}`),
   ].join(', ');
-  if (!jour.dansMois) return <View style={styles.case} />;
+  // Un jour d'un autre mois : juste son numéro, très pâle (pas de case, pas de points, pas touchable, ignoré des lecteurs d'écran)
+  if (!jour.dansMois) {
+    return (
+      <View style={styles.case} accessible={false} importantForAccessibility="no-hide-descendants">
+        <View style={styles.numero}>
+          <Text style={[styles.numeroTexte, { color: p.texteMuet, opacity: 0.4 }]}>{jour.num}</Text>
+        </View>
+      </View>
+    );
+  }
   // Le jour se teinte de gris, d'autant plus fort que sa charge est grande (de 10 % à 40 % d'opacité) : aucune couleur de sport sur les cases, les pastilles les portent
   const teinte = teinteJour(jour);
   const fond = teinte ? avecAlpha(p.sportNeutre, 0.1 + 0.3 * teinte.force) : undefined;
