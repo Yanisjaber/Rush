@@ -125,6 +125,25 @@ test('composerOnglet : Course, Vélo et Natation ont leur propre liste, sinon le
   assert.deepEqual(composerOnglet(tout, 'velo', perso), LISTES_PAR_DEFAUT.velo); // la liste de la course ne touche pas au vélo
 });
 
+test('TAILLES_ONGLET : chaque onglet fixe donne une taille permise à tous ses widgets', () => {
+  for (const sport of ['muscu', 'hyrox']) {
+    assert.deepEqual(Object.keys(TAILLES_ONGLET[sport]).sort(), [...ORDRE_ONGLET[sport]].sort(), sport);
+    for (const id of ORDRE_ONGLET[sport]) assert.ok((WIDGETS as Record<string, { tailles: readonly string[] }>)[id].tailles.includes(TAILLES_ONGLET[sport][id]), `${sport} : ${id}`);
+  }
+});
+
+test('Hyrox : les tuiles S vont par deux (aucune ne reste seule sur sa ligne)', () => {
+  const tailles = composerOnglet([], 'hyrox').map((w) => w.taille);
+  let suite = 0;
+  for (const t of [...tailles, 'm']) {
+    if (t === 's') suite++;
+    else {
+      assert.equal(suite % 2, 0, 'une suite de tuiles S doit être paire');
+      suite = 0;
+    }
+  }
+});
+
 test('LISTES_PAR_DEFAUT : chaque liste ne contient que des widgets du sport ou pour tous, des tailles permises, sans doublon', () => {
   for (const [sport, liste] of Object.entries(LISTES_PAR_DEFAUT)) {
     assert.equal(new Set(liste.map((w) => w.id)).size, liste.length, sport);

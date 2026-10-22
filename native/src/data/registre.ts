@@ -345,7 +345,8 @@ export interface WidgetPlace {
  */
 export const ORDRE_ONGLET: Record<string, readonly string[]> = {
   muscu: ['seancedujour', 'programmes', 'tonnage', 'regularite', 'dernieres', 'records', 'groupes', 'chargemuscu'],
-  hyrox: ['hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'semaine', 'chargeforce'],
+  // De haut en bas : l'objectif, le contexte de la semaine, la progression et l'effort, le dernier test, l'analyse, puis ce qui a été fait
+  hyrox: ['hyroxdossard', 'semaine', 'hyroxevolution', 'hyroxhebdo', 'hyroxtest', 'hyroxrunsstations', 'hyroxderive', 'hyroxallure', 'hyroxgains', 'chargeforce', 'dernieres'],
 };
 
 /** La liste par défaut d'un onglet de sport libre (Course, Vélo, Natation) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course et Vélo : les dispositions de Yanis. */
@@ -375,9 +376,11 @@ export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
   ],
 };
 
-/** Tailles par défaut d'un onglet (quand l'utilisateur n'a rien personnalisé) : elles passent avant celles de l'onglet « Tous ». Muscu : la disposition de Yanis. */
+/** Tailles par défaut d'un onglet (quand l'utilisateur n'a rien personnalisé) : elles passent avant celles de l'onglet « Tous ». Muscu : la disposition de Yanis ; Hyrox : une disposition pensée pour l'usage. */
 export const TAILLES_ONGLET: Record<string, Readonly<Record<string, Taille>>> = {
   muscu: { seancedujour: 'm', programmes: 'xs', tonnage: 's', regularite: 's', dernieres: 'xs', records: 'm', groupes: 's', chargemuscu: 's' },
+  // Hyrox : le dossard en héros, une bande fine, deux paires de tuiles (progression et effort, puis runs et dérive), le test en grand
+  hyrox: { hyroxdossard: 'm', semaine: 'xs', hyroxevolution: 's', hyroxhebdo: 's', hyroxtest: 'l', hyroxrunsstations: 's', hyroxderive: 's', hyroxallure: 'm', hyroxgains: 'm', chargeforce: 'xs', dernieres: 'm' },
 };
 
 /**
