@@ -241,7 +241,7 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
           <CoinPlie couleur={couleurNote(jour.notes[0].color)} />
         </View>
       ) : null}
-      <View style={[styles.numero, jour.aujourdhui && { backgroundColor: p.texte }]}>
+      <View style={[styles.numero, jour.aujourdhui && styles.aujourdhui, jour.aujourdhui && { backgroundColor: p.texte }]}>
         <Text style={[styles.numeroTexte, { color: jour.aujourdhui ? p.fond : jour.futur ? p.texteDoux : p.texte }]}>{jour.num}</Text>
       </View>
       <View style={styles.points}>
@@ -422,6 +422,8 @@ const styles = StyleSheet.create({
   jourProfil: { width: 4, borderRadius: 2 },
   case: { width: `${100 / 7}%`, minHeight: 58, alignItems: 'center', paddingTop: 4, borderRadius: rayon.base, borderWidth: 1, borderColor: 'transparent', gap: 2, overflow: 'hidden' },
   numero: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  // Aujourd'hui : un carré arrondi, serré autour du chiffre (la même hauteur totale que les autres jours : 22 + 2 × 2)
+  aujourdhui: { width: 24, height: 22, borderRadius: 6, marginVertical: 2 },
   numeroTexte: { fontFamily: police.titre700, fontSize: 16, lineHeight: 20, fontVariant: ['tabular-nums'] },
   points: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 10 },
   point: { width: 6, height: 6, borderRadius: 3 },
