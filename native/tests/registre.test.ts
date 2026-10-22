@@ -122,15 +122,16 @@ test('composerOnglet : Course, Vélo et Natation ont leur propre liste, sinon le
   }
   const perso = { course: [{ id: 'kmhebdo', taille: 'm' as const }] };
   assert.deepEqual(composerOnglet(tout, 'course', perso), [{ id: 'kmhebdo', taille: 'm' }]);
-  assert.deepEqual(composerOnglet(tout, 'velo', perso), compositionSport(['velo'])); // la liste de la course ne touche pas au vélo
+  assert.deepEqual(composerOnglet(tout, 'velo', perso), LISTES_PAR_DEFAUT.velo); // la liste de la course ne touche pas au vélo
 });
 
-test('LISTES_PAR_DEFAUT : la liste de Course ne contient que des widgets de course ou pour tous, des tailles permises, sans doublon', () => {
-  const liste = LISTES_PAR_DEFAUT.course;
-  assert.equal(new Set(liste.map((w) => w.id)).size, liste.length);
-  for (const w of liste) {
-    assert.ok(estPertinent(w.id, ['course']), w.id);
-    assert.ok((WIDGETS as Record<string, { tailles: readonly string[] }>)[w.id].tailles.includes(w.taille), `${w.id} ${w.taille}`);
+test('LISTES_PAR_DEFAUT : chaque liste ne contient que des widgets du sport ou pour tous, des tailles permises, sans doublon', () => {
+  for (const [sport, liste] of Object.entries(LISTES_PAR_DEFAUT)) {
+    assert.equal(new Set(liste.map((w) => w.id)).size, liste.length, sport);
+    for (const w of liste) {
+      assert.ok(estPertinent(w.id, [sport]), `${sport} : ${w.id}`);
+      assert.ok((WIDGETS as Record<string, { tailles: readonly string[] }>)[w.id].tailles.includes(w.taille), `${sport} : ${w.id} ${w.taille}`);
+    }
   }
   // Une copie à chaque appel : modifier le résultat ne change pas la liste par défaut
   composerOnglet([], 'course')[0].taille = 'xs';

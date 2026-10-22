@@ -316,7 +316,7 @@ export const ORDRE_ONGLET: Record<string, readonly string[]> = {
   hyrox: ['hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'semaine', 'chargeforce'],
 };
 
-/** La liste par défaut d'un onglet de sport libre (Course, Vélo, Natation) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course : la disposition de Yanis. */
+/** La liste par défaut d'un onglet de sport libre (Course, Vélo, Natation) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course et Vélo : les dispositions de Yanis. */
 export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
   course: [
     { id: 'kmhebdo', taille: 'm' },
@@ -328,6 +328,17 @@ export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
     { id: 'avenir', taille: 's' },
     { id: 'forme', taille: 's' },
     { id: 'charge', taille: 'l' },
+    { id: 'dernieres', taille: 'm' },
+  ],
+  velo: [
+    { id: 'semaine', taille: 'm' },
+    { id: 'forme', taille: 's' },
+    { id: 'kmvelo', taille: 's' },
+    { id: 'zonespuissance', taille: 'xs' },
+    { id: 'wattscardio', taille: 's' },
+    { id: 'ftp', taille: 's' },
+    { id: 'charge', taille: 'l' },
+    { id: 'puissance', taille: 'm' },
     { id: 'dernieres', taille: 'm' },
   ],
 };
