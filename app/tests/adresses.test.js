@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { nettoyerQ, analyserAdresse, construireAdresse, estSport, estPageSport, moisDepuisAdresse, moisVersAdresse, anneeDepuisAdresse } from '../src/lib/data/adresses.js';
 
 test('estSport : sports connus oui, pages et pièges non', () => {
-  for (const s of ['course', 'velo', 'muscu', 'hyrox', 'natation']) assert.equal(estSport(s), true, s);
-  for (const s of ['autre', 'calendrier', 'bilan', 'constructor', '__proto__', '', null, undefined, 3]) assert.equal(estSport(s), false, String(s));
+  for (const s of ['course', 'velo', 'muscu', 'hyrox', 'natation', 'autre']) assert.equal(estSport(s), true, s);
+  for (const s of ['calendrier', 'bilan', 'constructor', '__proto__', '', null, undefined, 3]) assert.equal(estSport(s), false, String(s));
 });
 
 test('analyserAdresse : accueil, avec et sans sport', () => {

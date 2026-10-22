@@ -45,9 +45,9 @@ export function nettoyerQ(brut) {
   return sortie;
 }
 
-/** Un mot de l'adresse est-il un sport (course, velo, muscu…) ? « autre » ne compte pas. */
+/** Un mot de l'adresse est-il un sport (course, velo, muscu, autre…) ? */
 export function estSport(mot) {
-  return typeof mot === 'string' && mot !== 'autre' && Object.hasOwn(SPORTS, mot);
+  return typeof mot === 'string' && Object.hasOwn(SPORTS, mot);
 }
 
 /** Cette page (chemin sans sport, ex. '/bilan') suit-elle le sport choisi ? */

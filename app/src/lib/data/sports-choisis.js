@@ -5,13 +5,7 @@
 export const SPORTS_PRINCIPAUX = ['course', 'velo', 'natation', 'muscu', 'hyrox'];
 
 /** Les autres sports de performance : ils ont leur pastille de couleur et leurs séances, sans widgets dédiés. */
-export const SPORTS_AUTRES = ['triathlon', 'duathlon', 'ski'];
-
-/**
- * Des activités qui comptent dans la charge, le volume et les listes de séances, mais qui n'ont PAS de page : on ne les propose pas à
- * cocher et elles n'ont jamais de pastille dans la barre du haut, même si les séances les révèlent. (Décision du 20 oct.)
- */
-export const SPORTS_SANS_PAGE = ['rando', 'combat', 'escalade', 'aviron', 'pagaie', 'athletisme'];
+export const SPORTS_AUTRES = ['triathlon', 'duathlon', 'autre'];
 
 /** Tout ce qu'on peut cocher, dans l'ordre de l'écran. */
 export const SPORTS_A_CHOISIR = [...SPORTS_PRINCIPAUX, ...SPORTS_AUTRES];
@@ -22,8 +16,11 @@ export const GROUPES_SPORTS = [
   { titre: 'Vélo & multisport', sports: ['velo', 'triathlon', 'duathlon'] },
   { titre: 'Eau', sports: ['natation'] },
   { titre: 'Force & hybride', sports: ['muscu', 'hyrox'] },
-  { titre: 'Nature', sports: ['ski'] },
+  { titre: 'Autres', sports: ['autre'] },
 ];
+
+/** Les sports qui avaient leur propre case avant l'onglet « Autres ». */
+const ANCIENS_SPORTS = ['ski', 'rando', 'combat', 'escalade', 'aviron', 'pagaie', 'athletisme'];
 
 /**
  * Nettoie une liste venue du stockage : on ne garde que des clés connues, une seule fois chacune, DANS L'ORDRE DE L'UTILISATEUR
@@ -35,7 +32,9 @@ export function nettoyerSports(brut) {
   const connus = new Set(SPORTS_A_CHOISIR);
   const vus = new Set();
   const liste = [];
-  for (const s of brut) {
+  for (const brutS of brut) {
+    // Les anciens sports (ski, randonnée, combat…) sont maintenant dans « Autres » : un ancien choix enregistré n'est pas perdu
+    const s = typeof brutS === 'string' && ANCIENS_SPORTS.includes(brutS) ? 'autre' : brutS;
     if (typeof s === 'string' && connus.has(s) && !vus.has(s)) {
       vus.add(s);
       liste.push(s);
@@ -80,7 +79,5 @@ export function fusionnerFamilles(deDonnees = [], choisis = []) {
     for (const famille of Object.hasOwn(FAMILLES_DU_SPORT, s) ? FAMILLES_DU_SPORT[s] : [s]) f.add(famille);
   }
   for (const famille of deDonnees || []) f.add(famille);
-  f.delete('autre');
-  for (const s of SPORTS_SANS_PAGE) f.delete(s);
   return [...f];
 }

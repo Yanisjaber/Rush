@@ -6,9 +6,9 @@ import { SPORTS } from '../src/lib/sports.js';
 test('types Strava courants rangés dans une vraie famille (pas « autre »)', () => {
   const attendu = {
     Workout: 'muscu', WeightTraining: 'muscu', Yoga: 'muscu', Pilates: 'muscu',
-    Walk: 'rando', Hike: 'rando', Snowshoe: 'rando',
+    Walk: 'autre', Hike: 'autre', Snowshoe: 'autre', Rowing: 'autre', Boxing: 'autre', Athletics: 'autre',
     Elliptical: 'course', StairStepper: 'course', Run: 'course', VirtualRun: 'course',
-    AlpineSki: 'ski', Snowboard: 'ski', RollerSki: 'ski', NordicSki: 'ski',
+    AlpineSki: 'autre', Snowboard: 'autre', RollerSki: 'autre', NordicSki: 'autre',
     Ride: 'velo', MountainBikeRide: 'velo', Swim: 'natation', Crossfit: 'muscu', HighIntensityIntervalTraining: 'muscu', GravelRide: 'velo', TrailRun: 'course', Hyrox: 'hyrox',
     Triathlon: 'triathlon', Duathlon: 'duathlon', // sports à part entière, pas « course + vélo + natation »
   };

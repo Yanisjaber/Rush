@@ -8,16 +8,9 @@ export const SPORTS = {
   natation: { nom: 'Natation', court: 'Natation', couleur: 'var(--sport-natation)' },
   triathlon: { nom: 'Triathlon', court: 'Triathlon', couleur: 'var(--sport-velo)' },
   duathlon: { nom: 'Duathlon', court: 'Duathlon', couleur: 'var(--sport-velo)' },
-  athletisme: { nom: 'Athlétisme', court: 'Athlé', couleur: 'var(--sport-neutre)' },
   hyrox: { nom: 'Hyrox', court: 'Hyrox', couleur: 'var(--sport-hybride)' },
   muscu: { nom: 'Musculation', court: 'Muscu', couleur: 'var(--sport-muscu)' },
-  aviron: { nom: 'Aviron', court: 'Aviron', couleur: 'var(--sport-natation)' },
-  ski: { nom: 'Ski de fond', court: 'Ski', couleur: 'var(--sport-neutre)' },
-  combat: { nom: 'Sports de combat', court: 'Combat', couleur: 'var(--sport-neutre)' },
-  rando: { nom: 'Randonnée', court: 'Rando', couleur: 'var(--sport-neutre)' },
-  escalade: { nom: 'Escalade', court: 'Escalade', couleur: 'var(--sport-neutre)' },
-  pagaie: { nom: 'Canoë-kayak', court: 'Pagaie', couleur: 'var(--sport-natation)' },
-  autre: { nom: 'Autre sport', court: 'Autre', couleur: 'var(--sport-neutre)' },
+  autre: { nom: 'Autres', court: 'Autres', couleur: 'var(--sport-neutre)' },
 };
 
 /** Couleur d'un sport (repli neutre si le sport est inconnu). */

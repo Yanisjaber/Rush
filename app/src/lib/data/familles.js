@@ -16,8 +16,6 @@ const FAMILLES = {
   TrailRun: 'course',
   // Natation et eau
   Swim: 'natation',
-  Rowing: 'aviron',
-  VirtualRow: 'aviron',
   // Force et hybride. « Workout » est le type générique de Strava (séance en salle, renforcement) : on le range avec la muscu,
   // comme le yoga, le pilates, le CrossFit et le HIIT (gainage, mobilité, renforcement) : ce sont des séances de travail du corps.
   WeightTraining: 'muscu',
@@ -29,28 +27,11 @@ const FAMILLES = {
   Hyrox: 'hyrox', // type propre à l'app : Strava n'a pas de sport Hyrox
   Triathlon: 'triathlon', // types propres à l'app (Strava n'a pas de séance « triathlon ») : un sport à part, pas la somme de course, vélo et natation
   Duathlon: 'duathlon',
-  Athletics: 'athletisme', // compte dans la charge, mais n'a pas de page (voir SPORTS_SANS_PAGE)
   HighIntensityIntervalTraining: 'muscu',
-  // Ski et glisse
-  NordicSki: 'ski',
-  BackcountrySki: 'ski',
-  AlpineSki: 'ski',
-  Snowboard: 'ski',
-  RollerSki: 'ski',
   // Machines d'endurance en salle : de la course à pied pour la charge et la forme
   Elliptical: 'course',
   StairStepper: 'course',
-  // Combat
-  Boxing: 'combat',
-  MartialArts: 'combat',
-  // Autres sports de performance
-  Hike: 'rando',
-  Walk: 'rando', // la marche rejoint la randonnée
-  Snowshoe: 'rando',
-  RockClimbing: 'escalade',
-  Canoeing: 'pagaie',
-  Kayaking: 'pagaie',
-  StandUpPaddling: 'pagaie',
+  // Tout le reste (ski, aviron, combat, randonnée, escalade, canoë, athlétisme, tennis…) n'est pas listé : c'est « autre » (l'onglet « Autres »)
 };
 
 /** Famille d'un type de sport brut. Tout ce qui est inconnu (foot, tennis, golf…) devient « autre ». */
