@@ -12,9 +12,9 @@ test('existe : seuls les vrais widgets, pas les propriétés héritées', () => 
   assert.equal(existe(42), false);
 });
 
-test('registre : 46 widgets, chacun avec une taille par défaut permise', () => {
+test('registre : 51 widgets, chacun avec une taille par défaut permise', () => {
   const ids = Object.keys(WIDGETS);
-  assert.equal(ids.length, 46);
+  assert.equal(ids.length, 51);
   for (const id of ids) {
     const d = (WIDGETS as Record<string, { tailles: readonly string[]; taille: string }>)[id];
     assert.ok(d.tailles.includes(d.taille), id);
