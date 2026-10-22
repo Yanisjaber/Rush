@@ -33,7 +33,11 @@ export function chiffresSeance(s: Seance): ChiffreSeance[] {
     const ecoule = positif(s.elapsed_time) && s.elapsed_time - s.moving_time >= 120 ? `${formatDuree(s.elapsed_time)} au total` : undefined;
     liste.push({ cle: 'duree', libelle: 'Durée', valeur: formatDuree(s.moving_time), note: ecoule });
   }
-  if (positif(s.distance_km)) liste.push({ cle: 'distance', libelle: 'Distance', valeur: formatKm(s.distance_km, s.distance_km < 10 ? 2 : 1), unite: 'km' });
+  if (positif(s.distance_km)) {
+    // En natation, la distance est en mètres
+    if (famille === 'natation') liste.push({ cle: 'distance', libelle: 'Distance', valeur: formatNombre(s.distance_km * 1000), unite: 'm' });
+    else liste.push({ cle: 'distance', libelle: 'Distance', valeur: formatKm(s.distance_km, s.distance_km < 10 ? 2 : 1), unite: 'km' });
+  }
   const spk = secondesParKm(s);
   if (spk && (famille === 'course' || famille === 'hyrox')) liste.push({ cle: 'allure', libelle: 'Allure', valeur: formatAllure(spk).replace('/km', ''), unite: '/km' });
   else if (spk && famille === 'natation') liste.push({ cle: 'allure', libelle: 'Allure', valeur: formatAllureDepuisKmh(s.distance_km! / (s.moving_time / 3600), true), unite: '/100 m' });

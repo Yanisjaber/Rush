@@ -87,3 +87,9 @@ test('toursDemo : un tour par kilomètre dont la somme redonne la séance ; rien
   assert.equal(h.length, 16);
   assert.deepEqual(h.map((x) => x.distance).slice(0, 4), [1000, 0, 1000, 0]);
 });
+
+test('chiffresSeance : en natation la distance est en mètres', () => {
+  const d = chiffresSeance(seance({ sport: 'Swim', distance_km: 2.4, moving_time: 3000 })).find((x) => x.cle === 'distance');
+  assert.equal(d?.unite, 'm');
+  assert.equal(d?.valeur, '2\u00a0400');
+});

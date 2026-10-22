@@ -82,6 +82,13 @@ export function formatNombre(n: unknown): string {
   return Math.round(Number(n)).toLocaleString('fr-FR').replace(/[\u202f\u00a0]/g, '\u00a0');
 }
 
+/** Une distance dans l'unité de son sport : en natation tout est en mètres (2.4 km → « 2 400 m »), ailleurs en kilomètres (7.4 → « 7,4 km »). */
+export function formatDistanceSport(km: number | null | undefined, famille: string): string {
+  const v = Number(km);
+  if (!(v > 0)) return '';
+  return famille === 'natation' ? `${formatNombre(v * 1000)} m` : `${formatKm(v)} km`;
+}
+
 /** « 7h42 » à partir de minutes. */
 export const texteHM = (min: number): string => `${Math.floor(min / 60)}h${String(Math.round(min % 60)).padStart(2, '0')}`;
 

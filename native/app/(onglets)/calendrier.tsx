@@ -12,7 +12,7 @@ import { SelecteurMois } from '@/components/SelecteurMois';
 import { chargeJour, chargeSeance, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
 import { couleurNote, libelleNote } from '@/data/annotations';
 import { familleAffichage, garderSeance } from '@/data/familles';
-import { dateIsoLocale, formatDuree, formatHeuresMinutes, formatKm } from '@/data/format';
+import { dateIsoLocale, formatDistanceSport, formatDuree, formatHeuresMinutes, formatNombre } from '@/data/format';
 import { useDonneesCalendrier } from '@/hooks/useDonneesCalendrier';
 import { useMenu } from '@/stores/menu';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
@@ -133,7 +133,7 @@ export default function Calendrier() {
           <Carte valeur={String(seancesDuMois.length)} unite="séan." legende={seancesDuMois.length > 1 ? 'séances' : 'séance'} serree={!!principaleDuMois} />
           <Carte valeur={formatDuree(tempsDuMois)} legende="de sport" serree={!!principaleDuMois} />
           <Carte valeur={chargeDuMois.toLocaleString('fr-FR')} unite="pts" legende="points de charge" serree={!!principaleDuMois} />
-          {principaleDuMois ? <Carte valeur={nombre(principaleDuMois.valeur)} unite={UNITES[principaleDuMois.unite].court} legende={UNITES[principaleDuMois.unite].dit} serree /> : null}
+          {principaleDuMois ? <Carte valeur={nombre(principaleDuMois.valeur, principaleDuMois.unite)} unite={UNITES[principaleDuMois.unite].court} legende={UNITES[principaleDuMois.unite].dit} serree /> : null}
         </View>
 
         {erreur ? (
@@ -319,10 +319,11 @@ const HAUTEUR_PROFIL = 22;
 // Les deux infos de la colonne de la semaine : le temps (toujours) et, pour un sport choisi, son info principale (voir METRIQUE_DU_SPORT : kilomètres, séries, dénivelé)
 const UNITES: Record<UniteSemaine, { court: string; dit: string }> = {
   km: { court: 'km', dit: 'kilomètres' },
+  m: { court: 'm', dit: 'mètres' },
   series: { court: 'sér.', dit: 'séries' },
 };
 // Au-delà de 100, les décimales n'apportent rien et prennent de la place : 266 km, pas 266,4 km
-const nombre = (n: number) => String(n >= 100 ? Math.round(n) : n).replace('.', ',');
+const nombre = (n: number, unite?: UniteSemaine) => (unite === 'm' ? formatNombre(n) : String(n >= 100 ? Math.round(n) : n).replace('.', ','));
 
 // Le récap de la semaine : le temps et l'info du sport en haut (à la hauteur du haut des cases) et, en bas (à la hauteur du bas des cases), le profil des sept jours :
 // une petite barre par jour, de lundi à dimanche, à la hauteur du temps du jour, de la couleur de son sport dominant, pâle quand il n'y a que du prévu.
@@ -338,7 +339,7 @@ function ProfilSemaine({ semaine, maxi, mono, filtre }: { semaine: JourGrille[];
       accessible
       accessibilityLabel={
         total
-          ? `Semaine du ${dateLongue(semaine[0].iso)} : ${formatDuree(r.faites)} faites${r.prevues ? `, ${formatDuree(r.prevues)} prévues` : ''}${c.principale ? `, ${nombre(c.principale.valeur)} ${UNITES[c.principale.unite].dit}` : ''}, ${r.charge} points de charge`
+          ? `Semaine du ${dateLongue(semaine[0].iso)} : ${formatDuree(r.faites)} faites${r.prevues ? `, ${formatDuree(r.prevues)} prévues` : ''}${c.principale ? `, ${nombre(c.principale.valeur, c.principale.unite)} ${UNITES[c.principale.unite].dit}` : ''}, ${r.charge} points de charge`
           : `Semaine du ${dateLongue(semaine[0].iso)} : rien`
       }
       style={styles.semaine}
@@ -349,7 +350,7 @@ function ProfilSemaine({ semaine, maxi, mono, filtre }: { semaine: JourGrille[];
         </Text>
         {c.principale ? (
           <Text style={[styles.chiffreSemaine, { color: p.texte }]}>
-            {nombre(c.principale.valeur)}
+            {nombre(c.principale.valeur, c.principale.unite)}
             <Text style={styles.unite}> {UNITES[c.principale.unite].court}</Text>
           </Text>
         ) : null}
@@ -433,7 +434,7 @@ function Detail({ jour }: { jour: JourGrille }) {
           ))}
           {jour.seances.map((s) => {
             const nom = s.name || nomSport(s.sport);
-            const detail = [Number(s.distance_km) > 0 ? `${formatKm(s.distance_km)} km` : '', `${chargeSeance(s)} pts`, heureDe(s.start_date_local)].filter(Boolean).join(' · ');
+            const detail = [formatDistanceSport(s.distance_km, familleAffichage(s.sport)), `${chargeSeance(s)} pts`, heureDe(s.start_date_local)].filter(Boolean).join(' · ');
             return (
               <Pressable
                 key={s.id}
@@ -454,7 +455,7 @@ function Detail({ jour }: { jour: JourGrille }) {
           {jour.planifiees.map((x) => {
             const nom = x.name || nomSport(x.sport);
             const couleur = couleurSport(p, familleAffichage(x.sport));
-            const detail = ['Prévue', Number(x.km) > 0 ? `${formatKm(x.km)} km` : ''].filter(Boolean).join(' · ');
+            const detail = ['Prévue', formatDistanceSport(x.km, familleAffichage(x.sport))].filter(Boolean).join(' · ');
             return (
               <Pressable
                 key={x.id}

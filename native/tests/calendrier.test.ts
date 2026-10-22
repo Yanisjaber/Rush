@@ -188,3 +188,8 @@ test('chiffresSemaine : une info principale à zéro n\'est pas affichée ; une 
   assert.deepEqual(chiffresSemaine(g.semaines[0], 'course'), { heures: 0, secondes: 0, principale: null });
 });
 
+
+test('chiffresSemaine : en natation tout est en mètres (faits et prévus ensemble)', () => {
+  const g = grilleMois(2026, 9, { seances: [avecDistance('a', '2026-10-19', 'Swim', 40, 2.4), avecDistance('b', '2026-10-21', 'Swim', 30, 1.55)], planifiees: [{ ...prevueCal('p', '2026-10-24', 45), km: 2, sport: 'Swim' }] }, auj);
+  assert.deepEqual(chiffresSemaine(semaineDu(g, '2026-10-19'), 'natation').principale, { valeur: 5950, unite: 'm' }); // 2400 + 1550 + 2000
+});

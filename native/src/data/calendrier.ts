@@ -223,7 +223,7 @@ export function profilSemaine(semaine: JourGrille[]): JourProfil[] {
 export const kmJour = (j: JourGrille): number =>
   j.seances.reduce((t, s) => t + (Number(s.distance_km) > 0 ? Number(s.distance_km) : 0), 0) + j.planifiees.reduce((t, x) => t + (Number(x.km) > 0 ? Number(x.km) : 0), 0);
 
-export type UniteSemaine = 'km' | 'series';
+export type UniteSemaine = 'km' | 'm' | 'series';
 
 export interface MetriqueSemaine {
   valeur: number;
@@ -239,7 +239,7 @@ export const METRIQUE_DU_SPORT: Record<string, UniteSemaine | null> = {
   tout: null,
   course: 'km',
   velo: 'km',
-  natation: 'km',
+  natation: 'm', // en natation, tout est en mètres
   triathlon: 'km',
   duathlon: 'km',
   autre: 'km',
@@ -265,7 +265,7 @@ export function chiffresSemaine(semaine: JourGrille[], filtre: string): Chiffres
   const heures = Math.round((secondes / 3600) * 10) / 10;
   const unite = Object.hasOwn(METRIQUE_DU_SPORT, filtre) ? METRIQUE_DU_SPORT[filtre] : 'km';
   if (!unite) return { heures, secondes, principale: null };
-  const valeur = unite === 'km' ? semaine.reduce((t, j) => t + kmJour(j), 0) : semaine.reduce((t, j) => t + j.series, 0);
+  const valeur = unite === 'series' ? semaine.reduce((t, j) => t + j.series, 0) : semaine.reduce((t, j) => t + kmJour(j), 0) * (unite === 'm' ? 1000 : 1);
   if (!(valeur > 0)) return { heures, secondes, principale: null };
   return { heures, secondes, principale: { valeur: unite === 'km' ? Math.round(valeur * 10) / 10 : Math.round(valeur), unite } };
 }

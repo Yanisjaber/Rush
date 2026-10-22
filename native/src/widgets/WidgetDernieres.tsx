@@ -6,7 +6,7 @@ import { Tuile } from '@/components/Tuile';
 import { LigneSeance, Points } from '@/components/LigneSeance';
 import { familleAffichage } from '@/data/familles';
 import { recordsParSeance } from '@/data/force';
-import { formatDateCourte, formatDuree, formatKm } from '@/data/format';
+import { formatDateCourte, formatDistanceSport, formatDuree } from '@/data/format';
 import { chargeSeance } from '@/data/synthese';
 import type { Seance, WidgetProps } from '@/data/types';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
@@ -17,7 +17,8 @@ import { usePalette } from '@/theme/usePalette';
 // Sur téléphone : 3 lignes. Une pastille « Record » signale les records de force battus pendant la séance.
 function detail(s: Seance): string {
   const morceaux = [formatDateCourte(s.start_date_local), formatDuree(s.moving_time)];
-  if (s.distance_km) morceaux.push(`${formatKm(s.distance_km)} km`);
+  const distance = formatDistanceSport(s.distance_km, familleAffichage(s.sport)); // en natation, en mètres
+  if (distance) morceaux.push(distance);
   return morceaux.join(' · ');
 }
 

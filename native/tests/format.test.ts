@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dateIsoLocale, formatDateCourte, formatDuree, formatHeuresMinutes, formatKm } from '../src/data/format.ts';
+import { dateIsoLocale, formatDateCourte, formatDuree, formatDistanceSport, formatHeuresMinutes, formatKm } from '../src/data/format.ts';
 
 test('formatDuree : minutes seules, puis heures et minutes sur deux chiffres', () => {
   assert.equal(formatDuree(2400), '40 min');
@@ -49,4 +49,12 @@ test('formatHeuresMinutes : toujours 0h00, pour que des durées empilées s\'ali
   assert.equal(formatHeuresMinutes(0), '0h00');
   assert.equal(formatHeuresMinutes(null), '0h00');
   assert.equal(formatHeuresMinutes(5100), '1h25');
+});
+
+test('formatDistanceSport : mètres en natation, kilomètres ailleurs, rien sans distance', () => {
+  assert.equal(formatDistanceSport(2.4, 'natation'), '2\u00a0400 m');
+  assert.equal(formatDistanceSport(0.75, 'natation'), '750 m');
+  assert.equal(formatDistanceSport(7.4, 'course'), '7,4 km');
+  assert.equal(formatDistanceSport(0, 'natation'), '');
+  assert.equal(formatDistanceSport(null, 'velo'), '');
 });
