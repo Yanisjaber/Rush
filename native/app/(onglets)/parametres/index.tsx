@@ -1,6 +1,6 @@
 import { FondDegrade } from '@/components/FondDegrade';
 import { useRouter, type Href } from 'expo-router';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
 import { CadreWidget } from '@/components/CadreWidget';
@@ -10,6 +10,7 @@ import { Tuile } from '@/components/Tuile';
 import type { Connexion, Tuile as ResumeTuile } from '@/data/parametres';
 import { useResumeParametres } from '@/hooks/useResumeParametres';
 import { deconnexion, quitterDemo, useAuth } from '@/stores/auth';
+import { definirTheme } from '@/stores/theme';
 import { definirPrevuesAujourdhui, PREVUES_AUJOURDHUI, useReglagesDemo } from '@/stores/reglagesDemo';
 import { espace } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
@@ -77,6 +78,8 @@ export default function Parametres() {
         </Emplacement>
       </GrilleWidgets>
 
+      <Apparence />
+
       <View style={styles.actions}>
         <View style={{ flex: 1 }}>
           <Bouton variante="discret" onPress={() => void Linking.openURL(ADRESSE_CONFIDENTIALITE)}>
@@ -94,21 +97,38 @@ export default function Parametres() {
   );
 }
 
+// Apparence : Sombre ou Clair, gardé sur le téléphone. Le bouton actif est celui du thème en cours (celui du téléphone tant que rien n'est choisi).
+function Apparence() {
+  const p = usePalette();
+  const clair = useColorScheme() === 'light';
+  // Sans boîte de grille : la carte garde sa hauteur naturelle (deux boutons, pas 160 pt)
+  return (
+    <CadreWidget titre="Apparence">
+      <View style={styles.choix} accessibilityRole="radiogroup">
+        <Pastille nom="Sombre" couleur={p.texte} actif={!clair} onPress={() => definirTheme('sombre')} aide="Thème sombre" />
+        <Pastille nom="Clair" couleur={p.texte} actif={clair} onPress={() => definirTheme('clair')} aide="Thème clair" />
+      </View>
+    </CadreWidget>
+  );
+}
+
 // Réglage de la démo (visible seulement en démo) : combien de séances sont prévues aujourd'hui, pour voir chaque cas de la « Séance du jour ».
 function ReglagesDemo() {
   const p = usePalette();
   const { prevuesAujourdhui } = useReglagesDemo();
+  const router = useRouter();
   return (
-    <Boite taille="m">
-      <CadreWidget titre="Réglage de la démo">
-        <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 10 }]}>Séances prévues aujourd'hui</Text>
-        <View style={styles.choix} accessibilityRole="radiogroup">
-          {PREVUES_AUJOURDHUI.map((n) => (
-            <Pastille key={n} nom={String(n)} couleur={p.texte} actif={prevuesAujourdhui === n} onPress={() => definirPrevuesAujourdhui(n)} aide={n === 0 ? "Rien de prévu aujourd'hui" : `${n} séance${n > 1 ? 's' : ''} prévue${n > 1 ? 's' : ''} aujourd'hui`} />
-          ))}
-        </View>
-      </CadreWidget>
-    </Boite>
+    <CadreWidget titre="Réglage de la démo">
+      <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 10 }]}>Séances prévues aujourd'hui</Text>
+      <View style={styles.choix} accessibilityRole="radiogroup">
+        {PREVUES_AUJOURDHUI.map((n) => (
+          <Pastille key={n} nom={String(n)} couleur={p.texte} actif={prevuesAujourdhui === n} onPress={() => definirPrevuesAujourdhui(n)} aide={n === 0 ? "Rien de prévu aujourd'hui" : `${n} séance${n > 1 ? 's' : ''} prévue${n > 1 ? 's' : ''} aujourd'hui`} />
+        ))}
+      </View>
+      <View style={{ marginTop: 14 }}>
+        <Bouton variante="discret" onPress={() => router.push('/parametres/widgets')}>Catalogue des widgets</Bouton>
+      </View>
+    </CadreWidget>
   );
 }
 

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
@@ -12,12 +12,19 @@ import { InstrumentSans_400Regular } from '@expo-google-fonts/instrument-sans/40
 import { InstrumentSans_500Medium } from '@expo-google-fonts/instrument-sans/500Medium';
 import { InstrumentSans_600SemiBold } from '@expo-google-fonts/instrument-sans/600SemiBold';
 import { initAuth, useAuth } from '@/stores/auth';
+import { chargerTheme } from '@/stores/theme';
 import { clair, sombre } from '@/theme/couleurs';
 
 export default function RootLayout() {
-  // Pour l'instant le thème suit le téléphone ; plus tard il suivra le compte (user_preferences).
+  // Le thème est celui choisi dans Paramètres (gardé sur le téléphone) ; sans choix, il suit le téléphone.
   const palette = useColorScheme() === 'light' ? clair : sombre;
   const { pret, session, demo } = useAuth();
+
+  // Lit le thème choisi avant le premier affichage : sinon l'écran clignoterait dans l'autre thème
+  const [themePret, setThemePret] = useState(false);
+  useEffect(() => {
+    void chargerTheme().finally(() => setThemePret(true));
+  }, []);
 
   // Lit la session gardée dans le Trousseau, puis suit ses changements
   useEffect(() => {
@@ -39,8 +46,8 @@ export default function RootLayout() {
     if (erreurPolices) console.warn('[polices] chargement impossible :', erreurPolices.message);
   }, [erreurPolices]);
 
-  // On attend les polices et la lecture de la session : sinon l'écran de connexion clignoterait avant l'Accueil
-  if ((!policesPretes && !erreurPolices) || !pret) return null;
+  // On attend les polices, le thème et la lecture de la session : sinon l'écran de connexion clignoterait avant l'Accueil
+  if ((!policesPretes && !erreurPolices) || !pret || !themePret) return null;
   const connecte = !!session || demo;
 
   return (
