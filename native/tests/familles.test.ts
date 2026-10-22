@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { familleAffichage, familleBarre, familleDesWidgets, familleSport, garderSeance } from '../src/data/familles.ts';
+import { familleAffichage, familleSport, garderSeance } from '../src/data/familles.ts';
 
 test('familleSport : les types Strava courants', () => {
   assert.equal(familleSport('Run'), 'course');
@@ -22,10 +22,11 @@ test('familleSport : les propriétés héritées ne sont pas des sports', () => 
   assert.equal(familleSport('toString'), 'autre');
 });
 
-test('familleAffichage : le trail compte comme de la course', () => {
-  assert.equal(familleSport('TrailRun'), 'trail');
+test('familleSport : le trail est de la course ; le VTT, le gravel et le vélo électrique sont du vélo ; le CrossFit et le HIIT sont de la musculation', () => {
+  assert.equal(familleSport('TrailRun'), 'course');
   assert.equal(familleAffichage('TrailRun'), 'course');
-  assert.equal(familleAffichage('Ride'), 'velo');
+  for (const t of ['Ride', 'MountainBikeRide', 'GravelRide', 'EMountainBikeRide', 'EBikeRide', 'VirtualRide']) assert.equal(familleSport(t), 'velo', t);
+  for (const t of ['Crossfit', 'HighIntensityIntervalTraining', 'WeightTraining']) assert.equal(familleSport(t), 'muscu', t);
 });
 
 test('garderSeance : « tout » garde tout, sinon le sport de la pastille', () => {
@@ -39,24 +40,19 @@ test('garderSeance : « tout » garde tout, sinon le sport de la pastille', () =
   assert.equal(garderSeance(null, 'tout'), true);
 });
 
-test('garderSeance : Trail et Course sont deux filtres différents (idem VTT et vélo)', () => {
-  assert.equal(garderSeance({ sport: 'TrailRun' }, 'course'), false);
-  assert.equal(garderSeance({ sport: 'TrailRun' }, 'trail'), true);
-  assert.equal(garderSeance({ sport: 'Run' }, 'trail'), false);
+test('garderSeance : Course garde le trail, Vélo garde le VTT et le gravel', () => {
+  assert.equal(garderSeance({ sport: 'TrailRun' }, 'course'), true);
   assert.equal(garderSeance({ sport: 'Run' }, 'course'), true);
-  assert.equal(garderSeance({ sport: 'MountainBikeRide' }, 'vtt'), true);
-  assert.equal(garderSeance({ sport: 'GravelRide' }, 'velo'), false);
+  assert.equal(garderSeance({ sport: 'MountainBikeRide' }, 'velo'), true);
+  assert.equal(garderSeance({ sport: 'GravelRide' }, 'velo'), true);
   assert.equal(garderSeance({ sport: 'Ride' }, 'velo'), true);
+  assert.equal(garderSeance({ sport: 'Run' }, 'velo'), false);
   assert.equal(garderSeance({ sport: 'TrailRun' }, 'tout'), true);
 });
 
-test('familleBarre et familleDesWidgets', () => {
-  assert.equal(familleBarre('TrailRun'), 'trail');
-  assert.equal(familleBarre('MountainBikeRide'), 'vtt');
-  assert.equal(familleBarre('Swim'), 'natation');
-  assert.equal(familleDesWidgets('trail'), 'course');
-  assert.equal(familleDesWidgets('vtt'), 'velo');
-  assert.equal(familleDesWidgets('muscu'), 'muscu');
+test('garderSeance : Muscu garde le CrossFit et le HIIT', () => {
+  for (const sport of ['Crossfit', 'HighIntensityIntervalTraining', 'WeightTraining']) assert.equal(garderSeance({ sport }, 'muscu'), true, sport);
+  assert.equal(garderSeance({ sport: 'Run' }, 'muscu'), false);
 });
 
 test('garderSeance : Triathlon garde natation, vélo et course ; Duathlon garde course et vélo, pas la natation', () => {
@@ -67,13 +63,6 @@ test('garderSeance : Triathlon garde natation, vélo et course ; Duathlon garde 
   assert.equal(garderSeance({ sport: 'Triathlon' }, 'duathlon'), false);
   // Les autres filtres ne changent pas : Course ne garde toujours que la course
   assert.equal(garderSeance({ sport: 'Ride' }, 'course'), false);
-});
-
-test('garderSeance : CrossFit garde le CrossFit, le HIIT et la musculation (force notée à part), pas la course', () => {
-  for (const sport of ['Crossfit', 'HighIntensityIntervalTraining', 'WeightTraining']) assert.equal(garderSeance({ sport }, 'crossfit'), true, sport);
-  assert.equal(garderSeance({ sport: 'Run' }, 'crossfit'), false);
-  // Musculation seule ne garde toujours pas le CrossFit
-  assert.equal(garderSeance({ sport: 'Crossfit' }, 'muscu'), false);
 });
 
 test('garderSeance : l\'onglet Ski garde le ski de fond, le ski à roulettes et le hors-piste, pas le ski alpin ni le snowboard', () => {

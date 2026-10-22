@@ -81,9 +81,7 @@ test('compositionSport : un seul sport a toute la place, trois sports ou plus n\
   assert.equal(multi.includes('natallure'), false);
 });
 
-test('compositionSport : trail et VTT comptent comme course et vélo, triathlon donne course, vélo et natation', () => {
-  assert.ok(ids(['trail']).includes('predictions'));
-  assert.ok(ids(['vtt']).includes('puissance'));
+test('compositionSport : triathlon donne course, vélo et natation', () => {
   const tri = ids(['triathlon']);
   assert.ok(tri.includes('predictions') && tri.includes('puissance') && tri.includes('natvolume'));
 });

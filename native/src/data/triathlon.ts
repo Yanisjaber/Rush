@@ -14,7 +14,7 @@ export function disciplinesDe(filtre: string): Discipline[] {
   return filtre === 'duathlon' ? ['course', 'velo'] : ['natation', 'velo', 'course'];
 }
 
-/** La discipline d'une séance (le trail compte comme de la course, le VTT comme du vélo), ou null pour tout autre sport. */
+/** La discipline d'une séance (le trail est de la course, le VTT et le gravel du vélo), ou null pour tout autre sport. */
 export function disciplineDe(s: Pick<Seance, 'sport'>): Discipline | null {
   const f = familleAffichage(s.sport);
   return f === 'natation' || f === 'velo' || f === 'course' ? f : null;

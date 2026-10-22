@@ -12,7 +12,7 @@ interface Props {
 }
 
 type Dessin = 'course' | 'velo' | 'natation' | 'muscu' | 'hyrox' | 'autre';
-const DESSIN: Record<string, Dessin> = { course: 'course', velo: 'velo', natation: 'natation', muscu: 'muscu', hyrox: 'hyrox', crossfit: 'hyrox' };
+const DESSIN: Record<string, Dessin> = { course: 'course', velo: 'velo', natation: 'natation', muscu: 'muscu', hyrox: 'hyrox' };
 
 export function IconeSport({ sport, taille = 18 }: Props) {
   const p = usePalette();

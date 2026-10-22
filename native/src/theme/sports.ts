@@ -6,15 +6,12 @@ type CleCouleur = 'sportCourse' | 'sportVelo' | 'sportNatation' | 'sportMuscu' |
 
 export const SPORTS = {
   course: { nom: 'Course à pied', court: 'Course', couleur: 'sportCourse' },
-  trail: { nom: 'Trail', court: 'Trail', couleur: 'sportCourse' },
   velo: { nom: 'Vélo route', court: 'Vélo', couleur: 'sportVelo' },
-  vtt: { nom: 'VTT / Gravel', court: 'VTT', couleur: 'sportVelo' },
   natation: { nom: 'Natation', court: 'Natation', couleur: 'sportNatation' },
   triathlon: { nom: 'Triathlon', court: 'Triathlon', couleur: 'sportVelo' },
   duathlon: { nom: 'Duathlon', court: 'Duathlon', couleur: 'sportVelo' },
   athletisme: { nom: 'Athlétisme', court: 'Athlé', couleur: 'sportNeutre' },
   hyrox: { nom: 'Hyrox', court: 'Hyrox', couleur: 'sportHybride' },
-  crossfit: { nom: 'CrossFit', court: 'CrossFit', couleur: 'sportHybride' },
   muscu: { nom: 'Musculation', court: 'Muscu', couleur: 'sportMuscu' },
   aviron: { nom: 'Aviron', court: 'Aviron', couleur: 'sportNatation' },
   ski: { nom: 'Ski de fond', court: 'Ski', couleur: 'sportNeutre' },

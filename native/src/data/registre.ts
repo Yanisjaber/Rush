@@ -4,7 +4,6 @@
 // `sports` : 'tous' (utile quel que soit le sport) ou une liste de sports (clés de theme/sports.ts) pour lesquels il est
 // proposé en priorité et composé automatiquement.
 // `tailles` : tailles possibles, de la plus petite à la plus grande ; `taille` est celle par défaut.
-import { familleDesWidgets } from './familles.ts';
 import type { Taille } from './types.ts';
 
 export const TAILLES: Record<Taille, { nom: string; court: string; description: string }> = {
@@ -567,7 +566,7 @@ export const SIGNATURES: Record<string, readonly Signature[]> = {
 };
 
 // Triathlon et duathlon : un sport à part sur la barre, mais ce sont des courses, du vélo et de la natation sur l'accueil
-const SPORTS_DE = (famille: string): string[] => (famille === 'triathlon' || famille === 'duathlon' ? ['course', 'velo', 'natation'] : [familleDesWidgets(famille)]);
+const SPORTS_DE = (famille: string): string[] => (famille === 'triathlon' || famille === 'duathlon' ? ['course', 'velo', 'natation'] : [famille]);
 
 const definition = (id: string): DefinitionWidget => (WIDGETS as Record<string, DefinitionWidget>)[id];
 
@@ -592,7 +591,7 @@ export function estPertinent(id: string, familles: readonly string[]): boolean {
   const def = definition(id);
   if (def.sports === 'tous') return true;
   // Triathlon et Duathlon montrent les widgets de leurs disciplines (natation, vélo, course)
-  const dessous = familles.flatMap((f) => SPORTS_VOISINS[f] ?? [familleDesWidgets(f)]);
+  const dessous = familles.flatMap((f) => SPORTS_VOISINS[f] ?? [f]);
   return def.sports.some((s) => dessous.includes(s));
 }
 

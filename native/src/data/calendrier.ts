@@ -223,11 +223,7 @@ export function profilSemaine(semaine: JourGrille[]): JourProfil[] {
 export const kmJour = (j: JourGrille): number =>
   j.seances.reduce((t, s) => t + (Number(s.distance_km) > 0 ? Number(s.distance_km) : 0), 0) + j.planifiees.reduce((t, x) => t + (Number(x.km) > 0 ? Number(x.km) : 0), 0);
 
-/** Le dénivelé positif d'un jour, en mètres : celui des séances faites et celui des séances prévues qui en ont un. */
-export const denivJour = (j: JourGrille): number =>
-  j.seances.reduce((t, s) => t + (Number(s.total_elevation_gain) > 0 ? Number(s.total_elevation_gain) : 0), 0) + j.planifiees.reduce((t, x) => t + (Number(x.d_plus) > 0 ? Number(x.d_plus) : 0), 0);
-
-export type UniteSemaine = 'km' | 'series' | 'dplus';
+export type UniteSemaine = 'km' | 'series';
 
 export interface MetriqueSemaine {
   valeur: number;
@@ -236,21 +232,18 @@ export interface MetriqueSemaine {
 
 /**
  * L'info la plus importante de chaque sport, affichée dans la colonne de la semaine à côté du temps : les kilomètres pour ce qui se mesure en distance,
- * les séries pour la force, le dénivelé pour le trail. `null` : rien de plus que le temps (Hyrox n'a pas de distance ; « Tous » mélange tout).
+ * les séries pour la force. `null` : rien de plus que le temps (Hyrox n'a pas de distance ; « Tous » mélange tout).
  * Un sport absent de la liste (aviron, randonnée…) prend les kilomètres.
  */
 export const METRIQUE_DU_SPORT: Record<string, UniteSemaine | null> = {
   tout: null,
   course: 'km',
-  trail: 'dplus',
   velo: 'km',
-  vtt: 'km',
   natation: 'km',
   triathlon: 'km',
   duathlon: 'km',
   ski: 'km',
   muscu: 'series',
-  crossfit: 'series',
   hyrox: null,
 };
 
@@ -269,7 +262,7 @@ export function chiffresSemaine(semaine: JourGrille[], filtre: string): Chiffres
   const heures = Math.round((semaine.reduce((t, j) => t + secondesJour(j), 0) / 3600) * 10) / 10;
   const unite = Object.hasOwn(METRIQUE_DU_SPORT, filtre) ? METRIQUE_DU_SPORT[filtre] : 'km';
   if (!unite) return { heures, principale: null };
-  const valeur = unite === 'km' ? semaine.reduce((t, j) => t + kmJour(j), 0) : unite === 'series' ? semaine.reduce((t, j) => t + j.series, 0) : semaine.reduce((t, j) => t + denivJour(j), 0);
+  const valeur = unite === 'km' ? semaine.reduce((t, j) => t + kmJour(j), 0) : semaine.reduce((t, j) => t + j.series, 0);
   if (!(valeur > 0)) return { heures, principale: null };
   return { heures, principale: { valeur: unite === 'km' ? Math.round(valeur * 10) / 10 : Math.round(valeur), unite } };
 }

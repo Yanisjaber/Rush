@@ -5,7 +5,7 @@
 export const SPORTS_PRINCIPAUX: string[] = ['course', 'velo', 'natation', 'muscu', 'hyrox'];
 
 /** Les autres sports de performance : ils ont leur pastille de couleur et leurs séances, sans widgets dédiés. */
-export const SPORTS_AUTRES: string[] = ['trail', 'vtt', 'triathlon', 'duathlon', 'crossfit', 'ski'];
+export const SPORTS_AUTRES: string[] = ['triathlon', 'duathlon', 'ski'];
 
 /**
  * Des activités qui comptent dans la charge, le volume et les listes de séances, mais qui n'ont PAS de page : on ne les propose pas à
@@ -18,10 +18,10 @@ export const SPORTS_A_CHOISIR: string[] = [...SPORTS_PRINCIPAUX, ...SPORTS_AUTRE
 
 /** Les sports rangés par thème pour l'écran de choix (chaque sport proposé apparaît dans un seul groupe). */
 export const GROUPES_SPORTS: { titre: string; sports: string[] }[] = [
-  { titre: 'Course', sports: ['course', 'trail'] },
-  { titre: 'Vélo & multisport', sports: ['velo', 'vtt', 'triathlon', 'duathlon'] },
+  { titre: 'Course', sports: ['course'] },
+  { titre: 'Vélo & multisport', sports: ['velo', 'triathlon', 'duathlon'] },
   { titre: 'Eau', sports: ['natation'] },
-  { titre: 'Force & hybride', sports: ['muscu', 'hyrox', 'crossfit'] },
+  { titre: 'Force & hybride', sports: ['muscu', 'hyrox'] },
   { titre: 'Nature', sports: ['ski'] },
 ];
 
@@ -75,7 +75,7 @@ export function onboardingNecessaire({
  */
 export function fusionnerFamilles(deDonnees: string[] = [], choisis: string[] | null = []): string[] {
   const f = new Set<string>();
-  // Chaque sport choisi a sa pastille (Trail et VTT aussi : ce ne sont pas de la course ni du vélo)
+  // Chaque sport choisi a sa pastille
   for (const s of choisis || []) f.add(s);
   for (const famille of deDonnees || []) f.add(famille);
   f.delete('autre');

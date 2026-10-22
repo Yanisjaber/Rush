@@ -54,8 +54,8 @@ export default function Calendrier() {
         notes: donnees.notes,
         repos: donnees.repos,
         cycles: donnees.cycles,
-        // Les séries de force ne comptent que pour « Tous », la musculation et le CrossFit (qui garde la musculation)
-        series: filtre === 'tout' || filtre === 'muscu' || filtre === 'crossfit' ? donnees.series : [],
+        // Les séries de force ne comptent que pour « Tous » et la musculation
+        series: filtre === 'tout' || filtre === 'muscu' ? donnees.series : [],
       },
       maintenant,
     );
@@ -270,7 +270,6 @@ const HAUTEUR_PROFIL = 22;
 const UNITES: Record<UniteSemaine, { court: string; dit: string }> = {
   km: { court: 'km', dit: 'kilomètres' },
   series: { court: 'sér.', dit: 'séries' },
-  dplus: { court: 'D+', dit: 'mètres de dénivelé' },
 };
 // Au-delà de 100, les décimales n'apportent rien et prennent de la place : 266 km, pas 266,4 km
 const nombre = (n: number) => String(n >= 100 ? Math.round(n) : n).replace('.', ',');

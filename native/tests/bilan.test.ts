@@ -12,7 +12,7 @@ const act = (iso: string, sport: ActiviteBilan['sport'], min: number, km: number
   id, name: `Sortie ${iso}`, iso, sport, famille: sport === 'cyclisme' ? 'velo' : sport, duree_min: min, distance_km: km, d_plus: dplus, tss,
 });
 
-test('familleBilan : vélo → cyclisme, trail → course, muscu → musculation, le reste → autre', () => {
+test('familleBilan : vélo (VTT et gravel compris) → cyclisme, trail → course, muscu → musculation, le reste → autre', () => {
   assert.equal(familleBilan('Ride'), 'cyclisme');
   assert.equal(familleBilan('MountainBikeRide'), 'cyclisme');
   assert.equal(familleBilan('Run'), 'course');

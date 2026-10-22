@@ -11,25 +11,25 @@ const FAMILLES: Record<string, string> = {
   EBikeRide: 'velo',
   EMountainBikeRide: 'velo',
   Handcycle: 'velo',
-  // Course à pied (le trail garde sa propre entrée, même couleur)
+  // Course à pied (le trail en fait partie)
   Run: 'course',
   VirtualRun: 'course',
-  TrailRun: 'trail',
+  TrailRun: 'course',
   // Natation et eau
   Swim: 'natation',
   Rowing: 'aviron',
   VirtualRow: 'aviron',
-  // Force et hybride. « Workout » est le type générique de Strava : on le range avec la muscu, comme le yoga et le pilates
+  // Force. « Workout » est le type générique de Strava : on le range avec la muscu, comme le yoga, le pilates, le CrossFit et le HIIT
   WeightTraining: 'muscu',
   Workout: 'muscu',
   Yoga: 'muscu',
   Pilates: 'muscu',
-  Crossfit: 'crossfit',
+  Crossfit: 'muscu',
   Hyrox: 'hyrox', // type propre à l'app : Strava n'a pas de sport Hyrox
   Triathlon: 'triathlon', // types propres à l'app : un sport à part, pas la somme de course, vélo et natation
   Duathlon: 'duathlon',
   Athletics: 'athletisme', // compte dans la charge, mais n'a pas de page (voir SPORTS_SANS_PAGE)
-  HighIntensityIntervalTraining: 'crossfit',
+  HighIntensityIntervalTraining: 'muscu',
   // Ski et glisse
   NordicSki: 'ski',
   BackcountrySki: 'ski',
@@ -58,33 +58,16 @@ export function familleSport(typeBrut: unknown): string {
   return typeof typeBrut === 'string' && Object.hasOwn(FAMILLES, typeBrut) ? FAMILLES[typeBrut] : 'autre';
 }
 
-/**
- * La pastille de la barre des sports pour un type brut : Trail et VTT / Gravel sont des sports à part entière (leur propre pastille
- * et leur propre filtre), alors que les graphiques les regroupent avec la course et le vélo (voir familleAffichage).
- */
-export function familleBarre(typeBrut: unknown): string {
-  if (typeBrut === 'MountainBikeRide' || typeBrut === 'EMountainBikeRide' || typeBrut === 'GravelRide') return 'vtt';
-  return familleSport(typeBrut);
-}
-
-/** Les widgets ne connaissent que course, vélo… : trail → course, vtt → vélo pour savoir lesquels afficher. */
-export const familleDesWidgets = (famille: string): string => (famille === 'trail' ? 'course' : famille === 'vtt' ? 'velo' : famille);
-
-/** Regroupe les familles proches pour les graphiques (trail compte comme de la course). */
-export function familleAffichage(typeBrut: unknown): string {
-  const f = familleSport(typeBrut);
-  return f === 'trail' ? 'course' : f;
-}
+/** La famille d'un type de sport brut, pour les graphiques et les filtres (le vélo de route, le VTT et le gravel sont du vélo ; le trail est de la course). */
+export const familleAffichage = familleSport;
 
 /**
  * Les pastilles qui regroupent plusieurs disciplines (le CrossFit garde aussi la musculation) : un triathlète a ses séances en natation, vélo et course, pas en « triathlon »
  * (type propre à l'app, pour une course ou une saisie à la main). Leur onglet garde donc toutes ses disciplines.
  */
 export const DISCIPLINES_DU_FILTRE: Record<string, readonly string[]> = {
-  triathlon: ['triathlon', 'natation', 'velo', 'vtt', 'course', 'trail'],
-  duathlon: ['duathlon', 'velo', 'vtt', 'course', 'trail'],
-  // Un crossfiteur note souvent sa force en « musculation » : son onglet la garde
-  crossfit: ['crossfit', 'muscu'],
+  triathlon: ['triathlon', 'natation', 'velo', 'course'],
+  duathlon: ['duathlon', 'velo', 'course'],
 };
 
 /**
@@ -93,10 +76,10 @@ export const DISCIPLINES_DU_FILTRE: Record<string, readonly string[]> = {
  */
 export const SKI_DE_FOND: readonly string[] = ['NordicSki', 'RollerSki', 'BackcountrySki'];
 
-/** Une séance passe-t-elle le filtre de l'accueil ? Le sport de la pastille (Trail et VTT ont la leur, Triathlon, Duathlon et CrossFit regroupent leurs disciplines) ; « tout » garde tout. */
+/** Une séance passe-t-elle le filtre de l'accueil ? Le sport de la pastille (Triathlon et Duathlon regroupent leurs disciplines) ; « tout » garde tout. */
 export function garderSeance(seance: { sport?: string } | null | undefined, filtre = 'tout'): boolean {
   if (filtre === 'tout') return true;
   if (filtre === 'ski') return typeof seance?.sport === 'string' && SKI_DE_FOND.includes(seance.sport);
-  const famille = familleBarre(seance?.sport);
+  const famille = familleSport(seance?.sport);
   return Object.hasOwn(DISCIPLINES_DU_FILTRE, filtre) ? DISCIPLINES_DU_FILTRE[filtre].includes(famille) : famille === filtre;
 }
