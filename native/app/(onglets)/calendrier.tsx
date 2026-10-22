@@ -138,7 +138,7 @@ export default function Calendrier() {
                       <Case key={j.iso} jour={j} choisi={j.iso === choisi} onPress={() => setChoisi(j.iso)} />
                     ))}
                   </View>
-                  <ProfilSemaine semaine={semaine} maxi={maxiJour} />
+                  <ProfilSemaine semaine={semaine} maxi={maxiJour} mono={filtre === 'tout'} />
                 </View>
               ))}
             </View>
@@ -250,7 +250,8 @@ const HAUTEUR_PROFIL = 24;
 
 // Le profil de la semaine : sept petites barres (une par jour, de lundi à dimanche) à la hauteur du temps du jour, de la couleur de son sport dominant,
 // pâles quand il n'y a que du prévu ; les heures de la semaine (faites + prévues) dessous.
-function ProfilSemaine({ semaine, maxi }: { semaine: JourGrille[]; maxi: number }) {
+// Sur « Tous », ses barres sont grises (aucun sport n'est mis en avant) ; la couleur revient quand on choisit un sport (mono = faux)
+function ProfilSemaine({ semaine, maxi, mono }: { semaine: JourGrille[]; maxi: number; mono: boolean }) {
   const p = usePalette();
   const r = resumeSemaine(semaine);
   const total = r.faites + r.prevues;
@@ -267,7 +268,7 @@ function ProfilSemaine({ semaine, maxi }: { semaine: JourGrille[]; maxi: number 
             key={j.iso}
             style={[
               styles.jourProfil,
-              { height: j.secondes ? Math.max(3, (j.secondes / maxi) * HAUTEUR_PROFIL) : 2, backgroundColor: j.famille ? couleurSport(p, j.famille) : p.traitFort, opacity: j.fait || !j.secondes ? 1 : 0.35 },
+              { height: j.secondes ? Math.max(3, (j.secondes / maxi) * HAUTEUR_PROFIL) : 2, backgroundColor: j.famille ? (mono ? p.sportNeutre : couleurSport(p, j.famille)) : p.traitFort, opacity: j.fait || !j.secondes ? 1 : 0.35 },
             ]}
           />
         ))}
