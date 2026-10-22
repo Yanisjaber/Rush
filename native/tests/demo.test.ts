@@ -10,9 +10,9 @@ test('donneesDemo : déterministe (deux appels, mêmes données)', () => {
   assert.deepEqual(donneesDemo(date), donneesDemo(date));
 });
 
-test('donneesDemo : 85 séances sur 84 jours (dont un footing fait ce matin et 10 séances Hyrox), de la plus récente à la plus ancienne', () => {
+test('donneesDemo : 95 séances sur 84 jours (dont un footing fait ce matin, 10 séances Hyrox et 10 de trail), de la plus récente à la plus ancienne', () => {
   const { seances } = donneesDemo(date);
-  assert.equal(seances.length, 85);
+  assert.equal(seances.length, 95);
   assert.ok(seances.some((s) => s.id === `demo-matin-${dateIsoLocale(date)}`));
   for (let i = 1; i < seances.length; i++) assert.ok(seances[i - 1].start_date_local >= seances[i].start_date_local);
 });

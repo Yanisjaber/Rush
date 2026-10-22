@@ -120,6 +120,40 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
       category: 'entrainement',
     });
   }
+  // Des sorties de trail environ toutes les semaines et demie (dénivelé de 450 à 1 420 m), pour que le suivi du trail ait quelque chose à montrer
+  const trailDemo = [
+    { i: 3, nom: 'Sortie crêtes', km: 24, dPlus: 1250, min: 215 },
+    { i: 10, nom: 'Côtes et descentes', km: 16, dPlus: 820, min: 125 },
+    { i: 17, nom: 'Sortie longue montagne', km: 28, dPlus: 1420, min: 260 },
+    { i: 24, nom: 'Footing vallonné', km: 14, dPlus: 520, min: 100 },
+    { i: 31, nom: 'Rando-course', km: 22, dPlus: 1100, min: 205 },
+    { i: 38, nom: 'Côtes et descentes', km: 15, dPlus: 760, min: 118 },
+    { i: 45, nom: 'Sortie crêtes', km: 20, dPlus: 980, min: 180 },
+    { i: 52, nom: 'Footing vallonné', km: 13, dPlus: 450, min: 95 },
+    { i: 59, nom: 'Sortie longue montagne', km: 25, dPlus: 1180, min: 230 },
+    { i: 66, nom: 'Côtes et descentes', km: 14, dPlus: 600, min: 110 },
+  ];
+  for (const t of trailDemo) {
+    if (t.i >= nbJours) continue;
+    const iso = dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - t.i));
+    const tss = Math.round(t.min * 0.55);
+    quotidien[iso] = (quotidien[iso] || 0) + tss;
+    seances.push({
+      id: `demo-trail-${iso}`,
+      name: t.nom,
+      sport: 'TrailRun',
+      start_date_local: `${iso}T09:00:00+00:00`,
+      moving_time: t.min * 60,
+      distance_km: t.km,
+      total_elevation_gain: t.dPlus,
+      avg_heartrate: 146 + ((t.i * 5) % 12),
+      ftp_at_time: null,
+      avg_watts: null,
+      np: null,
+      tss,
+      category: 'entrainement',
+    });
+  }
   seances.sort((a, b) => (a.start_date_local < b.start_date_local ? 1 : -1));
 
   // CTL (42 jours) et ATL (7 jours) : moyennes exponentielles de la charge quotidienne
@@ -180,6 +214,7 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
     objectifs: [
       { id: 'demo-hyrox-open', name: 'Hyrox Open', date: plusJours(27), sport: 'Hyrox', km: null, d_plus: null, priority: 'A', duration: 70, category: 'competition' },
       { id: 'demo-ramonville', name: 'Ronde de Ramonville', date: '2026-12-13', sport: 'Run', km: 10.15, d_plus: 42, priority: 'A', duration: 40, category: 'competition' },
+      { id: 'demo-trail-cretes', name: 'Trail des Crêtes', date: plusJours(63), sport: 'TrailRun', km: 32, d_plus: 1800, priority: 'B', duration: 330, category: 'competition' },
     ],
   };
 }
