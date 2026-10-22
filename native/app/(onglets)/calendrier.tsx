@@ -90,7 +90,7 @@ export default function Calendrier() {
       >
         <View style={styles.navigation}>
           <Fleche sens={-1} onPress={() => setCible((c) => decalerMois(c.annee, c.mois, -1))} />
-          {/* Sur un autre mois, le titre est aussi le bouton de retour à aujourd'hui (pastille avec l'icône ↺) */}
+          {/* Sur un autre mois, le titre est aussi le bouton de retour à aujourd'hui (titre suivi de l'icône ↺) */}
           <View style={styles.titreZone}>
             {estMoisCourant ? (
               <Text accessibilityRole="header" accessibilityLiveRegion="polite" style={[typo.titre2, { color: p.texte }]}>
@@ -101,7 +101,7 @@ export default function Calendrier() {
                 onPress={() => setCible({ annee: maintenant.getFullYear(), mois: maintenant.getMonth() })}
                 accessibilityRole="button"
                 accessibilityLabel={`${titre}. Revenir à aujourd'hui`}
-                style={[styles.titreBouton, { backgroundColor: p.surface }]}
+                style={styles.titreBouton}
               >
                 <Text accessibilityLiveRegion="polite" style={[typo.titre2, { color: p.texte }]}>{titre}</Text>
                 <View style={[styles.retourIcone, { borderColor: p.contourChamp }]}>
@@ -445,8 +445,8 @@ const styles = StyleSheet.create({
   fleche: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   chevron: { width: 12, height: 12, borderTopWidth: 2.5, borderRightWidth: 2.5 },
   titreZone: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  // Pastille du titre sur un autre mois : au moins 44 pt de haut pour le toucher
-  titreBouton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 10, borderRadius: rayon.rond },
+  // Titre sur un autre mois : au moins 44 pt de haut pour le toucher, sans fond
+  titreBouton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8 },
   retourIcone: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   retourFleche: { fontSize: 15, lineHeight: 18 },
   cartes: { flexDirection: 'row', gap: 6 },
