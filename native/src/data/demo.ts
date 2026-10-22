@@ -175,6 +175,39 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
       category: 'entrainement',
     });
   }
+  // Des sorties de VTT et de gravel environ toutes les semaines (de 12 à 35 m de D+ par km : du roulant au montagneux), pour que le suivi VTT ait quelque chose à montrer
+  const vttDemo = [
+    { i: 4, nom: 'VTT technique', sport: 'MountainBikeRide', km: 32, dPlus: 1050, min: 190 },
+    { i: 11, nom: 'Gravel longue', sport: 'GravelRide', km: 58, dPlus: 700, min: 215 },
+    { i: 18, nom: 'VTT forêt', sport: 'MountainBikeRide', km: 26, dPlus: 420, min: 125 },
+    { i: 25, nom: 'VTT crêtes', sport: 'MountainBikeRide', km: 38, dPlus: 1380, min: 235 },
+    { i: 32, nom: 'Gravel vallonné', sport: 'GravelRide', km: 45, dPlus: 620, min: 170 },
+    { i: 41, nom: 'VTT technique', sport: 'MountainBikeRide', km: 28, dPlus: 780, min: 160 },
+    { i: 48, nom: 'VTT forêt', sport: 'MountainBikeRide', km: 24, dPlus: 330, min: 115 },
+    { i: 55, nom: 'VTT crêtes', sport: 'MountainBikeRide', km: 35, dPlus: 1180, min: 210 },
+    { i: 62, nom: 'Gravel longue', sport: 'GravelRide', km: 52, dPlus: 560, min: 195 },
+  ];
+  for (const v of vttDemo) {
+    if (v.i >= nbJours) continue;
+    const iso = dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - v.i));
+    const tss = Math.round(v.min * 0.5);
+    quotidien[iso] = (quotidien[iso] || 0) + tss;
+    seances.push({
+      id: `demo-vtt-${iso}`,
+      name: v.nom,
+      sport: v.sport,
+      start_date_local: `${iso}T10:00:00+00:00`,
+      moving_time: v.min * 60,
+      distance_km: v.km,
+      total_elevation_gain: v.dPlus,
+      avg_heartrate: 140 + ((v.i * 7) % 14),
+      ftp_at_time: null,
+      avg_watts: null,
+      np: null,
+      tss,
+      category: 'entrainement',
+    });
+  }
   // De la natation environ deux fois par semaine, qui progresse doucement (de 2'05 à 1'52 au 100 m) ; la démo n'en avait pas
   const nageDemo = [
     { i: 2, nom: 'Natation technique', km: 1.5 }, { i: 6, nom: 'Séries 8 × 100 m', km: 1.8 }, { i: 9, nom: 'Natation endurance', km: 2.2 },
@@ -290,6 +323,7 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
     objectifs: [
       { id: 'demo-hyrox-open', name: 'Hyrox Open', date: plusJours(27), sport: 'Hyrox', km: null, d_plus: null, priority: 'A', duration: 70, category: 'competition' },
       { id: 'demo-ramonville', name: 'Ronde de Ramonville', date: '2026-12-13', sport: 'Run', km: 10.15, d_plus: 42, priority: 'A', duration: 40, category: 'competition' },
+      { id: 'demo-vtt-cretes', name: 'Marathon VTT des Crêtes', date: plusJours(56), sport: 'MountainBikeRide', km: 60, d_plus: 1900, priority: 'B', duration: 330, category: 'competition' },
       { id: 'demo-triathlon-gruissan', name: 'Triathlon M de Gruissan', date: plusJours(90), sport: 'Triathlon', km: 51.5, d_plus: null, priority: 'A', duration: 150, category: 'competition' },
       { id: 'demo-trail-cretes', name: 'Trail des Crêtes', date: plusJours(63), sport: 'TrailRun', km: 32, d_plus: 1800, priority: 'B', duration: 330, category: 'competition' },
     ],
