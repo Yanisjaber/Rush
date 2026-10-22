@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { COULEURS_CYCLE, joursDuCycle, validerCycle, type FormulaireCycle } from '../src/data/cycles.ts';
+import { COULEURS_CYCLE, joursDuCycle, validerCycle, type FormulaireCycle, avancementCycle } from '../src/data/cycles.ts';
 import { cyclesDuJour, grilleMois } from '../src/data/calendrier.ts';
 import type { Cycle } from '../src/data/types.ts';
 
@@ -71,4 +71,14 @@ test('grilleMois : chaque jour reçoit ses cycles', () => {
   assert.deepEqual(jour('2026-10-10').cycles.map((c) => c.id), ['A']);
   assert.deepEqual(jour('2026-10-20').cycles.map((c) => c.id), ['A', 'B']);
   assert.deepEqual(jour('2026-10-31').cycles.map((c) => c.id), ['B']);
+});
+
+test('avancementCycle : « jour 22 sur 23 », ramené dans les bornes du cycle', () => {
+  const c = { from_date: '2026-10-02', to_date: '2026-10-24' };
+  assert.deepEqual(avancementCycle(c, '2026-10-02'), { jour: 1, total: 23, part: 1 / 23 });
+  assert.deepEqual(avancementCycle(c, '2026-10-23'), { jour: 22, total: 23, part: 22 / 23 });
+  assert.equal(avancementCycle(c, '2026-10-24').part, 1);
+  assert.equal(avancementCycle(c, '2026-09-01').jour, 1); // avant le début
+  assert.equal(avancementCycle(c, '2026-12-01').jour, 23); // après la fin
+  assert.equal(avancementCycle({ from_date: '2026-10-05', to_date: '2026-10-05' }, '2026-10-05').total, 1); // un cycle d'un jour
 });

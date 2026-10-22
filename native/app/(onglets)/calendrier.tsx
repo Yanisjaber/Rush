@@ -11,6 +11,7 @@ import { Bouton } from '@/components/Bouton';
 import { SelecteurMois } from '@/components/SelecteurMois';
 import { chargeJour, chargeSeance, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
 import { couleurNote, libelleNote } from '@/data/annotations';
+import { avancementCycle } from '@/data/cycles';
 import { familleAffichage, garderSeance } from '@/data/familles';
 import { dateIsoLocale, formatDistanceSport, formatDuree, formatHeuresMinutes, formatNombre } from '@/data/format';
 import { useDonneesCalendrier } from '@/hooks/useDonneesCalendrier';
@@ -410,7 +411,7 @@ function Detail({ jour }: { jour: JourGrille }) {
           ))}
         </View>
       ) : null}
-      {jourVide(jour) ? (
+      {jourVide(jour) && !jour.cycles.length ? (
         <Text style={[styles.tiret, { color: p.texteMuet }]}>—</Text>
       ) : (
         <View>
@@ -426,13 +427,6 @@ function Detail({ jour }: { jour: JourGrille }) {
               <Text style={[typo.petit, { color: p.texteDoux }]}>Repos</Text>
             </View>
           ) : null}
-          {jour.notes.map((n) => (
-            <View key={n.id} style={[styles.note, { borderLeftColor: couleurNote(n.color), backgroundColor: p.surface2, marginTop: 8 }]}>
-              <Text numberOfLines={2} style={[typo.petit, { color: p.texte }]}>
-                {libelleNote(n)}
-              </Text>
-            </View>
-          ))}
           {jour.seances.map((s) => {
             const nom = s.name || nomSport(s.sport);
             const detail = [formatDistanceSport(s.distance_km, familleAffichage(s.sport)), `${chargeSeance(s)} pts`, heureDe(s.start_date_local)].filter(Boolean).join(' · ');
@@ -476,6 +470,39 @@ function Detail({ jour }: { jour: JourGrille }) {
           })}
         </View>
       )}
+      {/* Sous les séances : les cycles du jour avec leur avancement, puis les notes */}
+      {jour.cycles.map((c) => {
+        const av = avancementCycle(c, jour.iso);
+        return (
+          <Pressable
+            key={c.id}
+            onPress={() => router.push({ pathname: '/cycle', params: { id: c.id } })}
+            accessibilityRole="button"
+            accessibilityLabel={`Cycle ${c.name}, jour ${av.jour} sur ${av.total}`}
+            style={styles.cycleAvancement}
+          >
+            <View style={styles.cycleLigne}>
+              <View style={[styles.cyclePoint, { backgroundColor: couleurNote(c.color) }]} />
+              <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>
+                {c.name}
+              </Text>
+              <Text style={[typo.petit, { color: p.texteDoux }]}>
+                jour {av.jour} sur {av.total}
+              </Text>
+            </View>
+            <View style={[styles.cycleBarre, { backgroundColor: p.surface2 }]}>
+              <View style={[styles.cycleBarreRemplie, { width: `${Math.round(av.part * 100)}%`, backgroundColor: couleurNote(c.color) }]} />
+            </View>
+          </Pressable>
+        );
+      })}
+          {jour.notes.map((n) => (
+            <View key={n.id} style={[styles.note, { borderLeftColor: couleurNote(n.color), backgroundColor: p.surface2, marginTop: 10 }]}>
+              <Text numberOfLines={2} style={[typo.petit, { color: p.texte }]}>
+                {libelleNote(n)}
+              </Text>
+            </View>
+          ))}
     </Bloc>
   );
 }
@@ -545,5 +572,12 @@ const styles = StyleSheet.create({
   objectif: { borderRadius: rayon.base, paddingHorizontal: 12, paddingVertical: 8 },
   objectifTexte: { fontFamily: police.titre800, fontSize: 15, lineHeight: 19 },
   etiquette: { alignSelf: 'flex-start', borderRadius: rayon.rond, borderWidth: 1, borderStyle: 'dashed', paddingHorizontal: 12, paddingVertical: 6 },
-  note: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 10, paddingVertical: 8 },
+  // Une note : une citation avec un trait de sa couleur à gauche
+  note: { borderTopRightRadius: rayon.base, borderBottomRightRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 12, paddingVertical: 10 },
+  // Un cycle du jour : son nom et « jour 22 sur 23 », sous une fine barre de progression
+  cycleAvancement: { minHeight: 44, justifyContent: 'center', marginTop: 10 },
+  cycleLigne: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cyclePoint: { width: 10, height: 10, borderRadius: 5 },
+  cycleBarre: { height: 6, borderRadius: 3, overflow: 'hidden', marginTop: 6 },
+  cycleBarreRemplie: { height: '100%', borderRadius: 3 },
 });

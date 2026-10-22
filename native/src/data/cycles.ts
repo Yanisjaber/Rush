@@ -34,6 +34,13 @@ const deJours = (n: number): string => new Date(n * 86400000).toISOString().slic
 /** Le nombre de jours d'un cycle, bornes incluses. */
 export const joursDuCycle = (c: Pick<Cycle, 'from_date' | 'to_date'>): number => enJours(String(c.to_date).slice(0, 10)) - enJours(String(c.from_date).slice(0, 10)) + 1;
 
+/** Où en est un cycle un jour donné : « jour 22 sur 23 » et la part faite (de 0 à 1). Le jour est ramené dans les bornes du cycle. */
+export function avancementCycle(c: Pick<Cycle, 'from_date' | 'to_date'>, iso: string): { jour: number; total: number; part: number } {
+  const total = Math.max(1, joursDuCycle(c));
+  const jour = Math.min(total, Math.max(1, enJours(iso.slice(0, 10)) - enJours(String(c.from_date).slice(0, 10)) + 1));
+  return { jour, total, part: jour / total };
+}
+
 export interface FormulaireCycle {
   name: string;
   from_date: string;
