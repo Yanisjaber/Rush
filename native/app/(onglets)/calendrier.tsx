@@ -65,6 +65,8 @@ export default function Calendrier() {
   const dansMois = jours.filter((j) => j.dansMois);
   const seancesDuMois = dansMois.flatMap((j) => j.seances);
   const tempsDuMois = seancesDuMois.reduce((t, s) => t + (s.moving_time || 0), 0);
+  const chargeDuMois = dansMois.reduce((t, j) => t + chargeJour(j), 0);
+  const principaleDuMois = chiffresSemaine(dansMois, filtre).principale;
   const titre = grille.titre.charAt(0).toUpperCase() + grille.titre.slice(1);
   const estMoisCourant = cible.annee === maintenant.getFullYear() && cible.mois === maintenant.getMonth();
   const detail = jours.find((j) => j.iso === choisi) ?? null;
@@ -95,26 +97,27 @@ export default function Calendrier() {
           <Fleche sens={1} onPress={() => setCible((c) => decalerMois(c.annee, c.mois, 1))} />
         </View>
 
-        <View style={styles.resume}>
-          <View accessible accessibilityLabel={`${seancesDuMois.length} séance${seancesDuMois.length > 1 ? 's' : ''} ce mois-ci, ${formatDuree(tempsDuMois)}`} style={styles.chiffres}>
-            <Chiffre valeur={String(seancesDuMois.length)} unite={seancesDuMois.length > 1 ? 'séances' : 'séance'} />
-            <Chiffre valeur={formatDuree(tempsDuMois)} />
-          </View>
-          <View style={styles.boutons}>
-            {!estMoisCourant ? (
-              <Pressable
-                onPress={() => setCible({ annee: maintenant.getFullYear(), mois: maintenant.getMonth() })}
-                accessibilityRole="button"
-                accessibilityLabel="Revenir à aujourd'hui"
-                style={[styles.retour, { borderColor: p.contourChamp }]}
-              >
-                <Text style={[typo.corpsFort, { color: p.texte }]}>Aujourd'hui</Text>
-              </Pressable>
-            ) : null}
-            <Pressable onPress={() => router.push('/cycles')} accessibilityRole="button" accessibilityLabel="Mes cycles d'entraînement" style={[styles.retour, { borderColor: p.contourChamp }]}>
-              <Text style={[typo.corpsFort, { color: p.texte }]}>Cycles</Text>
+        {/* Les chiffres du mois en cartes : séances, temps, charge et, pour un sport qui en a une, son info principale (kilomètres ou séries, comme la colonne « Sem. ») */}
+        <View style={styles.cartes}>
+          <Carte valeur={String(seancesDuMois.length)} legende={seancesDuMois.length > 1 ? 'séances' : 'séance'} />
+          <Carte valeur={formatDuree(tempsDuMois)} legende="de sport" />
+          <Carte valeur={chargeDuMois.toLocaleString('fr-FR')} legende="charge" />
+          {principaleDuMois ? <Carte valeur={nombre(principaleDuMois.valeur)} legende={UNITES[principaleDuMois.unite].dit} /> : null}
+        </View>
+        <View style={styles.boutons}>
+          {!estMoisCourant ? (
+            <Pressable
+              onPress={() => setCible({ annee: maintenant.getFullYear(), mois: maintenant.getMonth() })}
+              accessibilityRole="button"
+              accessibilityLabel="Revenir à aujourd'hui"
+              style={[styles.retour, { borderColor: p.contourChamp }]}
+            >
+              <Text style={[typo.corpsFort, { color: p.texte }]}>Aujourd'hui</Text>
             </Pressable>
-          </View>
+          ) : null}
+          <Pressable onPress={() => router.push('/cycles')} accessibilityRole="button" accessibilityLabel="Mes cycles d'entraînement" style={[styles.retour, { borderColor: p.contourChamp }]}>
+            <Text style={[typo.corpsFort, { color: p.texte }]}>Cycles</Text>
+          </Pressable>
         </View>
 
         {erreur ? (
@@ -179,12 +182,12 @@ function Fleche({ sens, onPress }: { sens: -1 | 1; onPress: () => void }) {
   );
 }
 
-function Chiffre({ valeur, unite }: { valeur: string; unite?: string }) {
+function Carte({ valeur, legende }: { valeur: string; legende: string }) {
   const p = usePalette();
   return (
-    <View style={styles.chiffre}>
-      <Text style={[styles.chiffreValeur, { color: p.texte }]}>{valeur}</Text>
-      {unite ? <Text style={[typo.petit, { color: p.texteDoux }]}>{unite}</Text> : null}
+    <View accessible accessibilityLabel={`${valeur} ${legende}`} style={[styles.carte, { backgroundColor: p.surface }]}>
+      <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.carteValeur, { color: p.texte }]}>{valeur}</Text>
+      <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>{legende}</Text>
     </View>
   );
 }
@@ -438,14 +441,13 @@ const styles = StyleSheet.create({
   fleche: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   chevron: { width: 12, height: 12, borderTopWidth: 2.5, borderRightWidth: 2.5 },
   titreMois: { flex: 1, textAlign: 'center' },
-  resume: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espace.e3, minHeight: 44 },
-  chiffres: { flexDirection: 'row', alignItems: 'baseline', gap: espace.e5 },
-  chiffre: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
-  chiffreValeur: { fontFamily: police.titre800, fontSize: 32, lineHeight: 36, letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
-  boutons: { flexDirection: 'row', alignItems: 'center', gap: espace.e2 },
+  cartes: { flexDirection: 'row', gap: 6 },
+  carte: { flex: 1, borderRadius: rayon.base, paddingHorizontal: 10, paddingVertical: 10, gap: 2 },
+  carteValeur: { fontFamily: police.titre800, fontSize: 22, lineHeight: 26, letterSpacing: -0.4, fontVariant: ['tabular-nums'] },
+  boutons: { flexDirection: 'row', gap: 8 },
   cycleLigne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
   cycleBande: { width: 6, height: 26, borderRadius: 3 },
-  retour: { minHeight: 44, borderWidth: 1.5, borderRadius: rayon.rond, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
+  retour: { flex: 1, minHeight: 44, borderWidth: 1.5, borderRadius: rayon.rond, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
   grille: { borderRadius: rayon.bloc, paddingHorizontal: 8, paddingVertical: 10, gap: 4, overflow: 'hidden' },
