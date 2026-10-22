@@ -233,7 +233,7 @@ export interface MetriqueSemaine {
 /**
  * L'info la plus importante de chaque sport, affichée dans la colonne de la semaine à côté du temps : les kilomètres pour ce qui se mesure en distance,
  * les séries pour la force. `null` : rien de plus que le temps (Hyrox n'a pas de distance ; « Tous » mélange tout).
- * Un sport absent de la liste (aviron, randonnée…) prend les kilomètres.
+ * Un sport absent de la liste prend les kilomètres.
  */
 export const METRIQUE_DU_SPORT: Record<string, UniteSemaine | null> = {
   tout: null,
@@ -242,7 +242,7 @@ export const METRIQUE_DU_SPORT: Record<string, UniteSemaine | null> = {
   natation: 'km',
   triathlon: 'km',
   duathlon: 'km',
-  ski: 'km',
+  autre: 'km',
   muscu: 'series',
   hyrox: null,
 };

@@ -211,7 +211,7 @@ export const WIDGETS = {
     nom: "Kilomètres de ski par semaine",
     description: "Les kilomètres que tu skies chaque semaine (ski de fond, roulettes, hors-piste), avec ta moyenne.",
     categorie: "Ski de fond",
-    sports: ['ski'],
+    sports: ['autre'],
     tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
@@ -219,7 +219,7 @@ export const WIDGETS = {
     nom: "Dénivelé par semaine (ski)",
     description: "Le dénivelé positif que tu grimpes chaque semaine à ski, avec ta moyenne.",
     categorie: "Ski de fond",
-    sports: ['ski'],
+    sports: ['autre'],
     tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
@@ -227,7 +227,7 @@ export const WIDGETS = {
     nom: "Neige ou roulettes",
     description: "Où tu skies : sur la neige, en ski à roulettes ou en hors-piste, semaine après semaine.",
     categorie: "Ski de fond",
-    sports: ['ski'],
+    sports: ['autre'],
     tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
@@ -235,7 +235,7 @@ export const WIDGETS = {
     nom: "Intensité (ski)",
     description: "À quelle intensité tu skies : modérée, soutenue ou intense, d’après ton cardio.",
     categorie: "Ski de fond",
-    sports: ['ski'],
+    sports: ['autre'],
     tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
@@ -243,7 +243,7 @@ export const WIDGETS = {
     nom: "Prépa distance (ski)",
     description: "Ta plus longue sortie face à la distance de ta prochaine course de ski de fond.",
     categorie: "Ski de fond",
-    sports: ['ski'],
+    sports: ['autre'],
     tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
@@ -251,7 +251,7 @@ export const WIDGETS = {
     nom: "Meilleures sorties de ski",
     description: "Ta plus longue sortie, ton plus gros dénivelé et ta plus longue durée à ski.",
     categorie: "Ski de fond",
-    sports: ['ski'],
+    sports: ['autre'],
     tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
@@ -513,16 +513,10 @@ export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
     { id: 'forme', taille: 's' },
     { id: 'dernieres', taille: 'm' },
   ],
-  // Ski de fond : les kilomètres par semaine en héros, puis le contexte, le dénivelé et l'intensité côte à côte, la neige ou les roulettes, la préparation à la course, les records
-  ski: [
-    { id: 'kmski', taille: 'm' },
-    { id: 'semaine', taille: 'xs' },
+  // Autres : des sports trop différents pour avoir des widgets à eux, donc le socle ; chacun ajoute ce qu'il veut (les widgets de ski de fond sont dans la bibliothèque)
+  autre: [
+    { id: 'semaine', taille: 'm' },
     { id: 'objectif', taille: 'xs' },
-    { id: 'deniveleski', taille: 's' },
-    { id: 'skiintensite', taille: 's' },
-    { id: 'skisurfaces', taille: 'm' },
-    { id: 'skiprepa', taille: 'm' },
-    { id: 'meilleuresski', taille: 'm' },
     { id: 'charge', taille: 'm' },
     { id: 'avenir', taille: 's' },
     { id: 'forme', taille: 's' },
@@ -737,7 +731,7 @@ export function normaliser(brut: unknown): Disposition | null {
 }
 
 /** Les onglets de sport dont la bibliothèque reste ouverte : on peut y ajouter n'importe quel widget qui concerne le sport. */
-export const SPORTS_LIBRES: string[] = ['course', 'velo', 'natation', 'triathlon', 'duathlon', 'ski'];
+export const SPORTS_LIBRES: string[] = ['course', 'velo', 'natation', 'triathlon', 'duathlon', 'autre'];
 /** Les onglets de sport qui ont leur propre composition modifiable (Muscu, Hyrox, et les sports libres). */
 export const ONGLETS_PERSONNALISABLES: string[] = [...Object.keys(ORDRE_ONGLET), ...SPORTS_LIBRES];
 /** Onglets dont la bibliothèque est limitée à leurs propres widgets (ceux de ORDRE_ONGLET). */

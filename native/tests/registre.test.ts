@@ -112,10 +112,10 @@ test('composerOnglet : un sport sans onglet à lui (aviron) met l\'objectif en p
   assert.equal(ids.includes('predictions') || ids.includes('puissance'), false, 'aucun widget d\'un autre sport');
 });
 
-test('estPertinent : Ski voit les widgets de ski, Course et Vélo non', () => {
-  assert.ok(estPertinent('skisurfaces', ['ski']) && estPertinent('charge', ['ski']));
+test('estPertinent : Autres voit les widgets de ski de fond, Course et Vélo non', () => {
+  assert.ok(estPertinent('skisurfaces', ['autre']) && estPertinent('charge', ['autre']));
   assert.equal(estPertinent('skisurfaces', ['course']), false);
-  assert.equal(estPertinent('predictions', ['ski']), false);
+  assert.equal(estPertinent('predictions', ['autre']), false);
 });
 
 test('estPertinent : Triathlon voit natation, vélo et course, Duathlon pas la natation', () => {

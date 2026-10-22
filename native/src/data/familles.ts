@@ -17,8 +17,6 @@ const FAMILLES: Record<string, string> = {
   TrailRun: 'course',
   // Natation et eau
   Swim: 'natation',
-  Rowing: 'aviron',
-  VirtualRow: 'aviron',
   // Force. « Workout » est le type générique de Strava : on le range avec la muscu, comme le yoga, le pilates, le CrossFit et le HIIT
   WeightTraining: 'muscu',
   Workout: 'muscu',
@@ -28,31 +26,15 @@ const FAMILLES: Record<string, string> = {
   Hyrox: 'hyrox', // type propre à l'app : Strava n'a pas de sport Hyrox
   Triathlon: 'triathlon', // types propres à l'app : un sport à part, pas la somme de course, vélo et natation
   Duathlon: 'duathlon',
-  Athletics: 'athletisme', // compte dans la charge, mais n'a pas de page (voir SPORTS_SANS_PAGE)
   HighIntensityIntervalTraining: 'muscu',
-  // Ski et glisse
-  NordicSki: 'ski',
-  BackcountrySki: 'ski',
-  AlpineSki: 'ski',
-  Snowboard: 'ski',
-  RollerSki: 'ski',
   // Machines d'endurance en salle : de la course à pied pour la charge et la forme
   Elliptical: 'course',
   StairStepper: 'course',
-  // Combat
-  Boxing: 'combat',
-  MartialArts: 'combat',
-  // Autres sports de performance
-  Hike: 'rando',
-  Walk: 'rando', // la marche reste classée avec la randonnée (calendrier, bilan) ; l'accueil l'écarte, voir sansMarche (api.ts)
-  Snowshoe: 'rando',
-  RockClimbing: 'escalade',
-  Canoeing: 'pagaie',
-  Kayaking: 'pagaie',
-  StandUpPaddling: 'pagaie',
+  // Tout le reste (ski, aviron, combat, randonnée, escalade, canoë, athlétisme, tennis…) n'est pas listé : c'est « autre » (l'onglet « Autres »)
+  // La marche est écartée de l'accueil, voir sansMarche (api.ts)
 };
 
-/** Famille d'un type de sport brut. Tout ce qui est inconnu (foot, tennis, golf…) devient « autre ». */
+/** Famille d'un type de sport brut. Tout ce qui n'est pas une variante d'un sport proposé (ski, aviron, randonnée, tennis…) devient « autre ». */
 export function familleSport(typeBrut: unknown): string {
   // Object.hasOwn : on ignore les propriétés héritées d'un objet ('constructor', '__proto__'…)
   return typeof typeBrut === 'string' && Object.hasOwn(FAMILLES, typeBrut) ? FAMILLES[typeBrut] : 'autre';
@@ -70,16 +52,12 @@ export const DISCIPLINES_DU_FILTRE: Record<string, readonly string[]> = {
   duathlon: ['duathlon', 'velo', 'course'],
 };
 
-/**
- * Les types Strava de l'onglet « Ski de fond » : le ski de fond, le ski à roulettes (l'entraînement de l'été) et le ski hors-piste.
- * Le ski alpin et le snowboard font partie de la famille « ski » mais pas de cet onglet : ils ne se voient que sous « Tout ».
- */
+/** Les types Strava que comptent les widgets de ski de fond (rangés dans « Autres ») : le ski de fond, le ski à roulettes et le ski hors-piste, pas le ski alpin ni le snowboard. */
 export const SKI_DE_FOND: readonly string[] = ['NordicSki', 'RollerSki', 'BackcountrySki'];
 
 /** Une séance passe-t-elle le filtre de l'accueil ? Le sport de la pastille (Triathlon et Duathlon regroupent leurs disciplines) ; « tout » garde tout. */
 export function garderSeance(seance: { sport?: string } | null | undefined, filtre = 'tout'): boolean {
   if (filtre === 'tout') return true;
-  if (filtre === 'ski') return typeof seance?.sport === 'string' && SKI_DE_FOND.includes(seance.sport);
   const famille = familleSport(seance?.sport);
   return Object.hasOwn(DISCIPLINES_DU_FILTRE, filtre) ? DISCIPLINES_DU_FILTRE[filtre].includes(famille) : famille === filtre;
 }

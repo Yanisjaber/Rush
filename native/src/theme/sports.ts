@@ -10,16 +10,9 @@ export const SPORTS = {
   natation: { nom: 'Natation', court: 'Natation', couleur: 'sportNatation' },
   triathlon: { nom: 'Triathlon', court: 'Triathlon', couleur: 'sportVelo' },
   duathlon: { nom: 'Duathlon', court: 'Duathlon', couleur: 'sportVelo' },
-  athletisme: { nom: 'Athlétisme', court: 'Athlé', couleur: 'sportNeutre' },
   hyrox: { nom: 'Hyrox', court: 'Hyrox', couleur: 'sportHybride' },
   muscu: { nom: 'Musculation', court: 'Muscu', couleur: 'sportMuscu' },
-  aviron: { nom: 'Aviron', court: 'Aviron', couleur: 'sportNatation' },
-  ski: { nom: 'Ski de fond', court: 'Ski', couleur: 'sportNeutre' },
-  combat: { nom: 'Sports de combat', court: 'Combat', couleur: 'sportNeutre' },
-  rando: { nom: 'Randonnée', court: 'Rando', couleur: 'sportNeutre' },
-  escalade: { nom: 'Escalade', court: 'Escalade', couleur: 'sportNeutre' },
-  pagaie: { nom: 'Canoë-kayak', court: 'Pagaie', couleur: 'sportNeutre' },
-  autre: { nom: 'Autre sport', court: 'Autre', couleur: 'sportNeutre' },
+  autre: { nom: 'Autres', court: 'Autres', couleur: 'sportNeutre' },
 } as const satisfies Record<string, { nom: string; court: string; couleur: CleCouleur }>;
 
 export type CleSport = keyof typeof SPORTS;

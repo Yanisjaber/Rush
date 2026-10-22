@@ -65,9 +65,12 @@ test('garderSeance : Triathlon garde natation, vélo et course ; Duathlon garde 
   assert.equal(garderSeance({ sport: 'Ride' }, 'course'), false);
 });
 
-test('garderSeance : l\'onglet Ski garde le ski de fond, le ski à roulettes et le hors-piste, pas le ski alpin ni le snowboard', () => {
-  for (const sport of ['NordicSki', 'RollerSki', 'BackcountrySki']) assert.equal(garderSeance({ sport }, 'ski'), true, sport);
-  for (const sport of ['AlpineSki', 'Snowboard', 'Run']) assert.equal(garderSeance({ sport }, 'ski'), false, sport);
-  assert.equal(garderSeance({ sport: 'AlpineSki' }, 'tout'), true); // ils restent visibles sous « Tout »
+test('garderSeance : l\'onglet Autres garde le ski, l\'aviron, la rando, le tennis… et rien des sports proposés', () => {
+  for (const sport of ['NordicSki', 'RollerSki', 'AlpineSki', 'Snowboard', 'Rowing', 'Hike', 'Boxing', 'RockClimbing', 'Kayaking', 'Athletics', 'Tennis']) {
+    assert.equal(familleSport(sport), 'autre', sport);
+    assert.equal(garderSeance({ sport }, 'autre'), true, sport);
+  }
+  for (const sport of ['Run', 'Ride', 'WeightTraining']) assert.equal(garderSeance({ sport }, 'autre'), false, sport);
+  assert.equal(garderSeance({ sport: 'AlpineSki' }, 'tout'), true);
 });
 

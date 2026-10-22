@@ -5,13 +5,7 @@
 export const SPORTS_PRINCIPAUX: string[] = ['course', 'velo', 'natation', 'muscu', 'hyrox'];
 
 /** Les autres sports de performance : ils ont leur pastille de couleur et leurs séances, sans widgets dédiés. */
-export const SPORTS_AUTRES: string[] = ['triathlon', 'duathlon', 'ski'];
-
-/**
- * Des activités qui comptent dans la charge, le volume et les listes de séances, mais qui n'ont PAS de page : on ne les propose pas à
- * cocher et elles n'ont jamais de pastille dans la barre du haut, même si les séances les révèlent. (Décision du 20 oct.)
- */
-export const SPORTS_SANS_PAGE: string[] = ['rando', 'combat', 'escalade', 'aviron', 'pagaie', 'athletisme'];
+export const SPORTS_AUTRES: string[] = ['triathlon', 'duathlon', 'autre'];
 
 /** Tout ce qu'on peut cocher, dans l'ordre de l'écran. */
 export const SPORTS_A_CHOISIR: string[] = [...SPORTS_PRINCIPAUX, ...SPORTS_AUTRES];
@@ -22,8 +16,11 @@ export const GROUPES_SPORTS: { titre: string; sports: string[] }[] = [
   { titre: 'Vélo & multisport', sports: ['velo', 'triathlon', 'duathlon'] },
   { titre: 'Eau', sports: ['natation'] },
   { titre: 'Force & hybride', sports: ['muscu', 'hyrox'] },
-  { titre: 'Nature', sports: ['ski'] },
+  { titre: 'Autres', sports: ['autre'] },
 ];
+
+/** Les sports qui avaient leur propre case avant l'onglet « Autres ». */
+const ANCIENS_SPORTS = ['ski', 'rando', 'combat', 'escalade', 'aviron', 'pagaie', 'athletisme'];
 
 /**
  * Nettoie une liste venue du stockage : on ne garde que des clés connues, une seule fois chacune, DANS L'ORDRE DE L'UTILISATEUR
@@ -35,7 +32,9 @@ export function nettoyerSports(brut: unknown): string[] | null {
   const connus = new Set(SPORTS_A_CHOISIR);
   const vus = new Set<string>();
   const liste: string[] = [];
-  for (const s of brut) {
+  for (const brutS of brut) {
+    // Les anciens sports (ski, randonnée, combat…) sont maintenant dans « Autres » : un ancien choix enregistré n'est pas perdu
+    const s = typeof brutS === 'string' && ANCIENS_SPORTS.includes(brutS) ? 'autre' : brutS;
     if (typeof s === 'string' && connus.has(s) && !vus.has(s)) {
       vus.add(s);
       liste.push(s);
@@ -71,15 +70,13 @@ export function onboardingNecessaire({
 
 /**
  * Les pastilles de la barre, dans l'ordre d'affichage : d'abord les sports choisis (dans l'ordre de l'utilisateur),
- * puis ceux que ses données révèlent sans qu'il les ait cochés (« autre » et les sports sans page n'ont pas d'onglet).
+ * puis ceux que ses données révèlent sans qu'il les ait cochés (« Autres » compte comme un sport).
  */
 export function fusionnerFamilles(deDonnees: string[] = [], choisis: string[] | null = []): string[] {
   const f = new Set<string>();
   // Chaque sport choisi a sa pastille
   for (const s of choisis || []) f.add(s);
   for (const famille of deDonnees || []) f.add(famille);
-  f.delete('autre');
-  for (const s of SPORTS_SANS_PAGE) f.delete(s);
   return [...f];
 }
 
