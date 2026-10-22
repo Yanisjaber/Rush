@@ -135,15 +135,15 @@ export default function Calendrier() {
                 <View key={semaine[0].iso} style={styles.rangee}>
                   <View style={styles.jours}>
                     {semaine.map((j) => (
-                      <Case key={j.iso} jour={j} choisi={j.iso === choisi} onPress={() => setChoisi(j.iso)} mono={filtre === 'tout'} />
+                      <Case key={j.iso} jour={j} choisi={j.iso === choisi} onPress={() => setChoisi(j.iso)} />
                     ))}
                   </View>
-                  <ProfilSemaine semaine={semaine} maxi={maxiJour} mono={filtre === 'tout'} />
+                  <ProfilSemaine semaine={semaine} maxi={maxiJour} />
                 </View>
               ))}
             </View>
 
-            {detail ? <Detail jour={detail} /> : null}
+            {detail ? <Detail jour={detail} mono={filtre === 'tout'} /> : null}
           </>
         )}
       </ScrollView>
@@ -197,10 +197,8 @@ function CoinPlie({ couleur }: { couleur: string }) {
   );
 }
 
-// Sur « Tous », la grille est en gris : aucun sport n'est mis en avant ; la couleur revient quand on choisit un sport (mono = faux)
-function Case({ jour, choisi, onPress, mono }: { jour: JourGrille; choisi: boolean; onPress: () => void; mono: boolean }) {
+function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; onPress: () => void }) {
   const p = usePalette();
-  const coul = (famille?: string) => (mono ? p.sportNeutre : couleurSport(p, famille));
   const marques = jour.dansMois ? marquesDe(jour) : [];
   const label = [
     dateLongue(jour.iso),
@@ -213,7 +211,7 @@ function Case({ jour, choisi, onPress, mono }: { jour: JourGrille; choisi: boole
   if (!jour.dansMois) return <View style={styles.case} />;
   // Le jour se teinte de la couleur de son sport dominant, d'autant plus fort que sa charge est grande (de 14 % à 50 % d'opacité)
   const teinte = teinteJour(jour);
-  const fond = teinte ? avecAlpha(coul(teinte.famille), 0.14 + 0.36 * teinte.force) : undefined;
+  const fond = teinte ? avecAlpha(couleurSport(p, teinte.famille), 0.14 + 0.36 * teinte.force) : undefined;
   return (
     <Pressable
       onPress={onPress}
@@ -233,9 +231,9 @@ function Case({ jour, choisi, onPress, mono }: { jour: JourGrille; choisi: boole
       <View style={styles.points}>
         {marques.slice(0, MAX_POINTS).map((m) =>
           m.type === 'fait' ? (
-            <View key={m.cle} style={[styles.point, { backgroundColor: coul(m.couleur) }]} />
+            <View key={m.cle} style={[styles.point, { backgroundColor: couleurSport(p, m.couleur) }]} />
           ) : m.type === 'prevu' ? (
-            <View key={m.cle} style={[styles.point, { borderColor: coul(m.couleur), borderWidth: 1.5 }]} />
+            <View key={m.cle} style={[styles.point, { borderColor: couleurSport(p, m.couleur), borderWidth: 1.5 }]} />
           ) : (
             <View key={m.cle} style={[styles.carre, { backgroundColor: p.dossardFond, borderColor: p.texte }]} />
           ),
@@ -252,7 +250,7 @@ const HAUTEUR_PROFIL = 24;
 
 // Le profil de la semaine : sept petites barres (une par jour, de lundi à dimanche) à la hauteur du temps du jour, de la couleur de son sport dominant,
 // pâles quand il n'y a que du prévu ; les heures de la semaine (faites + prévues) dessous.
-function ProfilSemaine({ semaine, maxi, mono }: { semaine: JourGrille[]; maxi: number; mono: boolean }) {
+function ProfilSemaine({ semaine, maxi }: { semaine: JourGrille[]; maxi: number }) {
   const p = usePalette();
   const r = resumeSemaine(semaine);
   const total = r.faites + r.prevues;
@@ -269,7 +267,7 @@ function ProfilSemaine({ semaine, maxi, mono }: { semaine: JourGrille[]; maxi: n
             key={j.iso}
             style={[
               styles.jourProfil,
-              { height: j.secondes ? Math.max(3, (j.secondes / maxi) * HAUTEUR_PROFIL) : 2, backgroundColor: j.famille ? (mono ? p.sportNeutre : couleurSport(p, j.famille)) : p.traitFort, opacity: j.fait || !j.secondes ? 1 : 0.35 },
+              { height: j.secondes ? Math.max(3, (j.secondes / maxi) * HAUTEUR_PROFIL) : 2, backgroundColor: j.famille ? couleurSport(p, j.famille) : p.traitFort, opacity: j.fait || !j.secondes ? 1 : 0.35 },
             ]}
           />
         ))}
@@ -280,9 +278,11 @@ function ProfilSemaine({ semaine, maxi, mono }: { semaine: JourGrille[]; maxi: n
 }
 
 // Le détail du jour choisi : ses séances en pastilles pleines, ses séances prévues en pointillés, sa compétition, son repos, ses notes
-function Detail({ jour }: { jour: JourGrille }) {
+// Sur « Tous », le récap du jour est en gris : aucun sport n'est mis en avant ; la couleur revient quand on choisit un sport (mono = faux)
+function Detail({ jour, mono }: { jour: JourGrille; mono: boolean }) {
   const router = useRouter();
   const p = usePalette();
+  const coul = (sport: string) => (mono ? p.sportNeutre : couleurSport(p, familleAffichage(sport)));
   // « 2h14 faites · 110 pts · 54 min prévues » : ce que le jour pèse, d'un coup d'œil
   const faites = jour.seances.reduce((t, s) => t + (s.moving_time || 0), 0);
   const prevues = jour.planifiees.reduce((t, x) => t + (Number(x.duration) > 0 ? Number(x.duration) * 60 : 0), 0);
@@ -324,7 +324,7 @@ function Detail({ jour }: { jour: JourGrille }) {
               onPress={() => router.push({ pathname: '/seance', params: { id: s.id } })}
               accessibilityRole="button"
               accessibilityLabel={`${s.name || nomSport(s.sport)}, ${formatDuree(s.moving_time)}`}
-              style={[styles.seance, { backgroundColor: couleurSport(p, familleAffichage(s.sport)) }]}
+              style={[styles.seance, { backgroundColor: coul(s.sport) }]}
             >
               <Text numberOfLines={1} style={[typo.corpsFort, { color: p.encreSurCouleur, flex: 1 }]}>
                 {s.name || nomSport(s.sport)}
@@ -338,7 +338,7 @@ function Detail({ jour }: { jour: JourGrille }) {
               onPress={() => bientot('La modification de séance prévue')}
               accessibilityRole="button"
               accessibilityLabel={`Séance prévue : ${x.name || nomSport(x.sport)}`}
-              style={[styles.seance, { borderColor: couleurSport(p, familleAffichage(x.sport)), borderWidth: 2, borderStyle: 'dashed' }]}
+              style={[styles.seance, { borderColor: coul(x.sport), borderWidth: 2, borderStyle: 'dashed' }]}
             >
               <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>
                 {x.name || nomSport(x.sport)}
