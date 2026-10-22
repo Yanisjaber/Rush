@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bornesGrille, chargeJour, chargeSeance, decalerMois, grilleMois, jourAffiche, jourVide, nomJour, resumeSemaine, teinteJour, titreMois } from '../src/data/calendrier.ts';
+import { bornesGrille, chargeJour, chargeSeance, decalerMois, grilleMois, jourAffiche, jourVide, nomJour, profilSemaine, resumeSemaine, secondesJour, teinteJour, titreMois } from '../src/data/calendrier.ts';
 import { couleurNote, libelleNote, notesDuJour } from '../src/data/annotations.ts';
 import { annotationsDemo, donneesDemo } from '../src/data/demo.ts';
 import type { Note, Prevue, Seance } from '../src/data/types.ts';
@@ -144,5 +144,20 @@ test('resumeSemaine : le temps fait, le temps prévu et la charge de la semaine'
   assert.equal(chargeJour(jourDe(g, '2026-10-19')), 70);
   // Une semaine sans rien : des zéros
   assert.deepEqual(resumeSemaine(g.semaines[0]), { faites: 0, prevues: 0, charge: 0 });
+});
+
+test('profilSemaine : une barre par jour, à la hauteur du temps (fait + prévu), de la couleur du sport qui prend le plus de temps', () => {
+  const g = grilleMois(2026, 9, {
+    seances: [seanceCal('court', '2026-10-19', 'Run', 30, 20), seanceCal('long', '2026-10-19', 'Ride', 90, 60), seanceCal('c', '2026-10-21', 'Run', 40, 35)],
+    planifiees: [prevueCal('p1', '2026-10-21', 54), prevueCal('p2', '2026-10-23', 40), prevueCal('p3', '2026-10-23', 90)],
+  }, auj);
+  const semaine = g.semaines.find((s) => s.some((j) => j.iso === '2026-10-19'))!;
+  const p = profilSemaine(semaine);
+  assert.equal(p.length, 7);
+  assert.deepEqual(p[0], { iso: '2026-10-19', secondes: 120 * 60, famille: 'velo', fait: true }); // le vélo (90 min) l'emporte sur la course (30 min)
+  assert.deepEqual(p[1], { iso: '2026-10-20', secondes: 0, famille: null, fait: false });
+  assert.deepEqual(p[2], { iso: '2026-10-21', secondes: 94 * 60, famille: 'course', fait: true }); // le fait (course) passe avant le prévu
+  assert.deepEqual(p[4], { iso: '2026-10-23', secondes: 130 * 60, famille: 'course', fait: false }); // rien que du prévu : pâle ; la plus longue prévue est de la course (« Run »)
+  assert.equal(secondesJour(semaine[0]), 120 * 60);
 });
 

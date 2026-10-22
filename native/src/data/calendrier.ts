@@ -175,3 +175,29 @@ export function resumeSemaine(semaine: JourGrille[]): ResumeSemaine {
   return { faites, prevues, charge };
 }
 
+/** Le temps d'un jour : ses séances faites plus ses séances prévues (hors compétitions), en secondes. */
+export const secondesJour = (j: JourGrille): number =>
+  j.seances.reduce((t, s) => t + (s.moving_time || 0), 0) + j.planifiees.reduce((t, x) => t + (Number(x.duration) > 0 ? Number(x.duration) * 60 : 0), 0);
+
+export interface JourProfil {
+  iso: string;
+  /** Le temps du jour (fait + prévu), en secondes : la hauteur de sa barre. */
+  secondes: number;
+  /** La famille du sport qui prend le plus de temps ce jour-là (le fait d'abord, sinon le prévu) : la couleur de sa barre ; null un jour vide. */
+  famille: string | null;
+  /** Le jour a-t-il au moins une séance faite ? Sinon sa barre est pâle (rien que du prévu). */
+  fait: boolean;
+}
+
+/** Le profil d'une semaine de la grille : une barre par jour, de lundi à dimanche. */
+export function profilSemaine(semaine: JourGrille[]): JourProfil[] {
+  return semaine.map((j) => {
+    const faites = j.seances.filter((s) => s.moving_time > 0);
+    const prevues = j.planifiees.filter((x) => Number(x.duration) > 0);
+    const dominanteFaite = faites.length ? faites.reduce((a, b) => (b.moving_time > a.moving_time ? b : a)) : null;
+    const dominantePrevue = !dominanteFaite && prevues.length ? prevues.reduce((a, b) => (Number(b.duration) > Number(a.duration) ? b : a)) : null;
+    const sport = dominanteFaite?.sport ?? dominantePrevue?.sport;
+    return { iso: j.iso, secondes: secondesJour(j), famille: sport ? familleAffichage(sport) : null, fait: faites.length > 0 };
+  });
+}
+
