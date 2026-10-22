@@ -62,6 +62,8 @@ export interface Prevue {
   tss: number | null;
   category: string; // 'entrainement' | 'competition'
   km: number | null;
+  /** Dénivelé prévu, en mètres (facultatif). */
+  d_plus?: number | null;
   programme_id?: string;
 }
 

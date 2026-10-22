@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bornesGrille, chargeJour, chargeSeance, decalerMois, grilleMois, jourAffiche, jourVide, nomJour, profilSemaine, resumeSemaine, secondesJour, teinteJour, titreMois } from '../src/data/calendrier.ts';
+import { bornesGrille, chargeJour, chargeSeance, decalerMois, denivJour, grilleMois, jourAffiche, jourVide, kmJour, metriqueSemaine, nomJour, profilSemaine, resumeSemaine, secondesJour, teinteJour, titreMois } from '../src/data/calendrier.ts';
 import { couleurNote, libelleNote, notesDuJour } from '../src/data/annotations.ts';
 import { annotationsDemo, donneesDemo } from '../src/data/demo.ts';
 import type { Note, Prevue, Seance } from '../src/data/types.ts';
@@ -159,5 +159,33 @@ test('profilSemaine : une barre par jour, à la hauteur du temps (fait + prévu)
   assert.deepEqual(p[2], { iso: '2026-10-21', secondes: 94 * 60, famille: 'course', fait: true }); // le fait (course) passe avant le prévu
   assert.deepEqual(p[4], { iso: '2026-10-23', secondes: 130 * 60, famille: 'course', fait: false }); // rien que du prévu : pâle ; la plus longue prévue est de la course (« Run »)
   assert.equal(secondesJour(semaine[0]), 120 * 60);
+});
+
+const avecDistance = (id: string, jour: string, sport: string, minutes: number, km: number | null, dPlus: number | null = null): Seance => ({ ...seanceCal(id, jour, sport, minutes, 40), distance_km: km, total_elevation_gain: dPlus });
+const semaineDu = (g: ReturnType<typeof grilleMois>, iso: string) => g.semaines.find((s) => s.some((j) => j.iso === iso))!;
+
+test('metriqueSemaine : les kilomètres quand il y en a (faits et prévus ensemble)', () => {
+  const g = grilleMois(2026, 9, {
+    seances: [avecDistance('a', '2026-10-19', 'Run', 60, 10.4), avecDistance('b', '2026-10-21', 'Ride', 90, 32.15), avecDistance('muscu', '2026-10-20', 'WeightTraining', 60, null)],
+    planifiees: [{ ...prevueCal('p', '2026-10-24', 60), km: 12 }],
+  }, auj);
+  assert.deepEqual(metriqueSemaine(semaineDu(g, '2026-10-19')), { valeur: 54.6, unite: 'km' }); // 10,4 + 32,15 + 12 = 54,55
+  assert.equal(kmJour(jourDe(g, '2026-10-24')), 12);
+});
+
+test('metriqueSemaine : sans kilomètre, les séries de force ; sans série, le dénivelé ; sinon les heures', () => {
+  const muscu = grilleMois(2026, 9, { seances: [seanceCal('m', '2026-10-19', 'WeightTraining', 60, 40)], series: [{ date: '2026-10-19' }, { date: '2026-10-19' }, { date: '2026-10-21' }] }, auj);
+  assert.deepEqual(metriqueSemaine(semaineDu(muscu, '2026-10-19')), { valeur: 3, unite: 'series' });
+  assert.equal(jourDe(muscu, '2026-10-19').series, 2);
+  const deniv = grilleMois(2026, 9, { seances: [avecDistance('s', '2026-10-19', 'WeightTraining', 40, null, 350)] }, auj);
+  assert.deepEqual(metriqueSemaine(semaineDu(deniv, '2026-10-19')), { valeur: 350, unite: 'dplus' });
+  assert.equal(denivJour(jourDe(deniv, '2026-10-19')), 350);
+  const heures = grilleMois(2026, 9, { seances: [seanceCal('h', '2026-10-19', 'Yoga', 90, 20)] }, auj);
+  assert.deepEqual(metriqueSemaine(semaineDu(heures, '2026-10-19')), { valeur: 1.5, unite: 'h' });
+});
+
+test('metriqueSemaine : les kilomètres passent avant les séries (une semaine course et muscu montre ses kilomètres)', () => {
+  const g = grilleMois(2026, 9, { seances: [avecDistance('a', '2026-10-19', 'Run', 60, 10)], series: [{ date: '2026-10-20' }, { date: '2026-10-20' }] }, auj);
+  assert.deepEqual(metriqueSemaine(semaineDu(g, '2026-10-19')), { valeur: 10, unite: 'km' });
 });
 

@@ -64,6 +64,8 @@ export interface JourGrille {
   repos: boolean;
   /** Les cycles d'entraînement qui couvrent le jour (deux au plus : la limite de l'app et de la base), le plus ancien d'abord. */
   cycles: Cycle[];
+  /** Le nombre de séries de force faites ce jour-là (le carnet de force). */
+  series: number;
 }
 
 export function grilleMois(
@@ -76,7 +78,8 @@ export function grilleMois(
     notes = [],
     repos = [],
     cycles = [],
-  }: { seances?: Seance[]; planifiees?: Prevue[]; objectifs?: (Objectif | Prevue)[]; notes?: Note[]; repos?: (string | { iso_date: string })[]; cycles?: Cycle[] } = {},
+    series = [],
+  }: { seances?: Seance[]; planifiees?: Prevue[]; objectifs?: (Objectif | Prevue)[]; notes?: Note[]; repos?: (string | { iso_date: string })[]; cycles?: Cycle[]; series?: { date: string }[] } = {},
   aujourdhui: Date = new Date(),
 ): { titre: string; semaines: JourGrille[][] } {
   const { debut } = bornesGrille(annee, mois);
@@ -95,6 +98,8 @@ export function grilleMois(
   const parPlan = range(planifiees, (p) => p.date);
   const parObjectif = range(objectifs, (o) => o.date);
   const jourDeRepos = new Set(repos.map((r) => iso10(typeof r === 'string' ? r : r.iso_date)));
+  const seriesParJour = new Map<string, number>();
+  for (const x of series) seriesParJour.set(iso10(x.date), (seriesParJour.get(iso10(x.date)) ?? 0) + 1);
 
   const semaines: JourGrille[][] = [];
   const curseur = new Date(`${debut}T12:00:00`);
@@ -114,6 +119,7 @@ export function grilleMois(
         notes: notes.filter((n) => String(n.from_date) <= iso && iso <= String(n.to_date)),
         repos: jourDeRepos.has(iso),
         cycles: cyclesDuJour(cycles, iso),
+        series: seriesParJour.get(iso) ?? 0,
       });
       curseur.setDate(curseur.getDate() + 1);
     }
@@ -211,5 +217,35 @@ export function profilSemaine(semaine: JourGrille[]): JourProfil[] {
     const sport = dominanteFaite?.sport ?? dominantePrevue?.sport;
     return { iso: j.iso, secondes: secondesJour(j), famille: sport ? familleAffichage(sport) : null, fait: faites.length > 0 };
   });
+}
+
+/** Les kilomètres d'un jour : ceux des séances faites et ceux des séances prévues (hors compétitions). */
+export const kmJour = (j: JourGrille): number =>
+  j.seances.reduce((t, s) => t + (Number(s.distance_km) > 0 ? Number(s.distance_km) : 0), 0) + j.planifiees.reduce((t, x) => t + (Number(x.km) > 0 ? Number(x.km) : 0), 0);
+
+/** Le dénivelé positif d'un jour, en mètres : celui des séances faites et celui des séances prévues qui en ont un. */
+export const denivJour = (j: JourGrille): number =>
+  j.seances.reduce((t, s) => t + (Number(s.total_elevation_gain) > 0 ? Number(s.total_elevation_gain) : 0), 0) + j.planifiees.reduce((t, x) => t + (Number(x.d_plus) > 0 ? Number(x.d_plus) : 0), 0);
+
+export type UniteSemaine = 'km' | 'series' | 'dplus' | 'h';
+
+export interface MetriqueSemaine {
+  valeur: number;
+  unite: UniteSemaine;
+}
+
+/**
+ * Le chiffre qui résume une semaine, choisi selon ce qu'elle contient : les kilomètres quand il y en a (course, vélo, natation, ski…), sinon le nombre de séries
+ * de force (musculation), sinon le dénivelé, sinon les heures. Le fait et le prévu comptent ensemble, comme pour les heures.
+ */
+export function metriqueSemaine(semaine: JourGrille[]): MetriqueSemaine {
+  const km = semaine.reduce((t, j) => t + kmJour(j), 0);
+  if (km > 0) return { valeur: Math.round(km * 10) / 10, unite: 'km' };
+  const series = semaine.reduce((t, j) => t + j.series, 0);
+  if (series > 0) return { valeur: series, unite: 'series' };
+  const deniv = semaine.reduce((t, j) => t + denivJour(j), 0);
+  if (deniv > 0) return { valeur: Math.round(deniv), unite: 'dplus' };
+  const secondes = semaine.reduce((t, j) => t + secondesJour(j), 0);
+  return { valeur: Math.round((secondes / 3600) * 10) / 10, unite: 'h' };
 }
 

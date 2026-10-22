@@ -510,6 +510,12 @@ export async function supprimerMesureSante(userId: string, date: string, metric:
   return { erreur: '' };
 }
 
+/** Les séries de force faites sur une période (seulement leur date : le calendrier n'en compte que le nombre par jour). */
+export async function chargerSeriesPeriode(userId: string, debutIso: string, finIso: string): Promise<Resultat<{ date: string }[]>> {
+  const r = await sb.from('strength_sets').select('date').eq('user_id', userId).gte('date', debutIso).lte('date', finIso).limit(3000);
+  return resultat(r, 'Impossible de charger tes séries de force.');
+}
+
 // --- Cycles d'entraînement (table training_cycles) : lecture et écriture ---------------------------------------------------------------
 // La RLS limite chacun à ses lignes ; on filtre quand même par user_id. La base refuse un troisième cycle le même jour (code 23514).
 const COLONNES_CYCLE = 'id,name,from_date,to_date,color';

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { donneesDemoAccueil } from '@/data/accueil';
-import { chargerAnnotations, chargerCycles, chargerPlanifiees, chargerSeancesPeriode } from '@/data/api';
+import { chargerAnnotations, chargerCycles, chargerPlanifiees, chargerSeancesPeriode, chargerSeriesPeriode } from '@/data/api';
 import { bornesGrille } from '@/data/calendrier';
-import { annotationsDemo } from '@/data/demo';
+import { annotationsDemo, seriesForceDemo } from '@/data/demo';
 import { useAuth } from '@/stores/auth';
 import { cyclesDemo, useVersionCycles } from '@/stores/cycles';
 import type { Cycle, Note, Prevue, Seance } from '@/data/types';
@@ -14,9 +14,11 @@ export interface DonneesCalendrier {
   notes: Note[];
   repos: string[];
   cycles: Cycle[];
+  /** Les séries de force du mois (leur date seulement) : le calendrier en compte le nombre par jour. */
+  series: { date: string }[];
 }
 
-const vide: DonneesCalendrier = { seances: [], planifiees: [], objectifs: [], notes: [], repos: [], cycles: [] };
+const vide: DonneesCalendrier = { seances: [], planifiees: [], objectifs: [], notes: [], repos: [], cycles: [], series: [] };
 
 // Les données d'un mois affiché (la grille déborde sur les mois voisins) : la démo ou le compte connecté (lecture seule).
 export function useDonneesCalendrier(annee: number, mois: number): {
@@ -46,6 +48,7 @@ export function useDonneesCalendrier(annee: number, mois: number): {
       notes: a.notes.filter((n) => n.from_date <= fin && n.to_date >= debut),
       repos: a.repos.filter((r) => dans(r)),
       cycles: cyclesDemo().filter((c) => c.from_date <= fin && c.to_date >= debut),
+      series: seriesForceDemo(maintenant).filter((x) => dans(String(x.date).slice(0, 10))).map((x) => ({ date: x.date })),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [demo, debut, fin, version]);
@@ -57,7 +60,7 @@ export function useDonneesCalendrier(annee: number, mois: number): {
   const charger = useCallback(async () => {
     if (!userId) return;
     const numero = ++numeroRequete.current;
-    const [s, p, a, c] = await Promise.all([chargerSeancesPeriode(userId, debut, fin), chargerPlanifiees(userId, debut, fin), chargerAnnotations(userId, debut, fin), chargerCycles(userId, debut, fin)]);
+    const [s, p, a, c, f] = await Promise.all([chargerSeancesPeriode(userId, debut, fin), chargerPlanifiees(userId, debut, fin), chargerAnnotations(userId, debut, fin), chargerCycles(userId, debut, fin), chargerSeriesPeriode(userId, debut, fin)]);
     if (numero !== numeroRequete.current) return; // une requête plus récente a pris le relais (on a changé de mois entre-temps)
     const prevues = p.data ?? [];
     setReel({
@@ -70,6 +73,8 @@ export function useDonneesCalendrier(annee: number, mois: number): {
         repos: a.data?.repos ?? [],
         // Des cycles qui ne se chargent pas (table pas encore créée…) ne gênent pas le calendrier : il s'affiche sans bandes
         cycles: c.data ?? [],
+        // Des séries qui ne se chargent pas ne gênent pas non plus : le calendrier retombe sur les heures
+        series: f.data ?? [],
       },
       erreur: s.erreur || p.erreur || a.erreur,
     });
