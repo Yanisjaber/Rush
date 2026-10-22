@@ -9,10 +9,10 @@ import { BarreSports } from '@/components/BarreSports';
 import { Bloc } from '@/components/Bloc';
 import { Bouton } from '@/components/Bouton';
 import { SelecteurMois } from '@/components/SelecteurMois';
-import { chargeJour, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
+import { chargeJour, chargeSeance, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
 import { couleurNote, libelleNote } from '@/data/annotations';
 import { familleAffichage, garderSeance } from '@/data/familles';
-import { dateIsoLocale, formatDuree, formatHeuresMinutes } from '@/data/format';
+import { dateIsoLocale, formatDuree, formatHeuresMinutes, formatKm } from '@/data/format';
 import { useDonneesCalendrier } from '@/hooks/useDonneesCalendrier';
 import { useMenu } from '@/stores/menu';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
@@ -309,7 +309,11 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
   );
 }
 
-const courteDate = (iso: string) => new Date(`${String(iso).slice(0, 10)}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+// « 08:10 » depuis la date locale d'une séance ; rien si elle n'a pas d'heure (minuit = saisie sans heure)
+const heureDe = (iso: string | null | undefined): string => {
+  const h = String(iso ?? '').slice(11, 16);
+  return /^\d\d:\d\d$/.test(h) && h !== '00:00' ? h : '';
+};
 const HAUTEUR_PROFIL = 22;
 
 // Les deux infos de la colonne de la semaine : le temps (toujours) et, pour un sport choisi, son info principale (voir METRIQUE_DU_SPORT : kilomètres, séries, dénivelé)
@@ -369,97 +373,107 @@ function ProfilSemaine({ semaine, maxi, mono, filtre }: { semaine: JourGrille[];
 function Detail({ jour }: { jour: JourGrille }) {
   const router = useRouter();
   const p = usePalette();
-  // « 2h14 faites · 110 pts · 54 min prévues » : ce que le jour pèse, d'un coup d'œil
+  // Ce que le jour pèse, d'un coup d'œil : temps fait, charge, temps prévu (en pastilles, comme le haut du calendrier)
   const faites = jour.seances.reduce((t, s) => t + (s.moving_time || 0), 0);
   const prevues = jour.planifiees.reduce((t, x) => t + (Number(x.duration) > 0 ? Number(x.duration) * 60 : 0), 0);
-  const morceaux = [faites ? `${formatDuree(faites)} faites · ${chargeJour(jour)} pts` : '', prevues ? `${formatDuree(prevues)} prévues` : ''].filter(Boolean);
-  const resume = morceaux.length ? { texte: morceaux.join(' · '), etiquette: morceaux.join(', ').replace('pts', 'points de charge') } : null;
+  const pastilles = [
+    faites ? { valeur: formatDuree(faites), unite: 'faites', dit: `${formatDuree(faites)} faites` } : null,
+    faites ? { valeur: String(chargeJour(jour)), unite: 'pts', dit: `${chargeJour(jour)} points de charge` } : null,
+    prevues ? { valeur: formatDuree(prevues), unite: 'prévues', dit: `${formatDuree(prevues)} prévues` } : null,
+  ].filter((x): x is { valeur: string; unite: string; dit: string } => x !== null);
   return (
-    <Bloc titre={dateLongue(jour.iso)}>
-      {resume ? (
-        <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 8 }]} accessibilityLabel={resume.etiquette}>
-          {resume.texte}
+    <Bloc>
+      <View style={styles.detailTete}>
+        <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
+          {dateLongue(jour.iso)}
         </Text>
-      ) : null}
-      {jour.cycles.length ? (
-        <View style={{ gap: 4, marginBottom: 8 }}>
-          {jour.cycles.map((c) => (
-            <Pressable
-              key={c.id}
-              onPress={() => router.push({ pathname: '/cycle', params: { id: c.id } })}
-              accessibilityRole="button"
-              accessibilityLabel={`Cycle ${c.name}, du ${courteDate(c.from_date)} au ${courteDate(c.to_date)}`}
-              style={styles.cycleLigne}
-            >
-              <View style={[styles.cycleBande, { backgroundColor: couleurNote(c.color) }]} />
-              <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flexShrink: 1 }]}>
-                {c.name}
+        <Pressable
+          onPress={() => bientot('La planification de séance')}
+          accessibilityRole="button"
+          accessibilityLabel="Planifier une séance"
+          style={[styles.detailPlus, { backgroundColor: p.texte }]}
+        >
+          <Text style={[styles.detailPlusTexte, { color: p.fond }]}>+</Text>
+        </Pressable>
+      </View>
+      {pastilles.length ? (
+        <View style={styles.detailPastilles}>
+          {pastilles.map((x) => (
+            <View key={x.unite} accessible accessibilityLabel={x.dit} style={[styles.detailPastille, { backgroundColor: p.surface2 }]}>
+              <Text style={[styles.detailPastilleValeur, { color: p.texte }]}>
+                {x.valeur}
+                <Text style={[styles.carteUnite, { color: p.texteDoux }]}> {x.unite}</Text>
               </Text>
-              <Text style={[typo.petit, { color: p.texteDoux }]}>
-                {courteDate(c.from_date)} – {courteDate(c.to_date)}
-              </Text>
-            </Pressable>
+            </View>
           ))}
         </View>
       ) : null}
       {jourVide(jour) ? (
         <Text style={[styles.tiret, { color: p.texteMuet }]}>—</Text>
       ) : (
-        <View style={{ gap: 8 }}>
+        <View>
           {jour.objectifs.map((o) => (
-            <View key={o.id} accessible accessibilityLabel={`Compétition : ${o.name}`} style={[styles.objectif, { backgroundColor: p.dossardFond }]}>
+            <View key={o.id} accessible accessibilityLabel={`Compétition : ${o.name}`} style={[styles.objectif, { backgroundColor: p.dossardFond, marginTop: 8 }]}>
               <Text numberOfLines={1} style={[styles.objectifTexte, { color: p.dossardTexte }]}>
                 {o.name}
               </Text>
             </View>
           ))}
           {jour.repos ? (
-            <View style={[styles.etiquette, { borderColor: p.traitFort }]}>
+            <View style={[styles.etiquette, { borderColor: p.traitFort, marginTop: 8 }]}>
               <Text style={[typo.petit, { color: p.texteDoux }]}>Repos</Text>
             </View>
           ) : null}
           {jour.notes.map((n) => (
-            <View key={n.id} style={[styles.note, { borderLeftColor: couleurNote(n.color), backgroundColor: p.surface2 }]}>
+            <View key={n.id} style={[styles.note, { borderLeftColor: couleurNote(n.color), backgroundColor: p.surface2, marginTop: 8 }]}>
               <Text numberOfLines={2} style={[typo.petit, { color: p.texte }]}>
                 {libelleNote(n)}
               </Text>
             </View>
           ))}
-          {jour.seances.map((s) => (
-            <Pressable
-              key={s.id}
-              onPress={() => router.push({ pathname: '/seance', params: { id: s.id } })}
-              accessibilityRole="button"
-              accessibilityLabel={`${s.name || nomSport(s.sport)}, ${formatDuree(s.moving_time)}`}
-              style={[styles.seance, { backgroundColor: couleurSport(p, familleAffichage(s.sport)) }]}
-            >
-              <Text numberOfLines={1} style={[typo.corpsFort, { color: p.encreSurCouleur, flex: 1 }]}>
-                {s.name || nomSport(s.sport)}
-              </Text>
-              <Text style={[typo.corpsFort, { color: p.encreSurCouleur }]}>{formatDuree(s.moving_time)}</Text>
-            </Pressable>
-          ))}
-          {jour.planifiees.map((x) => (
-            <Pressable
-              key={x.id}
-              onPress={() => bientot('La modification de séance prévue')}
-              accessibilityRole="button"
-              accessibilityLabel={`Séance prévue : ${x.name || nomSport(x.sport)}`}
-              style={[styles.seance, { borderColor: couleurSport(p, familleAffichage(x.sport)), borderWidth: 2, borderStyle: 'dashed' }]}
-            >
-              <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>
-                {x.name || nomSport(x.sport)}
-              </Text>
-              {x.duration ? <Text style={[typo.corpsFort, { color: p.texteDoux }]}>{formatDuree(x.duration * 60)}</Text> : null}
-            </Pressable>
-          ))}
+          {jour.seances.map((s) => {
+            const nom = s.name || nomSport(s.sport);
+            const detail = [Number(s.distance_km) > 0 ? `${formatKm(s.distance_km)} km` : '', `${chargeSeance(s)} pts`, heureDe(s.start_date_local)].filter(Boolean).join(' · ');
+            return (
+              <Pressable
+                key={s.id}
+                onPress={() => router.push({ pathname: '/seance', params: { id: s.id } })}
+                accessibilityRole="button"
+                accessibilityLabel={`${nom}, ${formatDuree(s.moving_time)}`}
+                style={[styles.ligneSeance, { borderTopColor: p.trait }]}
+              >
+                <View style={[styles.ligneBarre, { backgroundColor: couleurSport(p, familleAffichage(s.sport)) }]} />
+                <View style={{ flex: 1 }}>
+                  <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte }]}>{nom}</Text>
+                  <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>{detail}</Text>
+                </View>
+                <Text style={[typo.corpsFort, { color: p.texte }]}>{formatDuree(s.moving_time)}</Text>
+              </Pressable>
+            );
+          })}
+          {jour.planifiees.map((x) => {
+            const nom = x.name || nomSport(x.sport);
+            const couleur = couleurSport(p, familleAffichage(x.sport));
+            const detail = ['Prévue', Number(x.km) > 0 ? `${formatKm(x.km)} km` : ''].filter(Boolean).join(' · ');
+            return (
+              <Pressable
+                key={x.id}
+                onPress={() => bientot('La modification de séance prévue')}
+                accessibilityRole="button"
+                accessibilityLabel={`Séance prévue : ${nom}`}
+                style={[styles.ligneSeance, { borderTopColor: p.trait }]}
+              >
+                <View style={[styles.ligneBarre, { borderColor: couleur, borderWidth: 2, borderStyle: 'dashed' }]} />
+                <View style={{ flex: 1 }}>
+                  <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte }]}>{nom}</Text>
+                  <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>{detail}</Text>
+                </View>
+                {x.duration ? <Text style={[typo.corpsFort, { color: p.texteDoux }]}>{formatDuree(x.duration * 60)}</Text> : null}
+              </Pressable>
+            );
+          })}
         </View>
       )}
-      <View style={{ marginTop: 12 }}>
-        <Bouton variante="discret" onPress={() => bientot('La planification de séance')}>
-          + Planifier une séance
-        </Bouton>
-      </View>
     </Bloc>
   );
 }
@@ -482,8 +496,6 @@ const styles = StyleSheet.create({
   carteSerree: { paddingHorizontal: 11 },
   carteUnite: { fontFamily: police.texte600, fontSize: 11, letterSpacing: 0 },
   carteValeur: { fontFamily: police.titre800, fontSize: 18, lineHeight: 22, letterSpacing: -0.2, fontVariant: ['tabular-nums'] },
-  cycleLigne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
-  cycleBande: { width: 6, height: 26, borderRadius: 3 },
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
   grille: { borderRadius: rayon.bloc, paddingHorizontal: 8, paddingVertical: 10, gap: 4, overflow: 'hidden' },
@@ -517,6 +529,15 @@ const styles = StyleSheet.create({
   bande: { height: 4 },
   barre: { width: 10, height: 3, borderRadius: 2 },
   plus: { fontSize: 10, lineHeight: 10, fontFamily: police.texte600 },
+  detailTete: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  detailPlus: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  detailPlusTexte: { fontFamily: police.titre800, fontSize: 26, lineHeight: 30 },
+  detailPastilles: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4, marginBottom: 6 },
+  detailPastille: { height: 28, borderRadius: rayon.rond, paddingHorizontal: 11, justifyContent: 'center' },
+  detailPastilleValeur: { fontFamily: police.titre800, fontSize: 13, lineHeight: 16 },
+  // Une séance du jour : une barre de la couleur du sport (en pointillés si elle est prévue), son nom et ses détails, sa durée à droite
+  ligneSeance: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, borderTopWidth: 1 },
+  ligneBarre: { width: 6, alignSelf: 'stretch', marginVertical: 8, borderRadius: 3 },
   tiret: { fontSize: 28, lineHeight: 32 },
   seance: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, borderRadius: rayon.base, paddingHorizontal: 14 },
   objectif: { borderRadius: rayon.base, paddingHorizontal: 12, paddingVertical: 8 },
