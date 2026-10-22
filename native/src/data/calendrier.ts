@@ -2,7 +2,7 @@
 // et y range les séances réalisées, les séances prévues et les objectifs.
 import { familleAffichage } from './familles.ts';
 import { dateIsoLocale } from './format.ts';
-import type { Note, Objectif, Prevue, Seance } from './types.ts';
+import type { Cycle, Note, Objectif, Prevue, Seance } from './types.ts';
 
 const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 export const JOURS_SEMAINE = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
@@ -14,6 +14,14 @@ function lundiDe(d: Date): Date {
   const x = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
   x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
   return x;
+}
+
+/** Les cycles qui couvrent un jour (dates incluses), le plus ancien d'abord ; deux au plus, comme la base le garantit. */
+export function cyclesDuJour(cycles: Cycle[], iso: string): Cycle[] {
+  return cycles
+    .filter((c) => String(c.from_date).slice(0, 10) <= iso && iso <= String(c.to_date).slice(0, 10))
+    .sort((a, b) => String(a.from_date).localeCompare(String(b.from_date)) || a.id.localeCompare(b.id))
+    .slice(0, 2);
 }
 
 /** Première et dernière date affichées pour un mois (la grille déborde sur les mois voisins). */
@@ -37,7 +45,7 @@ export function titreMois(annee: number, mois: number): string {
 
 /**
  * Grille d'un mois : { titre, semaines: [[jour × 7] × n] }.
- * jour : { iso, num, dansMois, aujourdhui, futur, seances, planifiees, objectifs, notes, repos }
+ * jour : { iso, num, dansMois, aujourdhui, futur, seances, planifiees, objectifs, notes, repos, cycles }
  *  - seances : séances réalisées (table activities)
  *  - planifiees : séances prévues (activity_planned, hors compétitions)
  *  - objectifs : compétitions (activity_planned, category = 'competition')
@@ -54,6 +62,8 @@ export interface JourGrille {
   objectifs: (Objectif | Prevue)[];
   notes: Note[];
   repos: boolean;
+  /** Les cycles d'entraînement qui couvrent le jour (deux au plus : la limite de l'app et de la base), le plus ancien d'abord. */
+  cycles: Cycle[];
 }
 
 export function grilleMois(
@@ -65,7 +75,8 @@ export function grilleMois(
     objectifs = [],
     notes = [],
     repos = [],
-  }: { seances?: Seance[]; planifiees?: Prevue[]; objectifs?: (Objectif | Prevue)[]; notes?: Note[]; repos?: (string | { iso_date: string })[] } = {},
+    cycles = [],
+  }: { seances?: Seance[]; planifiees?: Prevue[]; objectifs?: (Objectif | Prevue)[]; notes?: Note[]; repos?: (string | { iso_date: string })[]; cycles?: Cycle[] } = {},
   aujourdhui: Date = new Date(),
 ): { titre: string; semaines: JourGrille[][] } {
   const { debut } = bornesGrille(annee, mois);
@@ -102,6 +113,7 @@ export function grilleMois(
         objectifs: parObjectif.get(iso) || [],
         notes: notes.filter((n) => String(n.from_date) <= iso && iso <= String(n.to_date)),
         repos: jourDeRepos.has(iso),
+        cycles: cyclesDuJour(cycles, iso),
       });
       curseur.setDate(curseur.getDate() + 1);
     }

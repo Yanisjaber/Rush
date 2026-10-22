@@ -42,6 +42,16 @@ export interface Tour {
   distance: number;
 }
 
+/** Un cycle d'entraînement (table training_cycles) : une période que l'utilisateur nomme et colore (« Bloc force », « Affûtage »…). Dates incluses. */
+export interface Cycle {
+  id: string;
+  name: string;
+  from_date: string;
+  to_date: string;
+  /** #rrggbb */
+  color: string;
+}
+
 /** Une séance prévue ou une compétition (table activity_planned). */
 export interface Prevue {
   id: string;

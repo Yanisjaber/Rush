@@ -1,0 +1,74 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { COULEURS_CYCLE, joursDuCycle, validerCycle, type FormulaireCycle } from '../src/data/cycles.ts';
+import { cyclesDuJour, grilleMois } from '../src/data/calendrier.ts';
+import type { Cycle } from '../src/data/types.ts';
+
+const cycle = (id: string, de: string, a: string, couleur = '#e0a458'): Cycle => ({ id, name: id, from_date: de, to_date: a, color: couleur });
+const form = (extra: Partial<FormulaireCycle> = {}): FormulaireCycle => ({ name: 'Bloc force', from_date: '2026-10-05', to_date: '2026-10-25', color: '#e0a458', ...extra });
+
+test('COULEURS_CYCLE : huit couleurs #rrggbb, toutes différentes', () => {
+  assert.equal(COULEURS_CYCLE.length, 8);
+  assert.equal(new Set(COULEURS_CYCLE.map((c) => c.hex)).size, 8);
+  for (const c of COULEURS_CYCLE) assert.match(c.hex, /^#[0-9a-f]{6}$/);
+});
+
+test('joursDuCycle : bornes incluses', () => {
+  assert.equal(joursDuCycle(cycle('a', '2026-10-05', '2026-10-05')), 1);
+  assert.equal(joursDuCycle(cycle('a', '2026-10-05', '2026-10-25')), 21);
+  assert.equal(joursDuCycle(cycle('a', '2026-12-30', '2027-01-02')), 4); // à cheval sur deux années
+});
+
+test('validerCycle : un cycle valide est nettoyé (espaces)', () => {
+  const r = validerCycle(form({ name: '  Bloc   force  ' }), []);
+  assert.equal(r.ok, true);
+  assert.equal(r.ok && r.valeur.name, 'Bloc force');
+});
+
+test('validerCycle : nom, dates et couleur', () => {
+  const erreur = (f: FormulaireCycle) => { const r = validerCycle(f, []); return r.ok ? '' : r.erreur; };
+  assert.match(erreur(form({ name: '   ' })), /nom/);
+  assert.match(erreur(form({ name: 'x'.repeat(61) })), /trop long/);
+  assert.match(erreur(form({ from_date: '' })), /début/);
+  assert.match(erreur(form({ to_date: '2026-13-40' })), /début/); // une date qui n'existe pas
+  assert.match(erreur(form({ from_date: '2026-10-10', to_date: '2026-10-09' })), /avant le début/);
+  assert.match(erreur(form({ from_date: '2026-01-01', to_date: '2027-01-02' })), /366 jours/);
+  assert.equal(validerCycle(form({ from_date: '2026-01-01', to_date: '2027-01-01' }), []).ok, true); // 366 jours pile
+  assert.match(erreur(form({ color: 'rouge' })), /couleur/);
+  assert.match(erreur(form({ color: '#ff5a4f; drop' })), /couleur/);
+});
+
+test('validerCycle : deux cycles le même jour sont permis, un troisième est refusé avec les noms des deux autres', () => {
+  const deux = [cycle('Force', '2026-10-05', '2026-10-25'), cycle('Hyrox', '2026-10-15', '2026-11-18')];
+  assert.equal(validerCycle(form({ from_date: '2026-10-01', to_date: '2026-10-14' }), deux).ok, true); // ne touche que « Force »
+  assert.equal(validerCycle(form({ from_date: '2026-11-19', to_date: '2026-12-01' }), deux).ok, true); // après les deux
+  const r = validerCycle(form({ from_date: '2026-10-20', to_date: '2026-10-22' }), deux);
+  assert.equal(r.ok, false);
+  assert.match(r.ok ? '' : r.erreur, /20 octobre.*« Force » et « Hyrox »/);
+  // Un seul jour de chevauchement suffit à refuser
+  assert.equal(validerCycle(form({ from_date: '2026-10-25', to_date: '2026-10-30' }), deux).ok, false);
+});
+
+test('validerCycle : en modifiant un cycle, il ne se compte pas lui-même', () => {
+  const trois = [cycle('A', '2026-10-05', '2026-10-25'), cycle('B', '2026-10-15', '2026-11-18')];
+  assert.equal(validerCycle(form({ from_date: '2026-10-05', to_date: '2026-10-24' }), trois, 'A').ok, true); // raccourcir A
+  assert.equal(validerCycle(form({ from_date: '2026-10-05', to_date: '2026-10-24' }), trois).ok, false); // les mêmes dates, mais comme NOUVEAU cycle : un 3e du 15 au 24, refusé
+  assert.equal(validerCycle(form({ from_date: '2026-10-16', to_date: '2026-10-24' }), [...trois, cycle('C', '2026-10-10', '2026-10-30')], 'A').ok, false); // B et C couvrent déjà ces jours
+});
+
+test('cyclesDuJour : dates incluses, le plus ancien d\'abord, deux au plus', () => {
+  const liste = [cycle('B', '2026-10-15', '2026-11-18'), cycle('A', '2026-10-05', '2026-10-25'), cycle('C', '2026-10-01', '2026-10-31')];
+  assert.deepEqual(cyclesDuJour(liste, '2026-10-20').map((c) => c.id), ['C', 'A']); // trois couvrent le jour : on n'en garde que deux
+  assert.deepEqual(cyclesDuJour(liste, '2026-10-05').map((c) => c.id), ['C', 'A']);
+  assert.deepEqual(cyclesDuJour(liste, '2026-11-18').map((c) => c.id), ['B']);
+  assert.deepEqual(cyclesDuJour(liste, '2026-11-19'), []);
+});
+
+test('grilleMois : chaque jour reçoit ses cycles', () => {
+  const g = grilleMois(2026, 9, { cycles: [cycle('A', '2026-10-05', '2026-10-25'), cycle('B', '2026-10-15', '2026-11-18')] }, new Date(2026, 9, 19));
+  const jour = (iso: string) => g.semaines.flat().find((j) => j.iso === iso)!;
+  assert.equal(jour('2026-10-04').cycles.length, 0);
+  assert.deepEqual(jour('2026-10-10').cycles.map((c) => c.id), ['A']);
+  assert.deepEqual(jour('2026-10-20').cycles.map((c) => c.id), ['A', 'B']);
+  assert.deepEqual(jour('2026-10-31').cycles.map((c) => c.id), ['B']);
+});
