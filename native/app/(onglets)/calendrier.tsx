@@ -2,6 +2,7 @@ import { FondDegrade } from '@/components/FondDegrade';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Svg, { Ellipse, Line, Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
@@ -20,7 +21,8 @@ import { usePalette } from '@/theme/usePalette';
 
 const nomSport = (sport: string) => SPORTS[familleAffichage(sport) as CleSport]?.court ?? SPORTS.autre.court;
 const BARRE_ONGLETS = 72;
-const MAX_POINTS = 3;
+// Jusqu'à 5 séances se voient d'un coup d'œil sur un jour (un point chacune) : au-delà, un « + »
+const MAX_POINTS = 5;
 const dateLongue = (iso: string) => {
   const t = new Date(`${iso}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   return t.charAt(0).toUpperCase() + t.slice(1);
@@ -174,14 +176,29 @@ function Chiffre({ valeur, unite }: { valeur: string; unite?: string }) {
   );
 }
 
-// Les marques d'un jour (au plus trois points) : séance faite = point plein de la couleur du sport, prévue = contour, compétition = carré, note ou maladie = barre
-function marquesDe(j: JourGrille): { cle: string; type: 'fait' | 'prevu' | 'objectif' | 'note'; couleur?: string }[] {
+// Les marques d'un jour (au plus cinq points) : séance faite = point plein de la couleur du sport, prévue = contour, compétition = carré.
+// Une note n'est pas un point : elle a son petit parchemin dans le coin de la case (voir Parchemin).
+function marquesDe(j: JourGrille): { cle: string; type: 'fait' | 'prevu' | 'objectif'; couleur?: string }[] {
   return [
     ...j.objectifs.map((o) => ({ cle: `o${o.id}`, type: 'objectif' as const })),
     ...j.seances.map((s) => ({ cle: `s${s.id}`, type: 'fait' as const, couleur: familleAffichage(s.sport) })),
     ...j.planifiees.map((x) => ({ cle: `p${x.id}`, type: 'prevu' as const, couleur: familleAffichage(x.sport) })),
-    ...j.notes.map((n) => ({ cle: `n${n.id}`, type: 'note' as const, couleur: n.color as string })),
   ];
+}
+
+// Un petit parchemin pour dire « il y a une note sur ce jour » : une feuille crème dont les deux bouts roulés ont la couleur de la note (orange pour une blessure…)
+function Parchemin({ couleur }: { couleur: string }) {
+  const papier = '#f3ead2';
+  const encre = '#6b5a3a';
+  return (
+    <Svg width={16} height={16} viewBox="0 0 16 16" accessible={false}>
+      <Path d="M3.2 3.5h9.6v9H3.2z" fill={papier} />
+      <Ellipse cx={8} cy={3.4} rx={5.6} ry={2} fill={couleur} stroke={encre} strokeWidth={0.7} />
+      <Ellipse cx={8} cy={12.6} rx={5.6} ry={2} fill={couleur} stroke={encre} strokeWidth={0.7} />
+      <Line x1={5.4} y1={6.6} x2={10.6} y2={6.6} stroke={encre} strokeWidth={0.9} strokeLinecap="round" />
+      <Line x1={5.4} y1={8.9} x2={9.2} y2={8.9} stroke={encre} strokeWidth={0.9} strokeLinecap="round" />
+    </Svg>
+  );
 }
 
 function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; onPress: () => void }) {
@@ -207,6 +224,11 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
       accessibilityLabel={label}
       style={[styles.case, fond ? { backgroundColor: fond } : null, choisi && { borderColor: p.texte, borderWidth: 2 }]}
     >
+      {jour.notes.length ? (
+        <View style={styles.coin} pointerEvents="none">
+          <Parchemin couleur={couleurNote(jour.notes[0].color)} />
+        </View>
+      ) : null}
       <View style={[styles.numero, jour.aujourdhui && { backgroundColor: p.texte }]}>
         <Text style={[styles.numeroTexte, { color: jour.aujourdhui ? p.fond : jour.futur ? p.texteDoux : p.texte }]}>{jour.num}</Text>
       </View>
@@ -216,10 +238,8 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
             <View key={m.cle} style={[styles.point, { backgroundColor: couleurSport(p, m.couleur) }]} />
           ) : m.type === 'prevu' ? (
             <View key={m.cle} style={[styles.point, { borderColor: couleurSport(p, m.couleur), borderWidth: 1.5 }]} />
-          ) : m.type === 'objectif' ? (
-            <View key={m.cle} style={[styles.carre, { backgroundColor: p.dossardFond, borderColor: p.texte }]} />
           ) : (
-            <View key={m.cle} style={[styles.barre, { backgroundColor: couleurNote(m.couleur) }]} />
+            <View key={m.cle} style={[styles.carre, { backgroundColor: p.dossardFond, borderColor: p.texte }]} />
           ),
         )}
         {jour.repos && !marques.length ? <View style={[styles.barre, { backgroundColor: p.traitFort }]} /> : null}
@@ -357,9 +377,10 @@ const styles = StyleSheet.create({
   case: { width: `${100 / 7}%`, minHeight: 58, alignItems: 'center', paddingTop: 4, borderRadius: rayon.base, borderWidth: 1, borderColor: 'transparent', gap: 4 },
   numero: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   numeroTexte: { fontFamily: police.titre700, fontSize: 16, lineHeight: 20, fontVariant: ['tabular-nums'] },
-  points: { flexDirection: 'row', alignItems: 'center', gap: 3, minHeight: 10 },
-  point: { width: 8, height: 8, borderRadius: 4 },
-  carre: { width: 8, height: 8, borderRadius: 2, borderWidth: 1 },
+  points: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 10 },
+  point: { width: 6, height: 6, borderRadius: 3 },
+  carre: { width: 6, height: 6, borderRadius: 1.5, borderWidth: 1 },
+  coin: { position: 'absolute', top: 1, right: 1 },
   barre: { width: 10, height: 3, borderRadius: 2 },
   plus: { fontSize: 10, lineHeight: 10, fontFamily: police.texte600 },
   tiret: { fontSize: 28, lineHeight: 32 },
