@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compositionAuto, compositionSport, composerOnglet, estPertinent, existe, normaliserListe, ORDRE_ONGLET, TAILLES, WIDGETS } from '../src/data/registre.ts';
+import { compositionAuto, compositionSport, composerOnglet, estPertinent, existe, normaliserListe, ORDRE_ONGLET, TAILLES, TAILLES_ONGLET, WIDGETS } from '../src/data/registre.ts';
 import { construireContexte } from '../src/data/contexte.ts';
 import { donneesDemoAccueil } from '../src/data/accueil.ts';
 
@@ -102,6 +102,8 @@ test('compositionSport : chaque taille donnée est permise pour le widget', () =
 test('composerOnglet : Muscu et Hyrox ont leur composition fixe, en gardant la taille choisie', () => {
   const auto = compositionAuto(['muscu', 'hyrox']);
   assert.deepEqual(composerOnglet(auto, 'muscu').map((w) => w.id), [...ORDRE_ONGLET.muscu]);
+  // Muscu : les tailles par défaut sont celles de TAILLES_ONGLET, même si « Tous » en a d'autres
+  assert.deepEqual(composerOnglet(auto, 'muscu').map((w) => w.taille), ORDRE_ONGLET.muscu.map((id) => TAILLES_ONGLET.muscu[id]));
   assert.deepEqual(composerOnglet(auto, 'hyrox').map((w) => w.id), [...ORDRE_ONGLET.hyrox]);
 });
 

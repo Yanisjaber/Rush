@@ -260,6 +260,11 @@ export const ORDRE_ONGLET: Record<string, readonly string[]> = {
   hyrox: ['hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'semaine', 'chargeforce'],
 };
 
+/** Tailles par défaut d'un onglet (quand l'utilisateur n'a rien personnalisé) : elles passent avant celles de l'onglet « Tous ». Muscu : la disposition de Yanis. */
+export const TAILLES_ONGLET: Record<string, Readonly<Record<string, Taille>>> = {
+  muscu: { seancedujour: 'm', programmes: 'xs', tonnage: 's', regularite: 's', dernieres: 'xs', records: 'm', groupes: 's', chargemuscu: 's' },
+};
+
 /**
  * Les widgets « signature » de chaque sport : ceux qui disent le plus sur ce sport, du plus important au moins important.
  * Un coureur veut sa prédiction de temps et son allure, pas sa courbe de watts ; un cycliste l'inverse.
@@ -369,7 +374,7 @@ function tailleValide(id: string, souhaitee: Taille | undefined): Taille {
 }
 
 /**
- * Widgets d'un onglet de sport. Muscu et Hyrox : composition fixe (ORDRE_ONGLET), en gardant la taille choisie par l'utilisateur.
+ * Widgets d'un onglet de sport. Muscu et Hyrox : composition fixe (ORDRE_ONGLET) ; tailles : celles de TAILLES_ONGLET, sinon celles de l'onglet « Tous ».
  * Autres sports : les widgets de la disposition qui concernent ce sport, ceux du sport d'abord.
  */
 export function composerOnglet(widgets: WidgetPlace[], sport: string, onglets: Onglets | null = null): WidgetPlace[] {
@@ -378,7 +383,7 @@ export function composerOnglet(widgets: WidgetPlace[], sport: string, onglets: O
     const perso = onglets && Array.isArray(onglets[sport]) ? onglets[sport] : null;
     if (perso) return perso.map((w) => ({ ...w }));
     const tailles = new Map(widgets.map((w) => [w.id, w.taille]));
-    return ORDRE_ONGLET[sport].map((id) => ({ id, taille: tailleValide(id, tailles.get(id)) }));
+    return ORDRE_ONGLET[sport].map((id) => ({ id, taille: tailleValide(id, TAILLES_ONGLET[sport]?.[id] ?? tailles.get(id)) }));
   }
   const pertinents = widgets.filter((w) => estPertinent(w.id, [sport]));
   const universels = pertinents.filter((w) => definition(w.id).sports === 'tous');
