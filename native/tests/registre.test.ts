@@ -126,6 +126,11 @@ test('estPertinent : VTT voit les widgets de vélo ET de VTT, Vélo ne voit pas 
   assert.equal(estPertinent('vttterrain', ['course']), false);
 });
 
+test('estPertinent : CrossFit voit les widgets de CrossFit ET de musculation, Musculation ne voit pas ceux de CrossFit', () => {
+  assert.ok(estPertinent('cfmix', ['crossfit']) && estPertinent('records', ['crossfit']) && estPertinent('tonnage', ['crossfit']));
+  assert.equal(estPertinent('cfmix', ['muscu']), false);
+});
+
 test('estPertinent : Triathlon voit natation, vélo et course, Duathlon pas la natation', () => {
   for (const id of ['natvolume', 'puissance', 'predictions', 'tribricks']) assert.ok(estPertinent(id, ['triathlon']), `triathlon : ${id}`);
   assert.equal(estPertinent('natvolume', ['duathlon']), false);

@@ -517,7 +517,7 @@ export const ORDRE_ONGLET: Record<string, readonly string[]> = {
   hyrox: ['hyroxdossard', 'semaine', 'hyroxevolution', 'hyroxhebdo', 'hyroxtest', 'hyroxrunsstations', 'hyroxderive', 'hyroxallure', 'hyroxgains', 'chargeforce', 'dernieres'],
 };
 
-/** La liste par défaut d'un onglet de sport libre (Course, Trail, Vélo, VTT, Natation, Triathlon, Duathlon) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course et Vélo : les dispositions de Yanis ; Trail, VTT, Natation, Triathlon et Duathlon : pensées pour l'usage. */
+/** La liste par défaut d'un onglet de sport libre (Course, Trail, Vélo, VTT, Natation, Triathlon, Duathlon, CrossFit) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course et Vélo : les dispositions de Yanis ; Trail, VTT, Natation, Triathlon, Duathlon et CrossFit : pensées pour l'usage. */
 export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
   course: [
     { id: 'kmhebdo', taille: 'm' },
@@ -597,6 +597,20 @@ export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
     { id: 'forme', taille: 's' },
     { id: 'dernieres', taille: 'm' },
   ],
+  // CrossFit : la semaine en héros, puis le temps et l'intensité côte à côte, le mix force / WOD / endurance, les records de force, les séances marquantes, la charge
+  crossfit: [
+    { id: 'semaine', taille: 'm' },
+    { id: 'objectif', taille: 'xs' },
+    { id: 'cfhebdo', taille: 's' },
+    { id: 'cfintensite', taille: 's' },
+    { id: 'cfmix', taille: 'm' },
+    { id: 'records', taille: 'm' },
+    { id: 'cfmarquantes', taille: 'm' },
+    { id: 'charge', taille: 'm' },
+    { id: 'avenir', taille: 's' },
+    { id: 'forme', taille: 's' },
+    { id: 'dernieres', taille: 'm' },
+  ],
   velo: [
     { id: 'semaine', taille: 'm' },
     { id: 'forme', taille: 's' },
@@ -654,6 +668,7 @@ const SPORTS_VOISINS: Record<string, readonly string[]> = {
   triathlon: ['triathlon', 'natation', 'velo', 'course'],
   duathlon: ['duathlon', 'velo', 'course'],
   vtt: ['velo', 'vtt'],
+  crossfit: ['crossfit', 'muscu'],
 };
 
 /** Un widget est-il pertinent pour au moins un des sports de l'utilisateur ? */
@@ -661,7 +676,7 @@ export function estPertinent(id: string, familles: readonly string[]): boolean {
   if (!existe(id)) return false;
   const def = definition(id);
   if (def.sports === 'tous') return true;
-  // Un onglet Trail montre les widgets de course ET de trail, Triathlon et Duathlon ceux de leurs disciplines, VTT ceux du vélo ET ceux de VTT
+  // Un onglet Trail montre les widgets de course ET de trail, Triathlon et Duathlon ceux de leurs disciplines, VTT ceux du vélo ET de VTT, CrossFit ceux de CrossFit ET de musculation (records, tonnage…)
   const dessous = familles.flatMap((f) => SPORTS_VOISINS[f] ?? [familleDesWidgets(f)]);
   return def.sports.some((s) => dessous.includes(s));
 }
@@ -808,7 +823,7 @@ export function normaliser(brut: unknown): Disposition | null {
 }
 
 /** Les onglets de sport dont la bibliothèque reste ouverte : on peut y ajouter n'importe quel widget qui concerne le sport. */
-export const SPORTS_LIBRES: string[] = ['course', 'trail', 'velo', 'vtt', 'natation', 'triathlon', 'duathlon'];
+export const SPORTS_LIBRES: string[] = ['course', 'trail', 'velo', 'vtt', 'natation', 'triathlon', 'duathlon', 'crossfit'];
 /** Les onglets de sport qui ont leur propre composition modifiable (Muscu, Hyrox, et les sports libres). */
 export const ONGLETS_PERSONNALISABLES: string[] = [...Object.keys(ORDRE_ONGLET), ...SPORTS_LIBRES];
 /** Onglets dont la bibliothèque est limitée à leurs propres widgets (ceux de ORDRE_ONGLET). */
