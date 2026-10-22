@@ -45,7 +45,7 @@ test('fusionnerFamilles : données + sports choisis, sans doublon', () => {
   assert.deepEqual(fusionnerFamilles(['autre'], ['velo']), ['velo', 'autre']); // « Autres » est une pastille comme les autres
   assert.deepEqual(fusionnerFamilles([], ['constructor']), ['constructor']); // une clé inconnue n'est pas interprétée (le nettoyage en amont l'a déjà retirée)
   assert.deepEqual(fusionnerFamilles([], ['muscu']), ['muscu']);
-  assert.deepEqual(fusionnerFamilles(['autre'], null), []);
+  assert.deepEqual(fusionnerFamilles(['autre'], null), ['autre']);
   assert.deepEqual(fusionnerFamilles(), []);
 });
 
