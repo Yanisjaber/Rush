@@ -78,7 +78,7 @@
     const l = [{ etiquette: 'Durée', valeur: formatDuree(s.moving_time) }];
     if (s.distance_km) l.push({ etiquette: 'Distance', valeur: formatKm(s.distance_km), unite: 'km' });
     if (s.distance_km && s.moving_time) {
-      if (famille === 'course' || famille === 'trail') l.push({ etiquette: 'Allure', valeur: formatAllure(s.moving_time / s.distance_km).replace('/km', ''), unite: '/km' });
+      if (famille === 'course') l.push({ etiquette: 'Allure', valeur: formatAllure(s.moving_time / s.distance_km).replace('/km', ''), unite: '/km' });
       else l.push({ etiquette: 'Vitesse', valeur: formatKm((s.distance_km / s.moving_time) * 3600), unite: 'km/h' });
     }
     if (s.total_elevation_gain) l.push({ etiquette: 'Dénivelé +', valeur: String(s.total_elevation_gain), unite: 'm' });

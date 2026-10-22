@@ -5,11 +5,11 @@ import { validerPrevue, formulaireVide } from '../src/lib/data/prevue.js';
 
 const structure = [{ type: 'steady', name: 'Bloc', reps: 1, metric: 'power', unit: 'pct', work: { min: 60, int: 100, intHi: null } }];
 
-test('catégorie : vélo, VTT, course, trail, natation, muscu, autre', () => {
+test('catégorie : vélo (VTT compris), course (trail compris), natation, muscu, autre', () => {
   assert.equal(categorieDe('Ride'), 'cyclisme');
-  assert.equal(categorieDe('MountainBikeRide'), 'vtt');
+  assert.equal(categorieDe('MountainBikeRide'), 'cyclisme');
   assert.equal(categorieDe('Run'), 'course');
-  assert.equal(categorieDe('TrailRun'), 'trail');
+  assert.equal(categorieDe('TrailRun'), 'course');
   assert.equal(categorieDe('Swim'), 'natation');
   assert.equal(categorieDe('WeightTraining'), 'musculation');
   assert.equal(categorieDe('Yoga'), 'autre');
@@ -25,7 +25,7 @@ test('modèle → formulaire : champs repris, structure nettoyée, sport brut ou
   assert.equal(f.notes, 'Sur home-trainer');
   assert.equal(f.structure.length, 2);
   assert.equal(f.structure[1].type, 'steady'); // type inconnu ramené à un bloc continu : jamais de valeur dangereuse
-  assert.equal(formulaireDepuisModele({ name: 'x', sport: 'trail' }, '2026-10-20').sport, 'TrailRun');
+  assert.equal(formulaireDepuisModele({ name: 'x', sport: 'course' }, '2026-10-20').sport, 'Run');
   assert.equal(formulaireDepuisModele({ name: 'x', sport: 'bizarre', sport_raw: 'Piratage' }, '2026-10-20').sport, 'Other');
 });
 

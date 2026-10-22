@@ -5,7 +5,7 @@
 export const SPORTS_PRINCIPAUX = ['course', 'velo', 'natation', 'muscu', 'hyrox'];
 
 /** Les autres sports de performance : ils ont leur pastille de couleur et leurs séances, sans widgets dédiés. */
-export const SPORTS_AUTRES = ['trail', 'vtt', 'triathlon', 'duathlon', 'crossfit', 'ski'];
+export const SPORTS_AUTRES = ['triathlon', 'duathlon', 'ski'];
 
 /**
  * Des activités qui comptent dans la charge, le volume et les listes de séances, mais qui n'ont PAS de page : on ne les propose pas à
@@ -18,10 +18,10 @@ export const SPORTS_A_CHOISIR = [...SPORTS_PRINCIPAUX, ...SPORTS_AUTRES];
 
 /** Les sports rangés par thème pour l'écran de choix (chaque sport proposé apparaît dans un seul groupe). */
 export const GROUPES_SPORTS = [
-  { titre: 'Course', sports: ['course', 'trail'] },
-  { titre: 'Vélo & multisport', sports: ['velo', 'vtt', 'triathlon', 'duathlon'] },
+  { titre: 'Course', sports: ['course'] },
+  { titre: 'Vélo & multisport', sports: ['velo', 'triathlon', 'duathlon'] },
   { titre: 'Eau', sports: ['natation'] },
-  { titre: 'Force & hybride', sports: ['muscu', 'hyrox', 'crossfit'] },
+  { titre: 'Force & hybride', sports: ['muscu', 'hyrox'] },
   { titre: 'Nature', sports: ['ski'] },
 ];
 
@@ -64,11 +64,11 @@ export function onboardingNecessaire({ demo = false, sportsEnregistres = null, n
 }
 
 /**
- * Les familles de l'accueil qu'un sport choisi fait apparaître : le trail est de la course, le VTT du vélo.
+ * Les familles de l'accueil qu'un sport choisi fait apparaître : le sport lui-même.
  * Le triathlon et le duathlon sont des sports à part entière : cocher l'un n'ajoute ni course, ni vélo, ni natation
  * (on les coche à part, en plus si on les pratique aussi seuls).
  */
-const FAMILLES_DU_SPORT = { trail: ['course'], vtt: ['velo'] };
+const FAMILLES_DU_SPORT = {};
 
 /**
  * Les familles de sport de l'accueil, dans l'ordre d'affichage : d'abord les sports choisis (dans l'ordre de l'utilisateur),

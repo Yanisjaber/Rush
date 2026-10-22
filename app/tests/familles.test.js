@@ -9,7 +9,7 @@ test('types Strava courants rangés dans une vraie famille (pas « autre »)', (
     Walk: 'rando', Hike: 'rando', Snowshoe: 'rando',
     Elliptical: 'course', StairStepper: 'course', Run: 'course', VirtualRun: 'course',
     AlpineSki: 'ski', Snowboard: 'ski', RollerSki: 'ski', NordicSki: 'ski',
-    Ride: 'velo', MountainBikeRide: 'velo', Swim: 'natation', Crossfit: 'crossfit', Hyrox: 'hyrox',
+    Ride: 'velo', MountainBikeRide: 'velo', Swim: 'natation', Crossfit: 'muscu', HighIntensityIntervalTraining: 'muscu', GravelRide: 'velo', TrailRun: 'course', Hyrox: 'hyrox',
     Triathlon: 'triathlon', Duathlon: 'duathlon', // sports à part entière, pas « course + vélo + natation »
   };
   for (const [brut, famille] of Object.entries(attendu)) assert.equal(familleSport(brut), famille, brut);

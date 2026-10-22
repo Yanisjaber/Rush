@@ -4,15 +4,12 @@
 
 export const SPORTS = {
   course: { nom: 'Course à pied', court: 'Course', couleur: 'var(--sport-course)' },
-  trail: { nom: 'Trail', court: 'Trail', couleur: 'var(--sport-course)' },
-  velo: { nom: 'Vélo route', court: 'Vélo', couleur: 'var(--sport-velo)' },
-  vtt: { nom: 'VTT / Gravel', court: 'VTT', couleur: 'var(--sport-velo)' },
+  velo: { nom: 'Cyclisme', court: 'Cyclisme', couleur: 'var(--sport-velo)' },
   natation: { nom: 'Natation', court: 'Natation', couleur: 'var(--sport-natation)' },
   triathlon: { nom: 'Triathlon', court: 'Triathlon', couleur: 'var(--sport-velo)' },
   duathlon: { nom: 'Duathlon', court: 'Duathlon', couleur: 'var(--sport-velo)' },
   athletisme: { nom: 'Athlétisme', court: 'Athlé', couleur: 'var(--sport-neutre)' },
   hyrox: { nom: 'Hyrox', court: 'Hyrox', couleur: 'var(--sport-hybride)' },
-  crossfit: { nom: 'CrossFit', court: 'CrossFit', couleur: 'var(--sport-hybride)' },
   muscu: { nom: 'Musculation', court: 'Muscu', couleur: 'var(--sport-muscu)' },
   aviron: { nom: 'Aviron', court: 'Aviron', couleur: 'var(--sport-natation)' },
   ski: { nom: 'Ski de fond', court: 'Ski', couleur: 'var(--sport-neutre)' },

@@ -5,7 +5,7 @@ import { SPORTS_PRINCIPAUX, SPORTS_AUTRES, SPORTS_SANS_PAGE, SPORTS_A_CHOISIR, G
 
 test('sports proposés : les 5 sports de l\'accueil, puis les autres sports de performance (plus de case « Autre »)', () => {
   assert.deepEqual(SPORTS_PRINCIPAUX, ['course', 'velo', 'natation', 'muscu', 'hyrox']);
-  assert.deepEqual(SPORTS_AUTRES, ['trail', 'vtt', 'triathlon', 'duathlon', 'crossfit', 'ski']);
+  assert.deepEqual(SPORTS_AUTRES, ['triathlon', 'duathlon', 'ski']);
   assert.deepEqual(SPORTS_SANS_PAGE, ['rando', 'combat', 'escalade', 'aviron', 'pagaie', 'athletisme']); // comptent dans la charge, sans page ni case à cocher
   for (const s of SPORTS_SANS_PAGE) assert.ok(!SPORTS_A_CHOISIR.includes(s), s);
   assert.deepEqual(SPORTS_A_CHOISIR, [...SPORTS_PRINCIPAUX, ...SPORTS_AUTRES]);
@@ -40,8 +40,6 @@ test('fusionnerFamilles : l\'ordre des pastilles suit celui des sports choisis, 
 
 test('fusionnerFamilles : données + sports choisis, sans doublon et sans « autre »', () => {
   assert.deepEqual(fusionnerFamilles(['course'], ['velo', 'course', 'autre']).sort(), ['course', 'velo']);
-  assert.deepEqual(fusionnerFamilles([], ['trail']), ['course']); // le trail est de la course
-  assert.deepEqual(fusionnerFamilles([], ['vtt']), ['velo']);
   assert.deepEqual(fusionnerFamilles([], ['triathlon']), ['triathlon']); // un sport à part : ne coche ni course, ni vélo, ni natation
   assert.deepEqual(fusionnerFamilles([], ['duathlon']), ['duathlon']);
   assert.deepEqual(fusionnerFamilles([], ['triathlon', 'course', 'velo', 'natation']).sort(), ['course', 'natation', 'triathlon', 'velo']); // et on peut les avoir aussi en individuel
@@ -63,7 +61,7 @@ test('sportsCoches : les sports choisis (dans leur ordre) plus les sports princi
   assert.deepEqual(sportsCoches(['course', 'velo'], ['course', 'velo', 'muscu', 'hyrox']), ['course', 'velo', 'muscu', 'hyrox']); // muscu et hyrox : révélés par les séances
   assert.deepEqual(sportsCoches(['muscu', 'course'], ['course', 'muscu']), ['muscu', 'course']); // pas de doublon, l'ordre choisi est gardé
   assert.deepEqual(sportsCoches(null, ['course']), ['course']); // jamais demandé : ce que montre la barre
-  assert.deepEqual(sportsCoches(['trail'], []), ['trail']);
+  assert.deepEqual(sportsCoches(['ski'], []), ['ski']);
   assert.deepEqual(sportsCoches(undefined, undefined), []);
-  assert.deepEqual(sportsCoches([], ['autre', 'trail']), []); // seuls les cinq sports principaux sont « révélés » ; « autre » et trail ne le sont pas
+  assert.deepEqual(sportsCoches([], ['autre', 'ski']), []); // seuls les cinq sports principaux sont « révélés » ; « autre » n'en fait pas partie
 });

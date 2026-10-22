@@ -217,7 +217,6 @@ export function competitionsDemo(aujourdhui = new Date()) {
       prevue('demo-hyrox-open', 'Hyrox Open', 27, 'Hyrox', 'A', null, null, 70, 'Hyrox', 'Objectif : passer sous 1h10.'),
       prevue('demo-comp-b1', 'Cyclo des Vignes', 27, 'Ride', 'B', 82, 850, 150, 'Cyclosportive', 'Sortie test avant la saison.'),
       prevue('demo-ramonville', 'Ronde de Ramonville', 62, 'Run', 'A', 10.15, 42, 40, 'Route', "Objectif de l'automne : passer sous les 40 minutes."),
-      prevue('demo-comp-b2', 'Trail des Crêtes', 120, 'TrailRun', 'B', 24, 1300, 195, 'Trail'),
     ],
     courues: [
       { id: 'demo-comp-c1', name: '10 km de Blagnac', sport: 'Run', start_date_local: `${jour(-43)}T09:00:00+00:00`, moving_time: 2472, distance_km: 10, total_elevation_gain: 38, avg_heartrate: 176, avg_watts: null, np: null, tss: 71, category: 'competition', priority: 'A', result_place: null, result_total: null, result_catev: null },

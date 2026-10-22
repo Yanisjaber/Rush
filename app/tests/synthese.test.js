@@ -28,7 +28,7 @@ test('familleSport : rapproche les types Strava, inconnu → autre', () => {
   assert.equal(familleSport('Ride'), 'velo');
   assert.equal(familleSport('VirtualRide'), 'velo');
   assert.equal(familleSport('Run'), 'course');
-  assert.equal(familleSport('TrailRun'), 'trail');
+  assert.equal(familleSport('TrailRun'), 'course');
   assert.equal(familleAffichage('TrailRun'), 'course'); // le trail compte comme de la course dans les graphiques
   assert.equal(familleSport('WeightTraining'), 'muscu');
   assert.equal(familleSport('Soccer'), 'autre');

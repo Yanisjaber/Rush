@@ -9,16 +9,14 @@ const TYPES = new Set(SPORTS_PREVUE.map((s) => s.type));
 
 /** Clé de regroupement d'un type de sport brut (colonne `sport` des modèles). */
 export function categorieDe(sportBrut) {
-  if (['Ride', 'VirtualRide', 'GravelRide', 'EBikeRide'].includes(sportBrut)) return 'cyclisme';
-  if (['MountainBikeRide', 'EMountainBikeRide'].includes(sportBrut)) return 'vtt';
-  if (['Run', 'VirtualRun'].includes(sportBrut)) return 'course';
-  if (sportBrut === 'TrailRun') return 'trail';
+  if (['Ride', 'VirtualRide', 'GravelRide', 'EBikeRide', 'MountainBikeRide', 'EMountainBikeRide'].includes(sportBrut)) return 'cyclisme';
+  if (['Run', 'VirtualRun', 'TrailRun'].includes(sportBrut)) return 'course';
   if (['Swim', 'OpenWaterSwim'].includes(sportBrut)) return 'natation';
   if (sportBrut === 'WeightTraining') return 'musculation';
   return 'autre';
 }
-export const NOM_CATEGORIE = { cyclisme: 'Cyclisme', vtt: 'VTT', course: 'Course à pied', trail: 'Trail', natation: 'Natation', musculation: 'Musculation', triathlon: 'Triathlon', autre: 'Autre' };
-const TYPE_PAR_CATEGORIE = { cyclisme: 'Ride', vtt: 'MountainBikeRide', course: 'Run', trail: 'TrailRun', natation: 'Swim', musculation: 'WeightTraining', autre: 'Other' };
+export const NOM_CATEGORIE = { cyclisme: 'Cyclisme', course: 'Course à pied', natation: 'Natation', musculation: 'Musculation', triathlon: 'Triathlon', autre: 'Autre' };
+const TYPE_PAR_CATEGORIE = { cyclisme: 'Ride', vtt: 'Ride', course: 'Run', trail: 'Run', natation: 'Swim', musculation: 'WeightTraining', autre: 'Other' };
 
 const texte = (v) => (v == null ? '' : String(v));
 

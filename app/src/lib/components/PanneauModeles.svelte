@@ -13,7 +13,7 @@
   let aSupprimer = $state(null); // id du modèle en attente de confirmation
   let erreurLocale = $state('');
   const groupes = $derived(grouper(modeles, recherche));
-  const COULEUR = { cyclisme: 'velo', vtt: 'velo', course: 'course', trail: 'course', natation: 'natation', musculation: 'muscu', autre: 'autre' };
+  const COULEUR = { cyclisme: 'velo', course: 'course', natation: 'natation', musculation: 'muscu', autre: 'autre' };
 
   async function supprimer(m) {
     erreurLocale = '';

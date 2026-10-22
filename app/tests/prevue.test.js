@@ -82,7 +82,7 @@ test('sportsTries et sportDefaut : le sport filtré passe en premier et devient 
   const { sportsTries, sportDefaut, SPORTS_PREVUE } = await import('../src/lib/data/prevue.js');
   assert.deepEqual(sportsTries('tout'), SPORTS_PREVUE);
   assert.deepEqual(sportsTries('velo').slice(0, 1).map((s) => s.type), ['Ride']);
-  assert.equal(sportsTries('course')[1].type, 'TrailRun'); // course et trail ensemble
+  assert.equal(sportsTries('course')[0].type, 'Run');
   assert.equal(sportsTries('muscu').length, SPORTS_PREVUE.length); // rien ne disparaît
   assert.equal(sportDefaut('muscu'), 'WeightTraining');
   assert.equal(sportDefaut('hyrox'), 'Hyrox');

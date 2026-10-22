@@ -17,14 +17,11 @@ export function validerGpxFormulaire(g) {
 /** Sports proposables : clé de famille (voir sports.js) → type brut stocké en base (comme Strava). */
 export const SPORTS_PREVUE = [
   { cle: 'course', type: 'Run' },
-  { cle: 'trail', type: 'TrailRun' },
   { cle: 'velo', type: 'Ride' },
-  { cle: 'vtt', type: 'MountainBikeRide' },
   { cle: 'natation', type: 'Swim' },
   { cle: 'triathlon', type: 'Triathlon' },
   { cle: 'duathlon', type: 'Duathlon' },
   { cle: 'muscu', type: 'WeightTraining' },
-  { cle: 'crossfit', type: 'Crossfit' },
   { cle: 'hyrox', type: 'Hyrox' },
   { cle: 'aviron', type: 'Rowing' },
   { cle: 'ski', type: 'NordicSki' },

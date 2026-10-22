@@ -13,11 +13,11 @@ export const SPORTS_BILAN = [
 ];
 export const NOM_SPORT_BILAN = { ...Object.fromEntries(SPORTS_BILAN), tous: 'Tous sports' };
 
-/** Famille de bilan d'un type de sport brut (Strava) : vélo → cyclisme, course et trail → course, etc. */
+/** Famille de bilan d'un type de sport brut (Strava) : vélo → cyclisme, trail → course, VTT et gravel → cyclisme, etc. */
 export function familleBilan(sportBrut) {
   const f = familleAffichage(sportBrut);
-  if (f === 'velo' || f === 'vtt') return 'cyclisme';
-  if (f === 'course' || f === 'trail') return 'course';
+  if (f === 'velo') return 'cyclisme';
+  if (f === 'course') return 'course';
   if (f === 'natation') return 'natation';
   if (f === 'muscu') return 'musculation';
   return 'autre';
@@ -26,9 +26,9 @@ export function familleBilan(sportBrut) {
 /** Famille de bilan correspondant à un filtre global de sport (« velo » → cyclisme, « muscu » → musculation…), ou null pour « tout ». */
 export function familleBilanDuFiltre(filtre) {
   if (!filtre || filtre === 'tout') return null;
-  if (filtre === 'velo' || filtre === 'vtt') return 'cyclisme';
+  if (filtre === 'velo') return 'cyclisme';
   if (filtre === 'muscu') return 'musculation';
-  if (filtre === 'course' || filtre === 'trail' || filtre === 'natation') return filtre;
+  if (filtre === 'course' || filtre === 'natation') return filtre;
   return 'autre';
 }
 
@@ -39,7 +39,7 @@ export function normaliser(l) {
     name: l.name || '',
     iso: String(l.start_date_local || '').slice(0, 10),
     sport: familleBilan(l.sport),
-    famille: familleAffichage(l.sport) === 'vtt' ? 'velo' : familleAffichage(l.sport), // famille du filtre global de l'en-tête (le VTT compte avec le vélo)
+    famille: familleAffichage(l.sport), // famille du filtre global de l'en-tête
     duree_min: (Number(l.moving_time) || 0) / 60,
     distance_km: Number(l.distance_km) || 0,
     d_plus: Number(l.total_elevation_gain) || 0,
