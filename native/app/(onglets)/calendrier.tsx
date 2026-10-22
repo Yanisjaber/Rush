@@ -129,7 +129,7 @@ export default function Calendrier() {
                     </Text>
                   ))}
                 </View>
-                <Text style={[typo.micro, styles.enteteSemaine, { color: p.texteMuet }]}>h</Text>
+                <Text style={[typo.micro, styles.enteteSemaine, { color: p.texteMuet }]}>Sem.</Text>
               </View>
               {grille.semaines.map((semaine) => (
                 <View key={semaine[0].iso} style={styles.rangee}>
