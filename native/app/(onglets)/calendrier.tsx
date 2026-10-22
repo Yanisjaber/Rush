@@ -132,7 +132,7 @@ export default function Calendrier() {
             <View style={[styles.grille, { backgroundColor: p.surface }]}>
               {/* Le fond de la colonne « Sem. » : une bande un peu plus claire sur toute la hauteur, derrière les lignes */}
               <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={[styles.fondSemaine, { backgroundColor: p.surface2 }]} />
-              <View style={styles.rangee} accessible={false} importantForAccessibility="no-hide-descendants">
+              <View style={[styles.rangee, styles.enteteBande, { backgroundColor: p.surface2 }]} accessible={false} importantForAccessibility="no-hide-descendants">
                 <View style={styles.jours}>
                   {JOURS_SEMAINE.map((n, i) => (
                     <Text key={i} style={[typo.micro, styles.entete, { color: p.texteMuet }]}>
@@ -441,6 +441,8 @@ const styles = StyleSheet.create({
   grille: { borderRadius: rayon.bloc, paddingHorizontal: 8, paddingVertical: 10, gap: 4, overflow: 'hidden' },
   rangee: { flexDirection: 'row', alignItems: 'stretch' },
   // Collée au bord droit, en haut et en bas de la carte : c'est la carte (overflow hidden) qui arrondit les coins de la bande
+  // La ligne des jours : même teinte que la colonne « Sem. », de bord à bord en haut de la carte (marges négatives = le padding de la carte)
+  enteteBande: { marginHorizontal: -8, marginTop: -10, paddingHorizontal: 8, paddingTop: 10 },
   fondSemaine: { position: 'absolute', top: 0, bottom: 0, right: 0, width: 62 },
   jours: { flex: 1, flexDirection: 'row' },
   entete: { width: `${100 / 7}%`, textAlign: 'center', paddingBottom: 4 },
