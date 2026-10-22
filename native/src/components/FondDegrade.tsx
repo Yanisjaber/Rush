@@ -23,7 +23,7 @@ export function FondDegrade() {
   const halo = filtre === 'tout' ? p.sportNeutre : couleurSport(p, filtre);
   const sombre = p.fond === '#0c0d10';
   const haut = sombre ? '#181b23' : '#ffffff'; // le haut de page, un peu plus clair que le fond
-  const force = sombre ? 0.24 : 0.16;
+  const force = sombre ? 0.24 : 0.4; // en clair il faut plus d'opacité pour que la couleur ressorte sur le blanc
 
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
