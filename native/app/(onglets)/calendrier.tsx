@@ -2,7 +2,7 @@ import { FondDegrade } from '@/components/FondDegrade';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Svg, { Ellipse, Line, Path } from 'react-native-svg';
+import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
@@ -186,17 +186,18 @@ function marquesDe(j: JourGrille): { cle: string; type: 'fait' | 'prevu' | 'obje
   ];
 }
 
-// Un petit parchemin pour dire « il y a une note sur ce jour » : une feuille crème dont les deux bouts roulés ont la couleur de la note (orange pour une blessure…)
+// Un petit parchemin pour dire « il y a une note sur ce jour » : une feuille crème aux coins enroulés (en haut à gauche, en bas à droite), avec un petit sceau
+// de la couleur de la note (orange pour une blessure…). Placé dans le coin de la case, il ne touche pas le chiffre du jour.
 function Parchemin({ couleur }: { couleur: string }) {
-  const papier = '#f3ead2';
   const encre = '#6b5a3a';
   return (
-    <Svg width={16} height={16} viewBox="0 0 16 16" accessible={false}>
-      <Path d="M3.2 3.5h9.6v9H3.2z" fill={papier} />
-      <Ellipse cx={8} cy={3.4} rx={5.6} ry={2} fill={couleur} stroke={encre} strokeWidth={0.7} />
-      <Ellipse cx={8} cy={12.6} rx={5.6} ry={2} fill={couleur} stroke={encre} strokeWidth={0.7} />
-      <Line x1={5.4} y1={6.6} x2={10.6} y2={6.6} stroke={encre} strokeWidth={0.9} strokeLinecap="round" />
-      <Line x1={5.4} y1={8.9} x2={9.2} y2={8.9} stroke={encre} strokeWidth={0.9} strokeLinecap="round" />
+    <Svg width={15} height={15} viewBox="0 0 20 20" accessible={false}>
+      <Path d="M6 3H16a1.2 1.2 0 0 1 1.2 1.2V14.2a2.3 2.3 0 0 1-2.3 2.3H5.2A2.2 2.2 0 0 1 3 14.3V6.5Z" fill="#f3ead2" stroke={encre} strokeWidth={1} />
+      <Path d="M3 6.5V5.2A2.2 2.2 0 0 1 5.2 3H6a1.7 1.7 0 0 1 0 3.5Z" fill="#e4d6ae" stroke={encre} strokeWidth={1} />
+      <Path d="M17.2 13.5H11.2a1.7 1.7 0 0 0 0 3.4H14.9a2.3 2.3 0 0 0 2.3-2.3Z" fill="#e4d6ae" stroke={encre} strokeWidth={1} />
+      <Line x1={7.6} y1={8.4} x2={14.4} y2={8.4} stroke={encre} strokeWidth={1.1} strokeLinecap="round" />
+      <Line x1={7.6} y1={11} x2={12} y2={11} stroke={encre} strokeWidth={1.1} strokeLinecap="round" />
+      <Circle cx={14.4} cy={6} r={2} fill={couleur} stroke={encre} strokeWidth={0.8} />
     </Svg>
   );
 }
@@ -380,7 +381,7 @@ const styles = StyleSheet.create({
   points: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 10 },
   point: { width: 6, height: 6, borderRadius: 3 },
   carre: { width: 6, height: 6, borderRadius: 1.5, borderWidth: 1 },
-  coin: { position: 'absolute', top: 1, right: 1 },
+  coin: { position: 'absolute', top: -2, right: -1 },
   barre: { width: 10, height: 3, borderRadius: 2 },
   plus: { fontSize: 10, lineHeight: 10, fontFamily: police.texte600 },
   tiret: { fontSize: 28, lineHeight: 32 },
