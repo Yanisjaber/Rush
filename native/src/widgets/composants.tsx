@@ -36,6 +36,7 @@ import { WidgetSeanceDuJour } from './WidgetSeanceDuJour';
 import { WidgetSemaine } from './WidgetSemaine';
 import { WidgetTonnage } from './WidgetTonnage';
 import { WidgetVolume } from './WidgetVolume';
+import { WidgetWattsCardio } from './WidgetWattsCardio';
 import { WidgetZonesAllure } from './WidgetZonesAllure';
 import { WidgetZonesPuissance } from './WidgetZonesPuissance';
 
@@ -59,6 +60,7 @@ export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   denivele: WidgetDenivele,
   ftp: WidgetFtp,
   zonespuissance: WidgetZonesPuissance,
+  wattscardio: WidgetWattsCardio,
   puissance: WidgetPuissance,
   natvolume: WidgetNatVolume,
   natallure: WidgetNatAllure,

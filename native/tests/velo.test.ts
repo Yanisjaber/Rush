@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { deniveleParSemaine, evolutionFtp, ftpReference, kmVeloParSemaine, repartitionPuissance } from '../src/data/velo.ts';
+import { deniveleParSemaine, equivalenceWattsFc, evolutionFtp, ftpReference, kmVeloParSemaine, repartitionPuissance, wattsACardioEgal } from '../src/data/velo.ts';
 import type { Seance } from '../src/data/types.ts';
 
 const AUJOURDHUI = new Date(2026, 9, 21); // 21 octobre 2026
@@ -57,4 +57,43 @@ test('ftpReference : le profil d\'abord, sinon la sortie la plus récente', () =
   assert.equal(ftpReference(255, [sortie('a', 1, { ftp_at_time: 240 })]), 255);
   assert.equal(ftpReference(null, [sortie('a', 9, { ftp_at_time: 240 }), sortie('b', 1, { ftp_at_time: 250 })]), 250);
   assert.equal(ftpReference(null, []), null);
+});
+
+const facile = (id: string, avant: number, watts: number, fc: number, minutes = 60): Seance => sortie(id, avant, { avg_watts: watts, avg_heartrate: fc, moving_time: minutes * 60 });
+
+test('wattsACardioEgal : sorties faciles seulement, moyenne par semaine, évolution entre la première et la dernière', () => {
+  const w = wattsACardioEgal(
+    [facile('a', 15, 150, 130), facile('b', 8, 155, 132), facile('c', 1, 165, 131), facile('d', 2, 220, 175), facile('e', 3, 100, 120, 10)],
+    190, 4, AUJOURDHUI,
+  );
+  // FC max 190 : « facile » = 114 à 152 bpm. La sortie à 175 bpm (trop dure) et celle de 10 min sont ignorées.
+  assert.ok(w);
+  assert.deepEqual(w.points.map((p) => p.watts), [150, 155, 165]);
+  assert.equal(w.actuelle, 165);
+  assert.equal(w.evolutionPct, 10);
+});
+
+test('wattsACardioEgal : moins de trois semaines, null', () => {
+  assert.equal(wattsACardioEgal([facile('a', 1, 150, 130), facile('b', 8, 155, 132)], 190, 4, AUJOURDHUI), null);
+});
+
+test('equivalenceWattsFc : retrouve la droite, et la table reste dans la plage observée', () => {
+  // watts = 2 × FC − 100, sans bruit : 120 bpm → 140 W, 150 bpm → 200 W
+  const sorties = [120, 128, 135, 142, 150, 156].map((fc, i) => facile(`s${i}`, i + 1, 2 * fc - 100, fc));
+  const e = equivalenceWattsFc(sorties, 12, AUJOURDHUI);
+  assert.ok(e);
+  assert.ok(Math.abs(e.pente - 2) < 1e-9 && Math.abs(e.ordonnee + 100) < 1e-9);
+  assert.ok(e.r2 > 0.999);
+  assert.deepEqual(e.table, [{ fc: 120, watts: 140 }, { fc: 130, watts: 160 }, { fc: 140, watts: 180 }, { fc: 150, watts: 200 }]);
+});
+
+test('equivalenceWattsFc : une plage étroite donne une équivalence tous les 5 bpm', () => {
+  const sorties = [140, 144, 148, 152, 156, 158].map((fc, i) => facile(`e${i}`, i + 1, 2 * fc - 100, fc));
+  assert.deepEqual(equivalenceWattsFc(sorties, 12, AUJOURDHUI)?.table.map((t) => t.fc), [140, 145, 150, 155]);
+});
+
+test('equivalenceWattsFc : trop peu de sorties, FC trop proches, ou relation qui descend : null', () => {
+  assert.equal(equivalenceWattsFc([120, 130, 140].map((fc, i) => facile(`a${i}`, i + 1, fc, fc)), 12, AUJOURDHUI), null);
+  assert.equal(equivalenceWattsFc([130, 131, 132, 133, 134, 135].map((fc, i) => facile(`b${i}`, i + 1, 150 + i, fc)), 12, AUJOURDHUI), null);
+  assert.equal(equivalenceWattsFc([120, 130, 140, 150, 160, 170].map((fc, i) => facile(`c${i}`, i + 1, 300 - 5 * i, fc)), 12, AUJOURDHUI), null);
 });

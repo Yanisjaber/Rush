@@ -136,6 +136,14 @@ export const WIDGETS = {
     tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
+  wattscardio: {
+    nom: "Watts à cardio égal",
+    description: "Tes watts en sortie facile, semaine après semaine, et l’équivalence entre ton cardio et tes watts.",
+    categorie: "Vélo",
+    sports: ['velo'],
+    tailles: ['xs', 's', 'm', 'l'],
+    taille: 's',
+  },
   natvolume: {
     nom: "Natation par semaine",
     description: "Les mètres nagés chaque semaine, sur 8 semaines.",

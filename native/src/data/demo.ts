@@ -50,6 +50,7 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
     // La vitesse en course progresse doucement sur 12 semaines (de 10,6 à 11,8 km/h) : de quoi montrer l'efficacité
     const vitesseCourse = 10.6 + ((83 - Math.min(i, 83)) / 83) * 1.2;
     const distance = m.sport === 'Run' ? (m.min / 60) * vitesseCourse : m.sport === 'Ride' ? (m.min / 60) * 27 : null;
+    const fc = 142 + ((i * 3) % 18);
     seances.push({
       id: `demo-${iso}`,
       name: m.nom,
@@ -58,10 +59,11 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
       moving_time: Math.round(m.min * 60 * variation),
       distance_km: distance ? Math.round(distance * variation * 100) / 100 : null,
       total_elevation_gain: m.sport === 'WeightTraining' ? null : Math.round(40 + ((i * 17) % 200)),
-      avg_heartrate: 142 + ((i * 3) % 18),
+      avg_heartrate: fc,
       // La FTP monte doucement sur 12 semaines (de 238 à 252 W), pour que son évolution se voie
       ftp_at_time: m.sport === 'Ride' ? Math.round(238 + ((83 - Math.min(i, 83)) / 83) * 14) : null,
-      avg_watts: m.sport === 'Ride' ? 135 + ((i * 5) % 40) : null,
+      // À vélo, les watts suivent le cardio (environ 3 W par battement) et progressent un peu avec les semaines : de quoi montrer l'équivalence cardio et watts
+      avg_watts: m.sport === 'Ride' ? Math.round(150 + (fc - 142) * 3 + ((83 - Math.min(i, 83)) / 83) * 8) : null,
       np: m.sport === 'Ride' ? 142 + ((i * 7) % 40) : null,
       tss,
       category: 'entrainement',
