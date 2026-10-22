@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compositionAuto, compositionSport, composerOnglet, estPertinent, existe, normaliserListe, ONGLETS_PERSONNALISABLES, ORDRE_ONGLET, TAILLES, TAILLES_ONGLET, WIDGETS } from '../src/data/registre.ts';
+import { compositionAuto, compositionSport, composerOnglet, estPertinent, existe, normaliserListe, LISTES_PAR_DEFAUT, ONGLETS_PERSONNALISABLES, ORDRE_ONGLET, TAILLES, TAILLES_ONGLET, WIDGETS } from '../src/data/registre.ts';
 import { construireContexte } from '../src/data/contexte.ts';
 import { donneesDemoAccueil } from '../src/data/accueil.ts';
 
@@ -117,12 +117,24 @@ test('composerOnglet : un sport sans onglet à lui (trail) met l\'objectif en pr
 test('composerOnglet : Course, Vélo et Natation ont leur propre liste, sinon leur composition automatique', () => {
   const tout = compositionAuto(['course']); // l'onglet « Tous » ne compte pas
   for (const sport of ['course', 'velo', 'natation']) {
-    assert.deepEqual(composerOnglet(tout, sport), compositionSport([sport]));
+    assert.deepEqual(composerOnglet(tout, sport), LISTES_PAR_DEFAUT[sport] ?? compositionSport([sport]));
     assert.ok(ONGLETS_PERSONNALISABLES.includes(sport));
   }
   const perso = { course: [{ id: 'kmhebdo', taille: 'm' as const }] };
   assert.deepEqual(composerOnglet(tout, 'course', perso), [{ id: 'kmhebdo', taille: 'm' }]);
   assert.deepEqual(composerOnglet(tout, 'velo', perso), compositionSport(['velo'])); // la liste de la course ne touche pas au vélo
+});
+
+test('LISTES_PAR_DEFAUT : la liste de Course ne contient que des widgets de course ou pour tous, des tailles permises, sans doublon', () => {
+  const liste = LISTES_PAR_DEFAUT.course;
+  assert.equal(new Set(liste.map((w) => w.id)).size, liste.length);
+  for (const w of liste) {
+    assert.ok(estPertinent(w.id, ['course']), w.id);
+    assert.ok((WIDGETS as Record<string, { tailles: readonly string[] }>)[w.id].tailles.includes(w.taille), `${w.id} ${w.taille}`);
+  }
+  // Une copie à chaque appel : modifier le résultat ne change pas la liste par défaut
+  composerOnglet([], 'course')[0].taille = 'xs';
+  assert.equal(LISTES_PAR_DEFAUT.course[0].taille, 'm');
 });
 
 test('construireContexte : « Tous » ne filtre rien, un sport filtre séances et séances prévues', () => {

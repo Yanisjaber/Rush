@@ -276,6 +276,22 @@ export const ORDRE_ONGLET: Record<string, readonly string[]> = {
   hyrox: ['hyroxdossard', 'hyroxtest', 'hyroxallure', 'hyroxgains', 'semaine', 'chargeforce'],
 };
 
+/** La liste par défaut d'un onglet de sport libre (Course, Vélo, Natation) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course : la disposition de Yanis. */
+export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
+  course: [
+    { id: 'kmhebdo', taille: 'm' },
+    { id: 'semaine', taille: 'xs' },
+    { id: 'objectif', taille: 'xs' },
+    { id: 'efficacite', taille: 's' },
+    { id: 'zonesallure', taille: 's' },
+    { id: 'predictions', taille: 'm' },
+    { id: 'avenir', taille: 's' },
+    { id: 'forme', taille: 's' },
+    { id: 'charge', taille: 'l' },
+    { id: 'dernieres', taille: 'm' },
+  ],
+};
+
 /** Tailles par défaut d'un onglet (quand l'utilisateur n'a rien personnalisé) : elles passent avant celles de l'onglet « Tous ». Muscu : la disposition de Yanis. */
 export const TAILLES_ONGLET: Record<string, Readonly<Record<string, Taille>>> = {
   muscu: { seancedujour: 'm', programmes: 'xs', tonnage: 's', regularite: 's', dernieres: 'xs', records: 'm', groupes: 's', chargemuscu: 's' },
@@ -397,7 +413,8 @@ export function composerOnglet(widgets: WidgetPlace[], sport: string, onglets: O
   // Course, Vélo, Natation : leur propre liste (mode édition), sinon la composition automatique du sport. Ce qu'on voit en édition est donc ce qu'on voit après.
   if (SPORTS_LIBRES.includes(sport)) {
     const perso = onglets && Array.isArray(onglets[sport]) ? onglets[sport] : null;
-    return perso ? perso.map((w) => ({ ...w })) : compositionSport([sport]);
+    if (perso) return perso.map((w) => ({ ...w }));
+    return LISTES_PAR_DEFAUT[sport] ? LISTES_PAR_DEFAUT[sport].map((w) => ({ ...w })) : compositionSport([sport]);
   }
   if (Object.hasOwn(ORDRE_ONGLET, sport)) {
     // Composition personnalisée de cet onglet (mode édition), sinon la composition par défaut
