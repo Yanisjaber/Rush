@@ -8,7 +8,7 @@ import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
 import { Bloc } from '@/components/Bloc';
 import { Bouton } from '@/components/Bouton';
-import { chargeJour, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille } from '@/data/calendrier';
+import { chargeJour, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, metriqueSemaine, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
 import { couleurNote, libelleNote } from '@/data/annotations';
 import { familleAffichage, garderSeance } from '@/data/familles';
 import { dateIsoLocale, formatDuree } from '@/data/format';
@@ -54,6 +54,8 @@ export default function Calendrier() {
         notes: donnees.notes,
         repos: donnees.repos,
         cycles: donnees.cycles,
+        // Les séries de force ne comptent que pour « Tous », la musculation et le CrossFit (qui garde la musculation)
+        series: filtre === 'tout' || filtre === 'muscu' || filtre === 'crossfit' ? donnees.series : [],
       },
       maintenant,
     );
@@ -262,23 +264,37 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
 }
 
 const courteDate = (iso: string) => new Date(`${String(iso).slice(0, 10)}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-const heures = (secondes: number) => String(Math.round((secondes / 3600) * 10) / 10).replace('.', ',');
 const HAUTEUR_PROFIL = 24;
 
-// Le profil de la semaine : sept petites barres (une par jour, de lundi à dimanche) à la hauteur du temps du jour, de la couleur de son sport dominant,
-// pâles quand il n'y a que du prévu ; les heures de la semaine (faites + prévues) dessous.
-// Sur « Tous », ses barres sont grises (aucun sport n'est mis en avant) ; la couleur revient quand on choisit un sport (mono = faux)
+// Le chiffre de la semaine, avec son unité : les kilomètres quand il y en a, sinon les séries de force, sinon le dénivelé, sinon les heures (voir metriqueSemaine)
+const UNITES: Record<UniteSemaine, { court: string; dit: string }> = {
+  km: { court: 'km', dit: 'kilomètres' },
+  series: { court: 'sér.', dit: 'séries' },
+  dplus: { court: 'D+', dit: 'mètres de dénivelé' },
+  h: { court: 'h', dit: 'heures' },
+};
+// Au-delà de 100, les décimales n'apportent rien et prennent de la place : 266 km, pas 266,4 km
+const nombre = (n: number) => String(n >= 100 ? Math.round(n) : n).replace('.', ',');
+
+// Le récap de la semaine : le chiffre en haut (à la hauteur du haut des cases) et, en bas (à la hauteur du bas des cases), le profil des sept jours :
+// une petite barre par jour, de lundi à dimanche, à la hauteur du temps du jour, de la couleur de son sport dominant, pâle quand il n'y a que du prévu.
+// Sur « Tous », ses barres sont grises (aucun sport n'est mis en avant) ; la couleur revient quand on choisit un sport (mono = faux).
 function ProfilSemaine({ semaine, maxi, mono }: { semaine: JourGrille[]; maxi: number; mono: boolean }) {
   const p = usePalette();
   const r = resumeSemaine(semaine);
   const total = r.faites + r.prevues;
   const jours = profilSemaine(semaine);
+  const m = metriqueSemaine(semaine);
   return (
     <View
       accessible
-      accessibilityLabel={total ? `Semaine du ${dateLongue(semaine[0].iso)} : ${formatDuree(r.faites)} faites${r.prevues ? `, ${formatDuree(r.prevues)} prévues` : ''}, ${r.charge} points de charge` : `Semaine du ${dateLongue(semaine[0].iso)} : rien`}
+      accessibilityLabel={total ? `Semaine du ${dateLongue(semaine[0].iso)} : ${nombre(m.valeur)} ${UNITES[m.unite].dit}, ${formatDuree(r.faites)} faites${r.prevues ? `, ${formatDuree(r.prevues)} prévues` : ''}, ${r.charge} points de charge` : `Semaine du ${dateLongue(semaine[0].iso)} : rien`}
       style={styles.semaine}
     >
+      <Text style={[styles.chiffreSemaine, { color: total ? p.texteDoux : p.texteMuet }]}>
+        {total ? nombre(m.valeur) : '—'}
+        {total ? <Text style={styles.unite}> {UNITES[m.unite].court}</Text> : null}
+      </Text>
       <View style={styles.profil}>
         {jours.map((j) => (
           <View
@@ -290,7 +306,6 @@ function ProfilSemaine({ semaine, maxi, mono }: { semaine: JourGrille[]; maxi: n
           />
         ))}
       </View>
-      <Text style={[styles.heures, { color: total ? p.texteDoux : p.texteMuet }]}>{total ? heures(total) : '—'}</Text>
     </View>
   );
 }
@@ -415,9 +430,11 @@ const styles = StyleSheet.create({
   rangee: { flexDirection: 'row', alignItems: 'stretch' },
   jours: { flex: 1, flexDirection: 'row' },
   entete: { width: `${100 / 7}%`, textAlign: 'center', paddingBottom: 4 },
-  enteteSemaine: { width: 46, textAlign: 'right', paddingBottom: 4, paddingRight: 4 },
-  semaine: { width: 46, justifyContent: 'center', alignItems: 'flex-end', gap: 3, paddingRight: 4 },
-  heures: { fontFamily: police.titre700, fontSize: 12, lineHeight: 15, fontVariant: ['tabular-nums'] },
+  enteteSemaine: { width: 54, textAlign: 'right', paddingBottom: 4, paddingRight: 4 },
+  // Le chiffre en haut, le profil en bas : la colonne a la hauteur des cases, ses deux blocs s'alignent sur leur haut et leur bas
+  semaine: { width: 54, justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 6, paddingBottom: 2, paddingRight: 4 },
+  chiffreSemaine: { fontFamily: police.titre700, fontSize: 12, lineHeight: 15, fontVariant: ['tabular-nums'] },
+  unite: { fontFamily: police.texte600, fontSize: 9, lineHeight: 15 },
   profil: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: HAUTEUR_PROFIL },
   jourProfil: { width: 4, borderRadius: 2 },
   case: { width: `${100 / 7}%`, minHeight: 58, alignItems: 'center', paddingTop: 4, borderRadius: rayon.base, borderWidth: 1, borderColor: 'transparent', gap: 2, overflow: 'hidden' },
