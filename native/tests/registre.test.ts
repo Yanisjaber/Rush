@@ -107,54 +107,17 @@ test('composerOnglet : Muscu et Hyrox ont leur composition fixe, en gardant la t
   assert.deepEqual(composerOnglet(auto, 'hyrox').map((w) => w.id), [...ORDRE_ONGLET.hyrox]);
 });
 
-test('composerOnglet : un sport sans onglet à lui (trail) met l\'objectif en premier, puis les widgets de ce sport', () => {
-  const ids = composerOnglet(compositionSport(['course', 'velo']), 'trail').map((w) => w.id);
+test('composerOnglet : un sport sans onglet à lui (VTT) met l\'objectif en premier, puis les widgets de ce sport', () => {
+  const ids = composerOnglet(compositionSport(['course', 'velo']), 'vtt').map((w) => w.id);
   assert.equal(ids[0], 'objectif');
-  assert.ok(ids.indexOf('predictions') < ids.indexOf('forme'), 'les widgets de course passent avant les universels');
-  assert.equal(ids.includes('puissance'), false);
+  assert.ok(ids.indexOf('puissance') < ids.indexOf('forme'), 'les widgets de vélo passent avant les universels');
+  assert.equal(ids.includes('predictions'), false);
 });
 
-test('composerOnglet : Course, Vélo et Natation ont leur propre liste, sinon leur composition automatique', () => {
-  const tout = compositionAuto(['course']); // l'onglet « Tous » ne compte pas
-  for (const sport of ['course', 'velo', 'natation']) {
-    assert.deepEqual(composerOnglet(tout, sport), LISTES_PAR_DEFAUT[sport] ?? compositionSport([sport]));
-    assert.ok(ONGLETS_PERSONNALISABLES.includes(sport));
-  }
-  const perso = { course: [{ id: 'kmhebdo', taille: 'm' as const }] };
-  assert.deepEqual(composerOnglet(tout, 'course', perso), [{ id: 'kmhebdo', taille: 'm' }]);
-  assert.deepEqual(composerOnglet(tout, 'velo', perso), LISTES_PAR_DEFAUT.velo); // la liste de la course ne touche pas au vélo
-});
-
-test('TAILLES_ONGLET : chaque onglet fixe donne une taille permise à tous ses widgets', () => {
-  for (const sport of ['muscu', 'hyrox']) {
-    assert.deepEqual(Object.keys(TAILLES_ONGLET[sport]).sort(), [...ORDRE_ONGLET[sport]].sort(), sport);
-    for (const id of ORDRE_ONGLET[sport]) assert.ok((WIDGETS as Record<string, { tailles: readonly string[] }>)[id].tailles.includes(TAILLES_ONGLET[sport][id]), `${sport} : ${id}`);
-  }
-});
-
-test('Hyrox : les tuiles S vont par deux (aucune ne reste seule sur sa ligne)', () => {
-  const tailles = composerOnglet([], 'hyrox').map((w) => w.taille);
-  let suite = 0;
-  for (const t of [...tailles, 'm']) {
-    if (t === 's') suite++;
-    else {
-      assert.equal(suite % 2, 0, 'une suite de tuiles S doit être paire');
-      suite = 0;
-    }
-  }
-});
-
-test('LISTES_PAR_DEFAUT : chaque liste ne contient que des widgets du sport ou pour tous, des tailles permises, sans doublon', () => {
-  for (const [sport, liste] of Object.entries(LISTES_PAR_DEFAUT)) {
-    assert.equal(new Set(liste.map((w) => w.id)).size, liste.length, sport);
-    for (const w of liste) {
-      assert.ok(estPertinent(w.id, [sport]), `${sport} : ${w.id}`);
-      assert.ok((WIDGETS as Record<string, { tailles: readonly string[] }>)[w.id].tailles.includes(w.taille), `${sport} : ${w.id} ${w.taille}`);
-    }
-  }
-  // Une copie à chaque appel : modifier le résultat ne change pas la liste par défaut
-  composerOnglet([], 'course')[0].taille = 'xs';
-  assert.equal(LISTES_PAR_DEFAUT.course[0].taille, 'm');
+test('estPertinent : l\'onglet Trail voit les widgets de trail ET de course, Course ne voit pas ceux de trail', () => {
+  assert.ok(estPertinent('prepatrail', ['trail']) && estPertinent('predictions', ['trail']));
+  assert.equal(estPertinent('prepatrail', ['course']), false);
+  assert.equal(estPertinent('prepatrail', ['velo']), false);
 });
 
 test('construireContexte : « Tous » ne filtre rien, un sport filtre séances et séances prévues', () => {

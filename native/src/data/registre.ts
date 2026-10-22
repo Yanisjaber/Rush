@@ -381,7 +381,7 @@ export const ORDRE_ONGLET: Record<string, readonly string[]> = {
   hyrox: ['hyroxdossard', 'semaine', 'hyroxevolution', 'hyroxhebdo', 'hyroxtest', 'hyroxrunsstations', 'hyroxderive', 'hyroxallure', 'hyroxgains', 'chargeforce', 'dernieres'],
 };
 
-/** La liste par défaut d'un onglet de sport libre (Course, Vélo, Natation) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course et Vélo : les dispositions de Yanis. */
+/** La liste par défaut d'un onglet de sport libre (Course, Trail, Vélo, Natation) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course et Vélo : les dispositions de Yanis ; Trail : pensée pour l'usage. */
 export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
   course: [
     { id: 'kmhebdo', taille: 'm' },
@@ -393,6 +393,19 @@ export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
     { id: 'avenir', taille: 's' },
     { id: 'forme', taille: 's' },
     { id: 'charge', taille: 'l' },
+    { id: 'dernieres', taille: 'm' },
+  ],
+  // Trail : la préparation au dénivelé de la course visée en héros, puis le contexte, le volume en dénivelé et en km-effort, la charge, les records
+  trail: [
+    { id: 'prepatrail', taille: 'm' },
+    { id: 'semaine', taille: 'xs' },
+    { id: 'objectif', taille: 'xs' },
+    { id: 'deniveletrail', taille: 's' },
+    { id: 'kmeffort', taille: 's' },
+    { id: 'charge', taille: 'l' },
+    { id: 'meilleurestrail', taille: 'm' },
+    { id: 'avenir', taille: 's' },
+    { id: 'forme', taille: 's' },
     { id: 'dernieres', taille: 'm' },
   ],
   velo: [
@@ -451,7 +464,8 @@ export function estPertinent(id: string, familles: readonly string[]): boolean {
   if (!existe(id)) return false;
   const def = definition(id);
   if (def.sports === 'tous') return true;
-  const dessous = familles.map(familleDesWidgets); // un onglet Trail montre les widgets de course, un onglet VTT ceux du vélo
+  // Un onglet Trail montre les widgets de course ET ceux de trail ; un onglet VTT ceux du vélo
+  const dessous = familles.flatMap((f) => (f === 'trail' ? ['course', 'trail'] : [familleDesWidgets(f)]));
   return def.sports.some((s) => dessous.includes(s));
 }
 
@@ -597,7 +611,7 @@ export function normaliser(brut: unknown): Disposition | null {
 }
 
 /** Les onglets de sport dont la bibliothèque reste ouverte : on peut y ajouter n'importe quel widget qui concerne le sport. */
-export const SPORTS_LIBRES: string[] = ['course', 'velo', 'natation'];
+export const SPORTS_LIBRES: string[] = ['course', 'trail', 'velo', 'natation'];
 /** Les onglets de sport qui ont leur propre composition modifiable (Muscu, Hyrox, et les sports libres). */
 export const ONGLETS_PERSONNALISABLES: string[] = [...Object.keys(ORDRE_ONGLET), ...SPORTS_LIBRES];
 /** Onglets dont la bibliothèque est limitée à leurs propres widgets (ceux de ORDRE_ONGLET). */
