@@ -15,7 +15,7 @@ export interface EtatDisposition {
   pret: boolean;
   auto: boolean;
   widgets: WidgetPlace[];
-  /** Composition propre à chaque onglet riche (Muscu, Hyrox) ; null = composition par défaut. */
+  /** Composition propre à chaque onglet riche (Muscu, Hyrox, Course, Vélo, Natation) ; null = composition par défaut. */
   onglets: Record<string, WidgetPlace[] | null>;
   /** Liste modifiée pendant l'édition : 'tout' ou un onglet de ONGLETS_PERSONNALISABLES. */
   ongletEdition: string;
@@ -51,7 +51,7 @@ export const useDisposition = (): EtatDisposition => useSyncExternalStore(abonne
 function appliquer(layout: Disposition | null, garderOnglets = false) {
   const personnalisee = !!layout && !layout.auto;
   const widgets = personnalisee ? copie(layout.widgets) : compositionAuto(familles);
-  // Les compositions des onglets (Muscu, Hyrox) sont lues dès qu'une disposition existe, même si l'onglet « Tout » est automatique
+  // Les compositions des onglets (Muscu, Hyrox, Course…) sont lues dès qu'une disposition existe, même si l'onglet « Tout » est automatique
   const onglets = garderOnglets ? etat.onglets : ongletsVides();
   if (!garderOnglets) for (const sport of ONGLETS_PERSONNALISABLES) onglets[sport] = layout?.onglets?.[sport] ? copie(layout.onglets[sport]) : null;
   changer({ auto: !personnalisee, widgets, onglets, pret: true });
@@ -100,7 +100,7 @@ async function enregistrer() {
 }
 
 // --- Édition ---
-// On modifie toujours UNE liste : celle de l'onglet « Tout », ou celle d'un onglet riche (Muscu, Hyrox) qui a sa propre composition.
+// On modifie toujours UNE liste : celle de l'onglet « Tout », ou celle d'un onglet riche (Muscu, Hyrox, Course, Vélo, Natation) qui a sa propre composition.
 
 /** La liste en cours de modification. */
 export function listeEnEdition(e: EtatDisposition = etat): WidgetPlace[] {
@@ -145,7 +145,7 @@ export async function terminerEdition() {
 }
 
 /**
- * « Revenir à la composition automatique » : sur un onglet Muscu ou Hyrox, seul cet onglet est remis par défaut ;
+ * « Revenir à la composition automatique » : sur un onglet riche (Muscu, Hyrox, Course…), seul cet onglet est remis par défaut ;
  * sur l'onglet « Tout », tout l'accueil (onglets compris) est recomposé automatiquement.
  */
 export async function reinitialiserAuto() {

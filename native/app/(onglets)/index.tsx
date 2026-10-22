@@ -19,7 +19,7 @@ import { useAuth } from '@/stores/auth';
 import { ajouter, annulerEdition, changerTaille, chargerDisposition, deplacerWidget, demarrerEdition, listeEnEdition, reinitialiserAuto, retirer, terminerEdition, useDisposition } from '@/stores/disposition';
 import { useMenu } from '@/stores/menu';
 import { espace, rayon } from '@/theme/couleurs';
-import { couleurSport } from '@/theme/sports';
+import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 import { COMPOSANTS, WidgetBientot } from '@/widgets/composants';
@@ -98,7 +98,7 @@ export default function Accueil() {
   const ongletAModifier = ONGLETS_PERSONNALISABLES.includes(filtre) ? filtre : 'tout';
   const aAjouter = enEdition ? (disp.ongletEdition !== 'tout' ? disponiblesOnglet(widgets, disp.ongletEdition) : disponibles({ widgets }, familles)) : [];
 
-  const nomPersonnaliser = ONGLETS_PERSONNALISABLES.includes(filtre) ? `Personnaliser l'onglet ${filtre === 'muscu' ? 'Muscu' : 'Hyrox'}` : "Personnaliser l'accueil";
+  const nomPersonnaliser = ONGLETS_PERSONNALISABLES.includes(filtre) ? `Personnaliser l'onglet ${SPORTS[filtre as CleSport]?.court ?? filtre}` : "Personnaliser l'accueil";
 
   // Un S seul sur sa ligne est centré (voir solitaires)
   const seuls = solitaires(widgets.map((w) => w.taille));

@@ -390,10 +390,15 @@ function tailleValide(id: string, souhaitee: Taille | undefined): Taille {
 }
 
 /**
- * Widgets d'un onglet de sport. Muscu et Hyrox : composition fixe (ORDRE_ONGLET) ; tailles : celles de TAILLES_ONGLET, sinon celles de l'onglet « Tous ».
+ * Widgets d'un onglet de sport. Course, Vélo, Natation : leur liste enregistrée, sinon leur composition automatique. Muscu et Hyrox : composition fixe (ORDRE_ONGLET) ; tailles : celles de TAILLES_ONGLET, sinon celles de l'onglet « Tous ».
  * Autres sports : les widgets de la disposition qui concernent ce sport, ceux du sport d'abord.
  */
 export function composerOnglet(widgets: WidgetPlace[], sport: string, onglets: Onglets | null = null): WidgetPlace[] {
+  // Course, Vélo, Natation : leur propre liste (mode édition), sinon la composition automatique du sport. Ce qu'on voit en édition est donc ce qu'on voit après.
+  if (SPORTS_LIBRES.includes(sport)) {
+    const perso = onglets && Array.isArray(onglets[sport]) ? onglets[sport] : null;
+    return perso ? perso.map((w) => ({ ...w })) : compositionSport([sport]);
+  }
   if (Object.hasOwn(ORDRE_ONGLET, sport)) {
     // Composition personnalisée de cet onglet (mode édition), sinon la composition par défaut
     const perso = onglets && Array.isArray(onglets[sport]) ? onglets[sport] : null;
@@ -411,7 +416,7 @@ export function composerOnglet(widgets: WidgetPlace[], sport: string, onglets: O
   ];
 }
 
-/** Compositions propres aux onglets riches (Muscu, Hyrox) : une liste par sport, ou rien (= composition par défaut). */
+/** Compositions propres aux onglets personnalisables (Muscu, Hyrox, Course, Vélo, Natation) : une liste par sport, ou rien (= composition par défaut). */
 export type Onglets = Record<string, WidgetPlace[] | null | undefined>;
 
 /** La disposition de l'accueil telle qu'elle est enregistrée (user_preferences.layout). `auto` : elle suit les sports. */
@@ -445,10 +450,10 @@ export function normaliser(brut: unknown): Disposition | null {
   const b = brut as { auto?: unknown; widgets?: unknown; onglets?: Record<string, unknown> } | null;
   if (!b || typeof b !== 'object' || !Array.isArray(b.widgets)) return null;
   const resultat: Disposition = { v: 1, auto: b.auto === true, widgets: normaliserListe(b.widgets) };
-  // Compositions propres aux onglets Muscu et Hyrox (facultatif) : seuls les onglets connus sont gardés
+  // Compositions propres aux onglets personnalisables (facultatif) : seuls les onglets connus sont gardés
   if (b.onglets && typeof b.onglets === 'object') {
     const onglets: Record<string, WidgetPlace[]> = {};
-    for (const sport of Object.keys(ORDRE_ONGLET)) {
+    for (const sport of ONGLETS_PERSONNALISABLES) {
       if (Array.isArray(b.onglets[sport])) onglets[sport] = normaliserListe(b.onglets[sport]);
     }
     if (Object.keys(onglets).length) resultat.onglets = onglets;
@@ -456,8 +461,10 @@ export function normaliser(brut: unknown): Disposition | null {
   return resultat;
 }
 
-/** Les onglets de sport qui ont leur propre composition modifiable (Muscu, Hyrox). */
-export const ONGLETS_PERSONNALISABLES: string[] = Object.keys(ORDRE_ONGLET);
+/** Les onglets de sport dont la bibliothèque reste ouverte : on peut y ajouter n'importe quel widget qui concerne le sport. */
+export const SPORTS_LIBRES: string[] = ['course', 'velo', 'natation'];
+/** Les onglets de sport qui ont leur propre composition modifiable (Muscu, Hyrox, et les sports libres). */
+export const ONGLETS_PERSONNALISABLES: string[] = [...Object.keys(ORDRE_ONGLET), ...SPORTS_LIBRES];
 /** Onglets dont la bibliothèque est limitée à leurs propres widgets (ceux de ORDRE_ONGLET). */
 const ONGLETS_FERMES = new Set(['muscu']);
 

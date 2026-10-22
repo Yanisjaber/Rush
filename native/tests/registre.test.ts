@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compositionAuto, compositionSport, composerOnglet, estPertinent, existe, normaliserListe, ORDRE_ONGLET, TAILLES, TAILLES_ONGLET, WIDGETS } from '../src/data/registre.ts';
+import { compositionAuto, compositionSport, composerOnglet, estPertinent, existe, normaliserListe, ONGLETS_PERSONNALISABLES, ORDRE_ONGLET, TAILLES, TAILLES_ONGLET, WIDGETS } from '../src/data/registre.ts';
 import { construireContexte } from '../src/data/contexte.ts';
 import { donneesDemoAccueil } from '../src/data/accueil.ts';
 
@@ -107,11 +107,22 @@ test('composerOnglet : Muscu et Hyrox ont leur composition fixe, en gardant la t
   assert.deepEqual(composerOnglet(auto, 'hyrox').map((w) => w.id), [...ORDRE_ONGLET.hyrox]);
 });
 
-test('composerOnglet : un autre sport met l\'objectif en premier, puis les widgets de ce sport', () => {
-  const ids = composerOnglet(compositionSport(['course', 'velo']), 'course').map((w) => w.id);
+test('composerOnglet : un sport sans onglet à lui (trail) met l\'objectif en premier, puis les widgets de ce sport', () => {
+  const ids = composerOnglet(compositionSport(['course', 'velo']), 'trail').map((w) => w.id);
   assert.equal(ids[0], 'objectif');
   assert.ok(ids.indexOf('predictions') < ids.indexOf('forme'), 'les widgets de course passent avant les universels');
   assert.equal(ids.includes('puissance'), false);
+});
+
+test('composerOnglet : Course, Vélo et Natation ont leur propre liste, sinon leur composition automatique', () => {
+  const tout = compositionAuto(['course']); // l'onglet « Tous » ne compte pas
+  for (const sport of ['course', 'velo', 'natation']) {
+    assert.deepEqual(composerOnglet(tout, sport), compositionSport([sport]));
+    assert.ok(ONGLETS_PERSONNALISABLES.includes(sport));
+  }
+  const perso = { course: [{ id: 'kmhebdo', taille: 'm' as const }] };
+  assert.deepEqual(composerOnglet(tout, 'course', perso), [{ id: 'kmhebdo', taille: 'm' }]);
+  assert.deepEqual(composerOnglet(tout, 'velo', perso), compositionSport(['velo'])); // la liste de la course ne touche pas au vélo
 });
 
 test('construireContexte : « Tous » ne filtre rien, un sport filtre séances et séances prévues', () => {

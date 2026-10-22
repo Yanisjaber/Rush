@@ -41,3 +41,15 @@ test('composerOnglet : la composition personnalisée de Muscu l\'emporte', () =>
   const perso = { muscu: [{ id: 'tonnage', taille: 's' as const }] };
   assert.deepEqual(composerOnglet(compositionAuto(['muscu']), 'muscu', perso).map((w) => w.id), ['tonnage']);
 });
+
+test('disponiblesOnglet : Course reste ouvert (tout ce qui concerne la course), Muscu reste fermé', () => {
+  const course = disponiblesOnglet([], 'course');
+  assert.ok(course.includes('kmhebdo') && course.includes('objectif'));
+  assert.equal(course.includes('tonnage'), false); // un widget de muscu n'est pas proposé sur Course
+});
+
+test('normaliser : la liste de l\'onglet Course enregistrée est gardée, nettoyée', () => {
+  const d = normaliser({ v: 1, auto: true, widgets: [], onglets: { course: [{ id: 'kmhebdo', taille: 'm' }, { id: 'inconnu', taille: 's' }], velo: 'nimporte quoi' } });
+  assert.deepEqual(d?.onglets, { course: [{ id: 'kmhebdo', taille: 'm' }] });
+});
+
