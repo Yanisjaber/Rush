@@ -33,7 +33,6 @@ const dateLongue = (iso: string) => {
 // Lecture seule pour l'instant : ajouter une séance, une note ou un repos arrive avec leurs panneaux.
 export default function Calendrier() {
   const p = usePalette();
-  const router = useRouter();
   const bas = useSafeAreaInsets().bottom;
   const { filtre } = useMenu();
   const maintenant = useMemo(() => new Date(), []);
@@ -104,8 +103,9 @@ export default function Calendrier() {
           <Carte valeur={chargeDuMois.toLocaleString('fr-FR')} unite="pts" legende="points de charge" />
           {principaleDuMois ? <Carte valeur={nombre(principaleDuMois.valeur)} unite={UNITES[principaleDuMois.unite].court} legende={UNITES[principaleDuMois.unite].dit} /> : null}
         </View>
-        <View style={styles.boutons}>
-          {!estMoisCourant ? (
+        {/* Le retour à aujourd'hui, seulement quand on regarde un autre mois */}
+        {!estMoisCourant ? (
+          <View style={styles.boutons}>
             <Pressable
               onPress={() => setCible({ annee: maintenant.getFullYear(), mois: maintenant.getMonth() })}
               accessibilityRole="button"
@@ -114,11 +114,8 @@ export default function Calendrier() {
             >
               <Text style={[typo.corpsFort, { color: p.texte }]}>Aujourd'hui</Text>
             </Pressable>
-          ) : null}
-          <Pressable onPress={() => router.push('/cycles')} accessibilityRole="button" accessibilityLabel="Mes cycles d'entraînement" style={[styles.retour, { borderColor: p.contourChamp }]}>
-            <Text style={[typo.corpsFort, { color: p.texte }]}>Cycles</Text>
-          </Pressable>
-        </View>
+          </View>
+        ) : null}
 
         {erreur ? (
           <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
