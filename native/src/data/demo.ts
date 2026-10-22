@@ -175,6 +175,38 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
       category: 'entrainement',
     });
   }
+  // Des séances de CrossFit et de HIIT environ une et demie par semaine (de 25 à 60 minutes, cardio de 75 à 90 % de la FC max)
+  const wodDemo = [
+    { i: 1, nom: 'Fran', sport: 'Crossfit', min: 28, fc: 172 }, { i: 5, nom: 'AMRAP 20', sport: 'Crossfit', min: 45, fc: 160 },
+    { i: 8, nom: 'EMOM 30', sport: 'HighIntensityIntervalTraining', min: 35, fc: 152 }, { i: 12, nom: 'Cindy', sport: 'Crossfit', min: 30, fc: 168 },
+    { i: 15, nom: 'Chipper', sport: 'Crossfit', min: 55, fc: 164 }, { i: 19, nom: 'Intervalles rameur', sport: 'HighIntensityIntervalTraining', min: 30, fc: 158 },
+    { i: 22, nom: 'Murph', sport: 'Crossfit', min: 60, fc: 166 }, { i: 26, nom: 'AMRAP 15', sport: 'Crossfit', min: 38, fc: 156 },
+    { i: 29, nom: 'Grace', sport: 'Crossfit', min: 25, fc: 174 }, { i: 33, nom: 'EMOM 30', sport: 'HighIntensityIntervalTraining', min: 35, fc: 150 },
+    { i: 36, nom: 'Helen', sport: 'Crossfit', min: 32, fc: 169 }, { i: 40, nom: 'AMRAP 20', sport: 'Crossfit', min: 45, fc: 158 },
+    { i: 47, nom: 'Chipper', sport: 'Crossfit', min: 52, fc: 162 }, { i: 54, nom: 'Fran', sport: 'Crossfit', min: 28, fc: 170 },
+    { i: 61, nom: 'Intervalles rameur', sport: 'HighIntensityIntervalTraining', min: 30, fc: 155 }, { i: 68, nom: 'Murph', sport: 'Crossfit', min: 62, fc: 164 },
+  ];
+  for (const w of wodDemo) {
+    if (w.i >= nbJours) continue;
+    const iso = dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - w.i));
+    const tss = Math.round(w.min * 1.4);
+    quotidien[iso] = (quotidien[iso] || 0) + tss;
+    seances.push({
+      id: `demo-wod-${iso}`,
+      name: w.nom,
+      sport: w.sport,
+      start_date_local: `${iso}T12:15:00+00:00`,
+      moving_time: w.min * 60,
+      distance_km: null,
+      total_elevation_gain: null,
+      avg_heartrate: w.fc,
+      ftp_at_time: null,
+      avg_watts: null,
+      np: null,
+      tss,
+      category: 'entrainement',
+    });
+  }
   // Des sorties de VTT et de gravel environ toutes les semaines (de 12 à 35 m de D+ par km : du roulant au montagneux), pour que le suivi VTT ait quelque chose à montrer
   const vttDemo = [
     { i: 4, nom: 'VTT technique', sport: 'MountainBikeRide', km: 32, dPlus: 1050, min: 190 },
@@ -325,6 +357,7 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
     objectifs: [
       { id: 'demo-hyrox-open', name: 'Hyrox Open', date: plusJours(27), sport: 'Hyrox', km: null, d_plus: null, priority: 'A', duration: 70, category: 'competition' },
       { id: 'demo-ramonville', name: 'Ronde de Ramonville', date: '2026-12-13', sport: 'Run', km: 10.15, d_plus: 42, priority: 'A', duration: 40, category: 'competition' },
+      { id: 'demo-crossfit-throwdown', name: 'Throwdown de Toulouse', date: plusJours(40), sport: 'Crossfit', km: null, d_plus: null, priority: 'B', duration: 180, category: 'competition' },
       { id: 'demo-vtt-cretes', name: 'Marathon VTT des Crêtes', date: plusJours(56), sport: 'MountainBikeRide', km: 60, d_plus: 1900, priority: 'B', duration: 330, category: 'competition' },
       { id: 'demo-traversee', name: 'Traversée du lac d\'Annecy', date: plusJours(70), sport: 'Swim', km: 4, d_plus: null, priority: 'B', duration: 110, category: 'competition' },
       { id: 'demo-triathlon-gruissan', name: 'Triathlon M de Gruissan', date: plusJours(90), sport: 'Triathlon', km: 51.5, d_plus: null, priority: 'A', duration: 150, category: 'competition' },
