@@ -250,6 +250,8 @@ export const METRIQUE_DU_SPORT: Record<string, UniteSemaine | null> = {
 export interface ChiffresSemaine {
   /** Le temps de la semaine (faites + prévues), en heures, une décimale. */
   heures: number;
+  /** Le même temps en secondes, pour l'écrire en « 11h30 ». */
+  secondes: number;
   /** L'info la plus importante du sport choisi ; null sur « Tous », sans valeur cette semaine, ou pour un sport qui n'en a pas. */
   principale: MetriqueSemaine | null;
 }
@@ -259,10 +261,11 @@ export interface ChiffresSemaine {
  * Le fait et le prévu comptent ensemble.
  */
 export function chiffresSemaine(semaine: JourGrille[], filtre: string): ChiffresSemaine {
-  const heures = Math.round((semaine.reduce((t, j) => t + secondesJour(j), 0) / 3600) * 10) / 10;
+  const secondes = semaine.reduce((t, j) => t + secondesJour(j), 0);
+  const heures = Math.round((secondes / 3600) * 10) / 10;
   const unite = Object.hasOwn(METRIQUE_DU_SPORT, filtre) ? METRIQUE_DU_SPORT[filtre] : 'km';
-  if (!unite) return { heures, principale: null };
+  if (!unite) return { heures, secondes, principale: null };
   const valeur = unite === 'km' ? semaine.reduce((t, j) => t + kmJour(j), 0) : semaine.reduce((t, j) => t + j.series, 0);
-  if (!(valeur > 0)) return { heures, principale: null };
-  return { heures, principale: { valeur: unite === 'km' ? Math.round(valeur * 10) / 10 : Math.round(valeur), unite } };
+  if (!(valeur > 0)) return { heures, secondes, principale: null };
+  return { heures, secondes, principale: { valeur: unite === 'km' ? Math.round(valeur * 10) / 10 : Math.round(valeur), unite } };
 }

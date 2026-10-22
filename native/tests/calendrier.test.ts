@@ -166,7 +166,7 @@ const semaineDu = (g: ReturnType<typeof grilleMois>, iso: string) => g.semaines.
 
 test('chiffresSemaine : sur « Tous », le temps seul', () => {
   const g = grilleMois(2026, 9, { seances: [avecDistance('a', '2026-10-19', 'Run', 60, 10.4), avecDistance('b', '2026-10-21', 'Ride', 90, 32)], planifiees: [prevueCal('p', '2026-10-24', 60)] }, auj);
-  assert.deepEqual(chiffresSemaine(semaineDu(g, '2026-10-19'), 'tout'), { heures: 3.5, principale: null }); // 60 + 90 + 60 minutes
+  assert.deepEqual(chiffresSemaine(semaineDu(g, '2026-10-19'), 'tout'), { heures: 3.5, secondes: 12600, principale: null }); // 60 + 90 + 60 minutes
 });
 
 test('chiffresSemaine : un sport montre son temps ET son info principale (kilomètres, séries), faits et prévus ensemble', () => {
@@ -176,7 +176,7 @@ test('chiffresSemaine : un sport montre son temps ET son info principale (kilom�
     series: [{ date: '2026-10-19' }, { date: '2026-10-19' }, { date: '2026-10-20' }],
   }, auj);
   const sem = semaineDu(g, '2026-10-19');
-  assert.deepEqual(chiffresSemaine(sem, 'course'), { heures: 2.5, principale: { valeur: 27.6, unite: 'km' } }); // 10,4 + 5,15 + 12 = 27,55
+  assert.deepEqual(chiffresSemaine(sem, 'course'), { heures: 2.5, secondes: 9000, principale: { valeur: 27.6, unite: 'km' } }); // 10,4 + 5,15 + 12 = 27,55
   assert.deepEqual(chiffresSemaine(sem, 'muscu').principale, { valeur: 3, unite: 'series' });
   assert.equal(chiffresSemaine(sem, 'hyrox').principale, null); // Hyrox n'a pas de distance : le temps seul
   assert.deepEqual(chiffresSemaine(sem, 'aviron').principale, { valeur: 27.6, unite: 'km' }); // un sport sans règle : les kilomètres
@@ -184,7 +184,7 @@ test('chiffresSemaine : un sport montre son temps ET son info principale (kilom�
 
 test('chiffresSemaine : une info principale à zéro n\'est pas affichée ; une semaine vide a zéro heure', () => {
   const g = grilleMois(2026, 9, { seances: [seanceCal('m', '2026-10-19', 'WeightTraining', 60, 40)] }, auj);
-  assert.deepEqual(chiffresSemaine(semaineDu(g, '2026-10-19'), 'muscu'), { heures: 1, principale: null }); // pas de série enregistrée
-  assert.deepEqual(chiffresSemaine(g.semaines[0], 'course'), { heures: 0, principale: null });
+  assert.deepEqual(chiffresSemaine(semaineDu(g, '2026-10-19'), 'muscu'), { heures: 1, secondes: 3600, principale: null }); // pas de série enregistrée
+  assert.deepEqual(chiffresSemaine(g.semaines[0], 'course'), { heures: 0, secondes: 0, principale: null });
 });
 

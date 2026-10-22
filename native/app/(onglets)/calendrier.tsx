@@ -11,7 +11,7 @@ import { Bouton } from '@/components/Bouton';
 import { chargeJour, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
 import { couleurNote, libelleNote } from '@/data/annotations';
 import { familleAffichage, garderSeance } from '@/data/familles';
-import { dateIsoLocale, formatDuree } from '@/data/format';
+import { dateIsoLocale, formatDuree, formatHeuresMinutes } from '@/data/format';
 import { useDonneesCalendrier } from '@/hooks/useDonneesCalendrier';
 import { useMenu } from '@/stores/menu';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
@@ -297,8 +297,7 @@ function ProfilSemaine({ semaine, maxi, mono, filtre }: { semaine: JourGrille[];
     >
       <View style={styles.chiffresSemaine}>
         <Text style={[styles.chiffreSemaine, { color: total ? p.texteDoux : p.texteMuet }]}>
-          {total ? nombre(c.heures) : '—'}
-          {total ? <Text style={styles.unite}> h</Text> : null}
+          {total ? formatHeuresMinutes(c.secondes) : '—'}
         </Text>
         {c.principale ? (
           <Text style={[styles.chiffreSemaine, { color: p.texte }]}>
