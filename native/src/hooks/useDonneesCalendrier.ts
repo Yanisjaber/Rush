@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { donneesDemoAccueil } from '@/data/accueil';
-import { chargerAnnotations, chargerPlanifiees, chargerSeancesPeriode } from '@/data/api';
+import { chargerAnnotations, chargerCycles, chargerPlanifiees, chargerSeancesPeriode } from '@/data/api';
 import { bornesGrille } from '@/data/calendrier';
 import { annotationsDemo } from '@/data/demo';
 import { useAuth } from '@/stores/auth';
-import type { Note, Prevue, Seance } from '@/data/types';
+import { cyclesDemo, useVersionCycles } from '@/stores/cycles';
+import type { Cycle, Note, Prevue, Seance } from '@/data/types';
 
 export interface DonneesCalendrier {
   seances: Seance[];
@@ -12,9 +13,10 @@ export interface DonneesCalendrier {
   objectifs: Prevue[]; // compétitions
   notes: Note[];
   repos: string[];
+  cycles: Cycle[];
 }
 
-const vide: DonneesCalendrier = { seances: [], planifiees: [], objectifs: [], notes: [], repos: [] };
+const vide: DonneesCalendrier = { seances: [], planifiees: [], objectifs: [], notes: [], repos: [], cycles: [] };
 
 // Les données d'un mois affiché (la grille déborde sur les mois voisins) : la démo ou le compte connecté (lecture seule).
 export function useDonneesCalendrier(annee: number, mois: number): {
@@ -27,6 +29,7 @@ export function useDonneesCalendrier(annee: number, mois: number): {
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
   const { debut, fin } = bornesGrille(annee, mois);
+  const version = useVersionCycles(); // change à chaque création, modification ou suppression de cycle : on recharge
   const cle = `${userId}|${debut}|${fin}`;
 
   const demoDonnees = useMemo((): DonneesCalendrier | null => {
@@ -42,8 +45,10 @@ export function useDonneesCalendrier(annee: number, mois: number): {
       objectifs: prevues.filter((p) => p.category === 'competition'),
       notes: a.notes.filter((n) => n.from_date <= fin && n.to_date >= debut),
       repos: a.repos.filter((r) => dans(r)),
+      cycles: cyclesDemo().filter((c) => c.from_date <= fin && c.to_date >= debut),
     };
-  }, [demo, debut, fin]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demo, debut, fin, version]);
 
   const [reel, setReel] = useState<{ cle: string; donnees: DonneesCalendrier; erreur: string } | null>(null);
   const [actualisation, setActualisation] = useState(false);
@@ -52,7 +57,7 @@ export function useDonneesCalendrier(annee: number, mois: number): {
   const charger = useCallback(async () => {
     if (!userId) return;
     const numero = ++numeroRequete.current;
-    const [s, p, a] = await Promise.all([chargerSeancesPeriode(userId, debut, fin), chargerPlanifiees(userId, debut, fin), chargerAnnotations(userId, debut, fin)]);
+    const [s, p, a, c] = await Promise.all([chargerSeancesPeriode(userId, debut, fin), chargerPlanifiees(userId, debut, fin), chargerAnnotations(userId, debut, fin), chargerCycles(userId, debut, fin)]);
     if (numero !== numeroRequete.current) return; // une requête plus récente a pris le relais (on a changé de mois entre-temps)
     const prevues = p.data ?? [];
     setReel({
@@ -63,10 +68,12 @@ export function useDonneesCalendrier(annee: number, mois: number): {
         objectifs: prevues.filter((x) => x.category === 'competition'),
         notes: a.data?.notes ?? [],
         repos: a.data?.repos ?? [],
+        // Des cycles qui ne se chargent pas (table pas encore créée…) ne gênent pas le calendrier : il s'affiche sans bandes
+        cycles: c.data ?? [],
       },
       erreur: s.erreur || p.erreur || a.erreur,
     });
-  }, [userId, debut, fin, cle]);
+  }, [userId, debut, fin, cle, version]);
 
   useEffect(() => {
     if (!demo) void charger();
