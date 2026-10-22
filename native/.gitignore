@@ -16,3 +16,6 @@ android/
 *.mobileprovision
 GoogleService-Info.plist
 google-services.json
+
+# Dossier de l'éditeur (JetBrains)
+.idea/
