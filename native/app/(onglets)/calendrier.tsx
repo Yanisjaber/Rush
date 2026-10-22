@@ -438,9 +438,10 @@ const styles = StyleSheet.create({
   retour: { minHeight: 44, borderWidth: 1.5, borderRadius: rayon.rond, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
-  grille: { borderRadius: rayon.bloc, paddingHorizontal: 8, paddingVertical: 10, gap: 4 },
+  grille: { borderRadius: rayon.bloc, paddingHorizontal: 8, paddingVertical: 10, gap: 4, overflow: 'hidden' },
   rangee: { flexDirection: 'row', alignItems: 'stretch' },
-  fondSemaine: { position: 'absolute', top: 4, bottom: 4, right: 4, width: 58, borderRadius: rayon.base },
+  // Collée au bord droit, en haut et en bas de la carte : c'est la carte (overflow hidden) qui arrondit les coins de la bande
+  fondSemaine: { position: 'absolute', top: 0, bottom: 0, right: 0, width: 62 },
   jours: { flex: 1, flexDirection: 'row' },
   entete: { width: `${100 / 7}%`, textAlign: 'center', paddingBottom: 4 },
   enteteSemaine: { width: 54, textAlign: 'right', paddingBottom: 4, paddingRight: 4 },
