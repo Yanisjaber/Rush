@@ -68,3 +68,11 @@ test('garderSeance : Triathlon garde natation, vélo et course ; Duathlon garde 
   // Les autres filtres ne changent pas : Course ne garde toujours que la course
   assert.equal(garderSeance({ sport: 'Ride' }, 'course'), false);
 });
+
+test('garderSeance : CrossFit garde le CrossFit, le HIIT et la musculation (force notée à part), pas la course', () => {
+  for (const sport of ['Crossfit', 'HighIntensityIntervalTraining', 'WeightTraining']) assert.equal(garderSeance({ sport }, 'crossfit'), true, sport);
+  assert.equal(garderSeance({ sport: 'Run' }, 'crossfit'), false);
+  // Musculation seule ne garde toujours pas le CrossFit
+  assert.equal(garderSeance({ sport: 'Crossfit' }, 'muscu'), false);
+});
+

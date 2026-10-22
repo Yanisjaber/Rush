@@ -77,15 +77,17 @@ export function familleAffichage(typeBrut: unknown): string {
 }
 
 /**
- * Les pastilles qui regroupent plusieurs disciplines : un triathlète a ses séances en natation, vélo et course, pas en « triathlon »
+ * Les pastilles qui regroupent plusieurs disciplines (le CrossFit garde aussi la musculation) : un triathlète a ses séances en natation, vélo et course, pas en « triathlon »
  * (type propre à l'app, pour une course ou une saisie à la main). Leur onglet garde donc toutes ses disciplines.
  */
 export const DISCIPLINES_DU_FILTRE: Record<string, readonly string[]> = {
   triathlon: ['triathlon', 'natation', 'velo', 'vtt', 'course', 'trail'],
   duathlon: ['duathlon', 'velo', 'vtt', 'course', 'trail'],
+  // Un crossfiteur note souvent sa force en « musculation » : son onglet la garde
+  crossfit: ['crossfit', 'muscu'],
 };
 
-/** Une séance passe-t-elle le filtre de l'accueil ? Le sport de la pastille (Trail et VTT ont la leur, Triathlon et Duathlon regroupent leurs disciplines) ; « tout » garde tout. */
+/** Une séance passe-t-elle le filtre de l'accueil ? Le sport de la pastille (Trail et VTT ont la leur, Triathlon, Duathlon et CrossFit regroupent leurs disciplines) ; « tout » garde tout. */
 export function garderSeance(seance: { sport?: string } | null | undefined, filtre = 'tout'): boolean {
   if (filtre === 'tout') return true;
   const famille = familleBarre(seance?.sport);
