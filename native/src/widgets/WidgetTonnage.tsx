@@ -12,7 +12,7 @@ export function WidgetTonnage({ contexte, taille = 'm' }: WidgetProps) {
     <SerieHebdo
       taille={taille}
       couleur={p.sportMuscu}
-      titreTuile="Tonnage / semaine"
+      titreTuile="Tonnage / sem."
       titreL="Tonnage par semaine"
       valeur={formatNombre(t.derniere)}
       unite="kg"
