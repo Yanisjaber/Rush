@@ -361,7 +361,8 @@ function ProfilSemaine({ semaine, maxi, mono, filtre }: { semaine: JourGrille[];
             key={j.iso}
             style={[
               styles.jourProfil,
-              { height: j.secondes ? Math.max(3, (j.secondes / maxi) * HAUTEUR_PROFIL) : 2, backgroundColor: j.famille ? (mono ? p.sportNeutre : couleurSport(p, j.famille)) : p.traitFort, opacity: j.fait || !j.secondes ? 1 : 0.35 },
+              // Un jour sans séance : un point de 4 pt, donc une semaine vide fait un pointillé
+              { height: j.secondes ? Math.max(6, (j.secondes / maxi) * HAUTEUR_PROFIL) : 4, backgroundColor: j.famille ? (mono ? p.sportNeutre : couleurSport(p, j.famille)) : p.traitFort, opacity: j.fait || !j.secondes ? 1 : 0.35 },
             ]}
           />
         ))}
@@ -464,7 +465,7 @@ function Detail({ jour }: { jour: JourGrille }) {
                 accessibilityLabel={`Séance prévue : ${nom}`}
                 style={[styles.ligneSeance, { borderTopColor: p.trait }]}
               >
-                <View style={[styles.ligneBarre, { borderColor: couleur, borderWidth: 2, borderStyle: 'dashed' }]} />
+                <View style={[styles.ligneBarre, { borderColor: couleur, borderWidth: 2, borderStyle: 'dotted' }]} />
                 <View style={{ flex: 1 }}>
                   <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte }]}>{nom}</Text>
                   <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>{detail}</Text>
