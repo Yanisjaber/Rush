@@ -1,17 +1,18 @@
 import { SerieHebdo } from '@/components/SerieHebdo';
 import { formatNombre } from '@/data/format';
-import { deniveleTrailParSemaine } from '@/data/trail';
+import { deniveleParSemaineSport, type SportDenivele } from '@/data/trail';
 import type { WidgetProps } from '@/data/types';
 import { usePalette } from '@/theme/usePalette';
 
-// Le dénivelé positif grimpé chaque semaine en trail, sur 12 semaines (voir SerieHebdo).
-export function WidgetDeniveleTrail({ contexte, taille = 'm' }: WidgetProps) {
+// Le dénivelé positif grimpé chaque semaine, sur 12 semaines (voir SerieHebdo) : le même widget pour le trail et pour le VTT.
+export function DeniveleParSemaine({ contexte, taille = 'm', sport }: WidgetProps & { sport: SportDenivele }) {
   const p = usePalette();
-  const d = deniveleTrailParSemaine(contexte.toutesSeances);
+  const d = deniveleParSemaineSport(contexte.toutesSeances, sport);
+  const nom = sport === 'vtt' ? 'VTT' : 'trail';
   return (
     <SerieHebdo
       taille={taille}
-      couleur={p.sportCourse}
+      couleur={sport === 'vtt' ? p.sportVelo : p.sportCourse}
       titreTuile="D+ / semaine"
       titreL="Dénivelé par semaine"
       valeur={formatNombre(d.derniere)}
@@ -20,10 +21,14 @@ export function WidgetDeniveleTrail({ contexte, taille = 'm' }: WidgetProps) {
       formater={(n) => formatNombre(n)}
       badge={d.ecartPct != null ? { texte: `${d.ecartPct > 0 ? '+' : ''}${d.ecartPct} % vs moyenne`, ton: d.ecartPct >= 0 ? 'ok' : 'neutre' } : null}
       periode="12 dernières semaines"
-      pied="Dénivelé positif de tes sorties de trail, additionné sur 7 jours glissants. Pointillés : ta moyenne."
-      videTuile="Pas encore de trail"
-      videL="Pas encore de dénivelé en trail. Dès qu'une sortie de trail en a, ton D+ par semaine apparaît ici."
-      etiquette="Dénivelé positif en trail par semaine sur 12 semaines"
+      pied={`Dénivelé positif de tes sorties de ${nom}, additionné sur 7 jours glissants. Pointillés : ta moyenne.`}
+      videTuile={`Pas encore de ${nom}`}
+      videL={`Pas encore de dénivelé en ${nom}. Dès qu'une sortie de ${nom} en a, ton D+ par semaine apparaît ici.`}
+      etiquette={`Dénivelé positif en ${nom} par semaine sur 12 semaines`}
     />
   );
+}
+
+export function WidgetDeniveleTrail(props: WidgetProps) {
+  return <DeniveleParSemaine {...props} sport="trail" />;
 }

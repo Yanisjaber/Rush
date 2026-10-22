@@ -1,21 +1,36 @@
-// Trail : le dénivelé et le km-effort par semaine, la préparation face à la course visée, les meilleures sorties.
-// Calculs purs, sans écran (testés dans tests/trail.test.ts). On ne regarde que les sorties de type trail (TrailRun), pas la course sur route.
+// Trail et VTT : le dénivelé par semaine, la préparation face à la course visée, les meilleures sorties (le trail a aussi le km-effort).
+// Calculs purs, sans écran (testés dans tests/trail.test.ts et tests/vtt.test.ts). On ne regarde que les sorties du sport (TrailRun pour le trail,
+// VTT, gravel et VTT électrique pour le VTT), pas la course sur route ni le vélo de route.
 // Le km-effort est la mesure usuelle du trail : 1 km-effort = 1 km + 100 m de dénivelé positif.
-import { familleSport } from './familles.ts';
+import { familleBarre, familleSport } from './familles.ts';
 import { joursAvant } from './format.ts';
 import { cumulParSemaine, type CumulHebdo } from './hebdo.ts';
 import { indexSemaine } from './synthese.ts';
 import type { Objectif, Seance } from './types.ts';
 
+/** Les deux sports de dénivelé qui ont leur onglet. */
+export type SportDenivele = 'trail' | 'vtt';
+
 const EST_TRAIL = (s: Seance): boolean => familleSport(s.sport) === 'trail' && s.moving_time > 0;
+const EST_SPORT = (sport: SportDenivele) => (s: Seance): boolean => s.moving_time > 0 && (sport === 'trail' ? familleSport(s.sport) === 'trail' : familleBarre(s.sport) === 'vtt');
 const positif = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0;
 
 /** Les kilomètres-effort d'une sortie : distance + dénivelé positif ÷ 100. */
 export const kmEffort = (s: Seance): number => (positif(s.distance_km) ? s.distance_km : 0) + (positif(s.total_elevation_gain) ? s.total_elevation_gain / 100 : 0);
 
-/** Dénivelé positif grimpé par semaine glissante (mètres). */
-export function deniveleTrailParSemaine(seances: Seance[], nbSemaines = 12, aujourdhui: Date = new Date()): CumulHebdo {
-  return cumulParSemaine(seances, (s) => EST_TRAIL(s) && positif(s.total_elevation_gain), (s) => Number(s.total_elevation_gain), nbSemaines, aujourdhui, 0);
+/** Dénivelé positif grimpé par semaine glissante (mètres), pour un sport de dénivelé. */
+export function deniveleParSemaineSport(seances: Seance[], sport: SportDenivele, nbSemaines = 12, aujourdhui: Date = new Date()): CumulHebdo {
+  const est = EST_SPORT(sport);
+  return cumulParSemaine(seances, (s) => est(s) && positif(s.total_elevation_gain), (s) => Number(s.total_elevation_gain), nbSemaines, aujourdhui, 0);
+}
+
+/** Dénivelé positif grimpé par semaine glissante en trail (mètres). */
+export const deniveleTrailParSemaine = (seances: Seance[], nbSemaines = 12, aujourdhui: Date = new Date()): CumulHebdo => deniveleParSemaineSport(seances, 'trail', nbSemaines, aujourdhui);
+
+/** Kilomètres par semaine glissante (une décimale), pour un sport de dénivelé. */
+export function kmParSemaineSport(seances: Seance[], sport: SportDenivele, nbSemaines = 12, aujourdhui: Date = new Date()): CumulHebdo {
+  const est = EST_SPORT(sport);
+  return cumulParSemaine(seances, (s) => est(s) && positif(s.distance_km), (s) => Number(s.distance_km), nbSemaines, aujourdhui, 1);
 }
 
 /** Km-effort par semaine glissante (une décimale). */
@@ -33,11 +48,13 @@ export interface SortieTrail {
 }
 
 const enSortie = (s: Seance): SortieTrail => ({ id: s.id, nom: s.name, date: String(s.start_date_local).slice(0, 10), km: positif(s.distance_km) ? s.distance_km : 0, dPlus: positif(s.total_elevation_gain) ? s.total_elevation_gain : 0, secondes: s.moving_time });
-const recentes = (seances: Seance[], nbSemaines: number, aujourdhui: Date): Seance[] =>
-  seances.filter((s) => {
+const recentes = (seances: Seance[], nbSemaines: number, aujourdhui: Date, sport: SportDenivele = 'trail'): Seance[] => {
+  const est = EST_SPORT(sport);
+  return seances.filter((s) => {
     const i = indexSemaine(s.start_date_local, aujourdhui);
-    return EST_TRAIL(s) && i >= 0 && i < nbSemaines;
+    return est(s) && i >= 0 && i < nbSemaines;
   });
+};
 
 export interface MeilleuresTrail {
   plusGrosDPlus: SortieTrail | null;
@@ -47,9 +64,9 @@ export interface MeilleuresTrail {
   top: SortieTrail[];
 }
 
-/** Les meilleures sorties de trail des 12 dernières semaines : le plus gros D+, la plus longue distance, la plus longue durée. */
-export function meilleuresTrail(seances: Seance[], nbSemaines = 12, aujourdhui: Date = new Date()): MeilleuresTrail {
-  const sorties = recentes(seances, nbSemaines, aujourdhui).map(enSortie);
+/** Les meilleures sorties des 12 dernières semaines pour un sport de dénivelé : le plus gros D+, la plus longue distance, la plus longue durée. */
+export function meilleuresSorties(seances: Seance[], sport: SportDenivele, nbSemaines = 12, aujourdhui: Date = new Date()): MeilleuresTrail {
+  const sorties = recentes(seances, nbSemaines, aujourdhui, sport).map(enSortie);
   const max = (cle: (s: SortieTrail) => number): SortieTrail | null => (sorties.length && Math.max(...sorties.map(cle)) > 0 ? sorties.reduce((a, b) => (cle(b) > cle(a) ? b : a)) : null);
   return {
     plusGrosDPlus: max((s) => s.dPlus),
@@ -58,6 +75,9 @@ export function meilleuresTrail(seances: Seance[], nbSemaines = 12, aujourdhui: 
     top: sorties.filter((s) => s.dPlus > 0).sort((a, b) => b.dPlus - a.dPlus).slice(0, 5),
   };
 }
+
+/** Les meilleures sorties de trail des 12 dernières semaines. */
+export const meilleuresTrail = (seances: Seance[], nbSemaines = 12, aujourdhui: Date = new Date()): MeilleuresTrail => meilleuresSorties(seances, 'trail', nbSemaines, aujourdhui);
 
 export interface CibleTrail {
   nom: string;
@@ -85,24 +105,30 @@ export interface PrepaTrail {
 /** Une course sur route avec un peu de dénivelé n'est pas un objectif de trail : en dessous de ce D+, on ne la retient pas. */
 const DPLUS_MINI_COURSE = 300;
 
-/** La prochaine course à dénivelé : la plus proche à venir parmi les objectifs de trail, ou de course avec au moins 300 m de D+. */
-export function cibleTrail(objectifs: Objectif[], aujourdhui: Date = new Date()): CibleTrail | null {
+/**
+ * La prochaine course à dénivelé : la plus proche à venir. Trail : un objectif de trail, ou de course avec au moins 300 m de D+.
+ * VTT : un objectif de VTT, gravel ou VTT électrique avec un D+ (un objectif de vélo de route n'est pas une cible de VTT).
+ */
+export function cibleDenivele(objectifs: Objectif[], sport: SportDenivele = 'trail', aujourdhui: Date = new Date()): CibleTrail | null {
   const retenu = (o: Objectif): boolean => {
-    const famille = familleSport(o.sport);
     const dPlus = Number(o.d_plus);
-    return positif(dPlus) && (famille === 'trail' || (famille === 'course' && dPlus >= DPLUS_MINI_COURSE));
+    if (!positif(dPlus)) return false;
+    if (sport === 'vtt') return familleBarre(o.sport) === 'vtt';
+    const famille = familleSport(o.sport);
+    return famille === 'trail' || (famille === 'course' && dPlus >= DPLUS_MINI_COURSE);
   };
-  const prochaine = objectifs
-    .filter((o) => retenu(o) && joursAvant(o.date, aujourdhui) >= 0)
-    .sort((a, b) => a.date.localeCompare(b.date))[0];
+  const prochaine = objectifs.filter((o) => retenu(o) && joursAvant(o.date, aujourdhui) >= 0).sort((a, b) => a.date.localeCompare(b.date))[0];
   return prochaine ? { nom: prochaine.name, date: prochaine.date, km: positif(Number(prochaine.km)) ? Number(prochaine.km) : null, dPlus: Number(prochaine.d_plus), joursRestants: joursAvant(prochaine.date, aujourdhui) } : null;
 }
 
-/** Où tu en es de ta préparation au dénivelé de la course visée. */
-export function prepaTrail(seances: Seance[], objectifs: Objectif[], aujourdhui: Date = new Date()): PrepaTrail {
-  const cible = cibleTrail(objectifs, aujourdhui);
-  const douze = recentes(seances, 12, aujourdhui).map(enSortie);
-  const quatre = recentes(seances, 4, aujourdhui).map(enSortie);
+/** La prochaine course de trail à dénivelé. */
+export const cibleTrail = (objectifs: Objectif[], aujourdhui: Date = new Date()): CibleTrail | null => cibleDenivele(objectifs, 'trail', aujourdhui);
+
+/** Où tu en es de ta préparation au dénivelé de la course visée, pour un sport de dénivelé. */
+export function prepaDenivele(seances: Seance[], objectifs: Objectif[], sport: SportDenivele = 'trail', aujourdhui: Date = new Date()): PrepaTrail {
+  const cible = cibleDenivele(objectifs, sport, aujourdhui);
+  const douze = recentes(seances, 12, aujourdhui, sport).map(enSortie);
+  const quatre = recentes(seances, 4, aujourdhui, sport).map(enSortie);
   const meilleureDPlus = Math.max(0, ...douze.map((s) => s.dPlus));
   const meilleureDistance = Math.max(0, ...douze.map((s) => s.km));
   const dPlus4Semaines = Math.round(quatre.reduce((t, s) => t + s.dPlus, 0));
@@ -116,3 +142,6 @@ export function prepaTrail(seances: Seance[], objectifs: Objectif[], aujourdhui:
     pctDistance: cible?.km ? Math.round((meilleureDistance / cible.km) * 100) : null,
   };
 }
+
+/** Où tu en es de ta préparation à ta course de trail. */
+export const prepaTrail = (seances: Seance[], objectifs: Objectif[], aujourdhui: Date = new Date()): PrepaTrail => prepaDenivele(seances, objectifs, 'trail', aujourdhui);

@@ -4,30 +4,32 @@ import { ListeCompacte } from '@/components/ListeCompacte';
 import { StatCle } from '@/components/StatCle';
 import { Tuile } from '@/components/Tuile';
 import { formatKm, formatNombre } from '@/data/format';
-import { prepaTrail } from '@/data/trail';
+import { prepaDenivele, type SportDenivele } from '@/data/trail';
 import type { WidgetProps } from '@/data/types';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Où tu en es du dénivelé de ta prochaine course : ton plus gros D+ en une sortie (12 semaines) face au D+ de la course.
+// Où tu en es du dénivelé de ta prochaine course (trail ou VTT) : ton plus gros D+ en une sortie (12 semaines) face au D+ de la course.
 //  - XS : le pourcentage ; S : + la barre de progression ; M : + les chiffres en liste ;
 //  - L : le D+ et la distance face à la course, et ton dénivelé des 4 dernières semaines.
-export function WidgetPrepaTrail({ contexte, taille = 'm' }: WidgetProps) {
+export function PrepaDenivele({ contexte, taille = 'm', sport }: WidgetProps & { sport: SportDenivele }) {
   const p = usePalette();
-  const prepa = prepaTrail(contexte.toutesSeances, contexte.objectifs);
+  const prepa = prepaDenivele(contexte.toutesSeances, contexte.objectifs, sport);
+  const couleur = sport === 'vtt' ? p.sportVelo : p.sportCourse;
+  const nomSport = sport === 'vtt' ? 'VTT' : 'trail';
   const { cible } = prepa;
   const aDesSorties = prepa.meilleureDPlus > 0 || prepa.dPlus4Semaines > 0;
 
   const barre = (pct: number, etiquette: string) => (
     <View accessible accessibilityRole="progressbar" accessibilityLabel={etiquette} accessibilityValue={{ min: 0, max: 100, now: Math.min(100, pct) }} style={[styles.piste, { backgroundColor: p.surface2 }]}>
-      <View style={{ width: `${Math.min(100, Math.max(pct > 0 ? 3 : 0, pct))}%`, height: '100%', backgroundColor: p.sportCourse, borderRadius: 5 }} />
+      <View style={{ width: `${Math.min(100, Math.max(pct > 0 ? 3 : 0, pct))}%`, height: '100%', backgroundColor: couleur, borderRadius: 5 }} />
     </View>
   );
 
   if (taille !== 'l') {
     const valeur = cible && prepa.pctDPlus != null ? `${prepa.pctDPlus} %` : aDesSorties ? formatNombre(prepa.meilleureDPlus) : '—';
     const unite = !cible && aDesSorties ? 'm' : '';
-    const note = cible ? `du D+ de ${cible.nom}` : aDesSorties ? 'ton plus gros D+, pas de course visée' : 'Pas encore de trail';
+    const note = cible ? `du D+ de ${cible.nom}` : aDesSorties ? 'ton plus gros D+, pas de course visée' : `Pas encore de ${nomSport}`;
     return (
       <Tuile titre="Prépa dénivelé" valeur={valeur} unite={unite} note={note} large>
         {!cible || prepa.pctDPlus == null ? null : taille === 's' ? (
@@ -94,11 +96,15 @@ export function WidgetPrepaTrail({ contexte, taille = 'm' }: WidgetProps) {
         <Text style={[typo.corps, { color: p.texteDoux }]}>
           {aDesSorties
             ? `Pas de course à venir avec un dénivelé. Ton plus gros D+ en une sortie : ${formatNombre(prepa.meilleureDPlus)} m. Ajoute ta course, avec son D+, pour mesurer ta préparation.`
-            : 'Pas encore de sortie de trail ni de course à venir avec un dénivelé.'}
+            : `Pas encore de sortie de ${nomSport} ni de course à venir avec un dénivelé.`}
         </Text>
       )}
     </CadreWidget>
   );
+}
+
+export function WidgetPrepaTrail(props: WidgetProps) {
+  return <PrepaDenivele {...props} sport="trail" />;
 }
 
 const styles = StyleSheet.create({
