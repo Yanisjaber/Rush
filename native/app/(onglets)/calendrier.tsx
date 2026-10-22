@@ -8,7 +8,7 @@ import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
 import { Bloc } from '@/components/Bloc';
 import { Bouton } from '@/components/Bouton';
-import { chargeJour, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, resumeSemaine, teinteJour, type JourGrille } from '@/data/calendrier';
+import { chargeJour, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille } from '@/data/calendrier';
 import { couleurNote, libelleNote } from '@/data/annotations';
 import { familleAffichage, garderSeance } from '@/data/familles';
 import { dateIsoLocale, formatDuree } from '@/data/format';
@@ -64,8 +64,8 @@ export default function Calendrier() {
   const titre = grille.titre.charAt(0).toUpperCase() + grille.titre.slice(1);
   const estMoisCourant = cible.annee === maintenant.getFullYear() && cible.mois === maintenant.getMonth();
   const detail = jours.find((j) => j.iso === choisi) ?? null;
-  // La plus grosse semaine du mois (faites + prévues) : c'est elle qui donne la longueur d'une barre pleine dans la colonne des heures
-  const maxiSemaine = Math.max(1, ...grille.semaines.map((sem) => { const r = resumeSemaine(sem); return r.faites + r.prevues; }));
+  // Le jour le plus long du mois (au moins 1 h 30) : c'est lui qui donne la hauteur d'une barre pleine dans la colonne de la semaine
+  const maxiJour = Math.max(90 * 60, ...jours.map(secondesJour));
 
   // En changeant de mois, on choisit aujourd'hui (mois courant), sinon le premier jour qui a quelque chose, sinon le 1er
   useEffect(() => {
@@ -138,7 +138,7 @@ export default function Calendrier() {
                       <Case key={j.iso} jour={j} choisi={j.iso === choisi} onPress={() => setChoisi(j.iso)} />
                     ))}
                   </View>
-                  <HeuresSemaine semaine={semaine} maxi={maxiSemaine} />
+                  <ProfilSemaine semaine={semaine} maxi={maxiJour} />
                 </View>
               ))}
             </View>
@@ -246,26 +246,33 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
 }
 
 const heures = (secondes: number) => String(Math.round((secondes / 3600) * 10) / 10).replace('.', ',');
-const LARGEUR_BARRE = 34;
+const HAUTEUR_PROFIL = 24;
 
-// Les heures de la semaine (faites + prévues), avec une petite barre : pleine pour ce qui est fait, pâle pour ce qui est prévu
-function HeuresSemaine({ semaine, maxi }: { semaine: JourGrille[]; maxi: number }) {
+// Le profil de la semaine : sept petites barres (une par jour, de lundi à dimanche) à la hauteur du temps du jour, de la couleur de son sport dominant,
+// pâles quand il n'y a que du prévu ; les heures de la semaine (faites + prévues) dessous.
+function ProfilSemaine({ semaine, maxi }: { semaine: JourGrille[]; maxi: number }) {
   const p = usePalette();
   const r = resumeSemaine(semaine);
   const total = r.faites + r.prevues;
+  const jours = profilSemaine(semaine);
   return (
     <View
       accessible
       accessibilityLabel={total ? `Semaine du ${dateLongue(semaine[0].iso)} : ${formatDuree(r.faites)} faites${r.prevues ? `, ${formatDuree(r.prevues)} prévues` : ''}, ${r.charge} points de charge` : `Semaine du ${dateLongue(semaine[0].iso)} : rien`}
       style={styles.semaine}
     >
+      <View style={styles.profil}>
+        {jours.map((j) => (
+          <View
+            key={j.iso}
+            style={[
+              styles.jourProfil,
+              { height: j.secondes ? Math.max(3, (j.secondes / maxi) * HAUTEUR_PROFIL) : 2, backgroundColor: j.famille ? couleurSport(p, j.famille) : p.traitFort, opacity: j.fait || !j.secondes ? 1 : 0.35 },
+            ]}
+          />
+        ))}
+      </View>
       <Text style={[styles.heures, { color: total ? p.texteDoux : p.texteMuet }]}>{total ? heures(total) : '—'}</Text>
-      {total ? (
-        <View style={[styles.pisteSemaine, { width: LARGEUR_BARRE }]}>
-          <View style={{ width: Math.max(2, (r.faites / maxi) * LARGEUR_BARRE), height: 4, borderRadius: 2, backgroundColor: p.texteDoux }} />
-          {r.prevues ? <View style={{ width: Math.max(2, (r.prevues / maxi) * LARGEUR_BARRE), height: 4, borderRadius: 2, backgroundColor: avecAlpha(p.texteDoux, 0.3) }} /> : null}
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -367,9 +374,10 @@ const styles = StyleSheet.create({
   jours: { flex: 1, flexDirection: 'row' },
   entete: { width: `${100 / 7}%`, textAlign: 'center', paddingBottom: 4 },
   enteteSemaine: { width: 46, textAlign: 'right', paddingBottom: 4, paddingRight: 4 },
-  semaine: { width: 46, justifyContent: 'center', alignItems: 'flex-end', gap: 4, paddingRight: 4 },
+  semaine: { width: 46, justifyContent: 'center', alignItems: 'flex-end', gap: 3, paddingRight: 4 },
   heures: { fontFamily: police.titre700, fontSize: 12, lineHeight: 15, fontVariant: ['tabular-nums'] },
-  pisteSemaine: { flexDirection: 'row', gap: 1 },
+  profil: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: HAUTEUR_PROFIL },
+  jourProfil: { width: 4, borderRadius: 2 },
   case: { width: `${100 / 7}%`, minHeight: 58, alignItems: 'center', paddingTop: 4, borderRadius: rayon.base, borderWidth: 1, borderColor: 'transparent', gap: 4, overflow: 'hidden' },
   numero: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   numeroTexte: { fontFamily: police.titre700, fontSize: 16, lineHeight: 20, fontVariant: ['tabular-nums'] },
