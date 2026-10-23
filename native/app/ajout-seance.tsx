@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ChampHeure } from '@/components/ChampHeure';
 import { ChampTexte } from '@/components/ChampTexte';
 import { ChoixEffort } from '@/components/ChoixEffort';
 import { EcranAjout } from '@/components/EcranAjout';
@@ -82,7 +83,7 @@ export default function EcranAjoutSeance() {
             <MenuDeroulantSport valeur={cleDuType(f.type)} avecTous={false} onChoisir={(cle) => changerSport(typeDeCle(cle ?? 'autre'))} />
           </View>
           <View style={{ flex: 1 }}>
-            <ChampTexte etiquette="Heure" value={f.heure} onChangeText={(t) => change({ ...f, heure: t })} keyboardType="numbers-and-punctuation" maxLength={5} placeholder="18:00" />
+            <ChampHeure valeur={f.heure} onChange={(h) => change({ ...f, heure: h })} />
           </View>
         </View>
         <ChampTexte etiquette="Nom (facultatif)" value={f.nom} onChangeText={(t) => change({ ...f, nom: t })} maxLength={120} placeholder={nomSport(f.type)} returnKeyType="done" />

@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { RepliSiErreur } from '@/components/RepliSiErreur';
 import { decalerMois, grilleMois, JOURS_SEMAINE } from '@/data/calendrier';
 import { dateIsoLocale } from '@/data/format';
-import { espace, rayon } from '@/theme/couleurs';
+import { dateDepuisJour, jourDepuisDate } from '@/data/heure';
+import { espace, rayon, sombre } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -24,10 +27,73 @@ export function ChampDate({ date, onChange, etiquette, max, sur = 'fond' }: { da
   const nomChamp = etiquette ?? 'Date';
 
   const ouvrir = () => {
+    // Android : la fenêtre de calendrier du système ; iPhone (ou repli) : la feuille ci-dessous
+    if (Platform.OS === 'android') {
+      try {
+        DateTimePickerAndroid.open({
+          value: dateDepuisJour(date),
+          mode: 'date',
+          maximumDate: max ? dateDepuisJour(max) : undefined,
+          onChange: (e, d) => {
+            if (e.type === 'set' && d) onChange(jourDepuisDate(d));
+          },
+        });
+        return;
+      } catch {
+        // module natif absent : le calendrier de secours prend le relais
+      }
+    }
     setVue({ annee: Number(date.slice(0, 4)), mois: Number(date.slice(5, 7)) - 1 });
     setOuvert(true);
   };
   const semaines = grilleMois(vue.annee, vue.mois, {}, new Date()).semaines;
+
+  const calendrierJs = (
+    <View accessibilityViewIsModal style={[styles.carte, { backgroundColor: p.surface, borderColor: p.traitFort }]}>
+      <View style={styles.entete}>
+        <Pressable onPress={() => setVue((v) => decalerMois(v.annee, v.mois, -1))} accessibilityRole="button" accessibilityLabel="Mois précédent" style={styles.fleche}>
+          <Text style={{ color: p.texte, fontSize: 26, lineHeight: 30 }}>‹</Text>
+        </Pressable>
+        <Text accessibilityRole="header" accessibilityLiveRegion="polite" style={[typo.corpsFort, { color: p.texte }]}>{`${MOIS[vue.mois][0].toUpperCase()}${MOIS[vue.mois].slice(1)} ${vue.annee}`}</Text>
+        <Pressable onPress={() => setVue((v) => decalerMois(v.annee, v.mois, 1))} accessibilityRole="button" accessibilityLabel="Mois suivant" style={styles.fleche}>
+          <Text style={{ color: p.texte, fontSize: 26, lineHeight: 30 }}>›</Text>
+        </Pressable>
+      </View>
+      <View style={styles.rangee} accessible={false} importantForAccessibility="no-hide-descendants">
+        {JOURS_SEMAINE.map((n, i) => (
+          <Text key={i} style={[typo.micro, styles.lettre, { color: p.texteMuet }]}>
+            {n.charAt(0)}
+          </Text>
+        ))}
+      </View>
+      {semaines.map((semaine) => (
+        <View key={semaine[0].iso} style={styles.rangee}>
+          {semaine.map((j) => {
+            const choisi = j.iso === date;
+            const interdit = !!max && j.iso > max;
+            return (
+              <Pressable
+                key={j.iso}
+                disabled={interdit}
+                onPress={() => {
+                  onChange(j.iso);
+                  setOuvert(false);
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: choisi, disabled: interdit }}
+                accessibilityLabel={new Date(`${j.iso}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                style={styles.casePeriode}
+              >
+                <View style={[styles.jour, choisi && { backgroundColor: p.texte }]}>
+                  <Text style={[typo.corpsFort, { color: choisi ? p.fond : interdit ? p.texteMuet : j.dansMois ? p.texte : p.texteMuet, opacity: interdit ? 0.4 : 1 }]}>{j.num}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      ))}
+    </View>
+  );
 
   return (
     <View style={{ gap: 6 }}>
@@ -54,50 +120,24 @@ export function ChampDate({ date, onChange, etiquette, max, sur = 'fond' }: { da
       <Modal visible={ouvert} transparent animationType="fade" onRequestClose={() => setOuvert(false)}>
         <Pressable style={StyleSheet.absoluteFill} onPress={() => setOuvert(false)} accessibilityLabel="Fermer le calendrier" accessibilityRole="button" />
         <View style={styles.centre} pointerEvents="box-none">
-          <View accessibilityViewIsModal style={[styles.carte, { backgroundColor: p.surface, borderColor: p.traitFort }]}>
-            <View style={styles.entete}>
-              <Pressable onPress={() => setVue((v) => decalerMois(v.annee, v.mois, -1))} accessibilityRole="button" accessibilityLabel="Mois précédent" style={styles.fleche}>
-                <Text style={{ color: p.texte, fontSize: 26, lineHeight: 30 }}>‹</Text>
-              </Pressable>
-              <Text accessibilityRole="header" accessibilityLiveRegion="polite" style={[typo.corpsFort, { color: p.texte }]}>{`${MOIS[vue.mois][0].toUpperCase()}${MOIS[vue.mois].slice(1)} ${vue.annee}`}</Text>
-              <Pressable onPress={() => setVue((v) => decalerMois(v.annee, v.mois, 1))} accessibilityRole="button" accessibilityLabel="Mois suivant" style={styles.fleche}>
-                <Text style={{ color: p.texte, fontSize: 26, lineHeight: 30 }}>›</Text>
-              </Pressable>
+          <RepliSiErreur repli={calendrierJs}>
+            <View accessibilityViewIsModal style={[styles.carte, { backgroundColor: p.surface, borderColor: p.traitFort }]}>
+              <DateTimePicker
+                value={dateDepuisJour(date)}
+                mode="date"
+                display="inline"
+                locale="fr-FR"
+                maximumDate={max ? dateDepuisJour(max) : undefined}
+                themeVariant={p.fond === sombre.fond ? 'dark' : 'light'}
+                onChange={(_e, d) => {
+                  if (d) {
+                    onChange(jourDepuisDate(d));
+                    setOuvert(false);
+                  }
+                }}
+              />
             </View>
-            <View style={styles.rangee} accessible={false} importantForAccessibility="no-hide-descendants">
-              {JOURS_SEMAINE.map((n, i) => (
-                <Text key={i} style={[typo.micro, styles.lettre, { color: p.texteMuet }]}>
-                  {n.charAt(0)}
-                </Text>
-              ))}
-            </View>
-            {semaines.map((semaine) => (
-              <View key={semaine[0].iso} style={styles.rangee}>
-                {semaine.map((j) => {
-                  const choisi = j.iso === date;
-                  const interdit = !!max && j.iso > max;
-                  return (
-                    <Pressable
-                      key={j.iso}
-                      disabled={interdit}
-                      onPress={() => {
-                        onChange(j.iso);
-                        setOuvert(false);
-                      }}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: choisi, disabled: interdit }}
-                      accessibilityLabel={new Date(`${j.iso}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-                      style={styles.casePeriode}
-                    >
-                      <View style={[styles.jour, choisi && { backgroundColor: p.texte }]}>
-                        <Text style={[typo.corpsFort, { color: choisi ? p.fond : interdit ? p.texteMuet : j.dansMois ? p.texte : p.texteMuet, opacity: interdit ? 0.4 : 1 }]}>{j.num}</Text>
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ))}
-          </View>
+          </RepliSiErreur>
         </View>
       </Modal>
     </View>
