@@ -4,7 +4,7 @@ import { chargerAnnotations, chargerCycles, chargerPlanifiees, chargerSeancesPer
 import { bornesGrille } from '@/data/calendrier';
 import { annotationsDemo, seriesForceDemo } from '@/data/demo';
 import { useAuth } from '@/stores/auth';
-import { notesDeLaDemo, prevuesAjoutees, reposDeLaDemo, useVersionAjouts } from '@/stores/ajouts';
+import { notesDeLaDemo, prevuesAjoutees, reposDeLaDemo, sortiesAjoutees, useVersionAjouts } from '@/stores/ajouts';
 import { cyclesDemo, useVersionCycles } from '@/stores/cycles';
 import type { Cycle, Note, Prevue, Seance } from '@/data/types';
 
@@ -45,7 +45,7 @@ export function useDonneesCalendrier(annee: number, mois: number): {
     // Les séances prévues, compétitions et notes ajoutées pendant la démo s'ajoutent à celles de l'exemple
     const prevues = [...d.planifiees, ...prevuesAjoutees()].filter((p) => dans(p.date));
     return {
-      seances: d.seances.filter((s) => dans(String(s.start_date_local).slice(0, 10))),
+      seances: [...d.seances, ...sortiesAjoutees()].filter((s) => dans(String(s.start_date_local).slice(0, 10))),
       planifiees: prevues.filter((p) => p.category !== 'competition'),
       objectifs: prevues.filter((p) => p.category === 'competition'),
       notes: notesDeLaDemo(a.notes).filter((n) => n.from_date <= fin && n.to_date >= debut),

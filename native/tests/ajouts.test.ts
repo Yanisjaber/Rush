@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance } from '../src/data/ajouts.ts';
+import { distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle } from '../src/data/ajouts.ts';
 
 const date = '2026-10-23';
 
@@ -82,4 +82,61 @@ test('validerNote : une note veut un texte ; une maladie peut s\'en passer ; pé
   assert.equal(validerNote({ ...formulaireNoteVide(date), texte: 'x', couleur: 'rouge' }).ok, false);
   assert.equal(validerNote({ ...formulaireNoteVide(date), texte: 'x'.repeat(501) }).ok, false);
   assert.equal(validerNote({ ...formulaireNoteVide(date), type: 'repos' as 'texte', texte: 'x' }).ok, false);
+});
+
+const AUJ = '2026-10-23';
+
+test('validerSortie : une sortie valide devient une ligne activities saisie à la main', () => {
+  const r = validerSortie({ ...formulaireSortieVide(), nom: 'Footing du matin', type: 'Run', heure: '07:30', heures: '0', minutes: '45', distance: '8,2', dplus: '60', fc: '148', rpe: 5, notes: ' RAS ' }, '2026-10-22', AUJ, 'Course');
+  assert.ok(r.ok);
+  if (r.ok) {
+    assert.equal(r.ligne.source, 'manual');
+    assert.equal(r.ligne.moving_time, 2700);
+    assert.equal(r.ligne.distance_km, 8.2);
+    assert.equal(r.ligne.total_elevation_gain, 60);
+    assert.equal(r.ligne.avg_heartrate, 148);
+    assert.equal(r.ligne.rpe, 5);
+    assert.equal(r.ligne.user_notes, 'RAS');
+    assert.equal(r.ligne.start_date_local, '2026-10-22T07:30:00');
+    assert.equal(r.ligne.tss, estimerTss(45, 5));
+  }
+});
+
+test('validerSortie : sans nom, celui du sport ; la natation en mètres ; durée en heures et minutes', () => {
+  const r = validerSortie({ ...formulaireSortieVide(), type: 'Swim', heures: '1', minutes: '5', distance: '2400' }, AUJ, AUJ, 'Natation');
+  assert.ok(r.ok);
+  if (r.ok) {
+    assert.equal(r.ligne.name, 'Natation');
+    assert.equal(r.ligne.moving_time, 65 * 60);
+    assert.equal(r.ligne.distance_km, 2.4);
+  }
+});
+
+test('validerSortie : le futur, la durée et les bornes sont refusés avec un message', () => {
+  const refus = (f: Partial<ReturnType<typeof formulaireSortieVide>>, d = '2026-10-22') => {
+    const r = validerSortie({ ...formulaireSortieVide(), ...f }, d, AUJ, 'Course');
+    assert.equal(r.ok, false);
+    return r.ok ? '' : r.erreur;
+  };
+  assert.match(refus({}, '2026-10-24'), /futur/i);
+  assert.match(refus({ heures: '0', minutes: '0' }), /durée/i);
+  assert.match(refus({ minutes: '75' }), /minutes/i);
+  assert.match(refus({ heures: '25', minutes: '0' }), /durée/i);
+  assert.match(refus({ heures: '-1' }), /durée/i);
+  assert.match(refus({ heure: '7h30' }), /heure/i);
+  assert.match(refus({ distance: '9999' }), /distance/i);
+  assert.match(refus({ dplus: '12,5' }), /dénivelé/i);
+  assert.match(refus({ dplus: '31000' }), /dénivelé/i);
+  assert.match(refus({ fc: '20' }), /cardiaque/i);
+  assert.match(refus({ fc: '300' }), /cardiaque/i);
+  assert.match(refus({ rpe: 11 }), /effort/i);
+  assert.match(refus({ type: 'Piratage' }), /sport/i);
+  assert.match(refus({ notes: 'x'.repeat(2001) }), /notes/i);
+});
+
+test('cleDuType / typeDeCle : les deux sens, « autre » pour l\'inconnu', () => {
+  assert.equal(cleDuType('Ride'), 'velo');
+  assert.equal(typeDeCle('natation'), 'Swim');
+  assert.equal(cleDuType('Tennis'), 'autre');
+  assert.equal(typeDeCle('inconnu'), 'Other');
 });

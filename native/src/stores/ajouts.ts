@@ -1,11 +1,12 @@
 import { useSyncExternalStore } from 'react';
-import type { LigneNote, LignePrevue } from '@/data/ajouts';
-import type { Note, Prevue } from '@/data/types';
+import type { LigneNote, LignePrevue, LigneSortie } from '@/data/ajouts';
+import type { Note, Prevue, Seance } from '@/data/types';
 
 // Ce qu'on ajoute au calendrier de la démo (séances prévues, compétitions, notes) : en mémoire seulement, ça survit à la navigation mais pas à un relancement.
 // Un numéro de version change à chaque ajout (démo ou compte) pour que le calendrier recharge ses données.
 let prevues: Prevue[] = [];
 let notes: Note[] = [];
+let sorties: Seance[] = [];
 // Les notes de l'exemple modifiées ou supprimées, et les jours de repos posés ou retirés pendant la démo
 const notesRemplacees = new Map<string, Note>();
 const notesSupprimees = new Set<string>();
@@ -32,6 +33,7 @@ export const ajoutsChanges = (): void => prevenir();
 
 export const prevuesAjoutees = (): Prevue[] => prevues;
 export const notesAjoutees = (): Note[] => notes;
+export const sortiesAjoutees = (): Seance[] => sorties;
 
 /** Les notes de la démo : celles de l'exemple et celles ajoutées, avec les modifications et sans les suppressions. */
 export const notesDeLaDemo = (base: Note[]): Note[] =>
@@ -90,4 +92,28 @@ export function retirerReposDemo(iso: string): void {
   reposPoses.delete(iso);
   reposRetires.add(iso);
   prevenir();
+}
+
+export function ajouterSortieDemo(ligne: LigneSortie): Seance {
+  const s: Seance = {
+    id: identifiant(),
+    name: ligne.name,
+    sport: ligne.sport,
+    start_date_local: ligne.start_date_local,
+    moving_time: ligne.moving_time,
+    distance_km: ligne.distance_km,
+    total_elevation_gain: ligne.total_elevation_gain,
+    avg_heartrate: ligne.avg_heartrate,
+    ftp_at_time: null,
+    avg_watts: null,
+    np: null,
+    tss: ligne.tss,
+    category: ligne.category,
+    source: 'manual',
+    rpe: ligne.rpe,
+    user_notes: ligne.user_notes,
+  };
+  sorties = [...sorties, s];
+  prevenir();
+  return s;
 }

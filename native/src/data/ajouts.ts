@@ -210,3 +210,78 @@ export function validerNote(f: FormulaireNote): Resultat<LigneNote> {
   if (!COULEUR.test(String(f.couleur ?? ''))) return { ok: false, erreur: 'Choisis une couleur.' };
   return { ok: true, ligne: { type: f.type, text: texte || null, color: f.couleur, from_date: f.de, to_date: f.a } };
 }
+
+// --- Sortie déjà faite ---------------------------------------------------------------------------------------------------
+// Une sortie saisie à la main est une vraie ligne de `activities` (source = 'manual') : on peut la modifier et la supprimer, jamais celles de Strava.
+
+export interface FormulaireSortie {
+  nom: string;
+  type: string;
+  heure: string; // HH:MM
+  heures: string;
+  minutes: string;
+  distance: string; // mètres en natation, kilomètres sinon
+  dplus: string;
+  fc: string; // fréquence cardiaque moyenne
+  rpe: number | null; // effort ressenti, de 1 à 10
+  notes: string;
+}
+
+export const formulaireSortieVide = (): FormulaireSortie => ({ nom: '', type: 'Run', heure: '07:30', heures: '0', minutes: '45', distance: '', dplus: '', fc: '', rpe: null, notes: '' });
+
+/** Ligne à écrire dans activities (sans user_id ni client_id : ajoutés par l'API depuis la session). */
+export interface LigneSortie {
+  source: 'manual';
+  category: 'entrainement';
+  name: string;
+  start_date_local: string;
+  sport: string;
+  moving_time: number; // secondes
+  tss: number;
+  rpe: number | null;
+  distance_km: number | null;
+  total_elevation_gain: number | null;
+  avg_heartrate: number | null;
+  user_notes: string | null;
+}
+
+/** Vérifie une sortie déjà faite : le jour ne peut pas être dans le futur (`aujourdhui`, AAAA-MM-JJ). La charge est estimée d'après la durée et l'effort. */
+export function validerSortie(f: FormulaireSortie, date: string, aujourdhui: string, nomParDefaut: string): Resultat<LigneSortie> {
+  if (!dateValide(date)) return { ok: false, erreur: 'Choisis une date valide.' };
+  if (date > aujourdhui) return { ok: false, erreur: "Une sortie déjà faite ne peut pas être dans le futur : utilise « Séance prévue »." };
+  const nom = (String(f.nom ?? '').trim() || nomParDefaut).replace(/\s+/g, ' ');
+  if (nom.length > 120) return { ok: false, erreur: 'Le nom est trop long (120 caractères au plus).' };
+  if (!TYPES.has(f.type)) return { ok: false, erreur: 'Choisis un sport.' };
+  if (!HEURE.test(String(f.heure ?? ''))) return { ok: false, erreur: "L'heure n'est pas valide (par exemple 07:30)." };
+  const h = nombreOuNull(f.heures) ?? 0;
+  const m = nombreOuNull(f.minutes) ?? 0;
+  if (!Number.isInteger(h) || !Number.isInteger(m) || h < 0 || m < 0 || m > 59) return { ok: false, erreur: 'La durée doit être en heures et minutes (minutes de 0 à 59).' };
+  const duree = h * 60 + m;
+  if (duree < 1 || duree > 1440) return { ok: false, erreur: 'La durée doit être entre 1 minute et 24 heures.' };
+  const km = distanceEnKm(f.distance, f.type);
+  if (km != null && !(km >= 0 && km <= 5000)) return { ok: false, erreur: 'La distance doit être entre 0 et 5000 km.' };
+  const dplus = nombreOuNull(f.dplus);
+  if (dplus != null && !(Number.isInteger(dplus) && dplus >= 0 && dplus <= 30000)) return { ok: false, erreur: 'Le dénivelé doit être un nombre entier entre 0 et 30000 m.' };
+  const fc = nombreOuNull(f.fc);
+  if (fc != null && !(Number.isInteger(fc) && fc >= 30 && fc <= 250)) return { ok: false, erreur: 'La fréquence cardiaque doit être entre 30 et 250.' };
+  if (f.rpe != null && !(Number.isInteger(f.rpe) && f.rpe >= 1 && f.rpe <= 10)) return { ok: false, erreur: "L'effort ressenti doit être entre 1 et 10." };
+  const notes = String(f.notes ?? '').trim();
+  if (notes.length > 2000) return { ok: false, erreur: 'Les notes sont trop longues (2000 caractères au plus).' };
+  return {
+    ok: true,
+    ligne: {
+      source: 'manual',
+      category: 'entrainement',
+      name: nom,
+      start_date_local: `${date}T${f.heure}:00`,
+      sport: f.type,
+      moving_time: duree * 60,
+      tss: estimerTss(duree, f.rpe ?? 5),
+      rpe: f.rpe,
+      distance_km: km == null ? null : Math.round(km * 1000) / 1000,
+      total_elevation_gain: dplus,
+      avg_heartrate: fc,
+      user_notes: notes || null,
+    },
+  };
+}

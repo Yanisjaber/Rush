@@ -395,7 +395,8 @@ function Detail({ jour }: { jour: JourGrille }) {
     if (c === 'cycle') return router.push({ pathname: '/cycle', params: { debut: jour.iso } });
     if (c === 'competition') return router.push({ pathname: '/ajout-competition', params: { date: jour.iso } });
     if (c === 'note') return router.push({ pathname: '/ajout-note', params: { date: jour.iso } });
-    bientot(c === 'seance' ? 'La séance prévue' : c === 'sortie' ? 'La sortie déjà faite' : 'Les modèles de séance');
+    if (c === 'sortie') return router.push({ pathname: '/ajout-sortie', params: { date: jour.iso } });
+    bientot(c === 'seance' ? 'La séance prévue' : 'Les modèles de séance');
   };
   // Ce que le jour pèse, d'un coup d'œil : temps fait, charge, temps prévu (en pastilles, comme le haut du calendrier)
   const faites = jour.seances.reduce((t, s) => t + (s.moving_time || 0), 0);

@@ -18,7 +18,7 @@ import { valeurValide, type LigneMesure } from './sante-catalogue';
 import { messageTours, toursValides } from './seance-detail';
 import type { Cycle, Nuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Profil, Seance, SerieForce, TestHyrox, Tour } from './types';
 import type { FormulaireCycle } from './cycles';
-import type { LigneNote, LignePrevue } from './ajouts';
+import type { LigneNote, LignePrevue, LigneSortie } from './ajouts';
 
 export interface Resultat<T> {
   data: T | null;
@@ -531,6 +531,13 @@ export async function creerNoteJour(userId: string, ligne: LigneNote): Promise<R
   const client_id = `app-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
   const r = await sb.from('day_notes').insert({ ...ligne, user_id: userId, client_id }).select(COLONNES_NOTE).single();
   return resultat(r, "Impossible d'enregistrer la note.");
+}
+
+/** Écrit une sortie déjà faite (ligne validée par validerSortie) dans activities, avec source = 'manual' : une vraie ligne qu'on pourra modifier, contrairement à celles de Strava. */
+export async function creerSortie(userId: string, ligne: LigneSortie): Promise<Resultat<Seance>> {
+  const client_id = `app-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+  const r = await sb.from('activities').insert({ ...ligne, user_id: userId, client_id }).select(COLONNES_SEANCE).single();
+  return resultat(r, "Impossible d'enregistrer cette sortie.");
 }
 
 /** Modifie une note qui t'appartient (ligne validée par validerNote). */

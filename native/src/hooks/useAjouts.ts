@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
-import { creerNoteJour, creerPrevue, modifierNoteJour, poserRepos, retirerRepos, supprimerNoteJour } from '@/data/api';
-import type { LigneNote, LignePrevue } from '@/data/ajouts';
-import { ajoutsChanges, ajouterNoteDemo, ajouterPrevueDemo, modifierNoteDemo, poserReposDemo, retirerReposDemo, supprimerNoteDemo } from '@/stores/ajouts';
+import { creerNoteJour, creerPrevue, creerSortie, modifierNoteJour, poserRepos, retirerRepos, supprimerNoteJour } from '@/data/api';
+import type { LigneNote, LignePrevue, LigneSortie } from '@/data/ajouts';
+import { ajoutsChanges, ajouterNoteDemo, ajouterPrevueDemo, ajouterSortieDemo, modifierNoteDemo, poserReposDemo, retirerReposDemo, supprimerNoteDemo } from '@/stores/ajouts';
 import { useAuth } from '@/stores/auth';
 
 // De quoi ajouter au calendrier une séance prévue, une compétition ou une note : en mémoire dans la démo, dans la base pour un compte connecté.
@@ -9,6 +9,7 @@ import { useAuth } from '@/stores/auth';
 export function useAjouts(): {
   creerPrevue: (ligne: LignePrevue) => Promise<string>;
   creerNote: (ligne: LigneNote) => Promise<string>;
+  creerSortie: (ligne: LigneSortie) => Promise<string>;
   modifierNote: (id: string, ligne: LigneNote) => Promise<string>;
   supprimerNote: (id: string) => Promise<string>;
   /** Pose (`pose` vrai) ou retire un jour de repos. */
@@ -37,6 +38,19 @@ export function useAjouts(): {
       }
       if (!userId) return 'Reconnecte-toi.';
       const r = await creerNoteJour(userId, ligne);
+      if (!r.erreur) ajoutsChanges();
+      return r.erreur;
+    },
+    [demo, userId],
+  );
+  const sortie = useCallback(
+    async (ligne: LigneSortie) => {
+      if (demo) {
+        ajouterSortieDemo(ligne);
+        return '';
+      }
+      if (!userId) return 'Reconnecte-toi.';
+      const r = await creerSortie(userId, ligne);
       if (!r.erreur) ajoutsChanges();
       return r.erreur;
     },
@@ -82,5 +96,5 @@ export function useAjouts(): {
     },
     [demo, userId],
   );
-  return { creerPrevue: prevue, creerNote: note, modifierNote: modifier, supprimerNote: supprimer, basculerRepos: repos };
+  return { creerPrevue: prevue, creerNote: note, creerSortie: sortie, modifierNote: modifier, supprimerNote: supprimer, basculerRepos: repos };
 }
