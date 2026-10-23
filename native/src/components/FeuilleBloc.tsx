@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
 import { PastillesChoix } from '@/components/ChampsFeuille';
+import { ChampTexte } from '@/components/ChampTexte';
 import { formulaireBlocVide, formulaireDepuisBloc, validerBloc, type FormulaireBloc, type FormulaireSegment } from '@/data/blocs-formulaire';
 import { COULEURS_ZONE, lireDuree, NOM_METRIQUE, NOM_TYPE, texteCible, texteDuree, TYPES_BLOC, ZONES, type Bloc, type Metrique, type Reference, type TypeBloc } from '@/data/structure';
 import { espace, rayon } from '@/theme/couleurs';
-import { typo } from '@/theme/typo';
+import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La feuille qui crée ou modifie un bloc de séance : son type, sa durée et son intensité (une zone, ou un pourcentage libre) et, pour des intervalles, le nombre
@@ -48,8 +49,7 @@ export function FeuilleBloc({ ouvert, bloc, metriques, sport, reference, onSuppr
     setErreur('');
   };
 
-  const champ = [typo.corps, styles.champ, { color: p.texte, backgroundColor: p.surface2, borderColor: p.contourChamp }];
-  const etiquette = (t: string) => <Text style={[typo.micro, { color: p.texteDoux }]}>{t}</Text>;
+  const etiquette = (t: string) => <Text style={[typo.petit, { color: p.texteDoux, paddingLeft: 16, fontFamily: police.texte600 }]}>{t}</Text>;
 
   // Un segment (durée + intensité) : la durée s'écrit librement, l'intensité se choisit par zone ou en pourcentage
   const segment = (titre: string, s: FormulaireSegment, maj: (s: FormulaireSegment) => void) => {
@@ -59,8 +59,8 @@ export function FeuilleBloc({ ouvert, bloc, metriques, sport, reference, onSuppr
       <View style={{ gap: 8 }}>
         {etiquette(titre)}
         <View style={styles.ligne}>
-          <View style={{ flex: 1, gap: 6 }}>
-            <TextInput value={s.duree} onChangeText={(t) => maj({ ...s, duree: t })} placeholder="4, 30s, 1h…" placeholderTextColor={p.texteMuet} autoCorrect={false} accessibilityLabel={`Durée : ${titre}`} style={champ} />
+          <View style={{ flex: 1 }}>
+            <ChampTexte sur="surface" value={s.duree} onChangeText={(t) => maj({ ...s, duree: t })} placeholder="4, 30s, 1h…" autoCorrect={false} accessibilityLabel={`Durée : ${titre}`} />
           </View>
           <Text style={[typo.corpsFort, { color: p.texteDoux, minWidth: 64, textAlign: 'right' }]}>{lu ? texteDuree(lu) : ''}</Text>
         </View>
@@ -92,13 +92,11 @@ export function FeuilleBloc({ ouvert, bloc, metriques, sport, reference, onSuppr
         </View>
         {s.zone === 'perso' ? (
           <View style={styles.ligne}>
-            <View style={{ flex: 1, gap: 6 }}>
-              {etiquette('De (%)')}
-              <TextInput value={s.int} onChangeText={(t) => maj({ ...s, int: t })} keyboardType="decimal-pad" maxLength={6} accessibilityLabel="Intensité basse en pourcentage" style={champ} />
+            <View style={{ flex: 1 }}>
+              <ChampTexte sur="surface" etiquette="De (%)" value={s.int} onChangeText={(t) => maj({ ...s, int: t })} keyboardType="decimal-pad" maxLength={6} accessibilityLabel="Intensité basse en pourcentage" />
             </View>
-            <View style={{ flex: 1, gap: 6 }}>
-              {etiquette('À (%, facultatif)')}
-              <TextInput value={s.intHi} onChangeText={(t) => maj({ ...s, intHi: t })} keyboardType="decimal-pad" maxLength={6} accessibilityLabel="Intensité haute en pourcentage" style={champ} />
+            <View style={{ flex: 1 }}>
+              <ChampTexte sur="surface" etiquette="À (%, facultatif)" value={s.intHi} onChangeText={(t) => maj({ ...s, intHi: t })} keyboardType="decimal-pad" maxLength={6} accessibilityLabel="Intensité haute en pourcentage" />
             </View>
           </View>
         ) : null}
@@ -148,12 +146,10 @@ export function FeuilleBloc({ ouvert, bloc, metriques, sport, reference, onSuppr
                 <PastillesChoix valeurs={metriques.map((m) => ({ cle: m, nom: NOM_METRIQUE[m] }))} actuel={f.metric} onChoisir={(m) => change({ ...f, metric: m, travail: { ...f.travail, zone: Math.min(typeof f.travail.zone === 'number' ? f.travail.zone : 0, ZONES[m].bas.length - 1) }, recup: { ...f.recup, zone: Math.min(typeof f.recup.zone === 'number' ? f.recup.zone : 0, ZONES[m].bas.length - 1) } })} etiquette="Mesure de l'intensité" />
               </>
             ) : null}
-            {etiquette('Nom (facultatif)')}
-            <TextInput value={f.nom} onChangeText={(t) => change({ ...f, nom: t })} maxLength={60} placeholder={NOM_TYPE[f.type]} placeholderTextColor={p.texteMuet} returnKeyType="done" accessibilityLabel="Nom du bloc" style={champ} />
+            <ChampTexte sur="surface" etiquette="Nom (facultatif)" value={f.nom} onChangeText={(t) => change({ ...f, nom: t })} maxLength={60} placeholder={NOM_TYPE[f.type]} returnKeyType="done" accessibilityLabel="Nom du bloc" />
             {interval ? (
-              <View style={{ gap: 6 }}>
-                {etiquette('Répétitions')}
-                <TextInput value={f.reps} onChangeText={(t) => change({ ...f, reps: t })} keyboardType="number-pad" maxLength={2} accessibilityLabel="Nombre de répétitions" style={[...champ, { width: 96 }]} />
+              <View style={{ width: 130 }}>
+                <ChampTexte sur="surface" etiquette="Répétitions" value={f.reps} onChangeText={(t) => change({ ...f, reps: t })} keyboardType="number-pad" maxLength={2} accessibilityLabel="Nombre de répétitions" />
               </View>
             ) : null}
             {segment(interval ? 'Effort' : 'Durée et intensité', f.travail, (s) => change({ ...f, travail: s }))}
@@ -202,7 +198,6 @@ const styles = StyleSheet.create({
   conteneur: { flex: 1, justifyContent: 'flex-end' },
   feuille: { maxHeight: '92%', borderTopWidth: 1, borderTopLeftRadius: rayon.bloc, borderTopRightRadius: rayon.bloc, padding: espace.e4, gap: espace.e3 },
   poignee: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2 },
-  champ: { minHeight: 48, borderWidth: 1.5, borderRadius: rayon.base, paddingHorizontal: 14 },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   zones: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   zone: { minHeight: 44, minWidth: 48, borderWidth: 2, borderRadius: rayon.rond, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },

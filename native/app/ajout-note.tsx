@@ -1,14 +1,14 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { ChoixCouleur, PastillesChoix } from '@/components/ChampsFeuille';
+import { ChampTexte } from '@/components/ChampTexte';
 import { EcranAjout } from '@/components/EcranAjout';
 import { ChampDate } from '@/components/ChampDate';
 import { formulaireNoteVide, PALETTE_NOTE, TEXTE_MAX_NOTE, TYPES_NOTE, validerNote } from '@/data/ajouts';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useDateAjout } from '@/hooks/useDateAjout';
-import { rayon } from '@/theme/couleurs';
-import { typo } from '@/theme/typo';
+import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Ajouter une note (une ligne de day_notes) : un type (note, maladie, blessure), un texte, une période et une couleur.
@@ -43,29 +43,21 @@ export default function EcranAjoutNote() {
         onChoisir={(v) => change({ ...f, type: v, couleur: TYPES_NOTE.find((t) => t.cle === v)?.couleur ?? f.couleur })}
         etiquette="Type de note"
       />
-      <View style={{ gap: 6 }}>
-        <Text style={[typo.micro, { color: p.texteDoux }]}>{f.type === 'texte' ? 'Ta note' : 'Précision (facultatif)'}</Text>
-        <TextInput
-          value={f.texte}
-          onChangeText={(t) => change({ ...f, texte: t })}
-          maxLength={TEXTE_MAX_NOTE}
-          multiline
-          placeholder="Un mot sur ta journée…"
-          placeholderTextColor={p.texteMuet}
-          accessibilityLabel="Texte de la note"
-          style={[typo.corps, styles.champ, { color: p.texte, backgroundColor: p.surface2, borderColor: p.contourChamp }]}
-        />
-      </View>
+      <ChampTexte
+        etiquette={f.type === 'texte' ? 'Ta note' : 'Précision (facultatif)'}
+        value={f.texte}
+        onChangeText={(t) => change({ ...f, texte: t })}
+        maxLength={TEXTE_MAX_NOTE}
+        multiline
+        placeholder="Un mot sur ta journée…"
+      />
       <ChampDate etiquette="Du" date={f.de} onChange={(iso) => change({ ...f, de: iso, a: f.a < iso ? iso : f.a })} />
       <ChampDate etiquette="Au" date={f.a} onChange={(iso) => change({ ...f, a: iso, de: iso < f.de ? iso : f.de })} />
       <View style={{ gap: 6 }}>
-        <Text style={[typo.micro, { color: p.texteDoux }]}>Couleur</Text>
+        <Text style={[typo.petit, { color: p.texteDoux, paddingLeft: 16, fontFamily: police.texte600 }]}>Couleur</Text>
         <ChoixCouleur couleurs={PALETTE_NOTE.map((hex) => ({ hex, nom: hex }))} actuelle={f.couleur} onChoisir={(hex) => change({ ...f, couleur: hex })} />
       </View>
     </EcranAjout>
   );
 }
 
-const styles = StyleSheet.create({
-  champ: { minHeight: 96, textAlignVertical: 'top', borderWidth: 1.5, borderRadius: rayon.base, paddingHorizontal: 14, paddingTop: 12 },
-});

@@ -3,7 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { decalerMois, grilleMois, JOURS_SEMAINE } from '@/data/calendrier';
 import { dateIsoLocale } from '@/data/format';
 import { espace, rayon } from '@/theme/couleurs';
-import { typo } from '@/theme/typo';
+import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Une date à choisir, en une ligne arrondie : « ‹ lun. 26 oct. 2026 › ». Les flèches changent d'un jour ; toucher la date ouvre un petit calendrier pour choisir le jour.
@@ -15,7 +15,7 @@ const decaler = (iso: string, jours: number) => {
   return dateIsoLocale(d);
 };
 
-export function ChampDate({ date, onChange, etiquette, max }: { date: string; onChange: (iso: string) => void; etiquette?: string; max?: string }) {
+export function ChampDate({ date, onChange, etiquette, max, sur = 'fond' }: { date: string; onChange: (iso: string) => void; etiquette?: string; max?: string; sur?: 'fond' | 'surface' }) {
   const p = usePalette();
   const [ouvert, setOuvert] = useState(false);
   const [vue, setVue] = useState({ annee: Number(date.slice(0, 4)), mois: Number(date.slice(5, 7)) - 1 });
@@ -31,8 +31,8 @@ export function ChampDate({ date, onChange, etiquette, max }: { date: string; on
 
   return (
     <View style={{ gap: 6 }}>
-      {etiquette ? <Text style={[typo.micro, { color: p.texteDoux }]}>{etiquette}</Text> : null}
-      <View style={[styles.ligne, { backgroundColor: p.surface }]}>
+      {etiquette ? <Text style={[typo.petit, styles.etiquette, { color: p.texteDoux }]}>{etiquette}</Text> : null}
+      <View style={[styles.ligne, { backgroundColor: sur === 'surface' ? p.surface2 : p.surface }]}>
         <Pressable onPress={() => onChange(decaler(date, -1))} accessibilityRole="button" accessibilityLabel={`${nomChamp} : la veille`} style={styles.fleche}>
           <Text style={{ color: p.texteDoux, fontSize: 26, lineHeight: 30 }}>‹</Text>
         </Pressable>
@@ -105,6 +105,7 @@ export function ChampDate({ date, onChange, etiquette, max }: { date: string; on
 }
 
 const styles = StyleSheet.create({
+  etiquette: { paddingLeft: 16, fontFamily: police.texte600 },
   ligne: { flexDirection: 'row', alignItems: 'center', minHeight: 48, borderRadius: rayon.rond, paddingHorizontal: 4 },
   fleche: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   date: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' },

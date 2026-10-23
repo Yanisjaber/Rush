@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ChampTexte } from '@/components/ChampTexte';
 import { EcranAjout } from '@/components/EcranAjout';
 import { FeuilleBloc } from '@/components/FeuilleBloc';
 import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
@@ -14,7 +15,7 @@ import { useDateAjout } from '@/hooks/useDateAjout';
 import { useReferences } from '@/hooks/useReferences';
 import { espace, rayon } from '@/theme/couleurs';
 import { SPORTS, type CleSport } from '@/theme/sports';
-import { typo } from '@/theme/typo';
+import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Planifier une séance : sport, nom, heure, et pour le vélo, la course et la natation, des blocs (échauffement, intervalles, retour au calme…) dont la durée et la charge
@@ -65,8 +66,7 @@ export default function EcranAjoutSeance() {
     setErreur('');
   };
 
-  const champ = [typo.corps, styles.champ, { color: p.texte, backgroundColor: p.surface2, borderColor: p.contourChamp }];
-  const etiquette = (t: string) => <Text style={[typo.micro, { color: p.texteDoux }]}>{t}</Text>;
+  const etiquette = (t: string) => <Text style={[typo.petit, styles.etiquette, { color: p.texteDoux }]}>{t}</Text>;
   const dureeBloc = (b: Bloc) => tousSegments([b]).reduce((t, { seg }) => t + seg.min, 0);
   const blocEdite = edition?.index != null ? blocs[edition.index] ?? null : null;
 
@@ -79,15 +79,11 @@ export default function EcranAjoutSeance() {
             {etiquette('Sport')}
             <MenuDeroulantSport valeur={cleDuType(f.type)} avecTous={false} onChoisir={(cle) => changerSport(typeDeCle(cle ?? 'autre'))} />
           </View>
-          <View style={{ flex: 1, gap: 6 }}>
-            {etiquette('Heure')}
-            <TextInput value={f.heure} onChangeText={(t) => change({ ...f, heure: t })} keyboardType="numbers-and-punctuation" maxLength={5} placeholder="18:00" placeholderTextColor={p.texteMuet} accessibilityLabel="Heure" style={champ} />
+          <View style={{ flex: 1 }}>
+            <ChampTexte etiquette="Heure" value={f.heure} onChangeText={(t) => change({ ...f, heure: t })} keyboardType="numbers-and-punctuation" maxLength={5} placeholder="18:00" />
           </View>
         </View>
-        <View style={{ gap: 6 }}>
-          {etiquette('Nom (facultatif)')}
-          <TextInput value={f.nom} onChangeText={(t) => change({ ...f, nom: t })} maxLength={120} placeholder={nomSport(f.type)} placeholderTextColor={p.texteMuet} returnKeyType="done" accessibilityLabel="Nom de la séance" style={champ} />
-        </View>
+        <ChampTexte etiquette="Nom (facultatif)" value={f.nom} onChangeText={(t) => change({ ...f, nom: t })} maxLength={120} placeholder={nomSport(f.type)} returnKeyType="done" />
 
         {calcul ? (
           <View style={{ gap: espace.e3 }}>
@@ -145,14 +141,12 @@ export default function EcranAjoutSeance() {
 
         <View style={styles.ligne}>
           {!calcul ? (
-            <View style={{ flex: 1, gap: 6 }}>
-              {etiquette('Durée (min)')}
-              <TextInput value={f.duree} onChangeText={(t) => change({ ...f, duree: t })} keyboardType="number-pad" maxLength={4} accessibilityLabel="Durée en minutes" style={champ} />
+            <View style={{ flex: 1 }}>
+              <ChampTexte etiquette="Durée (min)" value={f.duree} onChangeText={(t) => change({ ...f, duree: t })} keyboardType="number-pad" maxLength={4} />
             </View>
           ) : null}
-          <View style={{ flex: 1, gap: 6 }}>
-            {etiquette(distanceEnMetres(f.type) ? 'Distance (m)' : 'Distance (km)')}
-            <TextInput value={f.distance} onChangeText={(t) => change({ ...f, distance: t })} keyboardType="decimal-pad" maxLength={8} accessibilityLabel={distanceEnMetres(f.type) ? 'Distance en mètres' : 'Distance en kilomètres'} style={champ} />
+          <View style={{ flex: 1 }}>
+            <ChampTexte etiquette={distanceEnMetres(f.type) ? 'Distance (m)' : 'Distance (km)'} value={f.distance} onChangeText={(t) => change({ ...f, distance: t })} keyboardType="decimal-pad" maxLength={8} accessibilityLabel={distanceEnMetres(f.type) ? 'Distance en mètres' : 'Distance en kilomètres'} />
           </View>
         </View>
       </EcranAjout>
@@ -195,12 +189,12 @@ export default function EcranAjoutSeance() {
 }
 
 const styles = StyleSheet.create({
-  champ: { minHeight: 48, borderWidth: 1.5, borderRadius: rayon.base, paddingHorizontal: 14 },
+  etiquette: { paddingLeft: 16, fontFamily: police.texte600 },
   ligne: { flexDirection: 'row', gap: espace.e2 },
   profil: { borderRadius: rayon.bloc, padding: espace.e3 },
   pastilles: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   pastille: { height: 32, borderRadius: rayon.rond, paddingHorizontal: 12, justifyContent: 'center' },
   bloc: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56, borderRadius: rayon.base, paddingHorizontal: 12, paddingVertical: 8 },
   barreZone: { width: 6, alignSelf: 'stretch', borderRadius: 3 },
-  ajout: { minHeight: 48, borderWidth: 1.5, borderStyle: 'dashed', borderRadius: rayon.base, alignItems: 'center', justifyContent: 'center' },
+  ajout: { minHeight: 48, borderWidth: 1.5, borderStyle: 'dashed', borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center' },
 });

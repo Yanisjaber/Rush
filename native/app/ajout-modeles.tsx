@@ -1,10 +1,11 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
 import { PastillesChoix } from '@/components/ChampsFeuille';
+import { ChampTexte } from '@/components/ChampTexte';
 import { ProfilSeance } from '@/components/ProfilSeance';
 import { ChampDate } from '@/components/ChampDate';
 import { blocsDuModele, cleDuModele, filtrerModeles, lignePrevueDepuisModele, resumeModele, sportsDesModeles, type Modele } from '@/data/modeles';
@@ -50,16 +51,7 @@ export default function EcranAjoutModeles() {
   return (
     <ScrollView contentContainerStyle={[styles.contenu, { paddingBottom: bas + espace.e6 }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
       <ChampDate etiquette="Poser le modèle le" date={date} onChange={setDate} />
-      <TextInput
-        value={recherche}
-        onChangeText={setRecherche}
-        placeholder="Chercher un modèle…"
-        placeholderTextColor={p.texteMuet}
-        autoCorrect={false}
-        returnKeyType="search"
-        accessibilityLabel="Chercher un modèle"
-        style={[typo.corps, styles.champ, { color: p.texte, backgroundColor: p.surface2, borderColor: p.contourChamp }]}
-      />
+      <ChampTexte value={recherche} onChangeText={setRecherche} placeholder="Chercher un modèle…" autoCorrect={false} returnKeyType="search" accessibilityLabel="Chercher un modèle" />
       {sports.length > 1 ? (
         <PastillesChoix
           valeurs={[{ cle: 'tous', nom: 'Tous' }, ...sports.map((cle) => ({ cle, nom: SPORTS[cle as CleSport].court }))]}
@@ -139,7 +131,6 @@ export default function EcranAjoutModeles() {
 
 const styles = StyleSheet.create({
   contenu: { padding: espace.e4, gap: espace.e4 },
-  champ: { minHeight: 48, borderWidth: 1.5, borderRadius: rayon.base, paddingHorizontal: 14 },
   carte: { borderRadius: rayon.bloc, padding: espace.e3, gap: espace.e3 },
   ligne: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: espace.e3 },
   point: { width: 14, height: 14, borderRadius: 7, marginHorizontal: 25 },

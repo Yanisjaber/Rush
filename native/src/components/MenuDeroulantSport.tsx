@@ -8,7 +8,7 @@ import { usePalette } from '@/theme/usePalette';
 
 // Un choix de sport en menu déroulant : un champ qui montre le sport choisi (avec son point de couleur), et une liste qui s'ouvre juste dessous,
 // comme le menu des sports de l'accueil. Avec `avecTous`, `null` = « Tous les sports » (le sport est facultatif) ; sans, un sport est toujours choisi.
-export function MenuDeroulantSport({ valeur, onChoisir, etiquette = 'Sport', avecTous = true }: { valeur: string | null; onChoisir: (sport: string | null) => void; etiquette?: string; avecTous?: boolean }) {
+export function MenuDeroulantSport({ valeur, onChoisir, etiquette = 'Sport', avecTous = true, sur = 'fond' }: { valeur: string | null; onChoisir: (sport: string | null) => void; etiquette?: string; avecTous?: boolean; sur?: 'fond' | 'surface' }) {
   const p = usePalette();
   const champRef = useRef<ComponentRef<typeof View>>(null);
   const [ouvert, setOuvert] = useState(false);
@@ -43,10 +43,10 @@ export function MenuDeroulantSport({ valeur, onChoisir, etiquette = 'Sport', ave
         accessibilityRole="button"
         accessibilityLabel={`${etiquette} : ${nom}. Changer`}
         accessibilityState={{ expanded: ouvert }}
-        style={[styles.champ, { backgroundColor: p.surface2, borderColor: p.contourChamp }]}
+        style={[styles.champ, { backgroundColor: sur === 'surface' ? p.surface2 : p.surface }]}
       >
         {point(valeur ? couleurSport(p, valeur) : p.texteMuet, !valeur)}
-        <Text style={[typo.corps, { color: p.texte, flex: 1 }]}>{nom}</Text>
+        <Text style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>{nom}</Text>
         <Text style={{ color: p.texteDoux, fontSize: 18 }}>⌄</Text>
       </Pressable>
       <Modal visible={ouvert} transparent animationType="fade" onRequestClose={() => setOuvert(false)}>
@@ -81,7 +81,8 @@ export function MenuDeroulantSport({ valeur, onChoisir, etiquette = 'Sport', ave
 }
 
 const styles = StyleSheet.create({
-  champ: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1.5, borderRadius: rayon.base, paddingHorizontal: 14 },
+  // La même pastille pleine que les champs de texte (voir ChampTexte)
+  champ: { height: 48, flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: rayon.rond, paddingHorizontal: 18 },
   point: { width: 10, height: 10, borderRadius: 5 },
   panneau: { position: 'absolute', borderWidth: 1, borderRadius: rayon.bloc, overflow: 'hidden' },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, paddingHorizontal: 10, borderRadius: 12 },

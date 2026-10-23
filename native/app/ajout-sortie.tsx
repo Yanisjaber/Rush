@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ChampTexte } from '@/components/ChampTexte';
 import { EcranAjout } from '@/components/EcranAjout';
 import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
 import { ChampDate } from '@/components/ChampDate';
@@ -10,7 +11,7 @@ import { useAjouts } from '@/hooks/useAjouts';
 import { useDateAjout } from '@/hooks/useDateAjout';
 import { espace, rayon } from '@/theme/couleurs';
 import { SPORTS, type CleSport } from '@/theme/sports';
-import { typo } from '@/theme/typo';
+import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Noter à la main une sortie déjà faite qui ne vient pas de Strava (ligne de activities, source « manual ») : sport, nom, heure, durée, distance, dénivelé, FC, effort, notes.
@@ -42,8 +43,7 @@ export default function EcranAjoutSortie() {
     router.back();
   }
 
-  const champ = [typo.corps, styles.champ, { color: p.texte, backgroundColor: p.surface2, borderColor: p.contourChamp }];
-  const etiquette = (t: string) => <Text style={[typo.micro, { color: p.texteDoux }]}>{t}</Text>;
+  const etiquette = (t: string) => <Text style={[typo.petit, styles.etiquette, { color: p.texteDoux }]}>{t}</Text>;
   return (
     <EcranAjout bouton="Enregistrer" enCours={enCours} erreur={erreur} onValider={() => void enregistrer()}>
       <ChampDate date={date} max={aujourdhui} onChange={(iso) => { setDate(iso > aujourdhui ? aujourdhui : iso); setErreur(''); }} />
@@ -52,36 +52,33 @@ export default function EcranAjoutSortie() {
           {etiquette('Sport')}
           <MenuDeroulantSport valeur={cleDuType(f.type)} avecTous={false} onChoisir={(cle) => change({ ...f, type: typeDeCle(cle ?? 'autre') })} />
         </View>
-        <View style={{ flex: 1, gap: 6 }}>
-          {etiquette('Heure')}
-          <TextInput value={f.heure} onChangeText={(t) => change({ ...f, heure: t })} keyboardType="numbers-and-punctuation" maxLength={5} placeholder="07:30" placeholderTextColor={p.texteMuet} accessibilityLabel="Heure" style={champ} />
+        <View style={{ flex: 1 }}>
+          <ChampTexte etiquette="Heure" value={f.heure} onChangeText={(t) => change({ ...f, heure: t })} keyboardType="numbers-and-punctuation" maxLength={5} placeholder="07:30" />
         </View>
       </View>
-      <View style={{ gap: 6 }}>
-        {etiquette('Nom (facultatif)')}
-        <TextInput value={f.nom} onChangeText={(t) => change({ ...f, nom: t })} maxLength={120} placeholder={nomSport(f.type)} placeholderTextColor={p.texteMuet} returnKeyType="done" accessibilityLabel="Nom de la sortie" style={champ} />
-      </View>
+      <ChampTexte etiquette="Nom (facultatif)" value={f.nom} onChangeText={(t) => change({ ...f, nom: t })} maxLength={120} placeholder={nomSport(f.type)} returnKeyType="done" />
       <View style={{ gap: 6 }}>
         {etiquette('Durée')}
         <View style={styles.duree}>
-          <TextInput value={f.heures} onChangeText={(t) => change({ ...f, heures: t })} keyboardType="number-pad" maxLength={2} accessibilityLabel="Heures" style={[...champ, styles.centre]} />
+          <View style={{ flex: 1 }}>
+            <ChampTexte value={f.heures} onChangeText={(t) => change({ ...f, heures: t })} keyboardType="number-pad" maxLength={2} accessibilityLabel="Heures" style={styles.centre} />
+          </View>
           <Text style={[typo.corps, { color: p.texteDoux }]}>h</Text>
-          <TextInput value={f.minutes} onChangeText={(t) => change({ ...f, minutes: t })} keyboardType="number-pad" maxLength={2} accessibilityLabel="Minutes" style={[...champ, styles.centre]} />
+          <View style={{ flex: 1 }}>
+            <ChampTexte value={f.minutes} onChangeText={(t) => change({ ...f, minutes: t })} keyboardType="number-pad" maxLength={2} accessibilityLabel="Minutes" style={styles.centre} />
+          </View>
           <Text style={[typo.corps, { color: p.texteDoux }]}>min</Text>
         </View>
       </View>
       <View style={styles.ligne}>
-        <View style={{ flex: 1, gap: 6 }}>
-          {etiquette(distanceEnMetres(f.type) ? 'Distance (m)' : 'Distance (km)')}
-          <TextInput value={f.distance} onChangeText={(t) => change({ ...f, distance: t })} keyboardType="decimal-pad" maxLength={8} accessibilityLabel={distanceEnMetres(f.type) ? 'Distance en mètres' : 'Distance en kilomètres'} style={champ} />
+        <View style={{ flex: 1 }}>
+          <ChampTexte etiquette={distanceEnMetres(f.type) ? 'Distance (m)' : 'Distance (km)'} value={f.distance} onChangeText={(t) => change({ ...f, distance: t })} keyboardType="decimal-pad" maxLength={8} accessibilityLabel={distanceEnMetres(f.type) ? 'Distance en mètres' : 'Distance en kilomètres'} />
         </View>
-        <View style={{ flex: 1, gap: 6 }}>
-          {etiquette('Dénivelé (m)')}
-          <TextInput value={f.dplus} onChangeText={(t) => change({ ...f, dplus: t })} keyboardType="number-pad" maxLength={5} accessibilityLabel="Dénivelé positif en mètres" style={champ} />
+        <View style={{ flex: 1 }}>
+          <ChampTexte etiquette="Dénivelé (m)" value={f.dplus} onChangeText={(t) => change({ ...f, dplus: t })} keyboardType="number-pad" maxLength={5} accessibilityLabel="Dénivelé positif en mètres" />
         </View>
-        <View style={{ flex: 1, gap: 6 }}>
-          {etiquette('FC moy.')}
-          <TextInput value={f.fc} onChangeText={(t) => change({ ...f, fc: t })} keyboardType="number-pad" maxLength={3} accessibilityLabel="Fréquence cardiaque moyenne" style={champ} />
+        <View style={{ flex: 1 }}>
+          <ChampTexte etiquette="FC moy." value={f.fc} onChangeText={(t) => change({ ...f, fc: t })} keyboardType="number-pad" maxLength={3} accessibilityLabel="Fréquence cardiaque moyenne" />
         </View>
       </View>
       <View style={{ gap: 6 }}>
@@ -96,28 +93,25 @@ export default function EcranAjoutSortie() {
                 accessibilityRole="radio"
                 accessibilityState={{ selected: actif }}
                 accessibilityLabel={`Effort ${n} sur 10`}
-                style={[styles.note, { backgroundColor: actif ? p.texte : p.surface2 }]}
+                style={[styles.note, { backgroundColor: actif ? p.texte : p.surface }]}
               >
                 <Text style={[typo.corpsFort, { color: actif ? p.fond : p.texte }]}>{n}</Text>
               </Pressable>
             );
           })}
         </View>
-        <Text style={[typo.petit, { color: p.texteDoux }]}>1 = très facile, 10 = effort maximal. Il sert à estimer la charge de la sortie.</Text>
+        <Text style={[typo.petit, { color: p.texteDoux, paddingLeft: 16 }]}>1 = très facile, 10 = effort maximal. Il sert à estimer la charge de la sortie.</Text>
       </View>
-      <View style={{ gap: 6 }}>
-        {etiquette('Notes (facultatif)')}
-        <TextInput value={f.notes} onChangeText={(t) => change({ ...f, notes: t })} maxLength={2000} multiline placeholder="Un mot sur la sortie…" placeholderTextColor={p.texteMuet} accessibilityLabel="Notes" style={[...champ, { minHeight: 88, textAlignVertical: 'top', paddingTop: 12 }]} />
-      </View>
+      <ChampTexte etiquette="Notes (facultatif)" value={f.notes} onChangeText={(t) => change({ ...f, notes: t })} maxLength={2000} multiline placeholder="Un mot sur la sortie…" />
     </EcranAjout>
   );
 }
 
 const styles = StyleSheet.create({
-  champ: { minHeight: 48, borderWidth: 1.5, borderRadius: rayon.base, paddingHorizontal: 14 },
-  centre: { flex: 1, textAlign: 'center' },
+  etiquette: { paddingLeft: 16, fontFamily: police.texte600 },
+  centre: { textAlign: 'center' },
   ligne: { flexDirection: 'row', gap: espace.e2 },
   duree: { flexDirection: 'row', alignItems: 'center', gap: espace.e2 },
   effort: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  note: { width: '18%', minHeight: 44, borderRadius: rayon.base, alignItems: 'center', justifyContent: 'center' },
+  note: { width: '18%', minHeight: 44, borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center' },
 });

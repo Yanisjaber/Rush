@@ -1,17 +1,18 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
 import { CalendrierPeriode } from '@/components/CalendrierPeriode';
 import { ChoixCouleur } from '@/components/ChampsFeuille';
+import { ChampTexte } from '@/components/ChampTexte';
 import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
 import { COULEURS_CYCLE, NOM_MAX_CYCLE, validerCycle } from '@/data/cycles';
 import { dateIsoLocale } from '@/data/format';
 import { useCycles } from '@/hooks/useCycles';
 import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
-import { typo } from '@/theme/typo';
+import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Créer ou modifier un cycle d'entraînement : un nom, un début, une fin, une couleur. Au plus deux cycles le même jour : si ce n'est pas possible, on dit lesquels.
@@ -103,25 +104,21 @@ export default function EcranCycle() {
       <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte }]}>
         {existant ? 'Modifier le cycle' : 'Nouveau cycle'}
       </Text>
+      <ChampTexte
+        etiquette="Nom"
+        value={nom}
+        onChangeText={(t) => {
+          setNom(t);
+          setErreur('');
+        }}
+        maxLength={NOM_MAX_CYCLE}
+        placeholder="Bloc force, Prépa spécifique, Affûtage…"
+        autoCorrect={false}
+        returnKeyType="done"
+        accessibilityLabel="Nom du cycle"
+      />
       <View style={{ gap: 6 }}>
-        <Text style={[typo.micro, { color: p.texteDoux }]}>Nom</Text>
-        <TextInput
-          value={nom}
-          onChangeText={(t) => {
-            setNom(t);
-            setErreur('');
-          }}
-          maxLength={NOM_MAX_CYCLE}
-          placeholder="Bloc force, Prépa spécifique, Affûtage…"
-          placeholderTextColor={p.texteMuet}
-          autoCorrect={false}
-          returnKeyType="done"
-          accessibilityLabel="Nom du cycle"
-          style={[typo.corps, styles.champ, { color: p.texte, backgroundColor: p.surface2, borderColor: p.contourChamp }]}
-        />
-      </View>
-      <View style={{ gap: 6 }}>
-        <Text style={[typo.micro, { color: p.texteDoux }]}>Période</Text>
+        <Text style={[typo.petit, { color: p.texteDoux, paddingLeft: 16, fontFamily: police.texte600 }]}>Période</Text>
         <CalendrierPeriode
           debut={debut}
           fin={fin}
@@ -134,7 +131,7 @@ export default function EcranCycle() {
         />
       </View>
       <View style={{ gap: 6 }}>
-        <Text style={[typo.micro, { color: p.texteDoux }]}>Sport</Text>
+        <Text style={[typo.petit, { color: p.texteDoux, paddingLeft: 16, fontFamily: police.texte600 }]}>Sport</Text>
         <MenuDeroulantSport
           valeur={sport}
           onChoisir={(v) => {
@@ -146,7 +143,7 @@ export default function EcranCycle() {
         />
       </View>
       <View style={{ gap: 6 }}>
-        <Text style={[typo.micro, { color: p.texteDoux }]}>Couleur</Text>
+        <Text style={[typo.petit, { color: p.texteDoux, paddingLeft: 16, fontFamily: police.texte600 }]}>Couleur</Text>
         <ChoixCouleur
           couleurs={COULEURS_CYCLE}
           actuelle={couleur}

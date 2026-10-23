@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
 import { ChoixCouleur, PastillesChoix } from '@/components/ChampsFeuille';
+import { ChampTexte } from '@/components/ChampTexte';
 import { ChampDate } from '@/components/ChampDate';
 import { PALETTE_NOTE, TEXTE_MAX_NOTE, TYPES_NOTE, validerNote, type FormulaireNote } from '@/data/ajouts';
 import { couleurNote, libelleNote } from '@/data/annotations';
 import { periodeCourte } from '@/data/format';
 import { useAjouts } from '@/hooks/useAjouts';
 import { espace, rayon } from '@/theme/couleurs';
-import { typo } from '@/theme/typo';
+import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 import type { Note } from '@/data/types';
 
@@ -76,8 +77,6 @@ export function FeuilleNote({ note, onFermer }: { note: Note | null; onFermer: (
     ]);
   }
 
-  const champ = [typo.corps, styles.champ, { color: p.texte, backgroundColor: p.surface2, borderColor: p.contourChamp }];
-
   return (
     <Modal visible={!!note} transparent animationType="fade" onRequestClose={onFermer}>
       <Pressable accessibilityLabel="Fermer" accessibilityRole="button" onPress={onFermer} style={styles.fond} />
@@ -127,20 +126,19 @@ export function FeuilleNote({ note, onFermer }: { note: Note | null; onFermer: (
                 onChoisir={(v) => change({ ...f, type: v })}
                 etiquette="Type de note"
               />
-              <Text style={[typo.micro, { color: p.texteDoux }]}>{f.type === 'texte' ? 'Ta note' : 'Précision (facultatif)'}</Text>
-              <TextInput
+              <ChampTexte
+                etiquette={f.type === 'texte' ? 'Ta note' : 'Précision (facultatif)'}
+                sur="surface"
                 value={f.texte}
                 onChangeText={(t) => change({ ...f, texte: t })}
                 maxLength={TEXTE_MAX_NOTE}
                 multiline
                 placeholder="Un mot sur ta journée…"
-                placeholderTextColor={p.texteMuet}
                 accessibilityLabel="Texte de la note"
-                style={[...champ, { minHeight: 88, textAlignVertical: 'top', paddingTop: 12 }]}
               />
-              <ChampDate etiquette="Du" date={f.de} onChange={(iso) => change({ ...f, de: iso, a: f.a < iso ? iso : f.a })} />
-              <ChampDate etiquette="Au" date={f.a} onChange={(iso) => change({ ...f, a: iso, de: iso < f.de ? iso : f.de })} />
-              <Text style={[typo.micro, { color: p.texteDoux }]}>Couleur</Text>
+              <ChampDate sur="surface" etiquette="Du" date={f.de} onChange={(iso) => change({ ...f, de: iso, a: f.a < iso ? iso : f.a })} />
+              <ChampDate sur="surface" etiquette="Au" date={f.a} onChange={(iso) => change({ ...f, a: iso, de: iso < f.de ? iso : f.de })} />
+              <Text style={[typo.petit, { color: p.texteDoux, paddingLeft: 16, fontFamily: police.texte600 }]}>Couleur</Text>
               <ChoixCouleur couleurs={PALETTE_NOTE.map((hex) => ({ hex, nom: hex }))} actuelle={f.couleur} onChoisir={(hex) => change({ ...f, couleur: hex })} />
             </ScrollView>
             {erreur ? (
@@ -169,5 +167,4 @@ const styles = StyleSheet.create({
   popupBarre: { width: 6, height: 26, borderRadius: 3 },
   feuille: { maxHeight: '92%', borderTopWidth: 1, borderTopLeftRadius: rayon.bloc, borderTopRightRadius: rayon.bloc, padding: espace.e4, gap: espace.e3 },
   poignee: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2 },
-  champ: { minHeight: 48, borderWidth: 1.5, borderRadius: rayon.base, paddingHorizontal: 14 },
 });
