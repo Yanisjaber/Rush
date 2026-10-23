@@ -162,7 +162,7 @@ export default function EcranAjoutSeance() {
           ) : null}
         </View>
         <ChoixEffort valeur={f.rpe} onChange={(v) => change({ ...f, rpe: v })} etiquette="Effort estimé (facultatif)" />
-        <ChampTexte etiquette="Notes (facultatif)" value={f.notes} onChangeText={(t) => change({ ...f, notes: t })} maxLength={2000} multiline placeholder="Un mot sur la séance : l'objectif, le parcours, les sensations à viser…" />
+        <ChampTexte etiquette="Notes (facultatif)" value={f.notes} onChangeText={(t) => change({ ...f, notes: t })} maxLength={2000} multiline />
       </EcranAjout>
       <FeuilleBloc
         ouvert={edition !== null}
