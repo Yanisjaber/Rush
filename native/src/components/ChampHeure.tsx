@@ -36,9 +36,8 @@ export function ChampHeure({ valeur, onChange, etiquette = 'Heure' }: { valeur: 
           value: dateDepuisHeure(valeur),
           mode: 'time',
           is24Hour: true,
-          onChange: (e, d) => {
-            if (e.type === 'set' && d) onChange(heureDepuisDate(d));
-          },
+          // Android : appelé quand on valide (et jamais quand on annule)
+          onValueChange: (_e, d) => onChange(heureDepuisDate(d)),
         });
         return;
       } catch {
@@ -63,7 +62,7 @@ export function ChampHeure({ valeur, onChange, etiquette = 'Heure' }: { valeur: 
             {etiquette}
           </Text>
           <RepliSiErreur repli={<SecoursHeure valeur={valeur} onValider={(h) => { onChange(h); setOuvert(false); }} />}>
-            <DateTimePicker value={choix} mode="time" display="spinner" is24Hour locale="fr-FR" themeVariant={p.fond === sombre.fond ? 'dark' : 'light'} onChange={(_e, d) => d && setChoix(d)} />
+            <DateTimePicker value={choix} mode="time" display="spinner" is24Hour locale="fr-FR" themeVariant={p.fond === sombre.fond ? 'dark' : 'light'} onValueChange={(_e, d) => setChoix(d)} />
             <View style={styles.boutons}>
               <Bouton variante="discret" onPress={() => setOuvert(false)}>
                 Annuler

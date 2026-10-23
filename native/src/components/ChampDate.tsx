@@ -34,9 +34,8 @@ export function ChampDate({ date, onChange, etiquette, max, sur = 'fond' }: { da
           value: dateDepuisJour(date),
           mode: 'date',
           maximumDate: max ? dateDepuisJour(max) : undefined,
-          onChange: (e, d) => {
-            if (e.type === 'set' && d) onChange(jourDepuisDate(d));
-          },
+          // Android : appelé quand on valide un jour (et jamais quand on annule)
+          onValueChange: (_e, d) => onChange(jourDepuisDate(d)),
         });
         return;
       } catch {
@@ -129,11 +128,9 @@ export function ChampDate({ date, onChange, etiquette, max, sur = 'fond' }: { da
                 locale="fr-FR"
                 maximumDate={max ? dateDepuisJour(max) : undefined}
                 themeVariant={p.fond === sombre.fond ? 'dark' : 'light'}
-                onChange={(_e, d) => {
-                  if (d) {
-                    onChange(jourDepuisDate(d));
-                    setOuvert(false);
-                  }
+                onValueChange={(_e, d) => {
+                  onChange(jourDepuisDate(d));
+                  setOuvert(false);
                 }}
               />
             </View>
