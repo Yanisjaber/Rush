@@ -203,3 +203,18 @@ test('chargeEstimee : celle des blocs, sinon celle de la durée et de l\'effort,
   assert.equal(chargeEstimee({ ...base, type: 'Ride', duree: '999' }, blocs, { ftp: 250 }), 48); // les blocs priment sur la durée saisie : 0,5 h à 98 % → 48,02 arrondi à 48
   assert.equal(chargeEstimee({ ...base, type: 'WeightTraining' }, blocs), estimerTss(60, 5)); // un sport sans structure ignore les blocs
 });
+
+test('validerSeance avec parcours GPX : le nom et le contenu sont joints, un faux fichier est refusé', () => {
+  const contenu = '<gpx version="1.1"><trk><trkseg><trkpt lat="43.6" lon="1.44"></trkpt><trkpt lat="43.7" lon="1.44"></trkpt></trkseg></trk></gpx>';
+  const ok = validerSeance(formulaireSeanceVide(), date, 'Course', [], {}, { nom: 'boucle.gpx', contenu });
+  assert.ok(ok.ok);
+  if (ok.ok) {
+    assert.equal(ok.ligne.gpx_name, 'boucle.gpx');
+    assert.equal(ok.ligne.gpx_content, contenu);
+  }
+  const sans = validerSeance(formulaireSeanceVide(), date, 'Course');
+  assert.ok(sans.ok);
+  if (sans.ok) assert.equal(sans.ligne.gpx_name, undefined); // sans parcours, les colonnes GPX ne sont pas écrites
+  assert.equal(validerSeance(formulaireSeanceVide(), date, 'Course', [], {}, { nom: 'x.gpx', contenu: '<html></html>' }).ok, false);
+  assert.equal(validerSeance(formulaireSeanceVide(), date, 'Course', [], {}, { nom: 'x.gpx', contenu: '' }).ok, false);
+});

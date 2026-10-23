@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Bouton } from '@/components/Bouton';
 import { ChampHeure } from '@/components/ChampHeure';
 import { ChampTexte } from '@/components/ChampTexte';
 import { ChoixEffort } from '@/components/ChoixEffort';
@@ -11,6 +12,8 @@ import { ProfilSeance } from '@/components/ProfilSeance';
 import { ChampDate } from '@/components/ChampDate';
 import { chargeEstimee, cleDuType, distanceEnMetres, formulaireSeanceVide, typeDeCle, validerSeance } from '@/data/ajouts';
 import { deplacerBloc, nomDuBloc, peutAjouterBloc } from '@/data/blocs-formulaire';
+import { nomDeFichier, resumerGpx, TAILLE_MAX_GPX, type ParcoursGpx, type ResumeGpx } from '@/data/gpx';
+import { formatNombre } from '@/data/format';
 import { COULEURS_ZONE, indiceZone, metriquesDuSport, milieu, NOM_TYPE, resume, sportAvecStructure, texteCible, texteDuree, tousSegments, type Bloc } from '@/data/structure';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useDateAjout } from '@/hooks/useDateAjout';
@@ -31,6 +34,7 @@ export default function EcranAjoutSeance() {
   const [f, setF] = useState(formulaireSeanceVide());
   const [blocs, setBlocs] = useState<Bloc[]>([]);
   const [edition, setEdition] = useState<{ index: number | null } | null>(null); // le bloc ouvert dans la feuille (null = fermée, index null = nouveau)
+  const [parcours, setParcours] = useState<{ fichier: ParcoursGpx; resume: ResumeGpx } | null>(null); // le GPX choisi
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState(false);
 
@@ -54,7 +58,7 @@ export default function EcranAjoutSeance() {
   }
 
   async function enregistrer() {
-    const r = validerSeance(f, date, nomSport(f.type), blocs, reference);
+    const r = validerSeance(f, date, nomSport(f.type), blocs, reference, parcours?.fichier ?? null);
     if (!r.ok) return setErreur(r.erreur);
     setEnCours(true);
     const e = await creerPrevue(r.ligne);
@@ -62,6 +66,40 @@ export default function EcranAjoutSeance() {
     if (e) return setErreur(e);
     router.back();
   }
+
+  // Choisir un fichier GPX dans le téléphone (sélecteur du système). Le module est chargé au moment du choix : tant que l'app n'a pas été reconstruite avec, on le dit clairement.
+  async function choisirGpx() {
+    setErreur('');
+    let selecteur: typeof import('expo-document-picker');
+    try {
+      selecteur = await import('expo-document-picker');
+    } catch {
+      return Alert.alert('Nouvelle version nécessaire', "Le choix d'un fichier demande de reconstruire l'app avec son module natif.");
+    }
+    try {
+      const r = await selecteur.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
+      if (r.canceled || !r.assets?.length) return;
+      const fichier = r.assets[0];
+      if (fichier.size != null && fichier.size > TAILLE_MAX_GPX) return setErreur('Le fichier est trop gros (5 Mo maximum).');
+      const texte = await (await fetch(fichier.uri)).text();
+      const lu = resumerGpx(texte);
+      if (!lu.ok) return setErreur(lu.erreur);
+      setParcours({ fichier: { nom: nomDeFichier(fichier.name), contenu: texte }, resume: lu.resume });
+    } catch {
+      setErreur("Impossible de lire ce fichier.");
+    }
+  }
+
+  // Reprendre la distance et le dénivelé du parcours dans les champs (en mètres pour la natation)
+  const utiliserParcours = () => {
+    if (!parcours) return;
+    const { distanceKm, denivele } = parcours.resume;
+    change({
+      ...f,
+      distance: distanceEnMetres(f.type) ? String(Math.round(distanceKm * 1000)) : String(distanceKm).replace('.', ','),
+      dplus: denivele != null ? String(denivele) : f.dplus,
+    });
+  };
 
   const enregistrerBloc = (b: Bloc) => {
     setBlocs((liste) => (edition?.index == null ? [...liste, b] : liste.map((x, i) => (i === edition.index ? b : x))));
@@ -163,6 +201,32 @@ export default function EcranAjoutSeance() {
           ) : null}
         </View>
         <ChoixEffort valeur={f.rpe} onChange={(v) => change({ ...f, rpe: v })} etiquette="Effort estimé (facultatif)" />
+        <View style={{ gap: 6 }}>
+          {etiquette('Parcours GPX (facultatif)')}
+          {parcours ? (
+            <View style={[styles.parcours, { backgroundColor: p.surface }]}>
+              <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte }]}>
+                {parcours.fichier.nom}
+              </Text>
+              <Text style={[typo.petit, { color: p.texteDoux }]}>
+                {`${String(parcours.resume.distanceKm).replace('.', ',')} km`}
+                {parcours.resume.denivele != null ? ` · ${formatNombre(parcours.resume.denivele)} m D+` : ''}
+              </Text>
+              <View style={styles.parcoursBoutons}>
+                <Bouton petit variante="discret" onPress={() => setParcours(null)}>
+                  Retirer
+                </Bouton>
+                <Bouton petit onPress={utiliserParcours}>
+                  Reprendre distance et D+
+                </Bouton>
+              </View>
+            </View>
+          ) : (
+            <Pressable onPress={() => void choisirGpx()} accessibilityRole="button" accessibilityLabel="Ajouter un parcours GPX" style={[styles.ajout, { borderColor: p.traitFort }]}>
+              <Text style={[typo.corpsFort, { color: p.texteDoux }]}>+ Ajouter un parcours GPX</Text>
+            </Pressable>
+          )}
+        </View>
         <ChampTexte etiquette="Notes (facultatif)" value={f.notes} onChangeText={(t) => change({ ...f, notes: t })} maxLength={2000} multiline />
       </EcranAjout>
       <FeuilleBloc
@@ -205,6 +269,8 @@ export default function EcranAjoutSeance() {
 
 const styles = StyleSheet.create({
   etiquette: { paddingLeft: 16, fontFamily: police.texte600 },
+  parcours: { borderRadius: rayon.bloc, padding: espace.e3, gap: 4 },
+  parcoursBoutons: { flexDirection: 'row', gap: espace.e2, justifyContent: 'flex-end', marginTop: 4 },
   ligne: { flexDirection: 'row', gap: espace.e2 },
   profil: { borderRadius: rayon.bloc, padding: espace.e3 },
   pastilles: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },

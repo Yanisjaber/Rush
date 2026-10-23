@@ -2,6 +2,7 @@
 // Port des règles de app/src/lib/data/prevue.js, competitions.js et annotations.js : mêmes bornes, mêmes colonnes. La base refait ces vérifications (RLS, contraintes) :
 // ici on écrit seulement des messages clairs.
 //
+import { verifierParcours, type ParcoursGpx } from './gpx.ts';
 import { resume, sportAvecStructure, type Bloc, type Reference } from './structure.ts';
 
 // STOCKAGE :
@@ -113,6 +114,9 @@ export interface LignePrevue {
   est_bpm?: number | null;
   est_kj?: number | null;
   est_if?: number | null;
+  /** Le parcours GPX joint (nom et contenu du fichier), absent sans parcours. */
+  gpx_name?: string | null;
+  gpx_content?: string | null;
 }
 
 /**
@@ -120,7 +124,7 @@ export interface LignePrevue {
  * Avec des blocs (pour un sport qui en accepte : vélo, course, natation), la durée et la charge viennent des blocs, calculés avec les références de l'utilisateur (`ref`) ;
  * sans bloc, elles viennent du formulaire (durée saisie, charge estimée).
  */
-export function validerSeance(f: FormulaireSeance, date: string, nomParDefaut: string, blocs: Bloc[] = [], ref: Reference = {}): Resultat<LignePrevue> {
+export function validerSeance(f: FormulaireSeance, date: string, nomParDefaut: string, blocs: Bloc[] = [], ref: Reference = {}, parcours: ParcoursGpx | null = null): Resultat<LignePrevue> {
   if (!dateValide(date)) return { ok: false, erreur: 'Choisis une date valide.' };
   const nom = (String(f.nom ?? '').trim() || nomParDefaut).replace(/\s+/g, ' ');
   if (nom.length > 120) return { ok: false, erreur: 'Le nom est trop long (120 caractères au plus).' };
@@ -139,6 +143,8 @@ export function validerSeance(f: FormulaireSeance, date: string, nomParDefaut: s
   if (tssSaisi != null && !(tssSaisi >= 0 && tssSaisi <= 1000)) return { ok: false, erreur: 'La charge doit être entre 0 et 1000 points.' };
   const notes = String(f.notes ?? '').trim();
   if (notes.length > 2000) return { ok: false, erreur: 'Les notes sont trop longues (2000 caractères au plus).' };
+  const erreurGpx = verifierParcours(parcours);
+  if (erreurGpx) return { ok: false, erreur: erreurGpx };
   return {
     ok: true,
     ligne: {
@@ -155,6 +161,7 @@ export function validerSeance(f: FormulaireSeance, date: string, nomParDefaut: s
       d_plus: dplus,
       notes: notes || null,
       ...(calcul ? { structure: blocs, est_watts: calcul.watts, est_bpm: calcul.bpm, est_kj: calcul.kj, est_if: calcul.facteurIntensite } : {}),
+      ...(parcours ? { gpx_name: parcours.nom, gpx_content: parcours.contenu } : {}),
     },
   };
 }

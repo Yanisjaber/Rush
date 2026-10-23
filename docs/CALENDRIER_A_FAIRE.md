@@ -32,6 +32,10 @@ Liste tenue à jour avec Yanis (écran `native/app/(onglets)/calendrier.tsx`). D
 - **Étiquetage des tours Hyrox** (table `hyrox_efforts` prête) : un tour par run et par station, ou aussi les repos ? le nom seul, ou aussi la charge et les répétitions ?
 - **Où mettre l'accès aux écrans de cycles** : l'écran `cycles` (liste) n'a plus de bouton depuis la refonte de l'en-tête ; on y accède seulement en touchant un cycle dans le détail d'un jour. Les créations passent par le « + ».
 
+## À reconstruire (une fois, par Yanis)
+
+- Deux paquets natifs ajoutés le 23 octobre : `@react-native-community/datetimepicker` 9.2.1 (sélecteurs de date et d'heure du système) et `expo-document-picker` 58.0.4 (choix d'un fichier GPX). Tant que l'app de développement n'est pas reconstruite (`npx expo run:ios`, sur le téléphone : `npx expo run:ios --device`), les écrans retombent sur les sélecteurs de secours (date en calendrier maison, heure saisie à la main, GPX : message « nouvelle version nécessaire »). Pour Android (Samsung) : le code est prêt, il reste à générer le dossier `android/` (`npx expo run:android`) et à fixer le nom de paquet, aujourd'hui provisoire (`TODO.rush`).
+
 ## Ménage à faire (demande d'accord de Yanis)
 
 - `native/src/components/FeuilleAjout.tsx` (l'ancienne feuille du « + » à onglets) n'est plus utilisée nulle part : à supprimer avec l'accord de Yanis.
