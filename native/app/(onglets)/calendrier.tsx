@@ -421,27 +421,18 @@ function Detail({ jour }: { jour: JourGrille }) {
           <Text style={[styles.detailPlusTexte, { color: p.fond }]}>+</Text>
         </Pressable>
       </View>
-      <View style={styles.detailPastilles}>
-        {pastilles.map((x) => (
-          <View key={x.unite} accessible accessibilityLabel={x.dit} style={[styles.detailPastille, { backgroundColor: p.surface2 }]}>
-            <Text style={[styles.detailPastilleValeur, { color: p.texte }]}>
-              {x.valeur}
-              <Text style={[styles.carteUnite, { color: p.texteDoux }]}> {x.unite}</Text>
-            </Text>
-          </View>
-        ))}
-        {/* Un jour de repos se pose et se retire d'un toucher (réversible, donc sans confirmation) */}
-        <Pressable
-          onPress={() => void (async () => setErreurRepos(await basculerRepos(jour.iso, !jour.repos)))()}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: jour.repos }}
-          accessibilityLabel="Jour de repos"
-          hitSlop={{ top: 8, bottom: 8 }}
-          style={[styles.detailPastille, jour.repos ? { backgroundColor: p.texte } : { borderWidth: 1, borderStyle: 'dashed', borderColor: p.traitFort }]}
-        >
-          <Text style={[styles.detailPastilleValeur, { color: jour.repos ? p.fond : p.texteDoux }]}>Repos</Text>
-        </Pressable>
-      </View>
+      {pastilles.length ? (
+        <View style={styles.detailPastilles}>
+          {pastilles.map((x) => (
+            <View key={x.unite} accessible accessibilityLabel={x.dit} style={[styles.detailPastille, { backgroundColor: p.surface2 }]}>
+              <Text style={[styles.detailPastilleValeur, { color: p.texte }]}>
+                {x.valeur}
+                <Text style={[styles.carteUnite, { color: p.texteDoux }]}> {x.unite}</Text>
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
       {erreurRepos ? (
         <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger, marginBottom: 6 }]}>
           {erreurRepos}
