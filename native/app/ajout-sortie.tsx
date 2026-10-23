@@ -11,6 +11,7 @@ import { cleDuType, distanceEnMetres, formulaireSortieVide, typeDeCle, validerSo
 import { dateIsoLocale } from '@/data/format';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useDateAjout } from '@/hooks/useDateAjout';
+import { useMenu } from '@/stores/menu';
 import { espace, rayon } from '@/theme/couleurs';
 import { SPORTS, type CleSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
@@ -22,10 +23,11 @@ export default function EcranAjoutSortie() {
   const p = usePalette();
   const router = useRouter();
   const { creerSortie } = useAjouts();
+  const { filtre, familles } = useMenu(); // le sport où l'on était (ou le premier de la barre sur « Tous ») est pré-sélectionné
   const aujourdhui = dateIsoLocale(new Date());
   const depart = useDateAjout();
   const [date, setDate] = useState(depart > aujourdhui ? aujourdhui : depart);
-  const [f, setF] = useState(formulaireSortieVide());
+  const [f, setF] = useState(() => formulaireSortieVide(filtre, familles));
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState(false);
 

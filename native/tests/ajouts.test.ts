@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { normaliser } from '../src/data/structure.ts';
-import { distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee } from '../src/data/ajouts.ts';
+import { distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, typeInitial } from '../src/data/ajouts.ts';
 
 const date = '2026-10-23';
 
@@ -217,4 +217,17 @@ test('validerSeance avec parcours GPX : le nom et le contenu sont joints, un fau
   if (sans.ok) assert.equal(sans.ligne.gpx_name, undefined); // sans parcours, les colonnes GPX ne sont pas écrites
   assert.equal(validerSeance(formulaireSeanceVide(), date, 'Course', [], {}, { nom: 'x.gpx', contenu: '<html></html>' }).ok, false);
   assert.equal(validerSeance(formulaireSeanceVide(), date, 'Course', [], {}, { nom: 'x.gpx', contenu: '' }).ok, false);
+});
+
+test('le sport choisi dans la barre du haut est pré-sélectionné dans la séance prévue', () => {
+  assert.equal(formulaireSeanceVide('velo').type, 'Ride');
+  assert.equal(formulaireSeanceVide('natation').type, 'Swim');
+  assert.equal(typeInitial('tout'), 'Run');
+  assert.equal(typeInitial('tout', ['natation', 'course']), 'Swim'); // sur « Tous » : le premier sport de la barre
+  assert.equal(formulaireSeanceVide('tout', ['velo']).type, 'Ride');
+  assert.equal(typeInitial('course', ['natation']), 'Run'); // un sport choisi l'emporte
+  assert.equal(typeInitial('inconnu'), 'Run');
+  assert.equal(formulaireSeanceVide().type, 'Run');
+  assert.equal(formulaireSortieVide('velo').type, 'Ride');
+  assert.equal(formulaireSortieVide('tout', ['muscu']).type, 'WeightTraining');
 });

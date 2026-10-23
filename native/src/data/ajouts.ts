@@ -80,7 +80,13 @@ export interface FormulaireSeance {
   notes: string;
 }
 
-export const formulaireSeanceVide = (): FormulaireSeance => ({ nom: '', type: 'Run', duree: '60', heure: '12:00', distance: '', dplus: '', rpe: null, tss: '', notes: '' });
+/** Le sport d'ouverture : celui choisi dans la barre du haut, ou le premier de la barre quand on est sur « tout » ; sans sport connu → course. */
+export const typeInitial = (filtre?: string, familles: string[] = []): string => {
+  const cle = filtre === 'tout' ? familles[0] : filtre;
+  return SPORTS_AJOUT.find((s) => s.cle === cle)?.type ?? 'Run';
+};
+
+export const formulaireSeanceVide = (filtre?: string, familles?: string[]): FormulaireSeance => ({ nom: '', type: typeInitial(filtre, familles), duree: '60', heure: '12:00', distance: '', dplus: '', rpe: null, tss: '', notes: '' });
 
 /**
  * La charge (points) estimée d'une séance en cours de saisie, pour l'afficher avant de l'enregistrer : celle des blocs s'il y en a (et que le sport en accepte),
@@ -272,7 +278,7 @@ export interface FormulaireSortie {
   notes: string;
 }
 
-export const formulaireSortieVide = (): FormulaireSortie => ({ nom: '', type: 'Run', heure: '07:30', heures: '0', minutes: '45', distance: '', dplus: '', fc: '', rpe: null, notes: '' });
+export const formulaireSortieVide = (filtre?: string, familles?: string[]): FormulaireSortie => ({ nom: '', type: typeInitial(filtre, familles), heure: '07:30', heures: '0', minutes: '45', distance: '', dplus: '', fc: '', rpe: null, notes: '' });
 
 /** Ligne à écrire dans activities (sans user_id ni client_id : ajoutés par l'API depuis la session). */
 export interface LigneSortie {

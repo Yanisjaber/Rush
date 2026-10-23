@@ -18,6 +18,7 @@ import { COULEURS_ZONE, indiceZone, metriquesDuSport, milieu, NOM_TYPE, resume, 
 import { useAjouts } from '@/hooks/useAjouts';
 import { useDateAjout } from '@/hooks/useDateAjout';
 import { useReferences } from '@/hooks/useReferences';
+import { useMenu } from '@/stores/menu';
 import { espace, rayon } from '@/theme/couleurs';
 import { SPORTS, type CleSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
@@ -30,8 +31,9 @@ export default function EcranAjoutSeance() {
   const router = useRouter();
   const { creerPrevue } = useAjouts();
   const reference = useReferences();
+  const { filtre, familles } = useMenu(); // le sport où l'on était (ou le premier de la barre sur « Tous ») est pré-sélectionné
   const [date, setDate] = useState(useDateAjout());
-  const [f, setF] = useState(formulaireSeanceVide());
+  const [f, setF] = useState(() => formulaireSeanceVide(filtre, familles));
   const [blocs, setBlocs] = useState<Bloc[]>([]);
   const [edition, setEdition] = useState<{ index: number | null } | null>(null); // le bloc ouvert dans la feuille (null = fermée, index null = nouveau)
   const [parcours, setParcours] = useState<{ fichier: ParcoursGpx; resume: ResumeGpx } | null>(null); // le GPX choisi
