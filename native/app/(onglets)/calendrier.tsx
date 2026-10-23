@@ -383,8 +383,6 @@ function Detail({ jour }: { jour: JourGrille }) {
   const router = useRouter();
   const p = usePalette();
   const [menuAjout, setMenuAjout] = useState(false); // le menu du « + »
-  const [zonePlus, setZonePlus] = useState({ haut: 0, bas: 0 });
-  const plusRef = useRef<ComponentRef<typeof View>>(null);
   const [noteOuverte, setNoteOuverte] = useState<Note | null>(null); // la note qu'on modifie
   const [cycleOuvert, setCycleOuvert] = useState<Cycle | null>(null); // le cycle qu'on regarde
   const { basculerRepos } = useAjouts();
@@ -414,14 +412,7 @@ function Detail({ jour }: { jour: JourGrille }) {
           {dateLongue(jour.iso)}
         </Text>
         <Pressable
-          ref={plusRef}
-          onPress={() =>
-            // On mesure où est le « + » pour poser le menu juste dessous
-            plusRef.current?.measureInWindow((_x, y, _w, h) => {
-              setZonePlus({ haut: y, bas: y + h });
-              setMenuAjout(true);
-            })
-          }
+          onPress={() => setMenuAjout(true)}
           accessibilityRole="button"
           accessibilityLabel="Ajouter : séance, sortie, modèle, compétition, note, cycle ou repos"
           accessibilityState={{ expanded: menuAjout }}
@@ -552,8 +543,6 @@ function Detail({ jour }: { jour: JourGrille }) {
       <MenuAjout
         ouvert={menuAjout}
         onFermer={() => setMenuAjout(false)}
-        haut={zonePlus.haut}
-        bas={zonePlus.bas}
         repos={jour.repos}
         onChoisir={(c) => {
           setMenuAjout(false);
