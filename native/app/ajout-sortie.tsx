@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { ChampTexte } from '@/components/ChampTexte';
+import { ChoixEffort } from '@/components/ChoixEffort';
 import { EcranAjout } from '@/components/EcranAjout';
 import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
 import { ChampDate } from '@/components/ChampDate';
@@ -81,27 +82,7 @@ export default function EcranAjoutSortie() {
           <ChampTexte etiquette="FC moy." value={f.fc} onChangeText={(t) => change({ ...f, fc: t })} keyboardType="number-pad" maxLength={3} accessibilityLabel="Fréquence cardiaque moyenne" />
         </View>
       </View>
-      <View style={{ gap: 6 }}>
-        {etiquette('Effort ressenti (facultatif)')}
-        <View style={styles.effort} accessibilityRole="radiogroup" accessibilityLabel="Effort ressenti de 1 à 10">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => {
-            const actif = f.rpe === n;
-            return (
-              <Pressable
-                key={n}
-                onPress={() => change({ ...f, rpe: actif ? null : n })}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: actif }}
-                accessibilityLabel={`Effort ${n} sur 10`}
-                style={[styles.note, { backgroundColor: actif ? p.texte : p.surface }]}
-              >
-                <Text style={[typo.corpsFort, { color: actif ? p.fond : p.texte }]}>{n}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <Text style={[typo.petit, { color: p.texteDoux, paddingLeft: 16 }]}>1 = très facile, 10 = effort maximal. Il sert à estimer la charge de la sortie.</Text>
-      </View>
+      <ChoixEffort valeur={f.rpe} onChange={(v) => change({ ...f, rpe: v })} etiquette="Effort ressenti (facultatif)" aide="1 = très facile, 10 = effort maximal. Il sert à estimer la charge de la sortie." />
       <ChampTexte etiquette="Notes (facultatif)" value={f.notes} onChangeText={(t) => change({ ...f, notes: t })} maxLength={2000} multiline placeholder="Un mot sur la sortie…" />
     </EcranAjout>
   );
@@ -112,6 +93,4 @@ const styles = StyleSheet.create({
   centre: { textAlign: 'center' },
   ligne: { flexDirection: 'row', gap: espace.e2 },
   duree: { flexDirection: 'row', alignItems: 'center', gap: espace.e2 },
-  effort: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  note: { width: '18%', minHeight: 44, borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center' },
 });

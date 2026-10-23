@@ -73,9 +73,24 @@ export interface FormulaireSeance {
   duree: string; // minutes
   heure: string; // HH:MM
   distance: string;
+  dplus: string; // dénivelé positif prévu, en mètres
+  rpe: number | null; // effort ressenti estimé, de 1 à 10
+  tss: string; // charge saisie à la main (facultatif) ; vide = estimée
+  notes: string;
 }
 
-export const formulaireSeanceVide = (): FormulaireSeance => ({ nom: '', type: 'Run', duree: '60', heure: '12:00', distance: '' });
+export const formulaireSeanceVide = (): FormulaireSeance => ({ nom: '', type: 'Run', duree: '60', heure: '12:00', distance: '', dplus: '', rpe: null, tss: '', notes: '' });
+
+/**
+ * La charge (points) estimée d'une séance en cours de saisie, pour l'afficher avant de l'enregistrer : celle des blocs s'il y en a (et que le sport en accepte),
+ * sinon celle de la durée et de l'effort estimé. Null si la durée n'est pas encore lisible.
+ */
+export function chargeEstimee(f: Pick<FormulaireSeance, 'duree' | 'type' | 'rpe'>, blocs: Bloc[] = [], ref: Reference = {}): number | null {
+  if (blocs.length > 0 && sportAvecStructure(f.type)) return resume(blocs, ref, f.type).tss;
+  const duree = nombreOuNull(f.duree);
+  if (duree == null || !Number.isInteger(duree) || duree < 1 || duree > 1440) return null;
+  return estimerTss(duree, f.rpe ?? 5);
+}
 
 /** Ligne à écrire dans activity_planned (sans user_id : il vient de la session, ajouté par l'API). */
 export interface LignePrevue {
@@ -86,10 +101,10 @@ export interface LignePrevue {
   sport: string;
   duration: number | null;
   tss: number | null;
-  rpe: null;
+  rpe: number | null;
   km: number | null;
-  d_plus: null;
-  notes: null;
+  d_plus: number | null;
+  notes: string | null;
   priority?: 'A' | 'B';
   type?: string | null;
   /** Les blocs de la séance (voir structure.ts), et les estimations qu'on en tire ; absents pour une séance sans structure. */
@@ -117,6 +132,13 @@ export function validerSeance(f: FormulaireSeance, date: string, nomParDefaut: s
   if (duree == null || !Number.isInteger(duree) || duree < 1 || duree > 1440) return { ok: false, erreur: 'La durée doit être entre 1 et 1440 minutes.' };
   const km = distanceEnKm(f.distance, f.type);
   if (km != null && !(km >= 0 && km <= 5000)) return { ok: false, erreur: 'La distance doit être entre 0 et 5000 km.' };
+  const dplus = nombreOuNull(f.dplus);
+  if (dplus != null && !(Number.isInteger(dplus) && dplus >= 0 && dplus <= 30000)) return { ok: false, erreur: 'Le dénivelé doit être un nombre entier entre 0 et 30000 m.' };
+  if (f.rpe != null && !(Number.isInteger(f.rpe) && f.rpe >= 1 && f.rpe <= 10)) return { ok: false, erreur: "L'effort estimé doit être entre 1 et 10." };
+  const tssSaisi = nombreOuNull(f.tss);
+  if (tssSaisi != null && !(tssSaisi >= 0 && tssSaisi <= 1000)) return { ok: false, erreur: 'La charge doit être entre 0 et 1000 points.' };
+  const notes = String(f.notes ?? '').trim();
+  if (notes.length > 2000) return { ok: false, erreur: 'Les notes sont trop longues (2000 caractères au plus).' };
   return {
     ok: true,
     ligne: {
@@ -126,11 +148,12 @@ export function validerSeance(f: FormulaireSeance, date: string, nomParDefaut: s
       start_date_local: `${date}T${f.heure}:00`,
       sport: f.type,
       duration: duree,
-      tss: calcul ? calcul.tss : estimerTss(duree),
-      rpe: null,
+      // Avec des blocs, la charge vient des blocs ; sinon celle qu'on a saisie, sinon l'estimation (durée et effort)
+      tss: calcul ? calcul.tss : tssSaisi != null ? Math.round(tssSaisi) : estimerTss(duree, f.rpe ?? 5),
+      rpe: f.rpe,
       km: km == null ? null : Math.round(km * 1000) / 1000,
-      d_plus: null,
-      notes: null,
+      d_plus: dplus,
+      notes: notes || null,
       ...(calcul ? { structure: blocs, est_watts: calcul.watts, est_bpm: calcul.bpm, est_kj: calcul.kj, est_if: calcul.facteurIntensite } : {}),
     },
   };

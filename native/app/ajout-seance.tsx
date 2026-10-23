@@ -2,12 +2,13 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChampTexte } from '@/components/ChampTexte';
+import { ChoixEffort } from '@/components/ChoixEffort';
 import { EcranAjout } from '@/components/EcranAjout';
 import { FeuilleBloc } from '@/components/FeuilleBloc';
 import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
 import { ProfilSeance } from '@/components/ProfilSeance';
 import { ChampDate } from '@/components/ChampDate';
-import { cleDuType, distanceEnMetres, formulaireSeanceVide, typeDeCle, validerSeance } from '@/data/ajouts';
+import { chargeEstimee, cleDuType, distanceEnMetres, formulaireSeanceVide, typeDeCle, validerSeance } from '@/data/ajouts';
 import { deplacerBloc, nomDuBloc, peutAjouterBloc } from '@/data/blocs-formulaire';
 import { COULEURS_ZONE, indiceZone, metriquesDuSport, milieu, NOM_TYPE, resume, sportAvecStructure, texteCible, texteDuree, tousSegments, type Bloc } from '@/data/structure';
 import { useAjouts } from '@/hooks/useAjouts';
@@ -35,6 +36,7 @@ export default function EcranAjoutSeance() {
   const metriques = metriquesDuSport(f.type);
   const aStructure = sportAvecStructure(f.type);
   const calcul = blocs.length && aStructure ? resume(blocs, reference, f.type) : null;
+  const charge = chargeEstimee(f, blocs, reference); // la charge estimée, avant même d'enregistrer
   const nomSport = (type: string) => SPORTS[cleDuType(type) as CleSport].nom;
 
   const change = (suite: typeof f) => {
@@ -149,6 +151,27 @@ export default function EcranAjoutSeance() {
             <ChampTexte etiquette={distanceEnMetres(f.type) ? 'Distance (m)' : 'Distance (km)'} value={f.distance} onChangeText={(t) => change({ ...f, distance: t })} keyboardType="decimal-pad" maxLength={8} accessibilityLabel={distanceEnMetres(f.type) ? 'Distance en mètres' : 'Distance en kilomètres'} />
           </View>
         </View>
+        <View style={styles.ligne}>
+          <View style={{ flex: 1 }}>
+            <ChampTexte etiquette="Dénivelé + (m)" value={f.dplus} onChangeText={(t) => change({ ...f, dplus: t })} keyboardType="number-pad" maxLength={5} accessibilityLabel="Dénivelé positif en mètres" />
+          </View>
+          {!calcul ? (
+            <View style={{ flex: 1 }}>
+              <ChampTexte etiquette="Charge (pts)" value={f.tss} onChangeText={(t) => change({ ...f, tss: t })} keyboardType="number-pad" maxLength={4} placeholder={charge != null ? `≈ ${charge}` : ''} accessibilityLabel="Charge en points (laisse vide pour l'estimation)" />
+            </View>
+          ) : null}
+        </View>
+        <ChoixEffort valeur={f.rpe} onChange={(v) => change({ ...f, rpe: v })} etiquette="Effort estimé (facultatif)" aide="1 = très facile, 10 = effort maximal. Sans blocs, il sert à estimer la charge." />
+        {!calcul && charge != null ? (
+          <View style={styles.pastilles}>
+            <View accessible accessibilityLabel={`${f.tss.trim() ? f.tss : charge} points de charge`} style={[styles.pastille, { backgroundColor: p.surface2 }]}>
+              <Text style={[typo.corpsFort, { color: p.texte }]}>
+                {f.tss.trim() ? f.tss : `≈ ${charge}`} <Text style={[typo.petit, { color: p.texteDoux }]}>{f.tss.trim() ? 'pts' : 'pts estimés'}</Text>
+              </Text>
+            </View>
+          </View>
+        ) : null}
+        <ChampTexte etiquette="Notes (facultatif)" value={f.notes} onChangeText={(t) => change({ ...f, notes: t })} maxLength={2000} multiline placeholder="Un mot sur la séance : l'objectif, le parcours, les sensations à viser…" />
       </EcranAjout>
       <FeuilleBloc
         ouvert={edition !== null}

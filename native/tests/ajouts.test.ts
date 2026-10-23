@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { normaliser } from '../src/data/structure.ts';
-import { distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle } from '../src/data/ajouts.ts';
+import { distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee } from '../src/data/ajouts.ts';
 
 const date = '2026-10-23';
 
@@ -163,4 +163,43 @@ test('validerSeance avec blocs : la durée et la charge viennent des blocs, la s
     assert.equal(muscu.ligne.duration, 45);
     assert.equal(muscu.ligne.structure, undefined);
   }
+});
+
+test('validerSeance : dénivelé, effort estimé, charge saisie et notes', () => {
+  const r = validerSeance({ ...formulaireSeanceVide(), duree: '90', dplus: '850', rpe: 7, notes: ' Sortie en côtes ' }, date, 'Course');
+  assert.ok(r.ok);
+  if (r.ok) {
+    assert.equal(r.ligne.d_plus, 850);
+    assert.equal(r.ligne.rpe, 7);
+    assert.equal(r.ligne.notes, 'Sortie en côtes');
+    assert.equal(r.ligne.tss, estimerTss(90, 7)); // l'effort estimé sert à estimer la charge
+  }
+  // une charge saisie à la main l'emporte sur l'estimation
+  const saisi = validerSeance({ ...formulaireSeanceVide(), duree: '90', tss: '120,4' }, date, 'Course');
+  assert.ok(saisi.ok);
+  if (saisi.ok) assert.equal(saisi.ligne.tss, 120);
+  const refus = (f: Partial<ReturnType<typeof formulaireSeanceVide>>) => {
+    const x = validerSeance({ ...formulaireSeanceVide(), ...f }, date, 'Course');
+    assert.equal(x.ok, false);
+    return x.ok ? '' : x.erreur;
+  };
+  assert.match(refus({ dplus: '12,5' }), /dénivelé/i);
+  assert.match(refus({ dplus: '31000' }), /dénivelé/i);
+  assert.match(refus({ dplus: '-4' }), /dénivelé/i);
+  assert.match(refus({ rpe: 11 }), /effort/i);
+  assert.match(refus({ rpe: 0 }), /effort/i);
+  assert.match(refus({ tss: '1500' }), /charge/i);
+  assert.match(refus({ tss: 'beaucoup' }), /charge/i);
+  assert.match(refus({ notes: 'x'.repeat(2001) }), /notes/i);
+});
+
+test('chargeEstimee : celle des blocs, sinon celle de la durée et de l\'effort, sinon rien', () => {
+  const base = { ...formulaireSeanceVide(), duree: '60' };
+  assert.equal(chargeEstimee(base), estimerTss(60, 5));
+  assert.equal(chargeEstimee({ ...base, rpe: 8 }), estimerTss(60, 8));
+  assert.equal(chargeEstimee({ ...base, duree: '' }), null); // durée pas encore lisible
+  assert.equal(chargeEstimee({ ...base, duree: '0' }), null);
+  const blocs = normaliser([{ type: 'steady', metric: 'power', unit: 'zone', work: { min: 30, int: 91, intHi: 105 } }]);
+  assert.equal(chargeEstimee({ ...base, type: 'Ride', duree: '999' }, blocs, { ftp: 250 }), 48); // les blocs priment sur la durée saisie : 0,5 h à 98 % → 48,02 arrondi à 48
+  assert.equal(chargeEstimee({ ...base, type: 'WeightTraining' }, blocs), estimerTss(60, 5)); // un sport sans structure ignore les blocs
 });
