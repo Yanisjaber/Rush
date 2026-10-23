@@ -26,11 +26,12 @@ export default function EcranCycle() {
   const p = usePalette();
   const router = useRouter();
   const bas = useSafeAreaInsets().bottom;
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, debut: debutParam } = useLocalSearchParams<{ id?: string; debut?: string }>();
   const { cycles, chargement, creer, modifier, supprimer } = useCycles();
   const existant = useMemo(() => (id ? cycles.find((c) => c.id === id) ?? null : null), [id, cycles]);
 
-  const aujourdhui = dateIsoLocale(new Date());
+  // Un nouveau cycle commence le jour d'où l'on vient (paramètre « debut »), sinon aujourd'hui
+  const aujourdhui = /^\d{4}-\d{2}-\d{2}$/.test(String(debutParam ?? '')) ? String(debutParam) : dateIsoLocale(new Date());
   const [nom, setNom] = useState('');
   const [debut, setDebut] = useState(aujourdhui);
   const [fin, setFin] = useState(decaler(aujourdhui, 27)); // quatre semaines : un cycle d'entraînement typique
