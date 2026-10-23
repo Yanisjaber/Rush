@@ -3,7 +3,7 @@ import { rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Le choix d'un effort ressenti de 1 à 10 (facultatif : retoucher le chiffre choisi l'efface). Deux rangées de cinq pastilles, avec une phrase qui explique l'échelle.
+// Le choix d'un effort ressenti de 1 à 10 (facultatif : retoucher le chiffre choisi l'efface). Dix pastilles sur une seule ligne (étroites, mais hautes de 44 pt), avec une phrase qui explique l'échelle.
 export function ChoixEffort({ valeur, onChange, etiquette, aide }: { valeur: number | null; onChange: (v: number | null) => void; etiquette: string; aide: string }) {
   const p = usePalette();
   return (
@@ -33,6 +33,6 @@ export function ChoixEffort({ valeur, onChange, etiquette, aide }: { valeur: num
 
 const styles = StyleSheet.create({
   etiquette: { paddingLeft: 16, fontFamily: police.texte600 },
-  effort: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  note: { width: '18%', minHeight: 44, borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center' },
+  effort: { flexDirection: 'row', gap: 3 },
+  note: { flex: 1, minHeight: 44, borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center' },
 });
