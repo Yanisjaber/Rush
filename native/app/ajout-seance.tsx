@@ -161,16 +161,7 @@ export default function EcranAjoutSeance() {
             </View>
           ) : null}
         </View>
-        <ChoixEffort valeur={f.rpe} onChange={(v) => change({ ...f, rpe: v })} etiquette="Effort estimé (facultatif)" aide="1 = très facile, 10 = effort maximal. Sans blocs, il sert à estimer la charge." />
-        {!calcul && charge != null ? (
-          <View style={styles.pastilles}>
-            <View accessible accessibilityLabel={`${f.tss.trim() ? f.tss : charge} points de charge`} style={[styles.pastille, { backgroundColor: p.surface2 }]}>
-              <Text style={[typo.corpsFort, { color: p.texte }]}>
-                {f.tss.trim() ? f.tss : `≈ ${charge}`} <Text style={[typo.petit, { color: p.texteDoux }]}>{f.tss.trim() ? 'pts' : 'pts estimés'}</Text>
-              </Text>
-            </View>
-          </View>
-        ) : null}
+        <ChoixEffort valeur={f.rpe} onChange={(v) => change({ ...f, rpe: v })} etiquette="Effort estimé (facultatif)" />
         <ChampTexte etiquette="Notes (facultatif)" value={f.notes} onChangeText={(t) => change({ ...f, notes: t })} maxLength={2000} multiline placeholder="Un mot sur la séance : l'objectif, le parcours, les sensations à viser…" />
       </EcranAjout>
       <FeuilleBloc

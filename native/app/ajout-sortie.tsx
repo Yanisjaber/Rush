@@ -82,7 +82,7 @@ export default function EcranAjoutSortie() {
           <ChampTexte etiquette="FC moy." value={f.fc} onChangeText={(t) => change({ ...f, fc: t })} keyboardType="number-pad" maxLength={3} accessibilityLabel="Fréquence cardiaque moyenne" />
         </View>
       </View>
-      <ChoixEffort valeur={f.rpe} onChange={(v) => change({ ...f, rpe: v })} etiquette="Effort ressenti (facultatif)" aide="1 = très facile, 10 = effort maximal. Il sert à estimer la charge de la sortie." />
+      <ChoixEffort valeur={f.rpe} onChange={(v) => change({ ...f, rpe: v })} etiquette="Effort ressenti (facultatif)" />
       <ChampTexte etiquette="Notes (facultatif)" value={f.notes} onChangeText={(t) => change({ ...f, notes: t })} maxLength={2000} multiline placeholder="Un mot sur la sortie…" />
     </EcranAjout>
   );

@@ -4,7 +4,7 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Le choix d'un effort ressenti de 1 à 10 (facultatif : retoucher le chiffre choisi l'efface). Dix pastilles sur une seule ligne (étroites, mais hautes de 44 pt), avec une phrase qui explique l'échelle.
-export function ChoixEffort({ valeur, onChange, etiquette, aide }: { valeur: number | null; onChange: (v: number | null) => void; etiquette: string; aide: string }) {
+export function ChoixEffort({ valeur, onChange, etiquette, aide }: { valeur: number | null; onChange: (v: number | null) => void; etiquette: string; aide?: string }) {
   const p = usePalette();
   return (
     <View style={{ gap: 6 }}>
@@ -27,7 +27,7 @@ export function ChoixEffort({ valeur, onChange, etiquette, aide }: { valeur: num
           );
         })}
       </View>
-      <Text style={[typo.petit, { color: p.texteDoux, paddingLeft: 16 }]}>{aide}</Text>
+      {aide ? <Text style={[typo.petit, { color: p.texteDoux, paddingLeft: 16 }]}>{aide}</Text> : null}
     </View>
   );
 }
