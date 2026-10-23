@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { normaliser } from '../src/data/structure.ts';
 import { distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle } from '../src/data/ajouts.ts';
 
 const date = '2026-10-23';
@@ -139,4 +140,27 @@ test('cleDuType / typeDeCle : les deux sens, « autre » pour l\'inconnu', () =>
   assert.equal(typeDeCle('natation'), 'Swim');
   assert.equal(cleDuType('Tennis'), 'autre');
   assert.equal(typeDeCle('inconnu'), 'Other');
+});
+
+test('validerSeance avec blocs : la durée et la charge viennent des blocs, la structure est écrite', () => {
+  const blocs = normaliser([
+    { type: 'warmup', work: { min: 10, int: 56, intHi: 75 } },
+    { type: 'interval', reps: 5, metric: 'power', unit: 'zone', work: { min: 4, int: 91, intHi: 105 }, rec: { min: 2, int: 40, intHi: 55 } },
+    { type: 'cooldown', work: { min: 10, int: 40, intHi: 55 } },
+  ]);
+  const r = validerSeance({ ...formulaireSeanceVide(), type: 'Ride', duree: '999' }, date, 'Cyclisme', blocs, { ftp: 250 });
+  assert.ok(r.ok);
+  if (r.ok) {
+    assert.equal(r.ligne.duration, 50); // la durée saisie (999) est ignorée : les blocs font 50 minutes
+    assert.ok((r.ligne.tss ?? 0) > 30);
+    assert.equal(r.ligne.structure?.length, 3);
+    assert.ok((r.ligne.est_watts ?? 0) > 100);
+  }
+  // un sport sans structure (muscu) ignore les blocs et garde sa durée saisie
+  const muscu = validerSeance({ ...formulaireSeanceVide(), type: 'WeightTraining', duree: '45' }, date, 'Muscu', blocs);
+  assert.ok(muscu.ok);
+  if (muscu.ok) {
+    assert.equal(muscu.ligne.duration, 45);
+    assert.equal(muscu.ligne.structure, undefined);
+  }
 });

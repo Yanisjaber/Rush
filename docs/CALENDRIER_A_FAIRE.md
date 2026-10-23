@@ -6,11 +6,10 @@ Liste tenue à jour avec Yanis (écran `native/app/(onglets)/calendrier.tsx`). D
 
 1. **Ouvrir une séance prévue** : la lire, la modifier, la supprimer. Aujourd'hui elle affiche « Bientôt ». Le site montre aussi ses blocs (structure) et son parcours GPX (`VuePrevue.svelte`, `PanneauPrevue.svelte`).
 2. **Ouvrir une compétition** : voir son détail, la modifier, la supprimer. Elle s'affiche dans le détail du jour mais n'est pas touchable (le site : `PanneauCompetition.svelte`, route Compétitions).
-3. **Les modèles de séance** (table `activity_template`) : poser une séance type sur un jour (le site : `PanneauModeles.svelte`).
-4. **Saisir une sortie déjà faite à la main** (« Sortie réalisée » sur le site). L'app ne lit que ce qui vient de Strava.
-5. **La feuille du « + »** (séance prévue, compétition, note, cycle), à refaire en entier plus tard. La version actuelle (`FeuilleAjout.tsx`) fonctionne mais n'est pas définitive.
 
 ## Fait récemment
+
+- **Le « + » refait** (23 octobre) : un menu (séance prévue, sortie déjà faite, modèle, compétition, note, cycle, repos) et un écran par ajout : `ajout-seance` (avec blocs, profil par zones, durée et charge calculées), `ajout-sortie` (écrite dans `activities` en source manuelle), `ajout-modeles` (liste, recherche, filtre par sport, pose sur le jour), `ajout-competition`, `ajout-note`, et l'écran Cycle. Le repos se pose d'un toucher depuis le menu. Calcul des blocs porté du site : `src/data/structure.ts`.
 
 - **Notes et repos** (23 octobre) : toucher une note ouvre une feuille pour la modifier ou la supprimer (`FeuilleNote.tsx`) ; le bouton « Repos » du détail du jour pose ou retire un jour de repos d'un toucher. Démo en mémoire, compte dans `day_notes` et `rest_day`.
 
@@ -32,3 +31,8 @@ Liste tenue à jour avec Yanis (écran `native/app/(onglets)/calendrier.tsx`). D
 
 - **Étiquetage des tours Hyrox** (table `hyrox_efforts` prête) : un tour par run et par station, ou aussi les repos ? le nom seul, ou aussi la charge et les répétitions ?
 - **Où mettre l'accès aux écrans de cycles** : l'écran `cycles` (liste) n'a plus de bouton depuis la refonte de l'en-tête ; on y accède seulement en touchant un cycle dans le détail d'un jour. Les créations passent par le « + ».
+
+## Ménage à faire (demande d'accord de Yanis)
+
+- `native/src/components/FeuilleAjout.tsx` (l'ancienne feuille du « + » à onglets) n'est plus utilisée nulle part : à supprimer avec l'accord de Yanis.
+- Les séances prévues créées avec des blocs gardent leur structure ; l'écran qui les relit (lecture, modification) reste à faire (ligne 1 de « Repoussé »).

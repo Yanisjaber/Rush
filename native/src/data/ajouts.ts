@@ -2,6 +2,8 @@
 // Port des règles de app/src/lib/data/prevue.js, competitions.js et annotations.js : mêmes bornes, mêmes colonnes. La base refait ces vérifications (RLS, contraintes) :
 // ici on écrit seulement des messages clairs.
 //
+import { resume, sportAvecStructure, type Bloc, type Reference } from './structure.ts';
+
 // STOCKAGE :
 //  - séance prévue : une ligne de `activity_planned` (category = 'entrainement')
 //  - compétition   : une ligne de `activity_planned` (category = 'competition', priority 'A' ou 'B')
@@ -98,14 +100,20 @@ export interface LignePrevue {
   est_if?: number | null;
 }
 
-/** Vérifie une séance prévue pour la date donnée. Sans nom, elle prend celui de son sport (`nomParDefaut`). */
-export function validerSeance(f: FormulaireSeance, date: string, nomParDefaut: string): Resultat<LignePrevue> {
+/**
+ * Vérifie une séance prévue pour la date donnée. Sans nom, elle prend celui de son sport (`nomParDefaut`).
+ * Avec des blocs (pour un sport qui en accepte : vélo, course, natation), la durée et la charge viennent des blocs, calculés avec les références de l'utilisateur (`ref`) ;
+ * sans bloc, elles viennent du formulaire (durée saisie, charge estimée).
+ */
+export function validerSeance(f: FormulaireSeance, date: string, nomParDefaut: string, blocs: Bloc[] = [], ref: Reference = {}): Resultat<LignePrevue> {
   if (!dateValide(date)) return { ok: false, erreur: 'Choisis une date valide.' };
   const nom = (String(f.nom ?? '').trim() || nomParDefaut).replace(/\s+/g, ' ');
   if (nom.length > 120) return { ok: false, erreur: 'Le nom est trop long (120 caractères au plus).' };
   if (!TYPES.has(f.type)) return { ok: false, erreur: 'Choisis un sport.' };
   if (!HEURE.test(String(f.heure ?? ''))) return { ok: false, erreur: "L'heure n'est pas valide (par exemple 18:30)." };
-  const duree = nombreOuNull(f.duree);
+  const avecBlocs = blocs.length > 0 && sportAvecStructure(f.type);
+  const calcul = avecBlocs ? resume(blocs, ref, f.type) : null;
+  const duree = calcul ? Math.max(1, calcul.dureeMin) : nombreOuNull(f.duree);
   if (duree == null || !Number.isInteger(duree) || duree < 1 || duree > 1440) return { ok: false, erreur: 'La durée doit être entre 1 et 1440 minutes.' };
   const km = distanceEnKm(f.distance, f.type);
   if (km != null && !(km >= 0 && km <= 5000)) return { ok: false, erreur: 'La distance doit être entre 0 et 5000 km.' };
@@ -118,11 +126,12 @@ export function validerSeance(f: FormulaireSeance, date: string, nomParDefaut: s
       start_date_local: `${date}T${f.heure}:00`,
       sport: f.type,
       duration: duree,
-      tss: estimerTss(duree),
+      tss: calcul ? calcul.tss : estimerTss(duree),
       rpe: null,
       km: km == null ? null : Math.round(km * 1000) / 1000,
       d_plus: null,
       notes: null,
+      ...(calcul ? { structure: blocs, est_watts: calcul.watts, est_bpm: calcul.bpm, est_kj: calcul.kj, est_if: calcul.facteurIntensite } : {}),
     },
   };
 }
