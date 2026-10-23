@@ -6,16 +6,13 @@ import { espace } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Le gabarit des écrans d'ajout du « + » : un titre, les champs, l'erreur éventuelle et le bouton d'enregistrement. Le clavier ne cache jamais les champs
+// Le gabarit des écrans d'ajout du « + » : les champs, l'erreur éventuelle et le bouton d'enregistrement (le titre est celui de l'en-tête de l'écran). Le clavier ne cache jamais les champs
 // (on peut faire défiler, et toucher en dehors d'un champ le ferme).
-export function EcranAjout({ titre, bouton, enCours, erreur, onValider, children }: { titre: string; bouton: string; enCours: boolean; erreur: string; onValider: () => void; children: ReactNode }) {
+export function EcranAjout({ bouton, enCours, erreur, onValider, children }: { bouton: string; enCours: boolean; erreur: string; onValider: () => void; children: ReactNode }) {
   const p = usePalette();
   const bas = useSafeAreaInsets().bottom;
   return (
     <ScrollView contentContainerStyle={[styles.contenu, { paddingBottom: bas + espace.e6 }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets>
-      <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte }]}>
-        {titre}
-      </Text>
       {children}
       {erreur ? (
         <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>

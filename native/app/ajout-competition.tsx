@@ -4,7 +4,7 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { PastillesChoix } from '@/components/ChampsFeuille';
 import { EcranAjout } from '@/components/EcranAjout';
 import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
-import { SelecteurDate } from '@/components/SelecteurDate';
+import { ChampDate } from '@/components/ChampDate';
 import { cleDuType, distanceEnMetres, formulaireCompetitionVide, typeDeCle, validerCompetition } from '@/data/ajouts';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useDateAjout } from '@/hooks/useDateAjout';
@@ -39,8 +39,8 @@ export default function EcranAjoutCompetition() {
 
   const champ = [typo.corps, styles.champ, { color: p.texte, backgroundColor: p.surface2, borderColor: p.contourChamp }];
   return (
-    <EcranAjout titre="Nouvelle compétition" bouton="Ajouter la compétition" enCours={enCours} erreur={erreur} onValider={() => void enregistrer()}>
-      <SelecteurDate etiquette="Date" date={date} onChange={(iso) => { setDate(iso); setErreur(''); }} />
+    <EcranAjout bouton="Ajouter la compétition" enCours={enCours} erreur={erreur} onValider={() => void enregistrer()}>
+      <ChampDate date={date} onChange={(iso) => { setDate(iso); setErreur(''); }} />
       <View style={{ gap: 6 }}>
         <Text style={[typo.micro, { color: p.texteDoux }]}>Sport</Text>
         <MenuDeroulantSport valeur={cleDuType(f.type)} avecTous={false} onChoisir={(cle) => change({ ...f, type: typeDeCle(cle ?? 'autre') })} />

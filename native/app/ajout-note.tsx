@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { ChoixCouleur, PastillesChoix } from '@/components/ChampsFeuille';
 import { EcranAjout } from '@/components/EcranAjout';
-import { SelecteurDate } from '@/components/SelecteurDate';
+import { ChampDate } from '@/components/ChampDate';
 import { formulaireNoteVide, PALETTE_NOTE, TEXTE_MAX_NOTE, TYPES_NOTE, validerNote } from '@/data/ajouts';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useDateAjout } from '@/hooks/useDateAjout';
@@ -36,7 +36,7 @@ export default function EcranAjoutNote() {
   }
 
   return (
-    <EcranAjout titre="Nouvelle note" bouton="Ajouter la note" enCours={enCours} erreur={erreur} onValider={() => void enregistrer()}>
+    <EcranAjout bouton="Ajouter la note" enCours={enCours} erreur={erreur} onValider={() => void enregistrer()}>
       <PastillesChoix
         valeurs={TYPES_NOTE.map((t) => ({ cle: t.cle, nom: t.nom }))}
         actuel={f.type}
@@ -56,8 +56,8 @@ export default function EcranAjoutNote() {
           style={[typo.corps, styles.champ, { color: p.texte, backgroundColor: p.surface2, borderColor: p.contourChamp }]}
         />
       </View>
-      <SelecteurDate etiquette="Du" date={f.de} onChange={(iso) => change({ ...f, de: iso, a: f.a < iso ? iso : f.a })} />
-      <SelecteurDate etiquette="Au" date={f.a} onChange={(iso) => change({ ...f, a: iso, de: iso < f.de ? iso : f.de })} />
+      <ChampDate etiquette="Du" date={f.de} onChange={(iso) => change({ ...f, de: iso, a: f.a < iso ? iso : f.a })} />
+      <ChampDate etiquette="Au" date={f.a} onChange={(iso) => change({ ...f, a: iso, de: iso < f.de ? iso : f.de })} />
       <View style={{ gap: 6 }}>
         <Text style={[typo.micro, { color: p.texteDoux }]}>Couleur</Text>
         <ChoixCouleur couleurs={PALETTE_NOTE.map((hex) => ({ hex, nom: hex }))} actuelle={f.couleur} onChoisir={(hex) => change({ ...f, couleur: hex })} />

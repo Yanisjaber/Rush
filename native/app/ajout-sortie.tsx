@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { EcranAjout } from '@/components/EcranAjout';
 import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
-import { SelecteurDate } from '@/components/SelecteurDate';
+import { ChampDate } from '@/components/ChampDate';
 import { cleDuType, distanceEnMetres, formulaireSortieVide, typeDeCle, validerSortie } from '@/data/ajouts';
 import { dateIsoLocale } from '@/data/format';
 import { useAjouts } from '@/hooks/useAjouts';
@@ -45,8 +45,8 @@ export default function EcranAjoutSortie() {
   const champ = [typo.corps, styles.champ, { color: p.texte, backgroundColor: p.surface2, borderColor: p.contourChamp }];
   const etiquette = (t: string) => <Text style={[typo.micro, { color: p.texteDoux }]}>{t}</Text>;
   return (
-    <EcranAjout titre="Sortie déjà faite" bouton="Enregistrer" enCours={enCours} erreur={erreur} onValider={() => void enregistrer()}>
-      <SelecteurDate etiquette="Date" date={date} onChange={(iso) => { setDate(iso > aujourdhui ? aujourdhui : iso); setErreur(''); }} />
+    <EcranAjout bouton="Enregistrer" enCours={enCours} erreur={erreur} onValider={() => void enregistrer()}>
+      <ChampDate date={date} max={aujourdhui} onChange={(iso) => { setDate(iso > aujourdhui ? aujourdhui : iso); setErreur(''); }} />
       <View style={styles.ligne}>
         <View style={{ flex: 1.4, gap: 6 }}>
           {etiquette('Sport')}

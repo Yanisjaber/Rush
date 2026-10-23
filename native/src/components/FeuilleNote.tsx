@@ -3,7 +3,7 @@ import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, St
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
 import { ChoixCouleur, PastillesChoix } from '@/components/ChampsFeuille';
-import { SelecteurDate } from '@/components/SelecteurDate';
+import { ChampDate } from '@/components/ChampDate';
 import { PALETTE_NOTE, TEXTE_MAX_NOTE, TYPES_NOTE, validerNote, type FormulaireNote } from '@/data/ajouts';
 import { couleurNote, libelleNote } from '@/data/annotations';
 import { periodeCourte } from '@/data/format';
@@ -138,8 +138,8 @@ export function FeuilleNote({ note, onFermer }: { note: Note | null; onFermer: (
                 accessibilityLabel="Texte de la note"
                 style={[...champ, { minHeight: 88, textAlignVertical: 'top', paddingTop: 12 }]}
               />
-              <SelecteurDate etiquette="Du" date={f.de} onChange={(iso) => change({ ...f, de: iso, a: f.a < iso ? iso : f.a })} />
-              <SelecteurDate etiquette="Au" date={f.a} onChange={(iso) => change({ ...f, a: iso, de: iso < f.de ? iso : f.de })} />
+              <ChampDate etiquette="Du" date={f.de} onChange={(iso) => change({ ...f, de: iso, a: f.a < iso ? iso : f.a })} />
+              <ChampDate etiquette="Au" date={f.a} onChange={(iso) => change({ ...f, a: iso, de: iso < f.de ? iso : f.de })} />
               <Text style={[typo.micro, { color: p.texteDoux }]}>Couleur</Text>
               <ChoixCouleur couleurs={PALETTE_NOTE.map((hex) => ({ hex, nom: hex }))} actuelle={f.couleur} onChoisir={(hex) => change({ ...f, couleur: hex })} />
             </ScrollView>

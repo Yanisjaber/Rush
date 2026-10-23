@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
 import { PastillesChoix } from '@/components/ChampsFeuille';
 import { ProfilSeance } from '@/components/ProfilSeance';
-import { SelecteurDate } from '@/components/SelecteurDate';
+import { ChampDate } from '@/components/ChampDate';
 import { blocsDuModele, cleDuModele, filtrerModeles, lignePrevueDepuisModele, resumeModele, sportsDesModeles, type Modele } from '@/data/modeles';
 import { COULEURS_ZONE, indiceZone, milieu, NOM_TYPE, texteCible, texteDuree } from '@/data/structure';
 import { useAjouts } from '@/hooks/useAjouts';
@@ -49,7 +49,7 @@ export default function EcranAjoutModeles() {
   const jourCourt = new Date(`${date}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
   return (
     <ScrollView contentContainerStyle={[styles.contenu, { paddingBottom: bas + espace.e6 }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-      <SelecteurDate etiquette="Poser le modèle le" date={date} onChange={setDate} />
+      <ChampDate etiquette="Poser le modèle le" date={date} onChange={setDate} />
       <TextInput
         value={recherche}
         onChangeText={setRecherche}

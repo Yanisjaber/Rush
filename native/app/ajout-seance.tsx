@@ -5,7 +5,7 @@ import { EcranAjout } from '@/components/EcranAjout';
 import { FeuilleBloc } from '@/components/FeuilleBloc';
 import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
 import { ProfilSeance } from '@/components/ProfilSeance';
-import { SelecteurDate } from '@/components/SelecteurDate';
+import { ChampDate } from '@/components/ChampDate';
 import { cleDuType, distanceEnMetres, formulaireSeanceVide, typeDeCle, validerSeance } from '@/data/ajouts';
 import { deplacerBloc, nomDuBloc, peutAjouterBloc } from '@/data/blocs-formulaire';
 import { COULEURS_ZONE, indiceZone, metriquesDuSport, milieu, NOM_TYPE, resume, sportAvecStructure, texteCible, texteDuree, tousSegments, type Bloc } from '@/data/structure';
@@ -72,8 +72,8 @@ export default function EcranAjoutSeance() {
 
   return (
     <>
-      <EcranAjout titre="Nouvelle séance" bouton="Planifier" enCours={enCours} erreur={erreur} onValider={() => void enregistrer()}>
-        <SelecteurDate etiquette="Date" date={date} onChange={(iso) => { setDate(iso); setErreur(''); }} />
+      <EcranAjout bouton="Planifier" enCours={enCours} erreur={erreur} onValider={() => void enregistrer()}>
+        <ChampDate date={date} onChange={(iso) => { setDate(iso); setErreur(''); }} />
         <View style={styles.ligne}>
           <View style={{ flex: 1.4, gap: 6 }}>
             {etiquette('Sport')}
