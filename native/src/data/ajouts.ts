@@ -20,6 +20,10 @@ export const SPORTS_AJOUT: { cle: string; type: string }[] = [
 ];
 const TYPES = new Set(SPORTS_AJOUT.map((s) => s.type));
 
+/** La clé de sport (course, velo…) d'un type brut (Run, Ride…), et inversement. */
+export const cleDuType = (type: string): string => SPORTS_AJOUT.find((s) => s.type === type)?.cle ?? 'autre';
+export const typeDeCle = (cle: string): string => SPORTS_AJOUT.find((s) => s.cle === cle)?.type ?? 'Other';
+
 /** La distance se saisit en mètres pour la natation (« 2400 »), en kilomètres pour le reste (« 7,5 »). */
 export const distanceEnMetres = (type: string): boolean => type === 'Swim';
 

@@ -7,8 +7,8 @@ import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Un choix de sport en menu déroulant : un champ qui montre le sport choisi (avec son point de couleur), et une liste qui s'ouvre juste dessous,
-// comme le menu des sports de l'accueil. `null` = « Tous les sports » (le sport est facultatif).
-export function MenuDeroulantSport({ valeur, onChoisir, etiquette = 'Sport' }: { valeur: string | null; onChoisir: (sport: string | null) => void; etiquette?: string }) {
+// comme le menu des sports de l'accueil. Avec `avecTous`, `null` = « Tous les sports » (le sport est facultatif) ; sans, un sport est toujours choisi.
+export function MenuDeroulantSport({ valeur, onChoisir, etiquette = 'Sport', avecTous = true }: { valeur: string | null; onChoisir: (sport: string | null) => void; etiquette?: string; avecTous?: boolean }) {
   const p = usePalette();
   const champRef = useRef<ComponentRef<typeof View>>(null);
   const [ouvert, setOuvert] = useState(false);
@@ -30,7 +30,7 @@ export function MenuDeroulantSport({ valeur, onChoisir, etiquette = 'Sport' }: {
 
   const nom = valeur && Object.hasOwn(SPORTS, valeur) ? SPORTS[valeur as CleSport].nom : 'Tous les sports';
   const options: { cle: string | null; nom: string; couleur: string }[] = [
-    { cle: null, nom: 'Tous les sports', couleur: p.texteMuet },
+    ...(avecTous ? [{ cle: null, nom: 'Tous les sports', couleur: p.texteMuet }] : []),
     ...SPORTS_CYCLE.map((cle) => ({ cle, nom: SPORTS[cle as CleSport].nom, couleur: couleurSport(p, cle) })),
   ];
   const point = (couleur: string, vide = false) => <View style={[styles.point, vide ? { borderColor: couleur, borderWidth: 2 } : { backgroundColor: couleur }]} />;

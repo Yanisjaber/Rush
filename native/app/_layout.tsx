@@ -77,6 +77,22 @@ export default function RootLayout() {
           />
           {/* Les cycles d'entraînement : la liste, puis le formulaire pour en créer ou en modifier un */}
           <Stack.Screen name="cycles" options={{ headerShown: true, title: 'Cycles', headerStyle: { backgroundColor: palette.fond }, headerTintColor: palette.texte, headerTitleStyle: { fontFamily: 'BricolageGrotesque_700Bold' }, headerBackButtonDisplayMode: 'minimal', headerShadowVisible: false }} />
+          {/* Les écrans d'ajout du « + » du calendrier : un par type d'ajout, tous avec le même en-tête */}
+          {['ajout-seance', 'ajout-sortie', 'ajout-modeles', 'ajout-competition', 'ajout-note'].map((nom) => (
+            <Stack.Screen
+              key={nom}
+              name={nom}
+              options={{
+                headerShown: true,
+                title: { 'ajout-seance': 'Séance prévue', 'ajout-sortie': 'Sortie déjà faite', 'ajout-modeles': 'Modèles', 'ajout-competition': 'Compétition', 'ajout-note': 'Note' }[nom],
+                headerStyle: { backgroundColor: palette.fond },
+                headerTintColor: palette.texte,
+                headerTitleStyle: { fontFamily: 'BricolageGrotesque_700Bold' },
+                headerBackButtonDisplayMode: 'minimal',
+                headerShadowVisible: false,
+              }}
+            />
+          ))}
           <Stack.Screen name="cycle" options={{ headerShown: true, title: 'Cycle', headerStyle: { backgroundColor: palette.fond }, headerTintColor: palette.texte, headerTitleStyle: { fontFamily: 'BricolageGrotesque_700Bold' }, headerBackButtonDisplayMode: 'minimal', headerShadowVisible: false }} />
         </Stack.Protected>
         <Stack.Protected guard={!connecte}>
