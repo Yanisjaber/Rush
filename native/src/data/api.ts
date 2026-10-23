@@ -19,6 +19,7 @@ import { messageTours, toursValides } from './seance-detail';
 import type { Cycle, Nuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Profil, Seance, SerieForce, TestHyrox, Tour } from './types';
 import type { FormulaireCycle } from './cycles';
 import type { LigneNote, LignePrevue, LigneSortie } from './ajouts';
+import type { Modele } from './modeles';
 
 export interface Resultat<T> {
   data: T | null;
@@ -531,6 +532,14 @@ export async function creerNoteJour(userId: string, ligne: LigneNote): Promise<R
   const client_id = `app-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
   const r = await sb.from('day_notes').insert({ ...ligne, user_id: userId, client_id }).select(COLONNES_NOTE).single();
   return resultat(r, "Impossible d'enregistrer la note.");
+}
+
+const COLONNES_MODELE = 'id,sport,sport_raw,name,duration_min,tss,description,rpe,distance_km,dplus,structure';
+
+/** Les modèles de séance de l'utilisateur (table activity_template), classés par nom. */
+export async function chargerModeles(userId: string): Promise<Resultat<Modele[]>> {
+  const r = await sb.from('activity_template').select(COLONNES_MODELE).eq('user_id', userId).order('name', { ascending: true }).limit(500);
+  return resultat(r, 'Impossible de charger tes modèles.');
 }
 
 /** Écrit une sortie déjà faite (ligne validée par validerSortie) dans activities, avec source = 'manual' : une vraie ligne qu'on pourra modifier, contrairement à celles de Strava. */

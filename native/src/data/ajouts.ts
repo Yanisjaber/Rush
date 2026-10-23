@@ -90,6 +90,12 @@ export interface LignePrevue {
   notes: null;
   priority?: 'A' | 'B';
   type?: string | null;
+  /** Les blocs de la séance (voir structure.ts), et les estimations qu'on en tire ; absents pour une séance sans structure. */
+  structure?: unknown[] | null;
+  est_watts?: number | null;
+  est_bpm?: number | null;
+  est_kj?: number | null;
+  est_if?: number | null;
 }
 
 /** Vérifie une séance prévue pour la date donnée. Sans nom, elle prend celui de son sport (`nomParDefaut`). */
