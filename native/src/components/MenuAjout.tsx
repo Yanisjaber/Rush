@@ -67,8 +67,9 @@ const styles = StyleSheet.create({
   feuille: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopWidth: 1, borderTopLeftRadius: rayon.bloc, borderTopRightRadius: rayon.bloc, padding: espace.e4, gap: espace.e3 },
   poignee: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2 },
   tuiles: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -4 },
+  // Chaque emplacement s'étire sur la hauteur de la rangée et sa tuile le remplit : deux tuiles côte à côte ont toujours la même hauteur, même si l'une a une phrase sur deux lignes
   emplacement: { width: '50%', padding: 4 },
-  tuile: { minHeight: 84, borderRadius: rayon.bloc, padding: espace.e3, gap: espace.e2 },
+  tuile: { flex: 1, minHeight: 96, borderRadius: rayon.bloc, padding: espace.e3, gap: espace.e2 },
   tete: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   icone: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   repos: { minHeight: 44, borderWidth: 1, borderRadius: rayon.base, alignItems: 'center', justifyContent: 'center' },
