@@ -19,9 +19,10 @@ export function ChoixEffort({ valeur, onChange, etiquette, aide }: { valeur: num
               accessibilityRole="radio"
               accessibilityState={{ selected: actif }}
               accessibilityLabel={`Effort ${n} sur 10`}
+              hitSlop={{ top: 3, bottom: 3 }}
               style={[styles.note, { backgroundColor: actif ? p.texte : p.surface }]}
             >
-              <Text style={[typo.corpsFort, { color: actif ? p.fond : p.texte }]}>{n}</Text>
+              <Text style={[typo.corpsFort, { color: actif ? p.fond : p.texte, fontSize: 14, lineHeight: 18 }]}>{n}</Text>
             </Pressable>
           );
         })}
@@ -34,5 +35,6 @@ export function ChoixEffort({ valeur, onChange, etiquette, aide }: { valeur: num
 const styles = StyleSheet.create({
   etiquette: { paddingLeft: 16, fontFamily: police.texte600 },
   effort: { flexDirection: 'row', gap: 3 },
-  note: { flex: 1, minHeight: 44, borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center' },
+  // Étroites et basses : dix pastilles sur une ligne (hitSlop pour garder une zone de toucher de 44 pt de haut)
+  note: { flex: 1, minHeight: 38, borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center' },
 });
