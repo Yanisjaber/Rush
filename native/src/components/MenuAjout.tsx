@@ -36,13 +36,15 @@ export function MenuAjout({ ouvert, onFermer, onChoisir, repos }: { ouvert: bool
                 accessibilityLabel={`${t.nom}. ${t.phrase}`}
                 style={({ pressed }) => [styles.tuile, { backgroundColor: p.surface2, opacity: pressed ? 0.7 : 1 }]}
               >
-                <View style={[styles.icone, { backgroundColor: couleurDe(t.couleur) }]}>
-                  <Text style={[typo.corpsFort, { color: p.encreSurCouleur, fontSize: 14, lineHeight: 18 }]}>{t.glyphe}</Text>
+                <View style={styles.tete}>
+                  <View style={[styles.icone, { backgroundColor: couleurDe(t.couleur) }]}>
+                    <Text style={[typo.corpsFort, { color: p.encreSurCouleur, fontSize: 14, lineHeight: 18 }]}>{t.glyphe}</Text>
+                  </View>
+                  <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>
+                    {t.nom}
+                  </Text>
                 </View>
-                <View style={{ gap: 2 }}>
-                  <Text style={[typo.corpsFort, { color: p.texte }]}>{t.nom}</Text>
-                  <Text style={[typo.petit, { color: p.texteDoux }]}>{t.phrase}</Text>
-                </View>
+                <Text style={[typo.petit, { color: p.texteDoux }]}>{t.phrase}</Text>
               </Pressable>
             </View>
           ))}
@@ -66,7 +68,8 @@ const styles = StyleSheet.create({
   poignee: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2 },
   tuiles: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -4 },
   emplacement: { width: '50%', padding: 4 },
-  tuile: { minHeight: 96, borderRadius: rayon.bloc, padding: espace.e3, justifyContent: 'space-between', gap: espace.e3 },
+  tuile: { minHeight: 84, borderRadius: rayon.bloc, padding: espace.e3, gap: espace.e2 },
+  tete: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   icone: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   repos: { minHeight: 44, borderWidth: 1, borderRadius: rayon.base, alignItems: 'center', justifyContent: 'center' },
 });
