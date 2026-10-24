@@ -2,37 +2,12 @@
 // des sports de l'app (voir theme/sports.ts) : un sport = une famille = une couleur.
 // Port de app/src/lib/data/familles.js.
 
-const FAMILLES: Record<string, string> = {
-  // Vélo
-  Ride: 'velo',
-  VirtualRide: 'velo',
-  GravelRide: 'velo',
-  MountainBikeRide: 'velo',
-  EBikeRide: 'velo',
-  EMountainBikeRide: 'velo',
-  Handcycle: 'velo',
-  // Course à pied (le trail en fait partie)
-  Run: 'course',
-  VirtualRun: 'course',
-  TrailRun: 'course',
-  // Natation et eau
-  Swim: 'natation',
-  // Force. « Workout » est le type générique de Strava : on le range avec la muscu, comme le yoga, le pilates, le CrossFit et le HIIT
-  WeightTraining: 'muscu',
-  Workout: 'muscu',
-  Yoga: 'muscu',
-  Pilates: 'muscu',
-  Crossfit: 'muscu',
-  Hyrox: 'hyrox', // type propre à l'app : Strava n'a pas de sport Hyrox
-  Triathlon: 'triathlon', // types propres à l'app : un sport à part, pas la somme de course, vélo et natation
-  Duathlon: 'duathlon',
-  HighIntensityIntervalTraining: 'muscu',
-  // Machines d'endurance en salle : de la course à pied pour la charge et la forme
-  Elliptical: 'course',
-  StairStepper: 'course',
-  // Tout le reste (ski, aviron, combat, randonnée, escalade, canoë, athlétisme, tennis…) n'est pas listé : c'est « autre » (l'onglet « Autres »)
-  // La marche est écartée de l'accueil, voir sansMarche (api.ts)
-};
+import { CATALOGUE } from './catalogue-sports.ts';
+
+// La famille de chaque type vient du catalogue (data/catalogue-sports.ts). Un type sans famille (ski, aviron, randonnée, tennis…) est « autre » :
+// c'est l'onglet « Autres », où chaque sous-sport garde son nom, son dessin et sa couleur.
+// La marche est écartée de l'accueil, voir sansMarche (api.ts).
+const FAMILLES: Record<string, string> = Object.fromEntries(CATALOGUE.filter((s) => s.famille !== 'autre').map((s) => [s.type, s.famille]));
 
 /** Famille d'un type de sport brut. Tout ce qui n'est pas une variante d'un sport proposé (ski, aviron, randonnée, tennis…) devient « autre ». */
 export function familleSport(typeBrut: unknown): string {
