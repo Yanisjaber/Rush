@@ -1,4 +1,5 @@
 import { FondDegrade } from '@/components/FondDegrade';
+import { courtDuType } from '@/data/catalogue-sports';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -7,7 +8,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
 import { Bloc } from '@/components/Bloc';
-import { Bouton } from '@/components/Bouton';
 import { ApercuCycle } from '@/components/ApercuCycle';
 import { MenuAjout, type ChoixAjout } from '@/components/MenuAjout';
 import { FeuilleNote } from '@/components/FeuilleNote';
@@ -21,12 +21,12 @@ import { useAjouts } from '@/hooks/useAjouts';
 import { useDonneesCalendrier } from '@/hooks/useDonneesCalendrier';
 import { useMenu } from '@/stores/menu';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
-import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
+import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 import type { Cycle, Note } from '@/data/types';
 
-const nomSport = (sport: string) => SPORTS[familleAffichage(sport) as CleSport]?.court ?? SPORTS.autre.court;
+const nomSport = courtDuType;
 const BARRE_ONGLETS = 72;
 // Jusqu'à 5 séances se voient d'un coup d'œil sur un jour (un point chacune) : au-delà, un « + »
 const MAX_POINTS = 5;
@@ -234,8 +234,8 @@ function Carte({ valeur, unite, legende, serree }: { valeur: string; unite?: str
 function marquesDe(j: JourGrille): { cle: string; type: 'fait' | 'prevu' | 'objectif'; couleur?: string }[] {
   return [
     ...j.objectifs.map((o) => ({ cle: `o${o.id}`, type: 'objectif' as const })),
-    ...j.seances.map((s) => ({ cle: `s${s.id}`, type: 'fait' as const, couleur: familleAffichage(s.sport) })),
-    ...j.planifiees.map((x) => ({ cle: `p${x.id}`, type: 'prevu' as const, couleur: familleAffichage(x.sport) })),
+    ...j.seances.map((s) => ({ cle: `s${s.id}`, type: 'fait' as const, couleur: s.sport })),
+    ...j.planifiees.map((x) => ({ cle: `p${x.id}`, type: 'prevu' as const, couleur: x.sport })),
   ];
 }
 
@@ -460,7 +460,7 @@ function Detail({ jour }: { jour: JourGrille }) {
                 accessibilityLabel={`${nom}, ${formatDuree(s.moving_time)}`}
                 style={[styles.ligneSeance, { borderTopColor: p.trait }]}
               >
-                <View style={[styles.ligneBarre, { backgroundColor: couleurSport(p, familleAffichage(s.sport)) }]} />
+                <View style={[styles.ligneBarre, { backgroundColor: couleurSport(p, s.sport) }]} />
                 <View style={{ flex: 1 }}>
                   <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte }]}>{nom}</Text>
                   <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>{detail}</Text>
@@ -471,7 +471,7 @@ function Detail({ jour }: { jour: JourGrille }) {
           })}
           {jour.planifiees.map((x) => {
             const nom = x.name || nomSport(x.sport);
-            const couleur = couleurSport(p, familleAffichage(x.sport));
+            const couleur = couleurSport(p, x.sport);
             const detail = ['Prévue', formatDistanceSport(x.km, familleAffichage(x.sport))].filter(Boolean).join(' · ');
             return (
               <Pressable

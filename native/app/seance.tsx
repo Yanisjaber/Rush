@@ -1,4 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
+import { nomDuType } from '@/data/catalogue-sports';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bloc } from '@/components/Bloc';
@@ -9,7 +10,7 @@ import { formatDateLongue } from '@/data/format';
 import { chiffresSeance, lignesTours } from '@/data/seance-detail';
 import { useSeance } from '@/hooks/useSeance';
 import { espace, rayon } from '@/theme/couleurs';
-import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
+import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -39,8 +40,8 @@ export default function Seance() {
   }
 
   const famille = familleAffichage(seance.sport);
-  const couleur = couleurSport(p, famille);
-  const nomSport = SPORTS[famille as CleSport]?.nom ?? SPORTS.autre.nom;
+  const couleur = couleurSport(p, seance.sport);
+  const nomSport = nomDuType(seance.sport);
   const chiffres = chiffresSeance(seance);
   const lignes = tours ? lignesTours(tours, seance.sport) : [];
   const notes = (seance.user_notes ?? '').trim();

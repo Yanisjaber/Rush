@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { courtDuType } from '@/data/catalogue-sports';
 import { Text } from 'react-native';
 import { CadreWidget } from '@/components/CadreWidget';
 import { ListeCompacte } from '@/components/ListeCompacte';
@@ -9,7 +10,7 @@ import { recordsParSeance } from '@/data/force';
 import { formatDateCourte, formatDistanceSport, formatDuree } from '@/data/format';
 import { chargeSeance } from '@/data/synthese';
 import type { Seance, WidgetProps } from '@/data/types';
-import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
+import { couleurSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -31,17 +32,16 @@ export function WidgetDernieres({ contexte, taille = 'm' }: WidgetProps) {
   // XS : la durée de la dernière ; S : + son nom et sa date ; M : + les trois dernières en liste (nom et charge) ; L : les quatre dernières avec détail et records
   if (taille !== 'l') {
     const derniere = contexte.dernieres[0];
-    const famille = derniere ? familleAffichage(derniere.sport) : '';
-    const nomDe = (x: Seance) => x.name || SPORTS[familleAffichage(x.sport) as CleSport]?.court || SPORTS.autre.court;
+    const nomDe = (x: Seance) => x.name || courtDuType(x.sport);
     return (
       <Tuile
         titre="Dernière séance"
         valeur={derniere ? formatDuree(derniere.moving_time) : '—'}
-        note={derniere ? `${derniere.name || SPORTS[famille as CleSport]?.court || SPORTS.autre.court} · ${formatDateCourte(derniere.start_date_local)}` : 'Aucune séance'}
+        note={derniere ? `${derniere.name || courtDuType(derniere.sport)} · ${formatDateCourte(derniere.start_date_local)}` : 'Aucune séance'}
         large
       >
         {taille === 'm' && contexte.dernieres.length > 1 ? (
-          <ListeCompacte lignes={contexte.dernieres.slice(0, 4).map((x) => ({ cle: x.id, nom: nomDe(x), valeur: `${chargeSeance(x)} pts`, point: couleurSport(p, familleAffichage(x.sport)) }))} />
+          <ListeCompacte lignes={contexte.dernieres.slice(0, 4).map((x) => ({ cle: x.id, nom: nomDe(x), valeur: `${chargeSeance(x)} pts`, point: couleurSport(p, x.sport) }))} />
         ) : null}
       </Tuile>
     );
@@ -51,14 +51,13 @@ export function WidgetDernieres({ contexte, taille = 'm' }: WidgetProps) {
     <CadreWidget titre="Dernières séances">
       {recentes.length ? (
         recentes.map((s, i) => {
-          const famille = familleAffichage(s.sport);
           const nbRecords = records.get(s.id)?.length ?? 0;
           return (
             <LigneSeance
               key={s.id}
               premiere={i === 0}
-              sport={famille}
-              nom={s.name || SPORTS[famille as CleSport]?.court || SPORTS.autre.court}
+              sport={s.sport}
+              nom={s.name || courtDuType(s.sport)}
               badge={nbRecords > 1 ? `${nbRecords} records` : nbRecords === 1 ? 'Record' : undefined}
               detail={detail(s)}
               droite={<Points valeur={chargeSeance(s)} />}

@@ -13,7 +13,7 @@ import { EcranAjout } from '@/components/EcranAjout';
 import { MenuDeroulantChoix } from '@/components/MenuDeroulantChoix';
 import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
 import { OngletsSegment } from '@/components/OngletsSegment';
-import { cleDuType, distanceEnMetres, formulaireCompetitionVide, validerCompetition } from '@/data/ajouts';
+import { distanceEnMetres, formulaireCompetitionVide, validerCompetition } from '@/data/ajouts';
 import { aUnFormat, allureMoyenne, champNiveau, federationsDuSport, FORMATS_TRI, lireTempsCible, TYPES_EPREUVE_VELO } from '@/data/competition';
 import { formatDateCourte, formatJoursAvant, joursAvant } from '@/data/format';
 import { useAjouts } from '@/hooks/useAjouts';
@@ -81,7 +81,7 @@ export default function EcranAjoutCompetition() {
     <>
       <Dossard
         taille="m"
-        sport={cleDuType(f.type)}
+        sport={f.type}
         etiquette={f.priorite === 'A' ? 'Compétition · Objectif' : 'Compétition · Préparation'}
         nom={f.nom.trim() || 'Ta course'}
         detail={detail}

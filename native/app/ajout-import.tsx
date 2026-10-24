@@ -5,7 +5,7 @@ import { Alert, Text } from 'react-native';
 import { EcranAjout } from '@/components/EcranAjout';
 import { apercuImport, type ApercuImport as Apercu } from '@/data/apercu-import';
 import { nomDuType } from '@/data/catalogue-sports';
-import { cleDuType, formulaireSortieVide, validerSortie } from '@/data/ajouts';
+import { formulaireSortieVide, validerSortie } from '@/data/ajouts';
 import { formatDateCourte, dateIsoLocale } from '@/data/format';
 import { donneesAEcrire, lireActivite, TAILLE_MAX_IMPORT, versChamps, type ActiviteImportee, type ChampsImport, type DonneesImport } from '@/data/import-activite';
 import { nomDeFichier } from '@/data/gpx';
@@ -95,7 +95,7 @@ export default function EcranAjoutImport() {
         <ApercuImport
           ouvert
           apercu={lu.apercu}
-          sport={cleDuType(lu.type)}
+          sport={lu.type}
           nomSport={nomSport(lu.type)}
           quand={`${formatDateCourte(lu.date)}${lu.champs.heure ? ` · ${lu.champs.heure}` : ''}`}
           km={lu.activite.distanceKm}

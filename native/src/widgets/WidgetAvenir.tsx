@@ -1,13 +1,13 @@
 import { Text } from 'react-native';
+import { courtDuType } from '@/data/catalogue-sports';
 import { CadreWidget } from '@/components/CadreWidget';
 import { ListeCompacte } from '@/components/ListeCompacte';
 import { Tuile } from '@/components/Tuile';
 import { LigneSeance } from '@/components/LigneSeance';
-import { familleAffichage } from '@/data/familles';
 import { formatDateCourte, formatDuree } from '@/data/format';
 import { prochainesPrevues } from '@/data/synthese';
 import type { Prevue, WidgetProps } from '@/data/types';
-import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
+import { couleurSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -26,17 +26,16 @@ export function WidgetAvenir({ contexte, taille = 'm' }: WidgetProps) {
   // XS : la date de la prochaine ; S : + son nom ; M : + les trois suivantes en liste ; L : les quatre prochaines avec leur détail
   if (taille !== 'l') {
     const prochaine = prochaines[0];
-    const famille = prochaine ? familleAffichage(prochaine.sport) : '';
-    const nomDe = (x: Prevue) => x.name || SPORTS[familleAffichage(x.sport) as CleSport]?.court || SPORTS.autre.court;
+    const nomDe = (x: Prevue) => x.name || courtDuType(x.sport);
     return (
       <Tuile
         titre="À venir"
         valeur={prochaine ? formatDateCourte(prochaine.date) : '—'}
-        note={prochaine ? `${prochaine.name || SPORTS[famille as CleSport]?.court || SPORTS.autre.court}${prochaine.duration ? ` · ${formatDuree(prochaine.duration * 60)}` : ''}` : 'Rien de prévu'}
+        note={prochaine ? `${prochaine.name || courtDuType(prochaine.sport)}${prochaine.duration ? ` · ${formatDuree(prochaine.duration * 60)}` : ''}` : 'Rien de prévu'}
         large
       >
         {taille === 'm' && prochaines.length > 1 ? (
-          <ListeCompacte lignes={prochaines.slice(0, 4).map((x) => ({ cle: x.id, nom: nomDe(x), valeur: formatDateCourte(x.date), point: couleurSport(palette, familleAffichage(x.sport)) }))} />
+          <ListeCompacte lignes={prochaines.slice(0, 4).map((x) => ({ cle: x.id, nom: nomDe(x), valeur: formatDateCourte(x.date), point: couleurSport(palette, x.sport) }))} />
         ) : null}
       </Tuile>
     );
@@ -46,13 +45,12 @@ export function WidgetAvenir({ contexte, taille = 'm' }: WidgetProps) {
     <CadreWidget titre="À venir">
       {prochaines.length ? (
         prochaines.map((p, i) => {
-          const famille = familleAffichage(p.sport);
           return (
             <LigneSeance
               key={p.id}
               premiere={i === 0}
-              sport={famille}
-              nom={p.name || SPORTS[famille as CleSport]?.court || SPORTS.autre.court}
+              sport={p.sport}
+              nom={p.name || courtDuType(p.sport)}
               detail={detail(p)}
             />
           );

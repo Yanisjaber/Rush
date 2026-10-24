@@ -21,7 +21,7 @@ export const CATALOGUE: readonly SportCatalogue[] = [
   { type: 'VirtualRun', nom: 'Course virtuelle', court: 'Course virt.', famille: 'course', groupe: null, couleur: { sombre: '#ffa97a', clair: '#e04f00' } },
   { type: 'Elliptical', nom: 'Elliptique', court: 'Elliptique', famille: 'course', groupe: null, couleur: { sombre: '#ffa947', clair: '#d67200' } },
   { type: 'StairStepper', nom: 'Escalier (machine)', court: 'Escalier', famille: 'course', groupe: null, couleur: { sombre: '#e16047', clair: '#9e301a' } },
-  { type: 'Ride', nom: 'Vélo de route', court: 'Route', famille: 'velo', groupe: null, couleur: { sombre: '#4f8cff', clair: '#2f6fe8' } },
+  { type: 'Ride', nom: 'Vélo de route', court: 'Cyclisme', famille: 'velo', groupe: null, couleur: { sombre: '#4f8cff', clair: '#2f6fe8' } },
   { type: 'GravelRide', nom: 'Gravel', court: 'Gravel', famille: 'velo', groupe: null, couleur: { sombre: '#8888f2', clair: '#1616ca' } },
   { type: 'MountainBikeRide', nom: 'VTT', court: 'VTT', famille: 'velo', groupe: null, couleur: { sombre: '#ba7a3b', clair: '#6d4722' } },
   { type: 'EBikeRide', nom: 'Vélo électrique', court: 'Vélo élec.', famille: 'velo', groupe: null, couleur: { sombre: '#3dbeff', clair: '#0088cc' } },
@@ -95,3 +95,18 @@ export const GROUPES_AUTRES: readonly string[] = ['Hiver', 'Eau', 'Montagne et m
 
 /** Les sports de la barre du haut, dans l'ordre de la liste de choix. */
 export const FAMILLES_PRINCIPALES: readonly string[] = ['course', 'velo', 'natation', 'muscu', 'hyrox', 'triathlon', 'duathlon'];
+
+/** Le sport de base d'une famille de la barre du haut (course → Run…), pour dessiner ou nommer une famille. « autre » donne `Other`. */
+export const TYPE_DE_FAMILLE: Readonly<Record<string, string>> = { course: 'Run', velo: 'Ride', natation: 'Swim', muscu: 'WeightTraining', hyrox: 'Hyrox', triathlon: 'Triathlon', duathlon: 'Duathlon', autre: 'Other' };
+
+/** Le type du catalogue à dessiner pour un sport donné : un type connu, une famille (course…) ou, à défaut, `Other`. */
+export function typeADessiner(sport: unknown): string {
+  if (typeof sport !== 'string') return 'Other';
+  if (PAR_TYPE.has(sport)) return sport;
+  return Object.hasOwn(TYPE_DE_FAMILLE, sport) ? TYPE_DE_FAMILLE[sport] : 'Other';
+}
+
+/** Le nom court d'un type brut (pastilles, listes serrées). Un type inconnu garde son nom brut, sans type : « Activité ». */
+export function courtDuType(type: unknown): string {
+  return sportDuType(type)?.court ?? nomDuType(type);
+}

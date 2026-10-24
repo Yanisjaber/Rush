@@ -1,20 +1,20 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { courtDuType } from '@/data/catalogue-sports';
 import { CadreWidget } from '@/components/CadreWidget';
 import { MiniBarres } from '@/components/MiniBarres';
 import { Tuile } from '@/components/Tuile';
-import { familleAffichage } from '@/data/familles';
 import { formatDuree } from '@/data/format';
 import { carresDuJour, semaineCourante } from '@/data/synthese';
 import type { WidgetProps } from '@/data/types';
 import { rayon } from '@/theme/couleurs';
-import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
+import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La semaine en cours, du lundi au dimanche. Sur le web, sept colonnes côte à côte ; sur téléphone,
 // une ligne par jour (sept colonnes de 46 pt seraient illisibles). Mêmes calculs, autre mise en page.
 // Séance faite : aplat de la couleur du sport. Séance prévue : simple contour.
-const nom = (sport: string) => SPORTS[familleAffichage(sport) as CleSport]?.court ?? SPORTS.autre.court;
+const nom = courtDuType;
 
 // tuile : le nombre de séances de la semaine + une barre par jour (lundi → dimanche).
 export function WidgetSemaine({ contexte, taille, tuile = false }: WidgetProps) {
@@ -87,7 +87,7 @@ function CorpsHero({ jours, grand = false }: { jours: ReturnType<typeof semaineC
                   {[...j.seances.map((x) => ({ cle: `f${x.id}`, fait: true, sport: x.sport, duree: formatDuree(x.moving_time) })), ...j.prevues.map((x) => ({ cle: `p${x.id}`, fait: false, sport: x.sport, duree: x.duration ? formatDuree(x.duration * 60) : '' }))]
                     .slice(0, 4)
                     .map((c) => {
-                      const couleur = couleurSport(p, familleAffichage(c.sport));
+                      const couleur = couleurSport(p, c.sport);
                       return (
                         <View key={c.cle} style={[styles.pastilleJour, c.fait ? { backgroundColor: couleur } : [styles.prevue, { borderColor: couleur }]]}>
                           <Text numberOfLines={1} style={[styles.dureeJour, { color: c.fait ? p.encreSurCouleur : p.texte }]}>

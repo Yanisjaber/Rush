@@ -1,12 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { courtDuType } from '@/data/catalogue-sports';
 import { CadreWidget, TitreWidget } from '@/components/CadreWidget';
 import { IconeRepos, IconeSport } from '@/components/IconeSport';
 import { elementsDuJour, infosDuJour, lignesDeLaBande, seancesDuJour, type ElementDuJour } from '@/data/aujourdhui';
-import { familleAffichage } from '@/data/familles';
 import { formatHeuresMinutes } from '@/data/format';
 import { resumeProgramme } from '@/data/force';
 import type { WidgetProps } from '@/data/types';
-import { SPORTS, type CleSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -16,7 +15,7 @@ import { usePalette } from '@/theme/usePalette';
 // les km et les exercices ne s'affichent que pour une séance seule (et, en L, pour chaque séance). Plus de 2 dans la bande fine : la plus longue, puis « + 2 séances · 1h25 » (le nombre des autres et la somme de leurs durées).
 // Une séance faite disparaît d'ici (on la retrouve dans « Dernière séance » et « Cette semaine »).
 // Tout ce qui était prévu est fait : « Terminé ». Rien de prévu : « Repos » et une petite lune à droite.
-const court = (sport: string) => SPORTS[familleAffichage(sport) as CleSport]?.court ?? SPORTS.autre.court;
+const court = courtDuType;
 
 export function WidgetAujourdhui({ contexte, taille }: WidgetProps) {
   const p = usePalette();
