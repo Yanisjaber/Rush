@@ -21,6 +21,8 @@ interface Props {
   sport?: string;
   taille?: 'l' | 'm';
   compact?: boolean;
+  /** Bandeau (taille m) seulement : un dessin à droite, à la place du grand chiffre. */
+  icone?: ReactNode;
   children?: ReactNode;
 }
 
@@ -28,7 +30,7 @@ const LISERE = 4;
 const TAILLE_MAX = { l: 112, m: 44 } as const;
 const TAILLE_MIN = 28;
 
-export function Dossard({ etiquette, nom, valeur, detail, sport, taille = 'l', compact = false, children }: Props) {
+export function Dossard({ etiquette, nom, valeur, detail, sport, taille = 'l', compact = false, icone, children }: Props) {
   const p = usePalette();
   const remplir = useRemplir();
   const max = TAILLE_MAX[taille];
@@ -58,7 +60,8 @@ export function Dossard({ etiquette, nom, valeur, detail, sport, taille = 'l', c
           ) : null}
           {children}
         </View>
-        {valeur ? (
+        {icone ? <View style={styles.iconeBandeau}>{icone}</View> : null}
+        {valeur && !icone ? (
           <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1.3} style={[styles.valeurBandeau, { color: p.dossardTexte }]}>
             {valeur}
           </Text>
@@ -134,6 +137,7 @@ export function Dossard({ etiquette, nom, valeur, detail, sport, taille = 'l', c
 }
 
 const styles = StyleSheet.create({
+  iconeBandeau: { alignSelf: 'center' }, // l'écart avec le texte vient du gap du bandeau
   dossard: {
     overflow: 'hidden', // le liseré épouse les coins arrondis
     borderRadius: rayon.bloc,

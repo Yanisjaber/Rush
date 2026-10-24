@@ -13,17 +13,18 @@ import { usePalette } from '@/theme/usePalette';
 // Une heure à choisir avec le sélecteur du système : les roues d'Apple sur iPhone (dans une feuille du bas), la fenêtre d'horloge d'Android sur Samsung.
 // Tant que l'app n'a pas été reconstruite avec le module natif, le champ retombe sur une saisie « HH:MM ».
 // Le sélecteur de secours : une saisie « HH:MM »
-function SecoursHeure({ valeur, onValider }: { valeur: string; onValider: (heure: string) => void }) {
+function SecoursHeure({ valeur, etiquette, onValider }: { valeur: string; etiquette: string; onValider: (heure: string) => void }) {
   const [texte, setTexte] = useState(valeur);
   return (
     <View style={{ gap: espace.e3 }}>
-      <ChampTexte etiquette="Heure (HH:MM)" sur="surface" value={texte} onChangeText={setTexte} keyboardType="numbers-and-punctuation" maxLength={5} placeholder="18:00" />
+      <ChampTexte etiquette={`${etiquette} (HH:MM)`} sur="surface" value={texte} onChangeText={setTexte} keyboardType="numbers-and-punctuation" maxLength={5} placeholder="18:00" />
       <Bouton onPress={() => heureValide(texte) && onValider(texte)}>Valider</Bouton>
     </View>
   );
 }
 
-export function ChampHeure({ valeur, onChange, etiquette = 'Heure' }: { valeur: string; onChange: (heure: string) => void; etiquette?: string }) {
+// `affichage` : le texte montré dans le champ à la place de « HH:MM » (par exemple « 4 h 37 min » pour une durée choisie sur les mêmes roues).
+export function ChampHeure({ valeur, onChange, etiquette = 'Heure', affichage }: { valeur: string; onChange: (heure: string) => void; etiquette?: string; affichage?: string }) {
   const p = usePalette();
   const bas = useSafeAreaInsets().bottom;
   const [ouvert, setOuvert] = useState(false);
@@ -51,8 +52,8 @@ export function ChampHeure({ valeur, onChange, etiquette = 'Heure' }: { valeur: 
   return (
     <View style={{ gap: 6 }}>
       <Text style={[typo.petit, styles.etiquette, { color: p.texteDoux }]}>{etiquette}</Text>
-      <Pressable onPress={ouvrir} accessibilityRole="button" accessibilityLabel={`${etiquette} : ${valeur}. Changer`} style={[styles.champ, { backgroundColor: p.surface }]}>
-        <Text style={[typo.corpsFort, { color: p.texte, fontSize: 16 }]}>{valeur}</Text>
+      <Pressable onPress={ouvrir} accessibilityRole="button" accessibilityLabel={`${etiquette} : ${affichage ?? valeur}. Changer`} style={[styles.champ, { backgroundColor: p.surface }]}>
+        <Text style={[typo.corpsFort, { color: p.texte, fontSize: 16 }]}>{affichage ?? valeur}</Text>
       </Pressable>
       <Modal visible={ouvert} transparent animationType="fade" onRequestClose={() => setOuvert(false)}>
         <Pressable accessibilityLabel="Fermer" accessibilityRole="button" onPress={() => setOuvert(false)} style={styles.fond} />
@@ -61,7 +62,7 @@ export function ChampHeure({ valeur, onChange, etiquette = 'Heure' }: { valeur: 
           <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte }]}>
             {etiquette}
           </Text>
-          <RepliSiErreur repli={<SecoursHeure valeur={valeur} onValider={(h) => { onChange(h); setOuvert(false); }} />}>
+          <RepliSiErreur repli={<SecoursHeure valeur={valeur} etiquette={etiquette} onValider={(h) => { onChange(h); setOuvert(false); }} />}>
             <DateTimePicker value={choix} mode="time" display="spinner" is24Hour locale="fr-FR" themeVariant={p.fond === sombre.fond ? 'dark' : 'light'} onValueChange={(_e, d) => setChoix(d)} />
             <View style={styles.boutons}>
               <Bouton variante="discret" onPress={() => setOuvert(false)}>

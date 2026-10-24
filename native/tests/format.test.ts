@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dateIsoLocale, formatDateCourte, formatDuree, formatDistanceSport, formatHeuresMinutes, formatKm, periodeCourte } from '../src/data/format.ts';
+import { dateIsoLocale, formatDateCourte, formatDuree, formatDistanceSport, formatHeuresMinutes, formatJoursAvant, formatKm, periodeCourte } from '../src/data/format.ts';
 
 test('formatDuree : minutes seules, puis heures et minutes sur deux chiffres', () => {
   assert.equal(formatDuree(2400), '40 min');
@@ -64,4 +64,10 @@ test('periodeCourte : un jour, ou « du … au … » pour une période', () => 
   const p = periodeCourte('2026-10-23', '2026-10-25');
   assert.match(p, /^du ven\.? 23 oct\.? au dim\.? 25 oct/);
   assert.equal(periodeCourte('2026-10-23T08:00:00', '2026-10-23'), periodeCourte('2026-10-23', '2026-10-23')); // l'heure est ignorée
+});
+
+test('formatJoursAvant : J-63, J-0 le jour même, J+3 une fois passé', () => {
+  assert.equal(formatJoursAvant(63), 'J-63');
+  assert.equal(formatJoursAvant(0), 'J-0');
+  assert.equal(formatJoursAvant(-3), 'J+3');
 });

@@ -7,12 +7,12 @@ import { usePalette } from '@/theme/usePalette';
 
 // Le menu du « + » du détail d'un jour : une feuille qui monte du bas, avec une tuile par ajout (son nom et une phrase qui l'explique). Chaque tuile ouvre son propre
 // écran, sauf le repos qui se pose ou se retire d'un toucher. Toucher à côté ferme la feuille.
-export type ChoixAjout = 'seance' | 'sortie' | 'modele' | 'competition' | 'note' | 'cycle' | 'repos';
+export type ChoixAjout = 'seance' | 'sortie' | 'import' | 'competition' | 'note' | 'cycle' | 'repos';
 
 const TUILES: { cle: ChoixAjout; nom: string; phrase: string; glyphe: string; couleur: keyof Palette | 'doux' }[] = [
   { cle: 'seance', nom: 'Séance prévue', phrase: 'Avec ses blocs', glyphe: 'S', couleur: 'sportCourse' },
-  { cle: 'sortie', nom: 'Sortie faite', phrase: 'Saisie à la main', glyphe: '✓', couleur: 'sportVelo' },
-  { cle: 'modele', nom: 'Modèle', phrase: 'Une séance type', glyphe: 'M', couleur: 'sportHybride' },
+  { cle: 'sortie', nom: 'Activité faite', phrase: 'Saisie à la main', glyphe: '✓', couleur: 'sportVelo' },
+  { cle: 'import', nom: 'Importer', phrase: 'Un fichier .fit, .gpx ou .tcx', glyphe: '↓', couleur: 'sportHybride' },
   { cle: 'competition', nom: 'Compétition', phrase: 'Objectif ou préparation', glyphe: 'C', couleur: 'sportMuscu' },
   { cle: 'note', nom: 'Note', phrase: 'Maladie, blessure…', glyphe: 'N', couleur: 'sportNatation' },
   { cle: 'cycle', nom: 'Cycle', phrase: "Une période d'entraînement", glyphe: '⟲', couleur: 'doux' },

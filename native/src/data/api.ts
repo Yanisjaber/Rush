@@ -542,11 +542,11 @@ export async function chargerModeles(userId: string): Promise<Resultat<Modele[]>
   return resultat(r, 'Impossible de charger tes modèles.');
 }
 
-/** Écrit une sortie déjà faite (ligne validée par validerSortie) dans activities, avec source = 'manual' : une vraie ligne qu'on pourra modifier, contrairement à celles de Strava. */
+/** Écrit une activité déjà faite (ligne validée par validerSortie) dans activities, avec source = 'manual' : une vraie ligne qu'on pourra modifier, contrairement à celles de Strava. */
 export async function creerSortie(userId: string, ligne: LigneSortie): Promise<Resultat<Seance>> {
   const client_id = `app-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
   const r = await sb.from('activities').insert({ ...ligne, user_id: userId, client_id }).select(COLONNES_SEANCE).single();
-  return resultat(r, "Impossible d'enregistrer cette sortie.");
+  return resultat(r, "Impossible d'enregistrer cette activité.");
 }
 
 /** Modifie une note qui t'appartient (ligne validée par validerNote). */

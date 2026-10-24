@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { normaliser } from '../src/data/structure.ts';
-import { distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, typeInitial } from '../src/data/ajouts.ts';
+import { distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, chargeEstimeeSortie, typeInitial } from '../src/data/ajouts.ts';
 
 const date = '2026-10-23';
 
@@ -230,4 +230,69 @@ test('le sport choisi dans la barre du haut est pré-sélectionné dans la séan
   assert.equal(formulaireSeanceVide().type, 'Run');
   assert.equal(formulaireSortieVide('velo').type, 'Ride');
   assert.equal(formulaireSortieVide('tout', ['muscu']).type, 'WeightTraining');
+  assert.equal(formulaireCompetitionVide('natation').type, 'Swim');
+  assert.equal(formulaireCompetitionVide('tout', ['velo']).type, 'Ride');
+  assert.equal(formulaireCompetitionVide().type, 'Run');
+});
+
+test('activité déjà faite : la charge estimée suit la durée et l\'effort, et celle qu\'on tape l\'emporte', () => {
+  const f = { ...formulaireSortieVide(), heures: '1', minutes: '0' };
+  assert.equal(chargeEstimeeSortie(f), estimerTss(60, 5));
+  assert.equal(chargeEstimeeSortie({ ...f, rpe: 8 }), estimerTss(60, 8));
+  assert.equal(chargeEstimeeSortie({ ...f, heures: '0', minutes: '0' }), null); // durée illisible : pas d'estimation
+  assert.equal(chargeEstimeeSortie({ ...f, minutes: '75' }), null);
+  const estimee = validerSortie(f, '2026-10-20', '2026-10-23', 'Course');
+  assert.ok(estimee.ok && estimee.ligne.tss === estimerTss(60, 5)); // vide : estimée
+  const saisie = validerSortie({ ...f, tss: '123,6' }, '2026-10-20', '2026-10-23', 'Course');
+  assert.ok(saisie.ok && saisie.ligne.tss === 124);
+  for (const mauvais of ['-5', '1001', 'abc']) assert.equal(validerSortie({ ...f, tss: mauvais }, '2026-10-20', '2026-10-23', 'Course').ok, false, mauvais);
+});
+
+test('validerCompetition : tous les champs de l\'ancien site, bornés', () => {
+  const date = '2027-04-18';
+  const complete = { ...formulaireCompetitionVide(), nom: 'Marathon de Toulouse', type: 'Run', epreuve: 'Route', distance: '42,2', heure: '09:30', federation: 'FFA', niveau: 'SE', cible: '3h45', dplus: '120', tours: '1', tss: '310', rpe: 8, notes: ' Partir prudent ' };
+  const r = validerCompetition(complete, date, { nom: 'trace.gpx', contenu: '<gpx></gpx>' });
+  assert.ok(r.ok);
+  if (r.ok) {
+    assert.equal(r.ligne.start_date_local, '2027-04-18T09:30:00');
+    assert.equal(r.ligne.target, '225'); // minutes, comme sur l'ancien site
+    assert.equal(r.ligne.d_plus, 120);
+    assert.equal(r.ligne.laps, 1);
+    assert.equal(r.ligne.federation, 'FFA');
+    assert.equal(r.ligne.race_level, 'SE');
+    assert.equal(r.ligne.tri_format, null);
+    assert.equal(r.ligne.tss, 310);
+    assert.equal(r.ligne.rpe, 8);
+    assert.equal(r.ligne.notes, 'Partir prudent');
+    assert.equal(r.ligne.gpx_name, 'trace.gpx');
+  }
+  const vide = validerCompetition({ ...formulaireCompetitionVide(), nom: 'x' }, date);
+  assert.ok(vide.ok);
+  if (vide.ok) {
+    assert.equal(vide.ligne.target, null);
+    assert.equal(vide.ligne.federation, null);
+    assert.equal('gpx_name' in vide.ligne, false); // sans parcours, aucune colonne GPX n'est écrite
+  }
+  const tri = validerCompetition({ ...formulaireCompetitionVide(), nom: 'x', type: 'Triathlon', federation: 'FFTri', format: 'M' }, date);
+  assert.ok(tri.ok && tri.ligne.tri_format === 'M' && tri.ligne.federation === 'FFTri');
+});
+
+test('validerCompetition : refus des valeurs incohérentes', () => {
+  const base = { ...formulaireCompetitionVide(), nom: 'x', type: 'Run' };
+  const date = '2027-04-18';
+  for (const [nom, f] of Object.entries({
+    'heure': { heure: '25:00' },
+    'fédération d\'un autre sport': { federation: 'FFC' },
+    'format hors triathlon': { format: 'M' },
+    'format inconnu': { type: 'Triathlon', format: 'XXL' },
+    'temps cible illisible': { cible: 'bientôt' },
+    'dénivelé négatif': { dplus: '-5' },
+    'dénivelé décimal': { dplus: '12,5' },
+    'tours à zéro': { tours: '0' },
+    'charge trop haute': { tss: '1001' },
+    'effort hors échelle': { rpe: 11 },
+    'niveau trop long': { niveau: 'n'.repeat(61) },
+    'notes trop longues': { notes: 'n'.repeat(2001) },
+  })) assert.equal(validerCompetition({ ...base, ...f } as typeof base, date).ok, false, nom);
+  assert.equal(validerCompetition(base, date, { nom: 'x.gpx', contenu: 'pas un gpx' }).ok, false); // GPX invalide
 });

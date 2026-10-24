@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Bouton } from '@/components/Bouton';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChampHeure } from '@/components/ChampHeure';
+import { ChampParcoursGpx, type ParcoursChoisi } from '@/components/ChampParcoursGpx';
 import { ChampTexte } from '@/components/ChampTexte';
 import { ChoixEffort } from '@/components/ChoixEffort';
 import { EcranAjout } from '@/components/EcranAjout';
@@ -12,9 +12,9 @@ import { ProfilSeance } from '@/components/ProfilSeance';
 import { ChampDate } from '@/components/ChampDate';
 import { chargeEstimee, cleDuType, distanceEnMetres, formulaireSeanceVide, typeDeCle, validerSeance } from '@/data/ajouts';
 import { deplacerBloc, nomDuBloc, peutAjouterBloc } from '@/data/blocs-formulaire';
-import { nomDeFichier, resumerGpx, TAILLE_MAX_GPX, type ParcoursGpx, type ResumeGpx } from '@/data/gpx';
-import { formatNombre } from '@/data/format';
+import { type ResumeGpx } from '@/data/gpx';
 import { COULEURS_ZONE, indiceZone, metriquesDuSport, milieu, NOM_TYPE, resume, sportAvecStructure, texteCible, texteDuree, tousSegments, type Bloc } from '@/data/structure';
+import { heureDepuisDuree, heuresMinutesDepuis, minutesDepuisHeure, texteDureeSaisie } from '@/data/heure';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useDateAjout } from '@/hooks/useDateAjout';
 import { useReferences } from '@/hooks/useReferences';
@@ -36,13 +36,14 @@ export default function EcranAjoutSeance() {
   const [f, setF] = useState(() => formulaireSeanceVide(filtre, familles));
   const [blocs, setBlocs] = useState<Bloc[]>([]);
   const [edition, setEdition] = useState<{ index: number | null } | null>(null); // le bloc ouvert dans la feuille (null = fermée, index null = nouveau)
-  const [parcours, setParcours] = useState<{ fichier: ParcoursGpx; resume: ResumeGpx } | null>(null); // le GPX choisi
+  const [parcours, setParcours] = useState<ParcoursChoisi | null>(null); // le GPX choisi
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState(false);
 
   const metriques = metriquesDuSport(f.type);
   const aStructure = sportAvecStructure(f.type);
   const calcul = blocs.length && aStructure ? resume(blocs, reference, f.type) : null;
+  const dureeSaisie = heuresMinutesDepuis(f.duree);
   const charge = chargeEstimee(f, blocs, reference); // la charge estimée, avant même d'enregistrer
   const nomSport = (type: string) => SPORTS[cleDuType(type) as CleSport].nom;
 
@@ -69,33 +70,8 @@ export default function EcranAjoutSeance() {
     router.back();
   }
 
-  // Choisir un fichier GPX dans le téléphone (sélecteur du système). Le module est chargé au moment du choix : tant que l'app n'a pas été reconstruite avec, on le dit clairement.
-  async function choisirGpx() {
-    setErreur('');
-    let selecteur: typeof import('expo-document-picker');
-    try {
-      selecteur = await import('expo-document-picker');
-    } catch {
-      return Alert.alert('Nouvelle version nécessaire', "Le choix d'un fichier demande de reconstruire l'app avec son module natif.");
-    }
-    try {
-      const r = await selecteur.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
-      if (r.canceled || !r.assets?.length) return;
-      const fichier = r.assets[0];
-      if (fichier.size != null && fichier.size > TAILLE_MAX_GPX) return setErreur('Le fichier est trop gros (5 Mo maximum).');
-      const texte = await (await fetch(fichier.uri)).text();
-      const lu = resumerGpx(texte);
-      if (!lu.ok) return setErreur(lu.erreur);
-      setParcours({ fichier: { nom: nomDeFichier(fichier.name), contenu: texte }, resume: lu.resume });
-    } catch {
-      setErreur("Impossible de lire ce fichier.");
-    }
-  }
-
   // Reprendre la distance et le dénivelé du parcours dans les champs (en mètres pour la natation)
-  const utiliserParcours = () => {
-    if (!parcours) return;
-    const { distanceKm, denivele } = parcours.resume;
+  const utiliserParcours = ({ distanceKm, denivele }: ResumeGpx) => {
     change({
       ...f,
       distance: distanceEnMetres(f.type) ? String(Math.round(distanceKm * 1000)) : String(distanceKm).replace('.', ','),
@@ -185,7 +161,13 @@ export default function EcranAjoutSeance() {
         <View style={styles.ligne}>
           {!calcul ? (
             <View style={{ flex: 1 }}>
-              <ChampTexte etiquette="Durée (min)" value={f.duree} onChangeText={(t) => change({ ...f, duree: t })} keyboardType="number-pad" maxLength={4} />
+              {/* Comme « Activité déjà faite » : la durée se choisit sur les roues d'Apple (heures et minutes) */}
+              <ChampHeure
+                etiquette="Durée"
+                valeur={heureDepuisDuree(dureeSaisie.heures, dureeSaisie.minutes)}
+                affichage={texteDureeSaisie(dureeSaisie.heures, dureeSaisie.minutes)}
+                onChange={(h) => change({ ...f, duree: minutesDepuisHeure(h) })}
+              />
             </View>
           ) : null}
           <View style={{ flex: 1 }}>
@@ -204,30 +186,7 @@ export default function EcranAjoutSeance() {
         </View>
         <ChoixEffort valeur={f.rpe} onChange={(v) => change({ ...f, rpe: v })} etiquette="Effort estimé (facultatif)" />
         <View style={{ gap: 6 }}>
-          {etiquette('Parcours GPX (facultatif)')}
-          {parcours ? (
-            <View style={[styles.parcours, { backgroundColor: p.surface }]}>
-              <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte }]}>
-                {parcours.fichier.nom}
-              </Text>
-              <Text style={[typo.petit, { color: p.texteDoux }]}>
-                {`${String(parcours.resume.distanceKm).replace('.', ',')} km`}
-                {parcours.resume.denivele != null ? ` · ${formatNombre(parcours.resume.denivele)} m D+` : ''}
-              </Text>
-              <View style={styles.parcoursBoutons}>
-                <Bouton petit variante="discret" onPress={() => setParcours(null)}>
-                  Retirer
-                </Bouton>
-                <Bouton petit onPress={utiliserParcours}>
-                  Reprendre distance et D+
-                </Bouton>
-              </View>
-            </View>
-          ) : (
-            <Pressable onPress={() => void choisirGpx()} accessibilityRole="button" accessibilityLabel="Ajouter un parcours GPX" style={[styles.ajout, { borderColor: p.traitFort }]}>
-              <Text style={[typo.corpsFort, { color: p.texteDoux }]}>+ Ajouter un parcours GPX</Text>
-            </Pressable>
-          )}
+          <ChampParcoursGpx etiquette="Parcours GPX (facultatif)" parcours={parcours} onChange={setParcours} onErreur={setErreur} onReprendre={utiliserParcours} />
         </View>
         <ChampTexte etiquette="Notes (facultatif)" value={f.notes} onChangeText={(t) => change({ ...f, notes: t })} maxLength={2000} multiline />
       </EcranAjout>
@@ -271,8 +230,6 @@ export default function EcranAjoutSeance() {
 
 const styles = StyleSheet.create({
   etiquette: { paddingLeft: 16, fontFamily: police.texte600 },
-  parcours: { borderRadius: rayon.bloc, padding: espace.e3, gap: 4 },
-  parcoursBoutons: { flexDirection: 'row', gap: espace.e2, justifyContent: 'flex-end', marginTop: 4 },
   ligne: { flexDirection: 'row', gap: espace.e2 },
   profil: { borderRadius: rayon.bloc, padding: espace.e3 },
   pastilles: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },

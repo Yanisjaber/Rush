@@ -43,6 +43,9 @@ export function joursAvant(iso: string, aujourdhui: Date = new Date()): number {
   return Math.round((cible.getTime() - base.getTime()) / 86400000);
 }
 
+/** Le compte à rebours d'un objectif : 63 → « J-63 », 0 → « J-0 », une date passée (-3) → « J+3 ». */
+export const formatJoursAvant = (jours: number): string => (jours >= 0 ? `J-${jours}` : `J+${-jours}`);
+
 /** Chronomètre : 2472 s → « 41'12" », 5500 s → « 1h31'40" ». */
 export function formatChrono(secondes: number | null | undefined): string {
   const s = Math.max(0, Math.round(secondes || 0));

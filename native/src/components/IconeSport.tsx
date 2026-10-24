@@ -9,17 +9,31 @@ interface Props {
   /** Le sport brut (Run, Ride…) ou une famille (course, velo…). */
   sport: string;
   taille?: number;
+  /** Le vélo épais (formes nettes, trait plein) des grands emplacements, comme le bandeau de l'aperçu d'import. Sans effet sur les autres sports. */
+  epais?: boolean;
 }
 
 type Dessin = 'course' | 'velo' | 'natation' | 'muscu' | 'hyrox' | 'autre';
 const DESSIN: Record<string, Dessin> = { course: 'course', velo: 'velo', natation: 'natation', muscu: 'muscu', hyrox: 'hyrox' };
 
-export function IconeSport({ sport, taille = 18 }: Props) {
+export function IconeSport({ sport, taille = 18, epais = false }: Props) {
   const p = usePalette();
   const famille = familleAffichage(sport) === 'autre' ? sport : familleAffichage(sport);
   const dessin: Dessin = DESSIN[familleAffichage(sport)] ?? DESSIN[sport] ?? 'autre';
   const couleur = couleurSport(p, familleAffichage(sport) === 'autre' ? sport : famille);
   const trait = { stroke: couleur, strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' };
+
+  // Le vélo épais est plus large que haut (grille de 100 sur 80) : `taille` en est la hauteur
+  if (epais && dessin === 'velo') {
+    const gras = { ...trait, strokeWidth: 5 };
+    return (
+      <Svg width={taille * 1.25} height={taille} viewBox="0 0 100 80" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Circle cx={22} cy={54} r={17} {...gras} />
+        <Circle cx={78} cy={54} r={17} {...gras} />
+        <Path d="M22 54 L33 26 L66 26 L78 54 M22 54 L42 54 L33 26 M42 54 L66 26 M27 19 L40 19 M66 26 L64 15 L75 15" {...gras} />
+      </Svg>
+    );
+  }
 
   return (
     <Svg width={taille} height={taille} viewBox="0 0 24 24" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">

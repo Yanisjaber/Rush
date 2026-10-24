@@ -3,6 +3,8 @@
 // ici on écrit seulement des messages clairs.
 //
 import { verifierParcours, type ParcoursGpx } from './gpx.ts';
+import { verifierDonneesImport, type DonneesImport } from './import-activite.ts';
+import { aUnFormat, FORMATS_TRI, federationsDuSport, lireTempsCible } from './competition.ts';
 import { resume, sportAvecStructure, type Bloc, type Reference } from './structure.ts';
 
 // STOCKAGE :
@@ -123,6 +125,12 @@ export interface LignePrevue {
   /** Le parcours GPX joint (nom et contenu du fichier), absent sans parcours. */
   gpx_name?: string | null;
   gpx_content?: string | null;
+  /** Compétition seulement : le temps cible (en minutes, écrit en texte comme sur le site), le nombre de tours, la fédération, le niveau et le format de triathlon. */
+  target?: string | null;
+  laps?: number | null;
+  federation?: string | null;
+  race_level?: string | null;
+  tri_format?: string | null;
 }
 
 /**
@@ -180,12 +188,24 @@ export interface FormulaireCompetition {
   priorite: 'A' | 'B';
   epreuve: string; // « Route, trail, cyclosportive… » (facultatif)
   distance: string;
+  heure: string; // HH:MM, l'heure de départ
+  federation: string; // vide = non précisée
+  niveau: string; // catégorie ou niveau (facultatif)
+  format: string; // XS à XL, triathlon et duathlon seulement
+  cible: string; // le temps cible, comme « 3h45 » (facultatif)
+  dplus: string;
+  tours: string;
+  tss: string; // charge estimée saisie ; vide = pas d'estimation
+  rpe: number | null; // effort estimé, de 1 à 10
+  notes: string;
 }
 
-export const formulaireCompetitionVide = (): FormulaireCompetition => ({ nom: '', type: 'Run', priorite: 'A', epreuve: '', distance: '' });
+export const formulaireCompetitionVide = (filtre?: string, familles?: string[]): FormulaireCompetition => ({
+  nom: '', type: typeInitial(filtre, familles), priorite: 'A', epreuve: '', distance: '', heure: '09:00', federation: '', niveau: '', format: '', cible: '', dplus: '', tours: '', tss: '', rpe: null, notes: '',
+});
 
 /** Vérifie une compétition pour la date donnée (9 h par défaut : on ne demande pas l'heure). */
-export function validerCompetition(f: FormulaireCompetition, date: string): Resultat<LignePrevue> {
+export function validerCompetition(f: FormulaireCompetition, date: string, parcours?: ParcoursGpx | null): Resultat<LignePrevue> {
   if (!dateValide(date)) return { ok: false, erreur: 'Choisis une date valide.' };
   const nom = String(f.nom ?? '').trim().replace(/\s+/g, ' ');
   if (!nom) return { ok: false, erreur: 'Donne un nom à la compétition.' };
@@ -196,22 +216,48 @@ export function validerCompetition(f: FormulaireCompetition, date: string): Resu
   if (epreuve.length > 60) return { ok: false, erreur: "Le type d'épreuve est trop long (60 caractères au plus)." };
   const km = distanceEnKm(f.distance, f.type);
   if (km != null && !(km >= 0 && km <= 5000)) return { ok: false, erreur: 'La distance doit être entre 0 et 5000 km.' };
+  if (!HEURE.test(String(f.heure ?? ''))) return { ok: false, erreur: "L'heure de départ n'est pas valide (par exemple 09:00)." };
+  const federation = String(f.federation ?? '').trim();
+  if (federation && !federationsDuSport(f.type).includes(federation)) return { ok: false, erreur: 'Cette fédération ne correspond pas au sport choisi.' };
+  const niveau = String(f.niveau ?? '').trim().replace(/\s+/g, ' ');
+  if (niveau.length > 60) return { ok: false, erreur: 'Le niveau est trop long (60 caractères au plus).' };
+  const format = String(f.format ?? '').trim();
+  if (format && !(aUnFormat(f.type) && FORMATS_TRI.includes(format))) return { ok: false, erreur: 'Ce format ne correspond pas au sport choisi.' };
+  const cible = lireTempsCible(f.cible);
+  if (!cible.ok) return { ok: false, erreur: 'Le temps cible doit s\'écrire comme 3h45, 3:45 ou 45 min (1 minute à 72 heures).' };
+  const dplus = nombreOuNull(f.dplus);
+  if (dplus != null && !(Number.isInteger(dplus) && dplus >= 0 && dplus <= 30000)) return { ok: false, erreur: 'Le dénivelé doit être un nombre entier entre 0 et 30000 m.' };
+  const tours = nombreOuNull(f.tours);
+  if (tours != null && !(Number.isInteger(tours) && tours >= 1 && tours <= 999)) return { ok: false, erreur: 'Le nombre de tours doit être entier, de 1 à 999.' };
+  const tss = nombreOuNull(f.tss);
+  if (tss != null && !(tss >= 0 && tss <= 1000)) return { ok: false, erreur: 'La charge doit être entre 0 et 1000 points.' };
+  if (f.rpe != null && !(Number.isInteger(f.rpe) && f.rpe >= 1 && f.rpe <= 10)) return { ok: false, erreur: "L'effort doit être entre 1 et 10." };
+  const notes = String(f.notes ?? '').trim();
+  if (notes.length > 2000) return { ok: false, erreur: 'Les notes sont trop longues (2000 caractères au plus).' };
+  const erreurGpx = verifierParcours(parcours);
+  if (erreurGpx) return { ok: false, erreur: erreurGpx };
   return {
     ok: true,
     ligne: {
       category: 'competition',
       name: nom,
       date,
-      start_date_local: `${date}T09:00:00`,
+      start_date_local: `${date}T${f.heure}:00`,
       sport: f.type,
       priority: f.priorite,
       type: epreuve || null,
       km: km == null ? null : Math.round(km * 1000) / 1000,
-      d_plus: null,
+      d_plus: dplus,
       duration: null,
-      tss: null,
-      rpe: null,
-      notes: null,
+      tss: tss == null ? null : Math.round(tss),
+      rpe: f.rpe,
+      notes: notes || null,
+      target: cible.minutes == null ? null : String(cible.minutes),
+      laps: tours,
+      federation: federation || null,
+      race_level: niveau || null,
+      tri_format: format || null,
+      ...(parcours ? { gpx_name: parcours.nom, gpx_content: parcours.contenu } : {}),
     },
   };
 }
@@ -275,13 +321,23 @@ export interface FormulaireSortie {
   dplus: string;
   fc: string; // fréquence cardiaque moyenne
   rpe: number | null; // effort ressenti, de 1 à 10
+  tss: string; // charge saisie à la main (facultatif) ; vide = estimée d'après la durée et l'effort
   notes: string;
 }
 
-export const formulaireSortieVide = (filtre?: string, familles?: string[]): FormulaireSortie => ({ nom: '', type: typeInitial(filtre, familles), heure: '07:30', heures: '0', minutes: '45', distance: '', dplus: '', fc: '', rpe: null, notes: '' });
+export const formulaireSortieVide = (filtre?: string, familles?: string[]): FormulaireSortie => ({ nom: '', type: typeInitial(filtre, familles), heure: '07:30', heures: '0', minutes: '45', distance: '', dplus: '', fc: '', rpe: null, tss: '', notes: '' });
+
+/** La charge (points) estimée d'une activité déjà faite, d'après sa durée et son effort ressenti (5 par défaut), pour l'afficher avant d'enregistrer. Null si la durée n'est pas lisible. */
+export function chargeEstimeeSortie(f: Pick<FormulaireSortie, 'heures' | 'minutes' | 'rpe'>): number | null {
+  const h = nombreOuNull(f.heures) ?? 0;
+  const m = nombreOuNull(f.minutes) ?? 0;
+  if (!Number.isInteger(h) || !Number.isInteger(m) || h < 0 || m < 0 || m > 59) return null;
+  const duree = h * 60 + m;
+  return duree >= 1 && duree <= 1440 ? estimerTss(duree, f.rpe ?? 5) : null;
+}
 
 /** Ligne à écrire dans activities (sans user_id ni client_id : ajoutés par l'API depuis la session). */
-export interface LigneSortie {
+export interface LigneSortie extends DonneesImport {
   source: 'manual';
   category: 'entrainement';
   name: string;
@@ -296,10 +352,10 @@ export interface LigneSortie {
   user_notes: string | null;
 }
 
-/** Vérifie une sortie déjà faite : le jour ne peut pas être dans le futur (`aujourdhui`, AAAA-MM-JJ). La charge est estimée d'après la durée et l'effort. */
-export function validerSortie(f: FormulaireSortie, date: string, aujourdhui: string, nomParDefaut: string): Resultat<LigneSortie> {
+/** Vérifie une activité déjà faite : le jour ne peut pas être dans le futur (`aujourdhui`, AAAA-MM-JJ). La charge est estimée d'après la durée et l'effort. */
+export function validerSortie(f: FormulaireSortie, date: string, aujourdhui: string, nomParDefaut: string, importe?: DonneesImport | null): Resultat<LigneSortie> {
   if (!dateValide(date)) return { ok: false, erreur: 'Choisis une date valide.' };
-  if (date > aujourdhui) return { ok: false, erreur: "Une sortie déjà faite ne peut pas être dans le futur : utilise « Séance prévue »." };
+  if (date > aujourdhui) return { ok: false, erreur: "Une activité déjà faite ne peut pas être dans le futur : utilise « Séance prévue »." };
   const nom = (String(f.nom ?? '').trim() || nomParDefaut).replace(/\s+/g, ' ');
   if (nom.length > 120) return { ok: false, erreur: 'Le nom est trop long (120 caractères au plus).' };
   if (!TYPES.has(f.type)) return { ok: false, erreur: 'Choisis un sport.' };
@@ -316,18 +372,24 @@ export function validerSortie(f: FormulaireSortie, date: string, aujourdhui: str
   const fc = nombreOuNull(f.fc);
   if (fc != null && !(Number.isInteger(fc) && fc >= 30 && fc <= 250)) return { ok: false, erreur: 'La fréquence cardiaque doit être entre 30 et 250.' };
   if (f.rpe != null && !(Number.isInteger(f.rpe) && f.rpe >= 1 && f.rpe <= 10)) return { ok: false, erreur: "L'effort ressenti doit être entre 1 et 10." };
+  const tssSaisi = nombreOuNull(f.tss);
+  if (tssSaisi != null && !(tssSaisi >= 0 && tssSaisi <= 1000)) return { ok: false, erreur: 'La charge doit être entre 0 et 1000 points.' };
   const notes = String(f.notes ?? '').trim();
   if (notes.length > 2000) return { ok: false, erreur: 'Les notes sont trop longues (2000 caractères au plus).' };
+  // Venue d'un fichier : flux, trace, tours et chiffres de résumé, relus avant d'être écrits
+  const plus = importe ? verifierDonneesImport(importe) : null;
+  if (plus && !plus.ok) return { ok: false, erreur: plus.erreur };
   return {
     ok: true,
     ligne: {
+      ...(plus?.donnees ?? {}),
       source: 'manual',
       category: 'entrainement',
       name: nom,
       start_date_local: `${date}T${f.heure}:00`,
       sport: f.type,
       moving_time: duree * 60,
-      tss: estimerTss(duree, f.rpe ?? 5),
+      tss: tssSaisi != null ? Math.round(tssSaisi) : estimerTss(duree, f.rpe ?? 5),
       rpe: f.rpe,
       distance_km: km == null ? null : Math.round(km * 1000) / 1000,
       total_elevation_gain: dplus,

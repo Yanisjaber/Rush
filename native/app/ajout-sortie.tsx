@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { ChampHeure } from '@/components/ChampHeure';
 import { ChampTexte } from '@/components/ChampTexte';
@@ -7,10 +7,13 @@ import { ChoixEffort } from '@/components/ChoixEffort';
 import { EcranAjout } from '@/components/EcranAjout';
 import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
 import { ChampDate } from '@/components/ChampDate';
-import { cleDuType, distanceEnMetres, formulaireSortieVide, typeDeCle, validerSortie } from '@/data/ajouts';
+import { chargeEstimeeSortie, cleDuType, distanceEnMetres, formulaireSortieVide, SPORTS_AJOUT, typeDeCle, validerSortie } from '@/data/ajouts';
+import { champsValides } from '@/data/import-activite';
 import { dateIsoLocale } from '@/data/format';
+import { dureeDepuisHeure, heureDepuisDuree, texteDureeSaisie } from '@/data/heure';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useDateAjout } from '@/hooks/useDateAjout';
+import { viderImport, lireImport } from '@/stores/import-en-attente';
 import { useMenu } from '@/stores/menu';
 import { espace, rayon } from '@/theme/couleurs';
 import { SPORTS, type CleSport } from '@/theme/sports';
@@ -27,7 +30,11 @@ export default function EcranAjoutSortie() {
   const aujourdhui = dateIsoLocale(new Date());
   const depart = useDateAjout();
   const [date, setDate] = useState(depart > aujourdhui ? aujourdhui : depart);
-  const [f, setF] = useState(() => formulaireSortieVide(filtre, familles));
+  const params = useLocalSearchParams(); // venant de « Importer » : les champs lus dans le fichier, relus ici (paramètres non fiables)
+  const [f, setF] = useState(() => ({ ...formulaireSortieVide(filtre, familles), ...champsValides(params, SPORTS_AJOUT.map((s) => s.type)) }));
+  // Les données lourdes du fichier (flux, trace, tours) ne sont reprises que si on arrive depuis « Importer », et oubliées en quittant l'écran
+  const [importe] = useState(() => (params.import === '1' ? lireImport() : null));
+  useEffect(() => () => viderImport(), []);
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState(false);
 
@@ -35,10 +42,11 @@ export default function EcranAjoutSortie() {
     setF(suite);
     setErreur('');
   };
+  const charge = chargeEstimeeSortie(f); // l'estimation, avant même d'enregistrer
   const nomSport = (type: string) => SPORTS[cleDuType(type) as CleSport].nom;
 
   async function enregistrer() {
-    const r = validerSortie(f, date, aujourdhui, nomSport(f.type));
+    const r = validerSortie(f, date, aujourdhui, nomSport(f.type), importe);
     if (!r.ok) return setErreur(r.erreur);
     setEnCours(true);
     const e = await creerSortie(r.ligne);
@@ -61,17 +69,26 @@ export default function EcranAjoutSortie() {
         </View>
       </View>
       <ChampTexte etiquette="Nom (facultatif)" value={f.nom} onChangeText={(t) => change({ ...f, nom: t })} maxLength={120} placeholder={nomSport(f.type)} returnKeyType="done" />
-      <View style={{ gap: 6 }}>
-        {etiquette('Durée')}
-        <View style={styles.duree}>
-          <View style={{ flex: 1 }}>
-            <ChampTexte value={f.heures} onChangeText={(t) => change({ ...f, heures: t })} keyboardType="number-pad" maxLength={2} accessibilityLabel="Heures" style={styles.centre} />
-          </View>
-          <Text style={[typo.corps, { color: p.texteDoux }]}>h</Text>
-          <View style={{ flex: 1 }}>
-            <ChampTexte value={f.minutes} onChangeText={(t) => change({ ...f, minutes: t })} keyboardType="number-pad" maxLength={2} accessibilityLabel="Minutes" style={styles.centre} />
-          </View>
-          <Text style={[typo.corps, { color: p.texteDoux }]}>min</Text>
+      {/* La durée se choisit sur les roues d'Apple (heures et minutes), comme l'heure ; le champ montre « 4 h 37 min ». À côté, la charge : vide = estimée (le gris donne l'estimation) */}
+      <View style={styles.ligne}>
+        <View style={{ flex: 1.4 }}>
+          <ChampHeure
+            etiquette="Durée"
+            valeur={heureDepuisDuree(f.heures, f.minutes)}
+            affichage={texteDureeSaisie(f.heures, f.minutes)}
+            onChange={(h) => change({ ...f, ...dureeDepuisHeure(h) })}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <ChampTexte
+            etiquette="Charge (pts)"
+            value={f.tss}
+            onChangeText={(t) => change({ ...f, tss: t })}
+            keyboardType="number-pad"
+            maxLength={4}
+            placeholder={charge != null ? `≈ ${charge}` : ''}
+            accessibilityLabel="Charge en points (laisse vide pour l'estimation)"
+          />
         </View>
       </View>
       <View style={styles.ligne}>
@@ -86,14 +103,12 @@ export default function EcranAjoutSortie() {
         </View>
       </View>
       <ChoixEffort valeur={f.rpe} onChange={(v) => change({ ...f, rpe: v })} etiquette="Effort ressenti (facultatif)" />
-      <ChampTexte etiquette="Notes (facultatif)" value={f.notes} onChangeText={(t) => change({ ...f, notes: t })} maxLength={2000} multiline placeholder="Un mot sur la sortie…" />
+      <ChampTexte etiquette="Notes (facultatif)" value={f.notes} onChangeText={(t) => change({ ...f, notes: t })} maxLength={2000} multiline placeholder="Un mot sur l'activité…" />
     </EcranAjout>
   );
 }
 
 const styles = StyleSheet.create({
   etiquette: { paddingLeft: 16, fontFamily: police.texte600 },
-  centre: { textAlign: 'center' },
   ligne: { flexDirection: 'row', gap: espace.e2 },
-  duree: { flexDirection: 'row', alignItems: 'center', gap: espace.e2 },
 });
