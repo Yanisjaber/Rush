@@ -54,5 +54,4 @@ Rien en attente : les migrations `2026-10-22_training_cycles.sql` et `2026-10-23
 
 ## Ménage à faire (demande d'accord de Yanis)
 
-- `native/src/components/FeuilleAjout.tsx` (l'ancienne feuille du « + » à onglets) n'est plus utilisée nulle part : à supprimer avec l'accord de Yanis.
 - Les séances prévues créées avec des blocs gardent leur structure ; l'écran qui les relit (lecture, modification) reste à faire (ligne 1 de « Repoussé »).
