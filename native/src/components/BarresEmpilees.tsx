@@ -33,7 +33,7 @@ export function BarresEmpilees({ series, etiquettes, ligne = [], hauteur = 200, 
 
   // Courbe en superposition, en pixels : chaque point est au centre de sa colonne
   let trace = '';
-  if (ligne.length && largeur) {
+  if (ligne.length && largeur && nb > 0) { // sans colonne, la largeur d'une colonne serait « … / 0 » : le tracé recevrait NaN et Infinity
     const haut = Math.max(...ligne);
     const colonne = (largeur - ECART * (nb - 1)) / nb;
     const pts: Point[] = ligne.map((v, i) => [i * (colonne + ECART) + colonne / 2, ((100 - (v / (haut * 1.15)) * 100 * 0.78 - 4) / 100) * hauteur]);

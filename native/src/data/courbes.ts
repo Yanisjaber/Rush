@@ -7,8 +7,10 @@ export type Point = [number, number];
  * Transforme une liste de points [x, y] en un chemin SVG lissé (courbes de Bézier).
  * `tension` règle la souplesse (0 = lignes droites, ~0.2 = courbe douce).
  */
-export function lisse(points: Point[] | null | undefined, tension = 0.18): string {
-  if (!points || points.length === 0) return '';
+export function lisse(entree: Point[] | null | undefined, tension = 0.18): string {
+  // Un point dont une coordonnée n'est pas un nombre fini (NaN, Infinity : division par zéro ailleurs) est écarté : le dessin SVG natif plante sur ces valeurs
+  const points = (entree ?? []).filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+  if (points.length === 0) return '';
   const f = (n: number) => n.toFixed(1);
   let d = `M${f(points[0][0])} ${f(points[0][1])}`;
   for (let i = 0; i < points.length - 1; i++) {
