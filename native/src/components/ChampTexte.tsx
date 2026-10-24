@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentRef, type Ref } from 'react';
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
@@ -7,7 +7,7 @@ import { usePalette } from '@/theme/usePalette';
 // Le champ de saisie de l'app : une pastille pleine (comme la date), le texte centré dans sa hauteur, le libellé en petit au-dessus. Quand on écrit, un contour clair
 // l'entoure. Les textes longs (notes) prennent la même couleur mais des coins moins ronds et le texte en haut. `sur` : sur quel fond le champ est posé
 // (« fond » = l'écran, « surface » = une feuille ou une carte, où le champ prend la teinte du dessus pour rester visible).
-export function ChampTexte({ etiquette, sur = 'fond', multiline, style, onFocus, onBlur, ...props }: TextInputProps & { etiquette?: string; sur?: 'fond' | 'surface' }) {
+export function ChampTexte({ etiquette, sur = 'fond', multiline, style, onFocus, onBlur, ref, ...props }: TextInputProps & { etiquette?: string; sur?: 'fond' | 'surface'; ref?: Ref<ComponentRef<typeof TextInput>> }) {
   const p = usePalette();
   const [actif, setActif] = useState(false);
   return (
@@ -15,6 +15,7 @@ export function ChampTexte({ etiquette, sur = 'fond', multiline, style, onFocus,
       {etiquette ? <Text style={[typo.petit, styles.etiquette, { color: p.texteDoux }]}>{etiquette}</Text> : null}
       <TextInput
         {...props}
+        ref={ref}
         multiline={multiline}
         placeholderTextColor={p.texteMuet}
         accessibilityLabel={props.accessibilityLabel ?? etiquette}

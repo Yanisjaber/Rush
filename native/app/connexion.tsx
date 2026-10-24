@@ -3,6 +3,7 @@ import { useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
+import { ChampTexte } from '@/components/ChampTexte';
 import { connexion, entrerDemo } from '@/stores/auth';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
@@ -32,8 +33,6 @@ export default function Connexion() {
     // En cas de succès, le changement de session fait basculer l'app vers l'Accueil tout seul
   }
 
-  const champ = [styles.champ, typo.corps, { color: p.texte, backgroundColor: p.surface, borderColor: p.contourChamp }];
-
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.page, { backgroundColor: 'transparent' }]}>
       <FondDegrade />
@@ -47,40 +46,38 @@ export default function Connexion() {
         </Text>
         <Text style={[typo.corps, { color: p.texteDoux, marginBottom: espace.e6 }]}>Ton entraînement et ta récupération, sport par sport.</Text>
 
-        <Text style={[typo.micro, { color: p.texteDoux }]}>E-mail</Text>
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          style={champ}
-          placeholder="toi@exemple.fr"
-          placeholderTextColor={p.texteMuet}
-          autoCapitalize="none"
-          autoCorrect={false}
-          autoComplete="email"
-          keyboardType="email-address"
-          textContentType="username"
-          returnKeyType="next"
-          onSubmitEditing={() => champMdp.current?.focus()}
-          accessibilityLabel="Adresse e-mail"
-        />
-
-        <Text style={[typo.micro, { color: p.texteDoux, marginTop: espace.e4 }]}>Mot de passe</Text>
-        <TextInput
-          ref={champMdp}
-          value={motDePasse}
-          onChangeText={setMotDePasse}
-          style={champ}
-          placeholder="Ton mot de passe"
-          placeholderTextColor={p.texteMuet}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-          autoComplete="current-password"
-          textContentType="password"
-          returnKeyType="go"
-          onSubmitEditing={valider}
-          accessibilityLabel="Mot de passe"
-        />
+        {/* Les mêmes champs que partout dans l'app (pastille centrée) */}
+        <View style={{ gap: espace.e4 }}>
+          <ChampTexte
+            etiquette="E-mail"
+            value={email}
+            onChangeText={setEmail}
+            placeholder="toi@exemple.fr"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+            textContentType="username"
+            keyboardType="email-address"
+            returnKeyType="next"
+            onSubmitEditing={() => champMdp.current?.focus()}
+            accessibilityLabel="Adresse e-mail"
+          />
+          <ChampTexte
+            ref={champMdp}
+            etiquette="Mot de passe"
+            value={motDePasse}
+            onChangeText={setMotDePasse}
+            placeholder="Ton mot de passe"
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="current-password"
+            textContentType="password"
+            returnKeyType="go"
+            onSubmitEditing={valider}
+            accessibilityLabel="Mot de passe"
+          />
+        </View>
 
         {erreur ? (
           <Text accessibilityRole="alert" style={[typo.corpsFort, { color: p.danger, marginTop: espace.e3 }]}>
@@ -121,8 +118,6 @@ const styles = StyleSheet.create({
   page: { flex: 1 },
   contenu: { paddingHorizontal: espace.e5, maxWidth: 520, width: '100%', alignSelf: 'center' },
   titre: { fontFamily: police.titre800, fontSize: 56, lineHeight: 56, marginBottom: espace.e2 },
-  // 48 pt de haut : au-dessus des 44 pt de cible tactile
-  champ: { marginTop: espace.e1, minHeight: 48, borderWidth: 1.5, borderRadius: rayon.base, paddingHorizontal: espace.e3 },
   attente: { minHeight: 44, borderRadius: rayon.base, alignItems: 'center', justifyContent: 'center' },
   separateur: { marginVertical: espace.e5, borderTopWidth: StyleSheet.hairlineWidth },
   lien: { minHeight: 44, justifyContent: 'center' },
