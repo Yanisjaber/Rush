@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PastillesChoix } from '@/components/ChampsFeuille';
 import { ChampDate } from '@/components/ChampDate';
+import { nomDuType } from '@/data/catalogue-sports';
 import { ChampHeure } from '@/components/ChampHeure';
 import { ChampParcoursGpx, type ParcoursChoisi } from '@/components/ChampParcoursGpx';
 import { ChampTexte } from '@/components/ChampTexte';
@@ -12,14 +13,13 @@ import { EcranAjout } from '@/components/EcranAjout';
 import { MenuDeroulantChoix } from '@/components/MenuDeroulantChoix';
 import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
 import { OngletsSegment } from '@/components/OngletsSegment';
-import { cleDuType, distanceEnMetres, formulaireCompetitionVide, typeDeCle, validerCompetition } from '@/data/ajouts';
+import { cleDuType, distanceEnMetres, formulaireCompetitionVide, validerCompetition } from '@/data/ajouts';
 import { aUnFormat, allureMoyenne, champNiveau, federationsDuSport, FORMATS_TRI, lireTempsCible, TYPES_EPREUVE_VELO } from '@/data/competition';
 import { formatDateCourte, formatJoursAvant, joursAvant } from '@/data/format';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useDateAjout } from '@/hooks/useDateAjout';
 import { useMenu } from '@/stores/menu';
 import { espace } from '@/theme/couleurs';
-import { SPORTS, type CleSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -66,9 +66,8 @@ export default function EcranAjoutCompetition() {
   }
 
   // Le dossard du haut : nom, jour et heure, sport, fédération, type d'épreuve, distance, et le compte à rebours
-  const cle = cleDuType(f.type);
   const distance = f.distance.trim() ? `${f.distance.trim()} ${distanceEnMetres(f.type) ? 'm' : 'km'}` : '';
-  const detail = [`${formatDateCourte(date)} · ${f.heure}`, SPORTS[cle as CleSport].nom, f.federation, f.epreuve.trim(), distance].filter(Boolean).join(' · ');
+  const detail = [`${formatDateCourte(date)} · ${f.heure}`, nomDuType(f.type), f.federation, f.epreuve.trim(), distance].filter(Boolean).join(' · ');
 
   const federations = federationsDuSport(f.type);
   const niveau = champNiveau(f.federation);
@@ -82,7 +81,7 @@ export default function EcranAjoutCompetition() {
     <>
       <Dossard
         taille="m"
-        sport={cle}
+        sport={cleDuType(f.type)}
         etiquette={f.priorite === 'A' ? 'Compétition · Objectif' : 'Compétition · Préparation'}
         nom={f.nom.trim() || 'Ta course'}
         detail={detail}
@@ -99,7 +98,7 @@ export default function EcranAjoutCompetition() {
           <ChampTexte etiquette="Nom" value={f.nom} onChangeText={(t) => change({ ...f, nom: t })} maxLength={120} placeholder="Marathon de Toulouse" returnKeyType="done" />
           <View style={{ gap: 6 }}>
             {etiquette('Sport')}
-            <MenuDeroulantSport valeur={cle} avecTous={false} onChoisir={(c) => changerSport(typeDeCle(c ?? 'autre'))} />
+            <MenuDeroulantSport parType valeur={f.type} avecTous={false} onChoisir={(type) => changerSport(type ?? 'Run')} />
           </View>
           <View style={{ gap: 6 }}>
             {etiquette('Priorité')}

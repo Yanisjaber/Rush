@@ -2,6 +2,7 @@
 // Port des règles de app/src/lib/data/prevue.js, competitions.js et annotations.js : mêmes bornes, mêmes colonnes. La base refait ces vérifications (RLS, contraintes) :
 // ici on écrit seulement des messages clairs.
 //
+import { CATALOGUE } from './catalogue-sports.ts';
 import { verifierParcours, type ParcoursGpx } from './gpx.ts';
 import { verifierDonneesImport, type DonneesImport } from './import-activite.ts';
 import { aUnFormat, FORMATS_TRI, federationsDuSport, lireTempsCible } from './competition.ts';
@@ -12,22 +13,14 @@ import { resume, sportAvecStructure, type Bloc, type Reference } from './structu
 //  - compétition   : une ligne de `activity_planned` (category = 'competition', priority 'A' ou 'B')
 //  - note          : une ligne de `day_notes` { type, text, color, from_date, to_date }
 
-/** Les sports proposés quand on planifie : clé du sport de l'app → type brut stocké en base (comme Strava). */
-export const SPORTS_AJOUT: { cle: string; type: string }[] = [
-  { cle: 'course', type: 'Run' },
-  { cle: 'velo', type: 'Ride' },
-  { cle: 'natation', type: 'Swim' },
-  { cle: 'muscu', type: 'WeightTraining' },
-  { cle: 'hyrox', type: 'Hyrox' },
-  { cle: 'triathlon', type: 'Triathlon' },
-  { cle: 'duathlon', type: 'Duathlon' },
-  { cle: 'autre', type: 'Other' },
-];
+/** Les sports proposés quand on planifie : tous ceux du catalogue (famille de l'app → type brut stocké en base, comme Strava). */
+export const SPORTS_AJOUT: { cle: string; type: string }[] = CATALOGUE.map((s) => ({ cle: s.famille, type: s.type }));
 const TYPES = new Set(SPORTS_AJOUT.map((s) => s.type));
 
 /** La clé de sport (course, velo…) d'un type brut (Run, Ride…), et inversement. */
+/** Pour une famille (course, velo…), son sport de base ; « autre » et l'inconnu donnent `Other`. */
 export const cleDuType = (type: string): string => SPORTS_AJOUT.find((s) => s.type === type)?.cle ?? 'autre';
-export const typeDeCle = (cle: string): string => SPORTS_AJOUT.find((s) => s.cle === cle)?.type ?? 'Other';
+export const typeDeCle = (cle: string): string => (cle === 'autre' ? 'Other' : (SPORTS_AJOUT.find((s) => s.cle === cle)?.type ?? 'Other'));
 
 /** La distance se saisit en mètres pour la natation (« 2400 »), en kilomètres pour le reste (« 7,5 »). */
 export const distanceEnMetres = (type: string): boolean => type === 'Swim';

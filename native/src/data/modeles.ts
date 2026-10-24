@@ -1,5 +1,6 @@
 // Modèles de séance (table activity_template) : des séances types qu'on pose sur un jour. Fonctions pures, sans écran ni réseau. Port de app/src/lib/data/modeles.js.
-import { cleDuType, estimerTss, SPORTS_AJOUT, type LignePrevue } from './ajouts.ts';
+import { FAMILLES_PRINCIPALES } from './catalogue-sports.ts';
+import { cleDuType, estimerTss, SPORTS_AJOUT, typeDeCle, type LignePrevue } from './ajouts.ts';
 import { metriquesDuSport, normaliser, resume, type Bloc, type Reference } from './structure.ts';
 
 export interface Modele {
@@ -19,7 +20,6 @@ export interface Modele {
 }
 
 const CATEGORIE_VERS_CLE: Record<string, string> = { cyclisme: 'velo', vtt: 'velo', course: 'course', trail: 'course', natation: 'natation', musculation: 'muscu', triathlon: 'triathlon' };
-const TYPE_PAR_CLE = (cle: string): string => SPORTS_AJOUT.find((s) => s.cle === cle)?.type ?? 'Other';
 
 /** La clé de sport (course, velo…) d'un modèle : son type brut s'il est connu, sinon sa catégorie. */
 export function cleDuModele(m: Pick<Modele, 'sport' | 'sport_raw'>): string {
@@ -41,11 +41,11 @@ export function filtrerModeles(modeles: Modele[], recherche = '', cle = 'tous'):
 /** Les sports présents dans les modèles, dans l'ordre de la liste des sports (pour les pastilles de filtre). */
 export const sportsDesModeles = (modeles: Modele[]): string[] => {
   const presents = new Set(modeles.map(cleDuModele));
-  return SPORTS_AJOUT.map((s) => s.cle).filter((c) => presents.has(c));
+  return [...FAMILLES_PRINCIPALES, 'autre'].filter((c) => presents.has(c));
 };
 
 /** Les blocs d'un modèle, nettoyés (jamais de valeur absurde venue de la base). */
-export const blocsDuModele = (m: Pick<Modele, 'structure' | 'sport' | 'sport_raw'>): Bloc[] => normaliser(m.structure, metriquesDuSport(m.sport_raw ?? TYPE_PAR_CLE(cleDuModele(m as Modele)))[0]);
+export const blocsDuModele = (m: Pick<Modele, 'structure' | 'sport' | 'sport_raw'>): Bloc[] => normaliser(m.structure, metriquesDuSport(m.sport_raw ?? typeDeCle(cleDuModele(m as Modele)))[0]);
 
 /** Résumé d'une ligne de modèle : « 55 min · 48 pts · 40 km · par blocs ». */
 export function resumeModele(m: Modele): string {
@@ -62,7 +62,7 @@ export function resumeModele(m: Modele): string {
  * quand il y en a, sinon du modèle, sinon d'une estimation (60 min).
  */
 export function lignePrevueDepuisModele(m: Modele, date: string, heure = '12:00', ref: Reference = {}): LignePrevue {
-  const type = m.sport_raw && SPORTS_AJOUT.some((s) => s.type === m.sport_raw) ? m.sport_raw : TYPE_PAR_CLE(cleDuModele(m));
+  const type = m.sport_raw && SPORTS_AJOUT.some((s) => s.type === m.sport_raw) ? m.sport_raw : typeDeCle(cleDuModele(m));
   const blocs = blocsDuModele({ structure: m.structure, sport: m.sport, sport_raw: type });
   const calcul = blocs.length ? resume(blocs, ref, type) : null;
   const duree = Math.min(1440, Math.max(1, Math.round(calcul ? calcul.dureeMin : Number(m.duration_min) > 0 ? Number(m.duration_min) : 60)));

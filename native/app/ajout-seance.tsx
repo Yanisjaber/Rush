@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { nomDuType } from '@/data/catalogue-sports';
 import { ChampHeure } from '@/components/ChampHeure';
 import { ChampParcoursGpx, type ParcoursChoisi } from '@/components/ChampParcoursGpx';
 import { ChampTexte } from '@/components/ChampTexte';
@@ -10,7 +11,7 @@ import { FeuilleBloc } from '@/components/FeuilleBloc';
 import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
 import { ProfilSeance } from '@/components/ProfilSeance';
 import { ChampDate } from '@/components/ChampDate';
-import { chargeEstimee, cleDuType, distanceEnMetres, formulaireSeanceVide, typeDeCle, validerSeance } from '@/data/ajouts';
+import { chargeEstimee, distanceEnMetres, formulaireSeanceVide, validerSeance } from '@/data/ajouts';
 import { deplacerBloc, nomDuBloc, peutAjouterBloc } from '@/data/blocs-formulaire';
 import { type ResumeGpx } from '@/data/gpx';
 import { COULEURS_ZONE, indiceZone, metriquesDuSport, milieu, NOM_TYPE, resume, sportAvecStructure, texteCible, texteDuree, tousSegments, type Bloc } from '@/data/structure';
@@ -20,7 +21,6 @@ import { useDateAjout } from '@/hooks/useDateAjout';
 import { useReferences } from '@/hooks/useReferences';
 import { useMenu } from '@/stores/menu';
 import { espace, rayon } from '@/theme/couleurs';
-import { SPORTS, type CleSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -45,7 +45,7 @@ export default function EcranAjoutSeance() {
   const calcul = blocs.length && aStructure ? resume(blocs, reference, f.type) : null;
   const dureeSaisie = heuresMinutesDepuis(f.duree);
   const charge = chargeEstimee(f, blocs, reference); // la charge estimée, avant même d'enregistrer
-  const nomSport = (type: string) => SPORTS[cleDuType(type) as CleSport].nom;
+  const nomSport = nomDuType;
 
   const change = (suite: typeof f) => {
     setF(suite);
@@ -96,7 +96,7 @@ export default function EcranAjoutSeance() {
         <View style={styles.ligne}>
           <View style={{ flex: 1.4, gap: 6 }}>
             {etiquette('Sport')}
-            <MenuDeroulantSport valeur={cleDuType(f.type)} avecTous={false} onChoisir={(cle) => changerSport(typeDeCle(cle ?? 'autre'))} />
+            <MenuDeroulantSport parType valeur={f.type} avecTous={false} onChoisir={(type) => changerSport(type ?? 'Run')} />
           </View>
           <View style={{ flex: 1 }}>
             <ChampHeure valeur={f.heure} onChange={(h) => change({ ...f, heure: h })} />

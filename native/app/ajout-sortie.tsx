@@ -1,13 +1,14 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { nomDuType } from '@/data/catalogue-sports';
 import { ChampHeure } from '@/components/ChampHeure';
 import { ChampTexte } from '@/components/ChampTexte';
 import { ChoixEffort } from '@/components/ChoixEffort';
 import { EcranAjout } from '@/components/EcranAjout';
 import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
 import { ChampDate } from '@/components/ChampDate';
-import { chargeEstimeeSortie, cleDuType, distanceEnMetres, formulaireSortieVide, SPORTS_AJOUT, typeDeCle, validerSortie } from '@/data/ajouts';
+import { chargeEstimeeSortie, distanceEnMetres, formulaireSortieVide, SPORTS_AJOUT, validerSortie } from '@/data/ajouts';
 import { champsValides } from '@/data/import-activite';
 import { dateIsoLocale } from '@/data/format';
 import { dureeDepuisHeure, heureDepuisDuree, texteDureeSaisie } from '@/data/heure';
@@ -16,7 +17,6 @@ import { useDateAjout } from '@/hooks/useDateAjout';
 import { viderImport, lireImport } from '@/stores/import-en-attente';
 import { useMenu } from '@/stores/menu';
 import { espace, rayon } from '@/theme/couleurs';
-import { SPORTS, type CleSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -43,7 +43,7 @@ export default function EcranAjoutSortie() {
     setErreur('');
   };
   const charge = chargeEstimeeSortie(f); // l'estimation, avant même d'enregistrer
-  const nomSport = (type: string) => SPORTS[cleDuType(type) as CleSport].nom;
+  const nomSport = nomDuType;
 
   async function enregistrer() {
     const r = validerSortie(f, date, aujourdhui, nomSport(f.type), importe);
@@ -62,7 +62,7 @@ export default function EcranAjoutSortie() {
       <View style={styles.ligne}>
         <View style={{ flex: 1.4, gap: 6 }}>
           {etiquette('Sport')}
-          <MenuDeroulantSport valeur={cleDuType(f.type)} avecTous={false} onChoisir={(cle) => change({ ...f, type: typeDeCle(cle ?? 'autre') })} />
+          <MenuDeroulantSport parType valeur={f.type} avecTous={false} onChoisir={(type) => change({ ...f, type: type ?? 'Run' })} />
         </View>
         <View style={{ flex: 1 }}>
           <ChampHeure valeur={f.heure} onChange={(h) => change({ ...f, heure: h })} />

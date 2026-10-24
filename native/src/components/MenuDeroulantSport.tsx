@@ -1,14 +1,16 @@
 import { useRef, useState, type ComponentRef } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { CATALOGUE, GROUPES_AUTRES, nomDuType } from '@/data/catalogue-sports';
 import { SPORTS_CYCLE } from '@/data/cycles';
 import { rayon } from '@/theme/couleurs';
-import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
+import { couleurSport, couleurSportType, SPORTS, type CleSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Un choix de sport en menu déroulant : un champ qui montre le sport choisi (avec son point de couleur), et une liste qui s'ouvre juste dessous,
 // comme le menu des sports de l'accueil. Avec `avecTous`, `null` = « Tous les sports » (le sport est facultatif) ; sans, un sport est toujours choisi.
-export function MenuDeroulantSport({ valeur, onChoisir, etiquette = 'Sport', avecTous = true, sur = 'fond' }: { valeur: string | null; onChoisir: (sport: string | null) => void; etiquette?: string; avecTous?: boolean; sur?: 'fond' | 'surface' }) {
+// Avec `parType`, on choisit un vrai sport (un type : Run, TrailRun, NordicSki…) au lieu d'une famille : les sports principaux d'abord, puis les autres rangés par groupe.
+export function MenuDeroulantSport({ valeur, onChoisir, etiquette = 'Sport', avecTous = true, sur = 'fond', parType = false }: { valeur: string | null; onChoisir: (sport: string | null) => void; etiquette?: string; avecTous?: boolean; sur?: 'fond' | 'surface'; parType?: boolean }) {
   const p = usePalette();
   const champRef = useRef<ComponentRef<typeof View>>(null);
   const [ouvert, setOuvert] = useState(false);
@@ -28,11 +30,21 @@ export function MenuDeroulantSport({ valeur, onChoisir, etiquette = 'Sport', ave
   const versLeHaut = placeDessous < 380 && placeDessus > placeDessous;
   const placement = versLeHaut ? { bottom: hauteurEcran - zone.haut + 6, maxHeight: Math.max(160, placeDessus) } : { top: zone.bas + 6, maxHeight: Math.max(160, placeDessous) };
 
-  const nom = valeur && Object.hasOwn(SPORTS, valeur) ? SPORTS[valeur as CleSport].nom : 'Tous les sports';
-  const options: { cle: string | null; nom: string; couleur: string }[] = [
-    ...(avecTous ? [{ cle: null, nom: 'Tous les sports', couleur: p.texteMuet }] : []),
-    ...SPORTS_CYCLE.map((cle) => ({ cle, nom: SPORTS[cle as CleSport].nom, couleur: couleurSport(p, cle) })),
-  ];
+  const nom = parType ? nomDuType(valeur) : valeur && Object.hasOwn(SPORTS, valeur) ? SPORTS[valeur as CleSport].nom : 'Tous les sports';
+  const couleurDe = (v: string) => (parType ? couleurSportType(p, v) : couleurSport(p, v));
+  // `titre` : une ligne de titre de groupe (Hiver, Eau…), pas un choix
+  const options: { cle: string | null; nom: string; couleur: string; titre?: boolean }[] = parType
+    ? [
+        ...CATALOGUE.filter((s) => s.famille !== 'autre').map((s) => ({ cle: s.type, nom: s.nom, couleur: couleurSportType(p, s.type) })),
+        ...GROUPES_AUTRES.flatMap((g) => [
+          { cle: `titre-${g}`, nom: g, couleur: p.texteMuet, titre: true },
+          ...CATALOGUE.filter((s) => s.groupe === g).map((s) => ({ cle: s.type, nom: s.nom, couleur: couleurSportType(p, s.type) })),
+        ]),
+      ]
+    : [
+        ...(avecTous ? [{ cle: null, nom: 'Tous les sports', couleur: p.texteMuet }] : []),
+        ...SPORTS_CYCLE.map((cle) => ({ cle, nom: SPORTS[cle as CleSport].nom, couleur: couleurSport(p, cle) })),
+      ];
   const point = (couleur: string, vide = false) => <View style={[styles.point, vide ? { borderColor: couleur, borderWidth: 2 } : { backgroundColor: couleur }]} />;
 
   return (
@@ -45,7 +57,7 @@ export function MenuDeroulantSport({ valeur, onChoisir, etiquette = 'Sport', ave
         accessibilityState={{ expanded: ouvert }}
         style={[styles.champ, { backgroundColor: sur === 'surface' ? p.surface2 : p.surface }]}
       >
-        {point(valeur ? couleurSport(p, valeur) : p.texteMuet, !valeur)}
+        {point(valeur ? couleurDe(valeur) : p.texteMuet, !valeur)}
         <Text style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>{nom}</Text>
         <Text style={{ color: p.texteDoux, fontSize: 18 }}>⌄</Text>
       </Pressable>
@@ -54,6 +66,13 @@ export function MenuDeroulantSport({ valeur, onChoisir, etiquette = 'Sport', ave
         <View accessibilityViewIsModal style={[styles.panneau, placement, { left: zone.gauche, width: zone.largeur, backgroundColor: p.surface, borderColor: p.traitFort }]}>
           <ScrollView contentContainerStyle={{ padding: 6 }} showsVerticalScrollIndicator={false}>
             {options.map((o) => {
+              if (o.titre) {
+                return (
+                  <Text key={o.cle} accessibilityRole="header" style={[typo.petit, styles.titre, { color: p.texteDoux }]}>
+                    {o.nom.toUpperCase()}
+                  </Text>
+                );
+              }
               const actif = (valeur ?? null) === o.cle;
               return (
                 <Pressable
@@ -85,5 +104,6 @@ const styles = StyleSheet.create({
   champ: { height: 48, flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: rayon.rond, paddingHorizontal: 18 },
   point: { width: 10, height: 10, borderRadius: 5 },
   panneau: { position: 'absolute', borderWidth: 1, borderRadius: rayon.bloc, overflow: 'hidden' },
+  titre: { paddingHorizontal: 10, paddingTop: 14, paddingBottom: 4, letterSpacing: 0.8 },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, paddingHorizontal: 10, borderRadius: 12 },
 });

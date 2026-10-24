@@ -1,4 +1,5 @@
-import type { Palette } from './couleurs';
+import { couleurDuType } from '../data/catalogue-sports';
+import { clair, type Palette } from './couleurs';
 
 // Catalogue des sports : mêmes clés, noms et couleurs que app/src/lib/sports.js.
 // La couleur est une clé de palette : elle change toute seule en thème clair.
@@ -21,4 +22,9 @@ export type CleSport = keyof typeof SPORTS;
 export function couleurSport(palette: Palette, cle?: string): string {
   const sport = cle && Object.hasOwn(SPORTS, cle) ? SPORTS[cle as CleSport] : SPORTS.autre;
   return palette[sport.couleur];
+}
+
+/** Couleur d'un sport précis (un type brut : TrailRun, Rowing…) dans la palette courante. Un type inconnu prend le gris neutre. */
+export function couleurSportType(palette: Palette, type?: string | null): string {
+  return couleurDuType(type, palette.fond === clair.fond ? 'clair' : 'sombre');
 }

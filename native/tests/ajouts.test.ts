@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normaliser } from '../src/data/structure.ts';
-import { distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, chargeEstimeeSortie, typeInitial } from '../src/data/ajouts.ts';
+import { CATALOGUE } from '../src/data/catalogue-sports.ts';
+import { normaliser, sportAvecStructure } from '../src/data/structure.ts';
+import { distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, chargeEstimeeSortie, typeInitial, SPORTS_AJOUT } from '../src/data/ajouts.ts';
 
 const date = '2026-10-23';
 
@@ -295,4 +296,26 @@ test('validerCompetition : refus des valeurs incohérentes', () => {
     'notes trop longues': { notes: 'n'.repeat(2001) },
   })) assert.equal(validerCompetition({ ...base, ...f } as typeof base, date).ok, false, nom);
   assert.equal(validerCompetition(base, date, { nom: 'x.gpx', contenu: 'pas un gpx' }).ok, false); // GPX invalide
+});
+
+test('tous les sports du catalogue sont proposés : la saisie enregistre le vrai sport, pas « Autre »', () => {
+  assert.equal(SPORTS_AJOUT.length, CATALOGUE.length);
+  assert.equal(cleDuType('NordicSki'), 'autre'); // sans famille : l'onglet « Autres » de la barre du haut
+  assert.equal(cleDuType('TrailRun'), 'course');
+  assert.equal(typeDeCle('autre'), 'Other'); // le filtre « Autres » seul ne dit pas quel sous-sport
+  assert.equal(typeDeCle('course'), 'Run');
+  const r = validerSortie({ ...formulaireSortieVide(), type: 'NordicSki', heures: '1', minutes: '30', distance: '18' }, AUJ, AUJ, 'Ski de fond');
+  assert.ok(r.ok);
+  if (r.ok) {
+    assert.equal(r.ligne.sport, 'NordicSki');
+    assert.equal(r.ligne.name, 'Ski de fond');
+  }
+  const s = validerSeance({ ...formulaireSeanceVide(), type: 'Rowing', duree: '45' }, date, 'Aviron', []);
+  assert.ok(s.ok);
+  if (s.ok) assert.equal(s.ligne.sport, 'Rowing');
+});
+
+test('les blocs restent réservés au vélo, à la course et à la natation (variantes comprises)', () => {
+  for (const t of ['Run', 'TrailRun', 'Ride', 'GravelRide', 'EMountainBikeRide', 'Swim']) assert.equal(sportAvecStructure(t), true, t);
+  for (const t of ['NordicSki', 'Rowing', 'WeightTraining', 'Hyrox', 'Triathlon']) assert.equal(sportAvecStructure(t), false, t);
 });

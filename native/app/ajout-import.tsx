@@ -4,6 +4,7 @@ import { ApercuImport } from '@/components/ApercuImport';
 import { Alert, Text } from 'react-native';
 import { EcranAjout } from '@/components/EcranAjout';
 import { apercuImport, type ApercuImport as Apercu } from '@/data/apercu-import';
+import { nomDuType } from '@/data/catalogue-sports';
 import { cleDuType, formulaireSortieVide, validerSortie } from '@/data/ajouts';
 import { formatDateCourte, dateIsoLocale } from '@/data/format';
 import { donneesAEcrire, lireActivite, TAILLE_MAX_IMPORT, versChamps, type ActiviteImportee, type ChampsImport, type DonneesImport } from '@/data/import-activite';
@@ -11,7 +12,6 @@ import { nomDeFichier } from '@/data/gpx';
 import { useAjouts } from '@/hooks/useAjouts';
 import { garderImport, viderImport } from '@/stores/import-en-attente';
 import { useMenu } from '@/stores/menu';
-import { SPORTS, type CleSport } from '@/theme/sports';
 import { useDateAjout } from '@/hooks/useDateAjout';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -62,7 +62,7 @@ export default function EcranAjoutImport() {
     }
   }
 
-  const nomSport = (type: string) => SPORTS[cleDuType(type) as CleSport].nom;
+  const nomSport = nomDuType;
 
   // « Enregistrer » dans la fenêtre : la même vérification et la même écriture que la saisie à la main
   async function enregistrer() {

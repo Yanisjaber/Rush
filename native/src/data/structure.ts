@@ -62,7 +62,7 @@ export const MAX_BLOCS = 40;
 const bornes = (v: number, min: number, max: number, repli: number): number => (Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : repli);
 
 const SPORTS_ALLURE = ['Run', 'TrailRun', 'VirtualRun', 'Swim', 'OpenWaterSwim'];
-const SPORTS_STRUCTURE = ['Ride', 'VirtualRide', 'MountainBikeRide', 'GravelRide', 'EBikeRide', ...SPORTS_ALLURE];
+const SPORTS_STRUCTURE = ['Ride', 'VirtualRide', 'MountainBikeRide', 'GravelRide', 'EBikeRide', 'EMountainBikeRide', ...SPORTS_ALLURE];
 
 /** Métriques disponibles selon le sport (type brut) : vélo = watts ou cardio, course et natation = allure ou cardio. */
 export const metriquesDuSport = (sport: string): Metrique[] => (SPORTS_ALLURE.includes(sport) ? ['pace', 'hr'] : ['power', 'hr']);
