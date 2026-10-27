@@ -24,6 +24,7 @@ import { avancementCycle, cycleVisible } from '@/data/cycles';
 import { familleAffichage, garderSeance } from '@/data/familles';
 import { dateIsoLocale, formatDistanceSport, formatDuree, formatHeuresMinutes, formatNombre } from '@/data/format';
 import { useAjouts } from '@/hooks/useAjouts';
+import { useAujourdhui } from '@/hooks/useAujourdhui';
 import { useDonneesCalendrier } from '@/hooks/useDonneesCalendrier';
 import { useMenu } from '@/stores/menu';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
@@ -49,7 +50,7 @@ export default function Calendrier() {
   const p = usePalette();
   const bas = useSafeAreaInsets().bottom;
   const { filtre } = useMenu();
-  const maintenant = useMemo(() => new Date(), []);
+  const maintenant = useAujourdhui(); // suit le changement de jour (minuit, retour au premier plan)
   const aujourdhui = dateIsoLocale(maintenant);
   const [cible, setCible] = useState({ annee: maintenant.getFullYear(), mois: maintenant.getMonth() });
   const [choisi, setChoisi] = useState(aujourdhui);

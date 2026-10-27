@@ -115,3 +115,9 @@ export function formatHeuresMinutes(secondes: number | null | undefined): string
   const s = Math.max(0, Math.round(secondes || 0));
   return `${Math.floor(s / 3600)}h${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}`;
 }
+
+/** Les millisecondes qui restent avant le prochain minuit (heure locale) : sert à garder « aujourd'hui » à jour (hooks/useAujourdhui). */
+export function msJusquaMinuit(maintenant: Date): number {
+  const minuit = new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate() + 1, 0, 0, 0, 0);
+  return minuit.getTime() - maintenant.getTime();
+}

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dateIsoLocale, formatDateCourte, formatDuree, formatDistanceSport, formatHeuresMinutes, formatJoursAvant, formatKm, periodeCourte } from '../src/data/format.ts';
+import { dateIsoLocale, msJusquaMinuit, formatDateCourte, formatDuree, formatDistanceSport, formatHeuresMinutes, formatJoursAvant, formatKm, periodeCourte } from '../src/data/format.ts';
 
 test('formatDuree : minutes seules, puis heures et minutes sur deux chiffres', () => {
   assert.equal(formatDuree(2400), '40 min');
@@ -70,4 +70,11 @@ test('formatJoursAvant : J-63, J-0 le jour même, J+3 une fois passé', () => {
   assert.equal(formatJoursAvant(63), 'J-63');
   assert.equal(formatJoursAvant(0), 'J-0');
   assert.equal(formatJoursAvant(-3), 'J+3');
+});
+
+test('msJusquaMinuit : le temps qui reste avant le prochain minuit local', () => {
+  assert.equal(msJusquaMinuit(new Date(2026, 9, 27, 23, 59, 0)), 60_000);
+  assert.equal(msJusquaMinuit(new Date(2026, 9, 27, 0, 0, 0)), 24 * 3600_000);
+  // fin de mois et d'année : le minuit suivant est bien le 1er
+  assert.equal(msJusquaMinuit(new Date(2026, 11, 31, 23, 0, 0)), 3600_000);
 });
