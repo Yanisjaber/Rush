@@ -58,7 +58,7 @@ export function useProfilSection(id: string) {
   }, []);
 
   const enregistrer = useCallback(async () => {
-    if (!section || envoi) return;
+    if (!section || envoi || !ligne) return; // sans profil chargé, on n'écrit rien (ça écraserait les vraies valeurs)
     setMessage('');
     setErreur('');
     const { propres, erreurs: e } = validerSection(section, valeurs);

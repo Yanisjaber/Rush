@@ -10,8 +10,9 @@
 // wipe=false (déconnexion seule) → supprime UNIQUEMENT la connexion
 //   (connexions_app). Les données importées restent.
 // wipe=true (déconnexion + suppression) :
-//   provider=strava → supprime power_profile, daily_metrics, activities,
-//     strava_connections, et remet à zéro ftp/weight (issus de Strava) dans user_profiles.
+//   provider=strava → supprime power_profile, daily_metrics, les activités
+//     venues de Strava (pas les séances manuelles), la connexion (connexions_app),
+//     et remet à zéro ftp/weight (issus de Strava) dans user_profiles.
 //
 // Utilise la service_role (bypass RLS) mais ne touche QUE les lignes de
 // l'utilisateur identifié par le JWT → un user ne peut effacer que ses données.
@@ -72,7 +73,7 @@ Deno.serve(async (req) => {
       }
       // Liste blanche : on ne laisse jamais le client choisir une table au hasard.
       if (!STEP_TABLES.includes(only)) return json({ error: "invalid_step" }, 400);
-      const { error } = await sb.from(only).delete().eq("user_id", uid);
+      const { error } = await effacerTable(sb, only, uid);
       if (error) { console.error(`delete ${only}:`, error.message); return json({ error: `delete_${only}_failed`, detail: error.message }, 500); }
       return json({ ok: true, step: only });
     }
@@ -84,7 +85,7 @@ Deno.serve(async (req) => {
     const tables: string[] = wipe ? STEP_TABLES : [];
 
     for (const table of tables) {
-      const { error } = await sb.from(table).delete().eq("user_id", uid);
+      const { error } = await effacerTable(sb, table, uid);
       if (error) { console.error(`delete ${table}:`, error.message); return json({ error: `delete_${table}_failed`, detail: error.message }, 500); }
       deleted[table] = true;
     }
@@ -110,6 +111,16 @@ Deno.serve(async (req) => {
     return json({ error: e.message || String(e) }, 500);
   }
 });
+
+// Efface les lignes d'une table pour cet utilisateur. Pour `activities`, on ne
+// supprime QUE les séances venues de Strava (strava_id renseigné) : les séances
+// saisies à la main ou importées d'un fichier restent, avec leur force/Hyrox.
+// daily_metrics est ensuite recalculé par le déclencheur sur `activities`.
+function effacerTable(sb: any, table: string, uid: string) {
+  let q = sb.from(table).delete().eq("user_id", uid);
+  if (table === "activities") q = q.not("strava_id", "is", null);
+  return q;
+}
 
 function json(body: any, status = 200): Response {
   return new Response(JSON.stringify(body), {

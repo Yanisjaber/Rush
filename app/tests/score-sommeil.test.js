@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scorePalier, efficacitePct, latenceMin, scoreNuit, qualificatifDe, tonDe, preparer, texteHM, moyenneHeure, analyserHoraires, analyser, signauxPhysio, synthese, planAction, comparaisons, bandeStress } from '../src/lib/data/score-sommeil.js';
+import { scorePalier, efficacitePct, latenceMin, scoreNuit, qualificatifDe, tonDe, preparer, texteHM, moyenneHeure, analyserHoraires, analyser, signauxPhysio, synthese, planAction, comparaisons, bandeStress, ecartHeures } from '../src/lib/data/score-sommeil.js';
 
 const nuitParfaite = (date = '2026-10-10') => ({
   date, bedtime: `${date} 23:00`, wake_time: `${date} 07:30`, total_sec: 28800, awake_sec: 1200, awake_count: 1,
@@ -132,4 +132,11 @@ test('bande de stress', () => {
   assert.equal(bandeStress(60), 'moyen');
   assert.equal(bandeStress(90), 'élevé');
   assert.equal(bandeStress(null), '');
+});
+
+test('écart entre deux heures : par le chemin le plus court, minuit compris', () => {
+  assert.equal(ecartHeures(30, 23 * 60 + 30), 60); // 00h30 contre 23h30
+  assert.equal(ecartHeures(23 * 60 + 30, 30), -60);
+  assert.equal(ecartHeures(8 * 60, 7 * 60), 60);
+  assert.equal(ecartHeures(null, 100), null);
 });

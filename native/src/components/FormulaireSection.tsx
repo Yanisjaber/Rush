@@ -20,6 +20,14 @@ export function FormulaireSection({ id }: { id: string }) {
       </View>
     );
   }
+  // Profil non chargé : on n'affiche que l'erreur. Un formulaire vide enregistré écraserait le vrai profil.
+  if (f.erreur && !f.ligne) {
+    return (
+      <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
+        <Text style={[typo.petit, { color: p.texte }]}>{f.erreur}</Text>
+      </View>
+    );
+  }
   return (
     <View style={{ gap: espace.e4 }}>
       {f.demo ? <Text style={[typo.petit, { color: p.texteMuet }]}>Mode démo : rien n'est enregistré.</Text> : null}

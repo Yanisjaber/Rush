@@ -156,9 +156,10 @@ export function modele(sport: string, id: string): ModeleObjectif | null {
   return Object.hasOwn(CATALOGUE, sport) ? CATALOGUE[sport].find((m) => m.id === id) || null : null;
 }
 export const estManuel = (m: ModeleObjectif | null | undefined): boolean => m?.calc === 'manual' || m?.calc === 'manual_lower';
-const estCumul = (m: ModeleObjectif): boolean => m.calc.startsWith('sum_') || m.calc.startsWith('avg_');
+// Un cumul grandit au fil de l'année (on peut lui tracer un rythme attendu et une projection) ; une moyenne par semaine se compare directement à sa cible
+const estCumul = (m: ModeleObjectif): boolean => m.calc.startsWith('sum_');
 
-const semainesEcoulees = (annee: number, maintenant: Date): number => (annee === maintenant.getFullYear() ? Math.max(1, Math.floor((maintenant.getTime() - new Date(annee, 0, 1).getTime()) / (7 * 86400000))) : 52);
+const semainesEcoulees = (annee: number, maintenant: Date): number => (annee === maintenant.getFullYear() ? Math.max(1, (maintenant.getTime() - new Date(annee, 0, 1).getTime()) / (7 * 86400000)) : 52);
 const partAnnee = (annee: number, maintenant: Date): number => Math.min(1, (maintenant.getTime() - new Date(annee, 0, 1).getTime()) / (365 * 86400000));
 
 /** Valeur actuelle d'un objectif, calculée sur les activités de l'année (ou la saisie pour un objectif manuel). */

@@ -178,6 +178,12 @@ export function moyenneHeure(heures) {
   return liste.length ? retablirMidi(moy(liste.map(decalerMidi))) : null;
 }
 
+/** Écart signé entre deux heures de la journée (en minutes), par le chemin le plus court : 00h30 − 23h30 = +60, pas −1380. */
+export function ecartHeures(a, b) {
+  if (a == null || b == null) return null;
+  return ((((a - b) % 1440) + 1440 + 720) % 1440) - 720;
+}
+
 // --- Analyses ------------------------------------------------------------------------------------------------------------
 
 /** Régularité, durée moyenne, objectifs de coucher et de lever, composant le plus faible du score. null sans données. */

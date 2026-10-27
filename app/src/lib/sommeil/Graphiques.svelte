@@ -2,7 +2,7 @@
   import Bloc from '../components/Bloc.svelte';
   import GrapheNuits from '../components/charts/GrapheNuits.svelte';
   import { COULEURS_PHASE } from './palette.js';
-  import { comparaisons, moyenneDe, bandeStress, texteHM, texteHMdepuisSec } from '../data/score-sommeil.js';
+  import { comparaisons, ecartHeures, moyenneDe, bandeStress, texteHM, texteHMdepuisSec } from '../data/score-sommeil.js';
 
   // Graphiques : l'évolution des 30 dernières nuits (durée et score, phases, HRV, respiration, SpO2, stress)
   // et deux comparaisons (7 derniers jours contre les 7 précédents ; semaine contre week-end).
@@ -20,15 +20,16 @@
   };
   const comp = $derived(comparaisons(nuits));
 
-  // Lignes de comparaison : [libellé, clé, formatage d'une valeur, formatage de l'écart]
+  // Lignes de comparaison : [libellé, clé, formatage d'une valeur, formatage de l'écart, heure de la journée ?]
   const minHM = (v) => texteHM(Math.round(v));
   function lignes(a, b, definitions) {
     return definitions
-      .map(([libelle, cle, fmt, fmtEcart]) => {
+      .map(([libelle, cle, fmt, fmtEcart, circulaire]) => {
         const va = a[cle];
         const vb = b[cle];
         if (va == null && vb == null) return null;
-        const ecart = va != null && vb != null ? va - vb : null;
+        // une heure de la journée est circulaire : 00h30 contre 23h30, c'est 1 h d'écart (pas 23 h)
+        const ecart = va != null && vb != null ? (circulaire ? ecartHeures(va, vb) : va - vb) : null;
         return { libelle, avant: vb != null ? fmt(vb) : '—', apres: va != null ? fmt(va) : '—', delta: ecart == null ? '—' : ecart === 0 ? '=' : `${ecart > 0 ? '↑' : '↓'} ${fmtEcart(Math.abs(ecart))}` };
       })
       .filter(Boolean);
@@ -42,8 +43,8 @@
   const defSemaine = [
     ['Durée moyenne', 'dureeSec', (v) => texteHMdepuisSec(v), (v) => texteHMdepuisSec(v)],
     ['Score moyen', 'score', (v) => String(Math.round(v)), (v) => `${Math.round(v)} pts`],
-    ['Heure de coucher', 'coucherMin', minHM, (v) => `${Math.round(v)} min`],
-    ['Heure de réveil', 'leverMin', minHM, (v) => `${Math.round(v)} min`],
+    ['Heure de coucher', 'coucherMin', minHM, minHM, true],
+    ['Heure de réveil', 'leverMin', minHM, minHM, true],
   ];
 </script>
 
