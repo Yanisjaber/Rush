@@ -4,6 +4,7 @@
   import Apercu from '../lib/sommeil/Apercu.svelte';
   import Graphiques from '../lib/sommeil/Graphiques.svelte';
   import Conseils from '../lib/sommeil/Conseils.svelte';
+  import Bouton from '../lib/components/Bouton.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { chargerSommeil } from '../lib/data/api.js';
   import { sommeilDemo } from '../lib/data/demo.js';
@@ -23,13 +24,23 @@
   // date de la nuit affichée dans l'aperçu, dans l'adresse (?nuit=2026-10-13) ; sans elle, la plus récente
   const choisie = $derived(route.q.nuit || null);
 
+  // Numéro du chargement en cours : une réponse en retard d'un chargement plus ancien est ignorée
+  let numero = 0;
   async function charger(userId) {
+    const moi = ++numero;
+    etat = { chargement: true, erreur: '', brutes: [] };
     if (demo) {
       etat = { chargement: false, erreur: '', brutes: sommeilDemo() };
       return;
     }
     if (!userId) return;
-    const r = await chargerSommeil(userId, 90);
+    let r;
+    try {
+      r = await chargerSommeil(userId, 90);
+    } catch {
+      r = { data: null, erreur: 'Impossible de charger ton sommeil.' };
+    }
+    if (moi !== numero) return;
     etat = { chargement: false, erreur: r.erreur, brutes: r.data || [] };
   }
   const userId = $derived(demo ? 'demo' : auth.session?.user?.id);
@@ -57,7 +68,10 @@
   {#if etat.chargement}
     <p class="info" role="status">Chargement du sommeil…</p>
   {:else if etat.erreur}
-    <p class="alerte" role="alert">{etat.erreur}</p>
+    <div class="alerte" role="alert">
+      <p>{etat.erreur} Vérifie ta connexion internet, puis réessaie.</p>
+      <Bouton variante="discret" onclick={() => charger(userId)}>Réessayer</Bouton>
+    </div>
   {:else if !nuits.length}
     <p class="info">Aucune nuit pour l'instant. La connexion officielle Garmin arrive bientôt.</p>
   {:else if onglet === 'graphiques'}
@@ -111,6 +125,10 @@
     color: var(--texte-doux);
   }
   .alerte {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
     padding: 10px 14px;
     border: 1px solid var(--danger);
     border-radius: var(--rayon-l);

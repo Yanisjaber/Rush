@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { chargerActivitesBilan, chargerObjectifsAnnuels } from '@/data/api';
-import type { ObjectifAnnuel } from '@/data/bilan';
+import { fusionnerChargement, type ObjectifAnnuel } from '@/data/bilan';
 import { activitesBilanDemo, objectifsAnnuelsDemo } from '@/data/demo';
 import { useAuth } from '@/stores/auth';
 import type { Seance } from '@/data/types';
@@ -12,19 +12,29 @@ export function useDonneesBilan(): {
   objectifs: ObjectifAnnuel[];
   chargement: boolean;
   erreur: string;
+  /** Y a-t-il de quoi afficher (au moins les activités chargées une fois) ? Faux : seul le message d'erreur et « Réessayer » s'affichent. */
+  pret: boolean;
   actualisation: boolean;
   recharger: () => Promise<void>;
 } {
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
-  const demoDonnees = useMemo(() => (demo ? { brutes: activitesBilanDemo(new Date()), objectifs: objectifsAnnuelsDemo(new Date()), erreur: '' } : null), [demo]);
-  const [reel, setReel] = useState<{ userId: string; brutes: Seance[]; objectifs: ObjectifAnnuel[]; erreur: string } | null>(null);
+  const demoDonnees = useMemo(() => (demo ? { brutes: activitesBilanDemo(new Date()), objectifs: objectifsAnnuelsDemo(new Date()), erreur: '', pret: true } : null), [demo]);
+  const [reel, setReel] = useState<{ userId: string; brutes: Seance[]; objectifs: ObjectifAnnuel[]; erreur: string; pret: boolean } | null>(null);
   const [actualisation, setActualisation] = useState(false);
 
   const charger = useCallback(async () => {
     if (!userId) return;
-    const [acts, obj] = await Promise.all([chargerActivitesBilan(userId, new Date().getFullYear()), chargerObjectifsAnnuels(userId)]);
-    setReel({ userId, brutes: acts.data ?? [], objectifs: obj.data ?? [], erreur: acts.erreur || obj.erreur });
+    let acts: Awaited<ReturnType<typeof chargerActivitesBilan>>;
+    let obj: Awaited<ReturnType<typeof chargerObjectifsAnnuels>>;
+    try {
+      [acts, obj] = await Promise.all([chargerActivitesBilan(userId, new Date().getFullYear()), chargerObjectifsAnnuels(userId)]);
+    } catch {
+      acts = { data: null, erreur: 'Impossible de charger ton bilan. Vérifie ta connexion.' };
+      obj = { data: null, erreur: '' };
+    }
+    // Un échec garde ce qui est déjà affiché (du même compte) au lieu de vider l'écran
+    setReel((avant) => ({ userId, ...fusionnerChargement(avant && avant.userId === userId ? avant : null, acts, obj) }));
   }, [userId]);
 
   useEffect(() => {
@@ -42,5 +52,5 @@ export function useDonneesBilan(): {
 
   // Les données d'un autre compte ne s'affichent jamais
   const donnees = demo ? demoDonnees : reel && reel.userId === userId ? reel : null;
-  return { brutes: donnees?.brutes ?? [], objectifs: donnees?.objectifs ?? [], chargement: !donnees, erreur: donnees?.erreur ?? '', actualisation, recharger };
+  return { brutes: donnees?.brutes ?? [], objectifs: donnees?.objectifs ?? [], chargement: !donnees, erreur: donnees?.erreur ?? '', pret: donnees?.pret ?? false, actualisation, recharger };
 }

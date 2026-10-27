@@ -14,7 +14,7 @@
   import { chargerActivitesBilan, chargerObjectifsAnnuels } from '../lib/data/api.js';
   import { activitesBilanDemo, objectifsAnnuelsDemo } from '../lib/data/demo.js';
   import {
-    normaliser, activitesAnnee, activitesAnneePrecedente, sommer, ecartPct, anneesDisponibles, avancement, recordsVolume, recordRecent,
+    normaliser, fusionnerChargement, activitesAnnee, activitesAnneePrecedente, sommer, ecartPct, anneesDisponibles, avancement, recordsVolume, recordRecent,
     cumulParAnnee, volumeMensuel, repartitionSport, NOM_SPORT_BILAN, SPORTS_BILAN, familleBilanDuFiltre,
   } from '../lib/data/bilan.js';
   import { formatDateLongue } from '../lib/utils/format.js';
@@ -28,17 +28,40 @@
   const choisirAnnee = (a) => aller(construireAdresse({ sport: menu.filtre, page: '/bilan', sous: Number(a) === maintenant.getFullYear() ? '' : String(a) }));
   // graphique de cumul : distance ou dénivelé, dans l'adresse (?metrique=d_plus)
   const metrique = $derived(route.q.metrique === 'd_plus' ? 'd_plus' : 'distance_km');
-  let etat = $state({ chargement: true, erreur: '', brutes: [], objectifs: [] });
+  let etat = $state({ chargement: true, erreur: '', brutes: [], objectifs: [], pret: false });
   let panneau = $state({ ouvert: false, objectif: null });
 
+  let sequence = 0; // numéro du dernier chargement lancé : une réponse plus ancienne que lui est ignorée
+  let dernierUtilisateur = null;
   async function charger(userId, a) {
     if (demo) {
-      etat = { chargement: false, erreur: '', brutes: activitesBilanDemo(maintenant), objectifs: objectifsAnnuelsDemo(maintenant) };
+      etat = { chargement: false, erreur: '', brutes: activitesBilanDemo(maintenant), objectifs: objectifsAnnuelsDemo(maintenant), pret: true };
       return;
     }
     if (!userId) return;
-    const [acts, obj] = await Promise.all([chargerActivitesBilan(userId, a), chargerObjectifsAnnuels(userId)]);
-    etat = { chargement: false, erreur: acts.erreur || obj.erreur, brutes: acts.data || [], objectifs: obj.data || [] };
+    // Les données d'un autre compte ne restent jamais à l'écran
+    if (dernierUtilisateur !== userId) {
+      dernierUtilisateur = userId;
+      etat = { chargement: true, erreur: '', brutes: [], objectifs: [], pret: false };
+    }
+    const moi = ++sequence;
+    let acts;
+    let obj;
+    try {
+      [acts, obj] = await Promise.all([chargerActivitesBilan(userId, a), chargerObjectifsAnnuels(userId)]);
+    } catch (e) {
+      console.error('[bilan] chargement', e?.name || '');
+      acts = { data: null, erreur: 'Impossible de charger ton bilan. Vérifie ta connexion.' };
+      obj = { data: null, erreur: '' };
+    }
+    if (moi !== sequence) return;
+    // Un échec garde ce qui est déjà affiché (et montre le bandeau) au lieu de vider l'écran
+    etat = { chargement: false, ...fusionnerChargement(etat, acts, obj) };
+  }
+  // Bouton « Réessayer » : pas de spinner plein écran s'il y a déjà un bilan à montrer
+  function reessayer() {
+    if (!etat.pret) etat.chargement = true;
+    charger(userId, new Date().getFullYear());
   }
   const userId = $derived(demo ? 'demo' : auth.session?.user?.id);
   // On recharge quand l'utilisateur change (les trois années sont chargées d'un coup ; changer d'année ne recharge pas)
@@ -133,9 +156,14 @@
 
   {#if etat.chargement}
     <p class="info" role="status">Chargement du bilan…</p>
-  {:else if etat.erreur}
-    <p class="alerte" role="alert">{etat.erreur}</p>
   {:else}
+    {#if etat.erreur}
+      <div class="alerte" role="alert">
+        <p>{etat.erreur}</p>
+        <Bouton variante="discret" onclick={reessayer}>Réessayer</Bouton>
+      </div>
+    {/if}
+  {#if etat.pret}
     <div class="tuiles">
       {#each tuiles as t (t.cle)}
         {@const e = ecartPct(t.val, t.prec)}
@@ -256,6 +284,7 @@
       </Bloc>
     </div>
   {/if}
+  {/if}
 </main>
 
 <PanneauObjectif
@@ -314,6 +343,12 @@
     font-size: 13px;
   }
   .alerte {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin-bottom: 16px;
     padding: 10px 14px;
     border: 1px solid var(--danger);
     border-radius: var(--rayon-l);

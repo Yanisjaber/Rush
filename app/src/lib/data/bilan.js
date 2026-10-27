@@ -249,6 +249,17 @@ export function repartitionSport(acts) {
   return liste.map((x) => ({ ...x, part: total ? Math.round((x.heures / total) * 100) : 0 }));
 }
 
+// --- Chargement : fusionner un résultat avec ce qui est déjà affiché ------------------------------------------------------
+
+/**
+ * Résultat d'un chargement (activités + objectifs) fusionné avec ce qui était déjà affiché (`avant`, du même utilisateur, ou null).
+ * Un échec garde les données précédentes au lieu de vider l'écran ; `pret` dit si on a au moins des activités à montrer.
+ */
+export function fusionnerChargement(avant, acts, obj) {
+  const brutes = acts.data ?? avant?.brutes ?? null;
+  return { brutes: brutes ?? [], objectifs: obj.data ?? avant?.objectifs ?? [], erreur: acts.erreur || obj.erreur || '', pret: brutes != null };
+}
+
 // --- Validation d'un objectif ---------------------------------------------------------------------------------------------
 
 /** Vérifie le formulaire d'un objectif annuel. Renvoie { valeurs, erreurs } (valeurs = null s'il y a des erreurs). */

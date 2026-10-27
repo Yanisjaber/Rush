@@ -52,7 +52,7 @@ export default function Bilan() {
   const [onglet, setOnglet] = useState<OngletBilan>('resume');
   const [metrique, setMetrique] = useState<MetriqueCumul>('distance_km');
   const [mesureRepartition, setMesureRepartition] = useState<MetriqueCumul>('heures'); // la mesure de la répartition par sport (le temps par défaut)
-  const { brutes, objectifs, chargement, erreur, actualisation, recharger } = useDonneesBilan();
+  const { brutes, objectifs, chargement, erreur, pret, actualisation, recharger } = useDonneesBilan();
   const annee = anneeChoisie;
 
   const toutes = useMemo(() => brutes.map(normaliser), [brutes]);
@@ -117,13 +117,17 @@ export default function Bilan() {
           <View accessible accessibilityLabel="Chargement du bilan" style={styles.attente}>
             <ActivityIndicator color={p.texteDoux} />
           </View>
-        ) : erreur ? (
-          <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
-            <Text style={[typo.petit, { color: p.texte }]}>{erreur}</Text>
-          </View>
         ) : (
           <>
-            {onglet === 'resume' ? (
+            {erreur ? (
+              <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
+                <Text style={[typo.petit, { color: p.texte }]}>{erreur}</Text>
+                <Bouton variante="discret" onPress={() => void recharger()}>
+                  Réessayer
+                </Bouton>
+              </View>
+            ) : null}
+            {pret && onglet === 'resume' ? (
               <>
                 {grand ? (
                   <Dossard etiquette={enCours ? 'Depuis janvier' : `En ${annee}`} valeur={grand.val} uniteValeur={grand.unite} sport={filtre !== 'tout' ? filtre : undefined} chiffreMax={44}>
@@ -257,7 +261,7 @@ export default function Bilan() {
               </>
             ) : null}
 
-            {onglet === 'rythme' ? (
+            {pret && onglet === 'rythme' ? (
               <>
                 <Bloc titre={enKm ? 'Distance par mois' : 'Heures par mois'}>
                   <BarresMois
@@ -319,7 +323,7 @@ export default function Bilan() {
               </>
             ) : null}
 
-            {onglet === 'records' ? (
+            {pret && onglet === 'records' ? (
               <>
                 {records.length ? (
                   <Bloc titre={`Records de ${annee}`}>
@@ -367,7 +371,7 @@ const styles = StyleSheet.create({
   page: { flex: 1 },
   contenu: { paddingHorizontal: espace.e4, paddingTop: espace.e4, gap: espace.e4 },
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
-  avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
+  avis: { gap: espace.e2, borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
   colonnesDossard: { flexDirection: 'row', borderTopWidth: 1.5, borderStyle: 'dashed', paddingTop: espace.e2, marginTop: -espace.e2 },
   valeurColonne: { fontFamily: police.titre700, fontSize: 24, lineHeight: 28, fontVariant: ['tabular-nums'] },
   pistes: { marginTop: espace.e3 },

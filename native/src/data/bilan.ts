@@ -456,6 +456,29 @@ export function repartitionSport(acts: ActiviteBilan[], mesure: MetriqueCumul = 
   return liste.map((x) => ({ ...x, part: total ? Math.round((x.valeur / total) * 100) : 0 }));
 }
 
+// --- Chargement : fusionner un résultat avec ce qui est déjà affiché ------------------------------------------------------
+
+/** Ce que le Bilan garde en mémoire : les activités brutes, les objectifs, le message d'erreur éventuel et « a-t-on de quoi afficher ». */
+export interface ChargementBilan<S> {
+  brutes: S[];
+  objectifs: ObjectifAnnuel[];
+  erreur: string;
+  pret: boolean;
+}
+
+/**
+ * Résultat d'un chargement (activités + objectifs) fusionné avec ce qui était déjà affiché (`avant`, du même utilisateur, ou null).
+ * Un échec garde les données précédentes au lieu de vider l'écran ; `pret` dit si on a au moins des activités à montrer.
+ */
+export function fusionnerChargement<S>(
+  avant: Pick<ChargementBilan<S>, 'brutes' | 'objectifs'> | null,
+  acts: { data: S[] | null; erreur: string },
+  obj: { data: ObjectifAnnuel[] | null; erreur: string },
+): ChargementBilan<S> {
+  const brutes = acts.data ?? avant?.brutes ?? null;
+  return { brutes: brutes ?? [], objectifs: obj.data ?? avant?.objectifs ?? [], erreur: acts.erreur || obj.erreur || '', pret: brutes != null };
+}
+
 // --- Validation d'un objectif ---------------------------------------------------------------------------------------------
 
 /** Vérifie le formulaire d'un objectif annuel. Renvoie { valeurs, erreurs } (valeurs = null s'il y a des erreurs). */

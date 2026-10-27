@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   activitesAnnee, activitesAnneePrecedente, anneesDisponibles, avancement, cumulParAnnee, ecartPct, familleBilan, familleBilanDuFiltre, modele, normaliser,
-  kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
+  fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
 } from '../src/data/bilan.ts';
 import { activitesBilanDemo, objectifsAnnuelsDemo } from '../src/data/demo.ts';
 
@@ -261,4 +261,18 @@ test('objectif « par semaine » : une moyenne, sans repère ni projection ; sem
   assert.equal(av.repere, null);
   assert.equal(av.projection, null);
   assert.ok(Math.abs((av.actuel ?? 0) - 13 / (13.5 / 7)) < 0.01);
+});
+
+test('fusionnerChargement : un échec garde ce qui est déjà affiché, sans activités on ne montre que l\'erreur', () => {
+  const obj = { id: 'g', annee: 2026, sport: 'tous', template: 'all_hours', target: 100 };
+  const avant = { brutes: [{ id: 1 }], objectifs: [obj] };
+  const r1 = fusionnerChargement(avant, { data: null, erreur: 'Impossible de charger tes activités.' }, { data: [], erreur: '' });
+  assert.deepEqual(r1.brutes, [{ id: 1 }]);
+  assert.equal(r1.pret, true);
+  assert.equal(r1.erreur, 'Impossible de charger tes activités.');
+  const r2 = fusionnerChargement(avant, { data: [{ id: 3 }], erreur: '' }, { data: null, erreur: 'Impossible de charger tes objectifs.' });
+  assert.deepEqual(r2.objectifs, [obj]);
+  assert.equal(r2.pret, true);
+  const r3 = fusionnerChargement(null, { data: null, erreur: 'x' }, { data: [], erreur: '' });
+  assert.deepEqual([r3.brutes, r3.pret, r3.erreur], [[], false, 'x']);
 });

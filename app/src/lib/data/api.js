@@ -398,6 +398,7 @@ export async function chargerActivitesBilan(userId, annee) {
       .gte('start_date_local', `${annee - 2}-01-01`)
       .lte('start_date_local', `${annee}-12-31T23:59:59`)
       .order('start_date_local', { ascending: true })
+      .order('id', { ascending: true }) // second critère : sans lui, deux séances à la même heure peuvent être doublées ou sautées entre deux pages
       .range(page * TAILLE_PAGE, (page + 1) * TAILLE_PAGE - 1);
     if (r.error) {
       console.error('[app/api] bilan', r.error.code || '');

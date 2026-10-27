@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { familleBilan, normaliser, activitesAnnee, activitesAnneePrecedente, sommer, ecartPct, anneesDisponibles, modele, valeurActuelle, avancement, recordsVolume, recordRecent, cumulParAnnee, volumeMensuel, repartitionSport, validerObjectif, CATALOGUE } from '../src/lib/data/bilan.js';
+import { familleBilan, normaliser, activitesAnnee, activitesAnneePrecedente, sommer, ecartPct, anneesDisponibles, modele, valeurActuelle, avancement, recordsVolume, recordRecent, cumulParAnnee, volumeMensuel, repartitionSport, validerObjectif, fusionnerChargement, CATALOGUE } from '../src/lib/data/bilan.js';
 
 const a = (iso, sport, distance = 0, minutes = 60, dplus = 0, tss = 50, name = 'x') => ({ id: iso + sport, name, iso, sport, duree_min: minutes, distance_km: distance, d_plus: dplus, tss });
 const MAINTENANT = new Date(2026, 9, 12, 12); // 12 octobre 2026
@@ -142,4 +142,22 @@ test('séances par semaine en début d\'année : des semaines à virgule, pas ar
   const acts = Array.from({ length: 13 }, (_, i) => a(`2026-01-${String(i + 1).padStart(2, '0')}`, 'course'));
   const v = valeurActuelle({ sport: 'tous', template: 'all_sess_w', target: 4 }, acts, 2026, new Date(2026, 0, 14, 12));
   assert.ok(Math.abs(v - 13 / (13.5 / 7)) < 0.01, `attendu ~6,7 séances/sem, obtenu ${v}`);
+});
+
+test('chargement : un échec garde ce qui est déjà affiché, sans activités on ne montre que l\'erreur', () => {
+  const avant = { brutes: [{ id: 1 }], objectifs: [{ id: 'g' }] };
+  // tout réussit
+  assert.deepEqual(fusionnerChargement(null, { data: [{ id: 2 }], erreur: '' }, { data: [], erreur: '' }), { brutes: [{ id: 2 }], objectifs: [], erreur: '', pret: true });
+  // les activités échouent : on garde les anciennes, avec le message
+  const r1 = fusionnerChargement(avant, { data: null, erreur: 'Impossible de charger tes activités.' }, { data: [], erreur: '' });
+  assert.deepEqual(r1.brutes, [{ id: 1 }]);
+  assert.equal(r1.pret, true);
+  assert.equal(r1.erreur, 'Impossible de charger tes activités.');
+  // les objectifs échouent : le bilan reste visible, les anciens objectifs aussi
+  const r2 = fusionnerChargement(avant, { data: [{ id: 3 }], erreur: '' }, { data: null, erreur: 'Impossible de charger tes objectifs.' });
+  assert.deepEqual(r2.objectifs, [{ id: 'g' }]);
+  assert.equal(r2.pret, true);
+  // premier chargement raté : rien à montrer
+  const r3 = fusionnerChargement(null, { data: null, erreur: 'x' }, { data: [], erreur: '' });
+  assert.deepEqual([r3.brutes, r3.pret, r3.erreur], [[], false, 'x']);
 });
