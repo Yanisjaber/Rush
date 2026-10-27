@@ -269,7 +269,7 @@ function LogosNotes({ notes }: { notes: Note[] }) {
 
 function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; onPress: () => void }) {
   const p = usePalette();
-  const marques = jour.dansMois ? marquesDe(jour) : [];
+  const marques = marquesDe(jour);
   const label = [
     dateLongue(jour.iso),
     ...jour.objectifs.map((o) => `compétition : ${o.name}`),
@@ -279,16 +279,8 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
     ...jour.seances.map((s) => `${s.name || nomSport(s.sport)}, ${formatDuree(s.moving_time)}`),
     ...jour.planifiees.map((x) => `séance prévue : ${x.name || nomSport(x.sport)}`),
   ].join(', ');
-  // Un jour d'un autre mois : juste son numéro, très pâle (pas de case, pas de points, pas touchable, ignoré des lecteurs d'écran)
-  if (!jour.dansMois) {
-    return (
-      <View style={styles.case} accessible={false} importantForAccessibility="no-hide-descendants">
-        <View style={styles.numero}>
-          <Text style={[styles.numeroTexte, { color: p.texteMuet, opacity: 0.4 }]}>{jour.num}</Text>
-        </View>
-      </View>
-    );
-  }
+  // Un jour d'un autre mois s'affiche comme les autres (ses séances comptent dans la colonne « Sem. »), mais atténué
+  const voisin = !jour.dansMois;
   // Le jour se teinte de gris, d'autant plus fort que sa charge est grande (de 10 % à 40 % d'opacité) : aucune couleur de sport sur les cases, les pastilles les portent
   const teinte = teinteJour(jour);
   const fond = teinte ? avecAlpha(p.sportNeutre, 0.1 + 0.3 * teinte.force) : undefined;
@@ -298,7 +290,7 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
       accessibilityRole="button"
       accessibilityState={{ selected: choisi }}
       accessibilityLabel={label}
-      style={[styles.case, fond ? { backgroundColor: fond } : null, choisi && { borderColor: p.texte }]}
+      style={[styles.case, fond ? { backgroundColor: fond } : null, choisi && { borderColor: p.texte }, voisin && styles.voisin]}
     >
       {jour.cycles.length ? (
         // Les cycles d'entraînement : une bande de la couleur du cycle au bas de la case, deux au plus (l'une au-dessus de l'autre)
@@ -605,6 +597,7 @@ const styles = StyleSheet.create({
   // Aujourd'hui : un carré arrondi, serré autour du chiffre (la même hauteur totale que les autres jours : 22 + 2 × 2)
   aujourdhui: { width: 24, height: 22, borderRadius: 6, marginVertical: 2 },
   numeroTexte: { fontFamily: police.titre700, fontSize: 16, lineHeight: 20, fontVariant: ['tabular-nums'] },
+  voisin: { opacity: 0.5 },
   points: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 10 },
   point: { width: 6, height: 6, borderRadius: 3 },
   carre: { width: 6, height: 6, borderRadius: 1.5, borderWidth: 1 },

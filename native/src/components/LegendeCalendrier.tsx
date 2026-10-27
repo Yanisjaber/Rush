@@ -63,7 +63,7 @@ export function LegendeCalendrier() {
           precision: 'Le chiffre est dans un carré clair.',
         },
         { marque: cases(undefined, p.texte), titre: 'Jour choisi', precision: 'Un contour : son détail s’affiche sous la grille.' },
-        { marque: <Text style={[typo.micro, { color: p.texteMuet, opacity: 0.4 }]}>30</Text>, titre: 'Jour d’un autre mois', precision: 'Un chiffre très pâle, sans rien dedans.' },
+        { marque: <Text style={[typo.micro, { color: p.texte, opacity: 0.5 }]}>30</Text>, titre: 'Jour d’un autre mois', precision: 'Atténué. Ses séances comptent dans la colonne « Sem. ».' },
       ],
     },
     {
