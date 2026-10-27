@@ -302,3 +302,47 @@ export function chiffresSemaine(semaine: JourGrille[], filtre: string, aujourdhu
   if (!(valeur > 0)) return { heures, secondes, principale: null };
   return { heures, secondes, principale: { valeur: unite === 'km' ? Math.round(valeur * 10) / 10 : Math.round(valeur), unite } };
 }
+
+/** Ce que le calendrier garde d'un mois : séances, séances prévues, compétitions, notes, repos, cycles et séries de force. */
+export interface DonneesCalendrier {
+  seances: Seance[];
+  planifiees: Prevue[];
+  objectifs: Prevue[];
+  notes: Note[];
+  repos: string[];
+  cycles: Cycle[];
+  series: { date: string }[];
+}
+
+interface Reponse<T> {
+  data: T | null;
+  erreur: string;
+}
+
+/**
+ * Range les réponses d'un chargement. Quand une requête échoue, on garde ce qu'on affichait déjà pour ce mois (`precedent`) au lieu de vider la grille :
+ * un rafraîchissement raté hors ligne ne doit pas faire croire que le mois est vide. Sans données précédentes, la partie en échec reste vide.
+ * Les cycles et les séries, eux, ne bloquent jamais : en cas d'échec, on garde aussi l'ancien.
+ */
+export function assemblerDonnees(
+  precedent: DonneesCalendrier | null,
+  s: Reponse<Seance[]>,
+  p: Reponse<Prevue[]>,
+  a: Reponse<{ notes: Note[]; repos: string[] }>,
+  c: Reponse<Cycle[]>,
+  f: Reponse<{ date: string }[]>,
+): { donnees: DonneesCalendrier; erreur: string } {
+  const prevues = p.data ?? (precedent ? [...precedent.planifiees, ...precedent.objectifs] : []);
+  return {
+    donnees: {
+      seances: s.data ?? precedent?.seances ?? [],
+      planifiees: prevues.filter((x) => x.category !== 'competition'),
+      objectifs: prevues.filter((x) => x.category === 'competition'),
+      notes: a.data?.notes ?? precedent?.notes ?? [],
+      repos: a.data?.repos ?? precedent?.repos ?? [],
+      cycles: c.data ?? precedent?.cycles ?? [],
+      series: f.data ?? precedent?.series ?? [],
+    },
+    erreur: s.erreur || p.erreur || a.erreur,
+  };
+}

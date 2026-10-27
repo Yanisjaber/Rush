@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bornesGrille, chargeJour, chargeSeance, decalerMois, grilleMois, jourAffiche, jourVide, chiffresSemaine, kmJour, nomJour, profilSemaine, resumeSemaine, secondesJour, teinteJour, titreMois, compositionJour } from '../src/data/calendrier.ts';
+import { bornesGrille, chargeJour, chargeSeance, decalerMois, grilleMois, jourAffiche, jourVide, chiffresSemaine, kmJour, nomJour, profilSemaine, resumeSemaine, secondesJour, teinteJour, titreMois, compositionJour, assemblerDonnees } from '../src/data/calendrier.ts';
 import { couleurNote, libelleNote, notesDuJour } from '../src/data/annotations.ts';
 import { annotationsDemo, donneesDemo } from '../src/data/demo.ts';
 import type { Note, Prevue, Seance } from '../src/data/types.ts';
@@ -209,4 +209,28 @@ test('compositionJour : le fait par sport (le plus long d\'abord) et le prévu',
   assert.equal(c.prevuSec, 94 * 60);
   assert.deepEqual(c.fait.map((x) => x.secondes), [70 * 60, 60 * 60]); // Cyclisme, puis la course (Run + TrailRun)
   assert.deepEqual(compositionJour({ seances: [], planifiees: [] }), { fait: [], faitSec: 0, prevuSec: 0 });
+});
+
+test('assemblerDonnees : une requête qui échoue garde les données déjà affichées', () => {
+  const ok = <T,>(data: T) => ({ data, erreur: '' });
+  const ko = { data: null, erreur: 'Impossible de charger.' };
+  const seance = { id: 's1', sport: 'Run', start_date_local: '2026-10-05T08:00:00', moving_time: 1800 } as Seance;
+  const course = { id: 'c1', name: 'Marathon', date: '2026-10-25', sport: 'Run', category: 'competition' } as Prevue;
+  const seance2 = { id: 'p1', name: 'Sortie', date: '2026-10-07', sport: 'Run', category: 'entrainement' } as Prevue;
+  const premier = assemblerDonnees(null, ok([seance]), ok([course, seance2]), ok({ notes: [], repos: ['2026-10-08'] }), ok([]), ok([]));
+  assert.equal(premier.erreur, '');
+  assert.equal(premier.donnees.objectifs.length, 1);
+  assert.equal(premier.donnees.planifiees.length, 1);
+  // Rechargement hors ligne : tout échoue, rien ne disparaît, l'erreur est signalée
+  const rate = assemblerDonnees(premier.donnees, ko, ko, ko, ko, ko);
+  assert.equal(rate.erreur, 'Impossible de charger.');
+  assert.deepEqual(rate.donnees, premier.donnees);
+  // Premier chargement qui échoue : rien à garder, la grille est vide
+  const vide = assemblerDonnees(null, ko, ko, ko, ko, ko);
+  assert.equal(vide.donnees.seances.length, 0);
+  assert.equal(vide.erreur, 'Impossible de charger.');
+  // Échec partiel : les séances sont à jour, les notes gardent l'ancien
+  const partiel = assemblerDonnees(premier.donnees, ok([]), ok([]), ko, ok([]), ok([]));
+  assert.equal(partiel.donnees.seances.length, 0);
+  assert.deepEqual(partiel.donnees.repos, ['2026-10-08']);
 });
