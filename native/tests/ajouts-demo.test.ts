@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ajouterNoteDemo, modifierNoteDemo, notesDeLaDemo, poserReposDemo, reposDeLaDemo, retirerReposDemo, supprimerNoteDemo } from '../src/stores/ajouts.ts';
-import type { Note } from '../src/data/types.ts';
+import { ajouterNoteDemo, ajouterPrevueDemo, modifierNoteDemo, modifierPrevueDemo, notesDeLaDemo, poserReposDemo, prevueCompleteDemo, prevuesDeLaDemo, reposDeLaDemo, retirerReposDemo, supprimerNoteDemo, supprimerPrevueDemo } from '../src/stores/ajouts.ts';
+import { validerSeance, formulaireSeanceVide } from '../src/data/ajouts.ts';
+import type { Note, Prevue } from '../src/data/types.ts';
 
 const base: Note[] = [{ id: 'exemple', type: 'texte', text: 'Un mot', color: '#60a5fa', from_date: '2026-10-20', to_date: '2026-10-20' }];
 const ligne = (texte: string) => ({ type: 'texte', text: texte, color: '#f87171', from_date: '2026-10-21', to_date: '2026-10-22' });
@@ -34,4 +35,32 @@ test('démo : on pose et on retire un jour de repos, y compris un jour de l\'exe
   assert.deepEqual(reposDeLaDemo(['2026-10-18']), []);
   poserReposDemo('2026-10-18'); // remettre un jour retiré
   assert.deepEqual(reposDeLaDemo(['2026-10-18']), ['2026-10-18']);
+});
+
+const prevueExemple: Prevue = { id: 'prevue-exemple', name: 'Sortie longue', date: '2026-10-24', sport: 'Ride', duration: 120, tss: 90, category: 'entrainement', km: 55 };
+const ligneSeance = (nom: string, notes = '') => {
+  const r = validerSeance({ ...formulaireSeanceVide(), nom, type: 'Run', duree: '45', notes }, '2026-10-26', 'Course à pied');
+  if (!r.ok) throw new Error(r.erreur);
+  return r.ligne;
+};
+
+test('démo : une séance prévue ajoutée se relit en entier, puis se modifie et se supprime', () => {
+  const p = ajouterPrevueDemo(ligneSeance('Footing', 'Facile'));
+  assert.equal(prevueCompleteDemo(p.id, [prevueExemple])?.notes, 'Facile'); // les notes, que le calendrier ne montre pas, sont gardées
+  modifierPrevueDemo(p.id, ligneSeance('Footing long', 'Plus long'));
+  assert.deepEqual(prevuesDeLaDemo([prevueExemple]).map((x) => x.name), ['Sortie longue', 'Footing long']);
+  assert.equal(prevueCompleteDemo(p.id, [prevueExemple])?.notes, 'Plus long');
+  supprimerPrevueDemo(p.id);
+  assert.deepEqual(prevuesDeLaDemo([prevueExemple]).map((x) => x.name), ['Sortie longue']);
+  assert.equal(prevueCompleteDemo(p.id, [prevueExemple]), null);
+});
+
+test('démo : une séance prévue de l\'exemple se relit, se modifie puis se supprime sans toucher au tableau d\'origine', () => {
+  assert.equal(prevueCompleteDemo('prevue-exemple', [prevueExemple])?.km, 55);
+  modifierPrevueDemo('prevue-exemple', ligneSeance('Retouchée'));
+  assert.equal(prevuesDeLaDemo([prevueExemple])[0].name, 'Retouchée');
+  assert.equal(prevueExemple.name, 'Sortie longue');
+  supprimerPrevueDemo('prevue-exemple');
+  assert.equal(prevuesDeLaDemo([prevueExemple]).length, 0);
+  assert.equal(prevueCompleteDemo('prevue-exemple', [prevueExemple]), null);
 });

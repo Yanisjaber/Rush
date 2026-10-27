@@ -271,6 +271,16 @@ const distanceEcrite = (km: number | null | undefined, type: string): string =>
 
 const textOuVide = (v: unknown): string => (v == null ? '' : String(v));
 
+/** Une ligne qu'on vient d'écrire, vue comme la base la rend quand on la relit (les colonnes absentes de la ligne valent null). Sert à la démo, qui n'a pas de base. */
+export const prevueDepuisLigne = (id: string, l: LignePrevue): PrevueComplete => ({
+  id, name: l.name, date: l.date, sport: l.sport, duration: l.duration, tss: l.tss, category: l.category, km: l.km, d_plus: l.d_plus,
+  start_date_local: l.start_date_local, rpe: l.rpe, notes: l.notes, structure: l.structure ?? null,
+  est_watts: l.est_watts ?? null, est_bpm: l.est_bpm ?? null, est_kj: l.est_kj ?? null, est_if: l.est_if ?? null,
+  gpx_name: l.gpx_name ?? null, gpx_content: l.gpx_content ?? null,
+  priority: l.priority ?? null, type: l.type ?? null, target: l.target ?? null, laps: l.laps ?? null,
+  federation: l.federation ?? null, race_level: l.race_level ?? null, tri_format: l.tri_format ?? null,
+});
+
 /** Le parcours GPX joint à une ligne, ou null. */
 export const parcoursDePrevue = (p: Pick<PrevueComplete, 'gpx_name' | 'gpx_content'>): ParcoursGpx | null =>
   p.gpx_content ? { nom: p.gpx_name || 'parcours.gpx', contenu: p.gpx_content } : null;

@@ -1,13 +1,16 @@
 import { useCallback } from 'react';
-import { creerNoteJour, creerPrevue, creerSortie, modifierNoteJour, poserRepos, retirerRepos, supprimerNoteJour } from '@/data/api';
+import { creerNoteJour, creerPrevue, creerSortie, modifierNoteJour, modifierPrevue as modifierPrevueApi, poserRepos, retirerRepos, supprimerNoteJour, supprimerPrevue as supprimerPrevueApi } from '@/data/api';
 import type { LigneNote, LignePrevue, LigneSortie } from '@/data/ajouts';
-import { ajoutsChanges, ajouterNoteDemo, ajouterPrevueDemo, ajouterSortieDemo, modifierNoteDemo, poserReposDemo, retirerReposDemo, supprimerNoteDemo } from '@/stores/ajouts';
+import { ajoutsChanges, ajouterNoteDemo, ajouterPrevueDemo, ajouterSortieDemo, modifierNoteDemo, modifierPrevueDemo, poserReposDemo, retirerReposDemo, supprimerNoteDemo, supprimerPrevueDemo } from '@/stores/ajouts';
 import { useAuth } from '@/stores/auth';
 
 // De quoi ajouter au calendrier une séance prévue, une compétition ou une note : en mémoire dans la démo, dans la base pour un compte connecté.
 // Chaque fonction renvoie un message d'erreur, vide quand tout s'est bien passé ; le calendrier se recharge tout seul après un ajout.
 export function useAjouts(): {
   creerPrevue: (ligne: LignePrevue) => Promise<string>;
+  /** Modifie une séance prévue ou une compétition déjà enregistrée. */
+  modifierPrevue: (id: string, ligne: LignePrevue) => Promise<string>;
+  supprimerPrevue: (id: string) => Promise<string>;
   creerNote: (ligne: LigneNote) => Promise<string>;
   creerSortie: (ligne: LigneSortie) => Promise<string>;
   modifierNote: (id: string, ligne: LigneNote) => Promise<string>;
@@ -25,6 +28,32 @@ export function useAjouts(): {
       }
       if (!userId) return 'Reconnecte-toi.';
       const r = await creerPrevue(userId, ligne);
+      if (!r.erreur) ajoutsChanges();
+      return r.erreur;
+    },
+    [demo, userId],
+  );
+  const modifierUnePrevue = useCallback(
+    async (id: string, ligne: LignePrevue) => {
+      if (demo) {
+        modifierPrevueDemo(id, ligne);
+        return '';
+      }
+      if (!userId) return 'Reconnecte-toi.';
+      const r = await modifierPrevueApi(userId, id, ligne);
+      if (!r.erreur) ajoutsChanges();
+      return r.erreur;
+    },
+    [demo, userId],
+  );
+  const supprimerUnePrevue = useCallback(
+    async (id: string) => {
+      if (demo) {
+        supprimerPrevueDemo(id);
+        return '';
+      }
+      if (!userId) return 'Reconnecte-toi.';
+      const r = await supprimerPrevueApi(userId, id);
       if (!r.erreur) ajoutsChanges();
       return r.erreur;
     },
@@ -96,5 +125,5 @@ export function useAjouts(): {
     },
     [demo, userId],
   );
-  return { creerPrevue: prevue, creerNote: note, creerSortie: sortie, modifierNote: modifier, supprimerNote: supprimer, basculerRepos: repos };
+  return { creerPrevue: prevue, modifierPrevue: modifierUnePrevue, supprimerPrevue: supprimerUnePrevue, creerNote: note, creerSortie: sortie, modifierNote: modifier, supprimerNote: supprimer, basculerRepos: repos };
 }

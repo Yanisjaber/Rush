@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CATALOGUE } from '../src/data/catalogue-sports.ts';
 import { normaliser, sportAvecStructure } from '../src/data/structure.ts';
-import { distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, chargeEstimeeSortie, typeInitial, SPORTS_AJOUT, blocsDePrevue, formulaireDepuisCompetition, formulaireDepuisSeance, parcoursDePrevue, type LignePrevue } from '../src/data/ajouts.ts';
+import { distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, chargeEstimeeSortie, typeInitial, SPORTS_AJOUT, blocsDePrevue, formulaireDepuisCompetition, formulaireDepuisSeance, parcoursDePrevue, prevueDepuisLigne, type LignePrevue } from '../src/data/ajouts.ts';
 import type { PrevueComplete } from '../src/data/types.ts';
 
 const date = '2026-10-23';
@@ -323,15 +323,7 @@ test('les blocs restent réservés au vélo, à la course et à la natation (var
 
 // --- Rouvrir une séance prévue ou une compétition pour la modifier : ligne de la base → formulaire → ligne, sans rien perdre ---
 
-/** Ce que la base rend quand on relit une ligne qu'on vient d'écrire (les colonnes absentes de la ligne valent null). */
-const relue = (ligne: LignePrevue, id = 'a1b2c3d4-0000-4000-8000-000000000001'): PrevueComplete => ({
-  id, name: ligne.name, date: ligne.date, sport: ligne.sport, duration: ligne.duration, tss: ligne.tss, category: ligne.category, km: ligne.km, d_plus: ligne.d_plus,
-  start_date_local: ligne.start_date_local, rpe: ligne.rpe, notes: ligne.notes, structure: ligne.structure ?? null,
-  est_watts: ligne.est_watts ?? null, est_bpm: ligne.est_bpm ?? null, est_kj: ligne.est_kj ?? null, est_if: ligne.est_if ?? null,
-  gpx_name: ligne.gpx_name ?? null, gpx_content: ligne.gpx_content ?? null,
-  priority: ligne.priority ?? null, type: ligne.type ?? null, target: ligne.target ?? null, laps: ligne.laps ?? null,
-  federation: ligne.federation ?? null, race_level: ligne.race_level ?? null, tri_format: ligne.tri_format ?? null,
-});
+const relue = (ligne: LignePrevue): PrevueComplete => prevueDepuisLigne('a1b2c3d4-0000-4000-8000-000000000001', ligne);
 
 test('formulaireDepuisSeance : une séance rouverte puis réenregistrée donne la même ligne', () => {
   const depart = validerSeance({ ...formulaireSeanceVide(), nom: 'Footing du soir', type: 'Run', duree: '50', heure: '18:30', distance: '9,5', dplus: '80', rpe: 6, notes: 'Rester facile' }, date, 'Course à pied');
