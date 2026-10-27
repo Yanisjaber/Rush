@@ -50,7 +50,7 @@ const SEC_TO_COL: Record<number, string> = {
 // Durées du Power Profile (secondes), dérivées de SEC_TO_COL (table power_profile).
 const DURATIONS = Object.keys(SEC_TO_COL).map(Number).sort((a, b) => a - b);
 
-// Jeu de durées du CLIENT (doit rester identique à __PC_DURS dans js/app.js).
+// Jeu de durées côté application (le site et l'app mobile affichent la courbe sur ces durées).
 // La courbe est calculée sur l'UNION (SEC_TO_COL ∪ client) pour servir à la fois
 // la table power_profile ET le tableau des records côté client.
 const PC_DURS: number[] = (() => {
@@ -62,7 +62,7 @@ const PC_DURS: number[] = (() => {
   return d;
 })();
 const MMP_DURS = Array.from(new Set([...DURATIONS, ...PC_DURS])).sort((a, b) => a - b);
-// Version du jeu de durées CLIENT (doit rester égale à __PC_VERSION dans js/app.js).
+// Version du jeu de durées : à augmenter si PC_DURS change, pour recalculer les anciennes courbes.
 const CLIENT_PC_VERSION = 3;
 
 // CORS restreint (voir _shared/cors.ts) : les en-têtes sont calculés PAR requête (pas de variable partagée
@@ -215,7 +215,7 @@ function streamData(arr: any[], type: string): any[] {
   return (s && Array.isArray(s.data)) ? s.data : [];
 }
 
-// Calcule les metriques avancees (port serveur de __computeActivityMetrics).
+// Calcule les metriques avancees (calcul fait côté serveur).
 function computeMetrics(W: any[], HR: any[], T: any[], ath: any): Record<string, any> {
   const ftp = +ath.ftp || 250;
   const hrMax = +ath.hrMax || 190;
@@ -568,7 +568,7 @@ async function backfillPowerCurves(sb: any, userId: string, limit: number, ath: 
 
 // ============ STREAMS ============
 
-// Strava (key_by_type=true) → format intervals.icu attendu par l'app : [{type,data}]
+// Strava (key_by_type=true) → format [{type,data}] stocké dans streams_gz
 function toIntervalsFormat(raw: any): any[] {
   if (!raw || typeof raw !== "object") return [];
   const out: any[] = [];
@@ -604,13 +604,6 @@ async function gunzipBase64(b64: string): Promise<string> {
   writer.close();
   const buf = await new Response(ds.readable).arrayBuffer();
   return new TextDecoder().decode(buf);
-}
-
-// Extrait le tableau de watts depuis les streams stockés [{type,data}].
-function wattsFromStreamArray(streamArray: any[]): number[] {
-  if (!Array.isArray(streamArray)) return [];
-  const w = streamArray.find((s) => s && s.type === "watts");
-  return (w && Array.isArray(w.data)) ? w.data : [];
 }
 
 // ============ HELPERS ============

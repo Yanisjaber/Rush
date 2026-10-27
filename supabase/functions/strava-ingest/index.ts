@@ -8,9 +8,9 @@
 //
 // Flow :
 //   1. Vérifier le JWT pour identifier l'user
-//   2. Lire les tokens Strava (table strava_connections)
+//   2. Lire les tokens Strava (Vault, via connexions_app.secret_id)
 //   3. Refresh si expiré
-//   4. Fetch /athlete/activities paginé jusqu'à tout récupérer
+//   4. Fetch /athlete/activities paginé : TOUT l'historique à chaque appel (pas de synchro incrémentale)
 //   5. Mapper chaque activité au format de notre table 'activities'
 //   6. Upsert par batches
 //   7. Recalculer les daily_metrics (CTL/ATL/TSB par jour)
@@ -72,7 +72,7 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
     }
     await joindreJetons(sbAdmin, conn); // jetons déchiffrés (Vault)
 
-    // FTP / HRmax / LTHR vivent dans user_profiles, pas dans strava_connections.
+    // FTP / HRmax / LTHR vivent dans user_profiles, pas dans connexions_app.
     // On les récupère pour pouvoir calculer le TSS correctement.
     const { data: profile } = await sbAdmin
       .from("user_profiles")
@@ -284,7 +284,7 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
     let totalActsInDb = 0;
     {
       // IMPORTANT : on recalcule les daily_metrics depuis TOUT l'historique en base
-      // (pas seulement les activites recuperees ce run), sinon un sync incremental
+      // (pas seulement les activites recuperees ce run), sinon une synchro partielle
       // casserait la continuite CTL/ATL. Lecture paginee (PostgREST plafonne a 1000).
       const READ_PAGE = 1000;
       let offset = 0;
@@ -452,25 +452,6 @@ const SPORT_TO_CAT: Record<string, string> = {
 function getSportCategory(sportRaw: string): string {
   if (!sportRaw) return "autre";
   return SPORT_TO_CAT[sportRaw] || "autre";
-}
-
-// Classification type d'effort : par mot-clé du nom puis fallback intensité.
-function classifyType(name: string, intensity: number, sportCat: string): string {
-  const n = (name || "").toLowerCase();
-  if (sportCat === "musculation") return "force";
-  if (sportCat === "natation") return "natation";
-  // Mots-clés explicites dans le nom
-  if (/\b(repos|rest|récup|recovery)\b/.test(n)) return "recup";
-  if (/\b(vo2|vmax)\b/.test(n)) return "vo2";
-  if (/\b(seuil|threshold|ftp\s*test)\b/.test(n)) return "seuil";
-  if (/\b(tempo|sweet\s*spot)\b/.test(n)) return "tempo";
-  // Fallback : intensité (ratio 0-1.5)
-  if (!intensity || intensity === 0) return "endurance";
-  if (intensity < 0.70) return "recup";
-  if (intensity < 0.80) return "endurance";
-  if (intensity < 0.90) return "tempo";
-  if (intensity < 1.00) return "seuil";
-  return "vo2";
 }
 
 // Calcul TSS Coggan : (durée_h) × IF² × 100

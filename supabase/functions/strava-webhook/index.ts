@@ -454,22 +454,6 @@ function getSportCategory(sportRaw: string): string {
   return SPORT_TO_CAT[sportRaw] || "autre";
 }
 
-function classifyType(name: string, intensity: number, sportCat: string): string {
-  const n = (name || "").toLowerCase();
-  if (sportCat === "musculation") return "force";
-  if (sportCat === "natation") return "natation";
-  if (/\b(repos|rest|récup|recovery)\b/.test(n)) return "recup";
-  if (/\b(vo2|vmax)\b/.test(n)) return "vo2";
-  if (/\b(seuil|threshold|ftp\s*test)\b/.test(n)) return "seuil";
-  if (/\b(tempo|sweet\s*spot)\b/.test(n)) return "tempo";
-  if (!intensity || intensity === 0) return "endurance";
-  if (intensity < 0.70) return "recup";
-  if (intensity < 0.80) return "endurance";
-  if (intensity < 0.90) return "tempo";
-  if (intensity < 1.00) return "seuil";
-  return "vo2";
-}
-
 function computeTss(a: any, ftp: number | null, lthr: number | null): number {
   const dur = a.moving_time || a.elapsed_time || 0;
   if (!dur) return 0;
