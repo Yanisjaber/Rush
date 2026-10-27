@@ -10,6 +10,7 @@ Liste tenue à jour avec Yanis (écran `native/app/(onglets)/calendrier.tsx`). D
 ## Fait récemment
 
 - **Légende et « Réessayer »** (27 octobre) : une petite phrase sous la grille (« Que signifient les points ? ») qui ouvre le détail de toutes les marques ; 4 points au plus par jour, sinon 3 et « +N » ; le message d'erreur a un bouton « Réessayer ». Football quitte le catalogue (les sports collectifs restent « Autre sport »).
+- **Bulle de la semaine** (27 octobre) : toucher la colonne « Sem. » ouvre une bulle accrochée à la colonne (temps, charge, séances, km, sept barres). Aussi : menu du « + » en liste à trois groupes avec glissement pour fermer, bouton « + Ajouter » en verre liquide (iOS 26), repos (lune dans la case, ligne « Jour de repos · Retirer » dans le détail), logo du sport dans la ligne de détail d'une séance, « 0h00 » pour une semaine vide, et accueil d'un compte neuf (« Rien encore. Normal. »).
 - **Colonne « Sem. »** (27 octobre, décidé avec Yanis) : elle montre la semaine entière, même quand elle déborde sur le mois voisin ; les pastilles du haut, elles, ne comptent que le mois. On garde ça.
 - **Fait et prévu dans les totaux** (27 octobre, décidé avec Yanis) : le temps et les kilomètres (ou séries) d'une semaine et de la carte du sport ne comptent que le fait ; une semaine pas encore commencée montre le prévu. Les petites barres de la colonne gardent le fait et le prévu (prévu en pâle).
 
@@ -26,7 +27,6 @@ Liste tenue à jour avec Yanis (écran `native/app/(onglets)/calendrier.tsx`). D
 ## Reste à faire (pas encore tranché)
 
 - **Le thème clair** : jamais vérifié sur le calendrier (bandes teintées, colonne « Sem. », pastilles, jours des mois voisins).
-- **Toucher une semaine** (colonne « Sem. ») pour voir son détail jour par jour.
 
 ## À débloquer côté base
 
