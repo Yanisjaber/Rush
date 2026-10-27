@@ -318,15 +318,14 @@ export async function chargerAnnotations(userId: string, debutIso: string, finIs
 const COLONNES_BILAN = 'id,strava_id,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,tss';
 const TAILLE_PAGE = 1000; // l'API renvoie au plus 1000 lignes par requête : on lit par pages
 
-/** Activités de l'année et des deux précédentes (colonnes légères), par pages de 1000. */
+/** Tout l'historique, de la toute première activité à la fin de l'année (colonnes légères), par pages de 1000. */
 export async function chargerActivitesBilan(userId: string, annee: number): Promise<Resultat<Seance[]>> {
   const toutes: Seance[] = [];
-  for (let page = 0; page < 12; page++) {
+  for (let page = 0; page < 100; page++) {
     const r = await sb
       .from('activities')
       .select(COLONNES_BILAN)
       .eq('user_id', userId)
-      .gte('start_date_local', `${annee - 2}-01-01`)
       .lte('start_date_local', `${annee}-12-31T23:59:59`)
       .order('start_date_local', { ascending: true })
       .range(page * TAILLE_PAGE, (page + 1) * TAILLE_PAGE - 1);

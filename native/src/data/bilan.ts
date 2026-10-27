@@ -3,6 +3,7 @@
 // Une « activité » de bilan est normalisée : { id, name, iso, sport, duree_min, distance_km, d_plus, tss }
 // où `sport` est une famille de bilan : 'cyclisme' | 'course' | 'natation' | 'musculation' | 'autre'.
 import { familleAffichage } from './familles.ts';
+import { intensiteDeCharge, type CaseRegularite } from './synthese.ts';
 import type { Seance } from './types.ts';
 
 export type SportBilan = 'cyclisme' | 'course' | 'natation' | 'musculation' | 'autre';
@@ -234,6 +235,30 @@ export function avancement(objectif: ObjectifAnnuel, acts: ActiviteBilan[], anne
   return { modele: m, actuel, cible, pct, enRythme, repere: estCumul(m) ? partAnnee(annee, maintenant) * 100 : null, projection, projectionPct: projection != null && cible > 0 ? Math.round((projection / cible) * 100) : null };
 }
 
+/** Ce qu'il faut dire d'un objectif en une phrase : où il va finir, ce qu'il manque, et si c'est bon ou à rattraper. */
+export interface VerdictObjectif {
+  ton: 'ok' | 'alerte' | 'neutre';
+  /** Objectif déjà atteint (valeur actuelle au niveau de la cible). */
+  atteint: boolean;
+  /** Fin d'année prévue au rythme actuel (objectifs cumulés de l'année en cours). */
+  projection: number | null;
+  /** Écart positif : ce qui manque à la cible (ou ce qui la dépasse, si la projection est au-dessus). */
+  ecart: number | null;
+  /** Où tu devrais en être aujourd'hui (la cible × la part d'année écoulée), pour le repère. */
+  attendu: number | null;
+}
+
+export function verdictObjectif(av: Avancement): VerdictObjectif {
+  const attendu = av.repere != null && av.repere < 100 ? (av.cible * av.repere) / 100 : null; // pas de repère pour une année terminée
+  if (av.actuel == null) return { ton: 'neutre', atteint: false, projection: null, ecart: null, attendu };
+  if (av.modele.calc === 'manual_lower') return { ton: av.enRythme ? 'ok' : 'alerte', atteint: av.enRythme, projection: null, ecart: null, attendu };
+  const atteint = av.actuel >= av.cible;
+  if (av.projection != null && !atteint) {
+    return { ton: av.projection >= av.cible ? 'ok' : 'alerte', atteint, projection: av.projection, ecart: Math.abs(av.cible - av.projection), attendu };
+  }
+  return { ton: atteint ? 'ok' : 'alerte', atteint, projection: null, ecart: atteint ? 0 : av.cible - av.actuel, attendu };
+}
+
 // --- Records --------------------------------------------------------------------------------------------------------------
 
 /** Records de volume : plus longue sortie, plus longue durée, plus grosse charge, plus de D+ en un jour. */
@@ -269,14 +294,29 @@ export const recordRecent = (iso: string, maintenant: Date = new Date()): boolea
 
 // --- Séries pour les graphiques ------------------------------------------------------------------------------------------
 
+/** Ce qu'on peut cumuler dans le graphique « Cumul sur 3 ans ». */
+export type MetriqueCumul = 'distance_km' | 'd_plus' | 'seances' | 'tss' | 'heures';
+
+/** Les mesures proposées dans le menu : le nom, l'unité écrite à côté des valeurs et la phrase lue par VoiceOver. */
+export const MESURES_CUMUL: { cle: MetriqueCumul; nom: string; unite: string; phrase: string }[] = [
+  { cle: 'distance_km', nom: 'Distance', unite: 'km', phrase: 'de la distance' },
+  { cle: 'd_plus', nom: 'Dénivelé', unite: 'm', phrase: 'du dénivelé' },
+  { cle: 'seances', nom: 'Séances', unite: 'séances', phrase: 'du nombre de séances' },
+  { cle: 'tss', nom: 'Charge', unite: 'TSS', phrase: 'de la charge' },
+  { cle: 'heures', nom: 'Temps', unite: 'h', phrase: 'du temps' },
+];
+
+/** Ce que vaut une activité pour la mesure choisie. */
+const valeurCumul = (a: ActiviteBilan, m: MetriqueCumul): number => (m === 'd_plus' ? a.d_plus : m === 'seances' ? 1 : m === 'tss' ? a.tss : m === 'heures' ? a.duree_min / 60 : a.distance_km);
+
 /**
- * Cumul jour par jour de la distance ou du dénivelé, pour plusieurs années : { etiquettes, series: [{ annee, valeurs }] }.
+ * Cumul jour par jour de la mesure choisie (distance, dénivelé, séances, charge ou temps), pour plusieurs années : { etiquettes, series: [{ annee, valeurs }] }.
  * Les étiquettes sont des dates d'une année bissextile (jj/mm). Pour l'année en cours, le cumul s'arrête aujourd'hui (null après).
  */
 export function cumulParAnnee(
   acts: ActiviteBilan[],
   annees: number[],
-  metrique: 'distance_km' | 'd_plus' = 'distance_km',
+  metrique: MetriqueCumul = 'distance_km',
   maintenant: Date = new Date(),
 ): { etiquettes: string[]; series: { annee: number; valeurs: (number | null)[] }[] } {
   const etiquettes = Array.from({ length: 366 }, (_, j) => dateIso(new Date(2024, 0, 1 + j, 12)));
@@ -285,7 +325,7 @@ export function cumulParAnnee(
     for (const a of acts) {
       if (!a.iso.startsWith(`${annee}-`)) continue;
       const jour = jourDeLAnnee(dateDe(a.iso));
-      if (jour >= 0 && jour < 366) parJour[jour] += metrique === 'd_plus' ? a.d_plus : a.distance_km;
+      if (jour >= 0 && jour < 366) parJour[jour] += valeurCumul(a, metrique);
     }
     const limite = annee === maintenant.getFullYear() ? jourDeLAnnee(maintenant) : 365;
     let cumul = 0;
@@ -302,17 +342,117 @@ export function volumeMensuel(acts: ActiviteBilan[], annee: number): number[] {
   return mois;
 }
 
-/** Répartition par sport : [{ sport, heures, seances, part }] triée par heures décroissantes (part en % du temps total). */
-export function repartitionSport(acts: ActiviteBilan[]): { sport: SportBilan; heures: number; seances: number; part: number }[] {
-  const par: Record<string, { sport: SportBilan; heures: number; seances: number }> = {};
+// --- Rythme : km par mois, charge par semaine, régularité -------------------------------------------------------------
+
+/** Distance (km) par mois : 12 valeurs pour une année. */
+export function kmParMois(acts: ActiviteBilan[], annee: number): number[] {
+  const mois = new Array(12).fill(0);
+  for (const a of acts) if (a.iso.startsWith(`${annee}-`)) mois[Number(a.iso.slice(5, 7)) - 1] += a.distance_km;
+  return mois;
+}
+
+const midi = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+const lundiDe = (d: Date) => {
+  const x = midi(d);
+  x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); // lundi = 0
+  return x;
+};
+const joursEntre = (a: Date, b: Date) => Math.round((Date.UTC(b.getFullYear(), b.getMonth(), b.getDate()) - Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())) / 86400000);
+/** Dernier jour pris en compte d'une année : aujourd'hui pour l'année en cours, le 31 décembre sinon. */
+const finDeAnnee = (annee: number, maintenant: Date) => (annee === maintenant.getFullYear() ? midi(maintenant) : new Date(annee, 11, 31, 12));
+
+/** Charge (TSS) des `nb` dernières semaines (lundi → dimanche) de l'année : la dernière valeur est la semaine en cours (ou la dernière de l'année). */
+export function chargeParSemaine(acts: ActiviteBilan[], annee: number, maintenant: Date = new Date(), nb = 12): number[] {
+  const fin = finDeAnnee(annee, maintenant);
+  const debut = lundiDe(fin);
+  debut.setDate(debut.getDate() - (nb - 1) * 7);
+  const finIso = dateIso(fin);
+  const semaines = new Array(nb).fill(0);
   for (const a of acts) {
-    par[a.sport] = par[a.sport] || { sport: a.sport, heures: 0, seances: 0 };
+    if (a.iso > finIso) continue;
+    const idx = Math.floor(joursEntre(debut, dateDe(a.iso)) / 7);
+    if (idx >= 0 && idx < nb) semaines[idx] += a.tss;
+  }
+  return semaines;
+}
+
+export interface RegulariteAnnee {
+  /** Une case par jour, rangée par rangée (lundi → dimanche), semaine par semaine ; les jours hors de l'année ou à venir sont `vide`. */
+  cases: CaseRegularite[];
+  colonnes: number;
+  /** Jours écoulés de l'année (1er janvier → aujourd'hui, ou 365/366). */
+  jours: number;
+  joursActifs: number;
+  /** Jours d'affilée jusqu'à aujourd'hui (hier compris si rien n'est encore fait aujourd'hui). */
+  serieEnCours: number;
+  serieRecord: number;
+}
+
+/** Régularité d'une année : la carte des jours (sport dominant et intensité), les jours actifs et les séries. */
+export function regulariteAnnee(acts: ActiviteBilan[], annee: number, maintenant: Date = new Date()): RegulariteAnnee {
+  const debut = new Date(annee, 0, 1, 12);
+  const fin = finDeAnnee(annee, maintenant);
+  const debutIso = dateIso(debut);
+  const finIso = dateIso(fin);
+  const parJour = new Map<string, Map<string, number>>(); // date ISO → Map(famille → charge)
+  for (const a of acts) {
+    if (a.iso < debutIso || a.iso > finIso) continue;
+    const m = parJour.get(a.iso) ?? new Map<string, number>();
+    m.set(a.famille, (m.get(a.famille) ?? 0) + (a.tss > 0 ? a.tss : Math.round((a.duree_min / 60) * 35))); // sans TSS : estimation par la durée
+    parJour.set(a.iso, m);
+  }
+
+  const lundi0 = lundiDe(debut);
+  const colonnes = Math.floor(joursEntre(lundi0, lundiDe(fin)) / 7) + 1;
+  const cases: CaseRegularite[] = [];
+  for (let rangee = 0; rangee < 7; rangee++) {
+    for (let col = 0; col < colonnes; col++) {
+      const d = new Date(lundi0);
+      d.setDate(lundi0.getDate() + col * 7 + rangee);
+      const iso = dateIso(d);
+      const m = parJour.get(iso);
+      if (iso < debutIso || iso > finIso) cases.push({ famille: null, intensite: 0, vide: true });
+      else if (!m) cases.push({ famille: null, intensite: 0, vide: false });
+      else {
+        const [famille] = [...m.entries()].sort((x, y) => y[1] - x[1])[0];
+        cases.push({ famille, intensite: intensiteDeCharge([...m.values()].reduce((x, y) => x + y, 0)), vide: false });
+      }
+    }
+  }
+
+  const jours = joursEntre(debut, fin) + 1;
+  let serieRecord = 0;
+  let courante = 0;
+  const d = new Date(debut);
+  for (let i = 0; i < jours; i++, d.setDate(d.getDate() + 1)) {
+    courante = parJour.has(dateIso(d)) ? courante + 1 : 0;
+    serieRecord = Math.max(serieRecord, courante);
+  }
+  const f = new Date(fin);
+  if (!parJour.has(dateIso(f))) f.setDate(f.getDate() - 1); // rien aujourd'hui : la série tient encore si hier était actif
+  let serieEnCours = 0;
+  while (parJour.has(dateIso(f))) {
+    serieEnCours++;
+    f.setDate(f.getDate() - 1);
+  }
+  return { cases, colonnes, jours, joursActifs: parJour.size, serieEnCours, serieRecord };
+}
+
+/**
+ * Répartition par sport : [{ sport, heures, seances, valeur, part }] triée par la mesure choisie, décroissante (le temps par défaut ; mêmes mesures que le cumul sur 3 ans).
+ * `valeur` est la somme de la mesure pour le sport, `part` sa part en % du total. Un sport à zéro pour la mesure (la muscu en distance) n'apparaît pas.
+ */
+export function repartitionSport(acts: ActiviteBilan[], mesure: MetriqueCumul = 'heures'): { sport: SportBilan; heures: number; seances: number; valeur: number; part: number }[] {
+  const par: Record<string, { sport: SportBilan; heures: number; seances: number; valeur: number }> = {};
+  for (const a of acts) {
+    par[a.sport] = par[a.sport] || { sport: a.sport, heures: 0, seances: 0, valeur: 0 };
     par[a.sport].heures += a.duree_min / 60;
     par[a.sport].seances += 1;
+    par[a.sport].valeur += valeurCumul(a, mesure);
   }
-  const liste = Object.values(par).sort((a, b) => b.heures - a.heures);
-  const total = liste.reduce((s, x) => s + x.heures, 0);
-  return liste.map((x) => ({ ...x, part: total ? Math.round((x.heures / total) * 100) : 0 }));
+  const liste = Object.values(par).filter((x) => x.valeur > 0).sort((a, b) => b.valeur - a.valeur);
+  const total = liste.reduce((s, x) => s + x.valeur, 0);
+  return liste.map((x) => ({ ...x, part: total ? Math.round((x.valeur / total) * 100) : 0 }));
 }
 
 // --- Validation d'un objectif ---------------------------------------------------------------------------------------------

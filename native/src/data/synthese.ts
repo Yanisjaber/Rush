@@ -187,7 +187,7 @@ export function conditionHebdo(metriques: Metrique[], nbSemaines = 12, aujourdhu
   return sorties;
 }
 
-function intensiteDeCharge(charge: number): number {
+export function intensiteDeCharge(charge: number): number {
   if (charge >= 80) return 3;
   if (charge >= 40) return 2;
   return charge > 0 ? 1 : 0;

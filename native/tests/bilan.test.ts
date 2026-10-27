@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   activitesAnnee, activitesAnneePrecedente, anneesDisponibles, avancement, cumulParAnnee, ecartPct, familleBilan, familleBilanDuFiltre, modele, normaliser,
-  recordRecent, recordsVolume, repartitionSport, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
+  kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
 } from '../src/data/bilan.ts';
 import { activitesBilanDemo, objectifsAnnuelsDemo } from '../src/data/demo.ts';
 
@@ -128,6 +128,10 @@ test('volumeMensuel et repartitionSport', () => {
   assert.deepEqual([m[0], m[1], m[2]], [3, 0, 3]);
   const r = repartitionSport(activitesAnnee(liste, 2026, maintenant));
   assert.deepEqual(r.map((x) => [x.sport, x.heures, x.part]), [['course', 4, 67], ['cyclisme', 2, 33]]); // 4 h et 2 h sur 6 h
+  // Autre mesure : la distance (course 40 km, vélo 40 km → 50 / 50) ; un sport à zéro n'apparaît pas
+  const dist = repartitionSport(activitesAnnee(liste, 2026, maintenant), 'distance_km');
+  assert.deepEqual(dist.map((x) => [x.sport, x.valeur, x.part]), [['course', 40, 50], ['cyclisme', 40, 50]]);
+  assert.deepEqual(repartitionSport(activitesAnnee([act('2026-01-10', 'musculation', 60, 0), act('2026-01-11', 'course', 60, 10)], 2026, maintenant), 'distance_km').map((x) => x.sport), ['course']);
 });
 
 test('cumulParAnnee : le cumul s\'arrête aujourd\'hui pour l\'année en cours', () => {
@@ -151,10 +155,100 @@ test('validerObjectif : cible positive, valeur saisie valide pour un objectif ma
   assert.ok(validerObjectif({ sport: 'course', template: 'run_10k', cible: '40', actuel: '-5' }).erreurs.actuel);
 });
 
-test('démo : trois ans d\'activités et quatre objectifs', () => {
+test('démo : six ans d\'activités et quatre objectifs', () => {
   const liste = activitesBilanDemo(maintenant).map(normaliser);
   assert.ok(liste.length > 400);
-  assert.deepEqual(anneesDisponibles(liste, maintenant), [2026, 2025, 2024]);
+  assert.deepEqual(anneesDisponibles(liste, maintenant), [2026, 2025, 2024, 2023, 2022, 2021]);
   assert.equal(objectifsAnnuelsDemo(maintenant).length, 4);
   assert.ok(liste.every((a) => a.iso <= '2026-07-01'));
+});
+
+// --- Rythme : km par mois, charge par semaine, régularité ---
+
+test('kmParMois : 12 mois, seulement l\'année demandée', () => {
+  const m = kmParMois([act('2026-01-05', 'cyclisme', 60, 30), act('2026-01-20', 'course', 30, 5), act('2026-03-02', 'cyclisme', 60, 40), act('2025-03-02', 'cyclisme', 60, 99)], 2026);
+  assert.equal(m.length, 12);
+  assert.equal(m[0], 35);
+  assert.equal(m[2], 40);
+  assert.equal(m[11], 0);
+});
+
+test('chargeParSemaine : la dernière valeur est la semaine en cours, les semaines vides valent 0', () => {
+  // 1er juillet 2026 = mercredi : la semaine en cours va du lundi 29 juin au dimanche 5 juillet
+  const acts = [act('2026-06-29', 'course', 60, 10, 0, 50), act('2026-07-01', 'cyclisme', 90, 40, 0, 70, 'b'), act('2026-06-22', 'cyclisme', 60, 20, 0, 30, 'c'), act('2026-01-02', 'course', 30, 5, 0, 99, 'd')];
+  const s = chargeParSemaine(acts, 2026, maintenant);
+  assert.equal(s.length, 12);
+  assert.equal(s[11], 120);
+  assert.equal(s[10], 30);
+  assert.equal(s[9], 0);
+  assert.equal(s.reduce((a, b) => a + b, 0), 150); // la séance de janvier est hors des 12 semaines
+});
+
+test('chargeParSemaine : une année passée s\'arrête au 31 décembre', () => {
+  const s = chargeParSemaine([act('2025-12-30', 'course', 60, 10, 0, 40)], 2025, maintenant);
+  assert.equal(s[11], 40);
+});
+
+test('regulariteAnnee : jours, jours actifs, séries et cases', () => {
+  const acts = [
+    act('2026-06-27', 'course', 60, 10, 0, 50, 'a'), act('2026-06-28', 'cyclisme', 60, 30, 0, 90, 'b'), act('2026-06-29', 'cyclisme', 60, 30, 0, 30, 'c'),
+    act('2026-06-30', 'course', 60, 10, 0, 50, 'd'), act('2026-07-01', 'course', 60, 10, 0, 50, 'e'),
+    act('2026-06-01', 'course', 60, 10, 0, 50, 'f'), act('2026-06-02', 'course', 60, 10, 0, 50, 'g'),
+  ];
+  const r = regulariteAnnee(acts, 2026, maintenant);
+  assert.equal(r.jours, 182); // du 1er janvier au 1er juillet 2026
+  assert.equal(r.joursActifs, 7);
+  assert.equal(r.serieEnCours, 5);
+  assert.equal(r.serieRecord, 5);
+  assert.equal(r.cases.length, 7 * r.colonnes);
+  assert.equal(r.cases.filter((c) => !c.vide).length, 182); // les jours hors année ou à venir sont vides
+  assert.equal(r.cases.filter((c) => c.intensite > 0).length, 7);
+  assert.ok(r.cases.some((c) => c.famille === 'velo' && c.intensite === 3)); // 28 juin : 90 de charge, vélo
+});
+
+test('regulariteAnnee : sans séance aujourd\'hui, la série tient si hier était actif', () => {
+  const r = regulariteAnnee([act('2026-06-29', 'course', 60, 10, 0, 50), act('2026-06-30', 'course', 60, 10, 0, 50, 'b')], 2026, maintenant);
+  assert.equal(r.serieEnCours, 2);
+  assert.equal(regulariteAnnee([act('2026-06-20', 'course', 60, 10, 0, 50)], 2026, maintenant).serieEnCours, 0);
+});
+
+// --- Verdict d'un objectif ---
+
+const objectifKm = (cible: number): ObjectifAnnuel => ({ id: 'o', annee: 2026, sport: 'course', template: 'run_dist', target: cible, current_manual: null } as ObjectifAnnuel);
+
+test('verdictObjectif : en retard, la projection est sous la cible et il manque l\'écart', () => {
+  // 1er juillet : environ la moitié de l'année ; 300 km faits sur 1 000 de cible
+  const av = avancement(objectifKm(1000), [act('2026-03-01', 'course', 600, 300)], 2026, maintenant)!;
+  const v = verdictObjectif(av);
+  assert.equal(v.ton, 'alerte');
+  assert.equal(v.atteint, false);
+  assert.ok(v.projection! < 1000 && v.projection! > 500);
+  assert.equal(Math.round(v.ecart!), Math.round(1000 - v.projection!));
+  assert.ok(v.attendu! > 400 && v.attendu! < 600); // environ la moitié de la cible
+});
+
+test('verdictObjectif : en avance, la projection dépasse la cible', () => {
+  const v = verdictObjectif(avancement(objectifKm(1000), [act('2026-03-01', 'course', 600, 700)], 2026, maintenant)!);
+  assert.equal(v.ton, 'ok');
+  assert.ok(v.projection! > 1000);
+  assert.equal(Math.round(v.ecart!), Math.round(v.projection! - 1000));
+});
+
+test('verdictObjectif : cible atteinte, ou année passée (pas de projection)', () => {
+  assert.equal(verdictObjectif(avancement(objectifKm(1000), [act('2026-03-01', 'course', 600, 1200)], 2026, maintenant)!).atteint, true);
+  const passee = verdictObjectif(avancement({ ...objectifKm(1000), annee: 2025 }, [act('2025-03-01', 'course', 600, 800)], 2025, maintenant)!);
+  assert.equal(passee.projection, null);
+  assert.equal(passee.ton, 'alerte');
+  assert.equal(Math.round(passee.ecart!), 200);
+  assert.equal(passee.attendu, null);
+});
+
+test('cumulParAnnee : séances, charge et temps (en heures) se cumulent comme la distance', () => {
+  const acts = [act('2026-01-02', 'course', 90, 10, 50, 60, 'a'), act('2026-01-02', 'cyclisme', 30, 20, 0, 40, 'b'), act('2026-01-05', 'course', 60, 5, 0, 20, 'c')];
+  const dernier = (m: Parameters<typeof cumulParAnnee>[2]) => cumulParAnnee(acts, [2026], m, maintenant).series[0].valeurs[181];
+  assert.equal(dernier('seances'), 3);
+  assert.equal(dernier('tss'), 120);
+  assert.equal(dernier('heures'), 3); // 90 + 30 + 60 minutes
+  assert.equal(dernier('distance_km'), 35);
+  assert.equal(dernier('d_plus'), 50);
 });

@@ -5,8 +5,8 @@ import { activitesBilanDemo, objectifsAnnuelsDemo } from '@/data/demo';
 import { useAuth } from '@/stores/auth';
 import type { Seance } from '@/data/types';
 
-// Les données du Bilan : les activités des trois dernières années et les objectifs annuels (démo ou compte connecté, lecture seule).
-// Les trois années sont chargées d'un coup : changer d'année affichée ne recharge rien.
+// Les données du Bilan : toutes les activités depuis la première et les objectifs annuels (démo ou compte connecté, lecture seule).
+// Toutes les années sont chargées d'un coup : changer d'année affichée ne recharge rien.
 export function useDonneesBilan(): {
   brutes: Seance[];
   objectifs: ObjectifAnnuel[];

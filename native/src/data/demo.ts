@@ -413,8 +413,8 @@ export function activitesBilanDemo(maintenant: Date = new Date()): Seance[] {
     { sport: 'Ride', min: 80, km: 36, d: 250 },
     { sport: 'Ride', min: 160, km: 72, d: 900 },
   ];
-  for (let a = maintenant.getFullYear() - 2; a <= maintenant.getFullYear(); a++) {
-    const progression = 0.78 + (a - (maintenant.getFullYear() - 2)) * 0.12; // l'athlète s'entraîne un peu plus chaque année
+  for (let a = maintenant.getFullYear() - 5; a <= maintenant.getFullYear(); a++) {
+    const progression = 0.6 + (a - (maintenant.getFullYear() - 5)) * 0.1; // l'athlète s'entraîne un peu plus chaque année
     for (let j = 0; j < 366; j++) {
       const d = new Date(a, 0, 1 + j, 12);
       if (d.getFullYear() !== a || d > maintenant) continue;
