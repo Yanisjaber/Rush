@@ -52,8 +52,9 @@ export default function Connexions() {
       <View style={{ gap: espace.e4 }}>
         {demo ? <Text style={[typo.petit, { color: p.texteMuet }]}>Mode démo : aucune connexion.</Text> : null}
         {erreur ? <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>{erreur}</Text> : null}
+        {erreur && !etat ? null : (
         <Bloc titre="Strava">
-          {!demo && !etat && !erreur ? (
+          {!demo && !etat ? (
             <ActivityIndicator color={p.texteDoux} />
           ) : (
             <>
@@ -78,6 +79,7 @@ export default function Connexions() {
             </>
           )}
         </Bloc>
+        )}
         <Bloc titre="Garmin">
           <View accessible accessibilityLabel="Garmin : bientôt disponible" style={styles.statut}>
             <View style={[styles.pastille, { backgroundColor: p.traitFort }]} />

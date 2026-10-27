@@ -102,8 +102,10 @@ test('couleurDuType : un type inconnu prend le gris neutre', () => {
   assert.equal(couleurDuType('Curling', 'sombre'), couleurDuType('Other', 'sombre'));
 });
 
-test('catalogue : les sports collectifs (foot, rugby…) n\'ont pas d\'entrée, ils restent « Autre sport » en gris', () => {
-  for (const t of ['Soccer', 'Rugby', 'Basketball']) {
+test('catalogue : le football existe (groupe « Raquettes et balles »), les autres sports collectifs (rugby, basket) restent « Autre sport » en gris', () => {
+  assert.equal(sportDuType('Soccer')?.nom, 'Football');
+  assert.equal(familleSport('Soccer'), 'autre');
+  for (const t of ['Rugby', 'Basketball']) {
     assert.equal(sportDuType(t), null, t);
     assert.equal(couleurDuType(t, 'sombre'), couleurDuType('Other', 'sombre'), t);
     assert.equal(familleSport(t), 'autre', t);

@@ -12,7 +12,7 @@ import { useResumeParametres } from '@/hooks/useResumeParametres';
 import { deconnexion, quitterDemo, useAuth } from '@/stores/auth';
 import { definirTheme } from '@/stores/theme';
 import { definirPrevuesAujourdhui, PREVUES_AUJOURDHUI, useReglagesDemo } from '@/stores/reglagesDemo';
-import { espace } from '@/theme/couleurs';
+import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -26,7 +26,16 @@ export default function Parametres() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { session, demo } = useAuth();
-  const { resume } = useResumeParametres();
+  const { resume: resumeBrut, chargement, erreurProfil, erreurConnexions } = useResumeParametres();
+  // Une lecture en erreur n'affiche ni « — » ni « non connecté » : on le dit, sans toucher aux autres tuiles
+  const resume = {
+    ...resumeBrut,
+    connexions: erreurConnexions
+      ? { etat: 'absente' as const, note: 'Illisible pour le moment' }
+      : chargement && !demo
+        ? { etat: 'absente' as const, note: 'Chargement…' }
+        : resumeBrut.connexions,
+  };
   const aller = (vers: Href) => router.push(vers);
 
   const tuile = (vers: Href, titre: string, t: ResumeTuile) => (
@@ -59,6 +68,12 @@ export default function Parametres() {
           <CarteCompte prenom={resume.prenom} email={demo ? null : session?.user.email ?? null} demo={demo} />
         </CadreWidget>
       </Boite>
+
+      {erreurProfil || erreurConnexions ? (
+        <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
+          <Text style={[typo.petit, { color: p.texte }]}>{[erreurProfil, erreurConnexions].filter(Boolean).join(' ')}</Text>
+        </View>
+      ) : null}
 
       {demo ? <ReglagesDemo /> : null}
 
@@ -174,5 +189,6 @@ const styles = StyleSheet.create({
   point: { width: 9, height: 9, borderRadius: 5 },
   pastille: { width: 28, height: 28, borderRadius: 14, alignSelf: 'flex-end' },
   actions: { flexDirection: 'row', gap: espace.e3 },
+  avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
   choix: { flexDirection: 'row', gap: espace.e2, flexWrap: 'wrap' },
 });

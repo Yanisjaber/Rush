@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Vue d'ensemble
 
-Rush : app d'entraînement et de récupération pour **tout sport de performance lié à un entraînement physique et une forme** (pas de sports collectifs). Accueil composé de widgets selon les sports de l'utilisateur, mode édition, deux coques (mobile simple, desktop complet). Front **Svelte 5 + Vite 8** (dossier `app/`), backend **Supabase** (Postgres + RLS + Edge Functions Deno), publié sur GitHub Pages (`https://yanisjaber.github.io/Rush/`), utilisable en PWA. Inscription ouverte (confirmation par e-mail, SMTP Brevo).
+Rush : app d'entraînement et de récupération pour **tout sport de performance lié à un entraînement physique et une forme** (pas de sports collectifs, sauf le football, ajouté au catalogue le 27 oct.). Accueil composé de widgets selon les sports de l'utilisateur, mode édition, deux coques (mobile simple, desktop complet). Front **Svelte 5 + Vite 8** (dossier `app/`), backend **Supabase** (Postgres + RLS + Edge Functions Deno), publié sur GitHub Pages (`https://yanisjaber.github.io/Rush/`), utilisable en PWA. Inscription ouverte (confirmation par e-mail, SMTP Brevo).
 
 ## Commandes
 

@@ -5,6 +5,7 @@
   import Graphiques from '../lib/sommeil/Graphiques.svelte';
   import Conseils from '../lib/sommeil/Conseils.svelte';
   import Bouton from '../lib/components/Bouton.svelte';
+  import { derniereDemande } from '../lib/utils/derniere-demande.js';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { chargerSommeil } from '../lib/data/api.js';
   import { sommeilDemo } from '../lib/data/demo.js';
@@ -24,10 +25,10 @@
   // date de la nuit affichée dans l'aperçu, dans l'adresse (?nuit=2026-10-13) ; sans elle, la plus récente
   const choisie = $derived(route.q.nuit || null);
 
-  // Numéro du chargement en cours : une réponse en retard d'un chargement plus ancien est ignorée
-  let numero = 0;
+  // Une réponse en retard d'un chargement plus ancien est ignorée
+  const suivi = derniereDemande();
   async function charger(userId) {
-    const moi = ++numero;
+    const moi = suivi.nouvelle();
     etat = { chargement: true, erreur: '', brutes: [] };
     if (demo) {
       etat = { chargement: false, erreur: '', brutes: sommeilDemo() };
@@ -40,7 +41,7 @@
     } catch {
       r = { data: null, erreur: 'Impossible de charger ton sommeil.' };
     }
-    if (moi !== numero) return;
+    if (!suivi.estActuelle(moi)) return;
     etat = { chargement: false, erreur: r.erreur, brutes: r.data || [] };
   }
   const userId = $derived(demo ? 'demo' : auth.session?.user?.id);

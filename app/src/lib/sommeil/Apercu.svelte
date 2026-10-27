@@ -12,6 +12,7 @@
   import { heureDe, heureApres, segmentsValides } from '../data/sommeil.js';
   import { NOM_NIVEAU, NOM_QUALIFICATIF, tonDe, efficacitePct, latenceMin, texteHM, texteHMdepuisSec } from '../data/score-sommeil.js';
   import { formatDateLongue } from '../utils/format.js';
+  import { derniereDemande } from '../utils/derniere-demande.js';
 
   // Aperçu : la nuit choisie (score maison, horaires, hypnogramme, phases, chiffres clés), le calendrier de nuits colorées par
   // score, le détail chiffré et la FC minute par minute.
@@ -87,19 +88,30 @@
 
   // --- FC minute par minute (chargée à la demande : colonne lourde) ---
   let fc = $state({ ouvert: false, chargement: false, points: null, erreur: '' });
+  const suiviFc = derniereDemande(); // la réponse d'une autre nuit (ou d'un panneau refermé) arrivée en retard est ignorée
+  async function chargerFc(date, donneesDemo) {
+    const id = suiviFc.nouvelle();
+    fc = { ouvert: true, chargement: true, points: null, erreur: '' };
+    let r;
+    try {
+      r = demo ? { data: donneesDemo, erreur: '' } : await chargerFcNuit(userId, date);
+    } catch {
+      r = { data: null, erreur: 'Impossible de charger la FC de cette nuit.' };
+    }
+    if (suiviFc.estActuelle(id)) fc = { ouvert: true, chargement: false, points: r.data, erreur: r.erreur };
+  }
   // Le panneau est dans l'adresse (?fc=1) : ouvrirFc l'y écrit, l'effet ci-dessous charge les points et ouvre le panneau
   const ouvrirFc = () => ouvrirPanneau({ fc: '1' });
   $effect(() => {
     const veut = route.q.fc === '1';
     const date = nuit?.date;
-    untrack(async () => {
+    untrack(() => {
       if (!veut || !date) {
+        suiviFc.annuler();
         if (fc.ouvert) fc = { ouvert: false, chargement: false, points: null, erreur: '' };
         return;
       }
-      fc = { ouvert: true, chargement: true, points: null, erreur: '' };
-      const r = demo ? { data: fcNuitDemo(nuit), erreur: '' } : await chargerFcNuit(userId, date);
-      if (route.q.fc === '1') fc = { ouvert: true, chargement: false, points: r.data, erreur: r.erreur };
+      chargerFc(date, demo ? fcNuitDemo(nuit) : null);
     });
   });
   const fcValeurs = $derived(fc.points ? fc.points.map((p) => p[1]) : []);
@@ -219,6 +231,7 @@
       <p class="info" role="status">Chargement…</p>
     {:else if fc.erreur}
       <p class="erreur" role="alert">{fc.erreur}</p>
+      <Bouton variante="discret" onclick={() => chargerFc(nuit.date, demo ? fcNuitDemo(nuit) : null)}>Réessayer</Bouton>
     {:else if fc.points && fc.points.length}
       <div class="stats-fc">
         <StatCle etiquette="Moyenne" valeur={String(fcStats.moy)} unite="bpm" />

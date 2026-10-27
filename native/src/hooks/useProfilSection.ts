@@ -38,7 +38,7 @@ export function useProfilSection(id: string) {
       setChargement(true);
       setErreur('');
       if (demo) {
-        appliquer({ ...donneesDemo().profil, extras: {} });
+        appliquer({ ...donneesDemo().profil }); // mêmes extras que la tuile de l'écran Paramètres
       } else if (userId) {
         const r = await chargerProfilComplet(userId);
         if (annule) return;

@@ -51,6 +51,7 @@ export const DESSINS: Readonly<Record<string, string>> = {
   Pickleball: '<path d="M6 3 H14 a2 2 0 0 1 2 2 V10.5 a2.5 2.5 0 0 1 -2.5 2.5 H6.5 A2.5 2.5 0 0 1 4 10.5 V5 a2 2 0 0 1 2 -2 Z M10 13 V19.5"/><circle cx="18" cy="17" r="3"/>',
   Racquetball: '<path d="M10 3 C14 3 15.5 7 14 10.5 C12.7 13 8.7 13 7.5 10 C6.3 6.5 7 3 10 3 Z M11 13 L18.5 21 M8.5 6 H12.5 M8 9 H13"/><circle cx="18.5" cy="6" r="1.6"/>',
   Golf: '<path d="M9 3 V19 M9 3 L16 6 L9 9 M4 20 H20"/><circle cx="15.5" cy="18" r="1.3"/>',
+  Soccer: '<circle cx="12" cy="12" r="9"/><path d="M12 9 L14.9 11.1 L13.8 14.4 L10.2 14.4 L9.1 11.1 Z M12 9 V3.2 M14.9 11.1 L20.4 9.3 M13.8 14.4 L17.2 19 M10.2 14.4 L6.8 19 M9.1 11.1 L3.6 9.3"/>',
   Skateboard: '<path d="M2.5 9.5 Q3.5 12.5 6 12.5 H18 Q20.5 12.5 21.5 9.5"/><circle cx="7" cy="16.5" r="1.8"/><circle cx="17" cy="16.5" r="1.8"/>',
   InlineSkate: '<path d="M7.5 3.5 V12 L4.5 14 V16 H19.5 V13 L11.5 12 V3.5 Z"/><circle cx="6.5" cy="19.5" r="1.5"/><circle cx="11" cy="19.5" r="1.5"/><circle cx="15.5" cy="19.5" r="1.5"/>',
   Wheelchair: '<circle cx="10" cy="4" r="1.4"/><path d="M10 7 V13 H16 L18.5 18.5"/><circle cx="9.5" cy="16.5" r="4.3"/>',
