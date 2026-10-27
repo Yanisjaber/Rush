@@ -1,60 +1,90 @@
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { SvgXml } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { Palette } from '@/theme/couleurs';
 import { espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Le menu du « + » du détail d'un jour : une feuille qui monte du bas, avec une tuile par ajout (son nom et une phrase qui l'explique). Chaque tuile ouvre son propre
-// écran, sauf le repos qui se pose ou se retire d'un toucher. Toucher à côté ferme la feuille.
+// Le menu du « + » du détail d'un jour : une feuille qui monte du bas, une ligne par ajout (pictogramme, nom et une phrase qui l'explique), rangée en trois
+// groupes : prévoir, enregistrer, noter. Chaque ligne ouvre son propre écran, sauf le repos qui se pose ou se retire d'un toucher. Toucher à côté ferme la feuille.
+// Aucune couleur de sport ici : ces lignes ne sont pas des sports (la couleur reste réservée aux sports).
 export type ChoixAjout = 'seance' | 'sortie' | 'import' | 'competition' | 'note' | 'cycle' | 'repos';
 
-const TUILES: { cle: ChoixAjout; nom: string; phrase: string; glyphe: string; couleur: keyof Palette | 'doux' }[] = [
-  { cle: 'seance', nom: 'Séance prévue', phrase: 'Avec ses blocs', glyphe: 'S', couleur: 'sportCourse' },
-  { cle: 'sortie', nom: 'Activité faite', phrase: 'Saisie à la main', glyphe: '✓', couleur: 'sportVelo' },
-  { cle: 'import', nom: 'Importer', phrase: 'Un fichier .fit, .gpx ou .tcx', glyphe: '↓', couleur: 'sportHybride' },
-  { cle: 'competition', nom: 'Compétition', phrase: 'Objectif ou préparation', glyphe: 'C', couleur: 'sportMuscu' },
-  { cle: 'note', nom: 'Note', phrase: 'Maladie, blessure…', glyphe: 'N', couleur: 'sportNatation' },
-  { cle: 'cycle', nom: 'Cycle', phrase: "Une période d'entraînement", glyphe: '⟲', couleur: 'doux' },
+// Les pictogrammes, dessinés sur une grille de 24 en trait (le contenu d'un <svg>)
+const PICTOS: Record<ChoixAjout, string> = {
+  seance: '<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17M12 13v5M9.5 15.5h5"/>',
+  sortie: '<circle cx="12" cy="12" r="8.5"/><path d="M8 12.3l3 3 5-6"/>',
+  import: '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M4.5 19.5h15"/>',
+  competition: '<path d="M6 21V4M6 5h11l-2.5 4 2.5 4H6"/>',
+  note: '<path d="M6 3.5h9l3.5 3.5v13.5H6zM9 11h6M9 14.5h6M9 18h3.5"/>',
+  cycle: '<path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5M4 20v-4.5h4.5"/>',
+  repos: '<path d="M19.5 14.2A8 8 0 1 1 9.8 4.5a6.4 6.4 0 0 0 9.7 9.7z"/>',
+};
+
+const LIGNES: Record<Exclude<ChoixAjout, 'repos'>, { nom: string; phrase: string }> = {
+  seance: { nom: 'Séance prévue', phrase: 'Avec ses blocs' },
+  competition: { nom: 'Compétition', phrase: 'Objectif ou préparation' },
+  cycle: { nom: 'Cycle', phrase: "Une période d'entraînement" },
+  sortie: { nom: 'Activité faite', phrase: 'Saisie à la main' },
+  import: { nom: 'Importer', phrase: 'Un fichier .fit, .gpx ou .tcx' },
+  note: { nom: 'Note', phrase: 'Maladie, blessure…' },
+};
+
+const GROUPES: { titre: string; choix: Exclude<ChoixAjout, 'repos'>[] }[] = [
+  { titre: 'Prévoir', choix: ['seance', 'competition', 'cycle'] },
+  { titre: 'Enregistrer', choix: ['sortie', 'import'] },
+  { titre: 'Noter', choix: ['note'] },
 ];
+
+function Picto({ choix, couleur, taille }: { choix: ChoixAjout; couleur: string; taille: number }) {
+  const xml = `<svg viewBox="0 0 24 24" stroke="${couleur}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none">${PICTOS[choix]}</svg>`;
+  return <SvgXml xml={xml} width={taille} height={taille} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />;
+}
 
 export function MenuAjout({ ouvert, onFermer, onChoisir, repos }: { ouvert: boolean; onFermer: () => void; onChoisir: (c: ChoixAjout) => void; repos: boolean }) {
   const p = usePalette();
   const bas = useSafeAreaInsets().bottom;
-  const couleurDe = (c: keyof Palette | 'doux') => (c === 'doux' ? p.texteDoux : (p[c] as string));
+  const { height } = useWindowDimensions();
   return (
     <Modal visible={ouvert} transparent animationType="fade" onRequestClose={onFermer}>
       <Pressable accessibilityLabel="Fermer le menu d'ajout" accessibilityRole="button" onPress={onFermer} style={styles.fond} />
       <View accessibilityViewIsModal style={[styles.feuille, { backgroundColor: p.surface, borderColor: p.traitFort, paddingBottom: bas + espace.e4 }]}>
         <View style={[styles.poignee, { backgroundColor: p.traitFort }]} />
-        <View style={styles.tuiles}>
-          {TUILES.map((t) => (
-            <View key={t.cle} style={styles.emplacement}>
-              <Pressable
-                onPress={() => onChoisir(t.cle)}
-                accessibilityRole="button"
-                accessibilityLabel={`${t.nom}. ${t.phrase}`}
-                style={({ pressed }) => [styles.tuile, { backgroundColor: p.surface2, opacity: pressed ? 0.7 : 1 }]}
-              >
-                <View style={styles.tete}>
-                  <View style={[styles.icone, { backgroundColor: couleurDe(t.couleur) }]}>
-                    <Text style={[typo.corpsFort, { color: p.encreSurCouleur, fontSize: 14, lineHeight: 18 }]}>{t.glyphe}</Text>
+        {/* Sur un petit écran, la liste défile plutôt que de sortir de la feuille */}
+        <ScrollView style={{ maxHeight: height * 0.75 }} showsVerticalScrollIndicator={false}>
+          {GROUPES.map((g, i) => (
+            <View key={g.titre}>
+              <Text accessibilityRole="header" style={[typo.micro, styles.groupe, i === 0 && styles.premierGroupe, { color: p.texteMuet }]}>
+                {g.titre.toUpperCase()}
+              </Text>
+              {g.choix.map((c, j) => (
+                <Pressable
+                  key={c}
+                  onPress={() => onChoisir(c)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${LIGNES[c].nom}. ${LIGNES[c].phrase}`}
+                  style={({ pressed }) => [styles.ligne, j > 0 && { borderTopColor: p.trait, borderTopWidth: 1 }, { opacity: pressed ? 0.6 : 1 }]}
+                >
+                  <View style={[styles.pastille, { backgroundColor: p.surface2 }]}>
+                    <Picto choix={c} couleur={p.texte} taille={22} />
                   </View>
-                  <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>
-                    {t.nom}
-                  </Text>
-                </View>
-                <Text style={[typo.petit, { color: p.texteDoux }]}>{t.phrase}</Text>
-              </Pressable>
+                  <View style={styles.texte}>
+                    <Text style={[typo.corpsFort, { color: p.texte }]}>{LIGNES[c].nom}</Text>
+                    <Text style={[typo.petit, { color: p.texteDoux }]}>{LIGNES[c].phrase}</Text>
+                  </View>
+                  <View style={[styles.chevron, { borderColor: p.texteMuet }]} />
+                </Pressable>
+              ))}
             </View>
           ))}
-        </View>
+        </ScrollView>
         <Pressable
           onPress={() => onChoisir('repos')}
           accessibilityRole="button"
           accessibilityLabel={repos ? 'Retirer le jour de repos' : 'Poser un jour de repos'}
           style={({ pressed }) => [styles.repos, { borderColor: p.traitFort, opacity: pressed ? 0.7 : 1 }]}
         >
+          <Picto choix="repos" couleur={p.texteDoux} taille={18} />
           <Text style={[typo.corpsFort, { color: p.texteDoux }]}>{repos ? 'Retirer le jour de repos' : 'Poser un jour de repos'}</Text>
         </Pressable>
       </View>
@@ -66,11 +96,11 @@ const styles = StyleSheet.create({
   fond: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.55)' },
   feuille: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopWidth: 1, borderTopLeftRadius: rayon.bloc, borderTopRightRadius: rayon.bloc, padding: espace.e4, gap: espace.e3 },
   poignee: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2 },
-  tuiles: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -4 },
-  // Chaque emplacement s'étire sur la hauteur de la rangée et sa tuile le remplit : deux tuiles côte à côte ont toujours la même hauteur, même si l'une a une phrase sur deux lignes
-  emplacement: { width: '50%', padding: 4 },
-  tuile: { flex: 1, minHeight: 96, borderRadius: rayon.bloc, padding: espace.e3, gap: espace.e2 },
-  tete: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  icone: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  repos: { minHeight: 44, borderWidth: 1, borderRadius: rayon.base, alignItems: 'center', justifyContent: 'center' },
+  groupe: { marginTop: espace.e3, marginBottom: 4, marginLeft: 4, letterSpacing: 0.9 },
+  premierGroupe: { marginTop: 0 },
+  ligne: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6, paddingHorizontal: 4 },
+  pastille: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  texte: { flex: 1 },
+  chevron: { width: 8, height: 8, borderTopWidth: 2, borderRightWidth: 2, transform: [{ rotate: '45deg' }], marginRight: 4 },
+  repos: { minHeight: 44, flexDirection: 'row', gap: 8, borderWidth: 1, borderRadius: rayon.base, alignItems: 'center', justifyContent: 'center' },
 });
