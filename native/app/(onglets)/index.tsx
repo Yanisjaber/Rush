@@ -6,6 +6,7 @@ import { BandeauEdition } from '@/components/BandeauEdition';
 import { BarreSports } from '@/components/BarreSports';
 import { BibliothequeWidgets } from '@/components/BibliothequeWidgets';
 import { Bouton } from '@/components/Bouton';
+import { EtatVide } from '@/components/EtatVide';
 import { FeuilleWidget } from '@/components/FeuilleWidget';
 import { Boite, Emplacement, GrilleWidgets } from '@/components/GrilleWidgets';
 import { solitaires } from '@/data/grille';
@@ -23,9 +24,6 @@ import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 import { COMPOSANTS, WidgetBientot } from '@/widgets/composants';
-
-// Un compte neuf (aucune donnée) ne voit que l'essentiel
-const COMPTE_VIDE = new Set(['objectif', 'semaine', 'avenir']);
 
 // Accueil : les widgets du sport choisi dans la barre du haut, avec les données du compte (ou la démo).
 export default function Accueil() {
@@ -89,9 +87,9 @@ export default function Accueil() {
     // Un onglet de sport reçoit sa propre composition automatique (tout l'écran pour ce sport) tant que l'accueil n'est pas personnalisé ;
     // sinon, ce que l'utilisateur a choisi, filtré pour ce sport
     const liste = filtre === 'tout' ? base : disp.auto && !ONGLETS_PERSONNALISABLES.includes(filtre) ? compositionSport([filtre]) : composerOnglet(base, filtre, disp.onglets);
-    return compteVide ? liste.filter((w) => COMPTE_VIDE.has(w.id)) : liste;
+    return liste;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [disp, base, filtre, compteVide, enEdition]);
+  }, [disp, base, filtre, enEdition]);
   // Onglet qu'on modifie : Muscu ou Hyrox ont leur propre composition ; ailleurs on modifie l'onglet « Tout »
   const ongletAModifier = ONGLETS_PERSONNALISABLES.includes(filtre) ? filtre : 'tout';
   const aAjouter = enEdition ? (disp.ongletEdition !== 'tout' ? disponiblesOnglet(widgets, disp.ongletEdition) : disponibles({ widgets }, familles)) : [];
@@ -149,9 +147,6 @@ export default function Accueil() {
           <>
             {donnees?.erreur ? <Avis texte={donnees.erreur} /> : null}
             {donnees?.erreurSport ? <Avis texte={donnees.erreurSport} /> : null}
-            {compteVide ? (
-              <Avis texte="Ton compte est neuf : rien à afficher pour l'instant. Tes séances arriveront dès que tu auras connecté Strava ou saisi une séance." info />
-            ) : null}
             {disp.message && !enEdition ? <Avis texte={disp.message} /> : null}
             {enEdition ? (
               <ListeTriable
@@ -165,7 +160,8 @@ export default function Accueil() {
                 rendre={(id) => rendre(widgets.find((w) => w.id === id) as WidgetPlace)}
               />
             ) : null}
-            {enEdition ? null : (
+            {compteVide && !enEdition ? <EtatVide hauteur={hauteurEcran * 0.62} /> : null}
+            {enEdition || compteVide ? null : (
               <GrilleWidgets>
                 {widgets.map((w, i) => (
                   <Emplacement key={w.id} taille={w.taille} seul={seuls[i]}>
@@ -203,11 +199,11 @@ export default function Accueil() {
   );
 }
 
-// Un message qui accompagne l'écran (erreur de lecture, compte neuf) : jamais de texte brut venu de la base
-function Avis({ texte, info = false }: { texte: string; info?: boolean }) {
+// Un message d'erreur qui accompagne l'écran (erreur de lecture) : jamais de texte brut venu de la base
+function Avis({ texte }: { texte: string }) {
   const p = usePalette();
   return (
-    <View accessible accessibilityRole={info ? undefined : 'alert'} style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: info ? p.sportNeutre : p.alerte }]}>
+    <View accessible accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
       <Text style={[typo.petit, { color: p.texte }]}>{texte}</Text>
     </View>
   );
