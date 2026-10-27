@@ -99,7 +99,7 @@ test('signaux physiologiques : HRV en baisse marquée, SpO2 basse', () => {
   const hrv = s.find((x) => x.cle === 'hrv');
   assert.equal(hrv.ton, 'mauvais'); // -33 % par rapport à la moyenne
   assert.match(hrv.texte, /Baisse marquée/);
-  assert.equal(s.find((x) => x.cle === 'spo2').ton, 'mauvais');
+  assert.equal(s.find((x) => x.cle === 'spo2').ton, 'attention'); // 93 % : à surveiller, pas alarmant
   assert.equal(s.find((x) => x.cle === 'stress').ton, 'bon');
 });
 
@@ -202,4 +202,14 @@ test('joursSansNuit : compte les jours manquants entre la première et la derni�
   assert.equal(joursSansNuit([{ date: '2026-10-05' }, { date: '2026-10-01' }]), 3); // les 2, 3 et 4
   assert.equal(joursSansNuit([{ date: '2026-10-05' }]), 0);
   assert.equal(joursSansNuit([]), 0);
+});
+
+test('SpO2 : normale dès 95 %, à surveiller entre 90 et 95 %, basse sous 90 %', () => {
+  const ton = (spo2) => {
+    const n = preparer([{ ...nuitParfaite('2026-10-10'), spo2_avg: spo2 }]);
+    return signauxPhysio(analyser(n)).find((x) => x.cle === 'spo2').ton;
+  };
+  assert.equal(ton(96), 'bon');
+  assert.equal(ton(94), 'attention');
+  assert.equal(ton(88), 'mauvais');
 });

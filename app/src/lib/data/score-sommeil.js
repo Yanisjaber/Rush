@@ -23,6 +23,7 @@ export const REPERES = {
   latenceMoyenne: 30,
   respiration: [12, 20],
   spo2Bonne: 95,
+  spo2Basse: 90,
   dureeCibleMin: 8 * 60, // la cible de durée : sert à la dette, au coucher visé et au plan d'action
 };
 
@@ -339,10 +340,16 @@ export function signauxPhysio(pro) {
     });
   }
   if (pro.spo2.derniere != null) {
-    const bonne = pro.spo2.derniere >= REPERES.spo2Bonne;
+    const v = pro.spo2.derniere;
+    const bonne = v >= REPERES.spo2Bonne;
+    const basse = v < REPERES.spo2Basse;
     lignes.push({
-      cle: 'spo2', titre: 'SpO2 moyenne', valeur: `${arrondi(pro.spo2.derniere)} %`, ton: bonne ? 'bon' : 'mauvais',
-      texte: bonne ? `Saturation normale (≥ ${REPERES.spo2Bonne} %).` : `Sous ${REPERES.spo2Bonne} % de moyenne : si c'est récurrent, parles-en à un médecin (piste possible : apnées du sommeil).`,
+      cle: 'spo2', titre: 'SpO2 moyenne', valeur: `${arrondi(v)} %`, ton: bonne ? 'bon' : basse ? 'mauvais' : 'attention',
+      texte: bonne
+        ? `Saturation normale (≥ ${REPERES.spo2Bonne} %).`
+        : basse
+          ? `Sous ${REPERES.spo2Basse} % de moyenne : c'est bas. Si ça se répète, parles-en à un médecin (piste possible : apnées du sommeil).`
+          : `Légèrement sous ${REPERES.spo2Bonne} %. La mesure au poignet reste approximative (position de la montre, altitude) : surveille si ça dure sur plusieurs nuits.`,
     });
   }
   if (pro.stress.derniere != null) {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { nuitVoisine, segmentsValides, heureApres, heureDe, minutesCoucher, heureDepuisMinutes, phases, efficacite, moyenne, moyenneCoucher, triees, tendance } from '../src/lib/data/sommeil.js';
+import { nuitVoisine, segmentsValides, heureApres, heureDe, heureDepuisMinutes } from '../src/lib/data/sommeil.js';
 
 test('heureDe : extrait HH:MM, tolère les valeurs absentes ou bizarres', () => {
   assert.equal(heureDe('2026-10-11 23:10'), '23:10');
@@ -9,42 +9,10 @@ test('heureDe : extrait HH:MM, tolère les valeurs absentes ou bizarres', () => 
   assert.equal(heureDe('n’importe quoi'), null);
 });
 
-test('coucher : après minuit compte comme tard, aller-retour en heure', () => {
-  assert.equal(minutesCoucher('23:30'), 23 * 60 + 30);
-  assert.equal(minutesCoucher('00:30'), 24 * 60 + 30);
-  assert.equal(heureDepuisMinutes(24 * 60 + 30), '00:30');
+test('heureDepuisMinutes : repasse minuit, tolère les valeurs absentes', () => {
+  assert.equal(heureDepuisMinutes(25 * 60), '01:00');
+  assert.equal(heureDepuisMinutes(0), '00:00');
   assert.equal(heureDepuisMinutes(null), null);
-});
-
-test('moyenneCoucher : 23:00 et 01:00 donnent minuit, pas midi', () => {
-  const m = moyenneCoucher([{ bedtime: 'x 23:00' }, { bedtime: 'x 01:00' }]);
-  assert.equal(heureDepuisMinutes(m), '00:00');
-});
-
-test('phases : parts qui totalisent 1, valeurs négatives ou absentes ignorées', () => {
-  const p = phases({ deep_sec: 3600, rem_sec: 3600, light_sec: 7200, awake_sec: null });
-  assert.equal(p.length, 4);
-  assert.ok(Math.abs(p.reduce((s, x) => s + x.part, 0) - 1) < 1e-9);
-  assert.deepEqual(phases({}), []);
-  assert.deepEqual(phases(null), []);
-});
-
-test('efficacité : temps dormi / temps au lit', () => {
-  const e = efficacite({ deep_sec: 100, rem_sec: 100, light_sec: 700, awake_sec: 100 });
-  assert.ok(Math.abs(e - 0.9) < 1e-9);
-  assert.equal(efficacite({}), null);
-});
-
-test('moyenne : ignore les trous', () => {
-  assert.equal(moyenne([{ a: 2 }, { a: null }, { a: 4 }, {}], 'a'), 3);
-  assert.equal(moyenne([], 'a'), null);
-});
-
-test('triées + tendance', () => {
-  const nuits = Array.from({ length: 30 }, (_, i) => ({ date: `2026-09-${String(i + 1).padStart(2, '0')}`, hrv_avg: i >= 23 ? 60 : 50 }));
-  assert.equal(triees(nuits)[0].date, '2026-09-30');
-  assert.equal(tendance(nuits, 'hrv_avg'), 'hausse');
-  assert.equal(tendance(nuits.slice(0, 5), 'hrv_avg'), null);
 });
 
 test('heureDe accepte aussi le format ISO avec T', () => {

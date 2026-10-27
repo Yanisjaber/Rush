@@ -74,7 +74,7 @@
       <Bouton variante="discret" onclick={() => charger(userId)}>Réessayer</Bouton>
     </div>
   {:else if !nuits.length}
-    <p class="info">Aucune nuit pour l'instant. La connexion officielle Garmin arrive bientôt.</p>
+    <p class="info">Aucune nuit pour l'instant. La connexion officielle Garmin arrive bientôt : tu pourras suivre son avancée dans <a href="#/parametres/connexions">Paramètres › Connexions</a>.</p>
   {:else if onglet === 'graphiques'}
     <Graphiques {nuits} />
   {:else if onglet === 'conseils'}
@@ -124,6 +124,11 @@
   }
   .info {
     color: var(--texte-doux);
+  }
+  .info a {
+    color: var(--texte);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
   .alerte {
     display: flex;
