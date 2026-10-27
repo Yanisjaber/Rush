@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scorePalier, efficacitePct, latenceMin, scoreNuit, qualificatifDe, tonDe, preparer, texteHM, moyenneHeure, analyserHoraires, analyser, signauxPhysio, synthese, planAction, comparaisons, bandeStress, ecartHeures, tesDernieresNuits, nuitsDeLaSemaine } from '../src/lib/data/score-sommeil.js';
+import { scorePalier, efficacitePct, latenceMin, scoreNuit, qualificatifDe, tonDe, preparer, texteHM, moyenneHeure, analyserHoraires, analyser, signauxPhysio, synthese, planAction, comparaisons, bandeStress, ecartHeures, tesDernieresNuits, nuitsDeLaSemaine, bornesAuto, joursSansNuit } from '../src/lib/data/score-sommeil.js';
 
 const nuitParfaite = (date = '2026-10-10') => ({
   date, bedtime: `${date} 23:00`, wake_time: `${date} 07:30`, total_sec: 28800, awake_sec: 1200, awake_count: 1,
@@ -188,4 +188,18 @@ test('7 derniers jours : par dates, un trou de synchronisation n\'est pas combl�
   assert.equal(nuitsDeLaSemaine(nuits, 7).length, 0);
   assert.equal(comparaisons(nuits).recent, null); // rien dans les 7 jours d'avant : pas de « tendance »
   assert.equal(analyser(nuits).nbNuitsDette, 5);
+});
+
+test('bornesAuto : échelle collée aux valeurs, vide sans valeur, ignore les trous', () => {
+  assert.deepEqual(bornesAuto([14, 15, null, 16]), { min: 13, max: 17 });
+  assert.deepEqual(bornesAuto([null, NaN]), {});
+  const plat = bornesAuto([60, 60]);
+  assert.ok(plat.min < 60 && plat.max > 60);
+});
+
+test('joursSansNuit : compte les jours manquants entre la première et la dernière nuit', () => {
+  assert.equal(joursSansNuit([{ date: '2026-10-01' }, { date: '2026-10-02' }, { date: '2026-10-03' }]), 0);
+  assert.equal(joursSansNuit([{ date: '2026-10-05' }, { date: '2026-10-01' }]), 3); // les 2, 3 et 4
+  assert.equal(joursSansNuit([{ date: '2026-10-05' }]), 0);
+  assert.equal(joursSansNuit([]), 0);
 });

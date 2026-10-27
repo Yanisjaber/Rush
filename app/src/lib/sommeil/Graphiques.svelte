@@ -2,7 +2,7 @@
   import Bloc from '../components/Bloc.svelte';
   import GrapheNuits from '../components/charts/GrapheNuits.svelte';
   import { COULEURS_PHASE } from './palette.js';
-  import { comparaisons, ecartHeures, moyenneDe, bandeStress, texteHM, texteHMdepuisSec } from '../data/score-sommeil.js';
+  import { comparaisons, ecartHeures, bornesAuto, joursSansNuit, moyenneDe, bandeStress, texteHM, texteHMdepuisSec } from '../data/score-sommeil.js';
 
   // Graphiques : l'évolution des 30 dernières nuits (durée et score, phases, HRV, respiration, SpO2, stress)
   // et deux comparaisons (7 derniers jours contre les 7 précédents ; semaine contre week-end).
@@ -19,6 +19,10 @@
     return b === 'repos' || b === 'bas' ? 'var(--ok)' : b === 'moyen' ? 'var(--alerte)' : 'var(--danger)';
   };
   const comp = $derived(comparaisons(nuits));
+  const trous = $derived(joursSansNuit(serie));
+  // Échelles qui collent aux valeurs (sinon la HRV et la respiration, qui bougent peu, paraissent plates)
+  const echelleHrv = $derived(bornesAuto(col('hrv_avg')));
+  const echelleResp = $derived(bornesAuto([...col('resp_min'), ...col('resp_max')]));
 
   // Lignes de comparaison : [libellé, clé, formatage d'une valeur, formatage de l'écart, heure de la journée ?]
   const minHM = (v) => texteHM(Math.round(v));
@@ -51,6 +55,9 @@
 {#if serie.length < 3}
   <Bloc><p class="info">Pas encore assez de nuits synchronisées pour les graphiques (3 minimum).</p></Bloc>
 {:else}
+  {#if trous > 0}
+    <p class="note-trous">{trous} jour{trous > 1 ? 's' : ''} sans nuit mesurée sur la période : les nuits sont placées les unes à côté des autres, sans laisser de vide pour ces jours.</p>
+  {/if}
   <div class="grille">
     <Bloc titre="Durée et score">
       <p class="legende-bloc">Score maison (pas celui de Garmin) en ligne, durée de sommeil en barres.</p>
@@ -93,6 +100,8 @@
           { nom: 'HRV', valeurs: col('hrv_avg'), couleur: 'var(--texte)' },
           { nom: 'Moyenne', valeurs: serie.map(() => moyenneHrv), couleur: 'var(--texte-muet)', pointille: true },
         ]}
+        min={echelleHrv.min}
+        max={echelleHrv.max}
         titre="HRV nocturne"
         formater={(v) => `${Math.round(v)} ms`}
       />
@@ -104,6 +113,8 @@
         etiquettes={dates}
         bande={{ min: col('resp_min').map((v) => v ?? NaN), max: col('resp_max').map((v) => v ?? NaN) }}
         lignes={[{ nom: 'Moyenne', valeurs: col('resp_avg'), couleur: 'var(--texte)' }]}
+        min={echelleResp.min}
+        max={echelleResp.max}
         titre="Fréquence respiratoire par nuit"
         formater={(v) => `${String(Math.round(v * 10) / 10).replace('.', ',')} /min`}
       />
@@ -140,7 +151,7 @@
         <Bloc titre="7 derniers jours contre les 7 précédents">
           <p class="legende-bloc">{comp.recent.a.n} nuits comparées à {comp.recent.b.n} : la tendance récente.</p>
           <table>
-            <thead><tr><th scope="col"><span class="visuel-cache">Mesure</span></th><th scope="col">Précédent</th><th scope="col"></th><th scope="col">Récent</th><th scope="col"><span class="visuel-cache">Écart</span></th></tr></thead>
+            <thead><tr><th scope="col"><span class="visuel-cache">Mesure</span></th><th scope="col">Précédent</th><th scope="col"><span class="visuel-cache">vers</span></th><th scope="col">Récent</th><th scope="col"><span class="visuel-cache">Écart</span></th></tr></thead>
             <tbody>
               {#each lignes(comp.recent.a, comp.recent.b, defRecent) as l (l.libelle)}
                 <tr><th scope="row">{l.libelle}</th><td>{l.avant}</td><td class="fleche">→</td><td><strong>{l.apres}</strong></td><td class="delta">{l.delta}</td></tr>
@@ -153,7 +164,7 @@
         <Bloc titre="Semaine contre week-end">
           <p class="legende-bloc">{comp.semaineWeekEnd.b.n} nuits en semaine, {comp.semaineWeekEnd.a.n} de week-end : l'effet « décalage horaire social ».</p>
           <table>
-            <thead><tr><th scope="col"><span class="visuel-cache">Mesure</span></th><th scope="col">Semaine</th><th scope="col"></th><th scope="col">Week-end</th><th scope="col"><span class="visuel-cache">Écart</span></th></tr></thead>
+            <thead><tr><th scope="col"><span class="visuel-cache">Mesure</span></th><th scope="col">Semaine</th><th scope="col"><span class="visuel-cache">vers</span></th><th scope="col">Week-end</th><th scope="col"><span class="visuel-cache">Écart</span></th></tr></thead>
             <tbody>
               {#each lignes(comp.semaineWeekEnd.a, comp.semaineWeekEnd.b, defSemaine) as l (l.libelle)}
                 <tr><th scope="row">{l.libelle}</th><td>{l.avant}</td><td class="fleche">→</td><td><strong>{l.apres}</strong></td><td class="delta">{l.delta}</td></tr>
@@ -171,6 +182,11 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr));
     gap: 16px;
+  }
+  .note-trous {
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: var(--texte-doux);
   }
   .comparaisons {
     margin-top: 16px;

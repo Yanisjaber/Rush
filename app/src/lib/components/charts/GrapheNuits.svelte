@@ -11,6 +11,7 @@
   const L = 800;
   const MARGE = 6;
   let survol = $state(null);
+  let auClavier = $state(false); // flèches du clavier : la valeur lue est annoncée aux lecteurs d'écran
 
   const n = $derived(etiquettes.length);
   const toutes = $derived([...barres.flatMap((b) => b.valeurs), ...lignes.filter((l) => !l.echelle).flatMap((l) => l.valeurs), ...(bande ? [...bande.min, ...bande.max] : []), ...reperes.map((r) => r.valeur)].filter((v) => v != null && !Number.isNaN(v)));
@@ -58,11 +59,25 @@
       return { d, couleur: l.couleur, pointille: l.pointille };
     }),
   );
+  // Bande min-max : un tracé par suite continue de nuits, les trous de données ne sont pas reliés
   const zoneBande = $derived.by(() => {
     if (!bande) return '';
-    const haut = bande.max.map((v, i) => [cx(i), y(v)]).filter(([, yy]) => !Number.isNaN(yy));
-    const bas = bande.min.map((v, i) => [cx(i), y(v)]).filter(([, yy]) => !Number.isNaN(yy)).reverse();
-    return haut.length && bas.length ? `M${[...haut, ...bas].map(([a, b]) => `${a.toFixed(1)},${b.toFixed(1)}`).join('L')}Z` : '';
+    const ok = (v) => v != null && !Number.isNaN(v);
+    const morceaux = [];
+    let courant = [];
+    const fermer = () => {
+      if (courant.length) morceaux.push(courant);
+      courant = [];
+    };
+    bande.max.forEach((vmax, i) => (ok(vmax) && ok(bande.min[i]) ? courant.push(i) : fermer()));
+    fermer();
+    return morceaux
+      .map((idx) => {
+        const haut = idx.map((i) => `${cx(i).toFixed(1)},${y(bande.max[i]).toFixed(1)}`);
+        const bas = idx.map((i) => `${cx(i).toFixed(1)},${y(bande.min[i]).toFixed(1)}`).reverse();
+        return `M${[...haut, ...bas].join('L')}Z`;
+      })
+      .join('');
   });
 
   const jj = (iso) => (texteEtiquette ? texteEtiquette(iso) : `${iso.slice(8, 10)}/${iso.slice(5, 7)}`);
@@ -76,7 +91,19 @@
           .join(' · ')}`,
   );
 
+  // Au clavier : ← → changent de nuit, Début / Fin vont aux extrémités, Échap efface
+  function touche(e) {
+    if (!n) return;
+    const cible = { ArrowLeft: (survol ?? n) - 1, ArrowRight: (survol ?? -1) + 1, Home: 0, End: n - 1 }[e.key];
+    if (e.key === 'Escape') survol = null;
+    if (cible === undefined) return;
+    e.preventDefault();
+    auClavier = true;
+    survol = Math.max(0, Math.min(n - 1, cible));
+  }
+
   function bouger(e) {
+    auClavier = false;
     const r = e.currentTarget.getBoundingClientRect();
     if (!r.width || !n) return;
     survol = Math.max(0, Math.min(n - 1, Math.floor(((e.clientX - r.left) / r.width) * n)));
@@ -84,8 +111,8 @@
 </script>
 
 <figure class="graphe">
-  <figcaption aria-live="off">{lecture || ' '}</figcaption>
-  <svg viewBox="0 0 {L} {hauteur}" style:aspect-ratio="{L} / {hauteur}" preserveAspectRatio="none" role="img" aria-label={titre} onpointermove={bouger} onpointerleave={() => (survol = null)}>
+  <figcaption aria-live={auClavier ? 'polite' : 'off'}>{lecture || ' '}</figcaption>
+  <svg viewBox="0 0 {L} {hauteur}" style:aspect-ratio="{L} / {hauteur}" preserveAspectRatio="none" role="application" aria-roledescription="graphique" aria-label="{titre} : flèches gauche et droite pour lire chaque nuit" tabindex="0" onkeydown={touche} onfocus={() => (survol ??= n - 1)} onblur={() => (survol = null)} onpointermove={bouger} onpointerleave={() => (survol = null)}>
     {#each reperes as r (r.valeur)}
       <line x1="0" x2={L} y1={y(r.valeur)} y2={y(r.valeur)} class="repere" />
     {/each}
@@ -122,6 +149,10 @@
     height: auto;
     touch-action: pan-y;
     cursor: crosshair;
+  }
+  svg:focus-visible {
+    outline: 2px solid var(--texte);
+    outline-offset: 2px;
   }
   .repere {
     stroke: var(--trait-fort);

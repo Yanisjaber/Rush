@@ -260,6 +260,23 @@ export function nuitsDeLaSemaine(nuitsTriees, decalage = 0) {
   });
 }
 
+/** Bornes d'une échelle qui colle aux valeurs (avec une marge), pour que de petites variations restent lisibles ; {} sans valeur. */
+export function bornesAuto(valeurs, marge = 0.15) {
+  const v = (valeurs || []).filter((x) => x != null && !Number.isNaN(Number(x))).map(Number);
+  if (!v.length) return {};
+  const min = Math.min(...v);
+  const max = Math.max(...v);
+  const aire = max - min || Math.max(1, Math.abs(max) * 0.1);
+  return { min: Math.floor(min - aire * marge), max: Math.ceil(max + aire * marge) };
+}
+
+/** Nombre de jours sans nuit entre la première et la dernière nuit d'une liste (dates « AAAA-MM-JJ », dans n'importe quel ordre). */
+export function joursSansNuit(nuits) {
+  const dates = (nuits || []).map((n) => n.date).sort();
+  if (dates.length < 2) return 0;
+  return Math.max(0, joursEntre(dates.at(-1), dates[0]) + 1 - new Set(dates).size);
+}
+
 /** Analyse « pro » sur les nuits récentes (la plus récente d'abord) : efficacité, endormissement, dette, phases, signaux. null sans nuit. */
 export function analyser(nuitsTriees) {
   const valides = nuitsTriees.filter((n) => n.total_sec != null);
