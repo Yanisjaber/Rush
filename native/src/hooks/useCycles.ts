@@ -36,6 +36,18 @@ export function useCycles(): {
     };
   }, [demo, userId, version]);
 
+  const { creer, modifier, supprimer } = useEcrituresCycles();
+  return { ...etat, creer, modifier, supprimer };
+}
+
+// Les écritures de cycles seules (créer, modifier, supprimer), sans charger la liste : pour un écran qui n'a besoin que d'écrire (l'aperçu d'un cycle).
+export function useEcrituresCycles(): {
+  creer: (f: FormulaireCycle) => Promise<string>;
+  modifier: (id: string, f: FormulaireCycle) => Promise<string>;
+  supprimer: (id: string) => Promise<string>;
+} {
+  const { session, demo } = useAuth();
+  const userId = session?.user.id ?? null;
   // Chaque écriture renvoie un message d'erreur, vide quand tout s'est bien passé
   const creer = useCallback(
     async (f: FormulaireCycle) => {
@@ -70,5 +82,5 @@ export function useCycles(): {
     },
     [demo, userId],
   );
-  return { ...etat, creer, modifier, supprimer };
+  return { creer, modifier, supprimer };
 }

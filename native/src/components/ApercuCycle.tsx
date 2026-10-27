@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Bouton } from '@/components/Bouton';
 import { avancementCycle, joursDuCycle } from '@/data/cycles';
 import { couleurNote } from '@/data/annotations';
 import { periodeCourte } from '@/data/format';
-import { useCycles } from '@/hooks/useCycles';
+import { useEcrituresCycles } from '@/hooks/useCycles';
 import { espace, rayon } from '@/theme/couleurs';
 import { SPORTS, type CleSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
@@ -15,9 +15,14 @@ import type { Cycle } from '@/data/types';
 // (qui ouvre l'écran du cycle) et « Supprimer » (après confirmation). Les séances ne sont jamais touchées par la suppression d'un cycle.
 export function ApercuCycle({ cycle, jour, onFermer, onModifier }: { cycle: Cycle | null; jour: string; onFermer: () => void; onModifier: (c: Cycle) => void }) {
   const p = usePalette();
-  const { supprimer } = useCycles();
+  const { supprimer } = useEcrituresCycles(); // pas besoin de charger tous les cycles pour en supprimer un
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState('');
+  // Un autre cycle (ou une réouverture) repart sans l'erreur du précédent
+  useEffect(() => {
+    setErreur('');
+    setEnCours(false);
+  }, [cycle]);
 
   function confirmerSuppression() {
     if (!cycle) return;
