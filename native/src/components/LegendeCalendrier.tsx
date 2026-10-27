@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LogoNote } from '@/components/LogoNote';
 import { couleurNote } from '@/data/annotations';
-import { rayon } from '@/theme/couleurs';
+import { espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -28,7 +28,7 @@ export function LegendeCalendrier() {
 
   return (
     <View style={styles.ligne}>
-      <Pressable onPress={() => setOuvert(true)} accessibilityRole="button" accessibilityLabel="Que signifient les points ? Ouvrir la légende" style={styles.aide}>
+      <Pressable onPress={() => setOuvert(true)} accessibilityRole="button" accessibilityLabel="Que signifient les points ? Ouvrir la légende" hitSlop={{ top: 14, bottom: 14, left: 24, right: 24 }} style={styles.aide}>
         <Text style={[typo.micro, { color: p.texteMuet }]}>Que signifient les points ?</Text>
       </Pressable>
 
@@ -59,12 +59,13 @@ export function LegendeCalendrier() {
 }
 
 const styles = StyleSheet.create({
-  ligne: { alignItems: 'center' },
+  // Collée à la grille : on annule l'écart de la page (espace.e3) au-dessus et on en garde un tout petit
+  ligne: { alignItems: 'center', marginTop: -espace.e3 + 3, marginBottom: -4 },
   point: { width: 6, height: 6, borderRadius: 3 },
   carre: { width: 6, height: 6, borderRadius: 1.5, borderWidth: 1 },
   barre: { width: 10, height: 3, borderRadius: 2 },
   bande: { width: 24, height: 4, borderRadius: 2 },
-  aide: { minHeight: 44, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
+  aide: { paddingHorizontal: 8, paddingVertical: 2, alignItems: 'center', justifyContent: 'center' },
   voile: { backgroundColor: 'rgba(0,0,0,0.45)' },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
   panneau: { width: '100%', maxWidth: 360, borderWidth: 1, borderRadius: rayon.bloc, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 6 },
