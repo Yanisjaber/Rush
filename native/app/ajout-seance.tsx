@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { nomDuType } from '@/data/catalogue-sports';
@@ -11,9 +11,11 @@ import { FeuilleBloc } from '@/components/FeuilleBloc';
 import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
 import { ProfilSeance } from '@/components/ProfilSeance';
 import { ChampDate } from '@/components/ChampDate';
-import { chargeEstimee, distanceEnMetres, formulaireSeanceVide, validerSeance } from '@/data/ajouts';
+import { AvecPrevue } from '@/components/AvecPrevue';
+import type { PrevueComplete } from '@/data/types';
+import { blocsDePrevue, chargeEstimee, distanceEnMetres, formulaireDepuisSeance, formulaireSeanceVide, parcoursDePrevue, validerSeance } from '@/data/ajouts';
 import { deplacerBloc, nomDuBloc, peutAjouterBloc } from '@/data/blocs-formulaire';
-import { type ResumeGpx } from '@/data/gpx';
+import { resumerGpx, type ResumeGpx } from '@/data/gpx';
 import { COULEURS_ZONE, indiceZone, metriquesDuSport, milieu, NOM_TYPE, resume, sportAvecStructure, texteCible, texteDuree, tousSegments, type Bloc } from '@/data/structure';
 import { heureDepuisDuree, heuresMinutesDepuis, minutesDepuisHeure, texteDureeSaisie } from '@/data/heure';
 import { useAjouts } from '@/hooks/useAjouts';
@@ -26,17 +28,27 @@ import { usePalette } from '@/theme/usePalette';
 
 // Planifier une séance : sport, nom, heure, et pour le vélo, la course et la natation, des blocs (échauffement, intervalles, retour au calme…) dont la durée et la charge
 // se calculent. Sans bloc, on saisit simplement une durée. La séance est écrite dans activity_planned, comme sur le site.
+// Avec un paramètre « id », c'est la modification d'une séance déjà enregistrée : le formulaire part de ses valeurs (voir AvecPrevue).
 export default function EcranAjoutSeance() {
+  return <AvecPrevue>{(prevue) => <FormulaireSeance key={prevue?.id ?? 'nouvelle'} prevue={prevue} />}</AvecPrevue>;
+}
+
+function FormulaireSeance({ prevue }: { prevue: PrevueComplete | null }) {
   const p = usePalette();
   const router = useRouter();
-  const { creerPrevue } = useAjouts();
+  const { creerPrevue, modifierPrevue } = useAjouts();
   const reference = useReferences();
   const { filtre, familles } = useMenu(); // le sport où l'on était (ou le premier de la barre sur « Tous ») est pré-sélectionné
-  const [date, setDate] = useState(useDateAjout());
-  const [f, setF] = useState(() => formulaireSeanceVide(filtre, familles));
-  const [blocs, setBlocs] = useState<Bloc[]>([]);
+  const dateParDefaut = useDateAjout();
+  const [date, setDate] = useState(prevue?.date ?? dateParDefaut);
+  const [f, setF] = useState(() => (prevue ? formulaireDepuisSeance(prevue) : formulaireSeanceVide(filtre, familles)));
+  const [blocs, setBlocs] = useState<Bloc[]>(() => (prevue ? blocsDePrevue(prevue) : []));
   const [edition, setEdition] = useState<{ index: number | null } | null>(null); // le bloc ouvert dans la feuille (null = fermée, index null = nouveau)
-  const [parcours, setParcours] = useState<ParcoursChoisi | null>(null); // le GPX choisi
+  const [parcours, setParcours] = useState<ParcoursChoisi | null>(() => {
+    const fichier = prevue ? parcoursDePrevue(prevue) : null;
+    const lu = fichier ? resumerGpx(fichier.contenu) : null;
+    return fichier && lu?.ok ? { fichier, resume: lu.resume } : null;
+  }); // le GPX choisi
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState(false);
 
@@ -64,7 +76,7 @@ export default function EcranAjoutSeance() {
     const r = validerSeance(f, date, nomSport(f.type), blocs, reference, parcours?.fichier ?? null);
     if (!r.ok) return setErreur(r.erreur);
     setEnCours(true);
-    const e = await creerPrevue(r.ligne);
+    const e = prevue ? await modifierPrevue(prevue.id, r.ligne) : await creerPrevue(r.ligne);
     setEnCours(false);
     if (e) return setErreur(e);
     router.back();
@@ -91,7 +103,8 @@ export default function EcranAjoutSeance() {
 
   return (
     <>
-      <EcranAjout bouton="Planifier" enCours={enCours} erreur={erreur} onValider={() => void enregistrer()}>
+      <Stack.Screen options={{ title: prevue ? 'Modifier la séance' : 'Séance prévue' }} />
+      <EcranAjout bouton={prevue ? 'Enregistrer' : 'Planifier'} enCours={enCours} erreur={erreur} onValider={() => void enregistrer()}>
         <ChampDate date={date} onChange={(iso) => { setDate(iso); setErreur(''); }} />
         <View style={styles.ligne}>
           <View style={{ flex: 1.4, gap: 6 }}>

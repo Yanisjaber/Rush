@@ -78,6 +78,19 @@ export default function RootLayout() {
               headerShadowVisible: false,
             }}
           />
+          {/* Une séance prévue ou une compétition en lecture, avec Modifier et Supprimer */}
+          <Stack.Screen
+            name="prevue"
+            options={{
+              headerShown: true,
+              title: 'Séance prévue',
+              headerStyle: { backgroundColor: palette.fond },
+              headerTintColor: palette.texte,
+              headerTitleStyle: { fontFamily: 'BricolageGrotesque_700Bold' },
+              headerBackButtonDisplayMode: 'minimal',
+              headerShadowVisible: false,
+            }}
+          />
           {/* Les cycles d'entraînement : la liste, puis le formulaire pour en créer ou en modifier un */}
           <Stack.Screen name="cycles" options={{ headerShown: true, title: 'Cycles', headerStyle: { backgroundColor: palette.fond }, headerTintColor: palette.texte, headerTitleStyle: { fontFamily: 'BricolageGrotesque_700Bold' }, headerBackButtonDisplayMode: 'minimal', headerShadowVisible: false }} />
           {/* Les écrans d'ajout du « + » du calendrier : un par type d'ajout, tous avec le même en-tête */}

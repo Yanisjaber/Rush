@@ -1,8 +1,9 @@
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PastillesChoix } from '@/components/ChampsFeuille';
 import { ChampDate } from '@/components/ChampDate';
+import { AvecPrevue } from '@/components/AvecPrevue';
 import { nomDuType } from '@/data/catalogue-sports';
 import { ChampHeure } from '@/components/ChampHeure';
 import { ChampParcoursGpx, type ParcoursChoisi } from '@/components/ChampParcoursGpx';
@@ -13,7 +14,9 @@ import { EcranAjout } from '@/components/EcranAjout';
 import { MenuDeroulantChoix } from '@/components/MenuDeroulantChoix';
 import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
 import { OngletsSegment } from '@/components/OngletsSegment';
-import { distanceEnMetres, formulaireCompetitionVide, validerCompetition } from '@/data/ajouts';
+import { distanceEnMetres, formulaireCompetitionVide, formulaireDepuisCompetition, parcoursDePrevue, validerCompetition } from '@/data/ajouts';
+import { resumerGpx } from '@/data/gpx';
+import type { PrevueComplete } from '@/data/types';
 import { aUnFormat, allureMoyenne, champNiveau, federationsDuSport, FORMATS_TRI, lireTempsCible, TYPES_EPREUVE_VELO } from '@/data/competition';
 import { formatDateCourte, formatJoursAvant, joursAvant } from '@/data/format';
 import { useAjouts } from '@/hooks/useAjouts';
@@ -32,15 +35,25 @@ const ONGLETS: { cle: Onglet; nom: string }[] = [
   { cle: 'objectif', nom: 'Objectif' },
 ];
 
+// Avec un paramètre « id », c'est la modification d'une compétition déjà enregistrée : le formulaire part de ses valeurs (voir AvecPrevue).
 export default function EcranAjoutCompetition() {
+  return <AvecPrevue>{(prevue) => <FormulaireCompetition key={prevue?.id ?? 'nouvelle'} prevue={prevue} />}</AvecPrevue>;
+}
+
+function FormulaireCompetition({ prevue }: { prevue: PrevueComplete | null }) {
   const p = usePalette();
   const router = useRouter();
-  const { creerPrevue } = useAjouts();
+  const { creerPrevue, modifierPrevue } = useAjouts();
   const { filtre, familles } = useMenu(); // le sport où l'on était (ou le premier de la barre sur « Tous ») est pré-sélectionné
   const [onglet, setOnglet] = useState<Onglet>('epreuve');
-  const [date, setDate] = useState(useDateAjout());
-  const [f, setF] = useState(() => formulaireCompetitionVide(filtre, familles));
-  const [parcours, setParcours] = useState<ParcoursChoisi | null>(null);
+  const dateParDefaut = useDateAjout();
+  const [date, setDate] = useState(prevue?.date ?? dateParDefaut);
+  const [f, setF] = useState(() => (prevue ? formulaireDepuisCompetition(prevue) : formulaireCompetitionVide(filtre, familles)));
+  const [parcours, setParcours] = useState<ParcoursChoisi | null>(() => {
+    const fichier = prevue ? parcoursDePrevue(prevue) : null;
+    const lu = fichier ? resumerGpx(fichier.contenu) : null;
+    return fichier && lu?.ok ? { fichier, resume: lu.resume } : null;
+  });
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState(false);
 
@@ -59,7 +72,7 @@ export default function EcranAjoutCompetition() {
     const r = validerCompetition(f, date, parcours?.fichier ?? null);
     if (!r.ok) return setErreur(r.erreur);
     setEnCours(true);
-    const e = await creerPrevue(r.ligne);
+    const e = prevue ? await modifierPrevue(prevue.id, r.ligne) : await creerPrevue(r.ligne);
     setEnCours(false);
     if (e) return setErreur(e);
     router.back();
@@ -92,105 +105,108 @@ export default function EcranAjoutCompetition() {
   );
 
   return (
-    <EcranAjout bouton="Ajouter la compétition" enCours={enCours} erreur={erreur} onValider={() => void enregistrer()} entete={entete}>
-      {onglet === 'epreuve' ? (
-        <>
-          <ChampTexte etiquette="Nom" value={f.nom} onChangeText={(t) => change({ ...f, nom: t })} maxLength={120} placeholder="Marathon de Toulouse" returnKeyType="done" />
-          <View style={{ gap: 6 }}>
-            {etiquette('Sport')}
-            <MenuDeroulantSport parType valeur={f.type} avecTous={false} onChoisir={(type) => changerSport(type ?? 'Run')} />
-          </View>
-          <View style={{ gap: 6 }}>
-            {etiquette('Priorité')}
-            <PastillesChoix
-              valeurs={[
-                { cle: 'A' as const, nom: 'Objectif' },
-                { cle: 'B' as const, nom: 'Préparation' },
-              ]}
-              actuel={f.priorite}
-              onChoisir={(v) => change({ ...f, priorite: v })}
-              etiquette="Priorité"
-            />
-            <Text style={[typo.petit, { color: p.texteDoux, paddingLeft: 16 }]}>{f.priorite === 'A' ? 'Ta course principale : la préparation vise cette date.' : 'Une course pour te tester, sans viser le pic de forme.'}</Text>
-          </View>
-          <ChampDate date={date} onChange={(iso) => { setDate(iso); setErreur(''); }} />
-          <View style={styles.ligne}>
-            <View style={{ flex: 1 }}>
-              <ChampHeure etiquette="Heure de départ" valeur={f.heure} onChange={(h) => change({ ...f, heure: h })} />
+    <>
+    <Stack.Screen options={{ title: prevue ? 'Modifier la compétition' : 'Compétition' }} />
+      <EcranAjout bouton={prevue ? 'Enregistrer' : 'Ajouter la compétition'} enCours={enCours} erreur={erreur} onValider={() => void enregistrer()} entete={entete}>
+        {onglet === 'epreuve' ? (
+          <>
+            <ChampTexte etiquette="Nom" value={f.nom} onChangeText={(t) => change({ ...f, nom: t })} maxLength={120} placeholder="Marathon de Toulouse" returnKeyType="done" />
+            <View style={{ gap: 6 }}>
+              {etiquette('Sport')}
+              <MenuDeroulantSport parType valeur={f.type} avecTous={false} onChoisir={(type) => changerSport(type ?? 'Run')} />
             </View>
-            <View style={{ flex: 1.3 }}>
-              {f.type === 'Ride' ? (
-                <MenuDeroulantChoix etiquette="Type d'épreuve" valeur={f.epreuve} options={TYPES_EPREUVE_VELO.map((t) => ({ cle: t, nom: t }))} onChoisir={(t) => change({ ...f, epreuve: t })} />
-              ) : (
-                <ChampTexte etiquette="Type d'épreuve" value={f.epreuve} onChangeText={(t) => change({ ...f, epreuve: t })} maxLength={60} placeholder="Route, trail…" />
-              )}
+            <View style={{ gap: 6 }}>
+              {etiquette('Priorité')}
+              <PastillesChoix
+                valeurs={[
+                  { cle: 'A' as const, nom: 'Objectif' },
+                  { cle: 'B' as const, nom: 'Préparation' },
+                ]}
+                actuel={f.priorite}
+                onChoisir={(v) => change({ ...f, priorite: v })}
+                etiquette="Priorité"
+              />
+              <Text style={[typo.petit, { color: p.texteDoux, paddingLeft: 16 }]}>{f.priorite === 'A' ? 'Ta course principale : la préparation vise cette date.' : 'Une course pour te tester, sans viser le pic de forme.'}</Text>
             </View>
-          </View>
-          {federations.length ? (
+            <ChampDate date={date} onChange={(iso) => { setDate(iso); setErreur(''); }} />
             <View style={styles.ligne}>
               <View style={{ flex: 1 }}>
-                <MenuDeroulantChoix etiquette="Fédération" valeur={f.federation} options={federations.map((x) => ({ cle: x, nom: x }))} onChoisir={(x) => change({ ...f, federation: x, niveau: '' })} />
+                <ChampHeure etiquette="Heure de départ" valeur={f.heure} onChange={(h) => change({ ...f, heure: h })} />
               </View>
               <View style={{ flex: 1.3 }}>
-                {niveau.liste ? (
-                  <MenuDeroulantChoix etiquette="Catégorie" valeur={f.niveau} options={niveau.liste.map(([code, nom]) => ({ cle: code, nom }))} onChoisir={(x) => change({ ...f, niveau: x })} />
+                {f.type === 'Ride' ? (
+                  <MenuDeroulantChoix etiquette="Type d'épreuve" valeur={f.epreuve} options={TYPES_EPREUVE_VELO.map((t) => ({ cle: t, nom: t }))} onChoisir={(t) => change({ ...f, epreuve: t })} />
                 ) : (
-                  <ChampTexte etiquette="Niveau" value={f.niveau} onChangeText={(t) => change({ ...f, niveau: t })} maxLength={60} placeholder={niveau.exemple} />
+                  <ChampTexte etiquette="Type d'épreuve" value={f.epreuve} onChangeText={(t) => change({ ...f, epreuve: t })} maxLength={60} placeholder="Route, trail…" />
                 )}
               </View>
             </View>
-          ) : null}
-          {aUnFormat(f.type) ? <MenuDeroulantChoix etiquette="Format" valeur={f.format} options={FORMATS_TRI.map((x) => ({ cle: x, nom: x }))} onChoisir={(x) => change({ ...f, format: x })} /> : null}
-        </>
-      ) : null}
-
-      {onglet === 'parcours' ? (
-        <>
-          <View style={styles.ligne}>
-            <View style={{ flex: 1 }}>
-              <ChampTexte etiquette="Temps cible" value={f.cible} onChangeText={(t) => change({ ...f, cible: t })} maxLength={8} placeholder="3h45" autoCapitalize="none" accessibilityLabel="Temps cible, par exemple 3h45" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <ChampTexte etiquette={distanceEnMetres(f.type) ? 'Distance (m)' : 'Distance (km)'} value={f.distance} onChangeText={(t) => change({ ...f, distance: t })} keyboardType="decimal-pad" maxLength={8} accessibilityLabel={distanceEnMetres(f.type) ? 'Distance en mètres' : 'Distance en kilomètres'} />
-            </View>
-          </View>
-          <View style={styles.ligne}>
-            <View style={{ flex: 1 }}>
-              <ChampTexte etiquette="Dénivelé + (m)" value={f.dplus} onChangeText={(t) => change({ ...f, dplus: t })} keyboardType="number-pad" maxLength={5} accessibilityLabel="Dénivelé positif en mètres" />
-            </View>
-            {f.type === 'Ride' ? (
-              <View style={{ flex: 1 }}>
-                <ChampTexte etiquette="Nombre de tours" value={f.tours} onChangeText={(t) => change({ ...f, tours: t })} keyboardType="number-pad" maxLength={3} accessibilityLabel="Nombre de tours" />
+            {federations.length ? (
+              <View style={styles.ligne}>
+                <View style={{ flex: 1 }}>
+                  <MenuDeroulantChoix etiquette="Fédération" valeur={f.federation} options={federations.map((x) => ({ cle: x, nom: x }))} onChoisir={(x) => change({ ...f, federation: x, niveau: '' })} />
+                </View>
+                <View style={{ flex: 1.3 }}>
+                  {niveau.liste ? (
+                    <MenuDeroulantChoix etiquette="Catégorie" valeur={f.niveau} options={niveau.liste.map(([code, nom]) => ({ cle: code, nom }))} onChoisir={(x) => change({ ...f, niveau: x })} />
+                  ) : (
+                    <ChampTexte etiquette="Niveau" value={f.niveau} onChangeText={(t) => change({ ...f, niveau: t })} maxLength={60} placeholder={niveau.exemple} />
+                  )}
+                </View>
               </View>
-            ) : (
-              <View style={{ flex: 1 }} />
-            )}
-          </View>
-          {allure ? (
-            <Text accessibilityLabel={`${allure.libelle} ${allure.valeur}`} style={[typo.corps, { color: p.texteDoux, paddingLeft: 16 }]}>
-              {allure.libelle} <Text style={{ fontFamily: police.texte600, color: p.texte }}>{allure.valeur}</Text>
-            </Text>
-          ) : null}
-          <ChampParcoursGpx
-            etiquette="Parcours GPX (facultatif)"
-            parcours={parcours}
-            onChange={setParcours}
-            onErreur={setErreur}
-            onReprendre={({ distanceKm, denivele }) =>
-              change({ ...f, distance: distanceEnMetres(f.type) ? String(Math.round(distanceKm * 1000)) : String(distanceKm).replace('.', ','), dplus: denivele != null ? String(denivele) : f.dplus })
-            }
-          />
-        </>
-      ) : null}
+            ) : null}
+            {aUnFormat(f.type) ? <MenuDeroulantChoix etiquette="Format" valeur={f.format} options={FORMATS_TRI.map((x) => ({ cle: x, nom: x }))} onChoisir={(x) => change({ ...f, format: x })} /> : null}
+          </>
+        ) : null}
 
-      {onglet === 'objectif' ? (
-        <>
-          <ChampTexte etiquette="Charge estimée (pts, facultatif)" value={f.tss} onChangeText={(t) => change({ ...f, tss: t })} keyboardType="number-pad" maxLength={4} accessibilityLabel="Charge estimée en points" />
-          <ChoixEffort valeur={f.rpe} onChange={(v) => change({ ...f, rpe: v })} etiquette="Effort estimé (facultatif)" />
-          <ChampTexte etiquette="Notes (facultatif)" value={f.notes} onChangeText={(t) => change({ ...f, notes: t })} maxLength={2000} multiline placeholder="Stratégie, observations, objectifs…" />
-        </>
-      ) : null}
-    </EcranAjout>
+        {onglet === 'parcours' ? (
+          <>
+            <View style={styles.ligne}>
+              <View style={{ flex: 1 }}>
+                <ChampTexte etiquette="Temps cible" value={f.cible} onChangeText={(t) => change({ ...f, cible: t })} maxLength={8} placeholder="3h45" autoCapitalize="none" accessibilityLabel="Temps cible, par exemple 3h45" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ChampTexte etiquette={distanceEnMetres(f.type) ? 'Distance (m)' : 'Distance (km)'} value={f.distance} onChangeText={(t) => change({ ...f, distance: t })} keyboardType="decimal-pad" maxLength={8} accessibilityLabel={distanceEnMetres(f.type) ? 'Distance en mètres' : 'Distance en kilomètres'} />
+              </View>
+            </View>
+            <View style={styles.ligne}>
+              <View style={{ flex: 1 }}>
+                <ChampTexte etiquette="Dénivelé + (m)" value={f.dplus} onChangeText={(t) => change({ ...f, dplus: t })} keyboardType="number-pad" maxLength={5} accessibilityLabel="Dénivelé positif en mètres" />
+              </View>
+              {f.type === 'Ride' ? (
+                <View style={{ flex: 1 }}>
+                  <ChampTexte etiquette="Nombre de tours" value={f.tours} onChangeText={(t) => change({ ...f, tours: t })} keyboardType="number-pad" maxLength={3} accessibilityLabel="Nombre de tours" />
+                </View>
+              ) : (
+                <View style={{ flex: 1 }} />
+              )}
+            </View>
+            {allure ? (
+              <Text accessibilityLabel={`${allure.libelle} ${allure.valeur}`} style={[typo.corps, { color: p.texteDoux, paddingLeft: 16 }]}>
+                {allure.libelle} <Text style={{ fontFamily: police.texte600, color: p.texte }}>{allure.valeur}</Text>
+              </Text>
+            ) : null}
+            <ChampParcoursGpx
+              etiquette="Parcours GPX (facultatif)"
+              parcours={parcours}
+              onChange={setParcours}
+              onErreur={setErreur}
+              onReprendre={({ distanceKm, denivele }) =>
+                change({ ...f, distance: distanceEnMetres(f.type) ? String(Math.round(distanceKm * 1000)) : String(distanceKm).replace('.', ','), dplus: denivele != null ? String(denivele) : f.dplus })
+              }
+            />
+          </>
+        ) : null}
+
+        {onglet === 'objectif' ? (
+          <>
+            <ChampTexte etiquette="Charge estimée (pts, facultatif)" value={f.tss} onChangeText={(t) => change({ ...f, tss: t })} keyboardType="number-pad" maxLength={4} accessibilityLabel="Charge estimée en points" />
+            <ChoixEffort valeur={f.rpe} onChange={(v) => change({ ...f, rpe: v })} etiquette="Effort estimé (facultatif)" />
+            <ChampTexte etiquette="Notes (facultatif)" value={f.notes} onChangeText={(t) => change({ ...f, notes: t })} maxLength={2000} multiline placeholder="Stratégie, observations, objectifs…" />
+          </>
+        ) : null}
+      </EcranAjout>
+    </>
   );
 }
 

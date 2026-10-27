@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
 import { Bloc } from '@/components/Bloc';
 import { BulleSemaine, type AncreBulle } from '@/components/BulleSemaine';
@@ -509,11 +508,17 @@ function Detail({ jour }: { jour: JourGrille }) {
       ) : (
         <View>
           {jour.objectifs.map((o) => (
-            <View key={o.id} accessible accessibilityLabel={`Compétition : ${o.name}`} style={[styles.objectif, { backgroundColor: p.dossardFond, marginTop: 8 }]}>
+            <Pressable
+              key={o.id}
+              onPress={() => router.push({ pathname: '/prevue', params: { id: o.id } })}
+              accessibilityRole="button"
+              accessibilityLabel={`Compétition : ${o.name}. Voir le détail`}
+              style={[styles.objectif, { backgroundColor: p.dossardFond, marginTop: 8 }]}
+            >
               <Text numberOfLines={1} style={[styles.objectifTexte, { color: p.dossardTexte }]}>
                 {o.name}
               </Text>
-            </View>
+            </Pressable>
           ))}
           {jour.seances.map((s) => {
             const nom = s.name || nomSport(s.sport);
@@ -545,7 +550,7 @@ function Detail({ jour }: { jour: JourGrille }) {
             return (
               <Pressable
                 key={x.id}
-                onPress={() => bientot('La modification de séance prévue')}
+                onPress={() => router.push({ pathname: '/prevue', params: { id: x.id } })}
                 accessibilityRole="button"
                 accessibilityLabel={`Séance prévue : ${nom}`}
                 style={[styles.ligneSeance, { borderTopColor: p.trait }]}
