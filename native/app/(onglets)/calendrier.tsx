@@ -8,6 +8,7 @@ import Svg, { Path } from 'react-native-svg';
 import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
 import { Bloc } from '@/components/Bloc';
+import { BoutonPlus } from '@/components/BoutonPlus';
 import { ApercuCycle } from '@/components/ApercuCycle';
 import { MenuAjout, type ChoixAjout } from '@/components/MenuAjout';
 import { FeuilleNote } from '@/components/FeuilleNote';
@@ -418,15 +419,7 @@ function Detail({ jour }: { jour: JourGrille }) {
         <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
           {dateLongue(jour.iso)}
         </Text>
-        <Pressable
-          onPress={() => setMenuAjout(true)}
-          accessibilityRole="button"
-          accessibilityLabel="Ajouter : séance, activité, import de fichier, compétition, note, cycle ou repos"
-          accessibilityState={{ expanded: menuAjout }}
-          style={[styles.detailPlus, { backgroundColor: p.texte }]}
-        >
-          <Text style={[styles.detailPlusTexte, { color: p.fond }]}>+</Text>
-        </Pressable>
+        <BoutonPlus onPress={() => setMenuAjout(true)} ouvert={menuAjout} />
       </View>
       {/* Un jour de repos : une ligne fine sous le titre (la lune, « Jour de repos », « Retirer »), les séances éventuelles restent dessous */}
       {jour.repos ? (
@@ -627,8 +620,6 @@ const styles = StyleSheet.create({
   bande: { height: 4 },
   plus: { fontSize: 8, lineHeight: 8, fontFamily: police.texte600 },
   detailTete: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  detailPlus: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  detailPlusTexte: { fontFamily: police.titre800, fontSize: 26, lineHeight: 30 },
   // Une séance du jour : une barre de la couleur du sport (en pointillés si elle est prévue), son nom et ses détails, sa durée à droite
   ligneSeance: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, borderTopWidth: 1 },
   ligneBarre: { width: 6, alignSelf: 'stretch', marginVertical: 8, borderRadius: 3 },
