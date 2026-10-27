@@ -8,6 +8,7 @@ import Svg, { Path } from 'react-native-svg';
 import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
 import { Bloc } from '@/components/Bloc';
+import { BulleSemaine, type AncreBulle } from '@/components/BulleSemaine';
 import { BoutonPlus } from '@/components/BoutonPlus';
 import { ApercuCycle } from '@/components/ApercuCycle';
 import { MenuAjout, type ChoixAjout } from '@/components/MenuAjout';
@@ -17,7 +18,7 @@ import { LegendeCalendrier } from '@/components/LegendeCalendrier';
 import { LogoNote } from '@/components/LogoNote';
 import { ResumeJour } from '@/components/ResumeJour';
 import { SelecteurMois } from '@/components/SelecteurMois';
-import { chargeJour, chargeSeance, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
+import { chargeJour, chargeSeance, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, kmJour, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
 import { couleurNote, libelleNote } from '@/data/annotations';
 import { titreNote } from '@/data/sante-notes';
 import { avancementCycle, cycleVisible } from '@/data/cycles';
@@ -358,40 +359,83 @@ function ProfilSemaine({ semaine, maxi, mono, filtre, aujourdhui }: { semaine: J
   const total = r.faites + r.prevues;
   const jours = profilSemaine(semaine);
   const c = chiffresSemaine(semaine, filtre, aujourdhui);
+
+  // Toucher la colonne ouvre la bulle de la semaine, accrochée à la colonne : on mesure où elle est dans la fenêtre
+  const zone = useRef<ComponentRef<typeof View>>(null);
+  const [ancre, setAncre] = useState<AncreBulle | null>(null);
+  const [bulle, setBulle] = useState(false);
+  const ouvrirBulle = () =>
+    zone.current?.measureInWindow((x, y, largeur, hauteur) => {
+      setAncre({ x, y, largeur, hauteur });
+      setBulle(true);
+    });
+  // Une semaine pas encore commencée montre le prévu (comme la colonne) ; sinon le fait, avec « sur … » s'il reste du prévu
+  const aVenir = semaine[0].iso > aujourdhui;
+  const nbSeances = semaine.reduce((t, j) => t + (aVenir ? j.planifiees.length : j.seances.length), 0);
+  const km = semaine.reduce((t, j) => t + kmJour(j, aVenir), 0);
+  const detailsBulle = [
+    aVenir ? null : r.charge > 0 ? `${r.charge} pts` : null,
+    nbSeances ? `${nbSeances} ${aVenir ? (nbSeances > 1 ? 'séances prévues' : 'séance prévue') : nbSeances > 1 ? 'séances' : 'séance'}` : null,
+    km > 0 ? `${nombre(Math.round(km * 10) / 10, 'km')} km` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ') || 'Rien cette semaine';
+  const maxiBulle = Math.max(3600, ...jours.map((j) => j.secondes));
+  const titreBulle = formatHeuresMinutes(aVenir ? r.prevues : r.faites);
+  const suiteBulle = aVenir ? 'prévues' : r.prevues > 0 ? `sur ${formatHeuresMinutes(r.faites + r.prevues)}` : '';
   return (
-    <View
-      accessible
-      accessibilityLabel={
-        total
-          ? `Semaine du ${dateLongue(semaine[0].iso)} : ${formatDuree(r.faites)} faites${r.prevues ? `, ${formatDuree(r.prevues)} prévues` : ''}${c.principale ? `, ${nombre(c.principale.valeur, c.principale.unite)} ${UNITES[c.principale.unite].dit}` : ''}, ${r.charge} points de charge`
-          : `Semaine du ${dateLongue(semaine[0].iso)} : rien`
-      }
-      style={styles.semaine}
-    >
-      <View style={styles.chiffresSemaine}>
-        <Text style={[styles.chiffreSemaine, { color: c.secondes ? p.texteDoux : p.texteMuet }]}>
-          {formatHeuresMinutes(c.secondes)}
-        </Text>
-        {c.principale ? (
-          <Text style={[styles.chiffreSemaine, { color: p.texte }]}>
-            {nombre(c.principale.valeur, c.principale.unite)}
-            <Text style={styles.unite}> {UNITES[c.principale.unite].court}</Text>
+    <>
+      <Pressable
+        ref={zone}
+        onPress={ouvrirBulle}
+        accessibilityRole="button"
+        accessibilityHint="Ouvre l'aperçu de la semaine"
+        accessibilityLabel={
+          total
+            ? `Semaine du ${dateLongue(semaine[0].iso)} : ${formatDuree(r.faites)} faites${r.prevues ? `, ${formatDuree(r.prevues)} prévues` : ''}${c.principale ? `, ${nombre(c.principale.valeur, c.principale.unite)} ${UNITES[c.principale.unite].dit}` : ''}, ${r.charge} points de charge`
+            : `Semaine du ${dateLongue(semaine[0].iso)} : rien`
+        }
+        style={styles.semaine}
+      >
+        <View style={styles.chiffresSemaine}>
+          <Text style={[styles.chiffreSemaine, { color: c.secondes ? p.texteDoux : p.texteMuet }]}>
+            {formatHeuresMinutes(c.secondes)}
           </Text>
-        ) : null}
-      </View>
-      <View style={styles.profil}>
-        {jours.map((j) => (
-          <View
-            key={j.iso}
-            style={[
-              styles.jourProfil,
-              // Un jour sans séance : un point de 4 pt, donc une semaine vide fait un pointillé
-              { height: j.secondes ? Math.max(6, (j.secondes / maxi) * HAUTEUR_PROFIL) : 4, backgroundColor: j.famille ? (mono ? p.sportNeutre : couleurSport(p, j.famille)) : p.traitFort, opacity: j.fait || !j.secondes ? 1 : 0.35 },
-            ]}
-          />
-        ))}
-      </View>
-    </View>
+          {c.principale ? (
+            <Text style={[styles.chiffreSemaine, { color: p.texte }]}>
+              {nombre(c.principale.valeur, c.principale.unite)}
+              <Text style={styles.unite}> {UNITES[c.principale.unite].court}</Text>
+            </Text>
+          ) : null}
+        </View>
+        <View style={styles.profil}>
+          {jours.map((j) => (
+            <View
+              key={j.iso}
+              style={[
+                styles.jourProfil,
+                // Un jour sans séance : un point de 4 pt, donc une semaine vide fait un pointillé
+                { height: j.secondes ? Math.max(6, (j.secondes / maxi) * HAUTEUR_PROFIL) : 4, backgroundColor: j.famille ? (mono ? p.sportNeutre : couleurSport(p, j.famille)) : p.traitFort, opacity: j.fait || !j.secondes ? 1 : 0.35 },
+              ]}
+            />
+          ))}
+        </View>
+      </Pressable>
+    <BulleSemaine
+      ouvert={bulle}
+      onFermer={() => setBulle(false)}
+      ancre={ancre}
+      titre={titreBulle}
+      suite={suiteBulle}
+      details={detailsBulle}
+      libelle={`Semaine du ${dateLongue(semaine[0].iso)} : ${titreBulle} ${suiteBulle}. ${detailsBulle}`}
+      barres={jours.map((j) => ({
+        hauteur: j.secondes ? j.secondes / maxiBulle : 0,
+        couleur: j.famille ? (mono ? p.sportNeutre : couleurSport(p, j.famille)) : p.traitFort,
+        prevu: !j.fait && j.secondes > 0,
+      }))}
+    />
+    </>
   );
 }
 
