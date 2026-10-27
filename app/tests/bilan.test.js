@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { familleBilan, normaliser, activitesAnnee, activitesAnneePrecedente, sommer, ecartPct, anneesDisponibles, modele, valeurActuelle, avancement, recordsVolume, recordRecent, cumulParAnnee, volumeMensuel, repartitionSport, validerObjectif, fusionnerChargement, CATALOGUE } from '../src/lib/data/bilan.js';
+import { familleBilan, normaliser, activitesAnnee, activitesAnneePrecedente, sommer, ecartPct, anneesDisponibles, modele, valeurActuelle, avancement, recordsVolume, recordRecent, cumulParAnnee, volumeMensuel, repartitionSport, validerObjectif, fusionnerChargement, decimalesObjectif, CATALOGUE } from '../src/lib/data/bilan.js';
 
 const a = (iso, sport, distance = 0, minutes = 60, dplus = 0, tss = 50, name = 'x') => ({ id: iso + sport, name, iso, sport, duree_min: minutes, distance_km: distance, d_plus: dplus, tss });
 const MAINTENANT = new Date(2026, 9, 12, 12); // 12 octobre 2026
@@ -90,10 +90,10 @@ test('cumul par année : s\'arrête aujourd\'hui pour l\'année en cours', () =>
   const s26 = c.series[0].valeurs;
   assert.equal(s26[0], 10);
   assert.equal(s26[2], 15);
-  assert.equal(s26[284], 15); // 12 octobre = jour 284 (0-indexé)
-  assert.equal(s26[285], null);
+  assert.equal(s26[285], 15); // 12 octobre 2026 : grille bissextile (le 29 février a sa case), donc jour 284 + 1
+  assert.equal(s26[286], null);
   const s25 = c.series[1].valeurs;
-  assert.equal(s25[364], 7); // 31 décembre 2025 (jour 364)
+  assert.equal(s25[365], 7); // 31 décembre 2025
   assert.notEqual(s25[365], null);
 });
 
@@ -124,9 +124,11 @@ test('familleBilanDuFiltre : filtre global de sport → famille de bilan', async
   const { familleBilanDuFiltre } = await import('../src/lib/data/bilan.js');
   assert.equal(familleBilanDuFiltre('tout'), null);
   assert.equal(familleBilanDuFiltre('velo'), 'cyclisme');
+  assert.equal(familleBilanDuFiltre('hyrox'), 'hyrox');
+  assert.equal(familleBilanDuFiltre('triathlon'), 'triathlon');
   assert.equal(familleBilanDuFiltre('muscu'), 'musculation');
   assert.equal(familleBilanDuFiltre('course'), 'course');
-  assert.equal(familleBilanDuFiltre('hyrox'), 'autre');
+  assert.equal(familleBilanDuFiltre('football'), 'autre');
 });
 
 test('objectif « par semaine » : une moyenne, sans repère ni projection, comparée directement à la cible', () => {
@@ -160,4 +162,57 @@ test('chargement : un échec garde ce qui est déjà affiché, sans activités o
   // premier chargement raté : rien à montrer
   const r3 = fusionnerChargement(null, { data: null, erreur: 'x' }, { data: [], erreur: '' });
   assert.deepEqual([r3.brutes, r3.pret, r3.erreur], [[], false, 'x']);
+});
+
+test('Hyrox, triathlon et duathlon sont des sports du bilan, plus rangés dans « autre »', () => {
+  assert.equal(familleBilan('Hyrox'), 'hyrox');
+  assert.equal(familleBilan('Triathlon'), 'triathlon');
+  assert.equal(familleBilan('Duathlon'), 'duathlon');
+  assert.equal(familleBilan('Soccer'), 'autre');
+  for (const sport of ['hyrox', 'triathlon', 'duathlon']) assert.ok(CATALOGUE[sport].length >= 2, sport);
+});
+
+test('même date : le 1er janvier de l\'année affichée n\'est jamais dans l\'an dernier, et le 29 février devient le 28', () => {
+  const acts = [a('2025-06-01', 'course'), a('2026-01-01', 'course'), a('2026-01-02', 'course'), a('2025-12-31', 'course')];
+  // année passée (2026 vue en 2027, 2025 n'est pas bissextile) : on s'arrête au 31 décembre 2025
+  assert.deepEqual(activitesAnneePrecedente(acts, 2026, new Date(2027, 5, 15, 12)).map((x) => x.iso), ['2025-06-01', '2025-12-31']);
+  // 29 février 2028 : l'an dernier s'arrête au 28 février 2027, pas au 1er mars
+  const fev = [a('2027-02-28', 'course'), a('2027-03-01', 'course')];
+  assert.deepEqual(activitesAnneePrecedente(fev, 2028, new Date(2028, 1, 29, 12)).map((x) => x.iso), ['2027-02-28']);
+});
+
+test('cumul : le 1er mars tombe sur la même case quelle que soit l\'année (grille bissextile)', () => {
+  const acts = [a('2024-03-01', 'course', 10), a('2026-03-01', 'course', 10), a('2026-02-28', 'course', 4)];
+  const c = cumulParAnnee(acts, [2026, 2024], 'distance_km', new Date(2027, 0, 5, 12));
+  const mars = c.etiquettes.indexOf('2024-03-01');
+  assert.equal(c.series[0].valeurs[mars], 14);
+  assert.equal(c.series[0].valeurs[mars - 1], 4); // le 29 février des années ordinaires garde le cumul du 28
+  assert.equal(c.series[1].valeurs[mars], 10);
+});
+
+test('décimales d\'un objectif : une pour les heures, W/kg, rythmes et chronos ; aucune pour km, m, TSS, séances', () => {
+  assert.equal(decimalesObjectif('W/kg'), 1);
+  assert.equal(decimalesObjectif('/sem'), 1);
+  assert.equal(decimalesObjectif('km/h'), 1);
+  assert.equal(decimalesObjectif('km'), 0);
+  assert.equal(decimalesObjectif(''), 0);
+});
+
+test('saisie d\'un objectif : seulement des chiffres, et le message dit l\'unité attendue', () => {
+  const cible = (template, c) => validerObjectif({ sport: 'course', template, cible: c, actuel: '' });
+  assert.equal(cible('run_5k', '17,5').valeurs.target, 17.5);
+  for (const mauvais of ['3:30', '1e3', '0x10', '-5', 'abc']) assert.ok(cible('run_5k', mauvais).erreurs.cible, mauvais);
+  assert.match(cible('run_mara', '3:30').erreurs.cible, /en min \(ex\. 210 pour 3 h 30\)/);
+});
+
+test('répartition : un sport sans durée n\'apparaît pas', () => {
+  assert.deepEqual(repartitionSport([a('2026-03-01', 'musculation', 0, 0)]), []);
+});
+
+test('projection : pas avant un peu plus d\'un mois ; année future sans repère négatif', () => {
+  const acts = [a('2026-01-03', 'course', 10)];
+  const obj = { sport: 'tous', template: 'all_dist', target: 1000 };
+  assert.equal(avancement(obj, acts, 2026, new Date(2026, 0, 9, 12)).projection, null);
+  assert.ok(avancement(obj, acts, 2026, new Date(2026, 5, 9, 12)).projection > 0);
+  assert.equal(avancement(obj, [], 2030, new Date(2026, 9, 27)).repere, 0);
 });

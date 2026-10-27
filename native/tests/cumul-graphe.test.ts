@@ -131,3 +131,13 @@ test('grapheCumul : en début d\'année (valeurs à zéro), les étiquettes rest
   const ys = g.etiquettes.map((e) => e.y).sort((a, b) => a - b);
   assert.ok(ys[1] - ys[0] >= 15 && ys[2] - ys[1] >= 15); // toujours écartées
 });
+
+test('graduations : jamais deux fois la même valeur, même avec un très petit maximum', () => {
+  const serie = (v: number) => [{ annee: 2026, valeurs: [0, v, v] as (number | null)[] }];
+  for (const v of [0, 0.4, 1, 2, 3, 7]) {
+    const valeurs = grapheCumul(serie(v)).graduations.map((g) => g.valeur);
+    assert.equal(new Set(valeurs).size, valeurs.length, `maximum ${v} : ${valeurs.join(', ')}`);
+    assert.equal(valeurs[0], 0);
+  }
+  assert.equal(maximumRond(0.4), 1);
+});

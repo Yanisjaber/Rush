@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   activitesAnnee, activitesAnneePrecedente, anneesDisponibles, avancement, cumulParAnnee, ecartPct, familleBilan, familleBilanDuFiltre, modele, normaliser,
-  donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
+  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
 } from '../src/data/bilan.ts';
 import { activitesBilanDemo, objectifsAnnuelsDemo } from '../src/data/demo.ts';
 
@@ -19,7 +19,10 @@ test('familleBilan : vélo (VTT et gravel compris) → cyclisme, trail → cours
   assert.equal(familleBilan('TrailRun'), 'course');
   assert.equal(familleBilan('Swim'), 'natation');
   assert.equal(familleBilan('WeightTraining'), 'musculation');
-  assert.equal(familleBilan('Hyrox'), 'autre');
+  assert.equal(familleBilan('Hyrox'), 'hyrox');
+  assert.equal(familleBilan('Triathlon'), 'triathlon');
+  assert.equal(familleBilan('Duathlon'), 'duathlon');
+  assert.equal(familleBilan('Soccer'), 'autre');
   assert.equal(familleBilan(null), 'autre');
 });
 
@@ -28,7 +31,9 @@ test('familleBilanDuFiltre : le filtre global vers la famille de bilan', () => {
   assert.equal(familleBilanDuFiltre('velo'), 'cyclisme');
   assert.equal(familleBilanDuFiltre('muscu'), 'musculation');
   assert.equal(familleBilanDuFiltre('course'), 'course');
-  assert.equal(familleBilanDuFiltre('hyrox'), 'autre');
+  assert.equal(familleBilanDuFiltre('hyrox'), 'hyrox');
+  assert.equal(familleBilanDuFiltre('triathlon'), 'triathlon');
+  assert.equal(familleBilanDuFiltre('football'), 'autre');
 });
 
 test('normaliser : une ligne de la base devient une activité de bilan, avec des nombres sûrs', () => {
@@ -284,4 +289,37 @@ test('donneesPerimees : jamais chargées ou vieilles de cinq minutes → à rech
   assert.equal(donneesPerimees(t, t + 5 * 60_000 - 1), false);
   assert.equal(donneesPerimees(t, t + 5 * 60_000), true);
   assert.equal(donneesPerimees(t, t - 1), true); // l'horloge a reculé : on recharge par prudence
+});
+
+test('même date : le 1er janvier de l\'année affichée n\'est jamais dans l\'an dernier, et le 29 février devient le 28', () => {
+  const acts = [act('2025-06-01', 'course'), act('2026-01-01', 'course'), act('2025-12-31', 'course')];
+  assert.deepEqual(activitesAnneePrecedente(acts, 2026, new Date(2027, 5, 15, 12)).map((x) => x.iso), ['2025-06-01', '2025-12-31']);
+  const fev = [act('2027-02-28', 'course'), act('2027-03-01', 'course')];
+  assert.deepEqual(activitesAnneePrecedente(fev, 2028, new Date(2028, 1, 29, 12)).map((x) => x.iso), ['2027-02-28']);
+});
+
+test('cumul : le 1er mars tombe sur la même case quelle que soit l\'année (grille bissextile)', () => {
+  const acts = [act('2024-03-01', 'course', 60, 10), act('2026-03-01', 'course', 60, 10), act('2026-02-28', 'course', 60, 4)];
+  const c = cumulParAnnee(acts, [2026, 2024], 'distance_km', new Date(2027, 0, 5, 12));
+  const mars = c.etiquettes.indexOf('2024-03-01');
+  assert.equal(c.series[0].valeurs[mars], 14);
+  assert.equal(c.series[0].valeurs[mars - 1], 4);
+  assert.equal(c.series[1].valeurs[mars], 10);
+});
+
+test('décimales d\'un objectif et saisie : chiffres seulement, message avec l\'unité', () => {
+  assert.equal(decimalesObjectif('W/kg'), 1);
+  assert.equal(decimalesObjectif('km'), 0);
+  const cible = (template: string, c: string) => validerObjectif({ sport: 'course', template, cible: c, actuel: '' });
+  assert.equal(cible('run_5k', '17,5').valeurs?.target, 17.5);
+  for (const mauvais of ['3:30', '1e3', '0x10', '-5', 'abc']) assert.ok(cible('run_5k', mauvais).erreurs.cible, mauvais);
+  assert.match(cible('run_mara', '3:30').erreurs.cible, /en min \(ex\. 210 pour 3 h 30\)/);
+});
+
+test('projection : pas avant un peu plus d\'un mois ; année future sans repère négatif', () => {
+  const acts = [act('2026-01-03', 'course', 60, 10)];
+  const obj = { id: 'g', annee: 2026, sport: 'tous', template: 'all_dist', target: 1000 };
+  assert.equal(avancement(obj, acts, 2026, new Date(2026, 0, 9, 12))?.projection, null);
+  assert.ok((avancement(obj, acts, 2026, new Date(2026, 5, 9, 12))?.projection ?? 0) > 0);
+  assert.equal(avancement(obj, [], 2030, new Date(2026, 9, 27))?.repere, 0);
 });

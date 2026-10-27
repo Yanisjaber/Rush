@@ -41,7 +41,7 @@ export interface GrapheCumul {
 export function maximumRond(valeur: number): number {
   if (!(valeur > 0)) return 1;
   const p = 10 ** Math.floor(Math.log10(valeur));
-  return Math.ceil(valeur / p) * p;
+  return Math.max(1, Math.ceil(valeur / p) * p);
 }
 
 const dernierIndexConnu = (s: SerieCumul): number => {
@@ -102,7 +102,8 @@ export function grapheCumul(series: SerieCumul[], jour: number | null = null, la
   }).filter((_, m) => m % 2 === 0);
 
   const points = marque < 0 ? [] : series.flatMap((s) => (s.valeurs[marque] != null ? [{ annee: s.annee, x: x(marque), y: y(s.valeurs[marque] as number), valeur: s.valeurs[marque] as number }] : []));
-  const graduations = [0, maximum / 3, (2 * maximum) / 3, maximum].map((v) => ({ valeur: Math.round(v), y: y(v) }));
+  // Quatre graduations à valeurs rondes et toutes différentes (avec un petit maximum, 1 ou 2, les arrondis se répéteraient) ; chacune est posée à la hauteur de sa valeur
+  const graduations = [...new Set([0, maximum / 3, (2 * maximum) / 3, maximum].map(Math.round))].map((valeur) => ({ valeur, y: y(valeur) }));
 
   // À droite de la ligne si la place suffit : chaque étiquette à la hauteur de son point, écartées si les courbes se touchent.
   // Sinon à gauche : empilées AU-DESSUS du point le plus haut (là où il n'y a pas de courbe) s'il y a la place, la plus haute en premier ;

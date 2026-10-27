@@ -6,7 +6,7 @@ import { familleAffichage } from './familles.ts';
 import { intensiteDeCharge, type CaseRegularite } from './synthese.ts';
 import type { Seance } from './types.ts';
 
-export type SportBilan = 'cyclisme' | 'course' | 'natation' | 'musculation' | 'autre';
+export type SportBilan = 'cyclisme' | 'course' | 'natation' | 'musculation' | 'hyrox' | 'triathlon' | 'duathlon' | 'autre';
 
 /** Une activité de bilan : la ligne de la base ramenée à ce dont le bilan a besoin. */
 export interface ActiviteBilan {
@@ -26,6 +26,9 @@ export const SPORTS_BILAN: [SportBilan, string][] = [
   ['course', 'Course à pied'],
   ['natation', 'Natation'],
   ['musculation', 'Musculation'],
+  ['hyrox', 'Hyrox'],
+  ['triathlon', 'Triathlon'],
+  ['duathlon', 'Duathlon'],
   ['autre', 'Autre'],
 ];
 export const NOM_SPORT_BILAN: Record<string, string> = { ...Object.fromEntries(SPORTS_BILAN), tous: 'Tous sports' };
@@ -37,6 +40,7 @@ export function familleBilan(sportBrut: unknown): SportBilan {
   if (f === 'course') return 'course';
   if (f === 'natation') return 'natation';
   if (f === 'muscu') return 'musculation';
+  if (f === 'hyrox' || f === 'triathlon' || f === 'duathlon') return f;
   return 'autre';
 }
 
@@ -45,7 +49,7 @@ export function familleBilanDuFiltre(filtre: string | null | undefined): string 
   if (!filtre || filtre === 'tout') return null;
   if (filtre === 'velo') return 'cyclisme';
   if (filtre === 'muscu') return 'musculation';
-  if (filtre === 'course' || filtre === 'natation') return filtre;
+  if (['course', 'natation', 'hyrox', 'triathlon', 'duathlon'].includes(filtre)) return filtre;
   return 'autre';
 }
 
@@ -69,6 +73,12 @@ export function normaliser(l: Pick<Seance, 'id' | 'name' | 'sport' | 'start_date
 const dateDe = (iso: string) => new Date(`${iso}T12:00:00`);
 const debutAnnee = (annee: number) => `${annee}-01-01`;
 const jourDeLAnnee = (d: Date) => Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(d.getFullYear(), 0, 1)) / 86400000); // 0 = 1er janvier
+const estBissextile = (a: number): boolean => (a % 4 === 0 && a % 100 !== 0) || a % 400 === 0;
+/** Place d'un jour dans la grille de 366 cases d'une année bissextile : le 29 février a sa case même les années ordinaires, pour que le 1er mars tombe toujours au même endroit. */
+const indexGrille = (d: Date): number => {
+  const j = jourDeLAnnee(d);
+  return !estBissextile(d.getFullYear()) && j >= 59 ? j + 1 : j;
+};
 const dateIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 /** Activités de l'année : du 1er janvier à aujourd'hui pour l'année en cours, l'année entière sinon. */
@@ -77,11 +87,14 @@ export function activitesAnnee(acts: ActiviteBilan[], annee: number, maintenant:
   return acts.filter((a) => a.iso >= debutAnnee(annee) && a.iso <= fin);
 }
 
-/** Activités de l'année précédente jusqu'au même jour de l'année (« à la même date »). */
+/** Activités de l'année précédente jusqu'à la même date (année en cours : même jour et même mois) ou jusqu'à son 31 décembre. */
 export function activitesAnneePrecedente(acts: ActiviteBilan[], annee: number, maintenant: Date = new Date()): ActiviteBilan[] {
-  const jours = annee === maintenant.getFullYear() ? jourDeLAnnee(maintenant) : 365;
-  const fin = new Date(annee - 1, 0, 1 + jours, 12);
-  return acts.filter((a) => a.iso >= debutAnnee(annee - 1) && a.iso <= dateIso(fin));
+  let fin = `${annee - 1}-12-31`;
+  if (annee === maintenant.getFullYear()) {
+    const mois = maintenant.getMonth();
+    fin = dateIso(new Date(annee - 1, mois, Math.min(maintenant.getDate(), new Date(annee - 1, mois + 1, 0).getDate()), 12)); // le 29 février devient le 28
+  }
+  return acts.filter((a) => a.iso >= debutAnnee(annee - 1) && a.iso <= fin);
 }
 
 /** Totaux d'un groupe d'activités. */
@@ -143,6 +156,9 @@ export const CATALOGUE: Record<string, ModeleObjectif[]> = {
     o('mus_clean', 'Épaulé (1RM)', 'kg', 'manual'), o('mus_pullup', 'Tractions max consécutives', 'reps', 'manual'), o('mus_pushup', 'Pompes max consécutives', 'reps', 'manual'),
     o('mus_dips', 'Dips max consécutifs', 'reps', 'manual'), o('mus_plank', 'Gainage durée max', 's', 'manual'), o('mus_bw', 'Poids corporel cible', 'kg', 'manual'),
   ],
+  hyrox: [o('hyrox_hours', 'Heures annuelles', 'h', 'sum_hours'), o('hyrox_sess_w', 'Séances par semaine', '/sem', 'avg_sess_week')],
+  triathlon: [o('tri_hours', 'Heures annuelles', 'h', 'sum_hours'), o('tri_dist', 'Distance annuelle', 'km', 'sum_dist'), o('tri_sess_w', 'Séances par semaine', '/sem', 'avg_sess_week')],
+  duathlon: [o('dua_hours', 'Heures annuelles', 'h', 'sum_hours'), o('dua_dist', 'Distance annuelle', 'km', 'sum_dist'), o('dua_sess_w', 'Séances par semaine', '/sem', 'avg_sess_week')],
   autre: [o('autre_hours', 'Heures annuelles', 'h', 'sum_hours'), o('autre_sess_w', 'Séances par semaine', '/sem', 'avg_sess_week'), o('autre_dist', 'Distance annuelle', 'km', 'sum_dist')],
   tous: [
     o('all_hours', 'Heures totales annuelles', 'h', 'sum_hours'), o('all_sess', 'Séances totales annuelles', '', 'sum_sess'), o('all_tss', 'Charge cumulée annuelle', 'TSS', 'sum_tss'),
@@ -155,12 +171,16 @@ export const SPORTS_OBJECTIFS: [string, string][] = [['tous', 'Tous sports'], ..
 export function modele(sport: string, id: string): ModeleObjectif | null {
   return Object.hasOwn(CATALOGUE, sport) ? CATALOGUE[sport].find((m) => m.id === id) || null : null;
 }
+/** Décimales à écrire pour la valeur d'un objectif selon son unité (heures, W/kg, rythmes par semaine, chronos : une ; km, m, TSS, séances : aucune). */
+export const decimalesObjectif = (unite: string): number => (['h', 'h/sem', '/sem', 'W/kg', 'km/h', 'min', 's', 's/km'].includes(unite) ? 1 : 0);
 export const estManuel = (m: ModeleObjectif | null | undefined): boolean => m?.calc === 'manual' || m?.calc === 'manual_lower';
 // Un cumul grandit au fil de l'année (on peut lui tracer un rythme attendu et une projection) ; une moyenne par semaine se compare directement à sa cible
 const estCumul = (m: ModeleObjectif): boolean => m.calc.startsWith('sum_');
 
+// Avant ce moment de l'année (un peu plus d'un mois), un seul gros week-end ferait une projection absurde : on n'en montre pas
+const PART_MIN_PROJECTION = 0.1;
 const semainesEcoulees = (annee: number, maintenant: Date): number => (annee === maintenant.getFullYear() ? Math.max(1, (maintenant.getTime() - new Date(annee, 0, 1).getTime()) / (7 * 86400000)) : 52);
-const partAnnee = (annee: number, maintenant: Date): number => Math.min(1, (maintenant.getTime() - new Date(annee, 0, 1).getTime()) / (365 * 86400000));
+const partAnnee = (annee: number, maintenant: Date): number => Math.max(0, Math.min(1, (maintenant.getTime() - new Date(annee, 0, 1).getTime()) / (365 * 86400000)));
 
 /** Valeur actuelle d'un objectif, calculée sur les activités de l'année (ou la saisie pour un objectif manuel). */
 /** Un objectif annuel (table yearly_goals, après versObjectif). */
@@ -230,7 +250,7 @@ export function avancement(objectif: ObjectifAnnuel, acts: ActiviteBilan[], anne
     }
   }
   let projection: number | null = null;
-  if (estCumul(m) && actuel != null && annee === maintenant.getFullYear() && partAnnee(annee, maintenant) > 0.02) {
+  if (estCumul(m) && actuel != null && annee === maintenant.getFullYear() && partAnnee(annee, maintenant) > PART_MIN_PROJECTION) {
     projection = actuel / partAnnee(annee, maintenant);
   }
   return { modele: m, actuel, cible, pct, enRythme, repere: estCumul(m) ? partAnnee(annee, maintenant) * 100 : null, projection, projectionPct: projection != null && cible > 0 ? Math.round((projection / cible) * 100) : null };
@@ -325,10 +345,10 @@ export function cumulParAnnee(
     const parJour = new Array(366).fill(0);
     for (const a of acts) {
       if (!a.iso.startsWith(`${annee}-`)) continue;
-      const jour = jourDeLAnnee(dateDe(a.iso));
+      const jour = indexGrille(dateDe(a.iso));
       if (jour >= 0 && jour < 366) parJour[jour] += valeurCumul(a, metrique);
     }
-    const limite = annee === maintenant.getFullYear() ? jourDeLAnnee(maintenant) : 365;
+    const limite = annee === maintenant.getFullYear() ? indexGrille(maintenant) : 365;
     let cumul = 0;
     const valeurs = parJour.map((v, j) => (j > limite ? null : (cumul += v)));
     return { annee, valeurs };
@@ -488,19 +508,25 @@ export const donneesPerimees = (chargeA: number | null, maintenant: number, dela
 
 // --- Validation d'un objectif ---------------------------------------------------------------------------------------------
 
+// Ce qu'on dit quand la cible est refusée : l'unité attendue, et pour un chrono comment l'écrire (un seul nombre)
+const EXEMPLES_CHRONO: Record<string, string> = { min: ' (ex. 210 pour 3 h 30)', s: ' (ex. 75 pour 1 min 15)', 's/km': ' (ex. 255 pour 4 min 15 par km)' };
+const messageCible = (m: ModeleObjectif | null): string => (m?.unit ? `Entre un nombre positif en ${m.unit}${EXEMPLES_CHRONO[m.unit] || ''}.` : 'Entre une valeur positive.');
+
 /** Vérifie le formulaire d'un objectif annuel. Renvoie { valeurs, erreurs } (valeurs = null s'il y a des erreurs). */
 export function validerObjectif(f: { sport: string; template: string; cible: unknown; actuel: unknown }) {
   const erreurs: Record<string, string> = {};
   const m = modele(f.sport, f.template);
   if (!m) erreurs.template = 'Choisis un objectif.';
+  // Un nombre écrit en chiffres seulement (virgule ou point) : ni « 3:30 », ni « 1e3 », ni « 0x10 »
   const nombre = (v: unknown): number | null => {
     const s = String(v ?? '').trim().replace(',', '.');
-    return s === '' ? null : Number(s);
+    if (s === '') return null;
+    return /^\d+(\.\d+)?$/.test(s) ? Number(s) : NaN;
   };
   const cible = nombre(f.cible);
-  if (cible == null || !Number.isFinite(cible) || cible <= 0 || cible > 1e7) erreurs.cible = 'Entre une valeur positive.';
+  if (cible == null || !Number.isFinite(cible) || cible <= 0 || cible > 1e7) erreurs.cible = messageCible(m);
   const actuel = nombre(f.actuel);
   if (m && estManuel(m) && actuel != null && (!Number.isFinite(actuel) || actuel < 0 || actuel > 1e7)) erreurs.actuel = 'Valeur invalide.';
-  if (Object.keys(erreurs).length) return { valeurs: null, erreurs };
+  if (Object.keys(erreurs).length || cible == null) return { valeurs: null, erreurs };
   return { erreurs, valeurs: { sport: f.sport, template: f.template, target: cible, current_manual: m && estManuel(m) ? actuel : null } };
 }
