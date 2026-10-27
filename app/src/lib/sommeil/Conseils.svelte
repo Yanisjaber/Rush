@@ -1,7 +1,7 @@
 <script>
   import Bloc from '../components/Bloc.svelte';
   import { COULEUR_TON } from './palette.js';
-  import { REPERES, analyser, signauxPhysio, synthese, planAction, texteHM } from '../data/score-sommeil.js';
+  import { REPERES, tesDernieresNuits, analyser, signauxPhysio, synthese, planAction, texteHM } from '../data/score-sommeil.js';
 
   // Conseils : analyse des dernières nuits (informatif, ne remplace pas un avis médical).
   //  nuits : nuits préparées (la plus récente d'abord)
@@ -13,14 +13,14 @@
   const h = $derived(pro?.horaires);
   const NOM_IMPACT = { fort: 'Impact fort', modere: 'Impact modéré', general: 'Général' };
 
-  // Puces d'architecture : valeur moyenne comparée à la cible
-  const puce = (nom, valeur, [bas, haut]) => (valeur == null ? null : { nom, valeur: Math.round(valeur), bas, haut, etat: valeur >= bas && valeur <= haut ? 'bon' : valeur < bas * 0.6 ? 'mauvais' : 'attention' });
+  // Puces d'architecture : valeur moyenne comparée à la cible (au-dessus de la fourchette, ce n'est pas un problème : « bon »)
+  const puce = (nom, valeur, [bas, haut]) => (valeur == null ? null : { nom, valeur: Math.round(valeur), bas, haut, etat: valeur >= bas ? 'bon' : valeur < bas * 0.6 ? 'mauvais' : 'attention' });
   const puces = $derived(pro ? [puce('Profond', pro.profondPct, REPERES.profondPct), puce('Paradoxal', pro.paradoxalPct, REPERES.paradoxalPct)].filter(Boolean) : []);
   const profondOk = $derived(pro?.profondPct != null && pro.profondPct >= REPERES.profondPct[0]);
   const paradoxalOk = $derived(pro?.paradoxalPct != null && pro.paradoxalPct >= REPERES.paradoxalPct[0]);
   const texteArchitecture = $derived(
     pro
-      ? `Sur tes ${Math.min(14, pro.nbNuits)} dernières nuits, le sommeil profond représente en moyenne ${pro.profondPct != null ? `${Math.round(pro.profondPct)} %` : '—'} et le sommeil paradoxal ${pro.paradoxalPct != null ? `${Math.round(pro.paradoxalPct)} %` : '—'} du temps de sommeil. ` +
+      ? `Sur ${tesDernieresNuits(pro.nbAnalysees)}, le sommeil profond représente en moyenne ${pro.profondPct != null ? `${Math.round(pro.profondPct)} %` : '—'} et le sommeil paradoxal ${pro.paradoxalPct != null ? `${Math.round(pro.paradoxalPct)} %` : '—'} du temps de sommeil. ` +
           (profondOk
             ? `La part de sommeil profond, qui porte l'essentiel de la récupération physique, est dans la norme attendue (${REPERES.profondPct[0]}–${REPERES.profondPct[1]} %). `
             : `La part de sommeil profond est sous la cible (${REPERES.profondPct[0]}–${REPERES.profondPct[1]} %) : c'est la phase la plus sensible à l'heure de coucher et à l'alcool en soirée. `) +
@@ -36,7 +36,7 @@
 {:else}
   <div class="colonne">
     <Bloc titre="Analyse">
-      <p class="legende-bloc">Basée sur tes {pro.nbNuits} dernières nuits. Informatif, ne remplace pas un avis médical.</p>
+      <p class="legende-bloc">Basée sur {tesDernieresNuits(pro.nbAnalysees)}. Informatif, ne remplace pas un avis médical.</p>
       <div class="boites">
         <div class="boite"><span class="etiq">Efficacité</span><strong>{pro.efficaciteMoy != null ? `${Math.round(pro.efficaciteMoy)} %` : '—'}</strong><span class="sous">cible ≥ {REPERES.efficaciteBonne} %</span></div>
         <div class="boite"><span class="etiq">Endormissement</span><strong>{pro.latenceMoy != null ? `${Math.round(pro.latenceMoy)} min` : '—'}</strong><span class="sous">cible ≤ {REPERES.latenceBonne} min</span></div>

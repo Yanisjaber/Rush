@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scorePalier, efficacitePct, latenceMin, scoreNuit, qualificatifDe, tonDe, preparer, texteHM, moyenneHeure, analyserHoraires, analyser, signauxPhysio, synthese, planAction, comparaisons, bandeStress, ecartHeures } from '../src/lib/data/score-sommeil.js';
+import { scorePalier, efficacitePct, latenceMin, scoreNuit, qualificatifDe, tonDe, preparer, texteHM, moyenneHeure, analyserHoraires, analyser, signauxPhysio, synthese, planAction, comparaisons, bandeStress, ecartHeures, tesDernieresNuits } from '../src/lib/data/score-sommeil.js';
 
 const nuitParfaite = (date = '2026-10-10') => ({
   date, bedtime: `${date} 23:00`, wake_time: `${date} 07:30`, total_sec: 28800, awake_sec: 1200, awake_count: 1,
@@ -153,4 +153,15 @@ test('horaires : un coucher mal formé est ignoré au lieu de compter pour midi'
   const h = analyserHoraires(preparer([...bonnes, mauvaise]));
   assert.equal(h.coucherMoyen, '23h00');
   assert.equal(h.ecartCoucherMin, 0);
+});
+
+test('« tes N dernières nuits » : singulier correct, et l\'analyse porte sur 14 nuits au plus', () => {
+  assert.equal(tesDernieresNuits(1), 'ta dernière nuit');
+  assert.equal(tesDernieresNuits(14), 'tes 14 dernières nuits');
+  const nuits = preparer(Array.from({ length: 30 }, (_, i) => nuitParfaite(`2026-09-${String(30 - i).padStart(2, '0')}`)));
+  const pro = analyser(nuits);
+  assert.equal(pro.nbAnalysees, 14);
+  assert.ok(pro.horaires.nbNuits <= 14);
+  const une = preparer([nuitParfaite('2026-09-30')]);
+  assert.ok(!synthese(une, analyser(une)).includes('1 dernières'));
 });

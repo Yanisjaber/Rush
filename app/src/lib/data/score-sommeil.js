@@ -48,6 +48,9 @@ export const CONSEIL_COMPOSANT = {
   latence: "couper les écrans 30 à 45 min avant le coucher et éviter les activités stimulantes juste avant, pour t'endormir plus vite",
   architecture: 'protéger la fin de nuit (où se concentre le sommeil paradoxal) en évitant de l’écourter',
 };
+/** « tes 7 dernières nuits » ; au singulier « ta dernière nuit » (jamais « tes 1 dernières nuits »). */
+export const tesDernieresNuits = (n) => (n === 1 ? 'ta dernière nuit' : `tes ${n} dernières nuits`);
+
 export const NOM_QUALIFICATIF = { EXCELLENT: 'Excellent', GOOD: 'Bon', FAIR: 'Correct', POOR: 'Faible' };
 
 const moy = (liste) => {
@@ -251,8 +254,9 @@ export function analyser(nuitsTriees) {
   const latences = r14.map(latenceMin).filter((v) => v != null);
   const pct = (champ) => moy(r14.map((n) => (n.total_sec ? ((n[champ] || 0) / n.total_sec) * 100 : null)));
   return {
-    horaires: analyserHoraires(nuitsTriees),
+    horaires: analyserHoraires(r14), // même fenêtre (14 nuits) que le reste de l'analyse
     nbNuits: valides.length,
+    nbAnalysees: r14.length,
     efficaciteMoy: moy(r14.map(efficacitePct)),
     latenceMoy: latences.length ? moy(latences) : null,
     detteMin: r7.reduce((a, n) => a + Math.max(0, REPERES.detteCibleMin * 60 - (n.total_sec || 0)), 0) / 60,
@@ -325,7 +329,7 @@ export function synthese(nuitsTriees, pro) {
   if (!scorees.length) return 'Pas encore assez de nuits scorées pour une synthèse.';
   const moyScore = Math.round(moy(scorees.map((n) => n.score_maison.total)));
   const mot = moyScore >= 80 ? 'bon' : moyScore >= 65 ? 'correct' : moyScore >= 50 ? 'modéré' : 'faible';
-  let s = `Sur tes ${scorees.length} dernières nuits, ton sommeil est en moyenne ${mot} (score moyen ${moyScore}/100).`;
+  let s = `Sur ${tesDernieresNuits(scorees.length)}, ton sommeil est en moyenne ${mot} (score moyen ${moyScore}/100).`;
   const faible = pro.horaires?.plusFaible;
   if (faible && CONSEIL_COMPOSANT[faible]) s += ` Le facteur qui pèse le plus sur ce score : ${NOM_COMPOSANT[faible].toLowerCase()}.`;
   if (pro.efficaciteMoy != null) {
@@ -345,7 +349,7 @@ export function planAction(pro) {
   const h = pro.horaires;
   const actions = [];
   if (h?.plusFaible && CONSEIL_COMPOSANT[h.plusFaible]) {
-    actions.push({ impact: 'fort', texte: `Priorité n°1 : ${CONSEIL_COMPOSANT[h.plusFaible]}. C'est le point qui a le plus pénalisé ton score sur tes ${h.nbNuits} dernières nuits.` });
+    actions.push({ impact: 'fort', texte: `Priorité n°1 : ${CONSEIL_COMPOSANT[h.plusFaible]}. C'est le point qui a le plus pénalisé ton score sur ${tesDernieresNuits(h.nbNuits)}.` });
   }
   if (pro.efficaciteMoy != null && pro.efficaciteMoy < REPERES.efficaciteMoyenne) {
     actions.push({ impact: 'fort', texte: `Ton efficacité de sommeil est basse (${Math.round(pro.efficaciteMoy)} %) : ne va te coucher que quand tu as sommeil, et si tu ne t'endors pas en 20 min, lève-toi plutôt que de tourner au lit.` });
