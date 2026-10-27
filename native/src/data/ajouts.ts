@@ -31,7 +31,7 @@ const DATE_ISO = /^\d{4}-\d{2}-\d{2}$/;
 const HEURE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const COULEUR = /^#[0-9a-f]{6}$/i;
 
-const dateValide = (iso: string): boolean => {
+export const dateValide = (iso: string): boolean => {
   if (!DATE_ISO.test(iso)) return false;
   const d = new Date(`${iso}T12:00:00Z`);
   return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === iso;
