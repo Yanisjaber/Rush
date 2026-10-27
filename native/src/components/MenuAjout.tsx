@@ -1,4 +1,5 @@
-import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useEffect, useMemo, useRef } from 'react';
+import { Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { espace, rayon } from '@/theme/couleurs';
@@ -7,6 +8,7 @@ import { usePalette } from '@/theme/usePalette';
 
 // Le menu du « + » du détail d'un jour : une feuille qui monte du bas, une ligne par ajout (pictogramme, nom et une phrase qui l'explique), rangée en trois
 // groupes : prévoir, enregistrer, noter. Chaque ligne ouvre son propre écran, sauf le repos qui se pose ou se retire d'un toucher. Toucher à côté ferme la feuille.
+// Glisser la feuille vers le bas la ferme (elle suit le doigt ; assez tirée ou lancée assez vite, elle part, sinon elle revient).
 // Aucune couleur de sport ici : ces lignes ne sont pas des sports (la couleur reste réservée aux sports).
 export type ChoixAjout = 'seance' | 'sortie' | 'import' | 'competition' | 'note' | 'cycle' | 'repos';
 
@@ -45,13 +47,42 @@ export function MenuAjout({ ouvert, onFermer, onChoisir, repos }: { ouvert: bool
   const p = usePalette();
   const bas = useSafeAreaInsets().bottom;
   const { height } = useWindowDimensions();
+
+  // Le glissement vers le bas : la feuille suit le doigt. Quand la liste défile, on ne prend la main que si elle est tout en haut.
+  const decalage = useRef(new Animated.Value(0)).current;
+  const defilement = useRef(0);
+  const fermer = useRef(onFermer);
+  fermer.current = onFermer;
+  useEffect(() => {
+    if (ouvert) decalage.setValue(0);
+  }, [ouvert, decalage]);
+  const glissement = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponderCapture: (_e, g) => g.dy > 8 && g.dy > Math.abs(g.dx) * 1.5 && defilement.current <= 0,
+        onPanResponderMove: (_e, g) => decalage.setValue(Math.max(0, g.dy)),
+        onPanResponderRelease: (_e, g) => {
+          if (g.dy > 110 || g.vy > 0.9) {
+            Animated.timing(decalage, { toValue: 800, duration: 160, useNativeDriver: true }).start(() => fermer.current());
+          } else {
+            Animated.spring(decalage, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
+          }
+        },
+        onPanResponderTerminate: () => Animated.spring(decalage, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start(),
+      }),
+    [decalage],
+  );
   return (
     <Modal visible={ouvert} transparent animationType="fade" onRequestClose={onFermer}>
       <Pressable accessibilityLabel="Fermer le menu d'ajout" accessibilityRole="button" onPress={onFermer} style={styles.fond} />
-      <View accessibilityViewIsModal style={[styles.feuille, { backgroundColor: p.surface, borderColor: p.traitFort, paddingBottom: bas + espace.e4 }]}>
+      <Animated.View
+        {...glissement.panHandlers}
+        accessibilityViewIsModal
+        style={[styles.feuille, { backgroundColor: p.surface, borderColor: p.traitFort, paddingBottom: bas + espace.e4, transform: [{ translateY: decalage }] }]}
+      >
         <View style={[styles.poignee, { backgroundColor: p.traitFort }]} />
         {/* Sur un petit écran, la liste défile plutôt que de sortir de la feuille */}
-        <ScrollView style={{ maxHeight: height * 0.75 }} showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ maxHeight: height * 0.75 }} showsVerticalScrollIndicator={false} scrollEventThrottle={16} onScroll={(e) => (defilement.current = e.nativeEvent.contentOffset.y)}>
           {GROUPES.map((g, i) => (
             <View key={g.titre}>
               <Text accessibilityRole="header" style={[typo.micro, styles.groupe, i === 0 && styles.premierGroupe, { color: p.texteMuet }]}>
@@ -87,7 +118,7 @@ export function MenuAjout({ ouvert, onFermer, onChoisir, repos }: { ouvert: bool
           <Picto choix="repos" couleur={p.texteDoux} taille={18} />
           <Text style={[typo.corpsFort, { color: p.texteDoux }]}>{repos ? 'Retirer le jour de repos' : 'Poser un jour de repos'}</Text>
         </Pressable>
-      </View>
+      </Animated.View>
     </Modal>
   );
 }
