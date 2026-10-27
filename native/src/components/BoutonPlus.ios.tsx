@@ -36,7 +36,7 @@ export function BoutonPlus(props: PropsBoutonPlus) {
     >
       {/* Le thème de l'app (clair ou sombre) s'impose au bouton, pas celui du téléphone */}
       <Host matchContents colorScheme={p.fond === clair.fond ? 'light' : 'dark'}>
-        <Button onPress={props.onPress} label="Ajouter" systemImage="plus" modifiers={[buttonStyle('glass'), controlSize('large')]} />
+        <Button onPress={props.onPress} label="Ajouter" systemImage="plus" modifiers={[buttonStyle('glass'), controlSize('regular')]} />
       </Host>
     </View>
   );

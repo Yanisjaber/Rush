@@ -18,6 +18,7 @@ export function BoutonPlus({ onPress, ouvert }: PropsBoutonPlus) {
       accessibilityRole="button"
       accessibilityLabel="Ajouter : séance, activité, import de fichier, compétition, note, cycle ou repos"
       accessibilityState={{ expanded: ouvert }}
+      hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
       style={[styles.pilule, { borderColor: p.traitFort }]}
     >
       <Text style={[styles.plus, { color: p.texte }]}>+</Text>
@@ -27,6 +28,6 @@ export function BoutonPlus({ onPress, ouvert }: PropsBoutonPlus) {
 }
 
 const styles = StyleSheet.create({
-  pilule: { minHeight: 44, flexDirection: 'row', gap: 6, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  plus: { fontFamily: police.titre800, fontSize: 22, lineHeight: 26 },
+  pilule: { minHeight: 36, flexDirection: 'row', gap: 5, paddingHorizontal: 13, borderRadius: 18, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  plus: { fontFamily: police.titre800, fontSize: 20, lineHeight: 24 },
 });
