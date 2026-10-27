@@ -27,11 +27,12 @@ test('efficacité et latence', () => {
   assert.equal(latenceMin({}), null);
 });
 
-test('scoreNuit : nuit idéale = 100 Excellent, nuit blanche = 0, durée courte pénalisée', () => {
+test('scoreNuit : nuit idéale = 100 Excellent, durée courte pénalisée, nuit sans durée = pas de score', () => {
   const s = scoreNuit(nuitParfaite());
   assert.equal(s.total, 100);
   assert.equal(s.qualificatif, 'EXCELLENT');
-  assert.equal(scoreNuit({ total_sec: 0 }).total, 0);
+  assert.equal(scoreNuit({ total_sec: 0 }), null);
+  assert.equal(scoreNuit({ total_sec: null }), null);
   const courte = scoreNuit({ ...nuitParfaite(), total_sec: 5 * 3600 });
   assert.equal(courte.composants.duree, 17);
   assert.ok(courte.total < 100);
@@ -139,4 +140,9 @@ test('écart entre deux heures : par le chemin le plus court, minuit compris', (
   assert.equal(ecartHeures(23 * 60 + 30, 30), -60);
   assert.equal(ecartHeures(8 * 60, 7 * 60), 60);
   assert.equal(ecartHeures(null, 100), null);
+});
+
+test('preparer : une nuit sans durée (montre pas portée) disparaît, elle ne compte ni en score ni en dette', () => {
+  const nuits = preparer([nuitParfaite('2026-10-26'), { date: '2026-10-27', total_sec: 0 }, { date: '2026-10-25', total_sec: null }]);
+  assert.deepEqual(nuits.map((n) => n.date), ['2026-10-26']);
 });

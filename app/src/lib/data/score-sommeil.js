@@ -121,12 +121,13 @@ export function qualificatifDe(v) {
 export const tonDe = (q) => (q === 'EXCELLENT' || q === 'GOOD' ? 'bon' : q === 'FAIR' ? 'moyen' : 'faible');
 
 /**
- * Score maison d'une nuit (0 à 100) : { total, qualificatif, composants } ou null si aucune donnée exploitable.
+ * Score maison d'une nuit (0 à 100) : { total, qualificatif, composants } ou null si aucune donnée exploitable
+ * (durée absente ou à 0 : montre pas portée ou nuit pas synchronisée, ce n'est pas une nuit « à 0 »).
  * Les composants sans donnée sont exclus et le poids est redistribué sur les autres.
  */
 export function scoreNuit(n) {
   if (!n) return null;
-  if (!(n.total_sec > 0)) return { total: 0, qualificatif: 'POOR', composants: {} };
+  if (!(n.total_sec > 0)) return null;
   const parties = [
     ['duree', scoreDuree(n.total_sec)],
     ['efficacite', scorePalier(efficacitePct(n), ...SEUILS.efficacite, true)],
@@ -149,9 +150,10 @@ export function scoreNuit(n) {
   return { total, qualificatif: qualificatifDe(total), composants };
 }
 
-/** Nuits triées de la plus récente à la plus ancienne, chacune avec son score maison (champ `score_maison`). */
+/** Nuits triées de la plus récente à la plus ancienne, chacune avec son score maison (champ `score_maison`). Les nuits sans durée sont écartées. */
 export function preparer(nuits) {
   return [...(nuits || [])]
+    .filter((n) => n?.total_sec > 0)
     .sort((a, b) => String(b.date).localeCompare(String(a.date)))
     .map((n) => ({ ...n, score_maison: scoreNuit(n) }));
 }

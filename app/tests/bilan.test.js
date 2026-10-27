@@ -128,3 +128,18 @@ test('familleBilanDuFiltre : filtre global de sport → famille de bilan', async
   assert.equal(familleBilanDuFiltre('course'), 'course');
   assert.equal(familleBilanDuFiltre('hyrox'), 'autre');
 });
+
+test('objectif « par semaine » : une moyenne, sans repère ni projection, comparée directement à la cible', () => {
+  const midAnnee = new Date(2026, 6, 2, 12); // 2 juillet 2026
+  const acts = Array.from({ length: 104 }, (_, i) => a(`2026-${i < 52 ? '01' : '05'}-${String((i % 28) + 1).padStart(2, '0')}`, 'course', 5, 30, 0, 20, `s${i}`));
+  const av = avancement({ sport: 'tous', template: 'all_sess_w', target: 8 }, acts, 2026, midAnnee);
+  assert.equal(av.repere, null);
+  assert.equal(av.projection, null);
+  assert.equal(av.enRythme, av.actuel >= 8);
+});
+
+test('séances par semaine en début d\'année : des semaines à virgule, pas arrondies vers le bas', () => {
+  const acts = Array.from({ length: 13 }, (_, i) => a(`2026-01-${String(i + 1).padStart(2, '0')}`, 'course'));
+  const v = valeurActuelle({ sport: 'tous', template: 'all_sess_w', target: 4 }, acts, 2026, new Date(2026, 0, 14, 12));
+  assert.ok(Math.abs(v - 13 / (13.5 / 7)) < 0.01, `attendu ~6,7 séances/sem, obtenu ${v}`);
+});

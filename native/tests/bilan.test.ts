@@ -252,3 +252,13 @@ test('cumulParAnnee : séances, charge et temps (en heures) se cumulent comme la
   assert.equal(dernier('distance_km'), 35);
   assert.equal(dernier('d_plus'), 50);
 });
+
+test('objectif « par semaine » : une moyenne, sans repère ni projection ; semaines écoulées à virgule', () => {
+  const acts = Array.from({ length: 13 }, (_, i) => ({ id: String(i), name: 'x', iso: `2026-01-${String(i + 1).padStart(2, '0')}`, sport: 'course' as const, famille: 'course', duree_min: 60, distance_km: 5, d_plus: 0, tss: 50 }));
+  const obj = { id: 'g', annee: 2026, sport: 'tous', template: 'all_sess_w', target: 8 };
+  const av = avancement(obj, acts, 2026, new Date(2026, 0, 14, 12));
+  assert.ok(av);
+  assert.equal(av.repere, null);
+  assert.equal(av.projection, null);
+  assert.ok(Math.abs((av.actuel ?? 0) - 13 / (13.5 / 7)) < 0.01);
+});
