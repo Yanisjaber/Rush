@@ -6,8 +6,8 @@ import { rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// La légende du calendrier : une phrase courte sous la grille (plein = fait, contour = prévu, carré = compétition) et un « ? » qui ouvre
-// le détail de toutes les marques (repos, cycle, note en plus). Mêmes formes que dans la grille (voir Case dans calendrier.tsx).
+// La légende du calendrier : une petite phrase discrète sous la grille, qui ouvre le détail de toutes les marques (fait, prévu, compétition,
+// repos, cycle, note). Mêmes formes que dans la grille (voir Case dans calendrier.tsx).
 export function LegendeCalendrier() {
   const p = usePalette();
   const [ouvert, setOuvert] = useState(false);
@@ -28,18 +28,8 @@ export function LegendeCalendrier() {
 
   return (
     <View style={styles.ligne}>
-      <View accessible accessibilityLabel="Plein : séance faite. Contour : séance prévue. Carré : compétition." style={styles.phrase}>
-        {plein}
-        <Text style={[typo.micro, { color: p.texteDoux }]}>fait</Text>
-        {contour}
-        <Text style={[typo.micro, { color: p.texteDoux }]}>prévu</Text>
-        {carre}
-        <Text style={[typo.micro, { color: p.texteDoux }]}>compétition</Text>
-      </View>
-      <Pressable onPress={() => setOuvert(true)} accessibilityRole="button" accessibilityLabel="Légende du calendrier" hitSlop={4} style={styles.aide}>
-        <View style={[styles.rondAide, { borderColor: p.contourChamp }]}>
-          <Text style={[typo.micro, { color: p.texteDoux }]}>?</Text>
-        </View>
+      <Pressable onPress={() => setOuvert(true)} accessibilityRole="button" accessibilityLabel="Que signifient les points ? Ouvrir la légende" style={styles.aide}>
+        <Text style={[typo.micro, { color: p.texteMuet }]}>Que signifient les points ?</Text>
       </Pressable>
 
       <Modal visible={ouvert} transparent animationType="fade" onRequestClose={() => setOuvert(false)}>
@@ -69,14 +59,12 @@ export function LegendeCalendrier() {
 }
 
 const styles = StyleSheet.create({
-  ligne: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
-  phrase: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  ligne: { alignItems: 'center' },
   point: { width: 6, height: 6, borderRadius: 3 },
   carre: { width: 6, height: 6, borderRadius: 1.5, borderWidth: 1 },
   barre: { width: 10, height: 3, borderRadius: 2 },
   bande: { width: 24, height: 4, borderRadius: 2 },
-  aide: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  rondAide: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  aide: { minHeight: 44, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
   voile: { backgroundColor: 'rgba(0,0,0,0.45)' },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
   panneau: { width: '100%', maxWidth: 360, borderWidth: 1, borderRadius: rayon.bloc, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 6 },
