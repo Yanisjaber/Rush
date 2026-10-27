@@ -120,6 +120,11 @@ export async function chargerSeances(userId: string, jours = 84, limite = 600): 
   return res;
 }
 
+/** Deux ans de séances (avec cardio et puissance) pour comparer une période à celle d'avant : voir data/progression.ts. Les plus récentes d'abord. */
+export async function chargerHistoriqueProgression(userId: string, jours = 730, limite = 3000): Promise<Resultat<Seance[]>> {
+  return chargerSeances(userId, jours, limite);
+}
+
 /**
  * Les N séances les plus récentes, QUELLE QUE SOIT leur date (pour la liste « Dernières séances » : elle ne doit pas
  * se vider parce qu'on n'a rien fait depuis 12 semaines). On en charge beaucoup plus que ce qu'on affiche : le filtre de sport
@@ -400,6 +405,54 @@ export async function chargerObjectifsAnnuels(userId: string): Promise<Resultat<
   const r = await sb.from('yearly_goals').select(COLONNES_OBJECTIF_ANNUEL).eq('user_id', userId).order('year', { ascending: false }).limit(500);
   const res = resultat<Parameters<typeof versObjectif>[0][]>(r, 'Impossible de charger tes objectifs.');
   return { data: res.data ? res.data.map(versObjectif) : null, erreur: res.erreur };
+}
+
+/** Ce qu'on écrit pour un objectif annuel (voir validerObjectif). */
+export interface ValeursObjectif {
+  sport: string;
+  template: string;
+  target: number;
+  current_manual: number | null;
+}
+
+/** Le message d'une erreur d'écriture d'objectif : jamais le texte brut de la base. */
+export function messageObjectif(code: unknown): string {
+  if (code === '23505') return 'Cet objectif existe déjà pour cette année : modifie-le plutôt.';
+  if (code === '23514') return 'La base refuse ces valeurs : la cible doit être positive et raisonnable.';
+  if (code === '42501') return "Tu n'as pas le droit de faire ça.";
+  return "Impossible d'enregistrer l'objectif pour le moment.";
+}
+
+/** Crée un objectif annuel. `client_id` : identifiant de l'appareil, comme pour les notes. */
+export async function creerObjectifAnnuel(userId: string, annee: number, v: ValeursObjectif): Promise<Resultat<ObjectifAnnuel>> {
+  const client_id = `app-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+  const r = await sb.from('yearly_goals').insert({ ...v, user_id: userId, year: annee, client_id }).select(COLONNES_OBJECTIF_ANNUEL).single();
+  if (r.error) {
+    console.error('[app/api] création de l\'objectif', r.error.code || '');
+    return { data: null, erreur: messageObjectif(r.error.code) };
+  }
+  return { data: versObjectif(r.data as Parameters<typeof versObjectif>[0]), erreur: '' };
+}
+
+/** Modifie un objectif annuel (seule la cible et la saisie changent). */
+export async function modifierObjectifAnnuel(userId: string, id: string, v: ValeursObjectif): Promise<Resultat<ObjectifAnnuel>> {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Objectif introuvable.' };
+  const r = await sb.from('yearly_goals').update({ target: v.target, current_manual: v.current_manual }).eq('user_id', userId).eq('id', id).select(COLONNES_OBJECTIF_ANNUEL).maybeSingle();
+  if (r.error) {
+    console.error('[app/api] modification de l\'objectif', r.error.code || '');
+    return { data: null, erreur: messageObjectif(r.error.code) };
+  }
+  return r.data ? { data: versObjectif(r.data as Parameters<typeof versObjectif>[0]), erreur: '' } : { data: null, erreur: 'Objectif introuvable.' };
+}
+
+export async function supprimerObjectifAnnuel(userId: string, id: string): Promise<{ erreur: string }> {
+  if (!UUID.test(String(id))) return { erreur: 'Objectif introuvable.' };
+  const r = await sb.from('yearly_goals').delete().eq('user_id', userId).eq('id', id);
+  if (r.error) {
+    console.error('[app/api] suppression de l\'objectif', r.error.code || '');
+    return { erreur: messageObjectif(r.error.code) };
+  }
+  return { erreur: '' };
 }
 
 // ---------------------------------------------------------------------------

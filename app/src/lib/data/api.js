@@ -25,10 +25,14 @@ export function invaliderRetouches() {
 }
 async function tableRetouches(userId) {
   if (cacheRetouches.userId === userId && cacheRetouches.table) return cacheRetouches.table;
-  const r = await sb.from('activity_edits').select('activity_id,data').eq('user_id', userId).limit(5000);
-  if (r.error) return null;
   const table = Object.create(null); // sans prototype : une clé comme « constructor » n'est jamais prise pour une retouche
-  for (const l of r.data || []) if (l && typeof l.data === 'object' && l.data) table[String(l.activity_id)] = l.data;
+  // Par pages de 1000 (l'API n'en renvoie pas plus) : sans limite à 5000 retouches
+  for (let page = 0; ; page++) {
+    const r = await sb.from('activity_edits').select('activity_id,data').eq('user_id', userId).order('activity_id', { ascending: true }).range(page * 1000, page * 1000 + 999);
+    if (r.error) return null;
+    for (const l of r.data || []) if (l && typeof l.data === 'object' && l.data) table[String(l.activity_id)] = l.data;
+    if ((r.data || []).length < 1000 || page >= 99) break;
+  }
   cacheRetouches = { userId, table };
   return table;
 }
@@ -381,21 +385,23 @@ export async function definirCategorieActivite(userId, id, categorie) {
 }
 
 // ---------------------------------------------------------------------------
-// Bilan annuel : activités des 3 dernières années et objectifs annuels
+// Bilan annuel : tout l'historique des activités et les objectifs annuels
 // ---------------------------------------------------------------------------
 
 const COLONNES_BILAN = 'id,strava_id,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,tss';
 const TAILLE_PAGE = 1000; // l'API renvoie au plus 1000 lignes par requête : on lit par pages
+const PAGES_MAX = 100; // garde-fou : 100 000 activités ; au-delà, on le dit au lieu d'afficher un bilan tronqué
 
-/** Activités de l'année et des deux précédentes (colonnes légères), par pages de 1000. */
+/** Tout l'historique, de la toute première activité à la fin de l'année (colonnes légères), par pages de 1000. Les étapes fusionnées d'un triathlon sont déjà comptées par leur parent. */
 export async function chargerActivitesBilan(userId, annee) {
   const toutes = [];
-  for (let page = 0; page < 12; page++) {
+  let complet = false;
+  for (let page = 0; page < PAGES_MAX; page++) {
     const r = await sb
       .from('activities')
       .select(COLONNES_BILAN)
       .eq('user_id', userId)
-      .gte('start_date_local', `${annee - 2}-01-01`)
+      .is('merged_into', null)
       .lte('start_date_local', `${annee}-12-31T23:59:59`)
       .order('start_date_local', { ascending: true })
       .order('id', { ascending: true }) // second critère : sans lui, deux séances à la même heure peuvent être doublées ou sautées entre deux pages
@@ -405,8 +411,12 @@ export async function chargerActivitesBilan(userId, annee) {
       return { data: null, erreur: 'Impossible de charger tes activités.' };
     }
     toutes.push(...r.data);
-    if (r.data.length < TAILLE_PAGE) break;
+    if (r.data.length < TAILLE_PAGE) {
+      complet = true;
+      break;
+    }
   }
+  if (!complet) return { data: null, erreur: 'Ton historique est trop long pour être chargé en entier.' };
   return { data: await avecRetouches(userId, toutes), erreur: '' };
 }
 
@@ -427,7 +437,8 @@ export async function creerObjectifAnnuel(userId, annee, valeurs) {
     .insert({ ...valeurs, user_id: userId, year: annee, client_id: `app-${crypto.randomUUID()}` })
     .select(COLONNES_OBJECTIF_ANNUEL)
     .single();
-  const res = resultat(r, "Impossible d'enregistrer l'objectif.");
+  // 23505 : la base refuse un doublon (même sport, même objectif, même année)
+  const res = resultat(r, r.error?.code === '23505' ? 'Cet objectif existe déjà pour cette année : modifie-le plutôt.' : "Impossible d'enregistrer l'objectif.");
   return { data: res.data ? versObjectif(res.data) : null, erreur: res.erreur };
 }
 
