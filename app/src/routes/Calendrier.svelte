@@ -59,6 +59,7 @@
       repos = a.data?.repos || [];
       erreur = s.erreur || p.erreur || a.erreur;
     } else {
+      etat.chargement = false; // pas de compte : rien à charger (sinon la grille resterait atténuée)
       return;
     }
     if (numero !== numeroRequete) return; // une requête plus récente a pris le relais
@@ -87,7 +88,7 @@
     grilleMois(cible.annee, cible.mois, {
       seances: etat.seances.filter(garder),
       planifiees: etat.planifiees.filter(garder),
-      objectifs: etat.objectifs,
+      objectifs: etat.objectifs.filter(garder), // une compétition suit le filtre de sport, comme les séances
       notes: etat.notes,
       repos: etat.repos,
     }),
@@ -308,7 +309,8 @@
             </div>
             <div class="contenu">
               {#each j.objectifs as o (o.id)}
-                <span class="pastille objectif" title={o.name}>{o.name}</span>
+                <!-- La pastille d'une compétition ouvre sa fiche dans la page Compétitions -->
+                <a class="pastille objectif" title={o.name} href={construireAdresse({ sport: menu.filtre, page: '/competitions', q: { competition: o.id } })}>{o.name}</a>
               {/each}
               {#if j.repos}
                 <button type="button" class="marque repos" aria-label="Jour de repos, modifier" onclick={() => ouvrirRepos(j.iso)}>Repos</button>
@@ -660,6 +662,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     display: block;
+    text-decoration: none;
   }
   .plus {
     font-size: 12px;
