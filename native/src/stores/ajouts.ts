@@ -39,6 +39,7 @@ export const prevuesAjoutees = (): Prevue[] => prevues;
 export const notesAjoutees = (): Note[] => notes;
 export const sortiesAjoutees = (): Seance[] => sorties;
 
+
 /** Une séance de la démo par son identifiant : celles de l'exemple (`base`) et celles saisies pendant la démo. Null si elle n'existe pas. */
 export const seanceDeLaDemo = (id: string, base: Seance[]): Seance | null => [...base, ...sorties].find((x) => x.id === id) ?? null;
 
@@ -168,4 +169,14 @@ export function ajouterSortieDemo(ligne: LigneSortie): Seance {
   sorties = [...sorties, s];
   prevenir();
   return s;
+}
+
+export function modifierSortieDemo(id: string, ligne: LigneSortie): void {
+  sorties = sorties.map((x) => (x.id === id ? { ...x, name: ligne.name, sport: ligne.sport, start_date_local: ligne.start_date_local, moving_time: ligne.moving_time, distance_km: ligne.distance_km, total_elevation_gain: ligne.total_elevation_gain, avg_heartrate: ligne.avg_heartrate, tss: ligne.tss, rpe: ligne.rpe, user_notes: ligne.user_notes } : x));
+  prevenir();
+}
+
+export function supprimerSortieDemo(id: string): void {
+  sorties = sorties.filter((x) => x.id !== id);
+  prevenir();
 }

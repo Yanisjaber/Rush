@@ -118,7 +118,8 @@ export function grilleMois(
         seances: parSeance.get(iso) || [],
         planifiees: parPlan.get(iso) || [],
         objectifs: parObjectif.get(iso) || [],
-        notes: notes.filter((n) => String(n.from_date) <= iso && iso <= String(n.to_date)),
+        // on compare les jours seuls : une date qui porterait une heure (2026-10-05T00:00:00) ne doit pas faire disparaître la note de son premier jour
+        notes: notes.filter((n) => iso10(n.from_date) <= iso && iso <= iso10(n.to_date)),
         repos: jourDeRepos.has(iso),
         cycles: cyclesDuJour(cycles, iso),
         series: seriesParJour.get(iso) ?? 0,
@@ -348,23 +349,10 @@ export function assemblerDonnees(
   };
 }
 
-export interface ChiffresMois {
-  /** Nombre de séances : les faites, ou les prévues pour un mois entièrement à venir. */
-  seances: number;
-  secondes: number;
-  /** Points de charge : ceux des séances faites, ou la charge prévue pour un mois à venir. */
-  charge: number;
-  principale: MetriqueSemaine | null;
-}
-
 /**
- * Les chiffres des pastilles du haut. Un mois commencé (ou passé) ne compte que le fait ; un mois entièrement à venir (son premier jour est après `aujourdhui`)
- * montre le prévu, comme une semaine pas encore commencée, pour que séances, temps, charge et kilomètres disent tous la même chose.
+ * Le message à montrer quand une requête a rempli sa limite : il y a sans doute des lignes en plus qui ne sont pas revenues (la fin de la période est coupée).
+ * Chaîne vide tant qu'on est en dessous.
  */
-export function chiffresMois(joursDuMois: JourGrille[], filtre: string, aujourdhui: string): ChiffresMois {
-  const aVenir = joursDuMois.length > 0 && joursDuMois[0].iso > aujourdhui;
-  const c = chiffresSemaine(joursDuMois, filtre, aujourdhui);
-  const seances = joursDuMois.reduce((t, j) => t + (aVenir ? j.planifiees.length : j.seances.length), 0);
-  const charge = joursDuMois.reduce((t, j) => t + (aVenir ? j.planifiees.reduce((u, x) => u + (Number(x.tss) > 0 ? Number(x.tss) : 0), 0) : chargeJour(j)), 0);
-  return { seances, secondes: c.secondes, charge, principale: c.principale };
+export function avertissementLimite(recues: number, limite: number, quoi: string): string {
+  return recues >= limite ? `Ce mois contient plus de ${quoi} que l'écran n'en affiche : les dernières manquent.` : '';
 }

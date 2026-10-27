@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ajouterSortieDemo, seanceDeLaDemo, ajouterNoteDemo, ajouterPrevueDemo, modifierNoteDemo, modifierPrevueDemo, notesDeLaDemo, poserReposDemo, prevueCompleteDemo, prevuesDeLaDemo, reposDeLaDemo, retirerReposDemo, supprimerNoteDemo, supprimerPrevueDemo } from '../src/stores/ajouts.ts';
+import { modifierSortieDemo, supprimerSortieDemo, ajouterSortieDemo, seanceDeLaDemo, ajouterNoteDemo, ajouterPrevueDemo, modifierNoteDemo, modifierPrevueDemo, notesDeLaDemo, poserReposDemo, prevueCompleteDemo, prevuesDeLaDemo, reposDeLaDemo, retirerReposDemo, supprimerNoteDemo, supprimerPrevueDemo } from '../src/stores/ajouts.ts';
 import { validerSeance, formulaireSeanceVide } from '../src/data/ajouts.ts';
 import type { Note, Prevue, Seance } from '../src/data/types.ts';
 
@@ -71,4 +71,15 @@ test('démo : une activité saisie pendant la démo se retrouve par son identifi
   assert.equal(seanceDeLaDemo(ajoutee.id, exemple)?.name, 'Ma sortie');
   assert.equal(seanceDeLaDemo('ex1', exemple)?.name, 'Sortie exemple');
   assert.equal(seanceDeLaDemo('inconnue', exemple), null);
+});
+
+test('démo : une activité saisie se modifie puis se supprime', () => {
+  const ligneSortie = (nom: string, minutes: number) => ({ source: 'manual' as const, category: 'entrainement' as const, name: nom, start_date_local: '2026-10-21T07:30:00', sport: 'Run', moving_time: minutes * 60, tss: 40, rpe: null, distance_km: 7, total_elevation_gain: null, avg_heartrate: null, user_notes: null });
+  const s = ajouterSortieDemo(ligneSortie('Avant', 45));
+  modifierSortieDemo(s.id, ligneSortie('Après', 50));
+  const lue = seanceDeLaDemo(s.id, []);
+  assert.equal(lue?.name, 'Après');
+  assert.equal(lue?.moving_time, 3000);
+  supprimerSortieDemo(s.id);
+  assert.equal(seanceDeLaDemo(s.id, []), null);
 });

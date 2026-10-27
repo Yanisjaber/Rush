@@ -10,6 +10,7 @@
 //  - Pour l'instant : lecture seule. Les écritures (séances, programmes, tests) arrivent avec leurs écrans.
 import { SUPABASE_URL } from '@/config';
 import { appliquerTout } from './retouches';
+import { avertissementLimite } from './calendrier';
 import { dateIsoLocale } from './format';
 import { sb } from './supabase';
 import type { ObjectifAnnuel } from './bilan.ts';
@@ -59,10 +60,15 @@ export function invaliderRetouches(): void {
 }
 async function tableRetouches(userId: string): Promise<Record<string, unknown> | null> {
   if (cacheRetouches.userId === userId && cacheRetouches.table) return cacheRetouches.table;
-  const r = await sb.from('activity_edits').select('activity_id,data').eq('user_id', userId).limit(5000);
-  if (r.error) return null;
   const table: Record<string, unknown> = Object.create(null); // sans prototype : une clé comme « constructor » n'est jamais prise pour une retouche
-  for (const l of (r.data as { activity_id: unknown; data: unknown }[]) || []) if (l && typeof l.data === 'object' && l.data) table[String(l.activity_id)] = l.data;
+  // Par pages de 1000 (l'API n'en renvoie pas plus) : sans limite à 5000 retouches
+  for (let page = 0; ; page++) {
+    const r = await sb.from('activity_edits').select('activity_id,data').eq('user_id', userId).order('activity_id', { ascending: true }).range(page * 1000, page * 1000 + 999);
+    if (r.error) return null;
+    const lignes = (r.data as { activity_id: unknown; data: unknown }[]) || [];
+    for (const l of lignes) if (l && typeof l.data === 'object' && l.data) table[String(l.activity_id)] = l.data;
+    if (lignes.length < 1000 || page >= 99) break;
+  }
   cacheRetouches = { userId, table };
   return table;
 }
@@ -213,6 +219,8 @@ export async function chargerPuissance(userId: string): Promise<Resultat<PointPu
   return resultat(r, 'Impossible de charger ta courbe de puissance.');
 }
 
+const LIMITE_PLANIFIEES = 600;
+
 /** Séances prévues entre deux dates ISO incluses. */
 export async function chargerPlanifiees(userId: string, debutIso: string, finIso: string): Promise<Resultat<Prevue[]>> {
   const r = await sb
@@ -222,8 +230,10 @@ export async function chargerPlanifiees(userId: string, debutIso: string, finIso
     .gte('date', debutIso)
     .lte('date', finIso)
     .order('date', { ascending: true })
-    .limit(300);
-  return resultat(r, 'Impossible de charger les séances prévues.');
+    .limit(LIMITE_PLANIFIEES);
+  const res = resultat<Prevue[]>(r, 'Impossible de charger les séances prévues.');
+  if (res.data) res.erreur = avertissementLimite(res.data.length, LIMITE_PLANIFIEES, 'séances prévues');
+  return res;
 }
 
 /**
@@ -303,6 +313,8 @@ export async function chargerSportsChoisis(userId: string): Promise<Resultat<unk
 // Calendrier : séances réalisées, séances prévues et annotations d'une période
 // ---------------------------------------------------------------------------
 
+const LIMITE_SEANCES = 1000; // le maximum que l'API renvoie en une requête
+
 /** Séances réalisées entre deux dates ISO incluses (le calendrier d'un mois). */
 export async function chargerSeancesPeriode(userId: string, debutIso: string, finIso: string): Promise<Resultat<Seance[]>> {
   const r = await sb
@@ -312,9 +324,11 @@ export async function chargerSeancesPeriode(userId: string, debutIso: string, fi
     .gte('start_date_local', debutIso)
     .lt('start_date_local', `${finIso}T23:59:59`)
     .order('start_date_local', { ascending: true })
-    .limit(500);
+    .limit(LIMITE_SEANCES);
   const res = resultat<Seance[]>(r, 'Impossible de charger les séances de ce mois.');
   if (res.data) res.data = await avecRetouches(userId, res.data);
+  // Limite atteinte : les données sont gardées, mais on le dit (sinon la fin du mois manquerait sans qu'on le sache)
+  if (res.data) res.erreur = avertissementLimite(res.data.length, LIMITE_SEANCES, 'séances');
   return res;
 }
 
@@ -340,14 +354,18 @@ export async function chargerAnnotations(userId: string, debutIso: string, finIs
 const COLONNES_BILAN = 'id,strava_id,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,tss';
 const TAILLE_PAGE = 1000; // l'API renvoie au plus 1000 lignes par requête : on lit par pages
 
-/** Tout l'historique, de la toute première activité à la fin de l'année (colonnes légères), par pages de 1000. */
+const PAGES_MAX = 100; // garde-fou : 100 000 activités ; au-delà, on le dit au lieu d'afficher un bilan tronqué
+
+/** Tout l'historique, de la toute première activité à la fin de l'année (colonnes légères), par pages de 1000. Les étapes fusionnées d'un triathlon sont déjà comptées par leur parent. */
 export async function chargerActivitesBilan(userId: string, annee: number): Promise<Resultat<Seance[]>> {
   const toutes: Seance[] = [];
-  for (let page = 0; page < 100; page++) {
+  let complet = false;
+  for (let page = 0; page < PAGES_MAX; page++) {
     const r = await sb
       .from('activities')
       .select(COLONNES_BILAN)
       .eq('user_id', userId)
+      .is('merged_into', null)
       .lte('start_date_local', `${annee}-12-31T23:59:59`)
       .order('start_date_local', { ascending: true })
       .order('id', { ascending: true }) // second critère : sans lui, deux séances à la même heure peuvent être doublées ou sautées entre deux pages
@@ -358,8 +376,12 @@ export async function chargerActivitesBilan(userId: string, annee: number): Prom
     }
     const lignes = (r.data as unknown as Seance[]) || [];
     toutes.push(...lignes);
-    if (lignes.length < TAILLE_PAGE) break;
+    if (lignes.length < TAILLE_PAGE) {
+      complet = true;
+      break;
+    }
   }
+  if (!complet) return { data: null, erreur: 'Ton historique est trop long pour être chargé en entier.' };
   return { data: await avecRetouches(userId, toutes), erreur: '' };
 }
 
@@ -602,6 +624,26 @@ export async function creerSortie(userId: string, ligne: LigneSortie): Promise<R
   const client_id = `app-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
   const r = await sb.from('activities').insert({ ...ligne, user_id: userId, client_id }).select(COLONNES_SEANCE).single();
   return resultat(r, "Impossible d'enregistrer cette activité.");
+}
+
+/**
+ * Modifie une activité saisie à la main (ligne validée par validerSortie). Le filtre `source = 'manual'` est là en plus de la RLS : une activité Strava ne se modifie jamais d'ici.
+ */
+export async function modifierSortie(userId: string, id: string, ligne: LigneSortie): Promise<Resultat<Seance>> {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Activité introuvable.' };
+  const { source: _source, category: _categorie, ...colonnes } = ligne;
+  const r = await sb.from('activities').update(colonnes).eq('user_id', userId).eq('id', id).eq('source', 'manual').select(COLONNES_SEANCE).maybeSingle();
+  const res = resultat<Seance | null>(r, "Impossible de modifier cette activité.");
+  return res.erreur ? { data: null, erreur: res.erreur } : res.data ? { data: res.data, erreur: '' } : { data: null, erreur: 'Activité introuvable.' };
+}
+
+/** Supprime une activité saisie à la main (jamais une activité Strava). Dit « introuvable » si aucune ligne n'a été supprimée. */
+export async function supprimerSortie(userId: string, id: string): Promise<{ erreur: string }> {
+  if (!UUID.test(String(id))) return { erreur: 'Activité introuvable.' };
+  const r = await sb.from('activities').delete().eq('user_id', userId).eq('id', id).eq('source', 'manual').select('id');
+  const res = resultat<{ id: string }[]>(r, 'Impossible de supprimer cette activité.');
+  if (res.erreur) return { erreur: res.erreur };
+  return { erreur: res.data && res.data.length ? '' : 'Activité introuvable.' };
 }
 
 /** Modifie une note qui t'appartient (ligne validée par validerNote). */

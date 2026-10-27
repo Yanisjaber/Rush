@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CATALOGUE } from '../src/data/catalogue-sports.ts';
 import { normaliser, sportAvecStructure } from '../src/data/structure.ts';
-import { distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, chargeEstimeeSortie, typeInitial, SPORTS_AJOUT, blocsDePrevue, formulaireDepuisCompetition, formulaireDepuisSeance, parcoursDePrevue, prevueDepuisLigne, type LignePrevue } from '../src/data/ajouts.ts';
+import { formulaireDepuisSortie, ligneDeModification, sortieModifiable, distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, chargeEstimeeSortie, typeInitial, SPORTS_AJOUT, blocsDePrevue, formulaireDepuisCompetition, formulaireDepuisSeance, parcoursDePrevue, prevueDepuisLigne, type LignePrevue } from '../src/data/ajouts.ts';
 import type { PrevueComplete } from '../src/data/types.ts';
 
 const date = '2026-10-23';
@@ -387,4 +387,39 @@ test('formulaireDepuisSeance / Competition : une ligne sans heure ni sport connu
   assert.equal(f.heure, '12:00');
   assert.equal(f.type, 'Run');
   assert.equal(formulaireDepuisCompetition({ ...vide, category: 'competition' }).heure, '09:00');
+});
+
+test('formulaireDepuisSortie : une activité enregistrée redonne son formulaire, la charge seulement si elle a été saisie', () => {
+  const base = { name: 'Footing', sport: 'Run', start_date_local: '2026-10-22T07:30:00', moving_time: 2700, distance_km: 8.2, total_elevation_gain: 60, avg_heartrate: 148, tss: estimerTss(45, 5), rpe: 5, user_notes: 'RAS' };
+  const { date, f } = formulaireDepuisSortie(base);
+  assert.equal(date, '2026-10-22');
+  assert.deepEqual({ heure: f.heure, heures: f.heures, minutes: f.minutes, distance: f.distance, dplus: f.dplus, fc: f.fc, tss: f.tss, notes: f.notes }, { heure: '07:30', heures: '0', minutes: '45', distance: '8,2', dplus: '60', fc: '148', tss: '', notes: 'RAS' });
+  assert.equal(formulaireDepuisSortie({ ...base, tss: 99 }).f.tss, '99'); // charge saisie à la main : reprise
+  assert.equal(formulaireDepuisSortie({ ...base, sport: 'Swim', distance_km: 2.4 }).f.distance, '2400'); // natation en mètres
+  assert.equal(formulaireDepuisSortie({ ...base, moving_time: 5400 }).f.heures, '1');
+  // aller-retour : le formulaire relu se valide en la même ligne
+  const r = validerSortie(f, date, '2026-10-30', 'Course');
+  assert.ok(r.ok && r.ligne.moving_time === 2700 && r.ligne.distance_km === 8.2);
+});
+
+test('ligneDeModification : une valeur seulement arrondie par le formulaire garde sa valeur exacte', () => {
+  const origine = { moving_time: 2731, avg_heartrate: 147.6, total_elevation_gain: 60.4 };
+  const f = formulaireDepuisSortie({ name: 'x', sport: 'Run', start_date_local: '2026-10-22T07:30:00', ...origine, distance_km: 8, tss: 40, rpe: null, user_notes: null }).f;
+  const r = validerSortie(f, '2026-10-22', '2026-10-30', 'Course');
+  assert.ok(r.ok);
+  if (!r.ok) return;
+  const intacte = ligneDeModification(origine, r.ligne);
+  assert.deepEqual([intacte.moving_time, intacte.avg_heartrate, intacte.total_elevation_gain], [2731, 147.6, 60.4]);
+  // on change la durée et la FC : les nouvelles valeurs l'emportent, le dénivelé non touché reste exact
+  const r2 = validerSortie({ ...f, minutes: '50', fc: '150' }, '2026-10-22', '2026-10-30', 'Course');
+  assert.ok(r2.ok);
+  if (!r2.ok) return;
+  const changee = ligneDeModification(origine, r2.ligne);
+  assert.deepEqual([changee.moving_time, changee.avg_heartrate, changee.total_elevation_gain], [3000, 150, 60.4]);
+});
+
+test('sortieModifiable : seulement une activité saisie à la main', () => {
+  assert.equal(sortieModifiable({ source: 'manual' }), true);
+  assert.equal(sortieModifiable({ source: 'strava' }), false);
+  assert.equal(sortieModifiable({}), false);
 });

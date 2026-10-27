@@ -1,13 +1,17 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { nomDuType } from '@/data/catalogue-sports';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bloc } from '@/components/Bloc';
+import { Bouton } from '@/components/Bouton';
 import { IconeSport } from '@/components/IconeSport';
 import { StatCle } from '@/components/StatCle';
+import { sortieModifiable } from '@/data/ajouts';
 import { familleAffichage } from '@/data/familles';
 import { formatDateLongue } from '@/data/format';
 import { chiffresSeance, lignesTours } from '@/data/seance-detail';
+import { useAjouts } from '@/hooks/useAjouts';
 import { useSeance } from '@/hooks/useSeance';
 import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
@@ -15,12 +19,19 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Le détail d'une séance faite, en lecture : son nom, ses chiffres (selon le sport), ses notes et ses tours (laps) quand la montre en a marqué.
-// On y arrive depuis le calendrier. Modifier une séance arrivera avec la saisie ; les tours serviront à détailler une séance Hyrox.
+// On y arrive depuis le calendrier. Une activité saisie à la main a en plus Modifier et Supprimer (celles de Strava appartiennent à Strava) ; les tours serviront à détailler une séance Hyrox.
 export default function Seance() {
   const p = usePalette();
   const bas = useSafeAreaInsets().bottom;
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const { seance, tours, chargement, chargementTours, erreur, erreurTours } = useSeance(String(id ?? ''));
+  const { supprimerSortie } = useAjouts();
+  const [enCours, setEnCours] = useState(false);
+  const [erreurSuppression, setErreurSuppression] = useState('');
+  const [supprimee, setSupprimee] = useState(false); // suppression réussie : écran vide le temps du retour (sinon « Séance introuvable » clignote)
+
+  if (supprimee) return <View style={styles.centre} />;
 
   if (chargement) {
     return (
@@ -45,9 +56,29 @@ export default function Seance() {
   const chiffres = chiffresSeance(seance);
   const lignes = tours ? lignesTours(tours, seance.sport) : [];
   const notes = (seance.user_notes ?? '').trim();
+  const modifiable = sortieModifiable(seance);
+  const confirmerSuppression = () =>
+    Alert.alert('Supprimer cette activité ?', 'Elle disparaîtra du calendrier et de tes totaux. Cette action est définitive.', [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Supprimer',
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            setEnCours(true);
+            const e = await supprimerSortie(seance.id);
+            setEnCours(false);
+            if (e) return setErreurSuppression(e);
+            setSupprimee(true);
+            router.back();
+          })();
+        },
+      },
+    ]);
 
   return (
-    <ScrollView contentContainerStyle={[styles.contenu, { paddingBottom: bas + espace.e5 }]} contentInsetAdjustmentBehavior="automatic">
+    <View style={styles.page}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.contenu, { paddingBottom: (modifiable ? espace.e5 : bas + espace.e5) }]} contentInsetAdjustmentBehavior="automatic">
       <View style={[styles.entete, { backgroundColor: p.surface, borderLeftColor: couleur }]}>
         <View style={styles.sport}>
           <IconeSport sport={seance.sport} />
@@ -110,10 +141,38 @@ export default function Seance() {
         )}
       </Bloc>
     </ScrollView>
+    {modifiable ? (
+      <View>
+        {erreurSuppression ? (
+          <Text accessibilityRole="alert" style={[typo.petit, styles.erreurBas, { color: p.danger, backgroundColor: p.fond }]}>
+            {erreurSuppression}
+          </Text>
+        ) : null}
+        <View style={[styles.bas, { backgroundColor: p.fond, borderTopColor: p.trait, paddingBottom: bas + espace.e3 }]}>
+          <View style={{ flex: 1 }}>
+            <Bouton onPress={() => router.push({ pathname: '/ajout-sortie', params: { id: seance.id } })}>Modifier</Bouton>
+          </View>
+          <Pressable
+            onPress={confirmerSuppression}
+            disabled={enCours}
+            accessibilityRole="button"
+            accessibilityLabel="Supprimer l'activité"
+            style={({ pressed }) => [styles.supprimer, { borderColor: p.danger, opacity: pressed || enCours ? 0.6 : 1 }]}
+          >
+            <Text style={[typo.corpsFort, { color: p.danger }]}>{enCours ? 'Suppression…' : 'Supprimer'}</Text>
+          </Pressable>
+        </View>
+      </View>
+    ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  page: { flex: 1 },
+  erreurBas: { paddingHorizontal: espace.e4, paddingTop: espace.e2 },
+  bas: { flexDirection: 'row', gap: espace.e2, paddingHorizontal: espace.e4, paddingTop: espace.e3, borderTopWidth: 1 },
+  supprimer: { flex: 1, minHeight: 44, borderRadius: rayon.base, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: espace.e5 },
   contenu: { padding: espace.e4, gap: espace.e3 },
   entete: { borderRadius: rayon.bloc, borderLeftWidth: 6, padding: espace.e4, gap: 4 },

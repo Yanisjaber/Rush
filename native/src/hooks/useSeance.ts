@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { donneesDemoAccueil } from '@/data/accueil';
 import { chargerSeance, chargerTours } from '@/data/api';
 import { toursDemo } from '@/data/demo';
-import { seanceDeLaDemo } from '@/stores/ajouts';
+import { seanceDeLaDemo, useVersionAjouts } from '@/stores/ajouts';
 import { useAuth } from '@/stores/auth';
 import type { Seance, Tour } from '@/data/types';
 
@@ -23,11 +23,17 @@ const initial: Etat = { seance: null, tours: null, chargement: true, chargementT
 export function useSeance(id: string): Etat {
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
+  const version = useVersionAjouts(); // une modification ou une suppression d'activité fait relire la fiche
   const [etat, setEtat] = useState<Etat>(initial);
+  const idLu = useRef(id);
 
   useEffect(() => {
     let annule = false;
-    setEtat(initial);
+    // On repart d'un état vide seulement pour une autre séance ; une relecture après modification garde la fiche affichée
+    if (idLu.current !== id) {
+      idLu.current = id;
+      setEtat(initial);
+    }
     if (demo) {
       const s = seanceDeLaDemo(id, donneesDemoAccueil(new Date()).seances);
       setEtat({ ...initial, seance: s, chargement: false, tours: s ? toursDemo(s) : null, erreur: s ? '' : 'Séance introuvable.' });
@@ -49,7 +55,7 @@ export function useSeance(id: string): Etat {
     return () => {
       annule = true;
     };
-  }, [id, userId, demo]);
+  }, [id, userId, demo, version]);
 
   return etat;
 }

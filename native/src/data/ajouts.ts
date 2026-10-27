@@ -474,3 +474,58 @@ export function validerSortie(f: FormulaireSortie, date: string, aujourdhui: str
     },
   };
 }
+
+// --- Rouvrir une activité saisie à la main pour la modifier ---------------------------------------------------------------------------
+
+/** Seule une activité saisie à la main (source « manual ») se modifie ou se supprime : celles de Strava appartiennent à Strava. */
+export const sortieModifiable = (s: { source?: string | null }): boolean => s.source === 'manual';
+
+/** Le formulaire d'une activité déjà enregistrée, et son jour. La charge n'est reprise que si elle a été saisie à la main (différente de l'estimation). */
+export function formulaireDepuisSortie(s: {
+  name?: string | null;
+  sport: string;
+  start_date_local: string;
+  moving_time: number;
+  distance_km: number | null;
+  total_elevation_gain: number | null;
+  avg_heartrate: number | null;
+  tss: number | null;
+  rpe?: number | null;
+  user_notes?: string | null;
+}): { date: string; f: FormulaireSortie } {
+  const minutes = Math.round((Number(s.moving_time) || 0) / 60);
+  const rpe = s.rpe != null && Number.isInteger(Number(s.rpe)) ? Number(s.rpe) : null;
+  const type = TYPES.has(s.sport) ? s.sport : 'Run';
+  const tssSaisi = s.tss != null && minutes > 0 && Math.round(Number(s.tss)) !== estimerTss(minutes, rpe ?? 5);
+  return {
+    date: String(s.start_date_local).slice(0, 10),
+    f: {
+      nom: textOuVide(s.name),
+      type,
+      heure: heureDe(s.start_date_local, '07:30'),
+      heures: String(Math.floor(minutes / 60)),
+      minutes: String(minutes % 60),
+      distance: distanceEcrite(s.distance_km, type),
+      dplus: s.total_elevation_gain != null ? String(Math.round(Number(s.total_elevation_gain))) : '',
+      fc: s.avg_heartrate != null ? String(Math.round(Number(s.avg_heartrate))) : '',
+      rpe,
+      tss: tssSaisi ? String(Math.round(Number(s.tss))) : '',
+      notes: textOuVide(s.user_notes),
+    },
+  };
+}
+
+/**
+ * La ligne à écrire quand on modifie une activité : celle du formulaire, mais une valeur que le formulaire n'a fait qu'arrondir (la durée à la minute, la FC et le dénivelé au
+ * nombre entier) garde sa valeur exacte d'origine tant qu'on n'y a pas touché. Une activité importée garde ainsi ses secondes et ses décimales.
+ */
+export function ligneDeModification(origine: { moving_time: number; avg_heartrate: number | null; total_elevation_gain: number | null }, ligne: LigneSortie): LigneSortie {
+  const garde = (nouvelle: number | null, ancienne: number | null | undefined, arrondi: (n: number) => number): number | null =>
+    nouvelle != null && ancienne != null && arrondi(Number(ancienne)) === nouvelle ? Number(ancienne) : nouvelle;
+  return {
+    ...ligne,
+    moving_time: garde(ligne.moving_time, origine.moving_time, (n) => Math.round(n / 60) * 60) ?? ligne.moving_time,
+    avg_heartrate: garde(ligne.avg_heartrate, origine.avg_heartrate, Math.round),
+    total_elevation_gain: garde(ligne.total_elevation_gain, origine.total_elevation_gain, Math.round),
+  };
+}
