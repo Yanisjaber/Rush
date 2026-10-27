@@ -369,8 +369,8 @@ function ProfilSemaine({ semaine, maxi, mono, filtre, aujourdhui }: { semaine: J
       style={styles.semaine}
     >
       <View style={styles.chiffresSemaine}>
-        <Text style={[styles.chiffreSemaine, { color: total ? p.texteDoux : p.texteMuet }]}>
-          {total ? formatHeuresMinutes(c.secondes) : '—'}
+        <Text style={[styles.chiffreSemaine, { color: c.secondes ? p.texteDoux : p.texteMuet }]}>
+          {c.secondes ? formatHeuresMinutes(c.secondes) : '0'}
         </Text>
         {c.principale ? (
           <Text style={[styles.chiffreSemaine, { color: p.texte }]}>
