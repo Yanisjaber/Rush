@@ -5,9 +5,10 @@
 import { CATALOGUE } from './catalogue-sports.ts';
 import { verifierParcours, type ParcoursGpx } from './gpx.ts';
 import { verifierDonneesImport, type DonneesImport } from './import-activite.ts';
-import { aUnFormat, FORMATS_TRI, federationsDuSport, lireTempsCible } from './competition.ts';
+import { aUnFormat, FORMATS_TRI, federationsDuSport, lireTempsCible, texteTempsCible } from './competition.ts';
 import { nettoyerDetails, type DetailsNote, type TypeNote } from './sante-notes.ts';
-import { resume, sportAvecStructure, type Bloc, type Reference } from './structure.ts';
+import { metriquesDuSport, normaliser, resume, sportAvecStructure, type Bloc, type Reference } from './structure.ts';
+import type { PrevueComplete } from './types.ts';
 
 // STOCKAGE :
 //  - séance prévue : une ligne de `activity_planned` (category = 'entrainement')
@@ -253,6 +254,73 @@ export function validerCompetition(f: FormulaireCompetition, date: string, parco
       tri_format: format || null,
       ...(parcours ? { gpx_name: parcours.nom, gpx_content: parcours.contenu } : {}),
     },
+  };
+}
+
+// --- Rouvrir une séance prévue ou une compétition pour la modifier ---------------------------------------------------------------------
+
+/** L'heure « 18:30 » d'une date locale « 2026-10-29T18:30:00 » ; `parDefaut` si la ligne n'en a pas (ou une illisible). */
+const heureDe = (iso: string | null | undefined, parDefaut: string): string => {
+  const h = /T(\d{2}:\d{2})/.exec(String(iso ?? ''))?.[1];
+  return h && HEURE.test(h) ? h : parDefaut;
+};
+
+/** Une distance en kilomètres, écrite comme on la saisit (mètres en natation, virgule décimale). */
+const distanceEcrite = (km: number | null | undefined, type: string): string =>
+  km == null || !(Number(km) > 0) ? '' : distanceEnMetres(type) ? String(Math.round(Number(km) * 1000)) : String(Number(km)).replace('.', ',');
+
+const textOuVide = (v: unknown): string => (v == null ? '' : String(v));
+
+/** Le parcours GPX joint à une ligne, ou null. */
+export const parcoursDePrevue = (p: Pick<PrevueComplete, 'gpx_name' | 'gpx_content'>): ParcoursGpx | null =>
+  p.gpx_content ? { nom: p.gpx_name || 'parcours.gpx', contenu: p.gpx_content } : null;
+
+/** Les blocs d'une séance prévue (vides pour un sport sans structure ou une ligne sans bloc). */
+export function blocsDePrevue(p: Pick<PrevueComplete, 'sport' | 'structure'>): Bloc[] {
+  if (!sportAvecStructure(p.sport) || !Array.isArray(p.structure)) return [];
+  return normaliser(p.structure, metriquesDuSport(p.sport)[0]);
+}
+
+/**
+ * Le formulaire d'une séance prévue déjà enregistrée, pour la rouvrir. La charge n'est reprise que si elle a été saisie à la main (différente de l'estimation) : sinon elle
+ * reste vide et se réestime, comme à la création. Avec des blocs, durée et charge viennent des blocs.
+ */
+export function formulaireDepuisSeance(p: PrevueComplete): FormulaireSeance {
+  const blocs = blocsDePrevue(p);
+  const rpe = p.rpe != null && Number.isInteger(Number(p.rpe)) ? Number(p.rpe) : null;
+  const saisie = !blocs.length && p.tss != null && p.duration != null && Math.round(Number(p.tss)) !== estimerTss(Number(p.duration), rpe ?? 5);
+  return {
+    nom: textOuVide(p.name),
+    type: TYPES.has(p.sport) ? p.sport : 'Run',
+    duree: p.duration != null ? String(p.duration) : '60',
+    heure: heureDe(p.start_date_local, '12:00'),
+    distance: distanceEcrite(p.km, p.sport),
+    dplus: p.d_plus != null ? String(p.d_plus) : '',
+    rpe,
+    tss: saisie ? String(Math.round(Number(p.tss))) : '',
+    notes: textOuVide(p.notes),
+  };
+}
+
+/** Le formulaire d'une compétition déjà enregistrée, pour la rouvrir (heure de départ 9 h si la ligne n'en a pas). */
+export function formulaireDepuisCompetition(p: PrevueComplete): FormulaireCompetition {
+  const cible = Number(p.target);
+  return {
+    nom: textOuVide(p.name),
+    type: TYPES.has(p.sport) ? p.sport : 'Run',
+    priorite: p.priority === 'B' ? 'B' : 'A',
+    epreuve: textOuVide(p.type),
+    distance: distanceEcrite(p.km, p.sport),
+    heure: heureDe(p.start_date_local, '09:00'),
+    federation: textOuVide(p.federation),
+    niveau: textOuVide(p.race_level),
+    format: textOuVide(p.tri_format),
+    cible: Number.isFinite(cible) && cible > 0 ? texteTempsCible(cible) : '',
+    dplus: p.d_plus != null ? String(p.d_plus) : '',
+    tours: p.laps != null ? String(p.laps) : '',
+    tss: p.tss != null ? String(Math.round(Number(p.tss))) : '',
+    rpe: p.rpe != null && Number.isInteger(Number(p.rpe)) ? Number(p.rpe) : null,
+    notes: textOuVide(p.notes),
   };
 }
 

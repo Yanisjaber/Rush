@@ -16,7 +16,7 @@ import type { ObjectifAnnuel } from './bilan.ts';
 import type { LigneProfil } from './profil.ts';
 import { valeurValide, type LigneMesure } from './sante-catalogue';
 import { messageTours, toursValides } from './seance-detail';
-import type { Cycle, Nuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Profil, Seance, SerieForce, TestHyrox, Tour } from './types';
+import type { Cycle, Nuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, PrevueComplete, ProgrammeForce, Profil, Seance, SerieForce, TestHyrox, Tour } from './types';
 import type { FormulaireCycle } from './cycles';
 import type { LigneNote, LignePrevue, LigneSortie } from './ajouts';
 import type { Modele } from './modeles';
@@ -524,6 +524,39 @@ export async function chargerSeriesPeriode(userId: string, debutIso: string, fin
 export async function creerPrevue(userId: string, ligne: LignePrevue): Promise<Resultat<Prevue>> {
   const r = await sb.from('activity_planned').insert({ ...ligne, user_id: userId }).select(COLONNES_PLANIFIEE).single();
   return resultat(r, ligne.category === 'competition' ? "Impossible d'enregistrer cette compétition." : "Impossible d'enregistrer cette séance.");
+}
+
+const COLONNES_PREVUE_COMPLETE = `${COLONNES_PLANIFIEE},est_watts,est_bpm,est_kj,est_if,gpx_content,priority,type,target,laps,federation,race_level,tri_format`;
+
+/** Une séance prévue ou une compétition de l'utilisateur avec toutes ses colonnes. Un identifiant qui n'est pas un UUID n'existe pas (pas de requête). */
+export async function chargerPrevue(userId: string, id: string): Promise<Resultat<PrevueComplete | null>> {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Séance introuvable.' };
+  const r = await sb.from('activity_planned').select(COLONNES_PREVUE_COMPLETE).eq('user_id', userId).eq('id', id).maybeSingle();
+  const res = resultat<PrevueComplete | null>(r, 'Impossible de charger cette séance.');
+  if (!res.erreur && !res.data) return { data: null, erreur: 'Séance introuvable.' };
+  return res;
+}
+
+/**
+ * Ce qu'une modification efface quand le formulaire ne le renvoie plus : sans blocs ni parcours, une ligne validée n'a pas ces clés, et un « update » les laisserait
+ * telles quelles en base. On les remet donc à null explicitement, avant d'appliquer la ligne.
+ */
+const EFFACES_A_LA_MODIFICATION = { structure: null, est_watts: null, est_bpm: null, est_kj: null, est_if: null, gpx_name: null, gpx_content: null };
+
+/** Modifie une séance prévue ou une compétition qui t'appartient (ligne validée par validerSeance / validerCompetition). La catégorie ne change jamais. */
+export async function modifierPrevue(userId: string, id: string, ligne: LignePrevue): Promise<Resultat<Prevue>> {
+  if (!UUID.test(String(id))) return { data: null, erreur: 'Séance introuvable.' };
+  const { category: _categorie, ...colonnes } = ligne;
+  const r = await sb.from('activity_planned').update({ ...EFFACES_A_LA_MODIFICATION, ...colonnes }).eq('user_id', userId).eq('id', id).eq('category', ligne.category).select(COLONNES_PLANIFIEE).maybeSingle();
+  const res = resultat<Prevue | null>(r, ligne.category === 'competition' ? 'Impossible de modifier cette compétition.' : 'Impossible de modifier cette séance.');
+  return res.erreur ? { data: null, erreur: res.erreur } : res.data ? { data: res.data, erreur: '' } : { data: null, erreur: 'Séance introuvable.' };
+}
+
+/** Supprime une séance prévue ou une compétition qui t'appartient. */
+export async function supprimerPrevue(userId: string, id: string): Promise<{ erreur: string }> {
+  if (!UUID.test(String(id))) return { erreur: 'Séance introuvable.' };
+  const r = await sb.from('activity_planned').delete().eq('user_id', userId).eq('id', id);
+  return { erreur: resultat(r, 'Impossible de supprimer cette séance.').erreur };
 }
 
 /** Écrit une note (ligne validée par validerNote) dans day_notes. */

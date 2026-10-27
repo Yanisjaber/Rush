@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CATALOGUE } from '../src/data/catalogue-sports.ts';
 import { normaliser, sportAvecStructure } from '../src/data/structure.ts';
-import { distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, chargeEstimeeSortie, typeInitial, SPORTS_AJOUT } from '../src/data/ajouts.ts';
+import { distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, chargeEstimeeSortie, typeInitial, SPORTS_AJOUT, blocsDePrevue, formulaireDepuisCompetition, formulaireDepuisSeance, parcoursDePrevue, type LignePrevue } from '../src/data/ajouts.ts';
+import type { PrevueComplete } from '../src/data/types.ts';
 
 const date = '2026-10-23';
 
@@ -318,4 +319,80 @@ test('tous les sports du catalogue sont proposés : la saisie enregistre le vrai
 test('les blocs restent réservés au vélo, à la course et à la natation (variantes comprises)', () => {
   for (const t of ['Run', 'TrailRun', 'Ride', 'GravelRide', 'EMountainBikeRide', 'Swim']) assert.equal(sportAvecStructure(t), true, t);
   for (const t of ['NordicSki', 'Rowing', 'WeightTraining', 'Hyrox', 'Triathlon']) assert.equal(sportAvecStructure(t), false, t);
+});
+
+// --- Rouvrir une séance prévue ou une compétition pour la modifier : ligne de la base → formulaire → ligne, sans rien perdre ---
+
+/** Ce que la base rend quand on relit une ligne qu'on vient d'écrire (les colonnes absentes de la ligne valent null). */
+const relue = (ligne: LignePrevue, id = 'a1b2c3d4-0000-4000-8000-000000000001'): PrevueComplete => ({
+  id, name: ligne.name, date: ligne.date, sport: ligne.sport, duration: ligne.duration, tss: ligne.tss, category: ligne.category, km: ligne.km, d_plus: ligne.d_plus,
+  start_date_local: ligne.start_date_local, rpe: ligne.rpe, notes: ligne.notes, structure: ligne.structure ?? null,
+  est_watts: ligne.est_watts ?? null, est_bpm: ligne.est_bpm ?? null, est_kj: ligne.est_kj ?? null, est_if: ligne.est_if ?? null,
+  gpx_name: ligne.gpx_name ?? null, gpx_content: ligne.gpx_content ?? null,
+  priority: ligne.priority ?? null, type: ligne.type ?? null, target: ligne.target ?? null, laps: ligne.laps ?? null,
+  federation: ligne.federation ?? null, race_level: ligne.race_level ?? null, tri_format: ligne.tri_format ?? null,
+});
+
+test('formulaireDepuisSeance : une séance rouverte puis réenregistrée donne la même ligne', () => {
+  const depart = validerSeance({ ...formulaireSeanceVide(), nom: 'Footing du soir', type: 'Run', duree: '50', heure: '18:30', distance: '9,5', dplus: '80', rpe: 6, notes: 'Rester facile' }, date, 'Course à pied');
+  assert.ok(depart.ok);
+  if (!depart.ok) return;
+  const f = formulaireDepuisSeance(relue(depart.ligne));
+  assert.equal(f.distance, '9,5');
+  assert.equal(f.heure, '18:30');
+  assert.equal(f.tss, ''); // la charge était estimée : elle se réestime
+  const encore = validerSeance(f, date, 'Course à pied');
+  assert.ok(encore.ok);
+  if (encore.ok) assert.deepEqual(encore.ligne, depart.ligne);
+});
+
+test('formulaireDepuisSeance : une charge saisie à la main est reprise, la natation se relit en mètres', () => {
+  const main = validerSeance({ ...formulaireSeanceVide(), type: 'Swim', duree: '40', distance: '2400', tss: '55' }, date, 'Natation');
+  assert.ok(main.ok);
+  if (!main.ok) return;
+  const f = formulaireDepuisSeance(relue(main.ligne));
+  assert.equal(f.distance, '2400');
+  assert.equal(f.tss, '55');
+  const encore = validerSeance(f, date, 'Natation');
+  assert.ok(encore.ok);
+  if (encore.ok) assert.deepEqual(encore.ligne, main.ligne);
+});
+
+test('blocsDePrevue : les blocs reviennent tels qu\'ils ont été écrits, et un sport sans structure n\'en a pas', () => {
+  const blocs = normaliser([
+    { type: 'warmup', work: { min: 10, int: 56, intHi: 75 } },
+    { type: 'interval', reps: 4, metric: 'pace', unit: 'zone', work: { min: 8, int: 91, intHi: 105 }, rec: { min: 2, int: 40, intHi: 55 } },
+  ], 'pace');
+  const r = validerSeance({ ...formulaireSeanceVide(), type: 'Run' }, date, 'Course', blocs, { ftp: 250 });
+  assert.ok(r.ok);
+  if (!r.ok) return;
+  const lue = relue(r.ligne);
+  assert.deepEqual(blocsDePrevue(lue), blocs);
+  assert.deepEqual(blocsDePrevue({ ...lue, sport: 'WeightTraining' }), []);
+  assert.deepEqual(blocsDePrevue({ ...lue, structure: null }), []);
+});
+
+test('formulaireDepuisCompetition : une compétition rouverte puis réenregistrée donne la même ligne', () => {
+  const depart = validerCompetition({
+    ...formulaireCompetitionVide(), nom: 'Semi de Paris', type: 'Run', priorite: 'B', epreuve: 'Route', distance: '21,1', heure: '09:30', federation: 'FFA', niveau: 'Senior', cible: '1h35', dplus: '85', tours: '1', tss: '140', rpe: 9, notes: 'Partir prudent',
+  }, '2027-03-07', { nom: 'semi.gpx', contenu: '<gpx></gpx>' });
+  assert.ok(depart.ok);
+  if (!depart.ok) return;
+  const lue = relue(depart.ligne);
+  const f = formulaireDepuisCompetition(lue);
+  assert.equal(f.cible, '1h35');
+  assert.equal(f.priorite, 'B');
+  assert.equal(f.heure, '09:30');
+  assert.deepEqual(parcoursDePrevue(lue), { nom: 'semi.gpx', contenu: '<gpx></gpx>' });
+  const encore = validerCompetition(f, '2027-03-07', parcoursDePrevue(lue));
+  assert.ok(encore.ok);
+  if (encore.ok) assert.deepEqual(encore.ligne, depart.ligne);
+});
+
+test('formulaireDepuisSeance / Competition : une ligne sans heure ni sport connu prend des valeurs par défaut valides', () => {
+  const vide = relue({ category: 'entrainement', name: '', date, start_date_local: '', sport: 'Inconnu', duration: null, tss: null, rpe: null, km: null, d_plus: null, notes: null });
+  const f = formulaireDepuisSeance(vide);
+  assert.equal(f.heure, '12:00');
+  assert.equal(f.type, 'Run');
+  assert.equal(formulaireDepuisCompetition({ ...vide, category: 'competition' }).heure, '09:00');
 });

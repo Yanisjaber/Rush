@@ -70,6 +70,29 @@ export interface Prevue {
   programme_id?: string;
 }
 
+/** Une séance prévue ou une compétition avec toutes ses colonnes (blocs, notes, parcours GPX…), telle qu'on la lit pour l'ouvrir ou la modifier. */
+export interface PrevueComplete extends Prevue {
+  start_date_local: string | null;
+  rpe: number | null;
+  notes: string | null;
+  /** Les blocs de la séance (voir structure.ts) ; null sans structure. */
+  structure: unknown[] | null;
+  est_watts: number | null;
+  est_bpm: number | null;
+  est_kj: number | null;
+  est_if: number | null;
+  gpx_name: string | null;
+  gpx_content: string | null;
+  /** Compétition seulement : priorité A ou B, type d'épreuve, temps cible (minutes, en texte), tours, fédération, niveau, format de triathlon. */
+  priority: string | null;
+  type: string | null;
+  target: string | null;
+  laps: number | null;
+  federation: string | null;
+  race_level: string | null;
+  tri_format: string | null;
+}
+
 /** Un objectif de compétition. */
 export interface Objectif {
   id: string;
