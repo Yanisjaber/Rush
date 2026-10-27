@@ -8,7 +8,7 @@ import { usePalette } from '@/theme/usePalette';
 
 // Le menu du « + » du détail d'un jour : une feuille qui monte du bas, une ligne par ajout (pictogramme, nom et une phrase qui l'explique), rangée en trois
 // groupes : prévoir, enregistrer, noter. Chaque ligne ouvre son propre écran, sauf le repos qui se pose ou se retire d'un toucher. Toucher à côté ferme la feuille.
-// Glisser la feuille vers le bas la ferme (elle suit le doigt ; assez tirée ou lancée assez vite, elle part, sinon elle revient).
+// Glisser la feuille vers le bas la ferme (la liste, elle, ne rebondit pas : seule la feuille bouge ; assez tirée ou lancée assez vite, elle part, sinon elle revient).
 // Aucune couleur de sport ici : ces lignes ne sont pas des sports (la couleur reste réservée aux sports).
 export type ChoixAjout = 'seance' | 'sortie' | 'import' | 'competition' | 'note' | 'cycle' | 'repos';
 
@@ -82,7 +82,7 @@ export function MenuAjout({ ouvert, onFermer, onChoisir, repos }: { ouvert: bool
       >
         <View style={[styles.poignee, { backgroundColor: p.traitFort }]} />
         {/* Sur un petit écran, la liste défile plutôt que de sortir de la feuille */}
-        <ScrollView style={{ maxHeight: height * 0.75 }} showsVerticalScrollIndicator={false} scrollEventThrottle={16} onScroll={(e) => (defilement.current = e.nativeEvent.contentOffset.y)}>
+        <ScrollView style={{ maxHeight: height * 0.75 }} showsVerticalScrollIndicator={false} bounces={false} overScrollMode="never" scrollEventThrottle={16} onScroll={(e) => (defilement.current = e.nativeEvent.contentOffset.y)}>
           {GROUPES.map((g, i) => (
             <View key={g.titre}>
               <Text accessibilityRole="header" style={[typo.micro, styles.groupe, i === 0 && styles.premierGroupe, { color: p.texteMuet }]}>
