@@ -2,7 +2,7 @@
   // Texte de la politique de confidentialité : ce que Rush enregistre, où, qui y accède, et comment récupérer ou
   // supprimer ses données. Utilisé dans Paramètres › Confidentialité et sur la page publique #/confidentialite.
   // La date de mise à jour est à changer à chaque modification du texte.
-  export const DATE_MAJ = '13 octobre 2026';
+  export const DATE_MAJ = '28 octobre 2026';
   const CONTACT = 'yanisjaber23@gmail.com';
 </script>
 
@@ -11,7 +11,7 @@
 <div class="texte">
   <section>
     <h2>Qui est derrière l'app</h2>
-    <p>Rush est un projet personnel, géré par Yanis. Ce n'est pas une entreprise : pas de publicité, pas de revente de données, pas de suivi de ton comportement.</p>
+    <p>Rush est un projet personnel, géré par Yanis. Ce n'est pas une entreprise : pas de publicité, pas de revente de données, pas de suivi de ton comportement. Rush existe en site web et en application mobile : le même compte, les mêmes données et les mêmes règles s'appliquent aux deux.</p>
   </section>
 
   <section>
@@ -19,18 +19,20 @@
     <ul>
       <li><strong>Ton compte</strong> : ton adresse e-mail et ton mot de passe (le mot de passe est transformé en une empreinte illisible : personne ne peut le relire).</li>
       <li><strong>Tes séances</strong> : durée, distance, dénivelé, cardio, puissance, courbes, et le parcours GPS quand ton activité en a un.</li>
-      <li><strong>Ton sommeil</strong> et ta forme, si tu connectes Garmin.</li>
+      <li><strong>Ton sommeil</strong> et ta forme, quand tu les saisis ou quand une nuit a déjà été importée depuis Garmin.</li>
+      <li><strong>Ton suivi de santé</strong>, si tu le renseignes : ressenti du matin, maladie (avec les symptômes), blessure (zone du corps, douleur), alcool, voyage, cycle, poids et mesures du corps, nutrition. Tu choisis ce que tu notes : rien n'est obligatoire.</li>
       <li><strong>Ton profil</strong> : poids, fréquence cardiaque max, seuils, zones.</li>
-      <li><strong>Tes entraînements de force</strong> (programmes, exercices, séries, charges), tes <strong>tests Hyrox</strong>, tes objectifs, tes notes, tes jours de repos.</li>
+      <li><strong>Tes entraînements de force</strong> (programmes, exercices, séries, charges), tes <strong>tests et efforts Hyrox</strong>, tes objectifs, tes cycles d'entraînement, tes notes, tes jours de repos.</li>
       <li><strong>Tes réglages</strong> : la disposition de ton accueil, tes préférences.</li>
     </ul>
-    <p>Une partie de ces données touche à la santé (cardio, sommeil, poids). Elles sont traitées avec le même soin que le reste et ne servent qu'à t'afficher tes propres chiffres.</p>
+    <p>Une grande partie de ces données touche à la santé (cardio, sommeil, poids, blessures, maladie, cycle). Ce sont des données sensibles : elles ne servent qu'à t'afficher tes propres chiffres, ne sont jamais partagées, et tu peux les supprimer à tout moment (voir « Tes droits »).</p>
   </section>
 
   <section>
     <h2>Où et qui y accède</h2>
     <ul>
-      <li>Les données sont stockées chez <strong>Supabase</strong>, le service qui héberge la base de données de l'app.</li>
+      <li>Les données sont stockées chez <strong>Supabase</strong>, le service qui héberge la base de données de l'app (le site est servi par GitHub Pages).</li>
+      <li>Les e-mails de connexion et de confirmation partent par <strong>Brevo</strong>, un service d'envoi d'e-mails : il reçoit ton adresse e-mail pour les transmettre, rien d'autre.</li>
       <li>Une règle de sécurité dans la base garantit que <strong>chaque compte ne voit que ses propres lignes</strong>. Un autre utilisateur de l'app ne peut pas lire les tiennes.</li>
       <li>Yanis administre l'app et a, comme tout administrateur, un accès technique à la base. Si tu as une question sur l'usage de tes données, écris-lui (voir « Contact » plus bas).</li>
     </ul>
@@ -40,7 +42,7 @@
     <h2>Les services connectés</h2>
     <ul>
       <li><strong>Strava</strong> (si tu le connectes) : l'app lit tes activités pour les afficher. Tu peux déconnecter Strava à tout moment dans Paramètres › Connexions, ou retirer l'app depuis tes réglages sur strava.com.</li>
-      <li><strong>Garmin</strong> : la connexion officielle arrive bientôt. En attendant, seules les nuits de sommeil déjà importées s'affichent.</li>
+      <li><strong>Garmin</strong> : aucune connexion pour l'instant (l'accès officiel arrive peut-être plus tard). Seules les nuits de sommeil déjà importées s'affichent.</li>
       <li><strong>Open Dossard</strong> (si tu lies ta licence) : l'app interroge leur site avec ton numéro de licence pour afficher tes résultats.</li>
       <li><strong>OpenStreetMap</strong> : pour afficher une carte, ton navigateur télécharge des images de carte sur leurs serveurs, qui voient donc ton adresse IP et la zone affichée.</li>
     </ul>
@@ -48,13 +50,13 @@
 
   <section>
     <h2>Cookies et traceurs</h2>
-    <p>Aucun cookie publicitaire, aucun outil de mesure d'audience. Ton navigateur garde seulement ta session de connexion et quelques préférences (thème, disposition de l'accueil) pour que l'app fonctionne.</p>
+    <p>Aucun cookie publicitaire, aucun outil de mesure d'audience. Ton navigateur (ou ton téléphone) garde seulement ta session de connexion et quelques préférences (thème, disposition de l'accueil) pour que l'app fonctionne.</p>
   </section>
 
   <section>
     <h2>Tes droits</h2>
     <ul>
-      <li><strong>Récupérer tes données</strong> : Paramètres › Général › « Exporter mes données » te donne un fichier avec tout.</li>
+      <li><strong>Récupérer tes données</strong> : Paramètres › Général › « Exporter mes données » te donne un fichier avec toutes tes données (séances, santé, force, Hyrox, cycles, notes, réglages). Les courbes brutes, les fichiers GPX et les jetons de connexion n'y sont pas.</li>
       <li><strong>Corriger</strong> : tout ce que tu as saisi se modifie dans l'app.</li>
       <li><strong>Tout supprimer</strong> : Paramètres › Général › « Supprimer mon compte et mes données ». C'est immédiat et définitif.</li>
     </ul>

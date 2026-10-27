@@ -5,7 +5,7 @@ import { sb } from '../supabase.js';
 
 const TABLES = [
   ['profil', 'user_profiles', '*'],
-  ['seances', 'activities', 'id,strava_id,source,name,sport,start_date_local,moving_time,elapsed_time,distance_km,total_elevation_gain,avg_heartrate,max_heartrate,avg_watts,np,tss,rpe,category,user_notes,planned_id,result_place,result_total,result_catev'],
+  ['seances', 'activities', 'id,strava_id,source,name,sport,discipline,category,start_date_local,moving_time,elapsed_time,distance_km,total_elevation_gain,avg_speed_kmh,avg_heartrate,max_heartrate,avg_watts,max_watts,np,ftp_at_time,avg_cadence,kj,calories,tss,rpe,user_notes,planned_id,merged_into,priority,target,course_dplus,tri,stages,laps,lap_details,gpx_name,result_place,result_total,result_catev'],
   ['retouches', 'activity_edits', '*'],
   ['seances_prevues', 'activity_planned', 'id,name,date,sport,duration,tss,category,km,start_date_local,rpe,d_plus,notes,structure,priority,type'],
   ['modeles', 'activity_template', '*'],
@@ -20,6 +20,11 @@ const TABLES = [
   ['series_force', 'strength_sets', '*'],
   ['tests_hyrox', 'hyrox_tests', '*'],
   ['objectif_hyrox', 'hyrox_objectif', '*'],
+  ['efforts_hyrox', 'hyrox_efforts', '*'],
+  ['cycles', 'training_cycles', '*'],
+  ['sante', 'health_metrics', '*'],
+  ['records_puissance', 'power_profile', '*'],
+  ['records_puissance_par_sport', 'power_profile_sport', '*'],
 ];
 const PAGE = 1000;
 const MAX_LIGNES = 50000; // plafond de sécurité par table
