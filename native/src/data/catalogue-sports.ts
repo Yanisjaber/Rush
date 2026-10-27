@@ -66,7 +66,6 @@ export const CATALOGUE: readonly SportCatalogue[] = [
   { type: 'Pickleball', nom: 'Pickleball', court: 'Pickleball', famille: 'autre', groupe: 'Raquettes et balles', couleur: { sombre: '#f7dc6e', clair: '#ae8d09' } },
   { type: 'Racquetball', nom: 'Racquetball', court: 'Racquetball', famille: 'autre', groupe: 'Raquettes et balles', couleur: { sombre: '#f4a32a', clair: '#a56609' } },
   { type: 'Golf', nom: 'Golf', court: 'Golf', famille: 'autre', groupe: 'Raquettes et balles', couleur: { sombre: '#30913d', clair: '#246b2d' } },
-  { type: 'Soccer', nom: 'Football', court: 'Football', famille: 'autre', groupe: 'Raquettes et balles', couleur: { sombre: '#31c47a', clair: '#1d7247' } },
   { type: 'Skateboard', nom: 'Skateboard', court: 'Skate', famille: 'autre', groupe: 'Roulettes', couleur: { sombre: '#d879d0', clair: '#ae32a4' } },
   { type: 'InlineSkate', nom: 'Roller', court: 'Roller', famille: 'autre', groupe: 'Roulettes', couleur: { sombre: '#e755b6', clair: '#b31980' } },
   { type: 'Wheelchair', nom: 'Fauteuil roulant', court: 'Fauteuil', famille: 'autre', groupe: 'Divers', couleur: { sombre: '#8199bb', clair: '#476185' } },

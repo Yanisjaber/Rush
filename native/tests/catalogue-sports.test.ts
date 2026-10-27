@@ -8,7 +8,7 @@ import { clair, sombre } from '../src/theme/couleurs.ts';
 const TYPES_STRAVA = [
   'AlpineSki', 'BackcountrySki', 'Badminton', 'Canoeing', 'Crossfit', 'EBikeRide', 'Elliptical', 'EMountainBikeRide', 'Golf', 'GravelRide', 'Handcycle',
   'HighIntensityIntervalTraining', 'Hike', 'IceSkate', 'InlineSkate', 'Kayaking', 'Kitesurf', 'MountainBikeRide', 'NordicSki', 'Pickleball', 'Pilates',
-  'Racquetball', 'Ride', 'RockClimbing', 'RollerSki', 'Rowing', 'Run', 'Sail', 'Skateboard', 'Snowboard', 'Snowshoe', 'Soccer', 'Squash', 'StairStepper',
+  'Racquetball', 'Ride', 'RockClimbing', 'RollerSki', 'Rowing', 'Run', 'Sail', 'Skateboard', 'Snowboard', 'Snowshoe', 'Squash', 'StairStepper',
   'StandUpPaddling', 'Surfing', 'Swim', 'TableTennis', 'Tennis', 'TrailRun', 'Velomobile', 'VirtualRide', 'VirtualRow', 'VirtualRun', 'Walk',
   'WeightTraining', 'Wheelchair', 'Windsurf', 'Workout', 'Yoga',
 ];
@@ -100,4 +100,12 @@ test('nomDuType : le nom français, le type brut s\'il est inconnu, « Activité
 
 test('couleurDuType : un type inconnu prend le gris neutre', () => {
   assert.equal(couleurDuType('Curling', 'sombre'), couleurDuType('Other', 'sombre'));
+});
+
+test('catalogue : les sports collectifs (foot, rugby…) n\'ont pas d\'entrée, ils restent « Autre sport » en gris', () => {
+  for (const t of ['Soccer', 'Rugby', 'Basketball']) {
+    assert.equal(sportDuType(t), null, t);
+    assert.equal(couleurDuType(t, 'sombre'), couleurDuType('Other', 'sombre'), t);
+    assert.equal(familleSport(t), 'autre', t);
+  }
 });
