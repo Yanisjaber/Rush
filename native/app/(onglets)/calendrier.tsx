@@ -31,8 +31,9 @@ import type { Cycle, Note } from '@/data/types';
 
 const nomSport = courtDuType;
 const BARRE_ONGLETS = 72;
-// Jusqu'à 5 séances se voient d'un coup d'œil sur un jour (un point chacune) : au-delà, un « + »
-const MAX_POINTS = 5;
+// Jusqu'à 4 marques se voient d'un coup d'œil sur un jour (un point chacune) ; au-delà, 3 points puis « +N » (le nombre qui reste), pour tenir dans la case
+const MAX_POINTS = 4;
+const POINTS_SI_PLUS = 3;
 const dateLongue = (iso: string) => {
   const t = new Date(`${iso}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   return t.charAt(0).toUpperCase() + t.slice(1);
@@ -326,7 +327,7 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
         <Text style={[styles.numeroTexte, { color: jour.aujourdhui ? p.fond : jour.futur ? p.texteDoux : p.texte }]}>{jour.num}</Text>
       </View>
       <View style={styles.points}>
-        {marques.slice(0, MAX_POINTS).map((m) =>
+        {(marques.length > MAX_POINTS ? marques.slice(0, POINTS_SI_PLUS) : marques).map((m) =>
           m.type === 'fait' ? (
             <View key={m.cle} style={[styles.point, { backgroundColor: couleurSport(p, m.couleur) }]} />
           ) : m.type === 'prevu' ? (
@@ -336,7 +337,7 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
           ),
         )}
         {jour.repos && !marques.length ? <View style={[styles.barre, { backgroundColor: p.traitFort }]} /> : null}
-        {marques.length > MAX_POINTS ? <Text style={[styles.plus, { color: p.texteDoux }]}>+</Text> : null}
+        {marques.length > MAX_POINTS ? <Text style={[styles.plus, { color: p.texteDoux }]}>+{marques.length - POINTS_SI_PLUS}</Text> : null}
       </View>
     </Pressable>
   );

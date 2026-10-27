@@ -43,7 +43,7 @@ export function LegendeCalendrier() {
         { marque: plein, titre: 'Séance faite', precision: 'La couleur du point est celle du sport.' },
         { marque: contour, titre: 'Séance prévue', precision: 'Pas encore faite.' },
         { marque: carre, titre: 'Compétition', precision: '' },
-        { marque: <Text style={[typo.micro, { color: p.texteDoux }]}>+</Text>, titre: 'Plus de 5 séances', precision: 'Un « + » après les cinq premiers points.' },
+        { marque: <Text style={[typo.micro, { color: p.texteDoux }]}>+2</Text>, titre: 'Plus de 4 marques', precision: 'Trois points, puis « +2 » : le nombre qui reste.' },
         { marque: <View style={[styles.barre, { backgroundColor: p.traitFort }]} />, titre: 'Repos', precision: 'Un jour de repos posé, sans séance.' },
         { marque: <View style={[styles.bande, { backgroundColor: couleurNote(undefined) }]} />, titre: 'Cycle', precision: 'Une bande au bas de la case, de la couleur du cycle.' },
         { marque: logos, titre: 'Notes', precision: 'Note, maladie, blessure, indisponible : un logo dans le coin.' },
