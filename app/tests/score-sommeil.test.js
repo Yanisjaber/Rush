@@ -170,3 +170,11 @@ test('latence : des segments mal formés ne font pas planter, ils sont ignorés'
   assert.equal(latenceMin({ segments: [null, [0, 10, 3], [10, 'x', 1], [10, 40, 1]] }), 10);
   assert.equal(latenceMin({ segments: [null, 'x'] }), null);
 });
+
+test('cible de durée : 8 h partout (dette, coucher visé, plan d\'action)', () => {
+  const nuits = preparer(Array.from({ length: 10 }, (_, i) => ({ ...nuitParfaite(`2026-09-${String(30 - i).padStart(2, '0')}`), total_sec: 7 * 3600, bedtime: `2026-09-${String(29 - i).padStart(2, '0')} 23:00`, wake_time: `2026-09-${String(30 - i).padStart(2, '0')} 07:00` })));
+  const pro = analyser(nuits);
+  assert.equal(pro.detteMin, 7 * 60); // 1 h manquante par nuit × 7 nuits
+  assert.equal(pro.horaires.coucherVise, '23h00'); // lever 7h − 8 h
+  assert.ok(planAction(pro).some((a) => a.texte.includes('vise plutôt 8h00')));
+});

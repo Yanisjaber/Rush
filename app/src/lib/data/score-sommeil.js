@@ -23,7 +23,7 @@ export const REPERES = {
   latenceMoyenne: 30,
   respiration: [12, 20],
   spo2Bonne: 95,
-  detteCibleMin: 8 * 60,
+  dureeCibleMin: 8 * 60, // la cible de durée : sert à la dette, au coucher visé et au plan d'action
 };
 
 const POIDS = { duree: 0.25, efficacite: 0.2, waso: 0.15, reveils: 0.15, latence: 0.1, architecture: 0.15 };
@@ -220,7 +220,7 @@ export function analyserHoraires(nuits) {
   }
   const paradoxalMoy = moy(avecDetail.map((n) => (n.total_sec ? ((n.rem_sec || 0) / n.total_sec) * 100 : null)));
   const leverVise = arrondir(retablirMidi(moyLever), 15);
-  const coucherVise = arrondir((leverVise - 7.5 * 60 + 1440) % 1440, 15);
+  const coucherVise = arrondir((leverVise - REPERES.dureeCibleMin + 1440) % 1440, 15);
   return {
     coucherMoyen: texteHM(retablirMidi(moyCoucher)),
     leverMoyen: texteHM(retablirMidi(moyLever)),
@@ -259,7 +259,7 @@ export function analyser(nuitsTriees) {
     nbAnalysees: r14.length,
     efficaciteMoy: moy(r14.map(efficacitePct)),
     latenceMoy: latences.length ? moy(latences) : null,
-    detteMin: r7.reduce((a, n) => a + Math.max(0, REPERES.detteCibleMin * 60 - (n.total_sec || 0)), 0) / 60,
+    detteMin: r7.reduce((a, n) => a + Math.max(0, REPERES.dureeCibleMin * 60 - (n.total_sec || 0)), 0) / 60,
     profondPct: pct('deep_sec'),
     legerPct: pct('light_sec'),
     paradoxalPct: pct('rem_sec'),
@@ -357,8 +357,8 @@ export function planAction(pro) {
   if (pro.latenceMoy != null && pro.latenceMoy > REPERES.latenceMoyenne) {
     actions.push({ impact: 'fort', texte: `Ton endormissement prend en moyenne ${Math.round(pro.latenceMoy)} min (cible ≤ ${REPERES.latenceBonne} min) : coupe les écrans 30 à 45 min avant le coucher et évite les activités stimulantes juste avant.` });
   }
-  if (h && 450 - h.dureeMoyMin > 20) {
-    actions.push({ impact: 'fort', texte: `Tu dors en moyenne ${texteHM(h.dureeMoyMin)} : vise plutôt 7h30 à 8h. Avance ton coucher progressivement (15 à 20 min tous les 2 à 3 jours).` });
+  if (h && REPERES.dureeCibleMin - h.dureeMoyMin > 20) {
+    actions.push({ impact: 'fort', texte: `Tu dors en moyenne ${texteHM(h.dureeMoyMin)} : vise plutôt ${texteHM(REPERES.dureeCibleMin)}. Avance ton coucher progressivement (15 à 20 min tous les 2 à 3 jours).` });
   }
   if (h && h.ecartCoucherMin > 90) {
     actions.push({ impact: 'modere', texte: `Tes horaires de coucher varient de ${texteHM(h.ecartCoucherMin)} d'une nuit à l'autre. Un créneau stable aide autant que la durée : vise ± 30 min autour de ${h.coucherVise}.` });

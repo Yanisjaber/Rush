@@ -87,7 +87,7 @@
         <div class="boites">
           <div class="boite"><span class="etiq">Coucher visé</span><strong>{h.coucherVise}</strong><span class="sous">± 30 min</span></div>
           <div class="boite"><span class="etiq">Lever visé</span><strong>{h.leverVise}</strong></div>
-          <div class="boite"><span class="etiq">Durée visée</span><strong>7h30–8h</strong><span class="sous">actuel : {texteHM(h.dureeMoyMin)}</span></div>
+          <div class="boite"><span class="etiq">Durée visée</span><strong>{texteHM(REPERES.dureeCibleMin)}</strong><span class="sous">actuel : {texteHM(h.dureeMoyMin)}</span></div>
         </div>
       </Bloc>
     {/if}
