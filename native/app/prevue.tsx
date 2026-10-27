@@ -30,19 +30,24 @@ export default function Prevue() {
   const p = usePalette();
   const router = useRouter();
   const bas = useSafeAreaInsets().bottom;
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, competition: estCompetition } = useLocalSearchParams<{ id: string; competition?: string }>();
   const { prevue, chargement, erreur } = usePrevue(String(id ?? ''));
   const reference = useReferences();
   const { supprimerPrevue } = useAjouts();
   const [enCours, setEnCours] = useState(false);
   const [erreurSuppression, setErreurSuppression] = useState('');
+  const [supprimee, setSupprimee] = useState(false); // la suppression a réussi : on laisse l'écran vide le temps du retour (sinon « Séance introuvable » clignote)
+  // Le titre de l'en-tête est juste dès l'ouverture (l'écran qui nous ouvre sait si c'est une compétition), pas seulement une fois la ligne chargée
+  const titreEntete = (prevue ? prevue.category === 'competition' : estCompetition === '1') ? 'Compétition' : 'Séance prévue';
 
   const blocs = useMemo(() => (prevue ? blocsDePrevue(prevue) : []), [prevue]);
   const parcours = useMemo(() => (prevue?.gpx_content ? apercuDeGpx(prevue.gpx_content) : null), [prevue?.gpx_content]);
 
+  if (supprimee) return <Stack.Screen options={{ title: titreEntete }} />;
   if (chargement) {
     return (
       <View accessible accessibilityLabel="Chargement de la séance" style={styles.centre}>
+        <Stack.Screen options={{ title: titreEntete }} />
         <ActivityIndicator color={p.texteDoux} />
       </View>
     );
@@ -50,6 +55,7 @@ export default function Prevue() {
   if (!prevue) {
     return (
       <View style={styles.centre}>
+        <Stack.Screen options={{ title: titreEntete }} />
         <Text accessibilityRole="alert" style={[typo.corps, { color: p.texteDoux, textAlign: 'center' }]}>
           {erreur || 'Séance introuvable.'}
         </Text>
@@ -61,7 +67,8 @@ export default function Prevue() {
   const couleur = couleurSport(p, prevue.sport);
   const nomSport = nomDuType(prevue.sport);
   const nom = (prevue.name ?? '').trim() || nomSport;
-  const heure = /T(\d{2}:\d{2})/.exec(String(prevue.start_date_local ?? ''))?.[1];
+  const heureLue = /T(\d{2}:\d{2})/.exec(String(prevue.start_date_local ?? ''))?.[1];
+  const heure = heureLue && heureLue !== '00:00' ? heureLue : undefined; // minuit = saisie sans heure (comme dans le calendrier)
   const nature = competition ? `Compétition${prevue.priority === 'A' || prevue.priority === 'B' ? ` · priorité ${prevue.priority}` : ''}` : 'Séance prévue';
   const chiffres = chiffresPrevue(prevue);
   const notes = (prevue.notes ?? '').trim();
@@ -80,6 +87,7 @@ export default function Prevue() {
             const e = await supprimerPrevue(prevue.id);
             setEnCours(false);
             if (e) return setErreurSuppression(e);
+            setSupprimee(true);
             router.back();
           })();
         },
@@ -88,7 +96,7 @@ export default function Prevue() {
 
   return (
     <View style={styles.page}>
-      <Stack.Screen options={{ title: competition ? 'Compétition' : 'Séance prévue' }} />
+      <Stack.Screen options={{ title: titreEntete }} />
       <ScrollView contentContainerStyle={styles.contenu} contentInsetAdjustmentBehavior="automatic">
         <View style={[styles.entete, { backgroundColor: p.surface, borderLeftColor: couleur }]}>
           <View style={styles.sport}>
@@ -167,13 +175,14 @@ export default function Prevue() {
           </Bloc>
         ) : null}
 
-        {erreurSuppression ? (
-          <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>
-            {erreurSuppression}
-          </Text>
-        ) : null}
       </ScrollView>
 
+      {/* L'erreur de suppression est dans la barre fixe du bas : on la voit toujours, même avec une longue séance */}
+      {erreurSuppression ? (
+        <Text accessibilityRole="alert" style={[typo.petit, styles.erreurBas, { color: p.danger, backgroundColor: p.fond }]}>
+          {erreurSuppression}
+        </Text>
+      ) : null}
       <View style={[styles.bas, { backgroundColor: p.fond, borderTopColor: p.trait, paddingBottom: bas + espace.e3 }]}>
         <View style={{ flex: 1 }}>
           <Bouton onPress={modifier}>Modifier</Bouton>
@@ -202,6 +211,7 @@ const styles = StyleSheet.create({
   case: { width: '50%', paddingRight: espace.e3 },
   ligneBloc: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56, paddingVertical: 6 },
   barreZone: { width: 6, alignSelf: 'stretch', borderRadius: 3 },
+  erreurBas: { paddingHorizontal: espace.e4, paddingTop: espace.e2 },
   bas: { flexDirection: 'row', gap: espace.e2, paddingHorizontal: espace.e4, paddingTop: espace.e3, borderTopWidth: 1 },
   supprimer: { flex: 1, minHeight: 44, borderRadius: rayon.base, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });
