@@ -158,7 +158,7 @@ export default function EcranCycle() {
           {erreur}
         </Text>
       ) : null}
-      <Bouton onPress={() => void enregistrer()}>{enCours ? 'Enregistrement…' : existant ? 'Enregistrer' : 'Créer le cycle'}</Bouton>
+      <Bouton disabled={enCours} onPress={() => void enregistrer()}>{enCours ? 'Enregistrement…' : existant ? 'Enregistrer' : 'Créer le cycle'}</Bouton>
       {existant ? (
         <Bouton variante="discret" onPress={confirmerSuppression}>
           Supprimer ce cycle

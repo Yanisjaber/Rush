@@ -39,6 +39,7 @@ export default function EcranAjoutModeles() {
   const sports = useMemo(() => sportsDesModeles(modeles), [modeles]);
 
   async function poser(m: Modele) {
+    if (enCours) return; // un second appui pendant l'ajout ne crée pas de doublon
     setErreur('');
     setEnCours(true);
     const e = await creerPrevue(lignePrevueDepuisModele(m, date, '12:00', ref));
@@ -118,7 +119,7 @@ export default function EcranAjoutModeles() {
                       {erreur}
                     </Text>
                   ) : null}
-                  <Bouton onPress={() => void poser(m)}>{enCours ? 'Ajout…' : `Poser sur ${jourCourt}`}</Bouton>
+                  <Bouton disabled={enCours} onPress={() => void poser(m)}>{enCours ? 'Ajout…' : `Poser sur ${jourCourt}`}</Bouton>
                 </View>
               ) : null}
             </View>

@@ -143,7 +143,7 @@ export function FeuilleNote({ note, onFermer }: { note: Note | null; onFermer: (
                 {erreur}
               </Text>
             ) : null}
-            <Bouton onPress={() => void enregistrer()}>{enCours ? 'Enregistrement…' : 'Enregistrer'}</Bouton>
+            <Bouton disabled={enCours} onPress={() => void enregistrer()}>{enCours ? 'Enregistrement…' : 'Enregistrer'}</Bouton>
             <Bouton variante="discret" onPress={confirmerSuppression}>
               Supprimer cette note
             </Bouton>

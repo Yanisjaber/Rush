@@ -24,7 +24,7 @@ export function EcranAjout({ bouton, enCours, erreur, onValider, entete, childre
             {erreur}
           </Text>
         ) : null}
-        <Bouton onPress={onValider}>{enCours ? 'Enregistrement…' : bouton}</Bouton>
+        <Bouton disabled={enCours} onPress={() => { if (!enCours) onValider(); }}>{enCours ? 'Enregistrement…' : bouton}</Bouton>
       </Pressable>
     </ScrollView>
     </>

@@ -13,9 +13,11 @@ interface Props {
   accessibilityLabel?: string;
   /** Plus bas (32 pt) pour les petits widgets ; la zone tactile reste de 44 pt grâce à hitSlop. */
   petit?: boolean;
+  /** Bloque le bouton (par exemple pendant un enregistrement) : il devient pâle et ne réagit plus. */
+  disabled?: boolean;
 }
 
-export function Bouton({ variante = 'principal', onPress, children, accessibilityLabel, petit }: Props) {
+export function Bouton({ variante = 'principal', onPress, children, accessibilityLabel, petit, disabled }: Props) {
   const p = usePalette();
   const styles = {
     principal: { fond: p.texte, texte: p.fond, contour: undefined },
@@ -29,13 +31,15 @@ export function Bouton({ variante = 'principal', onPress, children, accessibilit
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
       accessibilityLabel={accessibilityLabel}
       hitSlop={petit ? { top: 6, bottom: 6 } : undefined}
       style={({ pressed }) => [
         base.bouton,
         petit && base.petit,
-        { backgroundColor: styles.fond, opacity: pressed ? 0.7 : 1 },
+        { backgroundColor: styles.fond, opacity: disabled ? 0.5 : pressed ? 0.7 : 1 },
         styles.contour ? { borderColor: styles.contour, borderWidth: variante === 'sur-dossard-contour' ? 2 : 1 } : null,
       ]}
     >
