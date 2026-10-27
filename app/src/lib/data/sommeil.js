@@ -41,6 +41,17 @@ export function segmentsValides(nuit) {
   );
 }
 
+/**
+ * La nuit voisine de `date` dans une liste de nuits triée de la plus récente à la plus ancienne.
+ * sens = -1 : la nuit d'avant (plus ancienne) ; +1 : la nuit d'après (plus récente). Renvoie sa date, ou null s'il n'y en a pas.
+ * On saute les jours sans nuit : seules les nuits qui existent sont atteignables.
+ */
+export function nuitVoisine(nuits, date, sens) {
+  const i = (nuits || []).findIndex((n) => n.date === date);
+  if (i < 0) return null;
+  return nuits[i - sens]?.date ?? null;
+}
+
 /** Les phases d'une nuit : [{ cle, nom, secondes, part }] (part entre 0 et 1 du temps total passé au lit). */
 export function phases(nuit) {
   if (!nuit) return [];

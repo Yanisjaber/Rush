@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { segmentsValides, heureApres, heureDe, minutesCoucher, heureDepuisMinutes, phases, efficacite, moyenne, moyenneCoucher, triees, tendance } from '../src/lib/data/sommeil.js';
+import { nuitVoisine, segmentsValides, heureApres, heureDe, minutesCoucher, heureDepuisMinutes, phases, efficacite, moyenne, moyenneCoucher, triees, tendance } from '../src/lib/data/sommeil.js';
 
 test('heureDe : extrait HH:MM, tolère les valeurs absentes ou bizarres', () => {
   assert.equal(heureDe('2026-10-11 23:10'), '23:10');
@@ -69,4 +69,14 @@ test('segmentsValides : garde les segments sains, ignore le reste sans planter',
   assert.deepEqual(segmentsValides(null), []);
   const melanges = [[0, 20, 3], null, 'x', [5], [10, 5, 1], [0, 0, 1], [0, 10, 7], [0, 10, 1.5], [null, 10, 1], [0, '10', 1], [0, NaN, 1], [-5, 10, 1], [20, 40, 2]];
   assert.deepEqual(segmentsValides({ segments: melanges }), [[0, 20, 3], [20, 40, 2]]);
+});
+
+test('nuitVoisine : saute les jours sans nuit, null aux extrémités ou si la date est inconnue', () => {
+  const nuits = [{ date: '2026-10-27' }, { date: '2026-10-24' }, { date: '2026-10-20' }]; // la plus récente d'abord
+  assert.equal(nuitVoisine(nuits, '2026-10-24', -1), '2026-10-20');
+  assert.equal(nuitVoisine(nuits, '2026-10-24', 1), '2026-10-27');
+  assert.equal(nuitVoisine(nuits, '2026-10-27', 1), null);
+  assert.equal(nuitVoisine(nuits, '2026-10-20', -1), null);
+  assert.equal(nuitVoisine(nuits, '2026-01-01', 1), null);
+  assert.equal(nuitVoisine(null, '2026-10-24', 1), null);
 });

@@ -95,9 +95,15 @@ export default function Parametres() {
 
       <Apparence />
 
+      {demo ? null : (
+        <Bouton variante="discret" onPress={() => aller('/parametres/compte')}>
+          Mon compte
+        </Bouton>
+      )}
+
       <View style={styles.actions}>
         <View style={{ flex: 1 }}>
-          <Bouton variante="discret" onPress={() => void Linking.openURL(ADRESSE_CONFIDENTIALITE)}>
+          <Bouton variante="discret" onPress={() => void Linking.openURL(ADRESSE_CONFIDENTIALITE).catch(() => {})}>
             Confidentialité
           </Bouton>
         </View>

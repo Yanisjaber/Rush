@@ -59,8 +59,13 @@ export async function connexion(email: string, motDePasse: string): Promise<{ ok
   return { ok: true };
 }
 
-export async function deconnexion(): Promise<void> {
-  await sb.auth.signOut();
+/** `local` : ne ferme que la session de ce téléphone (après une suppression de compte, le serveur ne connaît plus l'utilisateur). */
+export async function deconnexion(local = false): Promise<void> {
+  try {
+    await (local ? sb.auth.signOut({ scope: 'local' }) : sb.auth.signOut());
+  } catch {
+    // Même sans réponse du serveur, la session locale est effacée par le client
+  }
   changer({ demo: false });
 }
 

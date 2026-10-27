@@ -18,6 +18,7 @@ import { valeurValide, type LigneMesure } from './sante-catalogue';
 import { messageTours, toursValides } from './seance-detail';
 import type { Cycle, Nuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, PrevueComplete, ProgrammeForce, Profil, Seance, SerieForce, TestHyrox, Tour } from './types';
 import type { FormulaireCycle } from './cycles';
+import { supprimerCompteAvec, type AppelFonction, type Progres, type ResultatSuppression } from './suppression-compte';
 import type { LigneNote, LignePrevue, LigneSortie } from './ajouts';
 import type { Modele } from './modeles';
 
@@ -162,6 +163,26 @@ export async function chargerTours(id: string): Promise<Resultat<Tour[]>> {
   } catch {
     return { data: null, erreur: messageTours(0, null) };
   }
+}
+
+/** Appelle une fonction serveur « delete-account » avec le jeton de la session (jamais de clé secrète dans l'app). */
+export async function supprimerMonCompte(confirmation: string, onProgres?: Progres): Promise<ResultatSuppression> {
+  const appeler: AppelFonction = async (corps) => {
+    const { data: s } = await sb.auth.getSession();
+    const jeton = s.session?.access_token;
+    if (!jeton) return { ok: false, statut: 401, data: null };
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/delete-account`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${jeton}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(corps),
+      });
+      return { ok: res.ok, statut: res.status, data: (await res.json().catch(() => null)) as Record<string, unknown> | null };
+    } catch {
+      return { ok: false, statut: 0, data: null };
+    }
+  };
+  return supprimerCompteAvec(appeler, confirmation, onProgres);
 }
 
 /** Prochaines compétitions (objectifs), de la plus proche à la plus lointaine. */

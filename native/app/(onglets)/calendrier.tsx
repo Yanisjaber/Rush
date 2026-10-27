@@ -2,7 +2,7 @@ import { FondDegrade } from '@/components/FondDegrade';
 import { courtDuType } from '@/data/catalogue-sports';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { BarreSports } from '@/components/BarreSports';
@@ -17,7 +17,7 @@ import { LegendeCalendrier } from '@/components/LegendeCalendrier';
 import { LogoNote } from '@/components/LogoNote';
 import { ResumeJour } from '@/components/ResumeJour';
 import { SelecteurMois } from '@/components/SelecteurMois';
-import { chargeJour, chargeSeance, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, kmJour, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
+import { chargeJour, chargeSeance, chiffresMois, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, kmJour, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
 import { couleurNote, libelleNote } from '@/data/annotations';
 import { titreNote } from '@/data/sante-notes';
 import { avancementCycle, cycleVisible } from '@/data/cycles';
@@ -45,7 +45,6 @@ const dateLongue = (iso: string) => {
 
 // Le calendrier d'un mois en grille (lundi à dimanche) : chaque jour montre des points, plein = séance faite (couleur du sport), contour = séance
 // prévue, carré noir = compétition. Un appui sur un jour affiche son détail dessous. Peu de texte : le mois se lit d'un coup d'œil.
-// Lecture seule pour l'instant : ajouter une séance, une note ou un repos arrive avec leurs panneaux.
 export default function Calendrier() {
   const p = usePalette();
   const bas = useSafeAreaInsets().bottom;
@@ -73,7 +72,7 @@ export default function Calendrier() {
       {
         seances: donnees.seances.filter(garde),
         planifiees: donnees.planifiees.filter(garde),
-        objectifs: donnees.objectifs,
+        objectifs: donnees.objectifs.filter(garde), // une compétition suit le filtre de sport, comme les séances
         notes: donnees.notes,
         repos: donnees.repos,
         // Sous un sport, on ne voit que les cycles de ce sport et ceux qui concernent tous les sports
@@ -90,12 +89,20 @@ export default function Calendrier() {
   const seancesDuMois = dansMois.flatMap((j) => j.seances);
   const tempsDuMois = seancesDuMois.reduce((t, s) => t + (s.moving_time || 0), 0);
   const chargeDuMois = dansMois.reduce((t, j) => t + chargeJour(j), 0);
-  const principaleDuMois = chiffresSemaine(dansMois, filtre, aujourdhui).principale;
+  // Les cartes du mois ne comptent que le fait (même un mois à venir : « 0 séance » ne s'accompagne pas de kilomètres prévus) : la date lointaine écarte le prévu
+  const principaleDuMois = chiffresSemaine(dansMois, filtre, '9999-12-31').principale;
   const titre = grille.titre.charAt(0).toUpperCase() + grille.titre.slice(1);
   const estMoisCourant = cible.annee === maintenant.getFullYear() && cible.mois === maintenant.getMonth();
   const detail = jours.find((j) => j.iso === choisi) ?? null;
   // Le jour le plus long du mois (au moins 1 h 30) : c'est lui qui donne la hauteur d'une barre pleine dans la colonne de la semaine
   const maxiJour = Math.max(90 * 60, ...jours.map(secondesJour));
+
+  // Sur iOS, accessibilityLiveRegion ne fait rien : on annonce le nouveau mois à la voix quand on change de mois (pas à l'ouverture de l'écran)
+  const premierTitre = useRef(true);
+  useEffect(() => {
+    if (premierTitre.current) premierTitre.current = false;
+    else AccessibilityInfo.announceForAccessibility(titre);
+  }, [titre]);
 
   // En changeant de mois, on choisit aujourd'hui (mois courant), sinon le premier jour qui a quelque chose, sinon le 1er
   useEffect(() => {
@@ -145,9 +152,9 @@ export default function Calendrier() {
 
         {/* Les chiffres du mois en cartes : séances, temps, charge et, pour un sport qui en a une, son info principale (kilomètres ou séries, comme la colonne « Sem. ») */}
         <View style={styles.cartes}>
-          <Carte valeur={String(seancesDuMois.length)} unite="séan." legende={seancesDuMois.length > 1 ? 'séances' : 'séance'} serree={!!principaleDuMois} />
-          <Carte valeur={formatDuree(tempsDuMois)} legende="de sport" serree={!!principaleDuMois} />
-          <Carte valeur={chargeDuMois.toLocaleString('fr-FR')} unite="pts" legende="points de charge" serree={!!principaleDuMois} />
+          <Carte valeur={String(mois.seances)} unite="séan." legende={mois.seances > 1 ? 'séances' : 'séance'} serree={!!principaleDuMois} />
+          <Carte valeur={formatDuree(mois.secondes)} legende="de sport" serree={!!principaleDuMois} />
+          <Carte valeur={mois.charge.toLocaleString('fr-FR')} unite="pts" legende="points de charge" serree={!!principaleDuMois} />
           {principaleDuMois ? <Carte valeur={nombre(principaleDuMois.valeur, principaleDuMois.unite)} unite={UNITES[principaleDuMois.unite].court} legende={UNITES[principaleDuMois.unite].dit} serree /> : null}
         </View>
 
@@ -165,11 +172,13 @@ export default function Calendrier() {
           </View>
         ) : null}
 
-        {chargement ? (
-          <View accessible accessibilityLabel="Chargement du calendrier" style={styles.attente}>
-            <ActivityIndicator color={p.texteDoux} />
-          </View>
-        ) : (
+        {/* Pendant un chargement, la grille reste là (vide, atténuée) avec une roue par-dessus : la page ne s'écrase pas et ne saute pas à chaque changement de mois */}
+        <View style={chargement ? styles.enChargement : null} accessibilityState={{ busy: chargement }}>
+          {chargement ? (
+            <View accessible accessibilityLabel="Chargement du calendrier" pointerEvents="none" style={styles.attente}>
+              <ActivityIndicator color={p.texteDoux} />
+            </View>
+          ) : null}
           <>
             <View style={[styles.grille, { backgroundColor: p.surface }]}>
               {/* Le fond de la colonne « Sem. » : une bande un peu plus claire sur toute la hauteur, derrière les lignes */}
@@ -200,9 +209,9 @@ export default function Calendrier() {
 
             <LegendeCalendrier />
 
-            {detail ? <Detail jour={detail} /> : null}
+            {detail ? <Detail key={detail.iso} jour={detail} /> : null}
           </>
-        )}
+        </View>
       </ScrollView>
       <SelecteurMois
         ouvert={moisOuvert}
@@ -448,7 +457,7 @@ function Detail({ jour }: { jour: JourGrille }) {
   const [cycleOuvert, setCycleOuvert] = useState<Cycle | null>(null); // le cycle qu'on regarde
   const { basculerRepos } = useAjouts();
   const [erreurRepos, setErreurRepos] = useState('');
-  // Ce que fait chaque ligne du menu : un écran pour la date du jour (ceux qui n'existent pas encore disent « Bientôt »), ou le repos d'un toucher
+  // Ce que fait chaque ligne du menu : un écran d'ajout pour la date du jour, ou le repos d'un toucher
   const choisirAjout = (c: ChoixAjout) => {
     if (c === 'repos') return void (async () => setErreurRepos(await basculerRepos(jour.iso, !jour.repos)))();
     if (c === 'cycle') return router.push({ pathname: '/cycle', params: { debut: jour.iso } });
@@ -521,6 +530,11 @@ function Detail({ jour }: { jour: JourGrille }) {
               </Text>
             </Pressable>
           ))}
+          {jour.series > 0 ? (
+            <Text style={[typo.petit, { color: p.texteDoux, marginTop: 8 }]}>
+              {jour.series} série{jour.series > 1 ? 's' : ''} de force
+            </Text>
+          ) : null}
           {jour.seances.map((s) => {
             const nom = s.name || nomSport(s.sport);
             const detail = [formatDistanceSport(s.distance_km, familleAffichage(s.sport)), `${chargeSeance(s)} pts`, heureDe(s.start_date_local)].filter(Boolean).join(' · ');
@@ -644,7 +658,8 @@ const styles = StyleSheet.create({
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
   avisTexte: { flex: 1 },
   reessayer: { minHeight: 44, borderRadius: rayon.rond, borderWidth: 1.5, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
-  attente: { alignItems: 'center', paddingVertical: espace.e7 },
+  enChargement: { opacity: 0.5 },
+  attente: { position: 'absolute', top: 80, left: 0, right: 0, zIndex: 2, alignItems: 'center' },
   grille: { borderRadius: rayon.bloc, paddingHorizontal: 8, paddingVertical: 10, gap: 4, overflow: 'hidden' },
   rangee: { flexDirection: 'row', alignItems: 'stretch' },
   // Collée au bord droit, en haut et en bas de la carte : c'est la carte (overflow hidden) qui arrondit les coins de la bande
@@ -686,7 +701,6 @@ const styles = StyleSheet.create({
   tiret: { fontSize: 28, lineHeight: 32 },
   // Le logo du sport au début de la ligne de détail (« 4,5 km · 19 pts · 03:48 »)
   detailSport: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  seance: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, borderRadius: rayon.base, paddingHorizontal: 14 },
   objectif: { borderRadius: rayon.base, paddingHorizontal: 12, paddingVertical: 8 },
   objectifTexte: { fontFamily: police.titre800, fontSize: 15, lineHeight: 19 },
   // Les notes du jour (pastilles) et les cycles du jour (tuiles : nom, « 21/23 », fine barre de progression)

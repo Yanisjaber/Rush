@@ -9,7 +9,7 @@
   import { COULEURS_PHASE, COULEUR_TON } from './palette.js';
   import { chargerFcNuit } from '../data/api.js';
   import { fcNuitDemo } from '../data/demo.js';
-  import { heureDe, heureApres, segmentsValides } from '../data/sommeil.js';
+  import { heureDe, heureApres, segmentsValides, nuitVoisine } from '../data/sommeil.js';
   import { NOM_NIVEAU, NOM_QUALIFICATIF, tonDe, efficacitePct, latenceMin, texteHM, texteHMdepuisSec } from '../data/score-sommeil.js';
   import { formatDateLongue } from '../utils/format.js';
   import { derniereDemande } from '../utils/derniere-demande.js';
@@ -24,6 +24,19 @@
   const parDate = $derived(new Map(nuits.map((n) => [n.date, n])));
   const score = $derived(nuit?.score_maison);
   const ton = $derived(score ? tonDe(score.qualificatif) : 'neutre');
+
+  // --- Navigation entre les nuits : flèches ‹ › ; un jour touché dans le calendrier (en bas sur téléphone) ramène en haut sur la nuit ---
+  const precedente = $derived(nuit ? nuitVoisine(nuits, nuit.date, -1) : null);
+  const suivante = $derived(nuit ? nuitVoisine(nuits, nuit.date, 1) : null);
+  let enteteNuit = $state(null);
+  function choisirDepuisCalendrier(date) {
+    onchoisir?.(date);
+    // Une colonne (téléphone) : le calendrier est sous la nuit, on remonte pour voir le résultat
+    if (enteteNuit && matchMedia('(max-width: 820px)').matches) {
+      const calme = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      enteteNuit.scrollIntoView({ block: 'start', behavior: calme ? 'auto' : 'smooth' });
+    }
+  }
 
   // --- Phases ---
   const totalLit = $derived(nuit ? (nuit.deep_sec || 0) + (nuit.light_sec || 0) + (nuit.rem_sec || 0) + (nuit.awake_sec || 0) : 0);
@@ -62,6 +75,11 @@
   });
   const NOMS_MOIS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
   const titreMois = $derived(mois ? `${NOMS_MOIS[Number(mois.slice(5, 7)) - 1]} ${mois.slice(0, 4)}` : '');
+  // Les flèches du calendrier s'arrêtent aux mois où il y a des nuits (pas de mois vides à l'infini, ni de futur)
+  const moisPlusAncien = $derived(nuits.at(-1)?.date.slice(0, 7));
+  const moisPlusRecent = $derived(nuits[0]?.date.slice(0, 7));
+  const peutReculer = $derived(!!mois && !!moisPlusAncien && mois > moisPlusAncien);
+  const peutAvancer = $derived(!!mois && !!moisPlusRecent && mois < moisPlusRecent);
   function decalerMois(delta) {
     const [a, m] = mois.split('-').map(Number);
     const d = new Date(a, m - 1 + delta, 1);
@@ -123,9 +141,13 @@
 {#if nuit}
   <div class="apercu">
     <Bloc>
-      <div class="entete-nuit">
+      <div class="entete-nuit" bind:this={enteteNuit}>
         <div>
-          <p class="quand">{formatDateLongue(nuit.date)} <span class="sous">· {nuit.date === derniere ? 'dernière nuit' : 'nuit sélectionnée'}</span></p>
+          <div class="ligne-quand">
+            <button type="button" class="fleche" aria-label="Nuit précédente" disabled={!precedente} onclick={() => onchoisir?.(precedente)}>‹</button>
+            <p class="quand">{formatDateLongue(nuit.date)} <span class="sous">· {nuit.date === derniere ? 'dernière nuit' : 'nuit sélectionnée'}</span></p>
+            <button type="button" class="fleche" aria-label="Nuit suivante" disabled={!suivante} onclick={() => onchoisir?.(suivante)}>›</button>
+          </div>
           <div class="horaires" aria-label="Coucher {heureDe(nuit.bedtime) || 'inconnu'}, réveil {heureDe(nuit.wake_time) || 'inconnu'}">
             <span><b>{heureDe(nuit.bedtime) || '—'}</b><i>coucher</i></span>
             <span class="trait" aria-hidden="true"></span>
@@ -187,8 +209,8 @@
       <Bloc titre={titreMois}>
         {#snippet actions()}
           <div class="nav-mois">
-            <button type="button" aria-label="Mois précédent" onclick={() => decalerMois(-1)}>‹</button>
-            <button type="button" aria-label="Mois suivant" onclick={() => decalerMois(1)}>›</button>
+            <button type="button" aria-label="Mois précédent" disabled={!peutReculer} onclick={() => decalerMois(-1)}>‹</button>
+            <button type="button" aria-label="Mois suivant" disabled={!peutAvancer} onclick={() => decalerMois(1)}>›</button>
           </div>
         {/snippet}
         <div class="calendrier" role="group" aria-label="Choisir une nuit">
@@ -197,7 +219,7 @@
             {#if j === null}
               <span class="vide"></span>
             {:else if j.ton}
-              <button type="button" class="jour" class:choisi={j.date === nuit.date} style:--ton={COULEUR_TON[j.ton]} aria-pressed={j.date === nuit.date} aria-label="Nuit du {formatDateLongue(j.date)}, {j.ton}" onclick={() => onchoisir?.(j.date)}>{j.j}</button>
+              <button type="button" class="jour" class:choisi={j.date === nuit.date} style:--ton={COULEUR_TON[j.ton]} aria-pressed={j.date === nuit.date} aria-label="Nuit du {formatDateLongue(j.date)}, {j.ton}" onclick={() => choisirDepuisCalendrier(j.date)}>{j.j}</button>
             {:else}
               <span class="jour sans" aria-hidden="true">{j.j}</span>
             {/if}
@@ -258,6 +280,29 @@
     justify-content: space-between;
     gap: 16px 32px;
     margin-bottom: 20px;
+  }
+  .entete-nuit {
+    scroll-margin-top: 12px;
+  }
+  .ligne-quand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .fleche {
+    width: 44px;
+    height: 44px;
+    flex: none;
+    border: 1px solid var(--trait-fort);
+    border-radius: var(--rayon);
+    background: transparent;
+    color: var(--texte);
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .fleche:disabled {
+    opacity: 0.35;
+    cursor: default;
   }
   .quand {
     font-size: 15px;
@@ -415,6 +460,10 @@
     color: var(--texte);
     font-size: 20px;
     cursor: pointer;
+  }
+  .nav-mois button:disabled {
+    opacity: 0.35;
+    cursor: default;
   }
   .calendrier {
     display: grid;

@@ -51,7 +51,7 @@ export function SelecteurMois({
   };
 
   return (
-    <Modal visible={ouvert} transparent animationType="fade" onRequestClose={onFermer}>
+    <Modal visible={ouvert} transparent statusBarTranslucent animationType="fade" onRequestClose={onFermer}>
       <Pressable style={StyleSheet.absoluteFill} onPress={onFermer} accessibilityLabel="Fermer le calendrier des mois" accessibilityRole="button" />
       <View accessibilityViewIsModal style={[styles.panneau, { top: haut + 6, backgroundColor: p.surface, borderColor: p.traitFort }]}>
         <View style={styles.annee}>

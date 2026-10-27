@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bornesGrille, chargeJour, chargeSeance, decalerMois, grilleMois, jourAffiche, jourVide, chiffresSemaine, kmJour, nomJour, profilSemaine, resumeSemaine, secondesJour, teinteJour, titreMois, compositionJour, assemblerDonnees } from '../src/data/calendrier.ts';
+import { bornesGrille, chargeJour, chargeSeance, decalerMois, grilleMois, jourAffiche, jourVide, chiffresSemaine, kmJour, nomJour, profilSemaine, resumeSemaine, secondesJour, teinteJour, titreMois, compositionJour, assemblerDonnees, chiffresMois } from '../src/data/calendrier.ts';
 import { couleurNote, libelleNote, notesDuJour } from '../src/data/annotations.ts';
 import { annotationsDemo, donneesDemo } from '../src/data/demo.ts';
 import type { Note, Prevue, Seance } from '../src/data/types.ts';
@@ -118,7 +118,8 @@ const jourDe = (g: ReturnType<typeof grilleMois>, iso: string) => g.semaines.fla
 
 test('chargeSeance : les points de la séance, sinon une estimation par la durée', () => {
   assert.equal(chargeSeance(seanceCal('a', '2026-10-14', 'Run', 60, 70)), 70);
-  assert.equal(chargeSeance(seanceCal('b', '2026-10-14', 'Run', 60, null)), 42); // 0,7 point par minute
+  assert.equal(chargeSeance(seanceCal('b', '2026-10-14', 'Run', 60, null)), 49); // la même estimation que le formulaire (effort 5 par défaut)
+  assert.equal(chargeSeance({ ...seanceCal('c', '2026-10-14', 'Run', 60, null), rpe: 8 }), 90); // et l'effort ressenti compte
 });
 
 test('teinteJour : la couleur du sport de la séance la plus chargée, la force selon la charge du jour ; rien sans séance faite', () => {
@@ -233,4 +234,18 @@ test('assemblerDonnees : une requête qui échoue garde les données déjà affi
   const partiel = assemblerDonnees(premier.donnees, ok([]), ok([]), ko, ok([]), ok([]));
   assert.equal(partiel.donnees.seances.length, 0);
   assert.deepEqual(partiel.donnees.repos, ['2026-10-08']);
+});
+
+test('chiffresMois : un mois à venir montre le prévu, un mois commencé le fait', () => {
+  const planif = [{ id: 'p', name: 'x', date: '2026-12-10', sport: 'Run', duration: 60, tss: 50, category: 'entrainement', km: 10 } as Prevue];
+  const fait = [{ id: 's', start_date_local: '2026-10-05T08:00:00', moving_time: 1800, sport: 'Run', distance_km: 5, tss: 30 } as Seance];
+  const jours = (a: number, m: number, o: object) => grilleMois(a, m, o, new Date(2026, 9, 27)).semaines.flat().filter((j) => j.dansMois);
+  // décembre : entièrement à venir
+  const dec = chiffresMois(jours(2026, 11, { planifiees: planif }), 'course', '2026-10-27');
+  assert.deepEqual({ s: dec.seances, t: dec.secondes, c: dec.charge, km: dec.principale?.valeur }, { s: 1, t: 3600, c: 50, km: 10 });
+  // octobre : commencé, seul le fait compte (le prévu du mois n'entre pas)
+  const oct = chiffresMois(jours(2026, 9, { seances: fait, planifiees: [{ ...planif[0], date: '2026-10-30' }] }), 'course', '2026-10-27');
+  assert.deepEqual({ s: oct.seances, t: oct.secondes, c: oct.charge, km: oct.principale?.valeur }, { s: 1, t: 1800, c: 30, km: 5 });
+  // un mois passé : le fait aussi
+  assert.equal(chiffresMois(jours(2026, 8, {}), 'tout', '2026-10-27').seances, 0);
 });

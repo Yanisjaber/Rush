@@ -55,7 +55,7 @@ export function BulleSemaine({
   const fleche = Math.max(16, Math.min(largeur - 28, ancre.x + ancre.largeur / 2 - gauche - 6));
   const position = dessous ? { top: ancre.y + ancre.hauteur + 8 } : { bottom: fenetre.height - ancre.y + 8 };
   return (
-    <Modal visible={ouvert} transparent animationType="fade" onRequestClose={onFermer}>
+    <Modal visible={ouvert} transparent statusBarTranslucent animationType="fade" onRequestClose={onFermer}>
       <Pressable accessibilityRole="button" accessibilityLabel="Fermer l'aperçu de la semaine" onPress={onFermer} style={StyleSheet.absoluteFill} />
       <View
         accessible

@@ -1,5 +1,6 @@
 // Logique du calendrier : construit la grille d'un mois (semaines de lundi à dimanche)
 // et y range les séances réalisées, les séances prévues et les objectifs.
+import { estimerTss } from './ajouts.ts';
 import { courtDuType } from './catalogue-sports.ts';
 import { familleAffichage } from './familles.ts';
 import { dateIsoLocale } from './format.ts';
@@ -133,8 +134,8 @@ export function grilleMois(
   return { titre: titreMois(annee, mois), semaines };
 }
 
-/** Un jour est vide quand il n'a ni séance, ni séance prévue, ni objectif, ni note, ni repos. */
-export const jourVide = (j: JourGrille): boolean => !j.seances.length && !j.planifiees.length && !j.objectifs.length && !j.notes.length && !j.repos;
+/** Un jour est vide quand il n'a ni séance, ni séance prévue, ni objectif, ni note, ni repos, ni série de force. */
+export const jourVide = (j: JourGrille): boolean => !j.seances.length && !j.planifiees.length && !j.objectifs.length && !j.notes.length && !j.repos && !j.series;
 
 /**
  * Le jour apparaît-il dans la liste (téléphone) ? Les jours vides sont masqués (sauf aujourd'hui), et un jour d'un mois voisin
@@ -149,8 +150,8 @@ export function jourAffiche(j: JourGrille): boolean {
 /** Nom court du jour de la semaine d'une date ISO : « Lun », « Mar »… */
 export const nomJour = (iso: string): string => JOURS_SEMAINE[(new Date(`${iso}T12:00:00`).getDay() + 6) % 7];
 
-/** La charge d'une séance faite, en points : ses points de charge, à défaut une estimation par la durée (0,7 point par minute). */
-export const chargeSeance = (s: Seance): number => (Number(s.tss) > 0 ? Number(s.tss) : Math.round(((s.moving_time || 0) / 60) * 0.7));
+/** La charge d'une séance faite, en points : ses points de charge, à défaut la même estimation que le formulaire d'ajout (durée et effort ressenti, 5 par défaut). */
+export const chargeSeance = (s: Seance): number => (Number(s.tss) > 0 ? Number(s.tss) : estimerTss((s.moving_time || 0) / 60, s.rpe ?? 5));
 
 /** La charge du jour : celle de toutes ses séances faites. */
 export const chargeJour = (j: JourGrille): number => j.seances.reduce((t, s) => t + chargeSeance(s), 0);
@@ -345,4 +346,25 @@ export function assemblerDonnees(
     },
     erreur: s.erreur || p.erreur || a.erreur,
   };
+}
+
+export interface ChiffresMois {
+  /** Nombre de séances : les faites, ou les prévues pour un mois entièrement à venir. */
+  seances: number;
+  secondes: number;
+  /** Points de charge : ceux des séances faites, ou la charge prévue pour un mois à venir. */
+  charge: number;
+  principale: MetriqueSemaine | null;
+}
+
+/**
+ * Les chiffres des pastilles du haut. Un mois commencé (ou passé) ne compte que le fait ; un mois entièrement à venir (son premier jour est après `aujourdhui`)
+ * montre le prévu, comme une semaine pas encore commencée, pour que séances, temps, charge et kilomètres disent tous la même chose.
+ */
+export function chiffresMois(joursDuMois: JourGrille[], filtre: string, aujourdhui: string): ChiffresMois {
+  const aVenir = joursDuMois.length > 0 && joursDuMois[0].iso > aujourdhui;
+  const c = chiffresSemaine(joursDuMois, filtre, aujourdhui);
+  const seances = joursDuMois.reduce((t, j) => t + (aVenir ? j.planifiees.length : j.seances.length), 0);
+  const charge = joursDuMois.reduce((t, j) => t + (aVenir ? j.planifiees.reduce((u, x) => u + (Number(x.tss) > 0 ? Number(x.tss) : 0), 0) : chargeJour(j)), 0);
+  return { seances, secondes: c.secondes, charge, principale: c.principale };
 }
