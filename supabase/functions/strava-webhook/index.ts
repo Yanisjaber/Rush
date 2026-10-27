@@ -84,17 +84,19 @@ Deno.serve(async (req) => {
     return json({ error: "invalid_json" }, 400);
   }
 
-  console.log("[webhook] event:", JSON.stringify(event));
+  console.log("[webhook] event:", JSON.stringify({ object_type: event?.object_type, aspect_type: event?.aspect_type, object_id: event?.object_id }));
 
   // Strava n'authentifie pas ses events : on écarte ceux qui ne viennent pas de NOTRE abonnement.
+  // Le filtre est OBLIGATOIRE : sans STRAVA_WEBHOOK_SUBSCRIPTION_ID, aucun event n'est traité
+  // (n'importe qui pourrait sinon déclencher des appels à Strava avec de faux events).
   // (200 pour éviter les retentatives, mais aucun traitement.)
-  if (SUBSCRIPTION_ID) {
-    if (String(event?.subscription_id ?? "") !== SUBSCRIPTION_ID) {
-      console.warn("[webhook] subscription_id inattendu, event ignoré");
-      return json({ ok: true });
-    }
-  } else {
-    console.warn("[webhook] STRAVA_WEBHOOK_SUBSCRIPTION_ID non défini : events non filtrés");
+  if (!SUBSCRIPTION_ID) {
+    console.error("[webhook] STRAVA_WEBHOOK_SUBSCRIPTION_ID non défini : event ignoré");
+    return json({ ok: true });
+  }
+  if (String(event?.subscription_id ?? "") !== SUBSCRIPTION_ID) {
+    console.warn("[webhook] subscription_id inattendu, event ignoré");
+    return json({ ok: true });
   }
 
   // ⚠ IMPORTANT : Strava attend une réponse 200 RAPIDEMENT (< 2s) sinon il retente.

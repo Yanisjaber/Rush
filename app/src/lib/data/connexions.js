@@ -1,7 +1,7 @@
 // Connexions (Strava ; Garmin à venir) : fonctions pures (statuts, textes, adresse d'autorisation, retour de Strava).
 // Aucun appel réseau ici : voir integrations.js.
 
-export const SCOPES_STRAVA = 'read,activity:read_all,profile:read_all';
+export const SCOPES_STRAVA = 'read,activity:read_all';
 const URL_AUTORISATION_STRAVA = 'https://www.strava.com/oauth/authorize';
 
 /** Statut d'une connexion : { cle: 'non' | 'ok' | 'erreur', texte }. `conn` est la ligne de connexions_app (ou null). */

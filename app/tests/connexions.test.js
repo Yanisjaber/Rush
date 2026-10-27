@@ -24,7 +24,7 @@ test('adresse Strava : paramètres attendus, state transmis tel quel', () => {
   assert.equal(u.origin + u.pathname, 'https://www.strava.com/oauth/authorize');
   assert.equal(u.searchParams.get('state'), 'abc123');
   assert.equal(u.searchParams.get('redirect_uri'), 'https://x.test/cb');
-  assert.equal(u.searchParams.get('scope'), 'read,activity:read_all,profile:read_all');
+  assert.equal(u.searchParams.get('scope'), 'read,activity:read_all');
 });
 
 test('retour OAuth : lu dans l\'adresse, erreur nettoyée', () => {

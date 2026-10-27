@@ -7,7 +7,7 @@
 // Consomme l'état (table oauth_states) pour retrouver l'utilisateur et l'URL
 // de retour (aucun JWT dans l'URL), puis échange le code contre les tokens
 // Strava (via client_secret),
-// stocke dans la table strava_connections,
+// enregistre la connexion (connexions_app) et les jetons (Vault),
 // redirige vers l'app avec un flag de succès.
 //
 // Déploiement :
@@ -40,7 +40,8 @@ Deno.serve(async (req) => {
     const error = url.searchParams.get("error");
 
     if (error) {
-      return redirectToApp(returnUrl, { strava_error: error });
+      // Le texte vient de l'URL : on ne le renvoie à l'app que s'il ressemble à un code d'erreur simple.
+      return redirectToApp(returnUrl, { strava_error: /^[a-z_]{1,40}$/.test(error) ? error : "strava_refused" });
     }
     if (!code || !state) {
       return redirectToApp(returnUrl, { strava_error: "missing_code_or_state" });
@@ -78,6 +79,10 @@ Deno.serve(async (req) => {
 
     // ===== 3) Stocker dans connexions_app (service_role pour bypass RLS) =====
     const athlete = tokens.athlete || {};
+    // Les droits accordés arrivent dans l'URL de retour (la réponse de l'échange n'en contient en général pas).
+    const scopeAccorde = (url.searchParams.get("scope") || tokens.scope || "").slice(0, 200) || null;
+    // Connexion déjà présente ? (pour défaire proprement si l'enregistrement des jetons échoue)
+    const { data: avant } = await sbAdmin.from("connexions_app").select("id").eq("user_id", user.id).eq("app", "strava").maybeSingle();
     const expiresAt = new Date((tokens.expires_at || 0) * 1000).toISOString();
 
     const { error: insertErr } = await sbAdmin
@@ -88,12 +93,12 @@ Deno.serve(async (req) => {
         external_id: athlete.id != null ? String(athlete.id) : null,
         athlete_name: `${athlete.firstname || ""} ${athlete.lastname || ""}`.trim() || null,
         expires_at: expiresAt,
-        scope: tokens.scope || null,
-        first_connected_at: new Date().toISOString(),
+        scope: scopeAccorde,
+        // first_connected_at n'est pas écrit ici : la base le remplit à la 1re connexion et une reconnexion ne le réécrit pas
       }, { onConflict: "user_id,app" });
 
     if (insertErr) {
-      console.error("Insert strava_connections failed:", insertErr);
+      console.error("Insert connexions_app failed:", insertErr.code || "", insertErr.message || "");
       return redirectToApp(returnUrl, { strava_error: "db_insert_failed" });
     }
 
@@ -101,20 +106,26 @@ Deno.serve(async (req) => {
     try {
       await ecrireJetons(sbAdmin, user.id, "strava", { access_token: tokens.access_token, refresh_token: tokens.refresh_token }, expiresAt);
     } catch (_e) {
+      // Pas de connexion « fantôme » (ligne sans jetons) : si elle vient d'être créée, on la retire.
+      if (!avant) await sbAdmin.from("connexions_app").delete().eq("user_id", user.id).eq("app", "strava");
       return redirectToApp(returnUrl, { strava_error: "token_save_failed" });
     }
 
     // ===== 4) Compléter le profil avec le FTP / le poids connus de Strava, SANS jamais écraser ce que l'utilisateur a saisi =====
     // (l'identifiant d'athlète est dans connexions_app.external_id ; le prénom du profil reste celui que l'utilisateur a choisi)
-    const profilStrava: Record<string, unknown> = { user_id: user.id };
-    if (athlete.ftp) profilStrava.ftp = athlete.ftp;
-    if (athlete.weight) profilStrava.weight = athlete.weight;
-    await sbAdmin.from("user_profiles").upsert(profilStrava, { onConflict: "user_id" });
+    // On ne remplit que les champs encore vides.
+    if (athlete.ftp || athlete.weight) {
+      const { data: profil } = await sbAdmin.from("user_profiles").select("ftp, weight").eq("user_id", user.id).maybeSingle();
+      const profilStrava: Record<string, unknown> = { user_id: user.id };
+      if (athlete.ftp && profil?.ftp == null) profilStrava.ftp = athlete.ftp;
+      if (athlete.weight && profil?.weight == null) profilStrava.weight = athlete.weight;
+      if (Object.keys(profilStrava).length > 1) await sbAdmin.from("user_profiles").upsert(profilStrava, { onConflict: "user_id" });
+    }
 
     // ===== 5) Redirection vers l'app avec flag de succès =====
     return redirectToApp(returnUrl, { strava_connected: "1" });
   } catch (e) {
-    console.error("Unhandled error:", e);
+    console.error("Unhandled error:", String((e as any)?.message || e).slice(0, 300));
     return redirectToApp(returnUrl, { strava_error: "unexpected" });
   }
 });
