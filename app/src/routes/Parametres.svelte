@@ -6,6 +6,7 @@
   import Connexions from '../lib/parametres/Connexions.svelte';
   import Preferences from '../lib/parametres/Preferences.svelte';
   import Confidentialite from '../lib/parametres/Confidentialite.svelte';
+  import Bouton from '../lib/components/Bouton.svelte';
   import { auth } from '../lib/stores/auth.svelte.js';
   import { profil, chargerProfilStore } from '../lib/stores/profil.svelte.js';
 
@@ -53,7 +54,10 @@
       {#if besoinProfil && profil.chargement}
         <p class="info" role="status">Chargement…</p>
       {:else if besoinProfil && profil.erreur}
-        <p class="alerte" role="alert">{profil.erreur}</p>
+        <div class="alerte" role="alert">
+          <p>{profil.erreur}</p>
+          <Bouton variante="discret" onclick={() => chargerProfilStore(userId, demo)}>Réessayer</Bouton>
+        </div>
       {:else if onglet === 'general'}
         <General {demo} {userId} />
       {:else if onglet === 'physiologie'}
@@ -120,6 +124,9 @@
     border-radius: var(--rayon-l);
     background: var(--surface);
     font-size: 14px;
+  }
+  .alerte p {
+    margin: 0 0 10px;
   }
   @media (max-width: 900px) {
     .disposition {

@@ -72,6 +72,7 @@
 
     {@render children?.()}
 
+    {#if Object.keys(erreurs).length}<p class="erreur global" role="alert">{Object.keys(erreurs).length > 1 ? `${Object.keys(erreurs).length} champs sont à corriger.` : 'Un champ est à corriger.'}</p>{/if}
     {#if erreurGlobale}<p class="erreur global" role="alert">{erreurGlobale}</p>{/if}
     <div class="pied">
       <Bouton type="submit">{envoi ? 'Enregistrement…' : 'Enregistrer'}</Bouton>

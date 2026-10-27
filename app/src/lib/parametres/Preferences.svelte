@@ -39,6 +39,10 @@
   }
   async function enregistrerSports() {
     if (sportsEnCours) return;
+    if (choix.length === 0) {
+      sportsMessage = 'Garde au moins un sport.'; // sans sport, l'accueil n'aurait plus rien à afficher
+      return;
+    }
     sportsEnCours = true;
     sportsMessage = '';
     const r = await enregistrerSportsChoisis(uid, choix);

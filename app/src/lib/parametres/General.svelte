@@ -36,12 +36,16 @@
   async function exporter() {
     if (export_.enCours) return;
     export_ = { enCours: true, message: '' };
-    const r = await exporterMesDonnees(auth.session?.user?.id, auth.session?.user?.email || '');
-    telechargerJson(r.contenu, `rush-mes-donnees-${new Date().toISOString().slice(0, 10)}.json`);
-    export_ = {
-      enCours: false,
-      message: r.avertissements.length ? `Fichier téléchargé. Ces parties n'ont pas pu être lues : ${r.avertissements.join(', ')}.` : 'Fichier téléchargé.',
-    };
+    try {
+      const r = await exporterMesDonnees(auth.session?.user?.id, auth.session?.user?.email || '');
+      telechargerJson(r.contenu, `rush-mes-donnees-${new Date().toISOString().slice(0, 10)}.json`);
+      export_ = {
+        enCours: false,
+        message: r.avertissements.length ? `Fichier téléchargé. Ces parties sont incomplètes ou n'ont pas pu être lues : ${r.avertissements.join(', ')}.` : 'Fichier téléchargé.',
+      };
+    } catch (_e) {
+      export_ = { enCours: false, message: "L'export a échoué. Vérifie ta connexion et réessaie." };
+    }
   }
   let suppression = $state({ ouvert: false, texte: '', enCours: false, message: '', pct: 0, etape: '' });
   const pretASupprimer = $derived(suppression.texte.trim() === 'SUPPRIMER');
@@ -55,10 +59,15 @@
     suppression.enCours = true;
     suppression.message = '';
     suppression.pct = 0;
-    const r = await supprimerCompte(suppression.texte.trim(), ({ pct, texte }) => {
-      suppression.pct = pct;
-      suppression.etape = texte;
-    });
+    let r;
+    try {
+      r = await supprimerCompte(suppression.texte.trim(), ({ pct, texte }) => {
+        suppression.pct = pct;
+        suppression.etape = texte;
+      });
+    } catch (_e) {
+      r = { ok: false, message: "La suppression s'est interrompue. Une partie de tes données a peut-être déjà été effacée : relance la suppression pour terminer, ou demande à Yanis." };
+    }
     suppression.enCours = false;
     if (!r.ok) suppression.message = r.message;
     // En cas de succès, la session est fermée : l'app affiche l'écran de connexion toute seule.

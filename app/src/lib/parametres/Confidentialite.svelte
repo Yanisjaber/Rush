@@ -43,6 +43,7 @@
     <ul>
       <li><strong>Strava</strong> (si tu le connectes) : l'app lit tes activités pour les afficher. Tu peux déconnecter Strava à tout moment dans Paramètres › Connexions, ou retirer l'app depuis tes réglages sur strava.com.</li>
       <li><strong>Garmin</strong> : aucune connexion pour l'instant (l'accès officiel arrive peut-être plus tard). Seules les nuits de sommeil déjà importées s'affichent.</li>
+      <li><strong>Hevy</strong> (si tu importes un export) : le fichier est lu sur ton appareil, seules les séances de force qu'il contient sont enregistrées dans ta base.</li>
       <li><strong>Open Dossard</strong> (si tu lies ta licence) : l'app interroge leur site avec ton numéro de licence pour afficher tes résultats.</li>
       <li><strong>OpenStreetMap</strong> : pour afficher une carte, ton navigateur télécharge des images de carte sur leurs serveurs, qui voient donc ton adresse IP et la zone affichée.</li>
     </ul>

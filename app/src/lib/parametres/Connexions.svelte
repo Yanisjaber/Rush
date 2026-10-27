@@ -39,6 +39,11 @@
     etat = r.erreur ? { ...etat, chargement: false, erreur: r.erreur } : { chargement: false, erreur: '', ...r.data };
   }
 
+  async function recharger() {
+    etat = { ...etat, chargement: true, erreur: '' };
+    await charger();
+  }
+
   let licence = $state({ ouvert: false });
   async function choisirLicence(l) {
     fermerPanneau('licence');
@@ -62,7 +67,9 @@
       effacerRetour();
     } else if (retourStrava.connecte) {
       effacerRetour();
-      if (etat.nbActivites > 0) infoStrava = 'Strava reconnecté : tes données sont déjà là.';
+      // Lecture en échec : on ne lance pas un import dont on ne verrait pas l'avancement
+      if (etat.erreur) infoStrava = 'Strava est connecté. Recharge les connexions, puis clique sur « Re-synchroniser ».';
+      else if (etat.nbActivites > 0) infoStrava = 'Strava reconnecté : tes données sont déjà là.';
       else lancerImport();
     }
   });
@@ -86,26 +93,34 @@
     // L'import des activités est un seul appel (~30 s) sans avancement : on anime une progression régulière plafonnée à 25 %
     const debut = Date.now();
     const minuteur = setInterval(() => (sync.pct = Math.max(sync.pct, Math.min(25, Math.round(((Date.now() - debut) / 30000) * 25)))), 300);
-    const a = await importerActivitesStrava(arret.signal);
-    clearInterval(minuteur);
-    if (a.abandon) return (sync = { actif: false, pct: 0, etiquette: '' });
-    if (a.aucuneConnexion) {
+    try {
+      const a = await importerActivitesStrava(arret.signal);
+      clearInterval(minuteur);
+      if (a.abandon) return (sync = { actif: false, pct: 0, etiquette: '' });
+      if (a.aucuneConnexion) {
+        sync = { actif: false, pct: 0, etiquette: '' };
+        return (erreurStrava = "Aucun compte Strava n'est lié. Utilise « Connecter Strava ».");
+      }
+      if (a.erreur) {
+        sync = { actif: false, pct: 0, etiquette: '' };
+        return (erreurStrava = a.erreur);
+      }
+      sync = { actif: true, pct: 28, etiquette: `${a.importees} activités importées` };
+      const s = await traiterStreamsStrava(userId, (traitees, total) => {
+        const p = progressionStreams(total, total - traitees);
+        sync = { actif: true, pct: p.pct, etiquette: `Courbes et records : ${p.traitees} / ${total} activités` };
+      }, arret.signal);
       sync = { actif: false, pct: 0, etiquette: '' };
-      return (erreurStrava = "Aucun compte Strava n'est lié. Utilise « Connecter Strava ».");
-    }
-    if (a.erreur) {
+      if (s.erreur) erreurStrava = s.erreur;
+      else if (s.limite) infoStrava = 'Limite Strava atteinte : la suite sera traitée à la prochaine synchro.';
+      else if (s.fini) infoStrava = 'Synchronisation terminée.';
+    } catch (_e) {
+      // Panne imprévue : la synchro ne doit jamais rester affichée « en cours »
+      erreurStrava = 'La synchronisation a été interrompue. Réessaie dans un instant.';
+    } finally {
+      clearInterval(minuteur);
       sync = { actif: false, pct: 0, etiquette: '' };
-      return (erreurStrava = a.erreur);
     }
-    sync = { actif: true, pct: 28, etiquette: `${a.importees} activités importées` };
-    const s = await traiterStreamsStrava(userId, (traitees, total) => {
-      const p = progressionStreams(total, total - traitees);
-      sync = { actif: true, pct: p.pct, etiquette: `Courbes et records : ${p.traitees} / ${total} activités` };
-    }, arret.signal);
-    sync = { actif: false, pct: 0, etiquette: '' };
-    if (s.erreur) erreurStrava = s.erreur;
-    else if (s.limite) infoStrava = 'Limite Strava atteinte : la suite sera traitée à la prochaine synchro.';
-    else if (s.fini) infoStrava = 'Synchronisation terminée.';
     await charger();
   }
 
@@ -127,8 +142,6 @@
 <div class="onglet">
   {#if etat.chargement}
     <p class="info" role="status">Chargement des connexions…</p>
-  {:else if etat.erreur}
-    <p class="alerte" role="alert">{etat.erreur}</p>
   {:else}
   <div class="grille">
     <article class="case">
@@ -136,15 +149,20 @@
       <div class="corps">
       <div class="entete-carte">
         <h2 class="titre">Strava</h2>
-        <span class="pastille {statutS.cle}">{statutS.texte}</span>
+        {#if !etat.erreur}<span class="pastille {statutS.cle}">{statutS.texte}</span>{/if}
       </div>
+      {#if etat.erreur}
+        <!-- La lecture a échoué : on ne sait pas si Strava est connecté, on ne l'affirme pas. Les autres cartes restent utilisables. -->
+        <p class="erreur" role="alert">{etat.erreur}</p>
+        <div class="actions"><Bouton onclick={recharger}>Réessayer</Bouton></div>
+      {:else}
       <p class="detail">{detailStrava(etat.strava, etat.nbActivites)}</p>
 
       {#if sync.actif}
         <div class="progression" role="status" aria-live="polite">
           <div class="ligne"><span>{sync.etiquette}</span><strong>{sync.pct} %</strong></div>
           <div class="piste" aria-hidden="true"><span style:width="{sync.pct}%"></span></div>
-          <p class="aide">Tu peux rester sur cette page : la synchro continue.</p>
+          <p class="aide">Reste sur cette page jusqu'à la fin : si tu la quittes, la synchro s'arrête et reprendra là où elle s'est arrêtée.</p>
         </div>
       {:else if choixDeconnexion}
         <div class="choix">
@@ -182,6 +200,7 @@
             </button>
           {/if}
         </div>
+      {/if}
       {/if}
 
       {#if erreurStrava}<p class="erreur" role="alert">{erreurStrava}</p>{/if}
@@ -336,9 +355,6 @@
   }
   .corps {
     padding: 20px 22px 24px;
-  }
-  .a-venir {
-    opacity: 0.75;
   }
   .entete-carte {
     display: flex;

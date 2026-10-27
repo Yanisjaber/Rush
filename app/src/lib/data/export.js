@@ -39,8 +39,9 @@ async function lireTable(userId, table, colonnes, avertissements) {
       return lignes;
     }
     lignes.push(...(r.data || []));
-    if ((r.data || []).length < PAGE) break;
+    if ((r.data || []).length < PAGE) return lignes;
   }
+  avertissements.push(`${table} (tronquée à ${MAX_LIGNES} lignes)`); // plafond atteint : l'export n'est pas complet, on le dit
   return lignes;
 }
 
