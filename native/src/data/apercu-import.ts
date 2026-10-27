@@ -1,5 +1,6 @@
 // L'aperçu d'une activité qu'on vient d'importer : la trace pour la carte, le profil d'altitude et les chiffres principaux. Fonctions pures, sans écran ni réseau.
 import { formatAllure, formatDuree, formatKm, formatNombre } from './format.ts';
+import { distanceKm, lireGpx } from './gpx.ts';
 import type { ActiviteImportee } from './import-activite.ts';
 
 export interface PointCarte {
@@ -115,4 +116,15 @@ export function apercuImport(a: ActiviteImportee, type: string): ApercuImport {
     altitudeMax: profil.length ? Math.max(...profil) : null,
     stats,
   };
+}
+
+/** La carte et le profil d'altitude d'un parcours GPX déjà enregistré (celui d'une séance prévue ou d'une compétition) ; null si le fichier n'a pas assez de points. */
+export function apercuDeGpx(contenu: string): Pick<ApercuImport, 'trace' | 'region' | 'profil' | 'altitudeMin' | 'altitudeMax'> | null {
+  const { points } = lireGpx(contenu);
+  if (points.length < 2) return null;
+  const trace = echantillonner(points.map((p) => ({ latitude: p.lat, longitude: p.lon })), POINTS_TRACE);
+  let cumul = 0;
+  const distances = points.map((p, i) => (i === 0 ? 0 : (cumul += distanceKm(points[i - 1], p))));
+  const profil = profilAltitude(points.map((p) => p.ele), distances);
+  return { trace, region: regionDeTrace(trace), profil, altitudeMin: profil.length ? Math.min(...profil) : null, altitudeMax: profil.length ? Math.max(...profil) : null };
 }
