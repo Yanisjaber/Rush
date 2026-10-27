@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
   bandes: { position: 'absolute', left: 0, right: 0, bottom: 0, gap: 1 },
   bande: { height: 4 },
   barre: { width: 10, height: 3, borderRadius: 2 },
-  plus: { fontSize: 10, lineHeight: 10, fontFamily: police.texte600 },
+  plus: { fontSize: 8, lineHeight: 8, fontFamily: police.texte600 },
   detailTete: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   detailPlus: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   detailPlusTexte: { fontFamily: police.titre800, fontSize: 26, lineHeight: 30 },
