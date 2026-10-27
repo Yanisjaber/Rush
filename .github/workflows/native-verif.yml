@@ -1,0 +1,43 @@
+name: Vérifier l'app mobile
+
+# Vérifie que l'app mobile (Expo / React Native) passe le contrôle des types et ses tests.
+# Ne construit pas l'app et ne déploie rien.
+on:
+  push:
+    branches: [main]
+    paths: ['native/**', '.github/workflows/native-verif.yml']
+  pull_request:
+    paths: ['native/**']
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: native/package-lock.json
+
+      # npm ci : exactement ce qui est dans package-lock.json. --ignore-scripts : aucun script d'installation.
+      - name: Installer les dépendances
+        run: npm ci --ignore-scripts
+
+      # Informatif pour l'instant : les alertes connues sont dans l'outillage Expo (pas dans l'app livrée).
+      - name: Audit de sécurité (dépendances de production)
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true
+
+      - name: Types
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
