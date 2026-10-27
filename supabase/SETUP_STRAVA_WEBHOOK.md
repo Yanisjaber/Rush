@@ -93,7 +93,7 @@ curl -X DELETE \
 | activity | create | — | Fetch activité → insert → recompute daily_metrics depuis ce jour |
 | activity | update | — | Fetch activité → upsert → recompute (au cas où TSS change) |
 | activity | delete | — | Delete activité → recompute |
-| athlete | update | "false" | Désauthorisation : delete strava_connections |
+| athlete | update | "false" | Désauthorisation : supprime la connexion (connexions_app) |
 
 Le recompute de daily_metrics part de la date de l'activité et avance jusqu'à aujourd'hui, en seed-ant CTL/ATL avec la valeur de la veille (donc rapide et correct).
 

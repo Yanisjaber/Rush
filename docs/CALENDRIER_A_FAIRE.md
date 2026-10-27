@@ -1,6 +1,6 @@
 # Calendrier natif : ce qui reste à faire
 
-Liste tenue à jour avec Yanis (écran `native/app/(onglets)/calendrier.tsx`). Dernière mise à jour : 24 octobre 2026.
+Liste tenue à jour avec Yanis (écran `native/app/(onglets)/calendrier.tsx`). Dernière mise à jour : 27 octobre 2026.
 
 ## Fait récemment
 
@@ -11,7 +11,7 @@ Liste tenue à jour avec Yanis (écran `native/app/(onglets)/calendrier.tsx`). D
 - **Colonne « Sem. »** (27 octobre, décidé avec Yanis) : elle montre la semaine entière, même quand elle déborde sur le mois voisin ; les pastilles du haut, elles, ne comptent que le mois. On garde ça.
 - **Fait et prévu dans les totaux** (27 octobre, décidé avec Yanis) : le temps et les kilomètres (ou séries) d'une semaine et de la carte du sport ne comptent que le fait ; une semaine pas encore commencée montre le prévu. Les petites barres de la colonne gardent le fait et le prévu (prévu en pâle).
 
-- **Notes de santé détaillées** (24 octobre, en local, pas encore poussé) : quatre types (Note, Maladie, Blessure, Indisponible) avec des menus déroulants propres à chacun (nom de la maladie, symptômes à cocher, gravité ; zone du corps avec silhouette, côté, nature, douleur ; motif, lieu), une feuille calendrier pour la période, et un petit logo par type sur les jours du calendrier (deux au plus par case). Toucher une note ouvre une fenêtre de détail. Code : `src/data/sante-notes.ts`, `ChampsNote.tsx`, `ChampPeriode.tsx`, `LogoNote.tsx`. Migration `2026-10-24_day_notes_details.sql` (colonne `details`, type `indisponible`) appliquée sur la vraie base le 24 octobre. Pas fait : la blessure « en cours » sans date de fin.
+- **Notes de santé détaillées** (24 octobre) : quatre types (Note, Maladie, Blessure, Indisponible) avec des menus déroulants propres à chacun (nom de la maladie, symptômes à cocher, gravité ; zone du corps avec silhouette, côté, nature, douleur ; motif, lieu), une feuille calendrier pour la période, et un petit logo par type sur les jours du calendrier (deux au plus par case). Toucher une note ouvre une fenêtre de détail. Code : `src/data/sante-notes.ts`, `ChampsNote.tsx`, `ChampPeriode.tsx`, `LogoNote.tsx`. Migration `2026-10-24_day_notes_details.sql` (colonne `details`, type `indisponible`) appliquée sur la vraie base le 24 octobre. Pas fait : la blessure « en cours » sans date de fin.
 - **Import d'une activité depuis un fichier** (24 octobre) : « Importer » remplace « Modèle » dans le « + ». Un fichier `.fit`, `.gpx` ou `.tcx` s'ouvre dans un pop-up (carte Apple, profil d'altitude, six chiffres) avec Enregistrer, Modifier ou Annuler. Les flux (gzip), la trace GPX, les tours (colonne `lap_details`, migration appliquée) et les chiffres de résumé partent avec l'activité. Code : `src/data/import-activite.ts`, `apercu-import.ts`, `app/ajout-import.tsx`, `ApercuImport.tsx`. L'écran Modèles existe toujours mais n'a plus d'entrée.
 - **Compétition refaite** (24 octobre) : dossard qui se remplit en haut, trois onglets (Épreuve, Parcours, Objectif) avec heure de départ, fédération, niveau, format de triathlon, temps cible, GPX, charge, effort, notes. Logique : `src/data/competition.ts`.
 - **Durée à roues, charge et clavier** (24 octobre) : la durée se choisit sur les roues d'Apple (activité déjà faite et séance prévue), « Charge (pts) » existe sur l'activité déjà faite, le sport s'ouvre sur celui de la barre du haut, toucher hors d'un champ ferme le clavier.
@@ -51,4 +51,4 @@ Rien en attente : les migrations `2026-10-22_training_cycles.sql` et `2026-10-23
 
 ## Ménage à faire (demande d'accord de Yanis)
 
-- Les séances prévues créées avec des blocs gardent leur structure ; l'écran qui les relit (lecture, modification) reste à faire (ligne 1 de « Repoussé »).
+- Rien en attente : l'écran qui relit les séances prévues (lecture, modification) existe depuis le 27 octobre (`app/prevue.tsx`).

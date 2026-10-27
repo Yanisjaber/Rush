@@ -84,14 +84,14 @@ gfavgstyyaaidkpadkxz.supabase.co
 4. Clique sur **Connecter Strava** → tu es redirigé vers Strava → autorise
 5. Strava te redirige vers l'Edge Function qui :
    - Échange ton code contre les tokens
-   - Stocke dans `strava_connections`
+   - Enregistre la connexion dans `connexions_app` et les jetons chiffrés dans Vault
    - Te redirige vers `localhost:8000/dashboard.html?strava_connected=1`
 6. Tu vois un toast vert "Strava connecté avec succès"
 
 ## 9. Vérification dans pgAdmin
 
 ```sql
-SELECT * FROM strava_connections WHERE user_id = '<UUID-DU-COMPTE-TEST>';
+SELECT id, app, external_id, athlete_name, expires_at FROM connexions_app WHERE app = 'strava' AND user_id = '<UUID-DU-COMPTE-TEST>';
 ```
 
 Tu dois voir la ligne avec les tokens.

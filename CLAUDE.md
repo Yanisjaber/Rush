@@ -21,6 +21,7 @@ Rush : app d'entraînement et de récupération pour **tout sport de performance
 
 - Dev local : `cd app && npm ci` puis `npm run dev` → http://localhost:5173 (le catalogue du design system est sur `#/catalogue`). Mode démo sans compte : `?demo`.
 - Vérifications : `npm test` (tests de calcul, `node --test`) et `npm run build`. La CI (`.github/workflows/app-build.yml` et `pages.yml`) fait `npm ci --ignore-scripts`, l'audit des dépendances de production, les tests et le build.
+- App mobile (`native/`) : `cd native && npm ci` puis `npm start` (Expo), `npm run typecheck` et `npm test`. La CI (`native-verif.yml`) lance le contrôle des types et les tests.
 - Edge Functions : `supabase functions deploy <nom>` (`strava-oauth-callback` et `strava-webhook` avec `--no-verify-jwt`). Les migrations SQL (`supabase/migrations/`, nommées `AAAA-MM-JJ_nom.sql`, idempotentes) s'appliquent avec `supabase db query --linked -f <fichier>`. **Tests de base en local** : Postgres jetable via `supabase/proposals/db-v2/tests/local_pg.sh start|reset|psql` (jamais la vraie base).
 - Garmin : **aucune intégration active** (décision du 2026-10-13). La carte « Garmin » de Paramètres › Connexions reste en « Bientôt disponible » (accès officiel à demander plus tard) ; les nuits déjà importées (`garmin_sleep`) restent affichées dans Sommeil.
 
@@ -35,6 +36,11 @@ Rush : app d'entraînement et de récupération pour **tout sport de performance
 - **Données** : tout vient de Supabase (RLS `auth.uid() = user_id`). Charge d'entraînement universelle : TSS (puissance), sinon TRIMP (cardio), sinon effort ressenti × durée. Les zones (FTP/LTHR) sont recalculées à l'affichage, jamais stockées.
 - **Nom de l'app : Rush** (ancien nom « Coach IA », abandonné le 15 oct : il ne doit plus apparaître nulle part, sauf dans `archive-v1/`). Clés de stockage navigateur : `rush-*` (thème, disposition, brouillons…) ; `app/src/lib/stockage-local.js` recopie une fois les anciennes clés de l'ancien nom au premier lancement, pour que personne ne perde ses réglages (fichier à retirer quand tous les appareils sont passés).
 - Adresse du site : `https://yanisjaber.github.io/Rush/` (dépôt GitHub `Yanisjaber/Rush`). Si elle change un jour, la mettre à jour aussi dans `supabase/functions/_shared/oauth-state.ts` (liste des redirections autorisées, puis redéployer `oauth-start` et `strava-oauth-callback`), dans le secret `APP_REDIRECT_URL`, dans les liens des modèles d'e-mails et dans la configuration d'authentification de Supabase.
+
+### App mobile (`native/`)
+- **Expo 58 + React Native + TypeScript**, iPhone d'abord (Android prévu). Même compte et même base Supabase que le site (RLS identique), session gardée dans SecureStore. Charte visuelle : `native/IDENTITE.md`. Écrans dans `native/app/`, logique dans `native/src/` (`data/`, `hooks/`, `stores/`), tests dans `native/tests/` (`node --test`).
+- Beaucoup de modules de calcul existent en double (`app/src/lib/data/*.js` et `native/src/data/*.ts`) : une correction de calcul se fait **dans les deux** (ou on ajoute un test qui compare).
+- L'identifiant de l'app (`bundleIdentifier` / `package` dans `native/app.json`) est encore provisoire (`TODO.rush`). Pas de connexion Strava depuis le téléphone : on passe par le site.
 
 ### Backend (`supabase/`)
 - `supabase/functions/` : Edge Functions Deno — ingestion (`strava-ingest`, `strava-webhook`, `strava-streams`, `strava-laps`), `oauth-start` (crée un `state` aléatoire à usage unique dans `oauth_states`, aucun JWT dans l'URL OAuth), callback OAuth (`strava-oauth-callback`), `delete-account` (suppression en 3 étapes : préparer, purger par lots, supprimer), `opendossard`, `disconnect-integration`. Helpers communs dans `functions/_shared/` (dont `jetons.ts` pour les jetons et `cors.ts`).
