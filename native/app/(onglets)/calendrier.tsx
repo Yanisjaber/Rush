@@ -173,7 +173,7 @@ export default function Calendrier() {
         ) : null}
 
         {/* Pendant un chargement, la grille reste là (vide, atténuée) avec une roue par-dessus : la page ne s'écrase pas et ne saute pas à chaque changement de mois */}
-        <View style={chargement ? styles.enChargement : null} accessibilityState={{ busy: chargement }}>
+        <View style={[styles.corps, chargement && styles.enChargement]} accessibilityState={{ busy: chargement }}>
           {chargement ? (
             <View accessible accessibilityLabel="Chargement du calendrier" pointerEvents="none" style={styles.attente}>
               <ActivityIndicator color={p.texteDoux} />
@@ -658,6 +658,7 @@ const styles = StyleSheet.create({
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
   avisTexte: { flex: 1 },
   reessayer: { minHeight: 44, borderRadius: rayon.rond, borderWidth: 1.5, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
+  corps: { gap: espace.e3 }, // le même espace entre grille, légende et détail que dans la page
   enChargement: { opacity: 0.5 },
   attente: { position: 'absolute', top: 80, left: 0, right: 0, zIndex: 2, alignItems: 'center' },
   grille: { borderRadius: rayon.bloc, paddingHorizontal: 8, paddingVertical: 10, gap: 4, overflow: 'hidden' },
