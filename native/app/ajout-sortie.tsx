@@ -58,8 +58,6 @@ function FormulaireSortie({ seance }: { seance: Seance | null }) {
   const aujourdhui = dateIsoLocale(new Date());
   const depart = useDateAjout();
   const ouverture = seance ? formulaireDepuisSortie(seance) : null;
-  // Venu d'un jour à venir : la date passe à aujourd'hui, et on le dit (sinon le changement surprend)
-  const [ramene] = useState(!seance && depart > aujourdhui);
   const [date, setDate] = useState(ouverture ? ouverture.date : depart > aujourdhui ? aujourdhui : depart);
   const params = useLocalSearchParams(); // venant de « Importer » : les champs lus dans le fichier, relus ici (paramètres non fiables)
   const [f, setF] = useState(() => ouverture?.f ?? { ...formulaireSortieVide(filtre, familles), ...champsValides(params, SPORTS_AJOUT.map((s) => s.type)) });
@@ -92,7 +90,6 @@ function FormulaireSortie({ seance }: { seance: Seance | null }) {
   return (
     <EcranAjout bouton="Enregistrer" enCours={enCours} erreur={erreur} onValider={() => void enregistrer()}>
       {seance ? <Stack.Screen options={{ title: "Modifier l'activité" }} /> : null}
-      {ramene ? <Text style={[typo.petit, { color: p.texteDoux, paddingLeft: 16 }]}>Ce jour n'est pas encore passé : j'ai mis aujourd'hui. Pour un jour à venir, utilise « Séance prévue ».</Text> : null}
       <ChampDate date={date} max={aujourdhui} onChange={(iso) => { setDate(iso > aujourdhui ? aujourdhui : iso); setErreur(''); }} />
       <View style={styles.ligne}>
         <View style={{ flex: 1.4, gap: 6 }}>
