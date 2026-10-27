@@ -10,6 +10,8 @@
 // (« AAAA-MM-JJ HH:MM »), hrv_avg, avg_heart_rate, resp_avg, spo2_avg, avg_stress, segments ([début_min, fin_min, niveau]), etc.
 // Niveaux d'un segment : 0 profond, 1 léger, 2 paradoxal, 3 éveillé.
 
+import { heureDe } from './sommeil.js';
+
 export const NOM_NIVEAU = ['Profond', 'Léger', 'Paradoxal', 'Éveil'];
 
 export const REPERES = {
@@ -164,9 +166,8 @@ const heureEnMin = (h) => {
   const m = /^(\d{1,2}):(\d{2})$/.exec(h || '');
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 };
-const decalerMidi = (m) => (m + 720) % 1440; // l'axe de la nuit commence à midi : 23h et 1h sont voisines
+const decalerMidi = (m) => (m == null ? null : (m + 720) % 1440); // l'axe de la nuit commence à midi : 23h et 1h sont voisines
 const retablirMidi = (s) => (((s - 720) % 1440) + 1440) % 1440;
-const heureDe = (h) => (h ? String(h).split(' ')[1] || null : null);
 const arrondir = (m, pas) => Math.round(m / pas) * pas;
 
 /** « 7h42 » à partir de minutes. */

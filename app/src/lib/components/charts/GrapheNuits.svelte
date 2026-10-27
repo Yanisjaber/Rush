@@ -5,7 +5,8 @@
   //  etiquettes : dates ISO · barres : [{ nom, valeurs, couleur, couleurs? }] · empile : empiler les barres (100 %)
   //  lignes : [{ nom, valeurs, couleur, pointille?, echelle?: { min, max } }] · bande : { min: [], max: [] }
   //  reperes : [{ valeur, etiquette }] · min / max : bornes de l'échelle · formater(valeur, nomSerie) : texte d'une valeur
-  let { etiquettes = [], barres = [], empile = false, lignes = [], bande = null, reperes = [], min, max, hauteur = 150, formater = (v) => String(Math.round(v)), titre = 'Graphique' } = $props();
+//  texteEtiquette(etiquette) : texte d'une étiquette sur l'axe et au survol (par défaut « JJ/MM » ; pour des heures : les laisser telles quelles)
+  let { etiquettes = [], barres = [], empile = false, lignes = [], bande = null, reperes = [], min, max, hauteur = 150, formater = (v) => String(Math.round(v)), texteEtiquette = null, titre = 'Graphique' } = $props();
 
   const L = 800;
   const MARGE = 6;
@@ -64,7 +65,7 @@
     return haut.length && bas.length ? `M${[...haut, ...bas].map(([a, b]) => `${a.toFixed(1)},${b.toFixed(1)}`).join('L')}Z` : '';
   });
 
-  const jj = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+  const jj = (iso) => (texteEtiquette ? texteEtiquette(iso) : `${iso.slice(8, 10)}/${iso.slice(5, 7)}`);
   const repereDates = $derived(n ? [0, Math.floor((n - 1) / 2), n - 1].filter((v, k, a) => a.indexOf(v) === k) : []);
   const lecture = $derived(
     survol == null || survol >= n

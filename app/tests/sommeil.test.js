@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { heureDe, minutesCoucher, heureDepuisMinutes, phases, efficacite, moyenne, moyenneCoucher, triees, tendance } from '../src/lib/data/sommeil.js';
+import { heureApres, heureDe, minutesCoucher, heureDepuisMinutes, phases, efficacite, moyenne, moyenneCoucher, triees, tendance } from '../src/lib/data/sommeil.js';
 
 test('heureDe : extrait HH:MM, tolère les valeurs absentes ou bizarres', () => {
   assert.equal(heureDe('2026-10-11 23:10'), '23:10');
@@ -45,4 +45,18 @@ test('triées + tendance', () => {
   assert.equal(triees(nuits)[0].date, '2026-09-30');
   assert.equal(tendance(nuits, 'hrv_avg'), 'hausse');
   assert.equal(tendance(nuits.slice(0, 5), 'hrv_avg'), null);
+});
+
+test('heureDe accepte aussi le format ISO avec T', () => {
+  assert.equal(heureDe('2026-10-26T23:05:00'), '23:05');
+  assert.equal(heureDe('2026-10-26 7:05'), '07:05');
+  assert.equal(heureDe('n’importe quoi'), null);
+});
+
+test('heureApres : repères d\'heure sans « :60 », passage de minuit, null sans coucher', () => {
+  assert.equal(heureApres('23:00', 119.5), '01:00'); // avant : « 00:60 »
+  assert.equal(heureApres('23:00', 0), '23:00');
+  assert.equal(heureApres('23:00', 478), '06:58');
+  assert.equal(heureApres(null, 30), null);
+  assert.equal(heureApres('23:00', null), null);
 });

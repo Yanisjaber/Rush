@@ -146,3 +146,11 @@ test('preparer : une nuit sans durée (montre pas portée) disparaît, elle ne c
   const nuits = preparer([nuitParfaite('2026-10-26'), { date: '2026-10-27', total_sec: 0 }, { date: '2026-10-25', total_sec: null }]);
   assert.deepEqual(nuits.map((n) => n.date), ['2026-10-26']);
 });
+
+test('horaires : un coucher mal formé est ignoré au lieu de compter pour midi', () => {
+  const bonnes = [0, 1, 2].map((i) => ({ ...nuitParfaite(`2026-10-2${i}`), bedtime: `2026-10-2${i} 23:00`, wake_time: `2026-10-2${i} 07:00` }));
+  const mauvaise = { ...nuitParfaite('2026-10-23'), bedtime: 'pas une heure', wake_time: '2026-10-23 07:00' };
+  const h = analyserHoraires(preparer([...bonnes, mauvaise]));
+  assert.equal(h.coucherMoyen, '23h00');
+  assert.equal(h.ecartCoucherMin, 0);
+});

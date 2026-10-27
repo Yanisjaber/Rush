@@ -3,7 +3,8 @@
 
 /** Heure « HH:MM » d'un horodatage « AAAA-MM-JJ HH:MM » (ou null si absent/mal formé). */
 export function heureDe(horodatage) {
-  const m = /(\d{1,2}):(\d{2})/.exec(String(horodatage || '').split(' ')[1] || '');
+  // accepte « AAAA-MM-JJ HH:MM », « AAAA-MM-JJTHH:MM:SS » ou « HH:MM »
+  const m = /(?:^|[ T])(\d{1,2}):(\d{2})/.exec(String(horodatage || ''));
   return m ? `${m[1].padStart(2, '0')}:${m[2]}` : null;
 }
 
@@ -20,6 +21,13 @@ export function heureDepuisMinutes(minutes) {
   if (minutes == null || Number.isNaN(minutes)) return null;
   const t = ((Math.round(minutes) % 1440) + 1440) % 1440;
   return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+}
+
+/** Heure « HH:MM » `minutes` minutes après l'heure de coucher « HH:MM » (null sans heure de coucher). Passe minuit sans jamais écrire « :60 ». */
+export function heureApres(coucher, minutes) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(coucher || '');
+  if (!m || minutes == null || Number.isNaN(Number(minutes))) return null;
+  return heureDepuisMinutes(Number(m[1]) * 60 + Number(m[2]) + Math.round(minutes));
 }
 
 /** Les phases d'une nuit : [{ cle, nom, secondes, part }] (part entre 0 et 1 du temps total passé au lit). */

@@ -9,8 +9,8 @@
   import { COULEURS_PHASE, COULEUR_TON } from './palette.js';
   import { chargerFcNuit } from '../data/api.js';
   import { fcNuitDemo } from '../data/demo.js';
-  import { heureDe } from '../data/sommeil.js';
-  import { NOM_NIVEAU, NOM_QUALIFICATIF, tonDe, efficacitePct, latenceMin, texteHMdepuisSec } from '../data/score-sommeil.js';
+  import { heureDe, heureApres } from '../data/sommeil.js';
+  import { NOM_NIVEAU, NOM_QUALIFICATIF, tonDe, efficacitePct, latenceMin, texteHM, texteHMdepuisSec } from '../data/score-sommeil.js';
   import { formatDateLongue } from '../utils/format.js';
 
   // Aperçu : la nuit choisie (score maison, horaires, hypnogramme, phases, chiffres clés), le calendrier de nuits colorées par
@@ -41,13 +41,8 @@
   const segments = $derived(Array.isArray(nuit?.segments) ? nuit.segments : []);
   const dureeMin = $derived(segments.length ? Math.max(...segments.map((s) => s[1])) : 0);
   const heureCoucher = $derived(heureDe(nuit?.bedtime));
-  function reperesTemps(fin) {
-    const [h, m] = (heureCoucher || '0:0').split(':').map(Number);
-    return [0, 0.25, 0.5, 0.75, 1].map((f) => {
-      const t = h * 60 + m + fin * f;
-      return `${String(Math.floor((t / 60) % 24)).padStart(2, '0')}:${String(Math.round(t % 60)).padStart(2, '0')}`;
-    });
-  }
+  // Cinq repères d'heure sous le graphique (début, quarts, fin) ; sans heure de coucher on ne les affiche pas
+  const reperesTemps = (fin) => (heureCoucher ? [0, 0.25, 0.5, 0.75, 1].map((f) => heureApres(heureCoucher, fin * f)) : []);
 
   // --- Calendrier ---
   let mois = $state(null); // 'AAAA-MM'
@@ -109,7 +104,8 @@
   });
   const fcValeurs = $derived(fc.points ? fc.points.map((p) => p[1]) : []);
   const fcStats = $derived(fcValeurs.length ? { moy: Math.round(fcValeurs.reduce((a, b) => a + b, 0) / fcValeurs.length), min: Math.min(...fcValeurs), max: Math.max(...fcValeurs) } : null);
-  const fcEtiquettes = $derived(fc.points ? fc.points.map((_, i) => nuit.date) : []);
+  // une étiquette par point : l'heure de la nuit (ou « 1h30 » écoulées si on ne connaît pas l'heure de coucher)
+  const fcEtiquettes = $derived(fc.points ? fc.points.map((p) => heureApres(heureCoucher, p[0]) ?? texteHM(p[0])) : []);
 </script>
 
 {#if nuit}
@@ -146,9 +142,11 @@
               </div>
             </div>
           {/each}
-          <div class="reperes">
-            {#each reperesTemps(dureeMin) as h, k (k)}<span>{h}</span>{/each}
-          </div>
+          {#if heureCoucher}
+            <div class="reperes">
+              {#each reperesTemps(dureeMin) as h, k (k)}<span>{h}</span>{/each}
+            </div>
+          {/if}
         </div>
       {:else if phases.length}
         <div class="barre-phases" role="img" aria-label="Répartition des phases">
@@ -227,8 +225,7 @@
         <StatCle etiquette="Minimum" valeur={String(fcStats.min)} unite="bpm" />
         <StatCle etiquette="Maximum" valeur={String(fcStats.max)} unite="bpm" />
       </div>
-      <GrapheNuits etiquettes={fcEtiquettes} lignes={[{ nom: 'FC', valeurs: fcValeurs, couleur: 'var(--danger)' }]} min={Math.max(0, fcStats.min - 5)} max={fcStats.max + 5} hauteur={220} titre="Fréquence cardiaque pendant la nuit" formater={(v) => `${Math.round(v)} bpm`} />
-      <div class="reperes fc-reperes">{#each reperesTemps(Math.max(...fc.points.map((p) => p[0]))) as h, k (k)}<span>{h}</span>{/each}</div>
+      <GrapheNuits etiquettes={fcEtiquettes} lignes={[{ nom: 'FC', valeurs: fcValeurs, couleur: 'var(--danger)' }]} min={Math.max(0, fcStats.min - 5)} max={fcStats.max + 5} hauteur={220} titre="Fréquence cardiaque pendant la nuit" texteEtiquette={(e) => e} formater={(v) => `${Math.round(v)} bpm`} />
     {:else}
       <p class="info">Pas de données minute par minute pour cette nuit.</p>
     {/if}
@@ -336,9 +333,6 @@
     margin: 4px 0 0 84px;
     font-size: 11px;
     color: var(--texte-muet);
-  }
-  .fc-reperes {
-    margin-left: 0;
   }
   .barre-phases {
     display: flex;
