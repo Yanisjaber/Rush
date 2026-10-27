@@ -19,8 +19,8 @@ for f in supabase/migrations/2026-10-14_jetons_vault_1_ajout.sql supabase/migrat
   bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f $f >/dev/null
 done
 echo "== le retrait des colonnes (deux fois : idempotent)"
-bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_jetons_colonnes_mortes.sql
-bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_jetons_colonnes_mortes.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_jetons_vault_3_colonnes_mortes.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-14_jetons_vault_3_colonnes_mortes.sql
 bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
 select public.rpc_save_connection_secrets('00000000-0000-4000-8000-000000000001', 'strava', '{"access_token":"nouveau_acc"}'::jsonb, now() + interval '2 hours');
 create temp table r as select public.rpc_connection_secrets('00000000-0000-4000-8000-000000000001', 'strava') as j;

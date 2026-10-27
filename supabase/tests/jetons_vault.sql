@@ -1,5 +1,5 @@
 -- ⚠ TEST HISTORIQUE de la transition (phases 1, 2a, 2b). Les colonnes en clair ont été supprimées le 2026-10-14
--- (migration 2026-10-14_jetons_colonnes_mortes.sql) : ce fichier ne peut plus tourner sur la base actuelle.
+-- (migration 2026-10-14_jetons_vault_3_colonnes_mortes.sql) : ce fichier ne peut plus tourner sur la base actuelle.
 -- Le test à jour est supabase/tests/jetons_colonnes_mortes.sh (Postgres local jetable).
 -- Test des fonctions de jetons chiffrés (Vault) : migration phase 1, puis phase 2. À lancer sur la base LOCALE de test uniquement.
 -- Prérequis : base locale avec l'ancien schéma dans `public` (voir supabase/proposals/db-v2/tests/run_cutover.sh pour la préparation).
