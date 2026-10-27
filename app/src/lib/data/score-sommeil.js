@@ -244,19 +244,36 @@ function ecartRefMoyenne(nuits, champ) {
   return { derniere, reference, ecartPct: reference ? ((derniere - reference) / reference) * 100 : null };
 }
 
+/** Nombre de jours entre deux dates « AAAA-MM-JJ » (a − b). */
+const joursEntre = (a, b) => Math.round((Date.parse(`${a}T12:00:00Z`) - Date.parse(`${b}T12:00:00Z`)) / 86400000);
+
+/**
+ * Les nuits des 7 jours qui finissent à la nuit la plus récente (`decalage` = 0), ou des 7 jours d'avant (`decalage` = 7).
+ * Par dates, pas par nombre de nuits : si la montre n'a rien enregistré pendant des jours, ces jours ne sont pas remplacés par de vieilles nuits.
+ */
+export function nuitsDeLaSemaine(nuitsTriees, decalage = 0) {
+  const ref = nuitsTriees[0]?.date;
+  if (!ref) return [];
+  return nuitsTriees.filter((n) => {
+    const j = joursEntre(ref, n.date);
+    return j >= decalage && j < decalage + 7;
+  });
+}
+
 /** Analyse « pro » sur les nuits récentes (la plus récente d'abord) : efficacité, endormissement, dette, phases, signaux. null sans nuit. */
 export function analyser(nuitsTriees) {
   const valides = nuitsTriees.filter((n) => n.total_sec != null);
   if (!valides.length) return null;
   const recentes = valides.slice(0, 30);
   const r14 = valides.slice(0, 14);
-  const r7 = valides.slice(0, 7);
+  const r7 = nuitsDeLaSemaine(valides); // les 7 derniers JOURS (pas les 7 dernières nuits)
   const latences = r14.map(latenceMin).filter((v) => v != null);
   const pct = (champ) => moy(r14.map((n) => (n.total_sec ? ((n[champ] || 0) / n.total_sec) * 100 : null)));
   return {
     horaires: analyserHoraires(r14), // même fenêtre (14 nuits) que le reste de l'analyse
     nbNuits: valides.length,
     nbAnalysees: r14.length,
+    nbNuitsDette: r7.length, // nuits réellement mesurées sur les 7 jours (la dette ne compte pas celles qui manquent)
     efficaciteMoy: moy(r14.map(efficacitePct)),
     latenceMoy: latences.length ? moy(latences) : null,
     detteMin: r7.reduce((a, n) => a + Math.max(0, REPERES.dureeCibleMin * 60 - (n.total_sec || 0)), 0) / 60,
@@ -401,8 +418,8 @@ function statsGroupe(liste) {
  */
 export function comparaisons(nuitsTriees) {
   const valides = nuitsTriees.filter((n) => n.total_sec != null);
-  const r7 = valides.slice(0, 7);
-  const p7 = valides.slice(7, 14);
+  const r7 = nuitsDeLaSemaine(valides, 0);
+  const p7 = nuitsDeLaSemaine(valides, 7);
   const semaine = valides.filter((n) => !estWeekEnd(n.date)).slice(0, 30);
   const weekEnd = valides.filter((n) => estWeekEnd(n.date)).slice(0, 12);
   return {

@@ -40,7 +40,7 @@
       <div class="boites">
         <div class="boite"><span class="etiq">Efficacité</span><strong>{pro.efficaciteMoy != null ? `${Math.round(pro.efficaciteMoy)} %` : '—'}</strong><span class="sous">cible ≥ {REPERES.efficaciteBonne} %</span></div>
         <div class="boite"><span class="etiq">Endormissement</span><strong>{pro.latenceMoy != null ? `${Math.round(pro.latenceMoy)} min` : '—'}</strong><span class="sous">cible ≤ {REPERES.latenceBonne} min</span></div>
-        <div class="boite"><span class="etiq">Dette (7 jours)</span><strong>{texteHM(Math.round(pro.detteMin))}</strong><span class="sous">par rapport à 8 h par nuit</span></div>
+        <div class="boite"><span class="etiq">Dette (7 jours)</span><strong>{texteHM(Math.round(pro.detteMin))}</strong><span class="sous">par rapport à {texteHM(REPERES.dureeCibleMin)} par nuit{pro.nbNuitsDette < 7 ? `, sur ${pro.nbNuitsDette} nuit${pro.nbNuitsDette > 1 ? 's' : ''} mesurée${pro.nbNuitsDette > 1 ? 's' : ''}` : ''}</span></div>
         {#if h}<div class="boite"><span class="etiq">Régularité du coucher</span><strong>± {texteHM(Math.round(h.ecartCoucherMin / 2))}</strong><span class="sous">écart sur la période</span></div>{/if}
       </div>
       <p class="synthese">{synthese(nuits, pro)}</p>

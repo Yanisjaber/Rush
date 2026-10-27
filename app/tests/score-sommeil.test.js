@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scorePalier, efficacitePct, latenceMin, scoreNuit, qualificatifDe, tonDe, preparer, texteHM, moyenneHeure, analyserHoraires, analyser, signauxPhysio, synthese, planAction, comparaisons, bandeStress, ecartHeures, tesDernieresNuits } from '../src/lib/data/score-sommeil.js';
+import { scorePalier, efficacitePct, latenceMin, scoreNuit, qualificatifDe, tonDe, preparer, texteHM, moyenneHeure, analyserHoraires, analyser, signauxPhysio, synthese, planAction, comparaisons, bandeStress, ecartHeures, tesDernieresNuits, nuitsDeLaSemaine } from '../src/lib/data/score-sommeil.js';
 
 const nuitParfaite = (date = '2026-10-10') => ({
   date, bedtime: `${date} 23:00`, wake_time: `${date} 07:30`, total_sec: 28800, awake_sec: 1200, awake_count: 1,
@@ -177,4 +177,15 @@ test('cible de durée : 8 h partout (dette, coucher visé, plan d\'action)', () 
   assert.equal(pro.detteMin, 7 * 60); // 1 h manquante par nuit × 7 nuits
   assert.equal(pro.horaires.coucherVise, '23h00'); // lever 7h − 8 h
   assert.ok(planAction(pro).some((a) => a.texte.includes('vise plutôt 8h00')));
+});
+
+test('7 derniers jours : par dates, un trou de synchronisation n\'est pas comblé par de vieilles nuits', () => {
+  // 5 nuits récentes, puis rien pendant 3 semaines, puis 6 vieilles nuits
+  const recentes = [30, 29, 28, 27, 26].map((j) => nuitParfaite(`2026-10-${j}`));
+  const vieilles = [5, 4, 3, 2, 1, 0].map((j) => nuitParfaite(`2026-10-0${j + 1}`));
+  const nuits = preparer([...recentes, ...vieilles]);
+  assert.equal(nuitsDeLaSemaine(nuits, 0).length, 5);
+  assert.equal(nuitsDeLaSemaine(nuits, 7).length, 0);
+  assert.equal(comparaisons(nuits).recent, null); // rien dans les 7 jours d'avant : pas de « tendance »
+  assert.equal(analyser(nuits).nbNuitsDette, 5);
 });
