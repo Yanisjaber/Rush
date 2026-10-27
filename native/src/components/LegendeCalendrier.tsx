@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SvgXml } from 'react-native-svg';
 import { LogoNote } from '@/components/LogoNote';
 import { couleurNote } from '@/data/annotations';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
@@ -44,7 +45,7 @@ export function LegendeCalendrier() {
         { marque: contour, titre: 'Séance prévue', precision: 'Pas encore faite.' },
         { marque: carre, titre: 'Compétition', precision: '' },
         { marque: <Text style={[typo.micro, { color: p.texteDoux }]}>+2</Text>, titre: 'Plus de 4 marques', precision: 'Trois points, puis « +2 » : le nombre qui reste.' },
-        { marque: <View style={[styles.barre, { backgroundColor: p.traitFort }]} />, titre: 'Repos', precision: 'Un jour de repos posé, sans séance.' },
+        { marque: <SvgXml xml={`<svg viewBox="0 0 24 24" stroke="${p.texteDoux}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M19.5 14.2A8 8 0 1 1 9.8 4.5a6.4 6.4 0 0 0 9.7 9.7z"/></svg>`} width={14} height={14} />, titre: 'Repos', precision: 'Une petite lune. Le détail du jour a sa ligne « Jour de repos ».' },
         { marque: <View style={[styles.bande, { backgroundColor: couleurNote(undefined) }]} />, titre: 'Cycle', precision: 'Une bande au bas de la case, de la couleur du cycle.' },
         { marque: logos, titre: 'Notes', precision: 'Note, maladie, blessure, indisponible : un logo dans le coin.' },
         {
@@ -121,7 +122,6 @@ const styles = StyleSheet.create({
   ligne: { alignItems: 'center', marginTop: -espace.e3 + 3, marginBottom: -4 },
   point: { width: 6, height: 6, borderRadius: 3 },
   carre: { width: 6, height: 6, borderRadius: 1.5, borderWidth: 1 },
-  barre: { width: 10, height: 3, borderRadius: 2 },
   bande: { width: 24, height: 4, borderRadius: 2 },
   aide: { paddingHorizontal: 8, paddingVertical: 2, alignItems: 'center', justifyContent: 'center' },
   voile: { backgroundColor: 'rgba(0,0,0,0.45)' },

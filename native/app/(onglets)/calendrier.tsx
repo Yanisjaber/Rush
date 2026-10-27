@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
 import { Bloc } from '@/components/Bloc';
@@ -243,7 +244,16 @@ function Carte({ valeur, unite, legende, serree }: { valeur: string; unite?: str
   );
 }
 
-// Les marques d'un jour (au plus cinq points) : séance faite = point plein de la couleur du sport, prévue = contour, compétition = carré.
+// La petite lune du repos : dans la case d'un jour de repos (sans autre marque) et en tête du détail du jour
+function LuneRepos({ taille, couleur }: { taille: number; couleur: string }) {
+  return (
+    <Svg width={taille} height={taille} viewBox="0 0 24 24" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Path d="M19.5 14.2A8 8 0 1 1 9.8 4.5a6.4 6.4 0 0 0 9.7 9.7z" stroke={couleur} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </Svg>
+  );
+}
+
+// Les marques d'un jour (au plus quatre points) : séance faite = point plein de la couleur du sport, prévue = contour, compétition = carré.
 // Une note n'est pas un point : elle met un petit logo dans le coin de la case (voir LogosNotes).
 function marquesDe(j: JourGrille): { cle: string; type: 'fait' | 'prevu' | 'objectif'; couleur?: string }[] {
   return [
@@ -314,7 +324,7 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
             <View key={m.cle} style={[styles.carre, { backgroundColor: p.dossardFond, borderColor: p.texte }]} />
           ),
         )}
-        {jour.repos && !marques.length ? <View style={[styles.barre, { backgroundColor: p.traitFort }]} /> : null}
+        {jour.repos && !marques.length ? <LuneRepos taille={12} couleur={p.texteDoux} /> : null}
         {marques.length > MAX_POINTS ? <Text style={[styles.plus, { color: p.texteDoux }]}>+{marques.length - POINTS_SI_PLUS}</Text> : null}
       </View>
     </Pressable>
@@ -418,6 +428,17 @@ function Detail({ jour }: { jour: JourGrille }) {
           <Text style={[styles.detailPlusTexte, { color: p.fond }]}>+</Text>
         </Pressable>
       </View>
+      {/* Un jour de repos : une ligne fine sous le titre (la lune, « Jour de repos », « Retirer »), les séances éventuelles restent dessous */}
+      {jour.repos ? (
+        <View style={styles.reposLigne}>
+          <LuneRepos taille={16} couleur={p.texteDoux} />
+          <Text style={[typo.petit, { color: p.texteDoux }]}>Jour de repos</Text>
+          <View style={[styles.reposTrait, { backgroundColor: p.trait }]} />
+          <Pressable onPress={() => choisirAjout('repos')} accessibilityRole="button" accessibilityLabel="Retirer le jour de repos" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.reposRetirer}>
+            <Text style={[typo.petit, { color: p.texteDoux }]}>Retirer</Text>
+          </Pressable>
+        </View>
+      ) : null}
       {/* Les notes de santé du jour : une pastille par note (logo + titre), on la touche pour le détail */}
       {jour.notes.length ? (
         <View style={styles.notesPastilles}>
@@ -604,7 +625,6 @@ const styles = StyleSheet.create({
   coin: { position: 'absolute', top: 1, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 1 },
   bandes: { position: 'absolute', left: 0, right: 0, bottom: 0, gap: 1 },
   bande: { height: 4 },
-  barre: { width: 10, height: 3, borderRadius: 2 },
   plus: { fontSize: 8, lineHeight: 8, fontFamily: police.texte600 },
   detailTete: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   detailPlus: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
@@ -612,6 +632,9 @@ const styles = StyleSheet.create({
   // Une séance du jour : une barre de la couleur du sport (en pointillés si elle est prévue), son nom et ses détails, sa durée à droite
   ligneSeance: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, borderTopWidth: 1 },
   ligneBarre: { width: 6, alignSelf: 'stretch', marginVertical: 8, borderRadius: 3 },
+  reposLigne: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
+  reposTrait: { flex: 1, height: 1 },
+  reposRetirer: { minHeight: 44, justifyContent: 'center' },
   tiret: { fontSize: 28, lineHeight: 32 },
   seance: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, borderRadius: rayon.base, paddingHorizontal: 14 },
   objectif: { borderRadius: rayon.base, paddingHorizontal: 12, paddingVertical: 8 },
