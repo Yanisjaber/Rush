@@ -10,6 +10,7 @@ import './lib/design/tokens.css';
 import './lib/design/global.css';
 
 import App from './App.svelte';
+import EnRefonte from './EnRefonte.svelte';
 import { migrerClesLocales } from './lib/stockage-local.js';
 
 // Pas de zoom au pincement : Safari sur iPhone ignore parfois la balise viewport, ses gestes de zoom sont donc bloqués ici aussi.
@@ -27,4 +28,7 @@ try {
   document.documentElement.dataset.theme = 'dark';
 }
 
-mount(App, { target: document.getElementById('app') });
+// Refonte en cours : l'app web est remplacée par un écran d'attente. Passer à false pour la rouvrir.
+const EN_REFONTE = true;
+
+mount(EN_REFONTE ? EnRefonte : App, { target: document.getElementById('app') });

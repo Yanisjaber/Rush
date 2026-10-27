@@ -13,6 +13,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Code, noms de fichiers et de variables : comme dans le projet. Commentaires en français.
 - On ne parle plus de « v1 » ni de « v2 » : il n'y a qu'**une seule app**. (L'ancienne version est archivée, voir plus bas.)
 
+## Gel de `app/` (depuis le 28 oct. 2026)
+
+- Le site web (`app/`) est **en refonte et gelé** : `src/main.js` affiche `EnRefonte.svelte` à la place de l'app (constante `EN_REFONTE`). On travaille **uniquement sur `native/`**.
+- Ne modifie **rien** dans `app/` sans accord explicite de Yanis (pas de corrections de calcul en double, pas de refactor). Les calculs dupliqués ne se synchronisent plus côté web.
+- Pour rouvrir le site : `EN_REFONTE = false` dans `app/src/main.js`.
+
 ## Vue d'ensemble
 
 Rush : app d'entraînement et de récupération pour **tout sport de performance lié à un entraînement physique et une forme** (pas de sports collectifs, sauf le football, ajouté au catalogue le 27 oct.). Accueil composé de widgets selon les sports de l'utilisateur, mode édition, deux coques (mobile simple, desktop complet). Front **Svelte 5 + Vite 8** (dossier `app/`), backend **Supabase** (Postgres + RLS + Edge Functions Deno), publié sur GitHub Pages (`https://yanisjaber.github.io/Rush/`), utilisable en PWA. Inscription ouverte (confirmation par e-mail, SMTP Brevo).
