@@ -69,7 +69,7 @@ export function LegendeCalendrier() {
     {
       titre: 'Colonne « Sem. »',
       exemples: [
-        { marque: <Text style={[typo.micro, { color: p.texteDoux }]}>5h40</Text>, titre: 'Le temps de la semaine', precision: 'Avec un sport choisi, sa distance ou ses séries s’ajoutent.' },
+        { marque: <Text style={[typo.micro, { color: p.texteDoux }]}>5h40</Text>, titre: 'Le temps de la semaine', precision: 'Le fait seulement ; une semaine à venir montre le prévu. Avec un sport choisi, sa distance ou ses séries s’ajoutent.' },
         { marque: barres, titre: 'Une barre par jour', precision: 'De lundi à dimanche, à la hauteur du temps. Pâle : prévu seulement. Grise sur « Tous », de la couleur du sport sinon.' },
       ],
     },

@@ -11,6 +11,7 @@ Liste tenue à jour avec Yanis (écran `native/app/(onglets)/calendrier.tsx`). D
 
 - **Légende et « Réessayer »** (27 octobre) : une petite phrase sous la grille (« Que signifient les points ? ») qui ouvre le détail de toutes les marques ; 4 points au plus par jour, sinon 3 et « +N » ; le message d'erreur a un bouton « Réessayer ». Football quitte le catalogue (les sports collectifs restent « Autre sport »).
 - **Colonne « Sem. »** (27 octobre, décidé avec Yanis) : elle montre la semaine entière, même quand elle déborde sur le mois voisin ; les pastilles du haut, elles, ne comptent que le mois. On garde ça.
+- **Fait et prévu dans les totaux** (27 octobre, décidé avec Yanis) : le temps et les kilomètres (ou séries) d'une semaine et de la carte du sport ne comptent que le fait ; une semaine pas encore commencée montre le prévu. Les petites barres de la colonne gardent le fait et le prévu (prévu en pâle).
 
 - **Notes de santé détaillées** (24 octobre, en local, pas encore poussé) : quatre types (Note, Maladie, Blessure, Indisponible) avec des menus déroulants propres à chacun (nom de la maladie, symptômes à cocher, gravité ; zone du corps avec silhouette, côté, nature, douleur ; motif, lieu), une feuille calendrier pour la période, et un petit logo par type sur les jours du calendrier (deux au plus par case). Toucher une note ouvre une fenêtre de détail. Code : `src/data/sante-notes.ts`, `ChampsNote.tsx`, `ChampPeriode.tsx`, `LogoNote.tsx`. Migration `2026-10-24_day_notes_details.sql` (colonne `details`, type `indisponible`) appliquée sur la vraie base le 24 octobre. Pas fait : la blessure « en cours » sans date de fin.
 - **Import d'une activité depuis un fichier** (24 octobre) : « Importer » remplace « Modèle » dans le « + ». Un fichier `.fit`, `.gpx` ou `.tcx` s'ouvre dans un pop-up (carte Apple, profil d'altitude, six chiffres) avec Enregistrer, Modifier ou Annuler. Les flux (gzip), la trace GPX, les tours (colonne `lap_details`, migration appliquée) et les chiffres de résumé partent avec l'activité. Code : `src/data/import-activite.ts`, `apercu-import.ts`, `app/ajout-import.tsx`, `ApercuImport.tsx`. L'écran Modèles existe toujours mais n'a plus d'entrée.
@@ -26,7 +27,6 @@ Liste tenue à jour avec Yanis (écran `native/app/(onglets)/calendrier.tsx`). D
 
 - **Le thème clair** : jamais vérifié sur le calendrier (bandes teintées, colonne « Sem. », pastilles, jours des mois voisins).
 - **Toucher une semaine** (colonne « Sem. ») pour voir son détail jour par jour.
-- **Les carrés de la carte du sport** (kilomètres ou séries) comptent le fait et le prévu ensemble, alors que « séances » et « de sport » ne comptent que le fait : choisir et aligner.
 
 ## À débloquer côté base
 

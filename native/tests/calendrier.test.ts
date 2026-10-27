@@ -166,32 +166,39 @@ const semaineDu = (g: ReturnType<typeof grilleMois>, iso: string) => g.semaines.
 
 test('chiffresSemaine : sur « Tous », le temps seul', () => {
   const g = grilleMois(2026, 9, { seances: [avecDistance('a', '2026-10-19', 'Run', 60, 10.4), avecDistance('b', '2026-10-21', 'Ride', 90, 32)], planifiees: [prevueCal('p', '2026-10-24', 60)] }, auj);
-  assert.deepEqual(chiffresSemaine(semaineDu(g, '2026-10-19'), 'tout'), { heures: 3.5, secondes: 12600, principale: null }); // 60 + 90 + 60 minutes
+  assert.deepEqual(chiffresSemaine(semaineDu(g, '2026-10-19'), 'tout', '2026-10-19'), { heures: 2.5, secondes: 9000, principale: null }); // semaine commencée : le fait seul (60 + 90 minutes)
 });
 
-test('chiffresSemaine : un sport montre son temps ET son info principale (kilomètres, séries), faits et prévus ensemble', () => {
+test('chiffresSemaine : un sport montre son temps ET son info principale (kilomètres, séries), le fait seul dans une semaine commencée', () => {
   const g = grilleMois(2026, 9, {
     seances: [avecDistance('a', '2026-10-19', 'Run', 60, 10.4, 200), avecDistance('b', '2026-10-21', 'Run', 30, 5.15, 100)],
     planifiees: [{ ...prevueCal('p', '2026-10-24', 60), km: 12 }],
     series: [{ date: '2026-10-19' }, { date: '2026-10-19' }, { date: '2026-10-20' }],
   }, auj);
   const sem = semaineDu(g, '2026-10-19');
-  assert.deepEqual(chiffresSemaine(sem, 'course'), { heures: 2.5, secondes: 9000, principale: { valeur: 27.6, unite: 'km' } }); // 10,4 + 5,15 + 12 = 27,55
-  assert.deepEqual(chiffresSemaine(sem, 'muscu').principale, { valeur: 3, unite: 'series' });
-  assert.equal(chiffresSemaine(sem, 'hyrox').principale, null); // Hyrox n'a pas de distance : le temps seul
-  assert.deepEqual(chiffresSemaine(sem, 'aviron').principale, { valeur: 27.6, unite: 'km' }); // un sport sans règle : les kilomètres
+  assert.deepEqual(chiffresSemaine(sem, 'course', '2026-10-21'), { heures: 1.5, secondes: 5400, principale: { valeur: 15.6, unite: 'km' } }); // 10,4 + 5,15 = 15,55 (les 12 km prévus ne comptent pas)
+  assert.deepEqual(chiffresSemaine(sem, 'muscu', '2026-10-21').principale, { valeur: 3, unite: 'series' });
+  assert.equal(chiffresSemaine(sem, 'hyrox', '2026-10-21').principale, null); // Hyrox n'a pas de distance : le temps seul
+  assert.deepEqual(chiffresSemaine(sem, 'aviron', '2026-10-21').principale, { valeur: 15.6, unite: 'km' }); // un sport sans règle : les kilomètres
 });
 
 test('chiffresSemaine : une info principale à zéro n\'est pas affichée ; une semaine vide a zéro heure', () => {
   const g = grilleMois(2026, 9, { seances: [seanceCal('m', '2026-10-19', 'WeightTraining', 60, 40)] }, auj);
-  assert.deepEqual(chiffresSemaine(semaineDu(g, '2026-10-19'), 'muscu'), { heures: 1, secondes: 3600, principale: null }); // pas de série enregistrée
-  assert.deepEqual(chiffresSemaine(g.semaines[0], 'course'), { heures: 0, secondes: 0, principale: null });
+  assert.deepEqual(chiffresSemaine(semaineDu(g, '2026-10-19'), 'muscu', '2026-10-19'), { heures: 1, secondes: 3600, principale: null }); // pas de série enregistrée
+  assert.deepEqual(chiffresSemaine(g.semaines[0], 'course', '2026-10-19'), { heures: 0, secondes: 0, principale: null });
 });
 
 
-test('chiffresSemaine : en natation tout est en mètres (faits et prévus ensemble)', () => {
+test('chiffresSemaine : en natation tout est en mètres (le fait seul dans une semaine commencée)', () => {
   const g = grilleMois(2026, 9, { seances: [avecDistance('a', '2026-10-19', 'Swim', 40, 2.4), avecDistance('b', '2026-10-21', 'Swim', 30, 1.55)], planifiees: [{ ...prevueCal('p', '2026-10-24', 45), km: 2, sport: 'Swim' }] }, auj);
-  assert.deepEqual(chiffresSemaine(semaineDu(g, '2026-10-19'), 'natation').principale, { valeur: 5950, unite: 'm' }); // 2400 + 1550 + 2000
+  assert.deepEqual(chiffresSemaine(semaineDu(g, '2026-10-19'), 'natation', '2026-10-22').principale, { valeur: 3950, unite: 'm' }); // 2400 + 1550 (les 2000 prévus ne comptent pas)
+});
+
+test('chiffresSemaine : une semaine pas encore commencée montre le prévu, la semaine en cours (même un jour avant la fin) ne le montre pas', () => {
+  const g = grilleMois(2026, 9, { planifiees: [{ ...prevueCal('p', '2026-10-27', 60), km: 12 }, { ...prevueCal('q', '2026-10-29', 30), km: 5 }] }, auj);
+  const sem = semaineDu(g, '2026-10-27'); // du lundi 26 au dimanche 1er novembre
+  assert.deepEqual(chiffresSemaine(sem, 'course', '2026-10-25'), { heures: 1.5, secondes: 5400, principale: { valeur: 17, unite: 'km' } }); // la veille du lundi : semaine à venir
+  assert.deepEqual(chiffresSemaine(sem, 'course', '2026-10-26'), { heures: 0, secondes: 0, principale: null }); // le lundi : la semaine a commencé, rien de fait
 });
 
 test('compositionJour : le fait par sport (le plus long d\'abord) et le prévu', () => {

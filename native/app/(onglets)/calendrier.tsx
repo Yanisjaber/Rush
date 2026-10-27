@@ -86,7 +86,7 @@ export default function Calendrier() {
   const seancesDuMois = dansMois.flatMap((j) => j.seances);
   const tempsDuMois = seancesDuMois.reduce((t, s) => t + (s.moving_time || 0), 0);
   const chargeDuMois = dansMois.reduce((t, j) => t + chargeJour(j), 0);
-  const principaleDuMois = chiffresSemaine(dansMois, filtre).principale;
+  const principaleDuMois = chiffresSemaine(dansMois, filtre, aujourdhui).principale;
   const titre = grille.titre.charAt(0).toUpperCase() + grille.titre.slice(1);
   const estMoisCourant = cible.annee === maintenant.getFullYear() && cible.mois === maintenant.getMonth();
   const detail = jours.find((j) => j.iso === choisi) ?? null;
@@ -189,7 +189,7 @@ export default function Calendrier() {
                       </View>
                     ))}
                   </View>
-                  <ProfilSemaine semaine={semaine} maxi={maxiJour} mono={filtre === 'tout'} filtre={filtre} />
+                  <ProfilSemaine semaine={semaine} maxi={maxiJour} mono={filtre === 'tout'} filtre={filtre} aujourdhui={aujourdhui} />
                 </View>
               ))}
             </View>
@@ -340,12 +340,12 @@ const nombre = (n: number, unite?: UniteSemaine) => (unite === 'm' ? formatNombr
 // Le récap de la semaine : le temps et l'info du sport en haut (à la hauteur du haut des cases) et, en bas (à la hauteur du bas des cases), le profil des sept jours :
 // une petite barre par jour, de lundi à dimanche, à la hauteur du temps du jour, de la couleur de son sport dominant, pâle quand il n'y a que du prévu.
 // Sur « Tous », ses barres sont grises (aucun sport n'est mis en avant) et il n'y a que le temps ; la couleur et l'info du sport reviennent quand on choisit un sport.
-function ProfilSemaine({ semaine, maxi, mono, filtre }: { semaine: JourGrille[]; maxi: number; mono: boolean; filtre: string }) {
+function ProfilSemaine({ semaine, maxi, mono, filtre, aujourdhui }: { semaine: JourGrille[]; maxi: number; mono: boolean; filtre: string; aujourdhui: string }) {
   const p = usePalette();
   const r = resumeSemaine(semaine);
   const total = r.faites + r.prevues;
   const jours = profilSemaine(semaine);
-  const c = chiffresSemaine(semaine, filtre);
+  const c = chiffresSemaine(semaine, filtre, aujourdhui);
   return (
     <View
       accessible

@@ -245,9 +245,14 @@ export function profilSemaine(semaine: JourGrille[]): JourProfil[] {
   });
 }
 
-/** Les kilomètres d'un jour : ceux des séances faites et ceux des séances prévues (hors compétitions). */
-export const kmJour = (j: JourGrille): number =>
-  j.seances.reduce((t, s) => t + (Number(s.distance_km) > 0 ? Number(s.distance_km) : 0), 0) + j.planifiees.reduce((t, x) => t + (Number(x.km) > 0 ? Number(x.km) : 0), 0);
+/** Les kilomètres d'un jour : ceux des séances faites et, si `avecPrevu`, ceux des séances prévues (hors compétitions). */
+export const kmJour = (j: JourGrille, avecPrevu = true): number =>
+  j.seances.reduce((t, s) => t + (Number(s.distance_km) > 0 ? Number(s.distance_km) : 0), 0) +
+  (avecPrevu ? j.planifiees.reduce((t, x) => t + (Number(x.km) > 0 ? Number(x.km) : 0), 0) : 0);
+
+/** Le temps d'un jour : ses séances faites et, si `avecPrevu`, ses séances prévues (hors compétitions), en secondes. */
+const secondesDuJour = (j: JourGrille, avecPrevu: boolean): number =>
+  j.seances.reduce((t, s) => t + (s.moving_time || 0), 0) + (avecPrevu ? j.planifiees.reduce((t, x) => t + (Number(x.duration) > 0 ? Number(x.duration) * 60 : 0), 0) : 0);
 
 export type UniteSemaine = 'km' | 'm' | 'series';
 
@@ -284,14 +289,16 @@ export interface ChiffresSemaine {
 
 /**
  * Les deux infos de la colonne de la semaine : toujours le temps, et pour un sport choisi son info principale (voir METRIQUE_DU_SPORT).
- * Le fait et le prévu comptent ensemble.
+ * Une semaine commencée (ou passée) ne compte que le fait ; une semaine pas encore commencée (son premier jour est après `aujourdhui`, en AAAA-MM-JJ)
+ * montre le prévu, puisqu'il n'y a encore rien de fait. Sert aussi à un mois entier (la liste de ses jours).
  */
-export function chiffresSemaine(semaine: JourGrille[], filtre: string): ChiffresSemaine {
-  const secondes = semaine.reduce((t, j) => t + secondesJour(j), 0);
+export function chiffresSemaine(semaine: JourGrille[], filtre: string, aujourdhui: string): ChiffresSemaine {
+  const avecPrevu = semaine.length > 0 && semaine[0].iso > aujourdhui;
+  const secondes = semaine.reduce((t, j) => t + secondesDuJour(j, avecPrevu), 0);
   const heures = Math.round((secondes / 3600) * 10) / 10;
   const unite = Object.hasOwn(METRIQUE_DU_SPORT, filtre) ? METRIQUE_DU_SPORT[filtre] : 'km';
   if (!unite) return { heures, secondes, principale: null };
-  const valeur = unite === 'series' ? semaine.reduce((t, j) => t + j.series, 0) : semaine.reduce((t, j) => t + kmJour(j), 0) * (unite === 'm' ? 1000 : 1);
+  const valeur = unite === 'series' ? semaine.reduce((t, j) => t + j.series, 0) : semaine.reduce((t, j) => t + kmJour(j, avecPrevu), 0) * (unite === 'm' ? 1000 : 1);
   if (!(valeur > 0)) return { heures, secondes, principale: null };
   return { heures, secondes, principale: { valeur: unite === 'km' ? Math.round(valeur * 10) / 10 : Math.round(valeur), unite } };
 }
