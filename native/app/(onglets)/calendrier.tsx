@@ -17,7 +17,7 @@ import { LegendeCalendrier } from '@/components/LegendeCalendrier';
 import { LogoNote } from '@/components/LogoNote';
 import { ResumeJour } from '@/components/ResumeJour';
 import { SelecteurMois } from '@/components/SelecteurMois';
-import { chargeJour, chargeSeance, chiffresMois, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, kmJour, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
+import { chargeJour, chargeSeance, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, kmJour, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
 import { couleurNote, libelleNote } from '@/data/annotations';
 import { titreNote } from '@/data/sante-notes';
 import { avancementCycle, cycleVisible } from '@/data/cycles';
@@ -152,9 +152,9 @@ export default function Calendrier() {
 
         {/* Les chiffres du mois en cartes : séances, temps, charge et, pour un sport qui en a une, son info principale (kilomètres ou séries, comme la colonne « Sem. ») */}
         <View style={styles.cartes}>
-          <Carte valeur={String(mois.seances)} unite="séan." legende={mois.seances > 1 ? 'séances' : 'séance'} serree={!!principaleDuMois} />
-          <Carte valeur={formatDuree(mois.secondes)} legende="de sport" serree={!!principaleDuMois} />
-          <Carte valeur={mois.charge.toLocaleString('fr-FR')} unite="pts" legende="points de charge" serree={!!principaleDuMois} />
+          <Carte valeur={String(seancesDuMois.length)} unite="séan." legende={seancesDuMois.length > 1 ? 'séances' : 'séance'} serree={!!principaleDuMois} />
+          <Carte valeur={formatDuree(tempsDuMois)} legende="de sport" serree={!!principaleDuMois} />
+          <Carte valeur={chargeDuMois.toLocaleString('fr-FR')} unite="pts" legende="points de charge" serree={!!principaleDuMois} />
           {principaleDuMois ? <Carte valeur={nombre(principaleDuMois.valeur, principaleDuMois.unite)} unite={UNITES[principaleDuMois.unite].court} legende={UNITES[principaleDuMois.unite].dit} serree /> : null}
         </View>
 
@@ -520,7 +520,7 @@ function Detail({ jour }: { jour: JourGrille }) {
           {jour.objectifs.map((o) => (
             <Pressable
               key={o.id}
-              onPress={() => router.push({ pathname: '/prevue', params: { id: o.id } })}
+              onPress={() => router.push({ pathname: '/prevue', params: { id: o.id, competition: '1' } })}
               accessibilityRole="button"
               accessibilityLabel={`Compétition : ${o.name}. Voir le détail`}
               style={[styles.objectif, { backgroundColor: p.dossardFond, marginTop: 8 }]}
