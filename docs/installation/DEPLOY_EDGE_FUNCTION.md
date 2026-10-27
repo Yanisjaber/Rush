@@ -1,124 +1,94 @@
-# Déploiement de l'Edge Function Strava OAuth
+# Connexion Strava : déployer les Edge Functions
 
-10 étapes (20 min). Tu fais ça **une seule fois**, ensuite l'Edge Function tourne sur l'infra Supabase 24/7.
+Tu fais ça **une seule fois** (puis à chaque modif du code des fonctions). Ensuite tout tourne sur Supabase, 24h/24.
 
-## 1. Installer la Supabase CLI
+## Comment ça marche (pour comprendre)
+
+1. Dans l'app, tu touches « Connecter Strava ». Le site appelle `oauth-start` (avec ta session) : la fonction crée un **`state` aléatoire à usage unique** (table `oauth_states`, valable 10 minutes) lié à ton compte. Aucun JWT ne circule dans l'adresse.
+2. Le site t'envoie chez Strava avec ce `state`.
+3. Strava te renvoie vers `strava-oauth-callback` avec un `code` et le `state`.
+4. La fonction consomme le `state` (il disparaît), échange le `code` contre les jetons (avec le `client_secret`, qui reste côté serveur), enregistre la connexion dans `connexions_app` et **chiffre les jetons dans Vault**, puis te ramène sur l'app avec `?strava_connected=1`.
+
+Deux fonctions : **`oauth-start`** (avec JWT) et **`strava-oauth-callback`** (sans JWT : Strava n'en envoie pas, l'identité vient du `state`).
+
+## 1. Installer la CLI Supabase et se connecter
 
 ```bash
 brew install supabase/tap/supabase
-```
-
-Vérif : `supabase --version` doit afficher `1.x.x` ou plus.
-
-## 2. Se logger
-
-```bash
-cd ~/Documents/rush
 supabase login
-```
-
-Ça ouvre un navigateur, autorise.
-
-## 3. Lier le projet local au projet cloud
-
-```bash
+cd ~/Developer/coachia
 supabase link --project-ref gfavgstyyaaidkpadkxz
 ```
 
-Te demande le DB password (celui défini dans Supabase Settings → Database). Si tu l'as oublié, reset-le et retape.
+(Le mot de passe de la base est demandé au `link` ; il se réinitialise dans Supabase › Settings › Database.)
 
-## 4. Définir les secrets de la function
+## 2. Définir les secrets
 
 ```bash
 supabase secrets set STRAVA_CLIENT_ID=248376
 supabase secrets set STRAVA_CLIENT_SECRET=<TON_STRAVA_CLIENT_SECRET>
-supabase secrets set APP_REDIRECT_URL=http://localhost:8000/dashboard.html
+supabase secrets set APP_REDIRECT_URL=https://yanisjaber.github.io/Rush/
 ```
 
-> Le `STRAVA_CLIENT_SECRET` est dans ton `.env` local (variable `STRAVA_CLIENT_SECRET`). NE JAMAIS le commit. Si tu l'as accidentellement exposé, va sur https://www.strava.com/settings/api et clique "Reset Client Secret".
+- Le `client_secret` est dans ton `.env` local (ignoré par git). **Jamais** dans un commit, une réponse ou un log. S'il fuite : https://www.strava.com/settings/api › « Reset Client Secret ».
+- `APP_REDIRECT_URL` est l'adresse de repli ; les retours autorisés sont une liste blanche exacte dans `supabase/functions/_shared/oauth-state.ts` (site en ligne + `http://localhost:5173/`).
+- Vérifier : `supabase secrets list`.
 
-**Note** : Pour le `APP_REDIRECT_URL` :
-- En local : `http://localhost:8000/dashboard.html`
-- En prod : `https://yanisjaber.github.io/Rush/` (ou ton domaine custom)
-- Tu peux changer plus tard avec la même commande.
-
-Vérif : `supabase secrets list` doit montrer les 3 secrets.
-
-## 5. Déployer l'Edge Function
+## 3. Déployer
 
 ```bash
+supabase functions deploy oauth-start
 supabase functions deploy strava-oauth-callback --no-verify-jwt
 ```
 
-Le flag `--no-verify-jwt` est important : on vérifie le JWT manuellement dans le code (avec le `state`), pas via l'auth header standard.
+`--no-verify-jwt` uniquement pour le callback (Strava appelle sans en-tête d'authentification).
 
-Tu verras : `Deployed Function strava-oauth-callback...`
+## 4. Déclarer le domaine chez Strava
 
-## 6. Tester que l'Edge Function répond
+https://www.strava.com/settings/api › **Authorization Callback Domain** :
 
-```bash
-curl -i 'https://gfavgstyyaaidkpadkxz.supabase.co/functions/v1/strava-oauth-callback'
-```
-
-Doit te rediriger (HTTP 302) vers `?strava_error=missing_code_or_state`. C'est normal — tu n'as pas fourni de code.
-
-## 7. Ajouter l'URL de callback dans l'app Strava
-
-Va sur https://www.strava.com/settings/api
-
-Dans **Authorization Callback Domain**, mets :
 ```
 gfavgstyyaaidkpadkxz.supabase.co
 ```
 
-(juste le domaine, sans https:// ni path). Save.
+(juste le domaine, sans `https://` ni chemin.)
 
-## 8. Tester le flow OAuth complet
+## 5. Tester
 
-1. Recharge `localhost:8000/dashboard.html`
-2. Si tu es déjà connecté avec ton compte (qui a tes données) → tu ne verras PAS la bannière onboarding (tes données existent)
-3. Pour tester en tant que "nouveau user", crée un compte test :
-   - Supabase → Authentication → Users → Add user → email/password test
-   - Déconnecte ton compte (bouton logout) → reconnecte avec le compte test
-   - Tu vois la bannière bleue avec bouton **"Connecter Strava"**
-4. Clique sur **Connecter Strava** → tu es redirigé vers Strava → autorise
-5. Strava te redirige vers l'Edge Function qui :
-   - Échange ton code contre les tokens
-   - Enregistre la connexion dans `connexions_app` et les jetons chiffrés dans Vault
-   - Te redirige vers `localhost:8000/dashboard.html?strava_connected=1`
-6. Tu vois un toast vert "Strava connecté avec succès"
+1. Lance le site en local (`cd app && npm run dev`) et connecte-toi avec un compte de test.
+2. Paramètres › Connexions › **Connecter Strava**, autorise sur Strava.
+3. Tu reviens sur l'app avec un message de succès.
+4. Vérifie en base (Supabase › SQL Editor) :
+   ```sql
+   SELECT app, external_id, athlete_name, expires_at
+   FROM connexions_app WHERE app = 'strava';
+   ```
+   Tu dois voir la connexion. Il n'y a **aucune colonne de jeton** : ils sont dans Vault (`docs/db/JETONS_VAULT.md`).
 
-## 9. Vérification dans pgAdmin
+Pas de connexion Strava depuis l'app mobile : on passe par le site.
 
-```sql
-SELECT id, app, external_id, athlete_name, expires_at FROM connexions_app WHERE app = 'strava' AND user_id = '<UUID-DU-COMPTE-TEST>';
-```
+## Quelles fonctions existent
 
-Tu dois voir la ligne avec les tokens.
+`oauth-start`, `strava-oauth-callback`, `strava-ingest`, `strava-webhook`, `strava-streams`, `strava-laps`, `disconnect-integration`, `delete-account`, `opendossard`. Elles sont dans `supabase/functions/` ; les parties communes dans `_shared/`.
 
-## 10. Limites actuelles (à savoir)
+`--no-verify-jwt` : seulement pour `strava-oauth-callback` et `strava-webhook` (appelées par Strava, sans JWT). Les autres se déploient sans ce drapeau.
 
-- Pour l'instant, **on stocke seulement les tokens**, on ne récupère PAS encore les activités automatiquement. La Phase C (pipeline d'ingestion) viendra dans une deuxième Edge Function `strava-ingest` qui fetch les activités et les insère dans la table `activities`.
-- Le `APP_REDIRECT_URL` est un seul URL. Si tu veux qu'il marche pour LOCALHOST ET pour le DOMAINE en même temps, il faudra adapter (par exemple : déduire l'URL depuis le `Origin` header).
-
-## Mettre à jour la function après modif
-
-Si tu modifies `supabase/functions/strava-oauth-callback/index.ts`, redéploie :
+## Mettre à jour une fonction après modif
 
 ```bash
-supabase functions deploy strava-oauth-callback --no-verify-jwt
+supabase functions deploy <nom>            # ajoute --no-verify-jwt pour strava-oauth-callback et strava-webhook
 ```
 
-## Logs de la function (debug)
+## Logs (debug)
 
 ```bash
-supabase functions logs strava-oauth-callback
+supabase functions logs <nom>
 ```
 
-Affiche les logs `console.log()` / `console.error()` en temps réel.
+Ou Supabase › Edge Functions › la fonction › Logs.
 
-## Désactiver la function
+## Désactiver une fonction
 
 ```bash
-supabase functions delete strava-oauth-callback
+supabase functions delete <nom>
 ```

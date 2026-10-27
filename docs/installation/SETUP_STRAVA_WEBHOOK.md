@@ -1,112 +1,108 @@
-# Setup Strava Webhooks
+# Webhook Strava : recevoir les activités en temps réel
 
-Les webhooks Strava permettent de recevoir **en temps réel** les nouvelles activités, modifications et suppressions, au lieu de poller toutes les 15 min / 3h. Dès que tu termines une sortie et que ta montre uploade sur Strava, l'activité apparaît dans Rush en quelques secondes.
+Avec le webhook, Strava prévient Rush **dès qu'une activité est créée, modifiée ou supprimée**, au lieu d'attendre une synchro. Tu finis ta sortie, ta montre envoie à Strava, et l'activité apparaît dans Rush en quelques secondes.
 
 ## Architecture
 
 ```
-Ta montre → Strava → Webhook POST → Edge Function strava-webhook → Supabase
-                                                       └→ insert activity + recompute daily_metrics
+Ta montre → Strava → POST → Edge Function strava-webhook → Supabase
+                                          └→ récupère l'activité, l'écrit dans activities
+                                             (le trigger SQL recalcule daily_metrics)
 ```
+
+Le compte concerné est retrouvé grâce à l'identifiant d'athlète Strava (`connexions_app.external_id`). Les jetons sont lus dans Vault (`docs/db/JETONS_VAULT.md`).
+
+## Pré-requis
+
+La connexion Strava marche déjà (`DEPLOY_EDGE_FUNCTION.md`) : `STRAVA_CLIENT_ID` et `STRAVA_CLIENT_SECRET` sont donc définis.
 
 ## Étapes
 
-### 1. Générer un verify_token (secret partagé avec Strava)
+### 1. Générer un `verify_token`
 
-Choisis une chaîne aléatoire (genre 32 caractères). Exemple :
+Une chaîne aléatoire, partagée entre Strava et la fonction :
 
 ```bash
 openssl rand -hex 16
-# → e.g. "f3b8a2c1d9e4f7a6b5c8d3e2f1a4b7c8"
 ```
 
-Garde-la, tu vas en avoir besoin deux fois.
+Garde-la : tu l'utilises aux étapes 2 et 4.
 
-### 2. Ajouter le secret dans Supabase
+### 2. L'ajouter aux secrets Supabase
 
 ```bash
-supabase secrets set STRAVA_WEBHOOK_VERIFY_TOKEN=f3b8a2c1d9e4f7a6b5c8d3e2f1a4b7c8
+supabase secrets set STRAVA_WEBHOOK_VERIFY_TOKEN=<TA_CHAINE>
 ```
 
-(STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY doivent déjà être set — ils servent aussi à strava-ingest.)
+Sans ce secret, la fonction refuse la validation de Strava.
 
-### 3. Déployer l'Edge Function
+### 3. Déployer la fonction
 
 ```bash
-cd ~/Documents/rush
 supabase functions deploy strava-webhook --no-verify-jwt
 ```
 
-⚠ Le flag `--no-verify-jwt` est obligatoire : Strava n'envoie pas de JWT, on s'authentifie via le `verify_token` qui est dans l'URL au moment de l'inscription, et après les events sont juste acceptés (Strava est la seule source possible vu l'URL).
+`--no-verify-jwt` est obligatoire : Strava n'envoie pas de JWT.
 
-### 4. Créer l'abonnement Strava (1 SEULE FOIS)
+### 4. Créer l'abonnement (UNE SEULE FOIS)
 
 ```bash
-# Remplace les valeurs entre <…>
 curl -X POST https://www.strava.com/api/v3/push_subscriptions \
   -F client_id=248376 \
   -F client_secret=<TON_STRAVA_CLIENT_SECRET> \
   -F callback_url=https://gfavgstyyaaidkpadkxz.supabase.co/functions/v1/strava-webhook \
-  -F verify_token=f3b8a2c1d9e4f7a6b5c8d3e2f1a4b7c8
+  -F verify_token=<TA_CHAINE>
 ```
 
-Strava va alors :
-1. Faire un `GET` sur ton callback URL avec `hub.challenge=XXX&hub.verify_token=YYY`
-2. Si ton edge function répond `{"hub.challenge":"XXX"}` (ce qu'elle fait), l'abonnement est créé
-3. Strava te renvoie `{"id": <subscription_id>}` → note le `id`
+Strava fait alors un `GET` sur l'URL avec `hub.challenge` et `hub.verify_token` ; la fonction répond `{"hub.challenge": "..."}` si le token correspond. Strava te renvoie `{"id": <subscription_id>}` : **note cet id**.
 
-### 5. Vérifier que l'abonnement existe
+### 5. Enregistrer l'id de l'abonnement (OBLIGATOIRE)
+
+Strava ne signe pas ses events : la fonction ne traite que ceux qui portent **ton** `subscription_id`.
 
 ```bash
-curl "https://www.strava.com/api/v3/push_subscriptions?client_id=248376&client_secret=<TON_SECRET>"
+supabase secrets set STRAVA_WEBHOOK_SUBSCRIPTION_ID=<SUBSCRIPTION_ID>
 ```
 
-Tu dois voir ton abonnement avec son id et le callback_url.
+**Sans ce secret, aucun event n'est traité** (ils sont ignorés et un message d'erreur est journalisé). Ce n'est plus optionnel : sinon n'importe qui pourrait envoyer de faux events et déclencher des appels à Strava.
 
-### 6. Tester
-
-Fais une petite activité Strava (ou édite une existante depuis l'app Strava). Tu devrais voir :
-
-- Dans les logs Supabase (Dashboard → Edge Functions → strava-webhook → Logs) un message `[webhook] event: {...}`
-- Dans la table `activities` Supabase, la nouvelle ligne (ou la mise à jour)
-- Dans Rush, après un refresh, l'activité apparaît avec son TSS
-
-## Désabonnement (si besoin)
-
-```bash
-# Remplace <SUB_ID> par l'id retourné à l'étape 4
-curl -X DELETE \
-  "https://www.strava.com/api/v3/push_subscriptions/<SUB_ID>?client_id=248376&client_secret=<TON_SECRET>"
-```
-
-## Limitations Strava
-
-- **1 seul abonnement actif par client_id Strava.** Si tu re-crées, il faut d'abord supprimer l'ancien.
-- L'URL callback doit être **HTTPS** (Supabase l'est par défaut).
-- Strava attend une réponse en **< 2s** sinon il retente. L'Edge Function répond immédiatement et fait le boulot en arrière-plan via `EdgeRuntime.waitUntil`.
-- Les events sont envoyés **pour TOUS les utilisateurs** ayant autorisé ton app — d'où le lookup par `strava_athlete_id` au début du handler.
-
-## Que se passe-t-il pour chaque event ?
-
-| object_type | aspect_type | updates.authorized | Action |
-|---|---|---|---|
-| activity | create | — | Fetch activité → insert → recompute daily_metrics depuis ce jour |
-| activity | update | — | Fetch activité → upsert → recompute (au cas où TSS change) |
-| activity | delete | — | Delete activité → recompute |
-| athlete | update | "false" | Désauthorisation : supprime la connexion (connexions_app) |
-
-Le recompute de daily_metrics part de la date de l'activité et avance jusqu'à aujourd'hui, en seed-ant CTL/ATL avec la valeur de la veille (donc rapide et correct).
-
-### 5. Filtrer les faux events (recommandé)
-
-Strava ne signe pas ses events. La fonction vérifie donc que le `subscription_id` reçu est le tien. Récupère-le puis enregistre-le :
+Pour retrouver l'id plus tard :
 
 ```bash
 curl -G https://www.strava.com/api/v3/push_subscriptions \
   -d client_id=248376 -d client_secret=<TON_STRAVA_CLIENT_SECRET>
-# → [{"id": 123456, ...}]
-
-supabase secrets set STRAVA_WEBHOOK_SUBSCRIPTION_ID=123456
 ```
 
-Sans ce secret, la fonction marche mais ne filtre pas (un avertissement est loggé). Par sécurité, une désautorisation n'est appliquée qu'après vérification auprès de Strava, et une suppression d'activité seulement si Strava répond 404.
+### 6. Tester
+
+Fais une petite activité sur Strava (ou modifie-en une depuis l'app Strava), puis vérifie :
+
+- Supabase › Edge Functions › `strava-webhook` › Logs : un event reçu (le journal ne garde que le type et l'identifiant, rien de personnel) ;
+- la ligne dans la table `activities` ;
+- l'activité dans Rush, après un rafraîchissement.
+
+## Que fait la fonction pour chaque event ?
+
+| object_type | aspect_type | Action |
+|---|---|---|
+| activity | create | récupère l'activité, l'insère |
+| activity | update | récupère l'activité, la met à jour (la charge peut changer) |
+| activity | delete | supprime l'activité (seulement si Strava répond 404 pour elle) |
+| athlete | update, `authorized = false` | supprime la connexion (après vérification auprès de Strava) |
+
+La forme (CTL/ATL/TSB) est recalculée par le trigger SQL de la base.
+
+## Se désabonner (si besoin)
+
+```bash
+curl -X DELETE \
+  "https://www.strava.com/api/v3/push_subscriptions/<SUBSCRIPTION_ID>?client_id=248376&client_secret=<TON_STRAVA_CLIENT_SECRET>"
+```
+
+## Limites de Strava
+
+- **Un seul abonnement actif par `client_id`.** Pour en recréer un, supprime d'abord l'ancien (puis mets à jour `STRAVA_WEBHOOK_SUBSCRIPTION_ID`).
+- L'URL de rappel doit être en **HTTPS** (Supabase l'est).
+- Strava attend une réponse en **moins de 2 secondes**, sinon il réessaie : la fonction répond tout de suite et travaille en arrière-plan.
+- Les events arrivent pour **tous les utilisateurs** qui ont autorisé ton app Strava ; la fonction retrouve le bon compte par l'identifiant d'athlète.
+- Un event perdu (par exemple pendant une panne) est rattrapé à la synchro suivante.
