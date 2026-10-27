@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ZoneClavier } from '@/components/ZoneClavier';
 import { Bouton } from '@/components/Bouton';
 import { PastillesChoix } from '@/components/ChampsFeuille';
 import { ChampTexte } from '@/components/ChampTexte';
@@ -128,7 +129,7 @@ export function FeuilleBloc({ ouvert, bloc, metriques, sport, reference, onSuppr
     <Modal visible={ouvert} transparent animationType="fade" onRequestClose={onFermer}>
       <Pressable accessibilityLabel="Fermer" accessibilityRole="button" onPress={onFermer} style={styles.fond} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.conteneur} pointerEvents="box-none">
-        <View accessibilityViewIsModal style={[styles.feuille, { backgroundColor: p.surface, borderColor: p.traitFort, paddingBottom: bas + espace.e4 }]}>
+        <ZoneClavier modale style={[styles.feuille, { backgroundColor: p.surface, borderColor: p.traitFort, paddingBottom: bas + espace.e4 }]}>
           <View style={[styles.poignee, { backgroundColor: p.traitFort }]} />
           <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte }]}>
             {bloc ? 'Modifier le bloc' : 'Nouveau bloc'}
@@ -187,7 +188,7 @@ export function FeuilleBloc({ ouvert, bloc, metriques, sport, reference, onSuppr
               ) : null}
             </View>
           ) : null}
-        </View>
+        </ZoneClavier>
       </KeyboardAvoidingView>
     </Modal>
   );

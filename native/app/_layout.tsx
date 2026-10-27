@@ -11,6 +11,7 @@ import { BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-gr
 import { InstrumentSans_400Regular } from '@expo-google-fonts/instrument-sans/400Regular';
 import { InstrumentSans_500Medium } from '@expo-google-fonts/instrument-sans/500Medium';
 import { InstrumentSans_600SemiBold } from '@expo-google-fonts/instrument-sans/600SemiBold';
+import { ZoneClavier } from '@/components/ZoneClavier';
 import { initAuth, useAuth } from '@/stores/auth';
 import { chargerTheme } from '@/stores/theme';
 import { clair, sombre } from '@/theme/couleurs';
@@ -53,6 +54,8 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar style={palette === clair ? 'dark' : 'light'} />
+      {/* Toucher à côté d'un champ texte, n'importe où dans l'app, ferme le clavier et retire le curseur */}
+      <ZoneClavier style={{ flex: 1 }}>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -99,6 +102,7 @@ export default function RootLayout() {
           <Stack.Screen name="connexion" />
         </Stack.Protected>
       </Stack>
+      </ZoneClavier>
     </GestureHandlerRootView>
   );
 }
