@@ -12,6 +12,7 @@ import { BoutonPlus } from '@/components/BoutonPlus';
 import { ApercuCycle } from '@/components/ApercuCycle';
 import { MenuAjout, type ChoixAjout } from '@/components/MenuAjout';
 import { FeuilleNote } from '@/components/FeuilleNote';
+import { IconeSport } from '@/components/IconeSport';
 import { LegendeCalendrier } from '@/components/LegendeCalendrier';
 import { LogoNote } from '@/components/LogoNote';
 import { ResumeJour } from '@/components/ResumeJour';
@@ -484,7 +485,10 @@ function Detail({ jour }: { jour: JourGrille }) {
                 <View style={[styles.ligneBarre, { backgroundColor: couleurSport(p, s.sport) }]} />
                 <View style={{ flex: 1 }}>
                   <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte }]}>{nom}</Text>
-                  <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>{detail}</Text>
+                  <View style={styles.detailSport}>
+                    <IconeSport sport={s.sport} taille={14} />
+                    <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux, flexShrink: 1 }]}>{detail}</Text>
+                  </View>
                 </View>
                 <Text style={[typo.corpsFort, { color: p.texte }]}>{formatDuree(s.moving_time)}</Text>
               </Pressable>
@@ -505,7 +509,10 @@ function Detail({ jour }: { jour: JourGrille }) {
                 <View style={[styles.ligneBarre, { borderColor: couleur, borderWidth: 2, borderStyle: 'dotted' }]} />
                 <View style={{ flex: 1 }}>
                   <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte }]}>{nom}</Text>
-                  <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>{detail}</Text>
+                  <View style={styles.detailSport}>
+                    <IconeSport sport={x.sport} taille={14} />
+                    <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux, flexShrink: 1 }]}>{detail}</Text>
+                  </View>
                 </View>
                 {x.duration ? <Text style={[typo.corpsFort, { color: p.texteDoux }]}>{formatDuree(x.duration * 60)}</Text> : null}
               </Pressable>
@@ -627,6 +634,8 @@ const styles = StyleSheet.create({
   reposTrait: { flex: 1, height: 1 },
   reposRetirer: { minHeight: 44, justifyContent: 'center' },
   tiret: { fontSize: 28, lineHeight: 32 },
+  // Le logo du sport au début de la ligne de détail (« 4,5 km · 19 pts · 03:48 »)
+  detailSport: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   seance: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, borderRadius: rayon.base, paddingHorizontal: 14 },
   objectif: { borderRadius: rayon.base, paddingHorizontal: 12, paddingVertical: 8 },
   objectifTexte: { fontFamily: police.titre800, fontSize: 15, lineHeight: 19 },
