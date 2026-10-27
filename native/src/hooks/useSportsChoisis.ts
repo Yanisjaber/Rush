@@ -14,6 +14,7 @@ export function useSportsChoisis() {
   const { demo: sportsDemo, version } = useSportsEtat();
   const [choisis, setChoisis] = useState<string[] | null>(null);
   const [erreur, setErreur] = useState('');
+  const [lectureEchouee, setLectureEchouee] = useState(false); // la liste enregistrée n'a pas pu être lue : on n'écrit rien par-dessus
   const [envoi, setEnvoi] = useState(false);
   const famillesRef = useRef(familles);
   famillesRef.current = familles;
@@ -21,8 +22,11 @@ export function useSportsChoisis() {
   useEffect(() => {
     let annule = false;
     (async () => {
-      const liste = demo ? sportsDemo : userId ? nettoyerSports((await chargerSportsChoisis(userId)).data) : null;
+      const lue = demo || !userId ? null : await chargerSportsChoisis(userId);
       if (annule) return;
+      const liste = demo ? sportsDemo : lue ? nettoyerSports(lue.data) : null;
+      setLectureEchouee(!!lue?.erreur);
+      setErreur(lue?.erreur ?? '');
       // Une liste choisie est la vérité ; sinon on montre cochés les sports que les séances font apparaître
       setChoisis(liste && liste.length ? liste : sportsCoches(liste, famillesRef.current));
     })();
@@ -37,7 +41,7 @@ export function useSportsChoisis() {
   /** Enregistre la liste. Renvoie true si c'est fait. */
   const appliquer = useCallback(
     async (liste: string[]): Promise<boolean> => {
-      if (envoi) return false;
+      if (envoi || lectureEchouee) return false;
       const propre = nettoyerSports(liste) ?? [];
       setErreur('');
       if (demo) {
@@ -59,8 +63,8 @@ export function useSportsChoisis() {
       sportsModifies();
       return true;
     },
-    [demo, userId, envoi],
+    [demo, userId, envoi, lectureEchouee],
   );
 
-  return { choisis, setChoisis, erreur, envoi, appliquer, demo };
+  return { choisis, setChoisis, erreur, envoi, appliquer, demo, lectureEchouee };
 }

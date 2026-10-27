@@ -39,6 +39,9 @@ export const prevuesAjoutees = (): Prevue[] => prevues;
 export const notesAjoutees = (): Note[] => notes;
 export const sortiesAjoutees = (): Seance[] => sorties;
 
+/** Une séance de la démo par son identifiant : celles de l'exemple (`base`) et celles saisies pendant la démo. Null si elle n'existe pas. */
+export const seanceDeLaDemo = (id: string, base: Seance[]): Seance | null => [...base, ...sorties].find((x) => x.id === id) ?? null;
+
 /** Les notes de la démo : celles de l'exemple et celles ajoutées, avec les modifications et sans les suppressions. */
 export const notesDeLaDemo = (base: Note[]): Note[] =>
   [...base, ...notes].filter((n) => !notesSupprimees.has(n.id)).map((n) => notesRemplacees.get(n.id) ?? n);

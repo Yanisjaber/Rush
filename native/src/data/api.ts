@@ -273,7 +273,8 @@ export async function chargerObjectifHyrox(userId: string): Promise<Resultat<Obj
 /** Sports choisis par l'utilisateur (user_preferences.sports) : null s'il ne les a jamais choisis ou si la colonne n'existe pas. */
 export async function chargerSportsChoisis(userId: string): Promise<Resultat<unknown>> {
   const r = await sb.from('user_preferences').select('sports').eq('user_id', userId).maybeSingle();
-  if (r.error) return { data: null, erreur: '' }; // tolérant : sans préférences, la barre se déduit des séances
+  // L'accueil ignore cette erreur (la barre se déduit des séances) ; l'écran Mes sports, lui, s'en sert pour ne pas écraser la vraie liste
+  if (r.error) return { data: null, erreur: 'Impossible de charger tes sports.' };
   return { data: (r.data as { sports?: unknown } | null)?.sports ?? null, erreur: '' };
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { donneesDemoAccueil } from '@/data/accueil';
 import { chargerSeance, chargerTours } from '@/data/api';
 import { toursDemo } from '@/data/demo';
+import { seanceDeLaDemo } from '@/stores/ajouts';
 import { useAuth } from '@/stores/auth';
 import type { Seance, Tour } from '@/data/types';
 
@@ -28,7 +29,7 @@ export function useSeance(id: string): Etat {
     let annule = false;
     setEtat(initial);
     if (demo) {
-      const s = donneesDemoAccueil(new Date()).seances.find((x) => x.id === id) ?? null;
+      const s = seanceDeLaDemo(id, donneesDemoAccueil(new Date()).seances);
       setEtat({ ...initial, seance: s, chargement: false, tours: s ? toursDemo(s) : null, erreur: s ? '' : 'Séance introuvable.' });
       return;
     }

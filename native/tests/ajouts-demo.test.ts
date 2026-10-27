@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ajouterNoteDemo, ajouterPrevueDemo, modifierNoteDemo, modifierPrevueDemo, notesDeLaDemo, poserReposDemo, prevueCompleteDemo, prevuesDeLaDemo, reposDeLaDemo, retirerReposDemo, supprimerNoteDemo, supprimerPrevueDemo } from '../src/stores/ajouts.ts';
+import { ajouterSortieDemo, seanceDeLaDemo, ajouterNoteDemo, ajouterPrevueDemo, modifierNoteDemo, modifierPrevueDemo, notesDeLaDemo, poserReposDemo, prevueCompleteDemo, prevuesDeLaDemo, reposDeLaDemo, retirerReposDemo, supprimerNoteDemo, supprimerPrevueDemo } from '../src/stores/ajouts.ts';
 import { validerSeance, formulaireSeanceVide } from '../src/data/ajouts.ts';
-import type { Note, Prevue } from '../src/data/types.ts';
+import type { Note, Prevue, Seance } from '../src/data/types.ts';
 
 const base: Note[] = [{ id: 'exemple', type: 'texte', text: 'Un mot', color: '#60a5fa', from_date: '2026-10-20', to_date: '2026-10-20' }];
 const ligne = (texte: string) => ({ type: 'texte', text: texte, color: '#f87171', from_date: '2026-10-21', to_date: '2026-10-22' });
@@ -63,4 +63,12 @@ test('démo : une séance prévue de l\'exemple se relit, se modifie puis se sup
   supprimerPrevueDemo('prevue-exemple');
   assert.equal(prevuesDeLaDemo([prevueExemple]).length, 0);
   assert.equal(prevueCompleteDemo('prevue-exemple', [prevueExemple]), null);
+});
+
+test('démo : une activité saisie pendant la démo se retrouve par son identifiant (fiche de la séance)', () => {
+  const exemple = [{ id: 'ex1', name: 'Sortie exemple', sport: 'Run', start_date_local: '2026-10-20T08:00:00', moving_time: 1800 }] as Seance[];
+  const ajoutee = ajouterSortieDemo({ source: 'manual', category: 'entrainement', name: 'Ma sortie', start_date_local: '2026-10-21T07:30:00', sport: 'Run', moving_time: 2700, tss: 40, rpe: null, distance_km: 7, total_elevation_gain: null, avg_heartrate: null, user_notes: null });
+  assert.equal(seanceDeLaDemo(ajoutee.id, exemple)?.name, 'Ma sortie');
+  assert.equal(seanceDeLaDemo('ex1', exemple)?.name, 'Sortie exemple');
+  assert.equal(seanceDeLaDemo('inconnue', exemple), null);
 });
