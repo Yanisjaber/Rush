@@ -38,12 +38,12 @@ const STRAVA_API = "https://www.strava.com/api/v3";
 const BATCH_SIZE = 100;
 const PER_PAGE = 100;
 
-// CORS headers pour pouvoir être appelée depuis n'importe quel domaine front
-// CORS restreint (voir _shared/cors.ts) : renseigné à chaque requête.
-let corsHeaders: Record<string, string> = {};
+// CORS restreint (voir _shared/cors.ts) : les en-têtes sont calculés PAR requête (pas de variable partagée
+// entre deux requêtes simultanées).
+Deno.serve((req) => gerer(req, corsHeadersFor(req)));
 
-Deno.serve(async (req) => {
-  corsHeaders = corsHeadersFor(req);
+async function gerer(req: Request, corsHeaders: Record<string, string>): Promise<Response> {
+  const json = (body: any, status = 200) => reponseJson(corsHeaders, body, status);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -382,15 +382,14 @@ Deno.serve(async (req) => {
     });
   } catch (e: any) {
     console.error("strava-ingest unhandled:", e);
-    return json({ error: e.message || String(e) }, 500);
+    return json({ error: "internal_error" }, 500);
   }
-});
+}
 
 // ============ HELPERS ============
-function json(body: any, status = 200): Response {
+function reponseJson(corsHeaders: Record<string, string>, body: any, status = 200): Response {
   return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status, headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
 

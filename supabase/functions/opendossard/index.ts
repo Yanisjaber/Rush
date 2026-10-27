@@ -28,8 +28,19 @@ const OD_EMAIL = Deno.env.get("OPENDOSSARD_EMAIL") || "";
 const OD_PASSWORD = Deno.env.get("OPENDOSSARD_PASSWORD") || "";
 const OD_BASE = "https://app-v2.opendossard.com/api/v2";
 
-// CORS restreint (voir _shared/cors.ts) : renseigné à chaque requête.
-let corsHeaders: Record<string, string> = {};
+// Plafond d'appels par utilisateur (les identifiants Open Dossard sont partagés par tous les comptes) :
+// 30 appels par minute, compté dans la mémoire de l'instance.
+const MAX_APPELS = 30;
+const FENETRE_MS = 60_000;
+const appels = new Map<string, number[]>();
+function tropDAppels(userId: string): boolean {
+  const maintenant = Date.now();
+  const recents = (appels.get(userId) || []).filter((t) => maintenant - t < FENETRE_MS);
+  recents.push(maintenant);
+  appels.set(userId, recents);
+  if (appels.size > 5000) appels.clear(); // garde-fou mémoire
+  return recents.length > MAX_APPELS;
+}
 
 // Cache du token OD en mémoire de l'instance (réutilisé tant qu'il est valide).
 let _odToken: string | null = null;
@@ -78,8 +89,12 @@ function qs(params: Record<string, any>): string {
   return s ? `?${s}` : "";
 }
 
-Deno.serve(async (req) => {
-  corsHeaders = corsHeadersFor(req);
+// CORS restreint (voir _shared/cors.ts) : les en-têtes sont calculés PAR requête (pas de variable partagée
+// entre deux requêtes simultanées).
+Deno.serve((req) => gerer(req, corsHeadersFor(req)));
+
+async function gerer(req: Request, corsHeaders: Record<string, string>): Promise<Response> {
+  const json = (body: any, status = 200) => reponseJson(corsHeaders, body, status);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
@@ -90,8 +105,11 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authErr } = await sbAuth.auth.getUser(jwt);
     if (authErr || !user) return json({ error: "invalid_jwt" }, 401);
 
+    if (tropDAppels(user.id)) return json({ error: "rate_limited" }, 429);
+
     if (!OD_EMAIL || !OD_PASSWORD) {
-      return json({ error: "od_credentials_missing", hint: "Définis les secrets OPENDOSSARD_EMAIL et OPENDOSSARD_PASSWORD." }, 500);
+      console.error("opendossard: secrets OPENDOSSARD_EMAIL / OPENDOSSARD_PASSWORD manquants");
+      return json({ error: "od_credentials_missing" }, 500);
     }
 
     // 2) Routage par action
@@ -99,7 +117,7 @@ Deno.serve(async (req) => {
     const action = String(body?.action || "");
 
     if (action === "search-licence") {
-      const q = String(body?.q || "").trim();
+      const q = String(body?.q || "").trim().slice(0, 80);
       if (!q) return json({ error: "missing_q" }, 400);
       // /licences/search?q= renvoie les licences correspondantes
       const data = await odGet(`/licences/search${qs({ q })}`);
@@ -115,24 +133,33 @@ Deno.serve(async (req) => {
 
     if (action === "competitions") {
       const f = body?.filters || {};
+      // Bornes : pas de limite géante, textes courts, tri parmi des valeurs connues.
+      const borne = (v: any, min: number, max: number, defaut: number) => {
+        const n = parseInt(String(v), 10);
+        return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : defaut;
+      };
+      const texte = (v: any) => (v == null ? undefined : String(v).slice(0, 80));
       const data = await odGet(`/competitions${qs({
-        offset: f.offset, limit: f.limit ?? 30,
-        search: f.search, dept: f.dept, fede: f.fede,
-        competitionType: f.competitionType,
-        startDate: f.startDate, endDate: f.endDate,
-        orderBy: f.orderBy ?? "eventDate", orderDirection: f.orderDirection ?? "ASC",
+        offset: borne(f.offset, 0, 10000, 0), limit: borne(f.limit, 1, 50, 30),
+        search: texte(f.search), dept: texte(f.dept), fede: texte(f.fede),
+        competitionType: texte(f.competitionType),
+        startDate: texte(f.startDate), endDate: texte(f.endDate),
+        orderBy: f.orderBy === "eventDate" || f.orderBy === "name" ? f.orderBy : "eventDate",
+        orderDirection: f.orderDirection === "DESC" ? "DESC" : "ASC",
       })}`);
       return json({ ok: true, competitions: data });
     }
 
     return json({ error: "unknown_action", action }, 400);
   } catch (e: any) {
-    console.error("opendossard unhandled:", e);
-    return json({ error: e.message || String(e) }, 500);
+    // Le détail (réponse d'Open Dossard) reste dans les journaux, jamais renvoyé au navigateur.
+    console.error("opendossard unhandled:", String(e?.message || e).slice(0, 300));
+    const enAmont = String(e?.message || "").startsWith("od_");
+    return json({ error: enAmont ? "od_upstream_error" : "internal_error" }, enAmont ? 502 : 500);
   }
-});
+}
 
-function json(body: any, status = 200): Response {
+function reponseJson(corsHeaders: Record<string, string>, body: any, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status, headers: { ...corsHeaders, "Content-Type": "application/json" },
   });

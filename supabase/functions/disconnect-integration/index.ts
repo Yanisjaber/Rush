@@ -32,11 +32,12 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // Tables de données effaçables (dans l'ordre des clés étrangères).
 const STEP_TABLES = ["power_profile", "daily_metrics", "activities"];
 
-// CORS restreint (voir _shared/cors.ts) : renseigné à chaque requête.
-let corsHeaders: Record<string, string> = {};
+// CORS restreint (voir _shared/cors.ts) : les en-têtes sont calculés PAR requête (pas de variable partagée
+// entre deux requêtes simultanées).
+Deno.serve((req) => gerer(req, corsHeadersFor(req)));
 
-Deno.serve(async (req) => {
-  corsHeaders = corsHeadersFor(req);
+async function gerer(req: Request, corsHeaders: Record<string, string>): Promise<Response> {
+  const json = (body: any, status = 200) => reponseJson(corsHeaders, body, status);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
@@ -68,13 +69,13 @@ Deno.serve(async (req) => {
       }
       if (only === "connexions_app") {
         const { error } = await sb.from("connexions_app").delete().eq("user_id", uid).eq("app", provider);
-        if (error) { console.error("delete connexions_app:", error.message); return json({ error: "delete_connexions_app_failed", detail: error.message }, 500); }
+        if (error) { console.error("delete connexions_app:", error.message); return json({ error: "delete_connexions_app_failed" }, 500); }
         return json({ ok: true, step: only });
       }
       // Liste blanche : on ne laisse jamais le client choisir une table au hasard.
       if (!STEP_TABLES.includes(only)) return json({ error: "invalid_step" }, 400);
       const { error } = await effacerTable(sb, only, uid);
-      if (error) { console.error(`delete ${only}:`, error.message); return json({ error: `delete_${only}_failed`, detail: error.message }, 500); }
+      if (error) { console.error(`delete ${only}:`, error.message); return json({ error: `delete_${only}_failed` }, 500); }
       return json({ ok: true, step: only });
     }
 
@@ -86,14 +87,14 @@ Deno.serve(async (req) => {
 
     for (const table of tables) {
       const { error } = await effacerTable(sb, table, uid);
-      if (error) { console.error(`delete ${table}:`, error.message); return json({ error: `delete_${table}_failed`, detail: error.message }, 500); }
+      if (error) { console.error(`delete ${table}:`, error.message); return json({ error: `delete_${table}_failed` }, 500); }
       deleted[table] = true;
     }
 
     // Supprimer la connexion de cette app uniquement (table mutualisée).
     {
       const { error } = await sb.from("connexions_app").delete().eq("user_id", uid).eq("app", provider);
-      if (error) { console.error("delete connexions_app:", error.message); return json({ error: "delete_connexions_app_failed", detail: error.message }, 500); }
+      if (error) { console.error("delete connexions_app:", error.message); return json({ error: "delete_connexions_app_failed" }, 500); }
       deleted["connexions_app"] = true;
     }
 
@@ -108,9 +109,9 @@ Deno.serve(async (req) => {
     return json({ ok: true, provider, wipe, deleted });
   } catch (e: any) {
     console.error("disconnect-integration unhandled:", e);
-    return json({ error: e.message || String(e) }, 500);
+    return json({ error: "internal_error" }, 500);
   }
-});
+}
 
 // Efface les lignes d'une table pour cet utilisateur. Pour `activities`, on ne
 // supprime QUE les séances venues de Strava (strava_id renseigné) : les séances
@@ -122,7 +123,7 @@ function effacerTable(sb: any, table: string, uid: string) {
   return q;
 }
 
-function json(body: any, status = 200): Response {
+function reponseJson(corsHeaders: Record<string, string>, body: any, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status, headers: { ...corsHeaders, "Content-Type": "application/json" },
   });

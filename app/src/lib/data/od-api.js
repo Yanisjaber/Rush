@@ -6,6 +6,7 @@ import { normaliserLicences, normaliserResultats, licenceValide } from './opendo
 function messageErreur(r) {
   const code = r.data?.error;
   if (code === 'od_credentials_missing') return "Open Dossard n'est pas configuré côté serveur.";
+  if (code === 'rate_limited' || r.statut === 429) return 'Trop de recherches d\'un coup. Attends une minute.';
   if (r.statut === 401) return 'Reconnecte-toi pour utiliser Open Dossard.';
   return 'Open Dossard ne répond pas. Réessaie dans un instant.';
 }

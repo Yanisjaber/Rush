@@ -65,11 +65,12 @@ const MMP_DURS = Array.from(new Set([...DURATIONS, ...PC_DURS])).sort((a, b) => 
 // Version du jeu de durées CLIENT (doit rester égale à __PC_VERSION dans js/app.js).
 const CLIENT_PC_VERSION = 3;
 
-// CORS restreint (voir _shared/cors.ts) : renseigné à chaque requête.
-let corsHeaders: Record<string, string> = {};
+// CORS restreint (voir _shared/cors.ts) : les en-têtes sont calculés PAR requête (pas de variable partagée
+// entre deux requêtes simultanées).
+Deno.serve((req) => gerer(req, corsHeadersFor(req)));
 
-Deno.serve(async (req) => {
-  corsHeaders = corsHeadersFor(req);
+async function gerer(req: Request, corsHeaders: Record<string, string>): Promise<Response> {
+  const json = (body: any, status = 200) => reponseJson(corsHeaders, body, status);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
@@ -123,7 +124,7 @@ Deno.serve(async (req) => {
         .is("streams_synced_at", null)
         .order("start_date_local", { ascending: false })
         .limit(limit);
-      if (todoErr) return json({ error: "query_todo_failed", detail: todoErr.message }, 500);
+      if (todoErr) return json({ error: "query_todo_failed" }, 500);
 
       // ===== 4) Fetch + stockage stream par stream =====
       for (const a of todo || []) {
@@ -198,9 +199,9 @@ Deno.serve(async (req) => {
     });
   } catch (e: any) {
     console.error("strava-streams unhandled:", e);
-    return json({ error: e.message || String(e) }, 500);
+    return json({ error: "internal_error" }, 500);
   }
-});
+}
 
 // ============ POWER PROFILE ============
 
@@ -613,7 +614,7 @@ function wattsFromStreamArray(streamArray: any[]): number[] {
 }
 
 // ============ HELPERS ============
-function json(body: any, status = 200): Response {
+function reponseJson(corsHeaders: Record<string, string>, body: any, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status, headers: { ...corsHeaders, "Content-Type": "application/json" },
   });

@@ -35,10 +35,13 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // Taille d'un lot de suppression (petit : chaque lot reste court et ne peut pas être coupé)
 const LOT = 300;
 
-let corsHeaders: Record<string, string> = {};
 
-Deno.serve(async (req) => {
-  corsHeaders = corsHeadersFor(req);
+// CORS restreint (voir _shared/cors.ts) : les en-têtes sont calculés PAR requête (pas de variable partagée
+// entre deux requêtes simultanées).
+Deno.serve((req) => gerer(req, corsHeadersFor(req)));
+
+async function gerer(req: Request, corsHeaders: Record<string, string>): Promise<Response> {
+  const json = (body: any, status = 200) => reponseJson(corsHeaders, body, status);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
@@ -69,7 +72,7 @@ Deno.serve(async (req) => {
     }
 
     // Étape « supprimer » : le compte lui-même (la cascade efface le reste, désormais léger)
-    if (etape === "supprimer") return await supprimerUtilisateur(sbAdmin, user.id);
+    if (etape === "supprimer") return await supprimerUtilisateur(sbAdmin, user.id, json);
 
     // Étapes « preparer » et « tout » : 3) Révocation chez Strava, au mieux (si elle échoue, la suppression continue :
     //    l'utilisateur peut toujours retirer l'app depuis ses réglages Strava).
@@ -95,15 +98,15 @@ Deno.serve(async (req) => {
     }
 
     // Ancien comportement (sans etape) : suppression directe
-    return await supprimerUtilisateur(sbAdmin, user.id);
+    return await supprimerUtilisateur(sbAdmin, user.id, json);
   } catch (_e) {
     console.error("delete-account unhandled");
     return json({ error: "internal_error" }, 500);
   }
-});
+}
 
 // Suppression de l'utilisateur Supabase Auth ; on journalise la vraie cause en cas d'échec (jamais de jeton)
-async function supprimerUtilisateur(sbAdmin: any, userId: string): Promise<Response> {
+async function supprimerUtilisateur(sbAdmin: any, userId: string, json: (body: any, status?: number) => Response): Promise<Response> {
   const { error: delErr } = await sbAdmin.auth.admin.deleteUser(userId);
   if (delErr) {
     console.error("delete-account: deleteUser a échoué", delErr.status || "", delErr.code || "", String(delErr.message || "").slice(0, 200));
@@ -112,7 +115,7 @@ async function supprimerUtilisateur(sbAdmin: any, userId: string): Promise<Respo
   return json({ ok: true });
 }
 
-function json(body: any, status = 200): Response {
+function reponseJson(corsHeaders: Record<string, string>, body: any, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status, headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
