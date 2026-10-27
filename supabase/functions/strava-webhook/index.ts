@@ -28,7 +28,7 @@
 //   STRAVA_WEBHOOK_VERIFY_TOKEN  ← à définir, une chaîne aléatoire qu'on partage avec Strava
 //   STRAVA_WEBHOOK_SUBSCRIPTION_ID ← id de l'abonnement (GET /push_subscriptions), filtre les faux events
 //
-// Abonnement (1 seule fois, voir SETUP_STRAVA_WEBHOOK.md) :
+// Abonnement (1 seule fois, voir docs/installation/SETUP_STRAVA_WEBHOOK.md) :
 //   curl -X POST https://www.strava.com/api/v3/push_subscriptions \
 //     -F client_id=$STRAVA_CLIENT_ID \
 //     -F client_secret=$STRAVA_CLIENT_SECRET \

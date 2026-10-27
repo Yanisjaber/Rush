@@ -11,7 +11,7 @@ export const police = {
   texte600: 'InstrumentSans_600SemiBold',
 } as const;
 
-// Échelle typographique de IDENTITE.md §5 (taille / interligne en pt).
+// Échelle typographique de docs/native/IDENTITE.md §5 (taille / interligne en pt).
 // Minimum absolu : 12 pt. Les chiffres de données sont tabulaires pour que les colonnes s'alignent.
 export const typo = {
   display: { fontFamily: police.titre800, fontSize: 56, lineHeight: 56, fontVariant: ['tabular-nums'] },

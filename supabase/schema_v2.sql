@@ -2,8 +2,8 @@
 -- # PÉRIMÉ (28/10/2026) : ce fichier est l'ancien schéma de départ.
 -- # Il décrit des tables qui n'existent plus (competitions, strava_connections,
 -- # whoop…) et ignore les colonnes récentes. NE PAS L'EXÉCUTER.
--- # La référence est MODELE_DONNEES.md + le journal supabase/migrations/
--- # (voir supabase/LISEZMOI_MIGRATIONS.md).
+-- # La référence est docs/db/MODELE_DONNEES.md + le journal supabase/migrations/
+-- # (voir docs/db/LISEZMOI_MIGRATIONS.md).
 -- ############################################################
 
 -- ============================================================

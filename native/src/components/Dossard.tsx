@@ -6,7 +6,7 @@ import { police, typo } from '@/theme/typo';
 import { useRemplir } from '@/components/taille';
 import { usePalette } from '@/theme/usePalette';
 
-// Le dossard : la signature visuelle de l'app (IDENTITE.md §3).
+// Le dossard : la signature visuelle de l'app (docs/native/IDENTITE.md §3).
 // Un bloc clair avec un liseré de sport en haut, quatre points d'attache, un grand nombre
 // (J-63, PUSH…) et le contexte. Tout est du texte brut : React Native n'interprète aucun HTML.
 // taille : 'l' (grand, avec place pour le chiffre) ou 'm' (bandeau bas comme celui de Muscu : le texte à gauche, le chiffre à droite).
