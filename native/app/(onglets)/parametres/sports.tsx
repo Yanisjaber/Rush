@@ -13,10 +13,20 @@ import { usePalette } from '@/theme/usePalette';
 // Les sports que tes séances révèlent (muscu, Hyrox…) apparaissent déjà cochés. L'ordre des pastilles = l'ordre où tu coches.
 export default function MesSports() {
   const p = usePalette();
-  const { choisis, setChoisis, erreur, envoi, appliquer, demo } = useSportsChoisis();
+  const { choisis, setChoisis, erreur, envoi, appliquer, demo, lectureEchouee } = useSportsChoisis();
   const [initial, setInitial] = useState<string | null>(null);
   const [message, setMessage] = useState('');
 
+  // Liste enregistrée illisible : on montre seulement l'erreur, car enregistrer maintenant écraserait ta vraie liste
+  if (lectureEchouee) {
+    return (
+      <EcranSection>
+        <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
+          <Text style={[typo.petit, { color: p.texte }]}>{erreur}</Text>
+        </View>
+      </EcranSection>
+    );
+  }
   if (!choisis) {
     return (
       <EcranSection>

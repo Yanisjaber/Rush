@@ -479,6 +479,13 @@ export function fusionnerChargement<S>(
   return { brutes: brutes ?? [], objectifs: obj.data ?? avant?.objectifs ?? [], erreur: acts.erreur || obj.erreur || '', pret: brutes != null };
 }
 
+/** Au bout de combien de temps les données du Bilan sont « vieilles » : revenir sur l'onglet les recharge alors. */
+export const DELAI_DONNEES_BILAN_MS = 5 * 60 * 1000;
+
+/** Les données chargées à `chargeA` (millisecondes, null si jamais) sont-elles à recharger à `maintenant` ? */
+export const donneesPerimees = (chargeA: number | null, maintenant: number, delai: number = DELAI_DONNEES_BILAN_MS): boolean =>
+  chargeA == null || maintenant < chargeA || maintenant - chargeA >= delai;
+
 // --- Validation d'un objectif ---------------------------------------------------------------------------------------------
 
 /** Vérifie le formulaire d'un objectif annuel. Renvoie { valeurs, erreurs } (valeurs = null s'il y a des erreurs). */

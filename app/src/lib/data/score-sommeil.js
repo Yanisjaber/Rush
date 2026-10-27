@@ -10,7 +10,7 @@
 // (« AAAA-MM-JJ HH:MM »), hrv_avg, avg_heart_rate, resp_avg, spo2_avg, avg_stress, segments ([début_min, fin_min, niveau]), etc.
 // Niveaux d'un segment : 0 profond, 1 léger, 2 paradoxal, 3 éveillé.
 
-import { heureDe } from './sommeil.js';
+import { heureDe, segmentsValides } from './sommeil.js';
 
 export const NOM_NIVEAU = ['Profond', 'Léger', 'Paradoxal', 'Éveil'];
 
@@ -70,8 +70,8 @@ export function efficacitePct(n) {
 
 /** Latence d'endormissement en minutes, déduite des segments (0 si déjà endormi au coucher), ou null. */
 export function latenceMin(n) {
-  const segs = n?.segments;
-  if (!Array.isArray(segs) || !segs.length) return null;
+  const segs = segmentsValides(n);
+  if (!segs.length) return null;
   const tries = segs.slice().sort((a, b) => a[0] - b[0]);
   if (tries[0][2] !== 3) return 0;
   const dormi = tries.find((s) => s[2] !== 3);

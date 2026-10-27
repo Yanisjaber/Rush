@@ -30,6 +30,17 @@ export function heureApres(coucher, minutes) {
   return heureDepuisMinutes(Number(m[1]) * 60 + Number(m[2]) + Math.round(minutes));
 }
 
+/**
+ * Segments exploitables de l'hypnogramme : [début_min, fin_min, niveau] avec des nombres, un niveau de 0 à 3 et une fin après le début.
+ * Tout le reste (segment mal formé, valeur vide, colonne qui n'est pas une liste) est ignoré au lieu de faire planter l'écran.
+ */
+export function segmentsValides(nuit) {
+  if (!Array.isArray(nuit?.segments)) return [];
+  return nuit.segments.filter(
+    (s) => Array.isArray(s) && s.length >= 3 && [s[0], s[1], s[2]].every((v) => typeof v === 'number' && Number.isFinite(v)) && Number.isInteger(s[2]) && s[2] >= 0 && s[2] <= 3 && s[0] >= 0 && s[1] > s[0],
+  );
+}
+
 /** Les phases d'une nuit : [{ cle, nom, secondes, part }] (part entre 0 et 1 du temps total passé au lit). */
 export function phases(nuit) {
   if (!nuit) return [];

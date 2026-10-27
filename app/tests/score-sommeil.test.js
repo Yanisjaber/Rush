@@ -165,3 +165,8 @@ test('« tes N dernières nuits » : singulier correct, et l\'analyse porte sur 
   const une = preparer([nuitParfaite('2026-09-30')]);
   assert.ok(!synthese(une, analyser(une)).includes('1 dernières'));
 });
+
+test('latence : des segments mal formés ne font pas planter, ils sont ignorés', () => {
+  assert.equal(latenceMin({ segments: [null, [0, 10, 3], [10, 'x', 1], [10, 40, 1]] }), 10);
+  assert.equal(latenceMin({ segments: [null, 'x'] }), null);
+});

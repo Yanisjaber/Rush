@@ -9,7 +9,7 @@
   import { COULEURS_PHASE, COULEUR_TON } from './palette.js';
   import { chargerFcNuit } from '../data/api.js';
   import { fcNuitDemo } from '../data/demo.js';
-  import { heureDe, heureApres } from '../data/sommeil.js';
+  import { heureDe, heureApres, segmentsValides } from '../data/sommeil.js';
   import { NOM_NIVEAU, NOM_QUALIFICATIF, tonDe, efficacitePct, latenceMin, texteHM, texteHMdepuisSec } from '../data/score-sommeil.js';
   import { formatDateLongue } from '../utils/format.js';
 
@@ -38,7 +38,7 @@
   );
 
   // --- Hypnogramme : un rang par niveau, les segments placés selon leur début et leur fin (en minutes) ---
-  const segments = $derived(Array.isArray(nuit?.segments) ? nuit.segments : []);
+  const segments = $derived(segmentsValides(nuit)); // seulement les segments exploitables (voir data/sommeil.js)
   const dureeMin = $derived(segments.length ? Math.max(...segments.map((s) => s[1])) : 0);
   const heureCoucher = $derived(heureDe(nuit?.bedtime));
   // Cinq repères d'heure sous le graphique (début, quarts, fin) ; sans heure de coucher on ne les affiche pas

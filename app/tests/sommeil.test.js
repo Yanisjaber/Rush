@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { heureApres, heureDe, minutesCoucher, heureDepuisMinutes, phases, efficacite, moyenne, moyenneCoucher, triees, tendance } from '../src/lib/data/sommeil.js';
+import { segmentsValides, heureApres, heureDe, minutesCoucher, heureDepuisMinutes, phases, efficacite, moyenne, moyenneCoucher, triees, tendance } from '../src/lib/data/sommeil.js';
 
 test('heureDe : extrait HH:MM, tolère les valeurs absentes ou bizarres', () => {
   assert.equal(heureDe('2026-10-11 23:10'), '23:10');
@@ -59,4 +59,14 @@ test('heureApres : repères d\'heure sans « :60 », passage de minuit, null san
   assert.equal(heureApres('23:00', 478), '06:58');
   assert.equal(heureApres(null, 30), null);
   assert.equal(heureApres('23:00', null), null);
+});
+
+test('segmentsValides : garde les segments sains, ignore le reste sans planter', () => {
+  const bons = [[0, 20, 3], [20, 90, 1], [90, 120, 0]];
+  assert.deepEqual(segmentsValides({ segments: bons }), bons);
+  assert.deepEqual(segmentsValides({ segments: null }), []);
+  assert.deepEqual(segmentsValides({ segments: 'oups' }), []);
+  assert.deepEqual(segmentsValides(null), []);
+  const melanges = [[0, 20, 3], null, 'x', [5], [10, 5, 1], [0, 0, 1], [0, 10, 7], [0, 10, 1.5], [null, 10, 1], [0, '10', 1], [0, NaN, 1], [-5, 10, 1], [20, 40, 2]];
+  assert.deepEqual(segmentsValides({ segments: melanges }), [[0, 20, 3], [20, 40, 2]]);
 });

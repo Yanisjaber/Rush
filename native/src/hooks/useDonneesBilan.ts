@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { chargerActivitesBilan, chargerObjectifsAnnuels } from '@/data/api';
-import { fusionnerChargement, type ObjectifAnnuel } from '@/data/bilan';
+import { donneesPerimees, fusionnerChargement, type ObjectifAnnuel } from '@/data/bilan';
 import { activitesBilanDemo, objectifsAnnuelsDemo } from '@/data/demo';
 import { useAuth } from '@/stores/auth';
 import type { Seance } from '@/data/types';
 
 // Les données du Bilan : toutes les activités depuis la première et les objectifs annuels (démo ou compte connecté, lecture seule).
 // Toutes les années sont chargées d'un coup : changer d'année affichée ne recharge rien.
+// Les onglets restent ouverts en arrière-plan : en revenant sur le Bilan, on recharge si les données ont plus de cinq minutes.
 export function useDonneesBilan(): {
   brutes: Seance[];
   objectifs: ObjectifAnnuel[];
@@ -22,6 +24,7 @@ export function useDonneesBilan(): {
   const demoDonnees = useMemo(() => (demo ? { brutes: activitesBilanDemo(new Date()), objectifs: objectifsAnnuelsDemo(new Date()), erreur: '', pret: true } : null), [demo]);
   const [reel, setReel] = useState<{ userId: string; brutes: Seance[]; objectifs: ObjectifAnnuel[]; erreur: string; pret: boolean } | null>(null);
   const [actualisation, setActualisation] = useState(false);
+  const chargeA = useRef<number | null>(null); // quand les données ont été chargées pour la dernière fois (millisecondes)
 
   const charger = useCallback(async () => {
     if (!userId) return;
@@ -34,12 +37,20 @@ export function useDonneesBilan(): {
       obj = { data: null, erreur: '' };
     }
     // Un échec garde ce qui est déjà affiché (du même compte) au lieu de vider l'écran
+    chargeA.current = Date.now();
     setReel((avant) => ({ userId, ...fusionnerChargement(avant && avant.userId === userId ? avant : null, acts, obj) }));
   }, [userId]);
 
   useEffect(() => {
     if (!demo) void charger();
   }, [demo, charger]);
+
+  // Retour sur l'onglet : on recharge seulement si les données sont vieilles. Premier chargement encore en cours (chargeA vide) : rien à faire.
+  useFocusEffect(
+    useCallback(() => {
+      if (!demo && userId && chargeA.current != null && donneesPerimees(chargeA.current, Date.now())) void charger();
+    }, [demo, userId, charger]),
+  );
 
   const recharger = useCallback(async () => {
     setActualisation(true);

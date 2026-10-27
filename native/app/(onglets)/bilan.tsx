@@ -1,6 +1,7 @@
 import { FondDegrade } from '@/components/FondDegrade';
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, AppState, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
@@ -47,7 +48,19 @@ export default function Bilan() {
   const p = usePalette();
   const bas = useSafeAreaInsets().bottom;
   const { filtre } = useMenu();
-  const maintenant = useMemo(() => new Date(), []);
+  // « Aujourd'hui » : l'onglet reste ouvert en arrière-plan, donc on le remet à jour en revenant sur l'écran ou dans l'app (minuit, Nouvel An)
+  const [maintenant, setMaintenant] = useState(() => new Date());
+  const actualiserDate = useCallback(() => {
+    const m = new Date();
+    setMaintenant((avant) => (avant.toDateString() === m.toDateString() ? avant : m));
+  }, []);
+  useFocusEffect(actualiserDate);
+  useEffect(() => {
+    const abonnement = AppState.addEventListener('change', (etat) => {
+      if (etat === 'active') actualiserDate();
+    });
+    return () => abonnement.remove();
+  }, [actualiserDate]);
   const [anneeChoisie, setAnneeChoisie] = useState(maintenant.getFullYear());
   const [onglet, setOnglet] = useState<OngletBilan>('resume');
   const [metrique, setMetrique] = useState<MetriqueCumul>('distance_km');

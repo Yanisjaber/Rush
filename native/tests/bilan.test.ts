@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   activitesAnnee, activitesAnneePrecedente, anneesDisponibles, avancement, cumulParAnnee, ecartPct, familleBilan, familleBilanDuFiltre, modele, normaliser,
-  fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
+  donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
 } from '../src/data/bilan.ts';
 import { activitesBilanDemo, objectifsAnnuelsDemo } from '../src/data/demo.ts';
 
@@ -275,4 +275,13 @@ test('fusionnerChargement : un échec garde ce qui est déjà affiché, sans act
   assert.equal(r2.pret, true);
   const r3 = fusionnerChargement(null, { data: null, erreur: 'x' }, { data: [], erreur: '' });
   assert.deepEqual([r3.brutes, r3.pret, r3.erreur], [[], false, 'x']);
+});
+
+test('donneesPerimees : jamais chargées ou vieilles de cinq minutes → à recharger', () => {
+  const t = 1_000_000;
+  assert.equal(donneesPerimees(null, t), true);
+  assert.equal(donneesPerimees(t, t + 60_000), false); // une minute
+  assert.equal(donneesPerimees(t, t + 5 * 60_000 - 1), false);
+  assert.equal(donneesPerimees(t, t + 5 * 60_000), true);
+  assert.equal(donneesPerimees(t, t - 1), true); // l'horloge a reculé : on recharge par prudence
 });
