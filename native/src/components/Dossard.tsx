@@ -16,10 +16,14 @@ interface Props {
   etiquette?: string;
   nom?: string;
   valeur?: string;
+  /** Une unité écrite en petit à côté du grand chiffre (« km »). */
+  uniteValeur?: string;
   detail?: string;
   /** Clé de sport (course, velo…) : donne la couleur du liseré. Sans sport : gris neutre. */
   sport?: string;
   taille?: 'l' | 'm';
+  /** Taille maximale du grand chiffre (112 par défaut en taille l). Pour un dossard plus petit, sans changer les autres. */
+  chiffreMax?: number;
   compact?: boolean;
   /** Bandeau (taille m) seulement : un dessin à droite, à la place du grand chiffre. */
   icone?: ReactNode;
@@ -30,14 +34,14 @@ const LISERE = 4;
 const TAILLE_MAX = { l: 112, m: 44 } as const;
 const TAILLE_MIN = 28;
 
-export function Dossard({ etiquette, nom, valeur, detail, sport, taille = 'l', compact = false, icone, children }: Props) {
+export function Dossard({ etiquette, nom, valeur, uniteValeur, detail, sport, taille = 'l', chiffreMax, compact = false, icone, children }: Props) {
   const p = usePalette();
   const remplir = useRemplir();
-  const max = TAILLE_MAX[taille];
+  const max = chiffreMax ?? TAILLE_MAX[taille];
   const attache = { backgroundColor: p.dossardTexte };
 
   // VoiceOver lit le dossard comme un seul bloc, dans l'ordre logique.
-  const libelle = [etiquette, nom, valeur, detail].filter(Boolean).join('. ');
+  const libelle = [etiquette, nom, valeur, uniteValeur, detail].filter(Boolean).join('. ');
 
   // Bandeau (taille m) : une rangée basse, texte à gauche, grand chiffre à droite
   if (taille === 'm' && !compact) {
@@ -121,6 +125,7 @@ export function Dossard({ etiquette, nom, valeur, detail, sport, taille = 'l', c
           ]}
         >
           {valeur}
+          {uniteValeur ? <Text style={{ fontFamily: police.texte500, fontSize: Math.round(max * 0.34), letterSpacing: 0 }}> {uniteValeur}</Text> : null}
         </Text>
       ) : null}
 

@@ -4,26 +4,44 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
+import { BarresHebdo } from '@/components/BarresHebdo';
+import { BarresMois } from '@/components/BarresMois';
+import { CarteChaleur } from '@/components/CarteChaleur';
+import { Dossard } from '@/components/Dossard';
 import { Bloc } from '@/components/Bloc';
 import { Bouton } from '@/components/Bouton';
-import { GrapheSeries } from '@/components/GrapheSeries';
+import { MenuMesure } from '@/components/MenuMesure';
+import { CumulAnnees } from '@/components/CumulAnnees';
+import { AnneauRepartition } from '@/components/AnneauRepartition';
+import { IconeSport } from '@/components/IconeSport';
+import { ObjectifSegments } from '@/components/ObjectifSegments';
+import { OngletsIcones } from '@/components/OngletsIcones';
+import type { IconeOnglet } from '@/components/OngletsIcones.types';
 import {
-  activitesAnnee, activitesAnneePrecedente, anneesDisponibles, avancement, cumulParAnnee, ecartPct, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
-  repartitionSport, sommer, volumeMensuel, familleBilanDuFiltre,
+  activitesAnnee, anneesDisponibles, avancement, chargeParSemaine, cumulParAnnee, kmParMois, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
+  regulariteAnnee, repartitionSport, sommer, volumeMensuel, familleBilanDuFiltre, type MetriqueCumul,
 } from '@/data/bilan';
 import { formatDateLongue, formatNum, texteHM } from '@/data/format';
 import { useDonneesBilan } from '@/hooks/useDonneesBilan';
 import { useMenu } from '@/stores/menu';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
+import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-const MOIS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 const NOMS_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const BARRE_ONGLETS = 72;
+type OngletBilan = 'resume' | 'rythme' | 'records';
+const ONGLETS: { cle: OngletBilan; nom: string; icone: IconeOnglet }[] = [
+  { cle: 'resume', nom: 'Résumé', icone: 'resume' },
+  { cle: 'rythme', nom: 'Rythme', icone: 'rythme' },
+  { cle: 'records', nom: 'Records', icone: 'records' },
+];
 const nomUnite = (u: string) => (u ? ` ${u}` : '');
+// Famille de bilan d'un objectif → famille de couleur de l'app (la couleur désigne le sport)
+const FAMILLE_COULEUR: Record<string, string> = { cyclisme: 'velo', course: 'course', natation: 'natation', musculation: 'muscu', autre: 'autre' };
 
-// Le bilan d'une année : chiffres contre l'an dernier à la même date, objectifs, records, cumul sur 3 ans, volume par mois, répartition.
+// Le bilan d'une année, en trois onglets : Résumé (une phrase, les objectifs, cumul sur 3 ans, répartition), Rythme (mois, semaines, régularité) et Records.
 // Lecture seule pour l'instant : ajouter ou modifier un objectif arrive avec son panneau.
 export default function Bilan() {
   const p = usePalette();
@@ -31,7 +49,9 @@ export default function Bilan() {
   const { filtre } = useMenu();
   const maintenant = useMemo(() => new Date(), []);
   const [anneeChoisie, setAnneeChoisie] = useState(maintenant.getFullYear());
-  const [metrique, setMetrique] = useState<'distance_km' | 'd_plus'>('distance_km');
+  const [onglet, setOnglet] = useState<OngletBilan>('resume');
+  const [metrique, setMetrique] = useState<MetriqueCumul>('distance_km');
+  const [mesureRepartition, setMesureRepartition] = useState<MetriqueCumul>('heures'); // la mesure de la répartition par sport (le temps par défaut)
   const { brutes, objectifs, chargement, erreur, actualisation, recharger } = useDonneesBilan();
   const annee = anneeChoisie;
 
@@ -41,23 +61,40 @@ export default function Bilan() {
   const filtrees = useMemo(() => (filtre === 'tout' ? toutes : toutes.filter((a) => a.famille === filtre)), [toutes, filtre]);
 
   const courant = sommer(activitesAnnee(filtrees, annee, maintenant));
-  const precedent = sommer(activitesAnneePrecedente(filtrees, annee, maintenant));
-  const tuiles = [
-    { cle: 'distance', libelle: 'Distance', val: courant.distance, prec: precedent.distance, unite: 'km', dec: 0 },
-    { cle: 'heures', libelle: 'Temps', val: courant.heures, prec: precedent.heures, unite: 'h', dec: 1 },
-    { cle: 'seances', libelle: 'Séances', val: courant.seances, prec: precedent.seances, unite: '', dec: 0 },
-    { cle: 'tss', libelle: 'Charge', val: courant.tss, prec: precedent.tss, unite: 'TSS', dec: 0 },
-  ];
+  // Le grand chiffre : la distance de l'année (ou les séances quand le sport n'a pas de distance, comme la musculation), puis trois chiffres en colonnes
+  const enCours = annee === maintenant.getFullYear();
+  const grand =
+    courant.seances === 0
+      ? null
+      : courant.distance > 0
+        ? { val: formatNum(courant.distance, 0), unite: 'km' }
+        : { val: formatNum(courant.seances, 0), unite: courant.seances > 1 ? 'séances' : 'séance' };
+  const colonnes = [
+    courant.heures > 0 ? { cle: 'heures', libelle: 'Temps', val: formatNum(courant.heures, 0), unite: 'h' } : null,
+    courant.distance > 0 && courant.seances > 0 ? { cle: 'seances', libelle: 'Séances', val: formatNum(courant.seances, 0), unite: '' } : null,
+    courant.tss > 0 ? { cle: 'effort', libelle: 'Effort', val: formatNum(courant.tss, 0), unite: '' } : null,
+  ].filter((x): x is { cle: string; libelle: string; val: string; unite: string } => !!x);
 
   const familleFiltre = familleBilanDuFiltre(filtre);
-  const objectifsAnnee = objectifs.filter((o) => o.annee === annee && (!familleFiltre || o.sport === 'tous' || o.sport === familleFiltre));
+  // Sur un onglet de sport, seulement les objectifs de ce sport : ceux « tous sports » n'apparaissent que sur l'onglet Tous
+  const objectifsAnnee = objectifs.filter((o) => o.annee === annee && (!familleFiltre || o.sport === familleFiltre));
   const avancements = objectifsAnnee.map((o) => ({ objectif: o, av: avancement(o, toutes, annee, maintenant) })).filter((x): x is { objectif: typeof x.objectif; av: NonNullable<typeof x.av> } => !!x.av);
 
   const records = recordsVolume(activitesAnnee(filtrees, annee, maintenant));
   const cumul = cumulParAnnee(filtrees, [annee, annee - 1, annee - 2], metrique, maintenant);
-  const mensuel = volumeMensuel(filtrees, annee);
-  const maxMois = Math.max(1, ...mensuel);
-  const repartition = repartitionSport(activitesAnnee(toutes, annee, maintenant));
+  const mesure = MESURES_CUMUL.find((m) => m.cle === metrique) ?? MESURES_CUMUL[0];
+  // Rythme : par mois (en km, ou en heures quand le sport n'a pas de distance, comme la musculation), charge par semaine, régularité
+  const enKm = courant.distance > 0;
+  const parMois = enKm ? kmParMois(filtrees, annee) : volumeMensuel(filtrees, annee);
+  const moisEnCours = annee === maintenant.getFullYear() ? maintenant.getMonth() : null;
+  const dernierMois = moisEnCours ?? 11;
+  const meilleurMois = Math.max(0, ...parMois);
+  const semaines = chargeParSemaine(filtrees, annee, maintenant);
+  const moyenneSemaine = Math.round(semaines.reduce((a, b) => a + b, 0) / semaines.length);
+  const regularite = regulariteAnnee(filtrees, annee, maintenant);
+  const seancesParSemaine = (n: number) => (regularite.jours ? n / (regularite.jours / 7) : 0);
+  const repartition = repartitionSport(activitesAnnee(toutes, annee, maintenant), mesureRepartition);
+  const mesureRep = MESURES_CUMUL.find((m) => m.cle === mesureRepartition) ?? MESURES_CUMUL[0];
 
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
@@ -71,19 +108,9 @@ export default function Bilan() {
         <Text accessibilityRole="header" style={styles.titreInvisible}>
           Bilan {annee}
         </Text>
-        <View style={styles.annees} accessibilityRole="tablist">
-          {annees.map((a) => (
-            <Pressable
-              key={a}
-              onPress={() => setAnneeChoisie(a)}
-              accessibilityRole="button"
-              accessibilityLabel={`Année ${a}`}
-              accessibilityState={{ selected: a === annee }}
-              style={[styles.pastille, { backgroundColor: a === annee ? p.texte : 'transparent', borderColor: a === annee ? p.texte : p.contourChamp }]}
-            >
-              <Text style={[typo.corpsFort, { color: a === annee ? p.fond : p.texteDoux }]}>{a}</Text>
-            </Pressable>
-          ))}
+        <View style={styles.entete}>
+          <MenuMesure grand etiquette="Année" valeur={String(annee)} options={annees.map((a) => ({ cle: String(a), nom: String(a) }))} onChoisir={(c) => setAnneeChoisie(Number(c))} />
+          <OngletsIcones onglets={ONGLETS} actuel={onglet} onChoisir={setOnglet} etiquette="Parties du bilan" />
         </View>
 
         {chargement ? (
@@ -96,180 +123,237 @@ export default function Bilan() {
           </View>
         ) : (
           <>
-            <View style={styles.tuiles}>
-              {tuiles.map((t) => {
-                const e = ecartPct(t.val, t.prec);
-                return (
-                  <View key={t.cle} accessible style={[styles.tuile, { backgroundColor: p.surface }]}>
-                    <Text style={[typo.micro, { color: p.texteDoux }]}>{t.libelle}</Text>
-                    <Text style={[styles.valeur, { color: p.texte }]}>
-                      {formatNum(t.val, t.dec)}
-                      <Text style={[typo.petit, { color: p.texteDoux }]}>{nomUnite(t.unite)}</Text>
-                    </Text>
-                    {e != null ? (
-                      <>
-                        <Text style={[typo.petit, styles.delta, { color: e >= 0 ? p.ok : p.alerte }]}>
-                          {e >= 0 ? '+' : ''}
-                          {e} % contre {annee - 1}
-                        </Text>
-                        <Text style={[typo.petit, { color: p.texteMuet }]}>
-                          {annee - 1} à la même date : {formatNum(t.prec, t.dec)}
-                          {nomUnite(t.unite)}
-                        </Text>
-                      </>
-                    ) : (
-                      <Text style={[typo.petit, { color: p.texteMuet }]}>Pas de référence {annee - 1}</Text>
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-
-            <Bloc titre={`Objectifs de ${annee}`}>
-              {avancements.length ? (
-                avancements.map(({ objectif, av }, i) => (
-                  <Pressable
-                    key={objectif.id}
-                    onPress={() => bientot("La modification d'un objectif")}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${av.modele.label}, ${av.actuel == null ? 'valeur inconnue' : `${Math.round(av.pct)} pour cent`}. Modifier l'objectif`}
-                    style={[styles.objectif, i > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }]}
-                  >
-                    <View style={styles.tete}>
-                      <Text style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>
-                        {objectif.sport !== 'tous' ? `${NOM_SPORT_BILAN[objectif.sport]} · ` : ''}
-                        {av.modele.label}
-                      </Text>
-                    </View>
-                    <Text style={[typo.petit, { color: p.texteDoux }]}>
-                      <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>
-                        {av.actuel == null ? '—' : formatNum(av.actuel, av.modele.unit === 'h' || av.modele.unit === 'W/kg' ? 1 : 0)}
-                      </Text>
-                      {` / ${formatNum(av.cible, av.modele.unit === 'h' ? 1 : 0)}${nomUnite(av.modele.unit)} · ${av.actuel == null ? '—' : `${Math.round(av.pct)} %`}`}
-                    </Text>
-                    <View style={[styles.barre, { backgroundColor: p.surface2 }]}>
-                      <View style={[styles.remplie, { width: `${av.pct}%`, backgroundColor: av.enRythme ? p.ok : p.sportCourse }]} />
-                      {av.repere != null ? <View style={[styles.repere, { left: `${av.repere}%`, backgroundColor: p.texte }]} /> : null}
-                    </View>
-                    {av.projection != null ? (
-                      <Text style={[typo.petit, { color: (av.projectionPct ?? 0) >= 100 ? p.ok : p.texteDoux }]}>
-                        Projection fin d'année : {formatNum(av.projection, av.modele.unit === 'h' ? 1 : 0)}
-                        {nomUnite(av.modele.unit)} · {av.projectionPct} % de la cible
-                      </Text>
+            {onglet === 'resume' ? (
+              <>
+                {grand ? (
+                  <Dossard etiquette={enCours ? 'Depuis janvier' : `En ${annee}`} valeur={grand.val} uniteValeur={grand.unite} sport={filtre !== 'tout' ? filtre : undefined} chiffreMax={44}>
+                    {colonnes.length ? (
+                      <View style={[styles.colonnesDossard, { borderTopColor: avecAlpha(p.dossardTexte, 0.28) }]}>
+                        {colonnes.map((c) => (
+                          <View key={c.cle} accessible style={{ width: `${100 / colonnes.length}%`, gap: 2 }}>
+                            <Text style={[typo.micro, { color: p.dossardTexte, opacity: 0.62 }]}>{c.libelle}</Text>
+                            <Text style={[styles.valeurColonne, { color: p.dossardTexte }]}>
+                              {c.val}
+                              {c.unite ? <Text style={[typo.petit, { color: p.dossardTexte, opacity: 0.62 }]}> {c.unite}</Text> : null}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
                     ) : null}
-                  </Pressable>
-                ))
-              ) : (
-                <Text style={[typo.corps, { color: p.texteDoux }]}>Aucun objectif pour {annee}. Ajoutes-en un : distance annuelle, heures, chrono visé…</Text>
-              )}
-              <View style={{ marginTop: espace.e3 }}>
-                <Bouton variante="discret" onPress={() => bientot("L'ajout d'un objectif")}>
-                  Ajouter un objectif
-                </Bouton>
-              </View>
-            </Bloc>
+                  </Dossard>
+                ) : (
+                  <Text style={[typo.titre2, { color: p.texte }]}>Pas encore d'activité en {annee}.</Text>
+                )}
 
-            {records.length ? (
-              <Bloc titre={`Records de ${annee}`}>
-                {records.map((r, i) => (
-                  <View
-                    key={r.cle}
-                    accessible
-                    accessibilityLabel={`${r.libelle}, ${r.cle === 'duree' ? texteHM(Math.round(r.valeur)) : `${formatNum(r.valeur, r.cle === 'distance' ? 1 : 0)} ${r.unite}`}, ${r.nom}, ${formatDateLongue(r.iso)}`}
-                    style={[styles.record, i > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }]}
-                  >
-                    <View style={styles.enteteRecord}>
-                      <Text style={[typo.micro, { color: p.texteDoux }]}>{r.libelle}</Text>
-                      {recordRecent(r.iso, maintenant) ? (
-                        <View style={[styles.nouveau, { backgroundColor: p.sportMuscu }]}>
-                          <Text style={[typo.micro, { color: p.encreSurCouleur }]}>Nouveau</Text>
-                        </View>
-                      ) : null}
+                <View>
+                  <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte }]}>
+                    Objectifs de {annee}
+                  </Text>
+                  {avancements.length ? (
+                    <View style={styles.pistes}>
+                      {avancements.map(({ objectif, av }) => {
+                        const dec = av.modele.unit === 'h' ? 1 : 0;
+                        const unite = nomUnite(av.modele.unit);
+                        const couleur = objectif.sport === 'tous' ? p.texte : couleurSport(p, FAMILLE_COULEUR[objectif.sport]);
+                        // En gros : ce que mesure l'objectif ; en petit : son sport (« Tous » pour un objectif tous sports)
+                        const nom = av.modele.label;
+                        const sport = objectif.sport === 'tous' ? 'Tous' : NOM_SPORT_BILAN[objectif.sport];
+                        return (
+                          <Pressable
+                            key={objectif.id}
+                            onPress={() => bientot("La modification d'un objectif")}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${nom}, ${sport}, ${av.actuel == null ? 'valeur inconnue' : `${Math.round(av.pct)} pour cent`}. Modifier l'objectif`}
+                            style={styles.caseObjectif}
+                          >
+                            <ObjectifSegments
+                              nom={nom}
+                              detail={sport}
+                              famille={objectif.sport === 'tous' ? undefined : FAMILLE_COULEUR[objectif.sport]}
+                              couleur={couleur}
+                              pct={av.actuel == null ? null : av.pct}
+                              attendu={av.repere != null && av.repere < 100 ? av.repere : null}
+                              fait={av.actuel == null ? '—' : formatNum(av.actuel, av.modele.unit === 'h' || av.modele.unit === 'W/kg' ? 1 : 0)}
+                              cible={`${formatNum(av.cible, dec)}${unite}`}
+                              etiquette={`${nom}, ${sport} : ${av.actuel == null ? 'valeur inconnue' : `${Math.round(av.pct)} pour cent`}`}
+                            />
+                          </Pressable>
+                        );
+                      })}
                     </View>
-                    <Text style={[styles.valeurRecord, { color: p.texte }]}>
-                      {r.cle === 'duree' ? texteHM(Math.round(r.valeur)) : formatNum(r.valeur, r.cle === 'distance' ? 1 : 0)}
-                      {r.cle !== 'duree' ? <Text style={[typo.corpsFort, { color: p.texteDoux }]}> {r.unite}</Text> : null}
-                    </Text>
-                    <Text style={[typo.petit, { color: p.texteDoux }]}>{r.nom}</Text>
-                    <Text style={[typo.petit, { color: p.texteDoux }]}>{formatDateLongue(r.iso)}</Text>
+                  ) : (
+                    <Text style={[typo.corps, { color: p.texteDoux, marginTop: espace.e3 }]}>Aucun objectif</Text>
+                  )}
+                  <View style={{ marginTop: espace.e3 }}>
+                    <Bouton variante="discret" onPress={() => bientot("L'ajout d'un objectif")}>
+                      Ajouter un objectif
+                    </Bouton>
                   </View>
-                ))}
-              </Bloc>
+                </View>
+
+                <Bloc>
+                  <View style={styles.enteteBloc}>
+                    <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
+                      Cumul sur 3 ans
+                    </Text>
+                    <MenuMesure etiquette="Mesure" valeur={metrique} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => setMetrique(c as MetriqueCumul)} />
+                  </View>
+                  <CumulAnnees
+                    series={cumul.series}
+                    enCours={enCours}
+                    formater={(v) => `${formatNum(v)} ${mesure.unite}`}
+                    titre={`Cumul ${mesure.phrase} sur trois ans`}
+                  />
+                </Bloc>
+
+                <Bloc>
+                  <View style={styles.enteteBloc}>
+                    <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
+                      Répartition par sport
+                    </Text>
+                    <MenuMesure etiquette="Mesure de la répartition" valeur={mesureRepartition} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => setMesureRepartition(c as MetriqueCumul)} />
+                  </View>
+                  <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>Part {mesureRep.phrase} de {annee}.</Text>
+                  {repartition.length ? (
+                    <View
+                      accessible
+                      accessibilityLabel={`Répartition par sport : ${repartition.map((r) => `${NOM_SPORT_BILAN[r.sport]}, ${formatNum(r.valeur, 0)} ${mesureRep.unite}, ${r.part} pour cent`).join(' ; ')}`}
+                      style={styles.repartition}
+                    >
+                      <AnneauRepartition
+                        parts={repartition.map((r) => ({ cle: r.sport, couleur: couleurSport(p, FAMILLE_COULEUR[r.sport]), valeur: r.valeur }))}
+                        taille={132}
+                        epaisseur={18}
+                        piste={p.surface2}
+                        etiquette="Anneau de la répartition du temps par sport"
+                      >
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} style={[styles.totalAnneau, { color: p.texte }]}>
+                          {formatNum(repartition.reduce((t, r) => t + r.valeur, 0), 0)}
+                        </Text>
+                        <Text style={[typo.petit, { color: p.texteDoux }]}>{mesureRep.unite === 'h' ? 'heures' : mesureRep.unite}</Text>
+                      </AnneauRepartition>
+                      <View style={styles.legendeRepartition}>
+                        {repartition.map((r) => (
+                          <View key={r.sport} style={styles.ligneRepartition}>
+                            <IconeSport sport={FAMILLE_COULEUR[r.sport]} taille={16} />
+                            <View style={{ flex: 1 }}>
+                              <Text numberOfLines={1} style={[typo.petit, { color: p.texte }]}>
+                                {NOM_SPORT_BILAN[r.sport]}
+                              </Text>
+                              {/* La stat elle-même (281 h, 3 120 km…), en plus du pourcentage */}
+                              <Text numberOfLines={1} style={[typo.micro, { color: p.texteMuet }]}>
+                                {formatNum(r.valeur, 0)} {mesureRep.unite}
+                              </Text>
+                            </View>
+                            <Text style={[typo.petit, { color: p.texte, fontFamily: police.titre700 }]}>{r.part} %</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  ) : (
+                    <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore d'activité en {annee}.</Text>
+                  )}
+                </Bloc>
+              </>
             ) : null}
 
-            <Bloc titre="Cumul sur 3 ans">
-              <View style={styles.bascule} accessibilityRole="tablist">
-                {(['distance_km', 'd_plus'] as const).map((m) => (
-                  <Pressable
-                    key={m}
-                    onPress={() => setMetrique(m)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: metrique === m }}
-                    style={[styles.pastille, { backgroundColor: metrique === m ? p.surface2 : 'transparent', borderColor: p.contourChamp }]}
-                  >
-                    <Text style={[typo.petit, { color: metrique === m ? p.texte : p.texteDoux, fontFamily: police.texte600 }]}>{m === 'distance_km' ? 'Distance' : 'Dénivelé'}</Text>
-                  </Pressable>
-                ))}
-              </View>
-              <GrapheSeries
-                etiquettes={cumul.etiquettes}
-                lignes={[
-                  { nom: String(annee), valeurs: cumul.series[0].valeurs, couleur: p.texte },
-                  { nom: String(annee - 1), valeurs: cumul.series[1].valeurs, couleur: p.texteDoux },
-                  { nom: String(annee - 2), valeurs: cumul.series[2].valeurs, couleur: p.texteMuet, pointille: true },
-                ]}
-                min={0}
-                hauteur={190}
-                titre={`Cumul ${metrique === 'd_plus' ? 'du dénivelé' : 'de la distance'} sur trois ans`}
-                formater={(v) => `${formatNum(v)} ${metrique === 'd_plus' ? 'm' : 'km'}`}
-              />
-              <View style={styles.cles}>
-                {[
-                  [String(annee), p.texte],
-                  [String(annee - 1), p.texteDoux],
-                  [String(annee - 2), p.texteMuet],
-                ].map(([nom, couleur]) => (
-                  <View key={nom} style={styles.cle}>
-                    <View style={[styles.traitCle, { backgroundColor: couleur }]} />
-                    <Text style={[typo.petit, { color: p.texteDoux }]}>{nom}</Text>
-                  </View>
-                ))}
-              </View>
-            </Bloc>
+            {onglet === 'rythme' ? (
+              <>
+                <Bloc titre={enKm ? 'Distance par mois' : 'Heures par mois'}>
+                  <BarresMois
+                    valeurs={parMois}
+                    moisEnCours={moisEnCours}
+                    dernierMois={dernierMois}
+                    formater={(v) => formatNum(v, 0)}
+                    etiquette={`${enKm ? 'Kilomètres' : "Heures d'entraînement"} par mois en ${annee} : ${parMois.map((v, i) => `${NOMS_MOIS[i]} ${formatNum(v, enKm ? 0 : 1)}`).join(', ')}. Meilleur mois : ${formatNum(meilleurMois, enKm ? 0 : 1)} ${enKm ? 'kilomètres' : 'heures'}.`}
+                  />
+                </Bloc>
 
-            <Bloc titre="Volume par mois">
-              <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>Heures d'entraînement chaque mois de {annee}.</Text>
-              <View accessible accessibilityRole="image" accessibilityLabel={`Heures d'entraînement par mois en ${annee} : ${mensuel.map((h, i) => `${NOMS_MOIS[i]} ${formatNum(h, 1)} heures`).join(', ')}`} style={styles.mois}>
-                {mensuel.map((h, i) => (
-                  <View key={i} style={styles.col}>
-                    <Text style={[typo.micro, styles.val, { color: p.texteDoux }]}>{h >= 1 ? formatNum(h, 0) : ''}</Text>
-                    <View style={styles.zoneBarre}>
-                      <View style={{ height: `${(h / maxMois) * 100}%`, minHeight: 2, backgroundColor: p.texte, opacity: 0.85, borderTopLeftRadius: 3, borderTopRightRadius: 3 }} />
-                    </View>
-                    <Text style={[typo.micro, { color: p.texteMuet }]}>{MOIS[i]}</Text>
-                  </View>
-                ))}
-              </View>
-            </Bloc>
+                <Bloc titre="Charge par semaine">
+                  <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>
+                    TSS des 12 dernières semaines · moyenne {formatNum(moyenneSemaine, 0)}.
+                  </Text>
+                  <BarresHebdo
+                    valeurs={semaines}
+                    couleur={p.texte}
+                    repere={moyenneSemaine}
+                    hauteur={110}
+                    etiquette={`Charge des 12 dernières semaines : ${semaines.map((v) => formatNum(v, 0)).join(', ')}. Moyenne ${formatNum(moyenneSemaine, 0)}.`}
+                  />
+                </Bloc>
 
-            <Bloc titre="Répartition par sport">
-              <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>Part du temps d'entraînement de {annee}.</Text>
-              {repartition.length ? (
-                repartition.map((r) => (
-                  <View key={r.sport} accessible accessibilityLabel={`${NOM_SPORT_BILAN[r.sport]}, ${formatNum(r.heures, 0)} heures, ${r.part} pour cent`} style={styles.ligneRepartition}>
-                    <Text style={[typo.petit, { color: p.texte, width: 104 }]}>{NOM_SPORT_BILAN[r.sport]}</Text>
-                    <View style={[styles.piste, { backgroundColor: avecAlpha(p.texte, 0.1) }]}>
-                      <View style={{ width: `${r.part}%`, height: '100%', backgroundColor: p.texte, opacity: 0.85, borderRadius: 4 }} />
-                    </View>
-                    <Text style={[typo.petit, { color: p.texteDoux, width: 78, textAlign: 'right' }]}>
-                      {formatNum(r.heures, 0)} h · {r.part} %
-                    </Text>
+                <Bloc titre="Régularité">
+                  <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>Une case par jour. Sa couleur est celle du sport du jour, plus elle est vive plus la charge est forte.</Text>
+                  <CarteChaleur
+                    cases={regularite.cases}
+                    colonnes={regularite.colonnes}
+                    ecart={1}
+                    hauteurCase={6}
+                    etiquette={`Carte des jours d'entraînement de ${annee} : ${regularite.joursActifs} jours actifs sur ${regularite.jours}`}
+                  />
+                  <View style={styles.serie}>
+                    {[
+                      moisEnCours != null
+                        ? { libelle: 'Série en cours', val: String(regularite.serieEnCours), unite: regularite.serieEnCours > 1 ? 'jours' : 'jour', note: `record : ${regularite.serieRecord}` }
+                        : { libelle: 'Plus longue série', val: String(regularite.serieRecord), unite: regularite.serieRecord > 1 ? 'jours' : 'jour', note: `en ${annee}` },
+                      { libelle: 'Jours actifs', val: String(regularite.joursActifs), unite: `/ ${regularite.jours}`, note: `${regularite.jours ? Math.round((regularite.joursActifs / regularite.jours) * 100) : 0} % des jours` },
+                      {
+                        libelle: 'Par semaine',
+                        val: formatNum(seancesParSemaine(courant.seances), 1),
+                        unite: 'séances',
+                        note: '',
+                      },
+                    ].map((c) => (
+                      <View key={c.libelle} accessible style={styles.statSerie}>
+                        <Text style={[typo.micro, { color: p.texteDoux }]}>{c.libelle}</Text>
+                        <Text style={[styles.valeurSerie, { color: p.texte }]}>
+                          {c.val}
+                          <Text style={[typo.micro, { color: p.texteDoux }]}> {c.unite}</Text>
+                        </Text>
+                        {c.note ? <Text style={[typo.petit, { color: p.texteMuet }]}>{c.note}</Text> : null}
+                      </View>
+                    ))}
                   </View>
-                ))
-              ) : (
-                <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore d'activité en {annee}.</Text>
-              )}
-            </Bloc>
+                </Bloc>
+
+              </>
+            ) : null}
+
+            {onglet === 'records' ? (
+              <>
+                {records.length ? (
+                  <Bloc titre={`Records de ${annee}`}>
+                    {records.map((r, i) => (
+                      <View
+                        key={r.cle}
+                        accessible
+                        accessibilityLabel={`${r.libelle}, ${r.cle === 'duree' ? texteHM(Math.round(r.valeur)) : `${formatNum(r.valeur, r.cle === 'distance' ? 1 : 0)} ${r.unite}`}, ${r.nom}, ${formatDateLongue(r.iso)}`}
+                        style={[styles.record, i > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }]}
+                      >
+                        <View style={styles.enteteRecord}>
+                          <Text style={[typo.micro, { color: p.texteDoux }]}>{r.libelle}</Text>
+                          {recordRecent(r.iso, maintenant) ? (
+                            <View style={[styles.nouveau, { backgroundColor: p.sportMuscu }]}>
+                              <Text style={[typo.micro, { color: p.encreSurCouleur }]}>Nouveau</Text>
+                            </View>
+                          ) : null}
+                        </View>
+                        <Text style={[styles.valeurRecord, { color: p.texte }]}>
+                          {r.cle === 'duree' ? texteHM(Math.round(r.valeur)) : formatNum(r.valeur, r.cle === 'distance' ? 1 : 0)}
+                          {r.cle !== 'duree' ? <Text style={[typo.corpsFort, { color: p.texteDoux }]}> {r.unite}</Text> : null}
+                        </Text>
+                        <Text style={[typo.petit, { color: p.texteDoux }]}>{r.nom}</Text>
+                        <Text style={[typo.petit, { color: p.texteDoux }]}>{formatDateLongue(r.iso)}</Text>
+                      </View>
+                    ))}
+                  </Bloc>
+                ) : (
+                  <Bloc titre={`Records de ${annee}`}>
+                    <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de record en {annee}.</Text>
+                  </Bloc>
+                )}
+              </>
+            ) : null}
           </>
         )}
       </ScrollView>
@@ -278,34 +362,27 @@ export default function Bilan() {
 }
 
 const styles = StyleSheet.create({
+  entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   titreInvisible: { position: 'absolute', width: 1, height: 1, opacity: 0 },
   page: { flex: 1 },
   contenu: { paddingHorizontal: espace.e4, paddingTop: espace.e4, gap: espace.e4 },
-  annees: { flexDirection: 'row', flexWrap: 'wrap', gap: espace.e2 },
-  pastille: { minHeight: 44, paddingHorizontal: 16, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
-  tuiles: { flexDirection: 'row', flexWrap: 'wrap', gap: espace.e3 },
-  tuile: { width: '48%', flexGrow: 1, borderRadius: rayon.base, paddingHorizontal: 14, paddingVertical: 12, gap: 2 },
-  valeur: { fontFamily: police.titre700, fontSize: 32, lineHeight: 36, marginTop: 4, fontVariant: ['tabular-nums'] },
-  delta: { fontFamily: police.texte600, marginTop: 2 },
-  objectif: { paddingVertical: 12, gap: 6 },
-  tete: { flexDirection: 'row', alignItems: 'baseline' },
-  barre: { height: 10, borderRadius: 5, overflow: 'visible', justifyContent: 'center' },
-  remplie: { height: '100%', borderRadius: 5 },
-  repere: { position: 'absolute', top: -3, bottom: -3, width: 2 },
+  colonnesDossard: { flexDirection: 'row', borderTopWidth: 1.5, borderStyle: 'dashed', paddingTop: espace.e2, marginTop: -espace.e2 },
+  valeurColonne: { fontFamily: police.titre700, fontSize: 24, lineHeight: 28, fontVariant: ['tabular-nums'] },
+  pistes: { marginTop: espace.e3 },
+  caseObjectif: { paddingVertical: espace.e3, minHeight: 44 },
   record: { paddingVertical: 12, gap: 2 },
   enteteRecord: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   nouveau: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 1 },
   valeurRecord: { fontFamily: police.titre700, fontSize: 32, lineHeight: 36, fontVariant: ['tabular-nums'] },
-  bascule: { flexDirection: 'row', gap: espace.e2, marginBottom: espace.e3 },
-  cles: { flexDirection: 'row', gap: 16, marginTop: 10 },
-  cle: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  traitCle: { width: 16, height: 3, borderRadius: 2 },
-  mois: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 150 },
-  col: { flex: 1, height: '100%', alignItems: 'center', gap: 4 },
-  val: { height: 16 },
-  zoneBarre: { flex: 1, width: '100%', justifyContent: 'flex-end' },
-  ligneRepartition: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 36 },
-  piste: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
+  enteteBloc: { flexDirection: 'row', alignItems: 'center', gap: espace.e3, marginBottom: espace.e3 },
+  serie: { flexDirection: 'row', gap: espace.e3, marginTop: espace.e3 },
+  statSerie: { flex: 1, gap: 2 },
+  valeurSerie: { fontFamily: police.titre700, fontSize: 22, lineHeight: 26, fontVariant: ['tabular-nums'] },
+  repartition: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  // Le total tient dans le trou de l'anneau (132 − 2 × 18 = 96 pt, moins une marge) : un grand nombre (22 535 TSS) rétrécit au lieu de toucher les parts
+  totalAnneau: { width: 78, textAlign: 'center', fontFamily: police.titre800, fontSize: 28, lineHeight: 30, fontVariant: ['tabular-nums'] },
+  legendeRepartition: { flex: 1, gap: 2 },
+  ligneRepartition: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 40 },
 });
