@@ -20,6 +20,7 @@ import { COULEURS_ZONE, indiceZone, metriquesDuSport, milieu, NOM_TYPE, resume, 
 import { heureDepuisDuree, heuresMinutesDepuis, minutesDepuisHeure, texteDureeSaisie } from '@/data/heure';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useDateAjout } from '@/hooks/useDateAjout';
+import { useGardeSortie } from '@/hooks/useGardeSortie';
 import { useReferences } from '@/hooks/useReferences';
 import { useMenu } from '@/stores/menu';
 import { espace, rayon } from '@/theme/couleurs';
@@ -51,6 +52,7 @@ function FormulaireSeance({ prevue }: { prevue: PrevueComplete | null }) {
   }); // le GPX choisi
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState(false);
+  const autoriser = useGardeSortie({ date, f, blocs, gpx: parcours?.fichier.nom ?? null });
 
   const metriques = metriquesDuSport(f.type);
   const aStructure = sportAvecStructure(f.type);
@@ -79,6 +81,7 @@ function FormulaireSeance({ prevue }: { prevue: PrevueComplete | null }) {
     const e = prevue ? await modifierPrevue(prevue.id, r.ligne) : await creerPrevue(r.ligne);
     setEnCours(false);
     if (e) return setErreur(e);
+    autoriser();
     router.back();
   }
 

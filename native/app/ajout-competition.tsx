@@ -21,6 +21,7 @@ import { aUnFormat, allureMoyenne, champNiveau, federationsDuSport, FORMATS_TRI,
 import { formatDateCourte, formatJoursAvant, joursAvant } from '@/data/format';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useDateAjout } from '@/hooks/useDateAjout';
+import { useGardeSortie } from '@/hooks/useGardeSortie';
 import { useMenu } from '@/stores/menu';
 import { espace } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
@@ -56,6 +57,7 @@ function FormulaireCompetition({ prevue }: { prevue: PrevueComplete | null }) {
   });
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState(false);
+  const autoriser = useGardeSortie({ date, f, gpx: parcours?.fichier.nom ?? null });
 
   const change = (suite: typeof f) => {
     setF(suite);
@@ -75,6 +77,7 @@ function FormulaireCompetition({ prevue }: { prevue: PrevueComplete | null }) {
     const e = prevue ? await modifierPrevue(prevue.id, r.ligne) : await creerPrevue(r.ligne);
     setEnCours(false);
     if (e) return setErreur(e);
+    autoriser();
     router.back();
   }
 

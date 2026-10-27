@@ -5,6 +5,7 @@ import { EcranAjout } from '@/components/EcranAjout';
 import { formulaireNoteVide, validerNote } from '@/data/ajouts';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useDateAjout } from '@/hooks/useDateAjout';
+import { useGardeSortie } from '@/hooks/useGardeSortie';
 
 // Ajouter une note (une ligne de day_notes) : une note, une maladie, une blessure ou une indisponibilité, avec le détail propre à chaque type et une période.
 export default function EcranAjoutNote() {
@@ -13,6 +14,7 @@ export default function EcranAjoutNote() {
   const [f, setF] = useState(formulaireNoteVide(useDateAjout()));
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState(false);
+  const autoriser = useGardeSortie(f);
 
   const change = (suite: typeof f) => {
     setF(suite);
@@ -26,6 +28,7 @@ export default function EcranAjoutNote() {
     const e = await creerNote(r.ligne);
     setEnCours(false);
     if (e) return setErreur(e);
+    autoriser();
     router.back();
   }
 

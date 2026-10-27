@@ -5,6 +5,7 @@ import { Bouton } from '@/components/Bouton';
 import { ChampsNote } from '@/components/ChampsNote';
 import { LogoNote } from '@/components/LogoNote';
 import { ZoneClavier } from '@/components/ZoneClavier';
+import { fermerAvecGarde } from '@/hooks/useGardeSortie';
 import { TYPES_NOTE, validerNote, type FormulaireNote } from '@/data/ajouts';
 import { couleurNote } from '@/data/annotations';
 import { periodeCourte } from '@/data/format';
@@ -48,9 +49,13 @@ export function FeuilleNote({ note, onFermer }: { note: Note | null; onFermer: (
     setErreur('');
   };
 
+  // Fermer en cours de modification (toucher le fond, retour Android) : on demande avant de perdre la saisie
+  const modifie = mode === 'edition' && !!note && !!f && JSON.stringify(f) !== JSON.stringify(versFormulaire(note));
+  const fermer = () => fermerAvecGarde(modifie, onFermer);
+
   async function enregistrer() {
     if (!note || !f) return;
-    const r = validerNote(f);
+    const r = validerNote(f, { de: String(note.from_date).slice(0, 10), a: String(note.to_date).slice(0, 10) });
     if (!r.ok) return setErreur(r.erreur);
     setEnCours(true);
     const e = await modifierNote(note.id, r.ligne);
@@ -78,8 +83,8 @@ export function FeuilleNote({ note, onFermer }: { note: Note | null; onFermer: (
   }
 
   return (
-    <Modal visible={!!note} transparent animationType="fade" onRequestClose={onFermer}>
-      <Pressable accessibilityLabel="Fermer" accessibilityRole="button" onPress={onFermer} style={styles.fond} />
+    <Modal visible={!!note} transparent animationType="fade" onRequestClose={fermer}>
+      <Pressable accessibilityLabel="Fermer" accessibilityRole="button" onPress={fermer} style={styles.fond} />
       {note && mode === 'vue' ? (
         <View style={styles.centre} pointerEvents="box-none">
           <View accessibilityViewIsModal style={[styles.popup, { backgroundColor: p.surface, borderColor: p.traitFort }]}>

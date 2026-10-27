@@ -301,7 +301,7 @@ export function formulaireDepuisSeance(p: PrevueComplete): FormulaireSeance {
   const saisie = !blocs.length && p.tss != null && p.duration != null && Math.round(Number(p.tss)) !== estimerTss(Number(p.duration), rpe ?? 5);
   return {
     nom: textOuVide(p.name),
-    type: TYPES.has(p.sport) ? p.sport : 'Run',
+    type: TYPES.has(p.sport) ? p.sport : 'Other', // un sport que l'app ne propose pas (rugby…) : « Autre sport », pas « Course »
     duree: p.duration != null ? String(p.duration) : '60',
     heure: heureDe(p.start_date_local, '12:00'),
     distance: distanceEcrite(p.km, p.sport),
@@ -317,7 +317,7 @@ export function formulaireDepuisCompetition(p: PrevueComplete): FormulaireCompet
   const cible = Number(p.target);
   return {
     nom: textOuVide(p.name),
-    type: TYPES.has(p.sport) ? p.sport : 'Run',
+    type: TYPES.has(p.sport) ? p.sport : 'Other', // un sport que l'app ne propose pas (rugby…) : « Autre sport », pas « Course »
     priorite: p.priority === 'B' ? 'B' : 'A',
     epreuve: textOuVide(p.type),
     distance: distanceEcrite(p.km, p.sport),
@@ -371,12 +371,14 @@ export interface LigneNote {
 
 const enJours = (iso: string): number => Math.round(Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10))) / 86400000);
 
-/** Vérifie une note : un texte (obligatoire pour une simple note), une couleur, une période de 90 jours au plus ; le détail est nettoyé selon le type (voir nettoyerDetails). */
-export function validerNote(f: FormulaireNote): Resultat<LigneNote> {
+/** Vérifie une note : un texte (obligatoire pour une simple note), une couleur, une période de 90 jours au plus ; le détail est nettoyé selon le type (voir nettoyerDetails).
+ * `periodeInitiale` : la période d'une note déjà enregistrée qu'on modifie. Si on n'y touche pas, la limite de 90 jours ne s'applique pas (une ancienne note plus longue reste modifiable). */
+export function validerNote(f: FormulaireNote, periodeInitiale?: { de: string; a: string }): Resultat<LigneNote> {
   if (!TYPES_NOTE.some((t) => t.cle === f.type)) return { ok: false, erreur: 'Choisis un type.' };
   if (!dateValide(f.de) || !dateValide(f.a)) return { ok: false, erreur: 'Choisis des dates valides.' };
   if (f.a < f.de) return { ok: false, erreur: 'La fin ne peut pas être avant le début.' };
-  if (enJours(f.a) - enJours(f.de) + 1 > JOURS_MAX_NOTE) return { ok: false, erreur: `Une période dure ${JOURS_MAX_NOTE} jours au plus.` };
+  const periodeInchangee = !!periodeInitiale && periodeInitiale.de === f.de && periodeInitiale.a === f.a;
+  if (!periodeInchangee && enJours(f.a) - enJours(f.de) + 1 > JOURS_MAX_NOTE) return { ok: false, erreur: `Une période dure ${JOURS_MAX_NOTE} jours au plus.` };
   const texte = String(f.texte ?? '').trim();
   if (texte.length > TEXTE_MAX_NOTE) return { ok: false, erreur: `Le texte est trop long (${TEXTE_MAX_NOTE} caractères au plus).` };
   if (f.type === 'texte' && !texte) return { ok: false, erreur: 'Écris ta note.' };

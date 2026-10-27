@@ -385,8 +385,9 @@ test('formulaireDepuisSeance / Competition : une ligne sans heure ni sport connu
   const vide = relue({ category: 'entrainement', name: '', date, start_date_local: '', sport: 'Inconnu', duration: null, tss: null, rpe: null, km: null, d_plus: null, notes: null });
   const f = formulaireDepuisSeance(vide);
   assert.equal(f.heure, '12:00');
-  assert.equal(f.type, 'Run');
+  assert.equal(f.type, 'Other'); // un sport inconnu ne devient pas « Course »
   assert.equal(formulaireDepuisCompetition({ ...vide, category: 'competition' }).heure, '09:00');
+  assert.equal(formulaireDepuisCompetition({ ...vide, category: 'competition' }).type, 'Other');
 });
 
 test('formulaireDepuisSortie : une activité enregistrée redonne son formulaire, la charge seulement si elle a été saisie', () => {
@@ -422,4 +423,11 @@ test('sortieModifiable : seulement une activité saisie à la main', () => {
   assert.equal(sortieModifiable({ source: 'manual' }), true);
   assert.equal(sortieModifiable({ source: 'strava' }), false);
   assert.equal(sortieModifiable({}), false);
+});
+
+test('validerNote : une ancienne note de plus de 90 jours reste modifiable tant qu\'on ne touche pas à sa période', () => {
+  const longue = { ...formulaireNoteVide('2026-01-01'), texte: 'Pubalgie', a: '2026-06-30' };
+  assert.equal(validerNote(longue).ok, false); // en création : trop longue
+  assert.equal(validerNote(longue, { de: '2026-01-01', a: '2026-06-30' }).ok, true); // en modification, période inchangée
+  assert.equal(validerNote({ ...longue, a: '2026-07-15' }, { de: '2026-01-01', a: '2026-06-30' }).ok, false); // période changée : la règle revient
 });

@@ -10,6 +10,7 @@ import { MenuDeroulantSport } from '@/components/MenuDeroulantSport';
 import { COULEURS_CYCLE, NOM_MAX_CYCLE, validerCycle } from '@/data/cycles';
 import { dateIsoLocale } from '@/data/format';
 import { useCycles } from '@/hooks/useCycles';
+import { useGardeSortie } from '@/hooks/useGardeSortie';
 import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
@@ -28,7 +29,7 @@ export default function EcranCycle() {
   const router = useRouter();
   const bas = useSafeAreaInsets().bottom;
   const { id, debut: debutParam } = useLocalSearchParams<{ id?: string; debut?: string }>();
-  const { cycles, chargement, creer, modifier, supprimer } = useCycles();
+  const { cycles, chargement, erreur: erreurChargement, creer, modifier, supprimer } = useCycles();
   const existant = useMemo(() => (id ? cycles.find((c) => c.id === id) ?? null : null), [id, cycles]);
 
   // Un nouveau cycle commence le jour d'où l'on vient (paramètre « debut »), sinon aujourd'hui
@@ -53,6 +54,8 @@ export default function EcranCycle() {
       setRempli(true);
     }
   }, [existant, rempli]);
+  // La garde de sortie attend que la fiche soit remplie (sinon le remplissage compterait comme une modification)
+  const autoriser = useGardeSortie(id && !rempli ? null : { nom, debut, fin, couleur, sport });
 
   async function enregistrer() {
     const r = validerCycle({ name: nom, from_date: debut, to_date: fin, color: couleur, sport }, cycles, existant?.id);
@@ -61,6 +64,7 @@ export default function EcranCycle() {
     const e = existant ? await modifier(existant.id, r.valeur) : await creer(r.valeur);
     setEnCours(false);
     if (e) return setErreur(e);
+    autoriser();
     router.back();
   }
 
@@ -76,6 +80,7 @@ export default function EcranCycle() {
           const e = await supprimer(existant.id);
           setEnCours(false);
           if (e) return setErreur(e);
+          autoriser();
           router.back();
         },
       },
@@ -93,7 +98,7 @@ export default function EcranCycle() {
     return (
       <View style={styles.centre}>
         <Text accessibilityRole="alert" style={[typo.corps, { color: p.texteDoux, textAlign: 'center' }]}>
-          Cycle introuvable.
+          {erreurChargement || 'Cycle introuvable.'}
         </Text>
       </View>
     );
