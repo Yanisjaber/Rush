@@ -2,7 +2,7 @@ import { FondDegrade } from '@/components/FondDegrade';
 import { courtDuType } from '@/data/catalogue-sports';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
@@ -10,6 +10,7 @@ import { Bloc } from '@/components/Bloc';
 import { ApercuCycle } from '@/components/ApercuCycle';
 import { MenuAjout, type ChoixAjout } from '@/components/MenuAjout';
 import { FeuilleNote } from '@/components/FeuilleNote';
+import { LegendeCalendrier } from '@/components/LegendeCalendrier';
 import { LogoNote } from '@/components/LogoNote';
 import { ResumeJour } from '@/components/ResumeJour';
 import { SelecteurMois } from '@/components/SelecteurMois';
@@ -58,6 +59,20 @@ export default function Calendrier() {
       setMoisOuvert(true);
     });
   const { donnees, chargement, erreur, actualisation, recharger } = useDonneesCalendrier(cible.annee, cible.mois);
+
+  // Balayer la grille vers la gauche passe au mois suivant, vers la droite au mois précédent (comme les flèches).
+  // On ne prend la main que sur un geste nettement horizontal : le défilement vertical et le toucher d'un jour restent libres.
+  const balayage = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 16 && Math.abs(g.dx) > Math.abs(g.dy) * 2,
+        onPanResponderRelease: (_e, g) => {
+          if (Math.abs(g.dx) < 60) return;
+          setCible((c) => decalerMois(c.annee, c.mois, g.dx < 0 ? 1 : -1));
+        },
+      }),
+    [],
+  );
 
   const grille = useMemo(() => {
     const garde = (x: { sport?: string }) => garderSeance(x, filtre);
@@ -147,7 +162,15 @@ export default function Calendrier() {
 
         {erreur ? (
           <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
-            <Text style={[typo.petit, { color: p.texte }]}>{erreur}</Text>
+            <Text style={[typo.petit, styles.avisTexte, { color: p.texte }]}>{erreur}</Text>
+            <Pressable
+              onPress={recharger}
+              accessibilityRole="button"
+              accessibilityLabel="Réessayer de charger le calendrier"
+              style={({ pressed }) => [styles.reessayer, { borderColor: p.texte, opacity: pressed ? 0.6 : 1 }]}
+            >
+              <Text style={[typo.corpsFort, { color: p.texte }]}>Réessayer</Text>
+            </Pressable>
           </View>
         ) : null}
 
@@ -157,7 +180,7 @@ export default function Calendrier() {
           </View>
         ) : (
           <>
-            <View style={[styles.grille, { backgroundColor: p.surface }]}>
+            <View {...balayage.panHandlers} style={[styles.grille, { backgroundColor: p.surface }]}>
               {/* Le fond de la colonne « Sem. » : une bande un peu plus claire sur toute la hauteur, derrière les lignes */}
               <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={[styles.fondSemaine, { backgroundColor: p.surface2 }]} />
               <View style={[styles.rangee, styles.enteteBande, { backgroundColor: p.surface2 }]} accessible={false} importantForAccessibility="no-hide-descendants">
@@ -183,6 +206,8 @@ export default function Calendrier() {
                 </View>
               ))}
             </View>
+
+            <LegendeCalendrier />
 
             {detail ? <Detail jour={detail} /> : null}
           </>
@@ -566,7 +591,9 @@ const styles = StyleSheet.create({
   carteSerree: { paddingHorizontal: 11 },
   carteUnite: { fontFamily: police.texte600, fontSize: 11, letterSpacing: 0 },
   carteValeur: { fontFamily: police.titre800, fontSize: 18, lineHeight: 22, letterSpacing: -0.2, fontVariant: ['tabular-nums'] },
-  avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
+  avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avisTexte: { flex: 1 },
+  reessayer: { minHeight: 44, borderRadius: rayon.rond, borderWidth: 1.5, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
   grille: { borderRadius: rayon.bloc, paddingHorizontal: 8, paddingVertical: 10, gap: 4, overflow: 'hidden' },
   rangee: { flexDirection: 'row', alignItems: 'stretch' },
