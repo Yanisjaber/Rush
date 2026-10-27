@@ -2,12 +2,9 @@
 
 Liste tenue à jour avec Yanis (écran `native/app/(onglets)/calendrier.tsx`). Dernière mise à jour : 24 octobre 2026.
 
-## Repoussé à plus tard (décidé avec Yanis)
-
-1. **Ouvrir une séance prévue** : la lire, la modifier, la supprimer. Aujourd'hui elle affiche « Bientôt ». Le site montre aussi ses blocs (structure) et son parcours GPX (`VuePrevue.svelte`, `PanneauPrevue.svelte`).
-2. **Ouvrir une compétition** : voir son détail, la modifier, la supprimer. Elle s'affiche dans le détail du jour mais n'est pas touchable (le site : `PanneauCompetition.svelte`, route Compétitions).
-
 ## Fait récemment
+
+- **Rouvrir une séance prévue ou une compétition** (27 octobre) : toucher la ligne ouvre une fiche en lecture (`app/prevue.tsx` : chiffres, profil et blocs, parcours GPX avec carte, notes) avec **Modifier** (le formulaire de création, déjà rempli, `?id=`) et **Supprimer** (avec confirmation). Marche aussi dans la démo (en mémoire). Pas encore vu à l'écran.
 
 - **Légende et « Réessayer »** (27 octobre) : une petite phrase sous la grille (« Que signifient les points ? ») qui ouvre le détail de toutes les marques ; 4 points au plus par jour, sinon 3 et « +N » ; le message d'erreur a un bouton « Réessayer ». Football quitte le catalogue (les sports collectifs restent « Autre sport »).
 - **Bulle de la semaine** (27 octobre) : toucher la colonne « Sem. » ouvre une bulle accrochée à la colonne (temps, charge, séances, km, sept barres). Aussi : menu du « + » en liste à trois groupes avec glissement pour fermer, bouton « + Ajouter » en verre liquide (iOS 26), repos (lune dans la case, ligne « Jour de repos · Retirer » dans le détail), logo du sport dans la ligne de détail d'une séance, « 0h00 » pour une semaine vide, et accueil d'un compte neuf (« Rien encore. Normal. »).
