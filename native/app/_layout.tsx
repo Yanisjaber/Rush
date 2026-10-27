@@ -109,6 +109,8 @@ export default function RootLayout() {
               }}
             />
           ))}
+          {/* Un objectif annuel du Bilan : créer, modifier ou supprimer */}
+          <Stack.Screen name="objectif" options={{ headerShown: true, title: 'Objectif', headerStyle: { backgroundColor: palette.fond }, headerTintColor: palette.texte, headerTitleStyle: { fontFamily: 'BricolageGrotesque_700Bold' }, headerBackButtonDisplayMode: 'minimal', headerShadowVisible: false }} />
           <Stack.Screen name="cycle" options={{ headerShown: true, title: 'Cycle', headerStyle: { backgroundColor: palette.fond }, headerTintColor: palette.texte, headerTitleStyle: { fontFamily: 'BricolageGrotesque_700Bold' }, headerBackButtonDisplayMode: 'minimal', headerShadowVisible: false }} />
         </Stack.Protected>
         <Stack.Protected guard={!connecte}>

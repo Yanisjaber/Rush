@@ -2,10 +2,9 @@
   import { untrack } from 'svelte';
   import Bloc from '../lib/components/Bloc.svelte';
   import Bouton from '../lib/components/Bouton.svelte';
-  import ChipSport from '../lib/components/ChipSport.svelte';
   import PanneauObjectif from '../lib/components/PanneauObjectif.svelte';
   import GrapheNuits from '../lib/components/charts/GrapheNuits.svelte';
-  import { menu } from '../lib/stores/menu.svelte.js';
+  import { menu, choisirFiltre } from '../lib/stores/menu.svelte.js';
   import { route, aller, ouvrirPanneau, fermerPanneau, regler } from '../lib/routeur.svelte.js';
   import { construireAdresse, anneeDepuisAdresse } from '../lib/data/adresses.js';
   import { auth } from '../lib/stores/auth.svelte.js';
@@ -15,7 +14,7 @@
   import { activitesBilanDemo, objectifsAnnuelsDemo } from '../lib/data/demo.js';
   import {
     normaliser, fusionnerChargement, activitesAnnee, activitesAnneePrecedente, sommer, ecartPct, anneesDisponibles, avancement, recordsVolume, recordRecent,
-    cumulParAnnee, volumeMensuel, repartitionSport, NOM_SPORT_BILAN, SPORTS_BILAN, familleBilanDuFiltre,
+    cumulParAnnee, volumeMensuel, repartitionSport, NOM_SPORT_BILAN, familleBilanDuFiltre, decimalesObjectif,
   } from '../lib/data/bilan.js';
   import { formatDateLongue } from '../lib/utils/format.js';
   import { texteHM } from '../lib/data/score-sommeil.js';
@@ -23,9 +22,11 @@
   let { demo = false } = $props();
 
   const maintenant = new Date();
-  // L'année affichée est dans l'adresse (#/course/bilan/2025) ; sans année, c'est l'année en cours
-  const annee = $derived(anneeDepuisAdresse(route.sous) ?? maintenant.getFullYear());
-  const choisirAnnee = (a) => aller(construireAdresse({ sport: menu.filtre, page: '/bilan', sous: Number(a) === maintenant.getFullYear() ? '' : String(a) }));
+  // L'année affichée est dans l'adresse (#/course/bilan/2025) ; sans année, c'est l'année en cours (et jamais une année à venir)
+  const annee = $derived(Math.min(anneeDepuisAdresse(route.sous) ?? maintenant.getFullYear(), maintenant.getFullYear()));
+  // Changer d'année garde la mesure du cumul choisie (?metrique=…)
+  const choisirAnnee = (a) =>
+    aller(construireAdresse({ sport: menu.filtre, page: '/bilan', sous: Number(a) === maintenant.getFullYear() ? '' : String(a), q: route.q.metrique ? { metrique: route.q.metrique } : null }));
   // graphique de cumul : distance ou dénivelé, dans l'adresse (?metrique=d_plus)
   const metrique = $derived(route.q.metrique === 'd_plus' ? 'd_plus' : 'distance_km');
   let etat = $state({ chargement: true, erreur: '', brutes: [], objectifs: [], pret: false });
@@ -73,8 +74,8 @@
 
   const toutes = $derived(etat.brutes.map(normaliser));
   const parId = $derived(new Map(etat.brutes.map((l) => [l.id, l])));
-  const annees = $derived(anneesDisponibles(toutes, maintenant));
-  // Filtre global de sport (en-tête) : concerne les chiffres, records et graphiques ; pas les objectifs annuels
+  const annees = $derived([...new Set([...anneesDisponibles(toutes, maintenant), annee])].sort((x, y) => y - x)); // l'année de l'adresse est toujours dans la liste
+  // Filtre global de sport (en-tête) : concerne les chiffres, records, graphiques et objectifs annuels (sauf la répartition par sport, qui montre tous les sports)
   const filtrees = $derived(menu.filtre === 'tout' ? toutes : toutes.filter((a) => a.famille === menu.filtre));
 
   // --- Chiffres de l'année contre l'an dernier à la même date ---
@@ -89,9 +90,9 @@
   ]);
 
   // --- Objectifs de l'année ---
-  // Objectifs annuels du sport filtré, plus ceux qui valent pour « tous sports »
+  // Sur un onglet de sport, seulement les objectifs de ce sport : ceux « tous sports » n'apparaissent que sur « Tout » (comme dans l'app mobile)
   const familleFiltre = $derived(familleBilanDuFiltre(menu.filtre));
-  const objectifsAnnee = $derived(etat.objectifs.filter((o) => o.annee === annee && (!familleFiltre || o.sport === 'tous' || o.sport === familleFiltre)));
+  const objectifsAnnee = $derived(etat.objectifs.filter((o) => o.annee === annee && (!familleFiltre || o.sport === familleFiltre)));
   const avancements = $derived(objectifsAnnee.map((o) => ({ objectif: o, av: avancement(o, toutes, annee, maintenant) })).filter((x) => x.av));
 
   // --- Records, graphiques ---
@@ -104,7 +105,6 @@
   const NOMS_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
   const nomUnite = (u) => (u ? ` ${u}` : '');
-  const chipSport = { cyclisme: 'velo', course: 'course', natation: 'natation', musculation: 'muscu', autre: 'autre' };
 
   function nouvelObjectif() {
     ouvrirPanneau({ objectif: 'nouveau' }); // ce qui est ouvert est dans l'adresse (voir plus bas)
@@ -112,7 +112,11 @@
   function ouvrirObjectif(o) {
     ouvrirPanneau({ objectif: o.id });
   }
-  const apresEnregistrement = (o) => (etat.objectifs = [...etat.objectifs.filter((x) => x.id !== o.id), o]);
+  const apresEnregistrement = (o) => {
+    etat.objectifs = [...etat.objectifs.filter((x) => x.id !== o.id), o];
+    // Un objectif d'un autre sport que le filtre serait invisible, comme si l'enregistrement avait échoué : on revient sur « Tout »
+    if (familleFiltre && o.sport !== familleFiltre) choisirFiltre('tout');
+  };
   const apresSuppression = (id) => (etat.objectifs = etat.objectifs.filter((x) => x.id !== id));
   function ouvrirRecord(r) {
     const ligne = r.id ? parId.get(r.id) : null;
@@ -172,7 +176,7 @@
           <p class="valeur titre">{fmt(t.val, t.dec)}<span class="unite">{nomUnite(t.unite)}</span></p>
           {#if e != null}
             <p class="delta" class:haut={e >= 0} class:bas={e < 0}>{e >= 0 ? '+' : ''}{e} % contre {annee - 1}</p>
-            <p class="ref">{annee - 1} à la même date : {fmt(t.prec, t.dec)}{nomUnite(t.unite)}</p>
+            <p class="ref">{annee - 1}{annee === maintenant.getFullYear() ? ' à la même date' : ''} : {fmt(t.prec, t.dec)}{nomUnite(t.unite)}</p>
           {:else}
             <p class="ref">Pas de référence {annee - 1}</p>
           {/if}
@@ -188,17 +192,17 @@
         <ul class="objectifs">
           {#each avancements as { objectif, av } (objectif.id)}
             <li>
-              <button type="button" class="objectif" onclick={() => ouvrirObjectif(objectif)} aria-label="Modifier l'objectif {av.modele.label}">
+              <button type="button" class="objectif" onclick={() => ouvrirObjectif(objectif)} aria-label="Modifier l'objectif {av.modele.label}, {NOM_SPORT_BILAN[objectif.sport]} : {av.actuel == null ? 'valeur inconnue' : `${fmt(av.actuel, decimalesObjectif(av.modele.unit))} sur ${fmt(av.cible, decimalesObjectif(av.modele.unit))}${nomUnite(av.modele.unit)}, ${Math.round(av.pct)} pour cent`}">
                 <span class="tete">
                   <span class="nom">{#if objectif.sport !== 'tous'}<span class="badge">{NOM_SPORT_BILAN[objectif.sport]}</span>{/if}{av.modele.label}</span>
-                  <span class="chiffres"><strong>{av.actuel == null ? '—' : fmt(av.actuel, av.modele.unit === 'h' || av.modele.unit === 'W/kg' ? 1 : 0)}</strong> / {fmt(av.cible, av.modele.unit === 'h' ? 1 : 0)}{nomUnite(av.modele.unit)} <span class="pct">{av.actuel == null ? '—' : `${Math.round(av.pct)} %`}</span></span>
+                  <span class="chiffres"><strong>{av.actuel == null ? '—' : fmt(av.actuel, decimalesObjectif(av.modele.unit))}</strong> / {fmt(av.cible, decimalesObjectif(av.modele.unit))}{nomUnite(av.modele.unit)} <span class="pct">{av.actuel == null ? '—' : `${Math.round(av.pct)} %`}</span></span>
                 </span>
                 <span class="barre" aria-hidden="true">
                   <span class="remplie" class:ok={av.enRythme} style:width="{av.pct}%"></span>
                   {#if av.repere != null}<span class="repere" style:left="{av.repere}%" title="Rythme attendu à cette date"></span>{/if}
                 </span>
                 {#if av.projection != null}
-                  <span class="projection" class:ok={av.projectionPct >= 100}>Projection fin d'année : {fmt(av.projection, av.modele.unit === 'h' ? 1 : 0)}{nomUnite(av.modele.unit)} · {av.projectionPct} % de la cible</span>
+                  <span class="projection" class:ok={av.projectionPct >= 100}>Projection fin d'année : {fmt(av.projection, decimalesObjectif(av.modele.unit))}{nomUnite(av.modele.unit)} · {av.projectionPct} % de la cible</span>
                 {/if}
               </button>
             </li>
@@ -217,7 +221,7 @@
               <button type="button" class="record" disabled={!r.id} onclick={() => ouvrirRecord(r)}>
                 <span class="etiq">{r.libelle}{#if recordRecent(r.iso, maintenant)} <span class="nouveau">nouveau</span>{/if}</span>
                 <span class="valeur titre">{r.cle === 'duree' ? texteHM(Math.round(r.valeur)) : fmt(r.valeur, r.cle === 'distance' ? 1 : 0)}{#if r.cle !== 'duree'}<span class="unite"> {r.unite}</span>{/if}</span>
-                <span class="sous">{r.nom}</span>
+                <span class="sous">{r.nom || 'Sans titre'}</span>
                 <span class="sous">{formatDateLongue(r.iso)}</span>
               </button>
             </li>
@@ -255,11 +259,11 @@
 
       <Bloc titre="Volume par mois">
         <p class="legende-bloc">Heures d'entraînement chaque mois de {annee}.</p>
-        <div class="mois" role="img" aria-label="Heures d'entraînement par mois en {annee}">
+        <div class="mois" role="img" aria-label="Heures d'entraînement par mois en {annee} : {mensuel.map((h, i) => `${NOMS_MOIS[i]} ${fmt(h, 1)}`).join(', ')}">
           {#each mensuel as h, i (i)}
             <div class="col" title="{NOMS_MOIS[i]} : {fmt(h, 1)} h">
               <span class="val">{h >= 1 ? fmt(h, 0) : ''}</span>
-              <span class="fut" style:height="{(h / maxMois) * 100}%"></span>
+              <span class="zone"><span class="fut" style:height="{(h / maxMois) * 100}%"></span></span>
               <span class="nom-mois">{MOIS[i]}</span>
             </div>
           {/each}
@@ -291,6 +295,7 @@
   ouvert={panneau.ouvert}
   objectif={panneau.objectif}
   {annee}
+  sportDefaut={familleFiltre}
   {userId}
   {demo}
   onfermer={() => fermerPanneau('objectif')}
@@ -326,12 +331,6 @@
     border: 1px solid var(--trait-fort);
     border-radius: var(--rayon);
     font-size: 16px;
-  }
-  .puces {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 16px;
   }
   .info,
   .legende-bloc {
@@ -580,6 +579,14 @@
     font-size: 11px;
     color: var(--texte-doux);
   }
+  .col .zone {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: flex-end;
+    width: 100%;
+    min-height: 0;
+  }
   .col .fut {
     display: block;
     width: 100%;
@@ -598,7 +605,7 @@
   }
   .repartition li {
     display: grid;
-    grid-template-columns: 110px 1fr 100px;
+    grid-template-columns: minmax(72px, 110px) minmax(40px, 1fr) auto;
     align-items: center;
     gap: 12px;
     font-size: 14px;
@@ -618,6 +625,7 @@
     background: var(--texte);
   }
   .chiffre {
+    white-space: nowrap;
     text-align: right;
     color: var(--texte-doux);
   }

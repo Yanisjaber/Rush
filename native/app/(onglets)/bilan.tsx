@@ -1,9 +1,8 @@
 import { FondDegrade } from '@/components/FondDegrade';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, AppState, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
 import { BarresHebdo } from '@/components/BarresHebdo';
 import { BarresMois } from '@/components/BarresMois';
@@ -20,7 +19,7 @@ import { OngletsIcones } from '@/components/OngletsIcones';
 import type { IconeOnglet } from '@/components/OngletsIcones.types';
 import {
   activitesAnnee, anneesDisponibles, avancement, chargeParSemaine, cumulParAnnee, kmParMois, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
-  regulariteAnnee, repartitionSport, sommer, volumeMensuel, familleBilanDuFiltre, type MetriqueCumul,
+  regulariteAnnee, repartitionSport, sommer, volumeMensuel, familleBilanDuFiltre, decimalesObjectif, type MetriqueCumul,
 } from '@/data/bilan';
 import { formatDateLongue, formatNum, texteHM } from '@/data/format';
 import { useDonneesBilan } from '@/hooks/useDonneesBilan';
@@ -40,12 +39,13 @@ const ONGLETS: { cle: OngletBilan; nom: string; icone: IconeOnglet }[] = [
 ];
 const nomUnite = (u: string) => (u ? ` ${u}` : '');
 // Famille de bilan d'un objectif → famille de couleur de l'app (la couleur désigne le sport)
-const FAMILLE_COULEUR: Record<string, string> = { cyclisme: 'velo', course: 'course', natation: 'natation', musculation: 'muscu', autre: 'autre' };
+const FAMILLE_COULEUR: Record<string, string> = { cyclisme: 'velo', course: 'course', natation: 'natation', musculation: 'muscu', hyrox: 'hyrox', triathlon: 'triathlon', duathlon: 'duathlon', autre: 'autre' };
 
 // Le bilan d'une année, en trois onglets : Résumé (une phrase, les objectifs, cumul sur 3 ans, répartition), Rythme (mois, semaines, régularité) et Records.
-// Lecture seule pour l'instant : ajouter ou modifier un objectif arrive avec son panneau.
+// Toucher un objectif l'ouvre pour le modifier ou le supprimer ; « Ajouter un objectif » en crée un (écran « objectif »). Toucher un record ouvre sa séance.
 export default function Bilan() {
   const p = usePalette();
+  const router = useRouter();
   const bas = useSafeAreaInsets().bottom;
   const { filtre } = useMenu();
   // « Aujourd'hui » : l'onglet reste ouvert en arrière-plan, donc on le remet à jour en revenant sur l'écran ou dans l'app (minuit, Nouvel An)
@@ -85,7 +85,7 @@ export default function Bilan() {
   const colonnes = [
     courant.heures > 0 ? { cle: 'heures', libelle: 'Temps', val: formatNum(courant.heures, 0), unite: 'h' } : null,
     courant.distance > 0 && courant.seances > 0 ? { cle: 'seances', libelle: 'Séances', val: formatNum(courant.seances, 0), unite: '' } : null,
-    courant.tss > 0 ? { cle: 'effort', libelle: 'Effort', val: formatNum(courant.tss, 0), unite: '' } : null,
+    courant.tss > 0 ? { cle: 'effort', libelle: 'Charge', val: formatNum(courant.tss, 0), unite: '' } : null,
   ].filter((x): x is { cle: string; libelle: string; val: string; unite: string } => !!x);
 
   const familleFiltre = familleBilanDuFiltre(filtre);
@@ -169,7 +169,7 @@ export default function Bilan() {
                   {avancements.length ? (
                     <View style={styles.pistes}>
                       {avancements.map(({ objectif, av }) => {
-                        const dec = av.modele.unit === 'h' ? 1 : 0;
+                        const dec = decimalesObjectif(av.modele.unit);
                         const unite = nomUnite(av.modele.unit);
                         const couleur = objectif.sport === 'tous' ? p.texte : couleurSport(p, FAMILLE_COULEUR[objectif.sport]);
                         // En gros : ce que mesure l'objectif ; en petit : son sport (« Tous » pour un objectif tous sports)
@@ -178,7 +178,12 @@ export default function Bilan() {
                         return (
                           <Pressable
                             key={objectif.id}
-                            onPress={() => bientot("La modification d'un objectif")}
+                            onPress={() =>
+                              router.push({
+                                pathname: '/objectif',
+                                params: { id: objectif.id, annee: String(annee), sport: objectif.sport, template: objectif.template, cible: String(objectif.target), actuel: objectif.currentManual != null ? String(objectif.currentManual) : '' },
+                              })
+                            }
                             accessibilityRole="button"
                             accessibilityLabel={`${nom}, ${sport}, ${av.actuel == null ? 'valeur inconnue' : `${Math.round(av.pct)} pour cent`}. Modifier l'objectif`}
                             style={styles.caseObjectif}
@@ -190,7 +195,7 @@ export default function Bilan() {
                               couleur={couleur}
                               pct={av.actuel == null ? null : av.pct}
                               attendu={av.repere != null && av.repere < 100 ? av.repere : null}
-                              fait={av.actuel == null ? '—' : formatNum(av.actuel, av.modele.unit === 'h' || av.modele.unit === 'W/kg' ? 1 : 0)}
+                              fait={av.actuel == null ? '—' : formatNum(av.actuel, dec)}
                               cible={`${formatNum(av.cible, dec)}${unite}`}
                               etiquette={`${nom}, ${sport} : ${av.actuel == null ? 'valeur inconnue' : `${Math.round(av.pct)} pour cent`}`}
                             />
@@ -202,7 +207,7 @@ export default function Bilan() {
                     <Text style={[typo.corps, { color: p.texteDoux, marginTop: espace.e3 }]}>Aucun objectif</Text>
                   )}
                   <View style={{ marginTop: espace.e3 }}>
-                    <Bouton variante="discret" onPress={() => bientot("L'ajout d'un objectif")}>
+                    <Bouton variante="discret" onPress={() => router.push({ pathname: '/objectif', params: { annee: String(annee), ...(familleFiltre ? { sport: familleFiltre } : {}) } })}>
                       Ajouter un objectif
                     </Bouton>
                   </View>
@@ -242,7 +247,7 @@ export default function Bilan() {
                         taille={132}
                         epaisseur={18}
                         piste={p.surface2}
-                        etiquette="Anneau de la répartition du temps par sport"
+                        etiquette={`Anneau de la répartition ${mesureRep.phrase} par sport`}
                       >
                         <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} style={[styles.totalAnneau, { color: p.texte }]}>
                           {formatNum(repartition.reduce((t, r) => t + r.valeur, 0), 0)}
@@ -288,8 +293,11 @@ export default function Bilan() {
 
                 <Bloc titre="Charge par semaine">
                   <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>
-                    TSS des 12 dernières semaines · moyenne {formatNum(moyenneSemaine, 0)}.
+                    {enCours ? 'TSS des 12 dernières semaines' : `TSS des 12 dernières semaines de ${annee}`} · moyenne {formatNum(moyenneSemaine, 0)}.
                   </Text>
+                  {semaines.every((v) => v === 0) ? (
+                    <Text style={[typo.corps, { color: p.texteDoux, marginBottom: 12 }]}>Pas de charge (TSS) enregistrée sur cette période : les séances sans puissance ni cardio n'en ont pas.</Text>
+                  ) : null}
                   <BarresHebdo
                     valeurs={semaines}
                     couleur={p.texte}
@@ -340,29 +348,39 @@ export default function Bilan() {
               <>
                 {records.length ? (
                   <Bloc titre={`Records de ${annee}`}>
-                    {records.map((r, i) => (
-                      <View
-                        key={r.cle}
-                        accessible
-                        accessibilityLabel={`${r.libelle}, ${r.cle === 'duree' ? texteHM(Math.round(r.valeur)) : `${formatNum(r.valeur, r.cle === 'distance' ? 1 : 0)} ${r.unite}`}, ${r.nom}, ${formatDateLongue(r.iso)}`}
-                        style={[styles.record, i > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }]}
-                      >
-                        <View style={styles.enteteRecord}>
-                          <Text style={[typo.micro, { color: p.texteDoux }]}>{r.libelle}</Text>
-                          {recordRecent(r.iso, maintenant) ? (
-                            <View style={[styles.nouveau, { backgroundColor: p.sportMuscu }]}>
-                              <Text style={[typo.micro, { color: p.encreSurCouleur }]}>Nouveau</Text>
-                            </View>
-                          ) : null}
+                    {records.map((r, i) => {
+                      const nom = r.nom || 'Sans titre';
+                      const contenu = (
+                        <>
+                          <View style={styles.enteteRecord}>
+                            <Text style={[typo.micro, { color: p.texteDoux }]}>{r.libelle}</Text>
+                            {recordRecent(r.iso, maintenant) ? (
+                              <View style={[styles.nouveau, { backgroundColor: p.sportMuscu }]}>
+                                <Text style={[typo.micro, { color: p.encreSurCouleur }]}>Nouveau</Text>
+                              </View>
+                            ) : null}
+                          </View>
+                          <Text style={[styles.valeurRecord, { color: p.texte }]}>
+                            {r.cle === 'duree' ? texteHM(Math.round(r.valeur)) : formatNum(r.valeur, r.cle === 'distance' ? 1 : 0)}
+                            {r.cle !== 'duree' ? <Text style={[typo.corpsFort, { color: p.texteDoux }]}> {r.unite}</Text> : null}
+                          </Text>
+                          <Text style={[typo.petit, { color: p.texteDoux }]}>{nom}</Text>
+                          <Text style={[typo.petit, { color: p.texteDoux }]}>{formatDateLongue(r.iso)}</Text>
+                        </>
+                      );
+                      const etiquette = `${r.libelle}, ${r.cle === 'duree' ? texteHM(Math.round(r.valeur)) : `${formatNum(r.valeur, r.cle === 'distance' ? 1 : 0)} ${r.unite}`}, ${nom}, ${formatDateLongue(r.iso)}`;
+                      const style = [styles.record, i > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }];
+                      // Le record « D+ en un jour » cumule plusieurs séances : il n'a pas de séance à ouvrir
+                      return r.id ? (
+                        <Pressable key={r.cle} accessibilityRole="button" accessibilityLabel={`${etiquette}. Ouvrir la séance`} onPress={() => router.push({ pathname: '/seance', params: { id: r.id } })} style={style}>
+                          {contenu}
+                        </Pressable>
+                      ) : (
+                        <View key={r.cle} accessible accessibilityLabel={etiquette} style={style}>
+                          {contenu}
                         </View>
-                        <Text style={[styles.valeurRecord, { color: p.texte }]}>
-                          {r.cle === 'duree' ? texteHM(Math.round(r.valeur)) : formatNum(r.valeur, r.cle === 'distance' ? 1 : 0)}
-                          {r.cle !== 'duree' ? <Text style={[typo.corpsFort, { color: p.texteDoux }]}> {r.unite}</Text> : null}
-                        </Text>
-                        <Text style={[typo.petit, { color: p.texteDoux }]}>{r.nom}</Text>
-                        <Text style={[typo.petit, { color: p.texteDoux }]}>{formatDateLongue(r.iso)}</Text>
-                      </View>
-                    ))}
+                      );
+                    })}
                   </Bloc>
                 ) : (
                   <Bloc titre={`Records de ${annee}`}>

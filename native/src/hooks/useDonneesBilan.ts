@@ -2,7 +2,8 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { chargerActivitesBilan, chargerObjectifsAnnuels } from '@/data/api';
 import { donneesPerimees, fusionnerChargement, type ObjectifAnnuel } from '@/data/bilan';
-import { activitesBilanDemo, objectifsAnnuelsDemo } from '@/data/demo';
+import { activitesBilanDemo } from '@/data/demo';
+import { objectifsDemo, useVersionObjectifs } from '@/stores/objectifs';
 import { useAuth } from '@/stores/auth';
 import type { Seance } from '@/data/types';
 
@@ -21,7 +22,9 @@ export function useDonneesBilan(): {
 } {
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
-  const demoDonnees = useMemo(() => (demo ? { brutes: activitesBilanDemo(new Date()), objectifs: objectifsAnnuelsDemo(new Date()), erreur: '', pret: true } : null), [demo]);
+  const versionObjectifs = useVersionObjectifs(); // change quand un objectif est créé, modifié ou supprimé
+  const brutesDemo = useMemo(() => (demo ? activitesBilanDemo(new Date()) : null), [demo]);
+  const demoDonnees = useMemo(() => (brutesDemo ? { brutes: brutesDemo, objectifs: objectifsDemo(), erreur: '', pret: true } : null), [brutesDemo, versionObjectifs]);
   const [reel, setReel] = useState<{ userId: string; brutes: Seance[]; objectifs: ObjectifAnnuel[]; erreur: string; pret: boolean } | null>(null);
   const [actualisation, setActualisation] = useState(false);
   const chargeA = useRef<number | null>(null); // quand les données ont été chargées pour la dernière fois (millisecondes)
@@ -43,7 +46,7 @@ export function useDonneesBilan(): {
 
   useEffect(() => {
     if (!demo) void charger();
-  }, [demo, charger]);
+  }, [demo, charger, versionObjectifs]);
 
   // Retour sur l'onglet : on recharge seulement si les données sont vieilles. Premier chargement encore en cours (chargeA vide) : rien à faire.
   useFocusEffect(

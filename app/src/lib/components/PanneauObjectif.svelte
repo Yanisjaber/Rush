@@ -7,22 +7,26 @@
   import { creerObjectifAnnuel, modifierObjectifAnnuel, supprimerObjectifAnnuel } from '../data/api.js';
 
   // Créer, modifier ou supprimer un objectif annuel (table yearly_goals).
-  //  objectif : objectif à modifier (null = nouveau) · annee : année de l'objectif · enregistre(objectif) / supprime(id)
-  let { ouvert = false, objectif = null, annee, userId, demo = false, onfermer, enregistre, supprime } = $props();
+  //  objectif : objectif à modifier (null = nouveau) · annee : année du nouvel objectif · sportDefaut : sport proposé à la création
+  //  enregistre(objectif) / supprime(id)
+  let { ouvert = false, objectif = null, annee, sportDefaut = null, userId, demo = false, onfermer, enregistre, supprime } = $props();
 
   let f = $state({ sport: 'tous', template: '', cible: '', actuel: '' });
   let erreurs = $state({});
   let erreurGlobale = $state('');
   let envoi = $state(false);
   let confirmer = $state(false);
+  let ouverture = 0; // change à chaque ouverture : une réponse arrivée après la fermeture ne ferme pas un autre panneau
 
   $effect(() => {
     if (!ouvert) return;
     const o = objectif;
     untrack(() => {
+      ouverture++;
+      const sport = sportDefaut && Object.hasOwn(CATALOGUE, sportDefaut) ? sportDefaut : 'tous';
       f = o
         ? { sport: o.sport, template: o.template, cible: String(o.target), actuel: o.currentManual != null ? String(o.currentManual) : '' }
-        : { sport: 'tous', template: CATALOGUE.tous[0].id, cible: '', actuel: '' };
+        : { sport, template: CATALOGUE[sport][0].id, cible: '', actuel: '' };
       erreurs = {};
       erreurGlobale = '';
       envoi = false;
@@ -46,9 +50,11 @@
     erreurGlobale = '';
     if (!valeurs) return;
     envoi = true;
+    const cetteOuverture = ouverture;
     let r;
     if (demo) r = { data: { id: objectif?.id || `demo-g-${Date.now()}`, annee, sport: valeurs.sport, template: valeurs.template, target: valeurs.target, currentManual: valeurs.current_manual ?? undefined }, erreur: '' };
     else r = objectif ? await modifierObjectifAnnuel(userId, objectif.id, valeurs) : await creerObjectifAnnuel(userId, annee, valeurs);
+    if (cetteOuverture !== ouverture) return r.erreur ? undefined : enregistre?.(r.data); // enregistré, mais le panneau n'est plus celui-là : on prévient la page sans le fermer
     envoi = false;
     if (r.erreur) return (erreurGlobale = r.erreur);
     enregistre?.(r.data);
@@ -58,19 +64,22 @@
   async function effacer() {
     if (!objectif || envoi) return;
     envoi = true;
-    const r = demo ? { erreur: '' } : await supprimerObjectifAnnuel(userId, objectif.id);
+    const cetteOuverture = ouverture;
+    const cible = objectif;
+    const r = demo ? { erreur: '' } : await supprimerObjectifAnnuel(userId, cible.id);
+    if (cetteOuverture !== ouverture) return r.erreur ? undefined : supprime?.(cible.id);
     envoi = false;
     if (r.erreur) {
       erreurGlobale = r.erreur;
       confirmer = false;
       return;
     }
-    supprime?.(objectif.id);
+    supprime?.(cible.id);
     onfermer?.();
   }
 </script>
 
-<Panneau {ouvert} titre={objectif ? `Modifier l'objectif ${annee}` : `Nouvel objectif ${annee}`} {onfermer}>
+<Panneau {ouvert} titre={objectif ? `Modifier l'objectif ${objectif.annee}` : `Nouvel objectif ${annee}`} {onfermer}>
   <form class="formulaire" onsubmit={enregistrer} novalidate>
     <div class="champ">
       <label for="obj-sport">Sport</label>
