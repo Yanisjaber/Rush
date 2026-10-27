@@ -296,7 +296,7 @@ export async function chargerSeancesPeriode(userId: string, debutIso: string, fi
   return res;
 }
 
-const COLONNES_NOTE = 'id,type,text,color,from_date,to_date';
+const COLONNES_NOTE = 'id,type,text,color,from_date,to_date,details';
 
 /** Notes qui recouvrent la période et jours de repos de la période. */
 export async function chargerAnnotations(userId: string, debutIso: string, finIso: string): Promise<Resultat<{ notes: Note[]; repos: string[] }>> {

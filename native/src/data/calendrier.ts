@@ -1,5 +1,6 @@
 // Logique du calendrier : construit la grille d'un mois (semaines de lundi à dimanche)
 // et y range les séances réalisées, les séances prévues et les objectifs.
+import { courtDuType } from './catalogue-sports.ts';
 import { familleAffichage } from './familles.ts';
 import { dateIsoLocale } from './format.ts';
 import type { Cycle, Note, Objectif, Prevue, Seance } from './types.ts';
@@ -153,6 +154,31 @@ export const chargeSeance = (s: Seance): number => (Number(s.tss) > 0 ? Number(s
 
 /** La charge du jour : celle de toutes ses séances faites. */
 export const chargeJour = (j: JourGrille): number => j.seances.reduce((t, s) => t + chargeSeance(s), 0);
+
+/** Ce que pèse un jour : les secondes faites par sport (le plus long d'abord) et les secondes prévues. `sport` sert à tirer la couleur (la famille, ou le type brut pour un sport « autre »). */
+export interface CompositionJour {
+  fait: { sport: string; nom: string; secondes: number }[];
+  faitSec: number;
+  prevuSec: number;
+}
+const NOM_FAMILLE: Record<string, string> = { course: 'Course', velo: 'Vélo', natation: 'Natation', muscu: 'Muscu', hyrox: 'Hyrox', triathlon: 'Triathlon', duathlon: 'Duathlon' };
+export function compositionJour(j: Pick<JourGrille, 'seances' | 'planifiees'>): CompositionJour {
+  // Une part par famille (le trail compte avec la course) ; les sports « autres » gardent chacun leur nom
+  const parNom = new Map<string, { sport: string; nom: string; secondes: number }>();
+  for (const s of j.seances) {
+    const sec = s.moving_time || 0;
+    if (sec <= 0) continue;
+    const famille = familleAffichage(s.sport);
+    const nom = NOM_FAMILLE[famille] ?? courtDuType(s.sport);
+    const cle = NOM_FAMILLE[famille] ? famille : `autre:${nom}`;
+    const part = parNom.get(cle);
+    if (part) part.secondes += sec;
+    else parNom.set(cle, { sport: NOM_FAMILLE[famille] ? famille : s.sport, nom, secondes: sec });
+  }
+  const fait = [...parNom.values()].sort((a, b) => b.secondes - a.secondes);
+  const prevuSec = j.planifiees.reduce((t, x) => t + (Number(x.duration) > 0 ? Number(x.duration) * 60 : 0), 0);
+  return { fait, faitSec: fait.reduce((t, x) => t + x.secondes, 0), prevuSec };
+}
 
 /** À partir de cette charge du jour (points), la teinte d'une case est à sa force maximale. */
 const CHARGE_JOUR_FORTE = 150;

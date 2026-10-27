@@ -3,7 +3,6 @@ import { courtDuType } from '@/data/catalogue-sports';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { bientot } from '@/actions/bientot';
 import { BarreSports } from '@/components/BarreSports';
@@ -11,9 +10,12 @@ import { Bloc } from '@/components/Bloc';
 import { ApercuCycle } from '@/components/ApercuCycle';
 import { MenuAjout, type ChoixAjout } from '@/components/MenuAjout';
 import { FeuilleNote } from '@/components/FeuilleNote';
+import { LogoNote } from '@/components/LogoNote';
+import { ResumeJour } from '@/components/ResumeJour';
 import { SelecteurMois } from '@/components/SelecteurMois';
 import { chargeJour, chargeSeance, chiffresSemaine, decalerMois, grilleMois, JOURS_SEMAINE, jourVide, profilSemaine, resumeSemaine, secondesJour, teinteJour, type JourGrille, type UniteSemaine } from '@/data/calendrier';
 import { couleurNote, libelleNote } from '@/data/annotations';
+import { titreNote } from '@/data/sante-notes';
 import { avancementCycle, cycleVisible } from '@/data/cycles';
 import { familleAffichage, garderSeance } from '@/data/familles';
 import { dateIsoLocale, formatDistanceSport, formatDuree, formatHeuresMinutes, formatNombre } from '@/data/format';
@@ -230,7 +232,7 @@ function Carte({ valeur, unite, legende, serree }: { valeur: string; unite?: str
 }
 
 // Les marques d'un jour (au plus cinq points) : séance faite = point plein de la couleur du sport, prévue = contour, compétition = carré.
-// Une note n'est pas un point : elle plie le coin de la case (voir CoinPlie).
+// Une note n'est pas un point : elle met un petit logo dans le coin de la case (voir LogosNotes).
 function marquesDe(j: JourGrille): { cle: string; type: 'fait' | 'prevu' | 'objectif'; couleur?: string }[] {
   return [
     ...j.objectifs.map((o) => ({ cle: `o${o.id}`, type: 'objectif' as const })),
@@ -239,14 +241,17 @@ function marquesDe(j: JourGrille): { cle: string; type: 'fait' | 'prevu' | 'obje
   ];
 }
 
-// Le coin plié : « il y a une note sur ce jour ». Le coin supérieur droit de la case se replie comme un coin de page, dans la couleur de la note
-// (orange pour une blessure, rouge pour une maladie…). Un triangle plus sombre fait le pli. La case l'arrondit (overflow caché), il ne touche jamais le chiffre.
-function CoinPlie({ couleur }: { couleur: string }) {
+// Les logos des notes du jour : un petit pictogramme par type (note, maladie, blessure, indisponible), dans la couleur de la note, alignés en ligne, centrés au-dessus du chiffre.
+// Un seul logo par type (quatre types, donc quatre logos au plus) ; le détail du jour liste toutes les notes.
+function LogosNotes({ notes }: { notes: Note[] }) {
+  const vus = new Set<string>();
+  const logos = notes.filter((n) => (vus.has(n.type) ? false : (vus.add(n.type), true)));
   return (
-    <Svg width={12} height={12} viewBox="0 0 20 20" accessible={false}>
-      <Path d="M0 0H20V20Z" fill={couleur} />
-      <Path d="M20 20L8 8H20Z" fill="rgba(0,0,0,0.28)" />
-    </Svg>
+    <View style={styles.coin} pointerEvents="none">
+      {logos.map((n) => (
+        <LogoNote key={n.id} type={n.type} couleur={couleurNote(n.color)} taille={8} />
+      ))}
+    </View>
   );
 }
 
@@ -281,7 +286,7 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
       accessibilityRole="button"
       accessibilityState={{ selected: choisi }}
       accessibilityLabel={label}
-      style={[styles.case, fond ? { backgroundColor: fond } : null, choisi && { borderColor: p.texte, borderWidth: 2 }]}
+      style={[styles.case, fond ? { backgroundColor: fond } : null, choisi && { borderColor: p.texte }]}
     >
       {jour.cycles.length ? (
         // Les cycles d'entraînement : une bande de la couleur du cycle au bas de la case, deux au plus (l'une au-dessus de l'autre)
@@ -291,11 +296,7 @@ function Case({ jour, choisi, onPress }: { jour: JourGrille; choisi: boolean; on
           ))}
         </View>
       ) : null}
-      {jour.notes.length ? (
-        <View style={styles.coin} pointerEvents="none">
-          <CoinPlie couleur={couleurNote(jour.notes[0].color)} />
-        </View>
-      ) : null}
+      {jour.notes.length ? <LogosNotes notes={jour.notes} /> : null}
       <View style={[styles.numero, jour.aujourdhui && styles.aujourdhui, jour.aujourdhui && { backgroundColor: p.texte }]}>
         <Text style={[styles.numeroTexte, { color: jour.aujourdhui ? p.fond : jour.futur ? p.texteDoux : p.texte }]}>{jour.num}</Text>
       </View>
@@ -397,14 +398,6 @@ function Detail({ jour }: { jour: JourGrille }) {
     if (c === 'import') return router.push({ pathname: '/ajout-import', params: { date: jour.iso } });
     if (c === 'seance') return router.push({ pathname: '/ajout-seance', params: { date: jour.iso } });
   };
-  // Ce que le jour pèse, d'un coup d'œil : temps fait, charge, temps prévu (en pastilles, comme le haut du calendrier)
-  const faites = jour.seances.reduce((t, s) => t + (s.moving_time || 0), 0);
-  const prevues = jour.planifiees.reduce((t, x) => t + (Number(x.duration) > 0 ? Number(x.duration) * 60 : 0), 0);
-  const pastilles = [
-    faites ? { valeur: formatDuree(faites), unite: 'faites', dit: `${formatDuree(faites)} faites` } : null,
-    faites ? { valeur: String(chargeJour(jour)), unite: 'pts', dit: `${chargeJour(jour)} points de charge` } : null,
-    prevues ? { valeur: formatDuree(prevues), unite: 'prévues', dit: `${formatDuree(prevues)} prévues` } : null,
-  ].filter((x): x is { valeur: string; unite: string; dit: string } => x !== null);
   return (
     <Bloc>
       <View style={styles.detailTete}>
@@ -421,18 +414,28 @@ function Detail({ jour }: { jour: JourGrille }) {
           <Text style={[styles.detailPlusTexte, { color: p.fond }]}>+</Text>
         </Pressable>
       </View>
-      {pastilles.length ? (
-        <View style={styles.detailPastilles}>
-          {pastilles.map((x) => (
-            <View key={x.unite} accessible accessibilityLabel={x.dit} style={[styles.detailPastille, { backgroundColor: p.surface2 }]}>
-              <Text style={[styles.detailPastilleValeur, { color: p.texte }]}>
-                {x.valeur}
-                <Text style={[styles.carteUnite, { color: p.texteDoux }]}> {x.unite}</Text>
+      {/* Les notes de santé du jour : une pastille par note (logo + titre), on la touche pour le détail */}
+      {jour.notes.length ? (
+        <View style={styles.notesPastilles}>
+          {jour.notes.map((n) => (
+            <Pressable
+              key={n.id}
+              onPress={() => setNoteOuverte(n)}
+              accessibilityRole="button"
+              accessibilityLabel={`${libelleNote(n)}. Voir le détail`}
+              hitSlop={5}
+              style={[styles.notePastille, { backgroundColor: p.surface2 }]}
+            >
+              <LogoNote type={n.type} couleur={couleurNote(n.color)} taille={14} />
+              <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flexShrink: 1 }]}>
+                {titreNote(n)}
               </Text>
-            </View>
+            </Pressable>
           ))}
         </View>
       ) : null}
+      {/* Ce que le jour pèse, d'un coup d'œil : temps fait, charge, et la part du prévu, par sport */}
+      <ResumeJour jour={jour} />
       {erreurRepos ? (
         <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger, marginBottom: 6 }]}>
           {erreurRepos}
@@ -492,45 +495,36 @@ function Detail({ jour }: { jour: JourGrille }) {
           })}
         </View>
       )}
-      {/* Sous les séances : les cycles du jour avec leur avancement, puis les notes */}
-      {jour.cycles.map((c) => {
-        const av = avancementCycle(c, jour.iso);
-        return (
-          <Pressable
-            key={c.id}
-            onPress={() => setCycleOuvert(c)}
-            accessibilityRole="button"
-            accessibilityLabel={`Cycle ${c.name}, jour ${av.jour} sur ${av.total}. Voir`}
-            style={styles.cycleAvancement}
-          >
-            <View style={styles.cycleLigne}>
-              <View style={[styles.cyclePoint, { backgroundColor: couleurNote(c.color) }]} />
-              <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>
-                {c.name}
-              </Text>
-              <Text style={[typo.petit, { color: p.texteDoux }]}>
-                jour {av.jour} sur {av.total}
-              </Text>
-            </View>
-            <View style={[styles.cycleBarre, { backgroundColor: p.surface2 }]}>
-              <View style={[styles.cycleBarreRemplie, { width: `${Math.round(av.part * 100)}%`, backgroundColor: couleurNote(c.color) }]} />
-            </View>
-          </Pressable>
-        );
-      })}
-          {jour.notes.map((n) => (
-            <Pressable
-              key={n.id}
-              onPress={() => setNoteOuverte(n)}
-              accessibilityRole="button"
-              accessibilityLabel={`Note : ${libelleNote(n)}. Modifier`}
-              style={[styles.note, { borderLeftColor: couleurNote(n.color), backgroundColor: p.surface2, marginTop: 10, minHeight: 44, justifyContent: 'center' }]}
-            >
-              <Text numberOfLines={2} style={[typo.petit, { color: p.texte }]}>
-                {libelleNote(n)}
-              </Text>
-            </Pressable>
-          ))}
+      {/* Sous les séances : les cycles du jour, deux par ligne (nom, jour x sur y, barre d'avancement) */}
+      {jour.cycles.length ? (
+        <View style={styles.cyclesLigne}>
+          {jour.cycles.map((c) => {
+            const av = avancementCycle(c, jour.iso);
+            return (
+              <Pressable
+                key={c.id}
+                onPress={() => setCycleOuvert(c)}
+                accessibilityRole="button"
+                accessibilityLabel={`Cycle ${c.name}, jour ${av.jour} sur ${av.total}. Voir`}
+                style={[styles.cycleTuile, { backgroundColor: p.surface2 }]}
+              >
+                <View style={styles.cycleLigne}>
+                  <View style={[styles.cyclePoint, { backgroundColor: couleurNote(c.color) }]} />
+                  <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>
+                    {c.name}
+                  </Text>
+                  <Text style={[typo.petit, { color: p.texteDoux }]}>
+                    {av.jour}/{av.total}
+                  </Text>
+                </View>
+                <View style={[styles.cycleBarre, { backgroundColor: p.trait }]}>
+                  <View style={[styles.cycleBarreRemplie, { width: `${Math.round(av.part * 100)}%`, backgroundColor: couleurNote(c.color) }]} />
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
       <MenuAjout
         ouvert={menuAjout}
         onFermer={() => setMenuAjout(false)}
@@ -592,7 +586,7 @@ const styles = StyleSheet.create({
   jourProfil: { width: 4, borderRadius: 2 },
   // Un septième de la rangée, avec un petit vide de chaque côté : c'est lui qui espace les cases entre elles
   emplacement: { width: `${100 / 7}%`, paddingHorizontal: 2 },
-  case: { width: '100%', minHeight: 58, alignItems: 'center', paddingTop: 4, borderRadius: rayon.base, borderWidth: 1, borderColor: 'transparent', gap: 2, overflow: 'hidden' },
+  case: { width: '100%', minHeight: 58, alignItems: 'center', paddingTop: 7, borderRadius: rayon.base, borderWidth: 2, borderColor: 'transparent', gap: 2, overflow: 'hidden' },
   numero: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   // Aujourd'hui : un carré arrondi, serré autour du chiffre (la même hauteur totale que les autres jours : 22 + 2 × 2)
   aujourdhui: { width: 24, height: 22, borderRadius: 6, marginVertical: 2 },
@@ -600,7 +594,7 @@ const styles = StyleSheet.create({
   points: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 10 },
   point: { width: 6, height: 6, borderRadius: 3 },
   carre: { width: 6, height: 6, borderRadius: 1.5, borderWidth: 1 },
-  coin: { position: 'absolute', top: 0, right: 0 },
+  coin: { position: 'absolute', top: 1, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 1 },
   bandes: { position: 'absolute', left: 0, right: 0, bottom: 0, gap: 1 },
   bande: { height: 4 },
   barre: { width: 10, height: 3, borderRadius: 2 },
@@ -608,22 +602,20 @@ const styles = StyleSheet.create({
   detailTete: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   detailPlus: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   detailPlusTexte: { fontFamily: police.titre800, fontSize: 26, lineHeight: 30 },
-  detailPastilles: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4, marginBottom: 6 },
-  detailPastille: { height: 28, borderRadius: rayon.rond, paddingHorizontal: 11, justifyContent: 'center' },
-  detailPastilleValeur: { fontFamily: police.titre800, fontSize: 13, lineHeight: 16 },
   // Une séance du jour : une barre de la couleur du sport (en pointillés si elle est prévue), son nom et ses détails, sa durée à droite
-  ligneSeance: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, borderTopWidth: 1 },
+  ligneSeance: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, borderTopWidth: 1 },
   ligneBarre: { width: 6, alignSelf: 'stretch', marginVertical: 8, borderRadius: 3 },
   tiret: { fontSize: 28, lineHeight: 32 },
   seance: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, borderRadius: rayon.base, paddingHorizontal: 14 },
   objectif: { borderRadius: rayon.base, paddingHorizontal: 12, paddingVertical: 8 },
   objectifTexte: { fontFamily: police.titre800, fontSize: 15, lineHeight: 19 },
-  // Une note : une citation avec un trait de sa couleur à gauche
-  note: { borderTopRightRadius: rayon.base, borderBottomRightRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 12, paddingVertical: 10 },
-  // Un cycle du jour : son nom et « jour 22 sur 23 », sous une fine barre de progression
-  cycleAvancement: { minHeight: 44, justifyContent: 'center', marginTop: 10 },
-  cycleLigne: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cyclePoint: { width: 10, height: 10, borderRadius: 5 },
-  cycleBarre: { height: 6, borderRadius: 3, overflow: 'hidden', marginTop: 6 },
+  // Les notes du jour (pastilles) et les cycles du jour (tuiles : nom, « 21/23 », fine barre de progression)
+  notesPastilles: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4, marginBottom: 6 },
+  notePastille: { minHeight: 34, maxWidth: '100%', flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: rayon.rond, paddingLeft: 10, paddingRight: 12 },
+  cyclesLigne: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  cycleTuile: { flexGrow: 1, flexBasis: '45%', minHeight: 44, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8, gap: 6, justifyContent: 'center' },
+  cycleLigne: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  cyclePoint: { width: 8, height: 8, borderRadius: 4 },
+  cycleBarre: { height: 5, borderRadius: 3, overflow: 'hidden' },
   cycleBarreRemplie: { height: '100%', borderRadius: 3 },
 });

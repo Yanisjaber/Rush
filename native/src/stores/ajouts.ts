@@ -62,14 +62,14 @@ export function ajouterPrevueDemo(ligne: LignePrevue): Prevue {
 }
 
 export function ajouterNoteDemo(ligne: LigneNote): Note {
-  const n: Note = { id: identifiant(), type: ligne.type, text: ligne.text, color: ligne.color, from_date: ligne.from_date, to_date: ligne.to_date };
+  const n: Note = { id: identifiant(), type: ligne.type, text: ligne.text, color: ligne.color, from_date: ligne.from_date, to_date: ligne.to_date, details: ligne.details };
   notes = [...notes, n];
   prevenir();
   return n;
 }
 
 export function modifierNoteDemo(id: string, ligne: LigneNote): void {
-  const n: Note = { id, type: ligne.type, text: ligne.text, color: ligne.color, from_date: ligne.from_date, to_date: ligne.to_date };
+  const n: Note = { id, type: ligne.type, text: ligne.text, color: ligne.color, from_date: ligne.from_date, to_date: ligne.to_date, details: ligne.details };
   if (notes.some((x) => x.id === id)) notes = notes.map((x) => (x.id === id ? n : x));
   else notesRemplacees.set(id, n);
   prevenir();

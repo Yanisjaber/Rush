@@ -1,4 +1,5 @@
 // Formes des données, identiques à celles de la base (voir MODELE_DONNEES.md) : activities, activity_planned, strength_sets.
+import type { DetailsNote } from './sante-notes.ts';
 
 /** Une séance réalisée (table activities). */
 export interface Seance {
@@ -156,11 +157,13 @@ export interface ObjectifHyrox {
 /** Une note du calendrier (table day_notes) : sur une plage de dates, avec un type et une couleur. */
 export interface Note {
   id: string;
-  type: 'texte' | 'maladie' | 'blessure' | string;
+  type: 'texte' | 'maladie' | 'blessure' | 'indisponible' | string;
   text: string | null;
   color: string | null;
   from_date: string;
   to_date: string;
+  /** Le détail de santé (nom de la maladie, zone de la blessure…), voir data/sante-notes.ts. Absent pour une simple note. */
+  details?: DetailsNote | null;
 }
 
 /** Segment d'une nuit : [début en minutes, fin en minutes, niveau] (0 profond, 1 léger, 2 paradoxal, 3 éveillé). */

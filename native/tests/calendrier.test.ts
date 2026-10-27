@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bornesGrille, chargeJour, chargeSeance, decalerMois, grilleMois, jourAffiche, jourVide, chiffresSemaine, kmJour, nomJour, profilSemaine, resumeSemaine, secondesJour, teinteJour, titreMois } from '../src/data/calendrier.ts';
+import { bornesGrille, chargeJour, chargeSeance, decalerMois, grilleMois, jourAffiche, jourVide, chiffresSemaine, kmJour, nomJour, profilSemaine, resumeSemaine, secondesJour, teinteJour, titreMois, compositionJour } from '../src/data/calendrier.ts';
 import { couleurNote, libelleNote, notesDuJour } from '../src/data/annotations.ts';
 import { annotationsDemo, donneesDemo } from '../src/data/demo.ts';
 import type { Note, Prevue, Seance } from '../src/data/types.ts';
@@ -192,4 +192,14 @@ test('chiffresSemaine : une info principale à zéro n\'est pas affichée ; une 
 test('chiffresSemaine : en natation tout est en mètres (faits et prévus ensemble)', () => {
   const g = grilleMois(2026, 9, { seances: [avecDistance('a', '2026-10-19', 'Swim', 40, 2.4), avecDistance('b', '2026-10-21', 'Swim', 30, 1.55)], planifiees: [{ ...prevueCal('p', '2026-10-24', 45), km: 2, sport: 'Swim' }] }, auj);
   assert.deepEqual(chiffresSemaine(semaineDu(g, '2026-10-19'), 'natation').principale, { valeur: 5950, unite: 'm' }); // 2400 + 1550 + 2000
+});
+
+test('compositionJour : le fait par sport (le plus long d\'abord) et le prévu', () => {
+  const seance = (sport: string, min: number) => ({ sport, moving_time: min * 60 }) as never;
+  const prevue = (min: number | null) => ({ duration: min }) as never;
+  const c = compositionJour({ seances: [seance('Run', 40), seance('Ride', 70), seance('TrailRun', 20)], planifiees: [prevue(54), prevue(null), prevue(40)] });
+  assert.equal(c.faitSec, 130 * 60);
+  assert.equal(c.prevuSec, 94 * 60);
+  assert.deepEqual(c.fait.map((x) => x.secondes), [70 * 60, 60 * 60]); // Cyclisme, puis la course (Run + TrailRun)
+  assert.deepEqual(compositionJour({ seances: [], planifiees: [] }), { fait: [], faitSec: 0, prevuSec: 0 });
 });

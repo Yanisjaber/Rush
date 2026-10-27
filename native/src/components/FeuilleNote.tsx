@@ -2,15 +2,16 @@ import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
-import { ChoixCouleur, PastillesChoix } from '@/components/ChampsFeuille';
-import { ChampTexte } from '@/components/ChampTexte';
-import { ChampDate } from '@/components/ChampDate';
-import { PALETTE_NOTE, TEXTE_MAX_NOTE, TYPES_NOTE, validerNote, type FormulaireNote } from '@/data/ajouts';
-import { couleurNote, libelleNote } from '@/data/annotations';
+import { ChampsNote } from '@/components/ChampsNote';
+import { LogoNote } from '@/components/LogoNote';
+import { ZoneClavier } from '@/components/ZoneClavier';
+import { TYPES_NOTE, validerNote, type FormulaireNote } from '@/data/ajouts';
+import { couleurNote } from '@/data/annotations';
 import { periodeCourte } from '@/data/format';
+import { lignesDetail, nettoyerDetails, titreNote } from '@/data/sante-notes';
 import { useAjouts } from '@/hooks/useAjouts';
-import { espace, rayon } from '@/theme/couleurs';
-import { police, typo } from '@/theme/typo';
+import { avecAlpha, espace, rayon } from '@/theme/couleurs';
+import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 import type { Note } from '@/data/types';
 
@@ -22,9 +23,8 @@ const versFormulaire = (n: Note): FormulaireNote => ({
   couleur: couleurNote(n.color),
   de: String(n.from_date).slice(0, 10),
   a: String(n.to_date).slice(0, 10),
+  details: nettoyerDetails(n.type, n.details) ?? {},
 });
-
-const NOM_TYPE: Record<string, string> = { texte: 'Note', maladie: 'Maladie', blessure: 'Blessure' };
 
 export function FeuilleNote({ note, onFermer }: { note: Note | null; onFermer: () => void }) {
   const p = usePalette();
@@ -61,7 +61,7 @@ export function FeuilleNote({ note, onFermer }: { note: Note | null; onFermer: (
 
   function confirmerSuppression() {
     if (!note) return;
-    Alert.alert('Supprimer cette note ?', 'Elle disparaît du calendrier.', [
+    Alert.alert(note ? `Supprimer « ${titreNote(note)} » ?` : 'Supprimer cette note ?', 'Elle disparaît du calendrier.', [
       { text: 'Annuler', style: 'cancel' },
       {
         text: 'Supprimer',
@@ -84,16 +84,32 @@ export function FeuilleNote({ note, onFermer }: { note: Note | null; onFermer: (
         <View style={styles.centre} pointerEvents="box-none">
           <View accessibilityViewIsModal style={[styles.popup, { backgroundColor: p.surface, borderColor: p.traitFort }]}>
             <View style={styles.popupTete}>
-              <View style={[styles.popupBarre, { backgroundColor: couleurNote(note.color) }]} />
-              <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte, flex: 1 }]}>
-                {NOM_TYPE[note.type] ?? 'Note'}
-              </Text>
+              <View style={[styles.popupLogo, { backgroundColor: avecAlpha(couleurNote(note.color), 0.22) }]}>
+                <LogoNote type={note.type} couleur={couleurNote(note.color)} taille={22} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte }]}>
+                  {titreNote(note)}
+                </Text>
+                <Text style={[typo.petit, { color: p.texteDoux }]}>{periodeCourte(note.from_date, note.to_date)}</Text>
+              </View>
             </View>
-            <Text style={[typo.petit, { color: p.texteDoux }]}>{periodeCourte(note.from_date, note.to_date)}</Text>
-            <ScrollView style={{ maxHeight: 220, flexGrow: 0 }} showsVerticalScrollIndicator={false}>
-              <Text selectable style={[typo.corps, { color: p.texte }]}>
-                {libelleNote(note)}
-              </Text>
+            <ScrollView style={{ maxHeight: 280, flexGrow: 0 }} showsVerticalScrollIndicator={false}>
+              {/* Une simple note : son texte ; sinon une ligne « étiquette : valeur » par détail */}
+              {note.type === 'texte' || !note.type ? (
+                <Text selectable style={[typo.corps, { color: p.texte }]}>
+                  {note.text || 'Note'}
+                </Text>
+              ) : (
+                lignesDetail(note).map((l) => (
+                  <View key={l.etiquette} style={[styles.detail, { borderTopColor: p.trait }]}>
+                    <Text style={[typo.petit, { color: p.texteMuet }]}>{l.etiquette}</Text>
+                    <Text selectable style={[typo.corpsFort, { color: p.texte, flexShrink: 1, textAlign: 'right' }]}>
+                      {l.valeur}
+                    </Text>
+                  </View>
+                ))
+              )}
             </ScrollView>
             {erreur ? (
               <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>
@@ -114,32 +130,13 @@ export function FeuilleNote({ note, onFermer }: { note: Note | null; onFermer: (
       ) : null}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.conteneur} pointerEvents="box-none">
         {f && mode === 'edition' ? (
-          <View accessibilityViewIsModal style={[styles.feuille, { backgroundColor: p.surface, borderColor: p.traitFort, paddingBottom: bas + espace.e4 }]}>
+          <ZoneClavier modale style={[styles.feuille, { backgroundColor: p.surface, borderColor: p.traitFort, paddingBottom: bas }]}>
             <View style={[styles.poignee, { backgroundColor: p.traitFort }]} />
             <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte }]}>
               Modifier la note
             </Text>
             <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ gap: espace.e3, paddingBottom: espace.e2 }}>
-              <PastillesChoix
-                valeurs={TYPES_NOTE.map((t) => ({ cle: t.cle, nom: t.nom }))}
-                actuel={f.type}
-                onChoisir={(v) => change({ ...f, type: v })}
-                etiquette="Type de note"
-              />
-              <ChampTexte
-                etiquette={f.type === 'texte' ? 'Ta note' : 'Précision (facultatif)'}
-                sur="surface"
-                value={f.texte}
-                onChangeText={(t) => change({ ...f, texte: t })}
-                maxLength={TEXTE_MAX_NOTE}
-                multiline
-                placeholder="Un mot sur ta journée…"
-                accessibilityLabel="Texte de la note"
-              />
-              <ChampDate sur="surface" etiquette="Du" date={f.de} onChange={(iso) => change({ ...f, de: iso, a: f.a < iso ? iso : f.a })} />
-              <ChampDate sur="surface" etiquette="Au" date={f.a} onChange={(iso) => change({ ...f, a: iso, de: iso < f.de ? iso : f.de })} />
-              <Text style={[typo.petit, { color: p.texteDoux, paddingLeft: 16, fontFamily: police.texte600 }]}>Couleur</Text>
-              <ChoixCouleur couleurs={PALETTE_NOTE.map((hex) => ({ hex, nom: hex }))} actuelle={f.couleur} onChoisir={(hex) => change({ ...f, couleur: hex })} />
+              <ChampsNote f={f} change={change} sur="surface" />
             </ScrollView>
             {erreur ? (
               <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>
@@ -150,7 +147,7 @@ export function FeuilleNote({ note, onFermer }: { note: Note | null; onFermer: (
             <Bouton variante="discret" onPress={confirmerSuppression}>
               Supprimer cette note
             </Bouton>
-          </View>
+          </ZoneClavier>
         ) : null}
       </KeyboardAvoidingView>
     </Modal>
@@ -164,7 +161,8 @@ const styles = StyleSheet.create({
   popup: { borderWidth: 1, borderRadius: rayon.bloc, padding: espace.e4, gap: espace.e3 },
   popupBoutons: { flexDirection: 'row', justifyContent: 'flex-end', gap: espace.e2 },
   popupTete: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  popupBarre: { width: 6, height: 26, borderRadius: 3 },
+  popupLogo: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  detail: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, minHeight: 44, borderTopWidth: StyleSheet.hairlineWidth },
   feuille: { maxHeight: '92%', borderTopWidth: 1, borderTopLeftRadius: rayon.bloc, borderTopRightRadius: rayon.bloc, padding: espace.e4, gap: espace.e3 },
   poignee: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2 },
 });

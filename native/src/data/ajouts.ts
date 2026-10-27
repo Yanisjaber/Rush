@@ -6,6 +6,7 @@ import { CATALOGUE } from './catalogue-sports.ts';
 import { verifierParcours, type ParcoursGpx } from './gpx.ts';
 import { verifierDonneesImport, type DonneesImport } from './import-activite.ts';
 import { aUnFormat, FORMATS_TRI, federationsDuSport, lireTempsCible } from './competition.ts';
+import { nettoyerDetails, type DetailsNote, type TypeNote } from './sante-notes.ts';
 import { resume, sportAvecStructure, type Bloc, type Reference } from './structure.ts';
 
 // STOCKAGE :
@@ -257,11 +258,12 @@ export function validerCompetition(f: FormulaireCompetition, date: string, parco
 
 // --- Note ----------------------------------------------------------------------------------------------------------------
 
-/** Les types de note (le repos n'y est pas : il se pose à part). */
-export const TYPES_NOTE: { cle: 'texte' | 'maladie' | 'blessure'; nom: string; couleur: string }[] = [
+/** Les types de note (le repos n'y est pas : il se pose à part). La couleur est celle du logo dans le calendrier. */
+export const TYPES_NOTE: { cle: TypeNote; nom: string; couleur: string }[] = [
   { cle: 'texte', nom: 'Note', couleur: '#60a5fa' },
-  { cle: 'maladie', nom: 'Maladie', couleur: '#f87171' },
-  { cle: 'blessure', nom: 'Blessure', couleur: '#fb923c' },
+  { cle: 'maladie', nom: 'Maladie', couleur: '#fbbf24' },
+  { cle: 'blessure', nom: 'Blessure', couleur: '#f87171' },
+  { cle: 'indisponible', nom: 'Indisponible', couleur: '#94a3b8' },
 ];
 /** Les couleurs proposées pour une note. */
 export const PALETTE_NOTE = ['#f87171', '#fb923c', '#fbbf24', '#4ade80', '#34d399', '#60a5fa', '#a78bfa', '#f472b6', '#94a3b8'];
@@ -269,14 +271,16 @@ export const TEXTE_MAX_NOTE = 500;
 export const JOURS_MAX_NOTE = 90;
 
 export interface FormulaireNote {
-  type: 'texte' | 'maladie' | 'blessure';
+  type: TypeNote;
   texte: string;
   couleur: string;
   de: string;
   a: string;
+  /** Le détail propre au type (maladie, blessure, indisponibilité). Vide pour une simple note. */
+  details: DetailsNote;
 }
 
-export const formulaireNoteVide = (date: string): FormulaireNote => ({ type: 'texte', texte: '', couleur: TYPES_NOTE[0].couleur, de: date, a: date });
+export const formulaireNoteVide = (date: string): FormulaireNote => ({ type: 'texte', texte: '', couleur: TYPES_NOTE[0].couleur, de: date, a: date, details: {} });
 
 export interface LigneNote {
   type: string;
@@ -284,11 +288,12 @@ export interface LigneNote {
   color: string;
   from_date: string;
   to_date: string;
+  details: DetailsNote | null;
 }
 
 const enJours = (iso: string): number => Math.round(Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10))) / 86400000);
 
-/** Vérifie une note : un texte (obligatoire pour une simple note), une couleur, une période de 90 jours au plus. */
+/** Vérifie une note : un texte (obligatoire pour une simple note), une couleur, une période de 90 jours au plus ; le détail est nettoyé selon le type (voir nettoyerDetails). */
 export function validerNote(f: FormulaireNote): Resultat<LigneNote> {
   if (!TYPES_NOTE.some((t) => t.cle === f.type)) return { ok: false, erreur: 'Choisis un type.' };
   if (!dateValide(f.de) || !dateValide(f.a)) return { ok: false, erreur: 'Choisis des dates valides.' };
@@ -298,7 +303,7 @@ export function validerNote(f: FormulaireNote): Resultat<LigneNote> {
   if (texte.length > TEXTE_MAX_NOTE) return { ok: false, erreur: `Le texte est trop long (${TEXTE_MAX_NOTE} caractères au plus).` };
   if (f.type === 'texte' && !texte) return { ok: false, erreur: 'Écris ta note.' };
   if (!COULEUR.test(String(f.couleur ?? ''))) return { ok: false, erreur: 'Choisis une couleur.' };
-  return { ok: true, ligne: { type: f.type, text: texte || null, color: f.couleur, from_date: f.de, to_date: f.a } };
+  return { ok: true, ligne: { type: f.type, text: texte || null, color: f.couleur, from_date: f.de, to_date: f.a, details: nettoyerDetails(f.type, f.details) } };
 }
 
 // --- Sortie déjà faite ---------------------------------------------------------------------------------------------------

@@ -75,7 +75,7 @@ test('validerNote : une note veut un texte ; une maladie peut s\'en passer ; pé
   assert.equal(validerNote(formulaireNoteVide(date)).ok, false); // note sans texte
   const ok = validerNote({ ...formulaireNoteVide(date), texte: ' Genou raide ' });
   assert.ok(ok.ok);
-  if (ok.ok) assert.deepEqual(ok.ligne, { type: 'texte', text: 'Genou raide', color: '#60a5fa', from_date: date, to_date: date });
+  if (ok.ok) assert.deepEqual(ok.ligne, { type: 'texte', text: 'Genou raide', color: '#60a5fa', from_date: date, to_date: date, details: null });
   const maladie = validerNote({ ...formulaireNoteVide(date), type: 'maladie', a: '2026-10-26' });
   assert.ok(maladie.ok);
   if (maladie.ok) assert.equal(maladie.ligne.text, null);

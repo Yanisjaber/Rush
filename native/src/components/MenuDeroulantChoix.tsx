@@ -5,8 +5,8 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Un choix dans une liste de textes, en menu déroulant : un champ (comme les autres pastilles) et une liste qui s'ouvre juste dessous, comme le menu des sports.
-// `options` : la clé est ce qui est enregistré (« » = rien choisi), le nom est ce qui s'affiche.
-export function MenuDeroulantChoix({ etiquette, valeur, options, onChoisir, vide = 'Non précisé' }: { etiquette: string; valeur: string; options: { cle: string; nom: string }[]; onChoisir: (cle: string) => void; vide?: string }) {
+// `sur` : le fond sur lequel le champ est posé (comme ChampTexte). `options` : la clé est ce qui est enregistré (« » = rien choisi), le nom est ce qui s'affiche.
+export function MenuDeroulantChoix({ etiquette, valeur, options, onChoisir, vide = 'Non précisé', sur = 'fond', sansVide = false }: { etiquette: string; valeur: string; options: { cle: string; nom: string }[]; onChoisir: (cle: string) => void; vide?: string; sur?: 'fond' | 'surface'; sansVide?: boolean }) {
   const p = usePalette();
   const champRef = useRef<ComponentRef<typeof View>>(null);
   const [ouvert, setOuvert] = useState(false);
@@ -26,7 +26,8 @@ export function MenuDeroulantChoix({ etiquette, valeur, options, onChoisir, vide
   const placement = versLeHaut ? { bottom: hauteurEcran - zone.haut + 6, maxHeight: Math.max(160, placeDessus) } : { top: zone.bas + 6, maxHeight: Math.max(160, placeDessous) };
 
   const choisi = options.find((o) => o.cle === valeur);
-  const liste = [{ cle: '', nom: vide }, ...options.filter((o) => o.cle !== '')];
+  // `sansVide` : pas de ligne « Non précisé » (un choix obligatoire)
+  const liste = sansVide ? options : [{ cle: '', nom: vide }, ...options.filter((o) => o.cle !== '')];
   return (
     <View style={{ gap: 6 }}>
       <Text style={[typo.petit, styles.etiquette, { color: p.texteDoux }]}>{etiquette}</Text>
@@ -36,7 +37,7 @@ export function MenuDeroulantChoix({ etiquette, valeur, options, onChoisir, vide
         accessibilityRole="button"
         accessibilityLabel={`${etiquette} : ${choisi?.nom ?? vide}. Changer`}
         accessibilityState={{ expanded: ouvert }}
-        style={[styles.champ, { backgroundColor: p.surface }]}
+        style={[styles.champ, { backgroundColor: sur === 'surface' ? p.surface2 : p.surface }]}
       >
         <Text numberOfLines={1} style={[typo.corpsFort, { color: choisi && choisi.cle ? p.texte : p.texteMuet, flex: 1 }]}>
           {choisi && choisi.cle ? choisi.nom : vide}

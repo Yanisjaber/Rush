@@ -396,7 +396,7 @@ export function objectifHyroxDemo(): ObjectifHyrox {
 export function annotationsDemo(aujourdhui: Date = new Date()): { notes: Note[]; repos: string[] } {
   const jour = (delta: number) => dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + delta));
   return {
-    notes: [{ id: 'demo-n1', type: 'blessure', text: 'Genou gauche : on lève le pied', color: '#fb923c', from_date: jour(-3), to_date: jour(-1) }],
+    notes: [{ id: 'demo-n1', type: 'blessure', text: 'On lève le pied', color: '#f87171', from_date: jour(-3), to_date: jour(-1), details: { zone: 'genou', cote: 'gauche', nature: 'tendinite', douleur: 4 } }],
     repos: [jour(-6), jour(3)],
   };
 }

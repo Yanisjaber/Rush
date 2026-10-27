@@ -4,7 +4,8 @@ import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Des onglets en pastille : un bloc arrondi, l'onglet choisi est plein (comme les pastilles de priorité). Chaque onglet fait au moins 44 pt de haut.
-export function OngletsSegment<T extends string>({ onglets, actuel, onChoisir, etiquette }: { onglets: { cle: T; nom: string }[]; actuel: T; onChoisir: (cle: T) => void; etiquette: string }) {
+// `taille` : la taille du texte (15 par défaut ; 13 quand il y a quatre onglets).
+export function OngletsSegment<T extends string>({ onglets, actuel, onChoisir, etiquette, taille = 15 }: { onglets: { cle: T; nom: string }[]; actuel: T; onChoisir: (cle: T) => void; etiquette: string; taille?: number }) {
   const p = usePalette();
   return (
     <View accessibilityRole="tablist" accessibilityLabel={etiquette} style={[styles.cadre, { backgroundColor: p.surface }]}>
@@ -19,7 +20,7 @@ export function OngletsSegment<T extends string>({ onglets, actuel, onChoisir, e
             accessibilityLabel={o.nom}
             style={[styles.onglet, actif && { backgroundColor: p.texte }]}
           >
-            <Text numberOfLines={1} style={[typo.corpsFort, { color: actif ? p.fond : p.texteDoux, fontSize: 15 }]}>
+            <Text numberOfLines={1} style={[typo.corpsFort, { color: actif ? p.fond : p.texteDoux, fontSize: taille }]}>
               {o.nom}
             </Text>
           </Pressable>
