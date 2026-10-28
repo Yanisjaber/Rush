@@ -1,4 +1,4 @@
-import { SerieHebdo } from '@/components/SerieHebdo';
+import { SerieHebdo } from '@/components/graphes/SerieHebdo';
 import { chargeMuscuRecente } from '@/data/sports/charge-muscu';
 import type { WidgetProps } from '@/data/types';
 import { usePalette } from '@/theme/usePalette';

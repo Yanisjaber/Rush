@@ -1,5 +1,5 @@
-import { EcranSection } from '@/components/EcranSection';
-import { FormulaireSection } from '@/components/FormulaireSection';
+import { EcranSection } from '@/components/ecrans/EcranSection';
+import { FormulaireSection } from '@/components/feuilles/FormulaireSection';
 
 export default function Profil() {
   return (

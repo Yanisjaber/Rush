@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { CadreWidget } from '@/components/CadreWidget';
-import { CourbeLissee } from '@/components/CourbeLissee';
-import { StatCle } from '@/components/StatCle';
-import { Tuile } from '@/components/Tuile';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { CourbeLissee } from '@/components/graphes/CourbeLissee';
+import { StatCle } from '@/components/ui/StatCle';
+import { Tuile } from '@/components/ui/Tuile';
 import type { WidgetProps } from '@/data/types';
 import { evolutionFtp } from '@/data/sports/velo';
 import { avecAlpha } from '@/theme/couleurs';

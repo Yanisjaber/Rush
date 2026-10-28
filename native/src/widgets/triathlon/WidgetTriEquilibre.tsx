@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { BarresEmpilees } from '@/components/BarresEmpilees';
-import { CadreWidget } from '@/components/CadreWidget';
-import { ListeCompacte } from '@/components/ListeCompacte';
-import { Tuile } from '@/components/Tuile';
+import { BarresEmpilees } from '@/components/graphes/BarresEmpilees';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { ListeCompacte } from '@/components/ui/ListeCompacte';
+import { Tuile } from '@/components/ui/Tuile';
 import { formatHeuresMinutes } from '@/data/outils/format';
 import { disciplinesDe, minutesParSemaine, repartitionDisciplines } from '@/data/sports/triathlon';
 import type { WidgetProps } from '@/data/types';

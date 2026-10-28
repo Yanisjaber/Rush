@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native';
-import { Bloc } from '@/components/Bloc';
-import { EcranSection } from '@/components/EcranSection';
-import { Pastille } from '@/components/Pastille';
+import { Bloc } from '@/components/feuilles/Bloc';
+import { EcranSection } from '@/components/ecrans/EcranSection';
+import { Pastille } from '@/components/ui/Pastille';
 import { chargerConnexions, type ConnexionStrava } from '@/data/acces/api';
 import { useAuth } from '@/stores/auth';
 import { espace, rayon } from '@/theme/couleurs';

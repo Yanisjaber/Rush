@@ -1,12 +1,12 @@
-import { FondDegrade } from '@/components/FondDegrade';
+import { FondDegrade } from '@/components/ui/FondDegrade';
 import { useRouter, type Href } from 'expo-router';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bouton } from '@/components/Bouton';
-import { CadreWidget } from '@/components/CadreWidget';
-import { Boite, Emplacement, GrilleWidgets } from '@/components/GrilleWidgets';
-import { Pastille } from '@/components/Pastille';
-import { Tuile } from '@/components/Tuile';
+import { Bouton } from '@/components/ui/Bouton';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { Boite, Emplacement, GrilleWidgets } from '@/components/widgets/GrilleWidgets';
+import { Pastille } from '@/components/ui/Pastille';
+import { Tuile } from '@/components/ui/Tuile';
 import type { Connexion, Tuile as ResumeTuile } from '@/data/reglages/parametres';
 import { useResumeParametres } from '@/hooks/useResumeParametres';
 import { deconnexion, quitterDemo, useAuth } from '@/stores/auth';

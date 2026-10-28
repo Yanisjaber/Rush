@@ -1,4 +1,4 @@
-import { SerieHebdo } from '@/components/SerieHebdo';
+import { SerieHebdo } from '@/components/graphes/SerieHebdo';
 import { formatKm } from '@/data/outils/format';
 import type { WidgetProps } from '@/data/types';
 import { kmVeloParSemaine } from '@/data/sports/velo';

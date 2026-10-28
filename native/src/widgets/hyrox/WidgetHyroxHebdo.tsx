@@ -1,4 +1,4 @@
-import { SerieHebdo } from '@/components/SerieHebdo';
+import { SerieHebdo } from '@/components/graphes/SerieHebdo';
 import { formatDuree } from '@/data/outils/format';
 import { hyroxParSemaine } from '@/data/sports/hyrox-suivi';
 import type { WidgetProps } from '@/data/types';

@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { CadreWidget } from '@/components/CadreWidget';
-import { StatCle } from '@/components/StatCle';
-import { Tuile } from '@/components/Tuile';
-import { CourbeLissee } from '@/components/CourbeLissee';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { StatCle } from '@/components/ui/StatCle';
+import { Tuile } from '@/components/ui/Tuile';
+import { CourbeLissee } from '@/components/graphes/CourbeLissee';
 import { formatAllure } from '@/data/outils/format';
 import { efficaciteCourse } from '@/data/bilan/synthese';
 import type { WidgetProps } from '@/data/types';

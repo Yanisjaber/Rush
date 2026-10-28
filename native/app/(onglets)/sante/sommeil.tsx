@@ -1,13 +1,13 @@
-import { FondDegrade } from '@/components/FondDegrade';
+import { FondDegrade } from '@/components/ui/FondDegrade';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AnneauJauge } from '@/components/AnneauJauge';
-import { AnneauZones } from '@/components/AnneauZones';
-import { Bloc } from '@/components/Bloc';
-import { GrapheSeries } from '@/components/GrapheSeries';
-import { StatCle } from '@/components/StatCle';
+import { AnneauJauge } from '@/components/graphes/AnneauJauge';
+import { AnneauZones } from '@/components/graphes/AnneauZones';
+import { Bloc } from '@/components/feuilles/Bloc';
+import { GrapheSeries } from '@/components/graphes/GrapheSeries';
+import { StatCle } from '@/components/ui/StatCle';
 import { niveauDe } from '@/data/sante/forme-sante';
 import { heureDe, phases } from '@/data/sante/sommeil';
 import {

@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { CadreWidget } from '@/components/CadreWidget';
-import { ListeCompacte } from '@/components/ListeCompacte';
-import { Tuile } from '@/components/Tuile';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { ListeCompacte } from '@/components/ui/ListeCompacte';
+import { Tuile } from '@/components/ui/Tuile';
 import { formatDateCourte, formatDuree, formatKm, formatNombre } from '@/data/outils/format';
 import { meilleuresSortiesSki } from '@/data/sports/ski';
 import type { WidgetProps } from '@/data/types';

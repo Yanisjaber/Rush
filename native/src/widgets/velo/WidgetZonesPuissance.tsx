@@ -1,4 +1,4 @@
-import { RepartitionZones } from '@/components/RepartitionZones';
+import { RepartitionZones } from '@/components/graphes/RepartitionZones';
 import type { WidgetProps } from '@/data/types';
 import { ftpReference, repartitionPuissance } from '@/data/sports/velo';
 import { usePalette } from '@/theme/usePalette';

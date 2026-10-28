@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { CadreWidget } from '@/components/CadreWidget';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
 import { recordsParGroupe, type ProgressionExercice } from '@/data/sports/force';
-import { CourbeLissee } from '@/components/CourbeLissee';
-import { ListeCompacte } from '@/components/ListeCompacte';
-import { Tuile } from '@/components/Tuile';
+import { CourbeLissee } from '@/components/graphes/CourbeLissee';
+import { ListeCompacte } from '@/components/ui/ListeCompacte';
+import { Tuile } from '@/components/ui/Tuile';
 import { formatKg } from '@/data/outils/format';
 import type { WidgetProps } from '@/data/types';
 import { police, typo } from '@/theme/typo';

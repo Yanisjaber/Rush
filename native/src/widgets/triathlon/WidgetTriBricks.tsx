@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { BarresHebdo } from '@/components/BarresHebdo';
-import { CadreWidget } from '@/components/CadreWidget';
-import { ListeCompacte } from '@/components/ListeCompacte';
-import { MiniBarres } from '@/components/MiniBarres';
-import { Tuile } from '@/components/Tuile';
+import { BarresHebdo } from '@/components/graphes/BarresHebdo';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { ListeCompacte } from '@/components/ui/ListeCompacte';
+import { MiniBarres } from '@/components/graphes/MiniBarres';
+import { Tuile } from '@/components/ui/Tuile';
 import { formatDateCourte, formatDuree } from '@/data/outils/format';
 import { bricks, bricksParSemaine, type Brick } from '@/data/sports/triathlon';
 import type { WidgetProps } from '@/data/types';

@@ -1,9 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { bientot } from '@/actions/bientot';
-import { CadreWidget } from '@/components/CadreWidget';
-import { Bouton } from '@/components/Bouton';
-import { ListeCompacte } from '@/components/ListeCompacte';
-import { Tuile } from '@/components/Tuile';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { Bouton } from '@/components/ui/Bouton';
+import { ListeCompacte } from '@/components/ui/ListeCompacte';
+import { Tuile } from '@/components/ui/Tuile';
 import { resumeProgramme } from '@/data/sports/force';
 import type { WidgetProps } from '@/data/types';
 import { rayon } from '@/theme/couleurs';

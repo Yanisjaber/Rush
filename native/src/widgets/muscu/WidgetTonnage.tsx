@@ -1,4 +1,4 @@
-import { SerieHebdo } from '@/components/SerieHebdo';
+import { SerieHebdo } from '@/components/graphes/SerieHebdo';
 import { tonnageParSemaine } from '@/data/sports/force';
 import { formatNombre } from '@/data/outils/format';
 import type { WidgetProps } from '@/data/types';

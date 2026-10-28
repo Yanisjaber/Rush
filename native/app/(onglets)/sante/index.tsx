@@ -1,12 +1,12 @@
-import { FondDegrade } from '@/components/FondDegrade';
+import { FondDegrade } from '@/components/ui/FondDegrade';
 import { useCallback, useMemo, useRef } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Boite, Emplacement, GrilleWidgets } from '@/components/GrilleWidgets';
-import { CourbeLissee } from '@/components/CourbeLissee';
-import { JaugePilier } from '@/components/JaugePilier';
-import { Tuile } from '@/components/Tuile';
+import { Boite, Emplacement, GrilleWidgets } from '@/components/widgets/GrilleWidgets';
+import { CourbeLissee } from '@/components/graphes/CourbeLissee';
+import { JaugePilier } from '@/components/graphes/JaugePilier';
+import { Tuile } from '@/components/ui/Tuile';
 import { CLES_RESSENTI, jusquAuDernierIndice, serieEtatDeForme } from '@/data/sante/forme-sante';
 import { dateIsoLocale } from '@/data/outils/format';
 import { construirePiliers, construireSuivis, motifsDuJour, NOM_COURT } from '@/data/sante/piliers';

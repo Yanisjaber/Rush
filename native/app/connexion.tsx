@@ -1,9 +1,9 @@
-import { FondDegrade } from '@/components/FondDegrade';
+import { FondDegrade } from '@/components/ui/FondDegrade';
 import { useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bouton } from '@/components/Bouton';
-import { ChampTexte } from '@/components/ChampTexte';
+import { Bouton } from '@/components/ui/Bouton';
+import { ChampTexte } from '@/components/champs/ChampTexte';
 import { connexion, entrerDemo } from '@/stores/auth';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';

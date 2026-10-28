@@ -1,8 +1,8 @@
 import { Text } from 'react-native';
-import { CadreWidget } from '@/components/CadreWidget';
-import { CarteChaleur } from '@/components/CarteChaleur';
-import { MiniBarres } from '@/components/MiniBarres';
-import { Tuile } from '@/components/Tuile';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { CarteChaleur } from '@/components/graphes/CarteChaleur';
+import { MiniBarres } from '@/components/graphes/MiniBarres';
+import { Tuile } from '@/components/ui/Tuile';
 import { casesRegularite } from '@/data/bilan/synthese';
 import type { WidgetProps } from '@/data/types';
 import { typo } from '@/theme/typo';

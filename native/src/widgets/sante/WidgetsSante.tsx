@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { AnneauZones } from '@/components/AnneauZones';
-import { CadreWidget } from '@/components/CadreWidget';
-import { Tuile } from '@/components/Tuile';
+import { AnneauZones } from '@/components/graphes/AnneauZones';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { Tuile } from '@/components/ui/Tuile';
 import { indiceVeille, jusquAuDernierIndice, lecture, niveauDe, piliersDispo, type PointForme } from '@/data/sante/forme-sante';
 import { avecAlpha } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';

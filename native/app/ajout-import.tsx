@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ApercuImport } from '@/components/ApercuImport';
+import { ApercuImport } from '@/components/calendrier/ApercuImport';
 import { Alert, Text } from 'react-native';
-import { EcranAjout } from '@/components/EcranAjout';
+import { EcranAjout } from '@/components/ecrans/EcranAjout';
 import { apercuImport, type ApercuImport as Apercu } from '@/data/calendrier/apercu-import';
 import { nomDuType } from '@/data/sports/catalogue-sports';
 import { formulaireSortieVide, validerSortie } from '@/data/calendrier/ajouts';

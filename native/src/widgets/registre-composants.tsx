@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import { Text } from 'react-native';
-import { CadreWidget } from '@/components/CadreWidget';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
 import type { WidgetProps } from '@/data/types';
 import { WIDGETS, type DefinitionWidget } from '@/data/accueil/registre';
 import { typo } from '@/theme/typo';

@@ -1,9 +1,9 @@
 import { Text } from 'react-native';
 import { courtDuType } from '@/data/sports/catalogue-sports';
-import { CadreWidget } from '@/components/CadreWidget';
-import { ListeCompacte } from '@/components/ListeCompacte';
-import { Tuile } from '@/components/Tuile';
-import { LigneSeance } from '@/components/LigneSeance';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { ListeCompacte } from '@/components/ui/ListeCompacte';
+import { Tuile } from '@/components/ui/Tuile';
+import { LigneSeance } from '@/components/calendrier/LigneSeance';
 import { formatDateCourte, formatDuree } from '@/data/outils/format';
 import { prochainesPrevues } from '@/data/bilan/synthese';
 import type { Prevue, WidgetProps } from '@/data/types';

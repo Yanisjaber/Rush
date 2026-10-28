@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { CadreWidget } from '@/components/CadreWidget';
-import { CourbeLissee } from '@/components/CourbeLissee';
-import { ListeCompacte } from '@/components/ListeCompacte';
-import { StatCle } from '@/components/StatCle';
-import { Tuile } from '@/components/Tuile';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { CourbeLissee } from '@/components/graphes/CourbeLissee';
+import { ListeCompacte } from '@/components/ui/ListeCompacte';
+import { StatCle } from '@/components/ui/StatCle';
+import { Tuile } from '@/components/ui/Tuile';
 import { formatChrono, formatDateCourte } from '@/data/outils/format';
 import { formatEcartLong } from '@/data/sports/hyrox';
 import { evolutionTotal } from '@/data/sports/hyrox-suivi';

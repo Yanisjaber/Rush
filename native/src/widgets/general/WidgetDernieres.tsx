@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { courtDuType } from '@/data/sports/catalogue-sports';
 import { Text } from 'react-native';
-import { CadreWidget } from '@/components/CadreWidget';
-import { ListeCompacte } from '@/components/ListeCompacte';
-import { Tuile } from '@/components/Tuile';
-import { LigneSeance, Points } from '@/components/LigneSeance';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { ListeCompacte } from '@/components/ui/ListeCompacte';
+import { Tuile } from '@/components/ui/Tuile';
+import { LigneSeance, Points } from '@/components/calendrier/LigneSeance';
 import { familleAffichage } from '@/data/sports/familles';
 import { recordsParSeance } from '@/data/sports/force';
 import { formatDateCourte, formatDistanceSport, formatDuree } from '@/data/outils/format';

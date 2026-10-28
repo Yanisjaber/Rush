@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { CadreWidget } from '@/components/CadreWidget';
-import { ListeCompacte } from '@/components/ListeCompacte';
-import { MiniBarres } from '@/components/MiniBarres';
-import { SilhouetteCorps } from '@/components/SilhouetteCorps';
-import { Tuile } from '@/components/Tuile';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { ListeCompacte } from '@/components/ui/ListeCompacte';
+import { MiniBarres } from '@/components/graphes/MiniBarres';
+import { SilhouetteCorps } from '@/components/corps/SilhouetteCorps';
+import { Tuile } from '@/components/ui/Tuile';
 import { seriesParGroupe } from '@/data/sports/force';
 import { musclesSurPeriode } from '@/data/sports/muscu';
 import type { WidgetProps } from '@/data/types';

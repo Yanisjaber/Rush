@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { CadreWidget } from '@/components/CadreWidget';
-import { ListeCompacte } from '@/components/ListeCompacte';
-import { MiniBarres } from '@/components/MiniBarres';
-import { StatCle } from '@/components/StatCle';
-import { Tuile } from '@/components/Tuile';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { ListeCompacte } from '@/components/ui/ListeCompacte';
+import { MiniBarres } from '@/components/graphes/MiniBarres';
+import { StatCle } from '@/components/ui/StatCle';
+import { Tuile } from '@/components/ui/Tuile';
 import { formatDuree, formatNombre } from '@/data/outils/format';
 import { bilanMoisNatation } from '@/data/sports/natation';
 import type { WidgetProps } from '@/data/types';

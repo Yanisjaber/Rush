@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Text as TexteSvg } from 'react-native-svg';
-import { CadreWidget } from '@/components/CadreWidget';
-import { CourbeLissee } from '@/components/CourbeLissee';
-import { ListeCompacte } from '@/components/ListeCompacte';
-import { Tuile } from '@/components/Tuile';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { CourbeLissee } from '@/components/graphes/CourbeLissee';
+import { ListeCompacte } from '@/components/ui/ListeCompacte';
+import { Tuile } from '@/components/ui/Tuile';
 import type { WidgetProps } from '@/data/types';
 import { equivalenceWattsFc, wattsACardioEgal } from '@/data/sports/velo';
 import { avecAlpha } from '@/theme/couleurs';

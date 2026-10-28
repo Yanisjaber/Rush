@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { Bloc } from '@/components/Bloc';
-import { ChampMesure } from '@/components/ChampMesure';
-import { CourbeLissee } from '@/components/CourbeLissee';
-import { EcranSection } from '@/components/EcranSection';
-import { SelecteurJour } from '@/components/SelecteurJour';
+import { Bloc } from '@/components/feuilles/Bloc';
+import { ChampMesure } from '@/components/champs/ChampMesure';
+import { CourbeLissee } from '@/components/graphes/CourbeLissee';
+import { EcranSection } from '@/components/ecrans/EcranSection';
+import { SelecteurJour } from '@/components/champs/SelecteurJour';
 import { dateIsoLocale } from '@/data/outils/format';
 import { defMesure, type MesuresParJour } from '@/data/sante/sante-catalogue';
 import { alerteVariation, lisser, serieDe, variationHebdo } from '@/data/sante/suivi-corps';

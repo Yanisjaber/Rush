@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Linking, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Bloc } from '@/components/Bloc';
-import { Bouton } from '@/components/Bouton';
-import { EcranSection } from '@/components/EcranSection';
+import { Bloc } from '@/components/feuilles/Bloc';
+import { Bouton } from '@/components/ui/Bouton';
+import { EcranSection } from '@/components/ecrans/EcranSection';
 import { supprimerMonCompte } from '@/data/acces/api';
 import { confirmationValide, MOT_CONFIRMATION } from '@/data/acces/suppression-compte';
 import { deconnexion } from '@/stores/auth';

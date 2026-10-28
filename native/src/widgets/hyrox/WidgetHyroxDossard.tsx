@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { CadreWidget } from '@/components/CadreWidget';
-import { GrandChiffre } from '@/components/GrandChiffre';
-import { ListeCompacte } from '@/components/ListeCompacte';
-import { Tuile } from '@/components/Tuile';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { GrandChiffre } from '@/components/ui/GrandChiffre';
+import { ListeCompacte } from '@/components/ui/ListeCompacte';
+import { Tuile } from '@/components/ui/Tuile';
 import { familleAffichage } from '@/data/sports/familles';
 import { formatDateCourte, formatDateLongue, joursAvant } from '@/data/outils/format';
 import { ecrireTemps, formatEcartLong } from '@/data/sports/hyrox';

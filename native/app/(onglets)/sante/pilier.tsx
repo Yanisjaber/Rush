@@ -1,11 +1,11 @@
-import { FondDegrade } from '@/components/FondDegrade';
+import { FondDegrade } from '@/components/ui/FondDegrade';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AnneauJauge } from '@/components/AnneauJauge';
-import { Bloc } from '@/components/Bloc';
-import { CourbeLissee } from '@/components/CourbeLissee';
+import { AnneauJauge } from '@/components/graphes/AnneauJauge';
+import { Bloc } from '@/components/feuilles/Bloc';
+import { CourbeLissee } from '@/components/graphes/CourbeLissee';
 import { estPilier, jusquAuDernierIndice, NOM_COMPOSANTE, POIDS_FORME, niveauDe, serieEtatDeForme, type CleComposante, type Niveau } from '@/data/sante/forme-sante';
 import { construirePiliers, historiquePilier, texteValeur } from '@/data/sante/piliers';
 import { useDonneesSommeil } from '@/hooks/useDonneesSommeil';

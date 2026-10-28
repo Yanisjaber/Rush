@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { BOUTON_AJOUT, ChampsNote } from '@/components/ChampsNote';
-import { EcranAjout } from '@/components/EcranAjout';
+import { BOUTON_AJOUT, ChampsNote } from '@/components/champs/ChampsNote';
+import { EcranAjout } from '@/components/ecrans/EcranAjout';
 import { formulaireNoteVide, validerNote } from '@/data/calendrier/ajouts';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useDateAjout } from '@/hooks/useDateAjout';

@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { courtDuType } from '@/data/sports/catalogue-sports';
-import { CadreWidget } from '@/components/CadreWidget';
-import { MiniBarres } from '@/components/MiniBarres';
-import { Tuile } from '@/components/Tuile';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { MiniBarres } from '@/components/graphes/MiniBarres';
+import { Tuile } from '@/components/ui/Tuile';
 import { formatDuree } from '@/data/outils/format';
 import { carresDuJour, semaineCourante } from '@/data/bilan/synthese';
 import type { WidgetProps } from '@/data/types';

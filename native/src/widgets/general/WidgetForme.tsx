@@ -1,10 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { TraitTirets } from '@/components/TraitTirets';
-import { CadreWidget } from '@/components/CadreWidget';
-import { CourbeLissee } from '@/components/CourbeLissee';
-import { DeuxCourbes } from '@/components/DeuxCourbes';
-import { StatCle } from '@/components/StatCle';
-import { Tuile } from '@/components/Tuile';
+import { TraitTirets } from '@/components/graphes/TraitTirets';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { CourbeLissee } from '@/components/graphes/CourbeLissee';
+import { DeuxCourbes } from '@/components/graphes/DeuxCourbes';
+import { StatCle } from '@/components/ui/StatCle';
+import { Tuile } from '@/components/ui/Tuile';
 import { formeActuelle } from '@/data/bilan/synthese';
 import type { WidgetProps } from '@/data/types';
 import { typo } from '@/theme/typo';

@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { CadreWidget } from '@/components/CadreWidget';
-import { ListeCompacte } from '@/components/ListeCompacte';
-import { Tuile } from '@/components/Tuile';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { ListeCompacte } from '@/components/ui/ListeCompacte';
+import { Tuile } from '@/components/ui/Tuile';
 import { formatAllure100m, formatDateCourte, formatDuree, formatNombre } from '@/data/outils/format';
 import { meilleuresNatation } from '@/data/sports/natation';
 import type { WidgetProps } from '@/data/types';

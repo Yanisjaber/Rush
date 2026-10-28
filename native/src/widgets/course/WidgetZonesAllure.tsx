@@ -1,4 +1,4 @@
-import { RepartitionZones } from '@/components/RepartitionZones';
+import { RepartitionZones } from '@/components/graphes/RepartitionZones';
 import { repartitionAllure } from '@/data/sports/course';
 import type { WidgetProps } from '@/data/types';
 import { usePalette } from '@/theme/usePalette';

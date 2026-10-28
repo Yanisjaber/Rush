@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { BarresHebdo } from '@/components/BarresHebdo';
-import { Bloc } from '@/components/Bloc';
-import { ChampMesure } from '@/components/ChampMesure';
-import { EcranSection } from '@/components/EcranSection';
-import { SelecteurJour } from '@/components/SelecteurJour';
+import { BarresHebdo } from '@/components/graphes/BarresHebdo';
+import { Bloc } from '@/components/feuilles/Bloc';
+import { ChampMesure } from '@/components/champs/ChampMesure';
+import { EcranSection } from '@/components/ecrans/EcranSection';
+import { SelecteurJour } from '@/components/champs/SelecteurJour';
 import { dateIsoLocale, formatNombre } from '@/data/outils/format';
 import { defMesure } from '@/data/sante/sante-catalogue';
 import { lisser, moyenneSur, proteinesParKg, serieDe, type NiveauProteines } from '@/data/sante/suivi-corps';

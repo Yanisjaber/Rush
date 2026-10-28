@@ -1,8 +1,8 @@
 import { StyleSheet, Text as TexteRN, View } from 'react-native';
-import { TraitTirets } from '@/components/TraitTirets';
+import { TraitTirets } from '@/components/graphes/TraitTirets';
 import Svg, { Circle, Line, Path, Text } from 'react-native-svg';
-import { CadreWidget } from '@/components/CadreWidget';
-import { Tuile } from '@/components/Tuile';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { Tuile } from '@/components/ui/Tuile';
 import { CADRE, CADRE_M, CADRE_S, geometriePuissance, LIBELLES_CLES } from '@/data/sports/puissance';
 import type { WidgetProps } from '@/data/types';
 import { police, typo } from '@/theme/typo';

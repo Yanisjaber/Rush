@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { CadreWidget } from '@/components/CadreWidget';
-import { IconeSport } from '@/components/IconeSport';
-import { OngletsSegment } from '@/components/OngletsSegment';
-import { Tuile } from '@/components/Tuile';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { IconeSport } from '@/components/ui/IconeSport';
+import { OngletsSegment } from '@/components/menus/OngletsSegment';
+import { Tuile } from '@/components/ui/Tuile';
 import { DISCIPLINES_DU_FILTRE, familleAffichage } from '@/data/sports/familles';
 import { PERIODES_PROGRESSION, progressionTousSports, type PeriodeProgression, type Progression } from '@/data/bilan/progression';
 import { MOT, formatPct, formatValeurProgression, variationTexte } from '@/data/bilan/progression-texte';

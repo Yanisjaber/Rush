@@ -1,4 +1,4 @@
-import { RepartitionZones } from '@/components/RepartitionZones';
+import { RepartitionZones } from '@/components/graphes/RepartitionZones';
 import { intensiteParZone } from '@/data/sports/hebdo';
 import { estSkiDeFond } from '@/data/sports/ski';
 import type { WidgetProps } from '@/data/types';

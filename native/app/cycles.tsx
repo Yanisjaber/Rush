@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bloc } from '@/components/Bloc';
-import { Bouton } from '@/components/Bouton';
+import { Bloc } from '@/components/feuilles/Bloc';
+import { Bouton } from '@/components/ui/Bouton';
 import { joursDuCycle } from '@/data/calendrier/cycles';
 import { dateIsoLocale } from '@/data/outils/format';
 import { useCycles } from '@/hooks/useCycles';

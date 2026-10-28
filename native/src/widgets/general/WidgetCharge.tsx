@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { BarresEmpilees } from '@/components/BarresEmpilees';
-import { CadreWidget } from '@/components/CadreWidget';
-import { MiniBarres } from '@/components/MiniBarres';
-import { Tuile } from '@/components/Tuile';
+import { BarresEmpilees } from '@/components/graphes/BarresEmpilees';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { MiniBarres } from '@/components/graphes/MiniBarres';
+import { Tuile } from '@/components/ui/Tuile';
 import { chargeParSemaine, conditionHebdo } from '@/data/bilan/synthese';
 import type { WidgetProps } from '@/data/types';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';

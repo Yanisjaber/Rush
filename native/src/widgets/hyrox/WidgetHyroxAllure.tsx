@@ -1,11 +1,11 @@
 import { StyleSheet, Text as TexteRN, View } from 'react-native';
-import { TraitTirets } from '@/components/TraitTirets';
+import { TraitTirets } from '@/components/graphes/TraitTirets';
 import Svg, { Circle, Path, Text } from 'react-native-svg';
-import { CadreWidget } from '@/components/CadreWidget';
-import { DeuxCourbes } from '@/components/DeuxCourbes';
-import { MiniBarres } from '@/components/MiniBarres';
-import { StatCle } from '@/components/StatCle';
-import { Tuile } from '@/components/Tuile';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { DeuxCourbes } from '@/components/graphes/DeuxCourbes';
+import { MiniBarres } from '@/components/graphes/MiniBarres';
+import { StatCle } from '@/components/ui/StatCle';
+import { Tuile } from '@/components/ui/Tuile';
 import { analyserTest, ciblesSegments, ecrireTemps } from '@/data/sports/hyrox';
 import type { WidgetProps } from '@/data/types';
 import { police, typo } from '@/theme/typo';

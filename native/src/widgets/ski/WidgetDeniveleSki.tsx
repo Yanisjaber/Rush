@@ -1,4 +1,4 @@
-import { SerieHebdo } from '@/components/SerieHebdo';
+import { SerieHebdo } from '@/components/graphes/SerieHebdo';
 import { formatNombre } from '@/data/outils/format';
 import { deniveleSkiParSemaine } from '@/data/sports/ski';
 import type { WidgetProps } from '@/data/types';

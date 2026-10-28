@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Anneau } from '@/components/Anneau';
-import { BarresEmpilees } from '@/components/BarresEmpilees';
-import { CadreWidget } from '@/components/CadreWidget';
-import { ListeCompacte } from '@/components/ListeCompacte';
-import { Tuile } from '@/components/Tuile';
+import { Anneau } from '@/components/graphes/Anneau';
+import { BarresEmpilees } from '@/components/graphes/BarresEmpilees';
+import { CadreWidget } from '@/components/widgets/CadreWidget';
+import { ListeCompacte } from '@/components/ui/ListeCompacte';
+import { Tuile } from '@/components/ui/Tuile';
 import { familleAffichage } from '@/data/sports/familles';
 import { dateIsoLocale, formatDuree } from '@/data/outils/format';
 import { repartition7Jours } from '@/data/bilan/synthese';

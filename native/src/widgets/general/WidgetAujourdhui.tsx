@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { courtDuType } from '@/data/sports/catalogue-sports';
-import { CadreWidget, TitreWidget } from '@/components/CadreWidget';
-import { IconeRepos, IconeSport } from '@/components/IconeSport';
+import { CadreWidget, TitreWidget } from '@/components/widgets/CadreWidget';
+import { IconeRepos, IconeSport } from '@/components/ui/IconeSport';
 import { elementsDuJour, infosDuJour, lignesDeLaBande, seancesDuJour, type ElementDuJour } from '@/data/accueil/aujourdhui';
 import { formatHeuresMinutes } from '@/data/outils/format';
 import { resumeProgramme } from '@/data/sports/force';

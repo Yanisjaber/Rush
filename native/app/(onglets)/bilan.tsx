@@ -1,25 +1,25 @@
-import { FondDegrade } from '@/components/FondDegrade';
+import { FondDegrade } from '@/components/ui/FondDegrade';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BarreSports } from '@/components/BarreSports';
-import { BarresHebdo } from '@/components/BarresHebdo';
-import { BarresMois } from '@/components/BarresMois';
-import { CarteChaleur } from '@/components/CarteChaleur';
-import { Dossard } from '@/components/Dossard';
-import { Bloc } from '@/components/Bloc';
-import { Bouton } from '@/components/Bouton';
-import { MenuMesure } from '@/components/MenuMesure';
-import { CumulAnnees } from '@/components/CumulAnnees';
-import { AnneauRepartition } from '@/components/AnneauRepartition';
-import { IconeSport } from '@/components/IconeSport';
-import { ObjectifSegments } from '@/components/ObjectifSegments';
-import { OngletsIcones } from '@/components/OngletsIcones';
-import { OngletsSegment } from '@/components/OngletsSegment';
-import { TraitTirets } from '@/components/TraitTirets';
-import { ProgresSport } from '@/components/ProgresSport';
-import type { IconeOnglet } from '@/components/OngletsIcones.types';
+import { BarreSports } from '@/components/graphes/BarreSports';
+import { BarresHebdo } from '@/components/graphes/BarresHebdo';
+import { BarresMois } from '@/components/graphes/BarresMois';
+import { CarteChaleur } from '@/components/graphes/CarteChaleur';
+import { Dossard } from '@/components/ui/Dossard';
+import { Bloc } from '@/components/feuilles/Bloc';
+import { Bouton } from '@/components/ui/Bouton';
+import { MenuMesure } from '@/components/menus/MenuMesure';
+import { CumulAnnees } from '@/components/graphes/CumulAnnees';
+import { AnneauRepartition } from '@/components/graphes/AnneauRepartition';
+import { IconeSport } from '@/components/ui/IconeSport';
+import { ObjectifSegments } from '@/components/graphes/ObjectifSegments';
+import { OngletsIcones } from '@/components/menus/OngletsIcones';
+import { OngletsSegment } from '@/components/menus/OngletsSegment';
+import { TraitTirets } from '@/components/graphes/TraitTirets';
+import { ProgresSport } from '@/components/graphes/ProgresSport';
+import type { IconeOnglet } from '@/components/menus/OngletsIcones.types';
 import {
   activitesAnnee, anneesDisponibles, avancement, chargeParSemaine, cumulParAnnee, kmParMois, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
   regulariteAnnee, repartitionSport, sommer, volumeMensuel, familleBilanDuFiltre, decimalesObjectif, phraseVerdict, type MetriqueCumul,
