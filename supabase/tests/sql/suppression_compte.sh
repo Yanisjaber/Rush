@@ -3,7 +3,7 @@
 # Usage : bash supabase/tests/sql/suppression_compte.sh      (prérequis : brew install postgresql@17)
 set -e
 cd "$(dirname "$0")/../../.."
-H=supabase/proposals/db-v2/tests/local_pg.sh
+H=supabase/tests/sql/local_pg.sh
 SEED_DEFS="supabase/tests/sql/suppression_compte_recalc_prod.sql"   # copie exacte des fonctions de recalcul de la production
 bash $H start >/dev/null 2>&1 || true
 bash $H reset

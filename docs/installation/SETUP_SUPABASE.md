@@ -27,7 +27,7 @@ Réglages dans Supabase › Authentication :
   ```bash
   supabase db query --linked -f supabase/migrations/<fichier>.sql
   ```
-- Avant de toucher à la vraie base, on teste en local sur un Postgres jetable (`supabase/tests/sql/*.sh`, `supabase/proposals/db-v2/tests/local_pg.sh start|reset|psql`).
+- Avant de toucher à la vraie base, on teste en local sur un Postgres jetable (`supabase/tests/sql/*.sh`, `supabase/tests/sql/local_pg.sh start|reset|psql`).
 - Les anciens `schema.sql` et `schema_v2.sql` ont été supprimés (périmés). Le schéma de référence est `supabase/baseline/`.
 - La liste des tables est dans `docs/db/MODELE_DONNEES.md`.
 

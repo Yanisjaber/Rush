@@ -1,4 +1,4 @@
--- Test LOCAL (base jetable : supabase/proposals/db-v2/tests/local_pg.sh) de la suppression d'un gros compte.
+-- Test LOCAL (base jetable : supabase/tests/sql/local_pg.sh) de la suppression d'un gros compte.
 -- Usage : cat supabase/tests/sql/suppression_compte_decor.sql <(cat defs) ... voir suppression_compte.sh
 \set ON_ERROR_STOP on
 \timing off

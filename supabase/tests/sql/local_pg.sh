@@ -1,7 +1,7 @@
 #!/bin/bash
-# Postgres 17 LOCAL et JETABLE pour tester la V2 : n'accède jamais à la vraie base (aucun mot de passe, aucun réseau).
+# Postgres 17 LOCAL et JETABLE pour tester les migrations : n'accède jamais à la vraie base (aucun mot de passe, aucun réseau).
 # Prérequis : brew install postgresql@17
-# Usage : tests/local_pg.sh start | stop | reset | psql [options psql…]
+# Usage : supabase/tests/sql/local_pg.sh start | stop | reset | psql [options psql…]
 DATA="${PGTEST_DATA:-$HOME/.cache/rush-pgtest}"   # fichiers de la base de test (jetables)
 SOCK=/tmp/rush-pg                                  # le chemin du socket doit rester COURT (limite de 103 caractères)
 PORT=54329

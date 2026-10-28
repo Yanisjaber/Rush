@@ -3,7 +3,7 @@
 # Usage : bash supabase/tests/sql/remplacer_power_profile.sh      (prérequis : brew install postgresql@17)
 set -e
 cd "$(dirname "$0")/../../.."
-H=supabase/proposals/db-v2/tests/local_pg.sh
+H=supabase/tests/sql/local_pg.sh
 bash $H start >/dev/null 2>&1 || true
 bash $H reset
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 <<'SQL'

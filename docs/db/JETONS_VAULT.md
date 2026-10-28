@@ -22,7 +22,7 @@ Le navigateur ne lit toujours **aucun** jeton (droits par colonne inchangés) et
 | `supabase/migrations/2026-10-14_jetons_vault_1_ajout.sql` | **Phase 1** : ajoute le coffre à côté de l'existant (écriture double, repli en lecture), chiffre les 4 connexions actuelles |
 | `supabase/migrations/2026-10-14_jetons_vault_2a_purge_strava.sql` | **Phase 2a (appliquée)** : efface le clair des jetons **Strava** et arrête de l'écrire (garde-fou : refuse si un secret manque) |
 | `supabase/migrations/2026-10-14_jetons_vault_2b_fin.sql` | **Phase 2b (appliquée)** : plus aucun clair, pour aucune connexion |
-| `supabase/proposals/jetons-vault/9_retour_arriere.sql` | remet le clair depuis le coffre si la phase 2 doit être annulée |
+| `9_retour_arriere.sql` (supprimé, récupérable dans l'historique git : `supabase/proposals/jetons-vault/`) | remettait le clair depuis le coffre si la phase 2 devait être annulée |
 | `supabase/functions/_shared/jetons.ts` | lecture/écriture des jetons pour les Edge Functions |
 | `strava-ingest`, `strava-streams`, `strava-webhook`, `strava-oauth-callback`, `strava-laps`, `delete-account` | modifiées pour utiliser le module (`disconnect-integration` n'a rien à changer : le déclencheur s'en charge) |
 | ~~`tools/garmin_sync.py`~~ | supprimé avec l'intégration Garmin (13/10/2026) |
