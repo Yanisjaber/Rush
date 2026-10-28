@@ -30,6 +30,7 @@ import { useDonneesBilan } from '@/hooks/useDonneesBilan';
 import { useHistoriqueProgression, useSeriesForceProgression } from '@/hooks/useHistoriqueProgression';
 import { useReferences } from '@/hooks/useReferences';
 import { useMenu } from '@/stores/menu';
+import { choisirMesure, useMesuresBilan } from '@/stores/mesures-bilan';
 import { choisirPeriodeProgression, usePeriodeProgression } from '@/stores/progression';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
@@ -80,10 +81,10 @@ export default function Bilan() {
     setAnneeChoisie((choisie) => (choisie === ancienne ? anneeCourante : choisie));
   }, [anneeCourante]);
   const [onglet, setOnglet] = useState<OngletBilan>('resume');
-  const [metrique, setMetrique] = useState<MetriqueCumul>('distance_km');
-  const [mesureMoisChoisie, setMesureMoisChoisie] = useState<MetriqueCumul | null>(null); // la mesure du graphique par mois ; null : la distance (ou le temps si le sport n'a pas de distance)
-  const [mesureSemaine, setMesureSemaine] = useState<MetriqueCumul>('tss'); // la mesure du graphique par semaine (la charge par défaut)
-  const [mesureRepartition, setMesureRepartition] = useState<MetriqueCumul>('heures'); // la mesure de la répartition par sport (le temps par défaut)
+  // Les mesures des menus (distance, temps…) : gardées tant que l'app n'est pas fermée, voir stores/mesures-bilan
+  const mesures = useMesuresBilan();
+  const metrique = mesures.cumul;
+  const mesureRepartition = mesures.repartition;
   const { brutes, objectifs, chargement, erreur, pret, actualisation, recharger } = useDonneesBilan();
   const annee = anneeChoisie;
   // Progrès : l'historique long et le carnet de force ne se chargent qu'à la première ouverture de l'onglet
@@ -129,7 +130,8 @@ export default function Bilan() {
   const mesure = MESURES_CUMUL.find((m) => m.cle === metrique) ?? MESURES_CUMUL[0];
   // Rythme : par mois (en km, ou en heures quand le sport n'a pas de distance, comme la musculation), charge par semaine, régularité
   const enKm = courant.distance > 0;
-  const mesureMois: MetriqueCumul = mesureMoisChoisie ?? (enKm ? 'distance_km' : 'heures');
+  const mesureMois: MetriqueCumul = mesures.mois ?? (enKm ? 'distance_km' : 'heures');
+  const mesureSemaine: MetriqueCumul = mesures.semaine ?? (enKm ? 'distance_km' : 'heures');
   const mesureM = MESURES_CUMUL.find((m) => m.cle === mesureMois) ?? MESURES_CUMUL[0];
   const decimalesMois = mesureMois === 'heures' ? 1 : 0;
   // L'unité écrite sur les graphiques : « km », « m », « TSS », « h » ; pour les séances, le titre le dit déjà
@@ -294,7 +296,7 @@ export default function Bilan() {
                     <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
                       Cumul sur 3 ans
                     </Text>
-                    <MenuMesure etiquette="Mesure" valeur={metrique} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => setMetrique(c as MetriqueCumul)} />
+                    <MenuMesure etiquette="Mesure" valeur={metrique} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => choisirMesure('cumul', c as MetriqueCumul)} />
                   </View>
                   <CumulAnnees
                     series={cumul.series}
@@ -311,7 +313,7 @@ export default function Bilan() {
                       <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
                         {filtre === 'tout' ? 'Répartition par sport' : 'Répartition par discipline'}
                       </Text>
-                      <MenuMesure etiquette="Mesure de la répartition" valeur={mesureRepartition} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => setMesureRepartition(c as MetriqueCumul)} />
+                      <MenuMesure etiquette="Mesure de la répartition" valeur={mesureRepartition} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => choisirMesure('repartition', c as MetriqueCumul)} />
                     </View>
                     {repartition.length ? (
                       <View style={[styles.statsRepartition, { borderColor: p.trait }]}>
@@ -379,7 +381,7 @@ export default function Bilan() {
                     <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
                       {mesureM.nom} par mois
                     </Text>
-                    <MenuMesure etiquette="Mesure par mois" valeur={mesureMois} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => setMesureMoisChoisie(c as MetriqueCumul)} />
+                    <MenuMesure etiquette="Mesure par mois" valeur={mesureMois} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => choisirMesure('mois', c as MetriqueCumul)} />
                   </View>
                   <BarresMois
                     valeurs={parMois}
@@ -396,7 +398,7 @@ export default function Bilan() {
                     <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
                       {mesureS.nom} par semaine
                     </Text>
-                    <MenuMesure etiquette="Mesure par semaine" valeur={mesureSemaine} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => setMesureSemaine(c as MetriqueCumul)} />
+                    <MenuMesure etiquette="Mesure par semaine" valeur={mesureSemaine} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => choisirMesure('semaine', c as MetriqueCumul)} />
                   </View>
                   {mesureSemaine === 'tss' && semaines.every((v) => v === 0) ? (
                     <Text style={[typo.corps, { color: p.texteDoux, marginBottom: 12 }]}>Pas de charge (TSS) enregistrée sur cette période : les séances sans puissance ni cardio n'en ont pas.</Text>
