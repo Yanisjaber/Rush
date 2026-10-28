@@ -34,8 +34,8 @@ const DUREE_DEPART = 1200;
 /** « Lundi 6 avril 2026 » : avec l'année, qui compte en « Tous temps ». */
 const dateAnnee = (iso: string): string => `${formatDateLongue(iso)} ${iso.slice(0, 4)}`;
 
-/** Le nom d'un record sur une mini tuile (étroite) : le détail, qui sort au toucher, donne le nom entier. */
-const NOM_TUILE: Record<string, string> = { duree: 'Durée', distance: 'Distance', dplus: 'D+', tss: 'Charge', vmoy: 'Vitesse moy.', pmoy: 'Puissance moy.', fcmoy: 'FC moy.' };
+/** Le nom d'un record sur une mini tuile (quatre par rangée, donc très étroite) : le détail, qui sort au toucher, donne le nom entier. */
+const NOM_TUILE: Record<string, string> = { duree: 'Durée', distance: 'Distance', dplus: 'D+', tss: 'Charge', vmoy: 'Vitesse moy.', pmoy: 'Puiss. moy.', fcmoy: 'FC moy.', kj: 'Énergie' };
 
 export function OngletRecordsVelo({ annee, maintenant, sorties, poids, courbeAnnee, courbeTout, chargement, erreur, onOuvrir }: Props) {
   const p = usePalette();
@@ -93,7 +93,7 @@ export function OngletRecordsVelo({ annee, maintenant, sorties, poids, courbeAnn
 
       {basiques.length ? (
         <>
-          {/* Les records basiques : de mini tuiles, trois par rangée ; on en touche une pour que son détail sorte dessous */}
+          {/* Les records basiques : de mini tuiles, quatre par rangée ; on en touche une pour que son détail sorte dessous */}
           <View style={styles.mini}>
             {basiques.map((r: RecordTop) => {
               const t = texteValeurRecord(r.top[0].valeur, r.unite);
@@ -228,9 +228,9 @@ const styles = StyleSheet.create({
   attente: { paddingVertical: 40, alignItems: 'center' },
   note: { marginBottom: 10 },
   mini: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tuileMini: { width: '31.7%', minHeight: 70, borderRadius: rayon.base, borderTopWidth: 3, borderWidth: 0, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 8, gap: 1 },
-  nomMini: { fontFamily: police.texte600, fontSize: 11, lineHeight: 14, letterSpacing: 0.4, textTransform: 'uppercase', minHeight: 28 },
-  valeurMini: { fontFamily: police.titre800, fontSize: 22, lineHeight: 26, fontVariant: ['tabular-nums'] },
+  tuileMini: { width: '23.1%', minHeight: 70, borderRadius: rayon.base, borderTopWidth: 3, borderWidth: 0, paddingHorizontal: 7, paddingTop: 8, paddingBottom: 8, gap: 1 },
+  nomMini: { fontFamily: police.texte600, fontSize: 10, lineHeight: 13, letterSpacing: 0.2, textTransform: 'uppercase', minHeight: 28 },
+  valeurMini: { fontFamily: police.titre800, fontSize: 20, lineHeight: 24, fontVariant: ['tabular-nums'] },
   valeurDetail: { fontFamily: police.titre800, fontSize: 36, lineHeight: 40, marginBottom: 4, fontVariant: ['tabular-nums'] },
   lecture: { alignItems: 'center', gap: 2, marginTop: 10 },
   valeur: { fontFamily: police.titre800, fontSize: 38, lineHeight: 42, fontVariant: ['tabular-nums'] },

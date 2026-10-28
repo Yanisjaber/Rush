@@ -59,7 +59,7 @@ test('recordsBasiquesVelo : cinq records, la distance, le dénivelé et la vites
     sortie('2026-04-10', { distance_km: 110, duree_min: 200, d_plus: 1800, tss: 120 }),
   ];
   const r = recordsBasiquesVelo(sorties);
-  assert.deepEqual(r.map((x) => x.cle), ['duree', 'distance', 'dplus', 'tss', 'vmoy']); // pas de puissance ni de FC dans ces sorties : pas de record
+  assert.deepEqual(r.map((x) => x.cle), ['duree', 'distance', 'dplus', 'tss', 'vmoy', 'kj']); // pas de puissance ni de FC dans ces sorties : pas de record ; 8 records au plus
   assert.equal(r[0].top[0].valeur, 400); // le virtuel compte pour le temps
   assert.equal(r[1].top[0].valeur, 110); // et pas pour la distance
   assert.equal(r[2].top[0].valeur, 1800);
@@ -81,7 +81,8 @@ test('recordsBasiquesVelo : puissance moyenne et FC moyenne, sur 30 minutes ou p
   const r = recordsBasiquesVelo(sorties);
   assert.deepEqual(r.find((x) => x.cle === 'pmoy')!.top.map((e) => e.valeur), [230, 210, 200]);
   assert.deepEqual(r.find((x) => x.cle === 'fcmoy')!.top.map((e) => e.valeur), [181, 150]);
-  assert.equal(r.find((x) => x.cle === 'pmoy')!.libelle, 'Puissance moyenne max'); // court : le titre d'un widget XS ne dépasse pas une vingtaine de lettres
+  assert.equal(r.find((x) => x.cle === 'pmoy')!.libelle, 'Puissance moyenne max');
+  assert.equal(r.find((x) => x.cle === 'kj')!.top[0].valeur, 1200); // court : le titre d'un widget XS ne dépasse pas une vingtaine de lettres
   assert.ok(FC_MOYENNE_MAX_CREDIBLE < 200);
 });
 

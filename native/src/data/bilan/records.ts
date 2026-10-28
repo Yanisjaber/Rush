@@ -188,7 +188,7 @@ export const FC_MOYENNE_MAX_CREDIBLE = 195;
 
 /**
  * Les records basiques du vélo : la plus longue sortie (en temps), la plus grande distance, le plus gros dénivelé, la plus grosse charge, la plus haute vitesse moyenne,
- * la plus grosse puissance moyenne et la plus grosse fréquence cardiaque moyenne (sorties de 30 minutes ou plus). La distance, le dénivelé et la vitesse ne comptent que les sorties dehors
+ * la plus grosse puissance moyenne et la plus grosse fréquence cardiaque moyenne (sorties de 30 minutes ou plus), et la plus grosse dépense d'énergie (kJ). La distance, le dénivelé et la vitesse ne comptent que les sorties dehors
  * (ceux d'un vélo virtuel sont simulés) ; les moyennes de puissance et de fréquence cardiaque comptent aussi le virtuel. La cadence et le couple max ne sont pas enregistrés : ils viendront avec les courbes de ces signaux.
  */
 export function recordsBasiquesVelo(sorties: SortieVelo[]): RecordTop[] {
@@ -202,6 +202,7 @@ export function recordsBasiquesVelo(sorties: SortieVelo[]): RecordTop[] {
     { cle: 'vmoy', libelle: 'Vitesse moyenne', unite: 'km/h', top: meilleures(dessous.filter((s) => s.distance_km >= DISTANCE_MIN_VITESSE_MOYENNE).map((s) => entree(s, vitesseMoyenne(s)))) },
     { cle: 'pmoy', libelle: 'Puissance moyenne max', unite: 'W', top: meilleures(sorties.filter((s) => s.duree_min >= DUREE_MIN_MOYENNE).map((s) => entree(s, s.puissance_moyenne))) },
     { cle: 'fcmoy', libelle: 'Plus grosse FC moyenne', unite: 'bpm', top: meilleures(sorties.filter((s) => s.duree_min >= DUREE_MIN_MOYENNE && (s.fc_moyenne ?? 0) <= FC_MOYENNE_MAX_CREDIBLE).map((s) => entree(s, s.fc_moyenne))) },
+    { cle: 'kj', libelle: 'Plus grosse dépense', unite: 'kJ', top: meilleures(sorties.map((s) => entree(s, s.kj))) },
   ];
   return records.filter((r) => r.top.length);
 }
