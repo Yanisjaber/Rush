@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   activitesAnnee, activitesAnneePrecedente, anneesDisponibles, avancement, cumulParAnnee, ecartPct, familleBilan, familleBilanDuFiltre, modele, normaliser,
-  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, valeursParMois, phraseVerdict, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
+  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, valeursParMois, valeursParJourSemaine, phraseVerdict, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
 } from '../../src/data/bilan/bilan.ts';
 import { activitesBilanDemo, objectifsAnnuelsDemo } from '../../src/data/demo/demo.ts';
 
@@ -137,6 +137,14 @@ test('repartitionSport : par discipline, la famille vélo se détaille en route,
   const velo = (iso: string, type: string, min: number) => ({ ...act(iso, 'cyclisme', min, 0), type });
   const r = repartitionSport(activitesAnnee([velo('2026-01-10', 'Ride', 180), velo('2026-01-11', 'MountainBikeRide', 60), velo('2026-01-12', 'VirtualRide', 60)], 2026, maintenant), 'heures', true);
   assert.deepEqual(r.map((x) => [x.cle, x.heures]), [['Ride', 3], ['MountainBikeRide', 1], ['VirtualRide', 1]]);
+});
+
+test('valeursParJourSemaine : la mesure choisie par jour de la semaine, lundi en premier', () => {
+  // 2026-06-29 = lundi, 2026-07-01 = mercredi, 2026-07-05 = dimanche
+  const liste = [act('2026-06-29', 'course', 60, 10), act('2026-06-29', 'cyclisme', 120, 40, 0, 0, 'b'), act('2026-07-01', 'course', 30, 5), act('2026-07-05', 'course', 90, 15)];
+  assert.deepEqual(valeursParJourSemaine(liste, 'seances'), [2, 0, 1, 0, 0, 0, 1]);
+  assert.deepEqual(valeursParJourSemaine(liste, 'distance_km'), [50, 0, 5, 0, 0, 0, 15]);
+  assert.deepEqual(valeursParJourSemaine([], 'heures'), [0, 0, 0, 0, 0, 0, 0]);
 });
 
 test('valeursParMois : la mesure choisie, mois par mois', () => {

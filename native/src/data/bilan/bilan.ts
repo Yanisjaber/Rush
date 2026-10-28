@@ -416,6 +416,13 @@ const joursEntre = (a: Date, b: Date) => Math.round((Date.UTC(b.getFullYear(), b
 /** Dernier jour pris en compte d'une année : aujourd'hui pour l'année en cours, le 31 décembre sinon. */
 const finDeAnnee = (annee: number, maintenant: Date) => (annee === maintenant.getFullYear() ? midi(maintenant) : new Date(annee, 11, 31, 12));
 
+/** La mesure choisie (distance, dénivelé, séances, charge ou temps) par jour de la semaine : 7 valeurs, lundi → dimanche, sur les activités données. */
+export function valeursParJourSemaine(acts: ActiviteBilan[], mesure: MetriqueCumul): number[] {
+  const jours = new Array(7).fill(0);
+  for (const a of acts) jours[(dateDe(a.iso).getDay() + 6) % 7] += valeurCumul(a, mesure);
+  return jours;
+}
+
 /** La mesure choisie (la charge TSS par défaut) des `nb` dernières semaines (lundi → dimanche) de l'année : la dernière valeur est la semaine en cours (ou la dernière de l'année). */
 export function chargeParSemaine(acts: ActiviteBilan[], annee: number, maintenant: Date = new Date(), nb = 12, mesure: MetriqueCumul = 'tss'): number[] {
   const fin = finDeAnnee(annee, maintenant);

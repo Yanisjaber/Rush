@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarreSports } from '@/components/graphes/BarreSports';
 import { BarresHebdo } from '@/components/graphes/BarresHebdo';
 import { BarresMois } from '@/components/graphes/BarresMois';
+import { CourbeSemaine } from '@/components/graphes/CourbeSemaine';
 import { RegulariteMois } from '@/components/graphes/RegulariteMois';
 import { Dossard } from '@/components/ui/Dossard';
 import { Bloc } from '@/components/feuilles/Bloc';
@@ -20,7 +21,7 @@ import { TraitTirets } from '@/components/graphes/TraitTirets';
 import { ProgresSport } from '@/components/graphes/ProgresSport';
 import type { IconeOnglet } from '@/components/menus/OngletsIcones.types';
 import {
-  activitesAnnee, anneesDisponibles, avancement, chargeParSemaine, cumulParAnnee, valeursParMois, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
+  activitesAnnee, anneesDisponibles, avancement, chargeParSemaine, cumulParAnnee, valeursParMois, valeursParJourSemaine, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
   regulariteAnnee, repartitionSport, sommer, familleBilanDuFiltre, decimalesObjectif, phraseVerdict, type MetriqueCumul,
 } from '@/data/bilan/bilan';
 import { formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
@@ -132,11 +133,15 @@ export default function Bilan() {
   const enKm = courant.distance > 0;
   const mesureMois: MetriqueCumul = mesures.mois ?? (enKm ? 'distance_km' : 'heures');
   const mesureSemaine: MetriqueCumul = mesures.semaine ?? (enKm ? 'distance_km' : 'heures');
+  const mesureJour: MetriqueCumul = mesures.jour ?? (enKm ? 'distance_km' : 'heures');
   const mesureM = MESURES_CUMUL.find((m) => m.cle === mesureMois) ?? MESURES_CUMUL[0];
   const decimalesMois = mesureMois === 'heures' ? 1 : 0;
   // L'unité écrite sur les graphiques : « km », « m », « TSS », « h » ; pour les séances, le titre le dit déjà
   const uniteGraphe = (m: { unite: string }) => (m.unite === 'séances' ? '' : m.unite);
   const mesureS = MESURES_CUMUL.find((m) => m.cle === mesureSemaine) ?? MESURES_CUMUL[0];
+  const mesureJ = MESURES_CUMUL.find((m) => m.cle === mesureJour) ?? MESURES_CUMUL[0];
+  // Une valeur de la semaine type écrite avec son unité : « 4h12 » pour le temps, « 18 » pour les séances (le titre le dit), « 1 040 km » sinon
+  const texteJour = (v: number, decimales = 0): string => (mesureJour === 'heures' ? texteHM(Math.round(v * 60)) : mesureJour === 'seances' ? formatNum(v, decimales) : `${formatNum(v, decimales)} ${mesureJ.unite}`);
   const decimalesSemaine = mesureSemaine === 'heures' || mesureSemaine === 'seances' ? 1 : 0;
   const moisEnCours = annee === maintenant.getFullYear() ? maintenant.getMonth() : null;
   const dernierMois = moisEnCours ?? 11;
@@ -146,8 +151,9 @@ export default function Bilan() {
     const semaines = chargeParSemaine(filtrees, annee, maintenant, 52, mesureSemaine);
     // La semaine en cours n'est pas finie : elle ne compte pas dans la moyenne (sinon celle-ci est tirée vers le bas)
     const completes = enCours ? semaines.slice(0, -1) : semaines;
-    return { parMois, meilleurMois: Math.max(0, ...parMois), semaines, moyenneSemaine: completes.reduce((a, b) => a + b, 0) / completes.length, regularite: regulariteAnnee(filtrees, annee, maintenant) };
-  }, [onglet, filtrees, annee, maintenant, mesureMois, mesureSemaine, enCours]);
+    const jourSemaine = valeursParJourSemaine(activitesAnnee(filtrees, annee, maintenant), mesureJour);
+    return { parMois, jourSemaine, meilleurMois: Math.max(0, ...parMois), semaines, moyenneSemaine: completes.reduce((a, b) => a + b, 0) / completes.length, regularite: regulariteAnnee(filtrees, annee, maintenant) };
+  }, [onglet, filtrees, annee, maintenant, mesureMois, mesureSemaine, mesureJour, enCours]);
   const repartition = useMemo(() => (onglet === 'resume' ? repartitionSport(activitesAnnee(filtrees, annee, maintenant), mesureRepartition, filtre !== 'tout') : []), [onglet, filtre, filtrees, annee, maintenant, mesureRepartition]);
   // `court` : pour le gros chiffre du haut, le mot « séances » est de trop (le libellé dessous le dit déjà)
   const texteRep = (v: number, court = false): string =>
@@ -155,7 +161,7 @@ export default function Bilan() {
   const dense = repartition.length > 6; // beaucoup de sports : lignes et barres plus serrées
   const mesureRep = MESURES_CUMUL.find((m) => m.cle === mesureRepartition) ?? MESURES_CUMUL[0];
   // Les valeurs de l'onglet Rythme : elles n'existent que sur cet onglet (l'affichage plus bas est gardé par `rythme`)
-  const { parMois, meilleurMois, semaines, moyenneSemaine, regularite } = rythme ?? ({} as NonNullable<typeof rythme>);
+  const { parMois, jourSemaine, meilleurMois, semaines, moyenneSemaine, regularite } = rythme ?? ({} as NonNullable<typeof rythme>);
   const seancesParSemaine = (n: number) => (regularite?.jours ? n / (regularite.jours / 7) : 0);
   const heuresParSemaine = seancesParSemaine; // même calcul : une quantité divisée par le nombre de semaines écoulées
   // Les trois chiffres en haut de l'onglet Rythme
@@ -422,6 +428,31 @@ export default function Bilan() {
                     dernierMois={dernierMois}
                     etiquette={`Régularité de ${annee}, mois par mois : ${regularite.joursActifs} jours actifs sur ${regularite.jours}. ${regularite.parMois.slice(0, dernierMois + 1).map((m, i) => `${NOMS_MOIS[i]} ${m.actifs}`).join(', ')}.`}
                   />
+                </Bloc>
+
+                <Bloc>
+                  <View style={styles.enteteBloc}>
+                    <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
+                      Semaine type
+                    </Text>
+                    <MenuMesure etiquette="Mesure de la semaine type" valeur={mesureJour} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => choisirMesure('jour', c as MetriqueCumul)} />
+                  </View>
+                  {jourSemaine.every((v) => v === 0) ? (
+                    <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore d'activité en {annee}.</Text>
+                  ) : (
+                    <>
+                      <CourbeSemaine
+                        valeurs={jourSemaine}
+                        couleur={filtre === 'tout' ? p.texte : couleurSport(p, filtre)}
+                        formater={(v) => texteJour(v)}
+                        etiquette={`${mesureJ.nom} par jour de la semaine en ${annee} : ${['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].map((j, i) => `${j} ${texteJour(jourSemaine[i], 1)}`).join(', ')}.`}
+                      />
+                      <Text style={[typo.petit, { color: p.texteDoux, marginTop: 6 }]}>
+                        Moyenne : {texteJour(jourSemaine.reduce((t, v) => t + v, 0) / 7, 1)}
+                        {mesureJour === 'seances' ? ' séances' : ''} par jour (pointillés).
+                      </Text>
+                    </>
+                  )}
                 </Bloc>
 
               </>
