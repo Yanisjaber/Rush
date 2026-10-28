@@ -137,7 +137,7 @@ export default function Bilan() {
     const completes = enCours ? semaines.slice(0, -1) : semaines;
     return { parMois, meilleurMois: Math.max(0, ...parMois), semaines, moyenneSemaine: Math.round(completes.reduce((a, b) => a + b, 0) / completes.length), regularite: regulariteAnnee(filtrees, annee, maintenant) };
   }, [onglet, filtrees, annee, maintenant, enKm, enCours]);
-  const repartition = useMemo(() => (onglet === 'resume' ? repartitionSport(activitesAnnee(toutes, annee, maintenant), mesureRepartition) : []), [onglet, toutes, annee, maintenant, mesureRepartition]);
+  const repartition = useMemo(() => (onglet === 'resume' && filtre === 'tout' ? repartitionSport(activitesAnnee(toutes, annee, maintenant), mesureRepartition) : []), [onglet, filtre, toutes, annee, maintenant, mesureRepartition]);
   // `court` : pour le gros chiffre du haut, le mot « séances » est de trop (le libellé dessous le dit déjà)
   const texteRep = (v: number, court = false): string =>
     mesureRep.unite === 'h' ? texteHM(Math.round(v * 60)) : court && mesureRep.unite === 'séances' ? formatNum(v, 0) : `${formatNum(v, 0)} ${mesureRep.unite}`;
@@ -283,55 +283,58 @@ export default function Bilan() {
                   />
                 </Bloc>
 
-                <Bloc>
-                  <View style={styles.enteteBloc}>
-                    <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
-                      Répartition par sport
-                    </Text>
-                    <MenuMesure etiquette="Mesure de la répartition" valeur={mesureRepartition} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => setMesureRepartition(c as MetriqueCumul)} />
-                  </View>
-                  {repartition.length ? (
-                    <View style={[styles.statsRepartition, { borderColor: p.trait }]}>
-                      <View style={styles.statRepartition}>
-                        <Text style={[styles.valeurSerie, { color: p.texte }]}>{texteRep(repartition.reduce((t, r) => t + r.valeur, 0), true)}</Text>
-                        <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none' }]}>{mesureRep.nom} en {annee}</Text>
-                      </View>
-                      <View style={[styles.statRepartition, { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: p.trait }]}>
-                        <Text style={[styles.valeurSerie, { color: p.texte }]}>{repartition.length}</Text>
-                        <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none' }]}>{repartition.length > 1 ? 'Sports' : 'Sport'}</Text>
-                      </View>
+                {/* La répartition compare les sports entre eux : elle n'a de sens que sur « Tous » */}
+                {filtre === 'tout' ? (
+                  <Bloc>
+                    <View style={styles.enteteBloc}>
+                      <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
+                        Répartition par sport
+                      </Text>
+                      <MenuMesure etiquette="Mesure de la répartition" valeur={mesureRepartition} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => setMesureRepartition(c as MetriqueCumul)} />
                     </View>
-                  ) : null}
-                  {repartition.length ? (
-                    <View
-                      accessible
-                      accessibilityLabel={`Répartition par sport : ${repartition.map((r) => `${r.type ? nomDuType(r.type) : NOM_SPORT_BILAN[r.sport]}, ${texteRep(r.valeur)}, ${r.part} pour cent`).join(' ; ')}`}
-                      style={{ gap: dense ? 8 : 14 }}
-                    >
-                      {repartition.map((r) => (
-                        <View key={r.cle} style={{ gap: 4 }}>
-                          <View style={styles.ligneRepartition}>
-                            <IconeSport sport={r.type ?? FAMILLE_COULEUR[r.sport]} taille={16} />
-                            <Text numberOfLines={1} style={[typo.petit, { color: p.texte, flex: 1 }]}>
-                              {r.type ? nomDuType(r.type) : NOM_SPORT_BILAN[r.sport]}
-                            </Text>
-                            {/* La stat elle-même (281 h, 3 120 km…), en plus du pourcentage */}
-                            <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none' }]}>
-                              {texteRep(r.valeur)}
-                            </Text>
-                            <Text style={[typo.petit, { color: p.texte, fontFamily: police.titre700, minWidth: 46, textAlign: 'right' }]}>{r.part === 0 ? '< 1 %' : `${r.part} %`}</Text>
-                          </View>
-                          {/* La barre la plus longue est le sport n°1 : on compare les sports entre eux */}
-                          <View style={[styles.pisteRepartition, { backgroundColor: p.surface2, height: dense ? 5 : 9 }]}>
-                            <View style={{ width: `${Math.max((r.valeur / repartition[0].valeur) * 100, 1)}%`, height: '100%', borderRadius: 3, backgroundColor: couleurSport(p, r.type ?? FAMILLE_COULEUR[r.sport]) }} />
-                          </View>
+                    {repartition.length ? (
+                      <View style={[styles.statsRepartition, { borderColor: p.trait }]}>
+                        <View style={styles.statRepartition}>
+                          <Text style={[styles.valeurSerie, { color: p.texte }]}>{texteRep(repartition.reduce((t, r) => t + r.valeur, 0), true)}</Text>
+                          <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none' }]}>{mesureRep.nom} en {annee}</Text>
                         </View>
-                      ))}
-                    </View>
-                  ) : (
-                    <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore d'activité en {annee}.</Text>
-                  )}
-                </Bloc>
+                        <View style={[styles.statRepartition, { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: p.trait }]}>
+                          <Text style={[styles.valeurSerie, { color: p.texte }]}>{repartition.length}</Text>
+                          <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none' }]}>{repartition.length > 1 ? 'Sports' : 'Sport'}</Text>
+                        </View>
+                      </View>
+                    ) : null}
+                    {repartition.length ? (
+                      <View
+                        accessible
+                        accessibilityLabel={`Répartition par sport : ${repartition.map((r) => `${r.type ? nomDuType(r.type) : NOM_SPORT_BILAN[r.sport]}, ${texteRep(r.valeur)}, ${r.part} pour cent`).join(' ; ')}`}
+                        style={{ gap: dense ? 8 : 14 }}
+                      >
+                        {repartition.map((r) => (
+                          <View key={r.cle} style={{ gap: 4 }}>
+                            <View style={styles.ligneRepartition}>
+                              <IconeSport sport={r.type ?? FAMILLE_COULEUR[r.sport]} taille={16} />
+                              <Text numberOfLines={1} style={[typo.petit, { color: p.texte, flex: 1 }]}>
+                                {r.type ? nomDuType(r.type) : NOM_SPORT_BILAN[r.sport]}
+                              </Text>
+                              {/* La stat elle-même (281 h, 3 120 km…), en plus du pourcentage */}
+                              <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none' }]}>
+                                {texteRep(r.valeur)}
+                              </Text>
+                              <Text style={[typo.petit, { color: p.texte, fontFamily: police.titre700, minWidth: 46, textAlign: 'right' }]}>{r.part === 0 ? '< 1 %' : `${r.part} %`}</Text>
+                            </View>
+                            {/* La barre la plus longue est le sport n°1 : on compare les sports entre eux */}
+                            <View style={[styles.pisteRepartition, { backgroundColor: p.surface2, height: dense ? 5 : 9 }]}>
+                              <View style={{ width: `${Math.max((r.valeur / repartition[0].valeur) * 100, 1)}%`, height: '100%', borderRadius: 3, backgroundColor: couleurSport(p, r.type ?? FAMILLE_COULEUR[r.sport]) }} />
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    ) : (
+                      <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore d'activité en {annee}.</Text>
+                    )}
+                  </Bloc>
+                ) : null}
               </>
             ) : null}
 
