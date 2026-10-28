@@ -1,6 +1,6 @@
 import { FondDegrade } from '@/components/FondDegrade';
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
-import { ActivityIndicator, Dimensions, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BandeauConnexion } from '@/components/BandeauConnexion';
 import { BandeauEdition } from '@/components/BandeauEdition';
@@ -70,7 +70,7 @@ export default function Accueil() {
   const [enGlisse, setEnGlisse] = useState(false);
   const defile = useRef<ComponentRef<typeof ScrollView>>(null);
   const decalageDefilement = useRef(0);
-  const hauteurEcran = Dimensions.get('window').height;
+  const hauteurEcran = useWindowDimensions().height; // se met à jour à la rotation
   // En quittant l'édition (Terminer, Annuler, réinitialisation), la fenêtre de modification se ferme
   useEffect(() => {
     if (!enEdition) setModif('');
@@ -87,6 +87,17 @@ export default function Accueil() {
   // Onglet qu'on modifie : Muscu ou Hyrox ont leur propre composition ; ailleurs on modifie l'onglet « Tout »
   const ongletAModifier = ONGLETS_PERSONNALISABLES.includes(filtre) ? filtre : 'tout';
   const aAjouter = enEdition ? (disp.ongletEdition !== 'tout' ? disponiblesOnglet(widgets, disp.ongletEdition) : disponibles({ widgets }, familles)) : [];
+
+  // « Réinitialiser » efface la personnalisation et enregistre tout de suite : on demande confirmation (un tap de travers à côté de Terminer)
+  const confirmerReinitialisation = () =>
+    Alert.alert(
+      ONGLETS_PERSONNALISABLES.includes(disp.ongletEdition) ? 'Remettre cet onglet par défaut ?' : "Remettre l'accueil par défaut ?",
+      'Ta disposition actuelle sera perdue.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Réinitialiser', style: 'destructive', onPress: () => void reinitialiserAuto() },
+      ],
+    );
 
   const nomPersonnaliser = ONGLETS_PERSONNALISABLES.includes(filtre) ? `Personnaliser l'onglet ${SPORTS[filtre as CleSport]?.court ?? filtre}` : "Personnaliser l'accueil";
 
@@ -177,7 +188,7 @@ export default function Accueil() {
       {enEdition ? (
         // En bas, au-dessus du menu : Terminer, Annuler, Réinitialiser
         <View pointerEvents="box-none" style={[styles.bas, { bottom: bas + 16 }]}>
-          <BandeauEdition onTerminer={() => void terminerEdition()} onAnnuler={annulerEdition} onAuto={() => void reinitialiserAuto()} />
+          <BandeauEdition onTerminer={() => void terminerEdition()} onAnnuler={annulerEdition} onAuto={confirmerReinitialisation} />
         </View>
       ) : null}
       <FeuilleWidget
