@@ -15,6 +15,9 @@ export const cleRetouche = (ligne: { strava_id?: unknown; id?: unknown } | null 
 /** Une séance est-elle modifiable directement ? (saisie à la main, pas issue de Strava ou Garmin) */
 export const estManuelle = (ligne: { source?: unknown } | null | undefined): boolean => ligne?.source === 'manual';
 
+// L'ancien site enregistrait parfois le nom de la famille (« cyclisme ») au lieu du type Strava (« Ride ») : sans traduction, la séance tombait dans « Autres ».
+const SPORT_ANCIEN_NOM: Record<string, string> = { cyclisme: 'Ride', course: 'Run', natation: 'Swim', musculation: 'WeightTraining' };
+
 /** Applique une retouche (objet `data` de activity_edits) à une ligne de activities. Renvoie une copie ; ne touche jamais l'originale. */
 export function appliquer<T extends Seance>(ligne: T, retouche: unknown): T {
   if (!retouche || typeof retouche !== 'object') return ligne;
@@ -26,7 +29,7 @@ export function appliquer<T extends Seance>(ligne: T, retouche: unknown): T {
     tss: ligne.tss, total_elevation_gain: ligne.total_elevation_gain, rpe: ligne.rpe, user_notes: ligne.user_notes,
   };
   if (typeof d.name === 'string' && d.name) r.name = d.name;
-  if (typeof d.sport === 'string' && d.sport) r.sport = d.sport;
+  if (typeof d.sport === 'string' && d.sport) r.sport = Object.hasOwn(SPORT_ANCIEN_NOM, d.sport) ? SPORT_ANCIEN_NOM[d.sport] : d.sport;
   if (Number.isFinite(d.duration)) r.moving_time = (d.duration as number) * 60;
   if (Number.isFinite(d.distance_km)) r.distance_km = d.distance_km as number;
   if (Number.isFinite(d.tss)) r.tss = d.tss as number;

@@ -116,6 +116,13 @@ test('appliquer : change les champs retouchés, garde l\'origine, ne touche pas 
   assert.equal(s.retouchee, undefined);
 });
 
+test('appliquer : un ancien nom de famille (« cyclisme ») devient le type Strava, pas « Autres »', () => {
+  const s = seance({});
+  assert.equal(appliquer(s, { sport: 'cyclisme' }).sport, 'Ride');
+  assert.equal(appliquer(s, { sport: 'course' }).sport, 'Run');
+  assert.equal(appliquer(s, { sport: 'Soccer' }).sport, 'Soccer'); // un vrai type ne change pas
+});
+
 test('appliquer : une retouche absente ou invalide laisse la séance telle quelle', () => {
   const s = seance({});
   assert.equal(appliquer(s, null), s);
