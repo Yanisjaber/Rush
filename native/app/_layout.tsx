@@ -97,7 +97,7 @@ export default function RootLayout() {
           {['ajout-seance', 'ajout-sortie', 'ajout-import', 'ajout-competition', 'ajout-note'].map((nom) => (
             <Stack.Screen
               key={nom}
-              name={nom}
+              name={`(ajouts)/${nom}`}
               options={{
                 headerShown: true,
                 title: { 'ajout-seance': 'Séance prévue', 'ajout-sortie': 'Activité déjà faite', 'ajout-import': 'Importer une séance', 'ajout-competition': 'Compétition', 'ajout-note': 'Note' }[nom],
