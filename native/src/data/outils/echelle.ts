@@ -1,22 +1,22 @@
-// Échelle « ronde » d'un graphique en barres : un pas rond (1, 2, 2,5 ou 5 fois une puissance de 10, toujours un entier) et un haut qui en est un multiple,
-// avec au plus 4 repères (2 000 → 500, 1 000, 1 500, 2 000). Fonctions pures, sans réseau.
+// Échelle « ronde » d'un graphique en barres : le haut est un multiple de 3 rond, juste au-dessus du plus grand mois (ou de la plus grande semaine),
+// pour que le tiers et les deux tiers tombent sur des nombres ronds (1 010 → 400, 800, 1 200 ; 2 542 → 1 000, 2 000, 3 000). Fonctions pures, sans réseau.
 
-const MULTIPLES = [1, 2, 2.5, 5];
+// Le pas entre deux repères : 1, 1,5, 2, 2,5, 3, 4, 5, 6 ou 8 fois une puissance de 10, du plus petit au plus grand (le haut vaut 3 pas). Seuls les entiers servent.
+const MULTIPLES = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8];
 
-/** Le plus petit pas rond (entier) qui couvre `maximum` en 4 repères au plus ; le haut est le plus petit multiple du pas qui couvre `maximum`. Rien (0 et 0) si `maximum` n'est pas positif. */
+/** Le plus petit pas rond (entier) dont 3 pas couvrent `maximum` ; le haut vaut 3 pas. Rien (0 et 0) si `maximum` n'est pas positif. */
 export function echelleRonde(maximum: number): { haut: number; pas: number } {
   if (!(maximum > 0)) return { haut: 0, pas: 0 };
   for (let puissance = 1; ; puissance *= 10) {
     for (const m of MULTIPLES) {
       const pas = m * puissance;
-      if (!Number.isInteger(pas)) continue;
-      if (Math.ceil(maximum / pas) <= 4) return { haut: Math.ceil(maximum / pas) * pas, pas };
+      if (Number.isInteger(pas) && 3 * pas >= maximum) return { haut: 3 * pas, pas };
     }
   }
 }
 
-/** Les valeurs des repères, du plus bas au haut : les multiples du pas (sans le 0). */
+/** Les valeurs des 3 repères, du plus bas au haut : un tiers, deux tiers et le haut (le 0 est la ligne de base). */
 export function reperesRonds(maximum: number): number[] {
-  const { haut, pas } = echelleRonde(maximum);
-  return pas > 0 ? Array.from({ length: Math.round(haut / pas) }, (_, i) => (i + 1) * pas) : [];
+  const { pas } = echelleRonde(maximum);
+  return pas > 0 ? [pas, 2 * pas, 3 * pas] : [];
 }

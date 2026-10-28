@@ -4,7 +4,7 @@ import { formatNum } from '@/data/outils/format';
 import { police } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// L'échelle d'un graphique en barres, comme dans le cumul sur 3 ans : des traits fins à des valeurs rondes (500, 1 000, 1 500…), et le 0 sur la ligne de base,
+// L'échelle d'un graphique en barres, comme dans le cumul sur 3 ans : des traits fins au tiers, aux deux tiers et en haut (un multiple de 3 rond : 400, 800, 1 200), et le 0 sur la ligne de base,
 // avec leur valeur (et son unité) écrite dans une marge à gauche des barres, jamais sous une barre. À poser derrière les barres, dans un conteneur de la même hauteur
 // que la zone des barres, dont le contenu est décalé de `largeurGouttiere` vers la droite.
 interface Props {
@@ -17,7 +17,7 @@ interface Props {
   bas?: number;
 }
 
-/** Les valeurs des repères : les multiples d'un pas rond jusqu'au haut de l'échelle (voir echelleRonde). */
+/** Les valeurs des repères : un tiers, deux tiers et le haut de l'échelle (voir echelleRonde). */
 export const graduationsBarres = reperesRonds;
 
 const texteRepere = (v: number, unite: string): string => (unite ? `${formatNum(v, 0)} ${unite}` : formatNum(v, 0));

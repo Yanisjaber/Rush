@@ -389,19 +389,20 @@ test('phraseVerdict : projection, manque, atteint, chrono et poids', () => {
   assert.equal(phraseVerdict(avancement(objectif('cyclisme', 'cyc_ftp', 300), [], 2026, maintenant)!, fmt).texte, ''); // pas de valeur saisie : rien à dire
 });
 
-test('echelleRonde : un pas rond, 4 repères au plus, haut multiple du pas', () => {
-  assert.deepEqual(echelleRonde(1010), { haut: 1500, pas: 500 });
-  assert.deepEqual(echelleRonde(705), { haut: 800, pas: 200 });
+test('echelleRonde : le haut est un multiple de 3 rond juste au-dessus du maximum, le tiers et les deux tiers sont ronds', () => {
+  assert.deepEqual(echelleRonde(1010), { haut: 1200, pas: 400 });
+  assert.deepEqual(echelleRonde(705), { haut: 750, pas: 250 });
   assert.deepEqual(echelleRonde(2542), { haut: 3000, pas: 1000 });
-  assert.deepEqual(echelleRonde(170), { haut: 200, pas: 50 });
-  assert.deepEqual(echelleRonde(400), { haut: 400, pas: 100 });
+  assert.deepEqual(echelleRonde(170), { haut: 180, pas: 60 });
+  assert.deepEqual(echelleRonde(400), { haut: 450, pas: 150 });
+  assert.deepEqual(echelleRonde(900), { haut: 900, pas: 300 }); // pile sur un multiple : pas de marge en plus
   assert.deepEqual(echelleRonde(3), { haut: 3, pas: 1 });
   assert.deepEqual(echelleRonde(0), { haut: 0, pas: 0 });
-  assert.deepEqual(reperesRonds(1010), [500, 1000, 1500]);
+  assert.deepEqual(reperesRonds(1010), [400, 800, 1200]);
   assert.deepEqual(reperesRonds(0), []);
   for (const m of [1, 7, 42, 99, 333, 1234, 98765]) {
-    const { haut } = echelleRonde(m);
-    assert.ok(haut >= m);
+    const { haut, pas } = echelleRonde(m);
+    assert.ok(haut >= m && haut % 3 === 0 && Number.isInteger(pas));
     assert.deepEqual(echelleRonde(haut), echelleRonde(m)); // refaire l'échelle sur son propre haut ne la change pas
   }
 });
