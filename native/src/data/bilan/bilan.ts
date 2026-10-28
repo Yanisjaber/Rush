@@ -490,14 +490,16 @@ export function regulariteAnnee(acts: ActiviteBilan[], annee: number, maintenant
  * Répartition par sport : [{ sport, cle, type, heures, seances, valeur, part }] triée par la mesure choisie, décroissante (le temps par défaut ; mêmes mesures que le cumul sur 3 ans).
  * `valeur` est la somme de la mesure pour le sport, `part` sa part en % du total. Un sport à zéro pour la mesure (la muscu en distance) n'apparaît pas.
  * La famille « autre » est détaillée : chaque sport du catalogue (randonnée, football, surf…) a sa ligne, `type` donne son type brut. Un type absent ou « Other » reste « Autre ».
+ * `parDiscipline` (onglet d'un sport) détaille toutes les familles : route, VTT, gravel et virtuel pour le vélo, par exemple.
  */
 export function repartitionSport(
   acts: ActiviteBilan[],
   mesure: MetriqueCumul = 'heures',
+  parDiscipline = false,
 ): { sport: SportBilan; cle: string; type?: string; heures: number; seances: number; valeur: number; part: number }[] {
   const par: Record<string, { sport: SportBilan; cle: string; type?: string; heures: number; seances: number; valeur: number }> = {};
   for (const a of acts) {
-    const type = a.sport === 'autre' && a.type && a.type !== 'Other' ? a.type : undefined;
+    const type = a.type && (parDiscipline || (a.sport === 'autre' && a.type !== 'Other')) ? a.type : undefined;
     const cle = type ?? a.sport;
     par[cle] = par[cle] || { sport: a.sport, cle, type, heures: 0, seances: 0, valeur: 0 };
     par[cle].heures += a.duree_min / 60;

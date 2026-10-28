@@ -137,7 +137,7 @@ export default function Bilan() {
     const completes = enCours ? semaines.slice(0, -1) : semaines;
     return { parMois, meilleurMois: Math.max(0, ...parMois), semaines, moyenneSemaine: Math.round(completes.reduce((a, b) => a + b, 0) / completes.length), regularite: regulariteAnnee(filtrees, annee, maintenant) };
   }, [onglet, filtrees, annee, maintenant, enKm, enCours]);
-  const repartition = useMemo(() => (onglet === 'resume' && filtre === 'tout' ? repartitionSport(activitesAnnee(toutes, annee, maintenant), mesureRepartition) : []), [onglet, filtre, toutes, annee, maintenant, mesureRepartition]);
+  const repartition = useMemo(() => (onglet === 'resume' ? repartitionSport(activitesAnnee(filtrees, annee, maintenant), mesureRepartition, filtre !== 'tout') : []), [onglet, filtre, filtrees, annee, maintenant, mesureRepartition]);
   // `court` : pour le gros chiffre du haut, le mot « séances » est de trop (le libellé dessous le dit déjà)
   const texteRep = (v: number, court = false): string =>
     mesureRep.unite === 'h' ? texteHM(Math.round(v * 60)) : court && mesureRep.unite === 'séances' ? formatNum(v, 0) : `${formatNum(v, 0)} ${mesureRep.unite}`;
@@ -283,12 +283,12 @@ export default function Bilan() {
                   />
                 </Bloc>
 
-                {/* La répartition compare les sports entre eux : elle n'a de sens que sur « Tous » */}
-                {filtre === 'tout' ? (
+                {/* Sur « Tous » : les sports entre eux ; sur un sport : ses disciplines (route, VTT…), et rien s'il n'en a qu'une */}
+                {filtre === 'tout' || repartition.length > 1 ? (
                   <Bloc>
                     <View style={styles.enteteBloc}>
                       <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
-                        Répartition par sport
+                        {filtre === 'tout' ? 'Répartition par sport' : 'Répartition par discipline'}
                       </Text>
                       <MenuMesure etiquette="Mesure de la répartition" valeur={mesureRepartition} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => setMesureRepartition(c as MetriqueCumul)} />
                     </View>
@@ -300,14 +300,14 @@ export default function Bilan() {
                         </View>
                         <View style={[styles.statRepartition, { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: p.trait }]}>
                           <Text style={[styles.valeurSerie, { color: p.texte }]}>{repartition.length}</Text>
-                          <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none' }]}>{repartition.length > 1 ? 'Sports' : 'Sport'}</Text>
+                          <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none' }]}>{filtre === 'tout' ? (repartition.length > 1 ? 'Sports' : 'Sport') : 'Disciplines'}</Text>
                         </View>
                       </View>
                     ) : null}
                     {repartition.length ? (
                       <View
                         accessible
-                        accessibilityLabel={`Répartition par sport : ${repartition.map((r) => `${r.type ? nomDuType(r.type) : NOM_SPORT_BILAN[r.sport]}, ${texteRep(r.valeur)}, ${r.part} pour cent`).join(' ; ')}`}
+                        accessibilityLabel={`${filtre === 'tout' ? 'Répartition par sport' : 'Répartition par discipline'} : ${repartition.map((r) => `${r.type ? nomDuType(r.type) : NOM_SPORT_BILAN[r.sport]}, ${texteRep(r.valeur)}, ${r.part} pour cent`).join(' ; ')}`}
                         style={{ gap: dense ? 8 : 14 }}
                       >
                         {repartition.map((r) => (

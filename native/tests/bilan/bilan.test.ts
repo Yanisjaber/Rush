@@ -132,6 +132,12 @@ test('repartitionSport : « autre » est détaillé par sport du catalogue', () 
   assert.deepEqual(r.map((x) => [x.cle, x.type, x.heures]), [['Hike', 'Hike', 4], ['Soccer', 'Soccer', 1], ['autre', undefined, 1]]);
 });
 
+test('repartitionSport : par discipline, la famille vélo se détaille en route, VTT, virtuel', () => {
+  const velo = (iso: string, type: string, min: number) => ({ ...act(iso, 'cyclisme', min, 0), type });
+  const r = repartitionSport(activitesAnnee([velo('2026-01-10', 'Ride', 180), velo('2026-01-11', 'MountainBikeRide', 60), velo('2026-01-12', 'VirtualRide', 60)], 2026, maintenant), 'heures', true);
+  assert.deepEqual(r.map((x) => [x.cle, x.heures]), [['Ride', 3], ['MountainBikeRide', 1], ['VirtualRide', 1]]);
+});
+
 test('volumeMensuel et repartitionSport', () => {
   const liste = [act('2026-01-10', 'course', 60, 10), act('2026-01-20', 'cyclisme', 120, 40), act('2026-03-05', 'course', 180, 30), act('2025-01-05', 'course', 600, 1)];
   const m = volumeMensuel(liste, 2026);
