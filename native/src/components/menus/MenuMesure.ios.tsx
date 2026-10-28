@@ -19,7 +19,8 @@ function chargerNatif(): Natif | null {
       verre = false;
     }
     return { ui: require('@expo/ui/swift-ui'), modifs: require('@expo/ui/swift-ui/modifiers'), verre };
-  } catch {
+  } catch (e) {
+    console.warn('[MenuMesure] module natif indisponible, version JS', String(e));
     return null;
   }
 }

@@ -362,8 +362,8 @@ export default function Bilan() {
             {pret && onglet === 'rythme' && rythme ? (
               <>
                 <View style={styles.bandeauRythme}>
-                  {statsRythme.map((c) => (
-                    <View key={c.libelle} accessible style={[styles.statRythme, { backgroundColor: avecAlpha(p.surface, 0.78) }]}>
+                  {statsRythme.map((c, k) => (
+                    <View key={k} accessible style={[styles.statRythme, { backgroundColor: avecAlpha(p.surface, 0.78) }]}>
                       <Text style={[styles.valeurSerie, { color: p.texte }]}>
                         {c.val}
                         <Text style={[typo.petit, { color: p.texteDoux }]}> {c.unite}</Text>

@@ -37,7 +37,7 @@ export function BarresMois({ valeurs, moisEnCours, dernierMois, hauteur = 150, u
         const v = valeurs[i] ?? 0;
         return (
           <View key={i} style={styles.col}>
-            <Text numberOfLines={1} style={[typo.micro, styles.valeur, { color: p.texte }]}>
+            <Text numberOfLines={1} style={[typo.micro, styles.valeur, { color: p.texte, textTransform: 'none' }]}>
               {i === meilleur && v > 0 ? formater(v) : ''}
             </Text>
             <View style={[styles.zone, { borderBottomColor: p.trait }]}>
