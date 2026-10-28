@@ -23,12 +23,13 @@ interface Props {
   etiquette: string;
 }
 
+// Avec l'échelle, marginLeft -9 : la moitié des 18 pt de marge intérieure de la carte, pour que l'échelle se rapproche du bord
 export function BarresHebdo({ valeurs, couleur, hauteur = 120, repere, echelle = false, unite = '', ecart = 6, rayonBarre = 6, etiquette }: Props) {
   const p = usePalette();
   const gouttiere = echelle && valeurs.some((v) => v > 0) ? largeurGouttiere(maximumRond(Math.max(0, ...valeurs)), unite) : 0;
   const maximum = echelle ? maximumRond(Math.max(0, ...valeurs)) : Math.max(1, ...valeurs);
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.barres, { height: hauteur, gap: ecart, borderBottomColor: p.trait }, echelle ? { paddingLeft: gouttiere, borderBottomWidth: 0 } : null]}>
+    <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.barres, { height: hauteur, gap: ecart, borderBottomColor: p.trait }, echelle ? { marginLeft: -9, paddingLeft: gouttiere, borderBottomWidth: 0 } : null]}>
       {echelle ? <EchelleBarres maximum={valeurs.some((v) => v > 0) ? maximum : 0} unite={unite} /> : null}
       {valeurs.map((v, i) => (
         <View key={i} style={[styles.colonne, { opacity: i === valeurs.length - 1 ? 1 : 0.55 }]}>

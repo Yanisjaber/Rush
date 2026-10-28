@@ -21,6 +21,7 @@ interface Props {
   etiquette: string;
 }
 
+// -9 : la moitié des 18 pt de marge intérieure de la carte, pour que l'échelle se rapproche du bord
 const LETTRES = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
 export function BarresMois({ valeurs, moisEnCours, dernierMois, hauteur = 150, unite = '', formater, etiquette }: Props) {
@@ -29,7 +30,7 @@ export function BarresMois({ valeurs, moisEnCours, dernierMois, hauteur = 150, u
   const echelle = valeurs.some((v) => v > 0) ? maximum : 0; // pas d'échelle (ni de marge) sans données
   const meilleur = valeurs.reduce((m, v, i) => (v > valeurs[m] ? i : m), 0);
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.mois, { height: hauteur, paddingLeft: largeurGouttiere(echelle, unite) }]}>
+    <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.mois, { height: hauteur, marginLeft: -9, paddingLeft: largeurGouttiere(echelle, unite) }]}>
       {/* La zone des barres commence sous la valeur du meilleur mois (16 + 4) et finit au-dessus des lettres (4 + 16) */}
       <EchelleBarres maximum={echelle} unite={unite} haut={20} bas={20} />
       {LETTRES.map((lettre, i) => {
