@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
   valeurRecord: { fontFamily: police.titre700, fontSize: 32, lineHeight: 36, fontVariant: ['tabular-nums'] },
   enteteBloc: { flexDirection: 'row', alignItems: 'center', gap: espace.e3, marginBottom: espace.e3 },
   // La ligne de lecture au-dessus d'un graphique : sa valeur, ou ce que le doigt touche
-  lecture: { minHeight: 20, marginBottom: 8 },
+  lecture: { minHeight: 20, marginBottom: 12, textAlign: 'center' }, // autant d'air dessous que dessus (le titre a 12 pt de marge sous lui)
   bandeauRythme: { flexDirection: 'row', gap: espace.e2, paddingBottom: 4 },
   statRythme: { flex: 1, alignItems: 'center', gap: 2, borderRadius: rayon.bloc, paddingHorizontal: 6, paddingVertical: 12 },
   valeurSerie: { fontFamily: police.titre700, fontSize: 22, lineHeight: 26, fontVariant: ['tabular-nums'] },
