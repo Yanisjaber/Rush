@@ -449,7 +449,7 @@ export default function Bilan() {
                       />
                       <Text style={[typo.petit, { color: p.texteDoux, marginTop: 6 }]}>
                         Moyenne : {texteJour(jourSemaine.reduce((t, v) => t + v, 0) / 7, 1)}
-                        {mesureJour === 'seances' ? ' séances' : ''} par jour (pointillés).
+                        {mesureJour === 'seances' ? ' séances' : ''} par jour de la semaine (pointillés).
                       </Text>
                     </>
                   )}
