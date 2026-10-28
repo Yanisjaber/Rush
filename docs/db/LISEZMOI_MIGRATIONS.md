@@ -9,6 +9,10 @@
 - `supabase/schema.sql` et `supabase/schema_v2.sql` sont les anciens points de départ. Ils sont **périmés** (tables disparues, colonnes manquantes) : ne pas s'en servir pour reconstruire la base.
 - La vraie base de production est la seule référence exacte. Pour reconstruire une base de test, on part d'un décor minimal (`supabase/tests/*_decor.sql`, `supabase/proposals/db-v2/tests/local_pg.sh`) et on joue seulement les migrations utiles au test.
 
-## Pour réparer un jour
+## Instantané de départ (28/10/2026)
 
-Prendre un instantané du schéma de production (`supabase db dump --linked --schema public`, qui lit sans écrire), le commiter comme `supabase/baseline/` puis ne rejouer que les migrations postérieures. Il faut Docker pour cette commande.
+`supabase/baseline/schema_public_2026-10-28.sql` est le schéma `public` de la production à cette date (sans données), pris avec `supabase db dump --linked --schema public` (Docker requis). **Il se rejoue sans erreur sur une base vide** (testé sur le Postgres jetable : `local_pg.sh start`, `reset`, puis `psql -d rush -f` sur ce fichier ; 24 tables, 13 fonctions).
+
+- Toutes les migrations datées **jusqu'au 28/10/2026** sont déjà dedans : pour reconstruire une base, on charge l'instantané puis seulement les migrations **postérieures**.
+- Ce que l'instantané ne contient pas : les tâches `pg_cron` (schéma `cron`, par exemple `daily_metrics_nuit`, voir `supabase/migrations/2026-10-28_daily_metrics_cron_nuit.sql`), Vault et les secrets, les utilisateurs (`auth`).
+- À refaire (et à renommer avec la nouvelle date) quand le schéma a beaucoup changé.

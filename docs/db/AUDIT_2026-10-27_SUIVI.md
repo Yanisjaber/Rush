@@ -42,13 +42,13 @@ Toutes redéployées le 28 octobre (y compris après le calcul de charge).
 - **12. `strava-streams`** : reste la précision 1 Hz, la transaction du power profile, le base64 et le CPU (voir plus haut).
 - **13. Modules en double `app/` ↔ `native/`** : décision du 28 octobre = on documente (voir `CLAUDE.md`), pas de paquet partagé pour l'instant. Piste : des tests de parité sur les calculs les plus sensibles (sommeil, structure, synthèse).
 - **14 (suite).** `hours_only` dans `strava-ingest` ; `SPORT_TO_CAT` et `mainId` sont retirés avec le calcul. Les vocabulaires de sports (serveur / mobile) ne sont plus comparés côté serveur.
-- **17. Mobile** : identifiant `TODO.rush` (à choisir par Yanis), bouton « Connecter Strava » qui renvoie vers le site (travail en cours dans `native/`).
+- **17. Mobile** : identifiant `TODO.rush` (laissé tel quel, voulu par Yanis), bouton « Connecter Strava » qui renvoie vers le site (travail en cours dans `native/`).
 
 ## Non fait, à décider ou bloqué (28 octobre)
 
-- **Journal de migrations rejouable** : il faut un instantané du schéma (`supabase db dump --linked --schema public`), qui demande **Docker Desktop lancé** (le démon est arrêté sur ce Mac).
+- **Journal de migrations rejouable : fait** (28 octobre). Instantané `supabase/baseline/schema_public_2026-10-28.sql`, rejoué sans erreur sur une base vide ; voir `docs/db/LISEZMOI_MIGRATIONS.md`.
 - **`npm audit` de `native/`** : la seule correction proposée est `npm audit fix --force`, qui installerait Expo 51 (rétrogradation cassante). Alertes dans l'outillage (node-forge, uuid, zod via Expo), pas dans l'app livrée. À reprendre avec la prochaine mise à jour d'Expo.
 - **Modules en double `app/` ↔ `native/`** : le site `app/` est gelé (refonte en cours), donc pas de tests de parité pour l'instant.
-- **Identifiant `TODO.rush`** (`native/app.json`) : à choisir par Yanis (il faudra reconstruire l'app de développement).
+- **Identifiant `TODO.rush`** (`native/app.json`) : Yanis ne veut pas y toucher, on le laisse tel quel.
 - **Mobile** : export de données et suppression de compte (en cours dans `native/`), bouton « Connecter Strava » qui renvoie vers le site.
 - **`hours_only` dans `strava-ingest`** : outil de maintenance ponctuel, gardé.
