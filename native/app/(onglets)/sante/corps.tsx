@@ -7,7 +7,7 @@ import { CourbeLissee } from '@/components/CourbeLissee';
 import { EcranSection } from '@/components/EcranSection';
 import { SelecteurJour } from '@/components/SelecteurJour';
 import { dateIsoLocale } from '@/data/format';
-import { defMesure } from '@/data/sante-catalogue';
+import { defMesure, type MesuresParJour } from '@/data/sante-catalogue';
 import { alerteVariation, lisser, serieDe, variationHebdo } from '@/data/suivi-corps';
 import { useMesuresSante } from '@/hooks/useMesuresSante';
 import { espace, rayon } from '@/theme/couleurs';
@@ -35,12 +35,12 @@ export default function Corps() {
 
   async function saisir(metric: string, valeur: number | null) {
     setMessage('');
-    if (await enregistrer(date, metric, valeur)) setMessage('Enregistré');
+    if (await enregistrer(date, metric, valeur)) setMessage(demo ? 'Noté (démo : non enregistré)' : 'Enregistré');
   }
 
-  const sys = serieDe(mesures, 'tension_sys');
-  const dia = serieDe(mesures, 'tension_dia');
-  const tension = sys.length && dia.length ? `${sys[sys.length - 1].valeur}/${dia[dia.length - 1].valeur}` : null;
+  // La tension se lit en paire : la dernière fois où les deux chiffres ont été saisis le MÊME jour (sinon on mélangerait deux jours)
+  const jourTension = Object.keys(mesures).sort().reverse().find((d) => mesures[d].tension_sys != null && mesures[d].tension_dia != null);
+  const tension = jourTension ? `${mesures[jourTension].tension_sys}/${mesures[jourTension].tension_dia}` : null;
 
   return (
     <EcranSection>
@@ -88,9 +88,9 @@ export default function Corps() {
         </Bloc>
 
         <View style={styles.tuiles}>
-          <Tuile titre="Gras" metric="masse_grasse_pct" unite="%" />
-          <Tuile titre="Muscle" metric="masse_musculaire_kg" unite="kg" />
-          <Tuile titre="Tension" metric="tension_sys" unite="mmHg" texte={tension} />
+          <Tuile mesures={mesures} titre="Gras" metric="masse_grasse_pct" unite="%" />
+          <Tuile mesures={mesures} titre="Muscle" metric="masse_musculaire_kg" unite="kg" />
+          <Tuile mesures={mesures} titre="Tension" metric="tension_sys" unite="mmHg" texte={tension ?? '—'} />
         </View>
 
         <Bloc titre="Saisir ce jour-là">
@@ -124,19 +124,20 @@ function Fleche({ haut, couleur }: { haut: boolean; couleur: string }) {
 
 // Une mesure lente en tuile : son nom, sa dernière valeur, l'écart sur 30 jours (flèche grise) et une mini-courbe.
 // Sans mesure, la tuile reste là avec un tiret : on voit ce qu'on peut suivre.
-function Tuile({ titre, metric, unite, texte }: { titre: string; metric: string; unite: string; texte?: string | null }) {
+// Les mesures viennent de l'écran (état partagé) : la tuile se met à jour dès qu'on saisit.
+function Tuile({ mesures, titre, metric, unite, texte }: { mesures: MesuresParJour; titre: string; metric: string; unite: string; texte?: string }) {
   const p = usePalette();
-  const { mesures } = useMesuresSante();
   const serie = serieDe(mesures, metric).slice(-60);
   const derniere = serie[serie.length - 1];
   const ancienne = derniere ? [...serie].reverse().find((pt) => (new Date(`${derniere.date}T12:00:00`).getTime() - new Date(`${pt.date}T12:00:00`).getTime()) / 86400000 >= 28) : undefined;
   const ecart = derniere && ancienne ? derniere.valeur - ancienne.valeur : null;
   const valeur = texte ?? (derniere ? virgule(derniere.valeur) : '—');
+  const sansMesure = valeur === '—';
   return (
-    <View accessible accessibilityLabel={derniere ? `${titre} : ${valeur} ${unite}${ecart ? `, ${ecart > 0 ? 'plus' : 'moins'} ${virgule(Math.abs(ecart))} sur 30 jours` : ''}` : `${titre} : pas de mesure`} style={[styles.tuile, { backgroundColor: p.surface }]}>
+    <View accessible accessibilityLabel={!sansMesure ? `${titre} : ${valeur} ${unite}${ecart ? `, ${ecart > 0 ? 'plus' : 'moins'} ${virgule(Math.abs(ecart))} sur 30 jours` : ''}` : `${titre} : pas de mesure`} style={[styles.tuile, { backgroundColor: p.surface }]}>
       <Text numberOfLines={1} style={[typo.micro, { color: p.texteDoux }]}>{titre}</Text>
       <View style={styles.valeurLigne}>
-        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={[styles.valeurTuile, { color: derniere ? p.texte : p.texteMuet }]}>{valeur}</Text>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={[styles.valeurTuile, { color: !sansMesure ? p.texte : p.texteMuet }]}>{valeur}</Text>
         <Text style={[typo.petit, { color: p.texteDoux }]}>{unite}</Text>
       </View>
       <View style={styles.variation}>

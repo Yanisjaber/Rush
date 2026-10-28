@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { donneesDemo, mesuresDemo, sommeilDemo } from '../src/data/demo.ts';
-import { serieEtatDeForme } from '../src/data/forme-sante.ts';
+import { indiceVeille, jusquAuDernierIndice, serieEtatDeForme } from '../src/data/forme-sante.ts';
 import { construirePiliers, construireSuivis, ecartTexte, historiquePilier, motifsDuJour, NOM_COURT, texteValeur } from '../src/data/piliers.ts';
 import { resoudreMesures } from '../src/data/sante-catalogue.ts';
 
@@ -116,4 +116,36 @@ test('motifsDuJour : les écarts qui ont le plus d\'effet, signés, au plus troi
   assert.ok(!motifs.some((m) => m.cle === 'charge' || m.cle === 'ressenti'));
   // les éléments surveillés (stress, respiration, température) ne comptent pas dans le chiffre : jamais dans les motifs
   assert.ok(!motifs.some((m) => m.cle === 'stress' || m.cle === 'resp' || m.cle === 'temperature'));
+});
+
+test('jusquAuDernierIndice : un jour avec seulement un poids ne remplace pas l\'état connu', () => {
+  const lendemain = '2026-10-21';
+  const avecPoids = serieEtatDeForme(nuits, metriques, { ...mesures, [lendemain]: { poids_kg: 72 } });
+  const dernier = avecPoids[avecPoids.length - 1];
+  assert.equal(dernier.date, lendemain);
+  assert.equal(dernier.indice, null); // ce jour-là, pas assez de piliers
+  const coupee = jusquAuDernierIndice(avecPoids);
+  assert.ok(coupee.length < avecPoids.length);
+  assert.notEqual(coupee[coupee.length - 1].indice, null);
+  assert.deepEqual(jusquAuDernierIndice([]), []);
+  // aucun indice nulle part : la série reste telle quelle
+  const vide = serieEtatDeForme([], [], { '2026-03-01': { poids_kg: 70 } });
+  assert.equal(jusquAuDernierIndice(vide), vide);
+});
+
+test('indiceVeille : saute les jours sans indice', () => {
+  const s = serieEtatDeForme(nuits, metriques, mesures);
+  assert.equal(indiceVeille(s), s[s.length - 2].indice);
+  assert.equal(indiceVeille([]), null);
+});
+
+test('construirePiliers : la HRV affichée est la moyenne des 3 dernières nuits, et une série coupée donne les valeurs de CE jour-là', () => {
+  const piliers = construirePiliers(nuits, metriques, mesures, serie);
+  const histo = historiquePilier('hrv', nuits, metriques, mesures);
+  const moy = Math.round(histo.slice(-3).reduce((a, b) => a + b, 0) / 3);
+  assert.equal(piliers.find((p) => p.cle === 'hrv')?.valeur, String(moy));
+  // `jusquA` ignore tout ce qui est plus récent
+  const jour = serie[serie.length - 5].date;
+  const coupe = historiquePilier('fc', nuits, metriques, mesures, jour);
+  assert.equal(coupe.length, historiquePilier('fc', nuits, metriques, mesures).length - 4);
 });

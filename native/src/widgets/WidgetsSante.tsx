@@ -3,7 +3,7 @@ import Svg, { Path } from 'react-native-svg';
 import { AnneauZones } from '@/components/AnneauZones';
 import { CadreWidget } from '@/components/CadreWidget';
 import { Tuile } from '@/components/Tuile';
-import { lecture, niveauDe, piliersDispo, type PointForme } from '@/data/forme-sante';
+import { indiceVeille, jusquAuDernierIndice, lecture, niveauDe, piliersDispo, type PointForme } from '@/data/forme-sante';
 import { avecAlpha } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -21,13 +21,15 @@ export interface PropsSante {
 const MOT_PRECISION = { basique: 'basique', bonne: 'bonne', elevee: 'élevée' } as const;
 
 /** L'état du jour : l'anneau de l'indice (0 à 100), le mot, la variation depuis hier, la précision en points. */
-export function WidgetEtatDuJour({ serie, tuile = false }: PropsSante) {
+export function WidgetEtatDuJour({ serie: brute, tuile = false }: PropsSante) {
+  // Le dernier jour qui a un indice : un jour avec seulement un poids ou un check-in ne doit pas effacer l'état connu
+  const serie = jusquAuDernierIndice(brute);
   const point = serie[serie.length - 1] ?? null;
   const l = lecture(point);
   if (tuile) {
     return <Tuile gros titre="État de forme" valeur={l ? String(l.indice) : '—'} unite={l ? '/100' : undefined} note={l ? l.mot : 'Pas assez de données'} />;
   }
-  const veille = serie[serie.length - 2]?.indice ?? null;
+  const veille = indiceVeille(serie);
   return (
     <CadreWidget titre="État du jour" serre>
       <ContenuAnneau point={point} veille={veille} />

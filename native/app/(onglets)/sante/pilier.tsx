@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnneauJauge } from '@/components/AnneauJauge';
 import { Bloc } from '@/components/Bloc';
 import { CourbeLissee } from '@/components/CourbeLissee';
-import { estPilier, NOM_COMPOSANTE, POIDS_FORME, niveauDe, serieEtatDeForme, type CleComposante, type Niveau } from '@/data/forme-sante';
+import { estPilier, jusquAuDernierIndice, NOM_COMPOSANTE, POIDS_FORME, niveauDe, serieEtatDeForme, type CleComposante, type Niveau } from '@/data/forme-sante';
 import { construirePiliers, historiquePilier, texteValeur } from '@/data/piliers';
 import { useDonneesSommeil } from '@/hooks/useDonneesSommeil';
 import { useMesuresSante } from '@/hooks/useMesuresSante';
@@ -25,7 +25,7 @@ const MOT: Record<Niveau, string> = { bon: 'Bon', moyen: 'Moyen', faible: 'Faibl
 const INFOS: Partial<Record<CleComposante, { veutDire: string; lecture: string; source: string }>> = {
   hrv: {
     veutDire: "La variabilité de ton rythme cardiaque pendant la nuit : c'est la mesure la plus sensible de ta récupération.",
-    lecture: "Comparée à TA moyenne : plus haute que d'habitude, c'est que ton corps a bien récupéré ; plus basse, qu'il est fatigué ou sous stress. On regarde la moyenne des 3 dernières nuits.",
+    lecture: "Comparée à TA moyenne : plus haute que d'habitude, c'est que ton corps a bien récupéré ; plus basse, qu'il est fatigué ou sous stress. On regarde la moyenne des 3 dernières nuits : c'est la valeur affichée.",
     source: 'Plews et coll., 2013 ; Buchheit, 2014 (suivi de la récupération par la HRV).',
   },
   fc: {
@@ -65,7 +65,7 @@ export default function Pilier() {
   const { nuits, chargement, actualisation, recharger } = useDonneesSommeil();
   const { metriques, recharger: rechargerMetriques } = useMetriques();
   const { mesures, recharger: rechargerMesures } = useMesuresSante();
-  const serie = useMemo(() => serieEtatDeForme(nuits, metriques, mesures), [nuits, metriques, mesures]);
+  const serie = useMemo(() => jusquAuDernierIndice(serieEtatDeForme(nuits, metriques, mesures)), [nuits, metriques, mesures]);
   const piliers = useMemo(() => construirePiliers(nuits, metriques, mesures, serie), [nuits, metriques, mesures, serie]);
 
   const cleValide = (Object.keys(POIDS_FORME) as CleComposante[]).find((c) => c === cle);
@@ -151,14 +151,15 @@ export default function Pilier() {
           <Bloc>
             <View style={styles.periodes} accessibilityRole="tablist">
               {PERIODES.map((n) => (
-                <Pressable key={n} onPress={() => setPeriode(n)} accessibilityRole="tab" accessibilityState={{ selected: n === periode }} accessibilityLabel={`${n} valeurs`} style={[styles.periode, { backgroundColor: n === periode ? p.surface2 : 'transparent', borderColor: n === periode ? p.traitFort : 'transparent' }]}>
-                  <Text style={[typo.corpsFort, { color: n === periode ? p.texte : p.texteDoux }]}>{n} j</Text>
+                <Pressable key={n} onPress={() => setPeriode(n)} accessibilityRole="tab" accessibilityState={{ selected: n === periode }} accessibilityLabel={`${n} dernières valeurs`} style={[styles.periode, { backgroundColor: n === periode ? p.surface2 : 'transparent', borderColor: n === periode ? p.traitFort : 'transparent' }]}>
+                  <Text style={[typo.corpsFort, { color: n === periode ? p.texte : p.texteDoux }]}>{n}</Text>
                 </Pressable>
               ))}
             </View>
             {recent.length > 1 ? (
               <>
                 <CourbeLissee valeurs={recent} couleur={p.texte} hauteur={100} etiquette={`${NOM_COMPOSANTE[cleValide]} sur ${recent.length} valeurs`} />
+                <Text style={[typo.micro, { color: p.texteMuet, marginTop: 8 }]}>{recent.length} dernières valeurs</Text>
                 {moyenne != null ? (
                   <Text accessibilityLabel={`Ta moyenne sur les ${reference.length} valeurs précédentes : ${texteValeur(cleValide, moyenne)} ${vue?.unite ?? ''}`} style={[typo.micro, { color: p.texteMuet, marginTop: 8 }]}>
                     ta moyenne · {texteValeur(cleValide, moyenne)} {vue?.unite ?? ''}
@@ -199,7 +200,7 @@ const styles = StyleSheet.create({
   puce: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 36, borderWidth: 1, borderRadius: rayon.rond, paddingHorizontal: 14 },
   point: { width: 12, height: 12, borderRadius: 6 },
   periodes: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  periode: { minHeight: 40, minWidth: 64, borderWidth: 1, borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
+  periode: { minHeight: 44, minWidth: 64, borderWidth: 1, borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
   rangee: { flexDirection: 'row', alignItems: 'center', minHeight: 56, borderRadius: rayon.bloc, paddingHorizontal: 18 },
   fleche: { width: 8, height: 8, borderTopWidth: 2, borderRightWidth: 2 },
 });

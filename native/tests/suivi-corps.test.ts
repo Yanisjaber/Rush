@@ -56,6 +56,8 @@ test('proteinesParKg : repère de 1,4 à 2,0 g par kilo', () => {
   assert.equal(proteinesParKg(80, 80)?.niveau, 'basse');
   assert.equal(proteinesParKg(130, 70)?.niveau, 'bonne');
   assert.equal(proteinesParKg(200, 70)?.niveau, 'haute');
+  assert.equal(proteinesParKg(140, 70)?.niveau, 'bonne'); // 2,0 pile : encore dans le repère
+  assert.equal(proteinesParKg(147, 70)?.niveau, 'haute'); // 2,1 : au-dessus du repère dessiné, donc plus de vert
   assert.equal(proteinesParKg(100, 0), null);
   assert.equal(proteinesParKg(null, 70), null);
   assert.equal(proteinesParKg(NaN, 70), null);

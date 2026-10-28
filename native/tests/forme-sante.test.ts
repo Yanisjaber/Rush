@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { accordAvecRessenti, CONFIANCE_MINI, enAlerte, estPilier, piliersDispo, type CleComposante, indiceCharge, indiceContreReference, indiceDepuisEcart, indiceRessenti, indiceTemperature, indicateurs, lecture, niveauDe, phi, POIDS_FORME, precisionDe, serieEtatDeForme } from '../src/data/forme-sante.ts';
+import { accordAvecRessenti, CONFIANCE_MINI, enAlerte, estPilier, piliersDispo, type CleComposante, indiceCharge, indiceContreReference, indiceDepuisEcart, indiceRessenti, indiceTemperature, lecture, niveauDe, phi, POIDS_FORME, precisionDe, serieEtatDeForme } from '../src/data/forme-sante.ts';
 import type { Metrique, Nuit } from '../src/data/types.ts';
 
 const proche = (a: number, b: number, eps = 0.002) => assert.ok(Math.abs(a - b) <= eps, `${a} ≠ ${b}`);
@@ -109,7 +109,7 @@ test('serieEtatDeForme : trop de données manquantes = pas d\'indice ; les poids
   assert.deepEqual(serieEtatDeForme(null, null), []);
 });
 
-test('niveauDe, lecture et indicateurs : seuils 65 et 40, point faible sous 45', () => {
+test('niveauDe et lecture : seuils 65 et 40', () => {
   assert.equal(niveauDe(65), 'bon');
   assert.equal(niveauDe(64), 'moyen');
   assert.equal(niveauDe(40), 'moyen');
@@ -118,11 +118,7 @@ test('niveauDe, lecture et indicateurs : seuils 65 et 40, point faible sous 45',
   const point = serieEtatDeForme(nuits(40, (i) => (i >= 37 ? { hrv_avg: 40, resting_heart_rate: 58 } : {})), [metrique('2026-02-09', 0)])[39];
   const l = lecture(point);
   assert.ok(l && l.niveau !== 'bon');
-  assert.ok(l?.pointFaible && l.pointFaible.indice != null && l.pointFaible.indice < 45);
   assert.equal(lecture({ date: '2026-01-01', indice: null, confiance: 0, composantes: [] }), null);
-  const ind = indicateurs(point);
-  assert.deepEqual(ind.map((i) => i.cle), ['sommeil', 'recuperation', 'forme']);
-  assert.equal(ind[2].indice, 50);
 });
 
 test('indiceRessenti : les cinq réponses du matin, de 0 à 100, au moins deux réponses', () => {
@@ -250,4 +246,15 @@ test('accordAvecRessenti : trop peu de jours = pas de verdict ; un ressenti qui 
   const constant = Object.fromEntries(Object.keys(suit).map((d) => [d, { ressenti_fatigue: 3, ressenti_humeur: 3 }]));
   assert.equal(accordAvecRessenti(n, [], constant).r, null);
   assert.deepEqual(accordAvecRessenti(null, null, null), { jours: 0, r: null, accord: null });
+});
+
+test('charge : une fraîcheur de plus de 14 jours est périmée (le pilier est sans donnée)', () => {
+  const date = '2026-02-09';
+  const recente = serieEtatDeForme(nuits(40), [metrique('2026-01-30', 0)])[39]; // 10 jours : encore valable
+  const perimee = serieEtatDeForme(nuits(40), [metrique('2026-01-20', 0)])[39]; // 20 jours : périmée
+  const charge = (p: typeof recente) => p.composantes.find((c) => c.cle === 'charge')?.indice;
+  assert.equal(recente.date, date);
+  assert.notEqual(charge(recente), null);
+  assert.equal(charge(perimee), null);
+  assert.ok(perimee.manquants.some((m) => m.cle === 'charge'));
 });

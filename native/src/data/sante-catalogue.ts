@@ -60,7 +60,7 @@ export const MESURES: Record<string, DefMesure> = Object.fromEntries(
       { cle: 'tension_dia', nom: 'Tension diastolique', famille: 'corps', type: 'nombre', unite: 'mmHg', min: 30, max: 160, pas: 1, sens: 'neutre', aide: 'Le second chiffre (le plus bas).' },
 
       // Nutrition
-      { cle: 'calories_kcal', nom: 'Calories', famille: 'nutrition', type: 'nombre', unite: 'kcal', min: 0, max: 15000, pas: 10, sens: 'neutre', aide: 'Ce que tu as mangé hier.' },
+      { cle: 'calories_kcal', nom: 'Calories', famille: 'nutrition', type: 'nombre', unite: 'kcal', min: 0, max: 15000, pas: 1, sens: 'neutre', aide: 'Ce que tu as mangé hier.' },
       { cle: 'proteines_g', nom: 'Protéines', famille: 'nutrition', type: 'nombre', unite: 'g', min: 0, max: 600, pas: 1, sens: 'neutre' },
       { cle: 'eau_l', nom: 'Eau', famille: 'nutrition', type: 'nombre', unite: 'L', min: 0, max: 15, pas: 0.1, sens: 'neutre' },
 

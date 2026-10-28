@@ -29,7 +29,7 @@ const COULEUR_CLE: Record<string, string> = { profond: COULEURS_PHASE[0], leger:
 const dateLongue = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 const couleurTon = (p: Palette, ton: string) => (ton === 'bon' ? p.ok : ton === 'moyen' || ton === 'attention' ? p.alerte : ton === 'mauvais' || ton === 'faible' ? p.danger : p.texteDoux);
 
-export default function Sante() {
+export default function Sommeil() {
   const p = usePalette();
   const bas = useSafeAreaInsets().bottom;
   const { nuits, chargement, erreur, actualisation, demo, recharger } = useDonneesSommeil();
@@ -399,8 +399,6 @@ const styles = StyleSheet.create({
   grille: { flexDirection: 'row', flexWrap: 'wrap', rowGap: espace.e4 },
   cellule: { width: '50%' },
   ligneNuit: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, paddingVertical: 8, paddingHorizontal: 4, borderTopWidth: StyleSheet.hairlineWidth },
-  legende: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 8 },
-  legendeItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   ligneTable: { flexDirection: 'row', alignItems: 'center', minHeight: 40, gap: 8 },
   signal: { borderLeftWidth: 4, paddingLeft: 10, paddingVertical: 6, marginTop: 8 },
 });

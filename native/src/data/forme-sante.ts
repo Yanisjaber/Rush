@@ -143,12 +143,23 @@ export function indiceCharge(tsb: number): number {
 
 // --- Le calcul jour par jour ----------------------------------------------------------------------------------------------
 
-/** Les métriques de charge triées par date, pour retrouver la fraîcheur d'un jour (à défaut, la dernière connue avant). */
-function fraicheurDu(metriques: Metrique[], date: string): number | null {
+/** Au-delà de ce nombre de jours sans nouvelle métrique de charge, la fraîcheur connue est périmée : le pilier est considéré sans donnée. */
+export const JOURS_MAX_CHARGE = 14;
+
+/** La métrique de charge la plus récente à cette date (ou la dernière connue avant), si elle date de 14 jours au plus ; sinon null. */
+export function metriqueRecente(metriques: Metrique[], date: string): Metrique | null {
   let trouve: Metrique | null = null;
   for (const m of metriques) {
     if (m.iso_date <= date && (!trouve || m.iso_date > trouve.iso_date)) trouve = m;
   }
+  if (!trouve) return null;
+  const jours = Math.round((new Date(`${date}T12:00:00`).getTime() - new Date(`${trouve.iso_date}T12:00:00`).getTime()) / 86400000);
+  return jours <= JOURS_MAX_CHARGE ? trouve : null;
+}
+
+/** Les métriques de charge triées par date, pour retrouver la fraîcheur d'un jour (à défaut, la dernière connue avant, si elle est récente). */
+function fraicheurDu(metriques: Metrique[], date: string): number | null {
+  const trouve = metriqueRecente(metriques, date);
   return trouve && Number.isFinite(Number(trouve.tsb)) ? Number(trouve.tsb) : null;
 }
 
@@ -162,6 +173,22 @@ const RESSENTI: { cle: string; hautMieux: boolean }[] = [
   { cle: 'ressenti_motivation', hautMieux: true },
   { cle: 'ressenti_stress', hautMieux: false },
 ];
+
+/** Les clés des cinq questions du ressenti du matin. */
+export const CLES_RESSENTI: string[] = RESSENTI.map((q) => q.cle);
+
+/**
+ * La série coupée au dernier jour qui a un indice. Un jour où il ne reste que quelques mesures (un poids, un check-in avant la synchro de la montre)
+ * n'a pas d'indice : sans cette coupe, l'écran afficherait « — » alors que l'état d'hier est connu. Sans aucun indice, la série reste telle quelle.
+ */
+export function jusquAuDernierIndice(serie: PointForme[]): PointForme[] {
+  let i = serie.length - 1;
+  while (i >= 0 && serie[i].indice == null) i--;
+  return i < 0 ? serie : serie.slice(0, i + 1);
+}
+
+/** L'indice du jour d'avant le dernier point (le plus récent qui en a un), pour la variation « depuis hier ». */
+export const indiceVeille = (serie: PointForme[]): number | null => serie.slice(0, -1).reverse().find((pt) => pt.indice != null)?.indice ?? null;
 
 /** Le sous-indice du ressenti : la moyenne des réponses du matin (au moins deux), de 0 à 100 ; null sinon. */
 export function indiceRessenti(mesures: Record<string, number> | undefined): number | null {
@@ -258,8 +285,6 @@ export interface Lecture {
   /** Le mot court (« Récupéré », « Moyen », « À ménager ») pour les écrans qui ne gardent aucune phrase. */
   mot: string;
   phrase: string;
-  /** Le pilier le plus bas s'il est sous 45 (ce qui tire l'état de forme vers le bas), sinon null. */
-  pointFaible: Composante | null;
 }
 
 const LIBELLES: Record<Niveau, { libelle: string; mot: string; phrase: string }> = {
@@ -272,20 +297,7 @@ const LIBELLES: Record<Niveau, { libelle: string; mot: string; phrase: string }>
 export function lecture(point: PointForme | null | undefined): Lecture | null {
   if (!point || point.indice == null) return null;
   const niveau = niveauDe(point.indice) as Niveau;
-  const bas = point.composantes.filter((c) => estPilier(c.cle) && c.indice != null).sort((a, b) => (a.indice as number) - (b.indice as number))[0];
-  return { indice: point.indice, niveau, ...LIBELLES[niveau], pointFaible: bas && (bas.indice as number) < 45 ? bas : null };
-}
-
-/** Les trois indicateurs du résumé : sommeil, récupération (HRV et FC de repos) et forme (charge). Chacun a un niveau, ou null sans données. */
-export function indicateurs(point: PointForme | null | undefined): { cle: string; nom: string; indice: number | null; niveau: Niveau | null }[] {
-  const val = (cle: CleComposante) => point?.composantes.find((c) => c.cle === cle)?.indice ?? null;
-  const recup = [val('hrv'), val('fc')].filter((x): x is number => x != null);
-  const recuperation = recup.length ? Math.round(moyenne(recup)) : null;
-  return [
-    { cle: 'sommeil', nom: 'Sommeil', indice: val('sommeil'), niveau: niveauDe(val('sommeil')) },
-    { cle: 'recuperation', nom: 'Récup.', indice: recuperation, niveau: niveauDe(recuperation) },
-    { cle: 'forme', nom: 'Forme', indice: val('charge'), niveau: niveauDe(val('charge')) },
-  ];
+  return { indice: point.indice, niveau, ...LIBELLES[niveau] };
 }
 
 // --- La vérification : l'état de forme calculé colle-t-il à ce que tu ressens ? --------------------------------------------------------------------

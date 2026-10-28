@@ -44,7 +44,7 @@ export default function Checkin() {
 
   async function saisir(metric: string, valeur: number | null) {
     setMessage('');
-    if (await enregistrer(date, metric, valeur)) setMessage('Enregistré');
+    if (await enregistrer(date, metric, valeur)) setMessage(demo ? 'Noté (démo : non enregistré)' : 'Enregistré');
   }
 
   const alcool = defMesure('alcool_verres');

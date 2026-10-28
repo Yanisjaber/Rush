@@ -75,9 +75,9 @@ export function moyenneSur(mesures: MesuresParJour | null | undefined, metric: s
 
 export type NiveauProteines = 'basse' | 'limite' | 'bonne' | 'haute';
 
-/** Les protéines par kilo de poids de corps. Repère : 1,4 à 2,0 g/kg/jour pour une personne qui s'entraîne ; sous 1,2 c'est bas, au-dessus de 2,2 c'est plus que nécessaire. */
+/** Les protéines par kilo de poids de corps. Repère : 1,4 à 2,0 g/kg/jour pour une personne qui s'entraîne ; sous 1,2 c'est bas, au-dessus de 2,0 c'est plus que nécessaire. */
 export function proteinesParKg(proteinesG: number | null | undefined, poidsKg: number | null | undefined): { gParKg: number; niveau: NiveauProteines } | null {
   if (!Number.isFinite(proteinesG) || !Number.isFinite(poidsKg) || (poidsKg as number) <= 0) return null;
   const g = Math.round(((proteinesG as number) / (poidsKg as number)) * 100) / 100;
-  return { gParKg: g, niveau: g < 1.2 ? 'basse' : g < 1.4 ? 'limite' : g <= 2.2 ? 'bonne' : 'haute' };
+  return { gParKg: g, niveau: g < 1.2 ? 'basse' : g < 1.4 ? 'limite' : g <= 2 ? 'bonne' : 'haute' };
 }

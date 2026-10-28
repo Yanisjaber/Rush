@@ -9,7 +9,7 @@ import { AnneauZones } from '@/components/AnneauZones';
 import { BarresEcarts } from '@/components/BarresEcarts';
 import { Bloc } from '@/components/Bloc';
 import { CourbeForme } from '@/components/CourbeForme';
-import { accordAvecRessenti, JOURS_MINI_ACCORD, lecture, niveauDe, NOM_COMPOSANTE, serieEtatDeForme } from '@/data/forme-sante';
+import { accordAvecRessenti, indiceVeille, JOURS_MINI_ACCORD, jusquAuDernierIndice, lecture, niveauDe, NOM_COMPOSANTE, serieEtatDeForme } from '@/data/forme-sante';
 import { construirePiliers, NOM_COURT } from '@/data/piliers';
 import { useDonneesSommeil } from '@/hooks/useDonneesSommeil';
 import { useMesuresSante } from '@/hooks/useMesuresSante';
@@ -35,11 +35,12 @@ export default function EtatDeForme() {
   const { nuits, chargement, actualisation, recharger } = useDonneesSommeil();
   const { metriques, recharger: rechargerMetriques } = useMetriques();
   const { mesures, recharger: rechargerMesures } = useMesuresSante();
-  const serie = useMemo(() => serieEtatDeForme(nuits, metriques, mesures), [nuits, metriques, mesures]);
+  // Coupée au dernier jour qui a un indice : un jour avec seulement un poids ou un check-in ne doit pas effacer l'état connu
+  const serie = useMemo(() => jusquAuDernierIndice(serieEtatDeForme(nuits, metriques, mesures)), [nuits, metriques, mesures]);
   const piliers = useMemo(() => construirePiliers(nuits, metriques, mesures, serie), [nuits, metriques, mesures, serie]);
   const accord = useMemo(() => accordAvecRessenti(nuits, metriques, mesures), [nuits, metriques, mesures]);
   const dernier = serie[serie.length - 1] ?? null;
-  const veille = serie[serie.length - 2]?.indice ?? null;
+  const veille = indiceVeille(serie);
   const l = lecture(dernier);
   const niveau = niveauDe(dernier?.indice);
   const couleur = niveau === 'bon' ? p.ok : niveau === 'moyen' ? p.alerte : niveau === 'faible' ? p.danger : p.traitFort;
@@ -152,7 +153,7 @@ export default function EtatDeForme() {
           {methode ? (
             <Bloc>
               <Text style={[typo.petit, { color: p.texteDoux }]}>
-                Estimation à partir de tes chiffres : ce n'est pas un avis médical. Chaque pilier est comparé à TA référence (tes 28 nuits précédentes), puis l'état de forme est la moyenne pondérée des piliers disponibles.
+                Estimation à partir de tes chiffres : ce n'est pas un avis médical. La HRV et la FC de repos sont comparées à TA référence (tes 28 nuits précédentes) ; le sommeil, le ressenti et la charge sont lus sur leur propre échelle. L'état de forme est la moyenne pondérée des piliers disponibles.
               </Text>
               <Text style={[typo.petit, { color: p.texteDoux, marginTop: 8 }]}>
                 Cinq piliers. HRV (30 %) : Plews et coll., 2013 ; Buchheit, 2014. Sommeil (24 %) : repères de la National Sleep Foundation, 2015. FC de repos (18 %) : écart à ta moyenne, inversé. Ressenti (18 %) : indice de Hooper, 1995. Charge (10 %) : modèle de Banister, 1975. Malade ou blessé plafonne l'état (35 et 50).
@@ -213,7 +214,7 @@ const styles = StyleSheet.create({
   puceAlerte: { borderWidth: 1, borderRadius: rayon.rond, paddingHorizontal: 12, minHeight: 32, justifyContent: 'center' },
   variation: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   periodes: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  periode: { minHeight: 40, minWidth: 64, borderWidth: 1, borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
+  periode: { minHeight: 44, minWidth: 64, borderWidth: 1, borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
   legende: { flexDirection: 'row', justifyContent: 'center', gap: 18, marginTop: 10 },
   legendeItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   puce: { width: 10, height: 10, borderRadius: 5 },

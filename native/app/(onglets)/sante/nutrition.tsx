@@ -40,7 +40,7 @@ export default function Nutrition() {
 
   async function saisir(metric: string, valeur: number | null) {
     setMessage('');
-    if (await enregistrer(date, metric, valeur)) setMessage('Enregistré');
+    if (await enregistrer(date, metric, valeur)) setMessage(demo ? 'Noté (démo : non enregistré)' : 'Enregistré');
   }
 
   return (
@@ -118,7 +118,7 @@ export default function Nutrition() {
 }
 
 // Les protéines par kilo sur une piste : la zone verte est le repère (1,4 à 2,0 g/kg), la pastille dit où tu en es.
-// Dans la zone c'est vert, juste en dessous orange, très bas rouge ; au-dessus de 2,2 c'est plus que nécessaire (neutre, pas une alerte).
+// Dans la zone c'est vert, juste en dessous orange, très bas rouge ; au-dessus de 2,0 c'est plus que nécessaire (neutre, pas une alerte).
 function PisteProteines({ gParKg, niveau }: { gParKg: number; niveau: NiveauProteines }) {
   const p = usePalette();
   const couleur = niveau === 'bonne' ? p.ok : niveau === 'limite' ? p.alerte : niveau === 'basse' ? p.danger : p.texteDoux;

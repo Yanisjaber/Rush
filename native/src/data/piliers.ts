@@ -1,6 +1,6 @@
 // Les piliers de l'écran Santé : une vue uniforme (valeur du jour, écart à TA moyenne, niveau, mini courbe) pour chaque facteur de l'état de forme.
 // Fonctions pures, sans réseau, testées. Les piliers sont triés du plus bas au plus haut : on lit d'abord ce qui tire l'état de forme vers le bas.
-import { COMMENT_AJOUTER, enAlerte, estPilier, indiceRessenti, niveauDe, NOM_COMPOSANTE, POIDS_FORME, type CleComposante, type Niveau, type PointForme } from './forme-sante.ts';
+import { COMMENT_AJOUTER, enAlerte, estPilier, indiceRessenti, metriqueRecente, niveauDe, NOM_COMPOSANTE, POIDS_FORME, type CleComposante, type Niveau, type PointForme } from './forme-sante.ts';
 import type { MesuresParJour } from './sante-catalogue.ts';
 import { lisser, moyenneSur, proteinesParKg, serieDe, variationHebdo } from './suivi-corps.ts';
 import { scoreNuit } from './score-sommeil.ts';
@@ -57,10 +57,11 @@ const POINT: Record<CleComposante, { unite: string; vers: string; decimales?: nu
  * L'historique d'un pilier, de la plus ancienne valeur à la plus récente : le score de sommeil, la HRV, la FC de repos, le stress de nuit (par nuit),
  * le ressenti (par jour saisi), la fraîcheur d'entraînement, la respiration et la température (par jour mesuré). Sert aux cartes et aux écrans de détail.
  */
-export function historiquePilier(cle: CleComposante, nuits: Nuit[] | null | undefined, metriques: Metrique[] | null | undefined, mesures: MesuresParJour | null | undefined): number[] {
-  const chrono = [...(nuits || [])].sort((a, b) => a.date.localeCompare(b.date));
+export function historiquePilier(cle: CleComposante, nuits: Nuit[] | null | undefined, metriques: Metrique[] | null | undefined, mesures: MesuresParJour | null | undefined, jusquA?: string): number[] {
+  // `jusquA` : on ignore tout ce qui est plus récent que ce jour (pour que la valeur affichée soit celle du jour de l'indice)
+  const chrono = [...(nuits || [])].filter((n) => !jusquA || n.date <= jusquA).sort((a, b) => a.date.localeCompare(b.date));
   const mes = mesures || {};
-  const jours = Object.keys(mes).sort();
+  const jours = Object.keys(mes).filter((d) => !jusquA || d <= jusquA).sort();
   const nombres = (v: (number | null | undefined)[]) => v.filter((x): x is number => x != null && Number.isFinite(x));
   const parNuit = (champ: keyof Nuit) => nombres(chrono.map((n) => Number(n[champ]))).filter((x) => x > 0);
   switch (cle) {
@@ -75,7 +76,7 @@ export function historiquePilier(cle: CleComposante, nuits: Nuit[] | null | unde
     case 'ressenti':
       return nombres(jours.map((d) => indiceRessenti(mes[d])));
     case 'charge':
-      return nombres([...(metriques || [])].sort((a, b) => a.iso_date.localeCompare(b.iso_date)).map((m) => Number(m.tsb)));
+      return nombres([...(metriques || [])].filter((m) => !jusquA || m.iso_date <= jusquA).sort((a, b) => a.iso_date.localeCompare(b.iso_date)).map((m) => Number(m.tsb)));
     case 'resp':
       return nombres(jours.map((d) => mes[d]?.resp_nuit));
     case 'temperature':
@@ -97,11 +98,16 @@ export function texteValeur(cle: CleComposante, v: number): string {
 export function construirePiliers(nuits: Nuit[] | null | undefined, metriques: Metrique[] | null | undefined, mesures: MesuresParJour | null | undefined, serie: PointForme[]): PilierVue[] {
   const point = serie[serie.length - 1];
   if (!point) return [];
-  const fraicheur = formeActuelle([...(metriques || [])].sort((a, b) => a.iso_date.localeCompare(b.iso_date)));
+  // La charge n'est lue que si sa dernière métrique est récente (14 jours au plus) : sinon elle est périmée, comme dans le calcul de l'indice
+  const chargeRecente = !!metriqueRecente(metriques || [], point.date);
+  const fraicheur = !chargeRecente ? null : formeActuelle([...(metriques || [])].filter((m) => m.iso_date <= point.date).sort((a, b) => a.iso_date.localeCompare(b.iso_date)));
 
   const vues: PilierVue[] = point.composantes.map((c) => {
-    const histo = historiquePilier(c.cle, nuits, metriques, mesures);
-    const dernier = histo[histo.length - 1];
+    const histo = c.cle === 'charge' && !chargeRecente ? [] : historiquePilier(c.cle, nuits, metriques, mesures, point.date);
+    // HRV : l'indice repose sur la moyenne des 3 dernières nuits (voir forme-sante.ts) ; la valeur et l'écart affichés sont donc ceux de cette moyenne,
+    // pour ne pas contredire la couleur de la jauge. Les autres piliers affichent la dernière valeur.
+    const hrvMoyenne = c.cle === 'hrv' && histo.length >= 2 ? Math.round(histo.slice(-3).reduce((a, b) => a + b, 0) / histo.slice(-3).length) : null;
+    const dernier = hrvMoyenne ?? histo[histo.length - 1];
     const aDonnee = dernier != null;
     // La charge n'a pas d'« écart à la moyenne » : on affiche son libellé (« Frais », « Fatigué »)
     const ecart = !aDonnee ? null : c.cle === 'charge' ? (fraicheur?.libelle ?? null) : c.cle === 'temperature' ? 'Écart à ta normale' : c.cle === 'ressenti' ? null : ecartTexte(dernier, histo.slice(0, -1));
