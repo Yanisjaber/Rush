@@ -3,7 +3,7 @@ import { formatNum } from '@/data/outils/format';
 import { police } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// L'échelle d'un graphique en barres, comme dans le cumul sur 3 ans : des traits fins au tiers, aux deux tiers et en haut de l'échelle (et le 0 sur la ligne de base),
+// L'échelle d'un graphique en barres, comme dans le cumul sur 3 ans : des traits fins au tiers, aux deux tiers et en haut de l'échelle, et le 0 sur la ligne de base,
 // avec leur valeur écrite dans une marge à gauche des barres (jamais sous une barre). À poser derrière les barres, dans un conteneur de la même hauteur que la zone des barres,
 // dont le contenu est décalé de `GOUTTIERE_ECHELLE` vers la droite.
 export const GOUTTIERE_ECHELLE = 36;
@@ -29,8 +29,7 @@ export function EchelleBarres({ maximum, haut = 0, bas = 0 }: Props) {
     <View pointerEvents="none" style={[styles.zone, { top: haut, bottom: bas }]}>
       {[0, ...graduationsBarres(maximum)].map((v) => (
         <View key={v} style={[styles.repere, { bottom: `${Math.min(100, (v / maximum) * 100)}%` }]}>
-          {/* Le 0 n'a pas de trait : c'est la ligne de base des barres, déjà dessinée */}
-          {v > 0 ? <View style={[styles.trait, { backgroundColor: p.trait }]} /> : null}
+          <View style={[styles.trait, { backgroundColor: p.trait }]} />
           <Text numberOfLines={1} style={[styles.valeur, { color: p.texteMuet, fontFamily: police.texte400 }]}>{formatNum(v, 0)}</Text>
         </View>
       ))}
