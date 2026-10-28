@@ -17,6 +17,8 @@ import { usePalette } from '@/theme/usePalette';
 //  - Un sélecteur de thème (Puissance, Vitesse, Sorties, Périodes pour le vélo ; Périodes, Séance, Régularité sinon), les records du thème, et le podium du record touché.
 //  - Chaque record dit ce que vaut l'autre période : « Ton record absolu » (coche) ou « Record absolu : 291 W ».
 interface Props {
+  /** La période choisie dans le menu de l'année : l'année (« annee ») ou tout l'historique (« tout »). */
+  portee: Portee;
   toutes: ActiviteBilan[];
   annee: number;
   maintenant: Date;
@@ -27,13 +29,12 @@ interface Props {
   onOuvrir: (id: string) => void;
 }
 
-type Portee = 'annee' | 'tout';
+export type Portee = 'annee' | 'tout';
 
 const SEMAINES_GRAPHIQUE = 8;
 
-export function OngletRecords({ toutes, annee, maintenant, filtre, mesure, onMesure, onOuvrir }: Props) {
+export function OngletRecords({ portee, toutes, annee, maintenant, filtre, mesure, onMesure, onOuvrir }: Props) {
   const p = usePalette();
-  const [portee, setPortee] = useState<Portee>('annee');
   const [categorie, setCategorie] = useState<string | null>(null);
   const [choisi, setChoisi] = useState<string | null>(null);
   const couleur = filtre === 'tout' ? p.texte : couleurSport(p, filtre);
@@ -84,18 +85,6 @@ export function OngletRecords({ toutes, annee, maintenant, filtre, mesure, onMes
 
   return (
     <>
-      <OngletsSegment<Portee>
-        etiquette="Période des records"
-        onglets={[
-          { cle: 'annee', nom: String(annee) },
-          { cle: 'tout', nom: 'Tous temps' },
-        ]}
-        actuel={portee}
-        onChoisir={(c) => {
-          setPortee(c);
-          setChoisi(null);
-        }}
-      />
       {g ? (
         <Bloc titre={g.titre}>
           {g.contenu}

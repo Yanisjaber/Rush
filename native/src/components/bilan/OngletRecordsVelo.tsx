@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { CourbePuissance } from '@/components/graphes/CourbePuissance';
-import { OngletsSegment } from '@/components/menus/OngletsSegment';
 import { Bouton } from '@/components/ui/Bouton';
 import { indexDureeProche, recordsBasiquesVelo, texteDuree, wattsParKg, type PointCourbe, type RecordTop, type SortieVelo } from '@/data/bilan/records';
 import { texteRecordSimple, texteValeurRecord } from '@/data/bilan/records-texte';
@@ -15,6 +14,8 @@ import { usePalette } from '@/theme/usePalette';
 // L'onglet Records du Cyclisme : tes records basiques (cinq tuiles), puis tes meilleurs efforts (la courbe de puissance de 1 s à 5 h, qu'on touche pour lire une durée) et le podium de cette durée.
 // Un sélecteur « année choisie / Tous temps » change la période ; chaque record dit ce que vaut l'autre : « Ton record absolu » (coche) ou « Record absolu : … ».
 interface Props {
+  /** La période choisie dans le menu de l'année : l'année (« annee ») ou tout l'historique (« tout »). */
+  portee: Portee;
   annee: number;
   maintenant: Date;
   sorties: SortieVelo[];
@@ -26,7 +27,7 @@ interface Props {
   onOuvrir: (id: string) => void;
 }
 
-type Portee = 'annee' | 'tout';
+export type Portee = 'annee' | 'tout';
 
 /** La durée montrée au départ : 20 minutes, celle de ton niveau (FTP). */
 const DUREE_DEPART = 1200;
@@ -37,9 +38,8 @@ const dateAnnee = (iso: string): string => `${formatDateLongue(iso)} ${iso.slice
 /** Le nom d'un record sur une mini tuile (quatre par rangée, donc très étroite) : le détail, qui sort au toucher, donne le nom entier. */
 const NOM_TUILE: Record<string, string> = { duree: 'Durée', distance: 'Distance', dplus: 'D+', tss: 'Charge', vmoy: 'Vitesse moy.', pmoy: 'Puiss. moy.', fcmoy: 'FC moy.', kj: 'Énergie' };
 
-export function OngletRecordsVelo({ annee, maintenant, sorties, poids, courbeAnnee, courbeTout, chargement, erreur, onOuvrir }: Props) {
+export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, courbeAnnee, courbeTout, chargement, erreur, onOuvrir }: Props) {
   const p = usePalette();
-  const [portee, setPortee] = useState<Portee>('annee');
   const [duree, setDuree] = useState<number | null>(null); // la durée touchée, en secondes ; null : la durée de départ
   const [ouvert, setOuvert] = useState<string | null>(null); // le record dont le détail est sorti
   const couleur = couleurSport(p, 'velo');
@@ -81,16 +81,6 @@ export function OngletRecordsVelo({ annee, maintenant, sorties, poids, courbeAnn
 
   return (
     <>
-      <OngletsSegment<Portee>
-        etiquette="Période des records"
-        onglets={[
-          { cle: 'annee', nom: String(annee) },
-          { cle: 'tout', nom: 'Tous temps' },
-        ]}
-        actuel={portee}
-        onChoisir={setPortee}
-      />
-
       {basiques.length ? (
         <>
           {/* Les records basiques : de mini tuiles, quatre par rangée ; on en touche une pour que son détail sorte dessous */}

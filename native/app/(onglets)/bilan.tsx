@@ -75,6 +75,8 @@ export default function Bilan() {
     return () => abonnement.remove();
   }, [actualiserDate]);
   const [anneeChoisie, setAnneeChoisie] = useState(maintenant.getFullYear());
+  // « Tous temps » : une option du menu de l'année, seulement sur l'onglet Records (les records de tout l'historique au lieu de ceux d'une année)
+  const [toutTemps, setToutTemps] = useState(false);
   // Nouvel An pendant que l'onglet est ouvert : si on regardait l'année qui vient de finir (l'« année en cours »), on passe à la nouvelle
   const anneeCourante = maintenant.getFullYear();
   const anneeVue = useRef(anneeCourante);
@@ -224,7 +226,16 @@ export default function Bilan() {
         <View style={styles.entete}>
           {/* Progrès suit ses propres périodes (4 semaines, 3 mois, 1 an) : l'année n'y sert à rien. Elle reste affichée mais grisée et non touchable, pour que les onglets ne bougent pas */}
           <View style={onglet === 'progres' ? styles.anneeMasquee : undefined} pointerEvents={onglet === 'progres' ? 'none' : 'auto'} accessibilityElementsHidden={onglet === 'progres'} importantForAccessibility={onglet === 'progres' ? 'no-hide-descendants' : 'auto'}>
-            <MenuMesure grand etiquette="Année" valeur={String(annee)} options={annees.map((a) => ({ cle: String(a), nom: String(a) }))} onChoisir={(c) => setAnneeChoisie(Number(c))} />
+            <MenuMesure
+              grand
+              etiquette="Année"
+              valeur={onglet === 'records' && toutTemps ? 'tout' : String(annee)}
+              options={[...(onglet === 'records' ? [{ cle: 'tout', nom: 'Tout' }] /* court : « Tous temps » pousserait le sélecteur d'onglets hors de l'écran */ : []), ...annees.map((a) => ({ cle: String(a), nom: String(a) }))]}
+              onChoisir={(c) => {
+                setToutTemps(c === 'tout');
+                if (c !== 'tout') setAnneeChoisie(Number(c));
+              }}
+            />
           </View>
           <OngletsIcones onglets={ONGLETS} actuel={onglet} onChoisir={setOnglet} etiquette="Parties du bilan" />
         </View>
@@ -515,6 +526,7 @@ export default function Bilan() {
             {pret && onglet === 'records' ? (
               filtre === 'velo' ? (
                 <OngletRecordsVelo
+                  portee={toutTemps ? 'tout' : 'annee'}
                   annee={annee}
                   maintenant={maintenant}
                   sorties={sortiesVelo}
@@ -527,6 +539,7 @@ export default function Bilan() {
                 />
               ) : (
                 <OngletRecords
+                  portee={toutTemps ? 'tout' : 'annee'}
                   toutes={filtrees}
                   annee={annee}
                   maintenant={maintenant}
