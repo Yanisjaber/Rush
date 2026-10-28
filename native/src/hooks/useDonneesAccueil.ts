@@ -4,7 +4,7 @@ import { chargerAccueil } from '@/data/acces/chargement';
 import { definirSources } from '@/stores/menu';
 import { useSportsEtat } from '@/stores/sports';
 import { useAuth } from '@/stores/auth';
-import { useReglagesDemo } from '@/stores/reglagesDemo';
+import { useReglagesDemo } from '@/stores/reglages-demo';
 
 // Les données de l'Accueil : la démo (générée, sans compte) ou celles du compte connecté (lecture seule, via Supabase).
 // Au premier chargement `chargement` est vrai ; ensuite, `recharger` (tirer pour actualiser) garde les données affichées.

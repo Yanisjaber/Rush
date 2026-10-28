@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { definirPrevuesAujourdhui, PREVUES_AUJOURDHUI } from '../../src/stores/reglagesDemo.ts';
+import { definirPrevuesAujourdhui, PREVUES_AUJOURDHUI } from '../../src/stores/reglages-demo.ts';
 
 test('réglages de la démo : de 0 à 5 séances prévues, rien d\'autre', () => {
   assert.deepEqual([...PREVUES_AUJOURDHUI], [0, 1, 2, 3, 4, 5]);

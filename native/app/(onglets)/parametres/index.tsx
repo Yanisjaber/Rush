@@ -11,7 +11,7 @@ import type { Connexion, Tuile as ResumeTuile } from '@/data/reglages/parametres
 import { useResumeParametres } from '@/hooks/useResumeParametres';
 import { deconnexion, quitterDemo, useAuth } from '@/stores/auth';
 import { definirTheme } from '@/stores/theme';
-import { definirPrevuesAujourdhui, PREVUES_AUJOURDHUI, useReglagesDemo } from '@/stores/reglagesDemo';
+import { definirPrevuesAujourdhui, PREVUES_AUJOURDHUI, useReglagesDemo } from '@/stores/reglages-demo';
 import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
