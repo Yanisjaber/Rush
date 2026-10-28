@@ -27,7 +27,7 @@ test('donneesDemoAccueil : toutes les parties de l\'enveloppe sont présentes', 
 
 const vide = (): DonneesAccueil => ({
   profil: null, metriques: [], seances: [], dernieres: [], objectifs: [], puissance: [], planifiees: [],
-  force: { series: [], programmes: [] }, hyrox: { tests: [], objectif: null }, sportsChoisis: null, erreur: '', erreurSport: '',
+  force: { series: [], programmes: [] }, hyrox: { tests: [], objectif: null }, sportsChoisis: null, connecte: false, erreur: '', erreurSport: '',
 });
 
 test('famillesDe : les sports se déduisent des séances, de la force et du Hyrox', () => {
@@ -150,4 +150,41 @@ test('contourChamp : au moins 3:1 sur le fond et la surface, en sombre comme en 
     assert.ok(contraste(p.contourChamp, p.fond) >= 3, `${nom} / fond : ${contraste(p.contourChamp, p.fond).toFixed(2)}`);
     assert.ok(contraste(p.contourChamp, p.surface) >= 3, `${nom} / surface : ${contraste(p.contourChamp, p.surface).toFixed(2)}`);
   }
+});
+
+// --- accueil d'un compte neuf, d'une reprise et message de connexion ------
+
+test('compte vide : ni donnée ni connexion → écran de démarrage', async () => {
+  const { compteVide, bandeauConnexionVisible } = await import('../src/data/etat-accueil.ts');
+  assert.equal(compteVide(vide(), false), true);
+  assert.equal(bandeauConnexionVisible(vide(), false, false), false); // l'écran de démarrage fait déjà le travail
+});
+
+test('compte vide : une connexion suffit à avoir un accueil normal, même sans sortie encore', async () => {
+  const { compteVide, bandeauConnexionVisible } = await import('../src/data/etat-accueil.ts');
+  const d = { ...vide(), connecte: true };
+  assert.equal(compteVide(d, false), false);
+  assert.equal(bandeauConnexionVisible(d, false, false), false);
+});
+
+test('reprise après une pause : une vieille sortie suffit, sans connexion → accueil normal + message', async () => {
+  const { compteVide, bandeauConnexionVisible } = await import('../src/data/etat-accueil.ts');
+  const d = { ...vide(), dernieres: [{ id: 'vieille' } as Seance] }; // hors des 84 jours : seules « dernieres » la voit
+  assert.equal(compteVide(d, false), false);
+  assert.equal(bandeauConnexionVisible(d, false, false), true);
+});
+
+test('message de connexion : fermé ou pas encore lu → absent ; démo → absent', async () => {
+  const { bandeauConnexionVisible } = await import('../src/data/etat-accueil.ts');
+  const d = { ...vide(), dernieres: [{ id: 'x' } as Seance] };
+  assert.equal(bandeauConnexionVisible(d, false, true), false);
+  assert.equal(bandeauConnexionVisible(d, false, null), false);
+  assert.equal(bandeauConnexionVisible(d, true, false), false);
+});
+
+test('un compte qui n\'a que de la force, un objectif ou Hyrox n\'est pas vide', async () => {
+  const { compteVide } = await import('../src/data/etat-accueil.ts');
+  assert.equal(compteVide({ ...vide(), force: { series: [], programmes: [{ id: 'p' } as never] } }, false), false);
+  assert.equal(compteVide({ ...vide(), objectifs: [{ id: 'o' } as never] }, false), false);
+  assert.equal(compteVide({ ...vide(), hyrox: { tests: [], objectif: {} as never } }, false), false);
 });

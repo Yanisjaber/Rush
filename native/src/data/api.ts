@@ -545,6 +545,16 @@ export async function chargerConnexions(userId: string): Promise<Resultat<{ stra
   return { data: { strava: strava.data as ConnexionStrava | null, nbActivites: activites.count || 0, nbNuits: nuits.count || 0 }, erreur: '' };
 }
 
+/** Le compte a-t-il au moins une connexion (Strava ou autre) ? `null` si on n'a pas pu le savoir (on ne suppose alors rien). */
+export async function aUneConnexion(userId: string): Promise<boolean | null> {
+  const r = await sb.from('connexions_app').select('app').eq('user_id', userId).limit(1);
+  if (r.error) {
+    console.error('[app/api] connexion', r.error.code || '');
+    return null;
+  }
+  return (r.data ?? []).length > 0;
+}
+
 // ---------------------------------------------------------------------------
 // Disposition de l'accueil de l'app mobile (user_preferences.layout_mobile). Le site a la sienne (`layout`) : les tailles ne sont pas les mêmes.
 // ---------------------------------------------------------------------------

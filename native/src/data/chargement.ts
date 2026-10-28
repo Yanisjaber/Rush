@@ -1,5 +1,5 @@
 // Chargement de l'Accueil d'un vrai compte : lecture seule, via Supabase.
-import { chargerDernieresSeances, chargerLiensProgrammes, chargerMetriques, chargerObjectifHyrox, chargerObjectifs, chargerPlanifiees, chargerProfil, chargerProgrammes, chargerPuissance, chargerSeances, chargerSeriesForce, chargerSportsChoisis, chargerTestsHyrox } from './api';
+import { chargerDernieresSeances, chargerLiensProgrammes, chargerMetriques, chargerObjectifHyrox, chargerObjectifs, chargerPlanifiees, chargerProfil, chargerProgrammes, chargerPuissance, chargerSeances, chargerSeriesForce, aUneConnexion, chargerSportsChoisis, chargerTestsHyrox } from './api';
 import type { DonneesAccueil } from './accueil';
 import { dateIsoLocale } from './format';
 import { nettoyerSports } from './sports-choisis';
@@ -8,7 +8,7 @@ import { nettoyerSports } from './sports-choisis';
 export async function chargerAccueil(userId: string): Promise<DonneesAccueil> {
   const bientot = dateIsoLocale(new Date(Date.now() + 60 * 86400e3)); // séances prévues des 60 prochains jours
   const aujourdhui = dateIsoLocale();
-  const [profil, metriques, seances, objectifs, puissance, series, programmes, tests, objectifHyrox, prevues, liens, dernieres, sports] = await Promise.all([
+  const [profil, metriques, seances, objectifs, puissance, series, programmes, tests, objectifHyrox, prevues, liens, dernieres, sports, connexion] = await Promise.all([
     chargerProfil(userId),
     chargerMetriques(userId),
     chargerSeances(userId),
@@ -22,6 +22,7 @@ export async function chargerAccueil(userId: string): Promise<DonneesAccueil> {
     chargerLiensProgrammes(userId, aujourdhui, bientot), // programme relié à chaque séance prévue (tolérant si la colonne n'existe pas)
     chargerDernieresSeances(userId), // sans limite de date : la liste « Dernières séances » ne se vide pas pendant une pause
     chargerSportsChoisis(userId),
+    aUneConnexion(userId),
   ]);
   const liensProgramme = liens.data ?? {};
   return {
@@ -35,6 +36,7 @@ export async function chargerAccueil(userId: string): Promise<DonneesAccueil> {
     force: { series: series.data ?? [], programmes: programmes.data ?? [] },
     hyrox: { tests: tests.data ?? [], objectif: objectifHyrox.data ?? null },
     sportsChoisis: nettoyerSports(sports.data),
+    connecte: connexion !== false, // lecture impossible (null) : on suppose connecté, pour ne pas montrer un faux écran de démarrage
     erreur: [profil, metriques, seances, objectifs, puissance].map((r) => r.erreur).find(Boolean) || '',
     // Force et Hyrox : tables ajoutées par la migration 2026-10-13. Si elle n'est pas appliquée, on affiche l'accueil quand même.
     erreurSport: [series, programmes, tests, objectifHyrox].some((r) => r.erreur)

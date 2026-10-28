@@ -17,6 +17,8 @@ export interface DonneesAccueil {
   hyrox: { tests: TestHyrox[]; objectif: ObjectifHyrox | null };
   /** Sports choisis par l'utilisateur (null : jamais demandé). */
   sportsChoisis: string[] | null;
+  /** Le compte a une connexion (Strava ou autre). En cas de doute (lecture impossible), vrai : on ne dérange pas. */
+  connecte: boolean;
   /** Message si une donnée essentielle n'a pas pu être lue (l'écran s'affiche quand même avec ce qui est là). */
   erreur: string;
   /** Message si le carnet de force ou le suivi Hyrox ne répondent pas. */
@@ -48,6 +50,7 @@ export function donneesDemoAccueil(aujourdhui: Date = new Date(), options: { pre
     force: { series: seriesForceDemo(aujourdhui), programmes: programmesDemo() },
     hyrox: { tests: testsHyroxDemo(aujourdhui), objectif: objectifHyroxDemo() },
     sportsChoisis: null,
+    connecte: false,
     erreur: '',
     erreurSport: '',
   };

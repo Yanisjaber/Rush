@@ -31,7 +31,7 @@ export function useDonneesAccueil(): {
     } catch (e) {
       // chargerAccueil ne lève pas ; on se protège quand même d'un échec inattendu pour ne jamais laisser l'écran bloqué
       console.error('[app/accueil]', e instanceof Error ? e.name : 'erreur');
-      setReel({ userId, donnees: { ...donneesDemoAccueil(), seances: [], dernieres: [], metriques: [], objectifs: [], planifiees: [], puissance: [], force: { series: [], programmes: [] }, hyrox: { tests: [], objectif: null }, profil: null, erreur: 'Impossible de charger tes données.' } });
+      setReel({ userId, donnees: { ...donneesDemoAccueil(), seances: [], dernieres: [], metriques: [], objectifs: [], planifiees: [], puissance: [], force: { series: [], programmes: [] }, hyrox: { tests: [], objectif: null }, connecte: true, profil: null, erreur: 'Impossible de charger tes données.' } });
     }
   }, [userId]);
 

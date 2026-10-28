@@ -2,6 +2,7 @@ import { FondDegrade } from '@/components/FondDegrade';
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, Dimensions, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BandeauConnexion } from '@/components/BandeauConnexion';
 import { BandeauEdition } from '@/components/BandeauEdition';
 import { BarreSports } from '@/components/BarreSports';
 import { BibliothequeWidgets } from '@/components/BibliothequeWidgets';
@@ -13,10 +14,12 @@ import { solitaires } from '@/data/grille';
 import { ListeTriable } from '@/components/ListeTriable';
 import { Onboarding } from '@/components/Onboarding';
 import { construireContexte } from '@/data/contexte';
+import { bandeauConnexionVisible, compteVide as estCompteVide } from '@/data/etat-accueil';
 import { disponibles, disponiblesOnglet, ONGLETS_PERSONNALISABLES, WIDGETS, type IdWidget, composerOnglet, compositionAuto, compositionSport, type WidgetPlace } from '@/data/registre';
 import { onboardingNecessaire } from '@/data/sports-choisis';
 import { useDonneesAccueil } from '@/hooks/useDonneesAccueil';
 import { useAuth } from '@/stores/auth';
+import { useBandeauConnexion } from '@/stores/bandeau-connexion';
 import { ajouter, annulerEdition, changerTaille, chargerDisposition, deplacerWidget, demarrerEdition, listeEnEdition, reinitialiserAuto, retirer, terminerEdition, useDisposition } from '@/stores/disposition';
 import { useMenu } from '@/stores/menu';
 import { espace, rayon } from '@/theme/couleurs';
@@ -34,18 +37,8 @@ export default function Accueil() {
 
   const contexte = useMemo(() => (donnees ? construireContexte(donnees, filtre) : null), [donnees, filtre]);
 
-  // Compte neuf : aucune séance, rien de prévu, aucun objectif, ni force ni Hyrox
-  const compteVide =
-    !!donnees &&
-    !demo &&
-    !donnees.erreur &&
-    !donnees.seances.length &&
-    !donnees.dernieres.length &&
-    !donnees.planifiees.length &&
-    !donnees.objectifs.length &&
-    !donnees.force.series.length &&
-    !donnees.force.programmes.length &&
-    !donnees.hyrox.tests.length;
+  // Compte neuf : aucune donnée (même ancienne) et aucune connexion. Une connexion, ou une vieille sortie, suffit à avoir un accueil normal.
+  const compteVide = !!donnees && estCompteVide(donnees, demo);
 
   // Compte neuf qui n'a jamais choisi ses sports : on les lui demande d'abord (voir onboardingNecessaire)
   const onboarding =
@@ -64,6 +57,7 @@ export default function Accueil() {
   const disp = useDisposition();
   const cleFamilles = familles.join(',');
   const uid = demo ? 'demo' : session?.user.id ?? null;
+  const bandeau = useBandeauConnexion(demo ? null : uid);
   useEffect(() => {
     if (donnees && uid && familles.length) void chargerDisposition(uid, familles);
     // cleFamilles : la liste change d'identité à chaque rendu du store, son contenu seul compte
@@ -148,6 +142,7 @@ export default function Accueil() {
             {donnees?.erreur ? <Avis texte={donnees.erreur} /> : null}
             {donnees?.erreurSport ? <Avis texte={donnees.erreurSport} /> : null}
             {disp.message && !enEdition ? <Avis texte={disp.message} /> : null}
+            {donnees && !enEdition && bandeauConnexionVisible(donnees, demo, bandeau.ferme) ? <BandeauConnexion onFermer={bandeau.fermer} /> : null}
             {enEdition ? (
               <ListeTriable
                 ids={widgets.map((w) => w.id)}
