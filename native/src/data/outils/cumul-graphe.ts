@@ -2,6 +2,8 @@
 // Entrée : les séries de cumulParAnnee (366 jours d'une année bissextile, null après aujourd'hui pour l'année en cours).
 // Sortie : tout ce qu'il faut dessiner dans un repère de LARGEUR × HAUTEUR : graduations, mois, courbes, repère « aujourd'hui », points.
 
+import { echelleRonde } from './echelle.ts';
+
 export const LARGEUR_CUMUL = 330;
 export const HAUTEUR_CUMUL = 200;
 /** Marge de droite : le graphique prend toute la largeur, les étiquettes se posent par-dessus. */
@@ -33,15 +35,8 @@ export interface GrapheCumul {
   points: { annee: number; x: number; y: number; valeur: number }[];
   /** Une étiquette par point : même ordre que `points`, écartées entre elles (`y` est la hauteur de l'étiquette, pas du point). Elles se posent à droite de la ligne, ou (`ancrage: 'fin'`) à gauche et au-dessus du point le plus haut s'il n'y a pas la place. */
   etiquettes: { annee: number; x: number; y: number; valeur: number; ancrage: 'debut' | 'fin' }[];
-  /** Haut de l'échelle (arrondi vers le haut à un chiffre rond). */
+  /** Haut de l'échelle (un multiple de 3 rond, voir echelleRonde). */
   maximum: number;
-}
-
-/** Arrondit vers le haut à un chiffre rond (8 433 → 9 000, 96 100 → 100 000). Au minimum 1. */
-export function maximumRond(valeur: number): number {
-  if (!(valeur > 0)) return 1;
-  const p = 10 ** Math.floor(Math.log10(valeur));
-  return Math.max(1, Math.ceil(valeur / p) * p);
 }
 
 const dernierIndexConnu = (s: SerieCumul): number => {
@@ -76,7 +71,8 @@ export function grapheCumul(series: SerieCumul[], jour: number | null = null, la
   const largeurUtile = LARGEUR_CUMUL - MARGE.gauche - MARGE.droite;
   const hauteurUtile = HAUTEUR_CUMUL - MARGE.haut - MARGE.bas;
   const plusGrand = Math.max(0, ...series.flatMap((s) => s.valeurs.filter((v): v is number => v != null)));
-  const maximum = maximumRond(plusGrand);
+  const { haut, pas } = echelleRonde(plusGrand);
+  const maximum = Math.max(1, haut); // le haut : un multiple de 3 rond juste au-dessus du plus grand cumul, comme les barres du Rythme
   const x = (j: number) => MARGE.gauche + (largeurUtile * j) / (n - 1);
   const y = (v: number) => HAUTEUR_CUMUL - MARGE.bas - (hauteurUtile * v) / maximum;
   const nombre = (v: number) => v.toFixed(1);
@@ -102,8 +98,8 @@ export function grapheCumul(series: SerieCumul[], jour: number | null = null, la
   }).filter((_, m) => m % 2 === 0);
 
   const points = marque < 0 ? [] : series.flatMap((s) => (s.valeurs[marque] != null ? [{ annee: s.annee, x: x(marque), y: y(s.valeurs[marque] as number), valeur: s.valeurs[marque] as number }] : []));
-  // Quatre graduations à valeurs rondes et toutes différentes (avec un petit maximum, 1 ou 2, les arrondis se répéteraient) ; chacune est posée à la hauteur de sa valeur
-  const graduations = [...new Set([0, maximum / 3, (2 * maximum) / 3, maximum].map(Math.round))].map((valeur) => ({ valeur, y: y(valeur) }));
+  // Quatre graduations : le 0, le tiers, les deux tiers et le haut, tous ronds (le pas est un entier) ; sans données, le 0 et le haut ; chacune est posée à la hauteur de sa valeur
+  const graduations = (pas > 0 ? [0, pas, 2 * pas, 3 * pas] : [0, maximum]).map((valeur) => ({ valeur, y: y(valeur) }));
 
   // À droite de la ligne si la place suffit : chaque étiquette à la hauteur de son point, écartées si les courbes se touchent.
   // Sinon à gauche : empilées AU-DESSUS du point le plus haut (là où il n'y a pas de courbe) s'il y a la place, la plus haute en premier ;

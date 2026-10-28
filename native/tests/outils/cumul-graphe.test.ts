@@ -1,17 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { grapheCumul, jourDeX, libelleJour, maximumRond, HAUTEUR_CUMUL, LARGEUR_CUMUL, MARGE_DROITE_CUMUL } from '../../src/data/outils/cumul-graphe.ts';
+import { grapheCumul, jourDeX, libelleJour, HAUTEUR_CUMUL, LARGEUR_CUMUL, MARGE_DROITE_CUMUL } from '../../src/data/outils/cumul-graphe.ts';
 
 // Une série qui monte de 1 par jour jusqu'au jour `jusque` (null après), sur 366 jours
 const monte = (annee: number, pente: number, jusque = 365) => ({ annee, valeurs: Array.from({ length: 366 }, (_, j) => (j > jusque ? null : j * pente)) });
-
-test('maximumRond : arrondit vers le haut à un chiffre rond, jamais 0', () => {
-  assert.equal(maximumRond(8433), 9000);
-  assert.equal(maximumRond(96100), 100000);
-  assert.equal(maximumRond(9000), 9000);
-  assert.equal(maximumRond(0), 1);
-  assert.equal(maximumRond(-5), 1);
-});
 
 test('grapheCumul : une courbe par série, 4 graduations, un mois sur deux dans le cadre', () => {
   const g = grapheCumul([monte(2026, 30, 298), monte(2025, 25), monte(2024, 22)]);
@@ -132,6 +124,13 @@ test('grapheCumul : en début d\'année (valeurs à zéro), les étiquettes rest
   assert.ok(ys[1] - ys[0] >= 15 && ys[2] - ys[1] >= 15); // toujours écartées
 });
 
+test('graduations : le haut est un multiple de 3 rond, le tiers et les deux tiers aussi', () => {
+  const valeurs = (plusGrand: number) => grapheCumul([{ annee: 2026, valeurs: [0, plusGrand, plusGrand] as (number | null)[] }]).graduations.map((g) => g.valeur);
+  assert.deepEqual(valeurs(8433), [0, 3000, 6000, 9000]);
+  assert.deepEqual(valeurs(13029), [0, 5000, 10000, 15000]);
+  assert.deepEqual(valeurs(2542), [0, 1000, 2000, 3000]);
+});
+
 test('graduations : jamais deux fois la même valeur, même avec un très petit maximum', () => {
   const serie = (v: number) => [{ annee: 2026, valeurs: [0, v, v] as (number | null)[] }];
   for (const v of [0, 0.4, 1, 2, 3, 7]) {
@@ -139,5 +138,4 @@ test('graduations : jamais deux fois la même valeur, même avec un très petit 
     assert.equal(new Set(valeurs).size, valeurs.length, `maximum ${v} : ${valeurs.join(', ')}`);
     assert.equal(valeurs[0], 0);
   }
-  assert.equal(maximumRond(0.4), 1);
 });
