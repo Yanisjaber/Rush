@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { donneesDemoAccueil, famillesDe, type DonneesAccueil } from '@/data/accueil';
-import { chargerAccueil } from '@/data/chargement';
+import { donneesDemoAccueil, famillesDe, type DonneesAccueil } from '@/data/accueil/accueil';
+import { chargerAccueil } from '@/data/acces/chargement';
 import { definirSources } from '@/stores/menu';
 import { useSportsEtat } from '@/stores/sports';
 import { useAuth } from '@/stores/auth';

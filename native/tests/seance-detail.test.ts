@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chiffresSeance, formatDureeTour, lignesTours, messageTours, toursValides } from '../src/data/seance-detail.ts';
-import { toursDemo } from '../src/data/demo.ts';
+import { chiffresSeance, formatDureeTour, lignesTours, messageTours, toursValides } from '../src/data/calendrier/seance-detail.ts';
+import { toursDemo } from '../src/data/demo/demo.ts';
 import type { Seance } from '../src/data/types.ts';
 
 const seance = (extra: Partial<Seance>): Seance => ({

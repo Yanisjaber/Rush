@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
-import { dateValide } from '@/data/ajouts';
-import { dateIsoLocale } from '@/data/format';
+import { dateValide } from '@/data/calendrier/ajouts';
+import { dateIsoLocale } from '@/data/outils/format';
 
 // La date pour laquelle on ajoute quelque chose : celle du jour d'où l'on vient (paramètre « date » de l'écran), sinon aujourd'hui.
 export function useDateAjout(): string {

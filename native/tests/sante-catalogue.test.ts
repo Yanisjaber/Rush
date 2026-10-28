@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { defMesure, FAMILLES, MESURES, mesuresDe, PRIORITE_SOURCES, remplacerSaisie, resoudreMesures, valeurValide } from '../src/data/sante-catalogue.ts';
+import { defMesure, FAMILLES, MESURES, mesuresDe, PRIORITE_SOURCES, remplacerSaisie, resoudreMesures, valeurValide } from '../src/data/sante/sante-catalogue.ts';
 
 test('catalogue : chaque mesure a des bornes cohérentes, une famille connue et une clé valide pour la base', () => {
   for (const [cle, m] of Object.entries(MESURES)) {

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { kmParSemaine, repartitionAllure } from '../src/data/course.ts';
+import { kmParSemaine, repartitionAllure } from '../src/data/sports/course.ts';
 import type { Seance } from '../src/data/types.ts';
 
 const AUJOURDHUI = new Date(2026, 9, 21); // 21 octobre 2026

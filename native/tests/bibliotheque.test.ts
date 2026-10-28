@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normaliser, RAYONS, rangerBibliotheque } from '../src/data/bibliotheque.ts';
-import { WIDGETS } from '../src/data/registre.ts';
+import { normaliser, RAYONS, rangerBibliotheque } from '../src/data/accueil/bibliotheque.ts';
+import { WIDGETS } from '../src/data/accueil/registre.ts';
 
 const TOUS = Object.keys(WIDGETS);
 

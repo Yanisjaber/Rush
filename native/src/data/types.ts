@@ -1,5 +1,5 @@
 // Formes des données, identiques à celles de la base (voir docs/db/MODELE_DONNEES.md) : activities, activity_planned, strength_sets.
-import type { DetailsNote } from './sante-notes.ts';
+import type { DetailsNote } from './sante/sante-notes.ts';
 
 /** Une séance réalisée (table activities). */
 export interface Seance {

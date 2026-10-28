@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
-import { aireSousCourbe, echelle, lisse } from '@/data/courbes';
+import { aireSousCourbe, echelle, lisse } from '@/data/outils/courbes';
 
 // Courbe lissée avec un fondu qui s'efface sous la courbe et un point sur la dernière valeur.
 // Port de components/charts/CourbeLissee.svelte. `etiquette` décrit le graphique pour VoiceOver.

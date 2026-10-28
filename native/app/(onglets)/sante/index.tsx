@@ -7,9 +7,9 @@ import { Boite, Emplacement, GrilleWidgets } from '@/components/GrilleWidgets';
 import { CourbeLissee } from '@/components/CourbeLissee';
 import { JaugePilier } from '@/components/JaugePilier';
 import { Tuile } from '@/components/Tuile';
-import { CLES_RESSENTI, jusquAuDernierIndice, serieEtatDeForme } from '@/data/forme-sante';
-import { dateIsoLocale } from '@/data/format';
-import { construirePiliers, construireSuivis, motifsDuJour, NOM_COURT } from '@/data/piliers';
+import { CLES_RESSENTI, jusquAuDernierIndice, serieEtatDeForme } from '@/data/sante/forme-sante';
+import { dateIsoLocale } from '@/data/outils/format';
+import { construirePiliers, construireSuivis, motifsDuJour, NOM_COURT } from '@/data/sante/piliers';
 import { useDonneesSommeil } from '@/hooks/useDonneesSommeil';
 import { useMesuresSante } from '@/hooks/useMesuresSante';
 import { useMetriques } from '@/hooks/useMetriques';
@@ -17,7 +17,7 @@ import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
-import { WidgetEtatDuJour } from '@/widgets/WidgetsSante';
+import { WidgetEtatDuJour } from '@/widgets/sante/WidgetsSante';
 
 const BARRE_ONGLETS = 72;
 // Santé : l'écran du matin, fait pour se lire d'un coup d'œil, sans phrase.

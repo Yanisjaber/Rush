@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/Bloc';
-import { GROUPES_SPORTS } from '@/data/sports-choisis';
+import { GROUPES_SPORTS } from '@/data/sports/sports-choisis';
 import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';

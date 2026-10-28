@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { niveauDe } from '@/data/forme-sante';
+import { niveauDe } from '@/data/sante/forme-sante';
 import { rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';

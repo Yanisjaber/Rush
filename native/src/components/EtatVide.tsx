@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Bouton } from '@/components/Bouton';
-import { dateIsoLocale } from '@/data/format';
+import { dateIsoLocale } from '@/data/outils/format';
 import { espace } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';

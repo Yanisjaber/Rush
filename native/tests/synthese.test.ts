@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { carresDuJour, chargeSeance, formeActuelle, prochainesPrevues, repartition7Jours, semaineCourante } from '../src/data/synthese.ts';
+import { carresDuJour, chargeSeance, formeActuelle, prochainesPrevues, repartition7Jours, semaineCourante } from '../src/data/bilan/synthese.ts';
 import type { Metrique, Prevue, Seance } from '../src/data/types.ts';
 
 test('chargeSeance : le TSS enregistré est utilisé tel quel', () => {

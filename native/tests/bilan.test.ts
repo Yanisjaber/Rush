@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {
   activitesAnnee, activitesAnneePrecedente, anneesDisponibles, avancement, cumulParAnnee, ecartPct, familleBilan, familleBilanDuFiltre, modele, normaliser,
   decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, phraseVerdict, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
-} from '../src/data/bilan.ts';
-import { activitesBilanDemo, objectifsAnnuelsDemo } from '../src/data/demo.ts';
+} from '../src/data/bilan/bilan.ts';
+import { activitesBilanDemo, objectifsAnnuelsDemo } from '../src/data/demo/demo.ts';
 
 const maintenant = new Date(2026, 6, 1, 12); // 1er juillet 2026 : environ la moitié de l'année
 

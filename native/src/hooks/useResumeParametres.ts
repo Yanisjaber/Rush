@@ -1,9 +1,9 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { chargerConnexions, chargerProfilComplet, type ConnexionStrava } from '@/data/api';
-import { donneesDemo } from '@/data/demo';
-import { resumeParametres, type ResumeParametres } from '@/data/parametres';
-import type { LigneProfil } from '@/data/profil';
+import { chargerConnexions, chargerProfilComplet, type ConnexionStrava } from '@/data/acces/api';
+import { donneesDemo } from '@/data/demo/demo';
+import { resumeParametres, type ResumeParametres } from '@/data/reglages/parametres';
+import type { LigneProfil } from '@/data/reglages/profil';
 import { useSportsChoisis } from '@/hooks/useSportsChoisis';
 import { useAuth } from '@/stores/auth';
 import { SPORTS, type CleSport } from '@/theme/sports';

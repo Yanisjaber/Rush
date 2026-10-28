@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { familleAffichage, familleSport, garderSeance } from '../src/data/familles.ts';
+import { familleAffichage, familleSport, garderSeance } from '../src/data/sports/familles.ts';
 
 test('familleSport : les types Strava courants', () => {
   assert.equal(familleSport('Run'), 'course');

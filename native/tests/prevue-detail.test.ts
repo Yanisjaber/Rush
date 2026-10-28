@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formulaireCompetitionVide, formulaireSeanceVide, prevueDepuisLigne, validerCompetition, validerSeance } from '../src/data/ajouts.ts';
-import { apercuDeGpx } from '../src/data/apercu-import.ts';
-import { chiffresPrevue } from '../src/data/prevue-detail.ts';
+import { formulaireCompetitionVide, formulaireSeanceVide, prevueDepuisLigne, validerCompetition, validerSeance } from '../src/data/calendrier/ajouts.ts';
+import { apercuDeGpx } from '../src/data/calendrier/apercu-import.ts';
+import { chiffresPrevue } from '../src/data/calendrier/prevue-detail.ts';
 
 const id = 'a1b2c3d4-0000-4000-8000-000000000001';
 const libelles = (liste: { libelle: string }[]) => liste.map((c) => c.libelle);

@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CATALOGUE } from '../src/data/catalogue-sports.ts';
-import { normaliser, sportAvecStructure } from '../src/data/structure.ts';
-import { formulaireDepuisSortie, ligneDeModification, sortieModifiable, distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, chargeEstimeeSortie, typeInitial, SPORTS_AJOUT, blocsDePrevue, formulaireDepuisCompetition, formulaireDepuisSeance, parcoursDePrevue, prevueDepuisLigne, type LignePrevue } from '../src/data/ajouts.ts';
+import { CATALOGUE } from '../src/data/sports/catalogue-sports.ts';
+import { normaliser, sportAvecStructure } from '../src/data/calendrier/structure.ts';
+import { formulaireDepuisSortie, ligneDeModification, sortieModifiable, distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, chargeEstimeeSortie, typeInitial, SPORTS_AJOUT, blocsDePrevue, formulaireDepuisCompetition, formulaireDepuisSeance, parcoursDePrevue, prevueDepuisLigne, type LignePrevue } from '../src/data/calendrier/ajouts.ts';
 import type { PrevueComplete } from '../src/data/types.ts';
 
 const date = '2026-10-23';

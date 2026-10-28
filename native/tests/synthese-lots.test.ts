@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   casesRegularite, chargeParSemaine, conditionHebdo, efficaciteCourse, joursActifs, meilleuresSortiesCourse, predictionsCourse, seancesForce,
-} from '../src/data/synthese.ts';
+} from '../src/data/bilan/synthese.ts';
 import type { Metrique, Seance } from '../src/data/types.ts';
 
 const aujourdhui = new Date(2026, 9, 19); // lundi 19 octobre 2026

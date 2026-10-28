@@ -1,6 +1,6 @@
 import Svg, { Circle, Line, Path, Rect, Text as TexteSvg } from 'react-native-svg';
-import { echelle, lisse, type Point } from '@/data/courbes';
-import { niveauDe, type PointForme } from '@/data/forme-sante';
+import { echelle, lisse, type Point } from '@/data/outils/courbes';
+import { niveauDe, type PointForme } from '@/data/sante/forme-sante';
 import { avecAlpha } from '@/theme/couleurs';
 import { police } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';

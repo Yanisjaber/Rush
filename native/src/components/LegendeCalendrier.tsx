@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { LogoNote } from '@/components/LogoNote';
-import { couleurNote } from '@/data/annotations';
+import { couleurNote } from '@/data/calendrier/annotations';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';

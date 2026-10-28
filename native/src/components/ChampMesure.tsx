@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { valeurValide, type DefMesure } from '@/data/sante-catalogue';
+import { valeurValide, type DefMesure } from '@/data/sante/sante-catalogue';
 import { espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';

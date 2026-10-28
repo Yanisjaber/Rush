@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dateIsoLocale, msJusquaMinuit, formatDateCourte, formatDuree, formatDistanceSport, formatHeuresMinutes, formatJoursAvant, formatKm, periodeCourte } from '../src/data/format.ts';
+import { dateIsoLocale, msJusquaMinuit, formatDateCourte, formatDuree, formatDistanceSport, formatHeuresMinutes, formatJoursAvant, formatKm, periodeCourte } from '../src/data/outils/format.ts';
 
 test('formatDuree : minutes seules, puis heures et minutes sur deux chiffres', () => {
   assert.equal(formatDuree(2400), '40 min');

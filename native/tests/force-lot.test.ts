@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { programmeDuJour, progressionParExercice, recordsParGroupe, resumeProgramme, seriesParGroupe, tonnage, tonnageParSemaine, tonnageSerie } from '../src/data/force.ts';
+import { programmeDuJour, progressionParExercice, recordsParGroupe, resumeProgramme, seriesParGroupe, tonnage, tonnageParSemaine, tonnageSerie } from '../src/data/sports/force.ts';
 import type { ProgrammeForce, Seance, SerieForce } from '../src/data/types.ts';
 
 const aujourdhui = new Date(2026, 9, 19);

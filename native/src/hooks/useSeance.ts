@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { donneesDemoAccueil } from '@/data/accueil';
-import { chargerSeance, chargerTours } from '@/data/api';
-import { toursDemo } from '@/data/demo';
+import { donneesDemoAccueil } from '@/data/accueil/accueil';
+import { chargerSeance, chargerTours } from '@/data/acces/api';
+import { toursDemo } from '@/data/demo/demo';
 import { seanceDeLaDemo, useVersionAjouts } from '@/stores/ajouts';
 import { useAuth } from '@/stores/auth';
 import type { Seance, Tour } from '@/data/types';

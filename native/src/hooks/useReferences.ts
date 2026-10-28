@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { chargerProfil } from '@/data/api';
-import type { Reference } from '@/data/structure';
+import { chargerProfil } from '@/data/acces/api';
+import type { Reference } from '@/data/calendrier/structure';
 import { useAuth } from '@/stores/auth';
 
 // Les références de l'utilisateur pour traduire les pourcentages d'une séance en watts, battements ou allures : sa FTP et sa FC max (profil).

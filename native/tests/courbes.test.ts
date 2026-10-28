@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { echelle, lisse, type Point } from '../src/data/courbes.ts';
+import { echelle, lisse, type Point } from '../src/data/outils/courbes.ts';
 
 test('lisse : un chemin pour des points normaux, rien pour une liste vide', () => {
   assert.equal(lisse([]), '');

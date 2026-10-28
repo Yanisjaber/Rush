@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compositionAuto, compositionSport, composerOnglet, estPertinent, existe, normaliserListe, LISTES_PAR_DEFAUT, ONGLETS_PERSONNALISABLES, ORDRE_ONGLET, TAILLES, TAILLES_ONGLET, WIDGETS } from '../src/data/registre.ts';
-import { construireContexte } from '../src/data/contexte.ts';
-import { donneesDemoAccueil } from '../src/data/accueil.ts';
+import { compositionAuto, compositionSport, composerOnglet, estPertinent, existe, normaliserListe, LISTES_PAR_DEFAUT, ONGLETS_PERSONNALISABLES, ORDRE_ONGLET, TAILLES, TAILLES_ONGLET, WIDGETS } from '../src/data/accueil/registre.ts';
+import { construireContexte } from '../src/data/accueil/contexte.ts';
+import { donneesDemoAccueil } from '../src/data/accueil/accueil.ts';
 
 test('existe : seuls les vrais widgets, pas les propriétés héritées', () => {
   assert.equal(existe('objectif'), true);

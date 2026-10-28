@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { Appearance } from 'react-native';
-import { lireChoixTheme, schemaDe, type ChoixTheme } from '@/data/theme-choisi';
+import { lireChoixTheme, schemaDe, type ChoixTheme } from '@/data/reglages/theme-choisi';
 
 // Le thème choisi dans Paramètres, gardé sur le téléphone seulement (rien n'est écrit en base).
 // On passe par Appearance.setColorScheme : tout ce qui suit le schéma du téléphone (palette, barre d'état, barre du bas native) suit le choix.

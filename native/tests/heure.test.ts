@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dateDepuisHeure, dateDepuisJour, dureeDepuisHeure, heureDepuisDate, heureDepuisDuree, heureValide, heuresMinutesDepuis, minutesDepuisHeure, jourDepuisDate, texteDureeSaisie } from '../src/data/heure.ts';
+import { dateDepuisHeure, dateDepuisJour, dureeDepuisHeure, heureDepuisDate, heureDepuisDuree, heureValide, heuresMinutesDepuis, minutesDepuisHeure, jourDepuisDate, texteDureeSaisie } from '../src/data/outils/heure.ts';
 
 test('heure : aller-retour entre « HH:MM » et une Date', () => {
   for (const h of ['00:00', '07:05', '12:00', '18:30', '23:59']) assert.equal(heureDepuisDate(dateDepuisHeure(h)), h);

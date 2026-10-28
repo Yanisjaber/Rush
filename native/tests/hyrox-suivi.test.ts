@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { deriveParTest, deriveRuns, evolutionTotal, hyroxParSemaine, partsRunsStations } from '../src/data/hyrox-suivi.ts';
+import { deriveParTest, deriveRuns, evolutionTotal, hyroxParSemaine, partsRunsStations } from '../src/data/sports/hyrox-suivi.ts';
 import type { Seance, TestHyrox } from '../src/data/types.ts';
 
 const AUJOURDHUI = new Date(2026, 9, 21); // 21 octobre 2026

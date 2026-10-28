@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { deniveleSkiParSemaine, estSkiDeFond, kmSkiParSemaine, meilleuresSortiesSki, minutesParSemaineSurfaces, repartitionSurfaces, surfaceDe } from '../src/data/ski.ts';
-import { intensiteParZone } from '../src/data/hebdo.ts';
-import { prepaDistance } from '../src/data/natation.ts';
+import { deniveleSkiParSemaine, estSkiDeFond, kmSkiParSemaine, meilleuresSortiesSki, minutesParSemaineSurfaces, repartitionSurfaces, surfaceDe } from '../src/data/sports/ski.ts';
+import { intensiteParZone } from '../src/data/sports/hebdo.ts';
+import { prepaDistance } from '../src/data/sports/natation.ts';
 import type { Seance } from '../src/data/types.ts';
 
 const AUJOURDHUI = new Date(2026, 9, 21); // 21 octobre 2026

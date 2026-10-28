@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dureeTotale, indiceZone, lireDuree, metriquesDuSport, normaliser, profilStructure, resume, sportAvecStructure, texteCible, texteDuree, type Bloc } from '../src/data/structure.ts';
+import { dureeTotale, indiceZone, lireDuree, metriquesDuSport, normaliser, profilStructure, resume, sportAvecStructure, texteCible, texteDuree, type Bloc } from '../src/data/calendrier/structure.ts';
 
 const seuil = (): Bloc[] =>
   normaliser([

@@ -8,12 +8,12 @@ import { AnneauZones } from '@/components/AnneauZones';
 import { Bloc } from '@/components/Bloc';
 import { GrapheSeries } from '@/components/GrapheSeries';
 import { StatCle } from '@/components/StatCle';
-import { niveauDe } from '@/data/forme-sante';
-import { heureDe, phases } from '@/data/sommeil';
+import { niveauDe } from '@/data/sante/forme-sante';
+import { heureDe, phases } from '@/data/sante/sommeil';
 import {
   analyser, comparaisons, efficacitePct, latenceMin, NOM_COMPOSANT, NOM_QUALIFICATIF, planAction, preparer, REPERES, signauxPhysio, synthese,
   texteHM, texteHMdepuisSec, tonDe, type NuitPreparee, type StatsGroupe,
-} from '@/data/score-sommeil';
+} from '@/data/sante/score-sommeil';
 import { useDonneesSommeil } from '@/hooks/useDonneesSommeil';
 import { avecAlpha, espace, rayon, type Palette } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';

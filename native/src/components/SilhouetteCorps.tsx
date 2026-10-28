@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { CORPS_SVG } from '@/data/corps-svg';
-import type { ResumeMuscle } from '@/data/muscu';
+import { CORPS_SVG } from '@/data/sante/corps-svg';
+import type { ResumeMuscle } from '@/data/sports/muscu';
 import { melange } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';

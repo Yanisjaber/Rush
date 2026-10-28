@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bornesGrille, chargeJour, chargeSeance, decalerMois, grilleMois, jourAffiche, jourVide, chiffresSemaine, kmJour, nomJour, profilSemaine, resumeSemaine, secondesJour, teinteJour, titreMois, compositionJour, assemblerDonnees, avertissementLimite } from '../src/data/calendrier.ts';
-import { couleurNote, libelleNote, notesDuJour } from '../src/data/annotations.ts';
-import { annotationsDemo, donneesDemo } from '../src/data/demo.ts';
+import { bornesGrille, chargeJour, chargeSeance, decalerMois, grilleMois, jourAffiche, jourVide, chiffresSemaine, kmJour, nomJour, profilSemaine, resumeSemaine, secondesJour, teinteJour, titreMois, compositionJour, assemblerDonnees, avertissementLimite } from '../src/data/calendrier/calendrier.ts';
+import { couleurNote, libelleNote, notesDuJour } from '../src/data/calendrier/annotations.ts';
+import { annotationsDemo, donneesDemo } from '../src/data/demo/demo.ts';
 import type { Note, Prevue, Seance } from '../src/data/types.ts';
 
 const auj = new Date(2026, 9, 19); // lundi 19 octobre 2026

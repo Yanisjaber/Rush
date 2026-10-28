@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { hslVersHex, paletteComplete } from '../src/data/palette-couleurs.ts';
+import { hslVersHex, paletteComplete } from '../src/data/outils/palette-couleurs.ts';
 
 test('hslVersHex : les couleurs de base', () => {
   assert.equal(hslVersHex(0, 100, 50), '#ff0000');

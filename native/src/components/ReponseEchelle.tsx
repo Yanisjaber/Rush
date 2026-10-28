@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { DefMesure } from '@/data/sante-catalogue';
+import type { DefMesure } from '@/data/sante/sante-catalogue';
 import { avecAlpha, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';

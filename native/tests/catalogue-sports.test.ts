@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CATALOGUE, couleurDuType, FAMILLES_PRINCIPALES, GROUPES_AUTRES, nomDuType, sportDuType } from '../src/data/catalogue-sports.ts';
-import { familleSport } from '../src/data/familles.ts';
+import { CATALOGUE, couleurDuType, FAMILLES_PRINCIPALES, GROUPES_AUTRES, nomDuType, sportDuType } from '../src/data/sports/catalogue-sports.ts';
+import { familleSport } from '../src/data/sports/familles.ts';
 import { clair, sombre } from '../src/theme/couleurs.ts';
 
 // Tous les types de sport de l'API Strava (sport_type) : aucun ne doit échapper au catalogue.

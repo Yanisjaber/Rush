@@ -1,5 +1,5 @@
 import Svg, { Circle, Path } from 'react-native-svg';
-import { ZONES } from '@/data/sante-notes';
+import { ZONES } from '@/data/sante/sante-notes';
 import { usePalette } from '@/theme/usePalette';
 
 // Une petite silhouette de face : la zone choisie s'allume d'un point corail. Elle ne se touche pas (on choisit dans le menu), elle montre où ça fait mal.

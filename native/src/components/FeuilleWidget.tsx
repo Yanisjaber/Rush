@@ -1,7 +1,7 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
-import { TAILLES, WIDGETS, type IdWidget } from '@/data/registre';
+import { TAILLES, WIDGETS, type IdWidget } from '@/data/accueil/registre';
 import type { Taille } from '@/data/types';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';

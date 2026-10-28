@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, Line, Pattern, Rect } from 'react-native-svg';
-import { chargeJour, compositionJour, type JourGrille } from '@/data/calendrier';
-import { formatDuree } from '@/data/format';
+import { chargeJour, compositionJour, type JourGrille } from '@/data/calendrier/calendrier';
+import { formatDuree } from '@/data/outils/format';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';

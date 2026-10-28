@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { resumeParametres } from '../src/data/parametres.ts';
+import { resumeParametres } from '../src/data/reglages/parametres.ts';
 
 const ligne = { weight: 72.5, ftp: 250, hr_max: 196, lthr: null, extras: { first_name: 'Yanis', birth_date: '2000-01-01', sex: 'M', height: 180, vma: 17.5, threshold_speed: 15 } };
 

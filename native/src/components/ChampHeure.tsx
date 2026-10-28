@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
 import { ChampTexte } from '@/components/ChampTexte';
 import { RepliSiErreur } from '@/components/RepliSiErreur';
-import { dateDepuisHeure, heureDepuisDate, heureValide } from '@/data/heure';
+import { dateDepuisHeure, heureDepuisDate, heureValide } from '@/data/outils/heure';
 import { espace, rayon, sombre } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';

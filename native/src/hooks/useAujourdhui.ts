@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
-import { dateIsoLocale, msJusquaMinuit } from '@/data/format';
+import { dateIsoLocale, msJusquaMinuit } from '@/data/outils/format';
 
 // La date d'aujourd'hui, tenue à jour tant que l'app reste ouverte : elle change à minuit et quand l'app repasse au premier plan.
 // Le Date renvoyé garde la même identité tant que le jour ne change pas (on peut s'en servir comme dépendance).

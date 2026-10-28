@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mesuresDemo } from '../src/data/demo.ts';
-import { defMesure, resoudreMesures, valeurValide } from '../src/data/sante-catalogue.ts';
-import { serieEtatDeForme } from '../src/data/forme-sante.ts';
-import { donneesDemo, sommeilDemo } from '../src/data/demo.ts';
+import { mesuresDemo } from '../src/data/demo/demo.ts';
+import { defMesure, resoudreMesures, valeurValide } from '../src/data/sante/sante-catalogue.ts';
+import { serieEtatDeForme } from '../src/data/sante/forme-sante.ts';
+import { donneesDemo, sommeilDemo } from '../src/data/demo/demo.ts';
 
 const AUJOURDHUI = new Date(2026, 9, 20);
 

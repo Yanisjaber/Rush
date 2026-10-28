@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { enregistrerMesureSante, supprimerMesureSante } from '@/data/api';
-import { remplacerSaisie, resoudreMesures, type LigneMesure, type MesuresParJour } from '@/data/sante-catalogue';
+import { enregistrerMesureSante, supprimerMesureSante } from '@/data/acces/api';
+import { remplacerSaisie, resoudreMesures, type LigneMesure, type MesuresParJour } from '@/data/sante/sante-catalogue';
 import { useAuth } from '@/stores/auth';
 import { saisirMesureDemo, useMesuresDemo } from '@/stores/mesures-demo';
 import { chargerMesures, mesuresDuCompte, poserMesures, useEtatMesures } from '@/stores/mesures-sante';

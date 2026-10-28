@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { basculerSport, GROUPES_SPORTS } from '@/data/sports-choisis';
+import { basculerSport, GROUPES_SPORTS } from '@/data/sports/sports-choisis';
 import { useSportsChoisis } from '@/hooks/useSportsChoisis';
 import { rayon } from '@/theme/couleurs';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';

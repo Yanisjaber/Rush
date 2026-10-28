@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
 import { ChampTexte } from '@/components/ChampTexte';
 import { MenuMesure } from '@/components/MenuMesure';
-import { CATALOGUE, estManuel, modele, NOM_SPORT_BILAN, SPORTS_OBJECTIFS, validerObjectif } from '@/data/bilan';
+import { CATALOGUE, estManuel, modele, NOM_SPORT_BILAN, SPORTS_OBJECTIFS, validerObjectif } from '@/data/bilan/bilan';
 import { useEcrituresObjectifs } from '@/hooks/useObjectifs';
 import { useGardeSortie } from '@/hooks/useGardeSortie';
 import { espace } from '@/theme/couleurs';

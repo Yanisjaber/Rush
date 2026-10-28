@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
-import { filtreApres, filtreValide } from '@/data/menu';
-import { fusionnerFamilles } from '@/data/sports-choisis';
+import { filtreApres, filtreValide } from '@/data/accueil/menu';
+import { fusionnerFamilles } from '@/data/sports/sports-choisis';
 
 // État du menu des sports : les sports proposés et le filtre choisi. Partagé par tous les écrans
 // (on choisit « Course » sur l'Accueil, le Calendrier reste sur « Course »).

@@ -4,8 +4,8 @@ import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { GOUTTIERE, styleEmplacement, styles as stylesGrille } from '@/components/GrilleWidgets';
 import { ECART_LIGNES } from '@/components/taille';
-import { deplacerVers, elementSousPoint, vitesseDefilement, type BoiteGrille } from '@/data/glisse';
-import { placerGrille, solitaires } from '@/data/grille';
+import { deplacerVers, elementSousPoint, vitesseDefilement, type BoiteGrille } from '@/data/sports/glisse';
+import { placerGrille, solitaires } from '@/data/accueil/grille';
 import type { Taille } from '@/data/types';
 import { usePalette } from '@/theme/usePalette';
 

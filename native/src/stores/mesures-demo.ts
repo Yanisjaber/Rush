@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
-import { mesuresDemo } from '@/data/demo';
-import { remplacerSaisie, type LigneMesure } from '@/data/sante-catalogue';
+import { mesuresDemo } from '@/data/demo/demo';
+import { remplacerSaisie, type LigneMesure } from '@/data/sante/sante-catalogue';
 
 // Les mesures de santé du mode démo : des données d'exemple au départ, puis ce que tu saisis, gardé en mémoire seulement (rien n'est écrit nulle part).
 let lignes: LigneMesure[] | null = null;

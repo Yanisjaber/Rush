@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { alerteVariation, lisser, moyenneSur, proteinesParKg, serieDe, variationHebdo } from '../src/data/suivi-corps.ts';
-import type { MesuresParJour } from '../src/data/sante-catalogue.ts';
+import { alerteVariation, lisser, moyenneSur, proteinesParKg, serieDe, variationHebdo } from '../src/data/sante/suivi-corps.ts';
+import type { MesuresParJour } from '../src/data/sante/sante-catalogue.ts';
 
 const iso = (i: number) => {
   const d = new Date(2026, 0, 1 + i);

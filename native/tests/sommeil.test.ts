@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { sommeilDemo } from '../src/data/demo.ts';
-import { heureDe, minutesCoucher, phases, efficacite } from '../src/data/sommeil.ts';
-import { analyser, comparaisons, preparer, scoreNuit, scorePalier } from '../src/data/score-sommeil.ts';
+import { sommeilDemo } from '../src/data/demo/demo.ts';
+import { heureDe, minutesCoucher, phases, efficacite } from '../src/data/sante/sommeil.ts';
+import { analyser, comparaisons, preparer, scoreNuit, scorePalier } from '../src/data/sante/score-sommeil.ts';
 
 const jour = new Date(2026, 9, 19);
 

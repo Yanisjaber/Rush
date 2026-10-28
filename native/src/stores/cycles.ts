@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
-import type { FormulaireCycle } from '@/data/cycles';
-import { dateIsoLocale } from '@/data/format';
+import type { FormulaireCycle } from '@/data/calendrier/cycles';
+import { dateIsoLocale } from '@/data/outils/format';
 import type { Cycle } from '@/data/types';
 
 // Les cycles de la démo (en mémoire seulement : ils survivent à la navigation, pas à un relancement), et un numéro de version qui change à chaque

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { grapheCumul, jourDeX, libelleJour, maximumRond, HAUTEUR_CUMUL, LARGEUR_CUMUL, MARGE_DROITE_CUMUL } from '../src/data/cumul-graphe.ts';
+import { grapheCumul, jourDeX, libelleJour, maximumRond, HAUTEUR_CUMUL, LARGEUR_CUMUL, MARGE_DROITE_CUMUL } from '../src/data/outils/cumul-graphe.ts';
 
 // Une série qui monte de 1 par jour jusqu'au jour `jusque` (null après), sur 366 jours
 const monte = (annee: number, pente: number, jusque = 365) => ({ annee, valeurs: Array.from({ length: 366 }, (_, j) => (j > jusque ? null : j * pente)) });

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { lireChoixTheme, schemaDe } from '../src/data/theme-choisi.ts';
+import { lireChoixTheme, schemaDe } from '../src/data/reglages/theme-choisi.ts';
 
 test('lireChoixTheme : seuls « sombre » et « clair » sont acceptés', () => {
   assert.equal(lireChoixTheme('sombre'), 'sombre');

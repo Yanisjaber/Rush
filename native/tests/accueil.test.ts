@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { donneesDemoAccueil, famillesDe, type DonneesAccueil } from '../src/data/accueil.ts';
-import { appliquer, appliquerTout, cleRetouche, estManuelle } from '../src/data/retouches.ts';
-import { fusionnerFamilles, nettoyerSports, onboardingNecessaire, sportsCoches } from '../src/data/sports-choisis.ts';
+import { donneesDemoAccueil, famillesDe, type DonneesAccueil } from '../src/data/accueil/accueil.ts';
+import { appliquer, appliquerTout, cleRetouche, estManuelle } from '../src/data/calendrier/retouches.ts';
+import { fusionnerFamilles, nettoyerSports, onboardingNecessaire, sportsCoches } from '../src/data/sports/sports-choisis.ts';
 import { clair, sombre } from '../src/theme/couleurs.ts';
 import type { Seance } from '../src/data/types.ts';
 
@@ -155,27 +155,27 @@ test('contourChamp : au moins 3:1 sur le fond et la surface, en sombre comme en 
 // --- accueil d'un compte neuf, d'une reprise et message de connexion ------
 
 test('compte vide : ni donnée ni connexion → écran de démarrage', async () => {
-  const { compteVide, bandeauConnexionVisible } = await import('../src/data/etat-accueil.ts');
+  const { compteVide, bandeauConnexionVisible } = await import('../src/data/accueil/etat-accueil.ts');
   assert.equal(compteVide(vide(), false), true);
   assert.equal(bandeauConnexionVisible(vide(), false, false), false); // l'écran de démarrage fait déjà le travail
 });
 
 test('compte vide : une connexion suffit à avoir un accueil normal, même sans sortie encore', async () => {
-  const { compteVide, bandeauConnexionVisible } = await import('../src/data/etat-accueil.ts');
+  const { compteVide, bandeauConnexionVisible } = await import('../src/data/accueil/etat-accueil.ts');
   const d = { ...vide(), connecte: true };
   assert.equal(compteVide(d, false), false);
   assert.equal(bandeauConnexionVisible(d, false, false), false);
 });
 
 test('reprise après une pause : une vieille sortie suffit, sans connexion → accueil normal + message', async () => {
-  const { compteVide, bandeauConnexionVisible } = await import('../src/data/etat-accueil.ts');
+  const { compteVide, bandeauConnexionVisible } = await import('../src/data/accueil/etat-accueil.ts');
   const d = { ...vide(), dernieres: [{ id: 'vieille' } as Seance] }; // hors des 84 jours : seules « dernieres » la voit
   assert.equal(compteVide(d, false), false);
   assert.equal(bandeauConnexionVisible(d, false, false), true);
 });
 
 test('message de connexion : fermé ou pas encore lu → absent ; démo → absent', async () => {
-  const { bandeauConnexionVisible } = await import('../src/data/etat-accueil.ts');
+  const { bandeauConnexionVisible } = await import('../src/data/accueil/etat-accueil.ts');
   const d = { ...vide(), dernieres: [{ id: 'x' } as Seance] };
   assert.equal(bandeauConnexionVisible(d, false, true), false);
   assert.equal(bandeauConnexionVisible(d, false, null), false);
@@ -183,7 +183,7 @@ test('message de connexion : fermé ou pas encore lu → absent ; démo → abse
 });
 
 test('un compte qui n\'a que de la force, un objectif ou Hyrox n\'est pas vide', async () => {
-  const { compteVide } = await import('../src/data/etat-accueil.ts');
+  const { compteVide } = await import('../src/data/accueil/etat-accueil.ts');
   assert.equal(compteVide({ ...vide(), force: { series: [], programmes: [{ id: 'p' } as never] } }, false), false);
   assert.equal(compteVide({ ...vide(), objectifs: [{ id: 'o' } as never] }, false), false);
   assert.equal(compteVide({ ...vide(), hyrox: { tests: [], objectif: {} as never } }, false), false);

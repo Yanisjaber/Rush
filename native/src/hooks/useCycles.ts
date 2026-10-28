@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { chargerTousCycles, creerCycle, modifierCycle, supprimerCycle } from '@/data/api';
-import type { FormulaireCycle } from '@/data/cycles';
+import { chargerTousCycles, creerCycle, modifierCycle, supprimerCycle } from '@/data/acces/api';
+import type { FormulaireCycle } from '@/data/calendrier/cycles';
 import type { Cycle } from '@/data/types';
 import { creerCycleDemo, cyclesChanges, cyclesDemo, modifierCycleDemo, supprimerCycleDemo, useVersionCycles } from '@/stores/cycles';
 import { useAuth } from '@/stores/auth';

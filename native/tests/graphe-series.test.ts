@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { construireGraphe, indiceTouche, jj, lectureGraphe, LARGEUR_GRAPHE } from '../src/data/graphe-series.ts';
+import { construireGraphe, indiceTouche, jj, lectureGraphe, LARGEUR_GRAPHE } from '../src/data/outils/graphe-series.ts';
 
 const dates = ['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04'];
 

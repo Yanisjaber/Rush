@@ -1,8 +1,8 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { chargerActivitesBilan, chargerObjectifsAnnuels } from '@/data/api';
-import { donneesPerimees, fusionnerChargement, type ObjectifAnnuel } from '@/data/bilan';
-import { activitesBilanDemo } from '@/data/demo';
+import { chargerActivitesBilan, chargerObjectifsAnnuels } from '@/data/acces/api';
+import { donneesPerimees, fusionnerChargement, type ObjectifAnnuel } from '@/data/bilan/bilan';
+import { activitesBilanDemo } from '@/data/demo/demo';
 import { objectifsDemo, useVersionObjectifs } from '@/stores/objectifs';
 import { useAuth } from '@/stores/auth';
 import type { Seance } from '@/data/types';

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { modelesDemo } from '../src/data/demo-modeles.ts';
-import { blocsDuModele, cleDuModele, filtrerModeles, lignePrevueDepuisModele, resumeModele, sportsDesModeles, type Modele } from '../src/data/modeles.ts';
+import { modelesDemo } from '../src/data/demo/demo-modeles.ts';
+import { blocsDuModele, cleDuModele, filtrerModeles, lignePrevueDepuisModele, resumeModele, sportsDesModeles, type Modele } from '../src/data/calendrier/modeles.ts';
 
 const demo = modelesDemo();
 const parNom = (n: string) => demo.find((m) => m.name === n) as Modele;

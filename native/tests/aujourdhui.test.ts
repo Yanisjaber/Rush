@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { elementsDuJour, faitePour, infosDuJour, lignesDeLaBande, seancesDuJour } from '../src/data/aujourdhui.ts';
+import { elementsDuJour, faitePour, infosDuJour, lignesDeLaBande, seancesDuJour } from '../src/data/accueil/aujourdhui.ts';
 import type { Prevue, Seance } from '../src/data/types.ts';
 
 const AUJOURDHUI = new Date(2026, 9, 21, 9, 0); // mercredi 21 octobre 2026

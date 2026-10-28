@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { paletteComplete } from '@/data/palette-couleurs';
+import { paletteComplete } from '@/data/outils/palette-couleurs';
 import { rayon, espace } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';

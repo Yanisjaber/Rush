@@ -4,8 +4,8 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Boite, Emplacement, GrilleWidgets } from '@/components/GrilleWidgets';
 import { Pastille } from '@/components/Pastille';
-import { construireContexte } from '@/data/contexte';
-import { WIDGETS } from '@/data/registre';
+import { construireContexte } from '@/data/accueil/contexte';
+import { WIDGETS } from '@/data/accueil/registre';
 import type { Taille } from '@/data/types';
 import { useDonneesAccueil } from '@/hooks/useDonneesAccueil';
 import { useAuth } from '@/stores/auth';
@@ -14,7 +14,7 @@ import { clair, sombre } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { ContextePalette, usePalette } from '@/theme/usePalette';
-import { COMPOSANTS, WidgetBientot } from '@/widgets/composants';
+import { COMPOSANTS, WidgetBientot } from '@/widgets/registre-composants';
 
 // Catalogue des widgets (outil de démo) : un widget à la fois, dans ses 4 tailles, en bloc normal puis en dossard,
 // en sombre ou en clair. Les données viennent de la démo ; le look dossard est forcé (à l'accueil, seul le premier widget l'a).

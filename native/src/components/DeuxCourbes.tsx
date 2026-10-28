@@ -1,5 +1,5 @@
 import Svg, { Circle, Path } from 'react-native-svg';
-import { echelle, lisse } from '@/data/courbes';
+import { echelle, lisse } from '@/data/outils/courbes';
 import { usePalette } from '@/theme/usePalette';
 
 // Deux courbes sur la même échelle : la principale en trait plein, la secondaire en tirets (la condition et la fatigue, ton test et ton objectif…).

@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chargeMuscuRecente, chargeParSerie, effortRir, zoneRatio } from '../src/data/charge-muscu.ts';
-import { musclesSurPeriode } from '../src/data/muscu.ts';
-import { MUSCLES, repartirPortions, repartirSerie } from '../src/data/muscles.ts';
-import { BIBLIOTHEQUE, chercherExercices, GROUPES, groupeValide, ORDRE_GROUPES } from '../src/data/exercices.ts';
+import { chargeMuscuRecente, chargeParSerie, effortRir, zoneRatio } from '../src/data/sports/charge-muscu.ts';
+import { musclesSurPeriode } from '../src/data/sports/muscu.ts';
+import { MUSCLES, repartirPortions, repartirSerie } from '../src/data/sports/muscles.ts';
+import { BIBLIOTHEQUE, chercherExercices, GROUPES, groupeValide, ORDRE_GROUPES } from '../src/data/sports/exercices.ts';
 import { melange } from '../src/theme/couleurs.ts';
 import type { SerieForce } from '../src/data/types.ts';
 

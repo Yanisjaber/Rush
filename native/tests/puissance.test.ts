@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CADRE, CADRE_M, CADRE_S, geometriePuissance, lignesValides } from '../src/data/puissance.ts';
-import { donneesDemo } from '../src/data/demo.ts';
+import { CADRE, CADRE_M, CADRE_S, geometriePuissance, lignesValides } from '../src/data/sports/puissance.ts';
+import { donneesDemo } from '../src/data/demo/demo.ts';
 
 const p = (d: number, w90: number, wTout: number) => ({ duration_s: d, watts_90d: w90, watts_alltime: wTout });
 

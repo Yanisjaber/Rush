@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { recordsParSeance, unRmEstime } from '../src/data/force.ts';
+import { recordsParSeance, unRmEstime } from '../src/data/sports/force.ts';
 import type { SerieForce } from '../src/data/types.ts';
 
 test('unRmEstime : formule d\'Epley, arrondie à une décimale', () => {

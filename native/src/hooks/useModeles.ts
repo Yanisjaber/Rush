@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { chargerModeles } from '@/data/api';
-import { modelesDemo } from '@/data/demo-modeles';
-import type { Modele } from '@/data/modeles';
+import { chargerModeles } from '@/data/acces/api';
+import { modelesDemo } from '@/data/demo/demo-modeles';
+import type { Modele } from '@/data/calendrier/modeles';
 import { useAuth } from '@/stores/auth';
 
 // Les modèles de séance de l'utilisateur : ceux de l'exemple en démo, ceux de la table activity_template sur un compte.

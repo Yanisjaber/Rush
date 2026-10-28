@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
-import type { ObjectifAnnuel } from '@/data/bilan';
-import { objectifsAnnuelsDemo } from '@/data/demo';
+import type { ObjectifAnnuel } from '@/data/bilan/bilan';
+import { objectifsAnnuelsDemo } from '@/data/demo/demo';
 
 // Les objectifs annuels de la démo (en mémoire seulement : ils survivent à la navigation, pas à un relancement), et un numéro de version qui change à chaque
 // création, modification ou suppression (démo ou compte), pour que le Bilan recharge ses objectifs.

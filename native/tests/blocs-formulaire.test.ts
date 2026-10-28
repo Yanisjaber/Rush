@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { deplacerBloc, formulaireBlocVide, formulaireDepuisBloc, nomDuBloc, peutAjouterBloc, validerBloc } from '../src/data/blocs-formulaire.ts';
-import { NOM_TYPE, ZONES } from '../src/data/structure.ts';
+import { deplacerBloc, formulaireBlocVide, formulaireDepuisBloc, nomDuBloc, peutAjouterBloc, validerBloc } from '../src/data/calendrier/blocs-formulaire.ts';
+import { NOM_TYPE, ZONES } from '../src/data/calendrier/structure.ts';
 
 test('formulaireBlocVide : des valeurs de départ sensées, valides telles quelles', () => {
   for (const metric of ['power', 'hr', 'pace'] as const) {

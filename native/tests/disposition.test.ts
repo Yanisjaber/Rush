@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { ajouterA, retirerDe, taillerDans } from '../src/data/disposition-edition.ts';
-import { compositionAuto, disponibles, disponiblesOnglet, normaliser, composerOnglet, WIDGETS } from '../src/data/registre.ts';
+import { ajouterA, retirerDe, taillerDans } from '../src/data/accueil/disposition-edition.ts';
+import { compositionAuto, disponibles, disponiblesOnglet, normaliser, composerOnglet, WIDGETS } from '../src/data/accueil/registre.ts';
 
 const base = [{ id: 'objectif', taille: 'm' }, { id: 'semaine', taille: 'l' }, { id: 'avenir', taille: 's' }] as ReturnType<typeof compositionAuto>;
 

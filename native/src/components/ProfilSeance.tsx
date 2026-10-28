@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { COULEURS_ZONE, profilStructure, type Bloc } from '@/data/structure';
+import { COULEURS_ZONE, profilStructure, type Bloc } from '@/data/calendrier/structure';
 import { rayon } from '@/theme/couleurs';
 
 // Le profil d'une séance à blocs : une barre par segment (travail, récupération…), plus large quand le segment est long, plus haute et plus chaude quand la zone est forte.

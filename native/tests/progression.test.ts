@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { courbeProgression, progressionSport, progressionTousSports } from '../src/data/progression.ts';
+import { courbeProgression, progressionSport, progressionTousSports } from '../src/data/bilan/progression.ts';
 import type { Seance, SerieForce } from '../src/data/types.ts';
 
 const AUJOURDHUI = new Date(2026, 9, 28); // 28 octobre 2026

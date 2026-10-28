@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { CourbeLissee } from '@/components/CourbeLissee';
-import { formatKm, formatNombre } from '@/data/format';
+import { formatKm, formatNombre } from '@/data/outils/format';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 

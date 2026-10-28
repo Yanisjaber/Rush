@@ -3,7 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Bouton } from '@/components/Bouton';
 import { EcranSection } from '@/components/EcranSection';
 import { SelecteurSports } from '@/components/SelecteurSports';
-import { basculerSport } from '@/data/sports-choisis';
+import { basculerSport } from '@/data/sports/sports-choisis';
 import { useSportsChoisis } from '@/hooks/useSportsChoisis';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { modifierSortieDemo, supprimerSortieDemo, ajouterSortieDemo, seanceDeLaDemo, ajouterNoteDemo, ajouterPrevueDemo, modifierNoteDemo, modifierPrevueDemo, notesDeLaDemo, poserReposDemo, prevueCompleteDemo, prevuesDeLaDemo, reposDeLaDemo, retirerReposDemo, supprimerNoteDemo, supprimerPrevueDemo } from '../src/stores/ajouts.ts';
-import { validerSeance, formulaireSeanceVide } from '../src/data/ajouts.ts';
+import { validerSeance, formulaireSeanceVide } from '../src/data/calendrier/ajouts.ts';
 import type { Note, Prevue, Seance } from '../src/data/types.ts';
 
 const base: Note[] = [{ id: 'exemple', type: 'texte', text: 'Un mot', color: '#60a5fa', from_date: '2026-10-20', to_date: '2026-10-20' }];

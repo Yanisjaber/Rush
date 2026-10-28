@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { champsValides, lireActivite, versChamps } from '../src/data/import-activite.ts';
+import { champsValides, lireActivite, versChamps } from '../src/data/calendrier/import-activite.ts';
 
 const MAINTENANT = Date.UTC(2026, 9, 23, 12, 0, 0);
 const octets = (t: string) => new TextEncoder().encode(t);
@@ -195,9 +195,9 @@ test('un FIT sans point ne donne aucun flux ; le TCX donne les siens', () => {
 
 // --- ce qui s'écrit avec l'activité ---------------------------------------------------------------------------------------
 import { gunzipSync } from 'fflate';
-import { compresserFlux, donneesAEcrire, enBase64, FORMAT_FLUX, gpxDepuisFlux, verifierDonneesImport } from '../src/data/import-activite.ts';
-import { formulaireSortieVide, validerSortie } from '../src/data/ajouts.ts';
-import { resumerGpx } from '../src/data/gpx.ts';
+import { compresserFlux, donneesAEcrire, enBase64, FORMAT_FLUX, gpxDepuisFlux, verifierDonneesImport } from '../src/data/calendrier/import-activite.ts';
+import { formulaireSortieVide, validerSortie } from '../src/data/calendrier/ajouts.ts';
+import { resumerGpx } from '../src/data/outils/gpx.ts';
 
 test('enBase64 : mêmes résultats que Buffer, sur toutes les longueurs', () => {
   for (const n of [0, 1, 2, 3, 4, 5, 100, 1001]) {

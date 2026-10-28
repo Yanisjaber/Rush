@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { allureMoyenne, aUnFormat, categorieFederation, champNiveau, federationsDuSport, lireTempsCible, texteTempsCible } from '../src/data/competition.ts';
+import { allureMoyenne, aUnFormat, categorieFederation, champNiveau, federationsDuSport, lireTempsCible, texteTempsCible } from '../src/data/calendrier/competition.ts';
 
 test('fédérations : selon le sport, et rien pour les sports sans fédération', () => {
   assert.deepEqual(federationsDuSport('Ride'), ['FFC', 'UFOLEP', 'FSGT']);

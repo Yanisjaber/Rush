@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Line, Path, Rect } from 'react-native-svg';
-import { construireGraphe, indiceTouche, jj, lectureGraphe, LARGEUR_GRAPHE, type ParamsGraphe } from '@/data/graphe-series';
+import { construireGraphe, indiceTouche, jj, lectureGraphe, LARGEUR_GRAPHE, type ParamsGraphe } from '@/data/outils/graphe-series';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 

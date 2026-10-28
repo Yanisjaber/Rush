@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { donneesDemo, seriesForceDemo } from '../src/data/demo.ts';
-import { dateIsoLocale } from '../src/data/format.ts';
-import { recordsParSeance } from '../src/data/force.ts';
+import { donneesDemo, seriesForceDemo } from '../src/data/demo/demo.ts';
+import { dateIsoLocale } from '../src/data/outils/format.ts';
+import { recordsParSeance } from '../src/data/sports/force.ts';
 
 const date = new Date(2026, 9, 19); // lundi 19 octobre 2026
 

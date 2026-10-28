@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Text as TexteSvg } from 'react-native-svg';
-import { grapheCumul, HAUTEUR_CUMUL, jourDeX, libelleJour, LARGEUR_CUMUL, MARGE_BAS_CUMUL, MARGE_DROITE_CUMUL, type SerieCumul } from '@/data/cumul-graphe';
-import { formatNum } from '@/data/format';
+import { grapheCumul, HAUTEUR_CUMUL, jourDeX, libelleJour, LARGEUR_CUMUL, MARGE_BAS_CUMUL, MARGE_DROITE_CUMUL, type SerieCumul } from '@/data/outils/cumul-graphe';
+import { formatNum } from '@/data/outils/format';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 

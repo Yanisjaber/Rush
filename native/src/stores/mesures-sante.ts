@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
-import { chargerMesuresSante } from '@/data/api';
-import type { LigneMesure } from '@/data/sante-catalogue';
+import { chargerMesuresSante } from '@/data/acces/api';
+import type { LigneMesure } from '@/data/sante/sante-catalogue';
 
 // Les mesures de santé du compte connecté, partagées par TOUS les écrans de Santé : une saisie dans le check-in, le corps ou la nutrition
 // met à jour l'écran principal tout de suite, et un même chargement sert tout le monde (avant, chaque écran avait son état et son téléchargement).

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { chargerMetriques } from '@/data/api';
-import { donneesDemo } from '@/data/demo';
+import { chargerMetriques } from '@/data/acces/api';
+import { donneesDemo } from '@/data/demo/demo';
 import type { Metrique } from '@/data/types';
 import { useAuth } from '@/stores/auth';
 

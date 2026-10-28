@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {
   analyserTest, ciblesSegments, ecartsParSegment, ecrireTemps, formatEcart, formatEcartLong, lireTemps, NB_SEGMENTS, resumeTests, SEGMENTS, segmentsDepuisTours,
   STATIONS, validerObjectif, validerTest,
-} from '../src/data/hyrox.ts';
-import { objectifHyroxDemo, testsHyroxDemo } from '../src/data/demo.ts';
+} from '../src/data/sports/hyrox.ts';
+import { objectifHyroxDemo, testsHyroxDemo } from '../src/data/demo/demo.ts';
 import type { TestHyrox } from '../src/data/types.ts';
 
 const date = new Date(2026, 9, 19);

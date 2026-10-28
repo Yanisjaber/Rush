@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { denivelePositif, distanceKm, lireGpx, nomDeFichier, resumerGpx, TAILLE_MAX_GPX, verifierParcours } from '../src/data/gpx.ts';
+import { denivelePositif, distanceKm, lireGpx, nomDeFichier, resumerGpx, TAILLE_MAX_GPX, verifierParcours } from '../src/data/outils/gpx.ts';
 
 const pt = (lat: number, lon: number, ele?: number) => `<trkpt lat="${lat}" lon="${lon}">${ele == null ? '' : `<ele>${ele}</ele>`}</trkpt>`;
 const gpx = (points: string, nom = 'Boucle du lac') => `<?xml version="1.0"?><gpx version="1.1"><trk><name>${nom}</name><trkseg>${points}</trkseg></trk></gpx>`;

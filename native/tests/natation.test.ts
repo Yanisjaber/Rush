@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { allureNatation, allureParSemaineNatation, alluresParDistance, bilanMoisNatation, meilleuresNatation, prepaNatation, volumeNatation } from '../src/data/natation.ts';
-import { formatAllure100m } from '../src/data/format.ts';
+import { allureNatation, allureParSemaineNatation, alluresParDistance, bilanMoisNatation, meilleuresNatation, prepaNatation, volumeNatation } from '../src/data/sports/natation.ts';
+import { formatAllure100m } from '../src/data/outils/format.ts';
 import type { Seance } from '../src/data/types.ts';
 
 const AUJOURDHUI = new Date(2026, 9, 21); // 21 octobre 2026

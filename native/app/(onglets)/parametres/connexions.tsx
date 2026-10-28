@@ -3,7 +3,7 @@ import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native
 import { Bloc } from '@/components/Bloc';
 import { EcranSection } from '@/components/EcranSection';
 import { Pastille } from '@/components/Pastille';
-import { chargerConnexions, type ConnexionStrava } from '@/data/api';
+import { chargerConnexions, type ConnexionStrava } from '@/data/acces/api';
 import { useAuth } from '@/stores/auth';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';

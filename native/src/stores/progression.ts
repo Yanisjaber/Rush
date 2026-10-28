@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { PeriodeProgression } from '@/data/progression';
+import type { PeriodeProgression } from '@/data/bilan/progression';
 
 // La période choisie pour comparer (4 semaines, 3 mois, 1 an) : la même pour toutes les tailles du widget Progression, le temps de la session.
 let periode: PeriodeProgression = 91;

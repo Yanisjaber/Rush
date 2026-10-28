@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { allureCourse4Semaines, bricks, bricksParSemaine, dernieresParDiscipline, disciplineDe, disciplinesDe, minutesParSemaine, repartitionDisciplines, reperesDisciplines } from '../src/data/triathlon.ts';
+import { allureCourse4Semaines, bricks, bricksParSemaine, dernieresParDiscipline, disciplineDe, disciplinesDe, minutesParSemaine, repartitionDisciplines, reperesDisciplines } from '../src/data/sports/triathlon.ts';
 import type { Seance } from '../src/data/types.ts';
 
 const AUJOURDHUI = new Date(2026, 9, 21); // 21 octobre 2026

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { deplacerVers, elementSousPoint, vitesseDefilement } from '../src/data/glisse.ts';
+import { deplacerVers, elementSousPoint, vitesseDefilement } from '../src/data/sports/glisse.ts';
 
 test('deplacerVers : déplace, ne change rien hors limites', () => {
   assert.deepEqual(deplacerVers(['a', 'b', 'c', 'd'], 0, 2), ['b', 'c', 'a', 'd']);

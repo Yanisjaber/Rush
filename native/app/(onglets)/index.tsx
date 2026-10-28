@@ -10,13 +10,13 @@ import { Bouton } from '@/components/Bouton';
 import { EtatVide } from '@/components/EtatVide';
 import { FeuilleWidget } from '@/components/FeuilleWidget';
 import { Boite, Emplacement, GrilleWidgets } from '@/components/GrilleWidgets';
-import { solitaires } from '@/data/grille';
+import { solitaires } from '@/data/accueil/grille';
 import { ListeTriable } from '@/components/ListeTriable';
 import { Onboarding } from '@/components/Onboarding';
-import { construireContexte } from '@/data/contexte';
-import { bandeauConnexionVisible, compteVide as estCompteVide } from '@/data/etat-accueil';
-import { disponibles, disponiblesOnglet, ONGLETS_PERSONNALISABLES, WIDGETS, type IdWidget, composerOnglet, compositionAuto, compositionSport, type WidgetPlace } from '@/data/registre';
-import { onboardingNecessaire } from '@/data/sports-choisis';
+import { construireContexte } from '@/data/accueil/contexte';
+import { bandeauConnexionVisible, compteVide as estCompteVide } from '@/data/accueil/etat-accueil';
+import { disponibles, disponiblesOnglet, ONGLETS_PERSONNALISABLES, WIDGETS, type IdWidget, composerOnglet, compositionAuto, compositionSport, type WidgetPlace } from '@/data/accueil/registre';
+import { onboardingNecessaire } from '@/data/sports/sports-choisis';
 import { useDonneesAccueil } from '@/hooks/useDonneesAccueil';
 import { useAuth } from '@/stores/auth';
 import { useBandeauConnexion } from '@/stores/bandeau-connexion';
@@ -26,7 +26,7 @@ import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
-import { COMPOSANTS, WidgetBientot } from '@/widgets/composants';
+import { COMPOSANTS, WidgetBientot } from '@/widgets/registre-composants';
 
 // Accueil : les widgets du sport choisi dans la barre du haut, avec les données du compte (ou la démo).
 export default function Accueil() {

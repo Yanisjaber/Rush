@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { donneesDemo, mesuresDemo, sommeilDemo } from '../src/data/demo.ts';
-import { indiceVeille, jusquAuDernierIndice, serieEtatDeForme } from '../src/data/forme-sante.ts';
-import { construirePiliers, construireSuivis, ecartTexte, historiquePilier, motifsDuJour, NOM_COURT, texteValeur } from '../src/data/piliers.ts';
-import { resoudreMesures } from '../src/data/sante-catalogue.ts';
+import { donneesDemo, mesuresDemo, sommeilDemo } from '../src/data/demo/demo.ts';
+import { indiceVeille, jusquAuDernierIndice, serieEtatDeForme } from '../src/data/sante/forme-sante.ts';
+import { construirePiliers, construireSuivis, ecartTexte, historiquePilier, motifsDuJour, NOM_COURT, texteValeur } from '../src/data/sante/piliers.ts';
+import { resoudreMesures } from '../src/data/sante/sante-catalogue.ts';
 
 const AUJOURDHUI = new Date(2026, 9, 20);
 const nuits = sommeilDemo(AUJOURDHUI, 90);

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { accordAvecRessenti, CONFIANCE_MINI, enAlerte, estPilier, piliersDispo, type CleComposante, indiceCharge, indiceContreReference, indiceDepuisEcart, indiceRessenti, indiceTemperature, lecture, niveauDe, phi, POIDS_FORME, precisionDe, serieEtatDeForme } from '../src/data/forme-sante.ts';
+import { accordAvecRessenti, CONFIANCE_MINI, enAlerte, estPilier, piliersDispo, type CleComposante, indiceCharge, indiceContreReference, indiceDepuisEcart, indiceRessenti, indiceTemperature, lecture, niveauDe, phi, POIDS_FORME, precisionDe, serieEtatDeForme } from '../src/data/sante/forme-sante.ts';
 import type { Metrique, Nuit } from '../src/data/types.ts';
 
 const proche = (a: number, b: number, eps = 0.002) => assert.ok(Math.abs(a - b) <= eps, `${a} ≠ ${b}`);

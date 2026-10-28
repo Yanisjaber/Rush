@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { formulaireNoteVide, validerNote } from '../src/data/ajouts.ts';
-import { libelleNote } from '../src/data/annotations.ts';
-import { detailsParDefaut, lignesDetail, nettoyerDetails, titreNote } from '../src/data/sante-notes.ts';
+import { formulaireNoteVide, validerNote } from '../src/data/calendrier/ajouts.ts';
+import { libelleNote } from '../src/data/calendrier/annotations.ts';
+import { detailsParDefaut, lignesDetail, nettoyerDetails, titreNote } from '../src/data/sante/sante-notes.ts';
 
 const date = '2026-10-23';
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { chargerSportsChoisis, enregistrerSportsChoisis } from '@/data/api';
-import { nettoyerSports, sportsCoches } from '@/data/sports-choisis';
+import { chargerSportsChoisis, enregistrerSportsChoisis } from '@/data/acces/api';
+import { nettoyerSports, sportsCoches } from '@/data/sports/sports-choisis';
 import { useAuth } from '@/stores/auth';
 import { definirSportsCoches, useMenu } from '@/stores/menu';
 import { definirSportsDemo, sportsModifies, useSportsEtat } from '@/stores/sports';

@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react';
-import { chargerLayout, enregistrerLayout } from '@/data/api';
-import { ajouterA, retirerDe, taillerDans } from '@/data/disposition-edition';
-import { deplacerVers } from '@/data/glisse';
-import { compositionAuto, composerOnglet, normaliser, ONGLETS_PERSONNALISABLES, type Disposition, type WidgetPlace } from '@/data/registre';
+import { chargerLayout, enregistrerLayout } from '@/data/acces/api';
+import { ajouterA, retirerDe, taillerDans } from '@/data/accueil/disposition-edition';
+import { deplacerVers } from '@/data/sports/glisse';
+import { compositionAuto, composerOnglet, normaliser, ONGLETS_PERSONNALISABLES, type Disposition, type WidgetPlace } from '@/data/accueil/registre';
 import type { Taille } from '@/data/types';
 
 // Disposition de l'accueil (quels widgets, dans quel ordre, quelle taille). Port de stores/disposition.svelte.js.

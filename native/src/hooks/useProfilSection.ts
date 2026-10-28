@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { chargerProfilComplet, enregistrerProfil } from '@/data/api';
-import { donneesDemo } from '@/data/demo';
-import { sectionParId, validerSection, valeursDepuis, versPayload, type LigneProfil, type Section } from '@/data/profil';
+import { chargerProfilComplet, enregistrerProfil } from '@/data/acces/api';
+import { donneesDemo } from '@/data/demo/demo';
+import { sectionParId, validerSection, valeursDepuis, versPayload, type LigneProfil, type Section } from '@/data/reglages/profil';
 import { useAuth } from '@/stores/auth';
 
 type Valeurs = Record<string, string | boolean>;

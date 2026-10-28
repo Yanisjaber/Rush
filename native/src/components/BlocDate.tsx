@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { nomJour } from '@/data/calendrier';
+import { nomJour } from '@/data/calendrier/calendrier';
 import { rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { COULEURS_CYCLE, cycleVisible, joursDuCycle, SPORTS_CYCLE, validerCycle, type FormulaireCycle, avancementCycle, toucherJourPeriode } from '../src/data/cycles.ts';
-import { cyclesDuJour, grilleMois } from '../src/data/calendrier.ts';
+import { COULEURS_CYCLE, cycleVisible, joursDuCycle, SPORTS_CYCLE, validerCycle, type FormulaireCycle, avancementCycle, toucherJourPeriode } from '../src/data/calendrier/cycles.ts';
+import { cyclesDuJour, grilleMois } from '../src/data/calendrier/calendrier.ts';
 import type { Cycle } from '../src/data/types.ts';
 
 const cycle = (id: string, de: string, a: string, couleur = '#e0a458'): Cycle => ({ id, name: id, from_date: de, to_date: a, color: couleur });

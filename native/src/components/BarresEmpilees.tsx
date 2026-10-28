@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { lisse, type Point } from '@/data/courbes';
+import { lisse, type Point } from '@/data/outils/courbes';
 import { usePalette } from '@/theme/usePalette';
 
 // Barres empilées par période (par exemple la charge par sport et par semaine).

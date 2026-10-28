@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { chargerSommeil } from '@/data/api';
-import { sommeilDemo } from '@/data/demo';
+import { chargerSommeil } from '@/data/acces/api';
+import { sommeilDemo } from '@/data/demo/demo';
 import type { Nuit } from '@/data/types';
 import { useAuth } from '@/stores/auth';
 

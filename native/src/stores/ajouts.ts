@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { prevueDepuisLigne, type LigneNote, type LignePrevue, type LigneSortie } from '../data/ajouts.ts';
+import { prevueDepuisLigne, type LigneNote, type LignePrevue, type LigneSortie } from '../data/calendrier/ajouts.ts';
 import type { Note, Prevue, PrevueComplete, Seance } from '../data/types.ts';
 
 // Ce qu'on ajoute au calendrier de la démo (séances prévues, compétitions, notes) : en mémoire seulement, ça survit à la navigation mais pas à un relancement.

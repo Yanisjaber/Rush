@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { AnneauJauge } from '@/components/AnneauJauge';
-import { niveauDe, type Niveau } from '@/data/forme-sante';
+import { niveauDe, type Niveau } from '@/data/sante/forme-sante';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 

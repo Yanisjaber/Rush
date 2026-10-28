@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/Bloc';
 import { EcranSection } from '@/components/EcranSection';
 import { Pastille } from '@/components/Pastille';
-import { calculerZones, MODELES_ZONES, referenceCardio, texteAllure, type ModeleZones } from '@/data/profil';
+import { calculerZones, MODELES_ZONES, referenceCardio, texteAllure, type ModeleZones } from '@/data/reglages/profil';
 import { useProfilSection } from '@/hooks/useProfilSection';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';

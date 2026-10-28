@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { deniveleParSemaine, equivalenceWattsFc, evolutionFtp, ftpReference, kmVeloParSemaine, repartitionPuissance, wattsACardioEgal } from '../src/data/velo.ts';
+import { deniveleParSemaine, equivalenceWattsFc, evolutionFtp, ftpReference, kmVeloParSemaine, repartitionPuissance, wattsACardioEgal } from '../src/data/sports/velo.ts';
 import type { Seance } from '../src/data/types.ts';
 
 const AUJOURDHUI = new Date(2026, 9, 21); // 21 octobre 2026

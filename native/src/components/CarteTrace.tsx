@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, useColorScheme, View } from 'react-native';
 import Svg, { Circle, Polyline } from 'react-native-svg';
-import type { PointCarte, RegionCarte } from '@/data/apercu-import';
+import type { PointCarte, RegionCarte } from '@/data/calendrier/apercu-import';
 import { rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';

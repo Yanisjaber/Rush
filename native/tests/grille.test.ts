@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { placerGrille, solitaires } from '../src/data/grille.ts';
+import { placerGrille, solitaires } from '../src/data/accueil/grille.ts';
 
 test('solitaires : un S entouré de widgets pleine largeur est seul', () => {
   assert.deepEqual(solitaires(['m', 's', 'm']), [false, true, false]);

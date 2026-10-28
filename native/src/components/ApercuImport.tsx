@@ -6,7 +6,7 @@ import { Dossard } from '@/components/Dossard';
 import { IconeSport } from '@/components/IconeSport';
 import { ProfilAltitude } from '@/components/ProfilAltitude';
 import { StatCle } from '@/components/StatCle';
-import type { ApercuImport as Apercu } from '@/data/apercu-import';
+import type { ApercuImport as Apercu } from '@/data/calendrier/apercu-import';
 import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';

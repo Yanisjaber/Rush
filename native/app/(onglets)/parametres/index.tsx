@@ -7,7 +7,7 @@ import { CadreWidget } from '@/components/CadreWidget';
 import { Boite, Emplacement, GrilleWidgets } from '@/components/GrilleWidgets';
 import { Pastille } from '@/components/Pastille';
 import { Tuile } from '@/components/Tuile';
-import type { Connexion, Tuile as ResumeTuile } from '@/data/parametres';
+import type { Connexion, Tuile as ResumeTuile } from '@/data/reglages/parametres';
 import { useResumeParametres } from '@/hooks/useResumeParametres';
 import { deconnexion, quitterDemo, useAuth } from '@/stores/auth';
 import { definirTheme } from '@/stores/theme';

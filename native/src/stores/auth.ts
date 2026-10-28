@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js';
 import { useSyncExternalStore } from 'react';
-import { sb } from '@/data/supabase';
+import { sb } from '@/data/acces/supabase';
 
 // État d'authentification. Trois situations :
 //  - pas encore lu (`pret` faux) : on affiche un écran d'attente ;

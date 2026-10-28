@@ -1,7 +1,7 @@
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Bouton } from '@/components/Bouton';
-import { formatNombre } from '@/data/format';
-import { nomDeFichier, resumerGpx, TAILLE_MAX_GPX, type ParcoursGpx, type ResumeGpx } from '@/data/gpx';
+import { formatNombre } from '@/data/outils/format';
+import { nomDeFichier, resumerGpx, TAILLE_MAX_GPX, type ParcoursGpx, type ResumeGpx } from '@/data/outils/gpx';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';

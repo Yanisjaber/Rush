@@ -1,7 +1,7 @@
 import { useRef, useState, type ComponentRef } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { CATALOGUE, GROUPES_AUTRES, nomDuType } from '@/data/catalogue-sports';
-import { SPORTS_CYCLE } from '@/data/cycles';
+import { CATALOGUE, GROUPES_AUTRES, nomDuType } from '@/data/sports/catalogue-sports';
+import { SPORTS_CYCLE } from '@/data/calendrier/cycles';
 import { rayon } from '@/theme/couleurs';
 import { couleurSport, couleurSportType, SPORTS, type CleSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';

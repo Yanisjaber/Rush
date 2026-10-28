@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { donneesDemoAccueil } from '@/data/accueil';
-import { chargerPrevue } from '@/data/api';
+import { donneesDemoAccueil } from '@/data/accueil/accueil';
+import { chargerPrevue } from '@/data/acces/api';
 import { prevueCompleteDemo, useVersionAjouts } from '@/stores/ajouts';
 import { useAuth } from '@/stores/auth';
 import type { PrevueComplete } from '@/data/types';

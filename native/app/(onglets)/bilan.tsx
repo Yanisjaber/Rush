@@ -23,9 +23,9 @@ import type { IconeOnglet } from '@/components/OngletsIcones.types';
 import {
   activitesAnnee, anneesDisponibles, avancement, chargeParSemaine, cumulParAnnee, kmParMois, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
   regulariteAnnee, repartitionSport, sommer, volumeMensuel, familleBilanDuFiltre, decimalesObjectif, phraseVerdict, type MetriqueCumul,
-} from '@/data/bilan';
-import { formatDateLongue, formatNum, texteHM } from '@/data/format';
-import { courbeProgression, PERIODES_PROGRESSION, progressionTousSports, type PeriodeProgression } from '@/data/progression';
+} from '@/data/bilan/bilan';
+import { formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
+import { courbeProgression, PERIODES_PROGRESSION, progressionTousSports, type PeriodeProgression } from '@/data/bilan/progression';
 import { useDonneesBilan } from '@/hooks/useDonneesBilan';
 import { useHistoriqueProgression, useSeriesForceProgression } from '@/hooks/useHistoriqueProgression';
 import { useReferences } from '@/hooks/useReferences';

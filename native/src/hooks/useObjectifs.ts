@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { creerObjectifAnnuel, modifierObjectifAnnuel, supprimerObjectifAnnuel, type ValeursObjectif } from '@/data/api';
+import { creerObjectifAnnuel, modifierObjectifAnnuel, supprimerObjectifAnnuel, type ValeursObjectif } from '@/data/acces/api';
 import { creerObjectifDemo, modifierObjectifDemo, objectifsChanges, supprimerObjectifDemo } from '@/stores/objectifs';
 import { useAuth } from '@/stores/auth';
 

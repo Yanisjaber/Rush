@@ -1,4 +1,4 @@
-import { couleurDuType, sportDuType } from '../data/catalogue-sports';
+import { couleurDuType, sportDuType } from '../data/sports/catalogue-sports';
 import { clair, type Palette } from './couleurs';
 
 // Catalogue des sports : mêmes clés, noms et couleurs que app/src/lib/sports.js.

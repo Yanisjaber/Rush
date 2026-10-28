@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import { creerNoteJour, creerPrevue, creerSortie, modifierNoteJour, modifierSortie as modifierSortieApi, supprimerSortie as supprimerSortieApi, modifierPrevue as modifierPrevueApi, poserRepos, retirerRepos, supprimerNoteJour, supprimerPrevue as supprimerPrevueApi } from '@/data/api';
-import type { LigneNote, LignePrevue, LigneSortie } from '@/data/ajouts';
+import { creerNoteJour, creerPrevue, creerSortie, modifierNoteJour, modifierSortie as modifierSortieApi, supprimerSortie as supprimerSortieApi, modifierPrevue as modifierPrevueApi, poserRepos, retirerRepos, supprimerNoteJour, supprimerPrevue as supprimerPrevueApi } from '@/data/acces/api';
+import type { LigneNote, LignePrevue, LigneSortie } from '@/data/calendrier/ajouts';
 import { ajoutsChanges, ajouterNoteDemo, ajouterPrevueDemo, ajouterSortieDemo, modifierNoteDemo, modifierSortieDemo, supprimerSortieDemo, modifierPrevueDemo, poserReposDemo, retirerReposDemo, supprimerNoteDemo, supprimerPrevueDemo } from '@/stores/ajouts';
 import { useAuth } from '@/stores/auth';
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { calculerZones, sectionParId, validerSection, valeursDepuis, versPayload, estimerFtp, referenceCardio } from '../src/data/profil.ts';
+import { calculerZones, sectionParId, validerSection, valeursDepuis, versPayload, estimerFtp, referenceCardio } from '../src/data/reglages/profil.ts';
 
 const physio = sectionParId('physiologie')!;
 const identite = sectionParId('identite')!;

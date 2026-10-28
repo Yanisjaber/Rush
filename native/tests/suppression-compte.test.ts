@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { confirmationValide, supprimerCompteAvec, type AppelFonction } from '../src/data/suppression-compte.ts';
+import { confirmationValide, supprimerCompteAvec, type AppelFonction } from '../src/data/acces/suppression-compte.ts';
 
 const ok = (data: Record<string, unknown> = {}) => ({ ok: true, statut: 200, data });
 const ko = (statut = 500) => ({ ok: false, statut, data: null });

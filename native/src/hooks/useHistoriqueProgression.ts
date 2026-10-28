@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { chargerHistoriqueProgression, chargerSeriesForce } from '@/data/api';
-import { seriesForceDemo } from '@/data/demo';
+import { chargerHistoriqueProgression, chargerSeriesForce } from '@/data/acces/api';
+import { seriesForceDemo } from '@/data/demo/demo';
 import { useAuth } from '@/stores/auth';
 import type { Seance, SerieForce } from '@/data/types';
 

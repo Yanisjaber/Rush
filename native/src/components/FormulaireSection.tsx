@@ -4,7 +4,7 @@ import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, View } from 'rea
 import { Bloc } from '@/components/Bloc';
 import { Bouton } from '@/components/Bouton';
 import { Pastille } from '@/components/Pastille';
-import type { Champ } from '@/data/profil';
+import type { Champ } from '@/data/reglages/profil';
 import { useProfilSection } from '@/hooks/useProfilSection';
 import { espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';

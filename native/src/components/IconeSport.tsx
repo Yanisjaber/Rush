@@ -1,7 +1,7 @@
 import Svg, { Circle, Path, SvgXml } from 'react-native-svg';
-import { typeADessiner } from '@/data/catalogue-sports';
-import { DESSINS } from '@/data/dessins-sports';
-import { familleSport } from '@/data/familles';
+import { typeADessiner } from '@/data/sports/catalogue-sports';
+import { DESSINS } from '@/data/sports/dessins-sports';
+import { familleSport } from '@/data/sports/familles';
 import { couleurSport } from '@/theme/sports';
 import { usePalette } from '@/theme/usePalette';
 

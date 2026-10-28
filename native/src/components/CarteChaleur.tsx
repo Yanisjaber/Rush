@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import type { CaseRegularite } from '@/data/synthese';
+import type { CaseRegularite } from '@/data/bilan/synthese';
 import { couleurSport } from '@/theme/sports';
 import { usePalette } from '@/theme/usePalette';
 

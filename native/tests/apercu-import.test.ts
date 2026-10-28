@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { apercuImport, echantillonner, profilAltitude, regionDeTrace } from '../src/data/apercu-import.ts';
-import type { ActiviteImportee } from '../src/data/import-activite.ts';
+import { apercuImport, echantillonner, profilAltitude, regionDeTrace } from '../src/data/calendrier/apercu-import.ts';
+import type { ActiviteImportee } from '../src/data/calendrier/import-activite.ts';
 
 const base = (): ActiviteImportee => ({ type: 'Ride', debut: null, dureeS: 3600, distanceKm: 30, denivele: 250, fc: 140, nom: '', flux: [], tours: [], extras: null });
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { decalerMois, grilleMois, JOURS_SEMAINE } from '@/data/calendrier';
-import { joursDuCycle, toucherJourPeriode, type ChoixPeriode } from '@/data/cycles';
+import { decalerMois, grilleMois, JOURS_SEMAINE } from '@/data/calendrier/calendrier';
+import { joursDuCycle, toucherJourPeriode, type ChoixPeriode } from '@/data/calendrier/cycles';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';

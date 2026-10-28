@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { donneesDemoAccueil } from '@/data/accueil';
-import { chargerAnnotations, chargerCycles, chargerPlanifiees, chargerSeancesPeriode, chargerSeriesPeriode } from '@/data/api';
-import { assemblerDonnees, bornesGrille, type DonneesCalendrier } from '@/data/calendrier';
-import { annotationsDemo, seriesForceDemo } from '@/data/demo';
+import { donneesDemoAccueil } from '@/data/accueil/accueil';
+import { chargerAnnotations, chargerCycles, chargerPlanifiees, chargerSeancesPeriode, chargerSeriesPeriode } from '@/data/acces/api';
+import { assemblerDonnees, bornesGrille, type DonneesCalendrier } from '@/data/calendrier/calendrier';
+import { annotationsDemo, seriesForceDemo } from '@/data/demo/demo';
 import { useAuth } from '@/stores/auth';
 import { notesDeLaDemo, prevuesDeLaDemo, reposDeLaDemo, sortiesAjoutees, useVersionAjouts } from '@/stores/ajouts';
 import { cyclesDemo, useVersionCycles } from '@/stores/cycles';
