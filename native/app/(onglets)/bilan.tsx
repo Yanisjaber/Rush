@@ -7,6 +7,7 @@ import { BarreSports } from '@/components/graphes/BarreSports';
 import { BarresHebdo } from '@/components/graphes/BarresHebdo';
 import { BarresMois } from '@/components/graphes/BarresMois';
 import { CourbeSemaine } from '@/components/graphes/CourbeSemaine';
+import { OngletRecords } from '@/components/bilan/OngletRecords';
 import { RegulariteMois } from '@/components/graphes/RegulariteMois';
 import { Dossard } from '@/components/ui/Dossard';
 import { Bloc } from '@/components/feuilles/Bloc';
@@ -21,13 +22,14 @@ import { TraitTirets } from '@/components/graphes/TraitTirets';
 import { ProgresSport } from '@/components/graphes/ProgresSport';
 import type { IconeOnglet } from '@/components/menus/OngletsIcones.types';
 import {
-  activitesAnnee, anneesDisponibles, avancement, cumulParAnnee, valeursParMois, moyennesParJourSemaine, semainesDeLAnnee, mesureParSemaine, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
+  activitesAnnee, anneesDisponibles, avancement, cumulParAnnee, valeursParMois, moyennesParJourSemaine, semainesDeLAnnee, mesureParSemaine, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser,
   regulariteAnnee, repartitionSport, sommer, familleBilanDuFiltre, decimalesObjectif, phraseVerdict, type MetriqueCumul,
 } from '@/data/bilan/bilan';
 import { formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
 import { nomDuType } from '@/data/sports/catalogue-sports';
 import { courbeProgression, PERIODES_PROGRESSION, progressionTousSports, type PeriodeProgression } from '@/data/bilan/progression';
 import { useDonneesBilan } from '@/hooks/useDonneesBilan';
+import { useRecordsVelo } from '@/hooks/useRecordsVelo';
 import { useHistoriqueProgression, useSeriesForceProgression } from '@/hooks/useHistoriqueProgression';
 import { useReferences } from '@/hooks/useReferences';
 import { useMenu } from '@/stores/menu';
@@ -131,7 +133,8 @@ export default function Bilan() {
   }, [onglet, objectifs, annee, familleFiltre, toutes, maintenant]);
 
   // Chaque onglet ne calcule que ses propres chiffres, et seulement quand ses données changent
-  const records = useMemo(() => (onglet === 'records' ? recordsVolume(activitesAnnee(filtrees, annee, maintenant)) : []), [onglet, filtrees, annee, maintenant]);
+  // Records : les sorties à vélo avec leurs colonnes en plus (puissance par durée, vitesse, énergie), chargées seulement sur l'onglet d'un sport vélo
+  const { sorties: sortiesVelo, poids: poidsVelo, chargement: chargementVelo, erreur: erreurVelo } = useRecordsVelo(onglet === 'records' && filtre === 'velo');
   const cumul = useMemo(() => (onglet === 'resume' ? cumulParAnnee(filtrees, [annee, annee - 1, annee - 2], metrique, maintenant) : { etiquettes: [], series: [] }), [onglet, filtrees, annee, metrique, maintenant]);
   const mesure = MESURES_CUMUL.find((m) => m.cle === metrique) ?? MESURES_CUMUL[0];
   // Rythme : par mois (en km, ou en heures quand le sport n'a pas de distance, comme la musculation), charge par semaine, régularité
@@ -139,6 +142,7 @@ export default function Bilan() {
   const mesureMois: MetriqueCumul = mesures.mois ?? (enKm ? 'distance_km' : 'heures');
   const mesureSemaine: MetriqueCumul = mesures.semaine ?? (enKm ? 'distance_km' : 'heures');
   const mesureJour: MetriqueCumul = mesures.jour ?? (enKm ? 'distance_km' : 'heures');
+  const mesureRecords: MetriqueCumul = mesures.records ?? (enKm ? 'distance_km' : 'heures');
   const mesureM = MESURES_CUMUL.find((m) => m.cle === mesureMois) ?? MESURES_CUMUL[0];
   const decimalesMois = mesureMois === 'heures' ? 1 : 0;
   // L'unité écrite sur les graphiques : « km », « m », « TSS », « h » ; pour les séances, le titre le dit déjà
@@ -508,49 +512,19 @@ export default function Bilan() {
             ) : null}
 
             {pret && onglet === 'records' ? (
-              <>
-                {records.length ? (
-                  <Bloc titre={`Records de ${annee}`}>
-                    {records.map((r, i) => {
-                      const nom = r.nom || 'Sans titre';
-                      const contenu = (
-                        <>
-                          <View style={styles.enteteRecord}>
-                            <Text style={[typo.micro, { color: p.texteDoux }]}>{r.libelle}</Text>
-                            {recordRecent(r.iso, maintenant) ? (
-                              <View style={[styles.nouveau, { backgroundColor: p.texte }]}>
-                                <Text style={[typo.micro, { color: p.fond }]}>Nouveau</Text>
-                              </View>
-                            ) : null}
-                          </View>
-                          <Text style={[styles.valeurRecord, { color: p.texte }]}>
-                            {r.cle === 'duree' ? texteHM(Math.round(r.valeur)) : formatNum(r.valeur, r.cle === 'distance' ? 1 : 0)}
-                            {r.cle !== 'duree' ? <Text style={[typo.corpsFort, { color: p.texteDoux }]}> {r.unite}</Text> : null}
-                          </Text>
-                          <Text style={[typo.petit, { color: p.texteDoux }]}>{nom}</Text>
-                          <Text style={[typo.petit, { color: p.texteDoux }]}>{formatDateLongue(r.iso)}</Text>
-                        </>
-                      );
-                      const etiquette = `${r.libelle}, ${r.cle === 'duree' ? texteHM(Math.round(r.valeur)) : `${formatNum(r.valeur, r.cle === 'distance' ? 1 : 0)} ${r.unite}`}, ${nom}, ${formatDateLongue(r.iso)}`;
-                      const style = [styles.record, i > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }];
-                      // Le record « D+ en un jour » cumule plusieurs séances : il n'a pas de séance à ouvrir
-                      return r.id ? (
-                        <Pressable key={r.cle} accessibilityRole="button" accessibilityLabel={`${etiquette}. Ouvrir la séance`} onPress={() => router.push({ pathname: '/seance', params: { id: r.id } })} style={style}>
-                          {contenu}
-                        </Pressable>
-                      ) : (
-                        <View key={r.cle} accessible accessibilityLabel={etiquette} style={style}>
-                          {contenu}
-                        </View>
-                      );
-                    })}
-                  </Bloc>
-                ) : (
-                  <Bloc titre={`Records de ${annee}`}>
-                    <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de record en {annee}.</Text>
-                  </Bloc>
-                )}
-              </>
+              <OngletRecords
+                toutes={filtrees}
+                annee={annee}
+                maintenant={maintenant}
+                filtre={filtre}
+                mesure={mesureRecords}
+                onMesure={(m) => choisirMesure('records', m)}
+                sortiesVelo={sortiesVelo}
+                poids={poidsVelo}
+                chargementVelo={chargementVelo}
+                erreurVelo={erreurVelo}
+                onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
+              />
             ) : null}
 
             {pret && onglet === 'progres' ? (
@@ -594,10 +568,6 @@ const styles = StyleSheet.create({
   valeurColonne: { fontFamily: police.titre700, fontSize: 24, lineHeight: 28, fontVariant: ['tabular-nums'] },
   pistes: { marginTop: espace.e3 },
   caseObjectif: { paddingVertical: espace.e3, minHeight: 44 },
-  record: { paddingVertical: 12, gap: 2 },
-  enteteRecord: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  nouveau: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 1 },
-  valeurRecord: { fontFamily: police.titre700, fontSize: 32, lineHeight: 36, fontVariant: ['tabular-nums'] },
   enteteBloc: { flexDirection: 'row', alignItems: 'center', gap: espace.e3, marginBottom: espace.e3 },
   // La ligne de lecture au-dessus d'un graphique : sa valeur, ou ce que le doigt touche
   lecture: { minHeight: 18, marginBottom: 6, textAlign: 'center' },

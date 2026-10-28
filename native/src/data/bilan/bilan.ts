@@ -309,34 +309,6 @@ export function phraseVerdict(av: Avancement, fmt: (v: number) => string): { tex
 
 // --- Records --------------------------------------------------------------------------------------------------------------
 
-/** Records de volume : plus longue sortie, plus longue durée, plus grosse charge, plus de D+ en un jour. */
-export interface RecordVolume {
-  cle: string;
-  libelle: string;
-  valeur: number;
-  unite: string;
-  nom: string;
-  iso: string;
-  id: string | null;
-}
-
-export function recordsVolume(acts: ActiviteBilan[]): RecordVolume[] {
-  const meilleur = (cle: 'distance_km' | 'duree_min' | 'tss') => acts.reduce<ActiviteBilan | null>((b, a) => (a[cle] > (b ? b[cle] : 0) ? a : b), null);
-  const parJour: Record<string, number> = {};
-  for (const a of acts) parJour[a.iso] = (parJour[a.iso] || 0) + a.d_plus;
-  const [jourDplus, dplus] = Object.entries(parJour).reduce((b, e) => (e[1] > b[1] ? e : b), ['', 0]);
-  const longue = meilleur('distance_km');
-  const duree = meilleur('duree_min');
-  const charge = meilleur('tss');
-  const liste: (RecordVolume | false | null)[] = [
-    longue && { cle: 'distance', libelle: 'Plus longue sortie', valeur: longue.distance_km, unite: 'km', nom: longue.name, iso: longue.iso, id: longue.id },
-    duree && { cle: 'duree', libelle: 'Plus longue durée', valeur: duree.duree_min, unite: 'min', nom: duree.name, iso: duree.iso, id: duree.id },
-    charge && { cle: 'tss', libelle: 'Plus grosse charge', valeur: charge.tss, unite: 'TSS', nom: charge.name, iso: charge.iso, id: charge.id },
-    dplus > 0 && { cle: 'dplus', libelle: 'Plus de D+ en 1 jour', valeur: dplus, unite: 'm', nom: 'Cumul des activités du jour', iso: jourDplus, id: null },
-  ];
-  return liste.filter((r): r is RecordVolume => !!r);
-}
-
 /** Un record est « nouveau » s'il date de moins de 30 jours. */
 export const recordRecent = (iso: string, maintenant: Date = new Date()): boolean => !!iso && maintenant.getTime() - dateDe(iso).getTime() < 30 * 86400000 && maintenant >= dateDe(iso);
 

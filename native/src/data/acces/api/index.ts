@@ -18,6 +18,7 @@ export * from './notes';
 export * from './sorties';
 export * from './cycles';
 export * from './bilan';
+export * from './records';
 export * from './force';
 export * from './hyrox';
 export * from './sante';

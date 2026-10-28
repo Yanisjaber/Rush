@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   activitesAnnee, activitesAnneePrecedente, anneesDisponibles, avancement, cumulParAnnee, ecartPct, familleBilan, familleBilanDuFiltre, modele, normaliser,
-  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, valeursParMois, moyennesParJourSemaine, semainesDeLAnnee, mesureParSemaine, phraseVerdict, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
+  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, regulariteAnnee, recordRecent, repartitionSport, valeursParMois, moyennesParJourSemaine, semainesDeLAnnee, mesureParSemaine, phraseVerdict, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
 } from '../../src/data/bilan/bilan.ts';
 import { activitesBilanDemo, objectifsAnnuelsDemo } from '../../src/data/demo/demo.ts';
 
@@ -108,16 +108,6 @@ test('avancement : « plus bas = mieux » progresse quand la valeur descend vers
   assert.equal(b.pct, 100);
   assert.equal(b.enRythme, true);
   assert.equal(avancement(objectif('course', 'inconnu', 1), [], 2026, maintenant), null);
-});
-
-test('recordsVolume : plus longue sortie, plus longue durée, plus grosse charge, plus de D+ en un jour', () => {
-  const liste = [act('2026-02-01', 'course', 60, 10, 100, 40, 'a'), act('2026-03-01', 'cyclisme', 200, 80, 600, 120, 'b'), act('2026-03-01', 'course', 30, 5, 400, 20, 'c')];
-  const r = recordsVolume(liste);
-  assert.deepEqual(r.map((x) => x.cle), ['distance', 'duree', 'tss', 'dplus']);
-  assert.equal(r[0].id, 'b');
-  assert.equal(r[3].valeur, 1000); // 600 + 400 le même jour
-  assert.equal(r[3].id, null);
-  assert.deepEqual(recordsVolume([]), []);
 });
 
 test('recordRecent : moins de 30 jours et pas dans le futur', () => {

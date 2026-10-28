@@ -58,8 +58,8 @@ const nomSeance = (a: ActiviteBilan): string => a.name || 'Sans titre';
 
 // --- Records de volume ---------------------------------------------------------------------------------------------------
 
-/** Meilleur jour, meilleure semaine et meilleur mois pour la mesure choisie (le temps, la distance, le dénivelé, la charge ou le nombre de séances). */
-export function recordsPeriodes(acts: ActiviteBilan[], mesure: MetriqueCumul): GroupeRecords {
+/** Meilleur jour, meilleure semaine et meilleur mois pour la mesure choisie (le temps, la distance, le dénivelé, la charge ou le nombre de séances) ; `n` entrées par record (3 par défaut). */
+export function recordsPeriodes(acts: ActiviteBilan[], mesure: MetriqueCumul, n = PODIUM): GroupeRecords {
   const unite = MESURES_CUMUL.find((m) => m.cle === mesure)?.unite ?? '';
   const par = (cle: 'jour' | 'semaine' | 'mois'): EntreeRecord[] => {
     const somme = new Map<string, { valeur: number; seances: number }>();
@@ -70,7 +70,7 @@ export function recordsPeriodes(acts: ActiviteBilan[], mesure: MetriqueCumul): G
       x.seances++;
       somme.set(k, x);
     }
-    return meilleures([...somme].map(([iso, x]) => ({ valeur: x.valeur, nom: '', iso, id: null, detail: `${x.seances} ${x.seances > 1 ? 'séances' : 'séance'}` })));
+    return meilleures([...somme].map(([iso, x]) => ({ valeur: x.valeur, nom: '', iso, id: null, detail: `${x.seances} ${x.seances > 1 ? 'séances' : 'séance'}` })), n);
   };
   const records: RecordTop[] = [
     { cle: 'jour', libelle: 'Meilleur jour', unite, periode: 'jour', top: par('jour') },
@@ -141,6 +141,48 @@ export interface SortieVelo {
   p300: number | null;
   p1200: number | null;
   p3600: number | null;
+}
+
+/** Une ligne de la fonction SQL rpc_sorties_velo, telle que l'API la renvoie (les numeric arrivent parfois en texte). */
+export interface LigneVelo {
+  id: string;
+  name: string | null;
+  sport: string;
+  start_date_local: string;
+  distance_km: number | string | null;
+  moving_time: number | null;
+  total_elevation_gain: number | null;
+  kj: number | null;
+  max_speed_kmh: number | string | null;
+  p5: number | null;
+  p60: number | null;
+  p300: number | null;
+  p1200: number | null;
+  p3600: number | null;
+}
+
+const nombre = (v: number | string | null | undefined): number | null => {
+  const n = Number(v);
+  return v != null && Number.isFinite(n) ? n : null;
+};
+
+export function sortieVeloDeLigne(l: LigneVelo): SortieVelo {
+  return {
+    id: l.id,
+    name: l.name || '',
+    iso: String(l.start_date_local || '').slice(0, 10),
+    sport: l.sport,
+    distance_km: nombre(l.distance_km) ?? 0,
+    duree_min: (l.moving_time ?? 0) / 60,
+    d_plus: l.total_elevation_gain ?? 0,
+    kj: l.kj,
+    vitesse_max: nombre(l.max_speed_kmh),
+    p5: l.p5,
+    p60: l.p60,
+    p300: l.p300,
+    p1200: l.p1200,
+    p3600: l.p3600,
+  };
 }
 
 /** Les durées de la courbe de puissance, de la plus courte à la plus longue. */

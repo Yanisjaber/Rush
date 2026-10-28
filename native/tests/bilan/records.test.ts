@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { ActiviteBilan } from '../../src/data/bilan/bilan.ts';
-import { courbePuissance, recordsPeriodes, recordsRegularite, recordsSeance, recordsVelo, VITESSE_MAX_CREDIBLE, wattsParKg, type SortieVelo } from '../../src/data/bilan/records.ts';
+import { courbePuissance, recordsPeriodes, sortieVeloDeLigne, recordsRegularite, recordsSeance, recordsVelo, VITESSE_MAX_CREDIBLE, wattsParKg, type SortieVelo } from '../../src/data/bilan/records.ts';
 
 const act = (iso: string, o: Partial<ActiviteBilan> = {}): ActiviteBilan => ({ id: `a-${iso}-${o.name ?? ''}`, name: `Sortie ${iso}`, iso, sport: 'cyclisme', famille: 'velo', duree_min: 60, distance_km: 30, d_plus: 100, tss: 50, ...o });
 
@@ -82,4 +82,35 @@ test('wattsParKg : une décimale, rien sans poids valable', () => {
   assert.equal(wattsParKg(259, 59), 4.4);
   assert.equal(wattsParKg(259, null), null);
   assert.equal(wattsParKg(259, 5), null);
+});
+
+test('sortieVeloDeLigne : une ligne de la base devient une sortie, avec des nombres sûrs', () => {
+  const s = sortieVeloDeLigne({ id: 'x', name: null, sport: 'Ride', start_date_local: '2026-03-02T09:00:00+00:00', distance_km: '80.5', moving_time: 7200, total_elevation_gain: null, kj: null, max_speed_kmh: null, p5: 900, p60: null, p300: null, p1200: 259, p3600: null });
+  assert.deepEqual(s, { id: 'x', name: '', iso: '2026-03-02', sport: 'Ride', distance_km: 80.5, duree_min: 120, d_plus: 0, kj: null, vitesse_max: null, p5: 900, p60: null, p300: null, p1200: 259, p3600: null });
+});
+
+import { formatNum } from '../../src/data/outils/format.ts';
+import { jourMois, libelleEntree, texteRecordSimple, texteValeurRecord } from '../../src/data/bilan/records-texte.ts';
+
+test('texteValeurRecord : la durée en heures-minutes, la distance avec une décimale, le reste en entier', () => {
+  assert.deepEqual(texteValeurRecord(385, 'min'), { nombre: '6h25', unite: '' });
+  assert.deepEqual(texteValeurRecord(7.2, 'h'), { nombre: '7h12', unite: '' });
+  assert.deepEqual(texteValeurRecord(122.4, 'km'), { nombre: '122,4', unite: 'km' });
+  assert.deepEqual(texteValeurRecord(78.43, 'km/h'), { nombre: '78,4', unite: 'km/h' });
+  assert.deepEqual(texteValeurRecord(8372, 'm'), { nombre: formatNum(8372, 0), unite: 'm' }); // les milliers s'écrivent avec une espace insécable
+  assert.deepEqual(texteValeurRecord(1, 'jours'), { nombre: '1', unite: 'jour' });
+  assert.deepEqual(texteValeurRecord(11, 'jours'), { nombre: '11', unite: 'jours' });
+  assert.equal(texteRecordSimple(9, 'séances'), '9 séances');
+  assert.equal(texteRecordSimple(385, 'min'), '6h25');
+});
+
+test('libelleEntree : la séance et sa date, la période, la série', () => {
+  const base = { cle: 'distance', libelle: 'x', unite: 'km', top: [] };
+  assert.equal(jourMois('2026-03-04'), '4 mars');
+  assert.deepEqual(libelleEntree(base, { valeur: 1, nom: 'Ski #4', iso: '2026-03-04', id: 'a' }), { titre: 'Ski #4', sous: 'Mercredi 4 mars' });
+  assert.deepEqual(libelleEntree({ ...base, cle: 'semaine', periode: 'semaine' }, { valeur: 1, nom: '', iso: '2026-05-11', id: null, detail: '9 séances' }), { titre: 'Semaine du 11 mai', sous: '9 séances' });
+  assert.deepEqual(libelleEntree({ ...base, cle: 'mois', periode: 'mois' }, { valeur: 1, nom: '', iso: '2026-03-01', id: null, detail: '30 séances' }), { titre: 'Mars 2026', sous: '30 séances' });
+  assert.equal(libelleEntree({ ...base, cle: 'jour', periode: 'jour' }, { valeur: 1, nom: '', iso: '2026-03-04', id: null, detail: '3 séances' }).titre, 'Mercredi 4 mars');
+  assert.equal(libelleEntree({ ...base, cle: 'serie' }, { valeur: 4, nom: '', iso: '2026-04-12', id: null, fin: '2026-04-22' }).titre, 'Du 12 avril au 22 avril');
+  assert.equal(libelleEntree(base, { valeur: 1, nom: '', iso: '2026-03-04', id: 'a' }).titre, 'Sans titre');
 });

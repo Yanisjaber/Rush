@@ -27,6 +27,11 @@ humain (coach ↔ athlète, messagerie) a été supprimé le 2026-10-11 ; le rô
 | `connexions_app` | Connexions OAuth (Strava ; Garmin à venir). **Aucune colonne de jeton** : les jetons sont chiffrés dans Supabase Vault (colonne `secret_id`) et ne sont lus que par les Edge Functions (service role), via `rpc_connection_secrets`. Le navigateur ne voit que le statut (`external_id`, `athlete_name`, dates de synchro) |
 | `oauth_states` | État OAuth à usage unique (créé par `oauth-start`, consommé par les callbacks) ; aucun accès client |
 
+## Fonctions SQL appelées par l'app
+| Fonction | Rôle |
+|---|---|
+| `rpc_sorties_velo()` | Les sorties à vélo du compte connecté (Ride, VirtualRide, GravelRide, MountainBikeRide ; ni vélo électrique, ni étapes fusionnées) avec cinq valeurs lues dans `power_curve` (meilleure puissance moyenne sur 5 s, 1 min, 5 min, 20 min, 1 h), la vitesse max, l'énergie (kJ) et le dénivelé. Sert aux records du Bilan. `security invoker` : la RLS s'applique ; réservée à `authenticated`. À ne pas confondre avec `power_profile`, qui mélange tous les sports (la course à pied avec capteur y fait des records) |
+
 ## Règles
 - Toute nouvelle table : RLS activée, policies limitées à `auth.uid() = user_id`.
 - Les secrets (tokens OAuth) ne sont lus que par les Edge Functions via `service_role`.
