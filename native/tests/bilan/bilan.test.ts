@@ -197,6 +197,15 @@ test('kmParMois : 12 mois, seulement l\'année demandée', () => {
   assert.equal(m[11], 0);
 });
 
+test('chargeParSemaine : une autre mesure (séances, distance) et 52 semaines', () => {
+  const acts = [act('2026-06-29', 'course', 60, 10, 0, 50), act('2026-07-01', 'cyclisme', 90, 40, 0, 70, 'b'), act('2026-01-02', 'course', 30, 5, 0, 99, 'd')];
+  const seances = chargeParSemaine(acts, 2026, maintenant, 52, 'seances');
+  assert.equal(seances.length, 52);
+  assert.equal(seances[51], 2);
+  const km = chargeParSemaine(acts, 2026, maintenant, 4, 'distance_km');
+  assert.deepEqual(km, [0, 0, 0, 50]);
+});
+
 test('chargeParSemaine : la dernière valeur est la semaine en cours, les semaines vides valent 0', () => {
   // 1er juillet 2026 = mercredi : la semaine en cours va du lundi 29 juin au dimanche 5 juillet
   const acts = [act('2026-06-29', 'course', 60, 10, 0, 50), act('2026-07-01', 'cyclisme', 90, 40, 0, 70, 'b'), act('2026-06-22', 'cyclisme', 60, 20, 0, 30, 'c'), act('2026-01-02', 'course', 30, 5, 0, 99, 'd')];

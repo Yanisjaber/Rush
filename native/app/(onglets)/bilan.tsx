@@ -82,6 +82,7 @@ export default function Bilan() {
   const [onglet, setOnglet] = useState<OngletBilan>('resume');
   const [metrique, setMetrique] = useState<MetriqueCumul>('distance_km');
   const [mesureMoisChoisie, setMesureMoisChoisie] = useState<MetriqueCumul | null>(null); // la mesure du graphique par mois ; null : la distance (ou le temps si le sport n'a pas de distance)
+  const [mesureSemaine, setMesureSemaine] = useState<MetriqueCumul>('tss'); // la mesure du graphique par semaine (la charge par défaut)
   const [mesureRepartition, setMesureRepartition] = useState<MetriqueCumul>('heures'); // la mesure de la répartition par sport (le temps par défaut)
   const { brutes, objectifs, chargement, erreur, pret, actualisation, recharger } = useDonneesBilan();
   const annee = anneeChoisie;
@@ -131,16 +132,18 @@ export default function Bilan() {
   const mesureMois: MetriqueCumul = mesureMoisChoisie ?? (enKm ? 'distance_km' : 'heures');
   const mesureM = MESURES_CUMUL.find((m) => m.cle === mesureMois) ?? MESURES_CUMUL[0];
   const decimalesMois = mesureMois === 'heures' ? 1 : 0;
+  const mesureS = MESURES_CUMUL.find((m) => m.cle === mesureSemaine) ?? MESURES_CUMUL[0];
+  const decimalesSemaine = mesureSemaine === 'heures' || mesureSemaine === 'seances' ? 1 : 0;
   const moisEnCours = annee === maintenant.getFullYear() ? maintenant.getMonth() : null;
   const dernierMois = moisEnCours ?? 11;
   const rythme = useMemo(() => {
     if (onglet !== 'rythme') return null;
     const parMois = valeursParMois(filtrees, annee, mesureMois);
-    const semaines = chargeParSemaine(filtrees, annee, maintenant, 52);
+    const semaines = chargeParSemaine(filtrees, annee, maintenant, 52, mesureSemaine);
     // La semaine en cours n'est pas finie : elle ne compte pas dans la moyenne (sinon celle-ci est tirée vers le bas)
     const completes = enCours ? semaines.slice(0, -1) : semaines;
-    return { parMois, meilleurMois: Math.max(0, ...parMois), semaines, moyenneSemaine: Math.round(completes.reduce((a, b) => a + b, 0) / completes.length), regularite: regulariteAnnee(filtrees, annee, maintenant) };
-  }, [onglet, filtrees, annee, maintenant, mesureMois, enCours]);
+    return { parMois, meilleurMois: Math.max(0, ...parMois), semaines, moyenneSemaine: completes.reduce((a, b) => a + b, 0) / completes.length, regularite: regulariteAnnee(filtrees, annee, maintenant) };
+  }, [onglet, filtrees, annee, maintenant, mesureMois, mesureSemaine, enCours]);
   const repartition = useMemo(() => (onglet === 'resume' ? repartitionSport(activitesAnnee(filtrees, annee, maintenant), mesureRepartition, filtre !== 'tout') : []), [onglet, filtre, filtrees, annee, maintenant, mesureRepartition]);
   // `court` : pour le gros chiffre du haut, le mot « séances » est de trop (le libellé dessous le dit déjà)
   const texteRep = (v: number, court = false): string =>
@@ -385,11 +388,14 @@ export default function Bilan() {
                   />
                 </Bloc>
 
-                <Bloc titre="Charge par semaine">
-                  <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>
-                    {enCours ? 'TSS des 52 dernières semaines' : `TSS des 52 semaines de ${annee}`} · moyenne {formatNum(moyenneSemaine, 0)}{enCours ? ' (semaine en cours exclue)' : ''}.
-                  </Text>
-                  {semaines.every((v) => v === 0) ? (
+                <Bloc>
+                  <View style={styles.enteteBloc}>
+                    <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
+                      {mesureS.nom} par semaine
+                    </Text>
+                    <MenuMesure etiquette="Mesure par semaine" valeur={mesureSemaine} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => setMesureSemaine(c as MetriqueCumul)} />
+                  </View>
+                  {mesureSemaine === 'tss' && semaines.every((v) => v === 0) ? (
                     <Text style={[typo.corps, { color: p.texteDoux, marginBottom: 12 }]}>Pas de charge (TSS) enregistrée sur cette période : les séances sans puissance ni cardio n'en ont pas.</Text>
                   ) : null}
                   <BarresHebdo
@@ -400,7 +406,7 @@ export default function Bilan() {
                     ecart={2}
                     rayonBarre={2}
                     hauteur={110}
-                    etiquette={`Charge des 52 dernières semaines : ${semaines.map((v) => formatNum(v, 0)).join(', ')}. Moyenne ${formatNum(moyenneSemaine, 0)}.`}
+                    etiquette={`${mesureS.nom} des 52 ${enCours ? 'dernières semaines' : `semaines de ${annee}`} (${mesureS.unite}) : ${semaines.map((v) => formatNum(v, decimalesSemaine)).join(', ')}. Moyenne ${formatNum(moyenneSemaine, decimalesSemaine)}${enCours ? ', semaine en cours exclue' : ''}.`}
                   />
                 </Bloc>
 
