@@ -47,7 +47,7 @@ Toutes redéployées le 28 octobre (y compris après le calcul de charge).
 ## Non fait, à décider ou bloqué (28 octobre)
 
 - **Journal de migrations rejouable : fait** (28 octobre). Instantané `supabase/baseline/schema_public_2026-10-28.sql`, rejoué sans erreur sur une base vide ; voir `docs/db/LISEZMOI_MIGRATIONS.md`.
-- **`npm audit` de `native/`** : la seule correction proposée est `npm audit fix --force`, qui installerait Expo 51 (rétrogradation cassante). Alertes dans l'outillage (node-forge, uuid, zod via Expo), pas dans l'app livrée. À reprendre avec la prochaine mise à jour d'Expo.
+- **`npm audit` de `native/` (étudié le 28 octobre, rien appliqué)** : `npm audit fix --force` rétrograderait Expo en 51 (cassant). `npm audit fix` sans `--force` ajouterait ou changerait des dizaines de paquets d'un coup (nouvel `@expo/cli`, `ws`, binaires `@noxcturnal/*`…) et le correctif de `node-forge` (1.4.1 / 1.4.2) date du 27 octobre, donc moins de deux semaines. Alertes dans l'outillage Expo (node-forge, uuid, zod, xcode), pas dans l'app livrée. **À refaire après le 10 novembre** : `npm audit fix --dry-run --omit=dev`, lire la liste des paquets ajoutés, puis décider avec Yanis.
 - **Modules en double `app/` ↔ `native/`** : le site `app/` est gelé (refonte en cours), donc pas de tests de parité pour l'instant.
 - **Identifiant `TODO.rush`** (`native/app.json`) : Yanis ne veut pas y toucher, on le laisse tel quel.
 - **Mobile** : export de données et suppression de compte (en cours dans `native/`), bouton « Connecter Strava » qui renvoie vers le site.
