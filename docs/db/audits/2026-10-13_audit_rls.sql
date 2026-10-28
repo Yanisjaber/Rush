@@ -1,5 +1,5 @@
 -- Audit de sécurité de la base (LECTURE SEULE : ne lit aucune donnée, seulement la configuration).
--- Lancer : supabase db query --linked -f supabase/audits/2026-10-13_audit_rls.sql
+-- Lancer : supabase db query --linked -f docs/db/audits/2026-10-13_audit_rls.sql
 --
 -- Comment lire le résultat : chaque ligne est un point à regarder. Un bon résultat ne contient que les lignes « Résumé »
 -- (et éventuellement des « Fonction SECURITY DEFINER » que tu connais). Toute autre ligne est à examiner.
