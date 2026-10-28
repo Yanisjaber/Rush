@@ -81,7 +81,7 @@ test('recordsBasiquesVelo : puissance moyenne et FC moyenne, sur 30 minutes ou p
   const r = recordsBasiquesVelo(sorties);
   assert.deepEqual(r.find((x) => x.cle === 'pmoy')!.top.map((e) => e.valeur), [230, 210, 200]);
   assert.deepEqual(r.find((x) => x.cle === 'fcmoy')!.top.map((e) => e.valeur), [181, 150]);
-  assert.equal(r.find((x) => x.cle === 'pmoy')!.libelle, 'Plus grosse puissance moyenne');
+  assert.equal(r.find((x) => x.cle === 'pmoy')!.libelle, 'Puissance moyenne max'); // court : le titre d'un widget XS ne dépasse pas une vingtaine de lettres
   assert.ok(FC_MOYENNE_MAX_CREDIBLE < 200);
 });
 
@@ -121,7 +121,7 @@ test('sortieVeloDeLigne : une ligne de la base devient une sortie, avec des nomb
 });
 
 import { formatNum } from '../../src/data/outils/format.ts';
-import { jourMois, libelleEntree, texteRecordSimple, texteValeurRecord } from '../../src/data/bilan/records-texte.ts';
+import { dateCourte, jourMois, libelleEntree, texteRecordSimple, texteValeurRecord } from '../../src/data/bilan/records-texte.ts';
 
 test('texteValeurRecord : la durée en heures-minutes, la distance avec une décimale, le reste en entier', () => {
   assert.deepEqual(texteValeurRecord(385, 'min'), { nombre: '6h25', unite: '' });
@@ -138,6 +138,8 @@ test('texteValeurRecord : la durée en heures-minutes, la distance avec une déc
 test('libelleEntree : la séance et sa date, la période, la série', () => {
   const base = { cle: 'distance', libelle: 'x', unite: 'km', top: [] };
   assert.equal(jourMois('2026-03-04'), '4 mars');
+  assert.equal(dateCourte('2023-02-25'), '25 févr. 2023');
+  assert.equal(dateCourte('2025-07-02'), '2 juil. 2025');
   assert.deepEqual(libelleEntree(base, { valeur: 1, nom: 'Ski #4', iso: '2026-03-04', id: 'a' }), { titre: 'Ski #4', sous: 'Mercredi 4 mars' });
   assert.deepEqual(libelleEntree({ ...base, cle: 'semaine', periode: 'semaine' }, { valeur: 1, nom: '', iso: '2026-05-11', id: null, detail: '9 séances' }), { titre: 'Semaine du 11 mai', sous: '9 séances' });
   assert.deepEqual(libelleEntree({ ...base, cle: 'mois', periode: 'mois' }, { valeur: 1, nom: '', iso: '2026-03-01', id: null, detail: '30 séances' }), { titre: 'Mars 2026', sous: '30 séances' });

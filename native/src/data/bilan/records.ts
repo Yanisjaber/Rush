@@ -200,7 +200,7 @@ export function recordsBasiquesVelo(sorties: SortieVelo[]): RecordTop[] {
     { cle: 'dplus', libelle: 'Plus gros D+', unite: 'm', top: meilleures(dessous.map((s) => entree(s, s.d_plus))) },
     { cle: 'tss', libelle: 'Plus grosse charge', unite: 'TSS', top: meilleures(sorties.map((s) => entree(s, s.tss))) },
     { cle: 'vmoy', libelle: 'Vitesse moyenne', unite: 'km/h', top: meilleures(dessous.filter((s) => s.distance_km >= DISTANCE_MIN_VITESSE_MOYENNE).map((s) => entree(s, vitesseMoyenne(s)))) },
-    { cle: 'pmoy', libelle: 'Plus grosse puissance moyenne', unite: 'W', top: meilleures(sorties.filter((s) => s.duree_min >= DUREE_MIN_MOYENNE).map((s) => entree(s, s.puissance_moyenne))) },
+    { cle: 'pmoy', libelle: 'Puissance moyenne max', unite: 'W', top: meilleures(sorties.filter((s) => s.duree_min >= DUREE_MIN_MOYENNE).map((s) => entree(s, s.puissance_moyenne))) },
     { cle: 'fcmoy', libelle: 'Plus grosse FC moyenne', unite: 'bpm', top: meilleures(sorties.filter((s) => s.duree_min >= DUREE_MIN_MOYENNE && (s.fc_moyenne ?? 0) <= FC_MOYENNE_MAX_CREDIBLE).map((s) => entree(s, s.fc_moyenne))) },
   ];
   return records.filter((r) => r.top.length);

@@ -6,6 +6,10 @@ const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 
 /** « 11 mai » à partir d'une date ISO. */
 export const jourMois = (iso: string): string => `${Number(iso.slice(8, 10))} ${MOIS[Number(iso.slice(5, 7)) - 1]}`;
 
+const MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+/** « 25 févr. 2023 » à partir d'une date ISO : pour les endroits étroits. */
+export const dateCourte = (iso: string): string => `${Number(iso.slice(8, 10))} ${MOIS_COURTS[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
+
 /** Une valeur de record : le nombre écrit (« 6h25 », « 122,4 », « 8 372 ») et son unité (vide quand le nombre la porte déjà, comme pour une durée). */
 export function texteValeurRecord(valeur: number, unite: string): { nombre: string; unite: string } {
   if (unite === 'min') return { nombre: texteHM(Math.round(valeur)), unite: '' };

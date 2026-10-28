@@ -3,9 +3,10 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { Bloc } from '@/components/feuilles/Bloc';
 import { CourbePuissance } from '@/components/graphes/CourbePuissance';
 import { OngletsSegment } from '@/components/menus/OngletsSegment';
-import { recordRecent } from '@/data/bilan/bilan';
+import { Tuile } from '@/components/ui/Tuile';
+import { ContexteTaille, ECART_LIGNES, HAUTEUR_FINE } from '@/components/ui/taille';
 import { indexDureeProche, recordsBasiquesVelo, texteDuree, wattsParKg, type PointCourbe, type RecordTop, type SortieVelo } from '@/data/bilan/records';
-import { jourMois, texteRecordSimple, texteValeurRecord } from '@/data/bilan/records-texte';
+import { dateCourte, texteRecordSimple, texteValeurRecord } from '@/data/bilan/records-texte';
 import { formatDateLongue } from '@/data/outils/format';
 import { rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
@@ -46,14 +47,14 @@ export function OngletRecordsVelo({ annee, maintenant, sorties, poids, courbeAnn
   const autre = portee === 'annee' ? courbeTout : courbeAnnee;
 
   /** Ce que vaut l'autre période pour un record : une coche quand c'est le même record. */
-  const comparaison = (a: number | undefined, b: number | undefined, unite: string): { texte: string; ok: boolean } | null => {
+  const comparaison = (a: number | undefined, b: number | undefined, unite: string): { texte: string; court: string; ok: boolean } | null => {
     if (a == null) return null;
     if (portee === 'annee') {
       if (b == null) return null;
-      return a >= b - 1e-9 ? { texte: 'Ton record absolu', ok: true } : { texte: `Record absolu : ${texteRecordSimple(b, unite)}`, ok: false };
+      return a >= b - 1e-9 ? { texte: 'Ton record absolu', court: '✓ Record absolu', ok: true } : { texte: `Record absolu : ${texteRecordSimple(b, unite)}`, court: `Absolu : ${texteRecordSimple(b, unite)}`, ok: false };
     }
-    if (b == null) return { texte: `Rien en ${annee}`, ok: false };
-    return Math.abs(a - b) < 1e-9 ? { texte: `Fait en ${annee}`, ok: true } : { texte: `En ${annee} : ${texteRecordSimple(b, unite)}`, ok: false };
+    if (b == null) return { texte: `Rien en ${annee}`, court: `Rien en ${annee}`, ok: false };
+    return Math.abs(a - b) < 1e-9 ? { texte: `Fait en ${annee}`, court: `✓ Fait en ${annee}`, ok: true } : { texte: `En ${annee} : ${texteRecordSimple(b, unite)}`, court: `${annee} : ${texteRecordSimple(b, unite)}`, ok: false };
   };
 
   const indexChoisi = courbe.length ? indexDureeProche(courbe, duree ?? DUREE_DEPART) : -1;
@@ -85,34 +86,19 @@ export function OngletRecordsVelo({ annee, maintenant, sorties, poids, courbeAnn
       />
 
       {basiques.length ? (
-        <View style={styles.tuiles}>
+        // Les records basiques : un widget XS (60 pt de haut, toute la largeur) par record, comme sur l'accueil
+        <View style={styles.xs}>
           {basiques.map((r: RecordTop) => {
             const e = r.top[0];
             const t = texteValeurRecord(e.valeur, r.unite);
             const cmp = comparaison(e.valeur, basiquesAutre.find((x) => x.cle === r.cle)?.top[0]?.valeur, r.unite);
             const etiquette = `${r.libelle}, ${texteRecordSimple(e.valeur, r.unite)}, ${e.nom}, ${formatDateLongue(e.iso)}${cmp ? `, ${cmp.texte}` : ''}. Ouvrir la séance`;
             return (
-              <Pressable key={r.cle} onPress={() => e.id && onOuvrir(e.id)} accessibilityRole="button" accessibilityLabel={etiquette} style={[styles.tuile, { backgroundColor: p.surface, borderTopColor: couleur }]}>
-                <View style={styles.ligneEntete}>
-                  <Text numberOfLines={2} style={[typo.micro, { color: p.texteDoux, flexShrink: 1 }]}>
-                    {r.libelle}
-                  </Text>
-                  {recordRecent(e.iso, maintenant) ? <View style={[styles.nouveau, { backgroundColor: p.texte }]} /> : null}
-                </View>
-                <Text style={[styles.nombre, { color: p.texte }]}>
-                  {t.nombre}
-                  {t.unite ? <Text style={[typo.petit, { color: p.texteDoux }]}> {t.unite}</Text> : null}
-                </Text>
-                <View style={{ marginTop: 'auto' }}>
-                  <Text numberOfLines={1} style={[typo.micro, { color: p.texteMuet, textTransform: 'none' }]}>
-                    {jourMois(e.iso)} {e.iso.slice(0, 4)}
-                  </Text>
-                  {cmp ? (
-                    <Text numberOfLines={2} style={[typo.micro, { color: cmp.ok ? p.texte : p.texteMuet, textTransform: 'none' }]}>
-                      {cmp.ok ? '✓ ' : ''}
-                      {cmp.texte}
-                    </Text>
-                  ) : null}
+              <Pressable key={r.cle} onPress={() => e.id && onOuvrir(e.id)} accessibilityRole="button" accessibilityLabel={etiquette}>
+                <View style={{ height: HAUTEUR_FINE }}>
+                  <ContexteTaille.Provider value="xs">
+                    <Tuile titre={r.libelle} valeur={t.nombre} unite={t.unite || undefined} note={`${dateCourte(e.iso)}\n${cmp ? cmp.court : ''}`} />
+                  </ContexteTaille.Provider>
                 </View>
               </Pressable>
             );
@@ -194,11 +180,7 @@ export function OngletRecordsVelo({ annee, maintenant, sorties, poids, courbeAnn
 const styles = StyleSheet.create({
   attente: { paddingVertical: 40, alignItems: 'center' },
   note: { marginBottom: 10 },
-  tuiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tuile: { width: '48.5%', minHeight: 112, borderRadius: rayon.base, borderTopWidth: 3, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 10, gap: 2 },
-  ligneEntete: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, minHeight: 32 },
-  nouveau: { width: 8, height: 8, borderRadius: 4 },
-  nombre: { fontFamily: police.titre800, fontSize: 26, lineHeight: 30, fontVariant: ['tabular-nums'] },
+  xs: { gap: ECART_LIGNES },
   lecture: { alignItems: 'center', gap: 2, marginTop: 10 },
   valeur: { fontFamily: police.titre800, fontSize: 38, lineHeight: 42, fontVariant: ['tabular-nums'] },
   podium: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingVertical: 6 },
