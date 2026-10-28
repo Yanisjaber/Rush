@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   activitesAnnee, activitesAnneePrecedente, anneesDisponibles, avancement, cumulParAnnee, ecartPct, familleBilan, familleBilanDuFiltre, modele, normaliser,
-  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, phraseVerdict, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
+  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, valeursParMois, phraseVerdict, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
 } from '../../src/data/bilan/bilan.ts';
 import { activitesBilanDemo, objectifsAnnuelsDemo } from '../../src/data/demo/demo.ts';
 
@@ -136,6 +136,13 @@ test('repartitionSport : par discipline, la famille vélo se détaille en route,
   const velo = (iso: string, type: string, min: number) => ({ ...act(iso, 'cyclisme', min, 0), type });
   const r = repartitionSport(activitesAnnee([velo('2026-01-10', 'Ride', 180), velo('2026-01-11', 'MountainBikeRide', 60), velo('2026-01-12', 'VirtualRide', 60)], 2026, maintenant), 'heures', true);
   assert.deepEqual(r.map((x) => [x.cle, x.heures]), [['Ride', 3], ['MountainBikeRide', 1], ['VirtualRide', 1]]);
+});
+
+test('valeursParMois : la mesure choisie, mois par mois', () => {
+  const liste = [act('2026-01-10', 'course', 60, 10), act('2026-01-20', 'cyclisme', 120, 40), act('2026-03-05', 'course', 180, 30), act('2025-01-05', 'course', 600, 1)];
+  assert.deepEqual(valeursParMois(liste, 2026, 'distance_km').slice(0, 3), [50, 0, 30]);
+  assert.deepEqual(valeursParMois(liste, 2026, 'heures').slice(0, 3), [3, 0, 3]);
+  assert.deepEqual(valeursParMois(liste, 2026, 'seances').slice(0, 3), [2, 0, 1]);
 });
 
 test('volumeMensuel et repartitionSport', () => {

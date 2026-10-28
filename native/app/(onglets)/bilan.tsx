@@ -20,8 +20,8 @@ import { TraitTirets } from '@/components/graphes/TraitTirets';
 import { ProgresSport } from '@/components/graphes/ProgresSport';
 import type { IconeOnglet } from '@/components/menus/OngletsIcones.types';
 import {
-  activitesAnnee, anneesDisponibles, avancement, chargeParSemaine, cumulParAnnee, kmParMois, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
-  regulariteAnnee, repartitionSport, sommer, volumeMensuel, familleBilanDuFiltre, decimalesObjectif, phraseVerdict, type MetriqueCumul,
+  activitesAnnee, anneesDisponibles, avancement, chargeParSemaine, cumulParAnnee, valeursParMois, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
+  regulariteAnnee, repartitionSport, sommer, familleBilanDuFiltre, decimalesObjectif, phraseVerdict, type MetriqueCumul,
 } from '@/data/bilan/bilan';
 import { formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
 import { nomDuType } from '@/data/sports/catalogue-sports';
@@ -81,6 +81,7 @@ export default function Bilan() {
   }, [anneeCourante]);
   const [onglet, setOnglet] = useState<OngletBilan>('resume');
   const [metrique, setMetrique] = useState<MetriqueCumul>('distance_km');
+  const [mesureMoisChoisie, setMesureMoisChoisie] = useState<MetriqueCumul | null>(null); // la mesure du graphique par mois ; null : la distance (ou le temps si le sport n'a pas de distance)
   const [mesureRepartition, setMesureRepartition] = useState<MetriqueCumul>('heures'); // la mesure de la répartition par sport (le temps par défaut)
   const { brutes, objectifs, chargement, erreur, pret, actualisation, recharger } = useDonneesBilan();
   const annee = anneeChoisie;
@@ -127,16 +128,19 @@ export default function Bilan() {
   const mesure = MESURES_CUMUL.find((m) => m.cle === metrique) ?? MESURES_CUMUL[0];
   // Rythme : par mois (en km, ou en heures quand le sport n'a pas de distance, comme la musculation), charge par semaine, régularité
   const enKm = courant.distance > 0;
+  const mesureMois: MetriqueCumul = mesureMoisChoisie ?? (enKm ? 'distance_km' : 'heures');
+  const mesureM = MESURES_CUMUL.find((m) => m.cle === mesureMois) ?? MESURES_CUMUL[0];
+  const decimalesMois = mesureMois === 'heures' ? 1 : 0;
   const moisEnCours = annee === maintenant.getFullYear() ? maintenant.getMonth() : null;
   const dernierMois = moisEnCours ?? 11;
   const rythme = useMemo(() => {
     if (onglet !== 'rythme') return null;
-    const parMois = enKm ? kmParMois(filtrees, annee) : volumeMensuel(filtrees, annee);
+    const parMois = valeursParMois(filtrees, annee, mesureMois);
     const semaines = chargeParSemaine(filtrees, annee, maintenant);
     // La semaine en cours n'est pas finie : elle ne compte pas dans la moyenne (sinon celle-ci est tirée vers le bas)
     const completes = enCours ? semaines.slice(0, -1) : semaines;
     return { parMois, meilleurMois: Math.max(0, ...parMois), semaines, moyenneSemaine: Math.round(completes.reduce((a, b) => a + b, 0) / completes.length), regularite: regulariteAnnee(filtrees, annee, maintenant) };
-  }, [onglet, filtrees, annee, maintenant, enKm, enCours]);
+  }, [onglet, filtrees, annee, maintenant, mesureMois, enCours]);
   const repartition = useMemo(() => (onglet === 'resume' ? repartitionSport(activitesAnnee(filtrees, annee, maintenant), mesureRepartition, filtre !== 'tout') : []), [onglet, filtre, filtrees, annee, maintenant, mesureRepartition]);
   // `court` : pour le gros chiffre du haut, le mot « séances » est de trop (le libellé dessous le dit déjà)
   const texteRep = (v: number, court = false): string =>
@@ -365,13 +369,19 @@ export default function Bilan() {
                   ))}
                 </View>
 
-                <Bloc titre={enKm ? 'Distance par mois' : 'Heures par mois'}>
+                <Bloc>
+                  <View style={styles.enteteBloc}>
+                    <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
+                      {mesureM.nom} par mois
+                    </Text>
+                    <MenuMesure etiquette="Mesure par mois" valeur={mesureMois} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => setMesureMoisChoisie(c as MetriqueCumul)} />
+                  </View>
                   <BarresMois
                     valeurs={parMois}
                     moisEnCours={moisEnCours}
                     dernierMois={dernierMois}
                     formater={(v) => formatNum(v, 0)}
-                    etiquette={`${enKm ? 'Kilomètres' : "Heures d'entraînement"} par mois en ${annee} : ${parMois.map((v, i) => `${NOMS_MOIS[i]} ${formatNum(v, enKm ? 0 : 1)}`).join(', ')}. Meilleur mois : ${formatNum(meilleurMois, enKm ? 0 : 1)} ${enKm ? 'kilomètres' : 'heures'}.`}
+                    etiquette={`${mesureM.nom} par mois en ${annee} (${mesureM.unite}) : ${parMois.map((v, i) => `${NOMS_MOIS[i]} ${formatNum(v, decimalesMois)}`).join(', ')}. Meilleur mois : ${formatNum(meilleurMois, decimalesMois)} ${mesureM.unite}.`}
                   />
                 </Bloc>
 

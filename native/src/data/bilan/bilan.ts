@@ -392,6 +392,13 @@ export function volumeMensuel(acts: ActiviteBilan[], annee: number): number[] {
 
 // --- Rythme : km par mois, charge par semaine, régularité -------------------------------------------------------------
 
+/** La mesure choisie (distance, dénivelé, séances, charge ou temps) par mois : 12 valeurs pour une année. */
+export function valeursParMois(acts: ActiviteBilan[], annee: number, mesure: MetriqueCumul): number[] {
+  const mois = new Array(12).fill(0);
+  for (const a of acts) if (a.iso.startsWith(`${annee}-`)) mois[Number(a.iso.slice(5, 7)) - 1] += valeurCumul(a, mesure);
+  return mois;
+}
+
 /** Distance (km) par mois : 12 valeurs pour une année. */
 export function kmParMois(acts: ActiviteBilan[], annee: number): number[] {
   const mois = new Array(12).fill(0);
