@@ -424,6 +424,20 @@ export function chargeParSemaine(acts: ActiviteBilan[], annee: number, maintenan
   return semaines;
 }
 
+/** Semaines (lundi → dimanche) de l'année où il y a au moins une activité, sur le nombre de semaines écoulées (la semaine du 1er janvier et la semaine en cours comptent). */
+export function semainesActives(acts: ActiviteBilan[], annee: number, maintenant: Date = new Date()): { actives: number; total: number } {
+  const debut = lundiDe(new Date(annee, 0, 1, 12));
+  const fin = finDeAnnee(annee, maintenant);
+  const total = Math.floor(joursEntre(debut, fin) / 7) + 1;
+  const finIso = dateIso(fin);
+  const vues = new Set<number>();
+  for (const a of acts) {
+    if (a.iso < debutAnnee(annee) || a.iso > finIso) continue;
+    vues.add(Math.floor(joursEntre(debut, dateDe(a.iso)) / 7));
+  }
+  return { actives: vues.size, total };
+}
+
 export interface RegulariteAnnee {
   /** Une case par jour, rangée par rangée (lundi → dimanche), semaine par semaine ; les jours hors de l'année ou à venir sont `vide`. */
   cases: CaseRegularite[];
