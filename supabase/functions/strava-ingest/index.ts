@@ -13,7 +13,7 @@
 //   4. Fetch /athlete/activities paginé : TOUT l'historique à chaque appel (pas de synchro incrémentale)
 //   5. Mapper chaque activité au format de notre table 'activities'
 //   6. Upsert par batches
-//   7. Recalculer les daily_metrics (CTL/ATL/TSB par jour)
+//   7. (daily_metrics : recalculé par le déclencheur SQL sur `activities`, plus ici)
 //   8. Retourner un résumé { imported, errors }
 //
 // Déploiement :
@@ -27,6 +27,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.3";
 import { corsHeadersFor } from "../_shared/cors.ts";
 import { joindreJetons, ecrireRenouvellementStrava } from "../_shared/jetons.ts";
+import { stravaToRow, lthrEffectif, ftpEffective } from "../_shared/charge.ts";
 
 const STRAVA_CLIENT_ID = Deno.env.get("STRAVA_CLIENT_ID")!;
 const STRAVA_CLIENT_SECRET = Deno.env.get("STRAVA_CLIENT_SECRET")!;
@@ -80,8 +81,7 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
       .eq("user_id", user.id)
       .maybeSingle();
     const athleteFtp = profile?.ftp || null;
-    const athleteHrMax = profile?.hr_max || null;
-    const athleteLthr = profile?.lthr || (athleteHrMax ? Math.round(athleteHrMax * 0.92) : null);
+    const athleteLthr = lthrEffectif(profile);
 
     // Marquer le sync comme "running"
     await sbAdmin.from("connexions_app").update({
@@ -170,21 +170,8 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
       return json({ ok: true, hours_only: true, fetched: all.length, updated });
     }
 
-    // ===== 4b) FTP effectif : profil sinon ESTIMÉ (comme le LTHR) =====
-    // Priorité : FTP du profil → 95% de la meilleure puissance 20 min (power profile)
-    // → repli : 90% de la meilleure puissance normalisée vue dans les activités.
-    let effFtp = athleteFtp;
-    if (!effFtp) {
-      try {
-        const { data: pp } = await sbAdmin.from("power_profile")
-          .select("best_watts").eq("user_id", user.id).eq("duration_s", 1200).maybeSingle();
-        if (pp && pp.best_watts) effFtp = Math.round(pp.best_watts * 0.95);
-      } catch (_) { /* power_profile pas encore calculé */ }
-    }
-    if (!effFtp) {
-      const nps = all.map((a: any) => a.weighted_average_watts || 0).filter((x: number) => x > 0);
-      if (nps.length) effFtp = Math.round(Math.max(...nps) * 0.90);
-    }
+    // ===== 4b) FTP effectif : profil sinon ESTIMÉ (règle commune avec le webhook, voir _shared/charge.ts) =====
+    const effFtp = await ftpEffective(sbAdmin, user.id, athleteFtp, all);
 
     // ===== 5) Mapper au format de notre table =====
     // On écarte les activités à date aberrante (ex. epoch 1970) → jamais insérées.
@@ -276,90 +263,11 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
       if (delActErr) console.error("Purge activités aberrantes:", delActErr.message);
     }
 
-    // ===== 7) Recalculer les daily_metrics depuis les activities =====
-    // On regroupe par jour : tss total + nombre d'activités + main activity (max TSS)
-    // Puis on calcule CTL/ATL/TSB via EWMA (Coggan)
-    const DATE_FLOOR = ACT_DATE_FLOOR; // ignore les dates aberrantes (ex. epoch 1970)
-    const dailyMap = new Map<string, { tss: number; duration: number; count: number; mainId: string | null; mainTss: number }>();
-    let totalActsInDb = 0;
-    {
-      // IMPORTANT : on recalcule les daily_metrics depuis TOUT l'historique en base
-      // (pas seulement les activites recuperees ce run), sinon une synchro partielle
-      // casserait la continuite CTL/ATL. Lecture paginee (PostgREST plafonne a 1000).
-      const READ_PAGE = 1000;
-      let offset = 0;
-      while (true) {
-        const { data: chunk, error: readErr } = await sbAdmin
-          .from("activities")
-          .select("start_date_local, tss, moving_time, elapsed_time")
-          .eq("user_id", user.id)
-          .is("merged_into", null) // étapes fusionnées (tri) : déjà comptées via leur parent
-          .order("start_date_local", { ascending: true })
-          .range(offset, offset + READ_PAGE - 1);
-        if (readErr) { console.error("read activities for metrics:", readErr.message); break; }
-        if (!chunk || chunk.length === 0) break;
-        for (const r of chunk) {
-          const iso = String(r.start_date_local || "").slice(0, 10);
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(iso) || iso < DATE_FLOOR) continue;
-          const existing = dailyMap.get(iso) || { tss: 0, duration: 0, count: 0, mainId: null, mainTss: -1 };
-          existing.tss += r.tss || 0;
-          existing.duration += Math.round((r.moving_time || r.elapsed_time || 0) / 60);
-          existing.count += 1;
-          dailyMap.set(iso, existing);
-        }
-        totalActsInDb += chunk.length;
-        if (chunk.length < READ_PAGE) break;
-        offset += READ_PAGE;
-      }
-    }
-
-    // Calcul CTL/ATL/TSB EWMA (continu, comble les trous)
-    const sortedIsos = [...dailyMap.keys()].sort();
-    let ctl = 0, atl = 0;
-    const dailyRows: any[] = [];
-    if (sortedIsos.length > 0) {
-      const start = new Date(sortedIsos[0] + "T00:00:00Z");
-      const end = new Date(sortedIsos[sortedIsos.length - 1] + "T00:00:00Z");
-      const cursor = new Date(start);
-      while (cursor <= end) {
-        const iso = cursor.toISOString().slice(0, 10);
-        const d = dailyMap.get(iso) || { tss: 0, duration: 0, count: 0, mainId: null, mainTss: 0 };
-        const tss = d.tss;
-        ctl = ctl + (tss - ctl) * (2 / (42 + 1));
-        atl = atl + (tss - atl) * (2 / (7 + 1));
-        dailyRows.push({
-          user_id: user.id,
-          iso_date: iso,
-          tss: Math.round(tss),
-          ctl: +ctl.toFixed(1),
-          atl: +atl.toFixed(1),
-          tsb: +(ctl - atl).toFixed(1),
-          duration_min: d.duration,
-          activity_count: d.count,
-        });
-        cursor.setUTCDate(cursor.getUTCDate() + 1);
-      }
-    }
-
-    // Purge les daily_metrics antérieurs à la 1ʳᵉ activité (nettoie d'anciennes
-    // lignes aberrantes, ex. série remontée jusqu'en 1970).
-    if (sortedIsos.length > 0) {
-      const { error: delErr } = await sbAdmin
-        .from("daily_metrics")
-        .delete()
-        .eq("user_id", user.id)
-        .lt("iso_date", sortedIsos[0]);
-      if (delErr) console.error("Purge daily_metrics error:", delErr);
-    }
-
-    // Upsert daily_metrics par batches
-    for (let i = 0; i < dailyRows.length; i += 500) {
-      const batch = dailyRows.slice(i, i + 500);
-      const { error: dmErr } = await sbAdmin
-        .from("daily_metrics")
-        .upsert(batch, { onConflict: "user_id,iso_date" });
-      if (dmErr) console.error("Upsert daily_metrics error:", dmErr);
-    }
+    // ===== 7) daily_metrics =====
+    // Plus de calcul ici : le déclencheur SQL sur `activities` (recalc_daily_metrics, qui exclut les étapes
+    // fusionnées et va jusqu'à aujourd'hui) recalcule la forme à chaque écriture, et pg_cron chaque nuit.
+    const { count: totalActsInDb } = await sbAdmin
+      .from("activities").select("id", { count: "exact", head: true }).eq("user_id", user.id);
 
     // ===== 8) Marquer sync OK =====
     await sbAdmin.from("connexions_app").update({
@@ -375,7 +283,6 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
       activities_received: all.length,
       activities_inserted: inserted,
       activities_errored: errors,
-      daily_metrics_computed: dailyRows.length,
       first_error: firstError,
       first_error_batch: firstErrorBatchIndex,
       first_error_sample: firstErrorSample,
@@ -414,105 +321,4 @@ async function refreshStravaToken(refreshToken: string) {
   });
   if (!res.ok) return null;
   return await res.json();
-}
-
-// Mapping COMPLET Strava sport_type / type → catégorie Rush.
-// Source : https://developers.strava.com/docs/reference/#api-models-SportType
-const SPORT_TO_CAT: Record<string, string> = {
-  // Cyclisme
-  Ride: "cyclisme", VirtualRide: "cyclisme", MountainBikeRide: "cyclisme",
-  GravelRide: "cyclisme", EBikeRide: "cyclisme", EMountainBikeRide: "cyclisme",
-  Velomobile: "cyclisme", Handcycle: "cyclisme",
-  // Course
-  Run: "course", TrailRun: "course", VirtualRun: "course",
-  // Natation
-  Swim: "natation", OpenWaterSwim: "natation",
-  // Musculation / salle
-  WeightTraining: "musculation", Workout: "musculation", Crossfit: "musculation",
-  Elliptical: "musculation", StairStepper: "musculation", VirtualWorkout: "musculation",
-  // Marche / rando
-  Walk: "autre", Hike: "autre", Snowshoe: "autre",
-  // Neige
-  AlpineSki: "autre", BackcountrySki: "autre", NordicSki: "autre",
-  Snowboard: "autre", IceSkate: "autre", InlineSkate: "autre",
-  // Eau
-  Rowing: "autre", Kayaking: "autre", Canoeing: "autre",
-  StandUpPaddling: "autre", Surfing: "autre", Windsurf: "autre",
-  Kitesurf: "autre", Sailing: "autre",
-  // Sports co / raquettes
-  Soccer: "autre", Basketball: "autre", Volleyball: "autre",
-  Hockey: "autre", Tennis: "autre", Squash: "autre",
-  Badminton: "autre", TableTennis: "autre", Cricket: "autre",
-  AmericanFootball: "autre",
-  // Souplesse / autre
-  Yoga: "autre", Pilates: "autre", Stretching: "autre",
-  RockClimbing: "autre", Boxing: "autre", Dance: "autre", Golf: "autre",
-  Skateboard: "autre", Wheelchair: "autre", Transition: "autre",
-};
-function getSportCategory(sportRaw: string): string {
-  if (!sportRaw) return "autre";
-  return SPORT_TO_CAT[sportRaw] || "autre";
-}
-
-// Calcul TSS Coggan : (durée_h) × IF² × 100
-// Priorité : NP/FTP (puissance) → HR/LTHR (cardio) → 0
-function computeTss(a: any, ftp: number | null, lthr: number | null): number {
-  const dur = a.moving_time || a.elapsed_time || 0;
-  if (!dur) return 0;
-  const durHr = dur / 3600;
-  // Puissance : NP si dispo, sinon puissance moyenne (Strava ne fournit pas toujours la NP).
-  const np = a.weighted_average_watts || a.average_watts || 0;
-  if (np && ftp) {
-    const intensity = np / ftp;
-    return Math.round(durHr * intensity * intensity * 100);
-  }
-  const avgHr = a.average_heartrate || 0;
-  if (avgHr && lthr) {
-    const intensity = avgHr / lthr;
-    return Math.round(durHr * intensity * intensity * 100);
-  }
-  // Ni puissance ni cardio → 0.
-  return 0;
-}
-
-function stravaToRow(a: any, userId: string, ftp: number | null, lthr: number | null) {
-  const sportRaw = a.sport_type || a.type || "";
-  const sport = getSportCategory(sportRaw);
-  const np = a.weighted_average_watts || a.average_watts || 0;
-  const intensity = (np && ftp) ? np / ftp : 0;
-  const tss = computeTss(a, ftp, lthr);
-  const distKm = a.distance ? +(a.distance / 1000).toFixed(2) : null;
-  const speedMs = a.average_speed || 0;
-  const maxSpeedMs = a.max_speed || 0;
-
-  return {
-    user_id: userId,
-    source: "strava",
-    strava_id: a.id,
-    name: a.name || "Activité",
-    sport: sportRaw,
-    start_date_local: a.start_date_local || a.start_date,
-    elapsed_time: a.elapsed_time != null ? Math.round(a.elapsed_time) : null,
-    moving_time: a.moving_time != null ? Math.round(a.moving_time) : null,
-    distance_km: distKm,
-    total_elevation_gain: a.total_elevation_gain != null ? Math.round(a.total_elevation_gain) : null,
-    total_elevation_loss: a.total_elevation_loss != null ? Math.round(a.total_elevation_loss) : null,
-    avg_speed_kmh: speedMs ? +(speedMs * 3.6).toFixed(2) : null,
-    max_speed_kmh: maxSpeedMs ? +(maxSpeedMs * 3.6).toFixed(2) : null,
-    avg_heartrate: a.average_heartrate ? Math.round(a.average_heartrate) : null,
-    max_heartrate: a.max_heartrate ? Math.round(a.max_heartrate) : null,
-    avg_watts: a.average_watts ? Math.round(a.average_watts) : null,
-    max_watts: a.max_watts ? Math.round(a.max_watts) : null,
-    np: np ? Math.round(np) : null,
-    intensity: intensity ? +intensity.toFixed(3) : null,
-    ftp_at_time: ftp,
-    avg_cadence: a.average_cadence ? Math.round(a.average_cadence) : null,
-    max_cadence: null,
-    kj: a.kilojoules ? Math.round(a.kilojoules) : null,
-    calories: a.calories ? Math.round(a.calories) : null,
-    tss,
-    has_heartrate: !!a.has_heartrate,
-    has_power: !!(a.device_watts || np),
-    device_watts: !!a.device_watts,
-  };
 }

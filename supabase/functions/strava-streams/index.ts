@@ -93,7 +93,7 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
     const ATH = {
       ftp: +(_prof?.ftp) || 0,
       hrMax: +(_prof?.hr_max) || 0,
-      hrRest: 50,
+      hrRest: 50, // pas de FC de repos dans le profil de l'app : valeur par défaut raisonnable
       sex: (_prof?.extras && _prof.extras.x_sex) || 'M',
     };
 
@@ -217,8 +217,10 @@ function streamData(arr: any[], type: string): any[] {
 
 // Calcule les metriques avancees (calcul fait côté serveur).
 function computeMetrics(W: any[], HR: any[], T: any[], ath: any): Record<string, any> {
-  const ftp = +ath.ftp || 250;
-  const hrMax = +ath.hrMax || 190;
+  // Pas de valeur inventée : sans FTP au profil on l'estime à partir de la séance (plus bas), sans FC max on prend
+  // la FC max de la séance. Les mesures qui en dépendent sont omises si on ne peut rien estimer.
+  let ftp = +ath.ftp || 0;
+  const hrMax = +ath.hrMax || 0;
   const sex = ath.sex || 'M';
   const hrRest = +ath.hrRest || 50;
   const m: Record<string, any> = { _v: METRICS_VERSION };
@@ -229,9 +231,11 @@ function computeMetrics(W: any[], HR: any[], T: any[], ath: any): Record<string,
     for (let i = 0; i < n; i++) ps[i + 1] = ps[i] + (+W[i] || 0);
     const bestAvg = (d: number) => { if (d > n) return 0; let b = 0; for (let s = 0; s + d <= n; s++) { const v = (ps[s + d] - ps[s]) / d; if (v > b) b = v; } return b; };
 
+    if (!ftp) ftp = Math.round(0.95 * bestAvg(1200)) || Math.round(0.90 * bestAvg(300)) || 0;
+
     let pmax = 0; for (let i = 0; i < n; i++) { const w0 = +W[i] || 0; if (w0 > pmax) pmax = w0; }
     m.pmax = Math.round(pmax);
-    let ex = 0; for (let i = 0; i < n; i++) { const w1 = +W[i] || 0; if (w1 > ftp) ex += (w1 - ftp); }
+    let ex = 0; for (let i = 0; i < n; i++) { const w1 = +W[i] || 0; if (ftp && w1 > ftp) ex += (w1 - ftp); }
     m.work_over_ftp_kj = Math.round(ex / 100) / 10;
 
     if (n >= 30) {
@@ -241,7 +245,7 @@ function computeMetrics(W: any[], HR: any[], T: any[], ath: any): Record<string,
     }
     if (m.np && ftp) { const ifr = m.np / ftp; m.if_pct = Math.round(ifr * 100); m.tss = Math.round(n / 3600 * ifr * ifr * 100); }
 
-    const hard = (bestAvg(300) >= ftp * 0.86) || (bestAvg(60) >= ftp * 1.15) || (bestAvg(1200) >= ftp * 0.84);
+    const hard = ftp > 0 && (bestAvg(300) >= ftp * 0.86) || (bestAvg(60) >= ftp * 1.15) || (bestAvg(1200) >= ftp * 0.84);
     if (hard) {
       const durs = [120, 180, 240, 300, 420, 600, 720, 900, 1200].filter((d) => d <= n);
       if (durs.length >= 2) {
@@ -266,8 +270,8 @@ function computeMetrics(W: any[], HR: any[], T: any[], ath: any): Record<string,
     }
 
     let choMech = 0;
-    for (let i = 0; i < n; i++) { const w4 = +W[i] || 0; if (w4 <= 0) continue; const I = w4 / ftp; let fr = 1 / (1 + Math.exp(-5 * (I - 0.45))); if (fr < 0.15) fr = 0.15; if (fr > 1) fr = 1; choMech += (w4 / 1000) * fr; }
-    m.cho_g = Math.round(choMech / 4.0);
+    if (ftp) for (let i = 0; i < n; i++) { const w4 = +W[i] || 0; if (w4 <= 0) continue; const I = w4 / ftp; let fr = 1 / (1 + Math.exp(-5 * (I - 0.45))); if (fr < 0.15) fr = 0.15; if (fr > 1) fr = 1; choMech += (w4 / 1000) * fr; }
+    if (ftp) m.cho_g = Math.round(choMech / 4.0);
 
     let z1 = 0, z2 = 0, z3 = 0;
     for (let i = 0; i < n; i++) { const ww = W[i]; if (ww == null) continue; const pr = ww / ftp; if (pr < 0.80) z1++; else if (pr <= 1.05) z2++; else z3++; }
@@ -280,10 +284,12 @@ function computeMetrics(W: any[], HR: any[], T: any[], ath: any): Record<string,
   }
 
   if (HR && HR.length) {
-    const hn = HR.length, denom = (hrMax - hrRest) || 1, kk = (sex === 'F') ? 1.67 : 1.92;
+    let hrMaxEff = hrMax; // FC max du profil, sinon celle de la séance
+    if (!hrMaxEff) { for (const h of HR) if (h != null && h > hrMaxEff) hrMaxEff = h; }
+    const hn = HR.length, denom = (hrMaxEff - hrRest) || 1, kk = (sex === 'F') ? 1.67 : 1.92;
     let trimp = 0;
     for (let i = 0; i < hn; i++) { const hh = HR[i]; if (hh == null) continue; let r = (hh - hrRest) / denom; if (r < 0) r = 0; if (r > 1) r = 1; trimp += (1 / 60) * r * 0.64 * Math.exp(kk * r); }
-    m.trimp = Math.round(trimp);
+    if (hrMaxEff > hrRest) m.trimp = Math.round(trimp);
     let drop = 0;
     if (T && T.length === hn) {
       let j = 0;
@@ -292,10 +298,10 @@ function computeMetrics(W: any[], HR: any[], T: any[], ath: any): Record<string,
         const target = T[i] + 60;
         while (j < hn && T[j] < target) j++;
         if (j >= hn) break;
-        if (HR[i] != null && HR[j] != null && HR[i] >= 0.85 * hrMax) { const d1 = HR[i] - HR[j]; if (d1 > drop) drop = d1; }
+        if (HR[i] != null && HR[j] != null && HR[i] >= 0.85 * hrMaxEff) { const d1 = HR[i] - HR[j]; if (d1 > drop) drop = d1; }
       }
     } else {
-      for (let i = 0; i + 60 < hn; i++) { if (HR[i] == null || HR[i + 60] == null) continue; if (HR[i] >= 0.85 * hrMax) { const d2 = HR[i] - HR[i + 60]; if (d2 > drop) drop = d2; } }
+      for (let i = 0; i + 60 < hn; i++) { if (HR[i] == null || HR[i + 60] == null) continue; if (HR[i] >= 0.85 * hrMaxEff) { const d2 = HR[i] - HR[i + 60]; if (d2 > drop) drop = d2; } }
     }
     if (drop > 0) m.hrrc = Math.round(drop);
   }
