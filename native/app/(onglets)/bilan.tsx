@@ -151,7 +151,7 @@ export default function Bilan() {
                       moisEnCours != null
                         ? { libelle: 'Série', val: String(regularite.serieEnCours), unite: regularite.serieEnCours > 1 ? 'jours' : 'jour', note: `record : ${regularite.serieRecord}` }
                         : { libelle: 'Série max', val: String(regularite.serieRecord), unite: regularite.serieRecord > 1 ? 'jours' : 'jour', note: `en ${annee}` },
-                      { libelle: 'Jours actifs', val: String(regularite.joursActifs), unite: `/ ${regularite.jours}`, note: `${regularite.jours ? Math.round((regularite.joursActifs / regularite.jours) * 100) : 0} % des jours` },
+                      { libelle: 'Jours actifs', val: String(regularite.joursActifs), unite: `/ ${regularite.jours}`, note: '' },
                       {
                         libelle: 'Par semaine',
                         val: formatNum(seancesParSemaine(courant.seances), 1),
