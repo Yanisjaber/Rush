@@ -1,3 +1,4 @@
+import { echelleRonde, reperesRonds } from '../../src/data/outils/echelle.ts';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -386,4 +387,21 @@ test('phraseVerdict : projection, manque, atteint, chrono et poids', () => {
   assert.equal(phraseVerdict(avancement(objectif('course', 'run_10k', 40, { currentManual: 50 }), [], 2026, maintenant)!, fmt).texte, 'Encore 10 min à gagner');
   assert.equal(phraseVerdict(avancement(objectif('musculation', 'mus_bw', 75, { currentManual: 85 }), [], 2026, maintenant)!, fmt).texte, "Encore 10 kg d'écart");
   assert.equal(phraseVerdict(avancement(objectif('cyclisme', 'cyc_ftp', 300), [], 2026, maintenant)!, fmt).texte, ''); // pas de valeur saisie : rien à dire
+});
+
+test('echelleRonde : un pas rond, 4 repères au plus, haut multiple du pas', () => {
+  assert.deepEqual(echelleRonde(1010), { haut: 1500, pas: 500 });
+  assert.deepEqual(echelleRonde(705), { haut: 800, pas: 200 });
+  assert.deepEqual(echelleRonde(2542), { haut: 3000, pas: 1000 });
+  assert.deepEqual(echelleRonde(170), { haut: 200, pas: 50 });
+  assert.deepEqual(echelleRonde(400), { haut: 400, pas: 100 });
+  assert.deepEqual(echelleRonde(3), { haut: 3, pas: 1 });
+  assert.deepEqual(echelleRonde(0), { haut: 0, pas: 0 });
+  assert.deepEqual(reperesRonds(1010), [500, 1000, 1500]);
+  assert.deepEqual(reperesRonds(0), []);
+  for (const m of [1, 7, 42, 99, 333, 1234, 98765]) {
+    const { haut } = echelleRonde(m);
+    assert.ok(haut >= m);
+    assert.deepEqual(echelleRonde(haut), echelleRonde(m)); // refaire l'échelle sur son propre haut ne la change pas
+  }
 });

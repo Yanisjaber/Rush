@@ -1,13 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { reperesRonds } from '@/data/outils/echelle';
 import { formatNum } from '@/data/outils/format';
 import { police } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// L'échelle d'un graphique en barres, comme dans le cumul sur 3 ans : des traits fins au tiers, aux deux tiers et en haut de l'échelle, et le 0 sur la ligne de base,
+// L'échelle d'un graphique en barres, comme dans le cumul sur 3 ans : des traits fins à des valeurs rondes (500, 1 000, 1 500…), et le 0 sur la ligne de base,
 // avec leur valeur (et son unité) écrite dans une marge à gauche des barres, jamais sous une barre. À poser derrière les barres, dans un conteneur de la même hauteur
 // que la zone des barres, dont le contenu est décalé de `largeurGouttiere` vers la droite.
 interface Props {
-  /** Haut de l'échelle (un chiffre rond, voir maximumRond) : 0 ou moins, et rien n'est dessiné. */
+  /** Haut de l'échelle (voir echelleRonde) : 0 ou moins, et rien n'est dessiné. */
   maximum: number;
   /** Unité écrite après chaque valeur (« km », « TSS »…), vide si le titre la dit déjà. */
   unite?: string;
@@ -16,11 +17,8 @@ interface Props {
   bas?: number;
 }
 
-/** Les valeurs des repères : un tiers, deux tiers et le haut, arrondis, toutes différentes (avec un petit maximum, les arrondis se répéteraient). */
-export function graduationsBarres(maximum: number): number[] {
-  if (!(maximum > 0)) return [];
-  return [...new Set([maximum / 3, (2 * maximum) / 3, maximum].map(Math.round))].filter((v) => v > 0);
-}
+/** Les valeurs des repères : les multiples d'un pas rond jusqu'au haut de l'échelle (voir echelleRonde). */
+export const graduationsBarres = reperesRonds;
 
 const texteRepere = (v: number, unite: string): string => (unite ? `${formatNum(v, 0)} ${unite}` : formatNum(v, 0));
 
