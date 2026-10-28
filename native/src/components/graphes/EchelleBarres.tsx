@@ -1,9 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { formatNum } from '@/data/outils/format';
 import { police } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // L'échelle d'un graphique en barres, comme dans le cumul sur 3 ans : des traits fins au tiers, aux deux tiers et en haut de l'échelle,
-// avec leur valeur écrite à gauche, au-dessus du trait. À poser derrière les barres, dans un conteneur de la même hauteur que la zone des barres.
+// avec leur valeur écrite dans une marge à gauche des barres (jamais sous une barre). À poser derrière les barres, dans un conteneur de la même hauteur que la zone des barres,
+// dont le contenu est décalé de `GOUTTIERE_ECHELLE` vers la droite.
+export const GOUTTIERE_ECHELLE = 36;
+
 interface Props {
   /** Haut de l'échelle (un chiffre rond, voir maximumRond) : 0 ou moins, et rien n'est dessiné. */
   maximum: number;
@@ -25,7 +29,7 @@ export function EchelleBarres({ maximum, haut = 0, bas = 0 }: Props) {
       {graduationsBarres(maximum).map((v) => (
         <View key={v} style={[styles.repere, { bottom: `${Math.min(100, (v / maximum) * 100)}%` }]}>
           <View style={[styles.trait, { backgroundColor: p.trait }]} />
-          <Text style={[styles.valeur, { color: p.texteMuet, fontFamily: police.texte400 }]}>{v.toLocaleString('fr-FR')}</Text>
+          <Text numberOfLines={1} style={[styles.valeur, { color: p.texteMuet, fontFamily: police.texte400 }]}>{formatNum(v, 0)}</Text>
         </View>
       ))}
     </View>
@@ -35,6 +39,7 @@ export function EchelleBarres({ maximum, haut = 0, bas = 0 }: Props) {
 const styles = StyleSheet.create({
   zone: { position: 'absolute', left: 0, right: 0 },
   repere: { position: 'absolute', left: 0, right: 0, height: 0 },
-  trait: { position: 'absolute', left: 0, right: 0, height: StyleSheet.hairlineWidth },
-  valeur: { position: 'absolute', left: 2, bottom: 2, fontSize: 9.5, lineHeight: 12, fontVariant: ['tabular-nums'] },
+  trait: { position: 'absolute', left: GOUTTIERE_ECHELLE - 2, right: 0, height: StyleSheet.hairlineWidth },
+  // Centrée sur son trait, alignée à droite contre les barres
+  valeur: { position: 'absolute', left: 0, width: GOUTTIERE_ECHELLE - 6, bottom: -6, textAlign: 'right', fontSize: 9.5, lineHeight: 12, fontVariant: ['tabular-nums'] },
 });

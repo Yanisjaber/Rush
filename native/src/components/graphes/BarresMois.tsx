@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { EchelleBarres } from '@/components/graphes/EchelleBarres';
+import { EchelleBarres, GOUTTIERE_ECHELLE } from '@/components/graphes/EchelleBarres';
 import { maximumRond } from '@/data/outils/cumul-graphe';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -26,7 +26,7 @@ export function BarresMois({ valeurs, moisEnCours, dernierMois, hauteur = 150, f
   const maximum = maximumRond(Math.max(0, ...valeurs)); // le haut de l'échelle : un chiffre rond, comme dans le cumul sur 3 ans
   const meilleur = valeurs.reduce((m, v, i) => (v > valeurs[m] ? i : m), 0);
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.mois, { height: hauteur }]}>
+    <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.mois, { height: hauteur, paddingLeft: GOUTTIERE_ECHELLE }]}>
       {/* La zone des barres commence sous la valeur du meilleur mois (16 + 4) et finit au-dessus des lettres (4 + 16) */}
       <EchelleBarres maximum={maximum} haut={20} bas={20} />
       {LETTRES.map((lettre, i) => {

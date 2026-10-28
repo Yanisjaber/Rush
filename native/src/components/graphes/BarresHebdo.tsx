@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { EchelleBarres } from '@/components/graphes/EchelleBarres';
+import { EchelleBarres, GOUTTIERE_ECHELLE } from '@/components/graphes/EchelleBarres';
 import { TraitTirets } from '@/components/graphes/TraitTirets';
 import { maximumRond } from '@/data/outils/cumul-graphe';
 import { usePalette } from '@/theme/usePalette';
@@ -22,14 +22,14 @@ export function BarresHebdo({ valeurs, couleur, hauteur = 120, repere, echelle =
   const p = usePalette();
   const maximum = echelle ? maximumRond(Math.max(0, ...valeurs)) : Math.max(1, ...valeurs);
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.barres, { height: hauteur, borderBottomColor: p.trait }]}>
+    <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.barres, { height: hauteur, borderBottomColor: p.trait, paddingLeft: echelle ? GOUTTIERE_ECHELLE : 0 }]}>
       {echelle ? <EchelleBarres maximum={maximum} /> : null}
       {valeurs.map((v, i) => (
         <View key={i} style={[styles.colonne, { opacity: i === valeurs.length - 1 ? 1 : 0.55 }]}>
           <View style={{ height: `${(v / maximum) * 100}%`, minHeight: 2, backgroundColor: couleur, borderRadius: 6 }} />
         </View>
       ))}
-      {repere != null && repere > 0 ? <View pointerEvents="none" style={[styles.repere, { bottom: `${Math.min(100, (repere / maximum) * 100)}%` }]}><TraitTirets couleur={p.texteMuet} epaisseur={1} /></View> : null}
+      {repere != null && repere > 0 ? <View pointerEvents="none" style={[styles.repere, { bottom: `${Math.min(100, (repere / maximum) * 100)}%`, left: echelle ? GOUTTIERE_ECHELLE : 0 }]}><TraitTirets couleur={p.texteMuet} epaisseur={1} /></View> : null}
     </View>
   );
 }
