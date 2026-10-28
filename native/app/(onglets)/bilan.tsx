@@ -418,7 +418,6 @@ export default function Bilan() {
                     selection={selMois}
                     onSelection={setSelMois}
                     unite={uniteGraphe(mesureM)}
-                    formater={(v) => `${formatNum(v, 0)}${uniteGraphe(mesureM) ? ` ${uniteGraphe(mesureM)}` : ''}`}
                     etiquette={`${mesureM.nom} par mois en ${annee} (${mesureM.unite}) : ${parMois.map((v, i) => `${NOMS_MOIS[i]} ${formatNum(v, decimalesMois)}`).join(', ')}. Meilleur mois : ${formatNum(meilleurMois, decimalesMois)} ${mesureM.unite}.`}
                   />
                 </Bloc>

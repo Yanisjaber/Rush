@@ -5,8 +5,7 @@ import { echelleRonde } from '@/data/outils/echelle';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Une barre par mois. Le meilleur mois porte sa valeur ;
-// le mois en cours (incomplet) est atténué, les mois à venir n'ont pas de barre.
+// Une barre par mois ; le mois en cours (incomplet) est atténué, les mois à venir n'ont pas de barre.
 interface Props {
   valeurs: number[];
   /** Mois en cours (0 à 11) : sa barre est atténuée parce qu'il n'est pas fini. Null pour une année passée. */
@@ -16,8 +15,6 @@ interface Props {
   hauteur?: number;
   /** Unité écrite après chaque valeur de l'échelle (« km »), vide si le titre la dit déjà. */
   unite?: string;
-  /** Écrit la valeur du meilleur mois (ex. « 1 050 »). */
-  formater: (v: number) => string;
   /** Le mois touché (0 à 11), ou null : sa barre est pleine, les autres s'atténuent. */
   selection?: number | null;
   onSelection?: (mois: number | null) => void;
@@ -28,23 +25,19 @@ interface Props {
 // -9 : la moitié des 18 pt de marge intérieure de la carte, pour que l'échelle se rapproche du bord
 const LETTRES = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
-export function BarresMois({ valeurs, moisEnCours, dernierMois, hauteur = 150, unite = '', formater, selection = null, onSelection, etiquette }: Props) {
+export function BarresMois({ valeurs, moisEnCours, dernierMois, hauteur = 150, unite = '', selection = null, onSelection, etiquette }: Props) {
   const p = usePalette();
   const maximum = Math.max(1, echelleRonde(Math.max(0, ...valeurs)).haut); // le haut de l'échelle : un multiple d'un pas rond
   const echelle = valeurs.some((v) => v > 0) ? maximum : 0; // pas d'échelle (ni de marge) sans données
-  const meilleur = valeurs.reduce((m, v, i) => (v > valeurs[m] ? i : m), 0);
   const gouttiere = largeurGouttiere(echelle, unite);
   const dessin = (
     <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.mois, { height: hauteur, marginLeft: -9, paddingLeft: gouttiere }]}>
-      {/* La zone des barres commence sous la valeur du meilleur mois (16 + 4) et finit au-dessus des lettres (4 + 16) */}
-      <EchelleBarres maximum={echelle} unite={unite} haut={20} bas={20} />
+      {/* La zone des barres finit au-dessus des lettres (4 + 16) */}
+      <EchelleBarres maximum={echelle} unite={unite} bas={20} />
       {LETTRES.map((lettre, i) => {
         const v = valeurs[i] ?? 0;
         return (
           <View key={i} style={styles.col}>
-            <Text numberOfLines={1} style={[typo.micro, styles.valeur, { color: p.texte, textTransform: 'none' }]}>
-              {selection == null && i === meilleur && v > 0 ? formater(v) : ''}
-            </Text>
             <View style={[styles.zone, { borderBottomColor: p.trait }]}>
               {v > 0 && i <= dernierMois ? (
                 <View style={[styles.barre, { height: `${(v / maximum) * 100}%`, backgroundColor: p.texte, opacity: selection != null ? (i === selection ? 1 : 0.35) : i === moisEnCours ? 0.55 : 0.9 }]} />
@@ -77,8 +70,6 @@ export function BarresMois({ valeurs, moisEnCours, dernierMois, hauteur = 150, u
 const styles = StyleSheet.create({
   mois: { flexDirection: 'row', alignItems: 'flex-end', gap: 4 },
   col: { flex: 1, height: '100%', alignItems: 'center', gap: 4 },
-  // Plus large que la colonne (et recentrée par la marge négative) : « 1 050 » ne tient pas dans 30 pt et finissait en « 1 … »
-  valeur: { height: 16, width: 64, marginHorizontal: -32, textAlign: 'center', fontVariant: ['tabular-nums'] },
   zone: { flex: 1, width: '100%', justifyContent: 'flex-end', borderBottomWidth: StyleSheet.hairlineWidth },
   barre: { position: 'absolute', bottom: 0, left: 4, right: 4, minHeight: 2, borderTopLeftRadius: 3, borderTopRightRadius: 3 },
 });
