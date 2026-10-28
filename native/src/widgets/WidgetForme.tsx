@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { TraitTirets } from '@/components/TraitTirets';
 import { CadreWidget } from '@/components/CadreWidget';
 import { CourbeLissee } from '@/components/CourbeLissee';
 import { DeuxCourbes } from '@/components/DeuxCourbes';
@@ -52,7 +53,7 @@ export function WidgetForme({ contexte, taille = 'm' }: WidgetProps) {
               <Text style={[typo.petit, { color: p.texteDoux }]}>Condition</Text>
             </View>
             <View style={styles.item}>
-              <View style={[styles.tirets, { borderColor: p.texteDoux }]} />
+              <TraitTirets couleur={p.texteDoux} epaisseur={2} largeur={16} />
               <Text style={[typo.petit, { color: p.texteDoux }]}>Fatigue</Text>
             </View>
             <Text style={[typo.petit, styles.periode, { color: p.texteDoux }]}>12 dernières semaines</Text>
@@ -71,6 +72,5 @@ const styles = StyleSheet.create({
   legende: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 8 },
   item: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   trait: { width: 16, height: 3, borderRadius: 2 },
-  tirets: { width: 16, height: 0, borderTopWidth: 2, borderStyle: 'dashed' },
   periode: { marginLeft: 'auto' },
 });

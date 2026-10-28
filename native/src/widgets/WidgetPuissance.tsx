@@ -1,4 +1,5 @@
 import { StyleSheet, Text as TexteRN, View } from 'react-native';
+import { TraitTirets } from '@/components/TraitTirets';
 import Svg, { Circle, Line, Path, Text } from 'react-native-svg';
 import { CadreWidget } from '@/components/CadreWidget';
 import { Tuile } from '@/components/Tuile';
@@ -59,7 +60,7 @@ export function WidgetPuissance({ contexte, taille = 'm' }: WidgetProps) {
                 <TexteRN style={[typo.petit, { color: p.texteDoux }]}>90 jours</TexteRN>
               </View>
               <View style={styles.item}>
-                <View style={[styles.traitTirets, { borderColor: p.texteDoux }]} />
+                <TraitTirets couleur={p.texteDoux} epaisseur={2} largeur={16} />
                 <TexteRN style={[typo.petit, { color: p.texteDoux }]}>Toute la vie</TexteRN>
               </View>
             </View>
@@ -102,5 +103,4 @@ const styles = StyleSheet.create({
   legende: { flexDirection: 'row', gap: 16, marginBottom: 8 },
   item: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   traitPlein: { width: 16, height: 3, borderRadius: 2 },
-  traitTirets: { width: 16, height: 0, borderTopWidth: 2, borderStyle: 'dashed' },
 });

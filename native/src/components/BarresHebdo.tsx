@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { TraitTirets } from '@/components/TraitTirets';
 import { usePalette } from '@/theme/usePalette';
 
 // Une barre par semaine (tonnage, charge de musculation…). La dernière est pleine, les autres atténuées.
@@ -23,13 +24,13 @@ export function BarresHebdo({ valeurs, couleur, hauteur = 120, repere, etiquette
           <View style={{ height: `${(v / maximum) * 100}%`, minHeight: 2, backgroundColor: couleur, borderRadius: 6 }} />
         </View>
       ))}
-      {repere != null && repere > 0 ? <View pointerEvents="none" style={[styles.repere, { bottom: `${Math.min(100, (repere / maximum) * 100)}%`, borderTopColor: p.texteMuet }]} /> : null}
+      {repere != null && repere > 0 ? <View pointerEvents="none" style={[styles.repere, { bottom: `${Math.min(100, (repere / maximum) * 100)}%` }]}><TraitTirets couleur={p.texteMuet} epaisseur={1} /></View> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   barres: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, borderBottomWidth: StyleSheet.hairlineWidth },
-  repere: { position: 'absolute', left: 0, right: 0, borderTopWidth: 1, borderStyle: 'dashed' },
+  repere: { position: 'absolute', left: 0, right: 0, height: 1 },
   colonne: { flex: 1, height: '100%', justifyContent: 'flex-end' },
 });

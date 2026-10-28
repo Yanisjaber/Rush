@@ -1,4 +1,5 @@
 import { StyleSheet, Text as TexteRN, View } from 'react-native';
+import { TraitTirets } from '@/components/TraitTirets';
 import Svg, { Circle, Path, Text } from 'react-native-svg';
 import { CadreWidget } from '@/components/CadreWidget';
 import { DeuxCourbes } from '@/components/DeuxCourbes';
@@ -55,7 +56,7 @@ export function WidgetHyroxAllure({ contexte, taille = 'm' }: WidgetProps) {
             </View>
             {runsCibles.length ? (
               <View style={styles.item}>
-                <View style={[styles.traitTirets, { borderColor: p.texteDoux }]} />
+                <TraitTirets couleur={p.texteDoux} epaisseur={2} largeur={18} />
                 <TexteRN style={[typo.petit, { color: p.texteDoux }]}>Objectif</TexteRN>
               </View>
             ) : null}
@@ -104,7 +105,6 @@ const styles = StyleSheet.create({
   legende: { flexDirection: 'row', gap: 16, marginBottom: 8 },
   item: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   traitPlein: { width: 18, height: 3, borderRadius: 2 },
-  traitTirets: { width: 18, height: 0, borderTopWidth: 2, borderStyle: 'dashed' },
   bas: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
   reperes: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 },
 });
