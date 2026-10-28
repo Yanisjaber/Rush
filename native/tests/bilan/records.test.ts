@@ -122,7 +122,7 @@ test('sortieVeloDeLigne : une ligne de la base devient une sortie, avec des nomb
 });
 
 import { formatNum } from '../../src/data/outils/format.ts';
-import { dateCourte, jourMois, libelleEntree, texteRecordSimple, texteValeurRecord } from '../../src/data/bilan/records-texte.ts';
+import { dateCourte, EnAnnee, enAnnee, jourMois, libelleEntree, texteRecordSimple, texteValeurRecord } from '../../src/data/bilan/records-texte.ts';
 
 test('texteValeurRecord : la durée en heures-minutes, la distance avec une décimale, le reste en entier', () => {
   assert.deepEqual(texteValeurRecord(385, 'min'), { nombre: '6h25', unite: '' });
@@ -147,4 +147,12 @@ test('libelleEntree : la séance et sa date, la période, la série', () => {
   assert.equal(libelleEntree({ ...base, cle: 'jour', periode: 'jour' }, { valeur: 1, nom: '', iso: '2026-03-04', id: null, detail: '3 séances' }).titre, 'Mercredi 4 mars');
   assert.equal(libelleEntree({ ...base, cle: 'serie' }, { valeur: 4, nom: '', iso: '2026-04-12', id: null, fin: '2026-04-22' }).titre, 'Du 12 avril au 22 avril');
   assert.equal(libelleEntree(base, { valeur: 1, nom: '', iso: '2026-03-04', id: 'a' }).titre, 'Sans titre');
+});
+
+test('enAnnee : « cette année » pour l\'année en cours, sinon l\'année écrite', () => {
+  const maintenant = new Date(2026, 9, 28, 12);
+  assert.equal(enAnnee(2026, maintenant), 'cette année');
+  assert.equal(enAnnee(2025, maintenant), 'en 2025');
+  assert.equal(EnAnnee(2026, maintenant), 'Cette année');
+  assert.equal(EnAnnee(2025, maintenant), 'En 2025');
 });

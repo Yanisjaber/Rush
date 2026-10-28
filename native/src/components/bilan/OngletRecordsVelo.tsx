@@ -4,7 +4,7 @@ import { Bloc } from '@/components/feuilles/Bloc';
 import { CourbePuissance } from '@/components/graphes/CourbePuissance';
 import { Bouton } from '@/components/ui/Bouton';
 import { indexDureeProche, recordsBasiquesVelo, texteDuree, wattsParKg, type PointCourbe, type RecordTop, type SortieVelo } from '@/data/bilan/records';
-import { texteRecordSimple, texteValeurRecord } from '@/data/bilan/records-texte';
+import { texteRecordSimple, texteValeurRecord, EnAnnee, enAnnee } from '@/data/bilan/records-texte';
 import { formatDateLongue } from '@/data/outils/format';
 import { rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
@@ -44,7 +44,7 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
   const [ouvert, setOuvert] = useState<string | null>(null); // le record dont le détail est sorti
   const couleur = couleurSport(p, 'velo');
   const nomPortee = portee === 'annee' ? String(annee) : 'Tous temps';
-  const nomAutre = portee === 'annee' ? 'Tous temps' : String(annee);
+  const nomAutre = portee === 'annee' ? 'Tous temps' : annee === maintenant.getFullYear() ? 'cette année' : String(annee);
 
   const sortiesAnnee = useMemo(() => sorties.filter((s) => s.iso.startsWith(`${annee}-`)), [sorties, annee]);
   const basiques = useMemo(() => recordsBasiquesVelo(portee === 'annee' ? sortiesAnnee : sorties), [portee, sortiesAnnee, sorties]);
@@ -59,8 +59,8 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
       if (b == null) return null;
       return a >= b - 1e-9 ? { texte: 'Ton record absolu', court: '✓ Record absolu', ok: true } : { texte: `Record absolu : ${texteRecordSimple(b, unite)}`, court: `Absolu : ${texteRecordSimple(b, unite)}`, ok: false };
     }
-    if (b == null) return { texte: `Rien en ${annee}`, court: `Rien en ${annee}`, ok: false };
-    return Math.abs(a - b) < 1e-9 ? { texte: `Fait en ${annee}`, court: `✓ Fait en ${annee}`, ok: true } : { texte: `En ${annee} : ${texteRecordSimple(b, unite)}`, court: `${annee} : ${texteRecordSimple(b, unite)}`, ok: false };
+    if (b == null) return { texte: `Rien ${enAnnee(annee, maintenant)}`, court: `Rien ${enAnnee(annee, maintenant)}`, ok: false };
+    return Math.abs(a - b) < 1e-9 ? { texte: `Fait ${enAnnee(annee, maintenant)}`, court: `✓ Fait ${enAnnee(annee, maintenant)}`, ok: true } : { texte: `${EnAnnee(annee, maintenant)} : ${texteRecordSimple(b, unite)}`, court: `${annee} : ${texteRecordSimple(b, unite)}`, ok: false };
   };
 
   const indexChoisi = courbe.length ? indexDureeProche(courbe, duree ?? DUREE_DEPART) : -1;
@@ -143,7 +143,7 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
         </>
       ) : (
         <Bloc titre="Records">
-          <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de record {portee === 'annee' ? `en ${annee}` : ''}.</Text>
+          <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de record {portee === 'annee' ? enAnnee(annee, maintenant) : ''}.</Text>
         </Bloc>
       )}
 
@@ -185,7 +185,7 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
             ) : null}
           </>
         ) : (
-          <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de puissance enregistrée {portee === 'annee' ? `en ${annee}` : ''}.</Text>
+          <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de puissance enregistrée {portee === 'annee' ? enAnnee(annee, maintenant) : ''}.</Text>
         )}
       </Bloc>
 

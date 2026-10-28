@@ -6,7 +6,7 @@ import { MenuMesure } from '@/components/menus/MenuMesure';
 import { OngletsSegment } from '@/components/menus/OngletsSegment';
 import { activitesAnnee, MESURES_CUMUL, recordRecent, type ActiviteBilan, type MetriqueCumul } from '@/data/bilan/bilan';
 import { recordsPeriodes, recordsRegularite, recordsSeance, type GroupeRecords, type RecordTop } from '@/data/bilan/records';
-import { jourMois, libelleEntree, texteRecordSimple, texteValeurRecord } from '@/data/bilan/records-texte';
+import { jourMois, libelleEntree, texteRecordSimple, texteValeurRecord, EnAnnee, enAnnee } from '@/data/bilan/records-texte';
 import { rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
@@ -50,7 +50,7 @@ export function OngletRecords({ portee, toutes, annee, maintenant, filtre, mesur
   const record = groupe?.records.find((r) => r.cle === choisi) ?? groupe?.records[0];
   const autreRecord = (r: RecordTop): RecordTop | undefined => autres.find((g) => g.cle === groupe?.cle)?.records.find((x) => x.cle === r.cle);
   const nomPortee = portee === 'annee' ? String(annee) : 'Tous temps';
-  const nomAutre = portee === 'annee' ? 'Tous temps' : String(annee);
+  const nomAutre = portee === 'annee' ? 'Tous temps' : annee === maintenant.getFullYear() ? 'cette année' : String(annee);
 
   /** Ce que vaut l'autre période pour ce record : une coche quand c'est le même record. */
   const comparaison = (r: RecordTop): { texte: string; ok: boolean } | null => {
@@ -61,8 +61,8 @@ export function OngletRecords({ portee, toutes, annee, maintenant, filtre, mesur
       if (b == null) return null;
       return a >= b - 1e-9 ? { texte: 'Ton record absolu', ok: true } : { texte: `Record absolu : ${texteRecordSimple(b, r.unite)}`, ok: false };
     }
-    if (b == null) return { texte: `Rien en ${annee}`, ok: false };
-    return Math.abs(a - b) < 1e-9 ? { texte: `Fait en ${annee}`, ok: true } : { texte: `En ${annee} : ${texteRecordSimple(b, r.unite)}`, ok: false };
+    if (b == null) return { texte: `Rien ${enAnnee(annee, maintenant)}`, ok: false };
+    return Math.abs(a - b) < 1e-9 ? { texte: `Fait ${enAnnee(annee, maintenant)}`, ok: true } : { texte: `${EnAnnee(annee, maintenant)} : ${texteRecordSimple(b, r.unite)}`, ok: false };
   };
 
   const graphique = (): { titre: string; contenu: ReactElement } | null => {
@@ -157,7 +157,7 @@ export function OngletRecords({ portee, toutes, annee, maintenant, filtre, mesur
                 );
               })
             ) : (
-              <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de record {portee === 'annee' ? `en ${annee}` : ''} dans ce thème.</Text>
+              <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de record {portee === 'annee' ? enAnnee(annee, maintenant) : ''} dans ce thème.</Text>
             )}
           </Bloc>
 
@@ -197,7 +197,7 @@ export function OngletRecords({ portee, toutes, annee, maintenant, filtre, mesur
         </>
       ) : (
         <Bloc titre="Records">
-          <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de record {portee === 'annee' ? `en ${annee}` : ''}.</Text>
+          <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de record {portee === 'annee' ? enAnnee(annee, maintenant) : ''}.</Text>
         </Bloc>
       )}
     </>

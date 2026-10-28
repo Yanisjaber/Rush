@@ -34,3 +34,11 @@ export function libelleEntree(record: RecordTop, e: EntreeRecord): { titre: stri
   if (record.periode === 'mois') return { titre: `${MOIS[Number(e.iso.slice(5, 7)) - 1][0].toUpperCase()}${MOIS[Number(e.iso.slice(5, 7)) - 1].slice(1)} ${e.iso.slice(0, 4)}`, sous: e.detail ?? '' };
   return { titre: e.nom || 'Sans titre', sous: formatDateLongue(e.iso) };
 }
+
+/** L'année dans une phrase : « cette année » pour l'année en cours, sinon « en 2025 » (« cette année » serait faux). */
+export const enAnnee = (annee: number, maintenant: Date = new Date()): string => (annee === maintenant.getFullYear() ? 'cette année' : `en ${annee}`);
+/** La même, au début d'une phrase : « Cette année » ou « En 2025 ». */
+export const EnAnnee = (annee: number, maintenant: Date = new Date()): string => {
+  const t = enAnnee(annee, maintenant);
+  return t.charAt(0).toUpperCase() + t.slice(1);
+};
