@@ -188,7 +188,7 @@ export function validerSection(
       if (texte.length > (c.max as number)) erreurs[c.cle] = `${c.max} caractères maximum.`;
       else propres[c.cle] = texte;
     } else if (c.type === 'date') {
-      if (!dateValide(texte) || texte > aujourdhui) erreurs[c.cle] = 'Date invalide.';
+      if (!dateValide(texte) || texte > aujourdhui) erreurs[c.cle] = 'Date invalide (format AAAA-MM-JJ, pas dans le futur).';
       else propres[c.cle] = texte;
     } else if (c.type === 'choix') {
       if (!(c.options || []).some(([v]) => v === texte)) erreurs[c.cle] = 'Choix invalide.';

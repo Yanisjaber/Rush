@@ -1,4 +1,6 @@
-import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
+import { usePreventRemove } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Bloc } from '@/components/Bloc';
 import { Bouton } from '@/components/Bouton';
 import { Pastille } from '@/components/Pastille';
@@ -12,6 +14,22 @@ import { usePalette } from '@/theme/usePalette';
 export function FormulaireSection({ id }: { id: string }) {
   const p = usePalette();
   const f = useProfilSection(id);
+  // Quitter l'écran avec des modifications non enregistrées : on demande, plutôt que de les perdre en silence.
+  // usePreventRemove bloque aussi le bouton retour natif d'iOS (un simple écouteur « beforeRemove » n'y suffit pas).
+  const [quitte, setQuitte] = useState(false);
+  usePreventRemove(f.sale && !quitte, ({ repeat }) => {
+    Alert.alert('Modifications non enregistrées', 'Tu perds ce que tu viens de saisir.', [
+      { text: 'Rester', style: 'cancel' },
+      {
+        text: 'Quitter',
+        style: 'destructive',
+        onPress: () => {
+          setQuitte(true);
+          repeat();
+        },
+      },
+    ]);
+  });
   if (!f.section) return null;
   if (f.chargement) {
     return (
@@ -48,6 +66,12 @@ export function FormulaireSection({ id }: { id: string }) {
           </View>
         </Bloc>
       ))}
+      {Object.keys(f.erreurs).length ? (
+        // Le champ en erreur peut être hors de l'écran : on le dit près du bouton
+        <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>
+          {Object.keys(f.erreurs).length > 1 ? `${Object.keys(f.erreurs).length} champs sont à corriger (en rouge).` : 'Un champ est à corriger (en rouge).'}
+        </Text>
+      ) : null}
       <Bouton onPress={() => void f.enregistrer()}>{f.envoi ? 'Enregistrement…' : f.sale ? 'Enregistrer' : 'Enregistré'}</Bouton>
       {f.message ? (
         <Text accessibilityLiveRegion="polite" style={[typo.petit, { color: p.ok }]}>

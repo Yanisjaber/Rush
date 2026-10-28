@@ -11,7 +11,7 @@ test('validerSection : bornes, virgule décimale, champ obligatoire', () => {
   assert.equal(validerSection(identite, { weight: '72,5', first_name: 'Yanis' }).propres.weight, 72.5);
   assert.ok(validerSection(identite, { first_name: '' }).erreurs.first_name);
   assert.ok(validerSection(physio, { pace_5k: '4h30' }).erreurs.pace_5k);
-  assert.equal(validerSection(physio, { last_ftp_test: '2999-01-01' }).erreurs.last_ftp_test, 'Date invalide.');
+  assert.equal(validerSection(physio, { last_ftp_test: '2999-01-01' }).erreurs.last_ftp_test, 'Date invalide (format AAAA-MM-JJ, pas dans le futur).');
 });
 
 test('versPayload : colonnes séparées des extras, extras des autres sections conservés', () => {

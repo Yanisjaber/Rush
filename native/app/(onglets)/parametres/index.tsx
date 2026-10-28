@@ -126,8 +126,8 @@ function Apparence() {
   return (
     <CadreWidget titre="Apparence">
       <View style={styles.choix} accessibilityRole="radiogroup">
-        <Pastille nom="Sombre" couleur={p.texte} actif={!clair} onPress={() => definirTheme('sombre')} aide="Thème sombre" />
-        <Pastille nom="Clair" couleur={p.texte} actif={clair} onPress={() => definirTheme('clair')} aide="Thème clair" />
+        <Pastille role="radio" nom="Sombre" couleur={p.texte} actif={!clair} onPress={() => definirTheme('sombre')} aide="Thème sombre" />
+        <Pastille role="radio" nom="Clair" couleur={p.texte} actif={clair} onPress={() => definirTheme('clair')} aide="Thème clair" />
       </View>
     </CadreWidget>
   );
@@ -143,7 +143,7 @@ function ReglagesDemo() {
       <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 10 }]}>Séances prévues aujourd'hui</Text>
       <View style={styles.choix} accessibilityRole="radiogroup">
         {PREVUES_AUJOURDHUI.map((n) => (
-          <Pastille key={n} nom={String(n)} couleur={p.texte} actif={prevuesAujourdhui === n} onPress={() => definirPrevuesAujourdhui(n)} aide={n === 0 ? "Rien de prévu aujourd'hui" : `${n} séance${n > 1 ? 's' : ''} prévue${n > 1 ? 's' : ''} aujourd'hui`} />
+          <Pastille role="radio" key={n} nom={String(n)} couleur={p.texte} actif={prevuesAujourdhui === n} onPress={() => definirPrevuesAujourdhui(n)} aide={n === 0 ? "Rien de prévu aujourd'hui" : `${n} séance${n > 1 ? 's' : ''} prévue${n > 1 ? 's' : ''} aujourd'hui`} />
         ))}
       </View>
       <View style={{ marginTop: 14 }}>

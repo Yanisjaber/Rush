@@ -12,16 +12,18 @@ interface Props {
   aide?: string;
   /** Couleur de remplissage quand elle est choisie (par défaut la couleur de la muscu). */
   couleur?: string;
+  /** 'radio' quand les pastilles forment un choix unique (Sombre / Clair…) : VoiceOver annonce « sélectionné » comme pour une case radio. */
+  role?: 'button' | 'radio';
 }
 
-export function Pastille({ nom, actif, onPress, aide, couleur }: Props) {
+export function Pastille({ nom, actif, onPress, aide, couleur, role = 'button' }: Props) {
   const p = usePalette();
   const c = couleur ?? p.sportMuscu;
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: actif }}
+      accessibilityRole={role}
+      accessibilityState={role === 'radio' ? { checked: actif } : { selected: actif }}
       accessibilityLabel={nom}
       accessibilityHint={aide}
       style={[styles.pastille, { backgroundColor: actif ? c : 'transparent', borderColor: actif ? c : p.contourChamp }]}
