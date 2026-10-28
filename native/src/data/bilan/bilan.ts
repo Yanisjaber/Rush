@@ -15,6 +15,8 @@ export interface ActiviteBilan {
   iso: string;
   sport: SportBilan;
   famille: string;
+  /** Type brut du sport (Strava : Hike, Soccer…), pour détailler « Autre » dans la répartition. */
+  type?: string;
   duree_min: number;
   distance_km: number;
   d_plus: number;
@@ -61,6 +63,7 @@ export function normaliser(l: Pick<Seance, 'id' | 'name' | 'sport' | 'start_date
     iso: String(l.start_date_local || '').slice(0, 10),
     sport: familleBilan(l.sport),
     famille: familleAffichage(l.sport), // famille du filtre global de l'en-tête
+    type: typeof l.sport === 'string' ? l.sport : undefined,
     duree_min: (Number(l.moving_time) || 0) / 60,
     distance_km: Number(l.distance_km) || 0,
     d_plus: Number(l.total_elevation_gain) || 0,
@@ -484,16 +487,22 @@ export function regulariteAnnee(acts: ActiviteBilan[], annee: number, maintenant
 }
 
 /**
- * Répartition par sport : [{ sport, heures, seances, valeur, part }] triée par la mesure choisie, décroissante (le temps par défaut ; mêmes mesures que le cumul sur 3 ans).
+ * Répartition par sport : [{ sport, cle, type, heures, seances, valeur, part }] triée par la mesure choisie, décroissante (le temps par défaut ; mêmes mesures que le cumul sur 3 ans).
  * `valeur` est la somme de la mesure pour le sport, `part` sa part en % du total. Un sport à zéro pour la mesure (la muscu en distance) n'apparaît pas.
+ * La famille « autre » est détaillée : chaque sport du catalogue (randonnée, football, surf…) a sa ligne, `type` donne son type brut. Un type absent ou « Other » reste « Autre ».
  */
-export function repartitionSport(acts: ActiviteBilan[], mesure: MetriqueCumul = 'heures'): { sport: SportBilan; heures: number; seances: number; valeur: number; part: number }[] {
-  const par: Record<string, { sport: SportBilan; heures: number; seances: number; valeur: number }> = {};
+export function repartitionSport(
+  acts: ActiviteBilan[],
+  mesure: MetriqueCumul = 'heures',
+): { sport: SportBilan; cle: string; type?: string; heures: number; seances: number; valeur: number; part: number }[] {
+  const par: Record<string, { sport: SportBilan; cle: string; type?: string; heures: number; seances: number; valeur: number }> = {};
   for (const a of acts) {
-    par[a.sport] = par[a.sport] || { sport: a.sport, heures: 0, seances: 0, valeur: 0 };
-    par[a.sport].heures += a.duree_min / 60;
-    par[a.sport].seances += 1;
-    par[a.sport].valeur += valeurCumul(a, mesure);
+    const type = a.sport === 'autre' && a.type && a.type !== 'Other' ? a.type : undefined;
+    const cle = type ?? a.sport;
+    par[cle] = par[cle] || { sport: a.sport, cle, type, heures: 0, seances: 0, valeur: 0 };
+    par[cle].heures += a.duree_min / 60;
+    par[cle].seances += 1;
+    par[cle].valeur += valeurCumul(a, mesure);
   }
   const liste = Object.values(par).filter((x) => x.valeur > 0).sort((a, b) => b.valeur - a.valeur);
   const total = liste.reduce((s, x) => s + x.valeur, 0);

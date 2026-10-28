@@ -38,7 +38,7 @@ test('familleBilanDuFiltre : le filtre global vers la famille de bilan', () => {
 
 test('normaliser : une ligne de la base devient une activité de bilan, avec des nombres sûrs', () => {
   const a = normaliser({ id: 'x', name: null, sport: 'Run', start_date_local: '2026-03-02T18:00:00+00:00', moving_time: 3600, distance_km: null, total_elevation_gain: 120, tss: 55 });
-  assert.deepEqual(a, { id: 'x', name: '', iso: '2026-03-02', sport: 'course', famille: 'course', duree_min: 60, distance_km: 0, d_plus: 120, tss: 55 });
+  assert.deepEqual(a, { id: 'x', name: '', iso: '2026-03-02', sport: 'course', famille: 'course', type: 'Run', duree_min: 60, distance_km: 0, d_plus: 120, tss: 55 });
 });
 
 test('activitesAnnee : du 1er janvier à aujourd\'hui pour l\'année en cours, l\'année entière sinon', () => {
@@ -124,6 +124,12 @@ test('recordRecent : moins de 30 jours et pas dans le futur', () => {
   assert.equal(recordRecent('2026-05-01', maintenant), false);
   assert.equal(recordRecent('2026-07-15', maintenant), false);
   assert.equal(recordRecent('', maintenant), false);
+});
+
+test('repartitionSport : « autre » est détaillé par sport du catalogue', () => {
+  const autre = (iso: string, type: string, min: number) => ({ ...act(iso, 'autre', min, 0), type });
+  const r = repartitionSport(activitesAnnee([autre('2026-01-10', 'Hike', 180), autre('2026-01-11', 'Hike', 60), autre('2026-01-12', 'Soccer', 60), autre('2026-01-13', 'Other', 60)], 2026, maintenant));
+  assert.deepEqual(r.map((x) => [x.cle, x.type, x.heures]), [['Hike', 'Hike', 4], ['Soccer', 'Soccer', 1], ['autre', undefined, 1]]);
 });
 
 test('volumeMensuel et repartitionSport', () => {

@@ -25,6 +25,7 @@ import {
   regulariteAnnee, repartitionSport, sommer, volumeMensuel, familleBilanDuFiltre, decimalesObjectif, phraseVerdict, type MetriqueCumul,
 } from '@/data/bilan/bilan';
 import { formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
+import { nomDuType } from '@/data/sports/catalogue-sports';
 import { courbeProgression, PERIODES_PROGRESSION, progressionTousSports, type PeriodeProgression } from '@/data/bilan/progression';
 import { useDonneesBilan } from '@/hooks/useDonneesBilan';
 import { useHistoriqueProgression, useSeriesForceProgression } from '@/hooks/useHistoriqueProgression';
@@ -290,11 +291,11 @@ export default function Bilan() {
                   {repartition.length ? (
                     <View
                       accessible
-                      accessibilityLabel={`Répartition par sport : ${repartition.map((r) => `${NOM_SPORT_BILAN[r.sport]}, ${formatNum(r.valeur, 0)} ${mesureRep.unite}, ${r.part} pour cent`).join(' ; ')}`}
+                      accessibilityLabel={`Répartition par sport : ${repartition.map((r) => `${r.type ? nomDuType(r.type) : NOM_SPORT_BILAN[r.sport]}, ${formatNum(r.valeur, 0)} ${mesureRep.unite}, ${r.part} pour cent`).join(' ; ')}`}
                       style={styles.repartition}
                     >
                       <AnneauRepartition
-                        parts={repartition.map((r) => ({ cle: r.sport, couleur: couleurSport(p, FAMILLE_COULEUR[r.sport]), valeur: r.valeur }))}
+                        parts={repartition.map((r) => ({ cle: r.cle, couleur: couleurSport(p, r.type ?? FAMILLE_COULEUR[r.sport]), valeur: r.valeur }))}
                         taille={132}
                         epaisseur={18}
                         piste={p.surface2}
@@ -307,11 +308,11 @@ export default function Bilan() {
                       </AnneauRepartition>
                       <View style={styles.legendeRepartition}>
                         {repartition.map((r) => (
-                          <View key={r.sport} style={styles.ligneRepartition}>
-                            <IconeSport sport={FAMILLE_COULEUR[r.sport]} taille={16} />
+                          <View key={r.cle} style={styles.ligneRepartition}>
+                            <IconeSport sport={r.type ?? FAMILLE_COULEUR[r.sport]} taille={16} />
                             <View style={{ flex: 1 }}>
                               <Text numberOfLines={1} style={[typo.petit, { color: p.texte }]}>
-                                {NOM_SPORT_BILAN[r.sport]}
+                                {r.type ? nomDuType(r.type) : NOM_SPORT_BILAN[r.sport]}
                               </Text>
                               {/* La stat elle-même (281 h, 3 120 km…), en plus du pourcentage */}
                               <Text numberOfLines={1} style={[typo.micro, { color: p.texteMuet }]}>
