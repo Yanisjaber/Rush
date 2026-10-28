@@ -28,7 +28,7 @@ export function BarresMois({ valeurs, moisEnCours, dernierMois, hauteur = 150, f
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.mois, { height: hauteur, paddingLeft: GOUTTIERE_ECHELLE }]}>
       {/* La zone des barres commence sous la valeur du meilleur mois (16 + 4) et finit au-dessus des lettres (4 + 16) */}
-      <EchelleBarres maximum={maximum} haut={20} bas={20} />
+      <EchelleBarres maximum={valeurs.some((v) => v > 0) ? maximum : 0} haut={20} bas={20} />
       {LETTRES.map((lettre, i) => {
         const v = valeurs[i] ?? 0;
         return (
