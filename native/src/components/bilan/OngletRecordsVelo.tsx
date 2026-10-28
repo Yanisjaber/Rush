@@ -3,10 +3,9 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { Bloc } from '@/components/feuilles/Bloc';
 import { CourbePuissance } from '@/components/graphes/CourbePuissance';
 import { OngletsSegment } from '@/components/menus/OngletsSegment';
-import { Tuile } from '@/components/ui/Tuile';
-import { ContexteTaille, ECART_LIGNES, HAUTEUR_FINE } from '@/components/ui/taille';
+import { Bouton } from '@/components/ui/Bouton';
 import { indexDureeProche, recordsBasiquesVelo, texteDuree, wattsParKg, type PointCourbe, type RecordTop, type SortieVelo } from '@/data/bilan/records';
-import { dateCourte, texteRecordSimple, texteValeurRecord } from '@/data/bilan/records-texte';
+import { texteRecordSimple, texteValeurRecord } from '@/data/bilan/records-texte';
 import { formatDateLongue } from '@/data/outils/format';
 import { rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
@@ -32,10 +31,17 @@ type Portee = 'annee' | 'tout';
 /** La durée montrée au départ : 20 minutes, celle de ton niveau (FTP). */
 const DUREE_DEPART = 1200;
 
+/** « Lundi 6 avril 2026 » : avec l'année, qui compte en « Tous temps ». */
+const dateAnnee = (iso: string): string => `${formatDateLongue(iso)} ${iso.slice(0, 4)}`;
+
+/** Le nom d'un record sur une mini tuile (étroite) : le détail, qui sort au toucher, donne le nom entier. */
+const NOM_TUILE: Record<string, string> = { duree: 'Durée', distance: 'Distance', dplus: 'D+', tss: 'Charge', vmoy: 'Vitesse moy.', pmoy: 'Puissance moy.', fcmoy: 'FC moy.' };
+
 export function OngletRecordsVelo({ annee, maintenant, sorties, poids, courbeAnnee, courbeTout, chargement, erreur, onOuvrir }: Props) {
   const p = usePalette();
   const [portee, setPortee] = useState<Portee>('annee');
   const [duree, setDuree] = useState<number | null>(null); // la durée touchée, en secondes ; null : la durée de départ
+  const [ouvert, setOuvert] = useState<string | null>(null); // le record dont le détail est sorti
   const couleur = couleurSport(p, 'velo');
   const nomPortee = portee === 'annee' ? String(annee) : 'Tous temps';
   const nomAutre = portee === 'annee' ? 'Tous temps' : String(annee);
@@ -86,24 +92,65 @@ export function OngletRecordsVelo({ annee, maintenant, sorties, poids, courbeAnn
       />
 
       {basiques.length ? (
-        // Les records basiques : un widget XS (60 pt de haut, toute la largeur) par record, comme sur l'accueil
-        <View style={styles.xs}>
-          {basiques.map((r: RecordTop) => {
+        <>
+          {/* Les records basiques : de mini tuiles, trois par rangée ; on en touche une pour que son détail sorte dessous */}
+          <View style={styles.mini}>
+            {basiques.map((r: RecordTop) => {
+              const t = texteValeurRecord(r.top[0].valeur, r.unite);
+              const actif = ouvert === r.cle;
+              return (
+                <Pressable
+                  key={r.cle}
+                  onPress={() => setOuvert(actif ? null : r.cle)}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: actif }}
+                  accessibilityLabel={`${r.libelle}, ${texteRecordSimple(r.top[0].valeur, r.unite)}. Voir le détail`}
+                  style={[styles.tuileMini, { backgroundColor: p.surface, borderTopColor: couleur }, actif && { borderColor: p.texte, borderWidth: 1.5, borderTopWidth: 3, borderTopColor: couleur }]}
+                >
+                  <Text numberOfLines={2} style={[styles.nomMini, { color: p.texteDoux }]}>
+                    {NOM_TUILE[r.cle] ?? r.libelle}
+                  </Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.valeurMini, { color: p.texte }]}>
+                    {t.nombre}
+                    {t.unite ? <Text style={[typo.micro, { color: p.texteDoux, textTransform: 'none' }]}> {t.unite}</Text> : null}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {(() => {
+            const r = basiques.find((x) => x.cle === ouvert);
+            if (!r) return null;
             const e = r.top[0];
             const t = texteValeurRecord(e.valeur, r.unite);
             const cmp = comparaison(e.valeur, basiquesAutre.find((x) => x.cle === r.cle)?.top[0]?.valeur, r.unite);
-            const etiquette = `${r.libelle}, ${texteRecordSimple(e.valeur, r.unite)}, ${e.nom}, ${formatDateLongue(e.iso)}${cmp ? `, ${cmp.texte}` : ''}. Ouvrir la séance`;
             return (
-              <Pressable key={r.cle} onPress={() => e.id && onOuvrir(e.id)} accessibilityRole="button" accessibilityLabel={etiquette}>
-                <View style={{ height: HAUTEUR_FINE }}>
-                  <ContexteTaille.Provider value="xs">
-                    <Tuile titre={r.libelle} valeur={t.nombre} unite={t.unite || undefined} note={`${dateCourte(e.iso)}\n${cmp ? cmp.court : ''}`} />
-                  </ContexteTaille.Provider>
-                </View>
-              </Pressable>
+              <Bloc titre={r.libelle}>
+                <Text style={[styles.valeurDetail, { color: p.texte }]}>
+                  {t.nombre}
+                  {t.unite ? <Text style={[typo.corpsFort, { color: p.texteDoux }]}> {t.unite}</Text> : null}
+                </Text>
+                <Text numberOfLines={2} style={[typo.corps, { color: p.texte }]}>
+                  {e.nom}
+                </Text>
+                <Text style={[typo.petit, { color: p.texteDoux }]}>{dateAnnee(e.iso)}</Text>
+                {cmp ? (
+                  <Text style={[typo.petit, { color: cmp.ok ? p.texte : p.texteMuet, marginTop: 4 }]}>
+                    {cmp.ok ? '✓ ' : ''}
+                    {cmp.texte}
+                  </Text>
+                ) : null}
+                {e.id ? (
+                  <View style={{ marginTop: 12 }}>
+                    <Bouton variante="discret" petit onPress={() => onOuvrir(e.id as string)} accessibilityLabel={`Ouvrir la séance ${e.nom}`}>
+                      Ouvrir la séance
+                    </Bouton>
+                  </View>
+                ) : null}
+              </Bloc>
             );
-          })}
-        </View>
+          })()}
+        </>
       ) : (
         <Bloc titre="Records">
           <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de record {portee === 'annee' ? `en ${annee}` : ''}.</Text>
@@ -128,7 +175,7 @@ export function OngletRecordsVelo({ annee, maintenant, sorties, poids, courbeAnn
                 .join(', ')}.`}
             />
             {point && meilleur ? (
-              <View accessible accessibilityLabel={`${texteDuree(point.duree)} : ${meilleur.watts} watts${wkg ? `, ${wkg} watts par kilo` : ''}, ${meilleur.nom}, ${formatDateLongue(meilleur.iso)}`} style={styles.lecture}>
+              <View accessible accessibilityLabel={`${texteDuree(point.duree)} : ${meilleur.watts} watts${wkg ? `, ${wkg} watts par kilo` : ''}, ${meilleur.nom}, ${dateAnnee(meilleur.iso)}`} style={styles.lecture}>
                 <Text style={[typo.micro, { color: p.texteMuet }]}>Puissance · {texteDuree(point.duree)}</Text>
                 <Text style={[styles.valeur, { color: p.texte }]}>
                   {meilleur.watts}
@@ -136,7 +183,7 @@ export function OngletRecordsVelo({ annee, maintenant, sorties, poids, courbeAnn
                 </Text>
                 <Text numberOfLines={2} style={[typo.petit, { color: p.texteDoux, textAlign: 'center' }]}>
                   {wkg ? `${wkg.toFixed(1).replace('.', ',')} W/kg · ` : ''}
-                  {meilleur.nom} · {formatDateLongue(meilleur.iso)}
+                  {meilleur.nom} · {dateAnnee(meilleur.iso)}
                 </Text>
                 {cmpEffort ? (
                   <Text style={[typo.petit, { color: cmpEffort.ok ? p.texte : p.texteMuet, textAlign: 'center' }]}>
@@ -155,7 +202,7 @@ export function OngletRecordsVelo({ annee, maintenant, sorties, poids, courbeAnn
       {point && point.top.length > 1 ? (
         <Bloc titre={`Podium · ${texteDuree(point.duree)}`}>
           {point.top.map((e, i) => {
-            const etiquette = `${i + 1}, ${e.nom}, ${formatDateLongue(e.iso)}, ${e.watts} watts`;
+            const etiquette = `${i + 1}, ${e.nom}, ${dateAnnee(e.iso)}, ${e.watts} watts`;
             return (
               <Pressable key={`${e.id}-${i}`} onPress={() => onOuvrir(e.id)} accessibilityRole="button" accessibilityLabel={`${etiquette}. Ouvrir la séance`} style={styles.podium}>
                 <Text style={[styles.rang, { color: i === 0 ? p.texte : p.texteMuet }]}>{i + 1}</Text>
@@ -164,7 +211,7 @@ export function OngletRecordsVelo({ annee, maintenant, sorties, poids, courbeAnn
                     {e.nom}
                   </Text>
                   <Text numberOfLines={1} style={[typo.petit, { color: p.texteMuet }]}>
-                    {formatDateLongue(e.iso)}
+                    {dateAnnee(e.iso)}
                   </Text>
                 </View>
                 <Text style={[styles.valeurPodium, { color: p.texte }]}>{e.watts} W</Text>
@@ -180,7 +227,11 @@ export function OngletRecordsVelo({ annee, maintenant, sorties, poids, courbeAnn
 const styles = StyleSheet.create({
   attente: { paddingVertical: 40, alignItems: 'center' },
   note: { marginBottom: 10 },
-  xs: { gap: ECART_LIGNES },
+  mini: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tuileMini: { width: '31.7%', minHeight: 70, borderRadius: rayon.base, borderTopWidth: 3, borderWidth: 0, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 8, gap: 1 },
+  nomMini: { fontFamily: police.texte600, fontSize: 11, lineHeight: 14, letterSpacing: 0.4, textTransform: 'uppercase', minHeight: 28 },
+  valeurMini: { fontFamily: police.titre800, fontSize: 22, lineHeight: 26, fontVariant: ['tabular-nums'] },
+  valeurDetail: { fontFamily: police.titre800, fontSize: 36, lineHeight: 40, marginBottom: 4, fontVariant: ['tabular-nums'] },
   lecture: { alignItems: 'center', gap: 2, marginTop: 10 },
   valeur: { fontFamily: police.titre800, fontSize: 38, lineHeight: 42, fontVariant: ['tabular-nums'] },
   podium: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingVertical: 6 },
