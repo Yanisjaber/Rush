@@ -416,11 +416,17 @@ const joursEntre = (a: Date, b: Date) => Math.round((Date.UTC(b.getFullYear(), b
 /** Dernier jour pris en compte d'une année : aujourd'hui pour l'année en cours, le 31 décembre sinon. */
 const finDeAnnee = (annee: number, maintenant: Date) => (annee === maintenant.getFullYear() ? midi(maintenant) : new Date(annee, 11, 31, 12));
 
-/** La mesure choisie (distance, dénivelé, séances, charge ou temps) par jour de la semaine : 7 valeurs, lundi → dimanche, sur les activités données. */
-export function valeursParJourSemaine(acts: ActiviteBilan[], mesure: MetriqueCumul): number[] {
-  const jours = new Array(7).fill(0);
-  for (const a of acts) jours[(dateDe(a.iso).getDay() + 6) % 7] += valeurCumul(a, mesure);
-  return jours;
+/**
+ * La mesure choisie (distance, dénivelé, séances, charge ou temps) en moyenne pour chaque jour de la semaine : 7 valeurs, lundi → dimanche.
+ * C'est le total de ce jour divisé par le nombre de ces jours écoulés dans l'année (« tes lundis » : le total des lundis ÷ le nombre de lundis, du 1er janvier à aujourd'hui).
+ */
+export function moyennesParJourSemaine(acts: ActiviteBilan[], annee: number, maintenant: Date = new Date(), mesure: MetriqueCumul = 'seances'): number[] {
+  const totaux = new Array(7).fill(0);
+  for (const a of acts) totaux[(dateDe(a.iso).getDay() + 6) % 7] += valeurCumul(a, mesure);
+  const nombre = new Array(7).fill(0);
+  const fin = finDeAnnee(annee, maintenant);
+  for (const d = new Date(annee, 0, 1, 12); d <= fin; d.setDate(d.getDate() + 1)) nombre[(d.getDay() + 6) % 7]++;
+  return totaux.map((t, i) => (nombre[i] ? t / nombre[i] : 0));
 }
 
 /** La mesure choisie (la charge TSS par défaut) des `nb` dernières semaines (lundi → dimanche) de l'année : la dernière valeur est la semaine en cours (ou la dernière de l'année). */

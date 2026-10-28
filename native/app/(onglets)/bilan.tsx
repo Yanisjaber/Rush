@@ -21,7 +21,7 @@ import { TraitTirets } from '@/components/graphes/TraitTirets';
 import { ProgresSport } from '@/components/graphes/ProgresSport';
 import type { IconeOnglet } from '@/components/menus/OngletsIcones.types';
 import {
-  activitesAnnee, anneesDisponibles, avancement, chargeParSemaine, cumulParAnnee, valeursParMois, valeursParJourSemaine, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
+  activitesAnnee, anneesDisponibles, avancement, chargeParSemaine, cumulParAnnee, valeursParMois, moyennesParJourSemaine, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
   regulariteAnnee, repartitionSport, sommer, familleBilanDuFiltre, decimalesObjectif, phraseVerdict, type MetriqueCumul,
 } from '@/data/bilan/bilan';
 import { formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
@@ -141,7 +141,7 @@ export default function Bilan() {
   const mesureS = MESURES_CUMUL.find((m) => m.cle === mesureSemaine) ?? MESURES_CUMUL[0];
   const mesureJ = MESURES_CUMUL.find((m) => m.cle === mesureJour) ?? MESURES_CUMUL[0];
   // Une valeur de la semaine type écrite avec son unité : « 4h12 » pour le temps, « 18 » pour les séances (le titre le dit), « 1 040 km » sinon
-  const texteJour = (v: number, decimales = 0): string => (mesureJour === 'heures' ? texteHM(Math.round(v * 60)) : mesureJour === 'seances' ? formatNum(v, decimales) : `${formatNum(v, decimales)} ${mesureJ.unite}`);
+  const texteJour = (v: number, decimales = mesureJour === 'seances' ? 1 : 0): string => (mesureJour === 'heures' ? texteHM(Math.round(v * 60)) : mesureJour === 'seances' ? formatNum(v, decimales) : `${formatNum(v, decimales)} ${mesureJ.unite}`);
   const decimalesSemaine = mesureSemaine === 'heures' || mesureSemaine === 'seances' ? 1 : 0;
   const moisEnCours = annee === maintenant.getFullYear() ? maintenant.getMonth() : null;
   const dernierMois = moisEnCours ?? 11;
@@ -151,7 +151,7 @@ export default function Bilan() {
     const semaines = chargeParSemaine(filtrees, annee, maintenant, 52, mesureSemaine);
     // La semaine en cours n'est pas finie : elle ne compte pas dans la moyenne (sinon celle-ci est tirée vers le bas)
     const completes = enCours ? semaines.slice(0, -1) : semaines;
-    const jourSemaine = valeursParJourSemaine(activitesAnnee(filtrees, annee, maintenant), mesureJour);
+    const jourSemaine = moyennesParJourSemaine(activitesAnnee(filtrees, annee, maintenant), annee, maintenant, mesureJour);
     return { parMois, jourSemaine, meilleurMois: Math.max(0, ...parMois), semaines, moyenneSemaine: completes.reduce((a, b) => a + b, 0) / completes.length, regularite: regulariteAnnee(filtrees, annee, maintenant) };
   }, [onglet, filtrees, annee, maintenant, mesureMois, mesureSemaine, mesureJour, enCours]);
   const repartition = useMemo(() => (onglet === 'resume' ? repartitionSport(activitesAnnee(filtrees, annee, maintenant), mesureRepartition, filtre !== 'tout') : []), [onglet, filtre, filtrees, annee, maintenant, mesureRepartition]);
@@ -445,11 +445,11 @@ export default function Bilan() {
                         valeurs={jourSemaine}
                         couleur={filtre === 'tout' ? p.texte : couleurSport(p, filtre)}
                         formater={(v) => texteJour(v)}
-                        etiquette={`${mesureJ.nom} par jour de la semaine en ${annee} : ${['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].map((j, i) => `${j} ${texteJour(jourSemaine[i], 1)}`).join(', ')}.`}
+                        etiquette={`${mesureJ.nom} en moyenne par jour de la semaine en ${annee} : ${['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].map((j, i) => `${j} ${texteJour(jourSemaine[i])}`).join(', ')}.`}
                       />
                       <Text style={[typo.petit, { color: p.texteDoux, marginTop: 6 }]}>
-                        Moyenne : {texteJour(jourSemaine.reduce((t, v) => t + v, 0) / 7, 1)}
-                        {mesureJour === 'seances' ? ' séances' : ''} par jour de la semaine (pointillés).
+                        Chaque point est la moyenne de ce jour, par semaine. Pointillés : {texteJour(jourSemaine.reduce((t, v) => t + v, 0) / 7)}
+                        {mesureJour === 'seances' ? ' séances' : ''} par jour.
                       </Text>
                     </>
                   )}

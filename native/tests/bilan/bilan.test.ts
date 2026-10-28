@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   activitesAnnee, activitesAnneePrecedente, anneesDisponibles, avancement, cumulParAnnee, ecartPct, familleBilan, familleBilanDuFiltre, modele, normaliser,
-  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, valeursParMois, valeursParJourSemaine, phraseVerdict, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
+  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, valeursParMois, moyennesParJourSemaine, phraseVerdict, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
 } from '../../src/data/bilan/bilan.ts';
 import { activitesBilanDemo, objectifsAnnuelsDemo } from '../../src/data/demo/demo.ts';
 
@@ -139,12 +139,16 @@ test('repartitionSport : par discipline, la famille vélo se détaille en route,
   assert.deepEqual(r.map((x) => [x.cle, x.heures]), [['Ride', 3], ['MountainBikeRide', 1], ['VirtualRide', 1]]);
 });
 
-test('valeursParJourSemaine : la mesure choisie par jour de la semaine, lundi en premier', () => {
-  // 2026-06-29 = lundi, 2026-07-01 = mercredi, 2026-07-05 = dimanche
-  const liste = [act('2026-06-29', 'course', 60, 10), act('2026-06-29', 'cyclisme', 120, 40, 0, 0, 'b'), act('2026-07-01', 'course', 30, 5), act('2026-07-05', 'course', 90, 15)];
-  assert.deepEqual(valeursParJourSemaine(liste, 'seances'), [2, 0, 1, 0, 0, 0, 1]);
-  assert.deepEqual(valeursParJourSemaine(liste, 'distance_km'), [50, 0, 5, 0, 0, 0, 15]);
-  assert.deepEqual(valeursParJourSemaine([], 'heures'), [0, 0, 0, 0, 0, 0, 0]);
+test('moyennesParJourSemaine : le total de chaque jour de la semaine divisé par le nombre de ces jours écoulés', () => {
+  // maintenant = mercredi 1er juillet 2026 : du 1er janvier (jeudi) au 1er juillet, 182 jours = 26 semaines pleines, donc 26 de chaque jour
+  // 2026-06-29 = lundi, 2026-07-01 = mercredi
+  const liste = [act('2026-06-29', 'course', 60, 52), act('2026-06-29', 'cyclisme', 120, 26, 0, 0, 'b'), act('2026-07-01', 'course', 30, 26)];
+  assert.deepEqual(moyennesParJourSemaine(liste, 2026, maintenant, 'distance_km'), [3, 0, 1, 0, 0, 0, 0]);
+  assert.deepEqual(moyennesParJourSemaine(liste, 2026, maintenant, 'seances').map((v) => Math.round(v * 26)), [2, 0, 1, 0, 0, 0, 0]);
+  assert.deepEqual(moyennesParJourSemaine([], 2026, maintenant), [0, 0, 0, 0, 0, 0, 0]);
+  // une année passée : toute l'année (2025 = 365 jours, un mercredi de plus que les autres : il commence un mercredi)
+  const m2025 = moyennesParJourSemaine([act('2025-01-01', 'course', 60, 53)], 2025, maintenant, 'distance_km');
+  assert.equal(m2025[2], 1); // 53 mercredis en 2025
 });
 
 test('valeursParMois : la mesure choisie, mois par mois', () => {
