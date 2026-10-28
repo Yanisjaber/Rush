@@ -136,7 +136,7 @@ export default function Bilan() {
   const rythme = useMemo(() => {
     if (onglet !== 'rythme') return null;
     const parMois = valeursParMois(filtrees, annee, mesureMois);
-    const semaines = chargeParSemaine(filtrees, annee, maintenant);
+    const semaines = chargeParSemaine(filtrees, annee, maintenant, 52);
     // La semaine en cours n'est pas finie : elle ne compte pas dans la moyenne (sinon celle-ci est tirée vers le bas)
     const completes = enCours ? semaines.slice(0, -1) : semaines;
     return { parMois, meilleurMois: Math.max(0, ...parMois), semaines, moyenneSemaine: Math.round(completes.reduce((a, b) => a + b, 0) / completes.length), regularite: regulariteAnnee(filtrees, annee, maintenant) };
@@ -387,7 +387,7 @@ export default function Bilan() {
 
                 <Bloc titre="Charge par semaine">
                   <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>
-                    {enCours ? 'TSS des 12 dernières semaines' : `TSS des 12 dernières semaines de ${annee}`} · moyenne {formatNum(moyenneSemaine, 0)}{enCours ? ' (semaine en cours exclue)' : ''}.
+                    {enCours ? 'TSS des 52 dernières semaines' : `TSS des 52 semaines de ${annee}`} · moyenne {formatNum(moyenneSemaine, 0)}{enCours ? ' (semaine en cours exclue)' : ''}.
                   </Text>
                   {semaines.every((v) => v === 0) ? (
                     <Text style={[typo.corps, { color: p.texteDoux, marginBottom: 12 }]}>Pas de charge (TSS) enregistrée sur cette période : les séances sans puissance ni cardio n'en ont pas.</Text>
@@ -397,8 +397,10 @@ export default function Bilan() {
                     couleur={p.texte}
                     repere={moyenneSemaine}
                     echelle
+                    ecart={2}
+                    rayonBarre={2}
                     hauteur={110}
-                    etiquette={`Charge des 12 dernières semaines : ${semaines.map((v) => formatNum(v, 0)).join(', ')}. Moyenne ${formatNum(moyenneSemaine, 0)}.`}
+                    etiquette={`Charge des 52 dernières semaines : ${semaines.map((v) => formatNum(v, 0)).join(', ')}. Moyenne ${formatNum(moyenneSemaine, 0)}.`}
                   />
                 </Bloc>
 
