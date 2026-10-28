@@ -288,7 +288,18 @@ export default function Bilan() {
                     </Text>
                     <MenuMesure etiquette="Mesure de la répartition" valeur={mesureRepartition} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => setMesureRepartition(c as MetriqueCumul)} />
                   </View>
-                  <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>Part {mesureRep.phrase} de {annee}, tous sports confondus ({texteRep(repartition.reduce((t, r) => t + r.valeur, 0))} au total).</Text>
+                  {repartition.length ? (
+                    <View style={[styles.statsRepartition, { borderColor: p.trait }]}>
+                      <View style={styles.statRepartition}>
+                        <Text style={[styles.valeurSerie, { color: p.texte }]}>{texteRep(repartition.reduce((t, r) => t + r.valeur, 0))}</Text>
+                        <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none' }]}>{mesureRep.nom} en {annee}</Text>
+                      </View>
+                      <View style={[styles.statRepartition, { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: p.trait, paddingLeft: 16 }]}>
+                        <Text style={[styles.valeurSerie, { color: p.texte }]}>{repartition.length}</Text>
+                        <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none' }]}>{repartition.length > 1 ? 'Sports' : 'Sport'}</Text>
+                      </View>
+                    </View>
+                  ) : null}
                   {repartition.length ? (
                     <View
                       accessible
@@ -483,5 +494,7 @@ const styles = StyleSheet.create({
   statSerie: { flex: 1, gap: 2 },
   valeurSerie: { fontFamily: police.titre700, fontSize: 22, lineHeight: 26, fontVariant: ['tabular-nums'] },
   ligneRepartition: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 24 },
+  statsRepartition: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 10, marginBottom: 14 },
+  statRepartition: { flex: 1 },
   pisteRepartition: { borderRadius: 3, overflow: 'hidden' },
 });
