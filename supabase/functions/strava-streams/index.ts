@@ -552,7 +552,13 @@ async function backfillPowerCurves(sb: any, userId: string, limit: number, ath: 
   const stale = (data || []).filter((a: any) => !a.power_curve || a.power_curve.v !== POWER_CURVE_VERSION);
   const todo = stale.slice(0, limit);
   let done = 0;
+  // Budget de calcul : les Edge Functions coupent à ~2 s de CPU. Mesuré : ~20 ms pour une sortie de 3 h, ~85 ms pour 8 h
+  // (+ décompression). On s'arrête après 1,2 s de calcul ; le reste est repris à l'appel suivant (« remaining »).
+  const BUDGET_CALCUL_MS = 1200;
+  let calculMs = 0;
   for (const a of todo) {
+    if (calculMs > BUDGET_CALCUL_MS) break;
+    const debut = performance.now();
     try {
       // 2) Charge le stream de CETTE activité uniquement (évite un gros payload global).
       const { data: row } = await sb.from("activities").select("streams_gz").eq("id", a.id).maybeSingle();
@@ -573,6 +579,7 @@ async function backfillPowerCurves(sb: any, userId: string, limit: number, ath: 
     } catch (e) {
       console.error("backfill power_curve", a.id, (e as any)?.message);
     }
+    calculMs += performance.now() - debut;
   }
   return { done, remaining: Math.max(0, stale.length - done) };
 }
