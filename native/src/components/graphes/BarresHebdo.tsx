@@ -20,6 +20,8 @@ interface Props {
   /** Espace entre les barres et arrondi de leur sommet (6 et 6 par défaut ; plus serrés pour beaucoup de semaines). */
   ecart?: number;
   rayonBarre?: number;
+  /** La dernière barre qui a des données (les suivantes, des semaines à venir, restent vides) : la semaine en cours. Par défaut, la dernière. */
+  dernier?: number;
   /** La barre touchée (avec l'échelle) : elle est pleine, les autres s'atténuent. */
   selection?: number | null;
   onSelection?: (index: number | null) => void;
@@ -28,7 +30,7 @@ interface Props {
 }
 
 // Avec l'échelle, marginLeft -9 : la moitié des 18 pt de marge intérieure de la carte, pour que l'échelle se rapproche du bord
-export function BarresHebdo({ valeurs, couleur, hauteur = 120, repere, echelle = false, unite = '', ecart = 6, rayonBarre = 6, selection = null, onSelection, etiquette }: Props) {
+export function BarresHebdo({ valeurs, couleur, hauteur = 120, repere, echelle = false, unite = '', ecart = 6, rayonBarre = 6, dernier = valeurs.length - 1, selection = null, onSelection, etiquette }: Props) {
   const p = usePalette();
   const gouttiere = echelle && valeurs.some((v) => v > 0) ? largeurGouttiere(echelleRonde(Math.max(0, ...valeurs)).haut, unite) : 0;
   const maximum = echelle ? Math.max(1, echelleRonde(Math.max(0, ...valeurs)).haut) : Math.max(1, ...valeurs);
@@ -36,8 +38,8 @@ export function BarresHebdo({ valeurs, couleur, hauteur = 120, repere, echelle =
     <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.barres, { height: hauteur, gap: ecart, borderBottomColor: p.trait }, echelle ? { marginLeft: -9, paddingLeft: gouttiere, borderBottomWidth: 0 } : null]}>
       {echelle ? <EchelleBarres maximum={valeurs.some((v) => v > 0) ? maximum : 0} unite={unite} /> : null}
       {valeurs.map((v, i) => (
-        <View key={i} style={[styles.colonne, { opacity: selection != null ? (i === selection ? 1 : 0.35) : i === valeurs.length - 1 ? 1 : 0.55 }]}>
-          <View style={{ height: `${(v / maximum) * 100}%`, minHeight: 2, backgroundColor: couleur, borderRadius: rayonBarre }} />
+        <View key={i} style={[styles.colonne, { opacity: selection != null ? (i === selection ? 1 : 0.35) : i === dernier ? 1 : 0.55 }]}>
+          {i <= dernier ? <View style={{ height: `${(v / maximum) * 100}%`, minHeight: 2, backgroundColor: couleur, borderRadius: rayonBarre }} /> : null}
         </View>
       ))}
       {repere != null && repere > 0 ? <View pointerEvents="none" style={[styles.repere, { bottom: `${Math.min(100, (repere / maximum) * 100)}%`, left: gouttiere }]}><TraitTirets couleur={p.texteMuet} epaisseur={1} /></View> : null}
@@ -50,7 +52,11 @@ export function BarresHebdo({ valeurs, couleur, hauteur = 120, repere, echelle =
     <ZoneTactile
       selection={selection}
       onSelection={onSelection}
-      indexDe={(x, largeur) => (x < debut || largeur <= debut ? null : Math.min(valeurs.length - 1, Math.floor(((x - debut) / (largeur - debut)) * valeurs.length)))}
+      indexDe={(x, largeur) => {
+        if (x < debut || largeur <= debut) return null;
+        const i = Math.min(valeurs.length - 1, Math.floor(((x - debut) / (largeur - debut)) * valeurs.length));
+        return i <= dernier ? i : null;
+      }}
     >
       {dessin}
     </ZoneTactile>

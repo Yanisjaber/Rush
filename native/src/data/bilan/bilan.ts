@@ -429,28 +429,29 @@ export function moyennesParJourSemaine(acts: ActiviteBilan[], annee: number, mai
   return totaux.map((t, i) => (nombre[i] ? t / nombre[i] : 0));
 }
 
-/** Les lundis (dates ISO) des `nb` dernières semaines de l'année, dans le même ordre que chargeParSemaine : le dernier est la semaine en cours (ou la dernière de l'année). */
-export function lundisDesSemaines(annee: number, maintenant: Date = new Date(), nb = 12): string[] {
-  const debut = lundiDe(finDeAnnee(annee, maintenant));
-  debut.setDate(debut.getDate() - (nb - 1) * 7);
-  return Array.from({ length: nb }, (_, i) => {
-    const d = new Date(debut);
-    d.setDate(debut.getDate() + i * 7);
+/**
+ * Les semaines (lundi → dimanche) de l'année : les lundis (dates ISO) de la semaine du 1er janvier à celle du 31 décembre (52 ou 53, les semaines des bords débordent sur l'année voisine),
+ * et `derniere`, l'indice de la dernière semaine écoulée (celle d'aujourd'hui pour l'année en cours, la dernière pour une année passée).
+ */
+export function semainesDeLAnnee(annee: number, maintenant: Date = new Date()): { lundis: string[]; derniere: number } {
+  const lundi0 = lundiDe(new Date(annee, 0, 1, 12));
+  const nb = Math.floor(joursEntre(lundi0, lundiDe(new Date(annee, 11, 31, 12))) / 7) + 1;
+  const lundis = Array.from({ length: nb }, (_, i) => {
+    const d = new Date(lundi0);
+    d.setDate(lundi0.getDate() + i * 7);
     return dateIso(d);
   });
+  return { lundis, derniere: Math.floor(joursEntre(lundi0, finDeAnnee(annee, maintenant)) / 7) };
 }
 
-/** La mesure choisie (la charge TSS par défaut) des `nb` dernières semaines (lundi → dimanche) de l'année : la dernière valeur est la semaine en cours (ou la dernière de l'année). */
-export function chargeParSemaine(acts: ActiviteBilan[], annee: number, maintenant: Date = new Date(), nb = 12, mesure: MetriqueCumul = 'tss'): number[] {
-  const fin = finDeAnnee(annee, maintenant);
-  const debut = lundiDe(fin);
-  debut.setDate(debut.getDate() - (nb - 1) * 7);
-  const finIso = dateIso(fin);
-  const semaines = new Array(nb).fill(0);
+/** La mesure choisie (distance, dénivelé, séances, charge ou temps) pour chaque semaine de l'année (voir semainesDeLAnnee) ; seuls les jours de l'année comptent, les semaines à venir valent 0. */
+export function mesureParSemaine(acts: ActiviteBilan[], annee: number, mesure: MetriqueCumul = 'tss'): number[] {
+  const lundi0 = lundiDe(new Date(annee, 0, 1, 12));
+  const semaines = new Array(semainesDeLAnnee(annee).lundis.length).fill(0);
   for (const a of acts) {
-    if (a.iso > finIso) continue;
-    const idx = Math.floor(joursEntre(debut, dateDe(a.iso)) / 7);
-    if (idx >= 0 && idx < nb) semaines[idx] += valeurCumul(a, mesure);
+    if (!a.iso.startsWith(`${annee}-`)) continue;
+    const idx = Math.floor(joursEntre(lundi0, dateDe(a.iso)) / 7);
+    if (idx >= 0 && idx < semaines.length) semaines[idx] += valeurCumul(a, mesure);
   }
   return semaines;
 }

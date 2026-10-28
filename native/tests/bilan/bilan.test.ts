@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   activitesAnnee, activitesAnneePrecedente, anneesDisponibles, avancement, cumulParAnnee, ecartPct, familleBilan, familleBilanDuFiltre, modele, normaliser,
-  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, valeursParMois, moyennesParJourSemaine, lundisDesSemaines, phraseVerdict, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
+  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, valeursParMois, moyennesParJourSemaine, semainesDeLAnnee, mesureParSemaine, phraseVerdict, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
 } from '../../src/data/bilan/bilan.ts';
 import { activitesBilanDemo, objectifsAnnuelsDemo } from '../../src/data/demo/demo.ts';
 
@@ -210,36 +210,27 @@ test('kmParMois : 12 mois, seulement l\'année demandée', () => {
   assert.equal(m[11], 0);
 });
 
-test('lundisDesSemaines : les lundis des dernières semaines, dans l\'ordre de chargeParSemaine', () => {
-  // maintenant = mercredi 1er juillet 2026 : la semaine en cours commence le lundi 29 juin
-  const l = lundisDesSemaines(2026, maintenant, 4);
-  assert.deepEqual(l, ['2026-06-08', '2026-06-15', '2026-06-22', '2026-06-29']);
-  assert.equal(lundisDesSemaines(2026, maintenant, 52).length, 52);
+test('semainesDeLAnnee : les semaines de l\'année (du 1er janvier au 31 décembre) et la dernière écoulée', () => {
+  // maintenant = mercredi 1er juillet 2026 ; le 1er janvier 2026 est un jeudi : la 1re semaine commence le lundi 29 décembre 2025
+  const { lundis, derniere } = semainesDeLAnnee(2026, maintenant);
+  assert.equal(lundis.length, 53);
+  assert.equal(lundis[0], '2025-12-29');
+  assert.equal(lundis[52], '2026-12-28');
+  assert.equal(derniere, 26);
+  assert.equal(lundis[26], '2026-06-29'); // la semaine en cours
+  // une année passée : toutes les semaines sont écoulées
+  const passee = semainesDeLAnnee(2025, maintenant);
+  assert.equal(passee.derniere, passee.lundis.length - 1);
 });
 
-test('chargeParSemaine : une autre mesure (séances, distance) et 52 semaines', () => {
-  const acts = [act('2026-06-29', 'course', 60, 10, 0, 50), act('2026-07-01', 'cyclisme', 90, 40, 0, 70, 'b'), act('2026-01-02', 'course', 30, 5, 0, 99, 'd')];
-  const seances = chargeParSemaine(acts, 2026, maintenant, 52, 'seances');
-  assert.equal(seances.length, 52);
-  assert.equal(seances[51], 2);
-  const km = chargeParSemaine(acts, 2026, maintenant, 4, 'distance_km');
-  assert.deepEqual(km, [0, 0, 0, 50]);
-});
-
-test('chargeParSemaine : la dernière valeur est la semaine en cours, les semaines vides valent 0', () => {
-  // 1er juillet 2026 = mercredi : la semaine en cours va du lundi 29 juin au dimanche 5 juillet
-  const acts = [act('2026-06-29', 'course', 60, 10, 0, 50), act('2026-07-01', 'cyclisme', 90, 40, 0, 70, 'b'), act('2026-06-22', 'cyclisme', 60, 20, 0, 30, 'c'), act('2026-01-02', 'course', 30, 5, 0, 99, 'd')];
-  const s = chargeParSemaine(acts, 2026, maintenant);
-  assert.equal(s.length, 12);
-  assert.equal(s[11], 120);
-  assert.equal(s[10], 30);
-  assert.equal(s[9], 0);
-  assert.equal(s.reduce((a, b) => a + b, 0), 150); // la séance de janvier est hors des 12 semaines
-});
-
-test('chargeParSemaine : une année passée s\'arrête au 31 décembre', () => {
-  const s = chargeParSemaine([act('2025-12-30', 'course', 60, 10, 0, 40)], 2025, maintenant);
-  assert.equal(s[11], 40);
+test('mesureParSemaine : une valeur par semaine de l\'année, seuls les jours de l\'année comptent', () => {
+  const acts = [act('2026-06-29', 'course', 60, 50), act('2026-07-01', 'cyclisme', 90, 40, 0, 0, 'b'), act('2026-01-02', 'course', 30, 5, 0, 0, 'd'), act('2025-12-30', 'course', 30, 999, 0, 0, 'e')];
+  const km = mesureParSemaine(acts, 2026, 'distance_km');
+  assert.equal(km.length, 53);
+  assert.equal(km[0], 5); // le 30 décembre 2025 est dans la même semaine mais pas dans l'année
+  assert.equal(km[26], 90);
+  assert.equal(km.reduce((t, v) => t + v, 0), 95);
+  assert.equal(mesureParSemaine(acts, 2026, 'seances')[26], 2);
 });
 
 test('regulariteAnnee : les jours rangés par mois, avec les jours actifs de chaque mois', () => {

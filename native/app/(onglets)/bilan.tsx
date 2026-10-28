@@ -21,7 +21,7 @@ import { TraitTirets } from '@/components/graphes/TraitTirets';
 import { ProgresSport } from '@/components/graphes/ProgresSport';
 import type { IconeOnglet } from '@/components/menus/OngletsIcones.types';
 import {
-  activitesAnnee, anneesDisponibles, avancement, chargeParSemaine, cumulParAnnee, valeursParMois, moyennesParJourSemaine, lundisDesSemaines, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
+  activitesAnnee, anneesDisponibles, avancement, cumulParAnnee, valeursParMois, moyennesParJourSemaine, semainesDeLAnnee, mesureParSemaine, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
   regulariteAnnee, repartitionSport, sommer, familleBilanDuFiltre, decimalesObjectif, phraseVerdict, type MetriqueCumul,
 } from '@/data/bilan/bilan';
 import { formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
@@ -164,13 +164,14 @@ export default function Bilan() {
   const rythme = useMemo(() => {
     if (onglet !== 'rythme') return null;
     const parMois = valeursParMois(filtrees, annee, mesureMois);
-    const semaines = chargeParSemaine(filtrees, annee, maintenant, 52, mesureSemaine);
-    // La semaine en cours n'est pas finie : elle ne compte pas dans la moyenne (sinon celle-ci est tirée vers le bas)
-    const completes = enCours ? semaines.slice(0, -1) : semaines;
-    const lundis = lundisDesSemaines(annee, maintenant, 52);
+    // Les semaines de l'année choisie (les à-venir restent vides), et leur moyenne : le total divisé par les semaines écoulées, comme la pastille « Par semaine » du haut
+    const { lundis, derniere: derniereSemaine } = semainesDeLAnnee(annee, maintenant);
+    const semaines = mesureParSemaine(filtrees, annee, mesureSemaine);
+    const regularite = regulariteAnnee(filtrees, annee, maintenant);
+    const moyenneSemaine = semaines.reduce((t, v) => t + v, 0) / Math.max(1, regularite.jours / 7);
     const jourSemaine = moyennesParJourSemaine(activitesAnnee(filtrees, annee, maintenant), annee, maintenant, mesureJour);
-    return { parMois, jourSemaine, lundis, meilleurMois: Math.max(0, ...parMois), semaines, moyenneSemaine: completes.reduce((a, b) => a + b, 0) / completes.length, regularite: regulariteAnnee(filtrees, annee, maintenant) };
-  }, [onglet, filtrees, annee, maintenant, mesureMois, mesureSemaine, mesureJour, enCours]);
+    return { parMois, jourSemaine, lundis, derniereSemaine, meilleurMois: Math.max(0, ...parMois), semaines, moyenneSemaine, regularite };
+  }, [onglet, filtrees, annee, maintenant, mesureMois, mesureSemaine, mesureJour]);
   const repartition = useMemo(() => (onglet === 'resume' ? repartitionSport(activitesAnnee(filtrees, annee, maintenant), mesureRepartition, filtre !== 'tout') : []), [onglet, filtre, filtrees, annee, maintenant, mesureRepartition]);
   // `court` : pour le gros chiffre du haut, le mot « séances » est de trop (le libellé dessous le dit déjà)
   const texteRep = (v: number, court = false): string =>
@@ -178,7 +179,7 @@ export default function Bilan() {
   const dense = repartition.length > 6; // beaucoup de sports : lignes et barres plus serrées
   const mesureRep = MESURES_CUMUL.find((m) => m.cle === mesureRepartition) ?? MESURES_CUMUL[0];
   // Les valeurs de l'onglet Rythme : elles n'existent que sur cet onglet (l'affichage plus bas est gardé par `rythme`)
-  const { parMois, jourSemaine, lundis, meilleurMois, semaines, moyenneSemaine, regularite } = rythme ?? ({} as NonNullable<typeof rythme>);
+  const { parMois, jourSemaine, lundis, derniereSemaine, meilleurMois, semaines, moyenneSemaine, regularite } = rythme ?? ({} as NonNullable<typeof rythme>);
   // La moyenne par mois : les mois terminés (le mois en cours ne l'est pas, comme la semaine en cours pour la moyenne par semaine) ; en janvier, le seul mois qu'on a
   const moisTermines = rythme ? (moisEnCours != null && moisEnCours > 0 ? parMois.slice(0, moisEnCours) : moisEnCours != null ? parMois.slice(0, 1) : parMois) : [];
   const moyenneMois = moisTermines.length ? moisTermines.reduce((t, v) => t + v, 0) / moisTermines.length : 0;
@@ -438,7 +439,7 @@ export default function Bilan() {
                   ) : null}
                   <Text style={[typo.petit, styles.lecture, { color: selSemaine != null ? p.texte : p.texteMuet }]}>
                     {selSemaine != null
-                      ? `Semaine du ${jourMois(lundis[selSemaine])}${enCours && selSemaine === semaines.length - 1 ? ' (en cours)' : ''} : ${texteMesure(semaines[selSemaine] ?? 0, mesureSemaine, mesureS.unite, decimalesSemaine)}`
+                      ? `Semaine du ${jourMois(lundis[selSemaine] < `${annee}-01-01` ? `${annee}-01-01` : lundis[selSemaine])}${enCours && selSemaine === derniereSemaine ? ' (en cours)' : ''} : ${texteMesure(semaines[selSemaine] ?? 0, mesureSemaine, mesureS.unite, decimalesSemaine)}`
                       : `Moyenne : ${texteMesure(moyenneSemaine, mesureSemaine, mesureS.unite, decimalesSemaine)} par semaine`}
                   </Text>
                   <BarresHebdo
@@ -446,13 +447,14 @@ export default function Bilan() {
                     couleur={p.texte}
                     repere={moyenneSemaine}
                     echelle
+                    dernier={derniereSemaine}
                     selection={selSemaine}
                     onSelection={setSelSemaine}
                     unite={uniteGraphe(mesureS)}
                     ecart={2}
                     rayonBarre={2}
                     hauteur={150} // la même que le graphique par mois : les deux cartes ont la même taille
-                    etiquette={`${mesureS.nom} des 52 ${enCours ? 'dernières semaines' : `semaines de ${annee}`} (${mesureS.unite}) : ${semaines.map((v) => formatNum(v, decimalesSemaine)).join(', ')}. Moyenne ${formatNum(moyenneSemaine, decimalesSemaine)}${enCours ? ', semaine en cours exclue' : ''}.`}
+                    etiquette={`${mesureS.nom} par semaine en ${annee} (${mesureS.unite}) : ${semaines.slice(0, derniereSemaine + 1).map((v) => formatNum(v, decimalesSemaine)).join(', ')}. Moyenne ${formatNum(moyenneSemaine, decimalesSemaine)}.`}
                   />
                 </Bloc>
 
