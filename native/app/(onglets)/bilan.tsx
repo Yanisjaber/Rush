@@ -396,6 +396,7 @@ export default function Bilan() {
                     valeurs={semaines}
                     couleur={p.texte}
                     repere={moyenneSemaine}
+                    echelle
                     hauteur={110}
                     etiquette={`Charge des 12 dernières semaines : ${semaines.map((v) => formatNum(v, 0)).join(', ')}. Moyenne ${formatNum(moyenneSemaine, 0)}.`}
                   />

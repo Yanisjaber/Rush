@@ -1,5 +1,7 @@
 import { StyleSheet, View } from 'react-native';
+import { EchelleBarres } from '@/components/graphes/EchelleBarres';
 import { TraitTirets } from '@/components/graphes/TraitTirets';
+import { maximumRond } from '@/data/outils/cumul-graphe';
 import { usePalette } from '@/theme/usePalette';
 
 // Une barre par semaine (tonnage, charge de musculation…). La dernière est pleine, les autres atténuées.
@@ -10,15 +12,18 @@ interface Props {
   hauteur?: number;
   /** Une ligne en pointillés à cette valeur (la moyenne, par exemple). */
   repere?: number;
+  /** Écrit l'échelle (des traits au tiers, aux deux tiers et en haut, avec leurs valeurs) et fait du haut un chiffre rond. */
+  echelle?: boolean;
   /** Phrase lue par VoiceOver à la place du dessin. */
   etiquette: string;
 }
 
-export function BarresHebdo({ valeurs, couleur, hauteur = 120, repere, etiquette }: Props) {
+export function BarresHebdo({ valeurs, couleur, hauteur = 120, repere, echelle = false, etiquette }: Props) {
   const p = usePalette();
-  const maximum = Math.max(1, ...valeurs);
+  const maximum = echelle ? maximumRond(Math.max(0, ...valeurs)) : Math.max(1, ...valeurs);
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.barres, { height: hauteur, borderBottomColor: p.trait }]}>
+      {echelle ? <EchelleBarres maximum={maximum} /> : null}
       {valeurs.map((v, i) => (
         <View key={i} style={[styles.colonne, { opacity: i === valeurs.length - 1 ? 1 : 0.55 }]}>
           <View style={{ height: `${(v / maximum) * 100}%`, minHeight: 2, backgroundColor: couleur, borderRadius: 6 }} />
