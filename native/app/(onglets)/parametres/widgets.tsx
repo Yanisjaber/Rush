@@ -8,6 +8,7 @@ import { construireContexte } from '@/data/contexte';
 import { WIDGETS } from '@/data/registre';
 import type { Taille } from '@/data/types';
 import { useDonneesAccueil } from '@/hooks/useDonneesAccueil';
+import { useAuth } from '@/stores/auth';
 import { espace } from '@/theme/couleurs';
 import { clair, sombre } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
@@ -21,6 +22,12 @@ const TAILLES: Taille[] = ['xs', 's', 'm', 'l'];
 const IDS = Object.keys(WIDGETS);
 
 export default function CatalogueWidgets() {
+  const { demo } = useAuth();
+  // Outil de démo : un lien profond ne l'ouvre pas sur un vrai compte
+  return demo ? <Catalogue /> : <View style={{ flex: 1 }} />;
+}
+
+function Catalogue() {
   const systeme = usePalette();
   const insets = useSafeAreaInsets();
   const { donnees } = useDonneesAccueil();
