@@ -30,16 +30,17 @@ export function MenuMesure(props: PropsMenuMesure) {
   const p = usePalette();
   if (!NATIF || props.grand) return <MenuMesureJs {...props} />;
   const { Host, Menu, Picker, Text } = NATIF.ui;
-  const { buttonStyle, buttonBorderShape, controlSize, foregroundStyle, menuIndicator, tag } = NATIF.modifs;
+  const { buttonStyle, buttonBorderShape, contentTransition, controlSize, foregroundStyle, menuIndicator, tag } = NATIF.modifs;
   const { options, valeur, onChoisir, etiquette } = props;
   const choisi = options.find((o) => o.cle === valeur) ?? options[0];
   return (
     <View accessibilityLabel={`${etiquette} : ${choisi?.nom}`} style={{ minHeight: 44, justifyContent: 'center' }}>
       {/* Le thème de l'app (clair ou sombre) s'impose au menu, pas celui du téléphone */}
-      <Host matchContents colorScheme={p.fond === clair.fond ? 'light' : 'dark'}>
+      {/* `key` : la pastille est recréée à chaque changement de choix. Sans ça, son animation (le texte et la largeur qui changent) continue pendant qu'on fait défiler la page, et elle se décale du reste. */}
+      <Host key={choisi?.cle} matchContents colorScheme={p.fond === clair.fond ? 'light' : 'dark'}>
         <Menu
           label={choisi?.nom ?? ''}
-          modifiers={[buttonStyle(NATIF.verre ? 'glass' : 'bordered'), buttonBorderShape('capsule'), controlSize('regular'), menuIndicator('visible'), foregroundStyle(p.texte)]}
+          modifiers={[buttonStyle(NATIF.verre ? 'glass' : 'bordered'), buttonBorderShape('capsule'), controlSize('regular'), menuIndicator('visible'), contentTransition('identity'), foregroundStyle(p.texte)]}
         >
           <Picker selection={valeur} onSelectionChange={(cle: string) => onChoisir(cle)}>
             {options.map((o) => (
