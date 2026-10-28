@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { EchelleBarres, largeurGouttiere } from '@/components/graphes/EchelleBarres';
+import { TraitTirets } from '@/components/graphes/TraitTirets';
 import { ZoneTactile } from '@/components/graphes/ZoneTactile';
 import { echelleRonde } from '@/data/outils/echelle';
 import { typo } from '@/theme/typo';
@@ -15,6 +16,8 @@ interface Props {
   hauteur?: number;
   /** Unité écrite après chaque valeur de l'échelle (« km »), vide si le titre la dit déjà. */
   unite?: string;
+  /** Une ligne en pointillés à cette valeur (la moyenne). */
+  repere?: number;
   /** Le mois touché (0 à 11), ou null : sa barre est pleine, les autres s'atténuent. */
   selection?: number | null;
   onSelection?: (mois: number | null) => void;
@@ -25,7 +28,7 @@ interface Props {
 // -9 : la moitié des 18 pt de marge intérieure de la carte, pour que l'échelle se rapproche du bord
 const LETTRES = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
-export function BarresMois({ valeurs, moisEnCours, dernierMois, hauteur = 150, unite = '', selection = null, onSelection, etiquette }: Props) {
+export function BarresMois({ valeurs, moisEnCours, dernierMois, hauteur = 150, unite = '', repere, selection = null, onSelection, etiquette }: Props) {
   const p = usePalette();
   const maximum = Math.max(1, echelleRonde(Math.max(0, ...valeurs)).haut); // le haut de l'échelle : un multiple d'un pas rond
   const echelle = valeurs.some((v) => v > 0) ? maximum : 0; // pas d'échelle (ni de marge) sans données
@@ -34,6 +37,13 @@ export function BarresMois({ valeurs, moisEnCours, dernierMois, hauteur = 150, u
     <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.mois, { height: hauteur, marginLeft: -9, paddingLeft: gouttiere }]}>
       {/* La zone des barres finit au-dessus des lettres (4 + 16) */}
       <EchelleBarres maximum={echelle} unite={unite} bas={20} />
+      {repere != null && repere > 0 && echelle > 0 ? (
+        <View pointerEvents="none" style={[styles.reperes, { left: gouttiere, bottom: 20 }]}>
+          <View style={[styles.repere, { bottom: `${Math.min(100, (repere / maximum) * 100)}%` }]}>
+            <TraitTirets couleur={p.texteMuet} epaisseur={1} />
+          </View>
+        </View>
+      ) : null}
       {LETTRES.map((lettre, i) => {
         const v = valeurs[i] ?? 0;
         return (
@@ -68,6 +78,9 @@ export function BarresMois({ valeurs, moisEnCours, dernierMois, hauteur = 150, u
 }
 
 const styles = StyleSheet.create({
+  // La zone des barres (au-dessus des lettres), où se pose le trait de la moyenne
+  reperes: { position: 'absolute', top: 0, right: 0 },
+  repere: { position: 'absolute', left: 0, right: 0, height: 1 },
   mois: { flexDirection: 'row', alignItems: 'flex-end', gap: 4 },
   col: { flex: 1, height: '100%', alignItems: 'center', gap: 4 },
   zone: { flex: 1, width: '100%', justifyContent: 'flex-end', borderBottomWidth: StyleSheet.hairlineWidth },

@@ -153,7 +153,7 @@ export default function Bilan() {
     setSelJour(null);
   }, [annee, filtre, onglet, mesureMois, mesureSemaine, mesureJour]);
   // Une valeur écrite avec son unité : « 4h12 » pour le temps, un simple nombre pour les séances (le titre le dit), « 1 040 km » sinon
-  const texteMesure = (v: number, cle: MetriqueCumul, unite: string, decimales = 0): string => (cle === 'heures' ? texteHM(Math.round(v * 60)) : cle === 'seances' ? formatNum(v, decimales) : `${formatNum(v, decimales)} ${unite}`);
+  const texteMesure = (v: number, cle: MetriqueCumul, unite: string, decimales = 0): string => (cle === 'heures' ? texteHM(Math.round(v * 60)) : cle === 'seances' ? `${formatNum(v, decimales)} ${v === 1 ? 'séance' : 'séances'}` : `${formatNum(v, decimales)} ${unite}`);
   const majuscule = (t: string): string => t.charAt(0).toUpperCase() + t.slice(1);
   const jourMois = (iso: string): string => `${Number(iso.slice(8, 10))} ${NOMS_MOIS[Number(iso.slice(5, 7)) - 1]}`;
   // Une valeur de la semaine type écrite avec son unité : « 4h12 » pour le temps, « 18 » pour les séances (le titre le dit), « 1 040 km » sinon
@@ -179,6 +179,9 @@ export default function Bilan() {
   const mesureRep = MESURES_CUMUL.find((m) => m.cle === mesureRepartition) ?? MESURES_CUMUL[0];
   // Les valeurs de l'onglet Rythme : elles n'existent que sur cet onglet (l'affichage plus bas est gardé par `rythme`)
   const { parMois, jourSemaine, lundis, meilleurMois, semaines, moyenneSemaine, regularite } = rythme ?? ({} as NonNullable<typeof rythme>);
+  // La moyenne par mois : les mois terminés (le mois en cours ne l'est pas, comme la semaine en cours pour la moyenne par semaine) ; en janvier, le seul mois qu'on a
+  const moisTermines = rythme ? (moisEnCours != null && moisEnCours > 0 ? parMois.slice(0, moisEnCours) : moisEnCours != null ? parMois.slice(0, 1) : parMois) : [];
+  const moyenneMois = moisTermines.length ? moisTermines.reduce((t, v) => t + v, 0) / moisTermines.length : 0;
   const seancesParSemaine = (n: number) => (regularite?.jours ? n / (regularite.jours / 7) : 0);
   const heuresParSemaine = seancesParSemaine; // même calcul : une quantité divisée par le nombre de semaines écoulées
   // Les trois chiffres en haut de l'onglet Rythme
@@ -409,12 +412,13 @@ export default function Bilan() {
                   <Text style={[typo.petit, styles.lecture, { color: selMois != null ? p.texte : p.texteMuet }]}>
                     {selMois != null
                       ? `${majuscule(NOMS_MOIS[selMois])} : ${texteMesure(parMois[selMois] ?? 0, mesureMois, mesureM.unite, decimalesMois)}`
-                      : `Total ${annee} : ${texteMesure(parMois.reduce((t, v) => t + v, 0), mesureMois, mesureM.unite, decimalesMois)}`}
+                      : `Moyenne : ${texteMesure(moyenneMois, mesureMois, mesureM.unite, decimalesMois)} par mois`}
                   </Text>
                   <BarresMois
                     valeurs={parMois}
                     moisEnCours={moisEnCours}
                     dernierMois={dernierMois}
+                    repere={moyenneMois}
                     selection={selMois}
                     onSelection={setSelMois}
                     unite={uniteGraphe(mesureM)}
@@ -484,7 +488,7 @@ export default function Bilan() {
                       <Text style={[typo.petit, styles.lecture, { color: selJourSemaine != null ? p.texte : p.texteMuet }]}>
                         {selJourSemaine != null
                           ? `${majuscule(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'][selJourSemaine])} : ${texteMesure(jourSemaine[selJourSemaine] ?? 0, mesureJour, mesureJ.unite, mesureJour === 'seances' ? 1 : 0)} en moyenne`
-                          : `Moyenne : ${texteMesure(jourSemaine.reduce((t, v) => t + v, 0) / 7, mesureJour, mesureJ.unite, mesureJour === 'seances' ? 1 : 0)}${mesureJour === 'seances' ? ' séances' : ''} par jour`}
+                          : `Moyenne : ${texteMesure(jourSemaine.reduce((t, v) => t + v, 0) / 7, mesureJour, mesureJ.unite, mesureJour === 'seances' ? 1 : 0)} par jour`}
                       </Text>
                       <CourbeSemaine
                         valeurs={jourSemaine}
