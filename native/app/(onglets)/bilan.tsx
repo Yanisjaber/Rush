@@ -225,8 +225,9 @@ export default function Bilan() {
         </Text>
         <View style={styles.entete}>
           {/* Progrès suit ses propres périodes (4 semaines, 3 mois, 1 an) : l'année n'y sert à rien. Elle reste affichée mais grisée et non touchable, pour que les onglets ne bougent pas */}
-          <View style={onglet === 'progres' ? styles.anneeMasquee : undefined} pointerEvents={onglet === 'progres' ? 'none' : 'auto'} accessibilityElementsHidden={onglet === 'progres'} importantForAccessibility={onglet === 'progres' ? 'no-hide-descendants' : 'auto'}>
+          <View style={[styles.zoneAnnee, onglet === 'progres' ? styles.anneeMasquee : null]} pointerEvents={onglet === 'progres' ? 'none' : 'auto'} accessibilityElementsHidden={onglet === 'progres'} importantForAccessibility={onglet === 'progres' ? 'no-hide-descendants' : 'auto'}>
             <MenuMesure
+              gras
               etiquette="Année"
               valeur={onglet === 'records' && toutTemps ? 'tout' : String(annee)}
               options={[...(onglet === 'records' ? [{ cle: 'tout', nom: 'Tout' }] /* court : « Tous temps » pousserait le sélecteur d'onglets hors de l'écran */ : []), ...annees.map((a) => ({ cle: String(a), nom: String(a) }))]}
@@ -580,6 +581,8 @@ export default function Bilan() {
 
 const styles = StyleSheet.create({
   entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  // La pastille de l'année est centrée entre le bord de la page (la marge de 16 pt est reprise) et les onglets à sa droite
+  zoneAnnee: { flex: 1, alignItems: 'center', marginLeft: -espace.e4 },
   anneeMasquee: { opacity: 0.3 },
   titreInvisible: { position: 'absolute', width: 1, height: 1, opacity: 0 },
   page: { flex: 1 },

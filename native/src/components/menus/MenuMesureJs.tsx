@@ -12,12 +12,14 @@ export interface PropsMenuMesure {
   onChoisir: (cle: string) => void;
   /** Ce que la pastille choisit (« Mesure »), lu par VoiceOver. */
   etiquette: string;
+  /** Le choix écrit en gras (le menu de l'année, en haut du Bilan). */
+  gras?: boolean;
 }
 
 const LARGEUR_LISTE = 230;
 const HAUTEUR_MAX_LISTE = 330; // un peu plus de sept lignes : au-delà, la liste défile
 
-export function MenuMesureJs({ options, valeur, onChoisir, etiquette }: PropsMenuMesure) {
+export function MenuMesureJs({ options, valeur, onChoisir, etiquette, gras = false }: PropsMenuMesure) {
   const p = usePalette();
   const pastilleRef = useRef<ComponentRef<typeof View>>(null);
   const listeRef = useRef<ComponentRef<typeof ScrollView>>(null);
@@ -41,7 +43,7 @@ export function MenuMesureJs({ options, valeur, onChoisir, etiquette }: PropsMen
         accessibilityState={{ expanded: ouvert }}
         style={[styles.pastille, { borderColor: p.contourChamp, borderWidth: 1 }]}
       >
-        <Text numberOfLines={1} style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>
+        <Text numberOfLines={1} style={[typo.petit, { color: p.texte, fontFamily: gras ? police.titre800 : police.texte600 }]}>
           {choisi?.nom}
         </Text>
         <Text style={{ color: p.texteDoux, fontSize: 16, marginTop: -2 }}>⌄</Text>

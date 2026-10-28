@@ -8,6 +8,9 @@ import { MenuMesureJs, type PropsMenuMesure } from './MenuMesureJs';
 // Sur iOS 26 et plus, la pastille est de verre (liquid glass) ; avant, c'est un bouton à contour d'iOS.
 //
 // Le choix de l'année en haut du Bilan est la même pastille. Le module natif (@expo/ui) n'existe que dans une app recompilée après son ajout : s'il manque (ou dans Expo Go), on se rabat sur la version JS plutôt que de planter.
+// SwiftUI cherche une police par son nom interne (PostScript), pas par le nom que lui donne l'app côté JavaScript (BricolageGrotesque_800ExtraBold)
+const NOM_NATIF_GRAS = 'BricolageGrotesque-ExtraBold';
+
 type Natif = { ui: typeof import('@expo/ui/swift-ui'); modifs: typeof import('@expo/ui/swift-ui/modifiers'); verre: boolean };
 function chargerNatif(): Natif | null {
   try {
@@ -29,8 +32,8 @@ export function MenuMesure(props: PropsMenuMesure) {
   const p = usePalette();
   if (!NATIF) return <MenuMesureJs {...props} />;
   const { Host, Menu, Picker, Text } = NATIF.ui;
-  const { buttonStyle, buttonBorderShape, contentTransition, controlSize, foregroundStyle, menuIndicator, tag } = NATIF.modifs;
-  const { options, valeur, onChoisir, etiquette } = props;
+  const { buttonStyle, buttonBorderShape, contentTransition, controlSize, font, foregroundStyle, menuIndicator, tag } = NATIF.modifs;
+  const { options, valeur, onChoisir, etiquette, gras } = props;
   const choisi = options.find((o) => o.cle === valeur) ?? options[0];
   return (
     <View accessibilityLabel={`${etiquette} : ${choisi?.nom}`} style={{ minHeight: 44, justifyContent: 'center' }}>
@@ -38,7 +41,7 @@ export function MenuMesure(props: PropsMenuMesure) {
       {/* `key` : la pastille est recréée à chaque changement de choix. Sans ça, son animation (le texte et la largeur qui changent) continue pendant qu'on fait défiler la page, et elle se décale du reste. */}
       <Host key={choisi?.cle} matchContents colorScheme={p.fond === clair.fond ? 'light' : 'dark'}>
         <Menu
-          label={choisi?.nom ?? ''}
+          label={gras ? <Text modifiers={[font({ family: NOM_NATIF_GRAS, size: 17, weight: 'heavy' }), foregroundStyle(p.texte)]}>{choisi?.nom ?? ''}</Text> : (choisi?.nom ?? '')}
           modifiers={[buttonStyle(NATIF.verre ? 'glass' : 'bordered'), buttonBorderShape('capsule'), controlSize('regular'), menuIndicator('visible'), contentTransition('identity'), foregroundStyle(p.texte)]}
         >
           <Picker selection={valeur} onSelectionChange={(cle: string) => onChoisir(cle)}>
