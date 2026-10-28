@@ -294,7 +294,7 @@ export default function Bilan() {
                         <Text style={[styles.valeurSerie, { color: p.texte }]}>{texteRep(repartition.reduce((t, r) => t + r.valeur, 0))}</Text>
                         <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none' }]}>{mesureRep.nom} en {annee}</Text>
                       </View>
-                      <View style={[styles.statRepartition, { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: p.trait, paddingLeft: 16 }]}>
+                      <View style={[styles.statRepartition, { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: p.trait }]}>
                         <Text style={[styles.valeurSerie, { color: p.texte }]}>{repartition.length}</Text>
                         <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none' }]}>{repartition.length > 1 ? 'Sports' : 'Sport'}</Text>
                       </View>
@@ -495,6 +495,6 @@ const styles = StyleSheet.create({
   valeurSerie: { fontFamily: police.titre700, fontSize: 22, lineHeight: 26, fontVariant: ['tabular-nums'] },
   ligneRepartition: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 24 },
   statsRepartition: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 10, marginBottom: 14 },
-  statRepartition: { flex: 1 },
+  statRepartition: { flex: 1, alignItems: 'center' },
   pisteRepartition: { borderRadius: 3, overflow: 'hidden' },
 });
