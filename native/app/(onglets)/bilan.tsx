@@ -367,8 +367,8 @@ export default function Bilan() {
             {pret && onglet === 'rythme' && rythme ? (
               <>
                 <View style={styles.bandeauRythme}>
-                  {statsRythme.map((c, k) => (
-                    <View key={c.libelle} accessible style={[styles.statRythme, k > 0 ? { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: p.trait } : null]}>
+                  {statsRythme.map((c) => (
+                    <View key={c.libelle} accessible style={[styles.statRythme, { backgroundColor: avecAlpha(p.surface, 0.78) }]}>
                       <Text style={[styles.valeurSerie, { color: p.texte }]}>
                         {c.val}
                         <Text style={[typo.micro, { color: p.texteDoux }]}> {c.unite}</Text>
@@ -511,8 +511,8 @@ const styles = StyleSheet.create({
   nouveau: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 1 },
   valeurRecord: { fontFamily: police.titre700, fontSize: 32, lineHeight: 36, fontVariant: ['tabular-nums'] },
   enteteBloc: { flexDirection: 'row', alignItems: 'center', gap: espace.e3, marginBottom: espace.e3 },
-  bandeauRythme: { flexDirection: 'row', paddingVertical: 12 },
-  statRythme: { flex: 1, alignItems: 'center', gap: 2, paddingHorizontal: 4 },
+  bandeauRythme: { flexDirection: 'row', gap: espace.e2, paddingBottom: 4 },
+  statRythme: { flex: 1, alignItems: 'center', gap: 2, borderRadius: rayon.bloc, paddingHorizontal: 6, paddingVertical: 12 },
   sectionPlate: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 16, paddingBottom: 12, paddingHorizontal: 4 },
   valeurSerie: { fontFamily: police.titre700, fontSize: 22, lineHeight: 26, fontVariant: ['tabular-nums'] },
   ligneRepartition: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 24 },
