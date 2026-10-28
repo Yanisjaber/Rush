@@ -22,7 +22,7 @@ export function BarresHebdo({ valeurs, couleur, hauteur = 120, repere, echelle =
   const p = usePalette();
   const maximum = echelle ? maximumRond(Math.max(0, ...valeurs)) : Math.max(1, ...valeurs);
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.barres, { height: hauteur, borderBottomColor: p.trait, paddingLeft: echelle ? GOUTTIERE_ECHELLE : 0 }]}>
+    <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.barres, { height: hauteur, borderBottomColor: p.trait }, echelle ? { paddingLeft: GOUTTIERE_ECHELLE, borderBottomWidth: 0 } : null]}>
       {echelle ? <EchelleBarres maximum={valeurs.some((v) => v > 0) ? maximum : 0} /> : null}
       {valeurs.map((v, i) => (
         <View key={i} style={[styles.colonne, { opacity: i === valeurs.length - 1 ? 1 : 0.55 }]}>
