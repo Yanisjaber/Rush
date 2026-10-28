@@ -227,7 +227,6 @@ export default function Bilan() {
           {/* Progrès suit ses propres périodes (4 semaines, 3 mois, 1 an) : l'année n'y sert à rien. Elle reste affichée mais grisée et non touchable, pour que les onglets ne bougent pas */}
           <View style={onglet === 'progres' ? styles.anneeMasquee : undefined} pointerEvents={onglet === 'progres' ? 'none' : 'auto'} accessibilityElementsHidden={onglet === 'progres'} importantForAccessibility={onglet === 'progres' ? 'no-hide-descendants' : 'auto'}>
             <MenuMesure
-              grand
               etiquette="Année"
               valeur={onglet === 'records' && toutTemps ? 'tout' : String(annee)}
               options={[...(onglet === 'records' ? [{ cle: 'tout', nom: 'Tout' }] /* court : « Tous temps » pousserait le sélecteur d'onglets hors de l'écran */ : []), ...annees.map((a) => ({ cle: String(a), nom: String(a) }))]}
