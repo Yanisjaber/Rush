@@ -55,6 +55,14 @@ export const WIDGETS = {
     tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
+  progression: {
+    nom: "Progression",
+    description: "As-tu progressé ? Une note par sport, comparée à la période d'avant (4 semaines, 3 mois ou 1 an).",
+    categorie: "Charge et forme",
+    sports: 'tous',
+    tailles: ['xs', 's', 'm', 'l'],
+    taille: 's',
+  },
   predictions: {
     nom: "Prédictions de temps",
     description: "5 km, 10 km et semi, estimés d’après tes sorties récentes, avec l’écart à ton objectif.",

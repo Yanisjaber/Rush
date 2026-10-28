@@ -1,5 +1,5 @@
 // Types communs des onglets en icônes (la version iOS native et la version de repli les partagent).
-export type IconeOnglet = 'resume' | 'rythme' | 'records';
+export type IconeOnglet = 'resume' | 'rythme' | 'records' | 'progres';
 
 export interface OngletIcone<T extends string> {
   cle: T;

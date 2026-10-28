@@ -36,6 +36,11 @@ function Icone({ nom, couleur }: { nom: IconeOnglet; couleur: string }) {
         </>
       ) : nom === 'rythme' ? (
         <Path d="M2 11h3l2-6 3 10 2-7 1.5 3H18" {...commun} />
+      ) : nom === 'progres' ? (
+        <>
+          <Path d="M2.5 14.5l4.5-4.5 3 3 7-7.5" {...commun} />
+          <Path d="M12.5 5.5h4.5V10" {...commun} />
+        </>
       ) : (
         <>
           <Path d="M6 3h8v5a4 4 0 0 1-8 0z" {...commun} />

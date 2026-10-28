@@ -14,6 +14,7 @@ import { WidgetDeniveleSki } from './WidgetDeniveleSki';
 import { WidgetDernieres } from './WidgetDernieres';
 import { WidgetDenivele } from './WidgetDenivele';
 import { WidgetEfficacite } from './WidgetEfficacite';
+import { WidgetProgression } from './WidgetProgression';
 import { WidgetFtp } from './WidgetFtp';
 import { WidgetForme } from './WidgetForme';
 import { WidgetGroupes } from './WidgetGroupes';
@@ -71,6 +72,7 @@ export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   dernieres: WidgetDernieres,
   predictions: WidgetPredictions,
   efficacite: WidgetEfficacite,
+  progression: WidgetProgression,
   meilleures: WidgetMeilleures,
   kmhebdo: WidgetKmHebdo,
   zonesallure: WidgetZonesAllure,

@@ -16,14 +16,20 @@ import { AnneauRepartition } from '@/components/AnneauRepartition';
 import { IconeSport } from '@/components/IconeSport';
 import { ObjectifSegments } from '@/components/ObjectifSegments';
 import { OngletsIcones } from '@/components/OngletsIcones';
+import { OngletsSegment } from '@/components/OngletsSegment';
+import { ProgresSport } from '@/components/ProgresSport';
 import type { IconeOnglet } from '@/components/OngletsIcones.types';
 import {
   activitesAnnee, anneesDisponibles, avancement, chargeParSemaine, cumulParAnnee, kmParMois, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
   regulariteAnnee, repartitionSport, sommer, volumeMensuel, familleBilanDuFiltre, decimalesObjectif, type MetriqueCumul,
 } from '@/data/bilan';
 import { formatDateLongue, formatNum, texteHM } from '@/data/format';
+import { courbeProgression, PERIODES_PROGRESSION, progressionTousSports, type PeriodeProgression } from '@/data/progression';
 import { useDonneesBilan } from '@/hooks/useDonneesBilan';
+import { useHistoriqueProgression, useSeriesForceProgression } from '@/hooks/useHistoriqueProgression';
+import { useReferences } from '@/hooks/useReferences';
 import { useMenu } from '@/stores/menu';
+import { choisirPeriodeProgression, usePeriodeProgression } from '@/stores/progression';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
@@ -31,11 +37,12 @@ import { usePalette } from '@/theme/usePalette';
 
 const NOMS_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const BARRE_ONGLETS = 72;
-type OngletBilan = 'resume' | 'rythme' | 'records';
+type OngletBilan = 'resume' | 'rythme' | 'records' | 'progres';
 const ONGLETS: { cle: OngletBilan; nom: string; icone: IconeOnglet }[] = [
   { cle: 'resume', nom: 'Résumé', icone: 'resume' },
   { cle: 'rythme', nom: 'Rythme', icone: 'rythme' },
   { cle: 'records', nom: 'Records', icone: 'records' },
+  { cle: 'progres', nom: 'Progrès', icone: 'progres' },
 ];
 const nomUnite = (u: string) => (u ? ` ${u}` : '');
 // Famille de bilan d'un objectif → famille de couleur de l'app (la couleur désigne le sport)
@@ -67,6 +74,12 @@ export default function Bilan() {
   const [mesureRepartition, setMesureRepartition] = useState<MetriqueCumul>('heures'); // la mesure de la répartition par sport (le temps par défaut)
   const { brutes, objectifs, chargement, erreur, pret, actualisation, recharger } = useDonneesBilan();
   const annee = anneeChoisie;
+  // Progrès : l'historique long et le carnet de force ne se chargent qu'à la première ouverture de l'onglet
+  const joursProgres = usePeriodeProgression();
+  const progresOuvert = onglet === 'progres';
+  const historique = useHistoriqueProgression(brutes, progresOuvert);
+  const carnet = useSeriesForceProgression(progresOuvert);
+  const { hrMax } = useReferences(); // la même FC max que le widget de l'accueil : sinon les deux ne diraient pas la même chose
 
   const toutes = useMemo(() => brutes.map(normaliser), [brutes]);
   const annees = useMemo(() => anneesDisponibles(toutes, maintenant), [toutes, maintenant]);
@@ -108,6 +121,14 @@ export default function Bilan() {
   const seancesParSemaine = (n: number) => (regularite.jours ? n / (regularite.jours / 7) : 0);
   const repartition = repartitionSport(activitesAnnee(toutes, annee, maintenant), mesureRepartition);
   const mesureRep = MESURES_CUMUL.find((m) => m.cle === mesureRepartition) ?? MESURES_CUMUL[0];
+
+  // Un bloc par sport mesurable : celui du filtre, ou tous ceux que tu pratiques sur « Tout »
+  const progres = useMemo(() => {
+    if (!progresOuvert) return [];
+    const familles = filtre === 'tout' ? [...new Set(toutes.map((a) => a.famille)), ...(carnet.series.length ? ['muscu'] : [])] : [filtre];
+    const donnees = { seances: historique.seances, series: carnet.series, hrMax: hrMax ?? null };
+    return progressionTousSports(familles, donnees, joursProgres, maintenant).map((prog) => ({ prog, courbe: courbeProgression(prog.famille, donnees, joursProgres, maintenant) }));
+  }, [progresOuvert, filtre, toutes, historique.seances, carnet.series, hrMax, joursProgres, maintenant]);
 
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
@@ -385,6 +406,28 @@ export default function Bilan() {
                 ) : (
                   <Bloc titre={`Records de ${annee}`}>
                     <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de record en {annee}.</Text>
+                  </Bloc>
+                )}
+              </>
+            ) : null}
+
+            {pret && onglet === 'progres' ? (
+              <>
+                <OngletsSegment<string>
+                  etiquette="Période de comparaison"
+                  onglets={PERIODES_PROGRESSION.map((x) => ({ cle: String(x.jours), nom: x.court }))}
+                  actuel={String(joursProgres)}
+                  onChoisir={(cle) => choisirPeriodeProgression(Number(cle) as PeriodeProgression)}
+                />
+                {historique.chargement || carnet.chargement ? (
+                  <View accessible accessibilityLabel="Chargement des progrès" style={styles.attente}>
+                    <ActivityIndicator color={p.texteDoux} />
+                  </View>
+                ) : progres.length ? (
+                  progres.map(({ prog, courbe }) => <ProgresSport key={prog.famille} progression={prog} courbe={courbe} jours={joursProgres} />)
+                ) : (
+                  <Bloc titre="Progrès">
+                    <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de progression mesurable pour ce sport : on sait la suivre en course, vélo, natation et musculation.</Text>
                   </Bloc>
                 )}
               </>
