@@ -11,6 +11,7 @@
   import Ecran from '../lib/components/Ecran.svelte';
   import ParcoursDemarrage from '../lib/components/ParcoursDemarrage.svelte';
   import Onboarding from '../lib/components/Onboarding.svelte';
+  import Dialogue from '../lib/components/Dialogue.svelte';
   import { sportsChoisis, chargerSportsChoisis } from '../lib/stores/sports.svelte.js';
   import { onboardingNecessaire, fusionnerFamilles } from '../lib/data/sports-choisis.js';
   import { menu, chargerMenu } from '../lib/stores/menu.svelte.js';
@@ -70,9 +71,26 @@
     }
   }
 
+  // Un seul chargement compte : le plus récent. Une réponse plus lente d'un chargement précédent est jetée, sinon elle écraserait les données fraîches.
+  let numeroChargement = 0;
+  // Pour qui l'accueil a déjà été affiché. Au rechargement (une sortie créée ou retouchée), on garde l'écran tel quel : pas de « Chargement… »,
+  // donc pas de clignotement, et un mode édition en cours n'est pas détruit.
+  let identiteAffichee = null;
+
   async function charger(userId) {
-    etat.chargement = true;
-    etat.erreur = '';
+    const numero = ++numeroChargement;
+    const perime = () => numero !== numeroChargement;
+    const cle = demo ? 'demo' : userId;
+    if (identiteAffichee !== cle) {
+      etat.chargement = true;
+      etat.erreur = '';
+    }
+    // La disposition relue depuis la base écraserait ce que l'utilisateur est en train de modifier : on n'y touche pas pendant l'édition d'un rechargement
+    const chargerLaDisposition = (id, familles) => (identiteAffichee === cle && disposition.enEdition ? null : chargerDisposition(id, familles));
+    const fini = () => {
+      identiteAffichee = cle;
+      terminerChargement();
+    };
     if (demo) {
       Object.assign(etat, donneesDemo());
       etat.dernieres = etat.seances;
@@ -80,12 +98,15 @@
       etat.hyrox = { tests: testsHyroxDemo(), objectif: objectifHyroxDemo() };
       etat.erreurSport = '';
       await chargerSportsChoisis('demo');
-      await chargerDisposition('demo', famillesDe(etat.seances, etat.force, etat.hyrox, etat.objectifs));
-      terminerChargement();
+      if (perime()) return;
+      await chargerLaDisposition('demo', famillesDe(etat.seances, etat.force, etat.hyrox, etat.objectifs));
+      if (perime()) return;
+      fini();
       return;
     }
     if (!userId) return;
     await chargerSportsChoisis(userId); // avant la disposition : les sports choisis comptent pour composer l'accueil
+    if (perime()) return;
     const [profil, metriques, seances, objectifs, puissance, series, programmes, exercices, tests, objectifHyrox, prevues, liens, dernieres] = await Promise.all([
       chargerProfil(userId),
       chargerMetriques(userId),
@@ -101,6 +122,7 @@
       chargerLiensProgrammes(userId, dateIsoLocale(), dateIsoLocale(new Date(Date.now() + 60 * 86400e3))), // programme relié à chaque séance prévue (tolérant si la migration n'est pas appliquée)
       chargerDernieresSeances(userId), // sans limite de date : la liste « Dernières séances » ne se vide pas pendant une pause
     ]);
+    if (perime()) return; // un chargement plus récent est parti entre-temps : sa réponse fera foi
     etat.profil = profil.data;
     etat.metriques = metriques.data || [];
     etat.seances = seances.data || [];
@@ -115,8 +137,9 @@
     etat.erreurSport = [series, programmes, exercices, tests, objectifHyrox].some((r) => r.erreur)
       ? "Le carnet de force et le suivi Hyrox ne répondent pas : la migration « force_hyrox » n'est peut-être pas appliquée sur ta base."
       : '';
-    await chargerDisposition(userId, famillesDe(etat.seances, etat.force, etat.hyrox, etat.objectifs));
-    terminerChargement();
+    await chargerLaDisposition(userId, famillesDe(etat.seances, etat.force, etat.hyrox, etat.objectifs));
+    if (perime()) return;
+    fini();
   }
   // L'effet ne dépend QUE de l'identité de l'utilisateur. Tout ce que `charger` lit ou écrit dans `etat`
   // est isolé par `untrack` : sinon l'effet se déclencherait lui-même en boucle (il écrit etat.seances,
@@ -145,7 +168,7 @@
       onboardingNecessaire({
         demo,
         sportsEnregistres: sportsChoisis.liste,
-        nbSeances: etat.seances.length,
+        nbSeances: etat.seances.length + etat.dernieres.length, // « dernieres » n'a pas de limite de date : une vieille sortie suffit à ne pas être un compte neuf
         aForce: etat.force.programmes.length > 0 || etat.force.series.length > 0,
         aHyrox: etat.hyrox.tests.length > 0 || !!etat.hyrox.objectif,
       }),
@@ -185,7 +208,17 @@
   );
   // Compte neuf (aucune séance, rien de prévu, aucun objectif) : parcours de démarrage + seulement objectif / semaine / à venir
   const compteVide = $derived(
-    !demo && !etat.chargement && !etat.erreur && !etat.seances.length && !etat.planifiees.length && !etat.objectifs.length,
+    !demo &&
+      !etat.chargement &&
+      !etat.erreur &&
+      !etat.seances.length &&
+      !etat.dernieres.length && // une sortie d'il y a des mois (hors des 84 jours de « seances ») suffit : après une pause, l'accueil reste normal
+      !etat.planifiees.length &&
+      !etat.objectifs.length &&
+      !etat.force.programmes.length &&
+      !etat.force.series.length &&
+      !etat.hyrox.tests.length &&
+      !etat.hyrox.objectif,
   );
   const widgetsVisibles = $derived(
     compteVide && !disposition.enEdition ? widgetsAffiches.filter((w) => ['objectif', 'semaine', 'avenir'].includes(w.id)) : widgetsAffiches,
@@ -202,6 +235,14 @@
 
   // Personnaliser sur téléphone : on touche un widget pour le sélectionner (la barre du bas de l'écran permet alors de le retirer),
   // et on le MAINTIENT puis on le glisse pour le déplacer, comme sur l'écran d'accueil de l'iPhone.
+  // « Revenir à l'accueil automatique » efface la personnalisation et enregistre tout de suite : on demande d'abord confirmation
+  let confirmerReinit = $state(false);
+  async function reinitialiser() {
+    confirmerReinit = false;
+    await reinitialiserAuto();
+    fermerPanneau('edition');
+  }
+
   let selection = $state('');
   const indexSelection = $derived(widgetsVisibles.findIndex((w) => w.id === selection));
   $effect(() => {
@@ -381,7 +422,7 @@
         <p>{ecran.telephone ? 'Touche un widget pour le retirer, maintiens-le et glisse pour le déplacer.' : 'Glisse les widgets pour les déplacer (ou utilise les flèches), redimensionne-les ou retire-les.'} Ajoute-en depuis la bibliothèque en bas.</p>
       </div>
       <div class="actions">
-        <Bouton variante="texte" onclick={async () => { await reinitialiserAuto(); fermerPanneau('edition'); }}>{nomOngletEdition ? 'Revenir à la composition par défaut de cet onglet' : "Revenir à l'accueil automatique"}</Bouton>
+        <Bouton variante="texte" onclick={() => (confirmerReinit = true)}>{nomOngletEdition ? 'Revenir à la composition par défaut de cet onglet' : "Revenir à l'accueil automatique"}</Bouton>
         <Bouton variante="discret" onclick={() => { annulerEdition(); fermerPanneau('edition'); }}>Annuler</Bouton>
         <Bouton variante="sur-dossard" onclick={async () => { const fin = terminerEdition(); fermerPanneau('edition'); await fin; }}>Terminer</Bouton>
       </div>
@@ -495,6 +536,16 @@
     {/if}
   {/if}
   {/if}
+
+  <Dialogue ouvert={confirmerReinit} titre={nomOngletEdition ? `Remettre l'onglet ${nomOngletEdition} par défaut ?` : "Remettre l'accueil par défaut ?"} ton="danger" onfermer={() => (confirmerReinit = false)}>
+    <div class="confirmation">
+      <p>Ta disposition actuelle sera perdue.</p>
+      <div class="boutons">
+        <Bouton variante="sur-dossard" onclick={reinitialiser}>Réinitialiser</Bouton>
+        <Bouton variante="discret" onclick={() => (confirmerReinit = false)}>Annuler</Bouton>
+      </div>
+    </div>
+  </Dialogue>
 
   <!-- La séance de muscu prévue aujourd'hui, ouverte par-dessus l'accueil (adresse ?seancejour=<id> : un rechargement la rouvre) -->
   <PanneauSeanceDuJour ouvert={!!prevueOuverte} prevue={prevueOuverte} programme={programmeOuvert} onfermer={() => fermerPanneau('seancejour')} />
@@ -612,6 +663,25 @@
   }
   /* Sur le bandeau (clair en thème sombre), les boutons « discret » ont besoin d'un contour foncé */
   .bandeau-edition :global(.discret) {
+    color: var(--dossard-texte);
+    border-color: var(--dossard-texte);
+  }
+
+  /* La fenêtre est un dossard (clair en thème sombre) : on reprend les couleurs du dossard pour le texte et le bouton discret */
+  .confirmation {
+    --texte: var(--dossard-texte);
+    --texte-doux: var(--dossard-texte);
+  }
+  .confirmation p {
+    margin-bottom: 18px;
+  }
+  .confirmation .boutons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  .confirmation :global(.discret) {
     color: var(--dossard-texte);
     border-color: var(--dossard-texte);
   }
