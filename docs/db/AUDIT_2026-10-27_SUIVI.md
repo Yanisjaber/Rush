@@ -17,7 +17,8 @@ Audit complet (fichiers + base) fait le 27 octobre 2026, traité point par point
 - **Base64 (décision : on ne convertit pas en bytea)** : gain de 21 Mo seulement (84 → 63 Mo) pour toucher le site, le mobile et 1 319 flux. À la place, **`VACUUM FULL` de `activities` fait le 28 octobre** : la table était à 289 Mo dont ~190 Mo d'espace mort (TOAST), elle est passée à **95 Mo** (base : 313 → 119 Mo), sans perte (4 358 séances, 1 319 flux). Si ça regonfle (réécritures de `streams_gz` par le rattrapage), refaire un `VACUUM FULL` ; `autovacuum` ne rend pas l'espace au disque.
 - **Correction au passage** : l'estimation de FTP lisait une colonne `best_watts` qui n'existe pas dans `power_profile` (elle s'appelle `watts_90d` / `watts_alltime`) : l'étape « 95 % du 20 min » n'avait jamais marché.
 - **Test dans le simulateur (compte de Yanis)** : ajout d'une séance manuelle puis suppression par l'app, vérifiés dans la base (plafonds et policies laissent passer, `daily_metrics` recalculé dans les deux sens).
-- **Pas fait** : charge CPU de `strava-streams` à mesurer, et les mesures déjà calculées avec les anciennes valeurs par défaut (FTP 250 W, FC max 190) dans `metrics` (il faudrait augmenter `METRICS_VERSION` et relancer un rattrapage).
+- **Charge CPU de `strava-streams` mesurée (28 octobre)** : environ 20 ms de calcul pour une sortie de 3 h, 85 ms pour 8 h. Le rattrapage s'arrête désormais après 1,2 s de calcul (limite CPU des Edge Functions ~2 s) et reprend à l'appel suivant. **Déployé.**
+- **Anciennes mesures (FTP 250 W / FC max 190 par défaut)** : recalculées par le même rattrapage, puisque `POWER_CURVE_VERSION` est passé à 6 (le rattrapage recalcule aussi `metrics`). Aucune action.
 
 ## Fait le 28 octobre (par points de l'audit)
 
@@ -42,3 +43,12 @@ Toutes redéployées le 28 octobre (y compris après le calcul de charge).
 - **13. Modules en double `app/` ↔ `native/`** : décision du 28 octobre = on documente (voir `CLAUDE.md`), pas de paquet partagé pour l'instant. Piste : des tests de parité sur les calculs les plus sensibles (sommeil, structure, synthèse).
 - **14 (suite).** `hours_only` dans `strava-ingest` ; `SPORT_TO_CAT` et `mainId` sont retirés avec le calcul. Les vocabulaires de sports (serveur / mobile) ne sont plus comparés côté serveur.
 - **17. Mobile** : identifiant `TODO.rush` (à choisir par Yanis), bouton « Connecter Strava » qui renvoie vers le site (travail en cours dans `native/`).
+
+## Non fait, à décider ou bloqué (28 octobre)
+
+- **Journal de migrations rejouable** : il faut un instantané du schéma (`supabase db dump --linked --schema public`), qui demande **Docker Desktop lancé** (le démon est arrêté sur ce Mac).
+- **`npm audit` de `native/`** : la seule correction proposée est `npm audit fix --force`, qui installerait Expo 51 (rétrogradation cassante). Alertes dans l'outillage (node-forge, uuid, zod via Expo), pas dans l'app livrée. À reprendre avec la prochaine mise à jour d'Expo.
+- **Modules en double `app/` ↔ `native/`** : le site `app/` est gelé (refonte en cours), donc pas de tests de parité pour l'instant.
+- **Identifiant `TODO.rush`** (`native/app.json`) : à choisir par Yanis (il faudra reconstruire l'app de développement).
+- **Mobile** : export de données et suppression de compte (en cours dans `native/`), bouton « Connecter Strava » qui renvoie vers le site.
+- **`hours_only` dans `strava-ingest`** : outil de maintenance ponctuel, gardé.
