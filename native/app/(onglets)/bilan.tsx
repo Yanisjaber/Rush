@@ -358,7 +358,7 @@ export default function Bilan() {
                     <View key={c.libelle} accessible style={[styles.statRythme, { backgroundColor: avecAlpha(p.surface, 0.78) }]}>
                       <Text style={[styles.valeurSerie, { color: p.texte }]}>
                         {c.val}
-                        <Text style={[typo.micro, { color: p.texteDoux }]}> {c.unite}</Text>
+                        <Text style={[typo.petit, { color: p.texteDoux }]}> {c.unite}</Text>
                       </Text>
                       <Text style={[typo.micro, { color: p.texteDoux, textAlign: 'center' }]}>{c.libelle}</Text>
                       {c.note ? <Text style={[typo.petit, { color: p.texteMuet, textAlign: 'center' }]}>{c.note}</Text> : null}
