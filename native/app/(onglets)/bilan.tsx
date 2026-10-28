@@ -138,6 +138,7 @@ export default function Bilan() {
     return { parMois, meilleurMois: Math.max(0, ...parMois), semaines, moyenneSemaine: Math.round(completes.reduce((a, b) => a + b, 0) / completes.length), regularite: regulariteAnnee(filtrees, annee, maintenant) };
   }, [onglet, filtrees, annee, maintenant, enKm, enCours]);
   const repartition = useMemo(() => (onglet === 'resume' ? repartitionSport(activitesAnnee(toutes, annee, maintenant), mesureRepartition) : []), [onglet, toutes, annee, maintenant, mesureRepartition]);
+  const texteRep = (v: number): string => (mesureRep.unite === 'h' ? texteHM(Math.round(v * 60)) : `${formatNum(v, 0)} ${mesureRep.unite}`);
   const dense = repartition.length > 6; // beaucoup de sports : lignes et barres plus serrées
   const mesureRep = MESURES_CUMUL.find((m) => m.cle === mesureRepartition) ?? MESURES_CUMUL[0];
   // Les valeurs de l'onglet Rythme : elles n'existent que sur cet onglet (l'affichage plus bas est gardé par `rythme`)
@@ -287,11 +288,11 @@ export default function Bilan() {
                     </Text>
                     <MenuMesure etiquette="Mesure de la répartition" valeur={mesureRepartition} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => setMesureRepartition(c as MetriqueCumul)} />
                   </View>
-                  <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>Part {mesureRep.phrase} de {annee}, tous sports confondus ({formatNum(repartition.reduce((t, r) => t + r.valeur, 0), 0)} {mesureRep.unite} au total).</Text>
+                  <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>Part {mesureRep.phrase} de {annee}, tous sports confondus ({texteRep(repartition.reduce((t, r) => t + r.valeur, 0))} au total).</Text>
                   {repartition.length ? (
                     <View
                       accessible
-                      accessibilityLabel={`Répartition par sport : ${repartition.map((r) => `${r.type ? nomDuType(r.type) : NOM_SPORT_BILAN[r.sport]}, ${formatNum(r.valeur, 0)} ${mesureRep.unite}, ${r.part} pour cent`).join(' ; ')}`}
+                      accessibilityLabel={`Répartition par sport : ${repartition.map((r) => `${r.type ? nomDuType(r.type) : NOM_SPORT_BILAN[r.sport]}, ${texteRep(r.valeur)}, ${r.part} pour cent`).join(' ; ')}`}
                       style={{ gap: dense ? 8 : 14 }}
                     >
                       {repartition.map((r) => (
@@ -303,7 +304,7 @@ export default function Bilan() {
                             </Text>
                             {/* La stat elle-même (281 h, 3 120 km…), en plus du pourcentage */}
                             <Text style={[typo.micro, { color: p.texteMuet }]}>
-                              {formatNum(r.valeur, 0)} {mesureRep.unite}
+                              {texteRep(r.valeur)}
                             </Text>
                             <Text style={[typo.petit, { color: p.texte, fontFamily: police.titre700, minWidth: 46, textAlign: 'right' }]}>{r.part === 0 ? '< 1 %' : `${r.part} %`}</Text>
                           </View>
