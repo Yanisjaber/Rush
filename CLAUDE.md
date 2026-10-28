@@ -58,7 +58,7 @@ Guide pour Claude Code (claude.ai/code) dans ce dépôt. Les `.md` détaillés s
 
 ## Backend
 
-- Modèle de données : `docs/db/MODELE_DONNEES.md`. Migrations : `docs/db/LISEZMOI_MIGRATIONS.md` (le journal ne se rejoue pas sur une base vide : `activities` n'a pas de migration de création). `schema.sql` et `schema_v2.sql` sont périmés.
+- Modèle de données : `docs/db/MODELE_DONNEES.md`. Migrations : `docs/db/LISEZMOI_MIGRATIONS.md` (le journal ne se rejoue pas sur une base vide : `activities` n'a pas de migration de création). Les anciens `schema.sql` et `schema_v2.sql` sont supprimés (schéma de référence : `supabase/baseline/`).
 - **Charge d'entraînement** : TSS (puissance), sinon TRIMP (cardio), sinon effort ressenti × durée. Les zones (FTP/LTHR) se recalculent à l'affichage, jamais stockées.
 - **Jetons OAuth** : chiffrés dans Supabase Vault, jamais en colonne, lus seulement par les Edge Functions (service role) via `rpc_connection_secrets`. Voir `docs/db/JETONS_VAULT.md`.
 - **OAuth** : `oauth-start` crée un `state` aléatoire à usage unique (`oauth_states`), aucun JWT dans l'URL. Guides : `docs/installation/`.
