@@ -441,6 +441,8 @@ export interface RegulariteAnnee {
   /** Jours d'affilée jusqu'à aujourd'hui (hier compris si rien n'est encore fait aujourd'hui). */
   serieEnCours: number;
   serieRecord: number;
+  /** Une entrée par mois (12) : une case par jour du mois (les jours à venir sont `vide`) et le nombre de jours actifs. */
+  parMois: { cases: CaseRegularite[]; actifs: number }[];
 }
 
 /** Régularité d'une année : la carte des jours (sport dominant et intensité), les jours actifs et les séries. */
@@ -475,6 +477,21 @@ export function regulariteAnnee(acts: ActiviteBilan[], annee: number, maintenant
     }
   }
 
+  // Les mêmes jours, rangés par mois : une case par jour du mois
+  const parMois: RegulariteAnnee['parMois'] = Array.from({ length: 12 }, () => ({ cases: [], actifs: 0 }));
+  for (const j = new Date(debut); j.getFullYear() === annee; j.setDate(j.getDate() + 1)) {
+    const iso = dateIso(j);
+    const m = parJour.get(iso);
+    const mois = parMois[j.getMonth()];
+    if (iso > finIso) mois.cases.push({ famille: null, intensite: 0, vide: true });
+    else if (!m) mois.cases.push({ famille: null, intensite: 0, vide: false });
+    else {
+      const [famille] = [...m.entries()].sort((x, y) => y[1] - x[1])[0];
+      mois.cases.push({ famille, intensite: intensiteDeCharge([...m.values()].reduce((x, y) => x + y, 0)), vide: false });
+      mois.actifs++;
+    }
+  }
+
   const jours = joursEntre(debut, fin) + 1;
   let serieRecord = 0;
   let courante = 0;
@@ -490,7 +507,7 @@ export function regulariteAnnee(acts: ActiviteBilan[], annee: number, maintenant
     serieEnCours++;
     f.setDate(f.getDate() - 1);
   }
-  return { cases, colonnes, jours, joursActifs: parJour.size, serieEnCours, serieRecord };
+  return { cases, colonnes, jours, joursActifs: parJour.size, serieEnCours, serieRecord, parMois };
 }
 
 /**

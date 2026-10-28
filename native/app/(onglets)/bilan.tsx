@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarreSports } from '@/components/graphes/BarreSports';
 import { BarresHebdo } from '@/components/graphes/BarresHebdo';
 import { BarresMois } from '@/components/graphes/BarresMois';
-import { CarteChaleur } from '@/components/graphes/CarteChaleur';
+import { RegulariteMois } from '@/components/graphes/RegulariteMois';
 import { Dossard } from '@/components/ui/Dossard';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { Bouton } from '@/components/ui/Bouton';
@@ -417,13 +417,10 @@ export default function Bilan() {
                 </Bloc>
 
                 <Bloc titre="Régularité">
-                  <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>Une case par jour. Sa couleur est celle du sport du jour, plus elle est vive plus la charge est forte.</Text>
-                  <CarteChaleur
-                    cases={regularite.cases}
-                    colonnes={regularite.colonnes}
-                    ecart={1}
-                    hauteurCase={6}
-                    etiquette={`Carte des jours d'entraînement de ${annee} : ${regularite.joursActifs} jours actifs sur ${regularite.jours}`}
+                  <RegulariteMois
+                    parMois={regularite.parMois}
+                    dernierMois={dernierMois}
+                    etiquette={`Régularité de ${annee}, mois par mois : ${regularite.joursActifs} jours actifs sur ${regularite.jours}. ${regularite.parMois.slice(0, dernierMois + 1).map((m, i) => `${NOMS_MOIS[i]} ${m.actifs}`).join(', ')}.`}
                   />
                 </Bloc>
 

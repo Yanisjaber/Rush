@@ -223,6 +223,20 @@ test('chargeParSemaine : une année passée s\'arrête au 31 décembre', () => {
   assert.equal(s[11], 40);
 });
 
+test('regulariteAnnee : les jours rangés par mois, avec les jours actifs de chaque mois', () => {
+  // maintenant = mercredi 1er juillet 2026
+  const r = regulariteAnnee([act('2026-03-05', 'course', 60, 10), act('2026-03-06', 'cyclisme', 90, 40, 0, 70, 'b'), act('2026-04-01', 'course', 30, 5, 0, 0, 'c')], 2026, maintenant);
+  assert.equal(r.parMois.length, 12);
+  assert.deepEqual(r.parMois.map((m) => m.cases.length), [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]);
+  assert.equal(r.parMois[2].actifs, 2);
+  assert.equal(r.parMois[2].cases[4].famille, 'course');
+  assert.equal(r.parMois[2].cases[5].famille, 'velo');
+  assert.equal(r.parMois[2].cases[0].famille, null);
+  assert.equal(r.parMois[6].cases[0].vide, false); // le 1er juillet est aujourd'hui
+  assert.equal(r.parMois[6].cases[1].vide, true); // le 2 juillet est à venir
+  assert.equal(r.parMois.reduce((t, m) => t + m.actifs, 0), r.joursActifs);
+});
+
 test('regulariteAnnee : jours, jours actifs, séries et cases', () => {
   const acts = [
     act('2026-06-27', 'course', 60, 10, 0, 50, 'a'), act('2026-06-28', 'cyclisme', 60, 30, 0, 90, 'b'), act('2026-06-29', 'cyclisme', 60, 30, 0, 30, 'c'),
