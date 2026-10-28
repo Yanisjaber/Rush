@@ -7,12 +7,12 @@ Audit complet (fichiers + base) fait le 27 octobre 2026, traité point par point
 - **1. « Tout effacer » Strava** : `disconnect-integration` ne supprime plus que les `activities` qui ont un `strava_id` (les séances manuelles et importées restent). **Code corrigé, fonction pas encore redéployée** (`supabase functions deploy disconnect-integration`).
 - **2. `daily_metrics`** : `recalc_daily_metrics` ignore les étapes fusionnées (`merged_into`) et la série va jusqu'à aujourd'hui. Migrations `2026-10-27_daily_metrics_sans_etapes_fusionnees.sql` et `2026-10-27_daily_metrics_jusqua_aujourdhui.sql`, **appliquées** sur la vraie base. Test local : `supabase/tests/daily_metrics_fusion.sh`.
 
-## En attente (décidé avec Yanis : « on fera le calcul des données plus tard »)
+## Calcul de la charge (fait le 28 octobre, après l'avoir mis en attente)
 
-- **Un seul calcul de la charge** : aujourd'hui trois versions (trigger SQL, `strava-ingest`, `strava-webhook`). Retirer le calcul de forme des Edge Functions et ne garder que le trigger.
-- **TSS identique selon le chemin d'arrivée** : le webhook utilise `weighted_average_watts || 0`, l'ingest `weighted_average_watts || average_watts` et estime la FTP. Mettre le calcul dans `_shared/`.
-- **`strava-streams`** : FC de repos fixée à 50, FTP 250 W et FC max 190 par défaut, courbes de puissance qui supposent 1 point = 1 s, `power_profile_sport` supprimé puis réécrit sans transaction, flux en base64, charge CPU à mesurer.
-- La série `daily_metrics` ne s'allonge que quand `activities` change (idée : `pg_cron` pour la prolonger chaque jour).
+- **Un seul TSS** : `supabase/functions/_shared/charge.ts` (`computeTss`, `stravaToRow`, `ftpEffective`, `lthrEffectif`) est utilisé par `strava-ingest` et `strava-webhook`. Puissance normalisée sinon moyenne, FTP du profil sinon estimée, sinon cardio. Test : `node --experimental-strip-types --test supabase/tests/charge.test.mts`. **Déployé.**
+- **Un seul calcul de forme** : le trigger SQL (`recalc_daily_metrics`) ; le calcul des deux fonctions est retiré. `pg_cron` (`daily_metrics_nuit`, 00 h 05 UTC) la prolonge chaque nuit. **Appliqué.**
+- **`strava-streams`** : plus de FTP 250 W ni de FC max 190 inventées (estimées sur la séance, sinon mesures omises). La FC de repos reste 50 (le profil n'en a pas). **Déployé.**
+- **Pas fait** : courbes de puissance qui supposent 1 point = 1 s, `power_profile_sport` réécrit sans transaction, flux en base64, charge CPU à mesurer, et les séances déjà calculées avec les anciennes valeurs par défaut (il faudrait augmenter `METRICS_VERSION` pour les recalculer).
 
 ## Fait le 28 octobre (par points de l'audit)
 
@@ -29,11 +29,11 @@ Audit complet (fichiers + base) fait le 27 octobre 2026, traité point par point
 
 ## Edge Functions à redéployer (le code est corrigé, la version en ligne est l'ancienne)
 
-`disconnect-integration`, `opendossard`, `delete-account`, `strava-ingest`, `strava-streams`, `strava-webhook`, `strava-oauth-callback` (avec `--no-verify-jwt` pour les deux Strava sans JWT).
+Toutes redéployées le 28 octobre (y compris après le calcul de charge).
 
 ## Reste
 
-- **12. `strava-streams`** (calcul des données, en attente avec le n°3).
+- **12. `strava-streams`** : reste la précision 1 Hz, la transaction du power profile, le base64 et le CPU (voir plus haut).
 - **13. Modules en double `app/` ↔ `native/`** : décision du 28 octobre = on documente (voir `CLAUDE.md`), pas de paquet partagé pour l'instant. Piste : des tests de parité sur les calculs les plus sensibles (sommeil, structure, synthèse).
-- **14 (suite).** `SPORT_TO_CAT` / `hours_only` / `mainId` dans `strava-ingest`, et vocabulaires de sports différents : à traiter avec le calcul.
+- **14 (suite).** `hours_only` dans `strava-ingest` ; `SPORT_TO_CAT` et `mainId` sont retirés avec le calcul. Les vocabulaires de sports (serveur / mobile) ne sont plus comparés côté serveur.
 - **17. Mobile** : identifiant `TODO.rush` (à choisir par Yanis), bouton « Connecter Strava » qui renvoie vers le site (travail en cours dans `native/`).
