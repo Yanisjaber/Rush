@@ -303,7 +303,7 @@ export default function Bilan() {
                               {r.type ? nomDuType(r.type) : NOM_SPORT_BILAN[r.sport]}
                             </Text>
                             {/* La stat elle-même (281 h, 3 120 km…), en plus du pourcentage */}
-                            <Text style={[typo.micro, { color: p.texteMuet }]}>
+                            <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none' }]}>
                               {texteRep(r.valeur)}
                             </Text>
                             <Text style={[typo.petit, { color: p.texte, fontFamily: police.titre700, minWidth: 46, textAlign: 'right' }]}>{r.part === 0 ? '< 1 %' : `${r.part} %`}</Text>
