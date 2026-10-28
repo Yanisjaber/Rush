@@ -41,7 +41,7 @@ export function EchelleBarres({ maximum, haut = 0, bas = 0 }: Props) {
 const styles = StyleSheet.create({
   zone: { position: 'absolute', left: 0, right: 0 },
   repere: { position: 'absolute', left: 0, right: 0, height: 0 },
-  trait: { position: 'absolute', left: GOUTTIERE_ECHELLE - 2, right: 0, height: StyleSheet.hairlineWidth },
+  trait: { position: 'absolute', left: GOUTTIERE_ECHELLE - 2, right: 0, height: 1 }, // 1 pt comme dans le cumul sur 3 ans : un filet plus fin disparaît sur le fond
   // Centrée sur son trait, alignée à droite contre les barres
   valeur: { position: 'absolute', left: 0, width: GOUTTIERE_ECHELLE - 6, bottom: -6, textAlign: 'right', fontSize: 9.5, lineHeight: 12, fontVariant: ['tabular-nums'] },
 });
