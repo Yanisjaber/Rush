@@ -146,10 +146,19 @@ export default function Bilan() {
   // Les valeurs de l'onglet Rythme : elles n'existent que sur cet onglet (l'affichage plus bas est gardé par `rythme`)
   const { parMois, meilleurMois, semaines, moyenneSemaine, regularite } = rythme ?? ({} as NonNullable<typeof rythme>);
   const seancesParSemaine = (n: number) => (regularite?.jours ? n / (regularite.jours / 7) : 0);
+  // Quand a eu lieu la dernière séance de l'année en cours (sous la série, qui vaut souvent 0)
+  const derniereSeance = useMemo(() => {
+    if (onglet !== 'rythme' || moisEnCours == null) return '';
+    const iso = activitesAnnee(filtrees, annee, maintenant).reduce((m, a) => (a.iso > m ? a.iso : m), '');
+    if (!iso) return '';
+    const [y, mo, d] = iso.split('-').map(Number);
+    const n = Math.round((new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate()).getTime() - new Date(y, mo - 1, d).getTime()) / 86400000);
+    return `dernière : ${n <= 0 ? "aujourd'hui" : n === 1 ? 'hier' : `il y a ${n} j`}`;
+  }, [onglet, moisEnCours, filtrees, annee, maintenant]);
   // Les trois chiffres en haut de l'onglet Rythme
   const statsRythme: { libelle: string; val: string; unite: string; note: string }[] = regularite ? [
                       moisEnCours != null
-                        ? { libelle: 'Série', val: String(regularite.serieEnCours), unite: regularite.serieEnCours > 1 ? 'jours' : 'jour', note: `record : ${regularite.serieRecord}` }
+                        ? { libelle: 'Série', val: String(regularite.serieEnCours), unite: regularite.serieEnCours > 1 ? 'jours' : 'jour', note: derniereSeance }
                         : { libelle: 'Série max', val: String(regularite.serieRecord), unite: regularite.serieRecord > 1 ? 'jours' : 'jour', note: `en ${annee}` },
                       { libelle: 'Jours actifs', val: String(regularite.joursActifs), unite: `/ ${regularite.jours}`, note: '' },
                       {
