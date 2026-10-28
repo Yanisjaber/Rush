@@ -1,0 +1,6 @@
+# Parcours Maestro du Bilan. Lancement (iPhone 16 Pro, Metro déjà démarré) :
+#   export JAVA_HOME=/opt/homebrew/opt/openjdk PATH="$JAVA_HOME/bin:$PATH"
+#   maestro --device <UDID de l'iPhone 16 Pro> test native/.maestro
+# Les parcours « objectifs » et « poids » créent puis suppriment des objectifs : sur un vrai compte, lance-les sur un compte de test.
+flows:
+  - "bilan-*.yaml"

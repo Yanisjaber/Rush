@@ -1,0 +1,29 @@
+# Bilan : filtre de sport (la répartition garde tous les sports), année passée, onglet Progrès
+appId: TODO.rush
+---
+- launchApp
+- runFlow: _ouvrir-bilan.yaml
+- tapOn: "Course"
+- extendedWaitUntil:
+    visible: "Objectifs de 2026"
+    timeout: 10000
+- takeScreenshot: filtre-course
+- tapOn: "Année : 2026. Changer"
+- waitForAnimationToEnd
+- tapOn: "2025"
+- extendedWaitUntil:
+    visible: "Objectifs de 2025"
+    timeout: 10000
+- assertVisible: "En 2025.*"
+- takeScreenshot: annee-2025
+- tapOn: "Progrès"
+- waitForAnimationToEnd
+- takeScreenshot: progres
+- tapOn: "Tous"
+- tapOn: "Résumé"
+# Sur Progrès, le sélecteur d'année est grisé et non touchable (il ne s'applique pas) ; il redevient actif sur Résumé
+- tapOn: "Progrès"
+- waitForAnimationToEnd
+- takeScreenshot: progres-annee-grisee
+- tapOn: "Résumé"
+- assertVisible: "Année : 20.*"

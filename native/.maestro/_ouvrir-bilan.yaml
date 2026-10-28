@@ -1,0 +1,20 @@
+# Sous-parcours : ferme la bulle d'avertissement d'Expo si elle est là, ouvre l'onglet Bilan et attend la fin du chargement.
+# Juste après le lancement, l'app finit de démarrer et ignore un premier tap : on relance le tap tant que le Bilan n'est pas là.
+appId: TODO.rush
+---
+- extendedWaitUntil:
+    visible: "Accueil"
+    timeout: 30000
+- runFlow:
+    when:
+      visible: "Open debugger to view warnings."
+    commands:
+      - tapOn:
+          point: "92%,93%"
+- retry:
+    maxRetries: 4
+    commands:
+      - tapOn: "Bilan"
+      - extendedWaitUntil:
+          visible: "Objectifs de 2026"
+          timeout: 8000

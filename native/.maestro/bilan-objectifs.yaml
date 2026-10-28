@@ -1,0 +1,51 @@
+# Objectifs : créer (avec phrase de projection), relire, modifier, refuser un doublon, supprimer. Sur le vrai compte : tout ce qui est créé est supprimé à la fin.
+appId: TODO.rush
+---
+- launchApp
+- runFlow: _ouvrir-bilan.yaml
+- tapOn: "Ajouter un objectif"
+- assertVisible: "Nouvel objectif 2026"
+- tapOn: "Créer l'objectif"        # cible vide : refusée, on reste sur l'écran
+- assertVisible: "Entre un nombre positif.*"
+- tapOn: "ex. 1500"
+- inputText: "400"
+- tapOn: "Créer l'objectif"
+- extendedWaitUntil:
+    visible: "Objectifs de 2026"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: ".*Fin d'année prévue.*il manquerait.*"
+    timeout: 15000
+- takeScreenshot: objectif-cree
+# Le même objectif une 2e fois : la base le refuse avec un message clair
+- tapOn: "Ajouter un objectif"
+- tapOn: "ex. 1500"
+- inputText: "500"
+- tapOn: "Créer l'objectif"
+- assertVisible: "Cet objectif existe déjà.*"
+- takeScreenshot: objectif-doublon
+- tapOn:
+    point: "9%,10%" # la flèche retour de l'en-tête
+- assertVisible: "Abandonner la saisie ?"   # la saisie en cours déclenche la garde d'abandon
+- tapOn: "Abandonner"
+- extendedWaitUntil:
+    visible: "Objectifs de 2026"
+    timeout: 10000
+# Modifier : une cible atteinte donne « Objectif atteint »
+- tapOn: ".*Heures totales annuelles.*"
+- assertVisible: "Modifier l'objectif 2026"
+- tapOn: "400"
+- eraseText: 10
+- inputText: "100"
+- tapOn: "Enregistrer"
+- extendedWaitUntil:
+    visible: ".*Objectif atteint.*"
+    timeout: 15000
+- takeScreenshot: objectif-atteint
+# Supprimer (la boîte de confirmation de iOS)
+- tapOn: ".*Heures totales annuelles.*"
+- tapOn: "Supprimer cet objectif"
+- tapOn: "Supprimer"
+- extendedWaitUntil:
+    visible: "Aucun objectif"
+    timeout: 15000

@@ -1,0 +1,48 @@
+# Poids corporel : perdre du poids (85 → cible 75) n'affiche plus 100 % ; la phrase dit l'écart. Supprimé à la fin (vrai compte).
+appId: TODO.rush
+---
+- launchApp
+- runFlow: _ouvrir-bilan.yaml
+- tapOn: "Ajouter un objectif"
+- tapOn: "Sport de l'objectif.*"
+- waitForAnimationToEnd
+- tapOn: "Musculation"
+- waitForAnimationToEnd
+- tapOn: "Ce que mesure l'objectif.*"
+- waitForAnimationToEnd
+- swipe:                    # la liste a 12 choix : on la fait défiler (lentement) jusqu'au poids
+    start: 30%, 70%
+    end: 30%, 45%
+    duration: 1500
+- takeScreenshot: poids-menu
+- tapOn: "Poids corporel cible.*"
+- waitForAnimationToEnd
+- assertVisible: "Tu saisis ta valeur actuelle.*"
+- tapOn: "ex. 1500"
+- inputText: "75"
+- tapOn:
+    point: "50%,61%"   # le champ « Performance actuelle » (son texte est aussi celui des libellés)
+- inputText: "85"
+- takeScreenshot: poids-formulaire
+- tapOn: "Créer l'objectif"
+- extendedWaitUntil:
+    visible: ".*Encore 10 kg d'écart.*"
+    timeout: 15000
+- assertNotVisible: ".*100 pour cent.*"
+- takeScreenshot: poids-resume
+# On remonte la cible à 85 → atteint
+- tapOn: ".*Poids corporel cible.*"
+- tapOn: "75"
+- eraseText: 10
+- inputText: "85"
+- tapOn: "Enregistrer"
+- extendedWaitUntil:
+    visible: ".*Objectif atteint.*"
+    timeout: 15000
+# Nettoyage
+- tapOn: ".*Poids corporel cible.*"
+- tapOn: "Supprimer cet objectif"
+- tapOn: "Supprimer"
+- extendedWaitUntil:
+    visible: "Aucun objectif"
+    timeout: 15000

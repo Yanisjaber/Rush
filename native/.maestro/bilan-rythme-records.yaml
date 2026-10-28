@@ -1,0 +1,24 @@
+# Bilan › Rythme (moyenne sans la semaine en cours, séries sur une ligne) puis Records
+appId: TODO.rush
+---
+- launchApp
+- runFlow: _ouvrir-bilan.yaml
+- tapOn: "Rythme"
+- assertVisible: "Distance par mois"
+- assertVisible: ".*semaine en cours exclue.*"
+- takeScreenshot: rythme-haut
+- scrollUntilVisible:
+    element: "Régularité"
+    speed: 5
+- assertVisible: "Jours actifs.*"
+- takeScreenshot: rythme-bas
+- swipe:
+    start: 50%, 30%
+    end: 50%, 80%
+    duration: 1500
+- tapOn: "Records"
+- assertVisible: "Records de 2026"
+- assertVisible: "Plus longue sortie.*"
+- takeScreenshot: records
+- tapOn: "Résumé"
+- assertVisible: "Objectifs de 2026"

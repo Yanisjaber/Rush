@@ -1,0 +1,16 @@
+# Bilan › Résumé : le dossard, les objectifs, le cumul et la répartition (qui dit « tous sports confondus »)
+appId: TODO.rush
+---
+- launchApp
+- runFlow: _ouvrir-bilan.yaml
+- assertVisible: "Ajouter un objectif"
+- assertVisible: "Cumul sur 3 ans"
+- takeScreenshot: resume-haut
+# Un swipe lent : les swipes rapides de Maestro ne font pas défiler l'app sur le simulateur
+- scrollUntilVisible:
+    element: "Répartition par sport"
+    speed: 5
+- scrollUntilVisible:
+    element: ".*tous sports confondus."
+    speed: 5
+- takeScreenshot: resume-bas
