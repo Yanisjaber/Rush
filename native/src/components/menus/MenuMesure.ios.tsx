@@ -33,7 +33,7 @@ export function MenuMesure(props: PropsMenuMesure) {
   if (!NATIF) return <MenuMesureJs {...props} />;
   const { Host, Menu, Picker, Text } = NATIF.ui;
   const { buttonStyle, buttonBorderShape, contentTransition, controlSize, font, foregroundStyle, menuIndicator, tag } = NATIF.modifs;
-  const { options, valeur, onChoisir, etiquette, gras } = props;
+  const { options, valeur, onChoisir, etiquette, gras, petite } = props;
   const choisi = options.find((o) => o.cle === valeur) ?? options[0];
   return (
     <View accessibilityLabel={`${etiquette} : ${choisi?.nom}`} style={{ minHeight: 44, justifyContent: 'center' }}>
@@ -42,7 +42,7 @@ export function MenuMesure(props: PropsMenuMesure) {
       <Host key={choisi?.cle} matchContents colorScheme={p.fond === clair.fond ? 'light' : 'dark'}>
         <Menu
           label={gras ? <Text modifiers={[font({ family: NOM_NATIF_GRAS, size: 17, weight: 'heavy' }), foregroundStyle(p.texte)]}>{choisi?.nom ?? ''}</Text> : (choisi?.nom ?? '')}
-          modifiers={[buttonStyle(NATIF.verre ? 'glass' : 'bordered'), buttonBorderShape('capsule'), controlSize('regular'), menuIndicator('visible'), contentTransition('identity'), foregroundStyle(p.texte)]}
+          modifiers={[buttonStyle(NATIF.verre ? 'glass' : 'bordered'), buttonBorderShape('capsule'), controlSize(petite ? 'small' : 'regular'), menuIndicator('visible'), contentTransition('identity'), foregroundStyle(p.texte)]}
         >
           <Picker selection={valeur} onSelectionChange={(cle: string) => onChoisir(cle)}>
             {options.map((o) => (

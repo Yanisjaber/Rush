@@ -14,12 +14,14 @@ export interface PropsMenuMesure {
   etiquette: string;
   /** Le choix écrit en gras (le menu de l'année, en haut du Bilan). */
   gras?: boolean;
+  /** La pastille plus basse, à la hauteur de la barre d'onglets du Bilan (le menu de l'année). */
+  petite?: boolean;
 }
 
 const LARGEUR_LISTE = 230;
 const HAUTEUR_MAX_LISTE = 330; // un peu plus de sept lignes : au-delà, la liste défile
 
-export function MenuMesureJs({ options, valeur, onChoisir, etiquette, gras = false }: PropsMenuMesure) {
+export function MenuMesureJs({ options, valeur, onChoisir, etiquette, gras = false, petite = false }: PropsMenuMesure) {
   const p = usePalette();
   const pastilleRef = useRef<ComponentRef<typeof View>>(null);
   const listeRef = useRef<ComponentRef<typeof ScrollView>>(null);

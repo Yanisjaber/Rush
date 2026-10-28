@@ -228,6 +228,7 @@ export default function Bilan() {
           <View style={[styles.zoneAnnee, onglet === 'progres' ? styles.anneeMasquee : null]} pointerEvents={onglet === 'progres' ? 'none' : 'auto'} accessibilityElementsHidden={onglet === 'progres'} importantForAccessibility={onglet === 'progres' ? 'no-hide-descendants' : 'auto'}>
             <MenuMesure
               gras
+              petite
               etiquette="Année"
               valeur={onglet === 'records' && toutTemps ? 'tout' : String(annee)}
               options={[...(onglet === 'records' ? [{ cle: 'tout', nom: 'Tout' }] /* court : « Tous temps » pousserait le sélecteur d'onglets hors de l'écran */ : []), ...annees.map((a) => ({ cle: String(a), nom: String(a) }))]}
