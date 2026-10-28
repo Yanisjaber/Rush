@@ -1,12 +1,11 @@
 import { useMemo, useState, type ReactElement } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { ClassementBarres } from '@/components/graphes/ClassementBarres';
-import { CourbePuissance } from '@/components/graphes/CourbePuissance';
 import { MenuMesure } from '@/components/menus/MenuMesure';
 import { OngletsSegment } from '@/components/menus/OngletsSegment';
 import { activitesAnnee, MESURES_CUMUL, recordRecent, type ActiviteBilan, type MetriqueCumul } from '@/data/bilan/bilan';
-import { courbePuissance, recordsPeriodes, recordsRegularite, recordsSeance, recordsVelo, wattsParKg, type GroupeRecords, type RecordTop, type SortieVelo } from '@/data/bilan/records';
+import { recordsPeriodes, recordsRegularite, recordsSeance, type GroupeRecords, type RecordTop } from '@/data/bilan/records';
 import { jourMois, libelleEntree, texteRecordSimple, texteValeurRecord } from '@/data/bilan/records-texte';
 import { rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
@@ -25,10 +24,6 @@ interface Props {
   filtre: string;
   mesure: MetriqueCumul;
   onMesure: (m: MetriqueCumul) => void;
-  sortiesVelo: SortieVelo[];
-  poids: number | null;
-  chargementVelo: boolean;
-  erreurVelo: string;
   onOuvrir: (id: string) => void;
 }
 
@@ -36,24 +31,17 @@ type Portee = 'annee' | 'tout';
 
 const SEMAINES_GRAPHIQUE = 8;
 
-export function OngletRecords({ toutes, annee, maintenant, filtre, mesure, onMesure, sortiesVelo, poids, chargementVelo, erreurVelo, onOuvrir }: Props) {
+export function OngletRecords({ toutes, annee, maintenant, filtre, mesure, onMesure, onOuvrir }: Props) {
   const p = usePalette();
   const [portee, setPortee] = useState<Portee>('annee');
   const [categorie, setCategorie] = useState<string | null>(null);
   const [choisi, setChoisi] = useState<string | null>(null);
-  const estVelo = filtre === 'velo';
-  const attenteVelo = estVelo && chargementVelo && !sortiesVelo.length;
-  const avecVelo = estVelo && sortiesVelo.length > 0;
   const couleur = filtre === 'tout' ? p.texte : couleurSport(p, filtre);
   const mesureInfo = MESURES_CUMUL.find((m) => m.cle === mesure) ?? MESURES_CUMUL[0];
 
-  const sortiesAnnee = useMemo(() => sortiesVelo.filter((s) => s.iso.startsWith(`${annee}-`)), [sortiesVelo, annee]);
-  const construire = (acts: ActiviteBilan[], sorties: SortieVelo[]): GroupeRecords[] => {
-    const periodes = recordsPeriodes(acts, mesure, SEMAINES_GRAPHIQUE);
-    return avecVelo ? [...recordsVelo(sorties), periodes] : [periodes, recordsSeance(acts), recordsRegularite(acts)];
-  };
-  const groupesAnnee = useMemo(() => construire(activitesAnnee(toutes, annee, maintenant), sortiesAnnee), [toutes, annee, maintenant, sortiesAnnee, mesure, avecVelo]); // eslint-disable-line react-hooks/exhaustive-deps
-  const groupesTout = useMemo(() => construire(toutes, sortiesVelo), [toutes, sortiesVelo, mesure, avecVelo]); // eslint-disable-line react-hooks/exhaustive-deps
+  const construire = (acts: ActiviteBilan[]): GroupeRecords[] => [recordsPeriodes(acts, mesure, SEMAINES_GRAPHIQUE), recordsSeance(acts), recordsRegularite(acts)];
+  const groupesAnnee = useMemo(() => construire(activitesAnnee(toutes, annee, maintenant)), [toutes, annee, maintenant, mesure]); // eslint-disable-line react-hooks/exhaustive-deps
+  const groupesTout = useMemo(() => construire(toutes), [toutes, mesure]); // eslint-disable-line react-hooks/exhaustive-deps
   const groupes = portee === 'annee' ? groupesAnnee : groupesTout;
   const autres = portee === 'annee' ? groupesTout : groupesAnnee;
 
@@ -77,22 +65,6 @@ export function OngletRecords({ toutes, annee, maintenant, filtre, mesure, onMes
   };
 
   const graphique = (): { titre: string; contenu: ReactElement } | null => {
-    if (avecVelo) {
-      const courbe = courbePuissance(portee === 'annee' ? sortiesAnnee : sortiesVelo);
-      if (!courbe.some((c) => c.watts != null)) return null;
-      const autre = courbePuissance(portee === 'annee' ? sortiesVelo : sortiesAnnee);
-      return {
-        titre: 'Ta courbe de puissance',
-        contenu: (
-          <>
-            <Text style={[typo.petit, styles.note, { color: p.texteDoux }]}>
-              Trait plein : {nomPortee}. Pointillés : {nomAutre}.
-            </Text>
-            <CourbePuissance courbe={courbe} autre={autre.some((c) => c.watts != null) ? autre : undefined} couleur={couleur} etiquette={`Courbe de puissance, ${nomPortee} : ${courbe.filter((c) => c.watts != null).map((c) => `${c.court} ${c.watts} watts`).join(', ')}.`} />
-          </>
-        ),
-      };
-    }
     const semaines = groupes.find((g) => g.cle === 'periodes')?.records.find((r) => r.cle === 'semaine');
     if (!semaines || semaines.top.length < 2) return null;
     const lignes = semaines.top.map((e) => ({ libelle: portee === 'tout' ? `${jourMois(e.iso)} ${e.iso.slice(2, 4)}` : jourMois(e.iso), valeur: e.valeur, texte: texteRecordSimple(e.valeur, semaines.unite) }));
@@ -110,14 +82,6 @@ export function OngletRecords({ toutes, annee, maintenant, filtre, mesure, onMes
   };
   const g = graphique();
 
-  if (attenteVelo) {
-    return (
-      <View accessible accessibilityLabel="Chargement des records" style={styles.attente}>
-        <ActivityIndicator color={p.texteDoux} />
-      </View>
-    );
-  }
-
   return (
     <>
       <OngletsSegment<Portee>
@@ -132,8 +96,6 @@ export function OngletRecords({ toutes, annee, maintenant, filtre, mesure, onMes
           setChoisi(null);
         }}
       />
-      {estVelo && erreurVelo && !avecVelo ? <Text style={[typo.petit, { color: p.texteDoux }]}>{erreurVelo} Les records de puissance et de vitesse ne sont pas affichés.</Text> : null}
-
       {g ? (
         <Bloc titre={g.titre}>
           {g.contenu}
@@ -165,7 +127,6 @@ export function OngletRecords({ toutes, annee, maintenant, filtre, mesure, onMes
                 const t = texteValeurRecord(meilleur.valeur, r.unite);
                 const sel = record?.cle === r.cle;
                 const cmp = comparaison(r);
-                const wkg = r.unite === 'W' ? wattsParKg(meilleur.valeur, poids) : null;
                 const l = libelleEntree(r, meilleur);
                 return (
                   <Pressable
@@ -173,7 +134,7 @@ export function OngletRecords({ toutes, annee, maintenant, filtre, mesure, onMes
                     onPress={() => setChoisi(r.cle)}
                     accessibilityRole="button"
                     accessibilityState={{ selected: sel }}
-                    accessibilityLabel={`${r.libelle}, ${texteRecordSimple(meilleur.valeur, r.unite)}${wkg ? `, ${wkg} watts par kilo` : ''}, ${l.titre}, ${l.sous}${cmp ? `, ${cmp.texte}` : ''}. Voir le podium`}
+                    accessibilityLabel={`${r.libelle}, ${texteRecordSimple(meilleur.valeur, r.unite)}, ${l.titre}, ${l.sous}${cmp ? `, ${cmp.texte}` : ''}. Voir le podium`}
                     style={[styles.record, i > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }, sel && { backgroundColor: p.surface2 }]}
                   >
                     <View style={{ flex: 1, gap: 2 }}>
@@ -201,7 +162,7 @@ export function OngletRecords({ toutes, annee, maintenant, filtre, mesure, onMes
                         {t.nombre}
                         {t.unite ? <Text style={[typo.corpsFort, { color: p.texteDoux }]}> {t.unite}</Text> : null}
                       </Text>
-                      {wkg ? <Text style={[typo.petit, { color: p.texteDoux }]}>{String(wkg).replace('.', ',')} W/kg</Text> : null}
+                      
                     </View>
                   </Pressable>
                 );
@@ -255,7 +216,6 @@ export function OngletRecords({ toutes, annee, maintenant, filtre, mesure, onMes
 }
 
 const styles = StyleSheet.create({
-  attente: { paddingVertical: 40, alignItems: 'center' },
   note: { marginBottom: 10 },
   entete: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
   record: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 8, marginHorizontal: -8, borderRadius: rayon.base },

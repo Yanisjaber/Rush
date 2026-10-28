@@ -8,6 +8,7 @@ import { BarresHebdo } from '@/components/graphes/BarresHebdo';
 import { BarresMois } from '@/components/graphes/BarresMois';
 import { CourbeSemaine } from '@/components/graphes/CourbeSemaine';
 import { OngletRecords } from '@/components/bilan/OngletRecords';
+import { OngletRecordsVelo } from '@/components/bilan/OngletRecordsVelo';
 import { RegulariteMois } from '@/components/graphes/RegulariteMois';
 import { Dossard } from '@/components/ui/Dossard';
 import { Bloc } from '@/components/feuilles/Bloc';
@@ -134,7 +135,7 @@ export default function Bilan() {
 
   // Chaque onglet ne calcule que ses propres chiffres, et seulement quand ses données changent
   // Records : les sorties à vélo avec leurs colonnes en plus (puissance par durée, vitesse, énergie), chargées seulement sur l'onglet d'un sport vélo
-  const { sorties: sortiesVelo, poids: poidsVelo, chargement: chargementVelo, erreur: erreurVelo } = useRecordsVelo(onglet === 'records' && filtre === 'velo');
+  const { sorties: sortiesVelo, poids: poidsVelo, courbeTout, courbeAnnee, chargement: chargementVelo, erreur: erreurVelo } = useRecordsVelo(onglet === 'records' && filtre === 'velo', annee);
   const cumul = useMemo(() => (onglet === 'resume' ? cumulParAnnee(filtrees, [annee, annee - 1, annee - 2], metrique, maintenant) : { etiquettes: [], series: [] }), [onglet, filtrees, annee, metrique, maintenant]);
   const mesure = MESURES_CUMUL.find((m) => m.cle === metrique) ?? MESURES_CUMUL[0];
   // Rythme : par mois (en km, ou en heures quand le sport n'a pas de distance, comme la musculation), charge par semaine, régularité
@@ -512,19 +513,29 @@ export default function Bilan() {
             ) : null}
 
             {pret && onglet === 'records' ? (
-              <OngletRecords
-                toutes={filtrees}
-                annee={annee}
-                maintenant={maintenant}
-                filtre={filtre}
-                mesure={mesureRecords}
-                onMesure={(m) => choisirMesure('records', m)}
-                sortiesVelo={sortiesVelo}
-                poids={poidsVelo}
-                chargementVelo={chargementVelo}
-                erreurVelo={erreurVelo}
-                onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
-              />
+              filtre === 'velo' ? (
+                <OngletRecordsVelo
+                  annee={annee}
+                  maintenant={maintenant}
+                  sorties={sortiesVelo}
+                  poids={poidsVelo}
+                  courbeAnnee={courbeAnnee}
+                  courbeTout={courbeTout}
+                  chargement={chargementVelo}
+                  erreur={erreurVelo}
+                  onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
+                />
+              ) : (
+                <OngletRecords
+                  toutes={filtrees}
+                  annee={annee}
+                  maintenant={maintenant}
+                  filtre={filtre}
+                  mesure={mesureRecords}
+                  onMesure={(m) => choisirMesure('records', m)}
+                  onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
+                />
+              )
             ) : null}
 
             {pret && onglet === 'progres' ? (

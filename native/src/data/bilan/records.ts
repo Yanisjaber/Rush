@@ -123,23 +123,23 @@ export function recordsRegularite(acts: ActiviteBilan[]): GroupeRecords {
 
 // --- Records du vélo -----------------------------------------------------------------------------------------------------
 
-/** Une sortie à vélo avec les colonnes en plus (courbe de puissance, énergie). Les valeurs absentes sont null. */
+/** Une sortie à vélo avec les colonnes des records basiques. Les valeurs absentes sont null. */
 export interface SortieVelo {
   id: string;
   name: string;
   iso: string;
-  /** Le type Strava (Ride, VirtualRide…) : la vitesse n'a pas de sens sur un vélo virtuel. */
+  /** Le type Strava (Ride, VirtualRide…) : la distance, le dénivelé et la vitesse n'ont pas de sens sur un vélo virtuel. */
   sport: string;
   distance_km: number;
   duree_min: number;
   d_plus: number;
   kj: number | null;
-  /** Meilleure puissance moyenne (en watts) sur 5 s, 1 min, 5 min, 20 min et 1 h. */
-  p5: number | null;
-  p60: number | null;
-  p300: number | null;
-  p1200: number | null;
-  p3600: number | null;
+  tss: number | null;
+  /** La puissance la plus haute de la sortie (W). */
+  puissance_max: number | null;
+  /** La fréquence cardiaque la plus haute et la moyenne de la sortie (bpm). */
+  fc_max: number | null;
+  fc_moyenne: number | null;
 }
 
 /** Une ligne de la fonction SQL rpc_sorties_velo, telle que l'API la renvoie (les numeric arrivent parfois en texte). */
@@ -152,11 +152,10 @@ export interface LigneVelo {
   moving_time: number | null;
   total_elevation_gain: number | null;
   kj: number | null;
-  p5: number | null;
-  p60: number | null;
-  p300: number | null;
-  p1200: number | null;
-  p3600: number | null;
+  tss: number | null;
+  max_watts: number | null;
+  max_heartrate: number | null;
+  avg_heartrate: number | null;
 }
 
 const nombre = (v: number | string | null | undefined): number | null => {
@@ -174,51 +173,111 @@ export function sortieVeloDeLigne(l: LigneVelo): SortieVelo {
     duree_min: (l.moving_time ?? 0) / 60,
     d_plus: l.total_elevation_gain ?? 0,
     kj: l.kj,
-    p5: l.p5,
-    p60: l.p60,
-    p300: l.p300,
-    p1200: l.p1200,
-    p3600: l.p3600,
+    tss: l.tss,
+    puissance_max: l.max_watts,
+    fc_max: l.max_heartrate,
+    fc_moyenne: l.avg_heartrate,
   };
 }
 
-/** Les durées de la courbe de puissance, de la plus courte à la plus longue. */
-export const DUREES_PUISSANCE: { cle: 'p5' | 'p60' | 'p300' | 'p1200' | 'p3600'; secondes: number; libelle: string; court: string }[] = [
-  { cle: 'p5', secondes: 5, libelle: 'Meilleur 5 s', court: '5 s' },
-  { cle: 'p60', secondes: 60, libelle: 'Meilleure 1 min', court: '1 min' },
-  { cle: 'p300', secondes: 300, libelle: 'Meilleurs 5 min', court: '5 min' },
-  { cle: 'p1200', secondes: 1200, libelle: 'Meilleurs 20 min', court: '20 min' },
-  { cle: 'p3600', secondes: 3600, libelle: 'Meilleure heure', court: '1 h' },
-];
-
-/** Une vitesse moyenne n'a de sens que sur une vraie sortie (30 km ou plus), dehors : pas sur un vélo virtuel. */
-const DISTANCE_MIN_VITESSE_MOYENNE = 30;
-
 const dehors = (s: SortieVelo): boolean => s.sport !== 'VirtualRide';
 const vitesseMoyenne = (s: SortieVelo): number => (s.duree_min > 0 ? s.distance_km / (s.duree_min / 60) : 0);
+/** Une vitesse moyenne n'a de sens que sur une vraie sortie (30 km ou plus), dehors. */
+const DISTANCE_MIN_VITESSE_MOYENNE = 30;
+/** Les capteurs de fréquence cardiaque donnent des pointes impossibles (233 bpm avec 226 de moyenne) : au-delà de ces limites, la valeur est écartée. */
+export const FC_MAX_CREDIBLE = 210;
+const FC_MOYENNE_MAX_CREDIBLE = 195;
 
-/** Les records du vélo : puissance (5 durées) et sorties (la plus longue, la vitesse moyenne, le plus de dénivelé, la plus grosse dépense). */
-export function recordsVelo(sorties: SortieVelo[]): GroupeRecords[] {
+/**
+ * Les records basiques du vélo : la plus longue sortie (en temps), la plus grande distance, le plus gros dénivelé, la plus grosse charge, la plus haute vitesse moyenne,
+ * la plus grosse puissance et la plus haute fréquence cardiaque. La distance, le dénivelé et la vitesse ne comptent que les sorties dehors (ceux d'un vélo virtuel sont simulés) ;
+ * la puissance et la fréquence cardiaque comptent aussi le virtuel. La cadence et le couple max ne sont pas enregistrés : ils viendront avec les courbes de ces signaux.
+ */
+export function recordsBasiquesVelo(sorties: SortieVelo[]): RecordTop[] {
   const entree = (s: SortieVelo, valeur: number | null): EntreeRecord => ({ valeur: valeur ?? 0, nom: s.name || 'Sans titre', iso: s.iso, id: s.id });
-  const puissance: RecordTop[] = DUREES_PUISSANCE.map((d) => ({ cle: d.cle, libelle: d.libelle, unite: 'W', top: meilleures(sorties.map((s) => entree(s, s[d.cle]))) })).filter((r) => r.top.length);
-  const sortiesRec: RecordTop[] = [
-    { cle: 'distance', libelle: 'Plus longue sortie', unite: 'km', top: meilleures(sorties.map((s) => entree(s, s.distance_km))) },
-    { cle: 'vmoy', libelle: 'Vitesse moyenne', unite: 'km/h', top: meilleures(sorties.filter((s) => dehors(s) && s.distance_km >= DISTANCE_MIN_VITESSE_MOYENNE).map((s) => entree(s, vitesseMoyenne(s)))) },
-    { cle: 'dplus', libelle: 'Plus gros D+', unite: 'm', top: meilleures(sorties.map((s) => entree(s, s.d_plus))) },
-    { cle: 'kj', libelle: 'Plus grosse dépense', unite: 'kJ', top: meilleures(sorties.map((s) => entree(s, s.kj))) },
-  ].filter((r) => r.top.length);
-  return [
-    { cle: 'puissance', libelle: 'Puissance', records: puissance },
-    { cle: 'sorties', libelle: 'Sorties', records: sortiesRec },
-  ].filter((g) => g.records.length);
-}
-
-/** La courbe de puissance : la meilleure puissance de chaque durée (null si aucune sortie n'a cette durée). */
-export function courbePuissance(sorties: SortieVelo[]): { secondes: number; court: string; watts: number | null }[] {
-  return DUREES_PUISSANCE.map((d) => ({ secondes: d.secondes, court: d.court, watts: sorties.reduce<number | null>((m, s) => (s[d.cle] != null && (m == null || (s[d.cle] as number) > m) ? (s[d.cle] as number) : m), null) }));
+  const dessous = sorties.filter(dehors);
+  const records: RecordTop[] = [
+    { cle: 'duree', libelle: 'Plus longue sortie', unite: 'min', top: meilleures(sorties.map((s) => entree(s, s.duree_min))) },
+    { cle: 'distance', libelle: 'Plus longue distance', unite: 'km', top: meilleures(dessous.map((s) => entree(s, s.distance_km))) },
+    { cle: 'dplus', libelle: 'Plus gros D+', unite: 'm', top: meilleures(dessous.map((s) => entree(s, s.d_plus))) },
+    { cle: 'tss', libelle: 'Plus grosse charge', unite: 'TSS', top: meilleures(sorties.map((s) => entree(s, s.tss))) },
+    { cle: 'vmoy', libelle: 'Vitesse moyenne', unite: 'km/h', top: meilleures(dessous.filter((s) => s.distance_km >= DISTANCE_MIN_VITESSE_MOYENNE).map((s) => entree(s, vitesseMoyenne(s)))) },
+    { cle: 'pmax', libelle: 'Plus grosse puissance', unite: 'W', top: meilleures(sorties.map((s) => entree(s, s.puissance_max))) },
+    { cle: 'fcmax', libelle: 'Plus grosse FC', unite: 'bpm', top: meilleures(sorties.filter((s) => (s.fc_max ?? 0) <= FC_MAX_CREDIBLE && (s.fc_moyenne ?? 0) <= FC_MOYENNE_MAX_CREDIBLE).map((s) => entree(s, s.fc_max))) },
+  ];
+  return records.filter((r) => r.top.length);
 }
 
 /** Les puissances rapportées au poids (W/kg), avec une décimale ; null sans poids valable. */
 export function wattsParKg(watts: number, poids: number | null | undefined): number | null {
   return poids && poids > 20 && poids < 250 ? Math.round((watts / poids) * 10) / 10 : null;
+}
+
+// --- La courbe de puissance ----------------------------------------------------------------------------------------------
+
+/** Une ligne de la fonction SQL rpc_courbe_puissance : la puissance de rang 1, 2 ou 3 pour une durée. */
+export interface LigneCourbe {
+  duree_s: number;
+  rang: number;
+  watts: number;
+  activity_id: string;
+  name: string | null;
+  start_date_local: string;
+}
+
+export interface EntreeCourbe {
+  watts: number;
+  id: string;
+  nom: string;
+  iso: string;
+}
+
+/** Une durée de la courbe et son podium (les trois meilleures séances, la meilleure d'abord). */
+export interface PointCourbe {
+  duree: number;
+  top: EntreeCourbe[];
+}
+
+/** La durée la plus courte et la plus longue de la courbe : l'axe va de 1 s à 5 h. */
+export const DUREE_MIN = 1;
+export const DUREE_MAX = 18000;
+
+/** Les lignes de la base deviennent une courbe : un point par durée, de la plus courte à la plus longue. */
+export function courbeDeLignes(lignes: LigneCourbe[]): PointCourbe[] {
+  const par = new Map<number, LigneCourbe[]>();
+  for (const l of lignes) par.set(l.duree_s, [...(par.get(l.duree_s) ?? []), l]);
+  return [...par]
+    .sort((a, b) => a[0] - b[0])
+    .map(([duree, ls]) => ({
+      duree,
+      top: ls.sort((a, b) => a.rang - b.rang).map((l) => ({ watts: l.watts, id: l.activity_id, nom: l.name || 'Sans titre', iso: String(l.start_date_local || '').slice(0, 10) })),
+    }));
+}
+
+/** Le point de la courbe dont la durée est la plus proche de `secondes` (à l'échelle logarithmique, comme l'axe) ; -1 si la courbe est vide. */
+export function indexDureeProche(courbe: PointCourbe[], secondes: number): number {
+  let meilleur = -1;
+  let ecart = Infinity;
+  courbe.forEach((p, i) => {
+    const e = Math.abs(Math.log(p.duree) - Math.log(Math.max(DUREE_MIN, secondes)));
+    if (e < ecart) {
+      ecart = e;
+      meilleur = i;
+    }
+  });
+  return meilleur;
+}
+
+/** Une durée écrite : « 5 s », « 1 min », « 20 min », « 1 h », « 1 h 30 ». */
+export function texteDuree(secondes: number): string {
+  const s = Math.round(secondes);
+  if (s < 60) return `${s} s`;
+  if (s < 3600) {
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return r && s < 600 ? `${m} min ${String(r).padStart(2, '0')}` : `${m} min`;
+  }
+  const h = Math.floor(s / 3600);
+  const m = Math.round((s % 3600) / 60);
+  return m ? `${h} h ${String(m).padStart(2, '0')}` : `${h} h`;
 }

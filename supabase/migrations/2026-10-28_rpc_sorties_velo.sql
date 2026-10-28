@@ -1,5 +1,5 @@
 -- ============================================================
--- Les sorties à vélo avec les colonnes des records basiques (Bilan › Records) : durée, distance, dénivelé, énergie et charge (TSS).
+-- Les sorties à vélo avec les colonnes des records basiques (Bilan › Records) : durée, distance, dénivelé, énergie, charge (TSS), puissance max et fréquence cardiaque (max et moyenne).
 -- La puissance par durée vient de rpc_courbe_puissance. Pas de vitesse max : elle contient des pointes GPS impossibles et n'est pas affichée.
 --
 -- Qui peut lire : seulement le compte connecté, et seulement ses séances (`security invoker` : la RLS de `activities` s'applique,
@@ -21,14 +21,17 @@ returns table (
   moving_time integer,
   total_elevation_gain integer,
   kj integer,
-  tss integer
+  tss integer,
+  max_watts integer,
+  max_heartrate integer,
+  avg_heartrate integer
 )
 language sql
 stable
 security invoker
 set search_path = public
 as $$
-  select a.id, a.name, a.sport, a.start_date_local, a.distance_km, a.moving_time, a.total_elevation_gain, a.kj, a.tss
+  select a.id, a.name, a.sport, a.start_date_local, a.distance_km, a.moving_time, a.total_elevation_gain, a.kj, a.tss, a.max_watts, a.max_heartrate, a.avg_heartrate
   from public.activities a
   where a.user_id = auth.uid()
     and a.merged_into is null

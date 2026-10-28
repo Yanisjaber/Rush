@@ -1,39 +1,62 @@
 import { useEffect, useState } from 'react';
-import { chargerProfil, chargerSortiesVelo } from '@/data/acces/api';
-import type { SortieVelo } from '@/data/bilan/records';
+import { chargerCourbePuissance, chargerProfil, chargerSortiesVelo } from '@/data/acces/api';
+import type { PointCourbe, SortieVelo } from '@/data/bilan/records';
 import { useAuth } from '@/stores/auth';
 
-// Les sorties à vélo avec les colonnes des records, et ton poids (pour les W/kg). Chargés quand `actif` passe à vrai (l'onglet Records d'un sport vélo est ouvert),
-// puis gardés en mémoire cinq minutes pour ne pas recharger à chaque changement d'onglet. Sans compte (démo), il n'y en a pas : l'écran n'affiche que les records de volume.
+// Les données de l'onglet Records du vélo : les sorties (records basiques), la courbe de puissance de tous les temps et celle de l'année choisie, et ton poids (pour les W/kg).
+// Chargées quand `actif` passe à vrai (l'onglet Records du Cyclisme est ouvert), puis gardées en mémoire cinq minutes pour ne pas recharger à chaque changement d'onglet.
+// Sans compte (démo), il n'y a rien : l'écran le dit.
 const DUREE_CACHE = 5 * 60 * 1000;
-let cache: { userId: string; sorties: SortieVelo[]; poids: number | null; a: number } | null = null;
+interface Donnees {
+  userId: string;
+  sorties: SortieVelo[];
+  poids: number | null;
+  courbeTout: PointCourbe[];
+  /** La courbe de chaque année déjà demandée. */
+  courbeAnnee: Record<number, PointCourbe[]>;
+  a: number;
+}
+let cache: Donnees | null = null;
 
-export function useRecordsVelo(actif: boolean): { sorties: SortieVelo[]; poids: number | null; chargement: boolean; erreur: string } {
+export function useRecordsVelo(actif: boolean, annee: number): { sorties: SortieVelo[]; poids: number | null; courbeTout: PointCourbe[]; courbeAnnee: PointCourbe[]; chargement: boolean; erreur: string } {
   const { session, demo } = useAuth();
   const userId = !demo ? (session?.user.id ?? null) : null;
-  const [etat, setEtat] = useState<{ userId: string; sorties: SortieVelo[]; poids: number | null } | null>(cache && cache.userId === userId ? cache : null);
+  const [donnees, setDonnees] = useState<Donnees | null>(cache && cache.userId === userId ? cache : null);
   const [chargement, setChargement] = useState(false);
   const [erreur, setErreur] = useState('');
 
   useEffect(() => {
     if (!actif || !userId) return;
-    if (cache && cache.userId === userId && Date.now() - cache.a < DUREE_CACHE) {
-      setEtat(cache);
-      return;
-    }
     let annule = false;
-    setChargement(true);
     void (async () => {
       try {
-        const [s, p] = await Promise.all([chargerSortiesVelo(), chargerProfil(userId)]);
-        if (annule) return;
-        if (s.data) {
-          cache = { userId, sorties: s.data, poids: p.data?.weight ?? null, a: Date.now() };
-          setEtat(cache);
-          setErreur('');
-        } else setErreur(s.erreur);
+        let courant = cache && cache.userId === userId && Date.now() - cache.a < DUREE_CACHE ? cache : null;
+        if (!courant) {
+          setChargement(true);
+          const [s, c, p] = await Promise.all([chargerSortiesVelo(), chargerCourbePuissance(), chargerProfil(userId)]);
+          if (annule) return;
+          if (!s.data || !c.data) {
+            setErreur(s.erreur || c.erreur);
+            return;
+          }
+          courant = { userId, sorties: s.data, poids: p.data?.weight ?? null, courbeTout: c.data, courbeAnnee: {}, a: Date.now() };
+          cache = courant;
+        }
+        if (!courant.courbeAnnee[annee]) {
+          setChargement(true);
+          const c = await chargerCourbePuissance(annee);
+          if (annule) return;
+          if (!c.data) {
+            setErreur(c.erreur);
+            return;
+          }
+          courant = { ...courant, courbeAnnee: { ...courant.courbeAnnee, [annee]: c.data } };
+          cache = courant;
+        }
+        setErreur('');
+        setDonnees(courant);
       } catch {
-        if (!annule) setErreur('Impossible de charger tes sorties à vélo.');
+        if (!annule) setErreur('Impossible de charger tes records à vélo.');
       } finally {
         if (!annule) setChargement(false);
       }
@@ -41,7 +64,8 @@ export function useRecordsVelo(actif: boolean): { sorties: SortieVelo[]; poids: 
     return () => {
       annule = true;
     };
-  }, [actif, userId]);
+  }, [actif, userId, annee]);
 
-  return { sorties: etat && etat.userId === userId ? etat.sorties : [], poids: etat && etat.userId === userId ? etat.poids : null, chargement, erreur };
+  const ici = donnees && donnees.userId === userId ? donnees : null;
+  return { sorties: ici?.sorties ?? [], poids: ici?.poids ?? null, courbeTout: ici?.courbeTout ?? [], courbeAnnee: ici?.courbeAnnee[annee] ?? [], chargement, erreur };
 }
