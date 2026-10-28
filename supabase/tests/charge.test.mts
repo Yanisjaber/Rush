@@ -31,7 +31,7 @@ const faux = (pp: any, top: any) => ({
 });
 test('ftpEffective : profil > 95 % du 20 min > 90 % de la meilleure puissance des activités > meilleure puissance en base', async () => {
   assert.equal(await ftpEffective(faux(null, null), 'u', 250), 250);
-  assert.equal(await ftpEffective(faux({ best_watts: 300 }, null), 'u', null), 285);
+  assert.equal(await ftpEffective(faux({ watts_90d: 300, watts_alltime: 320 }, null), 'u', null), 285);
   assert.equal(await ftpEffective(faux(null, null), 'u', null, [{ average_watts: 200 }, { weighted_average_watts: 250 }]), 225);
   assert.equal(await ftpEffective(faux(null, { np: 300 }), 'u', null, []), 270);
   assert.equal(await ftpEffective(faux(null, null), 'u', null, []), null);

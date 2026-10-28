@@ -29,8 +29,9 @@ export async function ftpEffective(sb: any, userId: string, ftpProfil: number | 
   if (ftpProfil) return ftpProfil;
   try {
     const { data: pp } = await sb.from("power_profile")
-      .select("best_watts").eq("user_id", userId).eq("duration_s", 1200).maybeSingle();
-    if (pp?.best_watts) return Math.round(pp.best_watts * 0.95);
+      .select("watts_90d, watts_alltime").eq("user_id", userId).eq("duration_s", 1200).maybeSingle();
+    const w20 = pp?.watts_90d || pp?.watts_alltime; // forme récente d'abord, sinon le record
+    if (w20) return Math.round(w20 * 0.95);
   } catch (_) { /* power_profile pas encore calculé */ }
   const meilleures = activites.map(puissanceRetenue).filter((x: number) => x > 0);
   if (meilleures.length) return Math.round(Math.max(...meilleures) * 0.90);

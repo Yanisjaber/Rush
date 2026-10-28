@@ -26,6 +26,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.3";
 import { corsHeadersFor } from "../_shared/cors.ts";
+import { reechantillonner1Hz } from "../_shared/flux.ts";
 import { joindreJetons, ecrireRenouvellementStrava } from "../_shared/jetons.ts";
 
 const STRAVA_CLIENT_ID = Deno.env.get("STRAVA_CLIENT_ID")!;
@@ -145,7 +146,8 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
 
         const raw = await res.json();                                    // { watts:{data:[]}, ... }
         const streamArray = toIntervalsFormat(raw);                      // [{type,data}, ...]
-        const watts = (raw?.watts?.data) || [];
+        // Remise à 1 point par seconde (trous de pause / enregistrement intelligent), voir _shared/flux.ts
+        const watts = reechantillonner1Hz((raw?.watts?.data) || [], (raw?.time?.data) || []);
         const powerCurve: Record<string, number> = computeMMP(watts);
         powerCurve.v = POWER_CURVE_VERSION; // marqueur de version (ignoré par l'agrégation)
         powerCurve._v = CLIENT_PC_VERSION; // marqueur attendu par le client (records sans recalcul manuel)
@@ -370,7 +372,11 @@ async function recomputePowerProfile(sb: any, userId: string): Promise<number> {
     if (data.length < PAGE) break;
     from += PAGE;
   }
-  if (!acts.length) return 0;
+  if (!acts.length) {
+    // plus aucune courbe : on vide aussi les records (ils viendraient de séances supprimées)
+    await sb.rpc("rpc_remplacer_power_profile", { p_user: userId, p_rows: [] });
+    return 0;
+  }
 
   const cutoff90 = new Date(Date.now() - 90 * 86400_000);
   const best: Record<string, { all: number; allDate: string; allId: string;
@@ -403,11 +409,10 @@ async function recomputePowerProfile(sb: any, userId: string): Promise<number> {
     updated_at: new Date().toISOString(),
   }));
 
-  for (let i = 0; i < rows.length; i += 200) {
-    const batch = rows.slice(i, i + 200);
-    const { error } = await sb.from("power_profile").upsert(batch, { onConflict: "user_id,duration_s" });
-    if (error) console.error("power_profile upsert error:", error.message);
-  }
+  // Remplacement en UNE transaction (rpc_remplacer_power_profile) : un record d'une séance supprimée disparaît,
+  // et une panne en route ne laisse jamais un compte sans records.
+  const { error } = await sb.rpc("rpc_remplacer_power_profile", { p_user: userId, p_rows: rows });
+  if (error) { console.error("power_profile remplacement:", error.message); return 0; }
   return rows.length;
 }
 
@@ -432,7 +437,11 @@ async function recomputePowerProfileBySport(sb: any, userId: string): Promise<nu
     if (data.length < PAGE) break;
     from += PAGE;
   }
-  if (!acts.length) return 0;
+  if (!acts.length) {
+    // plus aucune courbe : on vide aussi les records (ils viendraient de séances supprimées)
+    await sb.rpc("rpc_remplacer_power_profile_sport", { p_user: userId, p_rows: [] });
+    return 0;
+  }
 
   const cutoff90 = Date.now() - 90 * 86400_000;
   // best[sport][dur] = { all, allDate, allId, d90, d90Date, d90Id }
@@ -519,20 +528,16 @@ async function recomputePowerProfileBySport(sb: any, userId: string): Promise<nu
     return row;
   });
 
-  // Remplace l'ensemble pour ce user (purge puis upsert).
-  await sb.from("power_profile_sport").delete().eq("user_id", userId);
-  for (let i = 0; i < rows.length; i += 50) {
-    const batch = rows.slice(i, i + 50);
-    const { error } = await sb.from("power_profile_sport").upsert(batch, { onConflict: "user_id,sport" });
-    if (error) console.error("power_profile_sport upsert error:", error.message);
-  }
+  // Remplace l'ensemble pour ce user en UNE transaction (rpc_remplacer_power_profile_sport).
+  const { error } = await sb.rpc("rpc_remplacer_power_profile_sport", { p_user: userId, p_rows: rows });
+  if (error) { console.error("power_profile_sport remplacement:", error.message); return 0; }
   return rows.length;
 }
 
 // Recalcule la power_curve (avec les NOUVELLES durées) depuis les streams déjà
 // stockés, pour les activités dont la courbe est absente/obsolète. Lot limité
 // (idempotent, relançable). Renvoie { done, remaining }.
-const POWER_CURVE_VERSION = 5; // bump quand on change les durées/calculs (force un re-backfill local)
+const POWER_CURVE_VERSION = 6; // bump quand on change les durées/calculs (force un re-backfill local)
 async function backfillPowerCurves(sb: any, userId: string, limit: number, ath: any): Promise<{ done: number; remaining: number }> {
   // 1) Repère les activités obsolètes SANS charger les streams (power_curve est léger).
   const { data, error } = await sb
@@ -557,7 +562,7 @@ async function backfillPowerCurves(sb: any, userId: string, limit: number, ath: 
       }
       const jsonStr = await gunzipBase64(row.streams_gz);
       const arr = JSON.parse(jsonStr);
-      const watts = streamData(arr, "watts");
+      const watts = reechantillonner1Hz(streamData(arr, "watts"), streamData(arr, "time"));
       const pc: Record<string, number> = computeMMP(watts);
       Object.assign(pc, computeLateMMP(watts)); // late_300 / late_1200 si sortie > 2 h 30
       pc.v = POWER_CURVE_VERSION; // marqueur de version (ignoré par l'agrégation)
