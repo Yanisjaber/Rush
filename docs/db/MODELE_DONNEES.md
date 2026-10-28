@@ -30,7 +30,7 @@ humain (coach ↔ athlète, messagerie) a été supprimé le 2026-10-11 ; le rô
 ## Fonctions SQL appelées par l'app
 | Fonction | Rôle |
 |---|---|
-| `rpc_sorties_velo()` | Les sorties à vélo du compte connecté (Ride, VirtualRide, GravelRide, MountainBikeRide ; ni vélo électrique, ni étapes fusionnées) avec cinq valeurs lues dans `power_curve` (meilleure puissance moyenne sur 5 s, 1 min, 5 min, 20 min, 1 h), la vitesse max, l'énergie (kJ) et le dénivelé. Sert aux records du Bilan. `security invoker` : la RLS s'applique ; réservée à `authenticated`. À ne pas confondre avec `power_profile`, qui mélange tous les sports (la course à pied avec capteur y fait des records) |
+| `rpc_sorties_velo()` | Les sorties à vélo du compte connecté (Ride, VirtualRide, GravelRide, MountainBikeRide ; ni vélo électrique, ni étapes fusionnées) avec cinq valeurs lues dans `power_curve` (meilleure puissance moyenne sur 5 s, 1 min, 5 min, 20 min, 1 h), l'énergie (kJ) et le dénivelé. Sert aux records du Bilan. `security invoker` : la RLS s'applique ; réservée à `authenticated`. À ne pas confondre avec `power_profile`, qui mélange tous les sports (la course à pied avec capteur y fait des records) |
 
 ## Règles
 - Toute nouvelle table : RLS activée, policies limitées à `auth.uid() = user_id`.

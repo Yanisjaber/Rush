@@ -1,6 +1,6 @@
 -- ============================================================
 -- Les sorties à vélo avec les colonnes des records (Bilan › Records) : la meilleure puissance moyenne sur 5 s, 1 min, 5 min,
--- 20 min et 1 h (lue dans `power_curve`), la vitesse max, l'énergie et le dénivelé.
+-- 20 min et 1 h (lue dans `power_curve`), l'énergie et le dénivelé. (Pas de vitesse max : elle contient des pointes GPS impossibles et n'est pas affichée.)
 --
 -- Pourquoi une fonction : `power_curve` est un objet JSON avec une clé par durée (des milliers par séance). L'envoyer en entier pour
 -- toutes les séances serait énorme ; la fonction n'en renvoie que cinq valeurs par séance.
@@ -10,6 +10,9 @@
 -- les vélos électriques aussi (leur puissance n'est pas celle du cycliste).
 -- Relançable sans risque.
 -- ============================================================
+
+-- Le type de retour change (colonne en moins) : on supprime l'ancienne version d'abord (aucune dépendance, elle n'est appelée que par l'app)
+drop function if exists public.rpc_sorties_velo();
 
 create or replace function public.rpc_sorties_velo()
 returns table (
@@ -21,7 +24,6 @@ returns table (
   moving_time integer,
   total_elevation_gain integer,
   kj integer,
-  max_speed_kmh numeric,
   p5 integer,
   p60 integer,
   p300 integer,
@@ -33,7 +35,7 @@ stable
 security invoker
 set search_path = public
 as $$
-  select a.id, a.name, a.sport, a.start_date_local, a.distance_km, a.moving_time, a.total_elevation_gain, a.kj, a.max_speed_kmh,
+  select a.id, a.name, a.sport, a.start_date_local, a.distance_km, a.moving_time, a.total_elevation_gain, a.kj,
     round((a.power_curve ->> '5')::numeric)::integer,
     round((a.power_curve ->> '60')::numeric)::integer,
     round((a.power_curve ->> '300')::numeric)::integer,

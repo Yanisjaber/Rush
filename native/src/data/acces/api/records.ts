@@ -2,7 +2,7 @@ import { sb } from '../supabase';
 import { sortieVeloDeLigne, type LigneVelo, type SortieVelo } from '../../bilan/records.ts';
 import { resultat, type Resultat } from './commun';
 
-// Les sorties à vélo avec leurs colonnes de records (courbe de puissance, vitesse, énergie) : la fonction SQL rpc_sorties_velo ne renvoie que le compte connecté.
+// Les sorties à vélo avec leurs colonnes de records (courbe de puissance, énergie) : la fonction SQL rpc_sorties_velo ne renvoie que le compte connecté.
 const TAILLE_PAGE = 1000; // l'API renvoie au plus 1000 lignes par requête : on lit par pages
 const PAGES_MAX = 20; // garde-fou : 20 000 sorties
 

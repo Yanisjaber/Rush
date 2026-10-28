@@ -185,7 +185,7 @@ export function OngletRecords({ toutes, annee, maintenant, filtre, mesure, onMes
                           </View>
                         ) : null}
                       </View>
-                      <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>
+                      <Text numberOfLines={2} style={[typo.petit, { color: p.texteDoux }]}>
                         {l.titre}
                         {l.sous ? ` · ${l.sous}` : ''}
                       </Text>

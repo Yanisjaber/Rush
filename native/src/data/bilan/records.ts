@@ -123,7 +123,7 @@ export function recordsRegularite(acts: ActiviteBilan[]): GroupeRecords {
 
 // --- Records du vélo -----------------------------------------------------------------------------------------------------
 
-/** Une sortie à vélo avec les colonnes en plus (courbe de puissance, vitesse, énergie). Les valeurs absentes sont null. */
+/** Une sortie à vélo avec les colonnes en plus (courbe de puissance, énergie). Les valeurs absentes sont null. */
 export interface SortieVelo {
   id: string;
   name: string;
@@ -134,7 +134,6 @@ export interface SortieVelo {
   duree_min: number;
   d_plus: number;
   kj: number | null;
-  vitesse_max: number | null;
   /** Meilleure puissance moyenne (en watts) sur 5 s, 1 min, 5 min, 20 min et 1 h. */
   p5: number | null;
   p60: number | null;
@@ -153,7 +152,6 @@ export interface LigneVelo {
   moving_time: number | null;
   total_elevation_gain: number | null;
   kj: number | null;
-  max_speed_kmh: number | string | null;
   p5: number | null;
   p60: number | null;
   p300: number | null;
@@ -176,7 +174,6 @@ export function sortieVeloDeLigne(l: LigneVelo): SortieVelo {
     duree_min: (l.moving_time ?? 0) / 60,
     d_plus: l.total_elevation_gain ?? 0,
     kj: l.kj,
-    vitesse_max: nombre(l.max_speed_kmh),
     p5: l.p5,
     p60: l.p60,
     p300: l.p300,
@@ -194,30 +191,24 @@ export const DUREES_PUISSANCE: { cle: 'p5' | 'p60' | 'p300' | 'p1200' | 'p3600';
   { cle: 'p3600', secondes: 3600, libelle: 'Meilleure heure', court: '1 h' },
 ];
 
-/** La vitesse max d'une sortie n'est crédible que dehors, sur une vraie sortie, et sous cette limite (la base contient des pointes GPS à plus de 100 km/h). */
-export const VITESSE_MAX_CREDIBLE = 95;
-const DISTANCE_MIN_VITESSE_MAX = 10;
+/** Une vitesse moyenne n'a de sens que sur une vraie sortie (30 km ou plus), dehors : pas sur un vélo virtuel. */
 const DISTANCE_MIN_VITESSE_MOYENNE = 30;
 
 const dehors = (s: SortieVelo): boolean => s.sport !== 'VirtualRide';
 const vitesseMoyenne = (s: SortieVelo): number => (s.duree_min > 0 ? s.distance_km / (s.duree_min / 60) : 0);
 
-/** Les records du vélo : puissance (5 durées), vitesse (max et moyenne) et sorties (la plus longue, le plus de dénivelé, la plus grosse dépense). */
+/** Les records du vélo : puissance (5 durées) et sorties (la plus longue, la vitesse moyenne, le plus de dénivelé, la plus grosse dépense). */
 export function recordsVelo(sorties: SortieVelo[]): GroupeRecords[] {
   const entree = (s: SortieVelo, valeur: number | null): EntreeRecord => ({ valeur: valeur ?? 0, nom: s.name || 'Sans titre', iso: s.iso, id: s.id });
   const puissance: RecordTop[] = DUREES_PUISSANCE.map((d) => ({ cle: d.cle, libelle: d.libelle, unite: 'W', top: meilleures(sorties.map((s) => entree(s, s[d.cle]))) })).filter((r) => r.top.length);
-  const vitesse: RecordTop[] = [
-    { cle: 'vmax', libelle: 'Vitesse max', unite: 'km/h', top: meilleures(sorties.filter((s) => dehors(s) && s.distance_km >= DISTANCE_MIN_VITESSE_MAX && (s.vitesse_max ?? 0) <= VITESSE_MAX_CREDIBLE).map((s) => entree(s, s.vitesse_max))) },
-    { cle: 'vmoy', libelle: 'Vitesse moyenne', unite: 'km/h', top: meilleures(sorties.filter((s) => dehors(s) && s.distance_km >= DISTANCE_MIN_VITESSE_MOYENNE).map((s) => entree(s, vitesseMoyenne(s)))) },
-  ].filter((r) => r.top.length);
   const sortiesRec: RecordTop[] = [
     { cle: 'distance', libelle: 'Plus longue sortie', unite: 'km', top: meilleures(sorties.map((s) => entree(s, s.distance_km))) },
+    { cle: 'vmoy', libelle: 'Vitesse moyenne', unite: 'km/h', top: meilleures(sorties.filter((s) => dehors(s) && s.distance_km >= DISTANCE_MIN_VITESSE_MOYENNE).map((s) => entree(s, vitesseMoyenne(s)))) },
     { cle: 'dplus', libelle: 'Plus gros D+', unite: 'm', top: meilleures(sorties.map((s) => entree(s, s.d_plus))) },
     { cle: 'kj', libelle: 'Plus grosse dépense', unite: 'kJ', top: meilleures(sorties.map((s) => entree(s, s.kj))) },
   ].filter((r) => r.top.length);
   return [
     { cle: 'puissance', libelle: 'Puissance', records: puissance },
-    { cle: 'vitesse', libelle: 'Vitesse', records: vitesse },
     { cle: 'sorties', libelle: 'Sorties', records: sortiesRec },
   ].filter((g) => g.records.length);
 }
