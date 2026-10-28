@@ -21,7 +21,7 @@ import { TraitTirets } from '@/components/graphes/TraitTirets';
 import { ProgresSport } from '@/components/graphes/ProgresSport';
 import type { IconeOnglet } from '@/components/menus/OngletsIcones.types';
 import {
-  activitesAnnee, anneesDisponibles, avancement, chargeParSemaine, cumulParAnnee, valeursParMois, moyennesParJourSemaine, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
+  activitesAnnee, anneesDisponibles, avancement, chargeParSemaine, cumulParAnnee, valeursParMois, moyennesParJourSemaine, lundisDesSemaines, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
   regulariteAnnee, repartitionSport, sommer, familleBilanDuFiltre, decimalesObjectif, phraseVerdict, type MetriqueCumul,
 } from '@/data/bilan/bilan';
 import { formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
@@ -34,7 +34,7 @@ import { useMenu } from '@/stores/menu';
 import { choisirMesure, useMesuresBilan } from '@/stores/mesures-bilan';
 import { choisirPeriodeProgression, usePeriodeProgression } from '@/stores/progression';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
-import { couleurSport } from '@/theme/sports';
+import { couleurSport, SPORTS } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -84,6 +84,11 @@ export default function Bilan() {
   const [onglet, setOnglet] = useState<OngletBilan>('resume');
   // Les mesures des menus (distance, temps…) : gardées tant que l'app n'est pas fermée, voir stores/mesures-bilan
   const mesures = useMesuresBilan();
+  // Ce que le doigt touche dans les graphiques du Rythme (un mois, une semaine, un jour de la semaine, un jour du calendrier) ; null : rien
+  const [selMois, setSelMois] = useState<number | null>(null);
+  const [selSemaine, setSelSemaine] = useState<number | null>(null);
+  const [selJourSemaine, setSelJourSemaine] = useState<number | null>(null);
+  const [selJour, setSelJour] = useState<{ mois: number; jour: number } | null>(null);
   const metrique = mesures.cumul;
   const mesureRepartition = mesures.repartition;
   const { brutes, objectifs, chargement, erreur, pret, actualisation, recharger } = useDonneesBilan();
@@ -140,6 +145,17 @@ export default function Bilan() {
   const uniteGraphe = (m: { unite: string }) => (m.unite === 'séances' ? '' : m.unite);
   const mesureS = MESURES_CUMUL.find((m) => m.cle === mesureSemaine) ?? MESURES_CUMUL[0];
   const mesureJ = MESURES_CUMUL.find((m) => m.cle === mesureJour) ?? MESURES_CUMUL[0];
+  // Ce que le doigt touche s'efface quand on change d'année, de sport, d'onglet ou de mesure (les positions n'ont plus le même sens)
+  useEffect(() => {
+    setSelMois(null);
+    setSelSemaine(null);
+    setSelJourSemaine(null);
+    setSelJour(null);
+  }, [annee, filtre, onglet, mesureMois, mesureSemaine, mesureJour]);
+  // Une valeur écrite avec son unité : « 4h12 » pour le temps, un simple nombre pour les séances (le titre le dit), « 1 040 km » sinon
+  const texteMesure = (v: number, cle: MetriqueCumul, unite: string, decimales = 0): string => (cle === 'heures' ? texteHM(Math.round(v * 60)) : cle === 'seances' ? formatNum(v, decimales) : `${formatNum(v, decimales)} ${unite}`);
+  const majuscule = (t: string): string => t.charAt(0).toUpperCase() + t.slice(1);
+  const jourMois = (iso: string): string => `${Number(iso.slice(8, 10))} ${NOMS_MOIS[Number(iso.slice(5, 7)) - 1]}`;
   // Une valeur de la semaine type écrite avec son unité : « 4h12 » pour le temps, « 18 » pour les séances (le titre le dit), « 1 040 km » sinon
   const texteJour = (v: number, decimales = mesureJour === 'seances' ? 1 : 0): string => (mesureJour === 'heures' ? texteHM(Math.round(v * 60)) : mesureJour === 'seances' ? formatNum(v, decimales) : `${formatNum(v, decimales)} ${mesureJ.unite}`);
   const decimalesSemaine = mesureSemaine === 'heures' || mesureSemaine === 'seances' ? 1 : 0;
@@ -151,8 +167,9 @@ export default function Bilan() {
     const semaines = chargeParSemaine(filtrees, annee, maintenant, 52, mesureSemaine);
     // La semaine en cours n'est pas finie : elle ne compte pas dans la moyenne (sinon celle-ci est tirée vers le bas)
     const completes = enCours ? semaines.slice(0, -1) : semaines;
+    const lundis = lundisDesSemaines(annee, maintenant, 52);
     const jourSemaine = moyennesParJourSemaine(activitesAnnee(filtrees, annee, maintenant), annee, maintenant, mesureJour);
-    return { parMois, jourSemaine, meilleurMois: Math.max(0, ...parMois), semaines, moyenneSemaine: completes.reduce((a, b) => a + b, 0) / completes.length, regularite: regulariteAnnee(filtrees, annee, maintenant) };
+    return { parMois, jourSemaine, lundis, meilleurMois: Math.max(0, ...parMois), semaines, moyenneSemaine: completes.reduce((a, b) => a + b, 0) / completes.length, regularite: regulariteAnnee(filtrees, annee, maintenant) };
   }, [onglet, filtrees, annee, maintenant, mesureMois, mesureSemaine, mesureJour, enCours]);
   const repartition = useMemo(() => (onglet === 'resume' ? repartitionSport(activitesAnnee(filtrees, annee, maintenant), mesureRepartition, filtre !== 'tout') : []), [onglet, filtre, filtrees, annee, maintenant, mesureRepartition]);
   // `court` : pour le gros chiffre du haut, le mot « séances » est de trop (le libellé dessous le dit déjà)
@@ -161,7 +178,7 @@ export default function Bilan() {
   const dense = repartition.length > 6; // beaucoup de sports : lignes et barres plus serrées
   const mesureRep = MESURES_CUMUL.find((m) => m.cle === mesureRepartition) ?? MESURES_CUMUL[0];
   // Les valeurs de l'onglet Rythme : elles n'existent que sur cet onglet (l'affichage plus bas est gardé par `rythme`)
-  const { parMois, jourSemaine, meilleurMois, semaines, moyenneSemaine, regularite } = rythme ?? ({} as NonNullable<typeof rythme>);
+  const { parMois, jourSemaine, lundis, meilleurMois, semaines, moyenneSemaine, regularite } = rythme ?? ({} as NonNullable<typeof rythme>);
   const seancesParSemaine = (n: number) => (regularite?.jours ? n / (regularite.jours / 7) : 0);
   const heuresParSemaine = seancesParSemaine; // même calcul : une quantité divisée par le nombre de semaines écoulées
   // Les trois chiffres en haut de l'onglet Rythme
@@ -389,10 +406,17 @@ export default function Bilan() {
                     </Text>
                     <MenuMesure etiquette="Mesure par mois" valeur={mesureMois} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => choisirMesure('mois', c as MetriqueCumul)} />
                   </View>
+                  <Text style={[typo.petit, styles.lecture, { color: selMois != null ? p.texte : p.texteMuet }]}>
+                    {selMois != null
+                      ? `${majuscule(NOMS_MOIS[selMois])} : ${texteMesure(parMois[selMois] ?? 0, mesureMois, mesureM.unite, decimalesMois)}`
+                      : `Total ${annee} : ${texteMesure(parMois.reduce((t, v) => t + v, 0), mesureMois, mesureM.unite, decimalesMois)}`}
+                  </Text>
                   <BarresMois
                     valeurs={parMois}
                     moisEnCours={moisEnCours}
                     dernierMois={dernierMois}
+                    selection={selMois}
+                    onSelection={setSelMois}
                     unite={uniteGraphe(mesureM)}
                     formater={(v) => `${formatNum(v, 0)}${uniteGraphe(mesureM) ? ` ${uniteGraphe(mesureM)}` : ''}`}
                     etiquette={`${mesureM.nom} par mois en ${annee} (${mesureM.unite}) : ${parMois.map((v, i) => `${NOMS_MOIS[i]} ${formatNum(v, decimalesMois)}`).join(', ')}. Meilleur mois : ${formatNum(meilleurMois, decimalesMois)} ${mesureM.unite}.`}
@@ -409,11 +433,18 @@ export default function Bilan() {
                   {mesureSemaine === 'tss' && semaines.every((v) => v === 0) ? (
                     <Text style={[typo.corps, { color: p.texteDoux, marginBottom: 12 }]}>Pas de charge (TSS) enregistrée sur cette période : les séances sans puissance ni cardio n'en ont pas.</Text>
                   ) : null}
+                  <Text style={[typo.petit, styles.lecture, { color: selSemaine != null ? p.texte : p.texteMuet }]}>
+                    {selSemaine != null
+                      ? `Semaine du ${jourMois(lundis[selSemaine])}${enCours && selSemaine === semaines.length - 1 ? ' (en cours)' : ''} : ${texteMesure(semaines[selSemaine] ?? 0, mesureSemaine, mesureS.unite, decimalesSemaine)}`
+                      : `Moyenne : ${texteMesure(moyenneSemaine, mesureSemaine, mesureS.unite, decimalesSemaine)} par semaine`}
+                  </Text>
                   <BarresHebdo
                     valeurs={semaines}
                     couleur={p.texte}
                     repere={moyenneSemaine}
                     echelle
+                    selection={selSemaine}
+                    onSelection={setSelSemaine}
                     unite={uniteGraphe(mesureS)}
                     ecart={2}
                     rayonBarre={2}
@@ -423,9 +454,19 @@ export default function Bilan() {
                 </Bloc>
 
                 <Bloc titre="Régularité">
+                  <Text style={[typo.petit, styles.lecture, { color: selJour ? p.texte : p.texteMuet }]}>
+                    {(() => {
+                      const c = selJour ? regularite.parMois[selJour.mois]?.cases[selJour.jour] : null;
+                      if (!c?.iso) return `${regularite.joursActifs} jours actifs sur ${regularite.jours}`;
+                      if (!c.seances) return `${formatDateLongue(c.iso)} : repos`;
+                      return `${formatDateLongue(c.iso)} : ${c.famille ? SPORTS[c.famille as keyof typeof SPORTS]?.nom ?? 'Autre' : 'Autre'}, ${c.seances} ${c.seances > 1 ? 'séances' : 'séance'}, charge ${formatNum(c.charge ?? 0, 0)}`;
+                    })()}
+                  </Text>
                   <RegulariteMois
                     parMois={regularite.parMois}
                     dernierMois={dernierMois}
+                    selection={selJour}
+                    onSelection={setSelJour}
                     etiquette={`Régularité de ${annee}, mois par mois : ${regularite.joursActifs} jours actifs sur ${regularite.jours}. ${regularite.parMois.slice(0, dernierMois + 1).map((m, i) => `${NOMS_MOIS[i]} ${m.actifs}`).join(', ')}.`}
                   />
                 </Bloc>
@@ -441,16 +482,19 @@ export default function Bilan() {
                     <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore d'activité en {annee}.</Text>
                   ) : (
                     <>
+                      <Text style={[typo.petit, styles.lecture, { color: selJourSemaine != null ? p.texte : p.texteMuet }]}>
+                        {selJourSemaine != null
+                          ? `${majuscule(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'][selJourSemaine])} : ${texteMesure(jourSemaine[selJourSemaine] ?? 0, mesureJour, mesureJ.unite, mesureJour === 'seances' ? 1 : 0)} en moyenne`
+                          : `Moyenne : ${texteMesure(jourSemaine.reduce((t, v) => t + v, 0) / 7, mesureJour, mesureJ.unite, mesureJour === 'seances' ? 1 : 0)}${mesureJour === 'seances' ? ' séances' : ''} par jour`}
+                      </Text>
                       <CourbeSemaine
                         valeurs={jourSemaine}
                         couleur={filtre === 'tout' ? p.texte : couleurSport(p, filtre)}
                         formater={(v) => texteJour(v)}
+                        selection={selJourSemaine}
+                        onSelection={setSelJourSemaine}
                         etiquette={`${mesureJ.nom} en moyenne par jour de la semaine en ${annee} : ${['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].map((j, i) => `${j} ${texteJour(jourSemaine[i])}`).join(', ')}.`}
                       />
-                      <Text style={[typo.petit, { color: p.texteDoux, marginTop: 6 }]}>
-                        Chaque point est la moyenne de ce jour, par semaine. Pointillés : {texteJour(jourSemaine.reduce((t, v) => t + v, 0) / 7)}
-                        {mesureJour === 'seances' ? ' séances' : ''} par jour.
-                      </Text>
                     </>
                   )}
                 </Bloc>
@@ -550,6 +594,8 @@ const styles = StyleSheet.create({
   nouveau: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 1 },
   valeurRecord: { fontFamily: police.titre700, fontSize: 32, lineHeight: 36, fontVariant: ['tabular-nums'] },
   enteteBloc: { flexDirection: 'row', alignItems: 'center', gap: espace.e3, marginBottom: espace.e3 },
+  // La ligne de lecture au-dessus d'un graphique : sa valeur, ou ce que le doigt touche
+  lecture: { minHeight: 20, marginBottom: 8 },
   bandeauRythme: { flexDirection: 'row', gap: espace.e2, paddingBottom: 4 },
   statRythme: { flex: 1, alignItems: 'center', gap: 2, borderRadius: rayon.bloc, paddingHorizontal: 6, paddingVertical: 12 },
   valeurSerie: { fontFamily: police.titre700, fontSize: 22, lineHeight: 26, fontVariant: ['tabular-nums'] },

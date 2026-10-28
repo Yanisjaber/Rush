@@ -197,6 +197,10 @@ export interface CaseRegularite {
   famille: string | null; // sport dominant du jour (null : pas de séance, ou jour à venir)
   intensite: number; // 0 à 3
   vide: boolean; // jour à venir
+  /** Pour le détail d'un jour touché (Bilan › Rythme) : sa date, son nombre de séances et sa charge. */
+  iso?: string;
+  seances?: number;
+  charge?: number;
 }
 
 /**

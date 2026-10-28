@@ -429,6 +429,17 @@ export function moyennesParJourSemaine(acts: ActiviteBilan[], annee: number, mai
   return totaux.map((t, i) => (nombre[i] ? t / nombre[i] : 0));
 }
 
+/** Les lundis (dates ISO) des `nb` dernières semaines de l'année, dans le même ordre que chargeParSemaine : le dernier est la semaine en cours (ou la dernière de l'année). */
+export function lundisDesSemaines(annee: number, maintenant: Date = new Date(), nb = 12): string[] {
+  const debut = lundiDe(finDeAnnee(annee, maintenant));
+  debut.setDate(debut.getDate() - (nb - 1) * 7);
+  return Array.from({ length: nb }, (_, i) => {
+    const d = new Date(debut);
+    d.setDate(debut.getDate() + i * 7);
+    return dateIso(d);
+  });
+}
+
 /** La mesure choisie (la charge TSS par défaut) des `nb` dernières semaines (lundi → dimanche) de l'année : la dernière valeur est la semaine en cours (ou la dernière de l'année). */
 export function chargeParSemaine(acts: ActiviteBilan[], annee: number, maintenant: Date = new Date(), nb = 12, mesure: MetriqueCumul = 'tss'): number[] {
   const fin = finDeAnnee(annee, maintenant);
@@ -465,8 +476,10 @@ export function regulariteAnnee(acts: ActiviteBilan[], annee: number, maintenant
   const debutIso = dateIso(debut);
   const finIso = dateIso(fin);
   const parJour = new Map<string, Map<string, number>>(); // date ISO → Map(famille → charge)
+  const seancesParJour = new Map<string, number>();
   for (const a of acts) {
     if (a.iso < debutIso || a.iso > finIso) continue;
+    seancesParJour.set(a.iso, (seancesParJour.get(a.iso) ?? 0) + 1);
     const m = parJour.get(a.iso) ?? new Map<string, number>();
     m.set(a.famille, (m.get(a.famille) ?? 0) + (a.tss > 0 ? a.tss : Math.round((a.duree_min / 60) * 35))); // sans TSS : estimation par la durée
     parJour.set(a.iso, m);
@@ -496,11 +509,12 @@ export function regulariteAnnee(acts: ActiviteBilan[], annee: number, maintenant
     const iso = dateIso(j);
     const m = parJour.get(iso);
     const mois = parMois[j.getMonth()];
-    if (iso > finIso) mois.cases.push({ famille: null, intensite: 0, vide: true });
-    else if (!m) mois.cases.push({ famille: null, intensite: 0, vide: false });
+    if (iso > finIso) mois.cases.push({ famille: null, intensite: 0, vide: true, iso });
+    else if (!m) mois.cases.push({ famille: null, intensite: 0, vide: false, iso, seances: 0, charge: 0 });
     else {
       const [famille] = [...m.entries()].sort((x, y) => y[1] - x[1])[0];
-      mois.cases.push({ famille, intensite: intensiteDeCharge([...m.values()].reduce((x, y) => x + y, 0)), vide: false });
+      const charge = [...m.values()].reduce((x, y) => x + y, 0);
+      mois.cases.push({ famille, intensite: intensiteDeCharge(charge), vide: false, iso, seances: seancesParJour.get(iso) ?? 0, charge });
       mois.actifs++;
     }
   }

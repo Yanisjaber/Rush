@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { CaseRegularite } from '@/data/bilan/synthese';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
@@ -10,6 +10,9 @@ interface Props {
   parMois: { cases: CaseRegularite[]; actifs: number }[];
   /** Dernier mois affiché (0 à 11) : le mois en cours pour l'année en cours, 11 pour une année passée. */
   dernierMois: number;
+  /** Le jour touché (mois de 0 à 11, jour de 0 à 30), ou null : sa case est cerclée, les autres s'atténuent. */
+  selection?: { mois: number; jour: number } | null;
+  onSelection?: (jour: { mois: number; jour: number } | null) => void;
   /** Phrase lue par VoiceOver à la place du dessin. */
   etiquette: string;
 }
@@ -17,7 +20,7 @@ interface Props {
 const LETTRES = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 const OPACITES = [1, 0.35, 0.6, 1];
 
-export function RegulariteMois({ parMois, dernierMois, etiquette }: Props) {
+export function RegulariteMois({ parMois, dernierMois, selection = null, onSelection, etiquette }: Props) {
   const p = usePalette();
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={styles.liste}>
@@ -27,15 +30,22 @@ export function RegulariteMois({ parMois, dernierMois, etiquette }: Props) {
           <View style={styles.jours}>
             {Array.from({ length: 31 }, (_, d) => {
               const c = m.cases[d];
+              const choisie = selection?.mois === i && selection.jour === d;
+              const touchable = !!onSelection && !!c && !c.vide;
               return (
-                <View
+                <Pressable
                   key={d}
+                  disabled={!touchable}
+                  onPress={() => onSelection?.(choisie ? null : { mois: i, jour: d })}
+                  hitSlop={2}
+                  accessible={false}
                   style={[
                     styles.case,
                     {
                       backgroundColor: !c || c.vide ? 'transparent' : c.intensite && c.famille ? couleurSport(p, c.famille) : p.surface2,
-                      opacity: c?.intensite ? (OPACITES[c.intensite] ?? 1) : 1,
+                      opacity: selection && !choisie ? 0.35 : c?.intensite ? (OPACITES[c.intensite] ?? 1) : 1,
                     },
+                    choisie ? { borderWidth: 1.5, borderColor: p.texte } : null,
                   ]}
                 />
               );

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   activitesAnnee, activitesAnneePrecedente, anneesDisponibles, avancement, cumulParAnnee, ecartPct, familleBilan, familleBilanDuFiltre, modele, normaliser,
-  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, valeursParMois, moyennesParJourSemaine, phraseVerdict, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
+  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, valeursParMois, moyennesParJourSemaine, lundisDesSemaines, phraseVerdict, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
 } from '../../src/data/bilan/bilan.ts';
 import { activitesBilanDemo, objectifsAnnuelsDemo } from '../../src/data/demo/demo.ts';
 
@@ -210,6 +210,13 @@ test('kmParMois : 12 mois, seulement l\'année demandée', () => {
   assert.equal(m[11], 0);
 });
 
+test('lundisDesSemaines : les lundis des dernières semaines, dans l\'ordre de chargeParSemaine', () => {
+  // maintenant = mercredi 1er juillet 2026 : la semaine en cours commence le lundi 29 juin
+  const l = lundisDesSemaines(2026, maintenant, 4);
+  assert.deepEqual(l, ['2026-06-08', '2026-06-15', '2026-06-22', '2026-06-29']);
+  assert.equal(lundisDesSemaines(2026, maintenant, 52).length, 52);
+});
+
 test('chargeParSemaine : une autre mesure (séances, distance) et 52 semaines', () => {
   const acts = [act('2026-06-29', 'course', 60, 10, 0, 50), act('2026-07-01', 'cyclisme', 90, 40, 0, 70, 'b'), act('2026-01-02', 'course', 30, 5, 0, 99, 'd')];
   const seances = chargeParSemaine(acts, 2026, maintenant, 52, 'seances');
@@ -242,6 +249,9 @@ test('regulariteAnnee : les jours rangés par mois, avec les jours actifs de cha
   assert.deepEqual(r.parMois.map((m) => m.cases.length), [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]);
   assert.equal(r.parMois[2].actifs, 2);
   assert.equal(r.parMois[2].cases[4].famille, 'course');
+  assert.equal(r.parMois[2].cases[4].iso, '2026-03-05');
+  assert.equal(r.parMois[2].cases[4].seances, 1);
+  assert.equal(r.parMois[2].cases[5].charge, 70);
   assert.equal(r.parMois[2].cases[5].famille, 'velo');
   assert.equal(r.parMois[2].cases[0].famille, null);
   assert.equal(r.parMois[6].cases[0].vide, false); // le 1er juillet est aujourd'hui
