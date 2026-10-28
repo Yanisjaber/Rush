@@ -1,6 +1,6 @@
 import { FondDegrade } from '@/components/ui/FondDegrade';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarreSports } from '@/components/graphes/BarreSports';
@@ -51,19 +51,6 @@ const FAMILLE_COULEUR: Record<string, string> = { cyclisme: 'velo', course: 'cou
 
 // Le bilan d'une année, en trois onglets : Résumé (une phrase, les objectifs, cumul sur 3 ans, répartition), Rythme (mois, semaines, régularité) et Records.
 // Toucher un objectif l'ouvre pour le modifier ou le supprimer ; « Ajouter un objectif » en crée un (écran « objectif »). Toucher un record ouvre sa séance.
-// Une section « à plat » de l'onglet Rythme : un trait fin, un titre, le contenu (pas de carte)
-function Section({ titre, children }: { titre: string; children: ReactNode }) {
-  const p = usePalette();
-  return (
-    <View style={[styles.sectionPlate, { borderTopColor: p.trait }]}>
-      <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, marginBottom: 12 }]}>
-        {titre}
-      </Text>
-      {children}
-    </View>
-  );
-}
-
 export default function Bilan() {
   const p = usePalette();
   const router = useRouter();
@@ -379,7 +366,7 @@ export default function Bilan() {
                   ))}
                 </View>
 
-                <Section titre={enKm ? 'Distance par mois' : 'Heures par mois'}>
+                <Bloc titre={enKm ? 'Distance par mois' : 'Heures par mois'}>
                   <BarresMois
                     valeurs={parMois}
                     moisEnCours={moisEnCours}
@@ -387,9 +374,9 @@ export default function Bilan() {
                     formater={(v) => formatNum(v, 0)}
                     etiquette={`${enKm ? 'Kilomètres' : "Heures d'entraînement"} par mois en ${annee} : ${parMois.map((v, i) => `${NOMS_MOIS[i]} ${formatNum(v, enKm ? 0 : 1)}`).join(', ')}. Meilleur mois : ${formatNum(meilleurMois, enKm ? 0 : 1)} ${enKm ? 'kilomètres' : 'heures'}.`}
                   />
-                </Section>
+                </Bloc>
 
-                <Section titre="Charge par semaine">
+                <Bloc titre="Charge par semaine">
                   <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>
                     {enCours ? 'TSS des 12 dernières semaines' : `TSS des 12 dernières semaines de ${annee}`} · moyenne {formatNum(moyenneSemaine, 0)}{enCours ? ' (semaine en cours exclue)' : ''}.
                   </Text>
@@ -403,9 +390,9 @@ export default function Bilan() {
                     hauteur={110}
                     etiquette={`Charge des 12 dernières semaines : ${semaines.map((v) => formatNum(v, 0)).join(', ')}. Moyenne ${formatNum(moyenneSemaine, 0)}.`}
                   />
-                </Section>
+                </Bloc>
 
-                <Section titre="Régularité">
+                <Bloc titre="Régularité">
                   <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>Une case par jour. Sa couleur est celle du sport du jour, plus elle est vive plus la charge est forte.</Text>
                   <CarteChaleur
                     cases={regularite.cases}
@@ -414,7 +401,7 @@ export default function Bilan() {
                     hauteurCase={6}
                     etiquette={`Carte des jours d'entraînement de ${annee} : ${regularite.joursActifs} jours actifs sur ${regularite.jours}`}
                   />
-                </Section>
+                </Bloc>
 
               </>
             ) : null}
@@ -513,7 +500,6 @@ const styles = StyleSheet.create({
   enteteBloc: { flexDirection: 'row', alignItems: 'center', gap: espace.e3, marginBottom: espace.e3 },
   bandeauRythme: { flexDirection: 'row', gap: espace.e2, paddingBottom: 4 },
   statRythme: { flex: 1, alignItems: 'center', gap: 2, borderRadius: rayon.bloc, paddingHorizontal: 6, paddingVertical: 12 },
-  sectionPlate: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 16, paddingBottom: 12, paddingHorizontal: 4 },
   valeurSerie: { fontFamily: police.titre700, fontSize: 22, lineHeight: 26, fontVariant: ['tabular-nums'] },
   ligneRepartition: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 24 },
   statsRepartition: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 10, marginBottom: 14 },
