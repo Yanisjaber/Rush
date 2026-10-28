@@ -132,6 +132,8 @@ export default function Bilan() {
   const mesureMois: MetriqueCumul = mesureMoisChoisie ?? (enKm ? 'distance_km' : 'heures');
   const mesureM = MESURES_CUMUL.find((m) => m.cle === mesureMois) ?? MESURES_CUMUL[0];
   const decimalesMois = mesureMois === 'heures' ? 1 : 0;
+  // L'unité écrite sur les graphiques : « km », « m », « TSS », « h » ; pour les séances, le titre le dit déjà
+  const uniteGraphe = (m: { unite: string }) => (m.unite === 'séances' ? '' : m.unite);
   const mesureS = MESURES_CUMUL.find((m) => m.cle === mesureSemaine) ?? MESURES_CUMUL[0];
   const decimalesSemaine = mesureSemaine === 'heures' || mesureSemaine === 'seances' ? 1 : 0;
   const moisEnCours = annee === maintenant.getFullYear() ? maintenant.getMonth() : null;
@@ -383,7 +385,8 @@ export default function Bilan() {
                     valeurs={parMois}
                     moisEnCours={moisEnCours}
                     dernierMois={dernierMois}
-                    formater={(v) => formatNum(v, 0)}
+                    unite={uniteGraphe(mesureM)}
+                    formater={(v) => `${formatNum(v, 0)}${uniteGraphe(mesureM) ? ` ${uniteGraphe(mesureM)}` : ''}`}
                     etiquette={`${mesureM.nom} par mois en ${annee} (${mesureM.unite}) : ${parMois.map((v, i) => `${NOMS_MOIS[i]} ${formatNum(v, decimalesMois)}`).join(', ')}. Meilleur mois : ${formatNum(meilleurMois, decimalesMois)} ${mesureM.unite}.`}
                   />
                 </Bloc>
@@ -403,6 +406,7 @@ export default function Bilan() {
                     couleur={p.texte}
                     repere={moyenneSemaine}
                     echelle
+                    unite={uniteGraphe(mesureS)}
                     ecart={2}
                     rayonBarre={2}
                     hauteur={110}

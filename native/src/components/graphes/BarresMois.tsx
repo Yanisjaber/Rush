@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { EchelleBarres, GOUTTIERE_ECHELLE } from '@/components/graphes/EchelleBarres';
+import { EchelleBarres, largeurGouttiere } from '@/components/graphes/EchelleBarres';
 import { maximumRond } from '@/data/outils/cumul-graphe';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -13,6 +13,8 @@ interface Props {
   /** Dernier mois qui a des données (les mois suivants restent vides). */
   dernierMois: number;
   hauteur?: number;
+  /** Unité écrite après chaque valeur de l'échelle (« km »), vide si le titre la dit déjà. */
+  unite?: string;
   /** Écrit la valeur du meilleur mois (ex. « 1 050 »). */
   formater: (v: number) => string;
   /** Phrase lue par VoiceOver à la place du dessin. */
@@ -21,14 +23,15 @@ interface Props {
 
 const LETTRES = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
-export function BarresMois({ valeurs, moisEnCours, dernierMois, hauteur = 150, formater, etiquette }: Props) {
+export function BarresMois({ valeurs, moisEnCours, dernierMois, hauteur = 150, unite = '', formater, etiquette }: Props) {
   const p = usePalette();
   const maximum = maximumRond(Math.max(0, ...valeurs)); // le haut de l'échelle : un chiffre rond, comme dans le cumul sur 3 ans
+  const echelle = valeurs.some((v) => v > 0) ? maximum : 0; // pas d'échelle (ni de marge) sans données
   const meilleur = valeurs.reduce((m, v, i) => (v > valeurs[m] ? i : m), 0);
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.mois, { height: hauteur, paddingLeft: GOUTTIERE_ECHELLE }]}>
+    <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.mois, { height: hauteur, paddingLeft: largeurGouttiere(echelle, unite) }]}>
       {/* La zone des barres commence sous la valeur du meilleur mois (16 + 4) et finit au-dessus des lettres (4 + 16) */}
-      <EchelleBarres maximum={valeurs.some((v) => v > 0) ? maximum : 0} haut={20} bas={20} />
+      <EchelleBarres maximum={echelle} unite={unite} haut={20} bas={20} />
       {LETTRES.map((lettre, i) => {
         const v = valeurs[i] ?? 0;
         return (

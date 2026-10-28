@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { EchelleBarres, GOUTTIERE_ECHELLE } from '@/components/graphes/EchelleBarres';
+import { EchelleBarres, largeurGouttiere } from '@/components/graphes/EchelleBarres';
 import { TraitTirets } from '@/components/graphes/TraitTirets';
 import { maximumRond } from '@/data/outils/cumul-graphe';
 import { usePalette } from '@/theme/usePalette';
@@ -15,24 +15,27 @@ interface Props {
   /** Écrit l'échelle (des traits au tiers, aux deux tiers et en haut, avec leurs valeurs) et fait du haut un chiffre rond. */
   echelle?: boolean;
   /** Espace entre les barres et arrondi de leur sommet (6 et 6 par défaut ; plus serrés pour beaucoup de semaines). */
+  /** Unité écrite après chaque valeur de l'échelle (« km »), vide si le titre la dit déjà. */
+  unite?: string;
   ecart?: number;
   rayonBarre?: number;
   /** Phrase lue par VoiceOver à la place du dessin. */
   etiquette: string;
 }
 
-export function BarresHebdo({ valeurs, couleur, hauteur = 120, repere, echelle = false, ecart = 6, rayonBarre = 6, etiquette }: Props) {
+export function BarresHebdo({ valeurs, couleur, hauteur = 120, repere, echelle = false, unite = '', ecart = 6, rayonBarre = 6, etiquette }: Props) {
   const p = usePalette();
+  const gouttiere = echelle && valeurs.some((v) => v > 0) ? largeurGouttiere(maximumRond(Math.max(0, ...valeurs)), unite) : 0;
   const maximum = echelle ? maximumRond(Math.max(0, ...valeurs)) : Math.max(1, ...valeurs);
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.barres, { height: hauteur, gap: ecart, borderBottomColor: p.trait }, echelle ? { paddingLeft: GOUTTIERE_ECHELLE, borderBottomWidth: 0 } : null]}>
-      {echelle ? <EchelleBarres maximum={valeurs.some((v) => v > 0) ? maximum : 0} /> : null}
+    <View accessible accessibilityRole="image" accessibilityLabel={etiquette} style={[styles.barres, { height: hauteur, gap: ecart, borderBottomColor: p.trait }, echelle ? { paddingLeft: gouttiere, borderBottomWidth: 0 } : null]}>
+      {echelle ? <EchelleBarres maximum={valeurs.some((v) => v > 0) ? maximum : 0} unite={unite} /> : null}
       {valeurs.map((v, i) => (
         <View key={i} style={[styles.colonne, { opacity: i === valeurs.length - 1 ? 1 : 0.55 }]}>
           <View style={{ height: `${(v / maximum) * 100}%`, minHeight: 2, backgroundColor: couleur, borderRadius: rayonBarre }} />
         </View>
       ))}
-      {repere != null && repere > 0 ? <View pointerEvents="none" style={[styles.repere, { bottom: `${Math.min(100, (repere / maximum) * 100)}%`, left: echelle ? GOUTTIERE_ECHELLE : 0 }]}><TraitTirets couleur={p.texteMuet} epaisseur={1} /></View> : null}
+      {repere != null && repere > 0 ? <View pointerEvents="none" style={[styles.repere, { bottom: `${Math.min(100, (repere / maximum) * 100)}%`, left: gouttiere }]}><TraitTirets couleur={p.texteMuet} epaisseur={1} /></View> : null}
     </View>
   );
 }
