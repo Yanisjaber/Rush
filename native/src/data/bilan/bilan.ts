@@ -355,7 +355,7 @@ export const MESURES_CUMUL: { cle: MetriqueCumul; nom: string; unite: string; ph
 ];
 
 /** Ce que vaut une activité pour la mesure choisie. */
-const valeurCumul = (a: ActiviteBilan, m: MetriqueCumul): number => (m === 'd_plus' ? a.d_plus : m === 'seances' ? 1 : m === 'tss' ? a.tss : m === 'heures' ? a.duree_min / 60 : a.distance_km);
+export const valeurCumul = (a: ActiviteBilan, m: MetriqueCumul): number => (m === 'd_plus' ? a.d_plus : m === 'seances' ? 1 : m === 'tss' ? a.tss : m === 'heures' ? a.duree_min / 60 : a.distance_km);
 
 /**
  * Cumul jour par jour de la mesure choisie (distance, dénivelé, séances, charge ou temps), pour plusieurs années : { etiquettes, series: [{ annee, valeurs }] }.
