@@ -447,7 +447,7 @@ export default function Bilan() {
                     unite={uniteGraphe(mesureS)}
                     ecart={2}
                     rayonBarre={2}
-                    hauteur={110}
+                    hauteur={150} // la même que le graphique par mois : les deux cartes ont la même taille
                     etiquette={`${mesureS.nom} des 52 ${enCours ? 'dernières semaines' : `semaines de ${annee}`} (${mesureS.unite}) : ${semaines.map((v) => formatNum(v, decimalesSemaine)).join(', ')}. Moyenne ${formatNum(moyenneSemaine, decimalesSemaine)}${enCours ? ', semaine en cours exclue' : ''}.`}
                   />
                 </Bloc>
