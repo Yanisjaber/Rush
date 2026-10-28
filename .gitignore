@@ -40,3 +40,6 @@ node_modules/
 
 # Fichier GÉNÉRÉ par supabase/proposals/db-v2/tests/build_cutover.sh
 supabase/proposals/db-v2/cutover_all.sql
+
+# Copies de travail des sessions Claude en parallèle (git worktree)
+.claude/worktrees/
