@@ -1,12 +1,12 @@
 #!/bin/bash
 # Test LOCAL (Postgres jetable, jamais la vraie base) : liens vers une séance (SEC-4) et plafonds de stockage.
-# Usage : bash supabase/tests/liens_et_plafonds.sh      (prérequis : brew install postgresql@17)
+# Usage : bash supabase/tests/sql/liens_et_plafonds.sh      (prérequis : brew install postgresql@17)
 set -e
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/../../.."
 H=supabase/proposals/db-v2/tests/local_pg.sh
 bash $H start >/dev/null 2>&1 || true
 bash $H reset
-bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/tests/suppression_compte_decor.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/tests/sql/suppression_compte_decor.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 <<'SQL'
 alter table public.activities add column streams_gz text;
 create table public.user_profiles (user_id uuid primary key references auth.users(id) on delete cascade, extras jsonb default '{}'::jsonb);

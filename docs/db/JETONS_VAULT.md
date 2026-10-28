@@ -40,8 +40,8 @@ Pourquoi en plusieurs temps : effacer le clair avant que **toutes** les fonction
 
 ## Tests
 
-- **Base** (`supabase/tests/jetons_vault.sql`, sur un Postgres local jetable) : 26 contrôles — chiffrement des jetons d'origine, repli en lecture, fusion à l'écriture (un renouvellement Strava ne renvoie pas tous les champs), un seul secret par connexion, suppression du secret avec la connexion et avec le compte, **un utilisateur connecté ou anonyme ne peut ni lire ni écrire les jetons ni lire Vault**, phases 2a et 2b (clair Strava effacé et Garmin conservé tant que le Pi n'est pas à jour, puis plus aucun clair, écritures sans clair, garde-fou).
-- **Module des fonctions** (`supabase/tests/jetons.test.mts`) : 5 tests avec un faux client, dont « aucune erreur de la base n'est journalisée ».
+- **Base** (`supabase/tests/sql/jetons_vault.sql`, sur un Postgres local jetable) : 26 contrôles — chiffrement des jetons d'origine, repli en lecture, fusion à l'écriture (un renouvellement Strava ne renvoie pas tous les champs), un seul secret par connexion, suppression du secret avec la connexion et avec le compte, **un utilisateur connecté ou anonyme ne peut ni lire ni écrire les jetons ni lire Vault**, phases 2a et 2b (clair Strava effacé et Garmin conservé tant que le Pi n'est pas à jour, puis plus aucun clair, écritures sans clair, garde-fou).
+- **Module des fonctions** (`supabase/tests/edge/jetons.test.mts`) : 5 tests avec un faux client, dont « aucune erreur de la base n'est journalisée ».
 - Syntaxe des 8 fichiers TypeScript contrôlée.
 
 ## Ce qui ne peut pas être testé hors ligne
@@ -49,4 +49,4 @@ Pourquoi en plusieurs temps : effacer le clair avant que **toutes** les fonction
 La chaîne réelle (Vault de production, Strava, Garmin) : d'où la phase de vérification (étape 4) **avant** d'effacer quoi que ce soit.
 
 ## Étape finale (13/10/2026) : colonnes en clair supprimées
-Les colonnes `access_token`, `refresh_token`, `oauth1_token`, `oauth1_secret` de `connexions_app` (vides depuis la phase 2b) ont été supprimées (`supabase/migrations/2026-10-14_jetons_vault_3_colonnes_mortes.sql`, testée en local par `supabase/tests/jetons_colonnes_mortes.sh`). Les deux fonctions `rpc_connection_secrets` / `rpc_save_connection_secrets` ne gardent plus de « repli en clair ». Le retour arrière de la phase 2 (`9_retour_arriere.sql`) n'est plus applicable tel quel.
+Les colonnes `access_token`, `refresh_token`, `oauth1_token`, `oauth1_secret` de `connexions_app` (vides depuis la phase 2b) ont été supprimées (`supabase/migrations/2026-10-14_jetons_vault_3_colonnes_mortes.sql`, testée en local par `supabase/tests/sql/jetons_colonnes_mortes.sh`). Les deux fonctions `rpc_connection_secrets` / `rpc_save_connection_secrets` ne gardent plus de « repli en clair ». Le retour arrière de la phase 2 (`9_retour_arriere.sql`) n'est plus applicable tel quel.

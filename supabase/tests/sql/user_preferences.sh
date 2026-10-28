@@ -1,7 +1,7 @@
 #!/bin/bash
 # Test LOCAL (Postgres jetable) du renommage user_dashboard -> user_preferences + colonne theme + RLS.
 set -e
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/../../.."
 H=supabase/proposals/db-v2/tests/local_pg.sh
 bash $H start >/dev/null 2>&1 || true
 bash $H reset

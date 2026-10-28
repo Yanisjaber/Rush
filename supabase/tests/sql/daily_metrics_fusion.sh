@@ -1,14 +1,14 @@
 #!/bin/bash
 # Test LOCAL (Postgres jetable, jamais la vraie base) : un triathlon fusionné ne doit pas être compté deux fois dans daily_metrics.
 # Avant la migration (copie de la prod) : le test doit échouer. Après : il doit passer.
-# Usage : bash supabase/tests/daily_metrics_fusion.sh      (prérequis : brew install postgresql@17)
+# Usage : bash supabase/tests/sql/daily_metrics_fusion.sh      (prérequis : brew install postgresql@17)
 set -e
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/../../.."
 H=supabase/proposals/db-v2/tests/local_pg.sh
 bash $H start >/dev/null 2>&1 || true
 bash $H reset
-bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/tests/suppression_compte_decor.sql
-bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/tests/suppression_compte_recalc_prod.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/tests/sql/suppression_compte_decor.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/tests/sql/suppression_compte_recalc_prod.sql
 cat > /tmp/rush-fusion.sql <<'SQL'
 insert into auth.users (id, email) values ('00000000-0000-4000-8000-000000000001','tri@test') on conflict do nothing;
 -- Jour J : un triathlon parent (200 TSS) + ses 3 étapes fusionnées (50 + 100 + 50 = 200 TSS)

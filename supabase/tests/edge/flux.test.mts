@@ -1,8 +1,8 @@
 // Test de la remise à 1 point par seconde (aucun réseau).
-// Lancer : node --experimental-strip-types --test supabase/tests/flux.test.mts
+// Lancer : node --experimental-strip-types --test supabase/tests/edge/flux.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { reechantillonner1Hz } from '../functions/_shared/flux.ts';
+import { reechantillonner1Hz } from '../../functions/_shared/flux.ts';
 
 test('déjà à 1 Hz : la série est rendue telle quelle', () => {
   const w = [100, 110, 120];

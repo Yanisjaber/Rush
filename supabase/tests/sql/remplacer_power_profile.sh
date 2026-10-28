@@ -1,8 +1,8 @@
 #!/bin/bash
 # Test LOCAL (Postgres jetable, jamais la vraie base) : remplacement atomique des records de puissance.
-# Usage : bash supabase/tests/remplacer_power_profile.sh      (prérequis : brew install postgresql@17)
+# Usage : bash supabase/tests/sql/remplacer_power_profile.sh      (prérequis : brew install postgresql@17)
 set -e
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/../../.."
 H=supabase/proposals/db-v2/tests/local_pg.sh
 bash $H start >/dev/null 2>&1 || true
 bash $H reset

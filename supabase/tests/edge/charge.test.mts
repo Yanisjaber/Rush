@@ -1,8 +1,8 @@
 // Test du calcul de charge partagé (aucun réseau).
-// Lancer : node --experimental-strip-types --test supabase/tests/charge.test.mts
+// Lancer : node --experimental-strip-types --test supabase/tests/edge/charge.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { computeTss, stravaToRow, lthrEffectif, ftpEffective, puissanceRetenue } from '../functions/_shared/charge.ts';
+import { computeTss, stravaToRow, lthrEffectif, ftpEffective, puissanceRetenue } from '../../functions/_shared/charge.ts';
 
 test('une heure à la FTP = 100 points', () => {
   assert.equal(computeTss({ moving_time: 3600, weighted_average_watts: 200 }, 200, null), 100);

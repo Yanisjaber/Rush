@@ -1,13 +1,13 @@
 #!/bin/bash
 # Test LOCAL (Postgres jetable, jamais la vraie base) de la suppression d'un gros compte, avant / après la migration.
-# Usage : bash supabase/tests/suppression_compte.sh      (prérequis : brew install postgresql@17)
+# Usage : bash supabase/tests/sql/suppression_compte.sh      (prérequis : brew install postgresql@17)
 set -e
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/../../.."
 H=supabase/proposals/db-v2/tests/local_pg.sh
-SEED_DEFS="supabase/tests/suppression_compte_recalc_prod.sql"   # copie exacte des fonctions de recalcul de la production
+SEED_DEFS="supabase/tests/sql/suppression_compte_recalc_prod.sql"   # copie exacte des fonctions de recalcul de la production
 bash $H start >/dev/null 2>&1 || true
 bash $H reset
-bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/tests/suppression_compte_decor.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/tests/sql/suppression_compte_decor.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f "$SEED_DEFS"
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 <<'SQL'
 create trigger activities_recalc_metrics_ins after insert on public.activities referencing new table as changed_rows for each statement execute function public.trg_recalc_daily_metrics();
@@ -25,4 +25,4 @@ insert into public.power_profile (user_id, duration_s, activity_id_alltime, acti
   select '00000000-0000-4000-8000-000000000001', i, (select id from public.activities where user_id='00000000-0000-4000-8000-000000000001' offset (i % 3000) limit 1), (select id from public.activities where user_id='00000000-0000-4000-8000-000000000001' offset ((i*7) % 3000) limit 1) from generate_series(1,983) i;
 select 'décor : '||(select count(*) from public.activities where user_id='00000000-0000-4000-8000-000000000001')||' activités, '||(select count(*) from public.daily_metrics where user_id='00000000-0000-4000-8000-000000000001')||' jours de métriques, '||(select count(*) from public.power_profile)||' courbes' as etat;
 SQL
-bash $H psql -d rush -v ON_ERROR_STOP=1 -f supabase/tests/suppression_compte.sql
+bash $H psql -d rush -v ON_ERROR_STOP=1 -f supabase/tests/sql/suppression_compte.sql

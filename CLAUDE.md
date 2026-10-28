@@ -34,7 +34,7 @@ Guide pour Claude Code (claude.ai/code) dans ce dépôt. Les `.md` détaillés s
 
 - **Mobile** : `cd native && npm ci`, puis `npm start` (Expo), `npm run typecheck`, `npm test`. La CI (`native-verif.yml`) lance types + tests.
 - **Site** : `cd app && npm ci`, puis `npm run dev` (http://localhost:5173, démo sans compte : `?demo`), `npm test`, `npm run build`.
-- **Migrations** : `supabase db query --linked -f supabase/migrations/<fichier>.sql`. Fichiers nommés `AAAA-MM-JJ_nom.sql`, idempotents. Test local : Postgres jetable via `supabase/proposals/db-v2/tests/local_pg.sh start|reset|psql`, scripts dans `supabase/tests/`.
+- **Migrations** : `supabase db query --linked -f supabase/migrations/<fichier>.sql`. Fichiers nommés `AAAA-MM-JJ_nom.sql`, idempotents. Test local : Postgres jetable via `supabase/proposals/db-v2/tests/local_pg.sh start|reset|psql`, scripts dans `supabase/tests/sql/` (Postgres) et `supabase/tests/edge/` (Edge Functions).
 - **Edge Functions** : `supabase functions deploy <nom>` (`--no-verify-jwt` seulement pour `strava-oauth-callback` et `strava-webhook`).
 - Accès Supabase : jeton dans `.env` (ignoré par git).
 - **Garmin** : aucune intégration active (décision du 13 oct.). La carte reste « Bientôt disponible » ; les nuits déjà importées (`garmin_sleep`) restent affichées.

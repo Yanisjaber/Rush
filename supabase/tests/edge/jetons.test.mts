@@ -1,8 +1,8 @@
 // Test du module partagé des jetons avec un FAUX client Supabase (aucun réseau, aucune vraie clé).
-// Lancer : node --experimental-strip-types --test supabase/tests/jetons.test.mts
+// Lancer : node --experimental-strip-types --test supabase/tests/edge/jetons.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { lireJetons, ecrireJetons, joindreJetons, ecrireRenouvellementStrava } from '../functions/_shared/jetons.ts';
+import { lireJetons, ecrireJetons, joindreJetons, ecrireRenouvellementStrava } from '../../functions/_shared/jetons.ts';
 
 const faux = (reponse: any) => {
   const appels: any[] = [];

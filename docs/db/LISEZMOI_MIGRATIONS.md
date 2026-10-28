@@ -7,7 +7,7 @@
 
 - La table `activities` (la principale) n'est créée par **aucune** migration : elle existait avant le journal. Rejouer toutes les migrations sur une base vide échoue donc dès les premières.
 - Les anciens `schema.sql` et `schema_v2.sql` ont été supprimés (périmés). Pour reconstruire la base, utilise `supabase/baseline/`.
-- La vraie base de production est la seule référence exacte. Pour reconstruire une base de test, on part d'un décor minimal (`supabase/tests/*_decor.sql`, `supabase/proposals/db-v2/tests/local_pg.sh`) et on joue seulement les migrations utiles au test.
+- La vraie base de production est la seule référence exacte. Pour reconstruire une base de test, on part d'un décor minimal (`supabase/tests/sql/*_decor.sql`, `supabase/proposals/db-v2/tests/local_pg.sh`) et on joue seulement les migrations utiles au test.
 
 ## Instantané de départ (28/10/2026)
 

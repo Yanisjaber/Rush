@@ -1,7 +1,7 @@
 #!/bin/bash
 # Test LOCAL (Postgres jetable) : on rejoue tout l'historique du coffre de jetons, puis le retrait des colonnes en clair.
 set -e
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/../../.."
 H=supabase/proposals/db-v2/tests/local_pg.sh
 bash $H start >/dev/null 2>&1 || true
 bash $H reset
