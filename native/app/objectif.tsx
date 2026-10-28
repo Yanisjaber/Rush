@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/Bouton';
@@ -36,6 +36,7 @@ export default function EcranObjectif() {
   const [erreurs, setErreurs] = useState<Record<string, string>>({});
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState(false);
+  const envoi = useRef(false); // un double appui part deux fois avant que `enCours` ne soit à jour : ce verrou ne bouge pas avec le rendu
   const autoriser = useGardeSortie({ sport, template, cible, actuel });
 
   const m = modele(sport, template);
@@ -45,9 +46,11 @@ export default function EcranObjectif() {
     const r = validerObjectif({ sport, template, cible, actuel });
     setErreurs(r.erreurs);
     setErreur('');
-    if (!r.valeurs) return;
+    if (!r.valeurs || envoi.current) return;
+    envoi.current = true;
     setEnCours(true);
     const e = id ? await modifier(id, r.valeurs) : await creer(annee, r.valeurs);
+    envoi.current = false;
     setEnCours(false);
     if (e) return setErreur(e);
     autoriser();
@@ -62,8 +65,11 @@ export default function EcranObjectif() {
         text: 'Supprimer',
         style: 'destructive',
         onPress: async () => {
+          if (envoi.current) return;
+          envoi.current = true;
           setEnCours(true);
           const e = await supprimer(id);
+          envoi.current = false;
           setEnCours(false);
           if (e) return setErreur(e);
           autoriser();
@@ -130,7 +136,7 @@ export default function EcranObjectif() {
         {erreurs.template ? <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger, paddingLeft: 16 }]}>{erreurs.template}</Text> : null}
         {m ? (
           <Text style={[typo.petit, { color: p.texteDoux, paddingLeft: 16 }]}>
-            {estManuel(m) ? (m.calc === 'manual_lower' ? 'Tu saisis ta performance actuelle : plus elle est basse, mieux c\u2019est.' : 'Tu saisis ta performance actuelle.') : "Calculé automatiquement à partir de tes sorties de l'année."}
+            {estManuel(m) ? (m.calc === 'manual_lower' ? 'Tu saisis ta performance actuelle : plus elle est basse, mieux c\u2019est.' : m.calc === 'manual_proche' ? 'Tu saisis ta valeur actuelle : on mesure l\u2019écart avec la cible, que tu montes ou que tu descendes.' : 'Tu saisis ta performance actuelle.') : "Calculé automatiquement à partir de tes sorties de l'année."}
           </Text>
         ) : null}
       </View>
@@ -146,7 +152,6 @@ export default function EcranObjectif() {
           keyboardType="decimal-pad"
           placeholder="ex. 1500"
           maxLength={12}
-          returnKeyType="done"
         />
         {erreurs.cible ? <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger, paddingLeft: 16 }]}>{erreurs.cible}</Text> : null}
       </View>
@@ -161,7 +166,6 @@ export default function EcranObjectif() {
             }}
             keyboardType="decimal-pad"
             maxLength={12}
-            returnKeyType="done"
           />
           {erreurs.actuel ? <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger, paddingLeft: 16 }]}>{erreurs.actuel}</Text> : null}
         </View>

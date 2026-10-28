@@ -22,6 +22,7 @@ const HAUTEUR_MAX_LISTE = 330; // un peu plus de sept lignes : au-delà, la list
 export function MenuMesure({ options, valeur, onChoisir, etiquette, grand = false }: Props) {
   const p = usePalette();
   const pastilleRef = useRef<ComponentRef<typeof View>>(null);
+  const listeRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const [ouvert, setOuvert] = useState(false);
   const [zone, setZone] = useState({ bas: 0, droite: 0, gauche: 0 });
   const choisi = options.find((o) => o.cle === valeur) ?? options[0];
@@ -50,7 +51,8 @@ export function MenuMesure({ options, valeur, onChoisir, etiquette, grand = fals
       <Modal visible={ouvert} transparent animationType="fade" onRequestClose={() => setOuvert(false)}>
         <Pressable style={StyleSheet.absoluteFill} onPress={() => setOuvert(false)} accessibilityLabel="Fermer la liste" accessibilityRole="button" />
         <View accessibilityViewIsModal style={[styles.panneau, { top: zone.bas + 6, left: grand ? Math.max(16, zone.gauche) : Math.max(16, zone.droite - LARGEUR_LISTE), width: grand ? LARGEUR_LISTE_GRANDE : LARGEUR_LISTE, backgroundColor: p.surface, borderColor: p.traitFort }]}>
-          <ScrollView style={{ maxHeight: HAUTEUR_MAX_LISTE }} showsVerticalScrollIndicator={false}>
+          {/* Barre de défilement visible (elle clignote à l'ouverture) : sans elle, rien ne dit qu'il y a d'autres choix plus bas */}
+          <ScrollView ref={listeRef} style={{ maxHeight: HAUTEUR_MAX_LISTE }} indicatorStyle={p.fond === '#0c0d10' ? 'white' : 'black'} onLayout={() => listeRef.current?.flashScrollIndicators()}>
           {options.map((o) => {
             const actif = o.cle === valeur;
             return (
