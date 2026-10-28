@@ -149,7 +149,7 @@ export default function Bilan() {
   const heuresParSemaine = seancesParSemaine; // même calcul : une quantité divisée par le nombre de semaines écoulées
   // Les trois chiffres en haut de l'onglet Rythme
   const statsRythme: { libelle: string; val: string; unite: string; note: string }[] = regularite ? [
-                      { libelle: 'Heures par semaine', val: texteHM(Math.round(heuresParSemaine(courant.heures) * 60)), unite: '', note: '' },
+                      { libelle: 'Par semaine', val: texteHM(Math.round(heuresParSemaine(courant.heures) * 60)), unite: '', note: '' },
                       { libelle: 'Jours actifs', val: String(regularite.joursActifs), unite: `/ ${regularite.jours}`, note: '' },
                       {
                         libelle: 'Par semaine',
