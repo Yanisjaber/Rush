@@ -41,7 +41,8 @@ export default function Sante() {
   const aujourdhui = dateIsoLocale(new Date());
   const dernierJour = serieJour[serieJour.length - 1];
   const jourAffiche = dernierJour?.indice != null && dernierJour.date !== aujourdhui ? dernierJour.date : null;
-  const manquants = dernierJour?.indice != null ? dernierJour.manquants : [];
+  // Les consignes ne valent que pour l'état d'aujourd'hui : sur un ancien jour, « réponds au ressenti du matin » n'aurait pas de sens
+  const manquants = dernierJour?.indice != null && !jourAffiche ? dernierJour.manquants : [];
   const message = erreur || erreurMesures || erreurMetriques;
 
   // Au retour d'un sous-écran (check-in, corps, nutrition), on recharge les mesures : sauf au tout premier affichage, déjà chargé par les hooks
