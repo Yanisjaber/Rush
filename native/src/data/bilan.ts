@@ -125,7 +125,7 @@ export function anneesDisponibles(acts: ActiviteBilan[], maintenant: Date = new 
 
 // --- Catalogue des objectifs (identifiants stables : les lignes déjà enregistrées restent lisibles) -----------------
 // calc : 'sum_dist' | 'sum_hours' | 'sum_sess' | 'sum_tss' | 'sum_elev' | 'max_dist' | 'max_dur' | 'max_elev_day'
-//      | 'avg_sess_week' | 'avg_hours_week' | 'manual' (saisie) | 'manual_lower' (saisie, plus bas = mieux)
+//      | 'avg_sess_week' | 'avg_hours_week' | 'manual' (saisie) | 'manual_lower' (saisie, plus bas = mieux) | 'manual_proche' (saisie, le but est de s'approcher de la cible, par le haut ou par le bas : le poids)
 export interface ModeleObjectif {
   id: string;
   label: string;
@@ -154,7 +154,7 @@ export const CATALOGUE: Record<string, ModeleObjectif[]> = {
     o('mus_sess_w', 'Séances par semaine', '/sem', 'avg_sess_week'), o('mus_hours', 'Heures annuelles', 'h', 'sum_hours'), o('mus_bench', 'Développé couché (1RM)', 'kg', 'manual'),
     o('mus_squat', 'Squat (1RM)', 'kg', 'manual'), o('mus_dead', 'Soulevé de terre (1RM)', 'kg', 'manual'), o('mus_ohp', 'Développé militaire (1RM)', 'kg', 'manual'),
     o('mus_clean', 'Épaulé (1RM)', 'kg', 'manual'), o('mus_pullup', 'Tractions max consécutives', 'reps', 'manual'), o('mus_pushup', 'Pompes max consécutives', 'reps', 'manual'),
-    o('mus_dips', 'Dips max consécutifs', 'reps', 'manual'), o('mus_plank', 'Gainage durée max', 's', 'manual'), o('mus_bw', 'Poids corporel cible', 'kg', 'manual'),
+    o('mus_dips', 'Dips max consécutifs', 'reps', 'manual'), o('mus_plank', 'Gainage durée max', 's', 'manual'), o('mus_bw', 'Poids corporel cible', 'kg', 'manual_proche'),
   ],
   hyrox: [o('hyrox_hours', 'Heures annuelles', 'h', 'sum_hours'), o('hyrox_sess_w', 'Séances par semaine', '/sem', 'avg_sess_week')],
   triathlon: [o('tri_hours', 'Heures annuelles', 'h', 'sum_hours'), o('tri_dist', 'Distance annuelle', 'km', 'sum_dist'), o('tri_sess_w', 'Séances par semaine', '/sem', 'avg_sess_week')],
@@ -173,14 +173,17 @@ export function modele(sport: string, id: string): ModeleObjectif | null {
 }
 /** Décimales à écrire pour la valeur d'un objectif selon son unité (heures, W/kg, rythmes par semaine, chronos : une ; km, m, TSS, séances : aucune). */
 export const decimalesObjectif = (unite: string): number => (['h', 'h/sem', '/sem', 'W/kg', 'km/h', 'min', 's', 's/km'].includes(unite) ? 1 : 0);
-export const estManuel = (m: ModeleObjectif | null | undefined): boolean => m?.calc === 'manual' || m?.calc === 'manual_lower';
+export const estManuel = (m: ModeleObjectif | null | undefined): boolean => m?.calc === 'manual' || m?.calc === 'manual_lower' || m?.calc === 'manual_proche';
+// Poids : on est « arrivé » à 2 % de la cible près
+const TOLERANCE_PROCHE = 0.02;
 // Un cumul grandit au fil de l'année (on peut lui tracer un rythme attendu et une projection) ; une moyenne par semaine se compare directement à sa cible
 const estCumul = (m: ModeleObjectif): boolean => m.calc.startsWith('sum_');
 
 // Avant ce moment de l'année (un peu plus d'un mois), un seul gros week-end ferait une projection absurde : on n'en montre pas
 const PART_MIN_PROJECTION = 0.1;
-const semainesEcoulees = (annee: number, maintenant: Date): number => (annee === maintenant.getFullYear() ? Math.max(1, (maintenant.getTime() - new Date(annee, 0, 1).getTime()) / (7 * 86400000)) : 52);
-const partAnnee = (annee: number, maintenant: Date): number => Math.max(0, Math.min(1, (maintenant.getTime() - new Date(annee, 0, 1).getTime()) / (365 * 86400000)));
+const joursDansAnnee = (annee: number): number => (estBissextile(annee) ? 366 : 365);
+const semainesEcoulees = (annee: number, maintenant: Date): number => (annee === maintenant.getFullYear() ? Math.max(1, (maintenant.getTime() - new Date(annee, 0, 1).getTime()) / (7 * 86400000)) : joursDansAnnee(annee) / 7);
+const partAnnee = (annee: number, maintenant: Date): number => Math.max(0, Math.min(1, (maintenant.getTime() - new Date(annee, 0, 1).getTime()) / (joursDansAnnee(annee) * 86400000)));
 
 /** Valeur actuelle d'un objectif, calculée sur les activités de l'année (ou la saisie pour un objectif manuel). */
 /** Un objectif annuel (table yearly_goals, après versObjectif). */
@@ -244,6 +247,10 @@ export function avancement(objectif: ObjectifAnnuel, acts: ActiviteBilan[], anne
     if (m.calc === 'manual_lower') {
       pct = actuel > 0 ? Math.min(100, Math.max(0, (cible / actuel) * 100)) : 0;
       enRythme = actuel <= cible;
+    } else if (m.calc === 'manual_proche') {
+      // Sans poids de départ, la proximité dit où on en est : 85 kg pour une cible de 75 kg = 88 %, dans les deux sens
+      pct = actuel > 0 ? (Math.min(actuel, cible) / Math.max(actuel, cible)) * 100 : 0;
+      enRythme = Math.abs(actuel - cible) <= cible * TOLERANCE_PROCHE;
     } else {
       pct = Math.min(100, (actuel / cible) * 100);
       enRythme = estCumul(m) ? actuel >= cible * partAnnee(annee, maintenant) : actuel >= cible;
@@ -272,12 +279,29 @@ export interface VerdictObjectif {
 export function verdictObjectif(av: Avancement): VerdictObjectif {
   const attendu = av.repere != null && av.repere < 100 ? (av.cible * av.repere) / 100 : null; // pas de repère pour une année terminée
   if (av.actuel == null) return { ton: 'neutre', atteint: false, projection: null, ecart: null, attendu };
-  if (av.modele.calc === 'manual_lower') return { ton: av.enRythme ? 'ok' : 'alerte', atteint: av.enRythme, projection: null, ecart: null, attendu };
+  if (av.modele.calc === 'manual_lower') return { ton: av.enRythme ? 'ok' : 'alerte', atteint: av.enRythme, projection: null, ecart: av.enRythme ? 0 : av.actuel - av.cible, attendu };
+  if (av.modele.calc === 'manual_proche') return { ton: av.enRythme ? 'ok' : 'alerte', atteint: av.enRythme, projection: null, ecart: av.enRythme ? 0 : Math.abs(av.actuel - av.cible), attendu };
   const atteint = av.actuel >= av.cible;
   if (av.projection != null && !atteint) {
     return { ton: av.projection >= av.cible ? 'ok' : 'alerte', atteint, projection: av.projection, ecart: Math.abs(av.cible - av.projection), attendu };
   }
   return { ton: atteint ? 'ok' : 'alerte', atteint, projection: null, ecart: atteint ? 0 : av.cible - av.actuel, attendu };
+}
+
+/** La phrase écrite sous un objectif : où il va finir, ce qu'il manque, ou « atteint ». `fmt` écrit un nombre (décimales selon l'unité). Vide quand on n'a pas de valeur. */
+export function phraseVerdict(av: Avancement, fmt: (v: number) => string): { texte: string; ton: VerdictObjectif['ton'] } {
+  const v = verdictObjectif(av);
+  const unite = av.modele.unit ? ` ${av.modele.unit}` : '';
+  if (av.actuel == null) return { texte: '', ton: 'neutre' };
+  if (v.atteint) return { texte: 'Objectif atteint', ton: 'ok' };
+  if (av.modele.calc === 'manual_lower') return { texte: `Encore ${fmt(v.ecart ?? 0)}${unite} à gagner`, ton: v.ton };
+  if (av.modele.calc === 'manual_proche') return { texte: `Encore ${fmt(v.ecart ?? 0)}${unite} d'écart`, ton: v.ton };
+  if (v.projection != null) {
+    return v.ton === 'ok'
+      ? { texte: `Fin d'année prévue : ${fmt(v.projection)}${unite}, cible dépassée`, ton: 'ok' }
+      : { texte: `Fin d'année prévue : ${fmt(v.projection)}${unite}, il manquerait ${fmt(v.ecart ?? 0)}${unite}`, ton: 'alerte' };
+  }
+  return { texte: `Il manque ${fmt(v.ecart ?? 0)}${unite}`, ton: v.ton };
 }
 
 // --- Records --------------------------------------------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 import { FondDegrade } from '@/components/FondDegrade';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarreSports } from '@/components/BarreSports';
@@ -17,11 +17,12 @@ import { IconeSport } from '@/components/IconeSport';
 import { ObjectifSegments } from '@/components/ObjectifSegments';
 import { OngletsIcones } from '@/components/OngletsIcones';
 import { OngletsSegment } from '@/components/OngletsSegment';
+import { TraitTirets } from '@/components/TraitTirets';
 import { ProgresSport } from '@/components/ProgresSport';
 import type { IconeOnglet } from '@/components/OngletsIcones.types';
 import {
   activitesAnnee, anneesDisponibles, avancement, chargeParSemaine, cumulParAnnee, kmParMois, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
-  regulariteAnnee, repartitionSport, sommer, volumeMensuel, familleBilanDuFiltre, decimalesObjectif, type MetriqueCumul,
+  regulariteAnnee, repartitionSport, sommer, volumeMensuel, familleBilanDuFiltre, decimalesObjectif, phraseVerdict, type MetriqueCumul,
 } from '@/data/bilan';
 import { formatDateLongue, formatNum, texteHM } from '@/data/format';
 import { courbeProgression, PERIODES_PROGRESSION, progressionTousSports, type PeriodeProgression } from '@/data/progression';
@@ -69,6 +70,15 @@ export default function Bilan() {
     return () => abonnement.remove();
   }, [actualiserDate]);
   const [anneeChoisie, setAnneeChoisie] = useState(maintenant.getFullYear());
+  // Nouvel An pendant que l'onglet est ouvert : si on regardait l'année qui vient de finir (l'« année en cours »), on passe à la nouvelle
+  const anneeCourante = maintenant.getFullYear();
+  const anneeVue = useRef(anneeCourante);
+  useEffect(() => {
+    if (anneeVue.current === anneeCourante) return;
+    const ancienne = anneeVue.current;
+    anneeVue.current = anneeCourante;
+    setAnneeChoisie((choisie) => (choisie === ancienne ? anneeCourante : choisie));
+  }, [anneeCourante]);
   const [onglet, setOnglet] = useState<OngletBilan>('resume');
   const [metrique, setMetrique] = useState<MetriqueCumul>('distance_km');
   const [mesureRepartition, setMesureRepartition] = useState<MetriqueCumul>('heures'); // la mesure de la répartition par sport (le temps par défaut)
@@ -86,7 +96,7 @@ export default function Bilan() {
   // Le filtre global de sport concerne les chiffres, records et graphiques ; pas les objectifs annuels
   const filtrees = useMemo(() => (filtre === 'tout' ? toutes : toutes.filter((a) => a.famille === filtre)), [toutes, filtre]);
 
-  const courant = sommer(activitesAnnee(filtrees, annee, maintenant));
+  const courant = useMemo(() => sommer(activitesAnnee(filtrees, annee, maintenant)), [filtrees, annee, maintenant]);
   // Le grand chiffre : la distance de l'année (ou les séances quand le sport n'a pas de distance, comme la musculation), puis trois chiffres en colonnes
   const enCours = annee === maintenant.getFullYear();
   const grand =
@@ -103,25 +113,35 @@ export default function Bilan() {
 
   const familleFiltre = familleBilanDuFiltre(filtre);
   // Sur un onglet de sport, seulement les objectifs de ce sport : ceux « tous sports » n'apparaissent que sur l'onglet Tous
-  const objectifsAnnee = objectifs.filter((o) => o.annee === annee && (!familleFiltre || o.sport === familleFiltre));
-  const avancements = objectifsAnnee.map((o) => ({ objectif: o, av: avancement(o, toutes, annee, maintenant) })).filter((x): x is { objectif: typeof x.objectif; av: NonNullable<typeof x.av> } => !!x.av);
+  const avancements = useMemo(() => {
+    if (onglet !== 'resume') return [];
+    return objectifs
+      .filter((o) => o.annee === annee && (!familleFiltre || o.sport === familleFiltre))
+      .map((o) => ({ objectif: o, av: avancement(o, toutes, annee, maintenant) }))
+      .filter((x): x is { objectif: (typeof objectifs)[number]; av: NonNullable<typeof x.av> } => !!x.av);
+  }, [onglet, objectifs, annee, familleFiltre, toutes, maintenant]);
 
-  const records = recordsVolume(activitesAnnee(filtrees, annee, maintenant));
-  const cumul = cumulParAnnee(filtrees, [annee, annee - 1, annee - 2], metrique, maintenant);
+  // Chaque onglet ne calcule que ses propres chiffres, et seulement quand ses données changent
+  const records = useMemo(() => (onglet === 'records' ? recordsVolume(activitesAnnee(filtrees, annee, maintenant)) : []), [onglet, filtrees, annee, maintenant]);
+  const cumul = useMemo(() => (onglet === 'resume' ? cumulParAnnee(filtrees, [annee, annee - 1, annee - 2], metrique, maintenant) : { etiquettes: [], series: [] }), [onglet, filtrees, annee, metrique, maintenant]);
   const mesure = MESURES_CUMUL.find((m) => m.cle === metrique) ?? MESURES_CUMUL[0];
   // Rythme : par mois (en km, ou en heures quand le sport n'a pas de distance, comme la musculation), charge par semaine, régularité
   const enKm = courant.distance > 0;
-  const parMois = enKm ? kmParMois(filtrees, annee) : volumeMensuel(filtrees, annee);
   const moisEnCours = annee === maintenant.getFullYear() ? maintenant.getMonth() : null;
   const dernierMois = moisEnCours ?? 11;
-  const meilleurMois = Math.max(0, ...parMois);
-  const semaines = chargeParSemaine(filtrees, annee, maintenant);
-  const moyenneSemaine = Math.round(semaines.reduce((a, b) => a + b, 0) / semaines.length);
-  const regularite = regulariteAnnee(filtrees, annee, maintenant);
-  const seancesParSemaine = (n: number) => (regularite.jours ? n / (regularite.jours / 7) : 0);
-  const repartition = repartitionSport(activitesAnnee(toutes, annee, maintenant), mesureRepartition);
+  const rythme = useMemo(() => {
+    if (onglet !== 'rythme') return null;
+    const parMois = enKm ? kmParMois(filtrees, annee) : volumeMensuel(filtrees, annee);
+    const semaines = chargeParSemaine(filtrees, annee, maintenant);
+    // La semaine en cours n'est pas finie : elle ne compte pas dans la moyenne (sinon celle-ci est tirée vers le bas)
+    const completes = enCours ? semaines.slice(0, -1) : semaines;
+    return { parMois, meilleurMois: Math.max(0, ...parMois), semaines, moyenneSemaine: Math.round(completes.reduce((a, b) => a + b, 0) / completes.length), regularite: regulariteAnnee(filtrees, annee, maintenant) };
+  }, [onglet, filtrees, annee, maintenant, enKm, enCours]);
+  const repartition = useMemo(() => (onglet === 'resume' ? repartitionSport(activitesAnnee(toutes, annee, maintenant), mesureRepartition) : []), [onglet, toutes, annee, maintenant, mesureRepartition]);
   const mesureRep = MESURES_CUMUL.find((m) => m.cle === mesureRepartition) ?? MESURES_CUMUL[0];
-
+  // Les valeurs de l'onglet Rythme : elles n'existent que sur cet onglet (l'affichage plus bas est gardé par `rythme`)
+  const { parMois, meilleurMois, semaines, moyenneSemaine, regularite } = rythme ?? ({} as NonNullable<typeof rythme>);
+  const seancesParSemaine = (n: number) => (regularite?.jours ? n / (regularite.jours / 7) : 0);
   // Un bloc par sport mesurable : celui du filtre, ou tous ceux que tu pratiques sur « Tout »
   const progres = useMemo(() => {
     if (!progresOuvert) return [];
@@ -143,7 +163,10 @@ export default function Bilan() {
           Bilan {annee}
         </Text>
         <View style={styles.entete}>
-          <MenuMesure grand etiquette="Année" valeur={String(annee)} options={annees.map((a) => ({ cle: String(a), nom: String(a) }))} onChoisir={(c) => setAnneeChoisie(Number(c))} />
+          {/* Progrès suit ses propres périodes (4 semaines, 3 mois, 1 an) : l'année n'y sert à rien. Elle reste affichée mais grisée et non touchable, pour que les onglets ne bougent pas */}
+          <View style={onglet === 'progres' ? styles.anneeMasquee : undefined} pointerEvents={onglet === 'progres' ? 'none' : 'auto'} accessibilityElementsHidden={onglet === 'progres'} importantForAccessibility={onglet === 'progres' ? 'no-hide-descendants' : 'auto'}>
+            <MenuMesure grand etiquette="Année" valeur={String(annee)} options={annees.map((a) => ({ cle: String(a), nom: String(a) }))} onChoisir={(c) => setAnneeChoisie(Number(c))} />
+          </View>
           <OngletsIcones onglets={ONGLETS} actuel={onglet} onChoisir={setOnglet} etiquette="Parties du bilan" />
         </View>
 
@@ -166,16 +189,19 @@ export default function Bilan() {
                 {grand ? (
                   <Dossard etiquette={enCours ? 'Depuis janvier' : `En ${annee}`} valeur={grand.val} uniteValeur={grand.unite} sport={filtre !== 'tout' ? filtre : undefined} chiffreMax={44}>
                     {colonnes.length ? (
-                      <View style={[styles.colonnesDossard, { borderTopColor: avecAlpha(p.dossardTexte, 0.28) }]}>
-                        {colonnes.map((c) => (
-                          <View key={c.cle} accessible style={{ width: `${100 / colonnes.length}%`, gap: 2 }}>
-                            <Text style={[typo.micro, { color: p.dossardTexte, opacity: 0.62 }]}>{c.libelle}</Text>
-                            <Text style={[styles.valeurColonne, { color: p.dossardTexte }]}>
-                              {c.val}
-                              {c.unite ? <Text style={[typo.petit, { color: p.dossardTexte, opacity: 0.62 }]}> {c.unite}</Text> : null}
-                            </Text>
-                          </View>
-                        ))}
+                      <View style={styles.separateurDossard}>
+                        <TraitTirets couleur={avecAlpha(p.dossardTexte, 0.28)} epaisseur={1.5} />
+                        <View style={styles.colonnesDossard}>
+                          {colonnes.map((c) => (
+                            <View key={c.cle} accessible style={{ width: `${100 / colonnes.length}%`, gap: 2 }}>
+                              <Text style={[typo.micro, { color: p.dossardTexte, opacity: 0.62 }]}>{c.libelle}</Text>
+                              <Text style={[styles.valeurColonne, { color: p.dossardTexte }]}>
+                                {c.val}
+                                {c.unite ? <Text style={[typo.petit, { color: p.dossardTexte, opacity: 0.62 }]}> {c.unite}</Text> : null}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
                       </View>
                     ) : null}
                   </Dossard>
@@ -196,6 +222,9 @@ export default function Bilan() {
                         // En gros : ce que mesure l'objectif ; en petit : son sport (« Tous » pour un objectif tous sports)
                         const nom = av.modele.label;
                         const sport = objectif.sport === 'tous' ? 'Tous' : NOM_SPORT_BILAN[objectif.sport];
+                        const verdict = phraseVerdict(av, (v) => formatNum(v, dec));
+                        const repere = av.repere != null && av.repere < 100 ? `, tu devrais être à ${Math.round(av.repere)} pour cent` : '';
+                        const lu = `${nom}, ${sport} : ${av.actuel == null ? 'valeur inconnue' : `${Math.round(av.pct)} pour cent${repere}`}${verdict.texte ? `. ${verdict.texte}` : ''}`;
                         return (
                           <Pressable
                             key={objectif.id}
@@ -206,7 +235,7 @@ export default function Bilan() {
                               })
                             }
                             accessibilityRole="button"
-                            accessibilityLabel={`${nom}, ${sport}, ${av.actuel == null ? 'valeur inconnue' : `${Math.round(av.pct)} pour cent`}. Modifier l'objectif`}
+                            accessibilityLabel={`${lu}. Modifier l'objectif`}
                             style={styles.caseObjectif}
                           >
                             <ObjectifSegments
@@ -218,7 +247,8 @@ export default function Bilan() {
                               attendu={av.repere != null && av.repere < 100 ? av.repere : null}
                               fait={av.actuel == null ? '—' : formatNum(av.actuel, dec)}
                               cible={`${formatNum(av.cible, dec)}${unite}`}
-                              etiquette={`${nom}, ${sport} : ${av.actuel == null ? 'valeur inconnue' : `${Math.round(av.pct)} pour cent`}`}
+                              etiquette={lu}
+                              verdict={verdict}
                             />
                           </Pressable>
                         );
@@ -256,7 +286,7 @@ export default function Bilan() {
                     </Text>
                     <MenuMesure etiquette="Mesure de la répartition" valeur={mesureRepartition} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => setMesureRepartition(c as MetriqueCumul)} />
                   </View>
-                  <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>Part {mesureRep.phrase} de {annee}.</Text>
+                  <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>Part {mesureRep.phrase} de {annee}, tous sports confondus.</Text>
                   {repartition.length ? (
                     <View
                       accessible
@@ -300,7 +330,7 @@ export default function Bilan() {
               </>
             ) : null}
 
-            {pret && onglet === 'rythme' ? (
+            {pret && onglet === 'rythme' && rythme ? (
               <>
                 <Bloc titre={enKm ? 'Distance par mois' : 'Heures par mois'}>
                   <BarresMois
@@ -314,7 +344,7 @@ export default function Bilan() {
 
                 <Bloc titre="Charge par semaine">
                   <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>
-                    {enCours ? 'TSS des 12 dernières semaines' : `TSS des 12 dernières semaines de ${annee}`} · moyenne {formatNum(moyenneSemaine, 0)}.
+                    {enCours ? 'TSS des 12 dernières semaines' : `TSS des 12 dernières semaines de ${annee}`} · moyenne {formatNum(moyenneSemaine, 0)}{enCours ? ' (semaine en cours exclue)' : ''}.
                   </Text>
                   {semaines.every((v) => v === 0) ? (
                     <Text style={[typo.corps, { color: p.texteDoux, marginBottom: 12 }]}>Pas de charge (TSS) enregistrée sur cette période : les séances sans puissance ni cardio n'en ont pas.</Text>
@@ -340,8 +370,8 @@ export default function Bilan() {
                   <View style={styles.serie}>
                     {[
                       moisEnCours != null
-                        ? { libelle: 'Série en cours', val: String(regularite.serieEnCours), unite: regularite.serieEnCours > 1 ? 'jours' : 'jour', note: `record : ${regularite.serieRecord}` }
-                        : { libelle: 'Plus longue série', val: String(regularite.serieRecord), unite: regularite.serieRecord > 1 ? 'jours' : 'jour', note: `en ${annee}` },
+                        ? { libelle: 'Série', val: String(regularite.serieEnCours), unite: regularite.serieEnCours > 1 ? 'jours' : 'jour', note: `record : ${regularite.serieRecord}` }
+                        : { libelle: 'Série max', val: String(regularite.serieRecord), unite: regularite.serieRecord > 1 ? 'jours' : 'jour', note: `en ${annee}` },
                       { libelle: 'Jours actifs', val: String(regularite.joursActifs), unite: `/ ${regularite.jours}`, note: `${regularite.jours ? Math.round((regularite.joursActifs / regularite.jours) * 100) : 0} % des jours` },
                       {
                         libelle: 'Par semaine',
@@ -376,8 +406,8 @@ export default function Bilan() {
                           <View style={styles.enteteRecord}>
                             <Text style={[typo.micro, { color: p.texteDoux }]}>{r.libelle}</Text>
                             {recordRecent(r.iso, maintenant) ? (
-                              <View style={[styles.nouveau, { backgroundColor: p.sportMuscu }]}>
-                                <Text style={[typo.micro, { color: p.encreSurCouleur }]}>Nouveau</Text>
+                              <View style={[styles.nouveau, { backgroundColor: p.texte }]}>
+                                <Text style={[typo.micro, { color: p.fond }]}>Nouveau</Text>
                               </View>
                             ) : null}
                           </View>
@@ -441,12 +471,14 @@ export default function Bilan() {
 
 const styles = StyleSheet.create({
   entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  anneeMasquee: { opacity: 0.3 },
   titreInvisible: { position: 'absolute', width: 1, height: 1, opacity: 0 },
   page: { flex: 1 },
   contenu: { paddingHorizontal: espace.e4, paddingTop: espace.e4, gap: espace.e4 },
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
   avis: { gap: espace.e2, borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
-  colonnesDossard: { flexDirection: 'row', borderTopWidth: 1.5, borderStyle: 'dashed', paddingTop: espace.e2, marginTop: -espace.e2 },
+  separateurDossard: { marginTop: -espace.e2 },
+  colonnesDossard: { flexDirection: 'row', paddingTop: espace.e2 },
   valeurColonne: { fontFamily: police.titre700, fontSize: 24, lineHeight: 28, fontVariant: ['tabular-nums'] },
   pistes: { marginTop: espace.e3 },
   caseObjectif: { paddingVertical: espace.e3, minHeight: 44 },

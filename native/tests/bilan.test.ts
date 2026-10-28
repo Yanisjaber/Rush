@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   activitesAnnee, activitesAnneePrecedente, anneesDisponibles, avancement, cumulParAnnee, ecartPct, familleBilan, familleBilanDuFiltre, modele, normaliser,
-  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
+  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, phraseVerdict, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
 } from '../src/data/bilan.ts';
 import { activitesBilanDemo, objectifsAnnuelsDemo } from '../src/data/demo.ts';
 
@@ -322,4 +322,40 @@ test('projection : pas avant un peu plus d\'un mois ; année future sans repère
   assert.equal(avancement(obj, acts, 2026, new Date(2026, 0, 9, 12))?.projection, null);
   assert.ok((avancement(obj, acts, 2026, new Date(2026, 5, 9, 12))?.projection ?? 0) > 0);
   assert.equal(avancement(obj, [], 2030, new Date(2026, 9, 27))?.repere, 0);
+});
+
+test('poids corporel : on progresse en s\'approchant de la cible, par le haut comme par le bas', () => {
+  const perte = avancement(objectif('musculation', 'mus_bw', 75, { currentManual: 85 }), [], 2026, maintenant)!;
+  assert.ok(perte.pct > 85 && perte.pct < 90); // 75 / 85, plus jamais 100 % au départ
+  assert.equal(perte.enRythme, false);
+  const prise = avancement(objectif('musculation', 'mus_bw', 80, { currentManual: 70 }), [], 2026, maintenant)!;
+  assert.equal(Math.round(prise.pct), 88); // 70 / 80
+  const arrive = avancement(objectif('musculation', 'mus_bw', 75, { currentManual: 75.5 }), [], 2026, maintenant)!;
+  assert.equal(arrive.enRythme, true); // à 2 % près
+  assert.equal(verdictObjectif(perte).ton, 'alerte');
+  assert.equal(Math.round(verdictObjectif(perte).ecart!), 10);
+  assert.equal(validerObjectif({ sport: 'musculation', template: 'mus_bw', cible: '75', actuel: '85' }).valeurs?.current_manual, 85);
+});
+
+test('année bissextile : le repère d\'un cumul tombe à mi-année le 2 juillet 2028, et 52,14 semaines en 2025', () => {
+  const av = avancement(objectif('tous', 'all_hours', 100, { annee: 2028 }), [], 2028, new Date(2028, 6, 2, 12))!;
+  assert.ok(Math.abs(av.repere! - 50) < 0.5);
+  const sem = avancement(objectif('tous', 'all_sess_w', 10, { annee: 2025 }), Array.from({ length: 365 }, (_, i) => act(new Date(2025, 0, 1 + i, 12).toISOString().slice(0, 10), 'course', 30, 5, 0, 10, 's' + i)), 2025, maintenant)!;
+  assert.ok(Math.abs(sem.actuel! - 7) < 0.01); // une séance par jour = 7 par semaine, pas 7,02
+});
+
+test('phraseVerdict : projection, manque, atteint, chrono et poids', () => {
+  const fmt = (v: number) => String(Math.round(v));
+  const retard = phraseVerdict(avancement(objectifKm(1000), [act('2026-03-01', 'course', 600, 300)], 2026, maintenant)!, fmt);
+  assert.equal(retard.ton, 'alerte');
+  assert.match(retard.texte, /^Fin d'année prévue : \d+ km, il manquerait \d+ km$/);
+  const avance = phraseVerdict(avancement(objectifKm(1000), [act('2026-03-01', 'course', 600, 700)], 2026, maintenant)!, fmt);
+  assert.equal(avance.ton, 'ok');
+  assert.match(avance.texte, /cible dépassée$/);
+  assert.equal(phraseVerdict(avancement(objectifKm(1000), [act('2026-03-01', 'course', 600, 1200)], 2026, maintenant)!, fmt).texte, 'Objectif atteint');
+  const passee = phraseVerdict(avancement({ ...objectifKm(1000), annee: 2025 }, [act('2025-03-01', 'course', 600, 800)], 2025, maintenant)!, fmt);
+  assert.equal(passee.texte, 'Il manque 200 km');
+  assert.equal(phraseVerdict(avancement(objectif('course', 'run_10k', 40, { currentManual: 50 }), [], 2026, maintenant)!, fmt).texte, 'Encore 10 min à gagner');
+  assert.equal(phraseVerdict(avancement(objectif('musculation', 'mus_bw', 75, { currentManual: 85 }), [], 2026, maintenant)!, fmt).texte, "Encore 10 kg d'écart");
+  assert.equal(phraseVerdict(avancement(objectif('cyclisme', 'cyc_ftp', 300), [], 2026, maintenant)!, fmt).texte, ''); // pas de valeur saisie : rien à dire
 });

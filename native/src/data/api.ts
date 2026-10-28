@@ -353,7 +353,7 @@ export async function chargerAnnotations(userId: string, debutIso: string, finIs
 }
 
 // ---------------------------------------------------------------------------
-// Bilan annuel : activités des 3 dernières années et objectifs annuels
+// Bilan annuel : tout l'historique d'activités et objectifs annuels
 // ---------------------------------------------------------------------------
 
 const COLONNES_BILAN = 'id,strava_id,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,tss';

@@ -23,11 +23,13 @@ interface Props {
   cible: string;
   /** Phrase lue par VoiceOver à la place du dessin. */
   etiquette: string;
+  /** Une phrase sous la barre (« Fin d'année prévue : 1 340 km »), son ton donne la couleur ; absente = rien. */
+  verdict?: { texte: string; ton: 'ok' | 'alerte' | 'neutre' } | null;
 }
 
 const NB_SEGMENTS = 25;
 
-export function ObjectifSegments({ nom, detail, famille, couleur, pct, attendu, fait, cible, etiquette }: Props) {
+export function ObjectifSegments({ nom, detail, famille, couleur, pct, attendu, fait, cible, etiquette, verdict }: Props) {
   const p = usePalette();
   const pleins = pct == null ? 0 : Math.round((Math.min(100, Math.max(0, pct)) / 100) * NB_SEGMENTS);
   const reperage = attendu == null ? null : Math.min(NB_SEGMENTS, Math.max(1, Math.round((attendu / 100) * NB_SEGMENTS))); // numéro (de 1 à 25) du bloc marqué
@@ -59,6 +61,9 @@ export function ObjectifSegments({ nom, detail, famille, couleur, pct, attendu, 
           </View>
         ))}
       </View>
+      {verdict?.texte ? (
+        <Text style={[typo.petit, { color: verdict.ton === 'ok' ? p.ok : verdict.ton === 'alerte' ? p.alerte : p.texteDoux }]}>{verdict.texte}</Text>
+      ) : null}
     </View>
   );
 }

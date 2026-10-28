@@ -10,6 +10,7 @@ import type { Seance } from '@/data/types';
 // Les données du Bilan : toutes les activités depuis la première et les objectifs annuels (démo ou compte connecté, lecture seule).
 // Toutes les années sont chargées d'un coup : changer d'année affichée ne recharge rien.
 // Les onglets restent ouverts en arrière-plan : en revenant sur le Bilan, on recharge si les données ont plus de cinq minutes.
+// Une écriture d'objectif ne recharge que les objectifs (pas tout l'historique), et un résultat arrivé en retard n'écrase jamais un plus récent.
 export function useDonneesBilan(): {
   brutes: Seance[];
   objectifs: ObjectifAnnuel[];
@@ -28,9 +29,14 @@ export function useDonneesBilan(): {
   const [reel, setReel] = useState<{ userId: string; brutes: Seance[]; objectifs: ObjectifAnnuel[]; erreur: string; pret: boolean } | null>(null);
   const [actualisation, setActualisation] = useState(false);
   const chargeA = useRef<number | null>(null); // quand les données ont été chargées pour la dernière fois (millisecondes)
+  const sequenceTout = useRef(0); // numéro du dernier chargement complet : un résultat plus ancien est jeté
+  const sequenceObjectifs = useRef(0); // idem pour les objectifs seuls
+  const versionVue = useRef(versionObjectifs); // dernière version d'objectifs déjà prise en compte
 
   const charger = useCallback(async () => {
     if (!userId) return;
+    const mien = ++sequenceTout.current;
+    const objectifsAuDepart = sequenceObjectifs.current;
     let acts: Awaited<ReturnType<typeof chargerActivitesBilan>>;
     let obj: Awaited<ReturnType<typeof chargerObjectifsAnnuels>>;
     try {
@@ -39,6 +45,9 @@ export function useDonneesBilan(): {
       acts = { data: null, erreur: 'Impossible de charger ton bilan. Vérifie ta connexion.' };
       obj = { data: null, erreur: '' };
     }
+    if (mien !== sequenceTout.current) return; // un chargement plus récent a pris le relais
+    // Des objectifs rechargés pendant ce temps sont plus à jour que ceux de ce chargement : on les garde
+    if (objectifsAuDepart !== sequenceObjectifs.current) obj = { data: null, erreur: '' };
     // Un échec garde ce qui est déjà affiché (du même compte) au lieu de vider l'écran
     chargeA.current = Date.now();
     setReel((avant) => ({ userId, ...fusionnerChargement(avant && avant.userId === userId ? avant : null, acts, obj) }));
@@ -46,7 +55,27 @@ export function useDonneesBilan(): {
 
   useEffect(() => {
     if (!demo) void charger();
-  }, [demo, charger, versionObjectifs]);
+  }, [demo, charger]);
+
+  // Un objectif créé, modifié ou supprimé : on relit seulement les objectifs
+  const chargerObjectifsSeuls = useCallback(async () => {
+    if (!userId) return;
+    const mien = ++sequenceObjectifs.current;
+    let obj: Awaited<ReturnType<typeof chargerObjectifsAnnuels>>;
+    try {
+      obj = await chargerObjectifsAnnuels(userId);
+    } catch {
+      obj = { data: null, erreur: 'Impossible de charger tes objectifs.' };
+    }
+    if (mien !== sequenceObjectifs.current) return;
+    setReel((avant) => (avant && avant.userId === userId ? { ...avant, objectifs: obj.data ?? avant.objectifs, erreur: obj.erreur || avant.erreur } : avant));
+  }, [userId]);
+
+  useEffect(() => {
+    if (demo || versionVue.current === versionObjectifs) return;
+    versionVue.current = versionObjectifs;
+    void chargerObjectifsSeuls();
+  }, [demo, versionObjectifs, chargerObjectifsSeuls]);
 
   // Retour sur l'onglet : on recharge seulement si les données sont vieilles. Premier chargement encore en cours (chargeA vide) : rien à faire.
   useFocusEffect(

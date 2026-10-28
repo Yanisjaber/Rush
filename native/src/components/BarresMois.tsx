@@ -48,7 +48,8 @@ export function BarresMois({ valeurs, moisEnCours, dernierMois, hauteur = 150, f
 const styles = StyleSheet.create({
   mois: { flexDirection: 'row', alignItems: 'flex-end', gap: 4 },
   col: { flex: 1, height: '100%', alignItems: 'center', gap: 4 },
-  valeur: { height: 16, textAlign: 'center', fontVariant: ['tabular-nums'] },
+  // Plus large que la colonne (et recentrée par la marge négative) : « 1 050 » ne tient pas dans 30 pt et finissait en « 1 … »
+  valeur: { height: 16, width: 64, marginHorizontal: -32, textAlign: 'center', fontVariant: ['tabular-nums'] },
   zone: { flex: 1, width: '100%', justifyContent: 'flex-end', borderBottomWidth: StyleSheet.hairlineWidth },
   barre: { position: 'absolute', bottom: 0, left: 4, right: 4, minHeight: 2, borderTopLeftRadius: 3, borderTopRightRadius: 3 },
 });
