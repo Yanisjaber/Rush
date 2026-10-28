@@ -135,10 +135,9 @@ export interface SortieVelo {
   d_plus: number;
   kj: number | null;
   tss: number | null;
-  /** La puissance la plus haute de la sortie (W). */
-  puissance_max: number | null;
-  /** La fréquence cardiaque la plus haute et la moyenne de la sortie (bpm). */
-  fc_max: number | null;
+  /** La puissance moyenne de la sortie (W), seulement si elle est mesurée par un capteur. */
+  puissance_moyenne: number | null;
+  /** La fréquence cardiaque moyenne de la sortie (bpm). */
   fc_moyenne: number | null;
 }
 
@@ -153,8 +152,7 @@ export interface LigneVelo {
   total_elevation_gain: number | null;
   kj: number | null;
   tss: number | null;
-  max_watts: number | null;
-  max_heartrate: number | null;
+  avg_watts: number | null;
   avg_heartrate: number | null;
 }
 
@@ -174,8 +172,7 @@ export function sortieVeloDeLigne(l: LigneVelo): SortieVelo {
     d_plus: l.total_elevation_gain ?? 0,
     kj: l.kj,
     tss: l.tss,
-    puissance_max: l.max_watts,
-    fc_max: l.max_heartrate,
+    puissance_moyenne: l.avg_watts,
     fc_moyenne: l.avg_heartrate,
   };
 }
@@ -184,14 +181,15 @@ const dehors = (s: SortieVelo): boolean => s.sport !== 'VirtualRide';
 const vitesseMoyenne = (s: SortieVelo): number => (s.duree_min > 0 ? s.distance_km / (s.duree_min / 60) : 0);
 /** Une vitesse moyenne n'a de sens que sur une vraie sortie (30 km ou plus), dehors. */
 const DISTANCE_MIN_VITESSE_MOYENNE = 30;
-/** Les capteurs de fréquence cardiaque donnent des pointes impossibles (233 bpm avec 226 de moyenne) : au-delà de ces limites, la valeur est écartée. */
-export const FC_MAX_CREDIBLE = 210;
-const FC_MOYENNE_MAX_CREDIBLE = 195;
+/** Une moyenne de puissance ou de fréquence cardiaque n'a de sens que sur une vraie sortie : une course de 5 minutes à 275 W ne doit pas battre une sortie de 3 heures. */
+const DUREE_MIN_MOYENNE = 30;
+/** Un capteur défaillant donne des moyennes impossibles (226 bpm de moyenne) : au-delà de cette limite, la valeur est écartée. */
+export const FC_MOYENNE_MAX_CREDIBLE = 195;
 
 /**
  * Les records basiques du vélo : la plus longue sortie (en temps), la plus grande distance, le plus gros dénivelé, la plus grosse charge, la plus haute vitesse moyenne,
- * la plus grosse puissance et la plus haute fréquence cardiaque. La distance, le dénivelé et la vitesse ne comptent que les sorties dehors (ceux d'un vélo virtuel sont simulés) ;
- * la puissance et la fréquence cardiaque comptent aussi le virtuel. La cadence et le couple max ne sont pas enregistrés : ils viendront avec les courbes de ces signaux.
+ * la plus grosse puissance moyenne et la plus grosse fréquence cardiaque moyenne (sorties de 30 minutes ou plus). La distance, le dénivelé et la vitesse ne comptent que les sorties dehors
+ * (ceux d'un vélo virtuel sont simulés) ; les moyennes de puissance et de fréquence cardiaque comptent aussi le virtuel. La cadence et le couple max ne sont pas enregistrés : ils viendront avec les courbes de ces signaux.
  */
 export function recordsBasiquesVelo(sorties: SortieVelo[]): RecordTop[] {
   const entree = (s: SortieVelo, valeur: number | null): EntreeRecord => ({ valeur: valeur ?? 0, nom: s.name || 'Sans titre', iso: s.iso, id: s.id });
@@ -202,8 +200,8 @@ export function recordsBasiquesVelo(sorties: SortieVelo[]): RecordTop[] {
     { cle: 'dplus', libelle: 'Plus gros D+', unite: 'm', top: meilleures(dessous.map((s) => entree(s, s.d_plus))) },
     { cle: 'tss', libelle: 'Plus grosse charge', unite: 'TSS', top: meilleures(sorties.map((s) => entree(s, s.tss))) },
     { cle: 'vmoy', libelle: 'Vitesse moyenne', unite: 'km/h', top: meilleures(dessous.filter((s) => s.distance_km >= DISTANCE_MIN_VITESSE_MOYENNE).map((s) => entree(s, vitesseMoyenne(s)))) },
-    { cle: 'pmax', libelle: 'Plus grosse puissance', unite: 'W', top: meilleures(sorties.map((s) => entree(s, s.puissance_max))) },
-    { cle: 'fcmax', libelle: 'Plus grosse FC', unite: 'bpm', top: meilleures(sorties.filter((s) => (s.fc_max ?? 0) <= FC_MAX_CREDIBLE && (s.fc_moyenne ?? 0) <= FC_MOYENNE_MAX_CREDIBLE).map((s) => entree(s, s.fc_max))) },
+    { cle: 'pmoy', libelle: 'Plus grosse puissance moyenne', unite: 'W', top: meilleures(sorties.filter((s) => s.duree_min >= DUREE_MIN_MOYENNE).map((s) => entree(s, s.puissance_moyenne))) },
+    { cle: 'fcmoy', libelle: 'Plus grosse FC moyenne', unite: 'bpm', top: meilleures(sorties.filter((s) => s.duree_min >= DUREE_MIN_MOYENNE && (s.fc_moyenne ?? 0) <= FC_MOYENNE_MAX_CREDIBLE).map((s) => entree(s, s.fc_moyenne))) },
   ];
   return records.filter((r) => r.top.length);
 }

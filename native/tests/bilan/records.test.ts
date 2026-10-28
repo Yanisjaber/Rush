@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { ActiviteBilan } from '../../src/data/bilan/bilan.ts';
-import { courbeDeLignes, indexDureeProche, recordsBasiquesVelo, recordsPeriodes, recordsRegularite, recordsSeance, FC_MAX_CREDIBLE, sortieVeloDeLigne, texteDuree, wattsParKg, type SortieVelo } from '../../src/data/bilan/records.ts';
+import { courbeDeLignes, indexDureeProche, recordsBasiquesVelo, recordsPeriodes, recordsRegularite, recordsSeance, FC_MOYENNE_MAX_CREDIBLE, sortieVeloDeLigne, texteDuree, wattsParKg, type SortieVelo } from '../../src/data/bilan/records.ts';
 
 const act = (iso: string, o: Partial<ActiviteBilan> = {}): ActiviteBilan => ({ id: `a-${iso}-${o.name ?? ''}`, name: `Sortie ${iso}`, iso, sport: 'cyclisme', famille: 'velo', duree_min: 60, distance_km: 30, d_plus: 100, tss: 50, ...o });
 
@@ -49,7 +49,7 @@ test('recordsRegularite : la plus longue série de jours et le plus de séances 
   assert.deepEqual(sem.top[0], { valeur: 4, nom: '', iso: '2026-03-02', id: null }); // 4 séances (dont 2 le même jour) du 2 au 8 mars… et 4 la semaine du 9 : la plus ancienne devant
 });
 
-const sortie = (iso: string, o: Partial<SortieVelo> = {}): SortieVelo => ({ id: `v-${iso}`, name: `Vélo ${iso}`, iso, sport: 'Ride', distance_km: 60, duree_min: 120, d_plus: 500, kj: 1200, tss: 80, puissance_max: null, fc_max: null, fc_moyenne: null, ...o });
+const sortie = (iso: string, o: Partial<SortieVelo> = {}): SortieVelo => ({ id: `v-${iso}`, name: `Vélo ${iso}`, iso, sport: 'Ride', distance_km: 60, duree_min: 120, d_plus: 500, kj: 1200, tss: 80, puissance_moyenne: null, fc_moyenne: null, ...o });
 
 test('recordsBasiquesVelo : cinq records, la distance, le dénivelé et la vitesse seulement dehors', () => {
   const sorties = [
@@ -70,17 +70,19 @@ test('recordsBasiquesVelo : cinq records, la distance, le dénivelé et la vites
   assert.deepEqual(recordsBasiquesVelo([]), []);
 });
 
-test('recordsBasiquesVelo : la plus grosse puissance (virtuel compris) et la FC crédible', () => {
+test('recordsBasiquesVelo : puissance moyenne et FC moyenne, sur 30 minutes ou plus, FC crédible', () => {
   const sorties = [
-    sortie('2026-01-10', { puissance_max: 1100, fc_max: 185, fc_moyenne: 150 }),
-    sortie('2026-02-10', { sport: 'VirtualRide', puissance_max: 1400, fc_max: 233, fc_moyenne: 226 }), // pointe du capteur : FC écartée, puissance gardée
-    sortie('2026-03-10', { puissance_max: 900, fc_max: 223, fc_moyenne: 141 }), // 223 bpm : écartée
-    sortie('2026-04-10', { puissance_max: 1000, fc_max: 196, fc_moyenne: 160 }),
+    sortie('2026-01-10', { duree_min: 120, puissance_moyenne: 200, fc_moyenne: 150 }),
+    sortie('2026-02-10', { sport: 'VirtualRide', duree_min: 90, puissance_moyenne: 230, fc_moyenne: 226 }), // virtuel : la puissance compte ; FC de 226 : écartée
+    sortie('2026-03-10', { duree_min: 5, puissance_moyenne: 275, fc_moyenne: 186 }), // 5 minutes : pas une sortie
+    sortie('2026-04-10', { duree_min: 100, puissance_moyenne: 210, fc_moyenne: 181 }),
+    sortie('2026-05-10', { duree_min: 60, puissance_moyenne: null, fc_moyenne: null }), // puissance estimée : absente
   ];
   const r = recordsBasiquesVelo(sorties);
-  assert.equal(r.find((x) => x.cle === 'pmax')!.top[0].valeur, 1400);
-  assert.deepEqual(r.find((x) => x.cle === 'fcmax')!.top.map((e) => e.valeur), [196, 185]);
-  assert.ok(FC_MAX_CREDIBLE < 215);
+  assert.deepEqual(r.find((x) => x.cle === 'pmoy')!.top.map((e) => e.valeur), [230, 210, 200]);
+  assert.deepEqual(r.find((x) => x.cle === 'fcmoy')!.top.map((e) => e.valeur), [181, 150]);
+  assert.equal(r.find((x) => x.cle === 'pmoy')!.libelle, 'Plus grosse puissance moyenne');
+  assert.ok(FC_MOYENNE_MAX_CREDIBLE < 200);
 });
 
 test('courbeDeLignes : un point par durée, trié, le podium par rang', () => {
@@ -114,8 +116,8 @@ test('wattsParKg : une décimale, rien sans poids valable', () => {
 });
 
 test('sortieVeloDeLigne : une ligne de la base devient une sortie, avec des nombres sûrs', () => {
-  const s = sortieVeloDeLigne({ id: 'x', name: null, sport: 'Ride', start_date_local: '2026-03-02T09:00:00+00:00', distance_km: '80.5', moving_time: 7200, total_elevation_gain: null, kj: null, tss: 55, max_watts: 1100, max_heartrate: null, avg_heartrate: 150 });
-  assert.deepEqual(s, { id: 'x', name: '', iso: '2026-03-02', sport: 'Ride', distance_km: 80.5, duree_min: 120, d_plus: 0, kj: null, tss: 55, puissance_max: 1100, fc_max: null, fc_moyenne: 150 });
+  const s = sortieVeloDeLigne({ id: 'x', name: null, sport: 'Ride', start_date_local: '2026-03-02T09:00:00+00:00', distance_km: '80.5', moving_time: 7200, total_elevation_gain: null, kj: null, tss: 55, avg_watts: 220, avg_heartrate: 150 });
+  assert.deepEqual(s, { id: 'x', name: '', iso: '2026-03-02', sport: 'Ride', distance_km: 80.5, duree_min: 120, d_plus: 0, kj: null, tss: 55, puissance_moyenne: 220, fc_moyenne: 150 });
 });
 
 import { formatNum } from '../../src/data/outils/format.ts';
