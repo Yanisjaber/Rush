@@ -21,7 +21,7 @@ import { ProgresSport } from '@/components/graphes/ProgresSport';
 import type { IconeOnglet } from '@/components/menus/OngletsIcones.types';
 import {
   activitesAnnee, anneesDisponibles, avancement, chargeParSemaine, cumulParAnnee, kmParMois, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser, recordRecent, recordsVolume,
-  regulariteAnnee, semainesActives, repartitionSport, sommer, volumeMensuel, familleBilanDuFiltre, decimalesObjectif, phraseVerdict, type MetriqueCumul,
+  regulariteAnnee, repartitionSport, sommer, volumeMensuel, familleBilanDuFiltre, decimalesObjectif, phraseVerdict, type MetriqueCumul,
 } from '@/data/bilan/bilan';
 import { formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
 import { nomDuType } from '@/data/sports/catalogue-sports';
@@ -146,10 +146,10 @@ export default function Bilan() {
   // Les valeurs de l'onglet Rythme : elles n'existent que sur cet onglet (l'affichage plus bas est gardé par `rythme`)
   const { parMois, meilleurMois, semaines, moyenneSemaine, regularite } = rythme ?? ({} as NonNullable<typeof rythme>);
   const seancesParSemaine = (n: number) => (regularite?.jours ? n / (regularite.jours / 7) : 0);
+  const heuresParSemaine = seancesParSemaine; // même calcul : une quantité divisée par le nombre de semaines écoulées
   // Les trois chiffres en haut de l'onglet Rythme
-  const sa = semainesActives(activitesAnnee(filtrees, annee, maintenant), annee, maintenant);
   const statsRythme: { libelle: string; val: string; unite: string; note: string }[] = regularite ? [
-                      { libelle: 'Semaines actives', val: String(sa.actives), unite: `/ ${sa.total}`, note: '' },
+                      { libelle: 'Heures par semaine', val: texteHM(Math.round(heuresParSemaine(courant.heures) * 60)), unite: '', note: '' },
                       { libelle: 'Jours actifs', val: String(regularite.joursActifs), unite: `/ ${regularite.jours}`, note: '' },
                       {
                         libelle: 'Par semaine',

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   activitesAnnee, activitesAnneePrecedente, anneesDisponibles, avancement, cumulParAnnee, ecartPct, familleBilan, familleBilanDuFiltre, modele, normaliser,
-  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, semainesActives, phraseVerdict, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
+  decimalesObjectif, donneesPerimees, fusionnerChargement, kmParMois, verdictObjectif, chargeParSemaine, regulariteAnnee, recordRecent, recordsVolume, repartitionSport, phraseVerdict, sommer, validerObjectif, valeurActuelle, volumeMensuel, CATALOGUE, type ActiviteBilan, type ObjectifAnnuel,
 } from '../../src/data/bilan/bilan.ts';
 import { activitesBilanDemo, objectifsAnnuelsDemo } from '../../src/data/demo/demo.ts';
 
@@ -136,13 +136,6 @@ test('repartitionSport : par discipline, la famille vélo se détaille en route,
   const velo = (iso: string, type: string, min: number) => ({ ...act(iso, 'cyclisme', min, 0), type });
   const r = repartitionSport(activitesAnnee([velo('2026-01-10', 'Ride', 180), velo('2026-01-11', 'MountainBikeRide', 60), velo('2026-01-12', 'VirtualRide', 60)], 2026, maintenant), 'heures', true);
   assert.deepEqual(r.map((x) => [x.cle, x.heures]), [['Ride', 3], ['MountainBikeRide', 1], ['VirtualRide', 1]]);
-});
-
-test('semainesActives : les semaines (lundi → dimanche) avec au moins une activité, sur celles écoulées', () => {
-  // maintenant = mercredi 1er juillet 2026 : du lundi 29 déc. 2025 au lundi 29 juin, 27 semaines (la dernière est en cours)
-  const r = semainesActives([act('2026-01-02', 'course', 60, 5), act('2026-01-03', 'course', 60, 5), act('2026-03-10', 'course', 60, 5), act('2026-06-30', 'course', 60, 5), act('2026-07-14', 'course', 60, 5), act('2025-12-20', 'course', 60, 5)], 2026, maintenant);
-  assert.deepEqual(r, { actives: 3, total: 27 });
-  assert.deepEqual(semainesActives([], 2026, maintenant), { actives: 0, total: 27 });
 });
 
 test('volumeMensuel et repartitionSport', () => {
