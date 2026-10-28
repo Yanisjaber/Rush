@@ -41,7 +41,7 @@ export function RegulariteMois({ parMois, dernierMois, etiquette }: Props) {
               );
             })}
           </View>
-          <Text style={[typo.petit, styles.nombre, { color: p.texte }]}>{m.actifs} j</Text>
+          <Text style={[typo.micro, styles.nombre, { color: p.texte, textTransform: 'none' }]}>{m.actifs} j</Text>
         </View>
       ))}
     </View>
@@ -49,10 +49,10 @@ export function RegulariteMois({ parMois, dernierMois, etiquette }: Props) {
 }
 
 const styles = StyleSheet.create({
-  liste: { gap: 4 },
-  ligne: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  liste: { gap: 2 },
+  ligne: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   mois: { width: 14, textAlign: 'center' },
   jours: { flex: 1, flexDirection: 'row', gap: 1 },
   case: { flex: 1, aspectRatio: 1, borderRadius: 2 },
-  nombre: { width: 34, textAlign: 'right', fontVariant: ['tabular-nums'], fontFamily: police.texte600 },
+  nombre: { width: 26, textAlign: 'right', fontVariant: ['tabular-nums'], fontFamily: police.texte600 },
 });
