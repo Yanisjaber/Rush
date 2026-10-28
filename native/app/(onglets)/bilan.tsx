@@ -1,6 +1,6 @@
 import { FondDegrade } from '@/components/ui/FondDegrade';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, AppState, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarreSports } from '@/components/graphes/BarreSports';
@@ -51,6 +51,19 @@ const FAMILLE_COULEUR: Record<string, string> = { cyclisme: 'velo', course: 'cou
 
 // Le bilan d'une année, en trois onglets : Résumé (une phrase, les objectifs, cumul sur 3 ans, répartition), Rythme (mois, semaines, régularité) et Records.
 // Toucher un objectif l'ouvre pour le modifier ou le supprimer ; « Ajouter un objectif » en crée un (écran « objectif »). Toucher un record ouvre sa séance.
+// Une section « à plat » de l'onglet Rythme : un trait fin, un titre, le contenu (pas de carte)
+function Section({ titre, children }: { titre: string; children: ReactNode }) {
+  const p = usePalette();
+  return (
+    <View style={[styles.sectionPlate, { borderTopColor: p.trait }]}>
+      <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, marginBottom: 12 }]}>
+        {titre}
+      </Text>
+      {children}
+    </View>
+  );
+}
+
 export default function Bilan() {
   const p = usePalette();
   const router = useRouter();
@@ -146,6 +159,19 @@ export default function Bilan() {
   // Les valeurs de l'onglet Rythme : elles n'existent que sur cet onglet (l'affichage plus bas est gardé par `rythme`)
   const { parMois, meilleurMois, semaines, moyenneSemaine, regularite } = rythme ?? ({} as NonNullable<typeof rythme>);
   const seancesParSemaine = (n: number) => (regularite?.jours ? n / (regularite.jours / 7) : 0);
+  // Les trois chiffres en haut de l'onglet Rythme
+  const statsRythme: { libelle: string; val: string; unite: string; note: string }[] = regularite ? [
+                      moisEnCours != null
+                        ? { libelle: 'Série', val: String(regularite.serieEnCours), unite: regularite.serieEnCours > 1 ? 'jours' : 'jour', note: `record : ${regularite.serieRecord}` }
+                        : { libelle: 'Série max', val: String(regularite.serieRecord), unite: regularite.serieRecord > 1 ? 'jours' : 'jour', note: `en ${annee}` },
+                      { libelle: 'Jours actifs', val: String(regularite.joursActifs), unite: `/ ${regularite.jours}`, note: `${regularite.jours ? Math.round((regularite.joursActifs / regularite.jours) * 100) : 0} % des jours` },
+                      {
+                        libelle: 'Par semaine',
+                        val: formatNum(seancesParSemaine(courant.seances), 1),
+                        unite: 'séances',
+                        note: '',
+                      },
+                    ] : [];
   // Un bloc par sport mesurable : celui du filtre, ou tous ceux que tu pratiques sur « Tout »
   const progres = useMemo(() => {
     if (!progresOuvert) return [];
@@ -340,7 +366,20 @@ export default function Bilan() {
 
             {pret && onglet === 'rythme' && rythme ? (
               <>
-                <Bloc titre={enKm ? 'Distance par mois' : 'Heures par mois'}>
+                <View style={styles.bandeauRythme}>
+                  {statsRythme.map((c, k) => (
+                    <View key={c.libelle} accessible style={[styles.statRythme, k > 0 ? { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: p.trait } : null]}>
+                      <Text style={[styles.valeurSerie, { color: p.texte }]}>
+                        {c.val}
+                        <Text style={[typo.micro, { color: p.texteDoux }]}> {c.unite}</Text>
+                      </Text>
+                      <Text style={[typo.micro, { color: p.texteDoux, textAlign: 'center' }]}>{c.libelle}</Text>
+                      {c.note ? <Text style={[typo.petit, { color: p.texteMuet, textAlign: 'center' }]}>{c.note}</Text> : null}
+                    </View>
+                  ))}
+                </View>
+
+                <Section titre={enKm ? 'Distance par mois' : 'Heures par mois'}>
                   <BarresMois
                     valeurs={parMois}
                     moisEnCours={moisEnCours}
@@ -348,9 +387,9 @@ export default function Bilan() {
                     formater={(v) => formatNum(v, 0)}
                     etiquette={`${enKm ? 'Kilomètres' : "Heures d'entraînement"} par mois en ${annee} : ${parMois.map((v, i) => `${NOMS_MOIS[i]} ${formatNum(v, enKm ? 0 : 1)}`).join(', ')}. Meilleur mois : ${formatNum(meilleurMois, enKm ? 0 : 1)} ${enKm ? 'kilomètres' : 'heures'}.`}
                   />
-                </Bloc>
+                </Section>
 
-                <Bloc titre="Charge par semaine">
+                <Section titre="Charge par semaine">
                   <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>
                     {enCours ? 'TSS des 12 dernières semaines' : `TSS des 12 dernières semaines de ${annee}`} · moyenne {formatNum(moyenneSemaine, 0)}{enCours ? ' (semaine en cours exclue)' : ''}.
                   </Text>
@@ -364,9 +403,9 @@ export default function Bilan() {
                     hauteur={110}
                     etiquette={`Charge des 12 dernières semaines : ${semaines.map((v) => formatNum(v, 0)).join(', ')}. Moyenne ${formatNum(moyenneSemaine, 0)}.`}
                   />
-                </Bloc>
+                </Section>
 
-                <Bloc titre="Régularité">
+                <Section titre="Régularité">
                   <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 12 }]}>Une case par jour. Sa couleur est celle du sport du jour, plus elle est vive plus la charge est forte.</Text>
                   <CarteChaleur
                     cases={regularite.cases}
@@ -375,30 +414,7 @@ export default function Bilan() {
                     hauteurCase={6}
                     etiquette={`Carte des jours d'entraînement de ${annee} : ${regularite.joursActifs} jours actifs sur ${regularite.jours}`}
                   />
-                  <View style={styles.serie}>
-                    {[
-                      moisEnCours != null
-                        ? { libelle: 'Série', val: String(regularite.serieEnCours), unite: regularite.serieEnCours > 1 ? 'jours' : 'jour', note: `record : ${regularite.serieRecord}` }
-                        : { libelle: 'Série max', val: String(regularite.serieRecord), unite: regularite.serieRecord > 1 ? 'jours' : 'jour', note: `en ${annee}` },
-                      { libelle: 'Jours actifs', val: String(regularite.joursActifs), unite: `/ ${regularite.jours}`, note: `${regularite.jours ? Math.round((regularite.joursActifs / regularite.jours) * 100) : 0} % des jours` },
-                      {
-                        libelle: 'Par semaine',
-                        val: formatNum(seancesParSemaine(courant.seances), 1),
-                        unite: 'séances',
-                        note: '',
-                      },
-                    ].map((c) => (
-                      <View key={c.libelle} accessible style={styles.statSerie}>
-                        <Text style={[typo.micro, { color: p.texteDoux }]}>{c.libelle}</Text>
-                        <Text style={[styles.valeurSerie, { color: p.texte }]}>
-                          {c.val}
-                          <Text style={[typo.micro, { color: p.texteDoux }]}> {c.unite}</Text>
-                        </Text>
-                        {c.note ? <Text style={[typo.petit, { color: p.texteMuet }]}>{c.note}</Text> : null}
-                      </View>
-                    ))}
-                  </View>
-                </Bloc>
+                </Section>
 
               </>
             ) : null}
@@ -495,8 +511,9 @@ const styles = StyleSheet.create({
   nouveau: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 1 },
   valeurRecord: { fontFamily: police.titre700, fontSize: 32, lineHeight: 36, fontVariant: ['tabular-nums'] },
   enteteBloc: { flexDirection: 'row', alignItems: 'center', gap: espace.e3, marginBottom: espace.e3 },
-  serie: { flexDirection: 'row', gap: espace.e3, marginTop: espace.e3 },
-  statSerie: { flex: 1, gap: 2 },
+  bandeauRythme: { flexDirection: 'row', paddingVertical: 12 },
+  statRythme: { flex: 1, alignItems: 'center', gap: 2, paddingHorizontal: 4 },
+  sectionPlate: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 16, paddingBottom: 12, paddingHorizontal: 4 },
   valeurSerie: { fontFamily: police.titre700, fontSize: 22, lineHeight: 26, fontVariant: ['tabular-nums'] },
   ligneRepartition: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 24 },
   statsRepartition: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 10, marginBottom: 14 },
