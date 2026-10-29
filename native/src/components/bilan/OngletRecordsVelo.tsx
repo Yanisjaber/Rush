@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
-import { MenuMesure } from '@/components/menus/MenuMesure';
 import { CourbePuissance } from '@/components/graphes/CourbePuissance';
 import { indexDureeProche, recordsBasiquesVelo, texteDuree, wattsParKg, type PointCourbe, type RecordTop, type SortieVelo } from '@/data/bilan/records';
 import { texteRecordSimple, texteValeurRecord, EnAnnee, enAnnee } from '@/data/bilan/records-texte';
@@ -35,16 +34,12 @@ const DUREE_DEPART = 1200;
 /** « Lundi 6 avril 2026 » : avec l'année, qui compte en « Tous temps ». */
 const dateAnnee = (iso: string): string => `${formatDateLongue(iso)} ${iso.slice(0, 4)}`;
 
-/** Les tailles proposées par le menu du classement. */
-const TAILLES_CLASSEMENT = [3, 5, 10, 20, 30];
-
 /** Le nom d'un record sur une mini tuile (quatre par rangée, donc très étroite) : le détail, qui sort au toucher, donne le nom entier. */
 const NOM_TUILE: Record<string, string> = { duree: 'Durée', distance: 'Distance', dplus: 'D+', tss: 'Charge', vmoy: 'Vitesse moy.', pmoy: 'Puiss. moy.', fcmoy: 'FC moy.', kj: 'Énergie' };
 
 export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, courbeAnnee, courbeTout, chargement, erreur, onOuvrir }: Props) {
   const p = usePalette();
   const [duree, setDuree] = useState<number | null>(null); // la durée touchée, en secondes ; null : la durée de départ
-  const [nbClassement, setNbClassement] = useState(3); // combien de sorties montrer dans le classement d'un record
   const [ouvert, setOuvert] = useState<string | null>(null); // le record dont le détail est sorti
   const couleur = couleurSport(p, 'velo');
   const nomPortee = portee === 'annee' ? String(annee) : 'Tous temps';
@@ -131,12 +126,13 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
                   </Text>
                 ) : null}
                 {/* Le classement : une barre par sortie, proportionnelle au record ; on touche une ligne pour ouvrir la séance */}
-                <View style={styles.enteteClassement}>
-                  <Text style={[typo.corpsFort, { color: p.texteDoux }]}>Classement</Text>
-                  <MenuMesure etiquette="Nombre de sorties du classement" valeur={String(Math.min(nbClassement, r.top.length))} options={TAILLES_CLASSEMENT.filter((n) => n <= r.top.length || n === 3).map((n) => ({ cle: String(n), nom: `Top ${n}` }))} onChoisir={(c) => setNbClassement(Number(c))} />
+                <View style={[styles.enteteClassement, { borderTopColor: p.trait }]}>
+                  <Text style={[typo.corpsFort, { color: p.texteDoux, flex: 1 }]}>Classement</Text>
+                  <Text style={[typo.petit, { color: p.texteMuet }]}>{r.top.length} sorties</Text>
                 </View>
-                <View>
-                  {r.top.slice(0, nbClassement).map((x, i) => {
+                {/* Une zone de hauteur fixe qui défile : tout le classement (jusqu'à 30 sorties) sans allonger la page */}
+                <ScrollView nestedScrollEnabled showsVerticalScrollIndicator style={styles.zoneClassement} accessibilityLabel={`Classement de ${r.top.length} sorties`}>
+                  {r.top.map((x, i) => {
                     const tx = texteValeurRecord(x.valeur, r.unite);
                     const largeur = `${Math.max(4, Math.min(100, (x.valeur / e.valeur) * 100))}%` as `${number}%`;
                     const contenu = (
@@ -168,7 +164,7 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
                       </View>
                     );
                   })}
-                </View>
+                </ScrollView>
               </Bloc>
             );
           })()}
@@ -253,10 +249,11 @@ const styles = StyleSheet.create({
   tuileMini: { width: '23.1%', minHeight: 70, borderRadius: rayon.base, borderTopWidth: 3, borderWidth: 0, paddingHorizontal: 7, paddingTop: 8, paddingBottom: 8, gap: 1 },
   nomMini: { fontFamily: police.texte600, fontSize: 10, lineHeight: 13, letterSpacing: 0.2, textTransform: 'uppercase', minHeight: 28 },
   valeurMini: { fontFamily: police.titre800, fontSize: 20, lineHeight: 24, fontVariant: ['tabular-nums'] },
-  valeurDetail: { fontFamily: police.titre800, fontSize: 36, lineHeight: 40, marginBottom: 4, fontVariant: ['tabular-nums'] },
+  valeurDetail: { fontFamily: police.titre800, fontSize: 24, lineHeight: 28, marginBottom: 2, fontVariant: ['tabular-nums'] },
   lecture: { alignItems: 'center', gap: 2, marginTop: 10 },
   valeur: { fontFamily: police.titre800, fontSize: 38, lineHeight: 42, fontVariant: ['tabular-nums'] },
-  enteteClassement: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+  enteteClassement: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, marginTop: 8, borderTopWidth: StyleSheet.hairlineWidth },
+  zoneClassement: { height: 240 },
   classement: { paddingVertical: 8, minHeight: 56 },
   ligneClassement: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   piste: { height: 6, borderRadius: 3, marginLeft: 28, marginTop: 4, overflow: 'hidden' },
