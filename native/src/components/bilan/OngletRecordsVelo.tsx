@@ -159,7 +159,7 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
 
       {point && podium.length > 1 ? (
         <PodiumEfforts
-          titre={`Podium · ${texteDuree(point.duree)}`}
+          titre={`Classement · ${texteDuree(point.duree)}`}
           entrees={podium}
           unite={info.unite}
           sousPremiere={signal === 'puissance' && wkg ? `${wkg.toFixed(1).replace('.', ',')} W/kg` : null}
