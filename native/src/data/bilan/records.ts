@@ -322,18 +322,39 @@ export function wattsParKg(watts: number, poids: number | null | undefined): num
 
 // --- La courbe de puissance ----------------------------------------------------------------------------------------------
 
-/** Une ligne de la fonction SQL rpc_courbe_puissance : la puissance de rang 1, 2 ou 3 pour une durée. */
+/** Les courbes de records du vélo : la puissance (W) et les signaux calculés côté serveur. `cle` est le nom du signal pour la fonction SQL rpc_courbe_signal. */
+export type CleSignal = 'puissance' | 'fc' | 'cad' | 'cou' | 'vit' | 'vam' | 'des';
+export interface SignalVelo {
+  cle: CleSignal;
+  /** Le nom sur le bouton de choix. */
+  court: string;
+  /** Le nom entier, pour le titre et VoiceOver. */
+  nom: string;
+  unite: string;
+}
+export const SIGNAUX_VELO: SignalVelo[] = [
+  { cle: 'puissance', court: 'Puissance', nom: 'Puissance', unite: 'W' },
+  { cle: 'fc', court: 'FC', nom: 'Fréquence cardiaque', unite: 'bpm' },
+  { cle: 'cad', court: 'Cadence', nom: 'Cadence', unite: 'tr/min' },
+  { cle: 'cou', court: 'Couple', nom: 'Couple', unite: 'N·m' },
+  { cle: 'vit', court: 'Vitesse', nom: 'Vitesse moyenne', unite: 'km/h' },
+  { cle: 'vam', court: 'VAM', nom: 'Vitesse ascensionnelle', unite: 'm/h' },
+  { cle: 'des', court: 'Descente', nom: 'Mètres descendus', unite: 'm/h' },
+];
+
+/** Une ligne d'une courbe (puissance ou signal) : la valeur de rang 1, 2 ou 3 pour une durée. */
 export interface LigneCourbe {
   duree_s: number;
   rang: number;
-  watts: number;
+  valeur: number;
   activity_id: string;
   name: string | null;
   start_date_local: string;
 }
 
 export interface EntreeCourbe {
-  watts: number;
+  /** La valeur du signal sur cette durée (des watts pour la puissance). */
+  valeur: number;
   id: string;
   nom: string;
   iso: string;
@@ -345,7 +366,8 @@ export interface PointCourbe {
   top: EntreeCourbe[];
 }
 
-/** La durée la plus courte et la plus longue de la courbe : l'axe va de 1 s à 5 h. */
+/** La durée la plus courte et la plus longue de la courbe : l'axe va de 1 s à 5 h (de 1 min à 5 h pour les signaux autres que la puissance). */
+export const DUREE_MIN_SIGNAL = 60;
 export const DUREE_MIN = 1;
 export const DUREE_MAX = 18000;
 
@@ -357,7 +379,7 @@ export function courbeDeLignes(lignes: LigneCourbe[]): PointCourbe[] {
     .sort((a, b) => a[0] - b[0])
     .map(([duree, ls]) => ({
       duree,
-      top: ls.sort((a, b) => a.rang - b.rang).map((l) => ({ watts: l.watts, id: l.activity_id, nom: l.name || 'Sans titre', iso: String(l.start_date_local || '').slice(0, 10) })),
+      top: ls.sort((a, b) => a.rang - b.rang).map((l) => ({ valeur: Number(l.valeur), id: l.activity_id, nom: l.name || 'Sans titre', iso: String(l.start_date_local || '').slice(0, 10) })),
     }));
 }
 

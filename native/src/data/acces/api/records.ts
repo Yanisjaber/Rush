@@ -1,5 +1,5 @@
 import { sb } from '../supabase';
-import { courbeDeLignes, sortieVeloDeLigne, type LigneCourbe, type LigneVelo, type PointCourbe, type SortieVelo } from '../../bilan/records.ts';
+import { courbeDeLignes, sortieVeloDeLigne, type CleSignal, type LigneCourbe, type LigneVelo, type PointCourbe, type SortieVelo } from '../../bilan/records.ts';
 import { resultat, type Resultat } from './commun';
 
 // Les sorties à vélo avec leurs colonnes de records basiques, et la courbe de puissance : les fonctions SQL rpc_sorties_velo et rpc_courbe_puissance ne renvoient que le compte connecté.
@@ -21,6 +21,13 @@ export async function chargerSortiesVelo(): Promise<Resultat<SortieVelo[]>> {
 /** La courbe de puissance (trois meilleures séances par durée) d'une année (« 2026 »), ou de tout l'historique sans année. */
 export async function chargerCourbePuissance(annee?: number): Promise<Resultat<PointCourbe[]>> {
   const r = await sb.rpc('rpc_courbe_puissance', annee ? { p_debut: `${annee}-01-01`, p_fin: `${annee}-12-31` } : {});
-  const res = resultat<LigneCourbe[]>(r, 'Impossible de charger ta courbe de puissance.');
+  const res = resultat<(Omit<LigneCourbe, 'valeur'> & { watts: number })[]>(r, 'Impossible de charger ta courbe de puissance.');
+  return res.data ? { data: courbeDeLignes(res.data.map((l) => ({ ...l, valeur: l.watts }))), erreur: '' } : { data: null, erreur: res.erreur };
+}
+
+/** La courbe d'un autre signal (FC, cadence, couple, vitesse, VAM, descente) : trois meilleures séances par durée, d'une année ou de tout l'historique. */
+export async function chargerCourbeSignal(signal: Exclude<CleSignal, 'puissance'>, annee?: number): Promise<Resultat<PointCourbe[]>> {
+  const r = await sb.rpc('rpc_courbe_signal', { p_signal: signal, ...(annee ? { p_debut: `${annee}-01-01`, p_fin: `${annee}-12-31` } : {}) });
+  const res = resultat<LigneCourbe[]>(r, 'Impossible de charger cette courbe.');
   return res.data ? { data: courbeDeLignes(res.data), erreur: '' } : { data: null, erreur: res.erreur };
 }

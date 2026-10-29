@@ -75,8 +75,8 @@ test('recordsVeloDemo : des sorties, et une courbe de puissance qui baisse avec 
   assert.ok(d.sorties.every((s) => s.sport === 'Ride' && s.id && s.iso));
   const c = d.courbe();
   assert.ok(c.length > 20);
-  for (let i = 1; i < c.length; i++) assert.ok(c[i].duree > c[i - 1].duree && c[i].top[0].watts <= c[i - 1].top[0].watts);
-  assert.ok(c.every((p) => p.top.length <= 3 && p.top.every((t, k) => k === 0 || t.watts <= p.top[k - 1].watts)));
+  for (let i = 1; i < c.length; i++) assert.ok(c[i].duree > c[i - 1].duree && c[i].top[0].valeur <= c[i - 1].top[0].valeur);
+  assert.ok(c.every((p) => p.top.length <= 3 && p.top.every((t, k) => k === 0 || t.valeur <= p.top[k - 1].valeur)));
 });
 
 test('recordsVeloDemo : la courbe d\'une année ne contient que des sorties de cette année', () => {

@@ -2,10 +2,12 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { TuilesRecords } from '@/components/bilan/TuilesRecords';
 import { Bloc } from '@/components/feuilles/Bloc';
-import { CourbePuissance } from '@/components/graphes/CourbePuissance';
-import { indexDureeProche, recordsBasiquesVelo, texteDuree, wattsParKg, type PointCourbe, type SortieVelo } from '@/data/bilan/records';
-import { texteRecordSimple, EnAnnee, enAnnee } from '@/data/bilan/records-texte';
+import { CourbeEfforts } from '@/components/graphes/CourbeEfforts';
+import { DUREE_MIN_SIGNAL, indexDureeProche, recordsBasiquesVelo, SIGNAUX_VELO, texteDuree, wattsParKg, type CleSignal, type PointCourbe, type SortieVelo } from '@/data/bilan/records';
+import { texteRecordSimple, texteValeurRecord, EnAnnee, enAnnee } from '@/data/bilan/records-texte';
 import { formatDateLongue } from '@/data/outils/format';
+import { useCourbeSignal } from '@/hooks/useCourbeSignal';
+import { rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -34,9 +36,15 @@ const DUREE_DEPART = 1200;
 /** « Lundi 6 avril 2026 » : avec l'année, qui compte en « Tous temps ». */
 const dateAnnee = (iso: string): string => `${formatDateLongue(iso)} ${iso.slice(0, 4)}`;
 
-export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, courbeAnnee, courbeTout, chargement, erreur, onOuvrir }: Props) {
+export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, courbeAnnee: puissanceAnnee, courbeTout: puissanceTout, chargement, erreur, onOuvrir }: Props) {
   const p = usePalette();
   const [duree, setDuree] = useState<number | null>(null); // la durée touchée, en secondes ; null : la durée de départ
+  const [signal, setSignal] = useState<CleSignal>('puissance'); // le signal de la courbe : la puissance, la FC, la cadence…
+  const info = SIGNAUX_VELO.find((x) => x.cle === signal) ?? SIGNAUX_VELO[0];
+  const autresSignaux = useCourbeSignal(signal, annee);
+  const courbeTout = signal === 'puissance' ? puissanceTout : autresSignaux.courbeTout;
+  const courbeAnnee = signal === 'puissance' ? puissanceAnnee : autresSignaux.courbeAnnee;
+  const attenteSignal = signal !== 'puissance' && autresSignaux.chargement && !courbeTout.length;
   const couleur = couleurSport(p, 'velo');
   const nomPortee = portee === 'annee' ? String(annee) : 'Tous temps';
   const nomAutre = portee === 'annee' ? 'Tous temps' : annee === maintenant.getFullYear() ? 'cette année' : String(annee);
@@ -62,17 +70,19 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
   const point = indexChoisi >= 0 ? courbe[indexChoisi] : null;
   const pointAutre = point ? autre.find((x) => x.duree === point.duree) : undefined;
   const meilleur = point?.top[0];
-  const wkg = meilleur ? wattsParKg(meilleur.watts, poids) : null;
-  const cmpEffort = meilleur ? comparaison(meilleur.watts, pointAutre?.top[0]?.watts, 'W') : null;
+  const wkg = meilleur && signal === 'puissance' ? wattsParKg(meilleur.valeur, poids) : null;
+  const cmpEffort = meilleur ? comparaison(meilleur.valeur, pointAutre?.top[0]?.valeur, info.unite) : null;
+  const lecture = meilleur ? texteValeurRecord(meilleur.valeur, info.unite) : null;
+  const dureeMin = signal === 'puissance' ? undefined : DUREE_MIN_SIGNAL;
 
-  if (chargement && !courbeTout.length) {
+  if (chargement && !puissanceTout.length) {
     return (
       <View accessible accessibilityLabel="Chargement des records" style={styles.attente}>
         <ActivityIndicator color={p.texteDoux} />
       </View>
     );
   }
-  if (erreur && !courbeTout.length) return <Text style={[typo.corps, { color: p.texteDoux }]}>{erreur}</Text>;
+  if (erreur && !puissanceTout.length) return <Text style={[typo.corps, { color: p.texteDoux }]}>{erreur}</Text>;
 
   return (
     <>
@@ -85,28 +95,60 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
       )}
 
       <Bloc titre="Meilleurs efforts">
-        {courbe.some((x) => x.top.length) ? (
+        {/* Le signal de la courbe : la puissance, puis ce que le serveur calcule depuis les streams (FC, cadence, couple, vitesse, VAM, descente) */}
+        <View accessibilityRole="tablist" accessibilityLabel="Signal de la courbe" style={styles.signaux}>
+          {SIGNAUX_VELO.map((x) => {
+            const actif = x.cle === signal;
+            return (
+              <Pressable
+                key={x.cle}
+                onPress={() => {
+                  setSignal(x.cle);
+                  setDuree(null);
+                }}
+                hitSlop={4}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: actif }}
+                accessibilityLabel={x.nom}
+                style={[styles.signal, actif ? { backgroundColor: couleur, borderColor: couleur } : { borderColor: p.trait }]}
+              >
+                <Text style={[typo.petit, { color: actif ? p.fond : p.texteDoux, fontFamily: actif ? police.texte600 : police.texte400 }]}>{x.court}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        {attenteSignal ? (
+          <View accessible accessibilityLabel="Chargement de la courbe" style={styles.attente}>
+            <ActivityIndicator color={p.texteDoux} />
+          </View>
+        ) : signal !== 'puissance' && autresSignaux.erreur && !courbeTout.length ? (
+          <Text style={[typo.corps, { color: p.texteDoux }]}>{autresSignaux.erreur}</Text>
+        ) : courbe.some((x) => x.top.length) ? (
           <>
             <Text style={[typo.petit, styles.note, { color: p.texteDoux }]}>
-              Puissance, {nomPortee}. Pointillés : {nomAutre}. Touche la courbe pour lire une durée.
+              {info.nom}, {nomPortee}. Pointillés : {nomAutre}. Touche la courbe pour lire une durée.
             </Text>
-            <CourbePuissance
+            <CourbeEfforts
               courbe={courbe}
               autre={autre.some((x) => x.top.length) ? autre : undefined}
+              dureeMin={dureeMin}
+              serre={signal === 'fc' || signal === 'cad'}
               selection={indexChoisi >= 0 ? indexChoisi : null}
               onSelection={(i) => setDuree(i == null ? null : (courbe[i]?.duree ?? null))}
               couleur={couleur}
-              etiquette={`Courbe de puissance, ${nomPortee} : ${courbe
+              etiquette={`Courbe de ${info.nom.toLowerCase()}, ${nomPortee} : ${courbe
                 .filter((x) => x.top.length && [5, 60, 300, 1200, 3600].includes(x.duree))
-                .map((x) => `${texteDuree(x.duree)} ${x.top[0].watts} watts`)
+                .map((x) => `${texteDuree(x.duree)} ${texteRecordSimple(x.top[0].valeur, info.unite)}`)
                 .join(', ')}.`}
             />
-            {point && meilleur ? (
-              <View accessible accessibilityLabel={`${texteDuree(point.duree)} : ${meilleur.watts} watts${wkg ? `, ${wkg} watts par kilo` : ''}, ${meilleur.nom}, ${dateAnnee(meilleur.iso)}`} style={styles.lecture}>
-                <Text style={[typo.micro, { color: p.texteMuet }]}>Puissance · {texteDuree(point.duree)}</Text>
+            {point && meilleur && lecture ? (
+              <View accessible accessibilityLabel={`${texteDuree(point.duree)} : ${texteRecordSimple(meilleur.valeur, info.unite)}${wkg ? `, ${wkg} watts par kilo` : ''}, ${meilleur.nom}, ${dateAnnee(meilleur.iso)}`} style={styles.lecture}>
+                <Text style={[typo.micro, { color: p.texteMuet }]}>
+                  {info.nom} · {texteDuree(point.duree)}
+                </Text>
                 <Text style={[styles.valeur, { color: p.texte }]}>
-                  {meilleur.watts}
-                  <Text style={[typo.corpsFort, { color: p.texteDoux }]}> W</Text>
+                  {lecture.nombre}
+                  <Text style={[typo.corpsFort, { color: p.texteDoux }]}> {info.unite}</Text>
                 </Text>
                 <Text numberOfLines={2} style={[typo.petit, { color: p.texteDoux, textAlign: 'center' }]}>
                   {wkg ? `${wkg.toFixed(1).replace('.', ',')} W/kg · ` : ''}
@@ -122,14 +164,16 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
             ) : null}
           </>
         ) : (
-          <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de puissance enregistrée{portee === 'annee' ? ` ${enAnnee(annee, maintenant)}` : ''}.</Text>
+          <Text style={[typo.corps, { color: p.texteDoux }]}>
+            Pas encore de {info.nom.toLowerCase()} enregistrée{portee === 'annee' ? ` ${enAnnee(annee, maintenant)}` : ''}.
+          </Text>
         )}
       </Bloc>
 
       {point && point.top.length > 1 ? (
         <Bloc titre={`Podium · ${texteDuree(point.duree)}`}>
           {point.top.map((e, i) => {
-            const etiquette = `${i + 1}, ${e.nom}, ${dateAnnee(e.iso)}, ${e.watts} watts`;
+            const etiquette = `${i + 1}, ${e.nom}, ${dateAnnee(e.iso)}, ${texteRecordSimple(e.valeur, info.unite)}`;
             return (
               <Pressable key={`${e.id}-${i}`} onPress={() => onOuvrir(e.id)} accessibilityRole="button" accessibilityLabel={`${etiquette}. Ouvrir la séance`} style={styles.podium}>
                 <Text style={[styles.rang, { color: i === 0 ? p.texte : p.texteMuet }]}>{i + 1}</Text>
@@ -141,7 +185,7 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
                     {dateAnnee(e.iso)}
                   </Text>
                 </View>
-                <Text style={[styles.valeurPodium, { color: p.texte }]}>{e.watts} W</Text>
+                <Text style={[styles.valeurPodium, { color: p.texte }]}>{texteRecordSimple(e.valeur, info.unite)}</Text>
               </Pressable>
             );
           })}
@@ -154,6 +198,8 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
 const styles = StyleSheet.create({
   attente: { paddingVertical: 40, alignItems: 'center' },
   note: { marginBottom: 10 },
+  signaux: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
+  signal: { minHeight: 36, paddingHorizontal: 12, borderRadius: rayon.rond, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   lecture: { alignItems: 'center', gap: 2, marginTop: 10 },
   valeur: { fontFamily: police.titre800, fontSize: 38, lineHeight: 42, fontVariant: ['tabular-nums'] },
   podium: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingVertical: 6 },

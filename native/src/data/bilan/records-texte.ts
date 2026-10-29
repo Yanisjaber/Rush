@@ -14,7 +14,7 @@ export const dateCourte = (iso: string): string => `${Number(iso.slice(8, 10))} 
 export function texteValeurRecord(valeur: number, unite: string): { nombre: string; unite: string } {
   if (unite === 'min') return { nombre: texteHM(Math.round(valeur)), unite: '' };
   if (unite === 'h') return { nombre: texteHM(Math.round(valeur * 60)), unite: '' };
-  if (unite === 'km' || unite === 'km/h') return { nombre: formatNum(valeur, 1), unite };
+  if (unite === 'km' || unite === 'km/h' || unite === 'N·m') return { nombre: formatNum(valeur, 1), unite };
   if (unite === 'séances') return { nombre: formatNum(valeur, 0), unite: valeur > 1 ? 'séances' : 'séance' };
   if (unite === 'jours') return { nombre: formatNum(valeur, 0), unite: valeur > 1 ? 'jours' : 'jour' };
   return { nombre: formatNum(valeur, 0), unite };

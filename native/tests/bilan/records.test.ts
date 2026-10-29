@@ -87,10 +87,10 @@ test('recordsBasiquesVelo : puissance moyenne et FC moyenne, sur 30 minutes ou p
 });
 
 test('courbeDeLignes : un point par durée, trié, le podium par rang', () => {
-  const l = (duree_s: number, rang: number, watts: number) => ({ duree_s, rang, watts, activity_id: `a${watts}`, name: duree_s === 5 && rang === 1 ? null : `s${watts}`, start_date_local: '2026-03-02T09:00:00+00:00' });
+  const l = (duree_s: number, rang: number, valeur: number) => ({ duree_s, rang, valeur, activity_id: `a${valeur}`, name: duree_s === 5 && rang === 1 ? null : `s${valeur}`, start_date_local: '2026-03-02T09:00:00+00:00' });
   const c = courbeDeLignes([l(300, 1, 290), l(5, 2, 1100), l(5, 1, 1157), l(5, 3, 1000), l(60, 1, 480)]);
   assert.deepEqual(c.map((p) => p.duree), [5, 60, 300]);
-  assert.deepEqual(c[0].top.map((e) => e.watts), [1157, 1100, 1000]);
+  assert.deepEqual(c[0].top.map((e) => e.valeur), [1157, 1100, 1000]);
   assert.equal(c[0].top[0].nom, 'Sans titre');
   assert.equal(c[0].top[0].iso, '2026-03-02');
   assert.deepEqual(courbeDeLignes([]), []);

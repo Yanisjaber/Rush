@@ -4,7 +4,7 @@
 import { familleAffichage } from '../sports/familles.ts';
 import { dateIsoLocale } from '../outils/format.ts';
 import type { ObjectifAnnuel } from '../bilan/bilan.ts';
-import type { PointCourbe, SortieVelo } from '../bilan/records.ts';
+import type { CleSignal, PointCourbe, SortieVelo } from '../bilan/records.ts';
 import { valeurValide, type LigneMesure } from '../sante/sante-catalogue.ts';
 import type { Nuit, SegmentNuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Seance, SerieForce, TestHyrox, Tour } from '../types.ts';
 
@@ -446,7 +446,7 @@ export function activitesBilanDemo(maintenant: Date = new Date()): Seance[] {
 const DUREES_COURBE_DEMO = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300, 360, 420, 480, 600, 720, 900, 1200, 1500, 1800, 2400, 3000, 3600, 4500, 5400, 7200, 9000, 10800, 14400, 18000];
 
 /** Les données de l'onglet Records du vélo en démo : les sorties à vélo d'exemple, la courbe de puissance (tous temps ou d'une année) et un poids. */
-export function recordsVeloDemo(maintenant: Date = new Date()): { sorties: SortieVelo[]; poids: number; courbe: (annee?: number) => PointCourbe[] } {
+export function recordsVeloDemo(maintenant: Date = new Date()): { sorties: SortieVelo[]; poids: number; courbe: (annee?: number) => PointCourbe[]; courbeSignal: (signal: CleSignal, annee?: number) => PointCourbe[] } {
   const sorties: SortieVelo[] = activitesBilanDemo(maintenant)
     .filter((l) => l.sport === 'Ride')
     .map((l, i) => {
@@ -473,13 +473,44 @@ export function recordsVeloDemo(maintenant: Date = new Date()): { sorties: Sorti
       // Le « k » est le rang de la sortie dans la liste entière : sa part de hasard ne change pas d'une durée à l'autre, donc la courbe ne remonte jamais
       const tenables = candidates.filter(({ s }) => s.duree_min * 60 >= duree);
       const classees = tenables
-        .map(({ s, k }) => ({ s, watts: Math.round((s.puissance_moyenne ?? 180) * (1.15 + 1.7 * Math.pow(duree, -0.32)) * (0.97 + ((k * 31) % 7) / 100)) }))
-        .sort((a, b) => b.watts - a.watts)
+        .map(({ s, k }) => ({ s, valeur: Math.round((s.puissance_moyenne ?? 180) * (1.15 + 1.7 * Math.pow(duree, -0.32)) * (0.97 + ((k * 31) % 7) / 100)) }))
+        .sort((a, b) => b.valeur - a.valeur)
         .slice(0, 3);
-      return { duree, top: classees.map((c) => ({ watts: c.watts, id: c.s.id, nom: c.s.name, iso: c.s.iso })) };
+      return { duree, top: classees.map((c) => ({ valeur: c.valeur, id: c.s.id, nom: c.s.name, iso: c.s.iso })) };
     }).filter((pt) => pt.top.length > 0);
   };
-  return { sorties, poids: 72, courbe };
+  /** Les autres signaux : une valeur de référence à 20 minutes pour chaque sortie, qui baisse quand la durée augmente (même idée que la puissance). */
+  const courbeSignal = (signal: CleSignal, annee?: number): PointCourbe[] => {
+    // [valeur à 20 min d'une sortie, vitesse de baisse avec la durée, nombre de décimales]
+    const modele = (s: SortieVelo, k: number): [number, number, number] => {
+      const vitesse = s.duree_min > 0 ? s.distance_km / (s.duree_min / 60) : 25;
+      const montee = s.duree_min > 0 ? s.d_plus / (s.duree_min / 60) : 0;
+      switch (signal) {
+        case 'fc': return [(s.fc_moyenne ?? 140) + 16, 0.04, 0];
+        case 'cad': return [82 + ((k * 5) % 13), 0.03, 0];
+        case 'cou': return [34 + ((k * 3) % 9), 0.08, 1];
+        case 'vit': return [vitesse * 1.28, 0.1, 1];
+        case 'vam': return [650 + montee * 1.6 + ((k * 37) % 300), 0.12, 0];
+        default: return [1500 + montee * 2.2 + ((k * 53) % 600), 0.15, 0];
+      }
+    };
+    const candidates = sorties.map((s, k) => ({ s, k })).filter(({ s }) => (annee == null || s.iso.startsWith(`${annee}-`)) && s.duree_min >= 20);
+    return DUREES_COURBE_DEMO.filter((d) => d >= 60)
+      .map((duree) => {
+        const classees = candidates
+          .filter(({ s }) => s.duree_min * 60 >= duree)
+          .map(({ s, k }) => {
+            const [ref, b, dec] = modele(s, k);
+            const valeur = ref * Math.pow(duree / 1200, -b) * (0.97 + ((k * 31) % 7) / 100);
+            return { s, valeur: dec ? Math.round(valeur * 10 ** dec) / 10 ** dec : Math.round(valeur) };
+          })
+          .sort((a, b) => b.valeur - a.valeur)
+          .slice(0, 3);
+        return { duree, top: classees.map((c) => ({ valeur: c.valeur, id: c.s.id, nom: c.s.name, iso: c.s.iso })) };
+      })
+      .filter((pt) => pt.top.length > 0);
+  };
+  return { sorties, poids: 72, courbe, courbeSignal };
 }
 
 /** Objectifs annuels d'exemple. */
