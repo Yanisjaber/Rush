@@ -2,12 +2,12 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { TuilesRecords } from '@/components/bilan/TuilesRecords';
 import { Bloc } from '@/components/feuilles/Bloc';
+import { MenuMesure } from '@/components/menus/MenuMesure';
 import { CourbeEfforts } from '@/components/graphes/CourbeEfforts';
 import { DUREE_MIN_SIGNAL, indexDureeProche, recordsBasiquesVelo, SIGNAUX_VELO, texteDuree, wattsParKg, type CleSignal, type PointCourbe, type SortieVelo } from '@/data/bilan/records';
 import { texteRecordSimple, texteValeurRecord, EnAnnee, enAnnee } from '@/data/bilan/records-texte';
 import { formatDateLongue } from '@/data/outils/format';
 import { useCourbeSignal } from '@/hooks/useCourbeSignal';
-import { rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -94,28 +94,21 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
         </Bloc>
       )}
 
-      <Bloc titre="Meilleurs efforts">
-        {/* Le signal de la courbe : la puissance, puis ce que le serveur calcule depuis les streams (FC, cadence, couple, vitesse, VAM, descente) */}
-        <View accessibilityRole="tablist" accessibilityLabel="Signal de la courbe" style={styles.signaux}>
-          {SIGNAUX_VELO.map((x) => {
-            const actif = x.cle === signal;
-            return (
-              <Pressable
-                key={x.cle}
-                onPress={() => {
-                  setSignal(x.cle);
-                  setDuree(null);
-                }}
-                hitSlop={4}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: actif }}
-                accessibilityLabel={x.nom}
-                style={[styles.signal, actif ? { backgroundColor: couleur, borderColor: couleur } : { borderColor: p.trait }]}
-              >
-                <Text style={[typo.petit, { color: actif ? p.fond : p.texteDoux, fontFamily: actif ? police.texte600 : police.texte400 }]}>{x.court}</Text>
-              </Pressable>
-            );
-          })}
+      <Bloc>
+        {/* Le signal de la courbe : la puissance, puis ce que le serveur calcule depuis les streams (FC, cadence, couple, vitesse, VAM, descente). Le menu natif d'Apple, comme celui de l'année */}
+        <View style={styles.entete}>
+          <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
+            Meilleurs efforts
+          </Text>
+          <MenuMesure
+            etiquette="Signal de la courbe"
+            valeur={signal}
+            options={SIGNAUX_VELO.map((x) => ({ cle: x.cle, nom: x.court }))}
+            onChoisir={(c) => {
+              setSignal(c as CleSignal);
+              setDuree(null);
+            }}
+          />
         </View>
         {attenteSignal ? (
           <View accessible accessibilityLabel="Chargement de la courbe" style={styles.attente}>
@@ -198,8 +191,7 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
 const styles = StyleSheet.create({
   attente: { paddingVertical: 40, alignItems: 'center' },
   note: { marginBottom: 10 },
-  signaux: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
-  signal: { minHeight: 36, paddingHorizontal: 12, borderRadius: rayon.rond, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  entete: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
   lecture: { alignItems: 'center', gap: 2, marginTop: 10 },
   valeur: { fontFamily: police.titre800, fontSize: 38, lineHeight: 42, fontVariant: ['tabular-nums'] },
   podium: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingVertical: 6 },
