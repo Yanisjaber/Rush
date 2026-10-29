@@ -5,7 +5,7 @@ import { Bloc } from '@/components/feuilles/Bloc';
 import { MenuMesure } from '@/components/menus/MenuMesure';
 import { CourbeEfforts } from '@/components/graphes/CourbeEfforts';
 import { DUREE_MIN_SIGNAL, indexDureeProche, recordsBasiquesVelo, SIGNAUX_VELO, texteDuree, wattsParKg, type CleSignal, type PointCourbe, type SortieVelo } from '@/data/bilan/records';
-import { texteRecordSimple, texteValeurRecord, EnAnnee, enAnnee } from '@/data/bilan/records-texte';
+import { texteRecordSimple, EnAnnee, enAnnee } from '@/data/bilan/records-texte';
 import { formatDateLongue } from '@/data/outils/format';
 import { useCourbeSignal } from '@/hooks/useCourbeSignal';
 import { couleurSport } from '@/theme/sports';
@@ -71,7 +71,6 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
   const meilleur = point?.top[0];
   const wkg = meilleur && signal === 'puissance' ? wattsParKg(meilleur.valeur, poids) : null;
   const cmpEffort = meilleur ? comparaison(meilleur.valeur, pointAutre?.top[0]?.valeur, info.unite) : null;
-  const lecture = meilleur ? texteValeurRecord(meilleur.valeur, info.unite) : null;
   const dureeMin = signal === 'puissance' ? undefined : DUREE_MIN_SIGNAL;
 
   if (chargement && !puissanceTout.length) {
@@ -120,6 +119,7 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
             <CourbeEfforts
               courbe={courbe}
               autre={autre.some((x) => x.top.length) ? autre : undefined}
+              formater={(v) => texteRecordSimple(v, info.unite)}
               dureeMin={dureeMin}
               serre={signal === 'fc' || signal === 'cad'}
               selection={indexChoisi >= 0 ? indexChoisi : null}
@@ -130,15 +130,8 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
                 .map((x) => `${texteDuree(x.duree)} ${texteRecordSimple(x.top[0].valeur, info.unite)}`)
                 .join(', ')}.`}
             />
-            {point && meilleur && lecture ? (
+            {point && meilleur ? (
               <View accessible accessibilityLabel={`${texteDuree(point.duree)} : ${texteRecordSimple(meilleur.valeur, info.unite)}${wkg ? `, ${wkg} watts par kilo` : ''}, ${meilleur.nom}, ${dateAnnee(meilleur.iso)}`} style={styles.lecture}>
-                <Text style={[typo.micro, { color: p.texteMuet }]}>
-                  {info.nom} · {texteDuree(point.duree)}
-                </Text>
-                <Text style={[styles.valeur, { color: p.texte }]}>
-                  {lecture.nombre}
-                  <Text style={[typo.corpsFort, { color: p.texteDoux }]}> {info.unite}</Text>
-                </Text>
                 <Text numberOfLines={2} style={[typo.petit, { color: p.texteDoux, textAlign: 'center' }]}>
                   {wkg ? `${wkg.toFixed(1).replace('.', ',')} W/kg · ` : ''}
                   {meilleur.nom} · {dateAnnee(meilleur.iso)}
@@ -188,7 +181,6 @@ const styles = StyleSheet.create({
   attente: { paddingVertical: 40, alignItems: 'center' },
   entete: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
   lecture: { alignItems: 'center', gap: 2, marginTop: 10 },
-  valeur: { fontFamily: police.titre800, fontSize: 38, lineHeight: 42, fontVariant: ['tabular-nums'] },
   podium: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingVertical: 6 },
   rang: { width: 30, fontFamily: police.titre800, fontSize: 18 },
   valeurPodium: { fontFamily: police.titre700, fontSize: 16, fontVariant: ['tabular-nums'] },

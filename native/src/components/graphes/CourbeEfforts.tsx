@@ -1,8 +1,9 @@
-import Svg, { Circle, Line, Path, Text as TexteSvg } from 'react-native-svg';
+import { Fragment } from 'react';
+import Svg, { Circle, Line, Path, Rect, Text as TexteSvg } from 'react-native-svg';
 import { ZoneTactile } from '@/components/graphes/ZoneTactile';
 import { echelleRonde } from '@/data/outils/echelle';
 import { formatNum } from '@/data/outils/format';
-import { DUREE_MAX, DUREE_MIN, indexDureeProche, type PointCourbe } from '@/data/bilan/records';
+import { DUREE_MAX, DUREE_MIN, indexDureeProche, texteDuree, type PointCourbe } from '@/data/bilan/records';
 import { police } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -14,6 +15,8 @@ interface Props {
   autre?: PointCourbe[];
   /** La plus courte durée de l'axe : 1 s pour la puissance, 1 min pour les autres signaux. */
   dureeMin?: number;
+  /** Une valeur écrite avec son unité (« 357 W ») : pour les valeurs des repères et pour la bulle. */
+  formater: (v: number) => string;
   /** L'axe des valeurs ne part pas de zéro (la FC, la cadence) : sinon la courbe, qui reste entre 130 et 190, serait écrasée en haut. */
   serre?: boolean;
   /** La durée touchée (indice dans `courbe`), ou null. */
@@ -24,12 +27,15 @@ interface Props {
   etiquette: string;
 }
 
+const BULLE_H = 22;
 const LARGEUR = 330;
 const HAUTEUR = 210;
 const GAUCHE = 40;
 const DROITE = 10;
 const HAUT = 14;
 const BAS = 26; // la ligne de base, au-dessus des durées écrites
+/** Les durées qu'on connaît, marquées sur la courbe avec leur valeur. */
+const DUREES_CLES = [5, 60, 300, 1200, 3600];
 const REPERES_DUREE: [number, string][] = [
   [1, '1 s'],
   [10, '10 s'],
@@ -39,7 +45,7 @@ const REPERES_DUREE: [number, string][] = [
   [18000, '5 h'],
 ];
 
-export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, etiquette, dureeMin = DUREE_MIN, serre = false }: Props) {
+export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, etiquette, formater, dureeMin = DUREE_MIN, serre = false }: Props) {
   const p = usePalette();
   const x = (secondes: number) => GAUCHE + ((Math.log(secondes) - Math.log(dureeMin)) / (Math.log(DUREE_MAX) - Math.log(dureeMin))) * (LARGEUR - GAUCHE - DROITE);
   /** La durée sous un point de l'axe (le contraire de x), pour le toucher. */
@@ -56,6 +62,21 @@ export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, 
   const trace = (pts: { duree: number; valeur: number }[]) => pts.map((pt, i) => `${i ? 'L' : 'M'}${x(pt.duree).toFixed(1)} ${y(pt.valeur).toFixed(1)}`).join(' ');
   const reperes = pas > 0 ? [pas, 2 * pas, 3 * pas].map((k) => plancher + k) : [];
   const choisi = selection != null ? courbe[selection] : null;
+  const texteBulle = choisi && choisi.top.length ? `${texteDuree(choisi.duree)} · ${formater(choisi.top[0].valeur)}` : '';
+  const bulleL = texteBulle.length * 6.2 + 18;
+  const pointX = choisi ? x(choisi.duree) : 0;
+  const pointY = choisi && choisi.top.length ? y(choisi.top[0].valeur) : 0;
+  const bulleX = Math.min(LARGEUR - DROITE - bulleL, Math.max(GAUCHE, pointX - bulleL / 2));
+  const bulleY = pointY - BULLE_H - 12 < 2 ? pointY + 12 : pointY - BULLE_H - 12;
+  /** Une valeur de repère se cache quand elle toucherait la bulle (ou son point) : la bulle prime. */
+  const cache = (pt: { duree: number; valeur: number }): boolean => {
+    if (!choisi) return false;
+    const largeur = formater(pt.valeur).length * 6.4 + 6;
+    const gauche = x(pt.duree) - largeur / 2;
+    const haut = y(pt.valeur) - 22;
+    const touche = (a: number, b: number, c: number, d: number) => gauche < c + 3 && gauche + largeur > a - 3 && haut < d + 3 && haut + 14 > b - 3;
+    return touche(bulleX, bulleY, bulleX + bulleL, bulleY + BULLE_H) || touche(pointX - 8, pointY - 8, pointX + 8, pointY + 8);
+  };
   const dessin = (
     <Svg width="100%" viewBox={`0 0 ${LARGEUR} ${HAUTEUR}`} style={{ aspectRatio: LARGEUR / HAUTEUR }} accessible accessibilityRole="image" accessibilityLabel={etiquette}>
       {[plancher, ...reperes].map((w) => (
@@ -74,10 +95,33 @@ export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, 
       {b.length > 1 ? <Path d={trace(b)} fill="none" stroke={p.texteMuet} strokeWidth={1.6} strokeDasharray="4 3" strokeLinejoin="round" strokeLinecap="round" /> : null}
       {a.length > 1 ? <Path d={`${trace(a)} L${x(a[a.length - 1].duree).toFixed(1)} ${y(plancher)} L${x(a[0].duree).toFixed(1)} ${y(plancher)} Z`} fill={couleur} fillOpacity={0.13} /> : null}
       {a.length ? <Path d={trace(a)} fill="none" stroke={couleur} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" /> : null}
+      {/* Les durées clés : un point creux avec sa valeur (sauf près de la durée touchée, où la bulle parle) */}
+      {a
+        .filter((pt) => DUREES_CLES.includes(pt.duree) && pt.duree >= dureeMin && pt.duree !== choisi?.duree)
+        .map((pt) => (
+          <Fragment key={`cle${pt.duree}`}>
+            <Circle cx={x(pt.duree)} cy={y(pt.valeur)} r={3.5} fill={p.surface} stroke={couleur} strokeWidth={2} />
+            {cache(pt) ? null : (
+              <>
+                {/* Un contour de la couleur du fond, pour que les pointillés ne barrent pas le chiffre */}
+                <TexteSvg x={x(pt.duree)} y={y(pt.valeur) - 9} fontSize={10.5} fontFamily={police.titre700} fill={p.surface} stroke={p.surface} strokeWidth={4} strokeLinejoin="round" textAnchor="middle">
+                  {formater(pt.valeur)}
+                </TexteSvg>
+                <TexteSvg x={x(pt.duree)} y={y(pt.valeur) - 9} fontSize={10.5} fontFamily={police.titre700} fill={p.texte} textAnchor="middle">
+                  {formater(pt.valeur)}
+                </TexteSvg>
+              </>
+            )}
+          </Fragment>
+        ))}
       {choisi && choisi.top.length ? (
         <>
-          <Line x1={x(choisi.duree)} x2={x(choisi.duree)} y1={HAUT} y2={y(plancher)} stroke={p.texte} strokeWidth={1.2} strokeDasharray="2 3" />
-          <Circle cx={x(choisi.duree)} cy={y(choisi.top[0].valeur)} r={5} fill={couleur} stroke={p.surface} strokeWidth={2} />
+          <Circle cx={x(choisi.duree)} cy={y(choisi.top[0].valeur)} r={5.5} fill={couleur} stroke={p.surface} strokeWidth={2} />
+          {/* La bulle : la durée et la valeur, au-dessus du point (en dessous quand le point est tout en haut) */}
+          <Rect x={bulleX} y={bulleY} width={bulleL} height={BULLE_H} rx={BULLE_H / 2} fill={p.texte} />
+          <TexteSvg x={bulleX + bulleL / 2} y={bulleY + 15} fontSize={11} fontFamily={police.titre700} fill={p.fond} textAnchor="middle">
+            {texteBulle}
+          </TexteSvg>
         </>
       ) : null}
     </Svg>
