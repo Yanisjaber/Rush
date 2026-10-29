@@ -139,7 +139,7 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
               <View accessible accessibilityLabel={`${texteDuree(point.duree)} : ${texteRecordSimple(meilleur.valeur, info.unite)}${wkg ? `, ${wkg} watts par kilo` : ''}, ${meilleur.nom}, ${dateAnnee(meilleur.iso)}`} style={styles.lecture}>
                 <Text numberOfLines={2} style={[typo.petit, { color: p.texteDoux, textAlign: 'center' }]}>
                   {wkg ? `${wkg.toFixed(1).replace('.', ',')} W/kg · ` : ''}
-                  {meilleur.nom} · {dateAnnee(meilleur.iso)}
+                  {dateAnnee(meilleur.iso)}
                 </Text>
                 {cmpEffort ? (
                   <Text style={[typo.petit, { color: cmpEffort.ok ? p.texte : p.texteMuet, textAlign: 'center' }]}>
