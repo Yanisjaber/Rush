@@ -123,7 +123,8 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
           <>
             <CourbeEfforts
               courbe={courbe}
-              autre={autre.some((x) => x.top.length) ? autre : undefined}
+              // En « Tout », une seule ligne : la courbe de tous les temps, sans la pointillée de l'année
+              autre={portee === 'annee' && autre.some((x) => x.top.length) ? autre : undefined}
               formater={(v) => texteRecordSimple(v, info.unite)}
               dureeMin={dureeMin}
               serre={signal === 'fc' || signal === 'cad'}
