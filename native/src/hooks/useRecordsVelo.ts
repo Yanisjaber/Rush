@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { chargerCourbePuissance, chargerProfil, chargerSortiesVelo } from '@/data/acces/api';
 import type { PointCourbe, SortieVelo } from '@/data/bilan/records';
+import { recordsVeloDemo } from '@/data/demo/demo';
 import { useAuth } from '@/stores/auth';
 
 // Les données de l'onglet Records du vélo : les sorties (records basiques), la courbe de puissance de tous les temps et celle de l'année choisie, et ton poids (pour les W/kg).
 // Chargées quand `actif` passe à vrai (l'onglet Records du Cyclisme est ouvert), puis gardées en mémoire cinq minutes pour ne pas recharger à chaque changement d'onglet.
-// Sans compte (démo), il n'y a rien : l'écran le dit.
+// En démo, ce sont des sorties et une courbe d'exemple (rien n'est chargé).
 const DUREE_CACHE = 5 * 60 * 1000;
 interface Donnees {
   userId: string;
@@ -24,6 +25,11 @@ export function useRecordsVelo(actif: boolean, annee: number): { sorties: Sortie
   const [donnees, setDonnees] = useState<Donnees | null>(cache && cache.userId === userId ? cache : null);
   const [chargement, setChargement] = useState(false);
   const [erreur, setErreur] = useState('');
+  const exemple = useMemo(() => {
+    if (!demo) return null;
+    const e = recordsVeloDemo(new Date());
+    return { ...e, tout: e.courbe(), parAnnee: new Map<number, PointCourbe[]>() };
+  }, [demo]);
 
   useEffect(() => {
     if (!actif || !userId) return;
@@ -66,6 +72,10 @@ export function useRecordsVelo(actif: boolean, annee: number): { sorties: Sortie
     };
   }, [actif, userId, annee]);
 
+  if (exemple) {
+    if (!exemple.parAnnee.has(annee)) exemple.parAnnee.set(annee, exemple.courbe(annee));
+    return { sorties: exemple.sorties, poids: exemple.poids, courbeTout: exemple.tout, courbeAnnee: exemple.parAnnee.get(annee) ?? [], chargement: false, erreur: '' };
+  }
   const ici = donnees && donnees.userId === userId ? donnees : null;
   return { sorties: ici?.sorties ?? [], poids: ici?.poids ?? null, courbeTout: ici?.courbeTout ?? [], courbeAnnee: ici?.courbeAnnee[annee] ?? [], chargement, erreur };
 }

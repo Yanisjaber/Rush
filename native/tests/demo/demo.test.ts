@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { donneesDemo, seriesForceDemo } from '../../src/data/demo/demo.ts';
+import { donneesDemo, recordsVeloDemo, seriesForceDemo } from '../../src/data/demo/demo.ts';
 import { dateIsoLocale } from '../../src/data/outils/format.ts';
 import { recordsParSeance } from '../../src/data/sports/force.ts';
 
@@ -67,4 +67,20 @@ test('seriesForceDemo : le RIR n\'existe que sur les 5 dernières semaines', () 
   const series = seriesForceDemo(date);
   const limite = dateIsoLocale(new Date(2026, 9, 19 - 35));
   for (const s of series) assert.equal('rir' in s, s.date > limite, `${s.date} ${s.id}`);
+});
+
+test('recordsVeloDemo : des sorties, et une courbe de puissance qui baisse avec la durée', () => {
+  const d = recordsVeloDemo(date);
+  assert.ok(d.sorties.length > 50);
+  assert.ok(d.sorties.every((s) => s.sport === 'Ride' && s.id && s.iso));
+  const c = d.courbe();
+  assert.ok(c.length > 20);
+  for (let i = 1; i < c.length; i++) assert.ok(c[i].duree > c[i - 1].duree && c[i].top[0].watts <= c[i - 1].top[0].watts);
+  assert.ok(c.every((p) => p.top.length <= 3 && p.top.every((t, k) => k === 0 || t.watts <= p.top[k - 1].watts)));
+});
+
+test('recordsVeloDemo : la courbe d\'une année ne contient que des sorties de cette année', () => {
+  const c = recordsVeloDemo(date).courbe(2026);
+  assert.ok(c.length > 0);
+  assert.ok(c.every((p) => p.top.every((t) => t.iso.startsWith('2026-'))));
 });

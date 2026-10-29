@@ -4,6 +4,7 @@
 import { familleAffichage } from '../sports/familles.ts';
 import { dateIsoLocale } from '../outils/format.ts';
 import type { ObjectifAnnuel } from '../bilan/bilan.ts';
+import type { PointCourbe, SortieVelo } from '../bilan/records.ts';
 import { valeurValide, type LigneMesure } from '../sante/sante-catalogue.ts';
 import type { Nuit, SegmentNuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Seance, SerieForce, TestHyrox, Tour } from '../types.ts';
 
@@ -439,6 +440,46 @@ export function activitesBilanDemo(maintenant: Date = new Date()): Seance[] {
     }
   }
   return lignes;
+}
+
+/** Les durées (en secondes) de la courbe de puissance d'exemple : de 1 s à 5 h, comme celles de la vraie base. */
+const DUREES_COURBE_DEMO = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300, 360, 420, 480, 600, 720, 900, 1200, 1500, 1800, 2400, 3000, 3600, 4500, 5400, 7200, 9000, 10800, 14400, 18000];
+
+/** Les données de l'onglet Records du vélo en démo : les sorties à vélo d'exemple, la courbe de puissance (tous temps ou d'une année) et un poids. */
+export function recordsVeloDemo(maintenant: Date = new Date()): { sorties: SortieVelo[]; poids: number; courbe: (annee?: number) => PointCourbe[] } {
+  const sorties: SortieVelo[] = activitesBilanDemo(maintenant)
+    .filter((l) => l.sport === 'Ride')
+    .map((l, i) => {
+      const min = l.moving_time / 60;
+      const watts = 170 + ((i * 17) % 60) + Math.min(40, min / 5);
+      return {
+        id: l.id,
+        name: l.name || 'Sortie vélo',
+        iso: l.start_date_local.slice(0, 10),
+        sport: 'Ride',
+        distance_km: l.distance_km ?? 0,
+        duree_min: min,
+        d_plus: l.total_elevation_gain ?? 0,
+        kj: Math.round((watts * l.moving_time) / 1000),
+        tss: l.tss,
+        puissance_moyenne: Math.round(watts),
+        fc_moyenne: 128 + ((i * 7) % 30),
+      };
+    });
+  /** Le podium d'une durée : les trois sorties qui ont la plus forte puissance sur cette durée (une loi de puissance, qui baisse quand la durée augmente). */
+  const courbe = (annee?: number): PointCourbe[] => {
+    const candidates = sorties.map((s, k) => ({ s, k })).filter(({ s }) => (annee == null || s.iso.startsWith(`${annee}-`)) && s.duree_min >= 20);
+    return DUREES_COURBE_DEMO.map((duree) => {
+      // Le « k » est le rang de la sortie dans la liste entière : sa part de hasard ne change pas d'une durée à l'autre, donc la courbe ne remonte jamais
+      const tenables = candidates.filter(({ s }) => s.duree_min * 60 >= duree);
+      const classees = tenables
+        .map(({ s, k }) => ({ s, watts: Math.round((s.puissance_moyenne ?? 180) * (1.15 + 1.7 * Math.pow(duree, -0.32)) * (0.97 + ((k * 31) % 7) / 100)) }))
+        .sort((a, b) => b.watts - a.watts)
+        .slice(0, 3);
+      return { duree, top: classees.map((c) => ({ watts: c.watts, id: c.s.id, nom: c.s.name, iso: c.s.iso })) };
+    }).filter((pt) => pt.top.length > 0);
+  };
+  return { sorties, poids: 72, courbe };
 }
 
 /** Objectifs annuels d'exemple. */
