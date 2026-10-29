@@ -1,5 +1,5 @@
 import { sb } from '../supabase';
-import { courbeDeLignes, sortieVeloDeLigne, type CleSignal, type LigneCourbe, type LigneVelo, type PointCourbe, type SortieVelo } from '../../bilan/records.ts';
+import { courbeDeLignes, sortieVeloDeLigne, type CleSignal, type EntreeCourbe, type LigneCourbe, type LigneVelo, type PointCourbe, type SortieVelo } from '../../bilan/records.ts';
 import { resultat, type Resultat } from './commun';
 
 // Les sorties à vélo avec leurs colonnes de records basiques, et la courbe de puissance : les fonctions SQL rpc_sorties_velo et rpc_courbe_puissance ne renvoient que le compte connecté.
@@ -30,4 +30,14 @@ export async function chargerCourbeSignal(signal: Exclude<CleSignal, 'puissance'
   const r = await sb.rpc('rpc_courbe_signal', { p_signal: signal, ...(annee ? { p_debut: `${annee}-01-01`, p_fin: `${annee}-12-31` } : {}) });
   const res = resultat<LigneCourbe[]>(r, 'Impossible de charger cette courbe.');
   return res.data ? { data: courbeDeLignes(res.data), erreur: '' } : { data: null, erreur: res.erreur };
+}
+
+/** Le podium d'une durée : jusqu'à `n` séances (30 par défaut), d'une année ou de tout l'historique, la meilleure d'abord. Pour la puissance comme pour les autres signaux. */
+export async function chargerPodium(signal: CleSignal, duree: number, annee?: number, n = 30): Promise<Resultat<EntreeCourbe[]>> {
+  const dates = annee ? { p_debut: `${annee}-01-01`, p_fin: `${annee}-12-31` } : {};
+  const r = signal === 'puissance' ? await sb.rpc('rpc_courbe_puissance', { ...dates, p_duree: duree, p_n: n }) : await sb.rpc('rpc_courbe_signal', { p_signal: signal, ...dates, p_duree: duree, p_n: n });
+  const res = resultat<(Omit<LigneCourbe, 'valeur'> & { valeur?: number; watts?: number })[]>(r, 'Impossible de charger le podium.');
+  if (!res.data) return { data: null, erreur: res.erreur };
+  const lignes: LigneCourbe[] = res.data.map((l) => ({ ...l, valeur: Number(l.valeur ?? l.watts) }));
+  return { data: courbeDeLignes(lignes)[0]?.top ?? [], erreur: '' };
 }

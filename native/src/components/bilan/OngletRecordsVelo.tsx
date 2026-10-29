@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { PodiumEfforts } from '@/components/bilan/PodiumEfforts';
 import { TuilesRecords } from '@/components/bilan/TuilesRecords';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { MenuMesure } from '@/components/menus/MenuMesure';
@@ -8,6 +9,7 @@ import { DUREE_MIN_SIGNAL, indexDureeProche, recordsBasiquesVelo, SIGNAUX_VELO, 
 import { texteRecordSimple, EnAnnee, enAnnee } from '@/data/bilan/records-texte';
 import { formatDateLongue } from '@/data/outils/format';
 import { useCourbeSignal } from '@/hooks/useCourbeSignal';
+import { usePodium } from '@/hooks/usePodium';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -72,6 +74,9 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
   const wkg = meilleur && signal === 'puissance' ? wattsParKg(meilleur.valeur, poids) : null;
   const cmpEffort = meilleur ? comparaison(meilleur.valeur, pointAutre?.top[0]?.valeur, info.unite) : null;
   const dureeMin = signal === 'puissance' ? undefined : DUREE_MIN_SIGNAL;
+  // Le podium de la durée touchée : jusqu'à 30 séances, demandées au serveur ; en attendant, les trois de la courbe
+  const podiumLong = usePodium(signal, point?.duree ?? null, portee === 'annee' ? annee : null);
+  const podium = podiumLong ?? point?.top ?? [];
 
   if (chargement && !puissanceTout.length) {
     return (
@@ -152,26 +157,14 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
         )}
       </Bloc>
 
-      {point && point.top.length > 1 ? (
-        <Bloc titre={`Podium · ${texteDuree(point.duree)}`}>
-          {point.top.map((e, i) => {
-            const etiquette = `${i + 1}, ${e.nom}, ${dateAnnee(e.iso)}, ${texteRecordSimple(e.valeur, info.unite)}`;
-            return (
-              <Pressable key={`${e.id}-${i}`} onPress={() => onOuvrir(e.id)} accessibilityRole="button" accessibilityLabel={`${etiquette}. Ouvrir la séance`} style={styles.podium}>
-                <Text style={[styles.rang, { color: i === 0 ? p.texte : p.texteMuet }]}>{i + 1}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text numberOfLines={1} style={[typo.corps, { color: p.texte }]}>
-                    {e.nom}
-                  </Text>
-                  <Text numberOfLines={1} style={[typo.petit, { color: p.texteMuet }]}>
-                    {dateAnnee(e.iso)}
-                  </Text>
-                </View>
-                <Text style={[styles.valeurPodium, { color: p.texte }]}>{texteRecordSimple(e.valeur, info.unite)}</Text>
-              </Pressable>
-            );
-          })}
-        </Bloc>
+      {point && podium.length > 1 ? (
+        <PodiumEfforts
+          titre={`Podium · ${texteDuree(point.duree)}`}
+          entrees={podium}
+          unite={info.unite}
+          sousPremiere={signal === 'puissance' && wkg ? `${wkg.toFixed(1).replace('.', ',')} W/kg` : null}
+          onOuvrir={onOuvrir}
+        />
       ) : null}
     </>
   );
@@ -181,7 +174,4 @@ const styles = StyleSheet.create({
   attente: { paddingVertical: 40, alignItems: 'center' },
   entete: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
   lecture: { alignItems: 'center', gap: 2, marginTop: 10 },
-  podium: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingVertical: 6 },
-  rang: { width: 30, fontFamily: police.titre800, fontSize: 18 },
-  valeurPodium: { fontFamily: police.titre700, fontSize: 16, fontVariant: ['tabular-nums'] },
 });
