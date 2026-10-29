@@ -138,7 +138,7 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
                     const contenu = (
                       <>
                         <View style={styles.ligneClassement}>
-                          <Text style={[styles.rang, { color: i === 0 ? p.texte : p.texteMuet }]}>{i + 1}</Text>
+                          <Text numberOfLines={1} style={[styles.rang, { color: i === 0 ? p.texte : p.texteMuet }]}>{i + 1}</Text>
                           <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>
                             {x.nom}
                           </Text>
@@ -258,9 +258,9 @@ const styles = StyleSheet.create({
   contenuClassement: { paddingRight: 14 },
   classement: { paddingVertical: 8, minHeight: 56 },
   ligneClassement: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  piste: { height: 6, borderRadius: 3, marginLeft: 28, marginTop: 4, overflow: 'hidden' },
-  dateClassement: { marginLeft: 28, marginTop: 2 },
+  piste: { height: 6, borderRadius: 3, marginLeft: 38, marginTop: 4, overflow: 'hidden' },
+  dateClassement: { marginLeft: 38, marginTop: 2 },
   podium: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingVertical: 6 },
-  rang: { width: 20, fontFamily: police.titre800, fontSize: 18 },
+  rang: { width: 30, fontFamily: police.titre800, fontSize: 18 },
   valeurPodium: { fontFamily: police.titre700, fontSize: 16, fontVariant: ['tabular-nums'] },
 });
