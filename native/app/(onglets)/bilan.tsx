@@ -7,7 +7,8 @@ import { BarreSports } from '@/components/graphes/BarreSports';
 import { BarresHebdo } from '@/components/graphes/BarresHebdo';
 import { BarresMois } from '@/components/graphes/BarresMois';
 import { CourbeSemaine } from '@/components/graphes/CourbeSemaine';
-import { OngletRecords } from '@/components/bilan/OngletRecords';
+import { OngletRecordsSport } from '@/components/bilan/OngletRecordsSport';
+import { OngletRecordsTous } from '@/components/bilan/OngletRecordsTous';
 import { OngletRecordsVelo } from '@/components/bilan/OngletRecordsVelo';
 import { RegulariteMois } from '@/components/graphes/RegulariteMois';
 import { Dossard } from '@/components/ui/Dossard';
@@ -540,15 +541,23 @@ export default function Bilan() {
                   erreur={erreurVelo}
                   onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
                 />
+              ) : filtre === 'tout' ? (
+                <OngletRecordsTous
+                  portee={toutTemps ? 'tout' : 'annee'}
+                  toutes={toutes}
+                  annee={anneeRecords}
+                  maintenant={maintenant}
+                  mesure={mesureRecords}
+                  onMesure={(m) => choisirMesure('records', m)}
+                  onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
+                />
               ) : (
-                <OngletRecords
+                <OngletRecordsSport
                   portee={toutTemps ? 'tout' : 'annee'}
                   toutes={filtrees}
                   annee={anneeRecords}
                   maintenant={maintenant}
                   filtre={filtre}
-                  mesure={mesureRecords}
-                  onMesure={(m) => choisirMesure('records', m)}
                   onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
                 />
               )
