@@ -1,9 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
-import { BarresEvolution } from '@/components/graphes/BarresEvolution';
-import { OngletsSegment } from '@/components/menus/OngletsSegment';
-import { evolutionRecord, type RecordTop } from '@/data/bilan/records';
+import type { RecordTop } from '@/data/bilan/records';
 import { texteRecordSimple, texteValeurRecord, EnAnnee, enAnnee } from '@/data/bilan/records-texte';
 import { formatDateLongue } from '@/data/outils/format';
 import { rayon } from '@/theme/couleurs';
@@ -11,7 +9,7 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Les records basiques d'un sport : de mini tuiles (quatre par rangée). On en touche une, son détail sort dessous :
-// la valeur et ce que vaut l'autre période, l'évolution (12 mois ou années) et le classement des 30 meilleures séances (on touche une ligne pour l'ouvrir).
+// la valeur et ce que vaut l'autre période, et le classement des 30 meilleures séances (on touche une ligne pour l'ouvrir).
 // Le même écran sert au vélo, à la course, à la natation, à la musculation et à l'Hyrox : seuls les records changent.
 interface Props {
   records: RecordTop[];
@@ -34,12 +32,9 @@ const HAUTEUR_LIGNE = 70;
 /** Le nom d'un record sur une mini tuile (quatre par rangée, donc très étroite) : le détail, qui sort au toucher, donne le nom entier. */
 const NOM_TUILE: Record<string, string> = { duree: 'Durée', distance: 'Distance', dplus: 'D+', tss: 'Charge', vmoy: 'Vitesse moy.', pmoy: 'Puiss. moy.', fcmoy: 'FC moy.', kj: 'Énergie' };
 
-type ModeEvolution = 'mois' | 'annee';
-
 export function TuilesRecords({ records, recordsAutre, portee, annee, maintenant, couleur, onOuvrir }: Props) {
   const p = usePalette();
   const [ouvert, setOuvert] = useState<string | null>(null); // le record dont le détail est sorti
-  const [mode, setMode] = useState<ModeEvolution>('mois');
 
   /** Ce que vaut l'autre période pour un record : une coche quand c'est le même record. */
   const comparaison = (a: number | undefined, b: number | undefined, unite: string): { texte: string; ok: boolean } | null => {
@@ -53,9 +48,6 @@ export function TuilesRecords({ records, recordsAutre, portee, annee, maintenant
   };
 
   const r = records.find((x) => x.cle === ouvert);
-  // L'évolution porte sur tout l'historique du record, quelle que soit la période choisie en haut : c'est elle qui montre le chemin parcouru
-  const periodes = useMemo(() => (r?.entrees ? evolutionRecord(r.entrees, mode, maintenant) : []), [r, mode, maintenant]);
-
   return (
     <>
       {/* De mini tuiles, quatre par rangée ; on en touche une pour que son détail sorte dessous */}
@@ -98,28 +90,6 @@ export function TuilesRecords({ records, recordsAutre, portee, annee, maintenant
               </Text>
             ) : null;
           })()}
-
-          {/* L'évolution : le meilleur de chaque mois (les 12 derniers) ou de chaque année */}
-          <View style={[styles.entete, { borderTopColor: p.trait }]}>
-            <Text style={[typo.corpsFort, { color: p.texteDoux, flex: 1 }]}>Évolution</Text>
-          </View>
-          <OngletsSegment<ModeEvolution>
-            etiquette="Période de l'évolution"
-            onglets={[
-              { cle: 'mois', nom: '12 mois' },
-              { cle: 'annee', nom: 'Années' },
-            ]}
-            actuel={mode}
-            onChoisir={setMode}
-          />
-          <View style={styles.evolution}>
-            <BarresEvolution
-              periodes={periodes}
-              couleur={couleur}
-              formater={(v) => texteRecordSimple(v, r.unite)}
-              etiquette={`Évolution de ${r.libelle.toLowerCase()}, ${mode === 'mois' ? 'mois par mois sur 12 mois' : 'année par année'}.`}
-            />
-          </View>
 
           {/* Le classement : une barre par séance, proportionnelle au record ; on touche une ligne pour ouvrir la séance */}
           <View style={[styles.entete, { borderTopColor: p.trait }]}>
@@ -178,7 +148,6 @@ const styles = StyleSheet.create({
   valeurMini: { fontFamily: police.titre800, fontSize: 20, lineHeight: 24, fontVariant: ['tabular-nums'] },
   valeurDetail: { fontFamily: police.titre800, fontSize: 18, lineHeight: 22, marginBottom: 0, fontVariant: ['tabular-nums'] },
   entete: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, marginTop: 8, borderTopWidth: StyleSheet.hairlineWidth },
-  evolution: { marginTop: 10, marginBottom: 4 },
   // La zone déborde de 10 pt dans la marge de la carte : la barre de défilement s'y dessine, pas sur les valeurs
   zoneClassement: { height: HAUTEUR_LIGNE * 3, marginRight: -10 },
   contenuClassement: { paddingRight: 14 },
