@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
+import { MenuMesure } from '@/components/menus/MenuMesure';
 import { CourbePuissance } from '@/components/graphes/CourbePuissance';
 import { indexDureeProche, recordsBasiquesVelo, texteDuree, wattsParKg, type PointCourbe, type RecordTop, type SortieVelo } from '@/data/bilan/records';
 import { texteRecordSimple, texteValeurRecord, EnAnnee, enAnnee } from '@/data/bilan/records-texte';
-import { formatDateLongue, formatNum } from '@/data/outils/format';
+import { formatDateLongue } from '@/data/outils/format';
 import { rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
@@ -34,12 +35,16 @@ const DUREE_DEPART = 1200;
 /** « Lundi 6 avril 2026 » : avec l'année, qui compte en « Tous temps ». */
 const dateAnnee = (iso: string): string => `${formatDateLongue(iso)} ${iso.slice(0, 4)}`;
 
+/** Les tailles proposées par le menu du classement. */
+const TAILLES_CLASSEMENT = [3, 5, 10, 20, 30];
+
 /** Le nom d'un record sur une mini tuile (quatre par rangée, donc très étroite) : le détail, qui sort au toucher, donne le nom entier. */
 const NOM_TUILE: Record<string, string> = { duree: 'Durée', distance: 'Distance', dplus: 'D+', tss: 'Charge', vmoy: 'Vitesse moy.', pmoy: 'Puiss. moy.', fcmoy: 'FC moy.', kj: 'Énergie' };
 
 export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, courbeAnnee, courbeTout, chargement, erreur, onOuvrir }: Props) {
   const p = usePalette();
   const [duree, setDuree] = useState<number | null>(null); // la durée touchée, en secondes ; null : la durée de départ
+  const [nbClassement, setNbClassement] = useState(3); // combien de sorties montrer dans le classement d'un record
   const [ouvert, setOuvert] = useState<string | null>(null); // le record dont le détail est sorti
   const couleur = couleurSport(p, 'velo');
   const nomPortee = portee === 'annee' ? String(annee) : 'Tous temps';
@@ -112,8 +117,6 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
             if (!r) return null;
             const e = r.top[0];
             const t = texteValeurRecord(e.valeur, r.unite);
-            const s1 = sorties.find((x) => x.id === e.id);
-            const resume = s1 ? [s1.distance_km > 0 ? `${formatNum(s1.distance_km, 1)} km` : '', s1.d_plus ? `${formatNum(s1.d_plus)} m D+` : '', s1.tss ? `${formatNum(s1.tss)} TSS` : ''].filter(Boolean).join(' · ') : '';
             const cmp = comparaison(e.valeur, basiquesAutre.find((x) => x.cle === r.cle)?.top[0]?.valeur, r.unite);
             return (
               <Bloc titre={r.libelle}>
@@ -127,10 +130,13 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
                     {cmp.texte}
                   </Text>
                 ) : null}
-                {resume ? <Text style={[typo.petit, { color: p.texteDoux, marginTop: 6 }]}>{resume}</Text> : null}
                 {/* Le classement : une barre par sortie, proportionnelle au record ; on touche une ligne pour ouvrir la séance */}
-                <View style={{ marginTop: 10 }}>
-                  {r.top.map((x, i) => {
+                <View style={styles.enteteClassement}>
+                  <Text style={[typo.corpsFort, { color: p.texteDoux }]}>Classement</Text>
+                  <MenuMesure etiquette="Nombre de sorties du classement" valeur={String(Math.min(nbClassement, r.top.length))} options={TAILLES_CLASSEMENT.filter((n) => n <= r.top.length || n === 3).map((n) => ({ cle: String(n), nom: `Top ${n}` }))} onChoisir={(c) => setNbClassement(Number(c))} />
+                </View>
+                <View>
+                  {r.top.slice(0, nbClassement).map((x, i) => {
                     const tx = texteValeurRecord(x.valeur, r.unite);
                     const largeur = `${Math.max(4, Math.min(100, (x.valeur / e.valeur) * 100))}%` as `${number}%`;
                     const contenu = (
@@ -250,6 +256,7 @@ const styles = StyleSheet.create({
   valeurDetail: { fontFamily: police.titre800, fontSize: 36, lineHeight: 40, marginBottom: 4, fontVariant: ['tabular-nums'] },
   lecture: { alignItems: 'center', gap: 2, marginTop: 10 },
   valeur: { fontFamily: police.titre800, fontSize: 38, lineHeight: 42, fontVariant: ['tabular-nums'] },
+  enteteClassement: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
   classement: { paddingVertical: 8, minHeight: 56 },
   ligneClassement: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   piste: { height: 6, borderRadius: 3, marginLeft: 28, marginTop: 4, overflow: 'hidden' },

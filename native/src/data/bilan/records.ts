@@ -35,7 +35,7 @@ export interface GroupeRecords {
 
 const PODIUM = 3;
 /** Les sorties du classement d'un record basique du vélo. */
-const CLASSEMENT_VELO = 5;
+const CLASSEMENT_VELO = 30;
 
 // --- Dates ---------------------------------------------------------------------------------------------------------------
 
