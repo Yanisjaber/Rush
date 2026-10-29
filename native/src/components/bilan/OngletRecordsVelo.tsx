@@ -2,10 +2,9 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { CourbePuissance } from '@/components/graphes/CourbePuissance';
-import { Bouton } from '@/components/ui/Bouton';
 import { indexDureeProche, recordsBasiquesVelo, texteDuree, wattsParKg, type PointCourbe, type RecordTop, type SortieVelo } from '@/data/bilan/records';
 import { texteRecordSimple, texteValeurRecord, EnAnnee, enAnnee } from '@/data/bilan/records-texte';
-import { formatDateLongue } from '@/data/outils/format';
+import { formatDateLongue, formatNum } from '@/data/outils/format';
 import { rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
@@ -113,6 +112,8 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
             if (!r) return null;
             const e = r.top[0];
             const t = texteValeurRecord(e.valeur, r.unite);
+            const s1 = sorties.find((x) => x.id === e.id);
+            const resume = s1 ? [s1.distance_km > 0 ? `${formatNum(s1.distance_km, 1)} km` : '', s1.d_plus ? `${formatNum(s1.d_plus)} m D+` : '', s1.tss ? `${formatNum(s1.tss)} TSS` : ''].filter(Boolean).join(' · ') : '';
             const cmp = comparaison(e.valeur, basiquesAutre.find((x) => x.cle === r.cle)?.top[0]?.valeur, r.unite);
             return (
               <Bloc titre={r.libelle}>
@@ -120,23 +121,48 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
                   {t.nombre}
                   {t.unite ? <Text style={[typo.corpsFort, { color: p.texteDoux }]}> {t.unite}</Text> : null}
                 </Text>
-                <Text numberOfLines={2} style={[typo.corps, { color: p.texte }]}>
-                  {e.nom}
-                </Text>
-                <Text style={[typo.petit, { color: p.texteDoux }]}>{dateAnnee(e.iso)}</Text>
                 {cmp ? (
-                  <Text style={[typo.petit, { color: cmp.ok ? p.texte : p.texteMuet, marginTop: 4 }]}>
+                  <Text style={[typo.petit, { color: cmp.ok ? p.texte : p.texteMuet }]}>
                     {cmp.ok ? '✓ ' : ''}
                     {cmp.texte}
                   </Text>
                 ) : null}
-                {e.id ? (
-                  <View style={{ marginTop: 12 }}>
-                    <Bouton variante="discret" petit onPress={() => onOuvrir(e.id as string)} accessibilityLabel={`Ouvrir la séance ${e.nom}`}>
-                      Ouvrir la séance
-                    </Bouton>
-                  </View>
-                ) : null}
+                {resume ? <Text style={[typo.petit, { color: p.texteDoux, marginTop: 6 }]}>{resume}</Text> : null}
+                {/* Le classement : une barre par sortie, proportionnelle au record ; on touche une ligne pour ouvrir la séance */}
+                <View style={{ marginTop: 10 }}>
+                  {r.top.map((x, i) => {
+                    const tx = texteValeurRecord(x.valeur, r.unite);
+                    const largeur = `${Math.max(4, Math.min(100, (x.valeur / e.valeur) * 100))}%` as `${number}%`;
+                    const contenu = (
+                      <>
+                        <View style={styles.ligneClassement}>
+                          <Text style={[styles.rang, { color: i === 0 ? p.texte : p.texteMuet }]}>{i + 1}</Text>
+                          <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>
+                            {x.nom}
+                          </Text>
+                          <Text style={[styles.valeurPodium, { color: p.texte }]}>
+                            {tx.nombre}
+                            {tx.unite ? <Text style={[typo.micro, { color: p.texteDoux, textTransform: 'none' }]}> {tx.unite}</Text> : null}
+                          </Text>
+                        </View>
+                        <View style={[styles.piste, { backgroundColor: p.surface2 }]}>
+                          <View style={{ width: largeur, height: '100%', borderRadius: 3, backgroundColor: couleur, opacity: i === 0 ? 1 : 0.6 }} />
+                        </View>
+                        <Text style={[typo.petit, styles.dateClassement, { color: p.texteMuet }]}>{dateAnnee(x.iso)}</Text>
+                      </>
+                    );
+                    const etiquette = `${i + 1}, ${x.nom}, ${dateAnnee(x.iso)}, ${texteRecordSimple(x.valeur, r.unite)}`;
+                    return x.id ? (
+                      <Pressable key={`${x.iso}-${i}`} accessibilityRole="button" accessibilityLabel={`${etiquette}. Ouvrir la séance`} onPress={() => onOuvrir(x.id as string)} style={styles.classement}>
+                        {contenu}
+                      </Pressable>
+                    ) : (
+                      <View key={`${x.iso}-${i}`} accessible accessibilityLabel={etiquette} style={styles.classement}>
+                        {contenu}
+                      </View>
+                    );
+                  })}
+                </View>
               </Bloc>
             );
           })()}
@@ -224,6 +250,10 @@ const styles = StyleSheet.create({
   valeurDetail: { fontFamily: police.titre800, fontSize: 36, lineHeight: 40, marginBottom: 4, fontVariant: ['tabular-nums'] },
   lecture: { alignItems: 'center', gap: 2, marginTop: 10 },
   valeur: { fontFamily: police.titre800, fontSize: 38, lineHeight: 42, fontVariant: ['tabular-nums'] },
+  classement: { paddingVertical: 8, minHeight: 56 },
+  ligneClassement: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  piste: { height: 6, borderRadius: 3, marginLeft: 28, marginTop: 4, overflow: 'hidden' },
+  dateClassement: { marginLeft: 28, marginTop: 2 },
   podium: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingVertical: 6 },
   rang: { width: 20, fontFamily: police.titre800, fontSize: 18 },
   valeurPodium: { fontFamily: police.titre700, fontSize: 16, fontVariant: ['tabular-nums'] },

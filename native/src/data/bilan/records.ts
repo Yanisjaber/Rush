@@ -34,6 +34,8 @@ export interface GroupeRecords {
 }
 
 const PODIUM = 3;
+/** Les sorties du classement d'un record basique du vélo. */
+const CLASSEMENT_VELO = 5;
 
 // --- Dates ---------------------------------------------------------------------------------------------------------------
 
@@ -195,14 +197,14 @@ export function recordsBasiquesVelo(sorties: SortieVelo[]): RecordTop[] {
   const entree = (s: SortieVelo, valeur: number | null): EntreeRecord => ({ valeur: valeur ?? 0, nom: s.name || 'Sans titre', iso: s.iso, id: s.id });
   const dessous = sorties.filter(dehors);
   const records: RecordTop[] = [
-    { cle: 'duree', libelle: 'Plus longue sortie', unite: 'min', top: meilleures(sorties.map((s) => entree(s, s.duree_min))) },
-    { cle: 'distance', libelle: 'Plus longue distance', unite: 'km', top: meilleures(dessous.map((s) => entree(s, s.distance_km))) },
-    { cle: 'dplus', libelle: 'Plus gros D+', unite: 'm', top: meilleures(dessous.map((s) => entree(s, s.d_plus))) },
-    { cle: 'tss', libelle: 'Plus grosse charge', unite: 'TSS', top: meilleures(sorties.map((s) => entree(s, s.tss))) },
-    { cle: 'vmoy', libelle: 'Vitesse moyenne', unite: 'km/h', top: meilleures(dessous.filter((s) => s.distance_km >= DISTANCE_MIN_VITESSE_MOYENNE).map((s) => entree(s, vitesseMoyenne(s)))) },
-    { cle: 'pmoy', libelle: 'Puissance moyenne max', unite: 'W', top: meilleures(sorties.filter((s) => s.duree_min >= DUREE_MIN_MOYENNE).map((s) => entree(s, s.puissance_moyenne))) },
-    { cle: 'fcmoy', libelle: 'Plus grosse FC moyenne', unite: 'bpm', top: meilleures(sorties.filter((s) => s.duree_min >= DUREE_MIN_MOYENNE && (s.fc_moyenne ?? 0) <= FC_MOYENNE_MAX_CREDIBLE).map((s) => entree(s, s.fc_moyenne))) },
-    { cle: 'kj', libelle: 'Plus grosse dépense', unite: 'kJ', top: meilleures(sorties.map((s) => entree(s, s.kj))) },
+    { cle: 'duree', libelle: 'Plus longue sortie', unite: 'min', top: meilleures(sorties.map((s) => entree(s, s.duree_min)), CLASSEMENT_VELO) },
+    { cle: 'distance', libelle: 'Plus longue distance', unite: 'km', top: meilleures(dessous.map((s) => entree(s, s.distance_km)), CLASSEMENT_VELO) },
+    { cle: 'dplus', libelle: 'Plus gros D+', unite: 'm', top: meilleures(dessous.map((s) => entree(s, s.d_plus)), CLASSEMENT_VELO) },
+    { cle: 'tss', libelle: 'Plus grosse charge', unite: 'TSS', top: meilleures(sorties.map((s) => entree(s, s.tss)), CLASSEMENT_VELO) },
+    { cle: 'vmoy', libelle: 'Vitesse moyenne', unite: 'km/h', top: meilleures(dessous.filter((s) => s.distance_km >= DISTANCE_MIN_VITESSE_MOYENNE).map((s) => entree(s, vitesseMoyenne(s))), CLASSEMENT_VELO) },
+    { cle: 'pmoy', libelle: 'Puissance moyenne max', unite: 'W', top: meilleures(sorties.filter((s) => s.duree_min >= DUREE_MIN_MOYENNE).map((s) => entree(s, s.puissance_moyenne)), CLASSEMENT_VELO) },
+    { cle: 'fcmoy', libelle: 'Plus grosse FC moyenne', unite: 'bpm', top: meilleures(sorties.filter((s) => s.duree_min >= DUREE_MIN_MOYENNE && (s.fc_moyenne ?? 0) <= FC_MOYENNE_MAX_CREDIBLE).map((s) => entree(s, s.fc_moyenne)), CLASSEMENT_VELO) },
+    { cle: 'kj', libelle: 'Plus grosse dépense', unite: 'kJ', top: meilleures(sorties.map((s) => entree(s, s.kj)), CLASSEMENT_VELO) },
   ];
   return records.filter((r) => r.top.length);
 }
