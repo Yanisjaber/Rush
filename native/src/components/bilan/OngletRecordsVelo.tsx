@@ -131,7 +131,7 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
                   <Text style={[typo.petit, { color: p.texteMuet }]}>{r.top.length} sorties</Text>
                 </View>
                 {/* Une zone de hauteur fixe qui défile : tout le classement (jusqu'à 30 sorties) sans allonger la page */}
-                <ScrollView nestedScrollEnabled showsVerticalScrollIndicator style={styles.zoneClassement} accessibilityLabel={`Classement de ${r.top.length} sorties`}>
+                <ScrollView nestedScrollEnabled showsVerticalScrollIndicator style={styles.zoneClassement} contentContainerStyle={styles.contenuClassement} accessibilityLabel={`Classement de ${r.top.length} sorties`}>
                   {r.top.map((x, i) => {
                     const tx = texteValeurRecord(x.valeur, r.unite);
                     const largeur = `${Math.max(4, Math.min(100, (x.valeur / e.valeur) * 100))}%` as `${number}%`;
@@ -253,7 +253,9 @@ const styles = StyleSheet.create({
   lecture: { alignItems: 'center', gap: 2, marginTop: 10 },
   valeur: { fontFamily: police.titre800, fontSize: 38, lineHeight: 42, fontVariant: ['tabular-nums'] },
   enteteClassement: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, marginTop: 8, borderTopWidth: StyleSheet.hairlineWidth },
-  zoneClassement: { height: 240 },
+  // La zone déborde de 10 pt dans la marge de la carte : la barre de défilement s'y dessine, pas sur les valeurs
+  zoneClassement: { height: 240, marginRight: -10 },
+  contenuClassement: { paddingRight: 14 },
   classement: { paddingVertical: 8, minHeight: 56 },
   ligneClassement: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   piste: { height: 6, borderRadius: 3, marginLeft: 28, marginTop: 4, overflow: 'hidden' },
