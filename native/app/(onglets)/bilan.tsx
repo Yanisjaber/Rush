@@ -137,7 +137,9 @@ export default function Bilan() {
 
   // Chaque onglet ne calcule que ses propres chiffres, et seulement quand ses données changent
   // Records : les sorties à vélo avec leurs colonnes en plus (puissance par durée, vitesse, énergie), chargées seulement sur l'onglet d'un sport vélo
-  const { sorties: sortiesVelo, poids: poidsVelo, courbeTout, courbeAnnee, chargement: chargementVelo, erreur: erreurVelo } = useRecordsVelo(onglet === 'records' && filtre === 'velo', annee);
+  // « Tout » se compare à cette année, jamais à l'année qu'on avait choisie avant dans le menu
+  const anneeRecords = toutTemps ? anneeCourante : annee;
+  const { sorties: sortiesVelo, poids: poidsVelo, courbeTout, courbeAnnee, chargement: chargementVelo, erreur: erreurVelo } = useRecordsVelo(onglet === 'records' && filtre === 'velo', anneeRecords);
   const cumul = useMemo(() => (onglet === 'resume' ? cumulParAnnee(filtrees, [annee, annee - 1, annee - 2], metrique, maintenant) : { etiquettes: [], series: [] }), [onglet, filtrees, annee, metrique, maintenant]);
   const mesure = MESURES_CUMUL.find((m) => m.cle === metrique) ?? MESURES_CUMUL[0];
   // Rythme : par mois (en km, ou en heures quand le sport n'a pas de distance, comme la musculation), charge par semaine, régularité
@@ -528,7 +530,7 @@ export default function Bilan() {
               filtre === 'velo' ? (
                 <OngletRecordsVelo
                   portee={toutTemps ? 'tout' : 'annee'}
-                  annee={annee}
+                  annee={anneeRecords}
                   maintenant={maintenant}
                   sorties={sortiesVelo}
                   poids={poidsVelo}
@@ -542,7 +544,7 @@ export default function Bilan() {
                 <OngletRecords
                   portee={toutTemps ? 'tout' : 'annee'}
                   toutes={filtrees}
-                  annee={annee}
+                  annee={anneeRecords}
                   maintenant={maintenant}
                   filtre={filtre}
                   mesure={mesureRecords}
