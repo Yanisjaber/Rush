@@ -35,7 +35,7 @@ const DROITE = 10;
 const HAUT = 14;
 const BAS = 26; // la ligne de base, au-dessus des durées écrites
 /** Les durées qu'on connaît, marquées sur la courbe avec leur valeur. */
-const DUREES_CLES = [5, 60, 300, 1200, 3600];
+const DUREES_CLES = [5, 30, 60, 300, 1200, 3600];
 const REPERES_DUREE: [number, string][] = [
   [1, '1 s'],
   [10, '10 s'],
@@ -68,15 +68,23 @@ export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, 
   const pointY = choisi && choisi.top.length ? y(choisi.top[0].valeur) : 0;
   const bulleX = Math.min(LARGEUR - DROITE - bulleL, Math.max(GAUCHE, pointX - bulleL / 2));
   const bulleY = pointY - BULLE_H - 12 < 2 ? pointY + 12 : pointY - BULLE_H - 12;
-  /** Une valeur de repère se cache quand elle toucherait la bulle (ou son point) : la bulle prime. */
-  const cache = (pt: { duree: number; valeur: number }): boolean => {
-    if (!choisi) return false;
+  /** Le cadre d'une valeur de repère : sa largeur écrite, au-dessus du point. */
+  const cadre = (pt: { duree: number; valeur: number }) => {
     const largeur = formater(pt.valeur).length * 6.4 + 6;
-    const gauche = x(pt.duree) - largeur / 2;
-    const haut = y(pt.valeur) - 22;
-    const touche = (a: number, b: number, c: number, d: number) => gauche < c + 3 && gauche + largeur > a - 3 && haut < d + 3 && haut + 14 > b - 3;
-    return touche(bulleX, bulleY, bulleX + bulleL, bulleY + BULLE_H) || touche(pointX - 8, pointY - 8, pointX + 8, pointY + 8);
+    return { g: x(pt.duree) - largeur / 2, d: x(pt.duree) + largeur / 2, h: y(pt.valeur) - 22, b: y(pt.valeur) - 8 };
   };
+  const touche = (r: { g: number; d: number; h: number; b: number }, g: number, h: number, d: number, b: number) => r.g < d + 3 && r.d > g - 3 && r.h < b + 3 && r.b > h - 3;
+  // Les valeurs de repère qu'on écrit : une valeur se cache quand elle toucherait la bulle, son point, ou une valeur déjà écrite (la bulle prime)
+  const ecrites: number[] = [];
+  const cadresEcrits: { g: number; d: number; h: number; b: number }[] = [];
+  for (const pt of a.filter((q) => DUREES_CLES.includes(q.duree) && q.duree >= dureeMin && q.duree !== choisi?.duree)) {
+    const r = cadre(pt);
+    const gene = (choisi ? touche(r, bulleX, bulleY, bulleX + bulleL, bulleY + BULLE_H) || touche(r, pointX - 8, pointY - 8, pointX + 8, pointY + 8) : false) || cadresEcrits.some((c) => touche(r, c.g, c.h, c.d, c.b));
+    if (!gene) {
+      ecrites.push(pt.duree);
+      cadresEcrits.push(r);
+    }
+  }
   const dessin = (
     <Svg width="100%" viewBox={`0 0 ${LARGEUR} ${HAUTEUR}`} style={{ aspectRatio: LARGEUR / HAUTEUR }} accessible accessibilityRole="image" accessibilityLabel={etiquette}>
       {[plancher, ...reperes].map((w) => (
@@ -101,7 +109,7 @@ export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, 
         .map((pt) => (
           <Fragment key={`cle${pt.duree}`}>
             <Circle cx={x(pt.duree)} cy={y(pt.valeur)} r={3.5} fill={p.surface} stroke={couleur} strokeWidth={2} />
-            {cache(pt) ? null : (
+            {ecrites.includes(pt.duree) ? (
               <>
                 {/* Un contour de la couleur du fond, pour que les pointillés ne barrent pas le chiffre */}
                 <TexteSvg x={x(pt.duree)} y={y(pt.valeur) - 9} fontSize={10.5} fontFamily={police.titre700} fill={p.surface} stroke={p.surface} strokeWidth={4} strokeLinejoin="round" textAnchor="middle">
@@ -111,7 +119,7 @@ export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, 
                   {formater(pt.valeur)}
                 </TexteSvg>
               </>
-            )}
+            ) : null}
           </Fragment>
         ))}
       {choisi && choisi.top.length ? (
