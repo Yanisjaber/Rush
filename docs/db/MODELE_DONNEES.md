@@ -11,7 +11,7 @@ humain (coach ↔ athlète, messagerie) a été supprimé le 2026-10-11 ; le rô
 |---|---|
 | `user_profiles` | Profil de l'athlète : `ftp`, `hr_max`, `lthr`, `weight` en colonnes ; prénom et nom (`first_name`, `last_name`) et  le reste (FC repos, VMA, allures, équipement…) dans la colonne JSONB `extras`. Les zones sont recalculées à l'affichage, jamais stockées |
 | `user_preferences` | Préférences d'un compte (une ligne par utilisateur, RLS `auth.uid() = user_id`) : `layout` = disposition de l'accueil du site (JSON, widgets et tailles S, M, L, XL), `layout_mobile` = disposition de l'accueil de l'app mobile (JSON, tailles XS, S, M, L ; null = composition automatique), `theme` = `sombre` ou `clair`. Ancien nom : `user_dashboard` |
-| `activities` | Séances réalisées (Strava, fichier importé ou saisie manuelle) ; `streams_gz` (streams compressés), `power_curve`, `lap_details` (tours), `tss`, `category`, `discipline`, `merged_into` (étapes d'un triathlon fusionné)… |
+| `activities` | Séances réalisées (Strava, fichier importé ou saisie manuelle) ; `streams_gz` (streams compressés), `power_curve`, `signal_curves` (FC, cadence, couple, vitesse, VAM et descente par durée, vélo seulement), `lap_details` (tours), `tss`, `category`, `discipline`, `merged_into` (étapes d'un triathlon fusionné)… |
 | `activity_edits` | Calque de retouches utilisateur sur les activités |
 | `activity_planned` | Séances prévues (dont celles générées par l'IA) |
 | `activity_template` | Bibliothèque de séances réutilisables |
@@ -32,6 +32,7 @@ humain (coach ↔ athlète, messagerie) a été supprimé le 2026-10-11 ; le rô
 |---|---|
 | `rpc_sorties_velo()` | Les sorties à vélo du compte connecté (Ride, VirtualRide, GravelRide, MountainBikeRide ; ni vélo électrique, ni étapes fusionnées) avec durée, distance, dénivelé, énergie (kJ), charge (TSS), puissance moyenne (seulement mesurée par un capteur) et fréquence cardiaque moyenne. Sert aux records basiques du Bilan. `security invoker` : la RLS s'applique ; réservée à `authenticated` |
 | `rpc_courbe_puissance(p_debut, p_fin)` | Pour 44 durées (de 1 s à 5 h), les trois meilleures puissances moyennes du compte connecté, lues dans `power_curve`, avec la séance qui les a faites ; sur une période, ou sur tout l'historique sans dates. Mêmes sports et mêmes droits que `rpc_sorties_velo`. À ne pas confondre avec `power_profile`, qui mélange tous les sports (la course à pied avec capteur y fait des records) |
+| `rpc_courbe_signal(p_signal, p_debut, p_fin)` | Comme `rpc_courbe_puissance`, pour un autre signal du vélo : `fc` (bpm), `cad` (tr/min), `cou` (N·m), `vit` (km/h), `vam` et `des` (m/h). Lu dans `signal_curves`, rempli par l'Edge Function `strava-streams` (calcul dans `_shared/signaux.ts`). La vitesse, la VAM et la descente ignorent le vélo virtuel. Un nom de signal inconnu ne renvoie rien |
 
 ## Règles
 - Toute nouvelle table : RLS activée, policies limitées à `auth.uid() = user_id`.
