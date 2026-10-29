@@ -34,6 +34,9 @@ const DUREE_DEPART = 1200;
 /** « Lundi 6 avril 2026 » : avec l'année, qui compte en « Tous temps ». */
 const dateAnnee = (iso: string): string => `${formatDateLongue(iso)} ${iso.slice(0, 4)}`;
 
+/** La hauteur d'une ligne du classement : la zone qui défile en montre exactement trois. */
+const HAUTEUR_LIGNE = 70;
+
 /** Le nom d'un record sur une mini tuile (quatre par rangée, donc très étroite) : le détail, qui sort au toucher, donne le nom entier. */
 const NOM_TUILE: Record<string, string> = { duree: 'Durée', distance: 'Distance', dplus: 'D+', tss: 'Charge', vmoy: 'Vitesse moy.', pmoy: 'Puiss. moy.', fcmoy: 'FC moy.', kj: 'Énergie' };
 
@@ -254,9 +257,9 @@ const styles = StyleSheet.create({
   valeur: { fontFamily: police.titre800, fontSize: 38, lineHeight: 42, fontVariant: ['tabular-nums'] },
   enteteClassement: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, marginTop: 8, borderTopWidth: StyleSheet.hairlineWidth },
   // La zone déborde de 10 pt dans la marge de la carte : la barre de défilement s'y dessine, pas sur les valeurs
-  zoneClassement: { height: 240, marginRight: -10 },
+  zoneClassement: { height: HAUTEUR_LIGNE * 3, marginRight: -10 },
   contenuClassement: { paddingRight: 14 },
-  classement: { paddingVertical: 8, minHeight: 56 },
+  classement: { height: HAUTEUR_LIGNE, paddingVertical: 8 },
   ligneClassement: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   piste: { height: 6, borderRadius: 3, marginLeft: 38, marginTop: 4, overflow: 'hidden' },
   dateClassement: { marginLeft: 38, marginTop: 2 },
