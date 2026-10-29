@@ -7,11 +7,13 @@ H=supabase/tests/sql/local_pg.sh
 bash $H start >/dev/null 2>&1 || true
 bash $H reset
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 <<'SQL'
-create table public.activities (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade, name text, sport text, start_date_local timestamptz, merged_into uuid);
+create table public.activities (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade, name text, sport text, start_date_local timestamptz, power_curve jsonb, merged_into uuid);
 insert into auth.users (id, email) values ('00000000-0000-4000-8000-00000000000a','a@t'), ('00000000-0000-4000-8000-00000000000b','b@t');
 SQL
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-29_rpc_courbe_signal.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-29_rpc_courbe_signal.sql   # relançable
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-29_podium_duree.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-29_podium_duree.sql   # relançable
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 <<'SQL'
 insert into public.activities (user_id, name, sport, start_date_local, signal_curves, merged_into) values
  ('00000000-0000-4000-8000-00000000000a', 'A 2025', 'Ride', '2025-06-01 09:00+00', '{"v":1,"fc":{"300":180,"1200":170},"vit":{"300":50.5},"vam":{"600":1500}}', null),
@@ -40,11 +42,14 @@ union all select 'la FC compte le vélo virtuel', (select valeur from rpc_courbe
 union all select 'année 2026 : FC 5 min = 190, 175, 170', (select array_agg(valeur order by rang) from rpc_courbe_signal('fc', '2026-01-01', '2026-12-31') where duree_s = 300) = array[190, 175, 170]::numeric[]
 union all select '2025 est exclu de 2026', not exists (select 1 from rpc_courbe_signal('fc', '2026-01-01', '2026-12-31') where name = 'A 2025')
 union all select 'un signal inconnu ne renvoie rien', (select count(*) from rpc_courbe_signal('watts')) = 0
+union all select 'une durée et 30 places : les 5 séances de la FC 5 min, dans l''ordre', (select array_agg(valeur order by rang) from rpc_courbe_signal('fc', null, null, 300, 30)) = array[190, 180, 175, 170, 165]::numeric[]
+union all select 'une seule durée : rien d''autre', (select count(distinct duree_s) from rpc_courbe_signal('fc', null, null, 300, 30)) = 1
+union all select 'p_n est borné à 100 et vaut au moins 1', (select count(*) from rpc_courbe_signal('fc', null, null, 300, 0)) = 1
 union all select 'la séance est renvoyée avec son nom', (select name from rpc_courbe_signal('fc') where duree_s = 1200 and rang = 1) = 'A 2026 mars';
 set request.jwt.claim.sub = '';
 select 'sans connexion : aucune ligne' as controle, (select count(*) from rpc_courbe_signal('fc')) = 0 as ok;
 reset role;
 set role anon;
-select 'anon refusé' as controle, not has_function_privilege('anon', 'public.rpc_courbe_signal(text,date,date)', 'execute') as ok;
+select 'anon refusé' as controle, not has_function_privilege('anon', 'public.rpc_courbe_signal(text,date,date,integer,integer)', 'execute') as ok;
 SQL
 bash $H stop >/dev/null 2>&1 || true
