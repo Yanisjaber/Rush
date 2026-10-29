@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { ActiviteBilan } from '../../src/data/bilan/bilan.ts';
-import { courbeDeLignes, indexDureeProche, recordsBasiquesVelo, recordsPeriodes, recordsRegularite, recordsSeance, FC_MOYENNE_MAX_CREDIBLE, sortieVeloDeLigne, texteDuree, wattsParKg, type SortieVelo } from '../../src/data/bilan/records.ts';
+import { courbeDeLignes, indexDureeProche, evolutionRecord, periodesParSport, recordsBasiquesActivites, recordsBasiquesVelo, recordsPeriodes, recordsRegularite, recordsSeance, seancesLesPlusChargees, FC_MOYENNE_MAX_CREDIBLE, sortieVeloDeLigne, texteDuree, wattsParKg, type SortieVelo } from '../../src/data/bilan/records.ts';
 
 const act = (iso: string, o: Partial<ActiviteBilan> = {}): ActiviteBilan => ({ id: `a-${iso}-${o.name ?? ''}`, name: `Sortie ${iso}`, iso, sport: 'cyclisme', famille: 'velo', duree_min: 60, distance_km: 30, d_plus: 100, tss: 50, ...o });
 
@@ -155,4 +155,44 @@ test('enAnnee : « cette année » pour l\'année en cours, sinon l\'année écr
   assert.equal(enAnnee(2025, maintenant), 'en 2025');
   assert.equal(EnAnnee(2026, maintenant), 'Cette année');
   assert.equal(EnAnnee(2025, maintenant), 'En 2025');
+});
+
+test('recordsBasiquesActivites : la course ajoute la vitesse moyenne (5 km ou plus), la muscu n\'a pas de distance', () => {
+  const course = [act('2026-03-01', { famille: 'course', distance_km: 10, duree_min: 50, name: 'Footing' }), act('2026-03-02', { famille: 'course', distance_km: 3, duree_min: 10, name: 'Court' })];
+  const r = recordsBasiquesActivites(course, 'course');
+  assert.deepEqual(r.map((x) => x.cle), ['duree', 'distance', 'dplus', 'tss', 'vmoy']);
+  assert.equal(r.find((x) => x.cle === 'vmoy')!.top.length, 1); // le 3 km ne compte pas
+  assert.equal(r.find((x) => x.cle === 'vmoy')!.top[0].valeur, 12);
+  const muscu = recordsBasiquesActivites([act('2026-03-01', { famille: 'muscu', distance_km: 0, d_plus: 0, duree_min: 70, tss: 40 })], 'muscu');
+  assert.deepEqual(muscu.map((x) => x.cle), ['duree', 'tss']);
+  assert.equal(muscu[0].libelle, 'Plus longue séance');
+});
+
+test('evolutionRecord : 12 mois glissants et années, le meilleur de chaque période', () => {
+  const e = (iso: string, valeur: number) => ({ valeur, nom: '', iso, id: null });
+  const entrees = [e('2026-05-14', 281), e('2026-05-20', 270), e('2025-10-03', 255), e('2024-06-08', 266), e('2023-09-17', 259)];
+  const mois = evolutionRecord(entrees, 'mois', new Date('2026-10-29T12:00:00'));
+  assert.equal(mois.length, 12);
+  assert.equal(mois[0].cle, '2025-11');
+  assert.equal(mois[11].cle, '2026-10');
+  assert.equal(mois.find((m) => m.cle === '2026-05')!.valeur, 281);
+  assert.equal(mois.find((m) => m.cle === '2025-10'), undefined); // plus d'un an : hors de la fenêtre
+  assert.equal(mois[11].valeur, null);
+  const annees = evolutionRecord(entrees, 'annee', new Date('2026-10-29T12:00:00'));
+  assert.deepEqual(annees.map((a) => [a.cle, a.valeur]), [['2023', 259], ['2024', 266], ['2025', 255], ['2026', 281]]);
+  assert.equal(annees[0].libelle, '23');
+});
+
+test('periodesParSport : les meilleures semaines, découpées par sport', () => {
+  // semaine du 2 mars : vélo 100 + course 50 ; semaine du 9 mars : vélo 120
+  const acts = [act('2026-03-02', { tss: 100, famille: 'velo' }), act('2026-03-03', { tss: 50, famille: 'course' }), act('2026-03-10', { tss: 120, famille: 'velo' })];
+  const s = periodesParSport(acts, 'tss', 'semaine', 5);
+  assert.deepEqual(s.map((x) => [x.iso, x.total]), [['2026-03-02', 150], ['2026-03-09', 120]]);
+  assert.deepEqual(s[0].parts, [{ famille: 'velo', valeur: 100 }, { famille: 'course', valeur: 50 }]);
+  assert.equal(periodesParSport(acts, 'tss', 'mois', 5).length, 1);
+});
+
+test('seancesLesPlusChargees : tous sports mélangés, avec le sport de chaque séance', () => {
+  const r = seancesLesPlusChargees([act('2026-03-01', { tss: 90, famille: 'course', name: 'a' }), act('2026-03-02', { tss: 120, famille: 'velo', name: 'b' })], 5);
+  assert.deepEqual(r.map((x) => [x.nom, x.famille]), [['b', 'velo'], ['a', 'course']]);
 });

@@ -15,6 +15,8 @@ export interface EntreeRecord {
   fin?: string;
   /** Précision écrite sous le nom (« 3 séances »). */
   detail?: string;
+  /** Le sport de la séance (« velo », « course »…), pour colorer une ligne quand plusieurs sports se mélangent. */
+  famille?: string;
 }
 
 export interface RecordTop {
@@ -25,6 +27,8 @@ export interface RecordTop {
   periode?: 'jour' | 'semaine' | 'mois';
   /** Les meilleures entrées, la première est le record. */
   top: EntreeRecord[];
+  /** Toutes les entrées valables (pas seulement les meilleures) : elles servent à tracer l'évolution du record, mois par mois ou année par année. */
+  entrees?: EntreeRecord[];
 }
 
 export interface GroupeRecords {
@@ -34,8 +38,8 @@ export interface GroupeRecords {
 }
 
 const PODIUM = 3;
-/** Les sorties du classement d'un record basique du vélo. */
-const CLASSEMENT_VELO = 30;
+/** Les séances du classement d'un record basique (vélo et autres sports). */
+const CLASSEMENT = 30;
 
 // --- Dates ---------------------------------------------------------------------------------------------------------------
 
@@ -57,6 +61,12 @@ function meilleures(entrees: EntreeRecord[], n = PODIUM): EntreeRecord[] {
 }
 
 const nomSeance = (a: ActiviteBilan): string => a.name || 'Sans titre';
+
+/** Un record : ses meilleures entrées (le classement) et toutes les entrées valables (pour l'évolution). */
+function fabrique(cle: string, libelle: string, unite: string, entrees: EntreeRecord[]): RecordTop {
+  const valides = entrees.filter((e) => Number.isFinite(e.valeur) && e.valeur > 0);
+  return { cle, libelle, unite, top: meilleures(valides, CLASSEMENT), entrees: valides };
+}
 
 // --- Records de volume ---------------------------------------------------------------------------------------------------
 
@@ -197,16 +207,112 @@ export function recordsBasiquesVelo(sorties: SortieVelo[]): RecordTop[] {
   const entree = (s: SortieVelo, valeur: number | null): EntreeRecord => ({ valeur: valeur ?? 0, nom: s.name || 'Sans titre', iso: s.iso, id: s.id });
   const dessous = sorties.filter(dehors);
   const records: RecordTop[] = [
-    { cle: 'duree', libelle: 'Plus longue sortie', unite: 'min', top: meilleures(sorties.map((s) => entree(s, s.duree_min)), CLASSEMENT_VELO) },
-    { cle: 'distance', libelle: 'Plus longue distance', unite: 'km', top: meilleures(dessous.map((s) => entree(s, s.distance_km)), CLASSEMENT_VELO) },
-    { cle: 'dplus', libelle: 'Plus gros D+', unite: 'm', top: meilleures(dessous.map((s) => entree(s, s.d_plus)), CLASSEMENT_VELO) },
-    { cle: 'tss', libelle: 'Plus grosse charge', unite: 'TSS', top: meilleures(sorties.map((s) => entree(s, s.tss)), CLASSEMENT_VELO) },
-    { cle: 'vmoy', libelle: 'Vitesse moyenne', unite: 'km/h', top: meilleures(dessous.filter((s) => s.distance_km >= DISTANCE_MIN_VITESSE_MOYENNE).map((s) => entree(s, vitesseMoyenne(s))), CLASSEMENT_VELO) },
-    { cle: 'pmoy', libelle: 'Puissance moyenne max', unite: 'W', top: meilleures(sorties.filter((s) => s.duree_min >= DUREE_MIN_MOYENNE).map((s) => entree(s, s.puissance_moyenne)), CLASSEMENT_VELO) },
-    { cle: 'fcmoy', libelle: 'Plus grosse FC moyenne', unite: 'bpm', top: meilleures(sorties.filter((s) => s.duree_min >= DUREE_MIN_MOYENNE && (s.fc_moyenne ?? 0) <= FC_MOYENNE_MAX_CREDIBLE).map((s) => entree(s, s.fc_moyenne)), CLASSEMENT_VELO) },
-    { cle: 'kj', libelle: 'Plus grosse dépense', unite: 'kJ', top: meilleures(sorties.map((s) => entree(s, s.kj)), CLASSEMENT_VELO) },
+    fabrique('duree', 'Plus longue sortie', 'min', sorties.map((s) => entree(s, s.duree_min))),
+    fabrique('distance', 'Plus longue distance', 'km', dessous.map((s) => entree(s, s.distance_km))),
+    fabrique('dplus', 'Plus gros D+', 'm', dessous.map((s) => entree(s, s.d_plus))),
+    fabrique('tss', 'Plus grosse charge', 'TSS', sorties.map((s) => entree(s, s.tss))),
+    fabrique('vmoy', 'Vitesse moyenne', 'km/h', dessous.filter((s) => s.distance_km >= DISTANCE_MIN_VITESSE_MOYENNE).map((s) => entree(s, vitesseMoyenne(s)))),
+    fabrique('pmoy', 'Puissance moyenne max', 'W', sorties.filter((s) => s.duree_min >= DUREE_MIN_MOYENNE).map((s) => entree(s, s.puissance_moyenne))),
+    fabrique('fcmoy', 'Plus grosse FC moyenne', 'bpm', sorties.filter((s) => s.duree_min >= DUREE_MIN_MOYENNE && (s.fc_moyenne ?? 0) <= FC_MOYENNE_MAX_CREDIBLE).map((s) => entree(s, s.fc_moyenne))),
+    fabrique('kj', 'Plus grosse dépense', 'kJ', sorties.map((s) => entree(s, s.kj))),
   ];
   return records.filter((r) => r.top.length);
+}
+
+/** Une vitesse moyenne de course n'a de sens que sur une vraie sortie (5 km ou plus). */
+const DISTANCE_MIN_VITESSE_COURSE = 5;
+
+/**
+ * Les records basiques d'un autre sport (course, natation, musculation, Hyrox…), calculés sur les activités déjà chargées : la plus longue séance, la plus grande distance,
+ * le plus gros dénivelé, la plus grosse charge, et la vitesse moyenne en course. Les meilleurs temps sur une distance (5 km, 10 km) viendront avec les courbes calculées côté serveur.
+ */
+export function recordsBasiquesActivites(acts: ActiviteBilan[], famille: string): RecordTop[] {
+  const entree = (a: ActiviteBilan, valeur: number): EntreeRecord => ({ valeur, nom: nomSeance(a), iso: a.iso, id: a.id });
+  const seance = famille === 'muscu' || famille === 'hyrox' ? 'séance' : 'sortie';
+  const records: RecordTop[] = [
+    fabrique('duree', `Plus longue ${seance}`, 'min', acts.map((a) => entree(a, a.duree_min))),
+    fabrique('distance', 'Plus longue distance', 'km', acts.map((a) => entree(a, a.distance_km))),
+    fabrique('dplus', 'Plus gros D+', 'm', acts.map((a) => entree(a, a.d_plus))),
+    fabrique('tss', 'Plus grosse charge', 'TSS', acts.map((a) => entree(a, a.tss))),
+  ];
+  if (famille === 'course') {
+    records.push(fabrique('vmoy', 'Vitesse moyenne', 'km/h', acts.filter((a) => a.distance_km >= DISTANCE_MIN_VITESSE_COURSE && a.duree_min > 0).map((a) => entree(a, a.distance_km / (a.duree_min / 60)))));
+  }
+  return records.filter((r) => r.top.length);
+}
+
+// --- L'évolution d'un record ---------------------------------------------------------------------------------------------
+
+export interface PeriodeEvolution {
+  cle: string;
+  /** Ce qu'on écrit sous la barre : l'initiale du mois (« M »), ou les deux chiffres de l'année (« 26 »). */
+  libelle: string;
+  /** Le nom entier, pour VoiceOver : « mai 2026 », « 2026 ». */
+  nom: string;
+  /** Le meilleur de la période ; null quand il n'y a rien. */
+  valeur: number | null;
+}
+
+const NOMS_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+/** Au plus ce nombre d'années dans l'évolution : au-delà, les barres seraient trop fines pour un téléphone. */
+const ANNEES_EVOLUTION = 10;
+
+/** Le meilleur d'un record dans chaque période : les 12 derniers mois (celui d'aujourd'hui compris), ou les années depuis la première séance. */
+export function evolutionRecord(entrees: EntreeRecord[], mode: 'mois' | 'annee', maintenant: Date): PeriodeEvolution[] {
+  const meilleurDe = (prefixe: string): number | null => {
+    let m: number | null = null;
+    for (const e of entrees) if (e.iso.startsWith(prefixe) && e.valeur > 0 && (m === null || e.valeur > m)) m = e.valeur;
+    return m;
+  };
+  if (mode === 'mois') {
+    return Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(maintenant.getFullYear(), maintenant.getMonth() - (11 - i), 1);
+      const cle = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      return { cle, libelle: NOMS_MOIS[d.getMonth()][0].toUpperCase(), nom: `${NOMS_MOIS[d.getMonth()]} ${d.getFullYear()}`, valeur: meilleurDe(cle) };
+    });
+  }
+  const fin = maintenant.getFullYear();
+  const premiere = entrees.reduce((a, e) => Math.min(a, Number(e.iso.slice(0, 4))), fin);
+  const debut = Math.max(premiere, fin - ANNEES_EVOLUTION + 1);
+  return Array.from({ length: fin - debut + 1 }, (_, i) => {
+    const a = debut + i;
+    return { cle: String(a), libelle: String(a).slice(2), nom: String(a), valeur: meilleurDe(String(a)) };
+  });
+}
+
+// --- Tous les sports ------------------------------------------------------------------------------------------------------
+
+/** Les séances les plus chargées, tous sports mélangés, chacune avec son sport. */
+export function seancesLesPlusChargees(acts: ActiviteBilan[], n = 10): EntreeRecord[] {
+  return meilleures(acts.map((a) => ({ valeur: a.tss, nom: nomSeance(a), iso: a.iso, id: a.id, famille: a.famille })), n);
+}
+
+export interface PeriodeParSport {
+  /** Le lundi de la semaine, ou le 1er du mois. */
+  iso: string;
+  total: number;
+  /** Ce que chaque sport apporte à la période, le plus gros d'abord. */
+  parts: { famille: string; valeur: number }[];
+}
+
+/** Les semaines (ou les mois) où la mesure est la plus haute, avec ce que chaque sport y apporte ; la meilleure d'abord. */
+export function periodesParSport(acts: ActiviteBilan[], mesure: MetriqueCumul, periode: 'semaine' | 'mois', n = 6): PeriodeParSport[] {
+  const par = new Map<string, Map<string, number>>();
+  for (const a of acts) {
+    const v = valeurCumul(a, mesure);
+    if (!(v > 0)) continue;
+    const k = periode === 'semaine' ? lundiIso(a.iso) : `${a.iso.slice(0, 7)}-01`;
+    const m = par.get(k) ?? new Map<string, number>();
+    m.set(a.famille, (m.get(a.famille) ?? 0) + v);
+    par.set(k, m);
+  }
+  return [...par]
+    .map(([iso, m]) => {
+      const parts = [...m].map(([famille, valeur]) => ({ famille, valeur })).sort((a, b) => b.valeur - a.valeur);
+      return { iso, total: parts.reduce((s, x) => s + x.valeur, 0), parts };
+    })
+    .sort((a, b) => b.total - a.total || (a.iso < b.iso ? -1 : 1))
+    .slice(0, n);
 }
 
 /** Les puissances rapportées au poids (W/kg), avec une décimale ; null sans poids valable. */
