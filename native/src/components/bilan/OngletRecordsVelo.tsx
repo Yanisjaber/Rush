@@ -47,7 +47,6 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
   const attenteSignal = signal !== 'puissance' && autresSignaux.chargement && !courbeTout.length;
   const couleur = couleurSport(p, 'velo');
   const nomPortee = portee === 'annee' ? String(annee) : 'Tous temps';
-  const nomAutre = portee === 'annee' ? 'Tous temps' : annee === maintenant.getFullYear() ? 'cette année' : String(annee);
 
   const sortiesAnnee = useMemo(() => sorties.filter((s) => s.iso.startsWith(`${annee}-`)), [sorties, annee]);
   const basiques = useMemo(() => recordsBasiquesVelo(portee === 'annee' ? sortiesAnnee : sorties), [portee, sortiesAnnee, sorties]);
@@ -118,9 +117,6 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
           <Text style={[typo.corps, { color: p.texteDoux }]}>{autresSignaux.erreur}</Text>
         ) : courbe.some((x) => x.top.length) ? (
           <>
-            <Text style={[typo.petit, styles.note, { color: p.texteDoux }]}>
-              {info.nom}, {nomPortee}. Pointillés : {nomAutre}. Touche la courbe pour lire une durée.
-            </Text>
             <CourbeEfforts
               courbe={courbe}
               autre={autre.some((x) => x.top.length) ? autre : undefined}
@@ -190,7 +186,6 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
 
 const styles = StyleSheet.create({
   attente: { paddingVertical: 40, alignItems: 'center' },
-  note: { marginBottom: 10 },
   entete: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
   lecture: { alignItems: 'center', gap: 2, marginTop: 10 },
   valeur: { fontFamily: police.titre800, fontSize: 38, lineHeight: 42, fontVariant: ['tabular-nums'] },
