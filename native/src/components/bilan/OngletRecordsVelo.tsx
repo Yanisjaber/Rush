@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   tuileMini: { width: '23.1%', minHeight: 70, borderRadius: rayon.base, borderTopWidth: 3, borderWidth: 0, paddingHorizontal: 7, paddingTop: 8, paddingBottom: 8, gap: 1 },
   nomMini: { fontFamily: police.texte600, fontSize: 10, lineHeight: 13, letterSpacing: 0.2, textTransform: 'uppercase', minHeight: 28 },
   valeurMini: { fontFamily: police.titre800, fontSize: 20, lineHeight: 24, fontVariant: ['tabular-nums'] },
-  valeurDetail: { fontFamily: police.titre800, fontSize: 24, lineHeight: 28, marginBottom: 2, fontVariant: ['tabular-nums'] },
+  valeurDetail: { fontFamily: police.titre800, fontSize: 18, lineHeight: 22, marginBottom: 0, fontVariant: ['tabular-nums'] },
   lecture: { alignItems: 'center', gap: 2, marginTop: 10 },
   valeur: { fontFamily: police.titre800, fontSize: 38, lineHeight: 42, fontVariant: ['tabular-nums'] },
   enteteClassement: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, marginTop: 8, borderTopWidth: StyleSheet.hairlineWidth },
