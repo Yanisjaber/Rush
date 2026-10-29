@@ -8,7 +8,7 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Le podium d'une durée de la courbe : jusqu'à 30 séances, une coupe pour les trois premières, le nom sur une seule ligne et, pour chaque séance, l'écart avec la meilleure.
-// Une zone de hauteur fixe qui défile (trois lignes visibles) : tout le classement sans allonger la page. On touche une ligne pour ouvrir la séance.
+// Une zone de hauteur fixe qui défile (cinq lignes visibles) : tout le classement sans allonger la page. On touche une ligne pour ouvrir la séance.
 interface Props {
   titre: string;
   entrees: EntreeCourbe[];
@@ -18,8 +18,9 @@ interface Props {
   onOuvrir: (id: string) => void;
 }
 
-/** La hauteur d'une ligne : la zone qui défile en montre exactement trois. */
+/** La hauteur d'une ligne, et le nombre de lignes que la zone qui défile montre d'un coup. */
 const HAUTEUR_LIGNE = 62;
+const LIGNES_VISIBLES = 5;
 
 /** « Lundi 6 avril 2026 » : avec l'année, qui compte en « Tous temps ». */
 const dateAnnee = (iso: string): string => `${formatDateLongue(iso)} ${iso.slice(0, 4)}`;
@@ -64,7 +65,7 @@ export function PodiumEfforts({ titre, entrees, unite, sousPremiere, onOuvrir }:
 const styles = StyleSheet.create({
   compte: { marginBottom: 4 },
   // La zone déborde de 10 pt dans la marge de la carte : la barre de défilement s'y dessine, pas sur les valeurs
-  zone: { height: HAUTEUR_LIGNE * 3, marginRight: -10 },
+  zone: { height: HAUTEUR_LIGNE * LIGNES_VISIBLES, marginRight: -10 },
   contenu: { paddingRight: 14 },
   ligne: { height: HAUTEUR_LIGNE, flexDirection: 'row', alignItems: 'center', gap: 10 },
   rang: { width: 30, alignItems: 'center' },
