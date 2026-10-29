@@ -174,7 +174,7 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
         </>
       ) : (
         <Bloc titre="Records">
-          <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de record {portee === 'annee' ? enAnnee(annee, maintenant) : ''}.</Text>
+          <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de record{portee === 'annee' ? ` ${enAnnee(annee, maintenant)}` : ''}.</Text>
         </Bloc>
       )}
 
@@ -216,7 +216,7 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
             ) : null}
           </>
         ) : (
-          <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de puissance enregistrée {portee === 'annee' ? enAnnee(annee, maintenant) : ''}.</Text>
+          <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de puissance enregistrée{portee === 'annee' ? ` ${enAnnee(annee, maintenant)}` : ''}.</Text>
         )}
       </Bloc>
 

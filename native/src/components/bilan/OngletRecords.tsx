@@ -157,7 +157,7 @@ export function OngletRecords({ portee, toutes, annee, maintenant, filtre, mesur
                 );
               })
             ) : (
-              <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de record {portee === 'annee' ? enAnnee(annee, maintenant) : ''} dans ce thème.</Text>
+              <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de record{portee === 'annee' ? ` ${enAnnee(annee, maintenant)}` : ''} dans ce thème.</Text>
             )}
           </Bloc>
 
@@ -197,7 +197,7 @@ export function OngletRecords({ portee, toutes, annee, maintenant, filtre, mesur
         </>
       ) : (
         <Bloc titre="Records">
-          <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de record {portee === 'annee' ? enAnnee(annee, maintenant) : ''}.</Text>
+          <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de record{portee === 'annee' ? ` ${enAnnee(annee, maintenant)}` : ''}.</Text>
         </Bloc>
       )}
     </>
