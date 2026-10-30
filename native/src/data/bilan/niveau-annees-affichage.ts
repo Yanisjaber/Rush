@@ -101,5 +101,5 @@ export function recordsDeCourbe(an: number, courbe: readonly PointCourbe[]): Rec
     const v = courbe.find((p) => p.duree === duree)?.top[0]?.valeur;
     return v && v > 0 ? v : undefined;
   };
-  return { an, w300: meilleur(300), w1200: meilleur(1200), w3600: meilleur(3600) };
+  return { an, w5: meilleur(5), w300: meilleur(300), w1200: meilleur(1200), w3600: meilleur(3600) };
 }

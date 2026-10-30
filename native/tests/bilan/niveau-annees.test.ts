@@ -146,11 +146,22 @@ test('serieRecord : le meilleur record fait 100, une année sans record est abse
   assert.equal(serieRecord([{ an: 2025, w300: 300 }, { an: 2026 }], 'w300'), null);
 });
 
-test('recordsDeCourbe : lit 5, 20 et 60 minutes dans la courbe de puissance d\'une année', () => {
+test('serieRecord : le sprint (5 secondes) se note comme les autres durées', () => {
+  const serie = serieRecord([{ an: 2024, w5: 1100 }, { an: 2025, w5: 1210 }, { an: 2026, w5: 1155 }], 'w5');
+  assert.ok(serie);
+  assert.equal(serie.meilleur.an, 2025);
+  // 1 100 W / 1 210 W = 90,9 % du meilleur : (0,909 − 0,7) / 0,3 = 70
+  assert.equal(Math.round(serie.annuel[0].score), 70);
+  assert.equal(Math.round(serie.annuel[2].score), 85);
+});
+
+test('recordsDeCourbe : lit 5 secondes, 5, 20 et 60 minutes dans la courbe de puissance d\'une année', () => {
   const top = (valeur: number) => [{ valeur, id: 'a', nom: 'x', iso: '2025-05-01' }];
   const r = recordsDeCourbe(2025, [{ duree: 60, top: top(500) }, { duree: 300, top: top(290) }, { duree: 1200, top: top(259) }]);
-  assert.deepEqual(r, { an: 2025, w300: 290, w1200: 259, w3600: undefined });
-  assert.deepEqual(recordsDeCourbe(2024, []), { an: 2024, w300: undefined, w1200: undefined, w3600: undefined });
+  assert.deepEqual(r, { an: 2025, w5: undefined, w300: 290, w1200: 259, w3600: undefined });
+  assert.deepEqual(recordsDeCourbe(2024, []), { an: 2024, w5: undefined, w300: undefined, w1200: undefined, w3600: undefined });
+  // Le sprint est le meilleur sur 5 secondes
+  assert.equal(recordsDeCourbe(2025, [{ duree: 5, top: top(1104) }, { duree: 10, top: top(1030) }]).w5, 1104);
 });
 
 // --- Affichage ---

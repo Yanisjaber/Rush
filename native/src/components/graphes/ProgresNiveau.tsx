@@ -25,8 +25,8 @@ import { usePalette } from '@/theme/usePalette';
 // Calculs : data/bilan/niveau-annees.ts et docs/native/PROGRESSION_NIVEAU.md.
 type Choix = 'endurance' | DureeRecord;
 
-const NOMS_CHOIX: Record<Choix, string> = { endurance: 'Endurance', w300: '5 min', w1200: '20 min', w3600: '60 min' };
-const NOMS_RECORD: Record<DureeRecord, string> = { w300: 'Meilleur 5 min', w1200: 'Meilleur 20 min', w3600: 'Meilleur 60 min' };
+const NOMS_CHOIX: Record<Choix, string> = { endurance: 'Endurance', w5: 'Sprint', w300: '5 min', w1200: '20 min', w3600: '60 min' };
+const NOMS_RECORD: Record<DureeRecord, string> = { w5: 'Meilleur sprint (5 s)', w300: 'Meilleur 5 min', w1200: 'Meilleur 20 min', w3600: 'Meilleur 60 min' };
 
 /** Les deux flèches opposées (agrandir) ou face à face (réduire) du bouton en haut à droite de la courbe. */
 function IconeElargir({ reduire, couleur }: { reduire: boolean; couleur: string }) {
@@ -60,7 +60,7 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours }: Props)
   const couleur = couleurSport(p, famille);
   const seriesRecords = useMemo(() => {
     if (famille !== 'velo') return [];
-    return (['w300', 'w1200', 'w3600'] as const).map((d) => ({ duree: d, serie: serieRecord(records, d) })).filter((r): r is { duree: DureeRecord; serie: SerieNiveau } => r.serie !== null);
+    return (['w5', 'w300', 'w1200', 'w3600'] as const).map((d) => ({ duree: d, serie: serieRecord(records, d) })).filter((r): r is { duree: DureeRecord; serie: SerieNiveau } => r.serie !== null);
   }, [famille, records]);
   const choisie = choix === 'endurance' ? null : seriesRecords.find((r) => r.duree === choix);
   const actuelle = choisie ? choisie.serie : serie;
@@ -88,8 +88,9 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours }: Props)
       {famille === 'velo' && seriesRecords.length ? (
         <OngletsSegment<Choix>
           etiquette="Ce que montre la courbe"
-          taille={13}
-          onglets={[{ cle: 'endurance', nom: NOMS_CHOIX.endurance }, ...seriesRecords.map((r) => ({ cle: r.duree as Choix, nom: NOMS_CHOIX[r.duree] }))]}
+          taille={12}
+          proportionnel
+          onglets={[...seriesRecords.map((r) => ({ cle: r.duree as Choix, nom: NOMS_CHOIX[r.duree] })), { cle: 'endurance', nom: NOMS_CHOIX.endurance }]}
           actuel={choix}
           onChoisir={setChoix}
         />

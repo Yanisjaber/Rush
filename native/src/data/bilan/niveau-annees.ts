@@ -187,13 +187,14 @@ export function niveauxCourse(sorties: readonly SortieNiveauCourse[]): SerieNive
 /** Les meilleures puissances d'une année, pour quelques durées (en watts ; absentes quand l'année n'a pas de record sur cette durée). */
 export interface RecordsAnnee {
   an: number;
-  /** 5 min, 20 min, 60 min. */
+  /** Sprint (5 secondes), 5 min, 20 min, 60 min. */
+  w5?: number;
   w300?: number;
   w1200?: number;
   w3600?: number;
 }
 
-export type DureeRecord = 'w300' | 'w1200' | 'w3600';
+export type DureeRecord = 'w5' | 'w300' | 'w1200' | 'w3600';
 
 /** La série annuelle d'un record : une valeur par année (pas de marge d'erreur, pas de trimestre : un record n'est pas assez régulier pour ça). Null avec moins de deux années. */
 export function serieRecord(records: readonly RecordsAnnee[], duree: DureeRecord): SerieNiveau | null {
