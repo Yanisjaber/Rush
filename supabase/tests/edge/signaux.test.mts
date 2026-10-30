@@ -77,3 +77,22 @@ test('calculerSignaux : le couple ignore les secondes sans pédalage', () => {
   assert.equal(c.cou!['300'], Math.round((200 / ((90 * 2 * Math.PI) / 60)) * 10) / 10);
   assert.ok(c.cou!['600'] < c.cou!['300']); // la fenêtre de 10 min contient 5 min d'arrêt
 });
+
+test('calculerSignaux : les durées courtes (5 s, 30 s) existent pour les signaux, la VAM et la descente à partir de 30 s', () => {
+  const n = 900;
+  const c = calculerSignaux({ time: secondes(n), heartrate: constante(n, 150), cadence: constante(n, 90), velocity_smooth: constante(n, 10), altitude: secondes(n).map((i) => 1000 - i * 0.2) });
+  for (const d of ['1', '2', '3', '4', '5']) assert.equal(c.fc![d], 150);
+  assert.equal(c.cad!['30'], 90);
+  assert.equal(c.vit!['5'], 36);
+  assert.equal(c.des!['30'], 720);
+  assert.equal(c.vam, undefined);
+  assert.equal(c.des!['5'], undefined);
+});
+
+test('calculerSignaux : une pointe de cadence à 250 tr/min ne compte pas', () => {
+  const n = 120;
+  const cad = constante(n, 90);
+  for (let i = 20; i < 50; i++) cad[i] = 250;
+  const c = calculerSignaux({ time: secondes(n), cadence: cad });
+  assert.ok(c.cad!['30'] <= 90);
+});

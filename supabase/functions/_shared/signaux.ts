@@ -12,16 +12,19 @@
 import { reechantillonner1Hz } from './flux.ts';
 
 /** À augmenter quand les durées ou les calculs changent : les anciennes séances sont alors recalculées. */
-export const SIGNAUX_VERSION = 1;
+export const SIGNAUX_VERSION = 4;
 
-/** Durées (secondes) de chaque signal. Pas de durée courte pour la FC et l'altitude : une pointe de capteur ou un bruit GPS fausserait tout. */
-export const DUREES_MOYENNE = [60, 120, 180, 300, 420, 600, 900, 1200, 1800, 2400, 3600, 5400, 7200, 10800, 14400, 18000];
-export const DUREES_VAM = [300, 600, 900, 1200, 1800, 2700, 3600, 5400, 7200, 10800];
-export const DUREES_DESCENTE = [60, 120, 300, 600, 900, 1200, 1800, 3600, 7200];
+/** Durées (secondes) de chaque signal : les mêmes repères que la puissance (de 1 s à 5 h).
+ *  Les très courtes durées sont moins fiables pour la FC (le capteur est en retard sur le cœur) et pour l'altitude (le GPS bouge de quelques mètres) : la VAM et la descente commencent à 30 s, et l'altitude est lissée. */
+export const DUREES_MOYENNE = [1, 2, 3, 4, 5, 10, 15, 30, 45, 60, 120, 180, 300, 420, 600, 900, 1200, 1800, 2400, 3600, 5400, 7200, 10800, 14400, 18000];
+export const DUREES_VAM = [30, 60, 120, 300, 600, 900, 1200, 1800, 2700, 3600, 5400, 7200, 10800];
+export const DUREES_DESCENTE = [30, 60, 120, 300, 600, 900, 1200, 1800, 3600, 7200];
 
 /** Une FC au-dessus de cette valeur est une pointe de capteur (233 bpm vus) : on l'ignore. */
 const FC_MAX_CREDIBLE = 215;
 const FC_MIN_CREDIBLE = 30;
+/** Une cadence au-dessus de cette valeur est une pointe de capteur (190 tr/min tenus 30 s, vus dans l'historique) : on l'ignore. */
+const CADENCE_MAX_CREDIBLE = 180;
 /** En dessous de cette cadence, on ne pédale pas vraiment : le couple n'a pas de sens. */
 const CADENCE_MIN_COUPLE = 30;
 /** Le lissage de l'altitude (secondes) : le GPS et le baromètre bougent de quelques mètres sans que la pente change. */
@@ -146,7 +149,7 @@ export function calculerSignaux(flux: FluxSignaux): CourbesSignaux {
     ajoute('fc', meilleureMoyenne(fc, DUREES_MOYENNE));
   }
   if (flux.cadence?.length) {
-    const cad = un(flux.cadence).map((x) => (x > 0 ? x : 0));
+    const cad = un(flux.cadence).map((x) => (x > 0 && x <= CADENCE_MAX_CREDIBLE ? x : 0));
     ajoute('cad', meilleureMoyenne(cad, DUREES_MOYENNE));
     if (flux.watts?.length) {
       const w = un(flux.watts);
