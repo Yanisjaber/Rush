@@ -94,10 +94,11 @@ export function CourbeNiveau({ serie, mode, depuisAn, couleur, etiquette }: Prop
           <TexteSvg key={r.an} x={x(r.t)} y={HAUTEUR - 8} fontSize={12} fontFamily={police.texte500} fill={p.texteDoux} textAnchor="middle">{r.an}</TexteSvg>
         ))}
       </Svg>
-      <Text style={[typo.petit, styles.legende, { color: p.texteDoux }]}>
-        {aMarge ? '○ moins de 8 sorties · zone teintée : marge d\'erreur · pointillés : période sans assez de sorties' : 'Un point par année : ton meilleur sur cette durée'}
-        {sommetHorsVue ? ` Ton meilleur niveau (${libellePeriode(serie.meilleur.cle)}) est avant cette vue : touche la flèche pour tout voir.` : ''}
-      </Text>
+      {sommetHorsVue ? (
+        <Text style={[typo.petit, styles.legende, { color: p.texteDoux }]}>
+          Ton meilleur niveau ({libellePeriode(serie.meilleur.cle)}) est avant cette vue : touche la flèche pour tout voir.
+        </Text>
+      ) : null}
     </View>
   );
 }
