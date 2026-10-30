@@ -151,7 +151,7 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours }: Props)
           ))}
         </View>
         <Text style={[typo.petit, { color: p.texteDoux }]}>
-          {choisie ? 'Le score est le record de l\'année divisé par ton meilleur record, sur 100.' : `Niveau${lieu}, sur route. Le score est le niveau divisé par ton meilleur niveau, sur 100.`}
+          {choisie ? 'Score : 100 = ton meilleur record, 0 = un record 30 % en dessous.' : `Niveau${lieu}, sur route. Score : 100 = ton meilleur niveau, 0 = un niveau 30 % en dessous.`}
         </Text>
       </Bloc>
 

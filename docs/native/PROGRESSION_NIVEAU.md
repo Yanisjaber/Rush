@@ -22,7 +22,7 @@ Le **niveau** d'une période, c'est la puissance (vélo) ou l'allure (course) à
 - chaque niveau a sa **marge d'erreur** (1,8 fois l'incertitude au vélo, 2 en course) ;
 - une période a besoin d'au moins **3 sorties** pour avoir un niveau.
 
-Le **score** = niveau ÷ meilleur niveau × 100 (en course, plus rapide = score plus haut).
+Le **score** va de 0 à 100 : **100 = ton meilleur niveau, 0 = un niveau 30 % en dessous du meilleur**, en ligne droite entre les deux (1 % de niveau en moins = 3,3 points ; en course, plus rapide = score plus haut). On a d'abord essayé « niveau ÷ meilleur niveau × 100 » : un vélo qui passe de 138 à 169 W (22 % d'écart) n'y variait que de 82 à 100, tout se tassait entre 70 et 100. Avec l'échelle large, la même évolution va de ~40 à 100. La constante est `RAPPORT_ZERO` (0,7) dans `niveau-annees.ts`. Les records utilisent la même échelle (un record 30 % sous ton meilleur vaut 0).
 
 **Le sommet (100)** est le meilleur niveau parmi les périodes d'au moins **8 sorties** : une période de 3 ou 4 sorties peut sortir très haut par hasard (une sortie en descente), elle ne doit pas fixer le sommet. Son score est alors plafonné à 100 (sa marge d'erreur, elle, peut dépasser).
 

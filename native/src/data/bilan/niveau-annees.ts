@@ -93,12 +93,22 @@ function niveauxPar(lignes: readonly LigneNiveau[], cleDe: (l: LigneNiveau) => {
 }
 
 function noter(brut: Brut, meilleur: number, plusHautMieux: boolean): PointNiveau {
-  const brutScore = plusHautMieux ? (brut.niveau / meilleur) * 100 : (meilleur / brut.niveau) * 100;
-  const bas = plusHautMieux ? ((brut.niveau - brut.demi) / meilleur) * 100 : (meilleur / (brut.niveau + brut.demi)) * 100;
-  const haut = plusHautMieux ? ((brut.niveau + brut.demi) / meilleur) * 100 : (meilleur / Math.max(1e-9, brut.niveau - brut.demi)) * 100;
-  const score = Math.min(100, brutScore);
-  return { cle: brut.cle, an: brut.an, tranche: brut.tranche, niveau: brut.niveau, demi: brut.demi, n: brut.n, score, bas: Math.min(bas, score), haut };
+  // Le rapport au meilleur niveau (1 = le meilleur, 0,9 = 10 % en dessous), du centre de la marge d'erreur et de ses deux bouts
+  const rapport = plusHautMieux ? brut.niveau / meilleur : meilleur / brut.niveau;
+  const rapportBas = plusHautMieux ? (brut.niveau - brut.demi) / meilleur : meilleur / (brut.niveau + brut.demi);
+  const rapportHaut = plusHautMieux ? (brut.niveau + brut.demi) / meilleur : meilleur / Math.max(1e-9, brut.niveau - brut.demi);
+  const score = noteDe(rapport);
+  return { cle: brut.cle, an: brut.an, tranche: brut.tranche, niveau: brut.niveau, demi: brut.demi, n: brut.n, score, bas: Math.min(noteDe(rapportBas), score), haut: Math.max(noteLibre(rapportHaut), score) };
 }
+
+/**
+ * L'échelle du score : 100 = ton meilleur niveau, 0 = un niveau 30 % en dessous du meilleur, entre les deux en ligne droite (1 % de niveau en moins = 3,3 points).
+ * Un rapport au meilleur niveau simple (90 % = note 90) serrerait tout entre 70 et 100 : les écarts réels (un vélo qui passe de 138 à 169 W, soit 22 %) se verraient à peine.
+ */
+export const RAPPORT_ZERO = 0.7;
+const noteLibre = (rapport: number): number => ((rapport - RAPPORT_ZERO) / (1 - RAPPORT_ZERO)) * 100;
+/** La note, entre 0 et 100 (le haut de la marge d'erreur, lui, peut dépasser 100 : voir noteLibre). */
+const noteDe = (rapport: number): number => Math.max(0, Math.min(100, noteLibre(rapport)));
 
 /** Construit la série à partir des sorties, ou null s'il y a moins de deux années calculables. */
 function construire(lignes: readonly LigneNiveau[], r: Reglage): SerieNiveau | null {
@@ -190,6 +200,6 @@ export function serieRecord(records: readonly RecordsAnnee[], duree: DureeRecord
   const valeurs = records.filter((r) => (r[duree] ?? 0) > 0).sort((a, b) => a.an - b.an);
   if (valeurs.length < 2) return null;
   const meilleurW = Math.max(...valeurs.map((r) => r[duree]!));
-  const annuel = valeurs.map((r): PointNiveau => ({ cle: String(r.an), an: r.an, tranche: 0, niveau: r[duree]!, demi: 0, n: null, score: (r[duree]! / meilleurW) * 100, bas: (r[duree]! / meilleurW) * 100, haut: (r[duree]! / meilleurW) * 100 }));
+  const annuel = valeurs.map((r): PointNiveau => ({ cle: String(r.an), an: r.an, tranche: 0, niveau: r[duree]!, demi: 0, n: null, score: noteDe(r[duree]! / meilleurW), bas: noteDe(r[duree]! / meilleurW), haut: noteDe(r[duree]! / meilleurW) }));
   return { fcReference: null, tranchesParAn: 1, annuel, tranches: [], meilleur: annuel.reduce((m, p) => (p.score > m.score ? p : m)), actuel: annuel[annuel.length - 1] };
 }

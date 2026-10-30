@@ -27,16 +27,18 @@ test('niveauxVelo : le niveau de chaque année, le score (100 = meilleur) et l\'
   assert.ok(Math.abs(serie.annuel[0].niveau - 140) < 4, `2023 : ${serie.annuel[0].niveau}`);
   assert.ok(Math.abs(serie.annuel[1].niveau - 160) < 4);
   assert.ok(Math.abs(serie.annuel[2].niveau - 150) < 4);
-  // Le sommet est un trimestre de 2024 : l'année 2024 est donc tout près de 100, 2023 vers 87, 2025 vers 94
+  // Le sommet est un trimestre de 2024 : l'année 2024 est donc tout près de 100. L'échelle va de 100 (le meilleur) à 0 (30 % en dessous) :
+  // 2023 est à 87,5 % du meilleur, donc vers 58 ; 2025 à 93,7 %, donc vers 79
   assert.equal(serie.meilleur.an, 2024);
   assert.equal(serie.meilleur.score, 100);
-  assert.ok(serie.annuel[1].score > 96 && serie.annuel[1].score <= 100);
-  assert.ok(Math.abs(serie.annuel[0].score - 87.5) < 4);
-  assert.ok(Math.abs(serie.annuel[2].score - 93.7) < 4);
+  assert.ok(serie.annuel[1].score > 85 && serie.annuel[1].score <= 100);
+  assert.ok(Math.abs(serie.annuel[0].score - 58) < 12, `2023 : ${serie.annuel[0].score}`);
+  assert.ok(Math.abs(serie.annuel[2].score - 79) < 12, `2025 : ${serie.annuel[2].score}`);
+  assert.ok(serie.annuel[0].score < serie.annuel[2].score && serie.annuel[2].score < serie.annuel[1].score);
   assert.equal(serie.actuel.an, 2025);
   assert.equal(serie.tranchesParAn, 4);
   assert.equal(serie.tranches.length, 12);
-  assert.ok(ecartAuSommet(serie) > 3 && ecartAuSommet(serie) < 10);
+  assert.ok(ecartAuSommet(serie) > 10 && ecartAuSommet(serie) < 35, `écart ${ecartAuSommet(serie)}`);
   assert.ok(serie.annuel.every((p) => p.bas <= p.score && p.haut >= p.score - 0.01));
 });
 
@@ -135,7 +137,9 @@ test('serieRecord : le meilleur record fait 100, une année sans record est abse
   assert.deepEqual(serie.annuel.map((p) => p.cle), ['2022', '2023', '2025', '2026']);
   assert.equal(serie.meilleur.an, 2025);
   assert.equal(serie.meilleur.score, 100);
-  assert.equal(Math.round(serie.annuel[3].score), 86);
+  // 223 W contre 259 W : à 86 % du meilleur, soit 54 sur l'échelle (100 = le meilleur, 0 = 30 % en dessous)
+  assert.equal(Math.round(serie.annuel[3].score), 54);
+  assert.equal(Math.round(serie.annuel[0].score), 55); // 224 W : 86,5 %
   assert.equal(serie.annuel[0].n, null);
   assert.equal(serie.tranches.length, 0);
   assert.equal(serieRecord([{ an: 2025, w300: 300 }], 'w300'), null);

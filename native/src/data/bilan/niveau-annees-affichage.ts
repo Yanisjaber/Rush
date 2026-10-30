@@ -43,13 +43,17 @@ export function reperesAnnees(positions: readonly PositionNiveau[]): { an: numbe
   return [...parAn].map(([an, ts]) => ({ an, t: (Math.min(...ts) + Math.max(...ts)) / 2 }));
 }
 
-/** L'axe du score : de la dizaine sous le plus bas (avec un peu d'air) jusqu'à 104 (pour voir le haut des marges d'erreur au-dessus de 100), un repère par dizaine. */
+/**
+ * L'axe du score : du repère sous le plus bas (avec un peu d'air) jusqu'à 104 (pour voir le haut des marges d'erreur au-dessus de 100), un repère par dizaine,
+ * ou par vingtaine quand l'axe est haut (sinon les repères se serrent).
+ */
 export function axeScore(points: readonly PointNiveau[]): { min: number; max: number; reperes: number[] } {
-  const plusBas = Math.min(...points.map((p) => p.bas));
-  const min = Math.max(0, Math.floor((plusBas - 6) / 10) * 10);
+  const plusBas = Math.min(...points.map((p) => p.bas)) - 6;
+  const pas = 100 - plusBas > 50 ? 20 : 10;
+  const min = Math.max(0, Math.floor(plusBas / pas) * pas);
   const max = 104;
   const reperes: number[] = [];
-  for (let v = Math.ceil(min / 10) * 10; v <= 100; v += 10) reperes.push(v);
+  for (let v = min; v <= 100; v += pas) reperes.push(v);
   return { min, max, reperes };
 }
 
