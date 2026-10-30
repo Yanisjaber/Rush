@@ -12,13 +12,14 @@
 import { reechantillonner1Hz } from './flux.ts';
 
 /** À augmenter quand les durées ou les calculs changent : les anciennes séances sont alors recalculées. */
-export const SIGNAUX_VERSION = 4;
+export const SIGNAUX_VERSION = 6;
 
-/** Durées (secondes) de chaque signal : les mêmes repères que la puissance (de 1 s à 5 h).
- *  Les très courtes durées sont moins fiables pour la FC (le capteur est en retard sur le cœur) et pour l'altitude (le GPS bouge de quelques mètres) : la VAM et la descente commencent à 30 s, et l'altitude est lissée. */
-export const DUREES_MOYENNE = [1, 2, 3, 4, 5, 10, 15, 30, 45, 60, 120, 180, 300, 420, 600, 900, 1200, 1800, 2400, 3600, 5400, 7200, 10800, 14400, 18000];
-export const DUREES_VAM = [30, 60, 120, 300, 600, 900, 1200, 1800, 2700, 3600, 5400, 7200, 10800];
-export const DUREES_DESCENTE = [30, 60, 120, 300, 600, 900, 1200, 1800, 3600, 7200];
+/** Durées (secondes) de chaque signal : les mêmes 44 durées que la courbe de puissance (rpc_courbe_puissance), pour que le doigt trouve presque n'importe quelle durée sur la courbe.
+ *  Les très courtes durées sont moins fiables pour la FC (le capteur est en retard sur le cœur) et pour l'altitude (le GPS bouge de quelques mètres) : la VAM et la descente commencent à 30 s, et l'altitude est filtrée. */
+const DUREES_COURBE = [1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60, 75, 90, 120, 150, 180, 240, 300, 360, 420, 480, 600, 720, 900, 1080, 1200, 1500, 1800, 2400, 3000, 3600, 4500, 5400, 7200, 9000, 10800, 14400, 18000];
+export const DUREES_MOYENNE = DUREES_COURBE;
+export const DUREES_VAM = DUREES_COURBE.filter((d) => d >= 30);
+export const DUREES_DESCENTE = DUREES_COURBE.filter((d) => d >= 30);
 
 /** Une FC au-dessus de cette valeur est une pointe de capteur (233 bpm vus) : on l'ignore. */
 const FC_MAX_CREDIBLE = 215;
@@ -27,8 +28,11 @@ const FC_MIN_CREDIBLE = 30;
 const CADENCE_MAX_CREDIBLE = 180;
 /** En dessous de cette cadence, on ne pédale pas vraiment : le couple n'a pas de sens. */
 const CADENCE_MIN_COUPLE = 30;
-/** Le lissage de l'altitude (secondes) : le GPS et le baromètre bougent de quelques mètres sans que la pente change. */
-const LISSAGE_ALTITUDE_S = 15;
+/** Le filtre de l'altitude (secondes) : le GPS et le baromètre bougent de quelques mètres, ou sautent de dizaines de mètres, sans que la pente change. */
+const FILTRE_ALTITUDE_S = 15;
+/** Les vitesses verticales au-delà desquelles une montée ou une descente est une erreur de capteur, pas un effort : 1,3 m/s en montée (4 700 m/h, plus que n'importe quel grimpeur), 4 m/s en descente. */
+const MONTEE_MAX_CREDIBLE_MS = 1.3;
+const DESCENTE_MAX_CREDIBLE_MS = 4;
 
 export interface FluxSignaux {
   time?: any[];
@@ -75,8 +79,8 @@ export function meilleureMoyenne(serie: number[], durees: number[], facteur = 1,
   return sortie;
 }
 
-/** La meilleure variation d'altitude sur chaque durée, ramenée à l'heure. `sens` = 1 pour monter, -1 pour descendre. */
-export function meilleureVariation(altitude: number[], durees: number[], sens: 1 | -1): CourbeSignal {
+/** La meilleure variation d'altitude sur chaque durée, ramenée à l'heure. `sens` = 1 pour monter, -1 pour descendre. Une fenêtre plus rapide que `plafondMs` (mètres par seconde) est écartée : c'est une erreur de capteur. */
+export function meilleureVariation(altitude: number[], durees: number[], sens: 1 | -1, plafondMs = Infinity): CourbeSignal {
   const n = altitude.length;
   const sortie: CourbeSignal = {};
   for (const d of durees) {
@@ -84,7 +88,7 @@ export function meilleureVariation(altitude: number[], durees: number[], sens: 1
     let meilleure = 0;
     for (let i = 0; i + d < n; i++) {
       const gain = sens * (altitude[i + d] - altitude[i]);
-      if (gain > meilleure) meilleure = gain;
+      if (gain > meilleure && gain / d <= plafondMs) meilleure = gain;
     }
     if (meilleure > 0) sortie[String(d)] = Math.round((meilleure / d) * 3600);
   }
@@ -121,17 +125,14 @@ export function reechantillonnerContinu(valeurs: any[], temps: any[]): number[] 
   return sortie.map((v) => (Number.isFinite(v) ? (derniere = v) : derniere));
 }
 
-/** La moyenne mobile centrée sur `fenetre` secondes (bords : la fenêtre se réduit). */
-export function lisser(serie: number[], fenetre: number): number[] {
+/** La médiane mobile centrée sur `fenetre` secondes (bords : la fenêtre se réduit). Contrairement à une moyenne, elle efface un saut de quelques secondes au lieu de l'étaler. */
+export function medianeGlissante(serie: number[], fenetre: number): number[] {
   const n = serie.length;
   if (fenetre <= 1 || n < 3) return serie;
-  const cum = new Float64Array(n + 1);
-  for (let i = 0; i < n; i++) cum[i + 1] = cum[i] + serie[i];
   const demi = Math.floor(fenetre / 2);
   return serie.map((_, i) => {
-    const a = Math.max(0, i - demi);
-    const b = Math.min(n, i + demi + 1);
-    return (cum[b] - cum[a]) / (b - a);
+    const morceau = serie.slice(Math.max(0, i - demi), Math.min(n, i + demi + 1)).sort((x, y) => x - y);
+    return morceau[Math.floor(morceau.length / 2)];
   });
 }
 
@@ -164,9 +165,9 @@ export function calculerSignaux(flux: FluxSignaux): CourbesSignaux {
     ajoute('vit', meilleureMoyenne(v, DUREES_MOYENNE, 3.6, 1));
   }
   if (flux.altitude?.length) {
-    const alt = lisser(reechantillonnerContinu(flux.altitude, temps), LISSAGE_ALTITUDE_S);
-    ajoute('vam', meilleureVariation(alt, DUREES_VAM, 1));
-    ajoute('des', meilleureVariation(alt, DUREES_DESCENTE, -1));
+    const alt = medianeGlissante(reechantillonnerContinu(flux.altitude, temps), FILTRE_ALTITUDE_S);
+    ajoute('vam', meilleureVariation(alt, DUREES_VAM, 1, MONTEE_MAX_CREDIBLE_MS));
+    ajoute('des', meilleureVariation(alt, DUREES_DESCENTE, -1, DESCENTE_MAX_CREDIBLE_MS));
   }
   return resultat;
 }
