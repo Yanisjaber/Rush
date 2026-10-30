@@ -294,7 +294,7 @@ export const SIGNAUX_VELO: SignalVelo[] = [
   { cle: 'puissance', court: 'Puissance', nom: 'Puissance', unite: 'W' },
   { cle: 'fc', court: 'FC', nom: 'Fréquence cardiaque', unite: 'bpm' },
   { cle: 'cad', court: 'Cadence', nom: 'Cadence', unite: 'tr/min' },
-  { cle: 'cou', court: 'Couple', nom: 'Couple', unite: 'N·m' },
+  { cle: 'cou', court: 'Torque', nom: 'Torque', unite: 'N·m' },
   { cle: 'vit', court: 'Vitesse', nom: 'Vitesse moyenne', unite: 'km/h' },
   { cle: 'vam', court: 'VAM', nom: 'Vitesse ascensionnelle', unite: 'm/h' },
   { cle: 'des', court: 'Descente', nom: 'Mètres descendus', unite: 'm/h' },

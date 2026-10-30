@@ -125,6 +125,7 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
               // En « Tout », une seule ligne : la courbe de tous les temps, sans la pointillée de l'année
               autre={portee === 'annee' && autre.some((x) => x.top.length) ? autre : undefined}
               formater={(v) => texteRecordSimple(v, info.unite)}
+              dureeMin={signal === 'vam' || signal === 'des' ? 30 : undefined}
               serre={signal === 'fc' || signal === 'cad'}
               selection={indexChoisi >= 0 ? indexChoisi : null}
               onSelection={(i) => setDuree(i == null ? null : (courbe[i]?.duree ?? null))}

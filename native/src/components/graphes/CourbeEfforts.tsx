@@ -15,6 +15,8 @@ interface Props {
   autre?: PointCourbe[];
   /** Une valeur écrite avec son unité (« 357 W ») : pour les valeurs des repères et pour la bulle. */
   formater: (v: number) => string;
+  /** La plus courte durée de l'axe : 1 s pour la plupart des signaux, 30 s pour la VAM et la descente (en dessous, il n'y a rien à montrer). */
+  dureeMin?: number;
   /** L'axe des valeurs ne part pas de zéro (la FC, la cadence) : sinon la courbe, qui reste entre 130 et 190, serait écrasée en haut. */
   serre?: boolean;
   /** La durée touchée (indice dans `courbe`), ou null. */
@@ -43,11 +45,11 @@ const REPERES_DUREE: [number, string][] = [
   [18000, '5 h'],
 ];
 
-export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, etiquette, formater, serre = false }: Props) {
+export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, etiquette, formater, dureeMin = DUREE_MIN, serre = false }: Props) {
   const p = usePalette();
-  const x = (secondes: number) => GAUCHE + ((Math.log(secondes) - Math.log(DUREE_MIN)) / (Math.log(DUREE_MAX) - Math.log(DUREE_MIN))) * (LARGEUR - GAUCHE - DROITE);
+  const x = (secondes: number) => GAUCHE + ((Math.log(secondes) - Math.log(dureeMin)) / (Math.log(DUREE_MAX) - Math.log(dureeMin))) * (LARGEUR - GAUCHE - DROITE);
   /** La durée sous un point de l'axe (le contraire de x), pour le toucher. */
-  const secondesDeX = (px: number) => Math.exp(Math.log(DUREE_MIN) + ((px - GAUCHE) / (LARGEUR - GAUCHE - DROITE)) * (Math.log(DUREE_MAX) - Math.log(DUREE_MIN)));
+  const secondesDeX = (px: number) => Math.exp(Math.log(dureeMin) + ((px - GAUCHE) / (LARGEUR - GAUCHE - DROITE)) * (Math.log(DUREE_MAX) - Math.log(dureeMin)));
   const meilleurs = (c: PointCourbe[]) => c.filter((pt) => pt.top.length).map((pt) => ({ duree: pt.duree, valeur: pt.top[0].valeur }));
   const a = meilleurs(courbe);
   const b = autre ? meilleurs(autre) : [];
@@ -59,6 +61,8 @@ export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, 
   const y = (w: number) => HAUTEUR - BAS - ((w - plancher) / etendue) * (HAUTEUR - BAS - HAUT);
   const trace = (pts: { duree: number; valeur: number }[]) => pts.map((pt, i) => `${i ? 'L' : 'M'}${x(pt.duree).toFixed(1)} ${y(pt.valeur).toFixed(1)}`).join(' ');
   const reperes = pas > 0 ? [pas, 2 * pas, 3 * pas].map((k) => plancher + k) : [];
+  // Les durées écrites sous l'axe ; quand l'axe commence à 30 s, la première est « 30 s »
+  const reperesDuree: [number, string][] = [...(dureeMin >= 30 ? ([[30, '30 s']] as [number, string][]) : []), ...REPERES_DUREE.filter(([s]) => s >= dureeMin && !(dureeMin >= 30 && s === 30))];
   const choisi = selection != null ? courbe[selection] : null;
   const texteBulle = choisi && choisi.top.length ? `${texteDuree(choisi.duree)} · ${formater(choisi.top[0].valeur)}` : '';
   const bulleL = texteBulle.length * 6.2 + 18;
@@ -93,7 +97,7 @@ export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, 
           {formatNum(w, 0)}
         </TexteSvg>
       ))}
-      {REPERES_DUREE.map(([s, t]) => (
+      {reperesDuree.map(([s, t]) => (
         <TexteSvg key={s} x={x(s)} y={HAUTEUR - 8} fontSize={10} fontFamily={police.texte400} fill={p.texteDoux} textAnchor="middle">
           {t}
         </TexteSvg>
