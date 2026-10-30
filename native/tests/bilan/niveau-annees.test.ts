@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { niveauxCourse, niveauxVelo, serieRecord, type SortieNiveauCourse, type SortieNiveauVelo } from '../../src/data/bilan/niveau-annees.ts';
-import { axeScore, ecartAuSommet, formatMarge, formatNiveau, libellePeriode, positionsNiveau, recordsDeCourbe, reperesAnnees, segmentsContinus } from '../../src/data/bilan/niveau-annees-affichage.ts';
+import { axeScore, ecartAuSommet, formatMarge, formatNiveau, libellePeriode, pointsDepuis, positionsNiveau, recordsDeCourbe, reperesAnnees, segmentsContinus } from '../../src/data/bilan/niveau-annees-affichage.ts';
 
 // Un bruit fixe (pas de hasard : le test doit toujours donner le même résultat)
 const BRUIT = [-6, 3, -2, 5, 0, -4, 2, 4, -3, 1];
@@ -161,6 +161,27 @@ test('positionsNiveau et segmentsContinus : les trimestres sans assez de sorties
   assert.equal(segments.length, 2); // 2024-T1, T2 | 2024-T4, 2025-T1…T4 : le T3 de 2024 manque
   assert.deepEqual(segments[0].map((p) => p.point.cle), ['2024-T1', '2024-T2']);
   assert.deepEqual(reperesAnnees(pos).map((r) => r.an), [2024, 2025]);
+});
+
+test('reperesAnnees : l\'année s\'écrit au milieu de ses points, pour ne pas chevaucher la suivante', () => {
+  // 2023 n'a que ses deux derniers trimestres, 2024 les quatre
+  const serie = niveauxVelo([...annee(2023, 150, 10, [3, 4]), ...annee(2024, 160, 10, [1, 2, 3, 4])]);
+  assert.ok(serie);
+  const reperes = reperesAnnees(positionsNiveau(serie.tranches, serie.tranchesParAn));
+  assert.deepEqual(reperes.map((r) => r.an), [2023, 2024]);
+  // 2023 : entre T3 et T4 ; 2024 : entre T1 et T4 ; l'écart est d'au moins 3 trimestres
+  assert.ok(reperes[1].t - reperes[0].t >= 3, `${reperes[1].t - reperes[0].t}`);
+});
+
+test('pointsDepuis : la fenêtre des dernières années, ou tout s\'il n\'en reste pas assez', () => {
+  const serie = niveauxVelo([...annee(2022, 140), ...annee(2023, 150), ...annee(2024, 160), ...annee(2025, 155)]);
+  assert.ok(serie);
+  assert.equal(pointsDepuis(serie.tranches, undefined).length, 16);
+  const trois = pointsDepuis(serie.tranches, 2023);
+  assert.equal(trois.length, 12);
+  assert.ok(trois.every((p) => p.an >= 2023));
+  // Une fenêtre qui ne garde qu'un point : on montre tout plutôt qu'un point seul
+  assert.equal(pointsDepuis(serie.annuel, 2025).length, 4);
 });
 
 test('axeScore : de la dizaine sous le plus bas jusqu\'à 104, avec un repère par dizaine', () => {

@@ -7,7 +7,7 @@ S'appuie sur la même régression que la comparaison de deux périodes : voir `P
 
 Plus de choix « 4 sem. / 3 mois / 1 an » dans l'onglet Progrès. Pour le vélo et la course :
 - le **dossard** : le score de l'année en cours sur 100 (100 = ton meilleur niveau mesuré) ;
-- la **courbe** du score trimestre par trimestre (semestre par semestre en course), avec la zone de marge d'erreur, la ligne des 100 et le meilleur niveau cerclé ;
+- la **courbe** du score trimestre par trimestre (semestre par semestre en course), avec la zone de marge d'erreur, la ligne des 100 et le meilleur niveau cerclé. Elle montre les **3 dernières années** ; une flèche en haut à droite du bloc (visible s'il y a plus de 3 ans d'historique) ouvre tout l'historique depuis la première année, et une seconde touche revient aux 3 ans. Si ton meilleur niveau est avant la fenêtre, une phrase sous la courbe le dit ;
 - la liste **Par année** : le niveau, sa marge d'erreur, le nombre de sorties et le score ;
 - un **sélecteur** (vélo) : Endurance, ou le meilleur 5 min, 20 min, 60 min de chaque année ;
 - le bouton **Comment c'est calculé** : la preuve de la comparaison des 12 derniers mois aux 12 mois d'avant (verdict, fourchette, nuage de sorties, cascade).

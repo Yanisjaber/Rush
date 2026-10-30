@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { CourbeNiveau } from '@/components/graphes/CourbeNiveau';
 import { ProgresCourse } from '@/components/graphes/ProgresCourse';
@@ -28,6 +29,19 @@ const NOMS_CHOIX: Record<Choix, string> = { endurance: 'Endurance', w300: '5 min
 const NOMS_RECORD: Record<DureeRecord, string> = { w300: 'Meilleur 5 min', w1200: 'Meilleur 20 min', w3600: 'Meilleur 60 min' };
 const NOM_TRANCHE: Record<number, string> = { 4: 'trimestre', 2: 'semestre', 1: 'année' };
 
+/** Les deux flèches opposées (agrandir) ou face à face (réduire) du bouton en haut à droite de la courbe. */
+function IconeElargir({ reduire, couleur }: { reduire: boolean; couleur: string }) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={couleur} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+      {reduire ? (
+        <Path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" />
+      ) : (
+        <Path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+      )}
+    </Svg>
+  );
+}
+
 interface Props {
   famille: 'velo' | 'course';
   /** Le niveau d'endurance (watts ou allure à cardio égal). */
@@ -43,6 +57,7 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours }: Props)
   const p = usePalette();
   const [choix, setChoix] = useState<Choix>('endurance');
   const [preuveOuverte, setPreuveOuverte] = useState(false);
+  const [toutVoir, setToutVoir] = useState(false);
   const couleur = couleurSport(p, famille);
   const seriesRecords = useMemo(() => {
     if (famille !== 'velo') return [];
@@ -58,6 +73,9 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours }: Props)
   const grain = NOM_TRANCHE[actuelle.tranches.length ? actuelle.tranchesParAn : 1];
   const lieu = actuelle.fcReference ? ` à ${actuelle.fcReference} bpm` : '';
   const annees = [...actuelle.annuel].reverse();
+  // La courbe montre les 3 dernières années ; la flèche en haut à droite du bloc ouvre tout l'historique (seulement s'il y a plus de 3 ans)
+  const peutElargir = actuelle.actuel.an - actuelle.annuel[0].an >= 3;
+  const depuisAn = peutElargir && !toutVoir ? actuelle.actuel.an - 2 : undefined;
 
   return (
     <View style={styles.page}>
@@ -88,13 +106,28 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours }: Props)
         chiffreMax={64}
       />
 
-      <Bloc titre={choisie ? 'Ton record dans le temps' : 'Ton niveau dans le temps'}>
+      <Bloc>
+        <View style={styles.enteteBloc}>
+          <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, styles.flex, { color: p.texte }]}>{choisie ? 'Ton record dans le temps' : 'Ton niveau dans le temps'}</Text>
+          {peutElargir ? (
+            <Pressable
+              onPress={() => setToutVoir((v) => !v)}
+              accessibilityRole="button"
+              accessibilityLabel={toutVoir ? 'Revenir aux 3 dernières années' : "Voir tout l'historique"}
+              style={[styles.fleche, { backgroundColor: p.surface2 }]}
+            >
+              <IconeElargir reduire={toutVoir} couleur={p.texte} />
+            </Pressable>
+          ) : null}
+        </View>
         <Text style={[typo.petit, styles.sous, { color: p.texteDoux }]}>
           {choisie ? '100 = ta meilleure année sur cette durée.' : `100 = ton meilleur ${grain} mesuré${actuelle.tranches.length ? ' (au moins 8 sorties)' : ''}.`}
+          {peutElargir ? ` ${toutVoir ? 'Tout ton historique.' : 'Les 3 dernières années.'}` : ''}
         </Text>
         <CourbeNiveau
           serie={actuelle}
           mode={mode}
+          depuisAn={depuisAn}
           couleur={couleur}
           etiquette={`Évolution de ton niveau en ${nomSport}${choisie ? `, ${NOMS_RECORD[choisie.duree]}` : ''}. Score de ${actuelle.annuel.map((a) => `${a.an} : ${Math.round(a.score)}`).join(', ')}, où 100 est ton meilleur niveau.`}
         />
@@ -155,6 +188,8 @@ const styles = StyleSheet.create({
   flex: { flex: 1, minWidth: 0 },
   tete: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 },
   sous: { marginBottom: 8 },
+  enteteBloc: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  fleche: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginTop: -10, marginRight: -8 },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9, minHeight: 44 },
   annee: { width: 46, fontVariant: ['tabular-nums'] },
   gras: { fontFamily: police.texte600, fontVariant: ['tabular-nums'] },

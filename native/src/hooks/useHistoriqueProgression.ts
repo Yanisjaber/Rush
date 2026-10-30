@@ -4,8 +4,8 @@ import { donneesDemo, seriesForceDemo } from '@/data/demo/demo';
 import { useAuth } from '@/stores/auth';
 import type { Seance, SerieForce } from '@/data/types';
 
-/** En démo, trois ans de séances : de quoi montrer le niveau année après année. */
-const JOURS_DEMO = 365 * 3;
+/** En démo, cinq ans de séances : de quoi montrer le niveau année après année, et la flèche qui ouvre tout l'historique. */
+const JOURS_DEMO = 365 * 5;
 
 // L'historique complet dont la Progression a besoin (le niveau année après année remonte à la première séance) : l'accueil ne charge que 84 jours, et le Bilan ses activités sans cardio ni puissance.
 // Démo : des séances de démo avec cardio et puissance sur deux ans (celles de secours n'en ont pas : la progression y serait toujours vide). Compte connecté : une lecture au premier affichage (`actif` faux : on attend) ;

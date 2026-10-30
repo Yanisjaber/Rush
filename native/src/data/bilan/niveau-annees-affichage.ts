@@ -15,6 +15,13 @@ export function positionsNiveau(points: readonly PointNiveau[], tranchesParAn: n
   return points.map((point) => ({ point, t: point.an * tranchesParAn + point.tranche })).sort((a, b) => a.t - b.t);
 }
 
+/** Les points à partir d'une année (la fenêtre de 3 ans) ; tous les points s'il n'en reste pas au moins deux (une courbe d'un seul point ne montre rien). */
+export function pointsDepuis(points: readonly PointNiveau[], depuisAn?: number): PointNiveau[] {
+  if (depuisAn === undefined) return [...points];
+  const gardes = points.filter((p) => p.an >= depuisAn);
+  return gardes.length >= 2 ? gardes : [...points];
+}
+
 /** Les morceaux de courbe qui se suivent : on coupe quand une période n'a pas assez de sorties (écart de plus d'une tranche). */
 export function segmentsContinus(positions: readonly PositionNiveau[]): PositionNiveau[][] {
   const segments: PositionNiveau[][] = [];
@@ -26,16 +33,14 @@ export function segmentsContinus(positions: readonly PositionNiveau[]): Position
   return segments;
 }
 
-/** Où écrire l'année sous la courbe : à la première période de chaque année. */
+/**
+ * Où écrire l'année sous la courbe : au milieu de ses points. Au début de la première année (qui n'a parfois que deux trimestres, juste avant la suivante), l'écrire au premier point
+ * ferait chevaucher deux années.
+ */
 export function reperesAnnees(positions: readonly PositionNiveau[]): { an: number; t: number }[] {
-  const vus = new Set<number>();
-  const reperes: { an: number; t: number }[] = [];
-  for (const { point, t } of positions) {
-    if (vus.has(point.an)) continue;
-    vus.add(point.an);
-    reperes.push({ an: point.an, t });
-  }
-  return reperes;
+  const parAn = new Map<number, number[]>();
+  for (const { point, t } of positions) parAn.set(point.an, [...(parAn.get(point.an) ?? []), t]);
+  return [...parAn].map(([an, ts]) => ({ an, t: (Math.min(...ts) + Math.max(...ts)) / 2 }));
 }
 
 /** L'axe du score : de la dizaine sous le plus bas (avec un peu d'air) jusqu'à 104 (pour voir le haut des marges d'erreur au-dessus de 100), un repère par dizaine. */

@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Path, Text as TexteSvg } from 'react-native-svg';
 import type { SerieNiveau } from '@/data/bilan/niveau-annees';
 import { SORTIES_MINI_SOMMET } from '@/data/bilan/niveau-annees';
-import { axeScore, positionsNiveau, reperesAnnees, segmentsContinus } from '@/data/bilan/niveau-annees-affichage';
+import { axeScore, libellePeriode, pointsDepuis, positionsNiveau, reperesAnnees, segmentsContinus } from '@/data/bilan/niveau-annees-affichage';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -13,6 +13,8 @@ import { usePalette } from '@/theme/usePalette';
 interface Props {
   serie: SerieNiveau;
   mode: 'tranches' | 'annuel';
+  /** Ne montrer que les points de cette année et des suivantes (la fenêtre des 3 dernières années) ; sans valeur, tout l'historique. */
+  depuisAn?: number;
   couleur: string;
   /** Phrase lue par VoiceOver à la place du dessin. */
   etiquette: string;
@@ -25,10 +27,11 @@ const D = 12;
 const H = 18; // le haut : la ligne des 100 et l'étiquette « meilleur »
 const B = 30; // le bas : les années
 
-export function CourbeNiveau({ serie, mode, couleur, etiquette }: Props) {
+export function CourbeNiveau({ serie, mode, depuisAn, couleur, etiquette }: Props) {
   const p = usePalette();
-  const points = mode === 'tranches' && serie.tranches.length >= 2 ? serie.tranches : serie.annuel;
-  const m = points === serie.tranches ? serie.tranchesParAn : 1;
+  const tous = mode === 'tranches' && serie.tranches.length >= 2 ? serie.tranches : serie.annuel;
+  const points = pointsDepuis(tous, depuisAn);
+  const m = tous === serie.tranches ? serie.tranchesParAn : 1;
   const positions = positionsNiveau(points, m);
   const t0 = positions[0].t;
   const t1 = positions[positions.length - 1].t;
@@ -38,6 +41,8 @@ export function CourbeNiveau({ serie, mode, couleur, etiquette }: Props) {
   const segments = segmentsContinus(positions);
   const sommet = positions.find((o) => o.point.cle === serie.meilleur.cle);
   const aMarge = points.some((pt) => pt.demi > 0);
+  // Le sommet est plus ancien que la fenêtre : on le dit, sinon la ligne des 100 n'a pas de point
+  const sommetHorsVue = !sommet && points.length < tous.length;
 
   return (
     <View>
@@ -86,6 +91,7 @@ export function CourbeNiveau({ serie, mode, couleur, etiquette }: Props) {
       </Svg>
       <Text style={[typo.petit, styles.legende, { color: p.texteDoux }]}>
         {aMarge ? '○ moins de 8 sorties · zone teintée : marge d\'erreur · pointillés : période sans assez de sorties' : 'Un point par année : ton meilleur sur cette durée'}
+        {sommetHorsVue ? ` Ton meilleur niveau (${libellePeriode(serie.meilleur.cle)}) est avant cette vue : touche la flèche pour tout voir.` : ''}
       </Text>
     </View>
   );
