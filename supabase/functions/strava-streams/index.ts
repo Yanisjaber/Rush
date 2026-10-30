@@ -27,6 +27,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.3";
 import { corsHeadersFor } from "../_shared/cors.ts";
 import { reechantillonner1Hz } from "../_shared/flux.ts";
+import { clesRepetabilite } from "../_shared/repetabilite.ts";
 import { calculerSignaux, SIGNAUX_VERSION } from "../_shared/signaux.ts";
 import { joindreJetons, ecrireRenouvellementStrava } from "../_shared/jetons.ts";
 
@@ -152,6 +153,8 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
         // Remise à 1 point par seconde (trous de pause / enregistrement intelligent), voir _shared/flux.ts
         const watts = reechantillonner1Hz((raw?.watts?.data) || [], (raw?.time?.data) || []);
         const powerCurve: Record<string, number> = computeMMP(watts);
+        // Durabilité (late_300 / late_1200 si sortie > 2 h 30) et répétabilité (rep_1..3) : sans ça, une sortie importée aujourd'hui n'aurait ni l'une ni l'autre
+        Object.assign(powerCurve, computeLateMMP(watts), clesRepetabilite(watts));
         powerCurve.v = POWER_CURVE_VERSION; // marqueur de version (ignoré par l'agrégation)
         powerCurve._v = CLIENT_PC_VERSION; // marqueur attendu par le client (records sans recalcul manuel)
         const metrics = computeMetrics(watts, (raw?.heartrate?.data) || [], (raw?.time?.data) || [], ATH);
@@ -584,7 +587,7 @@ async function backfillPowerCurves(sb: any, userId: string, limit: number, ath: 
       if (courbeObsolete(a)) {
         const watts = reechantillonner1Hz(streamData(arr, "watts"), streamData(arr, "time"));
         const pc: Record<string, number> = computeMMP(watts);
-        Object.assign(pc, computeLateMMP(watts)); // late_300 / late_1200 si sortie > 2 h 30
+        Object.assign(pc, computeLateMMP(watts), clesRepetabilite(watts)); // late_300 / late_1200 si sortie > 2 h 30 ; rep_1..3 (trois efforts de 5 min)
         pc.v = POWER_CURVE_VERSION; // marqueur de version (ignoré par l'agrégation)
         pc._v = CLIENT_PC_VERSION; // marqueur attendu par le client
         maj.power_curve = pc;
