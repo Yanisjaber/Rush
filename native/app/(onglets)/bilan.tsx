@@ -30,6 +30,7 @@ import {
 import { formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
 import { nomDuType } from '@/data/sports/catalogue-sports';
 import { niveauxCourse, niveauxVelo } from '@/data/bilan/niveau-annees';
+import { niveauGlobal, recordsDeMesures } from '@/data/bilan/piliers-niveau';
 import { courbeProgression, progressionTousSports, type PeriodeProgression } from '@/data/bilan/progression';
 import { sortiesCourse } from '@/data/bilan/progression-course';
 import { sortiesVelo as sortiesVeloProgres } from '@/data/bilan/progression-velo';
@@ -39,7 +40,7 @@ import { useHistoriqueProgression, useSeriesForceProgression } from '@/hooks/use
 import { useReferences } from '@/hooks/useReferences';
 import { useMenu } from '@/stores/menu';
 import { choisirMesure, useMesuresBilan } from '@/stores/mesures-bilan';
-import { useRecordsAnnuels } from '@/hooks/useRecordsAnnuels';
+import { usePiliersAnnuels } from '@/hooks/usePiliersAnnuels';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
 import { couleurSport, SPORTS } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
@@ -230,7 +231,10 @@ export default function Bilan() {
       anneesVelo: Array.from({ length: maintenant.getFullYear() - premiere + 1 }, (_, i) => premiere + i),
     };
   }, [progresOuvert, historique.seances, hrMax, maintenant]);
-  const recordsAnnuels = useRecordsAnnuels(niveaux.anneesVelo, progresOuvert && niveaux.velo !== null);
+  // Les mesures par année (puissances de pointe, durabilité, répétabilité, charge) : une lecture, qui sert au niveau global et au sélecteur de records
+  const piliers = usePiliersAnnuels(progresOuvert && niveaux.velo !== null);
+  const recordsAnnuels = useMemo(() => recordsDeMesures(piliers.mesures), [piliers.mesures]);
+  const niveauGlobalVelo = useMemo(() => (niveaux.velo ? niveauGlobal(piliers.mesures, niveaux.velo) : null), [niveaux.velo, piliers.mesures]);
 
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
@@ -595,7 +599,8 @@ export default function Bilan() {
                       courbe={courbe}
                       jours={JOURS_PROGRES}
                       niveau={prog.famille === 'velo' ? niveaux.velo : prog.famille === 'course' ? niveaux.course : null}
-                      records={prog.famille === 'velo' ? recordsAnnuels.records : undefined}
+                      records={prog.famille === 'velo' ? recordsAnnuels : undefined}
+                      niveauGlobal={prog.famille === 'velo' ? niveauGlobalVelo : null}
                     />
                   ))
                 ) : (

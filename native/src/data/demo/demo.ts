@@ -4,6 +4,7 @@
 import { familleAffichage } from '../sports/familles.ts';
 import { dateIsoLocale } from '../outils/format.ts';
 import type { ObjectifAnnuel } from '../bilan/bilan.ts';
+import type { MesuresAnnee } from '../bilan/piliers-niveau.ts';
 import type { CleSignal, EntreeCourbe, PointCourbe, SortieVelo } from '../bilan/records.ts';
 import { valeurValide, type LigneMesure } from '../sante/sante-catalogue.ts';
 import type { Nuit, SegmentNuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Seance, SerieForce, TestHyrox, Tour } from '../types.ts';
@@ -672,5 +673,30 @@ export function toursDemo(s: Seance): Tour[] {
   return poids.map((w, i) => {
     const temps = Math.round((w / somme) * s.moving_time);
     return { index: i + 1, name: '', elapsed_time: temps, moving_time: temps, distance: i < entiers ? 1000 : Math.round(reste * 1000) };
+  });
+}
+
+/**
+ * Les mesures annuelles du niveau global du vélo en démo, sur cinq ans : les puissances de pointe viennent des records d'exemple ;
+ * la durabilité, la répétabilité et la charge sont inventées mais cohérentes (elles montent doucement, la dernière année recule).
+ */
+export function piliersAnnuelsDemo(maintenant: Date = new Date()): MesuresAnnee[] {
+  const records = recordsVeloDemo(maintenant);
+  const an = maintenant.getFullYear();
+  return Array.from({ length: 5 }, (_, i) => {
+    const a = an - 4 + i;
+    const courbe = records.courbe(a, 1);
+    const w = (duree: number): number | null => courbe.find((p) => p.duree === duree)?.top[0]?.valeur ?? null;
+    const w300 = w(300);
+    const w1200 = w(1200);
+    return {
+      an: a, w5: w(5), w300, w1200, w3600: w(3600),
+      late300: w300 ? Math.round(w300 * (0.86 + 0.015 * i)) : null,
+      late1200: w1200 ? Math.round(w1200 * (0.84 + 0.02 * i)) : null,
+      nLongues: 14 + i * 3,
+      repRatio: 0.9 + 0.01 * (i % 3),
+      repN: 8 + i * 2,
+      ctlMax: 52 + i * 9 - (i === 4 ? 18 : 0),
+    };
   });
 }

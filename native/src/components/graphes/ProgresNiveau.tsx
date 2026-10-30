@@ -50,9 +50,11 @@ interface Props {
   /** La comparaison des 12 derniers mois aux 12 mois d'avant : la preuve du calcul. */
   preuve: Progression | null;
   jours: PeriodeProgression;
+  /** Vrai quand la page qui l'affiche a déjà son en-tête (le titre du sport) : la carte « Détail par durée » du niveau global. */
+  sansEntete?: boolean;
 }
 
-export function ProgresNiveau({ famille, serie, records, preuve, jours }: Props) {
+export function ProgresNiveau({ famille, serie, records, preuve, jours, sansEntete = false }: Props) {
   const p = usePalette();
   const [choix, setChoix] = useState<Choix>('endurance');
   const [preuveOuverte, setPreuveOuverte] = useState(false);
@@ -77,13 +79,15 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours }: Props)
 
   return (
     <View style={styles.page}>
-      <View style={styles.tete}>
-        <IconeSport sport={famille} taille={22} />
-        <View style={styles.flex}>
-          <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte }]}>{nomSport}</Text>
-          <Text style={[typo.petit, { color: p.texteDoux }]}>{indicateur}</Text>
+      {sansEntete ? null : (
+        <View style={styles.tete}>
+          <IconeSport sport={famille} taille={22} />
+          <View style={styles.flex}>
+            <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte }]}>{nomSport}</Text>
+            <Text style={[typo.petit, { color: p.texteDoux }]}>{indicateur}</Text>
+          </View>
         </View>
-      </View>
+      )}
 
       {famille === 'velo' && seriesRecords.length ? (
         <OngletsSegment<Choix>

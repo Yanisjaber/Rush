@@ -2,8 +2,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { CourbeLissee } from '@/components/graphes/CourbeLissee';
 import { ProgresCourse } from '@/components/graphes/ProgresCourse';
+import { NiveauGlobalVelo } from '@/components/graphes/NiveauGlobalVelo';
 import { ProgresNiveau } from '@/components/graphes/ProgresNiveau';
 import type { RecordsAnnee, SerieNiveau } from '@/data/bilan/niveau-annees';
+import type { NiveauGlobal } from '@/data/bilan/piliers-niveau';
 import { ProgresVelo } from '@/components/graphes/ProgresVelo';
 import { IconeSport } from '@/components/ui/IconeSport';
 import { StatCle } from '@/components/ui/StatCle';
@@ -16,9 +18,13 @@ import { usePalette } from '@/theme/usePalette';
 
 // Le bloc d'un sport dans l'onglet Progrès du Bilan : le verdict en gros, la courbe de la période (100 = ton niveau d'avant), puis l'ancienne et la nouvelle valeur.
 // `courbe` : voir courbeProgression (data/progression.ts), vide quand il n'y a rien à tracer.
-export function ProgresSport({ progression, courbe, jours, niveau, records }: { progression: Progression; courbe: number[]; jours: PeriodeProgression; niveau?: SerieNiveau | null; records?: RecordsAnnee[] }) {
+export function ProgresSport({ progression, courbe, jours, niveau, records, niveauGlobal }: { progression: Progression; courbe: number[]; jours: PeriodeProgression; niveau?: SerieNiveau | null; records?: RecordsAnnee[]; niveauGlobal?: NiveauGlobal | null }) {
   const p = usePalette();
   // Le vélo et la course se lisent année après année (le niveau, avec la preuve du calcul derrière un bouton) quand l'historique le permet
+  // Le vélo : le niveau global de l'athlète (quatre cartes) quand on a de quoi le calculer
+  if (progression.famille === 'velo' && niveau && niveauGlobal) {
+    return <NiveauGlobalVelo global={niveauGlobal} serie={niveau} records={records ?? []} preuve={progression} jours={jours} />;
+  }
   if ((progression.famille === 'velo' || progression.famille === 'course') && niveau) {
     return <ProgresNiveau famille={progression.famille} serie={niveau} records={records ?? []} preuve={progression} jours={jours} />;
   }

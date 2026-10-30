@@ -108,7 +108,7 @@ function noter(brut: Brut, meilleur: number, plusHautMieux: boolean): PointNivea
 export const RAPPORT_ZERO = 0.7;
 const noteLibre = (rapport: number): number => ((rapport - RAPPORT_ZERO) / (1 - RAPPORT_ZERO)) * 100;
 /** La note, entre 0 et 100 (le haut de la marge d'erreur, lui, peut dépasser 100 : voir noteLibre). */
-const noteDe = (rapport: number): number => Math.max(0, Math.min(100, noteLibre(rapport)));
+export const noteDe = (rapport: number): number => Math.max(0, Math.min(100, noteLibre(rapport)));
 
 /** Construit la série à partir des sorties, ou null s'il y a moins de deux années calculables. */
 function construire(lignes: readonly LigneNiveau[], r: Reglage): SerieNiveau | null {
