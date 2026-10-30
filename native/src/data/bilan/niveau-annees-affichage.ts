@@ -44,6 +44,19 @@ export function reperesAnnees(positions: readonly PositionNiveau[]): { an: numbe
 }
 
 /**
+ * Où tracer la barre du début de chaque année : entre le dernier trimestre d'une année et le premier de la suivante (une demi-tranche avant le premier point de l'année).
+ * Seulement entre le premier et le dernier point, et seulement quand la courbe a des tranches (une série annuelle a un point par année : rien à séparer).
+ */
+export function debutsAnnees(positions: readonly PositionNiveau[], tranchesParAn: number): number[] {
+  if (tranchesParAn <= 1 || positions.length < 2) return [];
+  const t0 = positions[0].t;
+  const t1 = positions[positions.length - 1].t;
+  const debuts: number[] = [];
+  for (let an = Math.floor(t0 / tranchesParAn) + 1; an * tranchesParAn - 0.5 < t1; an++) debuts.push(an * tranchesParAn - 0.5);
+  return debuts.filter((t) => t > t0);
+}
+
+/**
  * L'axe du score : du repère sous le plus bas (avec un peu d'air) jusqu'à 104 (pour voir le haut des marges d'erreur au-dessus de 100), un repère par dizaine,
  * ou par vingtaine quand l'axe est haut (sinon les repères se serrent).
  */

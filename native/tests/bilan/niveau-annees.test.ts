@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { niveauxCourse, niveauxVelo, serieRecord, type SortieNiveauCourse, type SortieNiveauVelo } from '../../src/data/bilan/niveau-annees.ts';
-import { axeScore, ecartAuSommet, formatMarge, formatNiveau, libellePeriode, pointsDepuis, positionsNiveau, recordsDeCourbe, reperesAnnees, segmentsContinus } from '../../src/data/bilan/niveau-annees-affichage.ts';
+import { axeScore, debutsAnnees, ecartAuSommet, formatMarge, formatNiveau, libellePeriode, pointsDepuis, positionsNiveau, recordsDeCourbe, reperesAnnees, segmentsContinus } from '../../src/data/bilan/niveau-annees-affichage.ts';
 
 // Un bruit fixe (pas de hasard : le test doit toujours donner le même résultat)
 const BRUIT = [-6, 3, -2, 5, 0, -4, 2, 4, -3, 1];
@@ -175,6 +175,19 @@ test('reperesAnnees : l\'année s\'écrit au milieu de ses points, pour ne pas c
   assert.deepEqual(reperes.map((r) => r.an), [2023, 2024]);
   // 2023 : entre T3 et T4 ; 2024 : entre T1 et T4 ; l'écart est d'au moins 3 trimestres
   assert.ok(reperes[1].t - reperes[0].t >= 3, `${reperes[1].t - reperes[0].t}`);
+});
+
+test('debutsAnnees : une barre entre le dernier trimestre d\'une année et le premier de la suivante, rien sur une série annuelle', () => {
+  const serie = niveauxVelo([...annee(2023, 150), ...annee(2024, 160), ...annee(2025, 155)]);
+  assert.ok(serie);
+  const pos = positionsNiveau(serie.tranches, serie.tranchesParAn);
+  // 2023-T1 = 2023 × 4 : les barres sont à 2024 × 4 − 0,5 et 2025 × 4 − 0,5
+  assert.deepEqual(debutsAnnees(pos, 4), [8095.5, 8099.5]);
+  assert.deepEqual(debutsAnnees(positionsNiveau(serie.annuel, 1), 1), []);
+  // Un trimestre manquant n'empêche pas la barre
+  const trou = niveauxVelo([...annee(2023, 150, 10, [1, 2, 3]), ...annee(2024, 160, 10, [2, 3, 4])]);
+  assert.ok(trou);
+  assert.deepEqual(debutsAnnees(positionsNiveau(trou.tranches, trou.tranchesParAn), 4), [8095.5]);
 });
 
 test('pointsDepuis : la fenêtre des dernières années, ou tout s\'il n\'en reste pas assez', () => {

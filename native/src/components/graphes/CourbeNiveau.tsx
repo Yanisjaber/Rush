@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Path, Text as TexteSvg } from 'react-native-svg';
 import type { SerieNiveau } from '@/data/bilan/niveau-annees';
 import { SORTIES_MINI_SOMMET } from '@/data/bilan/niveau-annees';
-import { axeScore, libellePeriode, pointsDepuis, positionsNiveau, reperesAnnees, segmentsContinus } from '@/data/bilan/niveau-annees-affichage';
+import { axeScore, debutsAnnees, libellePeriode, pointsDepuis, positionsNiveau, reperesAnnees, segmentsContinus } from '@/data/bilan/niveau-annees-affichage';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -52,6 +52,11 @@ export function CourbeNiveau({ serie, mode, depuisAn, couleur, etiquette }: Prop
             <Line x1={G} x2={LARGEUR - D} y1={y(v)} y2={y(v)} stroke={v === 100 ? couleur : p.trait} strokeWidth={v === 100 ? 1.4 : 1} strokeDasharray={v === 100 ? '4 4' : undefined} />
             <TexteSvg x={G - 7} y={y(v) + 4} fontSize={12} fontFamily={v === 100 ? police.texte600 : police.texte400} fill={v === 100 ? couleur : p.texteMuet} textAnchor="end">{v}</TexteSvg>
           </Fragment>
+        ))}
+
+        {/* Une barre au début de chaque année */}
+        {debutsAnnees(positions, m).map((t) => (
+          <Line key={`an${t}`} x1={x(t)} x2={x(t)} y1={H} y2={HAUTEUR - B} stroke={p.traitFort} strokeWidth={1.5} />
         ))}
 
         {/* La marge d'erreur : une zone teintée autour de la courbe, morceau par morceau */}
