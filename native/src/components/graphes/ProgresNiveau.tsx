@@ -27,7 +27,6 @@ type Choix = 'endurance' | DureeRecord;
 
 const NOMS_CHOIX: Record<Choix, string> = { endurance: 'Endurance', w300: '5 min', w1200: '20 min', w3600: '60 min' };
 const NOMS_RECORD: Record<DureeRecord, string> = { w300: 'Meilleur 5 min', w1200: 'Meilleur 20 min', w3600: 'Meilleur 60 min' };
-const NOM_TRANCHE: Record<number, string> = { 4: 'trimestre', 2: 'semestre', 1: 'année' };
 
 /** Les deux flèches opposées (agrandir) ou face à face (réduire) du bouton en haut à droite de la courbe. */
 function IconeElargir({ reduire, couleur }: { reduire: boolean; couleur: string }) {
@@ -70,7 +69,6 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours }: Props)
   const ecart = ecartAuSommet(actuelle);
   const nomSport = famille === 'course' ? 'Course à pied' : 'Cyclisme';
   const indicateur = choisie ? NOMS_RECORD[choisie.duree] : famille === 'course' ? 'Allure à cardio égal' : 'Watts à cardio égal';
-  const grain = NOM_TRANCHE[actuelle.tranches.length ? actuelle.tranchesParAn : 1];
   const lieu = actuelle.fcReference ? ` à ${actuelle.fcReference} bpm` : '';
   const annees = [...actuelle.annuel].reverse();
   // La courbe montre les 3 dernières années ; la flèche en haut à droite du bloc ouvre tout l'historique (seulement s'il y a plus de 3 ans)
@@ -120,10 +118,6 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours }: Props)
             </Pressable>
           ) : null}
         </View>
-        <Text style={[typo.petit, styles.sous, { color: p.texteDoux }]}>
-          {choisie ? '100 = ta meilleure année sur cette durée.' : `100 = ton meilleur ${grain} mesuré${actuelle.tranches.length ? ' (au moins 8 sorties)' : ''}.`}
-          {peutElargir ? ` ${toutVoir ? 'Tout ton historique.' : 'Les 3 dernières années.'}` : ''}
-        </Text>
         <CourbeNiveau
           serie={actuelle}
           mode={mode}
