@@ -1,18 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { chargerHistoriqueProgression, chargerSeriesForce } from '@/data/acces/api';
-import { JOURS_HISTORIQUE } from '@/data/bilan/progression';
 import { donneesDemo, seriesForceDemo } from '@/data/demo/demo';
 import { useAuth } from '@/stores/auth';
 import type { Seance, SerieForce } from '@/data/types';
 
-// L'historique long (deux ans) dont la Progression a besoin : l'accueil ne charge que 84 jours, et le Bilan ses activités sans cardio ni puissance.
+/** En démo, trois ans de séances : de quoi montrer le niveau année après année. */
+const JOURS_DEMO = 365 * 3;
+
+// L'historique complet dont la Progression a besoin (le niveau année après année remonte à la première séance) : l'accueil ne charge que 84 jours, et le Bilan ses activités sans cardio ni puissance.
 // Démo : des séances de démo avec cardio et puissance sur deux ans (celles de secours n'en ont pas : la progression y serait toujours vide). Compte connecté : une lecture au premier affichage (`actif` faux : on attend) ;
 // en cas d'échec, on se rabat sur les séances de secours. Les données d'un autre compte ne s'affichent jamais.
 export function useHistoriqueProgression(secours: Seance[], actif = true): { seances: Seance[]; chargement: boolean } {
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
   const [lu, setLu] = useState<{ userId: string; seances: Seance[] | null } | null>(null);
-  const seancesDemo = useMemo(() => (demo ? donneesDemo(new Date(), JOURS_HISTORIQUE).seances : null), [demo]);
+  const seancesDemo = useMemo(() => (demo ? donneesDemo(new Date(), JOURS_DEMO).seances : null), [demo]);
 
   useEffect(() => {
     if (demo || !userId || !actif) return;

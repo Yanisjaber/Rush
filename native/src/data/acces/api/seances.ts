@@ -31,9 +31,29 @@ export async function chargerSeances(userId: string, jours = 84, limite = 600): 
   return res;
 }
 
-/** Deux ans de séances (avec cardio et puissance) pour comparer une période à celle d'avant : voir data/progression.ts. Les plus récentes d'abord. */
-export async function chargerHistoriqueProgression(userId: string, jours = 730, limite = 3000): Promise<Resultat<Seance[]>> {
-  return chargerSeances(userId, jours, limite);
+const TAILLE_PAGE = 1000; // l'API renvoie au plus 1000 lignes par requête : on lit par pages
+const PAGES_MAX = 20; // garde-fou : 20 000 séances
+
+/**
+ * Tout l'historique des séances (avec cardio et puissance) : le niveau année après année remonte à la première séance, et la comparaison de deux périodes à deux ans.
+ * Lu par pages de 1000. Les plus récentes d'abord. Voir data/bilan/niveau-annees.ts et progression.ts.
+ */
+export async function chargerHistoriqueProgression(userId: string): Promise<Resultat<Seance[]>> {
+  const toutes: Seance[] = [];
+  for (let page = 0; page < PAGES_MAX; page++) {
+    const r = await sb
+      .from('activities')
+      .select(COLONNES_SEANCE)
+      .eq('user_id', userId)
+      .order('start_date_local', { ascending: false })
+      .order('id', { ascending: true }) // un ordre complet : sans lui, deux séances à la même minute pourraient changer de page
+      .range(page * TAILLE_PAGE, (page + 1) * TAILLE_PAGE - 1);
+    const res = resultat<Seance[]>(r, 'Impossible de charger ton historique.');
+    if (res.erreur || !res.data) return { data: null, erreur: res.erreur || 'Impossible de charger ton historique.' };
+    toutes.push(...res.data);
+    if (res.data.length < TAILLE_PAGE) return { data: sansMarche(await avecRetouches(userId, toutes)), erreur: '' };
+  }
+  return { data: null, erreur: 'Ton historique est trop long pour être chargé en entier.' };
 }
 
 /**

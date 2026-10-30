@@ -29,14 +29,17 @@ import {
 } from '@/data/bilan/bilan';
 import { formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
 import { nomDuType } from '@/data/sports/catalogue-sports';
-import { courbeProgression, PERIODES_PROGRESSION, progressionTousSports, type PeriodeProgression } from '@/data/bilan/progression';
+import { niveauxCourse, niveauxVelo } from '@/data/bilan/niveau-annees';
+import { courbeProgression, progressionTousSports, type PeriodeProgression } from '@/data/bilan/progression';
+import { sortiesCourse } from '@/data/bilan/progression-course';
+import { sortiesVelo as sortiesVeloProgres } from '@/data/bilan/progression-velo';
 import { useDonneesBilan } from '@/hooks/useDonneesBilan';
 import { useRecordsVelo } from '@/hooks/useRecordsVelo';
 import { useHistoriqueProgression, useSeriesForceProgression } from '@/hooks/useHistoriqueProgression';
 import { useReferences } from '@/hooks/useReferences';
 import { useMenu } from '@/stores/menu';
 import { choisirMesure, useMesuresBilan } from '@/stores/mesures-bilan';
-import { choisirPeriodeProgression, usePeriodeProgression } from '@/stores/progression';
+import { useRecordsAnnuels } from '@/hooks/useRecordsAnnuels';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
 import { couleurSport, SPORTS } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
@@ -45,6 +48,10 @@ import { usePalette } from '@/theme/usePalette';
 const NOMS_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const BARRE_ONGLETS = 72;
 type OngletBilan = 'resume' | 'rythme' | 'records' | 'progres';
+
+// Progrès : plus de choix de période. Le niveau du vélo et de la course se lit année après année ; la natation et la musculation comparent les 12 derniers mois aux 12 mois d'avant ;
+// et la preuve du calcul (derrière « Comment c'est calculé ») fait de même.
+const JOURS_PROGRES: PeriodeProgression = 365;
 const ONGLETS: { cle: OngletBilan; nom: string; icone: IconeOnglet }[] = [
   { cle: 'resume', nom: 'Résumé', icone: 'resume' },
   { cle: 'rythme', nom: 'Rythme', icone: 'rythme' },
@@ -100,7 +107,6 @@ export default function Bilan() {
   const { brutes, objectifs, chargement, erreur, pret, actualisation, recharger } = useDonneesBilan();
   const annee = anneeChoisie;
   // Progrès : l'historique long et le carnet de force ne se chargent qu'à la première ouverture de l'onglet
-  const joursProgres = usePeriodeProgression();
   const progresOuvert = onglet === 'progres';
   const historique = useHistoriqueProgression(brutes, progresOuvert);
   const carnet = useSeriesForceProgression(progresOuvert);
@@ -211,8 +217,20 @@ export default function Bilan() {
     if (!progresOuvert) return [];
     const familles = filtre === 'tout' ? [...new Set(toutes.map((a) => a.famille)), ...(carnet.series.length ? ['muscu'] : [])] : [filtre];
     const donnees = { seances: historique.seances, series: carnet.series, hrMax: hrMax ?? null };
-    return progressionTousSports(familles, donnees, joursProgres, maintenant).map((prog) => ({ prog, courbe: courbeProgression(prog.famille, donnees, joursProgres, maintenant) }));
-  }, [progresOuvert, filtre, toutes, historique.seances, carnet.series, hrMax, joursProgres, maintenant]);
+    return progressionTousSports(familles, donnees, JOURS_PROGRES, maintenant).map((prog) => ({ prog, courbe: courbeProgression(prog.famille, donnees, JOURS_PROGRES, maintenant) }));
+  }, [progresOuvert, filtre, toutes, historique.seances, carnet.series, hrMax, maintenant]);
+  // Le niveau année après année du vélo et de la course, sur tout l'historique
+  const niveaux = useMemo(() => {
+    if (!progresOuvert) return { velo: null, course: null, anneesVelo: [] as number[] };
+    const sorties = sortiesVeloProgres(historique.seances, hrMax ?? null);
+    const premiere = sorties.length ? Math.min(...sorties.map((s) => Number(s.date.slice(0, 4)))) : maintenant.getFullYear();
+    return {
+      velo: niveauxVelo(sorties),
+      course: niveauxCourse(sortiesCourse(historique.seances, hrMax ?? null)),
+      anneesVelo: Array.from({ length: maintenant.getFullYear() - premiere + 1 }, (_, i) => premiere + i),
+    };
+  }, [progresOuvert, historique.seances, hrMax, maintenant]);
+  const recordsAnnuels = useRecordsAnnuels(niveaux.anneesVelo, progresOuvert && niveaux.velo !== null);
 
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
@@ -565,18 +583,21 @@ export default function Bilan() {
 
             {pret && onglet === 'progres' ? (
               <>
-                <OngletsSegment<string>
-                  etiquette="Période de comparaison"
-                  onglets={PERIODES_PROGRESSION.map((x) => ({ cle: String(x.jours), nom: x.court }))}
-                  actuel={String(joursProgres)}
-                  onChoisir={(cle) => choisirPeriodeProgression(Number(cle) as PeriodeProgression)}
-                />
                 {historique.chargement || carnet.chargement ? (
                   <View accessible accessibilityLabel="Chargement des progrès" style={styles.attente}>
                     <ActivityIndicator color={p.texteDoux} />
                   </View>
                 ) : progres.length ? (
-                  progres.map(({ prog, courbe }) => <ProgresSport key={prog.famille} progression={prog} courbe={courbe} jours={joursProgres} />)
+                  progres.map(({ prog, courbe }) => (
+                    <ProgresSport
+                      key={prog.famille}
+                      progression={prog}
+                      courbe={courbe}
+                      jours={JOURS_PROGRES}
+                      niveau={prog.famille === 'velo' ? niveaux.velo : prog.famille === 'course' ? niveaux.course : null}
+                      records={prog.famille === 'velo' ? recordsAnnuels.records : undefined}
+                    />
+                  ))
                 ) : (
                   <Bloc titre="Progrès">
                     <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de progression mesurable pour ce sport : on sait la suivre en course, vélo, natation et musculation.</Text>

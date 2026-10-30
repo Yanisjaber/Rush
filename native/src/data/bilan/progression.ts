@@ -16,9 +16,6 @@ export const PERIODES_PROGRESSION: readonly { jours: PeriodeProgression; court: 
   { jours: 365, court: '1 an', nom: '1 an' },
 ];
 
-/** Combien de jours d'historique il faut pour comparer la période choisie à celle d'avant. */
-export const JOURS_HISTORIQUE = 365 * 2;
-
 /** `incertain` : on a assez de sorties, mais elles varient trop pour trancher entre progrès, stable et recul. */
 export type Statut = 'hausse' | 'stable' | 'baisse' | 'incertain' | 'insuffisant';
 
