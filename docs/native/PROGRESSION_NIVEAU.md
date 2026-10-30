@@ -14,6 +14,30 @@ Plus de choix « 4 sem. / 3 mois / 1 an » dans l'onglet Progrès. Pour le vélo
 
 La natation et la musculation gardent leur écran : leur comparaison est fixée à 12 mois contre 12 mois d'avant.
 
+## Le niveau global de l'athlète (vélo)
+
+Un 5 min ou un 20 min isolé ne dit pas qui est le coureur. Sur le vélo, la page Progrès ouvre sur le **niveau global**, quatre cartes qu'on fait glisser (code : `NiveauGlobalVelo.tsx`, `PagerCartes.tsx` ; calcul : `piliers-niveau.ts`) :
+1. **Score global** : le dossard (score de l'année, variation depuis l'an dernier, écart au meilleur) et la courbe du score par année ;
+2. **Composition** : les blocs de chaque pilier dans chaque année, et la note de chaque pilier cette année ;
+3. **Ce qui a bougé** : l'évolution de chaque pilier depuis l'année d'avant ;
+4. **Détail par durée** : la page décrite plus haut (Sprint, 5, 20, 60 min, Endurance, preuve du calcul).
+
+Le score global est la **moyenne des piliers mesurés** (au moins 3). Chaque pilier va de 0 à 100 :
+
+| Pilier | Ce qui est mesuré | Note |
+|---|---|---|
+| Puissance | meilleurs sprint (5 s), 5, 20 et 60 min de l'année | moyenne des 4 notes, chacune = meilleur de l'année ÷ meilleur de toujours (100 = le meilleur, 0 = 30 % en dessous) |
+| Endurance | niveau à cardio égal (voir plus haut) | son score de l'année |
+| Durabilité | meilleur 5 et 20 min **après 2 h 30 de sortie** ÷ meilleur à froid | même échelle (100 = aucune perte, 0 = 30 % de perte) ; au moins 3 sorties longues |
+| Répétabilité | dans une sortie, le 3e meilleur effort de 5 min ÷ le 1er (médiane des sorties qui ont trois vrais efforts : le 3e ≥ 75 % du meilleur 5 min de l'année) | même échelle ; au moins 3 sorties |
+| Capacité de charge | charge chronique (CTL) maximale de l'année (`daily_metrics`) | CTL max ÷ meilleur CTL max, même échelle |
+
+Les mesures viennent de la fonction SQL `rpc_piliers_annuels` (une seule lecture, qui sert aussi au sélecteur de records). La durabilité (`late_300`, `late_1200`) et la répétabilité (`rep_1..3`) sont calculées par l'Edge Function `strava-streams` (`_shared/repetabilite.ts`) et stockées dans `power_curve` ; les anciennes sorties ont été rattrapées à la main depuis leurs streams.
+
+**La récupération physiologique n'est pas dans le score** : il n'y avait que 18 nuits de sommeil/HRV (du 21 sept. au 12 oct. 2026) et aucune mesure de santé. La capacité de charge est ce qu'on peut dire de l'entraînement encaissé. La vraie récupération (HRV, FC au repos) pourra devenir un sixième pilier quand elle sera mesurée sur plusieurs mois.
+
+Le calcul sur un vrai compte donne : 2022 : 33, 2023 : 73, 2024 : 85, 2025 : 86, 2026 : 60 (la capacité de charge de 2026 est basse : CTL max 70 contre 91, l'année n'est pas finie et l'entraînement a baissé). Les années à moins de 3 piliers mesurés n'ont pas de score global ; l'écran le dit (« Calculé sur N piliers sur 5 »).
+
 ## Comment le niveau est calculé
 
 Le **niveau** d'une période, c'est la puissance (vélo) ou l'allure (course) à cardio égal. Une seule régression sur tout l'historique, avec une colonne par année (une autre, séparée, par trimestre ou semestre) :

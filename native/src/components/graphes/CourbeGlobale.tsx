@@ -18,13 +18,15 @@ const G = 34;
 const D = 14;
 const H = 22;
 const B = 26;
+const MARGE = 14;
 
 export function CourbeGlobale({ points, meilleurAn, couleur, etiquette }: Props) {
   const p = usePalette();
   const plusBas = Math.min(...points.map((pt) => pt.score)) - 10;
   const pas = 100 - plusBas > 50 ? 20 : 10;
   const min = Math.max(0, Math.floor(plusBas / pas) * pas);
-  const x = (i: number): number => G + (points.length === 1 ? 0.5 : i / (points.length - 1)) * (LARGEUR - G - D);
+  // Un peu d'air de chaque côté : le premier point ne touche pas l'axe, le dernier ne sort pas du cadre
+  const x = (i: number): number => G + MARGE + (points.length === 1 ? 0.5 : i / (points.length - 1)) * (LARGEUR - G - D - 2 * MARGE);
   const y = (v: number): number => H + ((100 - v) / (100 - min)) * (HAUTEUR - H - B);
   const reperes: number[] = [];
   for (let v = min; v <= 100; v += pas) reperes.push(v);

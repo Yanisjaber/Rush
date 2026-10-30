@@ -67,7 +67,7 @@ export function NiveauGlobalVelo({ global: g, serie, records, preuve, jours }: P
           </Bloc>
           <Bloc titre={`Les piliers en ${g.actuel.an}`}>
             <Text style={[typo.corps, { color: p.texte }]}>
-              {nomPilier(g.fort)} est ton point fort ({Math.round(g.actuel.piliers[g.fort]!)}), {nomPilier(g.faible).toLowerCase()} ce qui te tire vers le bas ({Math.round(g.actuel.piliers[g.faible]!)}).
+              {nomPilier(g.fort)} est ton point fort ({Math.round(g.actuel.piliers[g.fort]!)}). {nomPilier(g.faible)} est ce qui te tire vers le bas ({Math.round(g.actuel.piliers[g.faible]!)}).
             </Text>
             <View>
               {PILIERS.map((pi, i) => {
