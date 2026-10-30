@@ -30,10 +30,14 @@ La barre et « environ… de calcul » ne comptent que le **temps de calcul** : 
 
 **Ce que l'écran affiche :** le grand chiffre du dossard est le pourcentage (« 2,3 % », une décimale), la barre le suit, et les sorties s'ajoutent **une par une**. Le serveur ne répond qu'à la fin d'un lot de 20 : pour que le compteur ne saute pas à chaque réponse, l'écran le fait avancer 10 fois par seconde à **vitesse constante** (la vitesse moyenne mesurée depuis le début du calcul : temps total des lots ÷ sorties faites). Il ne dépasse jamais la 19e sortie du lot en cours ; quand le serveur confirme un chiffre plus haut que le sien, il le rattrape en glissant (environ 1,5 s) au lieu de sauter (`avancerAffichage`).
 
-**Pas de pause automatique ni de prévision des pauses.** Strava limite à 100 demandes par quart d'heure et environ 1 000 par jour, pour toute l'application Rush. Quand Strava refuse une demande, le calcul s'arrête, l'écran le dit et le bouton « Reprendre » le relance à la main. Une erreur (réseau, jeton) est retentée 3 fois, puis l'écran dit qu'il est interrompu (« Réessayer »). Si rien n'avance sans que Strava refuse, il s'arrête aussi au bout de 3 lots. (La fonction `strava-streams` renvoie encore `quota`, lu dans les en-têtes de Strava par `_shared/quota-strava.ts` : l'app ne s'en sert plus.)
+**Pas de pause automatique ni de prévision des pauses.** Les limites de l'application Rush chez Strava (tableau de bord développeur, 30 oct. 2026) : **lecture 200 demandes par quart d'heure et 2 000 par jour**, globales 400 et 4 000, 10 athlètes autorisés (3 connectés). Elles valent pour tous les comptes ensemble. Quand Strava refuse une demande, le calcul s'arrête, l'écran le dit et le bouton « Reprendre » le relance à la main. Une erreur (réseau, jeton) est retentée 3 fois, puis l'écran dit qu'il est interrompu (« Réessayer »). Si rien n'avance sans que Strava refuse, il s'arrête aussi au bout de 3 lots. (La fonction `strava-streams` renvoie encore `quota`, lu dans les en-têtes de Strava par `_shared/quota-strava.ts` : l'app ne s'en sert plus.)
 
 ## Limites
 
 - Calcul seulement écran ouvert, et à relancer à la main après chaque limite de Strava : un gros compte demande plusieurs jours avec la limite quotidienne. Une tâche serveur planifiée (pg_cron) résoudrait ça, elle n'est pas faite.
 - Le temps annoncé est celui du calcul seul, pas celui des attentes imposées par Strava.
 - Pas de connexion Strava depuis le téléphone : l'écran suppose un compte déjà connecté depuis le site.
+
+## Ce qu'on a constaté le 30 oct. 2026
+
+Sur un compte de 2 986 sorties, l'import a écrit environ 1 900 flux en 35 minutes (de l'ordre de 1 000 par quart d'heure, soit environ 1 sortie par seconde), sans qu'aucune limite de Strava ne se déclenche, alors que la limite de lecture annoncée est de 200 par quart d'heure. Le graphique « Demandes » du tableau de bord Strava ne montrait à ce moment-là que 20 demandes sur la journée (toutes avant 17 h UTC). On ne sait pas encore si le tableau de bord est en retard ou si ces requêtes de flux ne sont pas comptées comme on le croit : la base (`streams_synced_at`) fait foi pour l'avancement.
