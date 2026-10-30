@@ -49,6 +49,27 @@ export async function chargerConnexions(userId: string): Promise<Resultat<{ stra
   return { data: { strava: strava.data as ConnexionStrava | null, nbActivites: activites.count || 0, nbNuits: nuits.count || 0 }, erreur: '' };
 }
 
+/**
+ * Déconnecte Strava par la fonction « disconnect-integration » (elle seule touche aux jetons). `effacer` : supprime aussi les données importées de Strava
+ * (activités, charge, records), sans retour possible ; sinon elles sont gardées et on pourra reconnecter sans tout re-télécharger.
+ */
+export async function deconnecterStrava(effacer: boolean): Promise<Resultat<true>> {
+  const echec = { data: null, erreur: 'Impossible de déconnecter Strava. Réessaie dans un instant.' };
+  const { data: s } = await sb.auth.getSession();
+  const jeton = s.session?.access_token;
+  if (!jeton) return echec;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/disconnect-integration`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${jeton}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider: 'strava', wipe: effacer === true }),
+    });
+    return res.ok ? { data: true, erreur: '' } : echec;
+  } catch {
+    return echec;
+  }
+}
+
 /** Le compte a-t-il au moins une connexion (Strava ou autre) ? `null` si on n'a pas pu le savoir (on ne suppose alors rien). */
 export async function aUneConnexion(userId: string): Promise<boolean | null> {
   const r = await sb.from('connexions_app').select('app').eq('user_id', userId).limit(1);

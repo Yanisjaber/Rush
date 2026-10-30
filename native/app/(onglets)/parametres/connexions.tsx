@@ -1,53 +1,36 @@
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
+import { CarteStrava } from '@/components/ecrans/CarteStrava';
 import { EcranSection } from '@/components/ecrans/EcranSection';
-import { Bouton } from '@/components/ui/Bouton';
-import { Pastille } from '@/components/ui/Pastille';
 import { chargerConnexions, type ConnexionStrava } from '@/data/acces/api';
 import { useAuth } from '@/stores/auth';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Adresse du site : la connexion à Strava passe encore par le web. Elle arrivera dans l'app avec l'ouverture du lien OAuth.
-const ADRESSE_SITE = 'https://yanisjaber.github.io/Rush/';
-
-const texteDate = (iso: string | null): string => {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? '' : d.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-};
 const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
 
-// Les connexions du compte, en lecture : une pastille d'état (verte, rouge ou grise), un mot, et des puces avec les chiffres. Peu de phrases.
+// Les connexions du compte : la carte Strava (la même que sur le site, voir CarteStrava) et Garmin (bientôt, avec les nuits déjà importées).
 export default function Connexions() {
   const p = usePalette();
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
-  const router = useRouter();
   const [etat, setEtat] = useState<{ strava: ConnexionStrava | null; nbActivites: number; nbNuits: number } | null>(null);
   const [erreur, setErreur] = useState('');
 
-  useEffect(() => {
+  const charger = useCallback(async () => {
     if (demo || !userId) return;
-    let annule = false;
-    chargerConnexions(userId).then((r) => {
-      if (annule) return;
-      setEtat(r.data);
-      setErreur(r.erreur);
-    });
-    return () => {
-      annule = true;
-    };
+    const r = await chargerConnexions(userId);
+    setEtat(r.data);
+    setErreur(r.erreur);
   }, [demo, userId]);
 
+  useEffect(() => {
+    void charger();
+  }, [charger]);
+
   const strava = demo ? null : (etat?.strava ?? null);
-  const enErreur = strava?.last_sync_status === 'error';
-  const mot = !strava ? 'Non connecté' : enErreur ? 'Erreur de synchro' : 'Connecté';
-  const couleur = !strava ? p.traitFort : enErreur ? p.danger : p.ok;
-  const puces = strava ? [strava.athlete_name, pluriel(etat?.nbActivites ?? 0, 'activité'), texteDate(strava.last_sync_at) ? `synchro ${texteDate(strava.last_sync_at)}` : ''].filter((x): x is string => !!x) : [];
   const nuits = etat?.nbNuits ?? 0;
 
   return (
@@ -55,39 +38,8 @@ export default function Connexions() {
       <View style={{ gap: espace.e4 }}>
         {demo ? <Text style={[typo.petit, { color: p.texteMuet }]}>Mode démo : aucune connexion.</Text> : null}
         {erreur ? <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>{erreur}</Text> : null}
-        {erreur && !etat ? null : (
-        <Bloc titre="Strava">
-          {!demo && !etat ? (
-            <ActivityIndicator color={p.texteDoux} />
-          ) : (
-            <>
-              <View accessible accessibilityLabel={`Strava : ${mot}`} style={styles.statut}>
-                <View style={[styles.pastille, { backgroundColor: couleur }]} />
-                <Text style={[styles.mot, { color: strava ? p.texte : p.texteDoux }]}>{mot}</Text>
-              </View>
-              {puces.length ? (
-                <View style={styles.puces}>
-                  {puces.map((x) => (
-                    <View key={x} style={[styles.puce, { borderColor: p.traitFort }]}>
-                      <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>{x}</Text>
-                    </View>
-                  ))}
-                </View>
-              ) : null}
-              {strava ? (
-                <View style={{ marginTop: espace.e3 }}>
-                  <Bouton variante="discret" onPress={() => router.push('/parametres/synchro')}>Flux et courbes des sorties</Bouton>
-                </View>
-              ) : null}
-              {!strava ? (
-                <View style={{ marginTop: espace.e3, alignItems: 'flex-start' }}>
-                  <Pastille nom="Connecter depuis le site" actif={false} onPress={() => void Linking.openURL(ADRESSE_SITE)} aide="Ouvre le site dans le navigateur" />
-                </View>
-              ) : null}
-            </>
-          )}
-        </Bloc>
-        )}
+        {!demo && !etat && !erreur ? <ActivityIndicator color={p.texteDoux} /> : null}
+        {demo || etat ? <CarteStrava strava={strava} nbActivites={etat?.nbActivites ?? 0} demo={demo} onChange={() => void charger()} /> : null}
         <Bloc titre="Garmin">
           <View accessible accessibilityLabel="Garmin : bientôt disponible" style={styles.statut}>
             <View style={[styles.pastille, { backgroundColor: p.traitFort }]} />
