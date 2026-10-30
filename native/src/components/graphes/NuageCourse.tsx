@@ -54,7 +54,7 @@ export function NuageCourse({ estimation: e, couleurVerdict }: Props) {
           <TexteSvg key={`tx${v}`} x={x(v)} y={HAUTEUR - B + 16} fontSize={12} fontFamily={police.texte400} fill={p.texteMuet} textAnchor="middle">{v}</TexteSvg>
         ))}
         <TexteSvg x={G} y={HAUTEUR - 4} fontSize={12} fontFamily={police.texte400} fill={p.texteMuet}>cardio moyen de la course (bpm)</TexteSvg>
-        <TexteSvg x={2} y={H - 8} fontSize={12} fontFamily={police.texte400} fill={p.texteMuet}>min/km ↑ rapide</TexteSvg>
+        <TexteSvg x={2} y={H - 14} fontSize={12} fontFamily={police.texte400} fill={p.texteMuet}>min/km ↑ rapide</TexteSvg>
 
         <Line x1={xRef} x2={xRef} y1={H} y2={HAUTEUR - B} stroke={p.texteMuet} strokeWidth={1} strokeDasharray="3 4" />
         <TexteSvg x={xRef} y={H - 8} fontSize={12} fontFamily={police.texte500} fill={p.texteDoux} textAnchor="middle">{`référence ${e.fcReference} bpm`}</TexteSvg>

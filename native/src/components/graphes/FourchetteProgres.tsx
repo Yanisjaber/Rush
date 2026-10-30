@@ -27,6 +27,8 @@ export function FourchetteProgres({ pct, bas, haut, statut }: Props) {
   const p = usePalette();
   const demi = echelleFourchette(bas, haut);
   const x = (v: number): number => MARGE + ((v + demi) / (2 * demi)) * (LARGEUR - 2 * MARGE);
+  // Fourchette étroite : les deux chiffres du bas se chevaucheraient, on les écarte (celui de gauche vers la gauche, celui de droite vers la droite)
+  const serree = x(haut) - x(bas) < 70;
   const couleur = statut === 'hausse' ? p.ok : statut === 'baisse' ? p.alerte : p.texteDoux;
   const etiquette = `Fourchette de l'évolution : entre ${ecritNombre(bas)} et ${ecritNombre(haut)}, estimation ${ecritNombre(pct)}.`;
 
@@ -42,8 +44,8 @@ export function FourchetteProgres({ pct, bas, haut, statut }: Props) {
         <Line x1={x(haut)} x2={x(haut)} y1={Y - 9} y2={Y + 9} stroke={couleur} strokeWidth={2.5} />
         <Circle cx={x(pct)} cy={Y} r={6.5} fill={couleur} stroke={p.surface} strokeWidth={2} />
         <TexteSvg x={x(pct)} y={Y - 30} fontSize={13} fontFamily={police.titre700} fill={couleur} textAnchor="middle">{ecritNombre(pct)}</TexteSvg>
-        <TexteSvg x={x(bas)} y={Y + 42} fontSize={12} fontFamily={police.texte500} fill={p.texteDoux} textAnchor="middle">{ecritNombre(bas)}</TexteSvg>
-        <TexteSvg x={x(haut)} y={Y + 42} fontSize={12} fontFamily={police.texte500} fill={p.texteDoux} textAnchor="middle">{ecritNombre(haut)}</TexteSvg>
+        <TexteSvg x={x(bas)} y={Y + 42} fontSize={12} fontFamily={police.texte500} fill={p.texteDoux} textAnchor={serree ? 'end' : 'middle'}>{ecritNombre(bas)}</TexteSvg>
+        <TexteSvg x={x(haut)} y={Y + 42} fontSize={12} fontFamily={police.texte500} fill={p.texteDoux} textAnchor={serree ? 'start' : 'middle'}>{ecritNombre(haut)}</TexteSvg>
       </Svg>
       <View style={styles.sens}>
         <Text style={[typo.petit, { color: p.alerte }]}>← recul</Text>
