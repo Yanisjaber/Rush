@@ -36,6 +36,9 @@ export interface LotSynchro {
 /** Sorties que le serveur télécharge à la fois pendant un lot : le calcul reste sur un seul fil, mais les attentes de Strava et de la base se recouvrent. */
 const PARALLELE = 4;
 
+/** Le délai maximum d'un lot : la fonction serveur s'arrête d'elle-même vers 150 s, 100 s laissent largement le temps à 20 sorties. */
+const DELAI_LOT_MS = 100_000;
+
 const entierPositif = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : null);
 
 const messageLot = (statut: number, code: unknown): string => {
@@ -50,9 +53,13 @@ export async function traiterLotSynchro(limite: number): Promise<Resultat<LotSyn
   const { data: s } = await sb.auth.getSession();
   const jeton = s.session?.access_token;
   if (!jeton) return { data: null, erreur: messageLot(401, null) };
+  // Un délai maximum : un appel qui ne revient jamais gèlerait l'écran. Passé ce délai, on le compte comme une erreur (le calcul est retenté).
+  const coupure = new AbortController();
+  const minuteur = setTimeout(() => coupure.abort(), DELAI_LOT_MS);
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/strava-streams`, {
       method: 'POST',
+      signal: coupure.signal,
       headers: { Authorization: `Bearer ${jeton}`, 'Content-Type': 'application/json' },
       // profil_a_la_fin : le profil de puissance ne se recalcule qu'au dernier lot ; parallele : quatre sorties téléchargées à la fois (voir strava-streams)
       body: JSON.stringify({ limit: Math.max(1, Math.min(40, Math.floor(limite))), profil_a_la_fin: true, parallele: PARALLELE }),
@@ -64,5 +71,7 @@ export async function traiterLotSynchro(limite: number): Promise<Resultat<LotSyn
     return { data: { restantes, limiteAtteinte: corps?.rate_limited === true }, erreur: '' };
   } catch {
     return { data: null, erreur: messageLot(0, null) };
+  } finally {
+    clearTimeout(minuteur);
   }
 }

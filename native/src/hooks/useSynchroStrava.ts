@@ -95,6 +95,32 @@ export function useSynchroStrava(): EtatSynchro & { demarrer: () => void; arrete
     maj({ phase: 'repos', message: '' });
   }, [maj]);
 
+  // La base fait foi : tant que l'écran est en calcul, à l'arrêt ou en erreur, on relit le compteur toutes les 4 s. L'écran suit même si un lot tarde,
+  // ou si un autre appareil (le même compte sur un autre téléphone) fait avancer la synchro ; à 100 %, la boucle s'arrête.
+  useEffect(() => {
+    if (!userId || (etat.phase !== 'calcul' && etat.phase !== 'repos' && etat.phase !== 'erreur')) return;
+    let annule = false;
+    const t = setInterval(() => {
+      void chargerCompteurSynchro(userId).then((r) => {
+        if (annule || !r.data) return;
+        const { total, faites } = r.data;
+        setEtat((e) => {
+          if (e.phase !== 'calcul' && e.phase !== 'repos' && e.phase !== 'erreur') return e;
+          const plusHaut = Math.max(e.faites, faites);
+          if (total > 0 && plusHaut >= total) {
+            boucle.current++;
+            return { ...e, total, faites: total, phase: 'fini', message: '' };
+          }
+          return plusHaut === e.faites && total === e.total ? e : { ...e, total, faites: plusHaut };
+        });
+      });
+    }, 4000);
+    return () => {
+      annule = true;
+      clearInterval(t);
+    };
+  }, [userId, etat.phase]);
+
   // À l'ouverture de l'écran : on lit où on en est, et on repart s'il reste des sorties
   useEffect(() => {
     if (demo || !userId) return;
