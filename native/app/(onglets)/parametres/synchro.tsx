@@ -1,10 +1,11 @@
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { EcranSection } from '@/components/ecrans/EcranSection';
 import { Bouton } from '@/components/ui/Bouton';
 import { Dossard } from '@/components/ui/Dossard';
-import { avancement, formaterDuree, tempsCalcul } from '@/data/synchro/estimation';
-import { useSynchroStrava, type PhaseSynchro } from '@/hooks/useSynchroStrava';
+import { avancement, faitesAffichees, formaterDuree, formaterPourcent, tempsCalcul } from '@/data/synchro/estimation';
+import { TAILLE_LOT, useSynchroStrava, type PhaseSynchro } from '@/hooks/useSynchroStrava';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
@@ -12,14 +13,22 @@ import { usePalette } from '@/theme/usePalette';
 
 const nb = (n: number): string => n.toLocaleString('fr-FR');
 
-// La synchro des flux et des courbes (maquette 1 : le dossard héros). Le compteur de sorties est la donnée héros ; la barre et « environ… de calcul » ne comptent que le
-// temps de calcul. Pas de pause automatique : si Strava atteint sa limite, le calcul s'arrête et un bouton le relance. Calculs : data/synchro/estimation.ts, doc : docs/native/SYNCHRO_STRAVA.md.
+// La synchro des flux et des courbes (maquette 1 : le dossard héros). Le pourcentage (« 2,3 / 100 ») est la donnée héros, la barre le suit, et les sorties s'ajoutent une par une
+// à vitesse régulière ; la barre et « environ… de calcul » ne comptent que le temps de calcul. Pas de pause automatique : si Strava atteint sa limite, le calcul s'arrête et un bouton le relance. Calculs : data/synchro/estimation.ts, doc : docs/native/SYNCHRO_STRAVA.md.
 export default function SynchroStrava() {
   const p = usePalette();
   const s = useSynchroStrava();
   const couleur = couleurSport(p, 'velo');
-  const restantes = Math.max(0, s.total - s.faites);
-  const part = avancement(s.faites, s.total);
+  // Pendant un lot, l'horloge tourne (10 fois par seconde) et les sorties s'ajoutent une par une, à vitesse régulière ; le serveur confirme à la fin du lot
+  const [maintenant, setMaintenant] = useState(Date.now());
+  useEffect(() => {
+    if (s.phase !== 'calcul') return;
+    const t = setInterval(() => setMaintenant(Date.now()), 100);
+    return () => clearInterval(t);
+  }, [s.phase]);
+  const faites = s.phase === 'calcul' ? faitesAffichees(s.faites, s.total, s.secParSortie, (maintenant - s.debutLot) / 1000, TAILLE_LOT) : s.faites;
+  const restantes = Math.max(0, s.total - faites);
+  const part = avancement(faites, s.total);
   const calcul = tempsCalcul(restantes, s.secParSortie);
 
   const statut: Record<PhaseSynchro, { mot: string; pastille: string }> = {
@@ -34,8 +43,8 @@ export default function SynchroStrava() {
 
   const reste =
     s.phase === 'fini' ? `Tes ${nb(s.total)} sorties sont importées avec leurs courbes.`
-    : s.phase === 'erreur' ? `Rien n'est perdu : ça reprend à la sortie ${nb(s.faites + 1)}.`
-    : s.phase === 'calcul' || s.phase === 'repos' ? `${nb(restantes)} sorties restantes, environ ${formaterDuree(calcul)} de calcul.`
+    : s.phase === 'erreur' ? `${nb(faites)} sorties sur ${nb(s.total)}. Rien n'est perdu : ça reprend à la sortie ${nb(faites + 1)}.`
+    : s.phase === 'calcul' || s.phase === 'repos' ? `${nb(faites)} sorties sur ${nb(s.total)}, environ ${formaterDuree(calcul)} de calcul.`
     : '';
 
   return (
@@ -51,7 +60,7 @@ export default function SynchroStrava() {
 
         {s.total > 0 ? (
           <>
-            <Dossard sport="velo" etiquette="Flux et courbes" valeur={nb(s.faites)} uniteValeur={`/ ${nb(s.total)}`} detail={reste} chiffreMax={64}>
+            <Dossard sport="velo" etiquette="Flux et courbes" valeur={formaterPourcent(part)} uniteValeur="/ 100" detail={reste} chiffreMax={64}>
               <View
                 accessibilityRole="progressbar"
                 accessibilityLabel="Avancement du calcul"

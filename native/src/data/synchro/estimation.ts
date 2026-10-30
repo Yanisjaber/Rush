@@ -30,6 +30,23 @@ export function formaterDuree(secondes: number): string {
   return h ? `${j} et ${h} h` : j;
 }
 
+/**
+ * Le nombre de sorties à AFFICHER pendant qu'un lot se calcule : le serveur ne répond qu'à la fin du lot (20 sorties), mais on les voit s'ajouter une par une, à vitesse
+ * régulière (le temps mesuré d'une sortie). On ne dépasse jamais la dernière sortie du lot en cours : au retour du serveur, le chiffre confirmé prend le relais.
+ *  confirmees : sorties confirmées par le serveur · ecouleSecondes : temps depuis le début du lot · tailleLot : sorties demandées dans le lot.
+ */
+export function faitesAffichees(confirmees: number, total: number, secParSortie: number, ecouleSecondes: number, tailleLot: number): number {
+  const ajout = secParSortie > 0 ? Math.floor(Math.max(0, ecouleSecondes) / secParSortie) : 0;
+  return Math.min(total, confirmees + Math.min(ajout, Math.max(0, tailleLot - 1)));
+}
+
+/** Un pourcentage avec une décimale et une virgule : « 2,3 », « 100 ». Jamais 100 tant que tout n'est pas fait (99,96 s'écrit 99,9). */
+export function formaterPourcent(part: number): string {
+  const p = Math.min(1, Math.max(0, part)) * 100;
+  if (p >= 100) return '100';
+  return (Math.floor(p * 10) / 10).toFixed(1).replace('.', ',');
+}
+
 /** L'avancement de 0 à 1 : la part des sorties déjà importées (chaque sortie prend à peu près le même temps, donc c'est aussi la part du temps de calcul). */
 export function avancement(faites: number, total: number): number {
   if (total <= 0) return 1;

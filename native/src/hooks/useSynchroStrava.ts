@@ -16,14 +16,17 @@ export interface EtatSynchro {
   faites: number;
   /** Le temps moyen d'une sortie, mesuré sur les lots déjà faits (une valeur de départ avant le premier). */
   secParSortie: number;
+  /** Le moment (ms) où le lot en cours est parti : l'écran en déduit les sorties à montrer une par une pendant qu'il se calcule. */
+  debutLot: number;
   /** Pourquoi le calcul s'est arrêté (limite Strava, erreur), sinon vide. */
   message: string;
 }
 
-const TAILLE_LOT = 20;
+/** Sorties demandées au serveur à chaque lot. */
+export const TAILLE_LOT = 20;
 const ESSAIS_MAX = 3;
 
-const INITIAL: EtatSynchro = { phase: 'chargement', total: 0, faites: 0, secParSortie: SECONDES_PAR_SORTIE_DEFAUT, message: '' };
+const INITIAL: EtatSynchro = { phase: 'chargement', total: 0, faites: 0, secParSortie: SECONDES_PAR_SORTIE_DEFAUT, debutLot: Date.now(), message: '' };
 const attendre = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 export function useSynchroStrava(): EtatSynchro & { demarrer: () => void; arreter: () => void } {
@@ -48,6 +51,7 @@ export function useSynchroStrava(): EtatSynchro & { demarrer: () => void; arrete
       while (vivant()) {
         const avant = etatRef.current;
         const t0 = Date.now();
+        maj({ debutLot: t0 });
         const r = await traiterLotSynchro(TAILLE_LOT);
         if (!vivant()) return;
         if (!r.data) {
