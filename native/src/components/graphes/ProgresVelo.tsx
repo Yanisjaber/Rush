@@ -7,8 +7,7 @@ import { Dossard } from '@/components/ui/Dossard';
 import { IconeSport } from '@/components/ui/IconeSport';
 import { PERIODES_PROGRESSION, type PeriodeProgression, type Progression } from '@/data/bilan/progression';
 import { MOT, formatPct } from '@/data/bilan/progression-texte';
-import { formatDateCourte } from '@/data/outils/format';
-import { espace, avecAlpha, rayon } from '@/theme/couleurs';
+import { espace } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -17,6 +16,9 @@ import { usePalette } from '@/theme/usePalette';
 // la fourchette, le nuage de sorties avec les deux droites, la cascade de l'écart brut à l'écart à cardio égal, et les sorties retenues.
 // Le détail du calcul vient de `progression.detailVelo` (voir data/bilan/progression-velo.ts et docs/native/PROGRESSION_VELO.md).
 const SORTIES_AFFICHEES = 5;
+
+/** « 28 oct. » : la date sans le jour de la semaine, pour que la ligne tienne sur un petit écran. */
+const dateJourMois = (iso: string): string => new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 
 export function ProgresVelo({ progression, jours }: { progression: Progression; jours: PeriodeProgression }) {
   const p = usePalette();
@@ -66,23 +68,23 @@ export function ProgresVelo({ progression, jours }: { progression: Progression; 
             <View
               key={`${s.date}-${i}`}
               accessible
-              accessibilityLabel={`${formatDateCourte(s.date)}, ${Math.round(s.watts)} watts à ${Math.round(s.fc)} battements par minute${s.interieur ? ', en salle' : ''}, soit ${Math.round(s.ajuste)} watts à ${e.fcReference} battements par minute. ${s.actuelle ? 'Période actuelle' : "Période d'avant"}.`}
+              accessibilityLabel={`${dateJourMois(s.date)}, ${Math.round(s.watts)} watts à ${Math.round(s.fc)} battements par minute${s.interieur ? ', en salle' : ''}, soit ${Math.round(s.ajuste)} watts à ${e.fcReference} battements par minute. ${s.actuelle ? 'Période actuelle' : "Période d'avant"}.`}
               style={[styles.ligne, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: p.trait }]}
             >
-              <Text style={[typo.petit, styles.date, { color: p.texteDoux }]}>{formatDateCourte(s.date)}</Text>
+              <Text style={[typo.petit, styles.date, { color: p.texteDoux }]}>{dateJourMois(s.date)}</Text>
               <Text style={[typo.petit, styles.flex, { color: p.texte }]}>
                 <Text style={styles.gras}>{Math.round(s.watts)} W</Text> · {Math.round(s.fc)} bpm{s.interieur ? ' · salle' : ''}
                 <Text style={{ color: p.texteDoux }}> → </Text>
                 <Text style={[styles.gras, s.actuelle && { color: velo }]}>{Math.round(s.ajuste)} W</Text>
               </Text>
-              <View style={[styles.periode, { backgroundColor: s.actuelle ? avecAlpha(velo, 0.2) : p.surface2 }]}>
-                <Text style={[typo.micro, { color: s.actuelle ? velo : p.texteDoux }]}>{s.actuelle ? 'maintenant' : 'avant'}</Text>
-              </View>
+              <View
+                style={[styles.point, { borderColor: s.actuelle ? velo : p.texteDoux, backgroundColor: s.actuelle ? velo : 'transparent' }]}
+              />
             </View>
           ))}
         </View>
         {autres > 0 ? <Text style={[typo.petit, styles.sous, { color: p.texteDoux }]}>+ {autres} autres sorties</Text> : null}
-        <Text style={[typo.petit, { color: p.texteDoux }]}>La flèche donne les watts de la sortie une fois ramenés à {e.fcReference} bpm et à l'extérieur.</Text>
+        <Text style={[typo.petit, { color: p.texteDoux }]}>● maintenant  ○ avant. La flèche donne les watts de la sortie une fois ramenés à {e.fcReference} bpm et à l'extérieur.</Text>
       </Bloc>
     </View>
   );
@@ -94,7 +96,7 @@ const styles = StyleSheet.create({
   tete: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 },
   sous: { marginBottom: 8 },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 9, minHeight: 44 },
-  date: { width: 78 },
+  date: { width: 62 },
   gras: { fontFamily: police.texte600, fontVariant: ['tabular-nums'] },
-  periode: { borderRadius: rayon.rond, paddingHorizontal: 8, paddingVertical: 2 },
+  point: { width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
 });

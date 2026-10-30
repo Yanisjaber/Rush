@@ -52,7 +52,7 @@ export function NuageVelo({ estimation: e, couleurVerdict }: Props) {
         <TexteSvg x={2} y={H - 8} fontSize={12} fontFamily={police.texte400} fill={p.texteMuet}>W</TexteSvg>
 
         <Line x1={xRef} x2={xRef} y1={H} y2={HAUTEUR - B} stroke={p.texteMuet} strokeWidth={1} strokeDasharray="3 4" />
-        <TexteSvg x={xRef} y={H - 8} fontSize={12} fontFamily={police.texte500} fill={p.texteDoux} textAnchor="middle">référence {e.fcReference} bpm</TexteSvg>
+        <TexteSvg x={xRef} y={H - 8} fontSize={12} fontFamily={police.texte500} fill={p.texteDoux} textAnchor="middle">{`référence ${e.fcReference} bpm`}</TexteSvg>
 
         <Line x1={x(g.x0)} x2={x(g.x1)} y1={y(g.droiteAvant.de)} y2={y(g.droiteAvant.a)} stroke={p.texteMuet} strokeWidth={2.4} strokeLinecap="round" />
         <Line x1={x(g.x0)} x2={x(g.x1)} y1={y(g.droiteActuelle.de)} y2={y(g.droiteActuelle.a)} stroke={velo} strokeWidth={2.4} strokeLinecap="round" />
@@ -62,7 +62,7 @@ export function NuageVelo({ estimation: e, couleurVerdict }: Props) {
         <Path d={`M${flecheX - 4} ${yFin - sens * 5} L${flecheX} ${yFin} L${flecheX + 4} ${yFin - sens * 5}`} fill="none" stroke={couleurVerdict} strokeWidth={2.4} />
         <TexteSvg
           x={aDroite ? flecheX - 7 : flecheX + 7}
-          y={(y(g.auReference.avant) + yFin) / 2 + 4}
+          y={Math.min(y(g.auReference.avant), yFin) - 10} // au-dessus des deux droites : l'écart est parfois trop petit pour y loger le texte
           fontSize={13}
           fontFamily={police.titre700}
           fill={couleurVerdict}
