@@ -4,7 +4,7 @@ import { CourbeLissee } from '@/components/graphes/CourbeLissee';
 import { IconeSport } from '@/components/ui/IconeSport';
 import { StatCle } from '@/components/ui/StatCle';
 import { PERIODES_PROGRESSION, type PeriodeProgression, type Progression } from '@/data/bilan/progression';
-import { MOT, formatPct, formatValeurProgression } from '@/data/bilan/progression-texte';
+import { MOT, baseTexte, formatPct, formatValeurProgression, fourchetteTexte } from '@/data/bilan/progression-texte';
 import { avecAlpha, rayon } from '@/theme/couleurs';
 import { SPORTS, couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
@@ -38,11 +38,12 @@ export function ProgresSport({ progression, courbe, jours }: { progression: Prog
         <>
           <View style={styles.verdict}>
             <Text style={[styles.pct, { color: couleurVerdict }]}>{formatPct(progression.variationPct!)}</Text>
-            <View style={[styles.mot, { backgroundColor: progression.statut === 'stable' ? p.surface2 : avecAlpha(couleurVerdict, 0.16) }]}>
+            <View style={[styles.mot, { backgroundColor: progression.statut === 'stable' || progression.statut === 'incertain' ? p.surface2 : avecAlpha(couleurVerdict, 0.16) }]}>
               <Text style={[typo.petit, styles.motTexte, { color: couleurVerdict }]}>{MOT[progression.statut]}</Text>
             </View>
           </View>
           <Text style={[typo.petit, { color: p.texteDoux }]}>sur {periode.nom}, comparés aux {periode.nom} d'avant</Text>
+          {fourchetteTexte(progression) ? <Text style={[typo.petit, { color: p.texteDoux }]}>Fourchette : {fourchetteTexte(progression)}</Text> : null}
           {courbe.length >= 2 ? (
             <View style={styles.courbe}>
               <CourbeLissee
@@ -56,6 +57,7 @@ export function ProgresSport({ progression, courbe, jours }: { progression: Prog
               <Text style={[typo.micro, { color: p.texteMuet }]}>100 = ton niveau d'avant · au-dessus, tu progresses</Text>
             </View>
           ) : null}
+          {baseTexte(progression) ? <Text style={[typo.micro, styles.base, { color: p.texteMuet }]}>{baseTexte(progression)}</Text> : null}
           <View style={styles.reperes}>
             <StatCle etiquette="Avant" valeur={formatValeurProgression(progression, progression.avant)} petit />
             <StatCle etiquette="Maintenant" valeur={formatValeurProgression(progression, progression.actuel)} petit couleur={couleurVerdict} />
@@ -78,4 +80,5 @@ const styles = StyleSheet.create({
   courbe: { marginTop: 12, gap: 4 },
   reperes: { flexDirection: 'row', gap: 32, marginTop: 14 },
   vide: { marginTop: 10 },
+  base: { marginTop: 10 },
 });

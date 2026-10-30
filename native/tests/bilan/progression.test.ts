@@ -77,8 +77,8 @@ test('course : sur 1 an, la comparaison remonte à l\'an dernier', () => {
 
 test('vélo : plus de watts au même cardio = hausse', () => {
   const seances = [
-    seance('a', 40, 'Ride', 40, 90, { avg_heartrate: 135, avg_watts: 150 }), seance('b', 38, 'Ride', 40, 90, { avg_heartrate: 135, avg_watts: 150 }),
-    seance('c', 8, 'Ride', 40, 90, { avg_heartrate: 135, avg_watts: 165 }), seance('d', 3, 'Ride', 40, 90, { avg_heartrate: 135, avg_watts: 165 }),
+    seance('a', 40, 'Ride', 40, 90, { avg_heartrate: 135, avg_watts: 150 }), seance('b', 38, 'Ride', 40, 90, { avg_heartrate: 135, avg_watts: 150 }), seance('e', 36, 'Ride', 40, 90, { avg_heartrate: 135, avg_watts: 150 }),
+    seance('c', 8, 'Ride', 40, 90, { avg_heartrate: 135, avg_watts: 165 }), seance('d', 3, 'Ride', 40, 90, { avg_heartrate: 135, avg_watts: 165 }), seance('f', 14, 'Ride', 40, 90, { avg_heartrate: 135, avg_watts: 165 }),
   ];
   const p = progressionSport('velo', { ...vide, seances }, 28, AUJOURDHUI)!;
   assert.equal(p.statut, 'hausse');

@@ -44,7 +44,7 @@ export function WidgetProgression({ contexte, taille = 'm' }: WidgetProps) {
 
   const couleurStatut = (prog: Progression): string => (prog.statut === 'hausse' ? p.ok : prog.statut === 'baisse' ? p.alerte : p.texteDoux);
   const pastille = (prog: Progression) => (
-    <View style={[styles.pastille, { backgroundColor: prog.statut === 'insuffisant' || prog.statut === 'stable' ? p.surface2 : avecAlpha(couleurStatut(prog), 0.16) }]}>
+    <View style={[styles.pastille, { backgroundColor: prog.statut === 'insuffisant' || prog.statut === 'stable' || prog.statut === 'incertain' ? p.surface2 : avecAlpha(couleurStatut(prog), 0.16) }]}>
       <Text style={[typo.petit, styles.pastilleTexte, { color: couleurStatut(prog) }]}>{variationTexte(prog)}</Text>
     </View>
   );

@@ -16,3 +16,4 @@ Tous les `.md` du projet sont ici, rangés par thème. Exceptions : `CLAUDE.md` 
 ## `native/` — app mobile
 - `IDENTITE.md` : charte visuelle de l'app native.
 - `CALENDRIER_A_FAIRE.md` : ce qui reste à faire sur le calendrier natif.
+- `PROGRESSION_VELO.md` : comment l'onglet Progrès décide pour le vélo (calcul, tests sur de vraies sorties, limites).

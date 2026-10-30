@@ -2,8 +2,8 @@
 import { formatAllure, formatAllure100m, formatNum } from '../outils/format.ts';
 import type { Progression, Statut } from './progression.ts';
 
-export const FLECHE: Record<Statut, string> = { hausse: '↗', stable: '→', baisse: '↘', insuffisant: '' };
-export const MOT: Record<Statut, string> = { hausse: 'Tu progresses', stable: 'Stable', baisse: 'En retrait', insuffisant: 'Pas assez de données' };
+export const FLECHE: Record<Statut, string> = { hausse: '↗', stable: '→', baisse: '↘', incertain: '≈', insuffisant: '' };
+export const MOT: Record<Statut, string> = { hausse: 'Tu progresses', stable: 'Stable', baisse: 'En retrait', incertain: 'Trop variable pour trancher', insuffisant: 'Pas assez de données' };
 
 /** « +8,3 % », « -2 % ». */
 export const formatPct = (v: number): string => `${v > 0 ? '+' : ''}${v.toString().replace('.', ',')} %`;
@@ -17,4 +17,16 @@ export function formatValeurProgression(prog: Progression, v: number | null): st
   if (prog.unite === 'allure') return formatAllure(v);
   if (prog.unite === 'allure100') return formatAllure100m(v);
   return `${formatNum(v)} ${prog.unite === 'watts' ? 'W' : 'kg'}`;
+}
+
+/** La fourchette de l'évolution : « entre −2,3 % et +6,4 % » ; vide quand l'algorithme n'en donne pas (course, natation, muscu). */
+export function fourchetteTexte(prog: Progression): string {
+  return prog.intervalle ? `entre ${formatPct(prog.intervalle.bas)} et ${formatPct(prog.intervalle.haut)}` : '';
+}
+
+/** Sur quoi repose le chiffre : « 8 sorties contre 7, watts ramenés à 145 bpm » ; vide sans ces informations. */
+export function baseTexte(prog: Progression): string {
+  if (prog.nbActuel == null || prog.nbAvant == null) return '';
+  const sorties = `${prog.nbActuel} sorties contre ${prog.nbAvant}`;
+  return prog.fcReference ? `${sorties}, watts ramenés à ${prog.fcReference} bpm` : sorties;
 }
