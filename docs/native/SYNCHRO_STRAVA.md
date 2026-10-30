@@ -16,16 +16,14 @@ Importer une sortie depuis Strava ne donne que son résumé (durée, cardio, wat
 
 À l'ouverture de l'écran, l'app lit le compteur (toutes les sorties, dont celles déjà importées) et, s'il en reste, lance le calcul par lots de 20, sans attendre entre deux lots. **Fermer l'écran l'arrête** (iOS ne laisse pas tourner ça en arrière-plan) ; le rouvrir reprend là où il en était, parce que chaque sortie est écrite au fur et à mesure.
 
-## Le temps : calcul et pauses séparés
+## Le temps
 
-Strava limite à **100 demandes par quart d'heure** et environ **1 000 par jour**, pour toute l'application Rush (tous les comptes ensemble). Ces limites sont lues dans les en-têtes de Strava (`X-RateLimit-Limit` / `X-RateLimit-Usage`, `_shared/quota-strava.ts`) et renvoyées par `strava-streams` dans `quota`. Strava remet le compteur à zéro à chaque quart d'heure pile, et à minuit UTC pour le jour.
+La barre et « environ… de calcul » ne comptent que le **temps de calcul** : sorties restantes × temps moyen d'une sortie, mesuré sur les lots déjà faits (2 s au départ). Chaque sortie prend à peu près le même temps, donc la barre avance à vitesse régulière.
 
-- **La barre et « il reste environ… »** ne comptent que le **temps de calcul** : sorties restantes × temps moyen d'une sortie, mesuré sur les lots déjà faits (2 s au départ). Chaque sortie prend à peu près le même temps, donc la barre avance à vitesse régulière tant que ça calcule.
-- **Les pauses** sont annoncées à part : « Pauses Strava à prévoir : 13 · environ 3 h » (simulation heure par heure du quota, avec l'attente de minuit quand la limite du jour est atteinte). Quand Strava refuse une demande, l'écran passe en pause avec un compte à rebours et reprend tout seul à la remise à zéro.
-- Une erreur (réseau, jeton) est retentée 3 fois, puis l'écran dit qu'il est interrompu (« Réessayer »). Si rien n'avance sans que Strava refuse, il s'arrête aussi au bout de 3 lots.
+**Pas de pause automatique ni de prévision des pauses.** Strava limite à 100 demandes par quart d'heure et environ 1 000 par jour, pour toute l'application Rush. Quand Strava refuse une demande, le calcul s'arrête, l'écran le dit et le bouton « Reprendre » le relance à la main. Une erreur (réseau, jeton) est retentée 3 fois, puis l'écran dit qu'il est interrompu (« Réessayer »). Si rien n'avance sans que Strava refuse, il s'arrête aussi au bout de 3 lots. (La fonction `strava-streams` renvoie encore `quota`, lu dans les en-têtes de Strava par `_shared/quota-strava.ts` : l'app ne s'en sert plus.)
 
 ## Limites
 
-- Calcul seulement écran ouvert : un gros compte demande plusieurs heures de calcul, et plus d'un jour avec la limite quotidienne. Une tâche serveur planifiée (pg_cron) résoudrait ça, elle n'est pas faite.
-- Le quota est partagé par tous les comptes : le temps annoncé est une estimation, pas une garantie.
+- Calcul seulement écran ouvert, et à relancer à la main après chaque limite de Strava : un gros compte demande plusieurs jours avec la limite quotidienne. Une tâche serveur planifiée (pg_cron) résoudrait ça, elle n'est pas faite.
+- Le temps annoncé est celui du calcul seul, pas celui des attentes imposées par Strava.
 - Pas de connexion Strava depuis le téléphone : l'écran suppose un compte déjà connecté depuis le site.

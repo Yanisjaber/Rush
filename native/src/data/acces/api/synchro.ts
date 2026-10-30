@@ -1,5 +1,4 @@
 import { SUPABASE_URL } from '@/config';
-import { quotaValide, type QuotaStrava } from '../../synchro/estimation';
 import { sb } from '../supabase';
 import { UUID, type Resultat } from './commun';
 
@@ -28,12 +27,10 @@ export async function chargerCompteurSynchro(userId: string): Promise<Resultat<C
 }
 
 export interface LotSynchro {
-  /** Sorties avec capteur qui attendent encore leur courbe, après ce lot. */
+  /** Sorties dont le flux n'est pas encore importé, après ce lot. */
   restantes: number;
   /** Strava a refusé une demande (limite atteinte) : il faut attendre. */
   limiteAtteinte: boolean;
-  /** Les limites et l'usage lus chez Strava, ou null si aucune demande n'est partie. */
-  quota: QuotaStrava | null;
 }
 
 const entierPositif = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : null);
@@ -45,7 +42,7 @@ const messageLot = (statut: number, code: unknown): string => {
   return 'Le calcul s\'est interrompu. Rien n\'est perdu : il reprend là où il s\'est arrêté.';
 };
 
-/** Calcule la courbe d'un lot de sorties (les plus récentes d'abord, seulement celles avec capteur de puissance). */
+/** Importe le flux et calcule les courbes d'un lot de sorties (les plus récentes d'abord). */
 export async function traiterLotSynchro(limite: number): Promise<Resultat<LotSynchro>> {
   const { data: s } = await sb.auth.getSession();
   const jeton = s.session?.access_token;
@@ -60,7 +57,7 @@ export async function traiterLotSynchro(limite: number): Promise<Resultat<LotSyn
     if (!res.ok) return { data: null, erreur: messageLot(res.status, corps?.error) };
     const restantes = entierPositif(corps?.remaining);
     if (restantes === null) return { data: null, erreur: messageLot(500, null) };
-    return { data: { restantes, limiteAtteinte: corps?.rate_limited === true, quota: quotaValide(corps?.quota) }, erreur: '' };
+    return { data: { restantes, limiteAtteinte: corps?.rate_limited === true }, erreur: '' };
   } catch {
     return { data: null, erreur: messageLot(0, null) };
   }
