@@ -53,6 +53,14 @@ export function ecartAuSommet(serie: SerieNiveau): number {
   return Math.max(0, serie.meilleur.score - serie.actuel.score);
 }
 
+/** Le nom d'une période en toutes lettres : « 2025-T2 » → « T2 2025 », « 2026-S1 » → « 1er semestre 2026 », « 2025 » → « 2025 ». */
+export function libellePeriode(cle: string): string {
+  const m = /^(\d{4})-([TS])(\d)$/.exec(cle);
+  if (!m) return cle;
+  if (m[2] === 'T') return `T${m[3]} ${m[1]}`;
+  return `${m[3] === '1' ? '1er' : `${m[3]}e`} semestre ${m[1]}`;
+}
+
 export type GenreNiveau = 'velo' | 'course' | 'record';
 
 /** Un niveau dans son unité : « 169 W » (vélo, records) ou « 5'22"/km » (course). */

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { niveauxCourse, niveauxVelo, serieRecord, type SortieNiveauCourse, type SortieNiveauVelo } from '../../src/data/bilan/niveau-annees.ts';
-import { axeScore, ecartAuSommet, formatMarge, formatNiveau, positionsNiveau, recordsDeCourbe, reperesAnnees, segmentsContinus } from '../../src/data/bilan/niveau-annees-affichage.ts';
+import { axeScore, ecartAuSommet, formatMarge, formatNiveau, libellePeriode, positionsNiveau, recordsDeCourbe, reperesAnnees, segmentsContinus } from '../../src/data/bilan/niveau-annees-affichage.ts';
 
 // Un bruit fixe (pas de hasard : le test doit toujours donner le même résultat)
 const BRUIT = [-6, 3, -2, 5, 0, -4, 2, 4, -3, 1];
@@ -171,6 +171,13 @@ test('axeScore : de la dizaine sous le plus bas jusqu\'à 104, avec un repère p
   assert.ok(axe.min <= Math.min(...serie.tranches.map((p) => p.bas)) - 6 + 10);
   assert.equal(axe.min % 10, 0);
   assert.equal(axe.reperes[axe.reperes.length - 1], 100);
+});
+
+test('libellePeriode : trimestre, semestre ou année en toutes lettres', () => {
+  assert.equal(libellePeriode('2025-T2'), 'T2 2025');
+  assert.equal(libellePeriode('2026-S1'), '1er semestre 2026');
+  assert.equal(libellePeriode('2025-S2'), '2e semestre 2025');
+  assert.equal(libellePeriode('2024'), '2024');
 });
 
 test('formatNiveau et formatMarge : watts ou allure', () => {

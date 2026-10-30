@@ -10,7 +10,7 @@ import { Dossard } from '@/components/ui/Dossard';
 import { IconeSport } from '@/components/ui/IconeSport';
 import type { DureeRecord, RecordsAnnee, SerieNiveau } from '@/data/bilan/niveau-annees';
 import { serieRecord } from '@/data/bilan/niveau-annees';
-import { ecartAuSommet, formatMarge, formatNiveau, type GenreNiveau } from '@/data/bilan/niveau-annees-affichage';
+import { ecartAuSommet, formatMarge, formatNiveau, libellePeriode, type GenreNiveau } from '@/data/bilan/niveau-annees-affichage';
 import type { PeriodeProgression, Progression } from '@/data/bilan/progression';
 import { formatNum } from '@/data/outils/format';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
@@ -84,7 +84,7 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours }: Props)
         etiquette={`${choisie ? NOMS_RECORD[choisie.duree] : 'Niveau'} en ${actuelle.actuel.an}`}
         valeur={String(Math.round(actuelle.actuel.score))}
         uniteValeur="/ 100"
-        detail={`${ecart < 1 ? (actuelle.actuel.an === actuelle.meilleur.an ? 'Ton meilleur niveau' : 'Au niveau de ton meilleur') : `${formatNum(ecart)} point${Math.round(ecart) > 1 ? 's' : ''} sous ton meilleur niveau`}\nMeilleur : ${actuelle.meilleur.an} · ${formatNiveau(genre, actuelle.meilleur.niveau)}${lieu}`}
+        detail={`${ecart < 1 ? (actuelle.actuel.cle === actuelle.meilleur.cle ? 'Ton meilleur niveau' : 'Au niveau de ton meilleur') : `${formatNum(ecart)} point${Math.round(ecart) > 1 ? 's' : ''} sous ton meilleur niveau`}\nMeilleur : ${libellePeriode(actuelle.meilleur.cle)} · ${formatNiveau(genre, actuelle.meilleur.niveau)}${lieu}`}
         chiffreMax={64}
       />
 
