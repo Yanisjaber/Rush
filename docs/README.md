@@ -18,3 +18,4 @@ Tous les `.md` du projet sont ici, rangés par thème. Exceptions : `CLAUDE.md` 
 - `CALENDRIER_A_FAIRE.md` : ce qui reste à faire sur le calendrier natif.
 - `PROGRESSION_VELO.md` : comment l'onglet Progrès décide pour le vélo (calcul, tests sur de vraies sorties, limites).
 - `PROGRESSION_COURSE.md` : la même chose pour la course (dénivelé, tapis, ce que les vraies courses ont montré).
+- `PROGRESSION_NIVEAU.md` : le score de niveau année après année (100 = meilleur niveau), les records, et le bouton « Comment c'est calculé ».

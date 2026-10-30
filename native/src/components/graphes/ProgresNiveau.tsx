@@ -84,7 +84,7 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours }: Props)
         etiquette={`${choisie ? NOMS_RECORD[choisie.duree] : 'Niveau'} en ${actuelle.actuel.an}`}
         valeur={String(Math.round(actuelle.actuel.score))}
         uniteValeur="/ 100"
-        detail={`${ecart < 1 ? 'Ton meilleur niveau' : `${formatNum(ecart)} point${Math.round(ecart) > 1 ? 's' : ''} sous ton meilleur niveau`}\nMeilleur : ${actuelle.meilleur.an} · ${formatNiveau(genre, actuelle.meilleur.niveau)}${lieu}`}
+        detail={`${ecart < 1 ? (actuelle.actuel.an === actuelle.meilleur.an ? 'Ton meilleur niveau' : 'Au niveau de ton meilleur') : `${formatNum(ecart)} point${Math.round(ecart) > 1 ? 's' : ''} sous ton meilleur niveau`}\nMeilleur : ${actuelle.meilleur.an} · ${formatNiveau(genre, actuelle.meilleur.niveau)}${lieu}`}
         chiffreMax={64}
       />
 
@@ -110,11 +110,13 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours }: Props)
               style={[styles.ligne, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: p.trait }]}
             >
               <Text style={[typo.corpsFort, styles.annee, { color: p.texte }]}>{a.an}</Text>
-              <Text style={[typo.petit, styles.flex, { color: p.texte }]}>
-                <Text style={styles.gras}>{formatNiveau(genre, a.niveau)}</Text>
-                {a.demi > 0 ? <Text style={{ color: p.texteDoux }}> {formatMarge(genre, a.demi)}</Text> : null}
-                {a.n !== null ? <Text style={{ color: p.texteDoux }}> · {a.n} sortie{a.n > 1 ? 's' : ''}</Text> : null}
-              </Text>
+              <View style={styles.flex}>
+                <Text style={[typo.petit, { color: p.texte }]}>
+                  <Text style={styles.gras}>{formatNiveau(genre, a.niveau)}</Text>
+                  {a.demi > 0 ? <Text style={{ color: p.texteDoux }}> {formatMarge(genre, a.demi)}</Text> : null}
+                </Text>
+                {a.n !== null ? <Text style={[typo.petit, { color: p.texteDoux }]}>{a.n} sortie{a.n > 1 ? 's' : ''}</Text> : null}
+              </View>
               <View style={[styles.score, { backgroundColor: a.an === actuelle.meilleur.an ? avecAlpha(couleur, 0.22) : p.surface2 }]}>
                 <Text style={[typo.petit, styles.gras, { color: a.an === actuelle.meilleur.an ? couleur : p.texteDoux }]}>{a.an === actuelle.meilleur.an ? 'meilleur' : Math.round(a.score)}</Text>
               </View>
