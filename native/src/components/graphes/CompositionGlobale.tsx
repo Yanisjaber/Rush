@@ -1,4 +1,5 @@
 import Svg, { G, Rect, Text as TexteSvg } from 'react-native-svg';
+import { amincirReperes } from '@/data/bilan/niveau-annees-affichage';
 import { PILIERS, type NiveauGlobalAnnee } from '@/data/bilan/piliers-niveau';
 import { police } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -20,6 +21,8 @@ export function CompositionGlobale({ annees, couleur }: Props) {
   const y = (v: number): number => HAUTEUR - BAS - (v / 100) * (HAUTEUR - BAS - HAUT);
   const pas = (LARGEUR - 12) / annees.length;
   const largeur = Math.min(46, pas * 0.62);
+  // Les années écrites sous les barres : une sur deux quand elles se serrent (la dernière toujours)
+  const anneesEcrites = new Set(amincirReperes(annees.map((a, i) => ({ an: a.an, x: 6 + (i + 0.5) * pas })), 36).map((r) => r.an));
   const etiquette = `Ce qui compose le score global : ${annees.map((a) => `${a.an}, ${a.global}`).join(' ; ')}.`;
 
   return (
@@ -39,7 +42,7 @@ export function CompositionGlobale({ annees, couleur }: Props) {
               return <Rect key={pi.cle} x={cx - largeur / 2} y={y1} width={largeur} height={Math.max(0, y0 - y1 - 1)} rx={3} fill={couleur} fillOpacity={0.3 + 0.7 * (rang / 4)} />;
             })}
             <TexteSvg x={cx} y={y(cumul) - 6} fontSize={12} fontFamily={police.texte600} fill={p.texte} textAnchor="middle">{Math.round(cumul)}</TexteSvg>
-            <TexteSvg x={cx} y={HAUTEUR - 6} fontSize={12} fontFamily={police.texte500} fill={p.texteDoux} textAnchor="middle">{a.an}</TexteSvg>
+            {anneesEcrites.has(a.an) ? <TexteSvg x={cx} y={HAUTEUR - 6} fontSize={12} fontFamily={police.texte500} fill={p.texteDoux} textAnchor="middle">{a.an}</TexteSvg> : null}
           </G>
         );
       })}
