@@ -13,7 +13,7 @@ import { usePalette } from '@/theme/usePalette';
 
 const nb = (n: number): string => n.toLocaleString('fr-FR');
 
-// La synchro des flux et des courbes (maquette 1 : le dossard héros). Le pourcentage (« 2,3 / 100 ») est la donnée héros, la barre le suit, et les sorties s'ajoutent une par une
+// La synchro des flux et des courbes (maquette 1 : le dossard héros). Le pourcentage (« 2,3 % ») est la donnée héros, la barre le suit, et les sorties s'ajoutent une par une
 // à vitesse régulière ; la barre et « environ… de calcul » ne comptent que le temps de calcul. Pas de pause automatique : si Strava atteint sa limite, le calcul s'arrête et un bouton le relance. Calculs : data/synchro/estimation.ts, doc : docs/native/SYNCHRO_STRAVA.md.
 export default function SynchroStrava() {
   const p = usePalette();
@@ -60,7 +60,7 @@ export default function SynchroStrava() {
 
         {s.total > 0 ? (
           <>
-            <Dossard sport="velo" etiquette="Flux et courbes" valeur={formaterPourcent(part)} uniteValeur="/ 100" detail={reste} chiffreMax={64}>
+            <Dossard sport="velo" etiquette="Flux et courbes" valeur={formaterPourcent(part)} uniteValeur="%" detail={reste} chiffreMax={64}>
               <View
                 accessibilityRole="progressbar"
                 accessibilityLabel="Avancement du calcul"
