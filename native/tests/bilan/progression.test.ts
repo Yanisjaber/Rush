@@ -18,58 +18,58 @@ const serie = (id: string, avant: number, exercice: string, poids: number, reps:
 });
 const vide = { seances: [] as Seance[], series: [] as SerieForce[], hrMax: 190 };
 
+// Une course de test : 10 km, FC 140 (dans la plage), 80 m de dénivelé : seule l'allure change d'un test à l'autre
+const course = (id: string, avant: number, minutes: number, extra: Partial<Seance> = {}): Seance =>
+  seance(id, avant, 'Run', 10, minutes, { avg_heartrate: 140, total_elevation_gain: 80, ...extra });
+
 test('course : une allure qui baisse à cardio égal = hausse', () => {
-  // 10 km en 60 min (6:00/km) il y a 5-6 sem., puis 10 km en 55 min (5:30/km) ces 4 dernières semaines ; FC 140 = dans 60–80 % de 190
-  const seances = [
-    seance('a', 40, 'Run', 10, 60, { avg_heartrate: 140 }), seance('b', 35, 'Run', 10, 60, { avg_heartrate: 140 }),
-    seance('c', 10, 'Run', 10, 55, { avg_heartrate: 140 }), seance('d', 3, 'Run', 10, 55, { avg_heartrate: 140 }),
-  ];
+  // 10 km en 60 min (6:00/km) il y a 4 à 8 sem., puis 10 km en 55 min (5:30/km) ces 4 dernières semaines
+  const seances = [course('a', 40, 60), course('b', 35, 60), course('e', 30, 60), course('c', 10, 55), course('d', 3, 55), course('f', 20, 55)];
   const p = progressionSport('course', { ...vide, seances }, 28, AUJOURDHUI)!;
   assert.equal(p.statut, 'hausse');
   assert.equal(p.variationPct, 8.3); // 360 s/km -> 330 s/km
   assert.equal(p.avant, 360);
   assert.equal(p.actuel, 330);
+  assert.ok(p.intervalle && p.intervalle.bas > 0);
+  assert.equal(p.nbActuel, 3);
+  assert.equal(p.nbAvant, 3);
+  assert.ok(p.detailCourse);
 });
 
 test('course : une allure qui monte = baisse', () => {
-  const seances = [
-    seance('a', 40, 'Run', 10, 55, { avg_heartrate: 140 }), seance('b', 35, 'Run', 10, 55, { avg_heartrate: 140 }),
-    seance('c', 10, 'Run', 10, 60, { avg_heartrate: 140 }), seance('d', 3, 'Run', 10, 60, { avg_heartrate: 140 }),
-  ];
+  const seances = [course('a', 40, 55), course('b', 35, 55), course('e', 30, 55), course('c', 10, 60), course('d', 3, 60), course('f', 20, 60)];
   const p = progressionSport('course', { ...vide, seances }, 28, AUJOURDHUI)!;
   assert.equal(p.statut, 'baisse');
   assert.equal(p.variationPct, -9.1);
 });
 
 test('course : écart sous 1 % = stable', () => {
-  const seances = [
-    seance('a', 40, 'Run', 10, 60, { avg_heartrate: 140 }), seance('b', 35, 'Run', 10, 60, { avg_heartrate: 140 }),
-    seance('c', 10, 'Run', 10, 59.8, { avg_heartrate: 140 }), seance('d', 3, 'Run', 10, 59.8, { avg_heartrate: 140 }),
-  ];
+  const seances = [course('a', 40, 60), course('b', 35, 60), course('e', 30, 60), course('c', 10, 59.8), course('d', 3, 59.8), course('f', 20, 59.8)];
   assert.equal(progressionSport('course', { ...vide, seances }, 28, AUJOURDHUI)!.statut, 'stable');
 });
 
-test('course : sorties trop intenses ou trop courtes ignorées, une seule sortie = insuffisant', () => {
+test('course : cardio hors plage, trop courtes, elliptique, sans dénivelé = écartées ; moins de 3 courses retenues = insuffisant, avec leur nombre', () => {
   const seances = [
-    seance('a', 40, 'Run', 10, 60, { avg_heartrate: 140 }), seance('b', 35, 'Run', 10, 60, { avg_heartrate: 175 }), // 175 > 80 % de 190
-    seance('c', 10, 'Run', 2, 10, { avg_heartrate: 140 }), seance('d', 3, 'Run', 10, 55, { avg_heartrate: 140 }), // 2 km : trop court
+    course('a', 40, 60), course('b', 35, 60), course('e', 30, 60, { avg_heartrate: 185 }), // 185 > 95 % de 190
+    course('c', 10, 55), seance('x', 5, 'Run', 2, 10, { avg_heartrate: 140, total_elevation_gain: 20 }), // 2 km : trop court
+    seance('y', 4, 'Elliptical', 10, 55, { avg_heartrate: 140, total_elevation_gain: 80 }), // pas d'allure à l'elliptique
+    seance('z', 3, 'Run', 10, 55, { avg_heartrate: 140 }), // dénivelé inconnu
   ];
   const p = progressionSport('course', { ...vide, seances }, 28, AUJOURDHUI)!;
   assert.equal(p.statut, 'insuffisant');
   assert.equal(p.variationPct, null);
   assert.ok(p.manque.length > 0);
+  assert.equal(p.nbActuel, 1);
+  assert.equal(p.nbAvant, 2);
 });
 
 test('course : les sorties plus vieilles que deux périodes ne comptent pas', () => {
-  const seances = [seance('a', 100, 'Run', 10, 40, { avg_heartrate: 140 }), seance('b', 90, 'Run', 10, 40, { avg_heartrate: 140 }), seance('c', 3, 'Run', 10, 55, { avg_heartrate: 140 }), seance('d', 5, 'Run', 10, 55, { avg_heartrate: 140 })];
+  const seances = [course('a', 100, 40), course('b', 90, 40), course('g', 80, 40), course('c', 3, 55), course('d', 5, 55), course('e', 7, 55)];
   assert.equal(progressionSport('course', { ...vide, seances }, 28, AUJOURDHUI)!.statut, 'insuffisant');
 });
 
 test('course : sur 1 an, la comparaison remonte à l\'an dernier', () => {
-  const seances = [
-    seance('a', 500, 'Run', 10, 66, { avg_heartrate: 140 }), seance('b', 450, 'Run', 10, 66, { avg_heartrate: 140 }),
-    seance('c', 100, 'Run', 10, 55, { avg_heartrate: 140 }), seance('d', 20, 'Run', 10, 55, { avg_heartrate: 140 }),
-  ];
+  const seances = [course('a', 500, 66), course('b', 450, 66), course('e', 400, 66), course('c', 100, 55), course('d', 20, 55), course('f', 200, 55)];
   const p = progressionSport('course', { ...vide, seances }, 365, AUJOURDHUI)!;
   assert.equal(p.statut, 'hausse');
   assert.equal(p.variationPct, 16.7);
@@ -122,13 +122,13 @@ test('progressionTousSports : seulement les sports pratiqués, dans un ordre sta
 });
 
 test('courbe course : 100 = niveau d\'avant, et une allure plus rapide monte au-dessus', () => {
-  // Avant (28 à 55 jours) : 6:00/km. Puis 6:00/km (sem. 4), 5:30/km (sem. 2 et 1) : l'indice passe de 100 à ~109
+  // Avant (28 à 55 jours) : 6:00/km. Puis 6:00/km (jours 21-27), 5:30/km (jours 7-13 et 0-6) : l'indice passe de 100 à ~109
   const seances = [
-    seance('a', 40, 'Run', 10, 60, { avg_heartrate: 140 }), seance('b', 35, 'Run', 10, 60, { avg_heartrate: 140 }),
-    seance('c', 24, 'Run', 10, 60, { avg_heartrate: 140 }), seance('d', 12, 'Run', 10, 55, { avg_heartrate: 140 }), seance('e', 3, 'Run', 10, 55, { avg_heartrate: 140 }),
+    course('a', 40, 60), course('b', 35, 60), course('c', 30, 60),
+    course('d', 26, 60), course('e', 22, 60), course('f', 12, 55), course('g', 9, 55), course('h', 4, 55), course('i', 1, 55),
   ];
   const c = courbeProgression('course', { ...vide, seances }, 28, AUJOURDHUI);
-  assert.deepEqual(c, [100, 109.1, 109.1]); // la semaine 3 (jours 14-20) n'a pas de sortie : sautée
+  assert.deepEqual(c, [100, 109.1, 109.1]); // la semaine 2 (jours 14-20) n'a pas de course : sautée
 });
 
 test('courbe : sans niveau de référence ou avec un seul point, pas de courbe', () => {

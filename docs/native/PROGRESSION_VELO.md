@@ -64,7 +64,7 @@ La saison existe dans les données (± 15 W entre janvier et octobre) mais elle 
 - Aucune donnée météo : la chaleur n'est pas corrigée.
 - Les sorties d'après une mauvaise nuit ne sont pas écartées (les nuits sont dans `garmin_sleep`, piste future).
 - Validé sur un seul athlète. À refaire quand d'autres comptes auront assez d'historique.
-- Course, natation et musculation utilisent encore l'ancien calcul (moyenne avec ±1 %), avec le même défaut.
+- La course utilise la même méthode (voir `PROGRESSION_COURSE.md`). La natation et la musculation utilisent encore l'ancien calcul (moyenne avec ±1 %), avec le même défaut.
 
 ## Études derrière les choix
 

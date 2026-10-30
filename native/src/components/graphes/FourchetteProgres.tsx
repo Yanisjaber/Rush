@@ -7,7 +7,7 @@ import { avecAlpha } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// La fourchette de l'évolution sur une règle graduée : à gauche le recul, à droite la hausse, une bande « stable » (±1 %) autour de zéro.
+// La fourchette de l'évolution (vélo, course) sur une règle graduée : à gauche le recul, à droite la hausse, une bande « stable » (±1 %) autour de zéro.
 // Le vrai écart est dans la barre ; si elle touche zéro, l'app ne tranche pas.
 interface Props {
   pct: number;
@@ -23,7 +23,7 @@ const Y = 46;
 
 const ecritNombre = (v: number): string => formatPct(v);
 
-export function FourchetteVelo({ pct, bas, haut, statut }: Props) {
+export function FourchetteProgres({ pct, bas, haut, statut }: Props) {
   const p = usePalette();
   const demi = echelleFourchette(bas, haut);
   const x = (v: number): number => MARGE + ((v + demi) / (2 * demi)) * (LARGEUR - 2 * MARGE);

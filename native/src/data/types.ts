@@ -21,6 +21,7 @@ export interface Seance {
   /** Données de puissance / de cardio que l'utilisateur a écartées de ses calculs. */
   excl_power?: boolean | null;
   excl_hr?: boolean | null;
+  excl_distance?: boolean | null;
   // Colonnes présentes sur les vraies lignes de la base (absentes des données de démo)
   strava_id?: number | null;
   source?: string;

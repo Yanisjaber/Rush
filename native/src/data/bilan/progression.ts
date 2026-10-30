@@ -1,11 +1,12 @@
 // Progression par sport : « est-ce que j'ai progressé ? ». On compare une période à celle d'avant, avec UN indicateur par sport.
 // Calculs purs, sans écran (testés dans tests/progression.test.ts).
-//   course   : allure des sorties faciles (cardio à 60–80 % du max). Plus basse = mieux.
+//   course   : allure à cardio et dénivelé égaux, par régression avec fourchette (voir progression-course.ts). Plus basse = mieux.
 //   vélo     : watts à cardio égal, par régression avec fourchette (voir progression-velo.ts). Plus haut = mieux.
 //   natation : allure au 100 m. Plus basse = mieux.
 //   muscu    : 1RM estimé (Epley), moyenne des exercices faits sur les deux périodes. Plus haut = mieux.
 import { familleAffichage } from '../sports/familles.ts';
 import type { Seance, SerieForce } from '../types.ts';
+import { compterSortiesCourse, estimerCourse, sortiesCourse, statutCourse, type EstimationCourse, type RaisonCourse } from './progression-course.ts';
 import { compterSortiesVelo, estimerVelo, sortiesVelo, statutVelo, type EstimationVelo, type RaisonVelo } from './progression-velo.ts';
 
 export type PeriodeProgression = 28 | 91 | 365;
@@ -42,6 +43,8 @@ export interface Progression {
   fcReference?: number;
   /** Tout le détail du calcul vélo : sorties retenues, pente, écart du home-trainer, moyennes brutes. */
   detailVelo?: EstimationVelo;
+  /** Tout le détail du calcul course : courses retenues, pentes, moyennes brutes. */
+  detailCourse?: EstimationCourse;
 }
 
 /** En dessous de cet écart (en %), on dit « stable » plutôt que d'annoncer une hausse ou une baisse qui n'en est pas une. */
@@ -87,27 +90,7 @@ interface Scalaire {
   mesure: (donnees: Donnees, dans: Fenetre) => Mesure | null;
 }
 
-/** La plage de cardio des sorties « faciles » : 60 à 80 % de la FC max (125 à 155 bpm sans FC max). */
-const plageFacile = (hrMax: number | null): [number, number] => (hrMax ? [hrMax * 0.6, hrMax * 0.8] : [125, 155]);
-
 const SCALAIRES: Record<string, Scalaire> = {
-  course: {
-    indicateur: 'Allure à cardio égal', unite: 'allure', plusBasMieux: true,
-    manque: 'Il faut au moins 2 sorties faciles de 3 km avec cardio sur chaque période.',
-    mesure: ({ seances, hrMax }, dans) => {
-      const [bas, haut] = plageFacile(hrMax);
-      let temps = 0, km = 0, n = 0;
-      for (const s of seances) {
-        if (familleAffichage(s.sport) !== 'course' || !((s.distance_km ?? 0) >= 3) || !(s.moving_time > 0)) continue;
-        const fc = Number(s.avg_heartrate);
-        if (!(fc >= bas && fc <= haut) || !dans(s.start_date_local)) continue;
-        temps += s.moving_time;
-        km += Number(s.distance_km);
-        n += 1;
-      }
-      return n ? { valeur: temps / km, n } : null;
-    },
-  },
   natation: {
     indicateur: 'Allure au 100 m', unite: 'allure100', plusBasMieux: true,
     manque: 'Il faut au moins 2 séances de 300 m ou plus sur chaque période.',
@@ -134,6 +117,26 @@ function comparer(famille: string, indicateur: string, unite: Progression['unite
   const brut = ((actuel - avant) / avant) * 100;
   const variationPct = arrondi1(plusBasMieux ? -brut : brut);
   return { famille, statut: statutDe(variationPct), variationPct, indicateur, avant, actuel, unite, manque: '' };
+}
+
+// --- Course ------------------------------------------------------------------------------------------------------------------
+
+const INDICATEUR_COURSE = 'Allure à cardio égal';
+const MANQUE_COURSE: Record<RaisonCourse, string> = {
+  'pas-assez': 'Il faut au moins 3 courses de 3 km avec cardio sur chaque période.',
+  'pas-comparable': "Tes courses de cette période et de celle d'avant ne sont pas comparables (tapis d'un côté, route de l'autre).",
+};
+
+function progressionCourse({ seances, hrMax }: Donnees, jours: number, aujourdhui: Date): Progression {
+  const sorties = sortiesCourse(seances, hrMax);
+  const actuelle = fenetre(aujourdhui, 0, jours);
+  const avant = fenetre(aujourdhui, jours, jours * 2);
+  const e = estimerCourse(sorties, actuelle, avant);
+  if (typeof e === 'string') return { ...insuffisant('course', INDICATEUR_COURSE, 'allure', MANQUE_COURSE[e]), ...compterSortiesCourse(sorties, actuelle, avant) };
+  return {
+    famille: 'course', statut: statutCourse(e), variationPct: e.variationPct, indicateur: INDICATEUR_COURSE, avant: e.avant, actuel: e.actuel, unite: 'allure', manque: '',
+    intervalle: { bas: e.bas, haut: e.haut }, nbActuel: e.nbActuel, nbAvant: e.nbAvant, fcReference: e.fcReference, detailCourse: e,
+  };
 }
 
 // --- Vélo -------------------------------------------------------------------------------------------------------------------
@@ -208,6 +211,16 @@ export function courbeProgression(famille: string, donnees: Donnees, jours: Peri
       const rapports = [...m.entries()].filter(([cle]) => reference.has(cle)).map(([cle, v]) => v / reference.get(cle)!);
       if (rapports.length) points.push(arrondi1((rapports.reduce((a, b) => a + b, 0) / rapports.length) * 100));
     }
+  } else if (famille === 'course') {
+    const sorties = sortiesCourse(donnees.seances, donnees.hrMax);
+    const e = estimerCourse(sorties, fenetre(aujourdhui, 0, jours), fenetre(aujourdhui, jours, jours * 2));
+    if (typeof e === 'string') return [];
+    // Les allures de chaque course sont ramenées au même cardio et au même dénivelé ; un morceau compte à partir de 2 courses, en indice sur la période d'avant (plus rapide = plus haut)
+    for (const [debut, fin] of bornes) {
+      const dans = fenetre(aujourdhui, debut, fin);
+      const morceauSorties = sorties.filter((s) => dans(s.date));
+      if (morceauSorties.length >= 2) points.push(arrondi1((e.avant / (morceauSorties.reduce((somme, s) => somme + e.ajuster(s), 0) / morceauSorties.length)) * 100));
+    }
   } else if (famille === 'velo') {
     const sorties = sortiesVelo(donnees.seances, donnees.hrMax);
     const e = estimerVelo(sorties, fenetre(aujourdhui, 0, jours), fenetre(aujourdhui, jours, jours * 2));
@@ -245,6 +258,7 @@ export function progressionSport(
 ): Progression | null {
   if (famille === 'muscu') return progressionMuscu(donnees.series, jours, aujourdhui);
   if (famille === 'velo') return progressionVelo(donnees, jours, aujourdhui);
+  if (famille === 'course') return progressionCourse(donnees, jours, aujourdhui);
   const sc = SCALAIRES[famille];
   if (!sc) return null;
   const actuel = sc.mesure(donnees, fenetre(aujourdhui, 0, jours));

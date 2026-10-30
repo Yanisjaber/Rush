@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { CascadeVelo } from '@/components/graphes/CascadeVelo';
-import { FourchetteVelo } from '@/components/graphes/FourchetteVelo';
+import { FourchetteProgres } from '@/components/graphes/FourchetteProgres';
 import { NuageVelo } from '@/components/graphes/NuageVelo';
 import { Dossard } from '@/components/ui/Dossard';
 import { IconeSport } from '@/components/ui/IconeSport';
@@ -50,7 +50,7 @@ export function ProgresVelo({ progression, jours }: { progression: Progression; 
 
       <Bloc titre="Fourchette">
         <Text style={[typo.petit, styles.sous, { color: p.texteDoux }]}>Où se trouve le vrai écart, une fois le bruit des sorties pris en compte.</Text>
-        <FourchetteVelo pct={progression.variationPct!} bas={progression.intervalle.bas} haut={progression.intervalle.haut} statut={progression.statut} />
+        <FourchetteProgres pct={progression.variationPct!} bas={progression.intervalle.bas} haut={progression.intervalle.haut} statut={progression.statut} />
       </Bloc>
 
       <Bloc titre="Chaque sortie">
