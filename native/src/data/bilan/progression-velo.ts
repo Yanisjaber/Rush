@@ -79,6 +79,29 @@ export interface EstimationVelo {
   fcReference: number;
   /** Les watts d'une sortie ramenés au cardio de référence et à l'extérieur : sert à tracer la courbe. */
   ajuster: (s: SortieVelo) => number;
+  /** Watts gagnés (ou perdus) par bpm de cardio en plus : la pente de la régression. */
+  pente: number;
+  /** Écart des sorties en salle par rapport à l'extérieur, à cardio égal, en watts (négatif : moins de watts en salle). 0 quand on ne compare qu'un seul terrain. */
+  decalageInterieur: number;
+  /** Les sorties qui ont servi au calcul, de la plus ancienne à la plus récente, avec leurs watts ramenés au cardio de référence. */
+  sorties: SortieComparee[];
+  /** Moyennes brutes de chaque période (avant toute correction) : elles expliquent le passage de l'écart brut à l'écart à cardio égal. */
+  brut: { avant: MoyenneBrute; actuel: MoyenneBrute };
+}
+
+/** Une sortie qui a servi au calcul. */
+export interface SortieComparee extends SortieVelo {
+  /** Vrai pour la période actuelle, faux pour la période d'avant. */
+  actuelle: boolean;
+  /** Ses watts ramenés au cardio de référence et à l'extérieur. */
+  ajuste: number;
+}
+
+export interface MoyenneBrute {
+  watts: number;
+  fc: number;
+  /** Part de sorties en salle, de 0 à 1. */
+  partSalle: number;
 }
 
 export type RaisonVelo = 'pas-assez' | 'pas-comparable';
@@ -128,13 +151,11 @@ function regression(x: number[][], y: number[]): { b: number[]; se: number[] } |
 }
 
 /**
- * Compare la période actuelle (`actuelle`) à celle d'avant (`avant`) à cardio égal.
- * Retourne la raison quand c'est impossible : 'pas-assez' (moins de 3 sorties retenues dans une période) ou 'pas-comparable' (par exemple
- * du home-trainer d'un côté et de l'extérieur de l'autre : l'écart viendrait du lieu, pas de ta forme).
+ * Les sorties qui entrent dans la comparaison. Le home-trainer n'est corrigé que si on a de quoi mesurer son écart (au moins 3 sorties de chaque sorte) ;
+ * sinon on garde la sorte la plus fréquente.
  */
-export function estimerVelo(sorties: readonly SortieVelo[], actuelle: (date: string) => boolean, avant: (date: string) => boolean): EstimationVelo | RaisonVelo {
+function sortiesComparees(sorties: readonly SortieVelo[], actuelle: (date: string) => boolean, avant: (date: string) => boolean): { lignes: SortieVelo[]; nbActuel: number; nbAvant: number } {
   let lignes = sorties.filter((s) => actuelle(s.date) || avant(s.date));
-  // Le home-trainer n'est corrigé que si on a de quoi mesurer son écart (au moins 3 sorties de chaque sorte) ; sinon on garde la sorte la plus fréquente
   const interieures = lignes.filter((s) => s.interieur).length;
   const exterieures = lignes.length - interieures;
   if (interieures < SORTIES_MINI_VELO || exterieures < SORTIES_MINI_VELO) {
@@ -142,7 +163,22 @@ export function estimerVelo(sorties: readonly SortieVelo[], actuelle: (date: str
     lignes = lignes.filter((s) => s.interieur === garderInterieur);
   }
   const nbActuel = lignes.filter((s) => actuelle(s.date)).length;
-  const nbAvant = lignes.length - nbActuel;
+  return { lignes, nbActuel, nbAvant: lignes.length - nbActuel };
+}
+
+/** Combien de sorties comptent dans chaque période (pour dire « 2 sur 3 » quand il en manque). */
+export function compterSortiesVelo(sorties: readonly SortieVelo[], actuelle: (date: string) => boolean, avant: (date: string) => boolean): { nbActuel: number; nbAvant: number } {
+  const { nbActuel, nbAvant } = sortiesComparees(sorties, actuelle, avant);
+  return { nbActuel, nbAvant };
+}
+
+/**
+ * Compare la période actuelle (`actuelle`) à celle d'avant (`avant`) à cardio égal.
+ * Retourne la raison quand c'est impossible : 'pas-assez' (moins de 3 sorties retenues dans une période) ou 'pas-comparable' (par exemple
+ * du home-trainer d'un côté et de l'extérieur de l'autre : l'écart viendrait du lieu, pas de ta forme).
+ */
+export function estimerVelo(sorties: readonly SortieVelo[], actuelle: (date: string) => boolean, avant: (date: string) => boolean): EstimationVelo | RaisonVelo {
+  const { lignes, nbActuel, nbAvant } = sortiesComparees(sorties, actuelle, avant);
   if (nbActuel < SORTIES_MINI_VELO || nbAvant < SORTIES_MINI_VELO) return 'pas-assez';
 
   const fcRef = Math.round(mediane(lignes.map((s) => s.fc)));
@@ -164,6 +200,12 @@ export function estimerVelo(sorties: readonly SortieVelo[], actuelle: (date: str
   const variationPct = (ecart / base) * 100;
   const demi = ((Z * incertitude) / base) * 100;
   const arrondi1 = (v: number): number => Math.round(v * 10) / 10;
+  const ajuster = (s: SortieVelo): number => s.watts - pente * (s.fc - fcRef) - (s.interieur ? decalageInterieur : 0);
+  const moyenne = (liste: SortieVelo[]): MoyenneBrute => ({
+    watts: liste.reduce((t, s) => t + s.watts, 0) / liste.length,
+    fc: liste.reduce((t, s) => t + s.fc, 0) / liste.length,
+    partSalle: liste.filter((s) => s.interieur).length / liste.length,
+  });
   return {
     avant: base,
     actuel: base + ecart,
@@ -173,7 +215,13 @@ export function estimerVelo(sorties: readonly SortieVelo[], actuelle: (date: str
     nbAvant,
     nbActuel,
     fcReference: fcRef,
-    ajuster: (s) => s.watts - pente * (s.fc - fcRef) - (s.interieur ? decalageInterieur : 0),
+    ajuster,
+    pente,
+    decalageInterieur,
+    sorties: lignes
+      .map((s) => ({ ...s, actuelle: actuelle(s.date), ajuste: ajuster(s) }))
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)),
+    brut: { avant: moyenne(lignes.filter((s) => !actuelle(s.date))), actuel: moyenne(lignes.filter((s) => actuelle(s.date))) },
   };
 }
 

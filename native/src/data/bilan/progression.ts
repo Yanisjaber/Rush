@@ -6,7 +6,7 @@
 //   muscu    : 1RM estimé (Epley), moyenne des exercices faits sur les deux périodes. Plus haut = mieux.
 import { familleAffichage } from '../sports/familles.ts';
 import type { Seance, SerieForce } from '../types.ts';
-import { estimerVelo, sortiesVelo, statutVelo, type RaisonVelo } from './progression-velo.ts';
+import { compterSortiesVelo, estimerVelo, sortiesVelo, statutVelo, type EstimationVelo, type RaisonVelo } from './progression-velo.ts';
 
 export type PeriodeProgression = 28 | 91 | 365;
 export const PERIODES_PROGRESSION: readonly { jours: PeriodeProgression; court: string; nom: string }[] = [
@@ -40,6 +40,8 @@ export interface Progression {
   nbAvant?: number;
   /** Le cardio (bpm) auquel les watts sont ramenés (vélo seulement). */
   fcReference?: number;
+  /** Tout le détail du calcul vélo : sorties retenues, pente, écart du home-trainer, moyennes brutes. */
+  detailVelo?: EstimationVelo;
 }
 
 /** En dessous de cet écart (en %), on dit « stable » plutôt que d'annoncer une hausse ou une baisse qui n'en est pas une. */
@@ -143,11 +145,14 @@ const MANQUE_VELO: Record<RaisonVelo, string> = {
 };
 
 function progressionVelo({ seances, hrMax }: Donnees, jours: number, aujourdhui: Date): Progression {
-  const e = estimerVelo(sortiesVelo(seances, hrMax), fenetre(aujourdhui, 0, jours), fenetre(aujourdhui, jours, jours * 2));
-  if (typeof e === 'string') return insuffisant('velo', INDICATEUR_VELO, 'watts', MANQUE_VELO[e]);
+  const sorties = sortiesVelo(seances, hrMax);
+  const actuelle = fenetre(aujourdhui, 0, jours);
+  const avant = fenetre(aujourdhui, jours, jours * 2);
+  const e = estimerVelo(sorties, actuelle, avant);
+  if (typeof e === 'string') return { ...insuffisant('velo', INDICATEUR_VELO, 'watts', MANQUE_VELO[e]), ...compterSortiesVelo(sorties, actuelle, avant) };
   return {
     famille: 'velo', statut: statutVelo(e), variationPct: e.variationPct, indicateur: INDICATEUR_VELO, avant: e.avant, actuel: e.actuel, unite: 'watts', manque: '',
-    intervalle: { bas: e.bas, haut: e.haut }, nbActuel: e.nbActuel, nbAvant: e.nbAvant, fcReference: e.fcReference,
+    intervalle: { bas: e.bas, haut: e.haut }, nbActuel: e.nbActuel, nbAvant: e.nbAvant, fcReference: e.fcReference, detailVelo: e,
   };
 }
 

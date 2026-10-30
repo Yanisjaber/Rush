@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { CourbeLissee } from '@/components/graphes/CourbeLissee';
+import { ProgresVelo } from '@/components/graphes/ProgresVelo';
 import { IconeSport } from '@/components/ui/IconeSport';
 import { StatCle } from '@/components/ui/StatCle';
 import { PERIODES_PROGRESSION, type PeriodeProgression, type Progression } from '@/data/bilan/progression';
@@ -14,6 +15,8 @@ import { usePalette } from '@/theme/usePalette';
 // `courbe` : voir courbeProgression (data/progression.ts), vide quand il n'y a rien à tracer.
 export function ProgresSport({ progression, courbe, jours }: { progression: Progression; courbe: number[]; jours: PeriodeProgression }) {
   const p = usePalette();
+  // Le vélo a sa propre page : le verdict, la fourchette et les étapes du calcul (maquette 1)
+  if (progression.famille === 'velo' && progression.detailVelo) return <ProgresVelo progression={progression} jours={jours} />;
   const periode = PERIODES_PROGRESSION.find((x) => x.jours === jours)!;
   const nom = (SPORTS as Record<string, { nom: string }>)[progression.famille]?.nom ?? progression.famille;
   const couleur = couleurSport(p, progression.famille);
@@ -64,7 +67,14 @@ export function ProgresSport({ progression, courbe, jours }: { progression: Prog
           </View>
         </>
       ) : (
-        <Text style={[typo.corps, styles.vide, { color: p.texteDoux }]}>{progression.manque}</Text>
+        <>
+          <Text style={[typo.corps, styles.vide, { color: p.texteDoux }]}>{progression.manque}</Text>
+          {progression.nbActuel != null && progression.nbAvant != null ? (
+            <Text style={[typo.petit, styles.vide, { color: p.texteMuet }]}>
+              Pour l'instant : {progression.nbActuel} sur 3 sorties maintenant, {progression.nbAvant} sur 3 la période d'avant.
+            </Text>
+          ) : null}
+        </>
       )}
     </Bloc>
   );
