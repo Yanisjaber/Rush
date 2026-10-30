@@ -40,9 +40,9 @@ export function ProgresVelo({ progression, jours }: { progression: Progression; 
 
       <Dossard
         sport="velo"
-        etiquette={`${periode.nom} comparés aux ${periode.nom} d'avant`}
+        etiquette={`${periode.court} vs ${periode.court} d'avant`}
         valeur={formatPct(progression.variationPct!)}
-        detail={`${MOT[progression.statut]} · entre ${formatPct(progression.intervalle.bas)} et ${formatPct(progression.intervalle.haut)}`}
+        detail={`${MOT[progression.statut]}\nentre ${formatPct(progression.intervalle.bas)} et ${formatPct(progression.intervalle.haut)}`}
         chiffreMax={64}
       />
 
