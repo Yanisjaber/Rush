@@ -16,8 +16,6 @@ export interface EtatSynchro {
   faites: number;
   /** Le temps moyen d'une sortie, mesuré sur les lots déjà faits (une valeur de départ avant le premier). */
   secParSortie: number;
-  /** Le moment (ms) où le lot en cours est parti : l'écran en déduit les sorties à montrer une par une pendant qu'il se calcule. */
-  debutLot: number;
   /** Pourquoi le calcul s'est arrêté (limite Strava, erreur), sinon vide. */
   message: string;
 }
@@ -26,7 +24,7 @@ export interface EtatSynchro {
 export const TAILLE_LOT = 20;
 const ESSAIS_MAX = 3;
 
-const INITIAL: EtatSynchro = { phase: 'chargement', total: 0, faites: 0, secParSortie: SECONDES_PAR_SORTIE_DEFAUT, debutLot: Date.now(), message: '' };
+const INITIAL: EtatSynchro = { phase: 'chargement', total: 0, faites: 0, secParSortie: SECONDES_PAR_SORTIE_DEFAUT, message: '' };
 const attendre = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 export function useSynchroStrava(): EtatSynchro & { demarrer: () => void; arreter: () => void } {
@@ -47,11 +45,11 @@ export function useSynchroStrava(): EtatSynchro & { demarrer: () => void; arrete
       maj({ phase: 'calcul', message: '' });
       let echecs = 0;
       let stagnation = 0;
-      let mesures = 0;
+      let cumulSecondes = 0;
+      let cumulSorties = 0;
       while (vivant()) {
         const avant = etatRef.current;
         const t0 = Date.now();
-        maj({ debutLot: t0 });
         const r = await traiterLotSynchro(TAILLE_LOT);
         if (!vivant()) return;
         if (!r.data) {
@@ -65,12 +63,13 @@ export function useSynchroStrava(): EtatSynchro & { demarrer: () => void; arrete
         echecs = 0;
         const { restantes, limiteAtteinte } = r.data;
         const nouvelles = Math.max(0, avant.total - avant.faites - restantes);
-        // Le temps d'une sortie : la moyenne glisse vers les mesures récentes (le premier lot remplace la valeur de départ)
+        // Le temps d'une sortie : la moyenne depuis le début du calcul (temps total des lots ÷ sorties faites), stable d'un lot à l'autre,
+        // sinon le compteur de l'écran accélérerait et ralentirait à chaque lot. Avant le premier lot, la valeur de départ.
         let sec = avant.secParSortie;
         if (nouvelles > 0 && !limiteAtteinte) {
-          const mesure = (Date.now() - t0) / 1000 / nouvelles;
-          sec = mesures === 0 ? mesure : sec * 0.7 + mesure * 0.3;
-          mesures++;
+          cumulSecondes += (Date.now() - t0) / 1000;
+          cumulSorties += nouvelles;
+          sec = cumulSecondes / cumulSorties;
         }
         maj({ faites: Math.max(avant.faites, avant.total - restantes), secParSortie: sec });
         if (restantes === 0) {

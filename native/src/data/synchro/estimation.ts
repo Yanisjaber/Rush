@@ -31,13 +31,16 @@ export function formaterDuree(secondes: number): string {
 }
 
 /**
- * Le nombre de sorties à AFFICHER pendant qu'un lot se calcule : le serveur ne répond qu'à la fin du lot (20 sorties), mais on les voit s'ajouter une par une, à vitesse
- * régulière (le temps mesuré d'une sortie). On ne dépasse jamais la dernière sortie du lot en cours : au retour du serveur, le chiffre confirmé prend le relais.
- *  confirmees : sorties confirmées par le serveur · ecouleSecondes : temps depuis le début du lot · tailleLot : sorties demandées dans le lot.
+ * Le compteur affiché, continu : il avance à vitesse constante (la vitesse moyenne mesurée depuis le début), pas de saut à chaque réponse du serveur.
+ * Le serveur ne répond qu'à la fin d'un lot : le compteur ne dépasse jamais la dernière sortie du lot en cours, et s'il est en retard sur le chiffre confirmé,
+ * il le rattrape en glissant (environ 1,5 s) au lieu de sauter. Appelée à chaque image d'animation, avec `dt` le temps écoulé depuis la précédente (en secondes).
+ *  affiche : valeur actuelle (décimale) · confirmees : sorties confirmées par le serveur · vitesse : sorties par seconde · tailleLot : sorties demandées dans le lot.
  */
-export function faitesAffichees(confirmees: number, total: number, secParSortie: number, ecouleSecondes: number, tailleLot: number): number {
-  const ajout = secParSortie > 0 ? Math.floor(Math.max(0, ecouleSecondes) / secParSortie) : 0;
-  return Math.min(total, confirmees + Math.min(ajout, Math.max(0, tailleLot - 1)));
+export function avancerAffichage(affiche: number, confirmees: number, total: number, vitesse: number, dt: number, tailleLot: number): number {
+  const plafond = Math.min(total, confirmees + Math.max(0, tailleLot - 1));
+  const retard = Math.max(0, confirmees - affiche);
+  const v = Math.max(0, vitesse) + retard / 1.5;
+  return Math.max(0, Math.min(plafond, affiche + v * Math.max(0, dt)));
 }
 
 /** Un pourcentage avec une décimale et une virgule : « 2,3 », « 100 ». Jamais 100 tant que tout n'est pas fait (99,96 s'écrit 99,9). */

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { avancement, faitesAffichees, formaterDuree, formaterPourcent, tempsCalcul } from '../../src/data/synchro/estimation.ts';
+import { avancement, avancerAffichage, formaterDuree, formaterPourcent, tempsCalcul } from '../../src/data/synchro/estimation.ts';
 
 test('tempsCalcul : le temps des sorties restantes, sans pause', () => {
   assert.equal(tempsCalcul(1352, 2), 2704);
@@ -18,14 +18,34 @@ test('formaterDuree : arrondie et lisible', () => {
   assert.equal(formaterDuree(48 * 3600), '2 jours');
 });
 
-test('faitesAffichees : une sortie de plus à chaque temps d\'une sortie, sans dépasser la fin du lot', () => {
-  assert.equal(faitesAffichees(100, 1352, 2, 0, 20), 100);
-  assert.equal(faitesAffichees(100, 1352, 2, 1.9, 20), 100);
-  assert.equal(faitesAffichees(100, 1352, 2, 2, 20), 101);
-  assert.equal(faitesAffichees(100, 1352, 2, 11, 20), 105);
-  assert.equal(faitesAffichees(100, 1352, 2, 500, 20), 119); // le lot est de 20 : la 20e attend la réponse du serveur
-  assert.equal(faitesAffichees(1350, 1352, 2, 500, 20), 1352); // jamais au-delà du total
-  assert.equal(faitesAffichees(100, 1352, 0, 30, 20), 100); // temps par sortie inconnu : on n'invente rien
+test('avancerAffichage : avance à vitesse constante, sans jamais dépasser la fin du lot', () => {
+  // 0,5 sortie par seconde, lot de 20 : 10 s = 5 sorties de plus
+  let v = 100;
+  for (let i = 0; i < 100; i++) v = avancerAffichage(v, 100, 1352, 0.5, 0.1, 20);
+  assert.ok(Math.abs(v - 105) < 1e-9);
+  // longtemps après : bloqué à la 19e du lot (la 20e attend la réponse du serveur)
+  for (let i = 0; i < 5000; i++) v = avancerAffichage(v, 100, 1352, 0.5, 0.1, 20);
+  assert.equal(v, 119);
+});
+
+test('avancerAffichage : une réponse du serveur ne fait pas sauter le compteur, il la rattrape en glissant', () => {
+  // le compteur est à 105 mais le serveur confirme 120 : on glisse, pas de saut de 15
+  let v = 105;
+  const pas: number[] = [];
+  for (let i = 0; i < 60; i++) {
+    const suivant = avancerAffichage(v, 120, 1352, 0.5, 0.1, 20);
+    pas.push(suivant - v);
+    v = suivant;
+  }
+  assert.ok(Math.max(...pas) < 1.6, `plus grand pas : ${Math.max(...pas)}`);
+  assert.ok(v >= 119);
+  assert.ok(pas.every((x) => x >= 0)); // jamais en arrière
+});
+
+test('avancerAffichage : jamais au-delà du total, ni de vitesse négative', () => {
+  assert.equal(avancerAffichage(1351, 1350, 1352, 5, 10, 20), 1352);
+  assert.equal(avancerAffichage(100, 100, 1352, -3, 1, 20), 100);
+  assert.equal(avancerAffichage(100, 100, 1352, 0, 5, 20), 100);
 });
 
 test('formaterPourcent : une décimale, une virgule, jamais 100 avant la fin', () => {

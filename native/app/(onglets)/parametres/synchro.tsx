@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { EcranSection } from '@/components/ecrans/EcranSection';
 import { Bouton } from '@/components/ui/Bouton';
 import { Dossard } from '@/components/ui/Dossard';
-import { avancement, faitesAffichees, formaterDuree, formaterPourcent, tempsCalcul } from '@/data/synchro/estimation';
+import { avancement, avancerAffichage, formaterDuree, formaterPourcent, tempsCalcul } from '@/data/synchro/estimation';
 import { TAILLE_LOT, useSynchroStrava, type PhaseSynchro } from '@/hooks/useSynchroStrava';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
@@ -19,16 +19,33 @@ export default function SynchroStrava() {
   const p = usePalette();
   const s = useSynchroStrava();
   const couleur = couleurSport(p, 'velo');
-  // Pendant un lot, l'horloge tourne (10 fois par seconde) et les sorties s'ajoutent une par une, à vitesse régulière ; le serveur confirme à la fin du lot
-  const [maintenant, setMaintenant] = useState(Date.now());
+  // Le compteur est continu : pendant le calcul il avance 10 fois par seconde à vitesse constante (la vitesse moyenne mesurée), sans sauter à chaque réponse du serveur
+  // (il rattrape le chiffre confirmé en glissant). Voir avancerAffichage. Hors calcul, on montre le chiffre confirmé.
+  const dernier = useRef(s);
+  dernier.current = s;
+  const afficheRef = useRef(s.faites);
+  const [affiche, setAffiche] = useState(s.faites);
+  useEffect(() => {
+    if (s.phase === 'calcul') return;
+    afficheRef.current = s.faites;
+    setAffiche(s.faites);
+  }, [s.phase, s.faites]);
   useEffect(() => {
     if (s.phase !== 'calcul') return;
-    const t = setInterval(() => setMaintenant(Date.now()), 100);
+    let avant = Date.now();
+    const t = setInterval(() => {
+      const maintenant = Date.now();
+      const c = dernier.current;
+      afficheRef.current = avancerAffichage(afficheRef.current, c.faites, c.total, c.secParSortie > 0 ? 1 / c.secParSortie : 0, (maintenant - avant) / 1000, TAILLE_LOT);
+      avant = maintenant;
+      setAffiche(afficheRef.current);
+    }, 100);
     return () => clearInterval(t);
   }, [s.phase]);
-  const faites = s.phase === 'calcul' ? faitesAffichees(s.faites, s.total, s.secParSortie, (maintenant - s.debutLot) / 1000, TAILLE_LOT) : s.faites;
+  const exacte = s.phase === 'calcul' ? affiche : s.faites;
+  const faites = Math.floor(exacte);
   const restantes = Math.max(0, s.total - faites);
-  const part = avancement(faites, s.total);
+  const part = avancement(exacte, s.total);
   const calcul = tempsCalcul(restantes, s.secParSortie);
 
   const statut: Record<PhaseSynchro, { mot: string; pastille: string }> = {
