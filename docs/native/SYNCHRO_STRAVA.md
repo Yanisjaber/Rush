@@ -16,6 +16,14 @@ Importer une sortie depuis Strava ne donne que son résumé (durée, cardio, wat
 
 À l'ouverture de l'écran, l'app lit le compteur (toutes les sorties, dont celles déjà importées) et, s'il en reste, lance le calcul par lots de 20, sans attendre entre deux lots. **Fermer l'écran l'arrête** (iOS ne laisse pas tourner ça en arrière-plan) ; le rouvrir reprend là où il en était, parce que chaque sortie est écrite au fur et à mesure.
 
+## Ce qui rend un lot plus rapide
+
+Deux options de `strava-streams`, demandées par l'app (le site, lui, garde l'ancien comportement) :
+- **`profil_a_la_fin`** : le profil de puissance (`power_profile`, deux recalculs) et le rattrapage des anciennes courbes ne se font qu'au **dernier lot** (quand il ne reste plus de sorties), pas à chaque appel. C'était une attente fixe à chaque lot de 20.
+- **`parallele: 4`** : le serveur télécharge et écrit **quatre sorties à la fois**. Le calcul des courbes reste sur un seul fil (JavaScript), donc seules les attentes (réponse de Strava, écriture en base) se recouvrent : on gagne sur l'attente réseau, pas sur le calcul. Ça ne change pas la limite de Strava (une demande par sortie) ; si Strava refuse (429), les quatre s'arrêtent.
+
+Si tu t'arrêtes en route, le profil de puissance du site reste à son ancien état jusqu'à la fin du calcul (l'app lit les courbes directement, pas ce profil).
+
 ## Le temps
 
 La barre et « environ… de calcul » ne comptent que le **temps de calcul** : sorties restantes × temps moyen d'une sortie, mesuré sur les lots déjà faits (2 s au départ). Chaque sortie prend à peu près le même temps, donc la barre avance à vitesse régulière.

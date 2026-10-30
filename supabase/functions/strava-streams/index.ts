@@ -16,6 +16,8 @@
 //   body JSON optionnel : { "limit": 40, "recompute_only": false, "puissance_seulement": false }
 //   - recompute_only:true → ne fetch aucun stream, recalcule juste power_profile.
 //   - puissance_seulement:true → ne traite (et ne compte) que les sorties avec capteur de puissance (device_watts) : c'est ce que demande l'écran de synchro de l'app.
+//   - profil_a_la_fin:true → le profil de puissance et le rattrapage des anciennes courbes ne se recalculent qu'au dernier lot (remaining = 0).
+//   - parallele:N (1 à 6, 1 par défaut) → N sorties téléchargées à la fois.
 //   La réponse contient `quota` : les limites et l'usage Strava lus dans ses en-têtes (null si aucune demande n'est partie).
 //
 // Déploiement :
@@ -93,6 +95,10 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
     const limit = clampInt(body?.limit, 1, 200, DEFAULT_LIMIT);
     const recomputeOnly = !!body?.recompute_only;
     const puissanceSeulement = !!body?.puissance_seulement;
+    // profil_a_la_fin : le profil de puissance (et le rattrapage des anciennes courbes) ne se recalcule qu'au dernier lot, pas à chaque appel (l'écran de synchro de l'app).
+    // parallele : combien de sorties se téléchargent à la fois (1 = une par une, comme avant ; l'app en demande plusieurs).
+    const profilAFin = !!body?.profil_a_la_fin;
+    const parallele = clampInt(body?.parallele, 1, 6, 1);
 
     const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -140,7 +146,8 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
       if (todoErr) return json({ error: "query_todo_failed" }, 500);
 
       // ===== 4) Fetch + stockage stream par stream =====
-      for (const a of todo || []) {
+      // `parallele` sorties à la fois : le calcul reste sur un seul fil, mais les attentes réseau (Strava, base) se recouvrent. Une limite Strava (429) arrête les ouvriers.
+      const traiterUne = async (a: any): Promise<void> => {
         const res = await fetch(
           `${STRAVA_API}/activities/${a.strava_id}/streams` +
           `?keys=time,watts,heartrate,cadence,altitude,distance,velocity_smooth&key_by_type=true`,
@@ -148,14 +155,14 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
         );
 
         quota = lireQuota(res.headers) ?? quota;                         // les limites et l'usage annoncés par Strava (pour les pauses de l'écran)
-        if (res.status === 429) { rateLimited = true; break; }           // stop net
+        if (res.status === 429) { rateLimited = true; return; }           // stop net
         if (res.status === 404) {                                        // pas de stream → marqué fait
           await sbAdmin.from("activities").update({
             streams_synced_at: new Date().toISOString(), streams_format: "none",
           }).eq("id", a.id);
-          continue;
+          return;
         }
-        if (!res.ok) { fetchErrors++; continue; }
+        if (!res.ok) { fetchErrors++; return; }
 
         const raw = await res.json();                                    // { watts:{data:[]}, ... }
         const streamArray = toIntervalsFormat(raw);                      // [{type,data}, ...]
@@ -182,28 +189,35 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
           signal_curves: signalCurves,
           metrics: metrics,
         }).eq("id", a.id);
-        if (upErr) { fetchErrors++; continue; }
+        if (upErr) { fetchErrors++; return; }
         streamsSynced++;
-      }
+      };
+      const liste = todo || [];
+      let suivante = 0;
+      const ouvrier = async (): Promise<void> => {
+        while (!rateLimited && suivante < liste.length) await traiterUne(liste[suivante++]);
+      };
+      await Promise.all(Array.from({ length: Math.min(parallele, liste.length) }, () => ouvrier()));
     }
 
-    // ===== 5) Backfill power_curve (nouvelles durées) depuis les streams stockés =====
-    // Lot limité (idempotent) : recalcule la courbe des activités obsolètes.
-    const backfill = await backfillPowerCurves(sbAdmin, user.id, 30, ATH);  // lot reduit : calcul dense plus lourd
-
-    // ===== 6) Recalculs power_profile (legacy) + power_profile_sport (par sport) =====
-    // On recalcule le profil par sport à CHAQUE passage : il s'appuie sur les power_curve
-    // déjà calculées, donc on obtient un profil partiel qui s'enrichit au fil du backfill
-    // (au lieu de n'afficher RIEN tant que tout n'est pas téléchargé).
-    const ppRows = await recomputePowerProfile(sbAdmin, user.id);
-    const ppSportRows = await recomputePowerProfileBySport(sbAdmin, user.id);
-
-    // ===== 7) Combien d'activités restent sans streams ? =====
+    // ===== 5) Combien d'activités restent sans streams ? (avant le backfill et le profil : ils peuvent attendre le dernier lot) =====
     let compteRestant = sbAdmin
       .from("activities").select("id", { count: "exact", head: true })
       .eq("user_id", user.id).is("streams_synced_at", null);
     if (puissanceSeulement) compteRestant = compteRestant.eq("device_watts", true).is("merged_into", null);
     const { count: remaining } = await compteRestant;
+
+    // ===== 5) Backfill power_curve (nouvelles durées) depuis les streams stockés =====
+    // Lot limité (idempotent) : recalcule la courbe des activités obsolètes.
+    const sauterFinitions = profilAFin && (remaining ?? 0) > 0;           // pas le dernier lot : le profil attend
+    const backfill = sauterFinitions ? { done: 0, remaining: 0 } : await backfillPowerCurves(sbAdmin, user.id, 30, ATH);  // lot reduit : calcul dense plus lourd
+
+    // ===== 6) Recalculs power_profile (legacy) + power_profile_sport (par sport) =====
+    // On recalcule le profil par sport à CHAQUE passage : il s'appuie sur les power_curve
+    // déjà calculées, donc on obtient un profil partiel qui s'enrichit au fil du backfill
+    // (au lieu de n'afficher RIEN tant que tout n'est pas téléchargé).
+    const ppRows = sauterFinitions ? 0 : await recomputePowerProfile(sbAdmin, user.id);
+    const ppSportRows = sauterFinitions ? 0 : await recomputePowerProfileBySport(sbAdmin, user.id);
 
     const moreBackfill = backfill.remaining > 0;
     return json({

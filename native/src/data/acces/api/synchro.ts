@@ -33,6 +33,9 @@ export interface LotSynchro {
   limiteAtteinte: boolean;
 }
 
+/** Sorties que le serveur télécharge à la fois pendant un lot : le calcul reste sur un seul fil, mais les attentes de Strava et de la base se recouvrent. */
+const PARALLELE = 4;
+
 const entierPositif = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : null);
 
 const messageLot = (statut: number, code: unknown): string => {
@@ -51,7 +54,8 @@ export async function traiterLotSynchro(limite: number): Promise<Resultat<LotSyn
     const res = await fetch(`${SUPABASE_URL}/functions/v1/strava-streams`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${jeton}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ limit: Math.max(1, Math.min(40, Math.floor(limite))) }),
+      // profil_a_la_fin : le profil de puissance ne se recalcule qu'au dernier lot ; parallele : quatre sorties téléchargées à la fois (voir strava-streams)
+      body: JSON.stringify({ limit: Math.max(1, Math.min(40, Math.floor(limite))), profil_a_la_fin: true, parallele: PARALLELE }),
     });
     const corps = (await res.json().catch(() => null)) as Record<string, unknown> | null;
     if (!res.ok) return { data: null, erreur: messageLot(res.status, corps?.error) };
