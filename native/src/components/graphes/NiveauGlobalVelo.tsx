@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
+import { ChaleurPiliers } from '@/components/graphes/ChaleurPiliers';
 import { CompositionGlobale } from '@/components/graphes/CompositionGlobale';
 import { CourbeGlobale } from '@/components/graphes/CourbeGlobale';
 import { EcartsPiliers } from '@/components/graphes/EcartsPiliers';
@@ -12,7 +13,7 @@ import { ecartsPiliers, PILIERS, type NiveauGlobal, type PilierCle } from '@/dat
 import type { PeriodeProgression, Progression } from '@/data/bilan/progression';
 import { espace } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
-import { typo, police } from '@/theme/typo';
+import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La page Progrès du vélo : le niveau global de l'athlète (cinq piliers : puissance, endurance, durabilité, répétabilité, capacité de charge, chacun noté de 0 à 100,
@@ -65,29 +66,11 @@ export function NiveauGlobalVelo({ global: g, serie, records, preuve, jours }: P
             <CompositionGlobale annees={g.annees} couleur={couleur} />
             <Text style={[typo.petit, { color: p.texteDoux }]}>Chaque bloc est la part d'un pilier. De bas en haut : puissance, endurance, durabilité, répétabilité, charge.</Text>
           </Bloc>
-          <Bloc titre={`Les piliers en ${g.actuel.an}`}>
+          <Bloc titre="Les piliers par année">
             <Text style={[typo.corps, { color: p.texte }]}>
               {nomPilier(g.fort)} est ton point fort ({Math.round(g.actuel.piliers[g.fort]!)}). {nomPilier(g.faible)} est ce qui te tire vers le bas ({Math.round(g.actuel.piliers[g.faible]!)}).
             </Text>
-            <View>
-              {PILIERS.map((pi, i) => {
-                const v = g.actuel.piliers[pi.cle];
-                return (
-                  <View
-                    key={pi.cle}
-                    accessible
-                    accessibilityLabel={`${pi.nom} : ${v === null ? 'pas mesuré' : `${Math.round(v)} sur 100`}. ${pi.explication}.`}
-                    style={[styles.ligne, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: p.trait }]}
-                  >
-                    <View style={styles.flex}>
-                      <Text style={[typo.corpsFort, { color: p.texte }]}>{pi.nom}</Text>
-                      <Text style={[typo.petit, { color: p.texteDoux }]}>{pi.explication}</Text>
-                    </View>
-                    <Text style={[styles.note, { color: v === null ? p.texteMuet : p.texte }]}>{v === null ? '—' : Math.round(v)}</Text>
-                  </View>
-                );
-              })}
-            </View>
+            <ChaleurPiliers annees={g.annees} couleur={couleur} />
           </Bloc>
         </View>
       ),
@@ -134,6 +117,4 @@ const styles = StyleSheet.create({
   page: { gap: espace.e3 },
   flex: { flex: 1, minWidth: 0 },
   tete: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 },
-  ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9, minHeight: 44 },
-  note: { fontFamily: police.titre700, fontSize: 22, fontVariant: ['tabular-nums'], minWidth: 36, textAlign: 'right' },
 });

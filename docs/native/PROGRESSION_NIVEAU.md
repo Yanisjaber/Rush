@@ -18,7 +18,7 @@ La natation et la musculation gardent leur écran : leur comparaison est fixée 
 
 Un 5 min ou un 20 min isolé ne dit pas qui est le coureur. Sur le vélo, la page Progrès ouvre sur le **niveau global**, quatre cartes qu'on fait glisser (code : `NiveauGlobalVelo.tsx`, `PagerCartes.tsx` ; calcul : `piliers-niveau.ts`) :
 1. **Score global** : le dossard (score de l'année, variation depuis l'an dernier, écart au meilleur) et la courbe du score par année ;
-2. **Composition** : les blocs de chaque pilier dans chaque année, et la note de chaque pilier cette année ;
+2. **Composition** : les blocs de chaque pilier dans chaque année, puis une **carte de chaleur** (`ChaleurPiliers.tsx`) : une ligne par pilier, une colonne par année, plus la case est bleue plus la note est haute (les 4 dernières années, « Tout l'historique » pour toutes, à faire défiler de côté). Le texte de chaque case est choisi pour rester lisible sur sa teinte (`theme/contraste.ts`) ;
 3. **Ce qui a bougé** : l'évolution de chaque pilier depuis l'année d'avant ;
 4. **Détail par durée** : la page décrite plus haut (Sprint, 5, 20, 60 min, Endurance, preuve du calcul).
 
