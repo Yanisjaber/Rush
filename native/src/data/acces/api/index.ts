@@ -24,3 +24,4 @@ export * from './hyrox';
 export * from './sante';
 export * from './reglages';
 export * from './compte';
+export * from './synchro';

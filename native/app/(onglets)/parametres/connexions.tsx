@@ -1,7 +1,9 @@
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { EcranSection } from '@/components/ecrans/EcranSection';
+import { Bouton } from '@/components/ui/Bouton';
 import { Pastille } from '@/components/ui/Pastille';
 import { chargerConnexions, type ConnexionStrava } from '@/data/acces/api';
 import { useAuth } from '@/stores/auth';
@@ -24,6 +26,7 @@ export default function Connexions() {
   const p = usePalette();
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
+  const router = useRouter();
   const [etat, setEtat] = useState<{ strava: ConnexionStrava | null; nbActivites: number; nbNuits: number } | null>(null);
   const [erreur, setErreur] = useState('');
 
@@ -69,6 +72,11 @@ export default function Connexions() {
                       <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>{x}</Text>
                     </View>
                   ))}
+                </View>
+              ) : null}
+              {strava ? (
+                <View style={{ marginTop: espace.e3 }}>
+                  <Bouton variante="discret" onPress={() => router.push('/parametres/synchro')}>Courbes de puissance</Bouton>
                 </View>
               ) : null}
               {!strava ? (

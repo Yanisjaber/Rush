@@ -13,8 +13,10 @@
 // si un 429 survient, elle s'arrête proprement et renvoie ce qui reste.
 //
 // Appel (front, POST, JWT Supabase dans Authorization) :
-//   body JSON optionnel : { "limit": 40, "recompute_only": false }
+//   body JSON optionnel : { "limit": 40, "recompute_only": false, "puissance_seulement": false }
 //   - recompute_only:true → ne fetch aucun stream, recalcule juste power_profile.
+//   - puissance_seulement:true → ne traite (et ne compte) que les sorties avec capteur de puissance (device_watts) : c'est ce que demande l'écran de synchro de l'app.
+//   La réponse contient `quota` : les limites et l'usage Strava lus dans ses en-têtes (null si aucune demande n'est partie).
 //
 // Déploiement :
 //   supabase functions deploy strava-streams
@@ -30,6 +32,7 @@ import { reechantillonner1Hz } from "../_shared/flux.ts";
 import { clesRepetabilite } from "../_shared/repetabilite.ts";
 import { calculerSignaux, SIGNAUX_VERSION } from "../_shared/signaux.ts";
 import { joindreJetons, ecrireRenouvellementStrava } from "../_shared/jetons.ts";
+import { lireQuota, type QuotaStrava } from "../_shared/quota-strava.ts";
 
 const STRAVA_CLIENT_ID = Deno.env.get("STRAVA_CLIENT_ID")!;
 const STRAVA_CLIENT_SECRET = Deno.env.get("STRAVA_CLIENT_SECRET")!;
@@ -89,6 +92,7 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
     const body = await safeJson(req);
     const limit = clampInt(body?.limit, 1, 200, DEFAULT_LIMIT);
     const recomputeOnly = !!body?.recompute_only;
+    const puissanceSeulement = !!body?.puissance_seulement;
 
     const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -105,6 +109,7 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
     let streamsSynced = 0;
     let rateLimited = false;
     let fetchErrors = 0;
+    let quota: QuotaStrava | null = null;
 
     if (!recomputeOnly) {
       // ===== 2) Tokens Strava + refresh =====
@@ -122,11 +127,14 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
       }
 
       // ===== 3) Activités sans streams (les plus récentes d'abord) =====
-      const { data: todo, error: todoErr } = await sbAdmin
+      // puissance_seulement : seules les sorties avec un vrai capteur de puissance (les autres n'auront jamais de courbe de watts, inutile de dépenser une demande Strava)
+      let aTraiter = sbAdmin
         .from("activities")
         .select("id, strava_id, sport, start_date_local")
         .eq("user_id", user.id)
-        .is("streams_synced_at", null)
+        .is("streams_synced_at", null);
+      if (puissanceSeulement) aTraiter = aTraiter.eq("device_watts", true).is("merged_into", null);
+      const { data: todo, error: todoErr } = await aTraiter
         .order("start_date_local", { ascending: false })
         .limit(limit);
       if (todoErr) return json({ error: "query_todo_failed" }, 500);
@@ -139,6 +147,7 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
           { headers: { Authorization: `Bearer ${accessToken}` } },
         );
 
+        quota = lireQuota(res.headers) ?? quota;                         // les limites et l'usage annoncés par Strava (pour les pauses de l'écran)
         if (res.status === 429) { rateLimited = true; break; }           // stop net
         if (res.status === 404) {                                        // pas de stream → marqué fait
           await sbAdmin.from("activities").update({
@@ -190,9 +199,11 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
     const ppSportRows = await recomputePowerProfileBySport(sbAdmin, user.id);
 
     // ===== 7) Combien d'activités restent sans streams ? =====
-    const { count: remaining } = await sbAdmin
+    let compteRestant = sbAdmin
       .from("activities").select("id", { count: "exact", head: true })
       .eq("user_id", user.id).is("streams_synced_at", null);
+    if (puissanceSeulement) compteRestant = compteRestant.eq("device_watts", true).is("merged_into", null);
+    const { count: remaining } = await compteRestant;
 
     const moreBackfill = backfill.remaining > 0;
     return json({
@@ -200,6 +211,7 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
       streams_synced: streamsSynced,
       fetch_errors: fetchErrors,
       rate_limited: rateLimited,
+      quota, // null si aucune demande n'est partie vers Strava pendant cet appel
       remaining: remaining ?? 0,
       power_profile_durations: ppRows,
       power_profile_sports: ppSportRows,
