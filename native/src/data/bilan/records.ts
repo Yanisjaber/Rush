@@ -27,8 +27,6 @@ export interface RecordTop {
   periode?: 'jour' | 'semaine' | 'mois';
   /** Les meilleures entrées, la première est le record. */
   top: EntreeRecord[];
-  /** Toutes les entrées valables (pas seulement les meilleures) : elles servent à tracer l'évolution du record, mois par mois ou année par année. */
-  entrees?: EntreeRecord[];
 }
 
 export interface GroupeRecords {
@@ -62,10 +60,9 @@ function meilleures(entrees: EntreeRecord[], n = PODIUM): EntreeRecord[] {
 
 const nomSeance = (a: ActiviteBilan): string => a.name || 'Sans titre';
 
-/** Un record : ses meilleures entrées (le classement) et toutes les entrées valables (pour l'évolution). */
+/** Un record : ses meilleures entrées (le classement). */
 function fabrique(cle: string, libelle: string, unite: string, entrees: EntreeRecord[]): RecordTop {
-  const valides = entrees.filter((e) => Number.isFinite(e.valeur) && e.valeur > 0);
-  return { cle, libelle, unite, top: meilleures(valides, CLASSEMENT), entrees: valides };
+  return { cle, libelle, unite, top: meilleures(entrees, CLASSEMENT) };
 }
 
 // --- Records de volume ---------------------------------------------------------------------------------------------------
@@ -239,45 +236,6 @@ export function recordsBasiquesActivites(acts: ActiviteBilan[], famille: string)
     records.push(fabrique('vmoy', 'Vitesse moyenne', 'km/h', acts.filter((a) => a.distance_km >= DISTANCE_MIN_VITESSE_COURSE && a.duree_min > 0).map((a) => entree(a, a.distance_km / (a.duree_min / 60)))));
   }
   return records.filter((r) => r.top.length);
-}
-
-// --- L'évolution d'un record ---------------------------------------------------------------------------------------------
-
-export interface PeriodeEvolution {
-  cle: string;
-  /** Ce qu'on écrit sous la barre : l'initiale du mois (« M »), ou les deux chiffres de l'année (« 26 »). */
-  libelle: string;
-  /** Le nom entier, pour VoiceOver : « mai 2026 », « 2026 ». */
-  nom: string;
-  /** Le meilleur de la période ; null quand il n'y a rien. */
-  valeur: number | null;
-}
-
-const NOMS_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-/** Au plus ce nombre d'années dans l'évolution : au-delà, les barres seraient trop fines pour un téléphone. */
-const ANNEES_EVOLUTION = 10;
-
-/** Le meilleur d'un record dans chaque période : les 12 derniers mois (celui d'aujourd'hui compris), ou les années depuis la première séance. */
-export function evolutionRecord(entrees: EntreeRecord[], mode: 'mois' | 'annee', maintenant: Date): PeriodeEvolution[] {
-  const meilleurDe = (prefixe: string): number | null => {
-    let m: number | null = null;
-    for (const e of entrees) if (e.iso.startsWith(prefixe) && e.valeur > 0 && (m === null || e.valeur > m)) m = e.valeur;
-    return m;
-  };
-  if (mode === 'mois') {
-    return Array.from({ length: 12 }, (_, i) => {
-      const d = new Date(maintenant.getFullYear(), maintenant.getMonth() - (11 - i), 1);
-      const cle = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      return { cle, libelle: NOMS_MOIS[d.getMonth()][0].toUpperCase(), nom: `${NOMS_MOIS[d.getMonth()]} ${d.getFullYear()}`, valeur: meilleurDe(cle) };
-    });
-  }
-  const fin = maintenant.getFullYear();
-  const premiere = entrees.reduce((a, e) => Math.min(a, Number(e.iso.slice(0, 4))), fin);
-  const debut = Math.max(premiere, fin - ANNEES_EVOLUTION + 1);
-  return Array.from({ length: fin - debut + 1 }, (_, i) => {
-    const a = debut + i;
-    return { cle: String(a), libelle: String(a).slice(2), nom: String(a), valeur: meilleurDe(String(a)) };
-  });
 }
 
 // --- Tous les sports ------------------------------------------------------------------------------------------------------

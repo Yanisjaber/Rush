@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { ActiviteBilan } from '../../src/data/bilan/bilan.ts';
-import { courbeDeLignes, indexDureeProche, evolutionRecord, periodesParSport, recordsBasiquesActivites, recordsBasiquesVelo, recordsPeriodes, recordsRegularite, recordsSeance, seancesLesPlusChargees, FC_MOYENNE_MAX_CREDIBLE, sortieVeloDeLigne, texteDuree, wattsParKg, type SortieVelo } from '../../src/data/bilan/records.ts';
+import { courbeDeLignes, indexDureeProche, periodesParSport, recordsBasiquesActivites, recordsBasiquesVelo, recordsPeriodes, recordsRegularite, recordsSeance, seancesLesPlusChargees, FC_MOYENNE_MAX_CREDIBLE, sortieVeloDeLigne, texteDuree, wattsParKg, type SortieVelo } from '../../src/data/bilan/records.ts';
 
 const act = (iso: string, o: Partial<ActiviteBilan> = {}): ActiviteBilan => ({ id: `a-${iso}-${o.name ?? ''}`, name: `Sortie ${iso}`, iso, sport: 'cyclisme', famille: 'velo', duree_min: 60, distance_km: 30, d_plus: 100, tss: 50, ...o });
 
@@ -166,21 +166,6 @@ test('recordsBasiquesActivites : la course ajoute la vitesse moyenne (5 km ou pl
   const muscu = recordsBasiquesActivites([act('2026-03-01', { famille: 'muscu', distance_km: 0, d_plus: 0, duree_min: 70, tss: 40 })], 'muscu');
   assert.deepEqual(muscu.map((x) => x.cle), ['duree', 'tss']);
   assert.equal(muscu[0].libelle, 'Plus longue séance');
-});
-
-test('evolutionRecord : 12 mois glissants et années, le meilleur de chaque période', () => {
-  const e = (iso: string, valeur: number) => ({ valeur, nom: '', iso, id: null });
-  const entrees = [e('2026-05-14', 281), e('2026-05-20', 270), e('2025-10-03', 255), e('2024-06-08', 266), e('2023-09-17', 259)];
-  const mois = evolutionRecord(entrees, 'mois', new Date('2026-10-29T12:00:00'));
-  assert.equal(mois.length, 12);
-  assert.equal(mois[0].cle, '2025-11');
-  assert.equal(mois[11].cle, '2026-10');
-  assert.equal(mois.find((m) => m.cle === '2026-05')!.valeur, 281);
-  assert.equal(mois.find((m) => m.cle === '2025-10'), undefined); // plus d'un an : hors de la fenêtre
-  assert.equal(mois[11].valeur, null);
-  const annees = evolutionRecord(entrees, 'annee', new Date('2026-10-29T12:00:00'));
-  assert.deepEqual(annees.map((a) => [a.cle, a.valeur]), [['2023', 259], ['2024', 266], ['2025', 255], ['2026', 281]]);
-  assert.equal(annees[0].libelle, '23');
 });
 
 test('periodesParSport : les meilleures semaines, découpées par sport', () => {
