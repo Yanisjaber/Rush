@@ -7,15 +7,24 @@ test('tempsCalcul : le temps des sorties restantes, sans pause', () => {
   assert.equal(tempsCalcul(-5, 2), 0);
 });
 
-test('formaterDuree : arrondie et lisible', () => {
-  assert.equal(formaterDuree(20), 'moins d\'une minute');
-  assert.equal(formaterDuree(7 * 60), '7 min');
-  assert.equal(formaterDuree(43 * 60), '45 min');
+test('formaterDuree : assez fine pour bouger (dizaine de secondes sous 10 min, minute au-delà)', () => {
+  assert.equal(formaterDuree(4), 'quelques secondes');
+  assert.equal(formaterDuree(20), '20 s');
+  assert.equal(formaterDuree(60), '1 min');
+  assert.equal(formaterDuree(3 * 60 + 52), '3 min 50 s');
+  assert.equal(formaterDuree(3 * 60 + 58), '4 min');
+  assert.equal(formaterDuree(7 * 60 + 10), '7 min 10 s');
+  assert.equal(formaterDuree(12 * 60 + 20), '12 min');
+  assert.equal(formaterDuree(43 * 60 + 40), '44 min');
   assert.equal(formaterDuree(3 * 3600 + 20 * 60), '3 h 20');
   assert.equal(formaterDuree(2 * 3600), '2 h');
-  assert.equal(formaterDuree(2 * 3600 + 58 * 60), '3 h');
   assert.equal(formaterDuree(30 * 3600), '1 jour et 6 h');
   assert.equal(formaterDuree(48 * 3600), '2 jours');
+});
+
+test('formaterDuree : deux états proches donnent deux textes différents (ça se voit bouger)', () => {
+  assert.notEqual(formaterDuree(4 * 60), formaterDuree(4 * 60 - 12));
+  assert.notEqual(formaterDuree(30 * 60), formaterDuree(29 * 60));
 });
 
 test('avancerAffichage : avance à vitesse constante, sans jamais dépasser la fin du lot', () => {
