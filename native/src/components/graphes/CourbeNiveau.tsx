@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Path, Text as TexteSvg } from 'react-native-svg';
 import type { SerieNiveau } from '@/data/bilan/niveau-annees';
 import { SORTIES_MINI_SOMMET } from '@/data/bilan/niveau-annees';
-import { axeScore, debutsAnnees, libellePeriode, pointsDepuis, positionsNiveau, reperesAnnees, segmentsContinus } from '@/data/bilan/niveau-annees-affichage';
+import { amincirReperes, axeScore, debutsAnnees, libellePeriode, pointsDepuis, positionsNiveau, reperesAnnees, segmentsContinus } from '@/data/bilan/niveau-annees-affichage';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -90,8 +90,8 @@ export function CourbeNiveau({ serie, mode, depuisAn, couleur, etiquette }: Prop
           </>
         ) : null}
 
-        {reperesAnnees(positions).map((r) => (
-          <TexteSvg key={r.an} x={x(r.t)} y={HAUTEUR - 8} fontSize={12} fontFamily={police.texte500} fill={p.texteDoux} textAnchor="middle">{r.an}</TexteSvg>
+        {amincirReperes(reperesAnnees(positions).map((r) => ({ an: r.an, x: x(r.t) })), 36).map((r) => (
+          <TexteSvg key={r.an} x={r.x} y={HAUTEUR - 8} fontSize={12} fontFamily={police.texte500} fill={p.texteDoux} textAnchor="middle">{r.an}</TexteSvg>
         ))}
       </Svg>
       {sommetHorsVue ? (

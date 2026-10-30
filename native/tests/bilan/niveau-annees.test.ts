@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { niveauxCourse, niveauxVelo, serieRecord, type SortieNiveauCourse, type SortieNiveauVelo } from '../../src/data/bilan/niveau-annees.ts';
-import { axeScore, debutsAnnees, ecartAuSommet, formatMarge, formatNiveau, libellePeriode, pointsDepuis, positionsNiveau, recordsDeCourbe, reperesAnnees, segmentsContinus } from '../../src/data/bilan/niveau-annees-affichage.ts';
+import { amincirReperes, axeScore, debutsAnnees, ecartAuSommet, formatMarge, formatNiveau, libellePeriode, pointsDepuis, positionsNiveau, recordsDeCourbe, reperesAnnees, segmentsContinus } from '../../src/data/bilan/niveau-annees-affichage.ts';
 
 // Un bruit fixe (pas de hasard : le test doit toujours donner le même résultat)
 const BRUIT = [-6, 3, -2, 5, 0, -4, 2, 4, -3, 1];
@@ -235,4 +235,15 @@ test('formatNiveau et formatMarge : watts ou allure', () => {
   assert.equal(formatNiveau('course', 322.6), `5'23"/km`);
   assert.equal(formatMarge('velo', 3.4), '± 3 W');
   assert.equal(formatMarge('course', 17.2), '± 17 s/km');
+});
+
+test('amincirReperes : garde tout quand il y a la place, sinon saute des années en gardant toujours la dernière', () => {
+  const largeLibre = [{ an: 2024, x: 50 }, { an: 2025, x: 150 }, { an: 2026, x: 250 }];
+  assert.deepEqual(amincirReperes(largeLibre, 36), largeLibre);
+  // 11 années (2016 à 2026) réparties sur 230 unités : 23 d'écart, trop serré pour 36 → une sur deux
+  const serre = Array.from({ length: 11 }, (_, i) => ({ an: 2016 + i, x: 48 + i * 23 }));
+  const gardes = amincirReperes(serre, 36);
+  assert.deepEqual(gardes.map((r) => r.an), [2016, 2018, 2020, 2022, 2024, 2026]);
+  assert.ok(gardes.every((r, i) => i === 0 || r.x - gardes[i - 1].x >= 36));
+  assert.deepEqual(amincirReperes([], 36), []);
 });

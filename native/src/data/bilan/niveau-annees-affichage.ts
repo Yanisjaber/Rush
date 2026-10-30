@@ -44,6 +44,19 @@ export function reperesAnnees(positions: readonly PositionNiveau[]): { an: numbe
 }
 
 /**
+ * Les repères d'années qu'on a la place d'écrire : quand ils se serrent (tout l'historique sur 10 ans), on en saute un sur deux, un sur trois…
+ * Le dernier (l'année en cours) est toujours gardé, on compte à rebours depuis lui. `ecartMini` = l'écart minimal entre deux étiquettes, dans l'unité de `x`.
+ */
+export function amincirReperes<T extends { x: number }>(reperes: readonly T[], ecartMini: number): T[] {
+  const gardes: T[] = [];
+  for (let i = reperes.length - 1; i >= 0; i--) {
+    const dernier = gardes[gardes.length - 1];
+    if (!dernier || dernier.x - reperes[i].x >= ecartMini) gardes.push(reperes[i]);
+  }
+  return gardes.reverse();
+}
+
+/**
  * Où tracer la barre du début de chaque année : entre le dernier trimestre d'une année et le premier de la suivante (une demi-tranche avant le premier point de l'année).
  * Seulement entre le premier et le dernier point, et seulement quand la courbe a des tranches (une série annuelle a un point par année : rien à séparer).
  */
