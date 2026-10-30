@@ -37,7 +37,7 @@ export default function SynchroStrava() {
   };
 
   const reste =
-    s.phase === 'fini' ? `Tes ${nb(s.total)} sorties avec capteur ont leur courbe.`
+    s.phase === 'fini' ? `Tes ${nb(s.total)} sorties sont importées avec leurs courbes.`
     : s.phase === 'pause' ? `${nb(restantes)} sorties restantes.`
     : s.phase === 'erreur' ? `Rien n'est perdu : ça reprend à la sortie ${nb(s.faites + 1)}.`
     : s.phase === 'calcul' || s.phase === 'repos' ? `${nb(restantes)} sorties restantes, environ ${formaterDuree(calcul)} de calcul.`
@@ -56,14 +56,14 @@ export default function SynchroStrava() {
         {s.phase === 'demo' ? <Text style={[typo.petit, { color: p.texteMuet }]}>Mode démo : pas de Strava à synchroniser.</Text> : null}
         {s.phase === 'chargement' ? <ActivityIndicator color={p.texteDoux} /> : null}
         {s.phase === 'vide' ? (
-          <Bloc titre="Courbes de puissance">
-            <Text style={[typo.corps, { color: p.texteDoux }]}>Aucune de tes sorties n'a de capteur de puissance : il n'y a pas de courbe de watts à calculer.</Text>
+          <Bloc titre="Flux des sorties">
+            <Text style={[typo.corps, { color: p.texteDoux }]}>Tu n'as aucune sortie importée : il n'y a rien à calculer.</Text>
           </Bloc>
         ) : null}
 
         {s.total > 0 ? (
           <>
-            <Dossard sport="velo" etiquette="Courbes de puissance" valeur={nb(s.faites)} uniteValeur={`/ ${nb(s.total)}`} detail={reste} chiffreMax={64}>
+            <Dossard sport="velo" etiquette="Flux et courbes" valeur={nb(s.faites)} uniteValeur={`/ ${nb(s.total)}`} detail={reste} chiffreMax={64}>
               <View
                 accessibilityRole="progressbar"
                 accessibilityLabel="Avancement du calcul"

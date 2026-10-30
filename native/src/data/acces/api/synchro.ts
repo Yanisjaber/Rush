@@ -3,19 +3,20 @@ import { quotaValide, type QuotaStrava } from '../../synchro/estimation';
 import { sb } from '../supabase';
 import { UUID, type Resultat } from './commun';
 
-// La synchro des courbes de puissance : combien de sorties avec capteur ont leur courbe, et le calcul d'un lot de sorties par la fonction « strava-streams »
-// (elle seule parle à Strava : aucun jeton ne passe par l'app). Voir docs/native/SYNCHRO_STRAVA.md.
+// La synchro des flux : combien de sorties ont leur flux seconde par seconde (watts, cardio, vitesse, altitude…) et leurs courbes, et le calcul d'un lot de sorties par la
+// fonction « strava-streams » (elle seule parle à Strava : aucun jeton ne passe par l'app). Toutes les sorties comptent, avec ou sans capteur de puissance
+// (décision de Yanis : on importe tout, même la vitesse). Voir docs/native/SYNCHRO_STRAVA.md.
 
 export interface CompteurSynchro {
-  /** Les sorties avec un vrai capteur de puissance : les seules qui auront une courbe de watts. */
+  /** Toutes les sorties du compte. */
   total: number;
-  /** Celles dont la courbe est déjà calculée. */
+  /** Celles dont le flux est déjà importé. */
   faites: number;
 }
 
 export async function chargerCompteurSynchro(userId: string): Promise<Resultat<CompteurSynchro>> {
   if (!UUID.test(String(userId))) return { data: null, erreur: 'Compte introuvable.' };
-  const base = () => sb.from('activities').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('device_watts', true).is('merged_into', null);
+  const base = () => sb.from('activities').select('id', { count: 'exact', head: true }).eq('user_id', userId);
   const [total, sansCourbe] = await Promise.all([base(), base().is('streams_synced_at', null)]);
   const erreur = total.error ?? sansCourbe.error;
   if (erreur) {
@@ -53,7 +54,7 @@ export async function traiterLotSynchro(limite: number): Promise<Resultat<LotSyn
     const res = await fetch(`${SUPABASE_URL}/functions/v1/strava-streams`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${jeton}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ limit: Math.max(1, Math.min(40, Math.floor(limite))), puissance_seulement: true }),
+      body: JSON.stringify({ limit: Math.max(1, Math.min(40, Math.floor(limite))) }),
     });
     const corps = (await res.json().catch(() => null)) as Record<string, unknown> | null;
     if (!res.ok) return { data: null, erreur: messageLot(res.status, corps?.error) };

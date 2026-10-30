@@ -3,7 +3,7 @@ import { chargerCompteurSynchro, traiterLotSynchro } from '@/data/acces/api';
 import { QUOTA_DEFAUT, SECONDES_PAR_SORTIE_DEFAUT, secondesAvantReprise, type QuotaStrava } from '@/data/synchro/estimation';
 import { useAuth } from '@/stores/auth';
 
-// La synchro des courbes de puissance, tant que l'écran est ouvert : elle calcule les sorties avec capteur par lots, le plus vite que Strava le permet,
+// La synchro des flux et des courbes (puissance, cardio, vitesse…), tant que l'écran est ouvert : elle importe les sorties par lots, le plus vite que Strava le permet,
 // se met en pause toute seule quand Strava dit stop (100 demandes par quart d'heure), reprend à la remise à zéro, et mesure le temps réel d'une sortie
 // pour que « il reste environ… » soit juste. Fermer l'écran l'arrête ; la rouvrir reprend là où elle s'est arrêtée (tout est écrit au fur et à mesure).
 // Les durées sont calculées dans data/synchro/estimation.ts. Voir docs/native/SYNCHRO_STRAVA.md.

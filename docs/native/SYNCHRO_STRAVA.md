@@ -1,18 +1,20 @@
-# Synchro Strava : le calcul des courbes de puissance
+# Synchro Strava : l'import des flux et des courbes
 
-Écran : Réglages › Connexions › « Courbes de puissance » (`native/app/(onglets)/parametres/synchro.tsx`). Logique : `native/src/hooks/useSynchroStrava.ts`, durées dans `native/src/data/synchro/estimation.ts` (tests : `native/tests/synchro/estimation.test.ts`), accès aux données `native/src/data/acces/api/synchro.ts`. Serveur : Edge Function `strava-streams`.
+Écran : Réglages › Connexions › « Flux et courbes des sorties » (`native/app/(onglets)/parametres/synchro.tsx`). Logique : `native/src/hooks/useSynchroStrava.ts`, durées dans `native/src/data/synchro/estimation.ts` (tests : `native/tests/synchro/estimation.test.ts`), accès aux données `native/src/data/acces/api/synchro.ts`. Serveur : Edge Function `strava-streams`.
 
 ## Pourquoi cet écran
 
-Importer une sortie depuis Strava ne donne que son résumé (durée, cardio, watts moyens). Les **courbes de puissance** (meilleur 5 s, 5, 20, 60 min, durabilité, répétabilité) demandent le flux seconde par seconde, une demande à Strava **par sortie**. Avant cet écran, ce calcul ne partait que depuis le site (gelé) : un compte connecté à Strava ne l'avait jamais, et le niveau global du vélo restait à 2 piliers sur 5.
+Importer une sortie depuis Strava ne donne que son résumé (durée, cardio, watts moyens). Les **courbes** (puissance : meilleur 5 s, 5, 20, 60 min, durabilité, répétabilité ; vitesse, cardio…) demandent le flux seconde par seconde, une demande à Strava **par sortie**. Avant cet écran, ce calcul ne partait que depuis le site (gelé) : un compte connecté à Strava ne l'avait jamais, et le niveau global du vélo restait à 2 piliers sur 5.
 
-## Ce qui est calculé
+## Ce qui est importé
 
-Seulement les sorties avec un **vrai capteur de puissance** (`device_watts`) : les autres n'auront jamais de courbe de watts, inutile de dépenser une demande Strava dessus (sur un compte test : 1 352 sorties sur 2 810). Les plus récentes d'abord. L'écran compte la même chose que le serveur (`puissance_seulement: true`).
+**Toutes les sorties** du compte, avec ou sans capteur de puissance (décision de Yanis : on importe tout, même la vitesse). Chaque sortie reçoit son flux seconde par seconde (watts, cardio, cadence, altitude, distance, vitesse) et ses courbes. Les plus récentes d'abord. Une sortie sans watts n'aura pas de courbe de puissance, mais ses autres courbes (vitesse, cardio…) sont calculées. La fonction accepte aussi `puissance_seulement: true` (seulement les sorties avec capteur, `device_watts`) ; l'app ne s'en sert plus.
+
+**Place dans la base :** un flux pèse environ 68 Ko compressé. 2 810 sorties de plus font passer la base d'environ 139 Mo à 330 Mo (le palier gratuit de Supabase s'arrête à 500 Mo).
 
 ## Comment ça tourne
 
-À l'ouverture de l'écran, l'app lit le compteur (sorties avec capteur, dont celles déjà calculées) et, s'il en reste, lance le calcul par lots de 20, sans attendre entre deux lots. **Fermer l'écran l'arrête** (iOS ne laisse pas tourner ça en arrière-plan) ; le rouvrir reprend là où il en était, parce que chaque sortie est écrite au fur et à mesure.
+À l'ouverture de l'écran, l'app lit le compteur (toutes les sorties, dont celles déjà importées) et, s'il en reste, lance le calcul par lots de 20, sans attendre entre deux lots. **Fermer l'écran l'arrête** (iOS ne laisse pas tourner ça en arrière-plan) ; le rouvrir reprend là où il en était, parce que chaque sortie est écrite au fur et à mesure.
 
 ## Le temps : calcul et pauses séparés
 

@@ -76,7 +76,7 @@ export default function Connexions() {
               ) : null}
               {strava ? (
                 <View style={{ marginTop: espace.e3 }}>
-                  <Bouton variante="discret" onPress={() => router.push('/parametres/synchro')}>Courbes de puissance</Bouton>
+                  <Bouton variante="discret" onPress={() => router.push('/parametres/synchro')}>Flux et courbes des sorties</Bouton>
                 </View>
               ) : null}
               {!strava ? (
