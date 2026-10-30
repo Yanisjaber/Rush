@@ -61,12 +61,12 @@ test('niveauGlobal : les notes des piliers sont ce qu\'on attend', () => {
   assert.equal(p.endurance, 89.6);
 });
 
-test('niveauGlobal : une année à moins de 3 piliers n\'a pas de score ; sans aucune année à 3 piliers, pas de niveau global', () => {
-  assert.equal(niveauGlobal([mesure(2025, { w5: 1000, w300: 300 })], null), null);
-  const g = niveauGlobal([mesure(2024, { w5: 1000, w300: 300, ctlMax: 80 }), mesure(2025, { w5: 1100, w300: 310, ctlMax: 85, repRatio: 0.9, repN: 5 })], endurance({ 2025: 80 }))!;
-  // 2024 : puissance et charge = 2 piliers (pas d'endurance cette année-là) : pas de score ; 2025 : puissance, endurance, répétabilité, charge
+test('niveauGlobal : une année à moins de 2 piliers n\'a pas de score ; sans aucune année à 2 piliers, pas de niveau global', () => {
+  assert.equal(niveauGlobal([mesure(2025, { w5: 1000 })], null), null);
+  const g = niveauGlobal([mesure(2024, { w5: 1000 }), mesure(2025, { w5: 1100, w300: 310, ctlMax: 85 })], endurance({}))!;
+  // 2024 : puissance seule = 1 pilier : pas de score ; 2025 : puissance et charge = 2 piliers
   assert.deepEqual(g.annees.map((a) => a.an), [2025]);
-  assert.equal(g.annees[0].nbPiliers, 4);
+  assert.equal(g.annees[0].nbPiliers, 2);
   assert.equal(g.precedent, null);
 });
 

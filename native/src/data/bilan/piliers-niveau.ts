@@ -58,13 +58,13 @@ export interface NiveauGlobal {
 /** Il faut au moins 3 sorties longues pour juger la durabilité d'une année, 3 sorties à trois vrais efforts pour la répétabilité. */
 export const SORTIES_MINI_DURABILITE = 3;
 export const SORTIES_MINI_REPETABILITE = 3;
-/** Une année a un score global à partir de 3 piliers mesurés. */
-export const PILIERS_MINI = 3;
+/** Une année a un score global à partir de 2 piliers mesurés (l'écran dit alors « Calculé sur N piliers sur 5 »). */
+export const PILIERS_MINI = 2;
 
 const moyenne = (v: number[]): number | null => (v.length ? v.reduce((s, x) => s + x, 0) / v.length : null);
 const meilleurDe = (valeurs: (number | null)[]): number => Math.max(0, ...valeurs.filter((v): v is number => v !== null));
 
-/** Les notes de chaque pilier pour chaque année, et le score global (moyenne des piliers mesurés). Null s'il n'y a aucune année avec 3 piliers. */
+/** Les notes de chaque pilier pour chaque année, et le score global (moyenne des piliers mesurés). Null s'il n'y a aucune année avec 2 piliers. */
 export function niveauGlobal(mesures: readonly MesuresAnnee[], endurance: SerieNiveau | null): NiveauGlobal | null {
   const meilleurs = {
     w5: meilleurDe(mesures.map((m) => m.w5)),
