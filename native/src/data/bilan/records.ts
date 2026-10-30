@@ -366,8 +366,7 @@ export interface PointCourbe {
   top: EntreeCourbe[];
 }
 
-/** La durée la plus courte et la plus longue de la courbe : l'axe va de 1 s à 5 h (de 1 min à 5 h pour les signaux autres que la puissance). */
-export const DUREE_MIN_SIGNAL = 60;
+/** La durée la plus courte et la plus longue de la courbe : l'axe va de 1 s à 5 h, pour la puissance comme pour les autres signaux. */
 export const DUREE_MIN = 1;
 export const DUREE_MAX = 18000;
 

@@ -495,7 +495,8 @@ export function recordsVeloDemo(maintenant: Date = new Date()): { sorties: Sorti
       }
     };
     const candidates = sorties.map((s, k) => ({ s, k })).filter(({ s }) => (annee == null || s.iso.startsWith(`${annee}-`)) && s.duree_min >= 20);
-    return DUREES_COURBE_DEMO.filter((d) => d >= 60)
+    // Comme sur le serveur : la VAM et la descente commencent à 30 s, les autres signaux à 1 s
+    return DUREES_COURBE_DEMO.filter((d) => d >= (signal === 'vam' || signal === 'des' ? 30 : 1))
       .map((duree) => {
         const classees = candidates
           .filter(({ s }) => s.duree_min * 60 >= duree)

@@ -5,7 +5,7 @@ import { TuilesRecords } from '@/components/bilan/TuilesRecords';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { MenuMesure } from '@/components/menus/MenuMesure';
 import { CourbeEfforts } from '@/components/graphes/CourbeEfforts';
-import { DUREE_MIN_SIGNAL, indexDureeProche, recordsBasiquesVelo, SIGNAUX_VELO, texteDuree, wattsParKg, type CleSignal, type PointCourbe, type SortieVelo } from '@/data/bilan/records';
+import { indexDureeProche, recordsBasiquesVelo, SIGNAUX_VELO, texteDuree, wattsParKg, type CleSignal, type PointCourbe, type SortieVelo } from '@/data/bilan/records';
 import { texteRecordSimple, EnAnnee, enAnnee } from '@/data/bilan/records-texte';
 import { formatDateLongue } from '@/data/outils/format';
 import { useCourbeSignal } from '@/hooks/useCourbeSignal';
@@ -73,7 +73,6 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
   const meilleur = point?.top[0];
   const wkg = meilleur && signal === 'puissance' ? wattsParKg(meilleur.valeur, poids) : null;
   const cmpEffort = meilleur ? comparaison(meilleur.valeur, pointAutre?.top[0]?.valeur, info.unite) : null;
-  const dureeMin = signal === 'puissance' ? undefined : DUREE_MIN_SIGNAL;
   // Le podium de la durée touchée : jusqu'à 30 séances, demandées au serveur ; en attendant, les trois de la courbe
   const podiumLong = usePodium(signal, point?.duree ?? null, portee === 'annee' ? annee : null);
   const podium = podiumLong ?? point?.top ?? [];
@@ -126,7 +125,6 @@ export function OngletRecordsVelo({ portee, annee, maintenant, sorties, poids, c
               // En « Tout », une seule ligne : la courbe de tous les temps, sans la pointillée de l'année
               autre={portee === 'annee' && autre.some((x) => x.top.length) ? autre : undefined}
               formater={(v) => texteRecordSimple(v, info.unite)}
-              dureeMin={dureeMin}
               serre={signal === 'fc' || signal === 'cad'}
               selection={indexChoisi >= 0 ? indexChoisi : null}
               onSelection={(i) => setDuree(i == null ? null : (courbe[i]?.duree ?? null))}

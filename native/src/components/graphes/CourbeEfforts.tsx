@@ -13,8 +13,6 @@ interface Props {
   courbe: PointCourbe[];
   /** L'autre période, en pointillés. */
   autre?: PointCourbe[];
-  /** La plus courte durée de l'axe : 1 s pour la puissance, 1 min pour les autres signaux. */
-  dureeMin?: number;
   /** Une valeur écrite avec son unité (« 357 W ») : pour les valeurs des repères et pour la bulle. */
   formater: (v: number) => string;
   /** L'axe des valeurs ne part pas de zéro (la FC, la cadence) : sinon la courbe, qui reste entre 130 et 190, serait écrasée en haut. */
@@ -45,11 +43,11 @@ const REPERES_DUREE: [number, string][] = [
   [18000, '5 h'],
 ];
 
-export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, etiquette, formater, dureeMin = DUREE_MIN, serre = false }: Props) {
+export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, etiquette, formater, serre = false }: Props) {
   const p = usePalette();
-  const x = (secondes: number) => GAUCHE + ((Math.log(secondes) - Math.log(dureeMin)) / (Math.log(DUREE_MAX) - Math.log(dureeMin))) * (LARGEUR - GAUCHE - DROITE);
+  const x = (secondes: number) => GAUCHE + ((Math.log(secondes) - Math.log(DUREE_MIN)) / (Math.log(DUREE_MAX) - Math.log(DUREE_MIN))) * (LARGEUR - GAUCHE - DROITE);
   /** La durée sous un point de l'axe (le contraire de x), pour le toucher. */
-  const secondesDeX = (px: number) => Math.exp(Math.log(dureeMin) + ((px - GAUCHE) / (LARGEUR - GAUCHE - DROITE)) * (Math.log(DUREE_MAX) - Math.log(dureeMin)));
+  const secondesDeX = (px: number) => Math.exp(Math.log(DUREE_MIN) + ((px - GAUCHE) / (LARGEUR - GAUCHE - DROITE)) * (Math.log(DUREE_MAX) - Math.log(DUREE_MIN)));
   const meilleurs = (c: PointCourbe[]) => c.filter((pt) => pt.top.length).map((pt) => ({ duree: pt.duree, valeur: pt.top[0].valeur }));
   const a = meilleurs(courbe);
   const b = autre ? meilleurs(autre) : [];
@@ -77,7 +75,7 @@ export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, 
   // Les valeurs de repère qu'on écrit : une valeur se cache quand elle toucherait la bulle, son point, ou une valeur déjà écrite (la bulle prime)
   const ecrites: number[] = [];
   const cadresEcrits: { g: number; d: number; h: number; b: number }[] = [];
-  for (const pt of a.filter((q) => DUREES_CLES.includes(q.duree) && q.duree >= dureeMin && q.duree !== choisi?.duree)) {
+  for (const pt of a.filter((q) => DUREES_CLES.includes(q.duree) && q.duree !== choisi?.duree)) {
     const r = cadre(pt);
     const gene = (choisi ? touche(r, bulleX, bulleY, bulleX + bulleL, bulleY + BULLE_H) || touche(r, pointX - 8, pointY - 8, pointX + 8, pointY + 8) : false) || cadresEcrits.some((c) => touche(r, c.g, c.h, c.d, c.b));
     if (!gene) {
@@ -95,7 +93,7 @@ export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, 
           {formatNum(w, 0)}
         </TexteSvg>
       ))}
-      {REPERES_DUREE.filter(([s]) => s >= dureeMin).map(([s, t]) => (
+      {REPERES_DUREE.map(([s, t]) => (
         <TexteSvg key={s} x={x(s)} y={HAUTEUR - 8} fontSize={10} fontFamily={police.texte400} fill={p.texteDoux} textAnchor="middle">
           {t}
         </TexteSvg>
@@ -105,7 +103,7 @@ export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, 
       {a.length ? <Path d={trace(a)} fill="none" stroke={couleur} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" /> : null}
       {/* Les durées clés : un point creux avec sa valeur (sauf près de la durée touchée, où la bulle parle) */}
       {a
-        .filter((pt) => DUREES_CLES.includes(pt.duree) && pt.duree >= dureeMin && pt.duree !== choisi?.duree)
+        .filter((pt) => DUREES_CLES.includes(pt.duree) && pt.duree !== choisi?.duree)
         .map((pt) => (
           <Fragment key={`cle${pt.duree}`}>
             <Circle cx={x(pt.duree)} cy={y(pt.valeur)} r={3.5} fill={p.surface} stroke={couleur} strokeWidth={2} />
