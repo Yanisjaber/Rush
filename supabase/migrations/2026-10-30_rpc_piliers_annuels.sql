@@ -71,15 +71,17 @@ as $$
     where d.user_id = auth.uid()
     group by 1
   )
-  select m.an,
+  -- toutes les années qui ont des courbes OU de la charge (un compte sans capteur de puissance a quand même sa capacité de charge)
+  select a.an,
          round(m.w5)::integer, round(m.w300)::integer, round(m.w1200)::integer, round(m.w3600)::integer,
-         round(m.late300)::integer, round(m.late1200)::integer, m.n_longues::integer,
+         round(m.late300)::integer, round(m.late1200)::integer, coalesce(m.n_longues, 0)::integer,
          round(r.rep_ratio::numeric, 3), coalesce(r.rep_n, 0)::integer,
          round(c.ctl_max, 1)
-  from meilleurs m
-  left join repet r on r.an = m.an
-  left join charge c on c.an = m.an
-  order by m.an;
+  from (select an from meilleurs union select an from charge) a
+  left join meilleurs m on m.an = a.an
+  left join repet r on r.an = a.an
+  left join charge c on c.an = a.an
+  order by a.an;
 $$;
 
 revoke all on function public.rpc_piliers_annuels() from public, anon;

@@ -9,7 +9,7 @@ bash $H reset
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 <<'SQL'
 create table public.activities (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade, name text, sport text, start_date_local timestamptz, power_curve jsonb, signal_curves jsonb, merged_into uuid);
 create table public.daily_metrics (user_id uuid not null references auth.users(id) on delete cascade, iso_date date not null, ctl numeric, primary key (user_id, iso_date));
-insert into auth.users (id, email) values ('00000000-0000-4000-8000-00000000000a','a@t'), ('00000000-0000-4000-8000-00000000000b','b@t');
+insert into auth.users (id, email) values ('00000000-0000-4000-8000-00000000000a','a@t'), ('00000000-0000-4000-8000-00000000000b','b@t'), ('00000000-0000-4000-8000-00000000000c','c@t');
 insert into public.activities (user_id, name, sport, start_date_local, power_curve, merged_into) values
  -- 2025 : le meilleur 5 min est 300 ; deux sorties avec trois vrais efforts (3e ≥ 225), une avec un 3e effort faible (200 < 225), une longue avec durabilité
  ('00000000-0000-4000-8000-00000000000a', 'A 2025 dur 1', 'Ride', '2025-03-01 09:00+00', '{"5": 1000, "300": 300, "1200": 250, "3600": 210, "rep_1": 300, "rep_2": 290, "rep_3": 270}', null),
@@ -26,7 +26,9 @@ insert into public.activities (user_id, name, sport, start_date_local, power_cur
  ('00000000-0000-4000-8000-00000000000b', 'B', 'Ride', '2025-03-01 09:00+00', '{"5": 8000, "300": 800, "rep_1": 800, "rep_3": 790}', null);
 insert into public.daily_metrics (user_id, iso_date, ctl) values
  ('00000000-0000-4000-8000-00000000000a', '2025-02-01', 60), ('00000000-0000-4000-8000-00000000000a', '2025-09-01', 88.46), ('00000000-0000-4000-8000-00000000000a', '2026-02-01', 70),
- ('00000000-0000-4000-8000-00000000000b', '2025-09-01', 150);
+ ('00000000-0000-4000-8000-00000000000b', '2025-09-01', 150),
+ -- compte C : de la charge mais aucune courbe de puissance (pas de capteur)
+ ('00000000-0000-4000-8000-00000000000c', '2024-05-01', 40), ('00000000-0000-4000-8000-00000000000c', '2025-05-01', 55);
 grant select on public.activities, public.daily_metrics to authenticated;
 SQL
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-30_rpc_piliers_annuels.sql
@@ -42,6 +44,8 @@ union all select '2025 : la répétabilité compte les deux sorties à trois vra
 union all select '2025 : charge maximale 88,5 (arrondie à une décimale)', (select ctl_max = 88.5 from rpc_piliers_annuels() where an = 2025)
 union all select '2026 : pas de sortie longue, pas de répétabilité, charge 70', (select late300 is null and late1200 is null and n_longues = 0 and rep_ratio is null and rep_n = 0 and ctl_max = 70 from rpc_piliers_annuels() where an = 2026)
 union all select '2026 : la sortie virtuelle du 31 décembre est comptée', (select w300 = 280 from rpc_piliers_annuels() where an = 2026);
+set request.jwt.claim.sub = '00000000-0000-4000-8000-00000000000c';
+select 'sans capteur de puissance : la charge est quand même rendue (2024 : 40, 2025 : 55)' as controle, (select array_agg(ctl_max order by an) from rpc_piliers_annuels()) = array[40, 55]::numeric[] and (select bool_and(w5 is null and w300 is null) from rpc_piliers_annuels()) as ok;
 set request.jwt.claim.sub = '';
 select 'sans connexion : aucune ligne' as controle, (select count(*) from rpc_piliers_annuels()) = 0 as ok;
 reset role;
