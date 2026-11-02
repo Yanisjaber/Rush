@@ -28,19 +28,25 @@ export interface EvolutionFtp {
 
 /**
  * Évolution de la FTP sur `nbSemaines`, d'après la FTP enregistrée avec chaque sortie (ftp_at_time) : la dernière sortie de la semaine fait foi.
- * Null sans aucune FTP connue sur la période.
+ * Seules comptent les sorties avec un vrai capteur de puissance et une puissance normalisée : la base ne met à jour la FTP que de celles-là,
+ * les autres gardent une FTP « du jour d'import » qui fausserait la courbe.
+ * Si la FTP du profil est renseignée, elle est la valeur d'aujourd'hui (dernier point et `actuelle`), même sans sortie récente.
+ * Null sans aucune FTP connue.
  */
-export function evolutionFtp(seances: Seance[], nbSemaines = 26, aujourdhui: Date = new Date()): EvolutionFtp | null {
+export function evolutionFtp(seances: Seance[], nbSemaines = 26, aujourdhui: Date = new Date(), profilFtp?: unknown): EvolutionFtp | null {
+  const ftpProfil = Number(profilFtp) > 0 ? Math.round(Number(profilFtp)) : null;
   // Par semaine (0 = la plus ancienne), la FTP de la sortie la plus récente
   const parSemaine: { date: string; ftp: number }[] = [];
   for (const s of seances) {
     const ftp = Number(s.ftp_at_time);
-    if (!EST_VELO(s) || !(ftp > 0)) continue;
+    if (!EST_VELO(s) || !(ftp > 0) || s.device_watts !== true || !(Number(s.np) > 0)) continue;
     const i = indexSemaine(s.start_date_local, aujourdhui);
     if (i < 0 || i >= nbSemaines) continue;
     const k = nbSemaines - 1 - i;
     if (!parSemaine[k] || s.start_date_local > parSemaine[k].date) parSemaine[k] = { date: s.start_date_local, ftp };
   }
+  // La FTP du profil vaut pour la semaine en cours
+  if (ftpProfil) parSemaine[nbSemaines - 1] = { date: '9999', ftp: ftpProfil };
   const premier = parSemaine.findIndex((x) => x);
   if (premier < 0) return null;
   const valeurs: number[] = [];

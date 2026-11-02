@@ -26,8 +26,10 @@ test('deniveleParSemaine : somme des mètres, une sortie sans dénivelé compte 
   assert.equal(d.derniere, 1200);
 });
 
+const capteur = (ftp: number): Partial<Seance> => ({ ftp_at_time: ftp, device_watts: true, np: 200 });
+
 test('evolutionFtp : la dernière sortie de la semaine fait foi, une semaine sans sortie garde la FTP d\'avant', () => {
-  const e = evolutionFtp([sortie('a', 22, { ftp_at_time: 240 }), sortie('b', 15, { ftp_at_time: 250 }), sortie('c', 14, { ftp_at_time: 252 }), sortie('d', 1, { ftp_at_time: 260 })], 4, AUJOURDHUI);
+  const e = evolutionFtp([sortie('a', 22, capteur(240)), sortie('b', 15, capteur(250)), sortie('c', 14, capteur(252)), sortie('d', 1, capteur(260))], 4, AUJOURDHUI);
   assert.ok(e);
   assert.deepEqual(e.parSemaine, [240, 252, 252, 260]);
   assert.equal(e.actuelle, 260);
@@ -36,7 +38,7 @@ test('evolutionFtp : la dernière sortie de la semaine fait foi, une semaine san
 });
 
 test('evolutionFtp : une FTP qui ne bouge pas n\'a pas d\'évolution ; sans FTP, null', () => {
-  assert.equal(evolutionFtp([sortie('a', 1, { ftp_at_time: 250 }), sortie('b', 8, { ftp_at_time: 250 })], 4, AUJOURDHUI)?.evolutionPct, null);
+  assert.equal(evolutionFtp([sortie('a', 1, capteur(250)), sortie('b', 8, capteur(250))], 4, AUJOURDHUI)?.evolutionPct, null);
   assert.equal(evolutionFtp([sortie('a', 1)], 4, AUJOURDHUI), null);
 });
 
@@ -51,6 +53,20 @@ test('repartitionPuissance : sans FTP, sans puissance ou hors période, null', (
   assert.equal(repartitionPuissance([sortie('a', 1, { avg_watts: 150 })], null, 4, AUJOURDHUI), null);
   assert.equal(repartitionPuissance([sortie('a', 1)], 200, 4, AUJOURDHUI), null);
   assert.equal(repartitionPuissance([sortie('a', 40, { avg_watts: 150 })], 200, 4, AUJOURDHUI), null);
+});
+
+test('evolutionFtp : une sortie sans capteur (watts estimés ou sans puissance normalisée) est ignorée', () => {
+  const e = evolutionFtp([sortie('a', 9, capteur(250)), sortie('b', 1, { ftp_at_time: 300, device_watts: false, np: 200 }), sortie('c', 2, { ftp_at_time: 300, device_watts: true, np: null })], 4, AUJOURDHUI);
+  assert.deepEqual(e?.parSemaine, [250, 250]);
+  assert.equal(evolutionFtp([sortie('a', 1, { ftp_at_time: 300 })], 4, AUJOURDHUI), null);
+});
+
+test('evolutionFtp : la FTP du profil est la valeur d\'aujourd\'hui, même sans sortie récente ni capteur', () => {
+  const e = evolutionFtp([sortie('a', 15, capteur(250))], 4, AUJOURDHUI, 262);
+  assert.deepEqual(e?.parSemaine, [250, 250, 262]);
+  assert.equal(e?.actuelle, 262);
+  assert.equal(e?.evolutionPct, 4.8);
+  assert.deepEqual(evolutionFtp([], 4, AUJOURDHUI, 262)?.parSemaine, [262]); // aucune sortie : juste la FTP du profil
 });
 
 test('ftpReference : le profil d\'abord, sinon la sortie la plus récente', () => {

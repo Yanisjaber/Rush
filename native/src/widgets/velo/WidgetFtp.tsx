@@ -9,10 +9,10 @@ import { avecAlpha } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Ta FTP au fil des semaines, d'après celle enregistrée avec chacune de tes sorties à vélo (26 semaines).
+// Ta FTP au fil des semaines, d'après celle enregistrée avec chacune de tes sorties à vélo avec capteur (26 semaines) ; aujourd'hui = la FTP de ton profil si elle est renseignée.
 export function WidgetFtp({ contexte, taille = 'm' }: WidgetProps) {
   const p = usePalette();
-  const e = evolutionFtp(contexte.toutesSeances);
+  const e = evolutionFtp(contexte.toutesSeances, 26, new Date(), contexte.profil?.ftp);
   const evolution = e?.evolutionPct != null ? `${e.evolutionPct > 0 ? '+' : ''}${e.evolutionPct.toString().replace('.', ',')} % en 6 mois` : e ? 'stable' : '';
   const monte = !!e && (e.evolutionPct ?? 0) > 0;
   // Une courbe a besoin d'au moins deux points
@@ -50,7 +50,7 @@ export function WidgetFtp({ contexte, taille = 'm' }: WidgetProps) {
             <StatCle etiquette="Aujourd'hui" valeur={String(e.actuelle)} unite="W" petit />
             <StatCle etiquette="Record" valeur={String(e.meilleure)} unite="W" petit />
           </View>
-          <Text style={[typo.petit, { color: p.texteDoux, marginTop: 10 }]}>La FTP enregistrée avec ta dernière sortie de chaque semaine. Sans sortie, elle reste celle d'avant.</Text>
+          <Text style={[typo.petit, { color: p.texteDoux, marginTop: 10 }]}>La FTP enregistrée avec ta dernière sortie avec capteur de chaque semaine (celle de ton profil pour aujourd'hui). Sans sortie, elle reste celle d'avant.</Text>
         </>
       ) : (
         <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de FTP enregistrée avec tes sorties à vélo.</Text>
