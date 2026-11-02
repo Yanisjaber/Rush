@@ -19,7 +19,7 @@ La natation et la musculation gardent leur écran : leur comparaison est fixée 
 Un 5 min ou un 20 min isolé ne dit pas qui est le coureur. Sur le vélo, la page Progrès montre le **niveau global** sur une seule page qui défile (code : `NiveauGlobalVelo.tsx` ; calcul : `piliers-niveau.ts`) :
 1. **Le niveau de l'année** en taille normale (« 80 / 100 », variation depuis l'an dernier, meilleur) ;
 2. **Score par année** : la courbe du score global, le score sur chaque point ;
-3. **Piliers par année** : la **carte de chaleur** (`ChaleurPiliers.tsx`) : une ligne par pilier, une colonne par année, plus la case est bleue plus la note est haute (les 4 dernières années, « Tout l'historique » pour toutes, à faire défiler de côté). Le texte de chaque case est choisi pour rester lisible sur sa teinte (`theme/contraste.ts`) ;
+3. **Piliers par année** : la **carte de chaleur** (`ChaleurPiliers.tsx`) : une ligne par année (la plus récente en haut), une colonne par pilier (noms abrégés : Puiss., Endur., Durab., Répét., Charge), plus la case est bleue plus la note est haute (les 4 dernières années, « Tout l'historique » ajoute les autres en dessous). Le texte de chaque case est choisi pour rester lisible sur sa teinte (`theme/contraste.ts`) ;
 4. **La courbe des niveaux** : le sélecteur Sprint, 5, 20, 60 min, Endurance et sa courbe (`ProgresNiveau` en mode `courbeSeule`, sans dossard, liste, calcul ni phrase sous la courbe).
 
 Le score global est la **moyenne des piliers mesurés** (au moins 2). Chaque pilier va de 0 à 100 :
