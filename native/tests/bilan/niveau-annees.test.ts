@@ -210,15 +210,11 @@ test('pointsDepuis : la fenêtre des dernières années, ou tout s\'il n\'en res
   assert.ok(trois.every((p) => p.an >= 2023));
   // Une fenêtre qui ne garde qu'un point : on montre tout plutôt qu'un point seul
   assert.equal(pointsDepuis(serie.annuel, 2025).length, 4);
-  // Une fenêtre qui finit sur une année passée : elle s'arrête sur le premier point d'après (2025), pas plus loin
-  assert.deepEqual(pointsDepuis(serie.annuel, 2020, 2023).map((p) => p.an), [2022, 2023, 2024]);
-  const t2023 = pointsDepuis(serie.tranches, 2023, 2023);
-  assert.deepEqual(t2023.map((p) => p.an), [2023, 2023, 2023, 2023, 2024]);
-  assert.equal(t2023[4].cle, serie.tranches.find((p) => p.an === 2024)!.cle); // le 1er trimestre de 2024
-  // L'année choisie est la dernière mesurée : rien d'autre
-  assert.deepEqual(pointsDepuis(serie.annuel, 2023, 2025).map((p) => p.an), [2023, 2024, 2025]);
-  // Un seul point dans la fenêtre : tous les points jusqu'à l'année choisie, plus le premier d'après
-  assert.deepEqual(pointsDepuis(serie.annuel, 2024, 2024).map((p) => p.an), [2022, 2023, 2024, 2025]);
+  // Une fenêtre qui finit sur l'année choisie : rien après elle
+  const jusqua2024 = pointsDepuis(serie.annuel, 2020, 2024);
+  assert.deepEqual(jusqua2024.map((p) => p.an), [2022, 2023, 2024]);
+  // Un seul point dans la fenêtre : tous les points jusqu'à l'année choisie, jamais ceux d'après
+  assert.deepEqual(pointsDepuis(serie.annuel, 2024, 2024).map((p) => p.an), [2022, 2023, 2024]);
   // Rien de mesuré jusqu'à l'année choisie : pas de courbe
   assert.equal(aDeQuoiTracer(serie.annuel, 2021), false);
   assert.equal(aDeQuoiTracer(serie.annuel, 2022), false);

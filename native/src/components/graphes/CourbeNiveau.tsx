@@ -94,8 +94,7 @@ export function CourbeNiveau({ serie, mode, depuisAn, jusquAn, couleur, etiquett
           </>
         ) : null}
 
-        {/* Les années sous la courbe ; pas celle d'après une année passée (seul son 1er point est montré, son nom collerait à l'année choisie) */}
-        {amincirReperes(reperesAnnees(positions).filter((r) => jusquAn === undefined || r.an <= jusquAn).map((r) => ({ an: r.an, x: x(r.t) })), 36).map((r) => (
+        {amincirReperes(reperesAnnees(positions).map((r) => ({ an: r.an, x: x(r.t) })), 36).map((r) => (
           <TexteSvg key={r.an} x={r.x} y={HAUTEUR - 8} fontSize={12} fontFamily={police.texte500} fill={p.texteDoux} textAnchor="middle">{r.an}</TexteSvg>
         ))}
       </Svg>
