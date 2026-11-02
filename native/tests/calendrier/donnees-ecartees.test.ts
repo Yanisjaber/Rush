@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chargeRetenue, COLONNES_ECART, DONNEE_DU_CHIFFRE, estEcartee, pucesEcart, sansDonneesEcartees } from '../../src/data/calendrier/donnees-ecartees.ts';
+import { chargeRetenue, chiffreEcarte, COLONNES_ECART, DONNEES_DU_CHIFFRE, estEcartee, pucesEcart, sansDonneesEcartees } from '../../src/data/calendrier/donnees-ecartees.ts';
 import { chiffresSeance } from '../../src/data/calendrier/seance-detail.ts';
 import { sortiesCourse } from '../../src/data/bilan/progression-course.ts';
 import { sortiesVelo } from '../../src/data/bilan/progression-velo.ts';
@@ -13,13 +13,13 @@ const velo = (extra: Partial<Seance> = {}): Seance => ({
 });
 
 test('pucesEcart : une puce par donnée que la séance a, dans l\'ordre de l\'écran', () => {
-  assert.deepEqual(pucesEcart(velo()).map((p) => p.cle), ['puissance', 'cardio', 'cadence', 'distance', 'denivele', 'charge']);
+  assert.deepEqual(pucesEcart(velo()).map((p) => p.cle), ['duree', 'puissance', 'cardio', 'cadence', 'distance', 'denivele', 'charge']);
   // Une course à pied sans capteur de puissance ni cadence : ni puissance ni cadence
   const course = velo({ sport: 'Run', avg_watts: null, np: null, avg_cadence: null, device_watts: null });
-  assert.deepEqual(pucesEcart(course).map((p) => p.cle), ['cardio', 'distance', 'denivele', 'charge']);
-  // Une séance de musculation à la main : seulement la charge
+  assert.deepEqual(pucesEcart(course).map((p) => p.cle), ['duree', 'cardio', 'distance', 'denivele', 'charge']);
+  // Une séance de musculation à la main : la durée et la charge
   const muscu = velo({ sport: 'WeightTraining', distance_km: null, total_elevation_gain: null, avg_heartrate: null, avg_watts: null, np: null, avg_cadence: null });
-  assert.deepEqual(pucesEcart(muscu).map((p) => p.cle), ['charge']);
+  assert.deepEqual(pucesEcart(muscu).map((p) => p.cle), ['duree', 'charge']);
 });
 
 test('pucesEcart : une donnée déjà écartée reste proposée, même si ses chiffres n\'y sont plus (pour pouvoir la remettre)', () => {
@@ -41,6 +41,8 @@ test('chargeRetenue : la charge vient de la puissance, sinon du cardio ; écarte
   assert.equal(chargeRetenue({ ...courseAuCardio, excl_hr: true }), null); // charge calculée avec le cardio
   assert.equal(chargeRetenue({ ...courseAuCardio, excl_power: true }), 55); // pas de puissance : écarter la puissance ne change rien
   assert.equal(chargeRetenue(velo({ excl_load: true })), null);
+  assert.equal(chargeRetenue(velo({ excl_duration: true })), null); // toute charge se calcule avec la durée
+  assert.equal(chargeRetenue({ ...courseAuCardio, excl_duration: true }), null);
   // Musculation : ni puissance ni cardio, la charge vient de l'effort ressenti : seul « charge » la retire
   const muscu = velo({ sport: 'WeightTraining', avg_watts: null, np: null, avg_heartrate: null, tss: 40 });
   assert.equal(chargeRetenue({ ...muscu, excl_hr: true, excl_power: true }), 40);
@@ -83,13 +85,40 @@ test('sansDonneesEcartees : rien d\'écarté = la même séance (pas de copie)',
 });
 
 test('COLONNES_ECART : une colonne par donnée écartable', () => {
-  assert.equal(new Set(COLONNES_ECART).size, 6);
-  assert.deepEqual([...new Set(Object.values(DONNEE_DU_CHIFFRE))].sort(), ['cadence', 'cardio', 'charge', 'denivele', 'distance', 'puissance']);
+  assert.equal(new Set(COLONNES_ECART).size, 7);
+  assert.deepEqual([...new Set(Object.values(DONNEES_DU_CHIFFRE).flat())].sort(), ['cadence', 'cardio', 'denivele', 'distance', 'duree', 'puissance']);
 });
 
 test('chaque chiffre de l\'écran est relié à la donnée dont il vient', () => {
   const cles = chiffresSeance(velo()).map((c) => c.cle);
-  for (const cle of cles) if (cle !== 'duree' && cle !== 'rpe') assert.ok(DONNEE_DU_CHIFFRE[cle], `${cle} n'a pas de donnée`);
+  for (const cle of cles) if (cle !== 'rpe' && cle !== 'charge') assert.ok(DONNEES_DU_CHIFFRE[cle], `${cle} n'a pas de donnée`);
+});
+
+test('chiffreEcarte : le chiffre est barré dès que l\'une de ses données est écartée', () => {
+  assert.equal(chiffreEcarte(velo(), 'distance'), false);
+  assert.equal(chiffreEcarte(velo({ excl_distance: true }), 'distance'), true);
+  // La vitesse est une distance divisée par une durée : l'une ou l'autre l'écarte
+  assert.equal(chiffreEcarte(velo({ excl_distance: true }), 'vitesse'), true);
+  assert.equal(chiffreEcarte(velo({ excl_duration: true }), 'vitesse'), true);
+  assert.equal(chiffreEcarte(velo({ excl_duration: true }), 'duree'), true);
+  assert.equal(chiffreEcarte(velo({ excl_duration: true }), 'distance'), false);
+  // La charge : écartée avec la durée, avec sa source (ici la puissance), ou toute seule ; pas avec le cardio quand elle vient de la puissance
+  assert.equal(chiffreEcarte(velo(), 'charge'), false);
+  assert.equal(chiffreEcarte(velo({ excl_duration: true }), 'charge'), true);
+  assert.equal(chiffreEcarte(velo({ excl_power: true }), 'charge'), true);
+  assert.equal(chiffreEcarte(velo({ excl_hr: true }), 'charge'), false);
+  assert.equal(chiffreEcarte(velo({ excl_load: true }), 'charge'), true);
+  assert.equal(chiffreEcarte(velo({ tss: null, excl_load: true }), 'charge'), false); // pas de charge à barrer
+});
+
+test('sansDonneesEcartees : une durée écartée vaut 0 minute, sans vitesse, et retire la charge', () => {
+  const r = sansDonneesEcartees(velo({ excl_duration: true, elapsed_time: 8000 }));
+  assert.equal(r.moving_time, 0);
+  assert.equal(r.elapsed_time, null);
+  assert.equal(r.avg_speed_kmh, null);
+  assert.equal(r.tss, null);
+  assert.equal(r.distance_km, 60);
+  assert.equal(r.avg_watts, 190);
 });
 
 test('les progressions ignorent ce qui est écarté, avec ou sans masque', () => {
@@ -98,10 +127,13 @@ test('les progressions ignorent ce qui est écarté, avec ou sans masque', () =>
   assert.equal(sortiesVelo([velo({ excl_power: true })], null).length, 0);
   assert.equal(sortiesVelo([sansDonneesEcartees(velo({ excl_power: true }))], null).length, 0);
   assert.equal(sortiesVelo([velo({ excl_hr: true })], null).length, 0);
+  assert.equal(sortiesVelo([velo({ excl_duration: true })], null).length, 0);
+  assert.equal(sortiesVelo([sansDonneesEcartees(velo({ excl_duration: true }))], null).length, 0);
   const course = velo({ sport: 'Run', distance_km: 10, moving_time: 3000, avg_watts: null, np: null, total_elevation_gain: 50 });
   assert.equal(sortiesCourse([course], null).length, 1);
   assert.equal(sortiesCourse([{ ...course, excl_distance: true }], null).length, 0);
   assert.equal(sortiesCourse([{ ...course, excl_hr: true }], null).length, 0);
+  assert.equal(sortiesCourse([{ ...course, excl_duration: true }], null).length, 0);
   assert.equal(sortiesCourse([{ ...course, excl_elevation: true }], null).length, 0); // l'allure ne se corrige plus sans le dénivelé
   assert.equal(sortiesCourse([sansDonneesEcartees({ ...course, excl_elevation: true })], null).length, 0);
 });

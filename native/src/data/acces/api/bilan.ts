@@ -10,7 +10,7 @@ import { avecRetouches } from './retouches-cache';
 // ---------------------------------------------------------------------------
 
 // np, avg_watts et avg_heartrate servent à savoir d'où vient la charge (puissance ou cardio) quand l'une des deux est écartée
-const COLONNES_BILAN = 'id,strava_id,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,tss,np,avg_watts,avg_heartrate,excl_power,excl_hr,excl_distance,excl_elevation,excl_load';
+const COLONNES_BILAN = 'id,strava_id,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,tss,np,avg_watts,avg_heartrate,excl_power,excl_hr,excl_distance,excl_elevation,excl_load,excl_duration';
 const TAILLE_PAGE = 1000; // l'API renvoie au plus 1000 lignes par requête : on lit par pages
 
 const PAGES_MAX = 100; // garde-fou : 100 000 activités ; au-delà, on le dit au lieu d'afficher un bilan tronqué

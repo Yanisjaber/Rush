@@ -34,6 +34,7 @@ export interface SeanceCourse {
   excl_hr?: boolean | null;
   excl_distance?: boolean | null;
   excl_elevation?: boolean | null;
+  excl_duration?: boolean | null;
 }
 
 /** Courses à pied seulement : l'elliptique et la machine d'escalier sont dans la famille « course » mais n'ont pas d'allure. */
@@ -57,7 +58,7 @@ export function sortiesCourse(seances: readonly SeanceCourse[], hrMax: number | 
   const [bas, haut] = hrMax ? [hrMax * PLAGE_FC_MAX[0], hrMax * PLAGE_FC_MAX[1]] : PLAGE_FC_SANS_MAX;
   const sorties: SortieCourse[] = [];
   for (const s of seances) {
-    if (!SPORTS_COURSE.has(s.sport) || s.excl_hr || s.excl_distance) continue;
+    if (!SPORTS_COURSE.has(s.sport) || s.excl_hr || s.excl_distance || s.excl_duration) continue;
     if (s.excl_elevation && s.sport !== 'VirtualRun') continue; // dénivelé écarté : l'allure ne se corrige plus, comme sans dénivelé
     const km = Number(s.distance_km);
     const fc = Number(s.avg_heartrate);

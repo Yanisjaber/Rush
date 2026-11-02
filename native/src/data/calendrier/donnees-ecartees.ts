@@ -5,12 +5,12 @@
 // lui, lit la séance entière et barre ce qui est écarté. Côté base : supabase/migrations/2026-11-02_donnees_ecartees.sql (mêmes règles).
 import type { Seance } from '../types.ts';
 
-export type DonneeEcartable = 'puissance' | 'cardio' | 'cadence' | 'distance' | 'denivele' | 'charge';
+export type DonneeEcartable = 'duree' | 'puissance' | 'cardio' | 'cadence' | 'distance' | 'denivele' | 'charge';
 
 /** Les colonnes de `activities` qui portent les drapeaux (vrai = écartée). */
-export type ColonneEcart = 'excl_power' | 'excl_hr' | 'excl_cadence' | 'excl_distance' | 'excl_elevation' | 'excl_load';
+export type ColonneEcart = 'excl_duration' | 'excl_power' | 'excl_hr' | 'excl_cadence' | 'excl_distance' | 'excl_elevation' | 'excl_load';
 
-export const COLONNES_ECART: readonly ColonneEcart[] = ['excl_power', 'excl_hr', 'excl_cadence', 'excl_distance', 'excl_elevation', 'excl_load'];
+export const COLONNES_ECART: readonly ColonneEcart[] = ['excl_duration', 'excl_power', 'excl_hr', 'excl_cadence', 'excl_distance', 'excl_elevation', 'excl_load'];
 
 export interface PuceEcart {
   cle: DonneeEcartable;
@@ -24,6 +24,7 @@ const aDeLaPuissance = (s: Seance): boolean => positif(s.np) || positif(s.avg_wa
 
 // L'ordre est celui des puces à l'écran
 const DONNEES: { cle: DonneeEcartable; libelle: string; colonne: ColonneEcart; presente: (s: Seance) => boolean }[] = [
+  { cle: 'duree', libelle: 'Durée', colonne: 'excl_duration', presente: (s) => positif(s.moving_time) },
   { cle: 'puissance', libelle: 'Puissance', colonne: 'excl_power', presente: aDeLaPuissance },
   { cle: 'cardio', libelle: 'Cardio', colonne: 'excl_hr', presente: (s) => positif(s.avg_heartrate) },
   { cle: 'cadence', libelle: 'Cadence', colonne: 'excl_cadence', presente: (s) => positif(s.avg_cadence) },
@@ -43,26 +44,33 @@ export function pucesEcart(s: Seance): PuceEcart[] {
   return DONNEES.filter((d) => d.presente(s) || s[d.colonne] === true).map((d) => ({ cle: d.cle, libelle: d.libelle, colonne: d.colonne, ecartee: s[d.colonne] === true }));
 }
 
-/** Le chiffre d'une séance (clé de `chiffresSeance`) et la donnée dont il vient : de quoi le barrer quand elle est écartée. */
-export const DONNEE_DU_CHIFFRE: Readonly<Record<string, DonneeEcartable>> = {
-  distance: 'distance',
-  allure: 'distance',
-  vitesse: 'distance',
-  denivele: 'denivele',
-  fc: 'cardio',
-  watts: 'puissance',
-  energie: 'puissance',
-  cadence: 'cadence',
-  charge: 'charge',
+/** Les données dont vient chaque chiffre de l'écran (clé de `chiffresSeance`) : un chiffre est écarté dès qu'une seule d'entre elles l'est. */
+export const DONNEES_DU_CHIFFRE: Readonly<Record<string, readonly DonneeEcartable[]>> = {
+  duree: ['duree'],
+  distance: ['distance'],
+  allure: ['distance', 'duree'], // l'allure et la vitesse sont une distance divisée par une durée
+  vitesse: ['distance', 'duree'],
+  denivele: ['denivele'],
+  fc: ['cardio'],
+  watts: ['puissance'],
+  energie: ['puissance'],
+  cadence: ['cadence'],
+  // « charge » n'est pas dans la table : elle est écartée dès que `chargeRetenue` la retire (durée, charge, ou sa source)
 };
+
+/** Ce chiffre de l'écran est-il écarté des calculs ? (de quoi le barrer) */
+export function chiffreEcarte(s: Seance, cleChiffre: string): boolean {
+  if (cleChiffre === 'charge') return positif(s.tss) && chargeRetenue(s) === null;
+  return (DONNEES_DU_CHIFFRE[cleChiffre] ?? []).some((d) => estEcartee(s, d));
+}
 
 /**
  * La charge (tss) qui compte vraiment : elle vient de la puissance si la séance en a, sinon du cardio, sinon de l'effort ressenti.
  * Écarter la puissance retire donc la charge d'une séance qui en a ; écarter le cardio, celle d'une séance sans puissance qui a du cardio ;
- * écarter la charge la retire toujours. (Même règle que `tss_retenu` en SQL.) Null = elle ne compte pas.
+ * écarter la durée ou la charge la retire toujours. (Même règle que `tss_retenu` en SQL.) Null = elle ne compte pas.
  */
 export function chargeRetenue(s: Seance): number | null {
-  if (s.excl_load) return null;
+  if (s.excl_load || s.excl_duration) return null; // toute charge se calcule avec la durée
   if (s.excl_power && aDeLaPuissance(s)) return null;
   if (s.excl_hr && !aDeLaPuissance(s) && positif(s.avg_heartrate)) return null;
   return s.tss;
@@ -75,6 +83,11 @@ export function chargeRetenue(s: Seance): number | null {
 export function sansDonneesEcartees<T extends Seance>(s: T): T {
   if (!COLONNES_ECART.some((c) => s[c] === true)) return s;
   const r: T = { ...s, tss: chargeRetenue(s) };
+  if (s.excl_duration) {
+    r.moving_time = 0; // les sommes ajoutent 0 ; les progressions, qui demandent une durée minimale, passent leur tour
+    r.elapsed_time = null;
+    r.avg_speed_kmh = null; // une vitesse est une distance divisée par une durée
+  }
   if (s.excl_power) {
     r.avg_watts = null;
     r.np = null;

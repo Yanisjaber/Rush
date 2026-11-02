@@ -9,7 +9,7 @@ import { IconeSport } from '@/components/ui/IconeSport';
 import { PucesEcart } from '@/components/ui/PucesEcart';
 import { StatCle } from '@/components/ui/StatCle';
 import { sortieModifiable } from '@/data/calendrier/ajouts';
-import { DONNEE_DU_CHIFFRE, estEcartee, pucesEcart } from '@/data/calendrier/donnees-ecartees';
+import { chiffreEcarte, pucesEcart } from '@/data/calendrier/donnees-ecartees';
 import { familleAffichage } from '@/data/sports/familles';
 import { formatDateLongue } from '@/data/outils/format';
 import { chiffresSeance, lignesTours } from '@/data/calendrier/seance-detail';
@@ -99,7 +99,7 @@ export default function Seance() {
           <View style={styles.grille}>
             {chiffres.map((c) => (
               <View key={c.cle} style={styles.case}>
-                <StatCle etiquette={c.libelle} valeur={c.valeur} unite={c.unite} note={c.note} petit ecarte={DONNEE_DU_CHIFFRE[c.cle] ? estEcartee(seance, DONNEE_DU_CHIFFRE[c.cle]) : false} />
+                <StatCle etiquette={c.libelle} valeur={c.valeur} unite={c.unite} note={c.note} petit ecarte={chiffreEcarte(seance, c.cle)} />
               </View>
             ))}
           </View>

@@ -18,6 +18,9 @@ SQL
 # Deux fois : la migration est relançable
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-02_donnees_ecartees.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-02_donnees_ecartees.sql
+# La durée écartable arrive dans une seconde migration, elle aussi relançable
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-02_duree_ecartable.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-02_duree_ecartable.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 <<'SQL'
 -- Charge : un jour par activité (le compte A) ; la charge de chaque jour doit refléter ce qui est écarté
 insert into public.activities (user_id, name, sport, start_date_local, moving_time, tss, np, avg_watts, avg_heartrate, excl_power, excl_hr, excl_load) values
@@ -27,6 +30,8 @@ insert into public.activities (user_id, name, sport, start_date_local, moving_ti
  ('00000000-0000-4000-8000-00000000000a', 'j4 charge écartée', 'Ride', '2026-01-04 09:00+00', 3600, 50, 150, 140, 130, null, null, true),
  ('00000000-0000-4000-8000-00000000000a', 'j5 cardio écarté mais la charge vient de la puissance', 'Ride', '2026-01-05 09:00+00', 3600, 70, 190, 180, 135, null, true, null),
  ('00000000-0000-4000-8000-00000000000a', 'j6 puissance écartée mais sans puissance : la charge reste', 'Run', '2026-01-06 09:00+00', 3600, 40, null, null, 145, true, null, null);
+insert into public.activities (user_id, name, sport, start_date_local, moving_time, tss, np, avg_watts, avg_heartrate, excl_duration) values
+ ('00000000-0000-4000-8000-00000000000a', 'j7 durée écartée : toute charge dépend de la durée', 'Ride', '2026-01-07 09:00+00', 3600, 55, 170, 160, 130, true);
 select public.recalc_daily_metrics('00000000-0000-4000-8000-00000000000a');
 SQL
 bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
@@ -36,9 +41,14 @@ select 'tss_retenu : 5 cas' as controle,
    and public.tss_retenu(60, 180, 170, 140, null, null, null) = 60
    and public.tss_retenu(50, 150, 140, 130, null, null, true) = 0
    and public.tss_retenu(70, 190, 180, 135, null, true, null) = 70
-   and public.tss_retenu(null, null, null, null, null, null, null) = 0) as ok
-union all select 'charge : ce qui est écarté ne compte plus, le reste compte (0, 0, 60, 0, 70, 40)',
-  (select array_agg(tss order by iso_date) from public.daily_metrics where user_id = '00000000-0000-4000-8000-00000000000a') = array[0, 0, 60, 0, 70, 40]::numeric[]
+   and public.tss_retenu(null, null, null, null, null, null, null) = 0
+   and public.tss_retenu(60, 180, 170, 140, null, null, null, true) = 0
+   and public.tss_retenu(60, 180, 170, 140, null, null, null, false) = 60) as ok
+union all select 'charge : ce qui est écarté ne compte plus, le reste compte (0, 0, 60, 0, 70, 40, 0 : la durée écartée retire la charge)',
+  (select array_agg(tss order by iso_date) from public.daily_metrics where user_id = '00000000-0000-4000-8000-00000000000a') = array[0, 0, 60, 0, 70, 40, 0]::numeric[]
+union all select 'minutes du jour : 60 min un jour normal, 0 le jour de la durée écartée',
+  (select duration_min from public.daily_metrics where user_id = '00000000-0000-4000-8000-00000000000a' and iso_date = '2026-01-03') = 60
+  and (select duration_min from public.daily_metrics where user_id = '00000000-0000-4000-8000-00000000000a' and iso_date = '2026-01-07') = 0
 union all select 'charge : la forme (ctl) du jour 3 vient de la charge retenue (0, 0, 60) : 2/43 × 60 (arrondi) = 2.8',
   (select ctl = 2.8 from public.daily_metrics where user_id = '00000000-0000-4000-8000-00000000000a' and iso_date = '2026-01-03');
 SQL
@@ -56,6 +66,8 @@ insert into public.activities (user_id, name, sport, start_date_local, moving_ti
   '{"5": 700, "300": 290, "7200": 195, "derive": 20.0}',
   '{"fc": {"60": 220}, "cad": {"60": 120}}', null, true, null),
  ('00000000-0000-4000-8000-00000000000a', 'distance faussée', 'Ride', '2025-05-04 09:00+00', 8000, 400, 700, 1300, 60, 200, 190, true, 138, '{"5": 600}', '{"vit": {"60": 120}}', null, null, true);
+insert into public.activities (user_id, name, sport, start_date_local, moving_time, distance_km, excl_duration) values
+ ('00000000-0000-4000-8000-00000000000a', 'durée faussée', 'Ride', '2025-05-05 09:00+00', 30000, 50, true);
 -- Le dénivelé et la cadence : les colonnes viennent de la migration
 update public.activities set excl_elevation = true where name = 'puissance faussée';
 update public.activities set excl_cadence = true where name = 'cardio faussé';
@@ -84,12 +96,14 @@ union all select 'sorties à vélo : les données écartées reviennent vides (k
   and (select (avg_heartrate is null and avg_watts = 195) from rpc_sorties_velo() where name = 'cardio faussé')
   and (select (distance_km is null and avg_watts = 190) from rpc_sorties_velo() where name = 'distance faussée')
 union all select 'sorties à vélo : la sortie normale est inchangée', (select (distance_km, kj, tss, avg_watts, avg_heartrate, total_elevation_gain) = (80, 1500, 77, 200, 140, 900) from rpc_sorties_velo() where name = 'normale')
+union all select 'sorties à vélo : la durée écartée revient vide, la distance reste ; la durée de la normale est inchangée',
+  (select moving_time is null and distance_km = 50 from rpc_sorties_velo() where name = 'durée faussée') and (select moving_time = 8000 from rpc_sorties_velo() where name = 'normale')
 union all select 'sorties à vélo : la charge (tss) d''une sortie à puissance écartée est vide', (select tss is null from rpc_sorties_velo() where name = 'puissance faussée');
 -- Les autres comptes ne voient rien de A
 set request.jwt.claim.sub = '00000000-0000-4000-8000-00000000000b';
 select 'compte B : aucune ligne (courbes, mesures, sorties)' as controle, (select count(*) from rpc_piliers_annuels()) = 0 and (select count(*) from rpc_courbe_puissance()) = 0 and (select count(*) from rpc_sorties_velo()) = 0 as ok;
 reset role;
 set role anon;
-select 'anon refusé' as controle, not has_function_privilege('anon', 'public.rpc_sorties_velo()', 'execute') and not has_function_privilege('anon', 'public.tss_retenu(numeric, numeric, numeric, numeric, boolean, boolean, boolean)', 'execute') as ok;
+select 'anon refusé' as controle, not has_function_privilege('anon', 'public.rpc_sorties_velo()', 'execute') and not has_function_privilege('anon', 'public.tss_retenu(numeric, numeric, numeric, numeric, boolean, boolean, boolean, boolean)', 'execute') as ok;
 SQL
 bash $H stop >/dev/null 2>&1 || true

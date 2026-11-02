@@ -32,6 +32,7 @@ export interface SeanceVelo {
   device_watts?: boolean | null;
   excl_power?: boolean | null;
   excl_hr?: boolean | null;
+  excl_duration?: boolean | null;
 }
 
 const SPORTS_VELO = new Set(['Ride', 'GravelRide', 'MountainBikeRide', 'VirtualRide']);
@@ -56,7 +57,7 @@ export function sortiesVelo(seances: readonly SeanceVelo[], hrMax: number | null
   const sorties: SortieVelo[] = [];
   for (const s of seances) {
     if (!SPORTS_VELO.has(s.sport)) continue; // inclut les sports de la famille vélo sauf le vélo électrique (sa puissance n'est pas la tienne)
-    if (s.device_watts === false || s.excl_power || s.excl_hr) continue; // puissance estimée par Strava, ou données que l'utilisateur a écartées
+    if (s.device_watts === false || s.excl_power || s.excl_hr || s.excl_duration) continue; // puissance estimée par Strava, ou données que l'utilisateur a écartées
     const np = Number(s.np);
     const watts = np > 0 ? np : Number(s.avg_watts);
     const fc = Number(s.avg_heartrate);

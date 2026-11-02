@@ -22,6 +22,7 @@ export interface Seance {
   excl_power?: boolean | null;
   excl_hr?: boolean | null;
   excl_distance?: boolean | null;
+  excl_duration?: boolean | null;
   excl_elevation?: boolean | null;
   excl_cadence?: boolean | null;
   excl_load?: boolean | null;
