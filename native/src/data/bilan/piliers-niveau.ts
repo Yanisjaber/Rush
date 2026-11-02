@@ -8,7 +8,8 @@
 //   durabilité   : garder sa puissance fatigué : meilleur 5 et 20 min après 2 h 30 de sortie, divisé par le meilleur à froid (100 = aucune perte, 0 = 30 % de perte) ;
 //   répétabilité : reproduire les efforts : dans une sortie, le 3e effort de 5 min divisé par le 1er (même échelle). Un « vrai effort » vaut au moins 50 % de ton meilleur 5 min
 //                  de TOUS LES TEMPS (calculé côté base) : répéter des efforts faciles ne donne pas de note ;
-//   charge       : encaisser et enchaîner l'entraînement : la charge chronique (CTL) maximale de l'année (100 = ta meilleure année).
+//   charge       : encaisser et enchaîner l'entraînement : la charge chronique (CTL) maximale de l'année (100 = ta meilleure année, 0 à 40 % de ta meilleure année :
+//                  une échelle plus douce que les autres piliers, car la charge est une quantité d'entraînement, pas un niveau de performance : passer de 52 à 91 est presque doubler).
 // Une note existe toujours (2 nov. 2026) : quand il manque des sorties pour la juger, la note est calculée avec ce qu'il y a puis RÉDUITE de la part qui manque
 // (2 sorties sur les 3 demandées = 2/3 de la note ; aucune = 0). Chaque note a sa « preuve » (de 0 à 1) : 1 = toutes les sorties demandées sont là. L'écran marque
 // les notes à preuve incomplète. Le score global est la moyenne des 5 notes, preuve incomplète comprise.
@@ -102,6 +103,10 @@ const moyenne = (v: number[]): number | null => (v.length ? v.reduce((s, x) => s
 /** Les puissances d'une année sont fiables seulement avec assez de sorties avec capteur. */
 const puissanceFiable = (m: MesuresAnnee): boolean => m.nCourbes >= SORTIES_MINI_PUISSANCE;
 const meilleurDe = (valeurs: (number | null)[]): number => Math.max(0, ...valeurs.filter((v): v is number => v !== null));
+/** La charge est notée de 0 (40 % de ta meilleure année ou moins) à 100 (ta meilleure année) : plus douce que `noteDe` (0 à 70 %), voir l'en-tête. */
+export const CHARGE_ZERO = 0.4;
+export const noteChargeDe = (rapport: number): number => Math.max(0, Math.min(100, ((rapport - CHARGE_ZERO) / (1 - CHARGE_ZERO)) * 100));
+
 /** La part de preuve : `n` sorties sur les `requis` demandées, entre 0 et 1. */
 export const preuveDe = (n: number, requis: number): number => Math.max(0, Math.min(1, n / requis));
 
@@ -153,7 +158,7 @@ export function niveauGlobal(mesures: readonly MesuresAnnee[]): NiveauGlobal | n
     const notesEndurance = [endurance.puissanceLongue, endurance.derive, endurance.volume].filter((v): v is number => v !== null);
     const preuveEndurance = preuveDe(notesEndurance.length, NOTES_MINI_ENDURANCE);
 
-    const charge = m.ctlMax !== null && meilleurs.ctl > 0 ? noteDe(m.ctlMax / meilleurs.ctl) : 0;
+    const charge = m.ctlMax !== null && meilleurs.ctl > 0 ? noteChargeDe(m.ctlMax / meilleurs.ctl) : 0;
 
     const piliers: NotesPiliers = { puissance, endurance: (moyenne(notesEndurance) ?? 0) * preuveEndurance, durabilite, repetabilite, charge };
     const preuves: PreuvesPiliers = { puissance: preuvePuissance, endurance: preuveEndurance, durabilite: preuveDurabilite, repetabilite: preuveRepetabilite, charge: m.ctlMax !== null ? 1 : 0 };

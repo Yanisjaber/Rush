@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { PointNiveau, SerieNiveau } from '../../src/data/bilan/niveau-annees.ts';
-import { ecartsPiliers, niveauGlobal, preuveDe, recordsDeMesures, type MesuresAnnee } from '../../src/data/bilan/piliers-niveau.ts';
+import { CHARGE_ZERO, ecartsPiliers, niveauGlobal, noteChargeDe, preuveDe, recordsDeMesures, type MesuresAnnee } from '../../src/data/bilan/piliers-niveau.ts';
 
 const mesure = (an: number, extra: Partial<MesuresAnnee> = {}): MesuresAnnee => ({
   an, w5: null, w300: null, w1200: null, w3600: null, late300: null, late1200: null, nLongues: 0, repRatio: null, repN: 0, ctlMax: null, nCourbes: 50, w7200: null, w10800: null, deriveMed: null, nDerive: 0, heuresLongues: 0, ...extra,
@@ -29,7 +29,7 @@ test('niveauGlobal : les cinq piliers de chaque année et leur moyenne (vraies m
   const par = Object.fromEntries(g.annees.map((a) => [a.an, a]));
   assert.ok(Math.abs(par[2025].global! - 83) <= 2, `2025 : ${par[2025].global}`);
   assert.ok(Math.abs(par[2024].global! - 85) <= 3, `2024 : ${par[2024].global}`);
-  assert.ok(Math.abs(par[2026].global! - 54) <= 3, `2026 : ${par[2026].global}`);
+  assert.ok(Math.abs(par[2026].global! - 61) <= 3, `2026 : ${par[2026].global}`);
   assert.ok(par[2022].global! < par[2023].global!);
   assert.equal(par[2025].nbPiliers, 5);
   // 2022 n'a que 2 sorties à trois vrais efforts : la répétabilité est notée, mais aux 2/3 : (0,907 − 0,7) / 0,3 = 69, × 2/3 = 46
@@ -44,7 +44,7 @@ test('niveauGlobal : l\'année actuelle, l\'année d\'avant, le meilleur, le poi
   assert.equal(g.precedent!.an, 2025);
   assert.ok(g.meilleur.an === 2025 || g.meilleur.an === 2024);
   assert.equal(g.fort, 'puissance');
-  assert.equal(g.faible, 'charge'); // CTL max 69,6 contre 91 : le plus bas des cinq en 2026
+  assert.equal(g.faible, 'durabilite'); // 2026 : 6 sorties longues seulement, la durabilité (50) est le plus bas des cinq ; la charge (CTL 69,6 contre 91) est à 61
 });
 
 test('niveauGlobal : les notes des piliers sont ce qu\'on attend', () => {
@@ -53,8 +53,8 @@ test('niveauGlobal : les notes des piliers sont ce qu\'on attend', () => {
   assert.ok(Math.abs(p.durabilite! - 72) < 1.5, `${p.durabilite}`);
   // Répétabilité 2025 : 0,935 → 78
   assert.ok(Math.abs(p.repetabilite! - 78.3) < 1, `${p.repetabilite}`);
-  // Charge 2025 : 90,3 / 91 = 99,2 % → 97,5
-  assert.ok(Math.abs(p.charge! - 97.4) < 1, `${p.charge}`);
+  // Charge 2025 : 90,3 / 91 = 99,2 % → (0,992 − 0,4) / 0,6 = 98,7
+  assert.ok(Math.abs(p.charge - 98.72) < 0.1, `${p.charge}`);
   // Puissance : la meilleure durée de chaque année vaut 100 pour son année record ; 2025 : sprint 1071/1157, 5 min 285/293, 20 min 100 %, 60 min 100 %
   assert.ok(p.puissance! > 85 && p.puissance! < 96, `${p.puissance}`);
   // Endurance 2025 : 2 h et 3 h sont les meilleurs de toujours (100), dérive 4,5 % → 70, volume 150 h sur 250 h → 60 : moyenne 76,7
@@ -116,7 +116,7 @@ test('ecartsPiliers : ce qui a bougé depuis l\'année d\'avant, seulement pour 
   const e = ecartsPiliers(g);
   assert.deepEqual(e.map((x) => x.cle), ['puissance', 'endurance', 'durabilite', 'repetabilite', 'charge']);
   const charge = e.find((x) => x.cle === 'charge')!;
-  assert.ok(charge.ecart < -60, `charge ${charge.ecart}`); // CTL max 90 → 70 : le plus gros recul
+  assert.ok(charge.ecart < -35, `charge ${charge.ecart}`); // CTL max 90 → 70 : le plus gros recul (99 → 61)
   assert.equal(e.find((x) => x.cle === 'endurance')!.ecart, 51 - 77); // volume 2026 : 25 h seulement
   assert.ok(e.every((x) => x.maintenant - x.avant === x.ecart));
   // Sans année d'avant : rien à comparer
@@ -137,7 +137,7 @@ test('niveauGlobal : une année à moins de 3 sorties avec capteur ne fixe jamai
   const g = niveauGlobal(mesures)!;
   assert.deepEqual(g.annees.map((a) => a.an), [2013, 2022, 2023, 2024, 2025, 2026]);
   // 2013 a un score, mais tout en bas (puissance et charge sous 70 % du meilleur : 0), et sa puissance repose sur 1 sortie sur 3
-  assert.equal(g.annees[0].global, 0);
+  assert.equal(g.annees[0].global, 7); // charge 55/91 = 60 % → 34 sur l'échelle douce, le reste 0 : 34 / 5 = 7
   assert.ok(Math.abs(g.annees[0].preuves.puissance - 1 / 3) < 1e-9);
   // Les notes des autres années ne bougent pas
   const sans = niveauGlobal(REEL)!;
@@ -183,4 +183,17 @@ test('niveauGlobal : l\'endurance demande 2 de ses 3 notes ; la dérive demande 
   // Une année à 2 sorties avec capteur : la puissance longue compte, aux 2/3 (comme la puissance)
   const capteur = niveauGlobal([mesure(2025, { w7200: 200, ctlMax: 80, nCourbes: 2, heuresLongues: 100, deriveMed: 3, nDerive: 3 })])!;
   assert.ok(Math.abs(capteur.actuel.endurance.puissanceLongue! - 66.67) < 0.01);
+});
+
+test('noteChargeDe : 100 au meilleur, 0 à 40 % du meilleur, en ligne droite (plus douce que les autres piliers : 0 à 70 %)', () => {
+  assert.equal(CHARGE_ZERO, 0.4);
+  assert.equal(noteChargeDe(1), 100);
+  assert.equal(noteChargeDe(1.3), 100); // plafonnée
+  assert.equal(noteChargeDe(0.4), 0);
+  assert.equal(noteChargeDe(0.1), 0); // plancher
+  assert.ok(Math.abs(noteChargeDe(0.7) - 50) < 1e-9);
+  // Le cas de 2022 : CTL 52 contre 91 = 57 % : 28,6 au lieu de 0 sur l'échelle des autres piliers
+  assert.ok(Math.abs(noteChargeDe(52 / 91) - 28.57) < 0.01);
+  const g = niveauGlobal([mesure(2024, { ctlMax: 91 }), mesure(2022, { ctlMax: 52 })])!;
+  assert.ok(Math.abs(g.annees[0].piliers.charge - 28.57) < 0.01, `${g.annees[0].piliers.charge}`);
 });
