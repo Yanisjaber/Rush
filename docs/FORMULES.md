@@ -34,6 +34,8 @@ TSS = 100 × hr_sq / ( LTHR² × 3600 )      // seconde par seconde : moyenne de
 
 **3. Sans rien** (affichage dans l'app, `chargeSeance` dans `native/src/data/bilan/synthese.ts`) : TSS enregistré s'il existe, sinon `durée_h × 45` si la FC moyenne est connue, sinon `durée_h × 35`. Estimation grossière, arrondie.
 
+**Garde-fou de plausibilité (3 nov. 2026)** : une sortie ne dépasse jamais **200 points par heure** (une heure à 1,4 fois la FTP en fait 196) et une **intensité de plus de 1,5 n'existe pas**. Au-delà, c'est une FTP absurde (4 W) ou une puissance fausse, pas un effort : la règle « puissance » est écartée et on passe au cardio ; sans cardio de référence, une sortie dont le TSS enregistré dépasse 200 par heure reçoit l'estimation générale (45 points par heure avec un cardio, 35 sans, comme `chargeSeance`), et sa FTP enregistrée est effacée. Cas réel du compte de test : 106 sorties de 2011 à 2013 (watts estimés, « FTP » de 4 W à l'import d'origine) avaient jusqu'à 1 176 714 TSS et un CTL de 221 025 en 2013 ; elles sont ramenées à 35 ou 45 par heure. Les 20 min qui servent à estimer la FTP ignorent ceux sous la moitié de ton meilleur de toujours (capteur en panne). Les séances saisies à la main ne sont jamais touchées.
+
 Qui calcule quoi : à l'import, `strava-ingest` et `strava-webhook` (`_shared/charge.ts`) donnent un premier TSS. La base a le dernier mot : `recalc_ftp_tss` (migration `2026-11-02_ftp_glissante.sql`) recalcule les sorties Strava avec la FTP de leur époque et le flux cardio, à la migration puis chaque nuit à 00 h 05 UTC. Les données **écartées** par l'utilisateur (puissance, cardio, charge, durée) sortent du calcul (`tss_retenu`).
 
 ---
@@ -174,6 +176,7 @@ Le pilier Durabilité (meilleur 5 et 20 min après 2 h 30 ÷ meilleur à froid) 
 - 2026-11-02 : création, ajout du TSS, du CTL/ATL/TSB, du score d'endurance et d'une proposition de score de puissance.
 - 2026-11-02 : TSS aligné sur le code (vrai capteur seulement, cardio seconde par seconde), FTP glissante, série de forme jusqu'à aujourd'hui.
 - 2026-11-02 : pilier Puissance sur une échelle plus exigeante (0 à 20 % sous le meilleur).
+- 2026-11-03 : TSS plausible : jamais plus de 200 points par heure ni d'intensité de plus de 1,5 (106 sorties de 2011-2013 à plus de 1000 TSS réparées).
 - 2026-11-03 : capacité de charge : on compte aussi les heures (25 %) et les jours actifs (15 %), annualisés pour l'année en cours ; le CTL moyen fait 60 %.
 - 2026-11-03 : capacité de charge : CTL moyen de l'année (au lieu du pic) contre la moyenne des 3 meilleures années (au lieu de la meilleure seule).
 - 2026-11-03 : répétabilité jugée sur les 10 meilleures sorties de l'année (le 3e effort le plus fort), plus sur toutes.

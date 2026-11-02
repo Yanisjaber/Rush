@@ -2,7 +2,7 @@
 // Lancer : node --experimental-strip-types --test supabase/tests/edge/charge.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { computeTss, stravaToRow, lthrEffectif, ftpEffective, puissanceRetenue, puissanceCharge } from '../../functions/_shared/charge.ts';
+import { computeTss, stravaToRow, lthrEffectif, ftpEffective, puissanceRetenue, puissanceCharge, INTENSITE_MAX } from '../../functions/_shared/charge.ts';
 
 test('une heure à la FTP = 100 points', () => {
   assert.equal(computeTss({ moving_time: 3600, sport_type: 'Ride', device_watts: true, weighted_average_watts: 200 }, 200, null), 100);
@@ -58,4 +58,14 @@ test('stravaToRow : même ligne quel que soit le chemin', () => {
   assert.equal(r.intensity, 1);
   assert.equal(r.ftp_at_time, 200);
   assert.equal(r.has_power, true);
+});
+
+test('une intensité de plus de 1,5 (FTP absurde de 4 W, puissance fausse) ne donne pas de TSS de puissance : le cardio prend le relais, sans intensité rangée', () => {
+  assert.equal(INTENSITE_MAX, 1.5);
+  const a = { id: 3, sport_type: 'Ride', moving_time: 3600, device_watts: true, weighted_average_watts: 200, average_heartrate: 150 };
+  assert.equal(computeTss(a, 4, 150), 100); // 200 / 4 = 50 : on prend le cardio (150 / 150)²
+  assert.equal(computeTss({ ...a, average_heartrate: undefined }, 4, 150), 0); // et sans cardio, 0 (jamais plus d'un million de points)
+  assert.equal(stravaToRow(a, 'u', 4, 150).intensity, null);
+  assert.equal(computeTss(a, 200, 150), 100); // une intensité normale (1,0) est inchangée
+  assert.equal(stravaToRow(a, 'u', 200, 150).intensity, 1);
 });

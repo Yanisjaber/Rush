@@ -56,12 +56,15 @@ export async function ftpEffective(sb: any, userId: string, ftpProfil: number | 
 }
 
 /** TSS d'une activité Strava (voir la règle en tête de fichier). */
+/** Une intensité (puissance normalisée ÷ FTP) de plus de 1,5 n'existe pas : c'est une FTP absurde (4 W) ou une puissance fausse. On ne s'en sert pas (voir recalc_ftp_tss). */
+export const INTENSITE_MAX = 1.5;
+
 export function computeTss(a: any, ftp: number | null, lthr: number | null): number {
   const dur = a?.moving_time || a?.elapsed_time || 0;
   if (!dur) return 0;
   const durHr = dur / 3600;
   const np = puissanceCharge(a);
-  if (np && ftp) {
+  if (np && ftp && np / ftp <= INTENSITE_MAX) {
     const intensity = np / ftp;
     return Math.round(durHr * intensity * intensity * 100);
   }
@@ -76,7 +79,8 @@ export function computeTss(a: any, ftp: number | null, lthr: number | null): num
 /** Une activité Strava → une ligne de la table `activities`. */
 export function stravaToRow(a: any, userId: string, ftp: number | null, lthr: number | null) {
   const np = puissanceRetenue(a);
-  const intensity = (puissanceCharge(a) && ftp) ? puissanceCharge(a) / ftp : 0;
+  const intensiteBrute = (puissanceCharge(a) && ftp) ? puissanceCharge(a) / ftp : 0;
+  const intensity = intensiteBrute <= INTENSITE_MAX ? intensiteBrute : 0; // une intensité absurde (FTP de 4 W) n'est pas rangée
   const tss = computeTss(a, ftp, lthr);
   const distKm = a.distance ? +(a.distance / 1000).toFixed(2) : null;
   const speedMs = a.average_speed || 0;
