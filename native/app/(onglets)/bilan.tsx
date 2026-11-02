@@ -235,6 +235,7 @@ export default function Bilan() {
   const piliers = usePiliersAnnuels(progresOuvert && niveaux.velo !== null);
   const recordsAnnuels = useMemo(() => recordsDeMesures(piliers.mesures), [piliers.mesures]);
   const niveauGlobalVelo = useMemo(() => (niveaux.velo ? niveauGlobal(piliers.mesures, niveaux.velo) : null), [niveaux.velo, piliers.mesures]);
+  const anneeInutile = onglet === 'progres' && !(niveauGlobalVelo && progres.some(({ prog }) => prog.famille === 'velo'));
 
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
@@ -249,8 +250,9 @@ export default function Bilan() {
           Bilan {annee}
         </Text>
         <View style={styles.entete}>
-          {/* Progrès suit ses propres périodes (4 semaines, 3 mois, 1 an) : l'année n'y sert à rien. Elle reste affichée mais grisée et non touchable, pour que les onglets ne bougent pas */}
-          <View style={[styles.zoneAnnee, onglet === 'progres' ? styles.anneeMasquee : null]} pointerEvents={onglet === 'progres' ? 'none' : 'auto'} accessibilityElementsHidden={onglet === 'progres'} importantForAccessibility={onglet === 'progres' ? 'no-hide-descendants' : 'auto'}>
+          {/* Sur Progrès, l'année ne sert qu'au niveau global du vélo (niveau, point cerclé, piliers et courbe jusqu'à cette année). Sans lui, elle reste affichée
+              mais grisée et non touchable, pour que les onglets ne bougent pas */}
+          <View style={[styles.zoneAnnee, anneeInutile ? styles.anneeMasquee : null]} pointerEvents={anneeInutile ? 'none' : 'auto'} accessibilityElementsHidden={anneeInutile} importantForAccessibility={anneeInutile ? 'no-hide-descendants' : 'auto'}>
             <MenuMesure
               gras
               petite
@@ -601,6 +603,7 @@ export default function Bilan() {
                       niveau={prog.famille === 'velo' ? niveaux.velo : prog.famille === 'course' ? niveaux.course : null}
                       records={prog.famille === 'velo' ? recordsAnnuels : undefined}
                       niveauGlobal={prog.famille === 'velo' ? niveauGlobalVelo : null}
+                      annee={annee}
                     />
                   ))
                 ) : (

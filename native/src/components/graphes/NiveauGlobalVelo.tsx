@@ -23,21 +23,25 @@ interface Props {
   records: RecordsAnnee[];
   preuve: Progression | null;
   jours: PeriodeProgression;
+  /** L'année choisie en haut du Bilan : le niveau du haut, le point cerclé, la fenêtre des piliers et de la courbe du bas. */
+  annee: number;
 }
 
-export function NiveauGlobalVelo({ global: g, serie, records, preuve, jours }: Props) {
+export function NiveauGlobalVelo({ global: g, serie, records, preuve, jours, annee }: Props) {
   const p = usePalette();
   const couleur = couleurSport(p, 'velo');
-  const score = g.actuel.global!;
+  // L'année choisie peut ne pas avoir de score (trop peu de sorties) : le niveau s'affiche alors « — »
+  const choisie = g.annees.find((a) => a.an === annee) ?? null;
+  const score = choisie ? String(choisie.global) : '—';
 
   return (
     <View style={styles.tout}>
       <View style={styles.tete}>
         <IconeSport sport="velo" taille={22} />
         <View style={styles.flex}>
-          <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte }]}>Niveau global {g.actuel.an}</Text>
+          <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte }]}>Niveau global {annee}</Text>
         </View>
-        <Text accessibilityLabel={`${score} sur 100`} style={[styles.score, { color: p.texte }]}>
+        <Text accessibilityLabel={choisie ? `${score} sur 100` : 'pas de niveau mesuré'} style={[styles.score, { color: p.texte }]}>
           {score}
           <Text style={[typo.petit, { color: p.texteDoux }]}> / 100</Text>
         </Text>
@@ -46,17 +50,17 @@ export function NiveauGlobalVelo({ global: g, serie, records, preuve, jours }: P
       <Bloc titre="Score par année">
         <CourbeGlobale
           points={g.annees.map((a) => ({ an: a.an, score: a.global! }))}
-          meilleurAn={g.meilleur.an}
+          anneeCerclee={annee}
           couleur={couleur}
           etiquette={`Score global par année : ${g.annees.map((a) => `${a.an} : ${a.global}`).join(', ')}, sur 100.`}
         />
       </Bloc>
 
       <Bloc titre="Piliers par année">
-        <ChaleurPiliers annees={g.annees} couleur={couleur} />
+        <ChaleurPiliers annees={g.annees} couleur={couleur} annee={annee} />
       </Bloc>
 
-      <ProgresNiveau famille="velo" serie={serie} records={records} preuve={preuve} jours={jours} courbeSeule />
+      <ProgresNiveau famille="velo" serie={serie} records={records} preuve={preuve} jours={jours} courbeSeule jusquAn={annee} />
     </View>
   );
 }

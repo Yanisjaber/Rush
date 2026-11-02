@@ -21,7 +21,7 @@ appId: TODO.rush
 - takeScreenshot: progres
 - tapOn: "Tous"
 - tapOn: "Résumé"
-# Sur Progrès, le sélecteur d'année est grisé et non touchable (il ne s'applique pas) ; il redevient actif sur Résumé
+# Sur Progrès, le sélecteur d'année reste actif quand le niveau global du vélo s'affiche (il pilote l'écran du vélo) ; grisé sinon
 - tapOn: "Progrès"
 - waitForAnimationToEnd
 - takeScreenshot: progres-annee-grisee

@@ -7,7 +7,7 @@ S'appuie sur la même régression que la comparaison de deux périodes : voir `P
 
 Plus de choix « 4 sem. / 3 mois / 1 an » dans l'onglet Progrès. Pour le vélo et la course :
 - le **dossard** : le score de l'année en cours sur 100 (100 = ton meilleur niveau mesuré) ;
-- la **courbe** du score trimestre par trimestre (semestre par semestre en course), avec la zone de marge d'erreur, la ligne des 100 et le meilleur niveau cerclé. Elle montre les **3 dernières années** ; une flèche en haut à droite du bloc (visible s'il y a plus de 3 ans d'historique) ouvre tout l'historique depuis la première année, et une seconde touche revient aux 3 ans. Si ton meilleur niveau est avant la fenêtre, une phrase sous la courbe le dit ;
+- la **courbe** du score trimestre par trimestre (semestre par semestre en course), avec la zone de marge d'erreur, la ligne des 100 et le meilleur niveau cerclé. Elle montre les **5 années qui finissent sur l'année choisie** en haut du Bilan (la dernière par défaut) ; une flèche en haut à droite du bloc (visible s'il y a des années avant la fenêtre) ouvre tout l'historique jusqu'à cette année, et une seconde touche revient aux 5 ans. Si ton meilleur niveau est avant la fenêtre, une phrase sous la courbe le dit ;
 - la liste **Par année** : le niveau, sa marge d'erreur, le nombre de sorties et le score ;
 - un **sélecteur** (vélo) : Sprint (meilleur 5 secondes de chaque année), 5 min, 20 min, 60 min, puis Endurance (le niveau à cardio égal) en dernier ;
 - le bouton **Comment c'est calculé** : la preuve de la comparaison des 12 derniers mois aux 12 mois d'avant (verdict, fourchette, nuage de sorties, cascade).
@@ -17,10 +17,11 @@ La natation et la musculation gardent leur écran : leur comparaison est fixée 
 ## Le niveau global de l'athlète (vélo)
 
 Un 5 min ou un 20 min isolé ne dit pas qui est le coureur. Sur le vélo, la page Progrès montre le **niveau global** sur une seule page qui défile (code : `NiveauGlobalVelo.tsx` ; calcul : `piliers-niveau.ts`) :
-1. **Le niveau de l’année** en taille normale (« 80 / 100 », sans autre texte) ;
-2. **Score par année** : la courbe du score global, le score sur chaque point ;
-3. **Piliers par année** : la **carte de chaleur** (`ChaleurPiliers.tsx`) : une ligne par année (la plus récente en haut), une colonne par pilier (noms abrégés : Puiss., Endur., Durab., Répét., Charge), plus la case est bleue plus la note est haute (les 4 dernières années, « Tout l'historique » ajoute les autres en dessous). Le texte de chaque case est choisi pour rester lisible sur sa teinte (`theme/contraste.ts`) ;
-4. **La courbe des niveaux** : le sélecteur Sprint, 5, 20, 60 min, Endurance et sa courbe (`ProgresNiveau` en mode `courbeSeule`, sans dossard, liste, calcul ni phrase sous la courbe).
+Tout l'écran suit **l'année choisie** en haut du Bilan (le sélecteur est actif sur Progrès quand le niveau global du vélo s'affiche, grisé sinon) :
+1. **Le niveau de l’année choisie** en taille normale (« 80 / 100 », « — » si l'année n'a pas de score, sans autre texte) ;
+2. **Score par année** : la courbe du score global, le score sur chaque point, l'année choisie cerclée ;
+3. **Piliers par année** : la **carte de chaleur** (`ChaleurPiliers.tsx`) : une ligne par année (la plus récente en haut), une colonne par pilier (noms abrégés : Puiss., Endur., Durab., Répét., Charge), plus la case est bleue plus la note est haute (l'année choisie et les 4 d'avant, « Tout l'historique » pour toutes). Le texte de chaque case est choisi pour rester lisible sur sa teinte (`theme/contraste.ts`) ;
+4. **La courbe des niveaux** : le sélecteur Sprint, 5, 20, 60 min, Endurance et sa courbe sur les 5 ans qui finissent sur l'année choisie (`ProgresNiveau` en mode `courbeSeule`, sans dossard, liste, calcul ni phrase sous la courbe).
 
 Le score global est la **moyenne des piliers mesurés** (au moins 2). Chaque pilier va de 0 à 100 :
 

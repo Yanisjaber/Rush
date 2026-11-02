@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { niveauxCourse, niveauxVelo, serieRecord, type SortieNiveauCourse, type SortieNiveauVelo } from '../../src/data/bilan/niveau-annees.ts';
-import { amincirReperes, axeScore, debutsAnnees, ecartAuSommet, formatMarge, formatNiveau, libellePeriode, pointsDepuis, positionsNiveau, recordsDeCourbe, reperesAnnees, segmentsContinus } from '../../src/data/bilan/niveau-annees-affichage.ts';
+import { aDeQuoiTracer, amincirReperes, axeScore, debutsAnnees, ecartAuSommet, formatMarge, formatNiveau, libellePeriode, pointsDepuis, positionsNiveau, recordsDeCourbe, reperesAnnees, segmentsContinus } from '../../src/data/bilan/niveau-annees-affichage.ts';
 
 // Un bruit fixe (pas de hasard : le test doit toujours donner le même résultat)
 const BRUIT = [-6, 3, -2, 5, 0, -4, 2, 4, -3, 1];
@@ -210,6 +210,15 @@ test('pointsDepuis : la fenêtre des dernières années, ou tout s\'il n\'en res
   assert.ok(trois.every((p) => p.an >= 2023));
   // Une fenêtre qui ne garde qu'un point : on montre tout plutôt qu'un point seul
   assert.equal(pointsDepuis(serie.annuel, 2025).length, 4);
+  // Une fenêtre qui finit sur l'année choisie : rien après elle
+  const jusqua2024 = pointsDepuis(serie.annuel, 2020, 2024);
+  assert.deepEqual(jusqua2024.map((p) => p.an), [2022, 2023, 2024]);
+  // Un seul point dans la fenêtre : tous les points jusqu'à l'année choisie, jamais ceux d'après
+  assert.deepEqual(pointsDepuis(serie.annuel, 2024, 2024).map((p) => p.an), [2022, 2023, 2024]);
+  // Rien de mesuré jusqu'à l'année choisie : pas de courbe
+  assert.equal(aDeQuoiTracer(serie.annuel, 2021), false);
+  assert.equal(aDeQuoiTracer(serie.annuel, 2022), false);
+  assert.equal(aDeQuoiTracer(serie.annuel, 2023), true);
 });
 
 test('axeScore : de la dizaine sous le plus bas jusqu\'à 104, avec un repère par dizaine', () => {

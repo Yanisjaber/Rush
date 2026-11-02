@@ -18,12 +18,12 @@ import { usePalette } from '@/theme/usePalette';
 
 // Le bloc d'un sport dans l'onglet Progrès du Bilan : le verdict en gros, la courbe de la période (100 = ton niveau d'avant), puis l'ancienne et la nouvelle valeur.
 // `courbe` : voir courbeProgression (data/progression.ts), vide quand il n'y a rien à tracer.
-export function ProgresSport({ progression, courbe, jours, niveau, records, niveauGlobal }: { progression: Progression; courbe: number[]; jours: PeriodeProgression; niveau?: SerieNiveau | null; records?: RecordsAnnee[]; niveauGlobal?: NiveauGlobal | null }) {
+export function ProgresSport({ progression, courbe, jours, niveau, records, niveauGlobal, annee }: { progression: Progression; courbe: number[]; jours: PeriodeProgression; niveau?: SerieNiveau | null; records?: RecordsAnnee[]; niveauGlobal?: NiveauGlobal | null; annee: number }) {
   const p = usePalette();
   // Le vélo et la course se lisent année après année (le niveau, avec la preuve du calcul derrière un bouton) quand l'historique le permet
-  // Le vélo : le niveau global de l'athlète (quatre cartes) quand on a de quoi le calculer
+  // Le vélo : le niveau global de l'athlète (une page, qui suit l'année choisie en haut du Bilan) quand on a de quoi le calculer
   if (progression.famille === 'velo' && niveau && niveauGlobal) {
-    return <NiveauGlobalVelo global={niveauGlobal} serie={niveau} records={records ?? []} preuve={progression} jours={jours} />;
+    return <NiveauGlobalVelo global={niveauGlobal} serie={niveau} records={records ?? []} preuve={progression} jours={jours} annee={annee} />;
   }
   if ((progression.famille === 'velo' || progression.famille === 'course') && niveau) {
     return <ProgresNiveau famille={progression.famille} serie={niveau} records={records ?? []} preuve={progression} jours={jours} />;

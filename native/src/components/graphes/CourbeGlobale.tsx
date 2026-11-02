@@ -4,10 +4,11 @@ import { amincirReperes } from '@/data/bilan/niveau-annees-affichage';
 import { police } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Le score global année après année : une courbe de 0 à 100, la ligne des 100 en pointillés, le score écrit au-dessus de chaque point et le meilleur année cerclé.
+// Le score global année après année : une courbe de 0 à 100, la ligne des 100 en pointillés, le score écrit au-dessus de chaque point et l'année choisie en haut du Bilan cerclée.
 interface Props {
   points: { an: number; score: number }[];
-  meilleurAn: number;
+  /** L'année cerclée (l'année choisie en haut du Bilan) ; aucune si elle n'a pas de score. */
+  anneeCerclee: number;
   couleur: string;
   /** Phrase lue par VoiceOver à la place du dessin. */
   etiquette: string;
@@ -21,7 +22,7 @@ const H = 22;
 const B = 26;
 const MARGE = 14;
 
-export function CourbeGlobale({ points, meilleurAn, couleur, etiquette }: Props) {
+export function CourbeGlobale({ points, anneeCerclee, couleur, etiquette }: Props) {
   const p = usePalette();
   const plusBas = Math.min(...points.map((pt) => pt.score)) - 10;
   const pas = 100 - plusBas > 50 ? 20 : 10;
@@ -51,7 +52,7 @@ export function CourbeGlobale({ points, meilleurAn, couleur, etiquette }: Props)
       {points.map((pt, i) => (
         <Fragment key={pt.an}>
           <Circle cx={x(i)} cy={y(pt.score)} r={4.4} fill={couleur} />
-          {pt.an === meilleurAn ? <Circle cx={x(i)} cy={y(pt.score)} r={8} fill="none" stroke={p.texte} strokeWidth={1.5} /> : null}
+          {pt.an === anneeCerclee ? <Circle cx={x(i)} cy={y(pt.score)} r={8} fill="none" stroke={p.texte} strokeWidth={1.5} /> : null}
           <TexteSvg x={x(i)} y={y(pt.score) - 11} fontSize={12} fontFamily={police.texte600} fill={p.texte} textAnchor="middle">{Math.round(pt.score)}</TexteSvg>
           {anneesEcrites.has(pt.an) ? <TexteSvg x={x(i)} y={HAUTEUR - 6} fontSize={12} fontFamily={police.texte500} fill={p.texteDoux} textAnchor="middle">{pt.an}</TexteSvg> : null}
         </Fragment>

@@ -7,25 +7,28 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La carte de chaleur des piliers : une ligne par année (la plus récente en haut), une colonne par pilier. Plus la case est bleue (la couleur du vélo), plus la note est haute.
-// Les 4 dernières années s'affichent ; « Tout l'historique » ajoute les autres en dessous. Les noms des piliers sont abrégés pour que les 5 colonnes tiennent
+// L'année choisie en haut du Bilan et les 4 d'avant s'affichent ; « Tout l'historique » montre toutes les années (l'année choisie reste en gras). Les noms des piliers sont abrégés pour que les 5 colonnes tiennent
 // sur la largeur d'un téléphone (VoiceOver lit le nom complet).
 interface Props {
   annees: NiveauGlobalAnnee[];
   couleur: string;
+  /** L'année choisie en haut du Bilan : la dernière ligne de la fenêtre, en gras. */
+  annee: number;
 }
 
-const ANNEES_VISIBLES = 4;
+const ANNEES_VISIBLES = 5;
 const LARGEUR_ANNEE = 48;
 const HAUTEUR_CASE = 40;
 const ECART = 4;
 const ABREGE: Record<PilierCle, string> = { puissance: 'Puiss.', endurance: 'Endur.', durabilite: 'Durab.', repetabilite: 'Répét.', charge: 'Charge' };
 
-export function ChaleurPiliers({ annees, couleur }: Props) {
+export function ChaleurPiliers({ annees, couleur, annee }: Props) {
   const p = usePalette();
   const [toutes, setToutes] = useState(false);
-  const montrees = (toutes ? annees : annees.slice(-ANNEES_VISIBLES)).slice().reverse();
-  const peutDeplier = annees.length > ANNEES_VISIBLES;
-  const dernier = annees[annees.length - 1];
+  const debut = annee - ANNEES_VISIBLES + 1;
+  const fenetre = annees.filter((a) => a.an >= debut && a.an <= annee);
+  const montrees = (toutes ? annees : fenetre).slice().reverse();
+  const peutDeplier = annees.length > fenetre.length;
 
   return (
     <View style={{ gap: 10 }}>
@@ -38,7 +41,7 @@ export function ChaleurPiliers({ annees, couleur }: Props) {
         </View>
         {montrees.map((a) => (
           <View key={a.an} style={styles.rangee}>
-            <Text style={[typo.corpsFort, styles.annee, { color: a.an === dernier.an ? p.texte : p.texteMuet, fontFamily: a.an === dernier.an ? police.texte600 : police.texte400 }]}>{a.an}</Text>
+            <Text style={[typo.corpsFort, styles.annee, { color: a.an === annee ? p.texte : p.texteMuet, fontFamily: a.an === annee ? police.texte600 : police.texte400 }]}>{a.an}</Text>
             {PILIERS.map((pi) => {
               const v = a.piliers[pi.cle];
               if (v === null) {
@@ -58,9 +61,10 @@ export function ChaleurPiliers({ annees, couleur }: Props) {
           </View>
         ))}
       </View>
+      {!montrees.length ? <Text style={[typo.corps, { color: p.texteDoux }]}>Pas de piliers mesurés de {debut} à {annee}.</Text> : null}
       {peutDeplier ? (
         <Pressable accessibilityRole="button" onPress={() => setToutes(!toutes)} style={styles.bascule}>
-          <Text style={[typo.corpsFort, { color: p.texteDoux }]}>{toutes ? `Les ${ANNEES_VISIBLES} dernières années` : `Tout l'historique (${annees.length} ans)`}</Text>
+          <Text style={[typo.corpsFort, { color: p.texteDoux }]}>{toutes ? `De ${debut} à ${annee}` : `Tout l'historique (${annees.length} ans)`}</Text>
         </Pressable>
       ) : null}
     </View>

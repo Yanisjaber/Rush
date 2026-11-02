@@ -13,8 +13,10 @@ import { usePalette } from '@/theme/usePalette';
 interface Props {
   serie: SerieNiveau;
   mode: 'tranches' | 'annuel';
-  /** Ne montrer que les points de cette année et des suivantes (la fenêtre des 3 dernières années) ; sans valeur, tout l'historique. */
+  /** Ne montrer que les points de cette année et des suivantes (la fenêtre des 5 dernières années) ; sans valeur, tout l'historique. */
   depuisAn?: number;
+  /** Ne montrer que les points jusqu'à cette année (l'année choisie en haut du Bilan) ; sans valeur, jusqu'à la dernière. */
+  jusquAn?: number;
   couleur: string;
   /** Phrase lue par VoiceOver à la place du dessin. */
   etiquette: string;
@@ -29,10 +31,10 @@ const D = 12;
 const H = 18; // le haut : la ligne des 100 et l'étiquette « meilleur »
 const B = 30; // le bas : les années
 
-export function CourbeNiveau({ serie, mode, depuisAn, couleur, etiquette, sansLegende = false }: Props) {
+export function CourbeNiveau({ serie, mode, depuisAn, jusquAn, couleur, etiquette, sansLegende = false }: Props) {
   const p = usePalette();
   const tous = mode === 'tranches' && serie.tranches.length >= 2 ? serie.tranches : serie.annuel;
-  const points = pointsDepuis(tous, depuisAn);
+  const points = pointsDepuis(tous, depuisAn, jusquAn);
   const m = tous === serie.tranches ? serie.tranchesParAn : 1;
   const positions = positionsNiveau(points, m);
   const t0 = positions[0].t;
@@ -44,7 +46,7 @@ export function CourbeNiveau({ serie, mode, depuisAn, couleur, etiquette, sansLe
   const sommet = positions.find((o) => o.point.cle === serie.meilleur.cle);
   const aMarge = points.some((pt) => pt.demi > 0);
   // Le sommet est plus ancien que la fenêtre : on le dit, sinon la ligne des 100 n'a pas de point
-  const sommetHorsVue = !sommet && points.length < tous.length;
+  const sommetHorsVue = !sommet && serie.meilleur.an < points[0].an;
 
   return (
     <View>

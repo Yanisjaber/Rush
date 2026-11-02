@@ -11,7 +11,7 @@ import { Dossard } from '@/components/ui/Dossard';
 import { IconeSport } from '@/components/ui/IconeSport';
 import type { DureeRecord, RecordsAnnee, SerieNiveau } from '@/data/bilan/niveau-annees';
 import { serieRecord } from '@/data/bilan/niveau-annees';
-import { ecartAuSommet, formatMarge, formatNiveau, libellePeriode, type GenreNiveau } from '@/data/bilan/niveau-annees-affichage';
+import { aDeQuoiTracer, ecartAuSommet, formatMarge, formatNiveau, libellePeriode, type GenreNiveau } from '@/data/bilan/niveau-annees-affichage';
 import type { PeriodeProgression, Progression } from '@/data/bilan/progression';
 import { formatNum } from '@/data/outils/format';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
@@ -24,6 +24,9 @@ import { usePalette } from '@/theme/usePalette';
 // (5, 20, 60 minutes : une valeur par année). Le bouton « Comment c'est calculé » ouvre la preuve : les 12 derniers mois contre les 12 mois d'avant (verdict, fourchette, nuage, cascade).
 // Calculs : data/bilan/niveau-annees.ts et docs/native/PROGRESSION_NIVEAU.md.
 type Choix = 'endurance' | DureeRecord;
+
+/** Le nombre d'années que la courbe montre avant qu'on l'élargisse. */
+const ANS_VISIBLES = 5;
 
 const NOMS_CHOIX: Record<Choix, string> = { endurance: 'Endurance', w5: 'Sprint', w300: '5 min', w1200: '20 min', w3600: '60 min' };
 const NOMS_RECORD: Record<DureeRecord, string> = { w5: 'Meilleur sprint (5 s)', w300: 'Meilleur 5 min', w1200: 'Meilleur 20 min', w3600: 'Meilleur 60 min' };
@@ -54,9 +57,11 @@ interface Props {
   sansEntete?: boolean;
   /** Seulement le sélecteur et la courbe (page Progrès du vélo) : ni en-tête, ni dossard, ni liste par année, ni calcul. */
   courbeSeule?: boolean;
+  /** La courbe s'arrête à cette année (l'année choisie en haut du Bilan) ; sans valeur, à la dernière année mesurée. */
+  jusquAn?: number;
 }
 
-export function ProgresNiveau({ famille, serie, records, preuve, jours, sansEntete = false, courbeSeule = false }: Props) {
+export function ProgresNiveau({ famille, serie, records, preuve, jours, sansEntete = false, courbeSeule = false, jusquAn }: Props) {
   const p = usePalette();
   const [choix, setChoix] = useState<Choix>('endurance');
   const [preuveOuverte, setPreuveOuverte] = useState(false);
@@ -75,9 +80,13 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours, sansEnte
   const indicateur = choisie ? NOMS_RECORD[choisie.duree] : famille === 'course' ? 'Allure à cardio égal' : 'Watts à cardio égal';
   const lieu = actuelle.fcReference ? ` à ${actuelle.fcReference} bpm` : '';
   const annees = [...actuelle.annuel].reverse();
-  // La courbe montre les 3 dernières années ; la flèche en haut à droite du bloc ouvre tout l'historique (seulement s'il y a plus de 3 ans)
-  const peutElargir = actuelle.actuel.an - actuelle.annuel[0].an >= 3;
-  const depuisAn = peutElargir && !toutVoir ? actuelle.actuel.an - 2 : undefined;
+  // La courbe montre les 5 années qui finissent sur l'année choisie (la dernière mesurée par défaut) ; la flèche en haut à droite du bloc ouvre
+  // tout l'historique jusqu'à cette année (seulement s'il y a des années avant la fenêtre)
+  const fin = jusquAn ?? actuelle.actuel.an;
+  const peutElargir = fin - actuelle.annuel[0].an >= ANS_VISIBLES;
+  const depuisAn = peutElargir && !toutVoir ? fin - ANS_VISIBLES + 1 : undefined;
+  const pointsCourbe = mode === 'tranches' && actuelle.tranches.length >= 2 ? actuelle.tranches : actuelle.annuel;
+  const tracable = aDeQuoiTracer(pointsCourbe, jusquAn);
 
   return (
     <View style={styles.page}>
@@ -120,21 +129,26 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours, sansEnte
             <Pressable
               onPress={() => setToutVoir((v) => !v)}
               accessibilityRole="button"
-              accessibilityLabel={toutVoir ? 'Revenir aux 3 dernières années' : "Voir tout l'historique"}
+              accessibilityLabel={toutVoir ? `Revenir aux ${ANS_VISIBLES} dernières années` : "Voir tout l'historique"}
               style={[styles.fleche, { backgroundColor: p.surface2 }]}
             >
               <IconeElargir reduire={toutVoir} couleur={p.texte} />
             </Pressable>
           ) : null}
         </View>
-        <CourbeNiveau
-          serie={actuelle}
-          mode={mode}
-          depuisAn={depuisAn}
-          couleur={couleur}
-          sansLegende={courbeSeule}
-          etiquette={`Évolution de ton niveau en ${nomSport}${choisie ? `, ${NOMS_RECORD[choisie.duree]}` : ''}. Score de ${actuelle.annuel.map((a) => `${a.an} : ${Math.round(a.score)}`).join(', ')}, où 100 est ton meilleur niveau.`}
-        />
+        {tracable ? (
+          <CourbeNiveau
+            serie={actuelle}
+            mode={mode}
+            depuisAn={depuisAn}
+            jusquAn={jusquAn}
+            couleur={couleur}
+            sansLegende={courbeSeule}
+            etiquette={`Évolution de ton niveau en ${nomSport}${choisie ? `, ${NOMS_RECORD[choisie.duree]}` : ''}. Score de ${actuelle.annuel.map((a) => `${a.an} : ${Math.round(a.score)}`).join(', ')}, où 100 est ton meilleur niveau.`}
+          />
+        ) : (
+          <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de niveau mesuré en {fin}.</Text>
+        )}
       </Bloc>
 
       {courbeSeule ? null : (
