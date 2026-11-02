@@ -55,7 +55,7 @@ export async function chargerPiliersAnnuels(): Promise<Resultat<MesuresAnnee[]>>
       late300: nombre(l.late300), late1200: nombre(l.late1200), nLongues: Number(l.n_longues) || 0,
       repRatio: nombre(l.rep_ratio), repW3: nombre(l.rep_w3), repN: Number(l.rep_n) || 0, ctlMax: nombre(l.ctl_max),
       nCourbes: Number(l.n_courbes) || 0,
-      w9000: nombre(l.w9000), fat20: nombre(l.fat20), nFat: Number(l.n_fat) || 0,
+      pRef: nombre(l.p_ref), fcRef: nombre(l.fc_ref), nFc: Number(l.n_fc) || 0, fat20: nombre(l.fat20), nFat: Number(l.n_fat) || 0,
       driftMed: nombre(l.drift_med), nDrift: Number(l.n_drift) || 0,
     })),
     erreur: '',

@@ -1,9 +1,12 @@
 // Le niveau global de l'athlète à vélo : cinq piliers, chacun noté de 0 à 100, et leur moyenne. Calculs purs, testés dans tests/bilan/piliers-niveau.test.ts.
 //   puissance    : la force de pointe, moyenne des notes de ton meilleur sprint (5 s), 5, 20 et 60 minutes de l'année (100 = ton meilleur de chaque durée, 0 = 20 % en dessous ; les autres piliers gardent 30 %) ;
-//   endurance    : tenir longtemps (formule de Yanis, 3 nov. 2026), note = 100 × (0,20 D + 0,35 R + 0,45 C), chaque lettre remise entre 0 et 1 :
-//                    - D fatigue : meilleur 20 min APRÈS 30 kJ/kg de travail cumulé ÷ ton meilleur 20 min frais de TOUS LES TEMPS (en watts : une année plus faible ne profite pas d'un bon ratio) ; 0 à 85 %, 1 à 97 % ;
-//                    - R longue durée : meilleur 2 h 30 de l'année ÷ FTP de TOUS LES TEMPS (95 % de ton meilleur 20 min de toujours) ; 0 à 65 %, 1 à 85 % ;
-//                    - C découplage : médiane du découplage des 10 sorties de plus de 2 h à la plus haute puissance normalisée de l'année, EF = puissance normalisée / FC, 1re contre 2e moitié ; 12 % = 0, 2 % = 1 ;
+//   endurance    : tenir longtemps, à PUISSANCE FIXE (formule de Yanis, 3 nov. 2026) : en 2026, tenir 175 W pendant 3 h est beaucoup plus facile qu'en 2019. La puissance de référence
+//                  est la même pour toutes les années : 70 % de ta FTP de TOUS LES TEMPS (95 % de ton meilleur 20 min de toujours). Note = 100 × (0,30 F + 0,25 H + 0,30 C + 0,15 D) :
+//                    - F facilité : puissance de référence ÷ FTP de l'année (la FTP de l'année = 95 % de son meilleur 20 min) ; 100 à 70 % de la FTP (ou moins), 0 à 90 % (ou plus) ;
+//                    - H coût cardio : FC moyenne médiane des sorties de plus de 2 h à la puissance de référence (±10 %, les 10 plus récentes de l'année) contre ton meilleur (le plus bas) de toujours ;
+//                      100 au meilleur, 0 à 15 battements de plus ;
+//                    - C fraîcheur à 2 h 30 : découplage cardiaque médian de ces mêmes sorties (EF = puissance normalisée / FC, 1re contre 2e moitié) ; 12 % = 0, 2 % = 100 ;
+//                    - D fatigue : meilleur 20 min APRÈS 30 kJ/kg de travail cumulé ÷ ton meilleur 20 min frais de TOUS LES TEMPS ; 0 à 85 %, 100 à 97 % ;
 //                  chaque lettre est multipliée par sa preuve (3 sorties demandées) ; une lettre sans mesure vaut 0 ;
 //                  (les watts à cardio égal, l'ancien pilier « Endurance », sont devenus la Forme : voir niveau-annees.ts et forme-saison.ts) ;
 //   durabilité   : garder sa puissance fatigué : meilleur 5 et 20 min après 2 h 30 de sortie, divisé par le meilleur à froid (100 = aucune perte, 0 = 30 % de perte) ;
@@ -22,7 +25,7 @@ import { noteDe } from './niveau-annees.ts';
 export type PilierCle = 'puissance' | 'endurance' | 'durabilite' | 'repetabilite' | 'charge';
 export const PILIERS: readonly { cle: PilierCle; nom: string; court: string; explication: string }[] = [
   { cle: 'puissance', nom: 'Puissance', court: 'Puissance', explication: 'Sprint, 5, 20 et 60 min' },
-  { cle: 'endurance', nom: 'Endurance', court: 'Endurance', explication: 'Puissance après fatigue, 2 h 30 contre ta FTP, découplage cardiaque' },
+  { cle: 'endurance', nom: 'Endurance', court: 'Endurance', explication: 'Effort et cœur à puissance fixe, fraîcheur à 2 h 30, puissance après fatigue' },
   { cle: 'durabilite', nom: 'Durabilité', court: 'Durabilité', explication: 'Puissance gardée après 2 h 30' },
   { cle: 'repetabilite', nom: 'Répétabilité', court: 'Répétabilité', explication: '3e effort contre le 1er' },
   { cle: 'charge', nom: 'Capacité de charge', court: 'Charge', explication: 'Charge chronique maximale' },
@@ -46,23 +49,29 @@ export interface MesuresAnnee {
   /** Combien de sorties de l'année ont une courbe de puissance (un capteur). */
   nCourbes: number;
   /** Meilleure puissance sur 2 h 30 de l'année. */
-  w9000: number | null;
+  /** La puissance de référence (W) : 70 % de la FTP de tous les temps, la même pour toutes les années. Null sans courbe de puissance. */
+  pRef: number | null;
+  /** FC moyenne médiane (bpm) des 10 plus récentes sorties de plus de 2 h à la puissance de référence (±10 %), et le nombre de sorties. */
+  fcRef: number | null;
+  nFc: number;
   /** Meilleur 20 min APRÈS fatigue (30 kJ/kg de travail déjà fait) de l'année, et le nombre de sorties qui en ont un. */
   fat20: number | null;
   nFat: number;
-  /** Médiane du découplage cardiaque (en %) des 10 sorties de plus de 2 h à la plus haute puissance normalisée de l'année, et le nombre de sorties qui ont compté. */
+  /** Médiane du découplage cardiaque (en %) des mêmes sorties à la puissance de référence, et le nombre de sorties qui ont compté. */
   driftMed: number | null;
   nDrift: number;
 }
 
 /** Les trois notes (0 à 100, avant leur poids et leur preuve) qui font l'endurance d'une année ; null quand la mesure manque. */
 export interface DetailEndurance {
+  /** F : la puissance de référence ÷ la FTP de l'année (à puissance égale, plus c'est facile, plus la note est haute). */
+  facilite: number | null;
+  /** H : la FC moyenne à la puissance de référence, contre ton meilleur de toujours. */
+  cardio: number | null;
+  /** C : le découplage cardiaque à la puissance de référence (fraîcheur à 2 h 30). */
+  decouplage: number | null;
   /** D : meilleur 20 min après fatigue ÷ meilleur 20 min frais de tous les temps. */
   fatigue: number | null;
-  /** R : meilleur 2 h 30 ÷ FTP de tous les temps. */
-  longue: number | null;
-  /** C : découplage cardiaque des sorties longues. */
-  decouplage: number | null;
 }
 
 /** Les deux notes qui font la répétabilité d'une année (null quand la mesure manque ; avant la hauteur, la régularité faisait seule la note). */
@@ -109,17 +118,20 @@ export interface NiveauGlobal {
 export const SORTIES_MINI_PUISSANCE = 3;
 export const SORTIES_MINI_DURABILITE = 3;
 export const SORTIES_MINI_REPETABILITE = 3;
-/** L'endurance (formule de Yanis, 3 nov. 2026) : 20 % la fatigue (D), 35 % la longue durée (R), 45 % le découplage (C). Chaque note est un rapport remis entre 0 et 1 ; sa preuve
- *  demande 3 sorties (3 sorties après fatigue, 3 sorties longues avec découplage, 3 sorties avec capteur) : avec moins, la note est réduite d'autant. */
+/** L'endurance (formule de Yanis, 3 nov. 2026) : 30 % la facilité (F), 25 % le coût cardio (H), 30 % la fraîcheur à 2 h 30 (C), 15 % la fatigue (D). Chaque note va de 0 à 100 ; sa preuve
+ *  demande 3 sorties (3 sorties à la puissance de référence avec FC, 3 avec découplage, 3 après fatigue, 3 avec capteur pour F) : avec moins, la note est réduite d'autant. */
 export const SORTIES_MINI_FATIGUE = 3;
 export const SORTIES_MINI_DECOUPLAGE = 3;
-export const POIDS_ENDURANCE = { fatigue: 0.2, longue: 0.35, decouplage: 0.45 } as const;
+export const SORTIES_MINI_CARDIO = 3;
+export const POIDS_ENDURANCE = { facilite: 0.3, cardio: 0.25, decouplage: 0.3, fatigue: 0.15 } as const;
+/** F : la puissance de référence vaut 70 % de la FTP de l'année (ou moins) = 100, 90 % (ou plus) = 0. */
+export const FACILITE_CENT = 0.7;
+export const FACILITE_ZERO = 0.9;
+/** H : 15 battements de plus que ton meilleur (le plus bas) = 0. */
+export const CARDIO_ECART_BPM = 15;
 /** D : le 20 min après fatigue vaut 0 à 85 % de ton meilleur 20 min frais de toujours (ou moins), 100 à 97 % (ou plus). */
 export const FATIGUE_ZERO = 0.85;
 export const FATIGUE_CENT = 0.97;
-/** R : le meilleur 2 h 30 vaut 0 à 65 % de la FTP de toujours (ou moins), 100 à 85 % (ou plus). */
-export const LONGUE_ZERO = 0.65;
-export const LONGUE_CENT = 0.85;
 /** C : un découplage de 12 % (ou plus) vaut 0, 2 % (ou moins) vaut 100. */
 export const DECOUPLAGE_ZERO = 12;
 export const DECOUPLAGE_CENT = 2;
@@ -161,6 +173,10 @@ export function niveauGlobal(mesures: readonly MesuresAnnee[]): NiveauGlobal | n
     w3600: meilleurDe(reference.map((m) => m.w3600)),
     ctl: meilleurDe(mesures.map((m) => m.ctlMax)),
   };
+  // Ton meilleur (le plus bas) cœur à la puissance de référence : sur les années à au moins 3 sorties de référence avec FC, sinon sur celles qui en ont au moins une
+  const cardios = mesures.filter((m) => m.fcRef !== null && m.fcRef > 0);
+  const cardiosFiables = cardios.filter((m) => m.nFc >= SORTIES_MINI_CARDIO);
+  const meilleurFc = Math.min(...(cardiosFiables.length ? cardiosFiables : cardios).map((m) => m.fcRef as number), Infinity);
   const parAn = new Map<number, MesuresAnnee>(mesures.map((m) => [m.an, m]));
   const annees = [...parAn.keys()].sort((a, b) => a - b);
 
@@ -185,22 +201,26 @@ export function niveauGlobal(mesures: readonly MesuresAnnee[]): NiveauGlobal | n
     // Sans la hauteur (une ancienne version de la base ne la rend pas), la régularité fait seule la note
     const repetabilite = (moyenne([detailRepetabilite.regularite, detailRepetabilite.hauteur].filter((v): v is number => v !== null)) ?? 0) * preuveRepetabilite;
 
-    // Endurance : D (fatigue), R (longue durée), C (découplage). D et R se jugent en WATTS contre ton meilleur de TOUS LES TEMPS (Yanis, 3 nov. 2026) : un bon ratio sur une année
-    // où la puissance était plus basse ne rapporte rien. La FTP de toujours = 95 % de ton meilleur 20 min frais de toujours (années fiables).
-    const ftpToujours = meilleurs.w1200 > 0 ? 0.95 * meilleurs.w1200 : null;
+    // Endurance à PUISSANCE FIXE (voir l'en-tête) : la même puissance de référence pour toutes les années, jugée en effort relatif (F), en cœur (H) et en fraîcheur à 2 h 30 (C),
+    // plus la puissance après fatigue contre ton meilleur 20 min de toujours (D).
+    const ftpAnnee = m.w1200 !== null && m.w1200 > 0 ? 0.95 * m.w1200 : null;
     const endurance: DetailEndurance = {
-      fatigue: m.fat20 !== null && meilleurs.w1200 > 0 ? noteLineaire(m.fat20 / meilleurs.w1200, FATIGUE_ZERO, FATIGUE_CENT) : null,
-      longue: m.w9000 !== null && ftpToujours !== null ? noteLineaire(m.w9000 / ftpToujours, LONGUE_ZERO, LONGUE_CENT) : null,
+      facilite: m.pRef !== null && m.pRef > 0 && ftpAnnee !== null ? noteLineaire(m.pRef / ftpAnnee, FACILITE_ZERO, FACILITE_CENT) : null,
+      cardio: m.fcRef !== null && m.fcRef > 0 && m.nFc > 0 && Number.isFinite(meilleurFc) ? noteLineaire(m.fcRef, meilleurFc + CARDIO_ECART_BPM, meilleurFc) : null,
       decouplage: m.driftMed !== null && m.nDrift > 0 ? noteLineaire(m.driftMed, DECOUPLAGE_ZERO, DECOUPLAGE_CENT) : null,
+      fatigue: m.fat20 !== null && meilleurs.w1200 > 0 ? noteLineaire(m.fat20 / meilleurs.w1200, FATIGUE_ZERO, FATIGUE_CENT) : null,
     };
     // Chaque note compte pour son poids, multipliée par sa preuve ; une note qui manque vaut 0 et sa part de preuve aussi
-    const preuveFatigue = endurance.fatigue !== null ? preuveDe(m.nFat, SORTIES_MINI_FATIGUE) : 0;
-    const preuveLongue = endurance.longue !== null ? preuvePuissance : 0;
+    const preuveFacilite = endurance.facilite !== null ? preuvePuissance : 0; // la FTP de l'année demande 3 sorties avec capteur
+    const preuveCardio = endurance.cardio !== null ? preuveDe(m.nFc, SORTIES_MINI_CARDIO) : 0;
     const preuveDecouplage = endurance.decouplage !== null ? preuveDe(m.nDrift, SORTIES_MINI_DECOUPLAGE) : 0;
-    const noteEndurance = POIDS_ENDURANCE.fatigue * (endurance.fatigue ?? 0) * preuveFatigue
-      + POIDS_ENDURANCE.longue * (endurance.longue ?? 0) * preuveLongue
-      + POIDS_ENDURANCE.decouplage * (endurance.decouplage ?? 0) * preuveDecouplage;
-    const preuveEndurance = POIDS_ENDURANCE.fatigue * preuveFatigue + POIDS_ENDURANCE.longue * preuveLongue + POIDS_ENDURANCE.decouplage * preuveDecouplage;
+    const preuveFatigue = endurance.fatigue !== null ? preuveDe(m.nFat, SORTIES_MINI_FATIGUE) : 0;
+    const noteEndurance = POIDS_ENDURANCE.facilite * (endurance.facilite ?? 0) * preuveFacilite
+      + POIDS_ENDURANCE.cardio * (endurance.cardio ?? 0) * preuveCardio
+      + POIDS_ENDURANCE.decouplage * (endurance.decouplage ?? 0) * preuveDecouplage
+      + POIDS_ENDURANCE.fatigue * (endurance.fatigue ?? 0) * preuveFatigue;
+    const preuveEndurance = POIDS_ENDURANCE.facilite * preuveFacilite + POIDS_ENDURANCE.cardio * preuveCardio
+      + POIDS_ENDURANCE.decouplage * preuveDecouplage + POIDS_ENDURANCE.fatigue * preuveFatigue;
 
     const charge = m.ctlMax !== null && meilleurs.ctl > 0 ? noteChargeDe(m.ctlMax / meilleurs.ctl) : 0;
 
