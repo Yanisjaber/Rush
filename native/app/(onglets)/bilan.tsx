@@ -29,6 +29,7 @@ import {
 } from '@/data/bilan/bilan';
 import { formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
 import { nomDuType } from '@/data/sports/catalogue-sports';
+import { formeParSemaine } from '@/data/bilan/forme-saison';
 import { niveauxCourse, niveauxVelo } from '@/data/bilan/niveau-annees';
 import { niveauGlobal, recordsDeMesures } from '@/data/bilan/piliers-niveau';
 import { courbeProgression, progressionTousSports, type PeriodeProgression } from '@/data/bilan/progression';
@@ -222,19 +223,25 @@ export default function Bilan() {
   }, [progresOuvert, filtre, toutes, historique.seances, carnet.series, hrMax, maintenant]);
   // Le niveau année après année du vélo et de la course, sur tout l'historique
   const niveaux = useMemo(() => {
-    if (!progresOuvert) return { velo: null, course: null, anneesVelo: [] as number[] };
+    if (!progresOuvert) return { velo: null, course: null, anneesVelo: [] as number[], sortiesVelo: [] as ReturnType<typeof sortiesVeloProgres> };
     const sorties = sortiesVeloProgres(historique.seances, hrMax ?? null);
     const premiere = sorties.length ? Math.min(...sorties.map((s) => Number(s.date.slice(0, 4)))) : maintenant.getFullYear();
     return {
       velo: niveauxVelo(sorties),
       course: niveauxCourse(sortiesCourse(historique.seances, hrMax ?? null)),
       anneesVelo: Array.from({ length: maintenant.getFullYear() - premiere + 1 }, (_, i) => premiere + i),
+      sortiesVelo: sorties,
     };
   }, [progresOuvert, historique.seances, hrMax, maintenant]);
   // Les mesures par année (puissances de pointe, durabilité, répétabilité, charge) : une lecture, qui sert au niveau global et au sélecteur de records
   const piliers = usePiliersAnnuels(progresOuvert && niveaux.velo !== null);
   const recordsAnnuels = useMemo(() => recordsDeMesures(piliers.mesures), [piliers.mesures]);
   const niveauGlobalVelo = useMemo(() => (niveaux.velo ? niveauGlobal(piliers.mesures) : null), [niveaux.velo, piliers.mesures]);
+  // La forme semaine par semaine de l'année choisie (graphique « Forme par saison »)
+  const formeSaison = useMemo(
+    () => (niveaux.velo ? formeParSemaine(niveaux.sortiesVelo, historique.seances, niveaux.velo, annee, maintenant) : null),
+    [niveaux, historique.seances, annee, maintenant],
+  );
   const anneeInutile = onglet === 'progres' && !(niveauGlobalVelo && progres.some(({ prog }) => prog.famille === 'velo'));
 
   return (
@@ -604,6 +611,7 @@ export default function Bilan() {
                       records={prog.famille === 'velo' ? recordsAnnuels : undefined}
                       niveauGlobal={prog.famille === 'velo' ? niveauGlobalVelo : null}
                       annee={annee}
+                      forme={prog.famille === 'velo' ? formeSaison : null}
                     />
                   ))
                 ) : (

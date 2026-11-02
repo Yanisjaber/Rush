@@ -2,8 +2,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { ChaleurPiliers } from '@/components/graphes/ChaleurPiliers';
 import { CourbeGlobale } from '@/components/graphes/CourbeGlobale';
+import { FormeSaison } from '@/components/graphes/FormeSaison';
 import { ProgresNiveau } from '@/components/graphes/ProgresNiveau';
 import { IconeSport } from '@/components/ui/IconeSport';
+import type { FormeSaison as Forme } from '@/data/bilan/forme-saison';
 import type { RecordsAnnee, SerieNiveau } from '@/data/bilan/niveau-annees';
 import type { NiveauGlobal } from '@/data/bilan/piliers-niveau';
 import type { PeriodeProgression, Progression } from '@/data/bilan/progression';
@@ -14,20 +16,22 @@ import { usePalette } from '@/theme/usePalette';
 
 // La page Progrès du vélo, sur une seule page qui défile (demande de Yanis, 2 nov. 2026) : le niveau global de l'année en taille normale (le chiffre seul),
 // la courbe du score global de toutes les années (le score sur chaque point), la carte de chaleur des cinq piliers par année,
-// puis la courbe des niveaux (Sprint, 5, 20, 60 min, Endurance) avec son sélecteur. Pas de texte d'explication.
+// puis la courbe des niveaux (Sprint, 5, 20, 60 min, Forme) avec son sélecteur, et la forme semaine par semaine de l'année choisie. Pas de texte d'explication.
 // Calculs : data/bilan/piliers-niveau.ts et docs/native/PROGRESSION_NIVEAU.md.
 interface Props {
   global: NiveauGlobal;
-  /** Le niveau d'endurance et les records de chaque année, pour la courbe du bas. */
+  /** La forme et les records de chaque année, pour la courbe des niveaux. */
   serie: SerieNiveau;
   records: RecordsAnnee[];
   preuve: Progression | null;
   jours: PeriodeProgression;
   /** L'année choisie en haut du Bilan : le niveau du haut, le point cerclé, la fenêtre des piliers et de la courbe du bas. */
   annee: number;
+  /** La forme semaine par semaine de l'année choisie ; null s'il n'y a pas de quoi la tracer. */
+  forme: Forme | null;
 }
 
-export function NiveauGlobalVelo({ global: g, serie, records, preuve, jours, annee }: Props) {
+export function NiveauGlobalVelo({ global: g, serie, records, preuve, jours, annee, forme }: Props) {
   const p = usePalette();
   const couleur = couleurSport(p, 'velo');
   // L'année choisie peut ne pas avoir de score (trop peu de sorties) : le niveau s'affiche alors « — »
@@ -61,6 +65,8 @@ export function NiveauGlobalVelo({ global: g, serie, records, preuve, jours, ann
       </Bloc>
 
       <ProgresNiveau famille="velo" serie={serie} records={records} preuve={preuve} jours={jours} courbeSeule jusquAn={annee} />
+
+      {forme ? <FormeSaison forme={forme} couleur={couleur} /> : null}
     </View>
   );
 }

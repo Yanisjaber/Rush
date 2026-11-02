@@ -106,7 +106,7 @@ function noter(brut: Brut, meilleur: number, plusHautMieux: boolean): PointNivea
  * Un rapport au meilleur niveau simple (90 % = note 90) serrerait tout entre 70 et 100 : les écarts réels (un vélo qui passe de 138 à 169 W, soit 22 %) se verraient à peine.
  */
 export const RAPPORT_ZERO = 0.7;
-const noteLibre = (rapport: number): number => ((rapport - RAPPORT_ZERO) / (1 - RAPPORT_ZERO)) * 100;
+export const noteLibre = (rapport: number): number => ((rapport - RAPPORT_ZERO) / (1 - RAPPORT_ZERO)) * 100;
 /** La note, entre 0 et 100 (le haut de la marge d'erreur, lui, peut dépasser 100 : voir noteLibre). */
 export const noteDe = (rapport: number): number => Math.max(0, Math.min(100, noteLibre(rapport)));
 
@@ -147,14 +147,16 @@ export interface SortieNiveauVelo {
 
 /** Niveau du vélo par année et par trimestre : les watts à cardio égal, sur route. Le home-trainer n'est corrigé que s'il y en a au moins 3 et 3 sorties sur route. */
 export function niveauxVelo(sorties: readonly SortieNiveauVelo[]): SerieNiveau | null {
+  return construire(lignesVelo(sorties), { tranchesParAn: 4, z: 1.8, plusHautMieux: true });
+}
+
+/** Les sorties vélo prêtes pour la régression (aussi utilisées par la forme semaine par semaine) : la colonne de correction vaut 1 sur home-trainer. */
+export function lignesVelo(sorties: readonly SortieNiveauVelo[]): LigneNiveau[] {
   const salle = sorties.filter((s) => s.interieur).length;
   const route = sorties.length - salle;
   const separe = salle >= SORTIES_MINI_PERIODE && route >= SORTIES_MINI_PERIODE;
   const gardees = separe ? sorties : sorties.filter((s) => s.interieur === salle > route);
-  return construire(
-    gardees.map((s) => ({ date: s.date, valeur: s.watts, fc: s.fc, corrections: separe ? [s.interieur ? 1 : 0] : [] })),
-    { tranchesParAn: 4, z: 1.8, plusHautMieux: true },
-  );
+  return gardees.map((s) => ({ date: s.date, valeur: s.watts, fc: s.fc, corrections: separe ? [s.interieur ? 1 : 0] : [] }));
 }
 
 // --- Course -----------------------------------------------------------------------------------------------------------------

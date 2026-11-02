@@ -1,0 +1,127 @@
+// La forme vélo semaine par semaine sur une année civile (graphique « Forme par saison », maquette 7 choisie par Yanis le 2 nov. 2026).
+// Chaque semaine reçoit les watts à cardio égal calculés sur les 6 semaines qui finissent avec elle (fenêtre glissante) :
+// - la pente du cardio et la correction du home-trainer viennent d'une seule régression sur tout l'historique (une colonne par trimestre, comme la courbe Forme) ;
+// - les watts de chaque sortie de la fenêtre sont ramenés au cardio de référence, puis moyennés ; la marge d'erreur vient de leur dispersion ;
+// - le score utilise la même échelle que la courbe Forme (100 = ton meilleur trimestre, voir niveau-annees.ts).
+// À côté : tes heures de vélo de chaque semaine, pour voir si la forme suit le volume.
+
+import { mediane, regression } from '../outils/regression.ts';
+import { lignesVelo, noteDe, noteLibre, SORTIES_MINI_PERIODE, type SerieNiveau, type SortieNiveauVelo } from './niveau-annees.ts';
+
+/** La fenêtre : la semaine et les 5 d'avant. */
+export const SEMAINES_FENETRE = 6;
+/** Comme la courbe Forme : la marge d'erreur vaut 1,8 fois l'incertitude. */
+const Z = 1.8;
+
+export interface SemaineForme {
+  /** Numéro de la semaine dans l'année, à partir de 0 (la semaine 0 commence le 1er janvier ; la dernière va jusqu'au 31 décembre). */
+  index: number;
+  /** Premier jour de la semaine, « AAAA-MM-JJ ». */
+  debut: string;
+  /** Le score sur 100, ou null s'il y a moins de 3 sorties dans la fenêtre. */
+  score: number | null;
+  /** La fourchette du score (le haut peut dépasser 100). */
+  bas: number | null;
+  haut: number | null;
+  /** Sorties mesurées dans la fenêtre de 6 semaines. */
+  n: number;
+  /** Heures de vélo de la semaine elle-même (toutes les sorties vélo, même sans capteur ni cardio, hors vélo électrique). */
+  heures: number;
+}
+
+export interface FormeSaison {
+  annee: number;
+  /** Les semaines déjà commencées (toutes, pour une année passée). */
+  semaines: SemaineForme[];
+  /** L'index de la meilleure semaine. */
+  meilleure: number;
+}
+
+/** Les champs d'une séance utiles pour les heures (un sous-ensemble de `Seance`). */
+export interface SeanceHeures {
+  sport: string;
+  start_date_local: string;
+  moving_time: number;
+}
+
+/** Les heures comptent le vélo que tu pédales toi-même (pas le vélo électrique), comme la forme. */
+const SPORTS_HEURES = new Set(['Ride', 'GravelRide', 'MountainBikeRide', 'VirtualRide']);
+const jourDe = (date: string): number => Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10))) / 86400000;
+const dateDe = (jour: number): string => new Date(jour * 86400000).toISOString().slice(0, 10);
+const moyenne = (v: number[]): number => v.reduce((s, x) => s + x, 0) / v.length;
+
+/** La pente du cardio (watts par bpm) et la correction home-trainer, estimées sur tout l'historique avec une colonne par trimestre. */
+function modele(lignes: ReturnType<typeof lignesVelo>, fcRef: number): { pente: number; salle: number } | null {
+  const trimestre = (date: string) => `${date.slice(0, 4)}-${Math.floor((Number(date.slice(5, 7)) - 1) / 3)}`;
+  const compte = new Map<string, number>();
+  for (const l of lignes) compte.set(trimestre(l.date), (compte.get(trimestre(l.date)) ?? 0) + 1);
+  const cles = [...compte].filter(([, n]) => n >= SORTIES_MINI_PERIODE).map(([cle]) => cle).sort();
+  const retenues = lignes.filter((l) => cles.includes(trimestre(l.date)));
+  if (!retenues.length || new Set(retenues.map((l) => l.fc)).size < 2) return null;
+  const avecSalle = retenues[0].corrections.length > 0 && new Set(retenues.map((l) => l.corrections[0])).size > 1;
+  const x = retenues.map((l) => [...cles.map((cle) => (trimestre(l.date) === cle ? 1 : 0)), l.fc - fcRef, ...(avecSalle ? [l.corrections[0]] : [])]);
+  const fit = regression(x, retenues.map((l) => l.valeur));
+  if (!fit) return null;
+  return { pente: fit.b[cles.length], salle: avecSalle ? fit.b[cles.length + 1] : 0 };
+}
+
+/**
+ * La forme de chaque semaine de `annee` (jusqu'à la semaine d'aujourd'hui pour l'année en cours), et les heures de vélo par semaine.
+ * Null si la série Forme n'existe pas ou si aucune semaine n'a 3 sorties dans sa fenêtre.
+ */
+export function formeParSemaine(
+  sorties: readonly SortieNiveauVelo[],
+  seances: readonly SeanceHeures[],
+  serie: SerieNiveau | null,
+  annee: number,
+  aujourdhui: Date,
+): FormeSaison | null {
+  if (!serie || !serie.fcReference || !(serie.meilleur.niveau > 0)) return null;
+  const lignes = lignesVelo(sorties);
+  const fcRef = serie.fcReference ?? Math.round(mediane(lignes.map((l) => l.fc)));
+  const m = modele(lignes, fcRef);
+  if (!m) return null;
+  const corrigees = lignes.map((l) => ({ jour: jourDe(l.date), watts: l.valeur - m.pente * (l.fc - fcRef) - m.salle * (l.corrections[0] ?? 0) }));
+
+  const debutAn = jourDe(`${annee}-01-01`);
+  const finAn = jourDe(`${annee + 1}-01-01`);
+  const auj = jourDe(`${aujourdhui.getFullYear()}-${String(aujourdhui.getMonth() + 1).padStart(2, '0')}-${String(aujourdhui.getDate()).padStart(2, '0')}`);
+  const heuresParSemaine = new Map<number, number>();
+  for (const s of seances) {
+    if (!SPORTS_HEURES.has(s.sport) || !(s.moving_time > 0)) continue;
+    const j = jourDe(s.start_date_local);
+    if (j < debutAn || j >= finAn) continue;
+    const i = Math.min(51, Math.floor((j - debutAn) / 7));
+    heuresParSemaine.set(i, (heuresParSemaine.get(i) ?? 0) + s.moving_time / 3600);
+  }
+
+  const meilleur = serie.meilleur.niveau;
+  const semaines: SemaineForme[] = [];
+  for (let i = 0; i < 52; i++) {
+    const debut = debutAn + 7 * i;
+    if (debut > auj) break;
+    const fin = i === 51 ? finAn : debut + 7;
+    const fenetre = corrigees.filter((c) => c.jour >= fin - 7 * SEMAINES_FENETRE && c.jour < fin).map((c) => c.watts);
+    const heures = heuresParSemaine.get(i) ?? 0;
+    if (fenetre.length < SORTIES_MINI_PERIODE) {
+      semaines.push({ index: i, debut: dateDe(debut), score: null, bas: null, haut: null, n: fenetre.length, heures });
+      continue;
+    }
+    const niveau = moyenne(fenetre);
+    const ecartType = Math.sqrt(fenetre.reduce((s, w) => s + (w - niveau) ** 2, 0) / (fenetre.length - 1));
+    const demi = (Z * ecartType) / Math.sqrt(fenetre.length);
+    const score = noteDe(niveau / meilleur);
+    semaines.push({
+      index: i,
+      debut: dateDe(debut),
+      score,
+      bas: Math.min(noteDe((niveau - demi) / meilleur), score),
+      haut: Math.max(noteLibre((niveau + demi) / meilleur), score),
+      n: fenetre.length,
+      heures,
+    });
+  }
+  const notees = semaines.filter((s) => s.score !== null);
+  if (!notees.length) return null;
+  return { annee, semaines, meilleure: notees.reduce((a, s) => (s.score! > a.score! ? s : a)).index };
+}
