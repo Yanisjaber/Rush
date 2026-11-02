@@ -3,7 +3,8 @@
 --
 -- Avant : une sortie comptait si son 3e effort de 5 min valait au moins 75 % du meilleur 5 min de l'année. Une année où tu roulais très doucement
 -- (84 W au mieux en 2017) validait donc des efforts à 80 W, et leur régularité donnait 83/100 : la note récompensait la facilité.
--- Maintenant : le 3e effort doit valoir au moins 75 % de ton meilleur 5 min de toujours (parmi les années où la puissance est fiable : 3 sorties
+-- Maintenant : le 3e effort doit valoir au moins 50 % de ton meilleur 5 min de toujours (la barre a été fixée à 50 % par Yanis le 2 nov. 2026 :
+-- à 75 %, une année de beaucoup de kilomètres tranquilles n'avait aucune sortie valide) (parmi les années où la puissance est fiable : 3 sorties
 -- à capteur au moins, la même règle que la note de puissance, pour qu'un capteur qui a menti en une sortie ne fixe pas la barre).
 -- Une année sans assez de vrais efforts n'a plus de note de répétabilité (« — »), au lieu d'une note flatteuse.
 --
@@ -77,7 +78,7 @@ as $$
       where s.pc ? 'rep_3' and s.pc ? 'rep_1'
     ) r
     cross join meilleur_5min b
-    where r.ratio is not null and r.rep_3 >= 0.75 * b.w300
+    where r.ratio is not null and r.rep_3 >= 0.5 * b.w300
     group by r.an
   ),
   longues as (
