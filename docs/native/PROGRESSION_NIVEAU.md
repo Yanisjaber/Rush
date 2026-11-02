@@ -62,6 +62,14 @@ Les watts à cardio égal mesurent la **forme** (l'efficacité aérobie), pas la
 
 Les anciennes sorties ont été rattrapées depuis leurs streams le 2 nov. 2026 ; `strava-streams` calcule la dérive des nouvelles.
 
+## Forme par saison (depuis le 2 nov. 2026)
+
+Sous la courbe des niveaux, le bloc « Forme par saison » (maquette 7 de `claude.ai/artifact/QXW6TvDr57NLowSB28ndjX` ; code : `forme-saison.ts`, `FormeSaison.tsx`) montre l'année civile choisie semaine par semaine :
+- **la forme** : pour chaque semaine, les sorties des 6 semaines qui finissent avec elle (au moins 3, sinon la semaine reste vide). Leurs watts sont ramenés au cardio de référence avec la pente et la correction home-trainer d'une régression sur tout l'historique (une colonne par trimestre), puis moyennés. Marge d'erreur = 1,8 × écart-type ÷ √n. Même échelle que la courbe Forme (100 = le meilleur trimestre) ; la meilleure semaine est cerclée ;
+- **les heures** de vélo de la semaine en barres (toutes les sorties vélo, hors vélo électrique), sur le même axe des mois.
+
+L'année en cours s'arrête à la semaine d'aujourd'hui. La semaine 1 commence le 1er janvier ; la dernière va jusqu'au 31 décembre.
+
 ## Les records
 
 Le sélecteur du vélo lit ton meilleur sprint (5 secondes) et tes meilleurs 5, 20 et 60 minutes de chaque année (fonction SQL `rpc_courbe_puissance`, une lecture par année). Chaque durée a son propre 100 (ta meilleure année sur cette durée). Pas de trimestres ni de marge d'erreur : un record n'est pas assez régulier (il demande un effort maximal ce jour-là).

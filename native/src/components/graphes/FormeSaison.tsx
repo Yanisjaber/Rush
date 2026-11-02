@@ -16,13 +16,13 @@ interface Props {
 const LARGEUR = 300;
 const G = 34;
 const D = 10;
-// La forme : de 14 (place pour le chiffre de la meilleure semaine) à 150
+// La forme : de 18 (place pour le chiffre de la meilleure semaine) à 150
 const F_HAUT = 18;
 const F_BAS = 150;
-// Les heures : de 164 à 214, puis les mois
-const V_HAUT = 166;
-const V_BAS = 214;
-const HAUTEUR = 236;
+// Les heures : de 180 à 226 (de l'air sous la forme pour que les deux échelles ne se touchent pas), puis les mois
+const V_HAUT = 180;
+const V_BAS = 226;
+const HAUTEUR = 248;
 const MOIS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 const NOMS_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
