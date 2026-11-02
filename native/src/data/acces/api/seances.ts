@@ -5,6 +5,7 @@ import { messageTours, toursValides } from '../../calendrier/seance-detail';
 import { sb } from '../supabase';
 import type { Seance, Tour } from '../../types';
 import { COLONNES_SEANCE, resultat, UUID, type Resultat } from './commun';
+import { COLONNES_ECART, sansDonneesEcarteesTout, type ColonneEcart } from '../../calendrier/donnees-ecartees';
 import { avecRetouches } from './retouches-cache';
 
 /**
@@ -27,7 +28,7 @@ export async function chargerSeances(userId: string, jours = 84, limite = 600): 
     .order('start_date_local', { ascending: false })
     .limit(limite);
   const res = resultat<Seance[]>(r, 'Impossible de charger tes séances.');
-  if (res.data) res.data = sansMarche(await avecRetouches(userId, res.data));
+  if (res.data) res.data = sansDonneesEcarteesTout(sansMarche(await avecRetouches(userId, res.data)));
   return res;
 }
 
@@ -51,7 +52,7 @@ export async function chargerHistoriqueProgression(userId: string): Promise<Resu
     const res = resultat<Seance[]>(r, 'Impossible de charger ton historique.');
     if (res.erreur || !res.data) return { data: null, erreur: res.erreur || 'Impossible de charger ton historique.' };
     toutes.push(...res.data);
-    if (res.data.length < TAILLE_PAGE) return { data: sansMarche(await avecRetouches(userId, toutes)), erreur: '' };
+    if (res.data.length < TAILLE_PAGE) return { data: sansDonneesEcarteesTout(sansMarche(await avecRetouches(userId, toutes))), erreur: '' };
   }
   return { data: null, erreur: 'Ton historique est trop long pour être chargé en entier.' };
 }
@@ -64,14 +65,15 @@ export async function chargerHistoriqueProgression(userId: string): Promise<Resu
 export async function chargerDernieresSeances(userId: string, limite = 200): Promise<Resultat<Seance[]>> {
   const r = await sb.from('activities').select(COLONNES_SEANCE).eq('user_id', userId).order('start_date_local', { ascending: false }).limit(limite);
   const res = resultat<Seance[]>(r, 'Impossible de charger tes dernières séances.');
-  if (res.data) res.data = sansMarche(await avecRetouches(userId, res.data));
+  if (res.data) res.data = sansDonneesEcarteesTout(sansMarche(await avecRetouches(userId, res.data)));
   return res;
 }
 
 // L'écran de détail d'une séance : les colonnes utiles (jamais les gros champs : flux, GPX…).
 const COLONNES_DETAIL =
   'id,strava_id,source,name,sport,start_date_local,elapsed_time,moving_time,distance_km,total_elevation_gain,avg_speed_kmh,' +
-  'avg_heartrate,max_heartrate,avg_watts,max_watts,np,ftp_at_time,avg_cadence,kj,calories,tss,user_notes,rpe,category';
+  'avg_heartrate,max_heartrate,avg_watts,max_watts,np,ftp_at_time,avg_cadence,kj,calories,tss,user_notes,rpe,category,device_watts,' +
+  'excl_power,excl_hr,excl_cadence,excl_distance,excl_elevation,excl_load';
 
 /** Une séance de l'utilisateur, avec ses retouches. Un identifiant qui n'est pas un UUID n'existe pas (pas de requête). */
 export async function chargerSeance(userId: string, id: string): Promise<Resultat<Seance | null>> {
@@ -119,8 +121,20 @@ export async function chargerSeancesPeriode(userId: string, debutIso: string, fi
     .order('start_date_local', { ascending: true })
     .limit(LIMITE_SEANCES);
   const res = resultat<Seance[]>(r, 'Impossible de charger les séances de ce mois.');
-  if (res.data) res.data = await avecRetouches(userId, res.data);
+  if (res.data) res.data = sansDonneesEcarteesTout(await avecRetouches(userId, res.data));
   // Limite atteinte : les données sont gardées, mais on le dit (sinon la fin du mois manquerait sans qu'on le sache)
   if (res.data) res.erreur = avertissementLimite(res.data.length, LIMITE_SEANCES, 'séances');
   return res;
+}
+
+/**
+ * Écarte (ou remet) une donnée d'une séance, Strava ou saisie à la main : seul le drapeau `excl_*` change, les chiffres restent en base
+ * (la synchro Strava ne touche pas à ces colonnes). Dit « introuvable » si aucune ligne n'a été modifiée. Le déclencheur SQL recalcule la charge.
+ */
+export async function changerDonneeEcartee(userId: string, id: string, colonne: ColonneEcart, ecartee: boolean): Promise<{ erreur: string }> {
+  if (!UUID.test(String(id)) || !COLONNES_ECART.includes(colonne)) return { erreur: 'Séance introuvable.' };
+  const r = await sb.from('activities').update({ [colonne]: ecartee }).eq('user_id', userId).eq('id', id).select('id');
+  const res = resultat<{ id: string }[]>(r, 'Impossible de changer cette donnée.');
+  if (res.erreur) return { erreur: res.erreur };
+  return { erreur: res.data && res.data.length ? '' : 'Séance introuvable.' };
 }

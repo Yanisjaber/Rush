@@ -6,8 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { Bouton } from '@/components/ui/Bouton';
 import { IconeSport } from '@/components/ui/IconeSport';
+import { PucesEcart } from '@/components/ui/PucesEcart';
 import { StatCle } from '@/components/ui/StatCle';
 import { sortieModifiable } from '@/data/calendrier/ajouts';
+import { DONNEE_DU_CHIFFRE, estEcartee, pucesEcart } from '@/data/calendrier/donnees-ecartees';
 import { familleAffichage } from '@/data/sports/familles';
 import { formatDateLongue } from '@/data/outils/format';
 import { chiffresSeance, lignesTours } from '@/data/calendrier/seance-detail';
@@ -25,7 +27,8 @@ export default function Seance() {
   const bas = useSafeAreaInsets().bottom;
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { seance, tours, chargement, chargementTours, erreur, erreurTours } = useSeance(String(id ?? ''));
+  const { seance, tours, chargement, chargementTours, erreur, erreurTours, basculerDonnee } = useSeance(String(id ?? ''));
+  const [erreurEcart, setErreurEcart] = useState('');
   const { supprimerSortie } = useAjouts();
   const [enCours, setEnCours] = useState(false);
   const [erreurSuppression, setErreurSuppression] = useState('');
@@ -55,6 +58,7 @@ export default function Seance() {
   const nomSport = nomDuType(seance.sport);
   const chiffres = chiffresSeance(seance);
   const lignes = tours ? lignesTours(tours, seance.sport) : [];
+  const puces = pucesEcart(seance);
   const notes = (seance.user_notes ?? '').trim();
   const modifiable = sortieModifiable(seance);
   const confirmerSuppression = () =>
@@ -95,11 +99,22 @@ export default function Seance() {
           <View style={styles.grille}>
             {chiffres.map((c) => (
               <View key={c.cle} style={styles.case}>
-                <StatCle etiquette={c.libelle} valeur={c.valeur} unite={c.unite} note={c.note} petit />
+                <StatCle etiquette={c.libelle} valeur={c.valeur} unite={c.unite} note={c.note} petit ecarte={DONNEE_DU_CHIFFRE[c.cle] ? estEcartee(seance, DONNEE_DU_CHIFFRE[c.cle]) : false} />
               </View>
             ))}
           </View>
         </Bloc>
+      ) : null}
+
+      {puces.length ? (
+        <PucesEcart
+          puces={puces}
+          couleur={couleur}
+          erreur={erreurEcart}
+          onBasculer={(puce) => {
+            void (async () => setErreurEcart(await basculerDonnee(puce.colonne, !puce.ecartee)))();
+          }}
+        />
       ) : null}
 
       {notes ? (

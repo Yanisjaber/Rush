@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { donneesDemoAccueil } from '@/data/accueil/accueil';
-import { chargerSeance, chargerTours } from '@/data/acces/api';
+import { changerDonneeEcartee, chargerSeance, chargerTours } from '@/data/acces/api';
+import type { ColonneEcart } from '@/data/calendrier/donnees-ecartees';
 import { toursDemo } from '@/data/demo/demo';
 import { seanceDeLaDemo, useVersionAjouts } from '@/stores/ajouts';
 import { useAuth } from '@/stores/auth';
+import { ecartsChanges } from '@/stores/ecarts';
 import type { Seance, Tour } from '@/data/types';
 
 interface Etat {
@@ -18,9 +20,14 @@ interface Etat {
 
 const initial: Etat = { seance: null, tours: null, chargement: true, chargementTours: false, erreur: '', erreurTours: '' };
 
-// Une séance et ses tours : la démo ou le compte connecté (lecture seule). La séance s'affiche dès qu'elle est là, les tours arrivent après
+/** L'état de la séance, et de quoi écarter (ou remettre) une de ses données : renvoie un message d'erreur, vide si tout s'est bien passé. */
+export interface RetourSeance extends Etat {
+  basculerDonnee: (colonne: ColonneEcart, ecartee: boolean) => Promise<string>;
+}
+
+// Une séance et ses tours : la démo ou le compte connecté. La séance s'affiche dès qu'elle est là, les tours arrivent après
 // (ils passent par Strava : c'est plus lent, et ça peut échouer sans gêner le reste).
-export function useSeance(id: string): Etat {
+export function useSeance(id: string): RetourSeance {
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
   const version = useVersionAjouts(); // une modification ou une suppression d'activité fait relire la fiche
@@ -57,5 +64,27 @@ export function useSeance(id: string): Etat {
     };
   }, [id, userId, demo, version]);
 
-  return etat;
+  // On change l'écran tout de suite, puis la base ; si la base refuse, on remet l'ancien état. En démo, rien n'est écrit (le changement dure le temps de l'écran).
+  const basculerDonnee = useCallback(
+    async (colonne: ColonneEcart, ecartee: boolean): Promise<string> => {
+      const poser = (valeur: boolean | null | undefined) => setEtat((e) => (e.seance ? { ...e, seance: { ...e.seance, [colonne]: valeur } } : e));
+      const avant = etat.seance?.[colonne];
+      poser(ecartee);
+      if (demo) return '';
+      if (!userId) {
+        poser(avant);
+        return 'Reconnecte-toi.';
+      }
+      const r = await changerDonneeEcartee(userId, id, colonne, ecartee);
+      if (r.erreur) {
+        poser(avant);
+        return r.erreur;
+      }
+      ecartsChanges(); // la charge, les records et le niveau se recalculent : les autres écrans relisent
+      return '';
+    },
+    [demo, userId, id, etat.seance],
+  );
+
+  return { ...etat, basculerDonnee };
 }

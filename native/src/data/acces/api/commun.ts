@@ -7,7 +7,7 @@ export interface Resultat<T> {
 }
 
 export const COLONNES_SEANCE =
-  'id,strava_id,source,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,avg_heartrate,avg_watts,np,tss,category,device_watts,excl_power,excl_hr,excl_distance';
+  'id,strava_id,source,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,avg_heartrate,avg_watts,np,tss,category,device_watts,excl_power,excl_hr,excl_distance,excl_elevation,excl_cadence,excl_load';
 
 export const COLONNES_PLANIFIEE = 'id,name,date,sport,duration,tss,category,km,start_date_local,rpe,d_plus,notes,structure,gpx_name';
 

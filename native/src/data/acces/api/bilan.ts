@@ -2,13 +2,15 @@ import { sb } from '../supabase';
 import type { ObjectifAnnuel } from '../../bilan/bilan.ts';
 import type { Seance } from '../../types';
 import { resultat, UUID, type Resultat } from './commun';
+import { sansDonneesEcarteesTout } from '../../calendrier/donnees-ecartees';
 import { avecRetouches } from './retouches-cache';
 
 // ---------------------------------------------------------------------------
 // Bilan annuel : tout l'historique d'activités et objectifs annuels
 // ---------------------------------------------------------------------------
 
-const COLONNES_BILAN = 'id,strava_id,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,tss';
+// np, avg_watts et avg_heartrate servent à savoir d'où vient la charge (puissance ou cardio) quand l'une des deux est écartée
+const COLONNES_BILAN = 'id,strava_id,name,sport,start_date_local,moving_time,distance_km,total_elevation_gain,tss,np,avg_watts,avg_heartrate,excl_power,excl_hr,excl_distance,excl_elevation,excl_load';
 const TAILLE_PAGE = 1000; // l'API renvoie au plus 1000 lignes par requête : on lit par pages
 
 const PAGES_MAX = 100; // garde-fou : 100 000 activités ; au-delà, on le dit au lieu d'afficher un bilan tronqué
@@ -39,7 +41,7 @@ export async function chargerActivitesBilan(userId: string, annee: number): Prom
     }
   }
   if (!complet) return { data: null, erreur: 'Ton historique est trop long pour être chargé en entier.' };
-  return { data: await avecRetouches(userId, toutes), erreur: '' };
+  return { data: sansDonneesEcarteesTout(await avecRetouches(userId, toutes)), erreur: '' };
 }
 
 const COLONNES_OBJECTIF_ANNUEL = 'id,year,sport,template,target,current_manual';

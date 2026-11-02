@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { chargerHistoriqueProgression, chargerSeriesForce } from '@/data/acces/api';
 import { donneesDemo, seriesForceDemo } from '@/data/demo/demo';
 import { useAuth } from '@/stores/auth';
+import { useVersionEcarts } from '@/stores/ecarts';
 import type { Seance, SerieForce } from '@/data/types';
 
 /** En démo, cinq ans de séances : de quoi montrer le niveau année après année, et la flèche qui ouvre tout l'historique. */
@@ -13,6 +14,7 @@ const JOURS_DEMO = 365 * 5;
 export function useHistoriqueProgression(secours: Seance[], actif = true): { seances: Seance[]; chargement: boolean } {
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
+  const versionEcarts = useVersionEcarts();
   const [lu, setLu] = useState<{ userId: string; seances: Seance[] | null } | null>(null);
   const seancesDemo = useMemo(() => (demo ? donneesDemo(new Date(), JOURS_DEMO).seances : null), [demo]);
 
@@ -29,7 +31,7 @@ export function useHistoriqueProgression(secours: Seance[], actif = true): { sea
     return () => {
       annule = true;
     };
-  }, [demo, userId, actif]);
+  }, [demo, userId, actif, versionEcarts]);
 
   if (demo) return { seances: seancesDemo ?? secours, chargement: false };
   if (!userId) return { seances: secours, chargement: false };

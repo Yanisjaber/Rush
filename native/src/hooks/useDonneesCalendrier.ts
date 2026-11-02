@@ -5,6 +5,7 @@ import { assemblerDonnees, bornesGrille, type DonneesCalendrier } from '@/data/c
 import { annotationsDemo, seriesForceDemo } from '@/data/demo/demo';
 import { useAuth } from '@/stores/auth';
 import { notesDeLaDemo, prevuesDeLaDemo, reposDeLaDemo, sortiesAjoutees, useVersionAjouts } from '@/stores/ajouts';
+import { useVersionEcarts } from '@/stores/ecarts';
 import { cyclesDemo, useVersionCycles } from '@/stores/cycles';
 
 export type { DonneesCalendrier };
@@ -23,7 +24,7 @@ export function useDonneesCalendrier(annee: number, mois: number): {
   const userId = session?.user.id ?? null;
   const { debut, fin } = bornesGrille(annee, mois);
   // Change à chaque création, modification ou suppression de cycle, et à chaque ajout (séance prévue, compétition, note) : on recharge
-  const version = useVersionCycles() + useVersionAjouts();
+  const version = useVersionCycles() + useVersionAjouts() + useVersionEcarts(); // une donnée écartée change les chiffres du calendrier
   const cle = `${userId}|${debut}|${fin}`;
 
   const demoDonnees = useMemo((): DonneesCalendrier | null => {

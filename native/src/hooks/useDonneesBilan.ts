@@ -5,6 +5,7 @@ import { donneesPerimees, fusionnerChargement, type ObjectifAnnuel } from '@/dat
 import { activitesBilanDemo } from '@/data/demo/demo';
 import { objectifsDemo, useVersionObjectifs } from '@/stores/objectifs';
 import { useAuth } from '@/stores/auth';
+import { useVersionEcarts } from '@/stores/ecarts';
 import type { Seance } from '@/data/types';
 
 // Les données du Bilan : toutes les activités depuis la première et les objectifs annuels (démo ou compte connecté, lecture seule).
@@ -53,9 +54,10 @@ export function useDonneesBilan(): {
     setReel((avant) => ({ userId, ...fusionnerChargement(avant && avant.userId === userId ? avant : null, acts, obj) }));
   }, [userId]);
 
+  const versionEcarts = useVersionEcarts(); // les totaux changent quand une donnée est écartée
   useEffect(() => {
     if (!demo) void charger();
-  }, [demo, charger]);
+  }, [demo, charger, versionEcarts]);
 
   // Un objectif créé, modifié ou supprimé : on relit seulement les objectifs
   const chargerObjectifsSeuls = useCallback(async () => {

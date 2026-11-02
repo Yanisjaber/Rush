@@ -3,16 +3,19 @@ import { chargerPiliersAnnuels } from '@/data/acces/api';
 import type { MesuresAnnee } from '@/data/bilan/piliers-niveau';
 import { piliersAnnuelsDemo } from '@/data/demo/demo';
 import { useAuth } from '@/stores/auth';
+import { auChangementDEcarts, useVersionEcarts } from '@/stores/ecarts';
 
 // Les mesures par année du niveau global du vélo (puissances de pointe, durabilité, répétabilité, charge) : une seule lecture (la fonction SQL rpc_piliers_annuels),
 // faite quand la page Progrès du vélo est ouverte (`actif`), puis gardée cinq minutes. En démo, des exemples.
 const DUREE_CACHE = 5 * 60 * 1000;
 const cache = new Map<string, { mesures: MesuresAnnee[]; a: number }>();
 const VIDE: MesuresAnnee[] = [];
+auChangementDEcarts(() => cache.clear()); // une donnée écartée change le niveau : on relit
 
 export function usePiliersAnnuels(actif: boolean): { mesures: MesuresAnnee[]; chargement: boolean } {
   const { session, demo } = useAuth();
   const userId = !demo ? (session?.user.id ?? null) : null;
+  const versionEcarts = useVersionEcarts();
   const [, rafraichir] = useState(0);
   const [chargement, setChargement] = useState(false);
   const exemple = useMemo(() => (demo && actif ? piliersAnnuelsDemo(new Date()) : null), [demo, actif]);
@@ -39,7 +42,7 @@ export function usePiliersAnnuels(actif: boolean): { mesures: MesuresAnnee[]; ch
     return () => {
       annule = true;
     };
-  }, [userId, actif]);
+  }, [userId, actif, versionEcarts]);
 
   if (!actif) return { mesures: VIDE, chargement: false };
   if (exemple) return { mesures: exemple, chargement: false };

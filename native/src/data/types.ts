@@ -18,10 +18,13 @@ export interface Seance {
   category: string;
   /** Puissance mesurée par un capteur (faux : estimée par Strava). Absent des données de démo. */
   device_watts?: boolean | null;
-  /** Données de puissance / de cardio que l'utilisateur a écartées de ses calculs. */
+  /** Données que l'utilisateur a écartées de ses calculs (vrai = écartée) : voir data/calendrier/donnees-ecartees.ts. */
   excl_power?: boolean | null;
   excl_hr?: boolean | null;
   excl_distance?: boolean | null;
+  excl_elevation?: boolean | null;
+  excl_cadence?: boolean | null;
+  excl_load?: boolean | null;
   // Colonnes présentes sur les vraies lignes de la base (absentes des données de démo)
   strava_id?: number | null;
   source?: string;

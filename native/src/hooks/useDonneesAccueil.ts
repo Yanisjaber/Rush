@@ -4,6 +4,7 @@ import { chargerAccueil } from '@/data/acces/chargement';
 import { definirSources } from '@/stores/menu';
 import { useSportsEtat } from '@/stores/sports';
 import { useAuth } from '@/stores/auth';
+import { useVersionEcarts } from '@/stores/ecarts';
 import { useReglagesDemo } from '@/stores/reglages-demo';
 
 // Les données de l'Accueil : la démo (générée, sans compte) ou celles du compte connecté (lecture seule, via Supabase).
@@ -18,6 +19,7 @@ export function useDonneesAccueil(): {
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
   const sports = useSportsEtat();
+  const versionEcarts = useVersionEcarts(); // les totaux et la charge changent quand une donnée est écartée
   const { prevuesAujourdhui } = useReglagesDemo();
   const donneesDemo = useMemo(() => (demo ? donneesDemoAccueil(new Date(), { prevuesAujourdhui }) : null), [demo, prevuesAujourdhui]);
   const [reel, setReel] = useState<{ userId: string; donnees: DonneesAccueil } | null>(null);
@@ -38,7 +40,7 @@ export function useDonneesAccueil(): {
   // `sports.version` change quand on coche ou décoche un sport : on recharge pour recomposer l'Accueil
   useEffect(() => {
     if (!demo) void charger();
-  }, [demo, charger, sports.version]);
+  }, [demo, charger, sports.version, versionEcarts]);
 
   // Les données d'un autre compte ne doivent jamais s'afficher : on ne garde que celles de l'utilisateur courant
   const donnees = demo ? donneesDemo : reel && reel.userId === userId ? reel.donnees : null;
