@@ -33,7 +33,6 @@ import { corsHeadersFor } from "../_shared/cors.ts";
 import { reechantillonner1Hz } from "../_shared/flux.ts";
 import { clesRepetabilite } from "../_shared/repetabilite.ts";
 import { cleDerive } from "../_shared/derive.ts";
-import { cleFatigue } from "../_shared/fatigue.ts";
 import { cleCardio } from "../_shared/cardio.ts";
 import { calculerSignaux, SIGNAUX_VERSION } from "../_shared/signaux.ts";
 import { joindreJetons, ecrireRenouvellementStrava } from "../_shared/jetons.ts";
@@ -116,11 +115,10 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
 
     // Profil athlete (pour les metriques : TRIMP, eFTP, W'bal, CHO...).
     const { data: _prof } = await sbAdmin
-      .from("user_profiles").select("ftp, hr_max, lthr, weight, extras").eq("user_id", user.id).maybeSingle();
+      .from("user_profiles").select("ftp, hr_max, lthr, extras").eq("user_id", user.id).maybeSingle();
     const ATH = {
       ftp: +(_prof?.ftp) || 0,
       hrMax: +(_prof?.hr_max) || 0,
-      poids: +(_prof?.weight) || 0, // kg, pour le seuil « après fatigue » (30 kJ/kg) ; 70 kg si absent
       hrRest: 50, // pas de FC de repos dans le profil de l'app : valeur par défaut raisonnable
       sex: (_prof?.extras && _prof.extras.x_sex) || 'M',
     };
@@ -182,10 +180,10 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
         // Remise à 1 point par seconde (trous de pause / enregistrement intelligent), voir _shared/flux.ts
         const watts = reechantillonner1Hz((raw?.watts?.data) || [], (raw?.time?.data) || []);
         const powerCurve: Record<string, number> = computeMMP(watts);
-        // Durabilité (late_300 / late_1200 si sortie > 2 h 30), répétabilité (rep_1..3), découplage cardiaque (drift, sortie ≥ 2 h), puissance après fatigue (fat20) et charge cardio (hr_s, hr_sq) :
+        // Durabilité (late_300 / late_1200 si sortie > 2 h 30), répétabilité (rep_1..3), découplage cardiaque (drift, sortie ≥ 2 h) et charge cardio (hr_s, hr_sq) :
         // sans ça, une sortie importée aujourd'hui n'aurait aucune des trois
         const fc1Hz = reechantillonner1Hz((raw?.heartrate?.data) || [], (raw?.time?.data) || []);
-        Object.assign(powerCurve, computeLateMMP(watts), clesRepetabilite(watts), cleDerive(watts, fc1Hz), cleFatigue(watts, ATH.poids), cleCardio(fc1Hz));
+        Object.assign(powerCurve, computeLateMMP(watts), clesRepetabilite(watts), cleDerive(watts, fc1Hz), cleCardio(fc1Hz));
         powerCurve.v = POWER_CURVE_VERSION; // marqueur de version (ignoré par l'agrégation)
         powerCurve._v = CLIENT_PC_VERSION; // marqueur attendu par le client (records sans recalcul manuel)
         const metrics = computeMetrics(watts, (raw?.heartrate?.data) || [], (raw?.time?.data) || [], ATH);
@@ -591,11 +589,11 @@ async function recomputePowerProfileBySport(sb: any, userId: string): Promise<nu
 // Recalcule la power_curve (avec les NOUVELLES durées) depuis les streams déjà
 // stockés, pour les activités dont la courbe est absente/obsolète. Lot limité
 // (idempotent, relançable). Renvoie { done, remaining }.
-const POWER_CURVE_VERSION = 8; // 8 : + puissance après fatigue (fat20) et découplage à la puissance normalisée (drift, remplace derive) ; 7 : + charge cardio (hr_s, hr_sq) ; bump quand on change les durées/calculs (force un re-backfill local)
+const POWER_CURVE_VERSION = 8; // 8 : + découplage à la puissance normalisée (drift, remplace derive ; la puissance après fatigue `fat20`, d'une première version de la 8, a été retirée : les sorties déjà calculées gardent la clé, personne ne la lit) ; 7 : + charge cardio (hr_s, hr_sq) ; bump quand on change les durées/calculs (force un re-backfill local)
 // Obsolète = pas de power_curve OU version différente (durées étendues), ou courbes de signaux absentes ou d'une autre version.
 // Les deux se recalculent ensemble : le stream n'est décompressé qu'une fois.
 // `pv` et `sv` sont les numéros de version seuls (power_curve->>v) : on ne charge pas les courbes entières de 2000 sorties à chaque appel (plusieurs dizaines de Mo).
-// Une courbe d'une ancienne version n'est recalculée que pour les sorties de plus de 1 h 30 : les seules qui peuvent avoir une puissance après fatigue (fat20) ou un découplage (drift).
+// Une courbe d'une ancienne version n'est recalculée que pour les sorties de plus de 1 h 30 : les seules qui peuvent avoir un découplage (drift).
 // Les clés des sorties plus courtes (5 s, 5 min, 20 min, 60 min…) n'ont pas changé : leur ancienne courbe reste valable. Une sortie sans aucune courbe est toujours calculée.
 const DUREE_MINI_RECALCUL_S = 5400;
 const courbeObsolete = (a: any): boolean => a.pv == null || (Number(a.pv) !== POWER_CURVE_VERSION && Number(a.moving_time ?? 0) >= DUREE_MINI_RECALCUL_S);
@@ -643,8 +641,8 @@ async function backfillPowerCurves(sb: any, userId: string, limit: number, ath: 
         const watts = reechantillonner1Hz(streamData(arr, "watts"), streamData(arr, "time"));
         const pc: Record<string, number> = computeMMP(watts);
         const fc1Hz = reechantillonner1Hz(streamData(arr, "heartrate"), streamData(arr, "time"));
-        // late_300 / late_1200 si sortie > 2 h 30 ; rep_1..3 (trois efforts de 5 min) ; drift (découplage cardiaque, sortie ≥ 2 h) ; fat20 (20 min après 30 kJ/kg) ; hr_s et hr_sq (charge cardio)
-        Object.assign(pc, computeLateMMP(watts), clesRepetabilite(watts), cleDerive(watts, fc1Hz), cleFatigue(watts, ath?.poids), cleCardio(fc1Hz));
+        // late_300 / late_1200 si sortie > 2 h 30 ; rep_1..3 (trois efforts de 5 min) ; drift (découplage cardiaque, sortie ≥ 2 h) ; hr_s et hr_sq (charge cardio)
+        Object.assign(pc, computeLateMMP(watts), clesRepetabilite(watts), cleDerive(watts, fc1Hz), cleCardio(fc1Hz));
         pc.v = POWER_CURVE_VERSION; // marqueur de version (ignoré par l'agrégation)
         pc._v = CLIENT_PC_VERSION; // marqueur attendu par le client
         maj.power_curve = pc;

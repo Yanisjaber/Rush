@@ -169,7 +169,7 @@ Exemple (compte de test) : 2026 ≈ 99, 2025 ≈ 90, 2024 ≈ 89, 2022 ≈ 94, 2
 
 ### Durabilité : retirée (2026-11-02)
 
-Le pilier Durabilité (meilleur 5 et 20 min après 2 h 30 ÷ meilleur à froid) et la lettre D de l'endurance (20 min après 30 kJ/kg) sont retirés. En sorties libres, un ratio bas peut venir de ce qu'on n'a pas osé faire en fin de sortie plutôt que d'un manque de durabilité : la mesure ne prouvait rien quand elle était basse. Les clés `late_300`, `late_1200`, `fat20` restent calculées côté base, l'app ne les lit plus. Détails dans `docs/native/PROGRESSION_NIVEAU.md`.
+Le pilier Durabilité (meilleur 5 et 20 min après 2 h 30 ÷ meilleur à froid) et la lettre D de l'endurance (20 min après 30 kJ/kg) sont retirés. En sorties libres, un ratio bas peut venir de ce qu'on n'a pas osé faire en fin de sortie plutôt que d'un manque de durabilité : la mesure ne prouvait rien quand elle était basse. Nettoyage du 3 nov. 2026 : la fonction `rpc_piliers_annuels` ne rend plus `late300`, `late1200`, `n_longues`, `fat20` ni `n_fat` ; la clé `fat20` n'est plus calculée à l'import (les sorties déjà recalculées la gardent, personne ne la lit) ; les clés `late_300` et `late_1200` restent calculées pour le profil de durabilité du site gelé, l'app ne les lit pas. Détails dans `docs/native/PROGRESSION_NIVEAU.md`.
 
 ---
 
@@ -178,6 +178,7 @@ Le pilier Durabilité (meilleur 5 et 20 min après 2 h 30 ÷ meilleur à froid) 
 - 2026-11-02 : création, ajout du TSS, du CTL/ATL/TSB, du score d'endurance et d'une proposition de score de puissance.
 - 2026-11-02 : TSS aligné sur le code (vrai capteur seulement, cardio seconde par seconde), FTP glissante, série de forme jusqu'à aujourd'hui.
 - 2026-11-02 : pilier Puissance sur une échelle plus exigeante (0 à 20 % sous le meilleur).
+- 2026-11-03 : nettoyage serveur : `rpc_piliers_annuels` sans les colonnes de la durabilité et de la fatigue, `fat20` n'est plus calculée.
 - 2026-11-03 : FTP glissante : fenêtre de ±90 jours (puis ±180, puis ±365) au lieu de ±45 (puis ±90, puis ±180) : la charge de 2022 n'est plus gonflée par une FTP trop basse.
 - 2026-11-03 : les watts estimés par Strava sont retirés de l'app (écartés d'office, rien supprimé en base).
 - 2026-11-03 : TSS plausible : jamais plus de 200 points par heure ni d'intensité de plus de 1,5 (106 sorties de 2011-2013 à plus de 1000 TSS réparées).
