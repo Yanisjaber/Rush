@@ -29,6 +29,8 @@ export interface MesuresAnnee {
   repRatio: number | null;
   repN: number;
   ctlMax: number | null;
+  /** Combien de sorties de l'année ont une courbe de puissance (un capteur). */
+  nCourbes: number;
 }
 
 export type NotesPiliers = Record<PilierCle, number | null>;
@@ -55,22 +57,27 @@ export interface NiveauGlobal {
   faible: PilierCle;
 }
 
-/** Il faut au moins 3 sorties longues pour juger la durabilité d'une année, 3 sorties à trois vrais efforts pour la répétabilité. */
+/** Il faut au moins 3 sorties longues pour juger la durabilité d'une année, 3 sorties à trois vrais efforts pour la répétabilité,
+ *  et 3 sorties avec capteur pour la puissance (une seule sortie, souvent un capteur en panne, donnait une note de 0). */
+export const SORTIES_MINI_PUISSANCE = 3;
 export const SORTIES_MINI_DURABILITE = 3;
 export const SORTIES_MINI_REPETABILITE = 3;
 /** Une année a un score global à partir de 2 piliers mesurés (l'écran dit alors « Calculé sur N piliers sur 5 »). */
 export const PILIERS_MINI = 2;
 
 const moyenne = (v: number[]): number | null => (v.length ? v.reduce((s, x) => s + x, 0) / v.length : null);
+/** Les puissances d'une année comptent seulement si elle a assez de sorties avec capteur. */
+const puissanceFiable = (m: MesuresAnnee): boolean => m.nCourbes >= SORTIES_MINI_PUISSANCE;
 const meilleurDe = (valeurs: (number | null)[]): number => Math.max(0, ...valeurs.filter((v): v is number => v !== null));
 
 /** Les notes de chaque pilier pour chaque année, et le score global (moyenne des piliers mesurés). Null s'il n'y a aucune année avec 2 piliers. */
 export function niveauGlobal(mesures: readonly MesuresAnnee[], endurance: SerieNiveau | null): NiveauGlobal | null {
+  const fiables = mesures.filter(puissanceFiable);
   const meilleurs = {
-    w5: meilleurDe(mesures.map((m) => m.w5)),
-    w300: meilleurDe(mesures.map((m) => m.w300)),
-    w1200: meilleurDe(mesures.map((m) => m.w1200)),
-    w3600: meilleurDe(mesures.map((m) => m.w3600)),
+    w5: meilleurDe(fiables.map((m) => m.w5)),
+    w300: meilleurDe(fiables.map((m) => m.w300)),
+    w1200: meilleurDe(fiables.map((m) => m.w1200)),
+    w3600: meilleurDe(fiables.map((m) => m.w3600)),
     ctl: meilleurDe(mesures.map((m) => m.ctlMax)),
   };
   const parAn = new Map<number, MesuresAnnee>(mesures.map((m) => [m.an, m]));
@@ -80,7 +87,7 @@ export function niveauGlobal(mesures: readonly MesuresAnnee[], endurance: SerieN
   const resultat: NiveauGlobalAnnee[] = [];
   for (const an of annees) {
     const m = parAn.get(an);
-    const durees = m ? ([['w5', m.w5], ['w300', m.w300], ['w1200', m.w1200], ['w3600', m.w3600]] as const) : [];
+    const durees = m && puissanceFiable(m) ? ([['w5', m.w5], ['w300', m.w300], ['w1200', m.w1200], ['w3600', m.w3600]] as const) : [];
     const notesPuissance = durees.filter(([cle, v]) => v !== null && v > 0 && meilleurs[cle] > 0).map(([cle, v]) => noteDe((v as number) / meilleurs[cle]));
     const ratiosDurabilite = m && m.nLongues >= SORTIES_MINI_DURABILITE
       ? [m.late300 && m.w300 ? m.late300 / m.w300 : null, m.late1200 && m.w1200 ? m.late1200 / m.w1200 : null].filter((r): r is number => r !== null)
@@ -122,8 +129,8 @@ export function ecartsPiliers(g: NiveauGlobal): { cle: PilierCle; avant: number;
   });
 }
 
-/** Les mesures de l'API en records par année (sprint, 5, 20 et 60 minutes) pour le sélecteur de records du vélo. */
+/** Les mesures de l'API en records par année (sprint, 5, 20 et 60 minutes) pour le sélecteur de records du vélo (sans les années à moins de 3 sorties avec capteur). */
 export function recordsDeMesures(mesures: readonly MesuresAnnee[]): { an: number; w5?: number; w300?: number; w1200?: number; w3600?: number }[] {
   const num = (v: number | null): number | undefined => (v !== null && v > 0 ? v : undefined);
-  return mesures.map((m) => ({ an: m.an, w5: num(m.w5), w300: num(m.w300), w1200: num(m.w1200), w3600: num(m.w3600) }));
+  return mesures.filter(puissanceFiable).map((m) => ({ an: m.an, w5: num(m.w5), w300: num(m.w300), w1200: num(m.w1200), w3600: num(m.w3600) }));
 }

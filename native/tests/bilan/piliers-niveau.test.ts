@@ -4,7 +4,7 @@ import type { PointNiveau, SerieNiveau } from '../../src/data/bilan/niveau-annee
 import { ecartsPiliers, niveauGlobal, recordsDeMesures, type MesuresAnnee } from '../../src/data/bilan/piliers-niveau.ts';
 
 const mesure = (an: number, extra: Partial<MesuresAnnee> = {}): MesuresAnnee => ({
-  an, w5: null, w300: null, w1200: null, w3600: null, late300: null, late1200: null, nLongues: 0, repRatio: null, repN: 0, ctlMax: null, ...extra,
+  an, w5: null, w300: null, w1200: null, w3600: null, late300: null, late1200: null, nLongues: 0, repRatio: null, repN: 0, ctlMax: null, nCourbes: 50, ...extra,
 });
 /** Une série d'endurance réduite aux années et à leur score. */
 const endurance = (scores: Record<number, number>): SerieNiveau => {
@@ -97,4 +97,24 @@ test('ecartsPiliers : ce qui a bougé depuis l\'année d\'avant, seulement pour 
 
 test('recordsDeMesures : les durées absentes ou nulles deviennent undefined', () => {
   assert.deepEqual(recordsDeMesures([mesure(2025, { w5: 1000, w300: 0, w1200: 250 })]), [{ an: 2025, w5: 1000, w300: undefined, w1200: 250, w3600: undefined }]);
+});
+
+test('niveauGlobal : une année à moins de 3 sorties avec capteur n\'a pas de note de puissance (cas du compte de test : 2013, un capteur en panne)', () => {
+  // 2013 : une seule sortie avec capteur, absurde (1 W sur une heure), et une petite charge : avant, puissance 0 + charge 0 = niveau global 0
+  const mesures = [
+    mesure(2013, { w5: 103, w300: 16, w1200: 4, w3600: 1, ctlMax: 55, nCourbes: 1 }),
+    ...REEL,
+  ];
+  const g = niveauGlobal(mesures, ENDURANCE)!;
+  assert.deepEqual(g.annees.map((a) => a.an), [2022, 2023, 2024, 2025, 2026]); // 2013 n'a plus qu'un pilier : pas de score
+  // Les notes des autres années ne bougent pas
+  const sans = niveauGlobal(REEL, ENDURANCE)!;
+  assert.deepEqual(g.annees.map((a) => a.global), sans.annees.map((a) => a.global));
+  // Une pointe absurde dans une année à 2 sorties ne devient pas « ton meilleur »
+  const pointe = niveauGlobal([mesure(2021, { w5: 3000, w300: 900, ctlMax: 40, nCourbes: 2 }), ...REEL], ENDURANCE)!;
+  assert.deepEqual(pointe.annees.map((a) => a.global), sans.annees.map((a) => a.global));
+});
+
+test('recordsDeMesures : sans les années à moins de 3 sorties avec capteur', () => {
+  assert.deepEqual(recordsDeMesures([mesure(2013, { w5: 103, nCourbes: 1 }), mesure(2025, { w5: 1000, nCourbes: 3 })]).map((r) => r.an), [2025]);
 });

@@ -26,7 +26,7 @@ Le score global est la **moyenne des piliers mesurés** (au moins 2). Chaque pil
 
 | Pilier | Ce qui est mesuré | Note |
 |---|---|---|
-| Puissance | meilleurs sprint (5 s), 5, 20 et 60 min de l'année | moyenne des 4 notes, chacune = meilleur de l'année ÷ meilleur de toujours (100 = le meilleur, 0 = 30 % en dessous) |
+| Puissance | meilleurs sprint (5 s), 5, 20 et 60 min de l'année | moyenne des 4 notes, chacune = meilleur de l'année ÷ meilleur de toujours (100 = le meilleur, 0 = 30 % en dessous) ; au moins 3 sorties avec capteur (`n_courbes`), sinon l'année n'est pas notée et ne compte pas pour « le meilleur de toujours » |
 | Endurance | niveau à cardio égal (voir plus haut) | son score de l'année |
 | Durabilité | meilleur 5 et 20 min **après 2 h 30 de sortie** ÷ meilleur à froid | même échelle (100 = aucune perte, 0 = 30 % de perte) ; au moins 3 sorties longues |
 | Répétabilité | dans une sortie, le 3e meilleur effort de 5 min ÷ le 1er (médiane des sorties qui ont trois vrais efforts : le 3e ≥ 75 % du meilleur 5 min de l'année) | même échelle ; au moins 3 sorties |
@@ -37,6 +37,8 @@ Les mesures viennent de la fonction SQL `rpc_piliers_annuels` (une seule lecture
 **La récupération physiologique n'est pas dans le score** : il n'y avait que 18 nuits de sommeil/HRV (du 21 sept. au 12 oct. 2026) et aucune mesure de santé. La capacité de charge est ce qu'on peut dire de l'entraînement encaissé. La vraie récupération (HRV, FC au repos) pourra devenir un sixième pilier quand elle sera mesurée sur plusieurs mois.
 
 Le calcul sur un vrai compte donne : 2022 : 33, 2023 : 73, 2024 : 85, 2025 : 86, 2026 : 60 (la capacité de charge de 2026 est basse : CTL max 70 contre 91, l'année n'est pas finie et l'entraînement a baissé). Les années à moins de 2 piliers mesurés n'ont pas de score global ; l'écran le dit (« Calculé sur N piliers sur 5 »).
+
+Pourquoi 3 sorties avec capteur pour la puissance (2 nov. 2026) : sur le compte de test, 2013 n'avait qu'une sortie avec capteur, en panne (1 W sur une heure). Sa puissance notée 0 et sa petite charge notée 0 donnaient un niveau global de 0. Une courbe qui n'a qu'un marqueur de version (`{"v": 6}`, sortie calculée sans capteur) ne compte pas. Le graphique « Score global par année » place chaque point selon son année : une année sans score laisse un trou.
 
 ## Comment le niveau est calculé
 

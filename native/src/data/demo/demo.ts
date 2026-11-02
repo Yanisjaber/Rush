@@ -697,6 +697,7 @@ export function piliersAnnuelsDemo(maintenant: Date = new Date()): MesuresAnnee[
       repRatio: 0.9 + 0.01 * (i % 3),
       repN: 8 + i * 2,
       ctlMax: 52 + i * 9 - (i === 4 ? 18 : 0),
+      nCourbes: 60 + i * 15,
     };
   });
 }

@@ -23,6 +23,7 @@ insert into public.activities (user_id, name, sport, start_date_local, power_cur
  ('00000000-0000-4000-8000-00000000000a', 'vélo électrique', 'EBikeRide', '2026-03-06 09:00+00', '{"5": 9000}', null),
  ('00000000-0000-4000-8000-00000000000a', 'étape fusionnée', 'Ride', '2026-03-07 09:00+00', '{"5": 9000}', gen_random_uuid()),
  ('00000000-0000-4000-8000-00000000000a', 'sans courbe', 'Ride', '2026-03-08 09:00+00', null, null),
+ ('00000000-0000-4000-8000-00000000000a', 'sans capteur (marqueur de version seul)', 'Ride', '2026-03-09 09:00+00', '{"v": 6, "_v": 3}', null),
  ('00000000-0000-4000-8000-00000000000b', 'B', 'Ride', '2025-03-01 09:00+00', '{"5": 8000, "300": 800, "rep_1": 800, "rep_3": 790}', null);
 insert into public.daily_metrics (user_id, iso_date, ctl) values
  ('00000000-0000-4000-8000-00000000000a', '2025-02-01', 60), ('00000000-0000-4000-8000-00000000000a', '2025-09-01', 88.46), ('00000000-0000-4000-8000-00000000000a', '2026-02-01', 70),
@@ -33,6 +34,8 @@ grant select on public.activities, public.daily_metrics to authenticated;
 SQL
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-30_rpc_piliers_annuels.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-10-30_rpc_piliers_annuels.sql   # relançable
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-02_rpc_piliers_n_courbes.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-02_rpc_piliers_n_courbes.sql   # relançable
 bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
 set role authenticated;
 set request.jwt.claim.sub = '00000000-0000-4000-8000-00000000000a';
@@ -43,9 +46,10 @@ union all select '2025 : la durabilité est la meilleure puissance tardive (255 
 union all select '2025 : la répétabilité compte les deux sorties à trois vrais efforts, pas la facile : médiane de 0,9 et 0,9', (select rep_n = 3 and rep_ratio = 0.9 from rpc_piliers_annuels() where an = 2025)
 union all select '2025 : charge maximale 88,5 (arrondie à une décimale)', (select ctl_max = 88.5 from rpc_piliers_annuels() where an = 2025)
 union all select '2026 : pas de sortie longue, pas de répétabilité, charge 70', (select late300 is null and late1200 is null and n_longues = 0 and rep_ratio is null and rep_n = 0 and ctl_max = 70 from rpc_piliers_annuels() where an = 2026)
-union all select '2026 : la sortie virtuelle du 31 décembre est comptée', (select w300 = 280 from rpc_piliers_annuels() where an = 2026);
+union all select '2026 : la sortie virtuelle du 31 décembre est comptée', (select w300 = 280 from rpc_piliers_annuels() where an = 2026)
+union all select 'n_courbes : 4 sorties à courbe en 2025 (la « longue 2 » n''a que des valeurs tardives), 1 en 2026 (ni course, ni vélo électrique, ni fusion, ni sortie sans courbe, ni marqueur de version seul)', (select array_agg(n_courbes order by an) from rpc_piliers_annuels()) = array[4, 1];
 set request.jwt.claim.sub = '00000000-0000-4000-8000-00000000000c';
-select 'sans capteur de puissance : la charge est quand même rendue (2024 : 40, 2025 : 55)' as controle, (select array_agg(ctl_max order by an) from rpc_piliers_annuels()) = array[40, 55]::numeric[] and (select bool_and(w5 is null and w300 is null) from rpc_piliers_annuels()) as ok;
+select 'sans capteur de puissance : la charge est quand même rendue (2024 : 40, 2025 : 55)' as controle, (select array_agg(ctl_max order by an) from rpc_piliers_annuels()) = array[40, 55]::numeric[] and (select bool_and(w5 is null and w300 is null and n_courbes = 0) from rpc_piliers_annuels()) as ok;
 set request.jwt.claim.sub = '';
 select 'sans connexion : aucune ligne' as controle, (select count(*) from rpc_piliers_annuels()) = 0 as ok;
 reset role;

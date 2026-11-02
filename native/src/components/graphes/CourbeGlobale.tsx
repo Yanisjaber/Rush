@@ -26,8 +26,11 @@ export function CourbeGlobale({ points, meilleurAn, couleur, etiquette }: Props)
   const plusBas = Math.min(...points.map((pt) => pt.score)) - 10;
   const pas = 100 - plusBas > 50 ? 20 : 10;
   const min = Math.max(0, Math.floor(plusBas / pas) * pas);
+  // Chaque point est placé selon son année (pas son rang) : une année sans score laisse un trou visible au lieu de coller deux années éloignées.
   // Un peu d'air de chaque côté : le premier point ne touche pas l'axe, le dernier ne sort pas du cadre
-  const x = (i: number): number => G + MARGE + (points.length === 1 ? 0.5 : i / (points.length - 1)) * (LARGEUR - G - D - 2 * MARGE);
+  const premier = points[0]?.an ?? 0;
+  const etendue = (points[points.length - 1]?.an ?? premier) - premier;
+  const x = (i: number): number => G + MARGE + (etendue === 0 ? 0.5 : (points[i].an - premier) / etendue) * (LARGEUR - G - D - 2 * MARGE);
   const y = (v: number): number => H + ((100 - v) / (100 - min)) * (HAUTEUR - H - B);
   // Les années écrites sous la courbe : une sur deux quand elles se serrent (le score, lui, reste écrit sur chaque point)
   const anneesEcrites = new Set(amincirReperes(points.map((pt, i) => ({ an: pt.an, x: x(i) })), 36).map((r) => r.an));
