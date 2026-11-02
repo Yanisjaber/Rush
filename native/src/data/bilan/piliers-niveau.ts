@@ -6,7 +6,8 @@
 //                    - volume long : heures en sorties de 2 h et plus, contre ta meilleure année (en proportion : la moitié = 50) ;
 //                  (les watts à cardio égal, l'ancien pilier « Endurance », sont devenus la Forme : voir niveau-annees.ts et forme-saison.ts) ;
 //   durabilité   : garder sa puissance fatigué : meilleur 5 et 20 min après 2 h 30 de sortie, divisé par le meilleur à froid (100 = aucune perte, 0 = 30 % de perte) ;
-//   répétabilité : reproduire les efforts : dans une sortie, le 3e effort de 5 min divisé par le 1er (même échelle) ;
+//   répétabilité : reproduire les efforts : dans une sortie, le 3e effort de 5 min divisé par le 1er (même échelle). Un « vrai effort » vaut au moins 75 % de ton meilleur 5 min
+//                  de TOUS LES TEMPS (calculé côté base) : répéter des efforts faciles ne donne pas de note ;
 //   charge       : encaisser et enchaîner l'entraînement : la charge chronique (CTL) maximale de l'année (100 = ta meilleure année).
 // La récupération physiologique (HRV, FC au repos) n'est pas dans le score : elle demande des mois de mesures. La capacité de charge est ce qu'on peut dire de l'entraînement encaissé.
 import { noteDe } from './niveau-annees.ts';
