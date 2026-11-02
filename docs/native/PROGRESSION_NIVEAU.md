@@ -66,6 +66,6 @@ Sur les données du compte qui a servi aux tests (vélo, par année) : l'enduran
 - Pas de météo, pas de sommeil.
 - L'historique est chargé en entier (par pages de 1000 séances) à la première ouverture de l'onglet.
 
-## Première carte : le récit (2 nov. 2026)
+## L'écran (2 nov. 2026)
 
-Maquette 8 de l'Artifact « Progrès vélo : 8 maquettes » (`claude.ai/artifact/6Nbst9aEztcDWYa75d6cBc`), choisie par Yanis, sans le gros titre. La carte remplace le dossard et la courbe chiffrée : une phrase (écart avec l'an dernier et avec le creux, et le meilleur s'il n'est pas cette année), la courbe avec une aire pâle et trois repères écrits (creux, reprise = début de la montée actuelle d'au moins 2 ans, record), puis jusqu'à trois lignes (point fort, plus grosse hausse ou baisse, pilier le plus bas, fusionné avec la ligne d'avant quand c'est le même pilier). « Voir les 5 piliers en détail » mène à la carte suivante. Calculs : `native/src/data/bilan/recit-niveau.ts`.
+Une seule page qui défile, sans cartes à faire glisser ni texte d'explication (demande de Yanis) : en haut, le niveau global de l'année en taille normale (« 80 / 100 », écart avec l'an dernier, meilleur) ; puis la courbe du score global de toutes les années (le score sur chaque point, placés selon l'année) ; la carte de chaleur des cinq piliers par année ; et la courbe des niveaux avec le sélecteur Sprint / 5 / 20 / 60 min / Endurance (`ProgresNiveau` en mode `courbeSeule` : ni dossard, ni liste par année, ni calcul). Un essai de « récit » (maquette 8 de `claude.ai/artifact/6Nbst9aEztcDWYa75d6cBc`) a été abandonné le même jour.

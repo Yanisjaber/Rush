@@ -52,9 +52,11 @@ interface Props {
   jours: PeriodeProgression;
   /** Vrai quand la page qui l'affiche a déjà son en-tête (le titre du sport) : la carte « Détail par durée » du niveau global. */
   sansEntete?: boolean;
+  /** Seulement le sélecteur et la courbe (page Progrès du vélo) : ni en-tête, ni dossard, ni liste par année, ni calcul. */
+  courbeSeule?: boolean;
 }
 
-export function ProgresNiveau({ famille, serie, records, preuve, jours, sansEntete = false }: Props) {
+export function ProgresNiveau({ famille, serie, records, preuve, jours, sansEntete = false, courbeSeule = false }: Props) {
   const p = usePalette();
   const [choix, setChoix] = useState<Choix>('endurance');
   const [preuveOuverte, setPreuveOuverte] = useState(false);
@@ -79,7 +81,7 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours, sansEnte
 
   return (
     <View style={styles.page}>
-      {sansEntete ? null : (
+      {sansEntete || courbeSeule ? null : (
         <View style={styles.tete}>
           <IconeSport sport={famille} taille={22} />
           <View style={styles.flex}>
@@ -100,14 +102,16 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours, sansEnte
         />
       ) : null}
 
-      <Dossard
-        sport={famille}
-        etiquette={`${choisie ? NOMS_RECORD[choisie.duree] : 'Niveau'} en ${actuelle.actuel.an}`}
-        valeur={String(Math.round(actuelle.actuel.score))}
-        uniteValeur="/ 100"
-        detail={`${ecart < 1 ? (actuelle.actuel.cle === actuelle.meilleur.cle ? 'Ton meilleur niveau' : 'Au niveau de ton meilleur') : `${formatNum(ecart)} point${Math.round(ecart) > 1 ? 's' : ''} sous ton meilleur niveau`}\nMeilleur : ${libellePeriode(actuelle.meilleur.cle)} · ${formatNiveau(genre, actuelle.meilleur.niveau)}${lieu}`}
-        chiffreMax={64}
-      />
+      {courbeSeule ? null : (
+        <Dossard
+          sport={famille}
+          etiquette={`${choisie ? NOMS_RECORD[choisie.duree] : 'Niveau'} en ${actuelle.actuel.an}`}
+          valeur={String(Math.round(actuelle.actuel.score))}
+          uniteValeur="/ 100"
+          detail={`${ecart < 1 ? (actuelle.actuel.cle === actuelle.meilleur.cle ? 'Ton meilleur niveau' : 'Au niveau de ton meilleur') : `${formatNum(ecart)} point${Math.round(ecart) > 1 ? 's' : ''} sous ton meilleur niveau`}\nMeilleur : ${libellePeriode(actuelle.meilleur.cle)} · ${formatNiveau(genre, actuelle.meilleur.niveau)}${lieu}`}
+          chiffreMax={64}
+        />
+      )}
 
       <Bloc>
         <View style={styles.enteteBloc}>
@@ -132,52 +136,56 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours, sansEnte
         />
       </Bloc>
 
-      <Bloc titre="Par année">
-        <View>
-          {annees.map((a, i) => (
-            <View
-              key={a.cle}
-              accessible
-              accessibilityLabel={`${a.an} : score ${Math.round(a.score)} sur 100, ${formatNiveau(genre, a.niveau)}${a.demi > 0 ? `, ${formatMarge(genre, a.demi)}` : ''}${a.n !== null ? `, ${a.n} sorties` : ''}${a.an === actuelle.meilleur.an ? ', meilleur niveau' : ''}`}
-              style={[styles.ligne, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: p.trait }]}
-            >
-              <Text style={[typo.corpsFort, styles.annee, { color: p.texte }]}>{a.an}</Text>
-              <View style={styles.flex}>
-                <Text style={[typo.petit, { color: p.texte }]}>
-                  <Text style={styles.gras}>{formatNiveau(genre, a.niveau)}</Text>
-                  {a.demi > 0 ? <Text style={{ color: p.texteDoux }}> {formatMarge(genre, a.demi)}</Text> : null}
-                </Text>
-                {a.n !== null ? <Text style={[typo.petit, { color: p.texteDoux }]}>{a.n} sortie{a.n > 1 ? 's' : ''}</Text> : null}
-              </View>
-              <View style={[styles.score, { backgroundColor: a.an === actuelle.meilleur.an ? avecAlpha(couleur, 0.22) : p.surface2 }]}>
-                <Text style={[typo.petit, styles.gras, { color: a.an === actuelle.meilleur.an ? couleur : p.texteDoux }]}>{a.an === actuelle.meilleur.an ? 'meilleur' : Math.round(a.score)}</Text>
-              </View>
+      {courbeSeule ? null : (
+        <>
+          <Bloc titre="Par année">
+            <View>
+              {annees.map((a, i) => (
+                <View
+                  key={a.cle}
+                  accessible
+                  accessibilityLabel={`${a.an} : score ${Math.round(a.score)} sur 100, ${formatNiveau(genre, a.niveau)}${a.demi > 0 ? `, ${formatMarge(genre, a.demi)}` : ''}${a.n !== null ? `, ${a.n} sorties` : ''}${a.an === actuelle.meilleur.an ? ', meilleur niveau' : ''}`}
+                  style={[styles.ligne, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: p.trait }]}
+                >
+                  <Text style={[typo.corpsFort, styles.annee, { color: p.texte }]}>{a.an}</Text>
+                  <View style={styles.flex}>
+                    <Text style={[typo.petit, { color: p.texte }]}>
+                      <Text style={styles.gras}>{formatNiveau(genre, a.niveau)}</Text>
+                      {a.demi > 0 ? <Text style={{ color: p.texteDoux }}> {formatMarge(genre, a.demi)}</Text> : null}
+                    </Text>
+                    {a.n !== null ? <Text style={[typo.petit, { color: p.texteDoux }]}>{a.n} sortie{a.n > 1 ? 's' : ''}</Text> : null}
+                  </View>
+                  <View style={[styles.score, { backgroundColor: a.an === actuelle.meilleur.an ? avecAlpha(couleur, 0.22) : p.surface2 }]}>
+                    <Text style={[typo.petit, styles.gras, { color: a.an === actuelle.meilleur.an ? couleur : p.texteDoux }]}>{a.an === actuelle.meilleur.an ? 'meilleur' : Math.round(a.score)}</Text>
+                  </View>
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
-        <Text style={[typo.petit, { color: p.texteDoux }]}>
-          {choisie ? 'Score : 100 = ton meilleur record, 0 = un record 30 % en dessous.' : `Niveau${lieu}, sur route. Score : 100 = ton meilleur niveau, 0 = un niveau 30 % en dessous.`}
-        </Text>
-      </Bloc>
+            <Text style={[typo.petit, { color: p.texteDoux }]}>
+              {choisie ? 'Score : 100 = ton meilleur record, 0 = un record 30 % en dessous.' : `Niveau${lieu}, sur route. Score : 100 = ton meilleur niveau, 0 = un niveau 30 % en dessous.`}
+            </Text>
+          </Bloc>
 
-      <Bouton variante="discret" onPress={() => setPreuveOuverte((o) => !o)} accessibilityLabel={preuveOuverte ? 'Masquer le calcul' : "Voir comment c'est calculé"}>
-        {preuveOuverte ? 'Masquer le calcul' : "Comment c'est calculé"}
-      </Bouton>
+          <Bouton variante="discret" onPress={() => setPreuveOuverte((o) => !o)} accessibilityLabel={preuveOuverte ? 'Masquer le calcul' : "Voir comment c'est calculé"}>
+            {preuveOuverte ? 'Masquer le calcul' : "Comment c'est calculé"}
+          </Bouton>
 
-      {preuveOuverte ? (
-        <View style={styles.preuve}>
-          <Text style={[typo.petit, { color: p.texteDoux }]}>
-            La preuve : tes 12 derniers mois contre les 12 mois d'avant, avec le calcul étape par étape. Le niveau ci-dessus utilise la même méthode, sur tout ton historique d'un coup.
-          </Text>
-          {preuve && preuve.detailVelo && famille === 'velo' ? <ProgresVelo progression={preuve} jours={jours} /> : null}
-          {preuve && preuve.detailCourse && famille === 'course' ? <ProgresCourse progression={preuve} jours={jours} /> : null}
-          {preuve && !preuve.detailVelo && !preuve.detailCourse ? (
-            <Bloc>
-              <Text style={[typo.corps, { color: p.texteDoux }]}>{preuve.manque}</Text>
-            </Bloc>
+          {preuveOuverte ? (
+            <View style={styles.preuve}>
+              <Text style={[typo.petit, { color: p.texteDoux }]}>
+                La preuve : tes 12 derniers mois contre les 12 mois d'avant, avec le calcul étape par étape. Le niveau ci-dessus utilise la même méthode, sur tout ton historique d'un coup.
+              </Text>
+              {preuve && preuve.detailVelo && famille === 'velo' ? <ProgresVelo progression={preuve} jours={jours} /> : null}
+              {preuve && preuve.detailCourse && famille === 'course' ? <ProgresCourse progression={preuve} jours={jours} /> : null}
+              {preuve && !preuve.detailVelo && !preuve.detailCourse ? (
+                <Bloc>
+                  <Text style={[typo.corps, { color: p.texteDoux }]}>{preuve.manque}</Text>
+                </Bloc>
+              ) : null}
+            </View>
           ) : null}
-        </View>
-      ) : null}
+        </>
+      )}
     </View>
   );
 }
