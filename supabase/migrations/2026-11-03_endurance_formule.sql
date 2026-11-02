@@ -2,10 +2,10 @@
 -- Endurance : nouvelle formule du pilier (Yanis, 3 nov. 2026) : trois mesures par année au lieu de « 2 h / 3 h + dérive + volume ».
 --   D (poids 20 %) : durabilité = meilleur 20 min APRÈS fatigue (30 kJ/kg de travail cumulé, clé `fat20`) ÷ meilleur 20 min frais (clé `1200`) ;
 --   R (poids 35 %) : longue durée = meilleur 2 h 30 (clé `9000`) ÷ FTP de l'année (95 % du meilleur 20 min de l'année) ;
---   C (poids 45 %) : découplage cardiaque (clé `drift`, puissance normalisée / FC, 1re contre 2e moitié) sur les sorties Z2 de 90 min et plus.
+--   C (poids 45 %) : découplage cardiaque (clé `drift`, puissance normalisée / FC, 1re contre 2e moitié) sur les sorties de plus de 2 h.
 -- Le calcul des notes est dans l'app (native/src/data/bilan/piliers-niveau.ts) ; la base rend les mesures :
---   w9000, fat20 (meilleur de l'année), n_fat (sorties qui ont un `fat20`), drift_med (médiane des 10 DERNIÈRES sorties Z2 de l'année), n_drift (combien de sorties ont compté).
---   Une sortie est « Z2 » quand sa puissance (normalisée, sinon moyenne) vaut 55 à 75 % de la FTP de l'année.
+--   w9000, fat20 (meilleur de l'année), n_fat (sorties qui ont un `fat20`), drift_med (médiane du découplage des 10 sorties de plus de 2 h à la plus haute
+--   puissance normalisée de l'année), n_drift (combien de sorties ont compté). Pas de filtre Z2 (Yanis, 3 nov. 2026).
 -- Le volume des sorties longues et les meilleurs 2 h / 3 h (w7200, w10800, heures_longues, derive_med) ne sont plus rendus.
 -- Les clés `fat20` et `drift` sont écrites par la fonction strava-streams (version des courbes 8) : tant qu'une sortie n'est pas recalculée, elle n'en a pas.
 --
@@ -45,6 +45,8 @@ as $$
     select extract(year from a.start_date_local)::integer as an,
            a.start_date_local as jour,
            coalesce(a.np, a.avg_watts) as watts_sortie,
+           -- la durée de la sortie (0 si l'utilisateur l'a écartée)
+           case when coalesce(a.excl_duration, false) then 0 else coalesce(a.moving_time, 0) end as duree,
            case when coalesce(a.excl_hr, false) then a.power_curve - 'drift' else a.power_curve end as pc
     from public.activities a
     where a.user_id = auth.uid()
@@ -88,19 +90,18 @@ as $$
     group by r.an
   ),
   decouplage as (
-    -- le découplage des sorties Z2 (55 à 75 % de la FTP de l'année = 95 % du meilleur 20 min de l'année) ; on garde les 10 plus récentes de chaque année
+    -- le découplage des sorties de plus de 2 h : on garde, pour chaque année, les 10 sorties à la plus haute puissance normalisée (les plus appuyées), puis la médiane
     select z.an,
            percentile_cont(0.5) within group (order by z.drift) as drift_med,
            count(*) as n_drift
     from (
       select s.an,
              (s.pc ->> 'drift')::numeric as drift,
-             row_number() over (partition by s.an order by s.jour desc) as rang
+             row_number() over (partition by s.an order by s.watts_sortie desc, s.jour desc) as rang
       from sorties s
-      join meilleurs m on m.an = s.an
       where s.pc ? 'drift'
-        and m.w1200 > 0
-        and s.watts_sortie between 0.55 * 0.95 * m.w1200 and 0.75 * 0.95 * m.w1200
+        and s.duree >= 7200
+        and s.watts_sortie > 0
     ) z
     where z.rang <= 10
     group by z.an

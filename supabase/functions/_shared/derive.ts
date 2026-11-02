@@ -1,17 +1,16 @@
 // ============================================================
 // Découplage cardiaque d'une sortie longue (pilier Endurance du niveau global vélo).
 //
-// Sur une sortie d'au moins 90 min avec puissance et cardio, on compare l'efficacité (EF = puissance normalisée / FC moyenne) de la 1re moitié
+// Sur une sortie d'au moins 2 h avec puissance et cardio, on compare l'efficacité (EF = puissance normalisée / FC moyenne) de la 1re moitié
 // et de la 2e moitié, échauffement (10 premières minutes) mis à part. Une sortie où l'efficacité tient (découplage proche de 0 %)
 // montre une bonne endurance ; un découplage de 12 % ou plus montre qu'on a tenu ses watts au prix d'un cœur qui monte.
 //   drift = (EF 1re moitié − EF 2e moitié) / EF 1re moitié × 100, en %, arrondi au dixième (peut être négatif).
 // Seules les secondes avec un cardio comptent (une pause garde ses watts à 0 et son cardio à 0 après rééchantillonnage : elle est ignorée).
-// Change le 3 nov. 2026 : la puissance normalisée remplace la puissance moyenne et la durée minimale passe de 2 h à 90 min (clé `drift` à la place de `derive`).
-// Stocké dans `power_curve` (clé `drift`). Les sorties « Z2 » (celles qui comptent pour le pilier) sont triées par rpc_piliers_annuels, qui connaît la FTP de l'année :
-// la médiane des 10 dernières sorties Z2 de l'année est faite là-bas.
+// Change le 3 nov. 2026 : la puissance normalisée remplace la puissance moyenne et la clé s'appelle `drift` (à la place de `derive`).
+// Stocké dans `power_curve` (clé `drift`). rpc_piliers_annuels garde, pour chaque année, les 10 sorties de plus de 2 h à la plus haute puissance normalisée et en rend la médiane.
 // ============================================================
 
-export const DERIVE_DUREE_MINI_S = 90 * 60;
+export const DERIVE_DUREE_MINI_S = 2 * 3600;
 const ECHAUFFEMENT_S = 600;
 /** Une moitié a besoin d'au moins 20 min de cardio mesuré. */
 const SECONDES_MINI_MOITIE = 1200;

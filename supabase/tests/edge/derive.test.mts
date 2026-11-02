@@ -16,7 +16,7 @@ test('cleDerive : mêmes watts, cardio qui monte de 10 % en 2e moitié → déri
 });
 
 test('cleDerive : une sortie régulière ne dérive pas ; une 2e moitié plus efficace donne une dérive négative', () => {
-  const n = 90 * 60 + 600;
+  const n = 2 * 3600 + 600;
   assert.deepEqual(cleDerive(constante(n, 180), constante(n, 135)), { drift: 0 });
   const milieu = Math.floor((600 + n) / 2);
   const watts = [...constante(milieu, 180), ...constante(n - milieu, 198)];
@@ -49,8 +49,8 @@ test('cleDerive : la puissance normalisée compte, pas la moyenne (une moitié p
   assert.ok(d < -2, `${d}`);
 });
 
-test('cleDerive : rien sous 90 min, sans cardio, ou pour une balade', () => {
-  assert.deepEqual(cleDerive(constante(5399, 200), constante(5399, 140)), {});
+test('cleDerive : rien sous 2 h, sans cardio, ou pour une balade', () => {
+  assert.deepEqual(cleDerive(constante(7199, 200), constante(7199, 140)), {});
   assert.deepEqual(cleDerive(constante(8000, 200), constante(8000, 0)), {});
   assert.deepEqual(cleDerive(constante(8000, 40), constante(8000, 110)), {});
   assert.deepEqual(cleDerive([], []), {});

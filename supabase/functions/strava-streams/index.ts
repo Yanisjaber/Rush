@@ -173,7 +173,7 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
         // Remise à 1 point par seconde (trous de pause / enregistrement intelligent), voir _shared/flux.ts
         const watts = reechantillonner1Hz((raw?.watts?.data) || [], (raw?.time?.data) || []);
         const powerCurve: Record<string, number> = computeMMP(watts);
-        // Durabilité (late_300 / late_1200 si sortie > 2 h 30), répétabilité (rep_1..3), découplage cardiaque (drift, sortie ≥ 90 min), puissance après fatigue (fat20) et charge cardio (hr_s, hr_sq) :
+        // Durabilité (late_300 / late_1200 si sortie > 2 h 30), répétabilité (rep_1..3), découplage cardiaque (drift, sortie ≥ 2 h), puissance après fatigue (fat20) et charge cardio (hr_s, hr_sq) :
         // sans ça, une sortie importée aujourd'hui n'aurait aucune des trois
         const fc1Hz = reechantillonner1Hz((raw?.heartrate?.data) || [], (raw?.time?.data) || []);
         Object.assign(powerCurve, computeLateMMP(watts), clesRepetabilite(watts), cleDerive(watts, fc1Hz), cleFatigue(watts, ATH.poids), cleCardio(fc1Hz));
@@ -620,7 +620,7 @@ async function backfillPowerCurves(sb: any, userId: string, limit: number, ath: 
         const watts = reechantillonner1Hz(streamData(arr, "watts"), streamData(arr, "time"));
         const pc: Record<string, number> = computeMMP(watts);
         const fc1Hz = reechantillonner1Hz(streamData(arr, "heartrate"), streamData(arr, "time"));
-        // late_300 / late_1200 si sortie > 2 h 30 ; rep_1..3 (trois efforts de 5 min) ; drift (découplage cardiaque, sortie ≥ 90 min) ; fat20 (20 min après 30 kJ/kg) ; hr_s et hr_sq (charge cardio)
+        // late_300 / late_1200 si sortie > 2 h 30 ; rep_1..3 (trois efforts de 5 min) ; drift (découplage cardiaque, sortie ≥ 2 h) ; fat20 (20 min après 30 kJ/kg) ; hr_s et hr_sq (charge cardio)
         Object.assign(pc, computeLateMMP(watts), clesRepetabilite(watts), cleDerive(watts, fc1Hz), cleFatigue(watts, ath?.poids), cleCardio(fc1Hz));
         pc.v = POWER_CURVE_VERSION; // marqueur de version (ignoré par l'agrégation)
         pc._v = CLIENT_PC_VERSION; // marqueur attendu par le client

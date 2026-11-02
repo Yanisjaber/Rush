@@ -3,7 +3,7 @@
 //   endurance    : tenir longtemps (formule de Yanis, 3 nov. 2026), note = 100 × (0,20 D + 0,35 R + 0,45 C), chaque lettre remise entre 0 et 1 :
 //                    - D fatigue : meilleur 20 min APRÈS 30 kJ/kg de travail cumulé ÷ meilleur 20 min frais de l'année ; 0 à 85 %, 1 à 97 % ;
 //                    - R longue durée : meilleur 2 h 30 de l'année ÷ FTP de l'année (95 % de son meilleur 20 min) ; 0 à 65 %, 1 à 85 % ;
-//                    - C découplage : médiane des 10 dernières sorties Z2 (55 à 75 % de la FTP) de 90 min et plus, EF = puissance normalisée / FC, 1re contre 2e moitié ; 12 % = 0, 2 % = 1 ;
+//                    - C découplage : médiane du découplage des 10 sorties de plus de 2 h à la plus haute puissance normalisée de l'année, EF = puissance normalisée / FC, 1re contre 2e moitié ; 12 % = 0, 2 % = 1 ;
 //                  chaque lettre est multipliée par sa preuve (3 sorties demandées) ; une lettre sans mesure vaut 0 ;
 //                  (les watts à cardio égal, l'ancien pilier « Endurance », sont devenus la Forme : voir niveau-annees.ts et forme-saison.ts) ;
 //   durabilité   : garder sa puissance fatigué : meilleur 5 et 20 min après 2 h 30 de sortie, divisé par le meilleur à froid (100 = aucune perte, 0 = 30 % de perte) ;
@@ -50,7 +50,7 @@ export interface MesuresAnnee {
   /** Meilleur 20 min APRÈS fatigue (30 kJ/kg de travail déjà fait) de l'année, et le nombre de sorties qui en ont un. */
   fat20: number | null;
   nFat: number;
-  /** Médiane du découplage cardiaque (en %) des 10 dernières sorties Z2 de 90 min et plus de l'année, et le nombre de sorties qui ont compté. */
+  /** Médiane du découplage cardiaque (en %) des 10 sorties de plus de 2 h à la plus haute puissance normalisée de l'année, et le nombre de sorties qui ont compté. */
   driftMed: number | null;
   nDrift: number;
 }
@@ -61,7 +61,7 @@ export interface DetailEndurance {
   fatigue: number | null;
   /** R : meilleur 2 h 30 ÷ FTP de l'année. */
   longue: number | null;
-  /** C : découplage cardiaque en Z2. */
+  /** C : découplage cardiaque des sorties longues. */
   decouplage: number | null;
 }
 
@@ -110,7 +110,7 @@ export const SORTIES_MINI_PUISSANCE = 3;
 export const SORTIES_MINI_DURABILITE = 3;
 export const SORTIES_MINI_REPETABILITE = 3;
 /** L'endurance (formule de Yanis, 3 nov. 2026) : 20 % la fatigue (D), 35 % la longue durée (R), 45 % le découplage (C). Chaque note est un rapport remis entre 0 et 1 ; sa preuve
- *  demande 3 sorties (3 sorties après fatigue, 3 sorties Z2, 3 sorties avec capteur pour la FTP de l'année) : avec moins, la note est réduite d'autant. */
+ *  demande 3 sorties (3 sorties après fatigue, 3 sorties longues avec découplage, 3 sorties avec capteur pour la FTP de l'année) : avec moins, la note est réduite d'autant. */
 export const SORTIES_MINI_FATIGUE = 3;
 export const SORTIES_MINI_DECOUPLAGE = 3;
 export const POIDS_ENDURANCE = { fatigue: 0.2, longue: 0.35, decouplage: 0.45 } as const;
