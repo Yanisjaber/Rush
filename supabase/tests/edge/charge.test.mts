@@ -69,3 +69,13 @@ test('une intensité de plus de 1,5 (FTP absurde de 4 W, puissance fausse) ne do
   assert.equal(computeTss(a, 200, 150), 100); // une intensité normale (1,0) est inchangée
   assert.equal(stravaToRow(a, 'u', 200, 150).intensity, 1);
 });
+
+test('watts estimés par Strava (pas de capteur) : stravaToRow ne range ni puissance, ni énergie, ni intensité ; un vrai capteur oui', () => {
+  const brut = { id: 5, sport_type: 'Ride', start_date_local: '2026-10-28T08:00:00Z', moving_time: 3600, average_watts: 180, weighted_average_watts: 200, max_watts: 800, kilojoules: 650, average_heartrate: 140 };
+  const estimee = stravaToRow({ ...brut, device_watts: false }, 'u', 200, 150);
+  assert.deepEqual([estimee.np, estimee.avg_watts, estimee.max_watts, estimee.kj, estimee.intensity, estimee.has_power], [null, null, null, null, null, false]);
+  assert.equal(estimee.tss, Math.round((140 / 150) ** 2 * 100)); // la charge vient du cardio
+  const vraie = stravaToRow({ ...brut, device_watts: true }, 'u', 200, 150);
+  assert.deepEqual([vraie.np, vraie.avg_watts, vraie.max_watts, vraie.kj, vraie.has_power], [200, 180, 800, 650, true]);
+  assert.equal(vraie.intensity, 1);
+});

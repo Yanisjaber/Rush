@@ -21,6 +21,7 @@ TSS = durée_h × IF² × 100
 
 - `NP` : la puissance moyenne lissée sur 30 s, élevée à la puissance 4, moyennée puis racine 4e. Elle vient de Strava (`weighted_average_watts`, colonne `np`).
 - `durée_h` : le temps en mouvement, sinon le temps total.
+- Les **watts estimés par Strava** (sortie sans capteur de puissance, `device_watts` faux) ne comptent nulle part et ne sont pas affichés dans l'app (3 nov. 2026, voir `docs/native/DONNEES_ECARTEES.md`).
 
 **2. Cardio** (sinon, y compris pour la course, le vélo électrique et les watts estimés) :
 
@@ -176,6 +177,7 @@ Le pilier Durabilité (meilleur 5 et 20 min après 2 h 30 ÷ meilleur à froid) 
 - 2026-11-02 : création, ajout du TSS, du CTL/ATL/TSB, du score d'endurance et d'une proposition de score de puissance.
 - 2026-11-02 : TSS aligné sur le code (vrai capteur seulement, cardio seconde par seconde), FTP glissante, série de forme jusqu'à aujourd'hui.
 - 2026-11-02 : pilier Puissance sur une échelle plus exigeante (0 à 20 % sous le meilleur).
+- 2026-11-03 : les watts estimés par Strava sont retirés de l'app (écartés d'office, rien supprimé en base).
 - 2026-11-03 : TSS plausible : jamais plus de 200 points par heure ni d'intensité de plus de 1,5 (106 sorties de 2011-2013 à plus de 1000 TSS réparées).
 - 2026-11-03 : capacité de charge : on compte aussi les heures (25 %) et les jours actifs (15 %), annualisés pour l'année en cours ; le CTL moyen fait 60 %.
 - 2026-11-03 : capacité de charge : CTL moyen de l'année (au lieu du pic) contre la moyenne des 3 meilleures années (au lieu de la meilleure seule).

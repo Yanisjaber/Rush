@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chargeRetenue, chiffreEcarte, COLONNES_ECART, DONNEES_DU_CHIFFRE, estEcartee, pucesEcart, sansDonneesEcartees } from '../../src/data/calendrier/donnees-ecartees.ts';
+import { aUneVraiePuissance, chargeRetenue, chiffreEcarte, COLONNES_ECART, DONNEES_DU_CHIFFRE, estEcartee, pucesEcart, sansDonneesEcartees, wattsEstimes } from '../../src/data/calendrier/donnees-ecartees.ts';
 import { chiffresSeance } from '../../src/data/calendrier/seance-detail.ts';
 import { sortiesCourse } from '../../src/data/bilan/progression-course.ts';
 import { sortiesVelo } from '../../src/data/bilan/progression-velo.ts';
@@ -136,4 +136,35 @@ test('les progressions ignorent ce qui est écarté, avec ou sans masque', () =>
   assert.equal(sortiesCourse([{ ...course, excl_duration: true }], null).length, 0);
   assert.equal(sortiesCourse([{ ...course, excl_elevation: true }], null).length, 0); // l'allure ne se corrige plus sans le dénivelé
   assert.equal(sortiesCourse([sansDonneesEcartees({ ...course, excl_elevation: true })], null).length, 0);
+});
+
+test('watts estimés par Strava (device_watts faux) : l\'app ne les montre pas, ne les utilise nulle part, et ne propose pas de les écarter', () => {
+  const estimee = velo({ device_watts: false });
+  assert.equal(wattsEstimes(estimee), true);
+  assert.equal(wattsEstimes(velo({ device_watts: true })), false);
+  assert.equal(wattsEstimes(velo({ device_watts: null })), false); // inconnu (séance saisie à la main, import de fichier) : on ne présume rien
+  assert.equal(aUneVraiePuissance(estimee), false);
+  assert.equal(aUneVraiePuissance(velo()), true);
+  // Les calculs la voient sans puissance ni énergie ; le reste ne bouge pas, la charge non plus (elle vient du cardio ou d'une estimation)
+  const vue = sansDonneesEcartees(estimee);
+  assert.deepEqual([vue.avg_watts, vue.np, vue.max_watts, vue.kj], [null, null, null, null]);
+  assert.equal(vue.tss, 90);
+  assert.equal(vue.avg_heartrate, 140);
+  assert.equal(vue.moving_time, 7200);
+  assert.equal(estimee.avg_watts, 190); // la séance d'origine n'est pas modifiée (la ligne en base garde ses chiffres)
+  // Pas de puce « Puissance » : il n'y a rien à écarter
+  assert.deepEqual(pucesEcart(estimee).map((p) => p.cle), ['duree', 'cardio', 'cadence', 'distance', 'denivele', 'charge']);
+  // Un vrai capteur ou un capteur inconnu : même séance, rien n'est copié
+  const vraie = velo();
+  assert.equal(sansDonneesEcartees(vraie), vraie);
+  const inconnue = velo({ device_watts: null });
+  assert.equal(sansDonneesEcartees(inconnue), inconnue);
+  // Les progressions du vélo n'ont plus ces séances
+  assert.equal(sortiesVelo([sansDonneesEcartees(velo({ device_watts: false }))], 2026).length, 0);
+});
+
+test('watts estimés : la charge d\'une séance reste (elle ne vient pas de la puissance) et écarter le cardio la retire', () => {
+  const estimee = velo({ device_watts: false, tss: 70 });
+  assert.equal(chargeRetenue(estimee), 70);
+  assert.equal(sansDonneesEcartees(estimee).tss, 70);
 });

@@ -78,7 +78,8 @@ export function computeTss(a: any, ftp: number | null, lthr: number | null): num
 
 /** Une activité Strava → une ligne de la table `activities`. */
 export function stravaToRow(a: any, userId: string, ftp: number | null, lthr: number | null) {
-  const np = puissanceRetenue(a);
+  // Les watts estimés par Strava (pas de capteur : `device_watts` faux) ne sont pas rangés : l'app ne les montre pas et ne les utilise pas (3 nov. 2026)
+  const np = a.device_watts ? puissanceRetenue(a) : 0;
   const intensiteBrute = (puissanceCharge(a) && ftp) ? puissanceCharge(a) / ftp : 0;
   const intensity = intensiteBrute <= INTENSITE_MAX ? intensiteBrute : 0; // une intensité absurde (FTP de 4 W) n'est pas rangée
   const tss = computeTss(a, ftp, lthr);
@@ -102,18 +103,18 @@ export function stravaToRow(a: any, userId: string, ftp: number | null, lthr: nu
     max_speed_kmh: maxSpeedMs ? +(maxSpeedMs * 3.6).toFixed(2) : null,
     avg_heartrate: a.average_heartrate ? Math.round(a.average_heartrate) : null,
     max_heartrate: a.max_heartrate ? Math.round(a.max_heartrate) : null,
-    avg_watts: a.average_watts ? Math.round(a.average_watts) : null,
-    max_watts: a.max_watts ? Math.round(a.max_watts) : null,
+    avg_watts: a.device_watts && a.average_watts ? Math.round(a.average_watts) : null,
+    max_watts: a.device_watts && a.max_watts ? Math.round(a.max_watts) : null,
     np: np ? Math.round(np) : null,
     intensity: intensity ? +intensity.toFixed(3) : null,
     ftp_at_time: ftp,
     avg_cadence: a.average_cadence ? Math.round(a.average_cadence) : null,
     max_cadence: null,
-    kj: a.kilojoules ? Math.round(a.kilojoules) : null,
+    kj: a.device_watts && a.kilojoules ? Math.round(a.kilojoules) : null,
     calories: a.calories ? Math.round(a.calories) : null,
     tss,
     has_heartrate: !!a.has_heartrate,
-    has_power: !!(a.device_watts || np),
+    has_power: !!a.device_watts,
     device_watts: !!a.device_watts,
   };
 }

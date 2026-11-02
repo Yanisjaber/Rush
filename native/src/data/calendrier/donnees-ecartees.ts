@@ -1,5 +1,8 @@
 // Les données qu'on peut écarter d'une activité (écran d'une activité › « Compte dans mes calculs »). Fonctions pures, sans réseau.
 //
+// Les WATTS ESTIMÉS par Strava (`device_watts` faux : pas de capteur de puissance) sont traités comme une puissance écartée d'office, sans drapeau et sans rien changer en base (3 nov. 2026) :
+// l'app ne les montre pas et ne les utilise nulle part. Seul un vrai capteur donne une puissance.
+//
 // Une donnée écartée n'entre plus dans AUCUN calcul : totaux, records, charge, forme, niveau global. La ligne en base garde ses chiffres
 // (on peut les remettre) ; les calculs de l'app lisent les séances à travers `sansDonneesEcartees`, qui les vide. L'écran de l'activité,
 // lui, lit la séance entière et barre ce qui est écarté. Côté base : supabase/migrations/2026-11-02_donnees_ecartees.sql (mêmes règles).
@@ -21,11 +24,15 @@ export interface PuceEcart {
 
 const positif = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0;
 const aDeLaPuissance = (s: Seance): boolean => positif(s.np) || positif(s.avg_watts);
+/** Les watts de cette séance sont estimés par Strava (pas de capteur de puissance) : l'app ne les montre pas et ne les utilise pas. */
+export const wattsEstimes = (s: Pick<Seance, 'device_watts'>): boolean => s.device_watts === false;
+/** La séance a une vraie puissance, mesurée par un capteur (une puissance estimée par Strava n'en est pas une). */
+export const aUneVraiePuissance = (s: Seance): boolean => !wattsEstimes(s) && aDeLaPuissance(s);
 
 // L'ordre est celui des puces à l'écran
 const DONNEES: { cle: DonneeEcartable; libelle: string; colonne: ColonneEcart; presente: (s: Seance) => boolean }[] = [
   { cle: 'duree', libelle: 'Durée', colonne: 'excl_duration', presente: (s) => positif(s.moving_time) },
-  { cle: 'puissance', libelle: 'Puissance', colonne: 'excl_power', presente: aDeLaPuissance },
+  { cle: 'puissance', libelle: 'Puissance', colonne: 'excl_power', presente: aUneVraiePuissance },
   { cle: 'cardio', libelle: 'Cardio', colonne: 'excl_hr', presente: (s) => positif(s.avg_heartrate) },
   { cle: 'cadence', libelle: 'Cadence', colonne: 'excl_cadence', presente: (s) => positif(s.avg_cadence) },
   { cle: 'distance', libelle: 'Distance', colonne: 'excl_distance', presente: (s) => positif(s.distance_km) },
@@ -81,14 +88,14 @@ export function chargeRetenue(s: Seance): number | null {
  * (pas une copie) quand rien n'est écarté. La charge se décide avant de vider la puissance et le cardio (elle en dépend).
  */
 export function sansDonneesEcartees<T extends Seance>(s: T): T {
-  if (!COLONNES_ECART.some((c) => s[c] === true)) return s;
+  if (!COLONNES_ECART.some((c) => s[c] === true) && !wattsEstimes(s)) return s;
   const r: T = { ...s, tss: chargeRetenue(s) };
   if (s.excl_duration) {
     r.moving_time = 0; // les sommes ajoutent 0 ; les progressions, qui demandent une durée minimale, passent leur tour
     r.elapsed_time = null;
     r.avg_speed_kmh = null; // une vitesse est une distance divisée par une durée
   }
-  if (s.excl_power) {
+  if (s.excl_power || wattsEstimes(s)) {
     r.avg_watts = null;
     r.np = null;
     r.max_watts = null;

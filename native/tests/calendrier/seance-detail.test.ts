@@ -93,3 +93,15 @@ test('chiffresSeance : en natation la distance est en mètres', () => {
   assert.equal(d?.unite, 'm');
   assert.equal(d?.valeur, '2\u00a0400');
 });
+
+test('chiffresSeance : des watts estimés par Strava (device_watts faux) ne sont pas montrés : ni puissance moyenne, ni énergie en kJ ; un vrai capteur oui', () => {
+  const velo = { sport: 'Ride', distance_km: 60, avg_watts: 190, np: 205, kj: 1400, calories: 1300, avg_heartrate: 140, tss: 90 };
+  const estimee = cles(seance({ ...velo, device_watts: false }));
+  assert.ok(!estimee.includes('watts'));
+  assert.ok(estimee.includes('energie')); // les calories remplacent les kJ
+  assert.equal(chiffresSeance(seance({ ...velo, device_watts: false })).find((c) => c.cle === 'energie')?.unite, 'kcal');
+  const vraie = chiffresSeance(seance({ ...velo, device_watts: true }));
+  assert.ok(vraie.some((c) => c.cle === 'watts'));
+  assert.equal(vraie.find((c) => c.cle === 'energie')?.unite, 'kJ');
+  assert.ok(cles(seance({ ...velo, device_watts: null })).includes('watts')); // inconnu : on ne présume rien
+});

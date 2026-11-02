@@ -31,3 +31,13 @@ La charge (TSS) d'une activité vient de la puissance si elle en a, sinon du car
 ## Démo
 
 En démo, la bascule change l'écran le temps de la visite, sans rien écrire ni changer les autres écrans.
+
+## Les watts estimés par Strava (3 nov. 2026)
+
+Une sortie sans capteur de puissance a quand même des watts chez Strava : il les **estime** (`device_watts` faux). Ils sont faux (vitesse, pente et masse supposés) et ne mesurent pas ta puissance. L'app les traite comme une **puissance écartée d'office**, sans drapeau et sans rien supprimer en base :
+- `sansDonneesEcartees` vide `avg_watts`, `np`, `max_watts` et `kj` de ces sorties avant tout calcul (zones de puissance, watts à cardio égal, widgets, progressions…) ; la charge de la sortie ne change pas (elle vient du cardio ou d'une estimation, jamais de ces watts) ;
+- l'écran d'une activité n'affiche ni « Puissance moyenne » ni l'énergie en kJ de ces sorties (les calories prennent la place), et ne propose pas la puce « Puissance » (il n'y a rien à écarter) ;
+- `stravaToRow` (import) ne range plus ces chiffres pour les nouvelles sorties (`np`, `avg_watts`, `max_watts`, `kj` vides, `has_power` faux) ;
+- côté base, les records (`rpc_sorties_velo`) filtraient déjà `device_watts`, et aucune sortie à watts estimés n'a de courbe de puissance (le niveau global n'en lisait déjà pas).
+Les anciennes lignes gardent leurs chiffres en base (compte de test : 1400 sorties, tes sorties : 136) ; l'app ne les lit plus. Une séance saisie à la main ou un fichier importé (`device_watts` inconnu) garde sa puissance : on ne présume rien.
+
