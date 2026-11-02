@@ -594,14 +594,18 @@ async function recomputePowerProfileBySport(sb: any, userId: string): Promise<nu
 const POWER_CURVE_VERSION = 8; // 8 : + puissance après fatigue (fat20) et découplage à la puissance normalisée (drift, remplace derive) ; 7 : + charge cardio (hr_s, hr_sq) ; bump quand on change les durées/calculs (force un re-backfill local)
 // Obsolète = pas de power_curve OU version différente (durées étendues), ou courbes de signaux absentes ou d'une autre version.
 // Les deux se recalculent ensemble : le stream n'est décompressé qu'une fois.
-const courbeObsolete = (a: any): boolean => !a.power_curve || a.power_curve.v !== POWER_CURVE_VERSION;
-const signauxObsoletes = (a: any): boolean => !a.signal_curves || a.signal_curves.v !== SIGNAUX_VERSION;
+// `pv` et `sv` sont les numéros de version seuls (power_curve->>v) : on ne charge pas les courbes entières de 2000 sorties à chaque appel (plusieurs dizaines de Mo).
+// Une courbe d'une ancienne version n'est recalculée que pour les sorties de plus de 1 h 30 : les seules qui peuvent avoir une puissance après fatigue (fat20) ou un découplage (drift).
+// Les clés des sorties plus courtes (5 s, 5 min, 20 min, 60 min…) n'ont pas changé : leur ancienne courbe reste valable. Une sortie sans aucune courbe est toujours calculée.
+const DUREE_MINI_RECALCUL_S = 5400;
+const courbeObsolete = (a: any): boolean => a.pv == null || (Number(a.pv) !== POWER_CURVE_VERSION && Number(a.moving_time ?? 0) >= DUREE_MINI_RECALCUL_S);
+const signauxObsoletes = (a: any): boolean => a.sv == null || Number(a.sv) !== SIGNAUX_VERSION;
 
-/** Les sorties (les plus récentes d'abord, 2000 au plus) qui ont leur flux stocké mais une courbe obsolète. Ne charge pas les flux (power_curve est léger). */
+/** Les sorties (les plus récentes d'abord, 2000 au plus) qui ont leur flux stocké mais une courbe obsolète. Ne charge ni les flux ni les courbes : seulement leur version. */
 async function listerCourbesObsoletes(sb: any, userId: string): Promise<any[]> {
   const { data, error } = await sb
     .from("activities")
-    .select("id, sport, power_curve, signal_curves")
+    .select("id, sport, moving_time, pv:power_curve->>v, sv:signal_curves->>v")
     .eq("user_id", userId)
     .not("streams_gz", "is", null)
     .order("start_date_local", { ascending: false })
