@@ -608,6 +608,9 @@ async function listerCourbesObsoletes(sb: any, userId: string): Promise<any[]> {
     .select("id, sport, moving_time, pv:power_curve->>v, sv:signal_curves->>v")
     .eq("user_id", userId)
     .not("streams_gz", "is", null)
+    // Le filtre est fait par la base (pas sur les 2000 plus récentes seulement : un compte de 3000 sorties n'aurait jamais vu les plus anciennes).
+    // Mêmes règles que courbeObsolete et signauxObsoletes ci-dessus.
+    .or(`power_curve.is.null,power_curve->>v.is.null,signal_curves.is.null,signal_curves->>v.neq.${SIGNAUX_VERSION},and(moving_time.gte.${DUREE_MINI_RECALCUL_S},power_curve->>v.neq.${POWER_CURVE_VERSION})`)
     .order("start_date_local", { ascending: false })
     .limit(2000);
   if (error) throw error;
