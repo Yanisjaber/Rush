@@ -33,6 +33,7 @@ import { corsHeadersFor } from "../_shared/cors.ts";
 import { reechantillonner1Hz } from "../_shared/flux.ts";
 import { clesRepetabilite } from "../_shared/repetabilite.ts";
 import { cleDerive } from "../_shared/derive.ts";
+import { cleCardio } from "../_shared/cardio.ts";
 import { calculerSignaux, SIGNAUX_VERSION } from "../_shared/signaux.ts";
 import { joindreJetons, ecrireRenouvellementStrava } from "../_shared/jetons.ts";
 import { lireQuota, type QuotaStrava } from "../_shared/quota-strava.ts";
@@ -170,10 +171,10 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
         // Remise à 1 point par seconde (trous de pause / enregistrement intelligent), voir _shared/flux.ts
         const watts = reechantillonner1Hz((raw?.watts?.data) || [], (raw?.time?.data) || []);
         const powerCurve: Record<string, number> = computeMMP(watts);
-        // Durabilité (late_300 / late_1200 si sortie > 2 h 30), répétabilité (rep_1..3) et dérive cardiaque (derive, sortie ≥ 2 h) :
+        // Durabilité (late_300 / late_1200 si sortie > 2 h 30), répétabilité (rep_1..3), dérive cardiaque (derive, sortie ≥ 2 h) et charge cardio (hr_s, hr_sq) :
         // sans ça, une sortie importée aujourd'hui n'aurait aucune des trois
         const fc1Hz = reechantillonner1Hz((raw?.heartrate?.data) || [], (raw?.time?.data) || []);
-        Object.assign(powerCurve, computeLateMMP(watts), clesRepetabilite(watts), cleDerive(watts, fc1Hz));
+        Object.assign(powerCurve, computeLateMMP(watts), clesRepetabilite(watts), cleDerive(watts, fc1Hz), cleCardio(fc1Hz));
         powerCurve.v = POWER_CURVE_VERSION; // marqueur de version (ignoré par l'agrégation)
         powerCurve._v = CLIENT_PC_VERSION; // marqueur attendu par le client (records sans recalcul manuel)
         const metrics = computeMetrics(watts, (raw?.heartrate?.data) || [], (raw?.time?.data) || [], ATH);
@@ -578,7 +579,7 @@ async function recomputePowerProfileBySport(sb: any, userId: string): Promise<nu
 // Recalcule la power_curve (avec les NOUVELLES durées) depuis les streams déjà
 // stockés, pour les activités dont la courbe est absente/obsolète. Lot limité
 // (idempotent, relançable). Renvoie { done, remaining }.
-const POWER_CURVE_VERSION = 6; // bump quand on change les durées/calculs (force un re-backfill local)
+const POWER_CURVE_VERSION = 7; // 7 : + charge cardio (hr_s, hr_sq) ; bump quand on change les durées/calculs (force un re-backfill local)
 async function backfillPowerCurves(sb: any, userId: string, limit: number, ath: any): Promise<{ done: number; remaining: number }> {
   // 1) Repère les activités obsolètes SANS charger les streams (power_curve est léger).
   const { data, error } = await sb
@@ -617,8 +618,8 @@ async function backfillPowerCurves(sb: any, userId: string, limit: number, ath: 
         const watts = reechantillonner1Hz(streamData(arr, "watts"), streamData(arr, "time"));
         const pc: Record<string, number> = computeMMP(watts);
         const fc1Hz = reechantillonner1Hz(streamData(arr, "heartrate"), streamData(arr, "time"));
-        // late_300 / late_1200 si sortie > 2 h 30 ; rep_1..3 (trois efforts de 5 min) ; derive (dérive cardiaque, sortie ≥ 2 h)
-        Object.assign(pc, computeLateMMP(watts), clesRepetabilite(watts), cleDerive(watts, fc1Hz));
+        // late_300 / late_1200 si sortie > 2 h 30 ; rep_1..3 (trois efforts de 5 min) ; derive (dérive cardiaque, sortie ≥ 2 h) ; hr_s et hr_sq (charge cardio)
+        Object.assign(pc, computeLateMMP(watts), clesRepetabilite(watts), cleDerive(watts, fc1Hz), cleCardio(fc1Hz));
         pc.v = POWER_CURVE_VERSION; // marqueur de version (ignoré par l'agrégation)
         pc._v = CLIENT_PC_VERSION; // marqueur attendu par le client
         maj.power_curve = pc;

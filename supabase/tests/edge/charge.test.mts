@@ -2,15 +2,30 @@
 // Lancer : node --experimental-strip-types --test supabase/tests/edge/charge.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { computeTss, stravaToRow, lthrEffectif, ftpEffective, puissanceRetenue } from '../../functions/_shared/charge.ts';
+import { computeTss, stravaToRow, lthrEffectif, ftpEffective, puissanceRetenue, puissanceCharge } from '../../functions/_shared/charge.ts';
 
 test('une heure à la FTP = 100 points', () => {
-  assert.equal(computeTss({ moving_time: 3600, weighted_average_watts: 200 }, 200, null), 100);
+  assert.equal(computeTss({ moving_time: 3600, sport_type: 'Ride', device_watts: true, weighted_average_watts: 200 }, 200, null), 100);
 });
-test('sans puissance normalisée, la puissance moyenne sert (webhook et ingest donnent le même résultat)', () => {
-  const a = { moving_time: 3600, average_watts: 200 };
+test('sans puissance normalisée, la puissance moyenne ne sert plus : le cardio prend le relais (la colonne np la garde pour l\'affichage)', () => {
+  const a = { moving_time: 3600, device_watts: true, average_watts: 200, average_heartrate: 150 };
   assert.equal(puissanceRetenue(a), 200);
-  assert.equal(computeTss(a, 200, null), 100);
+  assert.equal(puissanceCharge(a), 0);
+  assert.equal(computeTss(a, 200, 150), 100); // cardio : (150 / 150)² × 1 h
+  assert.equal(computeTss({ moving_time: 3600, device_watts: true, average_watts: 200 }, 200, null), 0); // ni NP ni cardio
+});
+test('des watts estimés par Strava (pas de capteur) ne comptent pas : le cardio prend le relais', () => {
+  const a = { moving_time: 3600, device_watts: false, weighted_average_watts: 300, average_heartrate: 120 };
+  assert.equal(puissanceCharge(a), 0);
+  assert.equal(computeTss(a, 200, 150), 64); // (120 / 150)² × 100
+  assert.equal(stravaToRow({ id: 2, sport_type: 'Ride', moving_time: 3600, device_watts: false, weighted_average_watts: 300, average_heartrate: 120 }, 'u', 200, 150).intensity, null);
+});
+test('course avec capteur de foulée et vélo électrique : pas de TSS de puissance, le cardio prend le relais (comme la base)', () => {
+  for (const sport_type of ['Run', 'EBikeRide']) {
+    const a = { moving_time: 3600, sport_type, device_watts: true, weighted_average_watts: 300, average_heartrate: 120 };
+    assert.equal(puissanceCharge(a), 0);
+    assert.equal(computeTss(a, 200, 150), 64); // (120 / 150)² × 100
+  }
 });
 test('sans puissance, le cardio prend le relais, sinon 0', () => {
   assert.equal(computeTss({ moving_time: 3600, average_heartrate: 150 }, null, 150), 100);
@@ -32,14 +47,15 @@ const faux = (pp: any, top: any) => ({
 test('ftpEffective : profil > 95 % du 20 min > 90 % de la meilleure puissance des activités > meilleure puissance en base', async () => {
   assert.equal(await ftpEffective(faux(null, null), 'u', 250), 250);
   assert.equal(await ftpEffective(faux({ watts_90d: 300, watts_alltime: 320 }, null), 'u', null), 285);
-  assert.equal(await ftpEffective(faux(null, null), 'u', null, [{ average_watts: 200 }, { weighted_average_watts: 250 }]), 225);
+  assert.equal(await ftpEffective(faux(null, null), 'u', null, [{ average_watts: 200 }, { device_watts: false, weighted_average_watts: 400 }, { sport_type: 'Ride', device_watts: true, weighted_average_watts: 250 }]), 225); // ni la moyenne ni les watts estimés ne servent
   assert.equal(await ftpEffective(faux(null, { np: 300 }), 'u', null, []), 270);
   assert.equal(await ftpEffective(faux(null, null), 'u', null, []), null);
 });
 test('stravaToRow : même ligne quel que soit le chemin', () => {
-  const r = stravaToRow({ id: 1, name: 'Sortie', sport_type: 'Ride', start_date_local: '2026-10-28T08:00:00Z', moving_time: 3600, average_watts: 200 }, 'u', 200, null);
+  const r = stravaToRow({ id: 1, name: 'Sortie', sport_type: 'Ride', start_date_local: '2026-10-28T08:00:00Z', moving_time: 3600, device_watts: true, weighted_average_watts: 200, average_watts: 180 }, 'u', 200, null);
   assert.equal(r.tss, 100);
   assert.equal(r.np, 200);
+  assert.equal(r.intensity, 1);
   assert.equal(r.ftp_at_time, 200);
   assert.equal(r.has_power, true);
 });

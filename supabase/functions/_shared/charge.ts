@@ -5,8 +5,10 @@
 // Avant : le webhook ne prenait que la puissance normalisée et la FTP du profil, l'ingest prenait aussi la
 // puissance moyenne et estimait la FTP : la même séance n'avait pas le même TSS selon son chemin.
 //
-// Règle : TSS de puissance (puissance normalisée, sinon moyenne, et FTP du profil, sinon estimée),
-// sinon TSS cardio (FC moyenne / LTHR), sinon 0. (Le résumé de charge « effort ressenti » est ajouté côté app.)
+// Règle (2 nov. 2026) : TSS de puissance seulement avec un VRAI capteur (`device_watts`) ET une puissance normalisée, et une FTP (profil, sinon estimée) ;
+// sinon TSS cardio (FC moyenne / LTHR), sinon 0. Les watts estimés par Strava et la simple puissance moyenne (qui sous-estime une sortie variée) ne servent plus à la charge.
+// (Le résumé de charge « effort ressenti » est ajouté côté app.)
+// La base a le dernier mot : `recalc_ftp_tss` (supabase/migrations/2026-11-02_ftp_glissante.sql) applique la même règle avec la FTP de l'époque de chaque sortie.
 // ============================================================
 // deno-lint-ignore-file no-explicit-any
 
@@ -16,14 +18,23 @@ export function lthrEffectif(profil: { lthr?: number | null; hr_max?: number | n
   return profil?.hr_max ? Math.round(profil.hr_max * 0.92) : null;
 }
 
-/** Puissance retenue pour une activité Strava : normalisée si elle existe, sinon moyenne. */
+/** Puissance affichée et stockée (colonne `np`) pour une activité Strava : normalisée si elle existe, sinon moyenne. Ne sert PAS à la charge : voir `puissanceCharge`. */
 export function puissanceRetenue(a: any): number {
   return a?.weighted_average_watts || a?.average_watts || 0;
 }
 
+/** Les sports où la puissance sert à la charge : le vélo (pas électrique). Même liste que `recalc_ftp_tss` côté base. */
+const SPORTS_VELO_PUISSANCE = ["Ride", "VirtualRide", "GravelRide", "MountainBikeRide"];
+
+/** Puissance qui compte pour la charge : la puissance normalisée d'un vrai capteur de puissance sur un vélo non électrique, sinon 0 (watts estimés, simple moyenne, capteur de foulée en course, vélo électrique : la charge passe au cardio). */
+export function puissanceCharge(a: any): number {
+  const sport = a?.sport_type || a?.type || "";
+  return a?.device_watts && a?.weighted_average_watts && SPORTS_VELO_PUISSANCE.includes(sport) ? a.weighted_average_watts : 0;
+}
+
 /**
  * FTP à utiliser : celle du profil, sinon 95 % de la meilleure puissance sur 20 min (power_profile),
- * sinon 90 % de la meilleure puissance retenue parmi `activites` (celles qu'on vient de récupérer).
+ * sinon 90 % de la meilleure puissance normalisée d'un vrai capteur parmi `activites` (celles qu'on vient de récupérer).
  */
 export async function ftpEffective(sb: any, userId: string, ftpProfil: number | null, activites: any[] = []): Promise<number | null> {
   if (ftpProfil) return ftpProfil;
@@ -33,7 +44,7 @@ export async function ftpEffective(sb: any, userId: string, ftpProfil: number | 
     const w20 = pp?.watts_90d || pp?.watts_alltime; // forme récente d'abord, sinon le record
     if (w20) return Math.round(w20 * 0.95);
   } catch (_) { /* power_profile pas encore calculé */ }
-  const meilleures = activites.map(puissanceRetenue).filter((x: number) => x > 0);
+  const meilleures = activites.map(puissanceCharge).filter((x: number) => x > 0);
   if (meilleures.length) return Math.round(Math.max(...meilleures) * 0.90);
   // Repli : meilleure puissance déjà enregistrée dans les séances de l'utilisateur
   try {
@@ -49,7 +60,7 @@ export function computeTss(a: any, ftp: number | null, lthr: number | null): num
   const dur = a?.moving_time || a?.elapsed_time || 0;
   if (!dur) return 0;
   const durHr = dur / 3600;
-  const np = puissanceRetenue(a);
+  const np = puissanceCharge(a);
   if (np && ftp) {
     const intensity = np / ftp;
     return Math.round(durHr * intensity * intensity * 100);
@@ -65,7 +76,7 @@ export function computeTss(a: any, ftp: number | null, lthr: number | null): num
 /** Une activité Strava → une ligne de la table `activities`. */
 export function stravaToRow(a: any, userId: string, ftp: number | null, lthr: number | null) {
   const np = puissanceRetenue(a);
-  const intensity = (np && ftp) ? np / ftp : 0;
+  const intensity = (puissanceCharge(a) && ftp) ? puissanceCharge(a) / ftp : 0;
   const tss = computeTss(a, ftp, lthr);
   const distKm = a.distance ? +(a.distance / 1000).toFixed(2) : null;
   const speedMs = a.average_speed || 0;
