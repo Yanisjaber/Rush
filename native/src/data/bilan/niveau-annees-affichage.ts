@@ -18,18 +18,21 @@ export function positionsNiveau(points: readonly PointNiveau[], tranchesParAn: n
 /**
  * Les points de `depuisAn` à `jusquAn` (la fenêtre de 5 ans qui finit sur l'année choisie ; sans borne, pas de limite de ce côté).
  * S'il reste moins de deux points dans la fenêtre (une courbe d'un seul point ne montre rien), tous les points jusqu'à `jusquAn`.
+ * Une année passée finit sur le premier point d'après (le début de l'année suivante), pour voir où elle repart.
  * Le résultat peut avoir moins de deux points quand rien n'est mesuré jusqu'à `jusquAn` : voir aDeQuoiTracer.
  */
 export function pointsDepuis(points: readonly PointNiveau[], depuisAn?: number, jusquAn?: number): PointNiveau[] {
   const avant = jusquAn === undefined ? [...points] : points.filter((p) => p.an <= jusquAn);
-  if (depuisAn === undefined) return avant;
+  const suivant = jusquAn === undefined || !avant.length ? undefined : points.find((p) => p.an > jusquAn);
+  const fin = (l: PointNiveau[]): PointNiveau[] => (suivant ? [...l, suivant] : l);
+  if (depuisAn === undefined) return fin(avant);
   const gardes = avant.filter((p) => p.an >= depuisAn);
-  return gardes.length >= 2 ? gardes : avant;
+  return fin(gardes.length >= 2 ? gardes : avant);
 }
 
 /** Vrai quand la courbe a au moins deux points à montrer jusqu'à `jusquAn`. */
 export function aDeQuoiTracer(points: readonly PointNiveau[], jusquAn?: number): boolean {
-  return pointsDepuis(points, undefined, jusquAn).length >= 2;
+  return (jusquAn === undefined ? points : points.filter((p) => p.an <= jusquAn)).length >= 2;
 }
 
 /** Les morceaux de courbe qui se suivent : on coupe quand une période n'a pas assez de sorties (écart de plus d'une tranche). */
