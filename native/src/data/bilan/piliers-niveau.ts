@@ -90,8 +90,8 @@ export interface NiveauGlobalAnnee {
   piliers: NotesPiliers;
   /** À quel point chaque note est appuyée par des mesures (1 = toutes les sorties demandées). */
   preuves: PreuvesPiliers;
-  /** La moyenne des 4 piliers, arrondie. */
-  global: number;
+  /** La moyenne des 4 piliers, arrondie ; null quand moins de `PILIERS_MINI_GLOBAL` piliers ont toutes leurs preuves (pas de score global cette année-là). */
+  global: number | null;
   /** Combien de piliers sur 4 ont toutes leurs preuves cette année-là. */
   nbPiliers: number;
   /** Le détail de la note d'endurance. */
@@ -160,6 +160,10 @@ export const noteChargeDe = (rapport: number): number => Math.max(0, Math.min(10
 /** La puissance est notée de 0 (20 % sous ton meilleur de toujours ou moins) à 100 (ton meilleur) : plus exigeante que `noteDe` (0 à 30 % sous), qui reste l'échelle des autres piliers. */
 export const PUISSANCE_ZERO = 0.8;
 export const notePuissanceDe = (rapport: number): number => Math.max(0, Math.min(100, ((rapport - PUISSANCE_ZERO) / (1 - PUISSANCE_ZERO)) * 100));
+
+/** Le score global d'une année demande au moins 3 piliers sur 4 qui ont toutes leurs preuves (3 nov. 2026) : sans capteur de puissance, la puissance et la répétabilité valent 0 et le chiffre
+ *  (7 à 11 pour 2016-2018 sur le compte de test) laisserait croire à de très mauvaises années ; l'année n'a alors pas de score global (« — »), ses piliers restent affichés. */
+export const PILIERS_MINI_GLOBAL = 3;
 
 /** La part de preuve : `n` sorties sur les `requis` demandées, entre 0 et 1. */
 export const preuveDe = (n: number, requis: number): number => Math.max(0, Math.min(1, n / requis));
@@ -238,10 +242,11 @@ export function niveauGlobal(mesures: readonly MesuresAnnee[]): NiveauGlobal | n
     const piliers: NotesPiliers = { puissance, endurance: noteEndurance, repetabilite, charge };
     const preuves: PreuvesPiliers = { puissance: preuvePuissance, endurance: preuveEndurance, repetabilite: preuveRepetabilite, charge: m.ctlMoy !== null ? 1 : 0 };
     const complets = PILIERS.filter((p) => preuves[p.cle] >= 1).length;
-    resultat.push({ an, piliers, preuves, global: Math.round(moyenne(PILIERS.map((p) => piliers[p.cle]))!), nbPiliers: complets, endurance, detailRepetabilite });
+    resultat.push({ an, piliers, preuves, global: complets >= PILIERS_MINI_GLOBAL ? Math.round(moyenne(PILIERS.map((p) => piliers[p.cle]))!) : null, nbPiliers: complets, endurance, detailRepetabilite });
   }
   const actuel = resultat[resultat.length - 1];
-  const meilleur = resultat.reduce((m, a) => (a.global > m.global ? a : m));
+  // La meilleure année se cherche parmi celles qui ont un score global ; sans aucune, c'est l'année actuelle
+  const meilleur = resultat.reduce((m, a) => ((a.global ?? -1) > (m.global ?? -1) ? a : m), resultat.filter((a) => a.global !== null)[0] ?? actuel);
   // Le point fort et le point faible se disent sur les piliers qui ont toutes leurs preuves (sinon un « faible » viendrait d'une donnée absente) ; à défaut, sur tous
   const complets = PILIERS.filter((p) => actuel.preuves[p.cle] >= 1).map((p) => p.cle);
   const trie = [...(complets.length ? complets : PILIERS.map((p) => p.cle))].sort((a, b) => actuel.piliers[b] - actuel.piliers[a]);

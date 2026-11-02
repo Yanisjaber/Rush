@@ -7,7 +7,7 @@ import { ProgresNiveau } from '@/components/graphes/ProgresNiveau';
 import { IconeSport } from '@/components/ui/IconeSport';
 import type { FormeSaison as Forme } from '@/data/bilan/forme-saison';
 import type { RecordsAnnee, SerieNiveau } from '@/data/bilan/niveau-annees';
-import type { NiveauGlobal } from '@/data/bilan/piliers-niveau';
+import { PILIERS_MINI_GLOBAL, type NiveauGlobal } from '@/data/bilan/piliers-niveau';
 import type { PeriodeProgression, Progression } from '@/data/bilan/progression';
 import { espace } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
@@ -36,9 +36,11 @@ interface Props {
 export function NiveauGlobalVelo({ global: g, serie, records, preuve, jours, annee, forme, onChoisirAnnee }: Props) {
   const p = usePalette();
   const couleur = couleurSport(p, 'velo');
-  // L'année choisie peut ne pas avoir de score (trop peu de sorties) : le niveau s'affiche alors « — »
+  // L'année choisie peut ne pas avoir de score (trop peu de sorties, ou moins de 3 piliers mesurables : pas de capteur de puissance) : le niveau s'affiche alors « — »
   const choisie = g.annees.find((a) => a.an === annee) ?? null;
-  const score = choisie ? String(choisie.global) : '—';
+  const scoreChoisi = choisie ? choisie.global : null;
+  const score = scoreChoisi !== null ? String(scoreChoisi) : '—';
+  const avecScore = g.annees.filter((a): a is typeof a & { global: number } => a.global !== null);
 
   return (
     <View style={styles.tout}>
@@ -47,19 +49,25 @@ export function NiveauGlobalVelo({ global: g, serie, records, preuve, jours, ann
         <View style={styles.flex}>
           <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte }]}>Niveau global {annee}</Text>
         </View>
-        <Text accessibilityLabel={choisie ? `${score} sur 100` : 'pas de niveau mesuré'} style={[styles.score, { color: p.texte }]}>
+        <Text accessibilityLabel={scoreChoisi !== null ? `${score} sur 100` : 'pas de niveau mesuré'} style={[styles.score, { color: p.texte }]}>
           {score}
           <Text style={[typo.petit, { color: p.texteDoux }]}> / 100</Text>
         </Text>
       </View>
 
+      {choisie && choisie.global === null ? (
+        <Text style={[typo.petit, { color: p.texteDoux }]}>
+          Pas de score global en {annee} : {choisie.nbPiliers} pilier{choisie.nbPiliers > 1 ? 's' : ''} sur 4 mesuré{choisie.nbPiliers > 1 ? 's' : ''}, il en faut {PILIERS_MINI_GLOBAL} (le capteur de puissance manquait). Les piliers sont quand même détaillés plus bas.
+        </Text>
+      ) : null}
+
       <Bloc titre="Score par année">
         <CourbeGlobale
-          points={g.annees.map((a) => ({ an: a.an, score: a.global! }))}
+          points={avecScore.map((a) => ({ an: a.an, score: a.global }))}
           anneeCerclee={annee}
           couleur={couleur}
           onChoisir={onChoisirAnnee}
-          etiquette={`Score global par année : ${g.annees.map((a) => `${a.an} : ${a.global}`).join(', ')}, sur 100.`}
+          etiquette={`Score global par année : ${avecScore.map((a) => `${a.an} : ${a.global}`).join(', ')}, sur 100.`}
         />
       </Bloc>
 

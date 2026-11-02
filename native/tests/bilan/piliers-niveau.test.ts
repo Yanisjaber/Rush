@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { PointNiveau, SerieNiveau } from '../../src/data/bilan/niveau-annees.ts';
-import { CHARGE_ZERO, DECOUPLAGE_CENT, DECOUPLAGE_ZERO, ecartsPiliers, FACILITE_CENT, FACILITE_ZERO, HAUTEUR_ZERO, niveauGlobal, noteChargeDe, noteHauteurDe, noteLineaire, notePuissanceDe, PILIERS, POIDS_ENDURANCE, preuveDe, recordsDeMesures, surUneAnnee, type MesuresAnnee } from '../../src/data/bilan/piliers-niveau.ts';
+import { CHARGE_ZERO, PILIERS_MINI_GLOBAL, DECOUPLAGE_CENT, DECOUPLAGE_ZERO, ecartsPiliers, FACILITE_CENT, FACILITE_ZERO, HAUTEUR_ZERO, niveauGlobal, noteChargeDe, noteHauteurDe, noteLineaire, notePuissanceDe, PILIERS, POIDS_ENDURANCE, preuveDe, recordsDeMesures, surUneAnnee, type MesuresAnnee } from '../../src/data/bilan/piliers-niveau.ts';
 
 const mesure = (an: number, extra: Partial<MesuresAnnee> = {}): MesuresAnnee => ({
   an, w5: null, w300: null, w1200: null, w3600: null, repRatio: null, repW3: null, repN: 0, ctlMax: null, nCourbes: 50, pRef: null, fcRef: null, nFc: 0, driftMed: null, nDrift: 0, heures: null, joursActifs: 0, joursCouverts: 0, ...extra,
@@ -72,10 +72,10 @@ test('niveauGlobal : les notes des piliers sont ce qu\'on attend', () => {
 
 test('niveauGlobal : chaque année a une note à chaque pilier, même sans mesure (0 quand rien n\'est mesuré)', () => {
   assert.equal(niveauGlobal([]), null);
-  // Une année avec un seul sprint : la puissance vaut 100 (c'est son meilleur), tout le reste 0, soit un score de 100 / 4 = 25
+  // Une année avec un seul sprint : la puissance vaut 100 (c'est son meilleur), tout le reste 0 ; un seul pilier sur 4 a ses preuves : pas de score global (« — »)
   const seul = niveauGlobal([mesure(2025, { w5: 1000 })])!;
   assert.deepEqual(seul.actuel.piliers, { puissance: 100, endurance: 0, repetabilite: 0, charge: 0 });
-  assert.equal(seul.actuel.global, 25);
+  assert.equal(seul.actuel.global, null);
   assert.equal(seul.actuel.nbPiliers, 1); // seule la puissance a toutes ses preuves
   // Deux années : toutes les deux ont un score, comme avant seulement la 2e
   const g = niveauGlobal([mesure(2024, { w5: 1000 }), mesure(2025, { w5: 1100, w300: 310, ctlMax: 85 })])!;
@@ -125,7 +125,8 @@ test('niveauGlobal : une année à moins de 3 sorties avec capteur ne fixe jamai
   const g = niveauGlobal(mesures)!;
   assert.deepEqual(g.annees.map((a) => a.an), [2013, 2022, 2023, 2024, 2025, 2026]);
   // 2013 a un score, mais tout en bas (puissance et charge sous 70 % du meilleur : 0), et sa puissance repose sur 1 sortie sur 3
-  assert.equal(g.annees[0].global, 10); // charge 55 contre la référence de 87 (3 meilleures années) = 63 % → 39 sur l'échelle douce, le reste 0 : 39 / 4 = 9,7, arrondi à 10
+  assert.equal(g.annees[0].global, null); // un seul pilier sur 4 a ses preuves (la charge) : pas de score global, au lieu des 10 d'une année « mauvaise » (charge 55 contre une référence de 87 = 39, le reste 0)
+  assert.equal(g.annees[0].piliers.charge > 30 && g.annees[0].piliers.charge < 45, true); // ses piliers restent notés
   assert.ok(Math.abs(g.annees[0].preuves.puissance - 1 / 3) < 1e-9);
   // Les notes des autres années ne bougent pas
   const sans = niveauGlobal(REEL)!;
@@ -332,4 +333,26 @@ test('niveauGlobal : l\'année en cours n\'est pas pénalisée pour ses heures e
   // Sans volume du tout (base pas à jour) : le CTL moyen fait seul la note, comme avant
   const sans = niveauGlobal([mesure(2024, { ctlMoy: 80 }), mesure(2025, { ctlMoy: 60 })])!;
   assert.ok(Math.abs(sans.annees[1].piliers.charge - 100 * ((60 / 70 - 0.4) / 0.6)) < 1e-9);
+});
+
+test('niveauGlobal : pas de score global quand moins de 3 piliers sur 4 ont toutes leurs preuves (années sans capteur de puissance) ; la meilleure année se cherche parmi les autres', () => {
+  assert.equal(PILIERS_MINI_GLOBAL, 3);
+  const g = niveauGlobal([
+    mesure(2017, { ctlMax: 40, ctlMoy: 40, nCourbes: 0 }), // sans capteur : seule la charge a ses preuves
+    ...REEL,
+  ])!;
+  const a2017 = g.annees.find((a) => a.an === 2017)!;
+  assert.equal(a2017.global, null);
+  assert.equal(a2017.nbPiliers, 1);
+  assert.ok(g.annees.filter((a) => a.an !== 2017).every((a) => a.global !== null));
+  // Le point le plus bas ne fausse pas « le meilleur » : une année sans score ne peut pas l'être
+  assert.ok(g.meilleur.global !== null && g.meilleur.an !== 2017);
+  // Exactement 3 piliers sur 4 avec leurs preuves : le score existe
+  const trois = niveauGlobal([mesure(2025, { w5: 1000, w300: 300, w1200: 250, ctlMax: 80, repRatio: 0.9, repW3: 250, repN: 5 })])!;
+  assert.equal(trois.actuel.nbPiliers, 3);
+  assert.ok(trois.actuel.global !== null);
+  // Une seule année, sans score : ni erreur, ni « meilleur » absurde (c'est l'année elle-même)
+  const seule = niveauGlobal([mesure(2017, { ctlMax: 40, nCourbes: 0 })])!;
+  assert.equal(seule.actuel.global, null);
+  assert.equal(seule.meilleur.an, 2017);
 });

@@ -80,7 +80,7 @@ FTP d'une sortie = 95 % × meilleur 20 min (clé '1200' de power_curve) des sort
 
 ## 4. Niveau global à vélo : 4 piliers, notés de 0 à 100
 
-Code : `native/src/data/bilan/piliers-niveau.ts`. Les mesures par année viennent de la fonction SQL `rpc_piliers_annuels` ; les notes sont calculées dans l'app. **Score global = moyenne des 4 piliers**, arrondie. La durabilité a été retirée (voir la fin de cette section).
+Code : `native/src/data/bilan/piliers-niveau.ts`. Les mesures par année viennent de la fonction SQL `rpc_piliers_annuels` ; les notes sont calculées dans l'app. **Score global = moyenne des 4 piliers**, arrondie, **seulement si au moins 3 piliers sur 4 ont toutes leurs preuves** (3 nov. 2026) ; sinon l'année n'a pas de score global (l'écran affiche « — » et dit combien de piliers sont mesurés) et ses piliers restent détaillés. Compte de test : 2016-2018, sans capteur de puissance, affichaient 7 à 11 comme de très mauvaises années alors que deux piliers sur quatre n'étaient pas mesurables. La durabilité a été retirée (voir la fin de cette section).
 
 **Échelles** (une note linéaire entre deux bornes, bornée à 0 et 100) :
 
@@ -178,6 +178,7 @@ Le pilier Durabilité (meilleur 5 et 20 min après 2 h 30 ÷ meilleur à froid) 
 - 2026-11-02 : création, ajout du TSS, du CTL/ATL/TSB, du score d'endurance et d'une proposition de score de puissance.
 - 2026-11-02 : TSS aligné sur le code (vrai capteur seulement, cardio seconde par seconde), FTP glissante, série de forme jusqu'à aujourd'hui.
 - 2026-11-02 : pilier Puissance sur une échelle plus exigeante (0 à 20 % sous le meilleur).
+- 2026-11-03 : pas de score global pour une année où moins de 3 piliers sur 4 sont mesurables (« — » au lieu de 7 à 11 pour les années sans capteur de puissance).
 - 2026-11-03 : LTHR déduite des sorties quand le profil n'en a pas : le TSS cardio remplace le TSS tiré des watts estimés (CTL de 2022 : plus gonflé).
 - 2026-11-03 : nettoyage serveur : `rpc_piliers_annuels` sans les colonnes de la durabilité et de la fatigue, `fat20` n'est plus calculée.
 - 2026-11-03 : FTP glissante : fenêtre de ±90 jours (puis ±180, puis ±365) au lieu de ±45 (puis ±90, puis ±180) : la charge de 2022 n'est plus gonflée par une FTP trop basse.
