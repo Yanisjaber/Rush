@@ -18,6 +18,8 @@ interface Props {
   couleur: string;
   /** Phrase lue par VoiceOver à la place du dessin. */
   etiquette: string;
+  /** Sans la phrase « Ton meilleur niveau … est avant cette vue » sous la courbe (page Progrès du vélo). */
+  sansLegende?: boolean;
 }
 
 const LARGEUR = 300;
@@ -27,7 +29,7 @@ const D = 12;
 const H = 18; // le haut : la ligne des 100 et l'étiquette « meilleur »
 const B = 30; // le bas : les années
 
-export function CourbeNiveau({ serie, mode, depuisAn, couleur, etiquette }: Props) {
+export function CourbeNiveau({ serie, mode, depuisAn, couleur, etiquette, sansLegende = false }: Props) {
   const p = usePalette();
   const tous = mode === 'tranches' && serie.tranches.length >= 2 ? serie.tranches : serie.annuel;
   const points = pointsDepuis(tous, depuisAn);
@@ -94,7 +96,7 @@ export function CourbeNiveau({ serie, mode, depuisAn, couleur, etiquette }: Prop
           <TexteSvg key={r.an} x={r.x} y={HAUTEUR - 8} fontSize={12} fontFamily={police.texte500} fill={p.texteDoux} textAnchor="middle">{r.an}</TexteSvg>
         ))}
       </Svg>
-      {sommetHorsVue ? (
+      {sommetHorsVue && !sansLegende ? (
         <Text style={[typo.petit, styles.legende, { color: p.texteDoux }]}>
           Ton meilleur niveau ({libellePeriode(serie.meilleur.cle)}) est avant cette vue : touche la flèche pour tout voir.
         </Text>

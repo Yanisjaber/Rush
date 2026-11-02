@@ -16,11 +16,11 @@ La natation et la musculation gardent leur écran : leur comparaison est fixée 
 
 ## Le niveau global de l'athlète (vélo)
 
-Un 5 min ou un 20 min isolé ne dit pas qui est le coureur. Sur le vélo, la page Progrès ouvre sur le **niveau global**, quatre cartes qu'on fait glisser (code : `NiveauGlobalVelo.tsx`, `PagerCartes.tsx` ; calcul : `piliers-niveau.ts`) :
-1. **Score global** : le dossard (score de l'année, variation depuis l'an dernier, écart au meilleur) et la courbe du score par année ;
-2. **Composition** : les blocs de chaque pilier dans chaque année, puis une **carte de chaleur** (`ChaleurPiliers.tsx`) : une ligne par pilier, une colonne par année, plus la case est bleue plus la note est haute (les 4 dernières années, « Tout l'historique » pour toutes, à faire défiler de côté). Le texte de chaque case est choisi pour rester lisible sur sa teinte (`theme/contraste.ts`) ;
-3. **Ce qui a bougé** : l'évolution de chaque pilier depuis l'année d'avant ;
-4. **Détail par durée** : la page décrite plus haut (Sprint, 5, 20, 60 min, Endurance, preuve du calcul).
+Un 5 min ou un 20 min isolé ne dit pas qui est le coureur. Sur le vélo, la page Progrès montre le **niveau global** sur une seule page qui défile (code : `NiveauGlobalVelo.tsx` ; calcul : `piliers-niveau.ts`) :
+1. **Le niveau de l'année** en taille normale (« 80 / 100 », variation depuis l'an dernier, meilleur) ;
+2. **Score par année** : la courbe du score global, le score sur chaque point ;
+3. **Piliers par année** : la **carte de chaleur** (`ChaleurPiliers.tsx`) : une ligne par pilier, une colonne par année, plus la case est bleue plus la note est haute (les 4 dernières années, « Tout l'historique » pour toutes, à faire défiler de côté). Le texte de chaque case est choisi pour rester lisible sur sa teinte (`theme/contraste.ts`) ;
+4. **La courbe des niveaux** : le sélecteur Sprint, 5, 20, 60 min, Endurance et sa courbe (`ProgresNiveau` en mode `courbeSeule`, sans dossard, liste, calcul ni phrase sous la courbe).
 
 Le score global est la **moyenne des piliers mesurés** (au moins 2). Chaque pilier va de 0 à 100 :
 

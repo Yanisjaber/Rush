@@ -132,6 +132,7 @@ export function ProgresNiveau({ famille, serie, records, preuve, jours, sansEnte
           mode={mode}
           depuisAn={depuisAn}
           couleur={couleur}
+          sansLegende={courbeSeule}
           etiquette={`Évolution de ton niveau en ${nomSport}${choisie ? `, ${NOMS_RECORD[choisie.duree]}` : ''}. Score de ${actuelle.annuel.map((a) => `${a.an} : ${Math.round(a.score)}`).join(', ')}, où 100 est ton meilleur niveau.`}
         />
       </Bloc>
