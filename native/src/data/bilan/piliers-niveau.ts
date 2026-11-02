@@ -13,9 +13,11 @@
 //                    - régularité : dans une sortie, le 3e effort de 5 min divisé par le 1er (médiane des 10 ; 100 = aucune perte, 0 = 30 % de perte) ;
 //                    - hauteur : le 3e effort (médiane des 10) divisé par ton meilleur 5 min de TOUS LES TEMPS (0 à 50 %, 100 à 100 %) : répéter des efforts
 //                      plus forts compte plus que répéter des efforts faciles. Un « vrai effort » vaut au moins 50 % de ce record (calculé côté base) ;
-//   charge       : encaisser et enchaîner l'entraînement : la charge chronique (CTL) MOYENNE de l'année, la charge que tu tiens toute l'année et pas le pic d'un seul jour (3 nov. 2026),
-//                  contre la moyenne de tes 3 MEILLEURES années (une seule année gonflée, par exemple par une FTP estimée trop basse, ne fixe plus le « 100 »). 100 = cette référence
-//                  (ou plus), 0 à 40 % de la référence : une échelle plus douce que les autres piliers, car la charge est une quantité d'entraînement, pas un niveau de performance.
+//   charge       : encaisser et enchaîner l'entraînement (3 nov. 2026) : 60 % la charge chronique (CTL) MOYENNE de l'année (la charge tenue toute l'année, pas le pic d'un jour),
+//                  25 % les HEURES de l'année et 15 % les JOURS ACTIFS. Chacun est jugé contre la moyenne de tes 3 MEILLEURES années (une seule année gonflée, par exemple par une FTP
+//                  estimée trop basse, ne fixe plus le « 100 »). 100 = cette référence (ou plus), 0 à 40 % de la référence : une échelle plus douce que les autres piliers, car la charge est
+//                  une quantité d'entraînement, pas un niveau de performance. L'année en cours (et la première) ne couvre pas 365 jours : heures et jours actifs sont ramenés à une année
+//                  complète (× 365 ÷ jours couverts, à partir de 30 jours couverts). Sans heures ni jours actifs (base pas à jour), le CTL moyen fait seul la note.
 // Une note existe toujours (2 nov. 2026) : quand il manque des sorties pour la juger, la note est calculée avec ce qu'il y a puis RÉDUITE de la part qui manque
 // (2 sorties sur les 3 demandées = 2/3 de la note ; aucune = 0). Chaque note a sa « preuve » (de 0 à 1) : 1 = toutes les sorties demandées sont là. L'écran marque
 // les notes à preuve incomplète. Le score global est la moyenne des 4 notes, preuve incomplète comprise.
@@ -45,6 +47,10 @@ export interface MesuresAnnee {
   ctlMax: number | null;
   /** La charge chronique (CTL) moyenne de l'année : la charge tenue toute l'année. La note de charge se fait dessus ; le pic (`ctlMax`) reste rendu. */
   ctlMoy: number | null;
+  /** Les heures et les jours actifs de l'année (daily_metrics), et combien de jours de l'année la série couvre (365 pour une année complète). */
+  heures: number | null;
+  joursActifs: number;
+  joursCouverts: number;
   /** Combien de sorties de l'année ont une courbe de puissance (un capteur). */
   nCourbes: number;
   /** Meilleure puissance sur 2 h 30 de l'année. */
@@ -135,6 +141,18 @@ const meilleurDe = (valeurs: (number | null)[]): number => Math.max(0, ...valeur
 export const HAUTEUR_ZERO = 0.5;
 export const noteHauteurDe = (rapport: number): number => Math.max(0, Math.min(100, ((rapport - HAUTEUR_ZERO) / (1 - HAUTEUR_ZERO)) * 100));
 
+/** Ce que compte la charge (3 nov. 2026) : le CTL moyen, les heures et les jours actifs de l'année. */
+export const POIDS_CHARGE = { ctl: 0.6, heures: 0.25, jours: 0.15 } as const;
+/** En dessous de ce nombre de jours couverts, heures et jours actifs ne sont pas ramenés à une année (trop peu de jours pour une moyenne). */
+export const JOURS_COUVERTS_MINI = 30;
+/** Heures ou jours actifs ramenés à une année complète ; null si la série couvre trop peu de jours. */
+export const surUneAnnee = (v: number | null, joursCouverts: number): number | null =>
+  v !== null && joursCouverts >= JOURS_COUVERTS_MINI ? (v * 365) / joursCouverts : null;
+/** La moyenne des `n` plus hautes valeurs positives (ou de toutes s'il y en a moins), 0 sans valeur. */
+const moyenneDesMeilleures = (valeurs: (number | null)[], n = 3): number => {
+  const top = valeurs.filter((v): v is number => v !== null && v > 0).sort((a, b) => b - a).slice(0, n);
+  return top.length ? top.reduce((s, v) => s + v, 0) / top.length : 0;
+};
 /** La charge est notée de 0 (40 % de la référence ou moins) à 100 (la référence : la moyenne de tes 3 meilleures années) : plus douce que `noteDe` (0 à 70 %), voir l'en-tête. */
 export const CHARGE_ZERO = 0.4;
 export const noteChargeDe = (rapport: number): number => Math.max(0, Math.min(100, ((rapport - CHARGE_ZERO) / (1 - CHARGE_ZERO)) * 100));
@@ -162,8 +180,9 @@ export function niveauGlobal(mesures: readonly MesuresAnnee[]): NiveauGlobal | n
     w3600: meilleurDe(reference.map((m) => m.w3600)),
   };
   // La référence de charge : la moyenne de la charge moyenne de tes 3 meilleures années (ou de toutes si tu en as moins de 3) : une année aberrante ne fixe pas le « 100 »
-  const chargesAnnuelles = mesures.map((m) => m.ctlMoy).filter((v): v is number => v !== null && v > 0).sort((a, b) => b - a).slice(0, 3);
-  const chargeReference = chargesAnnuelles.length ? chargesAnnuelles.reduce((s, v) => s + v, 0) / chargesAnnuelles.length : 0;
+  const refCtl = moyenneDesMeilleures(mesures.map((m) => m.ctlMoy));
+  const refHeures = moyenneDesMeilleures(mesures.map((m) => surUneAnnee(m.heures, m.joursCouverts)));
+  const refJours = moyenneDesMeilleures(mesures.map((m) => surUneAnnee(m.joursActifs, m.joursCouverts)));
   // Ton meilleur (le plus bas) cœur à la puissance de référence : sur les années à au moins 3 sorties de référence avec FC, sinon sur celles qui en ont au moins une
   const cardios = mesures.filter((m) => m.fcRef !== null && m.fcRef > 0);
   const cardiosFiables = cardios.filter((m) => m.nFc >= SORTIES_MINI_CARDIO);
@@ -206,7 +225,15 @@ export function niveauGlobal(mesures: readonly MesuresAnnee[]): NiveauGlobal | n
     const preuveEndurance = Math.round((POIDS_ENDURANCE.facilite * preuveFacilite + POIDS_ENDURANCE.cardio * preuveCardio
       + POIDS_ENDURANCE.decouplage * preuveDecouplage) * 1e9) / 1e9;
 
-    const charge = m.ctlMoy !== null && chargeReference > 0 ? noteChargeDe(m.ctlMoy / chargeReference) : 0;
+    // Charge : CTL moyen, heures et jours actifs ; une part sans mesure ne compte pas (la moyenne se fait sur celles qui existent)
+    const heuresAn = surUneAnnee(m.heures, m.joursCouverts);
+    const joursAn = surUneAnnee(m.joursActifs, m.joursCouverts);
+    const partsCharge: [number, number][] = [];
+    if (m.ctlMoy !== null && refCtl > 0) partsCharge.push([POIDS_CHARGE.ctl, noteChargeDe(m.ctlMoy / refCtl)]);
+    if (heuresAn !== null && refHeures > 0) partsCharge.push([POIDS_CHARGE.heures, noteChargeDe(heuresAn / refHeures)]);
+    if (joursAn !== null && refJours > 0) partsCharge.push([POIDS_CHARGE.jours, noteChargeDe(joursAn / refJours)]);
+    const poidsCharge = partsCharge.reduce((s, [w]) => s + w, 0);
+    const charge = poidsCharge > 0 ? partsCharge.reduce((s, [w, n]) => s + w * n, 0) / poidsCharge : 0;
 
     const piliers: NotesPiliers = { puissance, endurance: noteEndurance, repetabilite, charge };
     const preuves: PreuvesPiliers = { puissance: preuvePuissance, endurance: preuveEndurance, repetabilite: preuveRepetabilite, charge: m.ctlMoy !== null ? 1 : 0 };

@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { PointNiveau, SerieNiveau } from '../../src/data/bilan/niveau-annees.ts';
-import { CHARGE_ZERO, DECOUPLAGE_CENT, DECOUPLAGE_ZERO, ecartsPiliers, FACILITE_CENT, FACILITE_ZERO, HAUTEUR_ZERO, niveauGlobal, noteChargeDe, noteHauteurDe, noteLineaire, notePuissanceDe, PILIERS, POIDS_ENDURANCE, preuveDe, recordsDeMesures, type MesuresAnnee } from '../../src/data/bilan/piliers-niveau.ts';
+import { CHARGE_ZERO, DECOUPLAGE_CENT, DECOUPLAGE_ZERO, ecartsPiliers, FACILITE_CENT, FACILITE_ZERO, HAUTEUR_ZERO, niveauGlobal, noteChargeDe, noteHauteurDe, noteLineaire, notePuissanceDe, PILIERS, POIDS_ENDURANCE, preuveDe, recordsDeMesures, surUneAnnee, type MesuresAnnee } from '../../src/data/bilan/piliers-niveau.ts';
 
 const mesure = (an: number, extra: Partial<MesuresAnnee> = {}): MesuresAnnee => ({
-  an, w5: null, w300: null, w1200: null, w3600: null, repRatio: null, repW3: null, repN: 0, ctlMax: null, nCourbes: 50, pRef: null, fcRef: null, nFc: 0, driftMed: null, nDrift: 0, ...extra,
+  an, w5: null, w300: null, w1200: null, w3600: null, repRatio: null, repW3: null, repN: 0, ctlMax: null, nCourbes: 50, pRef: null, fcRef: null, nFc: 0, driftMed: null, nDrift: 0, heures: null, joursActifs: 0, joursCouverts: 0, ...extra,
   // la charge moyenne de l'année : par défaut la valeur de ctlMax donnée au test (la note de charge se fait sur la moyenne)
   ctlMoy: extra.ctlMoy !== undefined ? extra.ctlMoy : (extra.ctlMax ?? null),
 });
@@ -297,4 +297,39 @@ test('piliers : la durabilité est retirée (quatre piliers) et les poids de l\'
   assert.deepEqual(PILIERS.map((p) => p.cle), ['puissance', 'endurance', 'repetabilite', 'charge']);
   assert.ok(Math.abs(Object.values(POIDS_ENDURANCE).reduce((t, x) => t + x, 0) - 1) < 1e-9);
   assert.deepEqual(Object.keys(POIDS_ENDURANCE), ['facilite', 'cardio', 'decouplage']);
+});
+
+test('niveauGlobal : la charge compte les heures et les jours actifs (60 % CTL moyen, 25 % heures, 15 % jours actifs), chacun contre la moyenne des meilleures années', () => {
+  // Même CTL moyen (70) : 2024 = 400 h et 220 jours actifs, 2025 = la moitié (200 h, 110 jours)
+  const g = niveauGlobal([
+    mesure(2024, { ctlMoy: 70, heures: 400, joursActifs: 220, joursCouverts: 366 }),
+    mesure(2025, { ctlMoy: 70, heures: 200, joursActifs: 110, joursCouverts: 365 }),
+  ])!;
+  const charge = Object.fromEntries(g.annees.map((a) => [a.an, a.piliers.charge]));
+  // Références : heures (398,9 + 200) / 2 = 299,5 ; jours (219,4 + 110) / 2 = 164,7. 2025 : 200 / 299,5 = 66,8 % → 44,6 sur l'échelle douce, idem pour les jours
+  assert.equal(charge[2024], 100);
+  assert.ok(Math.abs(charge[2025] - (0.6 * 100 + 0.4 * 44.645)) < 0.01, `${charge[2025]}`); // 77,86 : sans le volume, les deux années auraient la même note (100)
+  assert.ok(charge[2025] < charge[2024]);
+});
+
+test('surUneAnnee : heures et jours actifs ramenés à une année complète, sauf quand la série couvre trop peu de jours', () => {
+  assert.equal(surUneAnnee(400, 365), 400);
+  assert.ok(Math.abs(surUneAnnee(200, 183)! - 398.91) < 0.01); // l\'année en cours : 200 h en 183 jours ≈ 399 h sur l\'année
+  assert.equal(surUneAnnee(50, 29), null); // moins de 30 jours couverts : pas de moyenne fiable
+  assert.ok(surUneAnnee(50, 30) !== null);
+  assert.equal(surUneAnnee(null, 365), null);
+});
+
+test('niveauGlobal : l\'année en cours n\'est pas pénalisée pour ses heures et ses jours (annualisés) ; un début d\'année de moins de 30 jours ne compte que par son CTL', () => {
+  const g = niveauGlobal([
+    mesure(2025, { ctlMoy: 70, heures: 400, joursActifs: 220, joursCouverts: 365 }),
+    mesure(2026, { ctlMoy: 70, heures: 200, joursActifs: 110, joursCouverts: 183 }), // même rythme, à la moitié de l\'année
+  ])!;
+  assert.ok(g.annees[1].piliers.charge > 99, `${g.annees[1].piliers.charge}`);
+  // Une série de 20 jours seulement : heures et jours actifs ne comptent pas (CTL seul)
+  const debut = niveauGlobal([mesure(2026, { ctlMoy: 70, heures: 3, joursActifs: 1, joursCouverts: 20 })])!;
+  assert.equal(debut.actuel.piliers.charge, 100);
+  // Sans volume du tout (base pas à jour) : le CTL moyen fait seul la note, comme avant
+  const sans = niveauGlobal([mesure(2024, { ctlMoy: 80 }), mesure(2025, { ctlMoy: 60 })])!;
+  assert.ok(Math.abs(sans.annees[1].piliers.charge - 100 * ((60 / 70 - 0.4) / 0.6)) < 1e-9);
 });

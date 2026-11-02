@@ -85,7 +85,7 @@ Code : `native/src/data/bilan/piliers-niveau.ts`. Les mesures par année viennen
 | `noteDe` | 70 % du meilleur | le meilleur | régularité de la répétabilité, niveau par année, records |
 | puissance | 80 % du meilleur | le meilleur | pilier Puissance (plus exigeante) |
 | hauteur | 50 % du record | le record | hauteur des efforts répétés |
-| charge | 40 % de la référence | la référence (moyenne de tes 3 meilleures années) | pilier Capacité de charge (plus douce) |
+| charge | 40 % de la référence | la référence (moyenne de tes 3 meilleures années) | pilier Capacité de charge : CTL moyen, heures, jours actifs (plus douce) |
 
 **Preuves** : une note est toujours calculée avec ce qui est mesuré, puis multipliée par sa « preuve » (`nombre de sorties ÷ sorties demandées`, entre 0 et 1, les sorties demandées étant 3 pour chaque pilier). Une case à preuve incomplète est en pointillés dans l'écran.
 
@@ -149,13 +149,19 @@ Répétabilité = moyenne( régularité ; hauteur ) × preuve
 ### 4.4 Capacité de charge
 
 ```
-Référence = moyenne des 3 plus hauts CTL moyens annuels (ou de tous, s'il y a moins de 3 années)
-Charge    = noteLinéaire( CTL moyen de l'année ÷ Référence ; 0,40 → 0 ; 1,00 → 100 )
+Référence_x = moyenne des 3 plus hautes valeurs annuelles de x (ou de toutes, s'il y a moins de 3 années)      // x = CTL moyen, heures, jours actifs
+
+note_x  = noteLinéaire( valeur_x de l'année ÷ Référence_x ; 0,40 → 0 ; 1,00 → 100 )
+Charge  = 0,60 · note_CTL + 0,25 · note_heures + 0,15 · note_jours
 ```
 
-- **CTL moyen de l'année** : la moyenne des CTL de tous les jours de l'année (`ctl_moy`, rendue par `rpc_piliers_annuels` avec le pic `ctl_max`). C'est la charge qu'on tient **toute l'année** (« encaisser et enchaîner »), pas le pic d'un seul jour.
-- **Référence = les 3 meilleures années** (3 nov. 2026) : une seule année gonflée ne fixe plus le « 100 ». Cas du compte de test : 2022 avait un CTL max de 149 (contre 100 à 110 en 2024-2026) alors que ses heures et ses watts étaient les mêmes ; sa FTP estimée était trop basse (204 W, seulement 51 sorties avec capteur) donc l'intensité médiane valait 0,91 au lieu de 0,80. Avec « CTL max contre la meilleure année », 2026 était à 56, 2025 à 45 ; avec la moyenne des 3 meilleures années, 2026 ≈ 100 et 2025 ≈ 84.
+- **CTL moyen de l'année** (60 %) : la moyenne des CTL de tous les jours de l'année (`ctl_moy`, rendue par `rpc_piliers_annuels` avec le pic `ctl_max`). C'est la charge tenue **toute l'année** (« encaisser et enchaîner »), pas le pic d'un seul jour.
+- **Heures de l'année** (25 %) : somme des minutes de `daily_metrics` en heures (les durées écartées n'y sont déjà pas). **Jours actifs** (15 %) : les jours avec au moins une activité (la régularité : 220 jours actifs et 180 jours actifs ne valent pas pareil à CTL égal).
+- **L'année en cours** (et la première) ne couvre pas 365 jours : heures et jours actifs sont ramenés à une année complète, `valeur × 365 ÷ jours couverts`, à partir de 30 jours couverts (en dessous, ils ne comptent pas et le CTL moyen fait seul la note). Sans volume du tout (base pas à jour), le CTL moyen fait seul la note.
+- **Référence = les 3 meilleures années** (3 nov. 2026) : une seule année gonflée ne fixe plus le « 100 ». Cas du compte de test : 2022 avait un CTL max de 149 (contre 100 à 110 en 2024-2026) alors que ses heures et ses watts étaient les mêmes ; sa FTP estimée était trop basse (204 W, seulement 51 sorties avec capteur) donc l'intensité médiane valait 0,91 au lieu de 0,80.
 - Au-dessus de la référence : plafonné à 100. Preuve : 1 dès que l'année a une charge. Plus douce que les autres échelles : la charge est une quantité d'entraînement, pas un niveau de performance.
+
+Exemple (compte de test) : 2026 ≈ 99, 2025 ≈ 90, 2024 ≈ 89, 2022 ≈ 94, 2019 ≈ 50 (avant le volume : 100, 84, 86, 100, 35).
 
 ### Durabilité : retirée (2026-11-02)
 
@@ -168,6 +174,7 @@ Le pilier Durabilité (meilleur 5 et 20 min après 2 h 30 ÷ meilleur à froid) 
 - 2026-11-02 : création, ajout du TSS, du CTL/ATL/TSB, du score d'endurance et d'une proposition de score de puissance.
 - 2026-11-02 : TSS aligné sur le code (vrai capteur seulement, cardio seconde par seconde), FTP glissante, série de forme jusqu'à aujourd'hui.
 - 2026-11-02 : pilier Puissance sur une échelle plus exigeante (0 à 20 % sous le meilleur).
+- 2026-11-03 : capacité de charge : on compte aussi les heures (25 %) et les jours actifs (15 %), annualisés pour l'année en cours ; le CTL moyen fait 60 %.
 - 2026-11-03 : capacité de charge : CTL moyen de l'année (au lieu du pic) contre la moyenne des 3 meilleures années (au lieu de la meilleure seule).
 - 2026-11-03 : répétabilité jugée sur les 10 meilleures sorties de l'année (le 3e effort le plus fort), plus sur toutes.
 - 2026-11-03 : endurance refaite à puissance fixe (F facilité, H coût cardio, C fraîcheur à 2 h 30, D fatigue) : la même puissance en watts pour toutes les années.
