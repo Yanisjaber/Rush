@@ -5,7 +5,8 @@ import { usePalette } from '@/theme/usePalette';
 // Des cartes qu'on fait glisser de côté, avec des points en bas. La hauteur suit la carte affichée : une carte courte ne laisse pas un grand vide
 // (chaque carte mesure sa propre hauteur, le cadre prend celle de la carte visible).
 interface Props {
-  pages: { nom: string; contenu: ReactNode }[];
+  /** Le contenu d'une carte, ou une fonction qui reçoit `aller` pour qu'un lien de la carte mène à une autre carte. */
+  pages: { nom: string; contenu: ReactNode | ((aller: (i: number) => void) => ReactNode) }[];
   /** Phrase lue par VoiceOver pour le groupe de cartes. */
   etiquette: string;
 }
@@ -46,7 +47,7 @@ export function PagerCartes({ pages, etiquette }: Props) {
                 setHauteurs((avant) => (avant[i] === h ? avant : Object.assign([...avant], { [i]: h })));
               }}
             >
-              {page.contenu}
+              {typeof page.contenu === 'function' ? page.contenu(aller) : page.contenu}
             </View>
           ))}
         </ScrollView>

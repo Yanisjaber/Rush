@@ -1,61 +1,63 @@
 import { Fragment } from 'react';
 import Svg, { Circle, Line, Path, Text as TexteSvg } from 'react-native-svg';
-import { amincirReperes } from '@/data/bilan/niveau-annees-affichage';
+import type { RepereRecit } from '@/data/bilan/recit-niveau';
 import { police } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Le score global année après année : une courbe de 0 à 100, la ligne des 100 en pointillés, le score écrit au-dessus de chaque point et le meilleur année cerclé.
+// Le score global année après année, en récit : une aire pâle sous la courbe, la ligne des 100 en pointillés, et quelques repères écrits
+// (creux, reprise, record : voir data/bilan/recit-niveau.ts) au lieu d'un chiffre sur chaque point. Première et dernière années sous la courbe.
 interface Props {
   points: { an: number; score: number }[];
-  meilleurAn: number;
+  reperes: RepereRecit[];
   couleur: string;
   /** Phrase lue par VoiceOver à la place du dessin. */
   etiquette: string;
 }
 
-const LARGEUR = 300;
-const HAUTEUR = 170;
-const G = 34;
-const D = 14;
-const H = 22;
-const B = 26;
-const MARGE = 14;
+const LARGEUR = 334;
+const HAUTEUR = 200;
+const HAUT = 30;
+const BAS = 176;
+const MARGE = 10;
 
-export function CourbeGlobale({ points, meilleurAn, couleur, etiquette }: Props) {
+export function CourbeGlobale({ points, reperes, couleur, etiquette }: Props) {
   const p = usePalette();
-  const plusBas = Math.min(...points.map((pt) => pt.score)) - 10;
-  const pas = 100 - plusBas > 50 ? 20 : 10;
-  const min = Math.max(0, Math.floor(plusBas / pas) * pas);
-  // Chaque point est placé selon son année (pas son rang) : une année sans score laisse un trou visible au lieu de coller deux années éloignées.
-  // Un peu d'air de chaque côté : le premier point ne touche pas l'axe, le dernier ne sort pas du cadre
+  const min = Math.max(0, Math.floor((Math.min(...points.map((pt) => pt.score)) - 10) / 10) * 10);
+  // Chaque point est placé selon son année (pas son rang) : une année sans score laisse un trou visible
   const premier = points[0]?.an ?? 0;
-  const etendue = (points[points.length - 1]?.an ?? premier) - premier;
-  const x = (i: number): number => G + MARGE + (etendue === 0 ? 0.5 : (points[i].an - premier) / etendue) * (LARGEUR - G - D - 2 * MARGE);
-  const y = (v: number): number => H + ((100 - v) / (100 - min)) * (HAUTEUR - H - B);
-  // Les années écrites sous la courbe : une sur deux quand elles se serrent (le score, lui, reste écrit sur chaque point)
-  const anneesEcrites = new Set(amincirReperes(points.map((pt, i) => ({ an: pt.an, x: x(i) })), 36).map((r) => r.an));
-  const reperes: number[] = [];
-  for (let v = min; v <= 100; v += pas) reperes.push(v);
+  const dernier = points[points.length - 1]?.an ?? premier;
+  const etendue = dernier - premier;
+  const x = (an: number): number => MARGE + (etendue === 0 ? 0.5 : (an - premier) / etendue) * (LARGEUR - 2 * MARGE);
+  const y = (v: number): number => HAUT + ((100 - v) / (100 - min)) * (BAS - HAUT);
+  const ligne = points.map((pt, i) => `${i ? 'L' : 'M'}${x(pt.an)} ${y(pt.score)}`).join(' ');
+  const aire = points.length > 1 ? `${ligne} L${x(dernier)} ${BAS} L${x(premier)} ${BAS} Z` : '';
+  // Le texte d'un repère : calé à gauche près du bord gauche, à droite près du bord droit, centré ailleurs
+  const ancre = (an: number): 'start' | 'middle' | 'end' => (x(an) < 60 ? 'start' : x(an) > LARGEUR - 60 ? 'end' : 'middle');
+  const decalage = (an: number): number => (ancre(an) === 'start' ? -4 : ancre(an) === 'end' ? 4 : 0);
 
   return (
     <Svg accessible accessibilityRole="image" accessibilityLabel={etiquette} width="100%" viewBox={`0 0 ${LARGEUR} ${HAUTEUR}`} style={{ aspectRatio: LARGEUR / HAUTEUR }}>
-      {reperes.map((v) => (
-        <Fragment key={v}>
-          <Line x1={G} x2={LARGEUR - D} y1={y(v)} y2={y(v)} stroke={v === 100 ? couleur : p.trait} strokeWidth={v === 100 ? 1.4 : 1} strokeDasharray={v === 100 ? '4 4' : undefined} />
-          <TexteSvg x={G - 7} y={y(v) + 4} fontSize={12} fontFamily={v === 100 ? police.texte600 : police.texte400} fill={v === 100 ? couleur : p.texteMuet} textAnchor="end">{v}</TexteSvg>
-        </Fragment>
-      ))}
-      {points.length > 1 ? (
-        <Path d={points.map((pt, i) => `${i ? 'L' : 'M'}${x(i)} ${y(pt.score)}`).join(' ')} fill="none" stroke={couleur} strokeWidth={2.8} strokeLinejoin="round" strokeLinecap="round" />
-      ) : null}
-      {points.map((pt, i) => (
-        <Fragment key={pt.an}>
-          <Circle cx={x(i)} cy={y(pt.score)} r={4.4} fill={couleur} />
-          {pt.an === meilleurAn ? <Circle cx={x(i)} cy={y(pt.score)} r={8} fill="none" stroke={p.texte} strokeWidth={1.5} /> : null}
-          <TexteSvg x={x(i)} y={y(pt.score) - 11} fontSize={12} fontFamily={police.texte600} fill={p.texte} textAnchor="middle">{Math.round(pt.score)}</TexteSvg>
-          {anneesEcrites.has(pt.an) ? <TexteSvg x={x(i)} y={HAUTEUR - 6} fontSize={12} fontFamily={police.texte500} fill={p.texteDoux} textAnchor="middle">{pt.an}</TexteSvg> : null}
-        </Fragment>
-      ))}
+      <Line x1={0} x2={LARGEUR} y1={y(100)} y2={y(100)} stroke={p.trait} strokeWidth={1} strokeDasharray="3 4" />
+      {aire ? <Path d={aire} fill={couleur} fillOpacity={0.12} /> : null}
+      {points.length > 1 ? <Path d={ligne} fill="none" stroke={couleur} strokeWidth={3} strokeLinejoin="round" strokeLinecap="round" /> : null}
+      {points.length === 1 ? <Circle cx={x(premier)} cy={y(points[0].score)} r={4.5} fill={couleur} /> : null}
+      {reperes.map((r) => {
+        const cx = x(r.an);
+        const cy = y(r.score);
+        const tx = cx + decalage(r.an);
+        // Au-dessus : titre puis détail, au-dessus du point ; en dessous : titre puis détail, sous le point
+        // (un sommet trop près du haut du dessin s'écrit en dessous, pour ne pas être coupé)
+        const y1 = r.dessus && cy - 26 >= 14 ? cy - 26 : cy + 22;
+        return (
+          <Fragment key={`${r.titre}-${r.an}`}>
+            <Circle cx={cx} cy={cy} r={4.5} fill={p.surface} stroke={p.texte} strokeWidth={2} />
+            <TexteSvg x={tx} y={y1} fontSize={12} fontFamily={police.texte600} fill={p.texte} textAnchor={ancre(r.an)}>{r.titre}</TexteSvg>
+            <TexteSvg x={tx} y={y1 + 14} fontSize={12} fontFamily={police.texte400} fill={p.texteDoux} textAnchor={ancre(r.an)}>{r.detail}</TexteSvg>
+          </Fragment>
+        );
+      })}
+      <TexteSvg x={x(premier) - MARGE + 2} y={HAUTEUR - 4} fontSize={12} fontFamily={police.texte500} fill={p.texteMuet} textAnchor="start">{premier}</TexteSvg>
+      {etendue > 0 ? <TexteSvg x={x(dernier) + MARGE - 2} y={HAUTEUR - 4} fontSize={12} fontFamily={police.texte500} fill={p.texteMuet} textAnchor="end">{dernier}</TexteSvg> : null}
     </Svg>
   );
 }

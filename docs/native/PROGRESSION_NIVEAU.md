@@ -65,3 +65,7 @@ Sur les données du compte qui a servi aux tests (vélo, par année) : l'enduran
 - En course, les années pèsent peu de courses : les marges d'erreur sont larges et les écarts entre années restent souvent dans le bruit.
 - Pas de météo, pas de sommeil.
 - L'historique est chargé en entier (par pages de 1000 séances) à la première ouverture de l'onglet.
+
+## Première carte : le récit (2 nov. 2026)
+
+Maquette 8 de l'Artifact « Progrès vélo : 8 maquettes » (`claude.ai/artifact/6Nbst9aEztcDWYa75d6cBc`), choisie par Yanis, sans le gros titre. La carte remplace le dossard et la courbe chiffrée : une phrase (écart avec l'an dernier et avec le creux, et le meilleur s'il n'est pas cette année), la courbe avec une aire pâle et trois repères écrits (creux, reprise = début de la montée actuelle d'au moins 2 ans, record), puis jusqu'à trois lignes (point fort, plus grosse hausse ou baisse, pilier le plus bas, fusionné avec la ligne d'avant quand c'est le même pilier). « Voir les 5 piliers en détail » mène à la carte suivante. Calculs : `native/src/data/bilan/recit-niveau.ts`.
