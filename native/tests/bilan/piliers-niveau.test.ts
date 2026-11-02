@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { PointNiveau, SerieNiveau } from '../../src/data/bilan/niveau-annees.ts';
-import { CHARGE_ZERO, DECOUPLAGE_CENT, DECOUPLAGE_ZERO, ecartsPiliers, FATIGUE_CENT, FATIGUE_ZERO, FACILITE_CENT, FACILITE_ZERO, HAUTEUR_ZERO, niveauGlobal, noteChargeDe, noteHauteurDe, noteLineaire, notePuissanceDe, preuveDe, recordsDeMesures, type MesuresAnnee } from '../../src/data/bilan/piliers-niveau.ts';
+import { CHARGE_ZERO, DECOUPLAGE_CENT, DECOUPLAGE_ZERO, ecartsPiliers, FACILITE_CENT, FACILITE_ZERO, HAUTEUR_ZERO, niveauGlobal, noteChargeDe, noteHauteurDe, noteLineaire, notePuissanceDe, PILIERS, POIDS_ENDURANCE, preuveDe, recordsDeMesures, type MesuresAnnee } from '../../src/data/bilan/piliers-niveau.ts';
 
 const mesure = (an: number, extra: Partial<MesuresAnnee> = {}): MesuresAnnee => ({
-  an, w5: null, w300: null, w1200: null, w3600: null, late300: null, late1200: null, nLongues: 0, repRatio: null, repW3: null, repN: 0, ctlMax: null, nCourbes: 50, pRef: null, fcRef: null, nFc: 0, fat20: null, nFat: 0, driftMed: null, nDrift: 0, ...extra,
+  an, w5: null, w300: null, w1200: null, w3600: null, repRatio: null, repW3: null, repN: 0, ctlMax: null, nCourbes: 50, pRef: null, fcRef: null, nFc: 0, driftMed: null, nDrift: 0, ...extra,
 });
 /** Une série d'endurance réduite aux années et à leur score. */
 const endurance = (scores: Record<number, number>): SerieNiveau => {
@@ -12,31 +12,31 @@ const endurance = (scores: Record<number, number>): SerieNiveau => {
   return { fcReference: 149, tranchesParAn: 1, annuel, tranches: [], meilleur: annuel[0], actuel: annuel[annuel.length - 1] };
 };
 
-// Les vraies mesures du compte de test, 2022 à 2026 (l'endurance : 2 h 30, après fatigue et découplage inventés, plausibles)
+// Les vraies mesures du compte de test, 2022 à 2026 (le découplage de l'endurance est inventé, plausible)
 const REEL: MesuresAnnee[] = [
-  mesure(2022, { w5: 939, w300: 265, w1200: 224, w3600: 171, late300: 198, late1200: 162, nLongues: 10, repRatio: 0.907, repW3: 200, repN: 2, ctlMax: 52, pRef: 172, fcRef: 143, nFc: 5, fat20: 200, nFat: 8, driftMed: 8, nDrift: 6 }),
-  mesure(2023, { w5: 1118, w300: 289, w1200: 227, w3600: 201, late300: 255, late1200: 222, nLongues: 46, repRatio: 0.929, repW3: 215, repN: 16, ctlMax: 79.6, pRef: 172, fcRef: 140, nFc: 10, fat20: 210, nFat: 20, driftMed: 6, nDrift: 10 }),
-  mesure(2024, { w5: 1157, w300: 293, w1200: 252, w3600: 201, late300: 254, late1200: 240, nLongues: 57, repRatio: 0.925, repW3: 220, repN: 37, ctlMax: 91, pRef: 172, fcRef: 135, nFc: 10, fat20: 238, nFat: 30, driftMed: 5, nDrift: 10 }),
-  mesure(2025, { w5: 1071, w300: 285, w1200: 259, w3600: 206, late300: 261, late1200: 237, nLongues: 40, repRatio: 0.935, repW3: 190, repN: 26, ctlMax: 90.3, pRef: 172, fcRef: 132, nFc: 10, fat20: 245, nFat: 25, driftMed: 4.5, nDrift: 10 }),
-  mesure(2026, { w5: 1103, w300: 271, w1200: 223, w3600: 194, late300: 242, late1200: 180, nLongues: 6, repRatio: 0.915, repW3: 205, repN: 20, ctlMax: 69.6, pRef: 172, fcRef: 133, nFc: 3, fat20: 195, nFat: 3, driftMed: 6, nDrift: 3 }),
+  mesure(2022, { w5: 939, w300: 265, w1200: 224, w3600: 171, repRatio: 0.907, repW3: 200, repN: 2, ctlMax: 52, pRef: 172, fcRef: 143, nFc: 5, driftMed: 8, nDrift: 6 }),
+  mesure(2023, { w5: 1118, w300: 289, w1200: 227, w3600: 201, repRatio: 0.929, repW3: 215, repN: 16, ctlMax: 79.6, pRef: 172, fcRef: 140, nFc: 10, driftMed: 6, nDrift: 10 }),
+  mesure(2024, { w5: 1157, w300: 293, w1200: 252, w3600: 201, repRatio: 0.925, repW3: 220, repN: 37, ctlMax: 91, pRef: 172, fcRef: 135, nFc: 10, driftMed: 5, nDrift: 10 }),
+  mesure(2025, { w5: 1071, w300: 285, w1200: 259, w3600: 206, repRatio: 0.935, repW3: 190, repN: 26, ctlMax: 90.3, pRef: 172, fcRef: 132, nFc: 10, driftMed: 4.5, nDrift: 10 }),
+  mesure(2026, { w5: 1103, w300: 271, w1200: 223, w3600: 194, repRatio: 0.915, repW3: 205, repN: 20, ctlMax: 69.6, pRef: 172, fcRef: 133, nFc: 3, driftMed: 6, nDrift: 3 }),
 ];
 
-test('niveauGlobal : les cinq piliers de chaque année et leur moyenne (vraies mesures)', () => {
+test('niveauGlobal : les quatre piliers de chaque année et leur moyenne (vraies mesures)', () => {
   const g = niveauGlobal(REEL);
   assert.ok(g);
   assert.deepEqual(g.annees.map((a) => a.an), [2022, 2023, 2024, 2025, 2026]);
   // Le score global d'une année est la moyenne de ses piliers mesurés
   const par = Object.fromEntries(g.annees.map((a) => [a.an, a]));
-  assert.ok(Math.abs(par[2025].global! - 80) <= 2, `2025 : ${par[2025].global}`);
-  assert.ok(Math.abs(par[2024].global! - 81) <= 2, `2024 : ${par[2024].global}`);
-  assert.ok(Math.abs(par[2026].global! - 56) <= 2, `2026 : ${par[2026].global}`);
+  assert.ok(Math.abs(par[2025].global! - 83) <= 1, `2025 : ${par[2025].global}`);
+  assert.ok(Math.abs(par[2024].global! - 84) <= 1, `2024 : ${par[2024].global}`);
+  assert.ok(Math.abs(par[2026].global! - 60) <= 1, `2026 : ${par[2026].global}`);
   assert.ok(par[2022].global! < par[2023].global!);
-  assert.equal(par[2025].nbPiliers, 5);
+  assert.equal(par[2025].nbPiliers, 4);
   // 2022 n'a que 2 sorties à trois vrais efforts : la répétabilité est notée, mais aux 2/3 :
   // régularité (0,907 − 0,7) / 0,3 = 69 ; hauteur : 200 W sur un record de 293 W = 68,3 % → (0,683 − 0,5) / 0,5 = 36,5 ; moyenne 52,8 ; × 2/3 = 35,2
   assert.ok(Math.abs(par[2022].piliers.repetabilite - 35.2) < 0.5, `${par[2022].piliers.repetabilite}`);
   assert.ok(Math.abs(par[2022].preuves.repetabilite - 2 / 3) < 1e-9);
-  assert.equal(par[2022].nbPiliers, 4); // les quatre autres ont toutes leurs preuves
+  assert.equal(par[2022].nbPiliers, 3); // les trois autres ont toutes leurs preuves
 });
 
 test('niveauGlobal : l\'année actuelle, l\'année d\'avant, le meilleur, le point fort et le point faible', () => {
@@ -44,14 +44,12 @@ test('niveauGlobal : l\'année actuelle, l\'année d\'avant, le meilleur, le poi
   assert.equal(g.actuel.an, 2026);
   assert.equal(g.precedent!.an, 2025);
   assert.ok(g.meilleur.an === 2025 || g.meilleur.an === 2024);
-  assert.equal(g.fort, 'charge'); // la puissance 2026 (≈ 60 avec l'échelle 0 à 20 % sous le record) passe juste sous la charge (61)
-  assert.equal(g.faible, 'durabilite'); // 2026 : 6 sorties longues seulement, la durabilité (50) est le plus bas des cinq ; l'endurance (≈ 55 : effort relatif 82 %, cœur proche de ton meilleur) est juste au-dessus
+  assert.equal(g.fort, 'endurance'); // 2026 : endurance ≈ 64 (effort relatif 81 % de la FTP, cœur à 1 bpm de ton meilleur, découplage de 6 %), devant la charge (61) et la puissance (60)
+  assert.equal(g.faible, 'repetabilite'); // la répétabilité (≈ 56) est le plus bas des quatre
 });
 
 test('niveauGlobal : les notes des piliers sont ce qu\'on attend', () => {
   const p = niveauGlobal(REEL)!.annees.find((a) => a.an === 2025)!.piliers;
-  // Durabilité 2025 : 261/285 = 91,6 % et 237/259 = 91,5 % → ratio moyen 0,916 → (0,916 − 0,7) / 0,3 = 72
-  assert.ok(Math.abs(p.durabilite! - 72) < 1.5, `${p.durabilite}`);
   // Répétabilité 2025 : régularité 0,935 → 78,3 ; hauteur 190 W sur 293 W = 64,8 % → 29,7 ; moyenne des deux : 54,0
   assert.ok(Math.abs(p.repetabilite - 54) < 0.5, `${p.repetabilite}`);
   const d = niveauGlobal(REEL)!.annees.find((a) => a.an === 2025)!.detailRepetabilite;
@@ -60,22 +58,21 @@ test('niveauGlobal : les notes des piliers sont ce qu\'on attend', () => {
   assert.ok(Math.abs(p.charge - 98.72) < 0.1, `${p.charge}`);
   // Puissance : la meilleure durée de chaque année vaut 100 pour son année record ; 2025 : sprint 1071/1157, 5 min 285/293, 20 min 100 %, 60 min 100 %
   assert.ok(p.puissance! > 85 && p.puissance! < 96, `${p.puissance}`);
-  // Endurance 2025 : F = 172 / (0,95 × 259) = 69,9 % de la FTP → 100 ; H = 132 bpm = ton meilleur → 100 ; C = (12 − 4,5) / 10 → 75 ; D = 245 / 259 = 94,6 % → 80
-  // note = 0,30 × 100 + 0,25 × 100 + 0,30 × 75 + 0,15 × 80 = 89,5
+  // Endurance 2025 : F = 172 / (0,95 × 259) = 69,9 % de la FTP → 100 ; H = 132 bpm = ton meilleur → 100 ; C = (12 − 4,5) / 10 → 75
+  // note = 0,35 × 100 + 0,30 × 100 + 0,35 × 75 = 91,25
   const e = niveauGlobal(REEL)!.annees.find((a) => a.an === 2025)!.endurance;
   assert.equal(e.facilite, 100);
   assert.equal(e.cardio, 100);
   assert.equal(e.decouplage, 75);
-  assert.ok(Math.abs(e.fatigue! - 79.96) < 0.01, `${e.fatigue}`);
-  assert.ok(Math.abs(p.endurance! - 89.5) < 0.05, `${p.endurance}`);
+  assert.ok(Math.abs(p.endurance! - 91.25) < 1e-9, `${p.endurance}`);
 });
 
 test('niveauGlobal : chaque année a une note à chaque pilier, même sans mesure (0 quand rien n\'est mesuré)', () => {
   assert.equal(niveauGlobal([]), null);
-  // Une année avec un seul sprint : la puissance vaut 100 (c'est son meilleur), tout le reste 0, soit un score de 100 / 5 = 20
+  // Une année avec un seul sprint : la puissance vaut 100 (c'est son meilleur), tout le reste 0, soit un score de 100 / 4 = 25
   const seul = niveauGlobal([mesure(2025, { w5: 1000 })])!;
-  assert.deepEqual(seul.actuel.piliers, { puissance: 100, endurance: 0, durabilite: 0, repetabilite: 0, charge: 0 });
-  assert.equal(seul.actuel.global, 20);
+  assert.deepEqual(seul.actuel.piliers, { puissance: 100, endurance: 0, repetabilite: 0, charge: 0 });
+  assert.equal(seul.actuel.global, 25);
   assert.equal(seul.actuel.nbPiliers, 1); // seule la puissance a toutes ses preuves
   // Deux années : toutes les deux ont un score, comme avant seulement la 2e
   const g = niveauGlobal([mesure(2024, { w5: 1000 }), mesure(2025, { w5: 1100, w300: 310, ctlMax: 85 })])!;
@@ -91,18 +88,6 @@ test('preuveDe : la part de sorties demandées, entre 0 et 1', () => {
   assert.equal(preuveDe(-2, 3), 0);
 });
 
-test('niveauGlobal : la durabilité demande 3 sorties longues : avec moins, la note est réduite ; sans aucune, 0', () => {
-  const peu = niveauGlobal([mesure(2025, { w5: 1000, w300: 300, w1200: 250, late300: 270, late1200: 225, nLongues: 2, ctlMax: 80 })])!;
-  assert.ok(Math.abs(peu.actuel.piliers.durabilite - 44.44) < 0.01, `${peu.actuel.piliers.durabilite}`); // 66,7 × 2/3
-  assert.ok(Math.abs(peu.actuel.preuves.durabilite - 2 / 3) < 1e-9);
-  const aucune = niveauGlobal([mesure(2025, { w5: 1000, w300: 300, w1200: 250, ctlMax: 80 })])!;
-  assert.equal(aucune.actuel.piliers.durabilite, 0);
-  assert.equal(aucune.actuel.preuves.durabilite, 0);
-  const assez = niveauGlobal([mesure(2025, { w5: 1000, w300: 300, w1200: 250, late300: 270, late1200: 225, nLongues: 3, ctlMax: 80 })])!;
-  assert.equal(Math.round(assez.actuel.piliers.durabilite), 67); // ratio 0,9 des deux : (0,9 − 0,7) / 0,3
-  assert.equal(assez.actuel.preuves.durabilite, 1);
-});
-
 test('niveauGlobal : la répétabilité aussi : 3 sorties = note complète, 1 sortie = le tiers, aucune = 0', () => {
   const note = (repN: number, repRatio: number | null) => niveauGlobal([mesure(2025, { w5: 1000, w300: 300, ctlMax: 80, repN, repRatio })])!.actuel.piliers.repetabilite;
   assert.ok(Math.abs(note(3, 0.9) - 66.67) < 0.01);
@@ -111,18 +96,13 @@ test('niveauGlobal : la répétabilité aussi : 3 sorties = note complète, 1 so
   assert.equal(note(5, 1.2), 100); // plafonnée
 });
 
-test('niveauGlobal : une durabilité au-dessus de 100 % est plafonnée à 100', () => {
-  const g = niveauGlobal([mesure(2025, { w5: 1000, w300: 300, w1200: 250, late300: 320, late1200: 260, nLongues: 5, ctlMax: 80 })])!;
-  assert.equal(g.actuel.piliers.durabilite, 100);
-});
-
 test('ecartsPiliers : ce qui a bougé depuis l\'année d\'avant, seulement pour les piliers mesurés les deux années', () => {
   const g = niveauGlobal(REEL)!;
   const e = ecartsPiliers(g);
-  assert.deepEqual(e.map((x) => x.cle), ['puissance', 'endurance', 'durabilite', 'repetabilite', 'charge']);
+  assert.deepEqual(e.map((x) => x.cle), ['puissance', 'endurance', 'repetabilite', 'charge']);
   const charge = e.find((x) => x.cle === 'charge')!;
   assert.ok(charge.ecart < -35, `charge ${charge.ecart}`); // CTL max 90 → 70 : le plus gros recul (99 → 61)
-  assert.equal(e.find((x) => x.cle === 'endurance')!.ecart, -34); // 2026 (≈ 55) contre 2025 (≈ 89) : effort relatif de 82 % de la FTP au lieu de 70 %, 195 W après fatigue contre un record de 259 W (D = 0)
+  assert.equal(e.find((x) => x.cle === 'endurance')!.ecart, -27); // 2026 (≈ 64) contre 2025 (≈ 91) : effort relatif de 81 % de la FTP au lieu de 70 %, découplage de 6 % au lieu de 4,5 %
   assert.ok(e.every((x) => x.maintenant - x.avant === x.ecart));
   // Sans année d'avant : rien à comparer
   const seul = niveauGlobal([REEL[3]])!;
@@ -142,7 +122,7 @@ test('niveauGlobal : une année à moins de 3 sorties avec capteur ne fixe jamai
   const g = niveauGlobal(mesures)!;
   assert.deepEqual(g.annees.map((a) => a.an), [2013, 2022, 2023, 2024, 2025, 2026]);
   // 2013 a un score, mais tout en bas (puissance et charge sous 70 % du meilleur : 0), et sa puissance repose sur 1 sortie sur 3
-  assert.equal(g.annees[0].global, 7); // charge 55/91 = 60 % → 34 sur l'échelle douce, le reste 0 : 34 / 5 = 7
+  assert.equal(g.annees[0].global, 9); // charge 55/91 = 60 % → 34 sur l'échelle douce, le reste 0 : 34 / 4 = 8,5, arrondi à 9
   assert.ok(Math.abs(g.annees[0].preuves.puissance - 1 / 3) < 1e-9);
   // Les notes des autres années ne bougent pas
   const sans = niveauGlobal(REEL)!;
@@ -164,15 +144,12 @@ test('recordsDeMesures : sans les années à moins de 3 sorties avec capteur', (
   assert.deepEqual(recordsDeMesures([mesure(2013, { w5: 103, nCourbes: 1 }), mesure(2025, { w5: 1000, nCourbes: 3 })]).map((r) => r.an), [2025]);
 });
 
-test('noteLineaire : les bornes de la formule d\'endurance (F 90 → 70 % de la FTP, D 85 → 97 %, C 12 → 2 %)', () => {
+test('noteLineaire : les bornes de la formule d\'endurance (F 90 → 70 % de la FTP, C 12 → 2 %)', () => {
   assert.equal(noteLineaire(0.9, FACILITE_ZERO, FACILITE_CENT), 0);
   assert.equal(noteLineaire(1.05, FACILITE_ZERO, FACILITE_CENT), 0); // une puissance au-dessus de la FTP : tout en bas
   assert.equal(noteLineaire(0.7, FACILITE_ZERO, FACILITE_CENT), 100);
   assert.equal(noteLineaire(0.6, FACILITE_ZERO, FACILITE_CENT), 100);
   assert.ok(Math.abs(noteLineaire(0.8, FACILITE_ZERO, FACILITE_CENT) - 50) < 1e-9);
-  assert.equal(noteLineaire(0.85, FATIGUE_ZERO, FATIGUE_CENT), 0);
-  assert.equal(noteLineaire(0.97, FATIGUE_ZERO, FATIGUE_CENT), 100);
-  assert.ok(Math.abs(noteLineaire(0.91, FATIGUE_ZERO, FATIGUE_CENT) - 50) < 1e-9);
   assert.equal(noteLineaire(12, DECOUPLAGE_ZERO, DECOUPLAGE_CENT), 0);
   assert.equal(noteLineaire(20, DECOUPLAGE_ZERO, DECOUPLAGE_CENT), 0); // 20 % : tout en bas
   assert.equal(noteLineaire(2, DECOUPLAGE_ZERO, DECOUPLAGE_CENT), 100);
@@ -198,29 +175,29 @@ test('niveauGlobal : endurance à puissance fixe : la même puissance de référ
   assert.ok(a2026.piliers.endurance - a2019.piliers.endurance > 40, `${a2019.piliers.endurance} → ${a2026.piliers.endurance}`);
 });
 
-test('niveauGlobal : endurance = 100 × (0,30 F + 0,25 H + 0,30 C + 0,15 D), chaque lettre aux 3 sorties de preuve ; une lettre sans mesure vaut 0', () => {
-  // Tout au maximum : F 100 (199 W ≤ 70 % de la FTP de 285 W), H 100 (ton meilleur cœur), C 100 (2 % ou moins), D 100 (97 % ou plus) → 100
-  const plein = niveauGlobal([mesure(2025, { w5: 1000, w300: 300, w1200: 300, pRef: 199, fcRef: 120, nFc: 5, driftMed: 2, nDrift: 5, fat20: 291, nFat: 5, ctlMax: 80 })])!;
+test('niveauGlobal : endurance = 100 × (0,35 F + 0,30 H + 0,35 C), chaque lettre aux 3 sorties de preuve ; une lettre sans mesure vaut 0', () => {
+  // Tout au maximum : F 100 (199 W ≤ 70 % de la FTP de 285 W), H 100 (ton meilleur cœur), C 100 (2 % ou moins) → 100
+  const plein = niveauGlobal([mesure(2025, { w5: 1000, w300: 300, w1200: 300, pRef: 199, fcRef: 120, nFc: 5, driftMed: 2, nDrift: 5, ctlMax: 80 })])!;
   assert.ok(Math.abs(plein.actuel.piliers.endurance - 100) < 1e-9, `${plein.actuel.piliers.endurance}`);
   assert.equal(plein.actuel.preuves.endurance, 1);
   // Rien de mesuré : 0, sans preuve
   const rien = niveauGlobal([mesure(2025, { w5: 1000, ctlMax: 80 })])!;
   assert.equal(rien.actuel.piliers.endurance, 0);
   assert.equal(rien.actuel.preuves.endurance, 0);
-  assert.deepEqual(rien.actuel.endurance, { facilite: null, cardio: null, decouplage: null, fatigue: null });
-  // Le découplage seul (C = 100, poids 30 %) : 30, preuve 0,3 ; avec 2 sorties sur 3 : aux 2/3 (20)
+  assert.deepEqual(rien.actuel.endurance, { facilite: null, cardio: null, decouplage: null });
+  // Le découplage seul (C = 100, poids 35 %) : 35, preuve 0,35 ; avec 2 sorties sur 3 : aux 2/3 (23,33)
   const seulC = niveauGlobal([mesure(2025, { w5: 1000, ctlMax: 80, driftMed: 2, nDrift: 3 })])!;
-  assert.ok(Math.abs(seulC.actuel.piliers.endurance - 30) < 1e-9);
-  assert.ok(Math.abs(seulC.actuel.preuves.endurance - 0.3) < 1e-9);
+  assert.ok(Math.abs(seulC.actuel.piliers.endurance - 35) < 1e-9);
+  assert.ok(Math.abs(seulC.actuel.preuves.endurance - 0.35) < 1e-9);
   const deux = niveauGlobal([mesure(2025, { w5: 1000, ctlMax: 80, driftMed: 2, nDrift: 2 })])!;
-  assert.ok(Math.abs(deux.actuel.piliers.endurance - 20) < 1e-9);
+  assert.ok(Math.abs(deux.actuel.piliers.endurance - 23.33) < 0.01);
   // Un découplage de 20 % vaut 0 ; une 2e moitié plus efficace (négatif) est plafonnée à 100
   assert.equal(niveauGlobal([mesure(2025, { w5: 1000, ctlMax: 80, driftMed: 20, nDrift: 5 })])!.actuel.endurance.decouplage, 0);
   assert.equal(niveauGlobal([mesure(2025, { w5: 1000, ctlMax: 80, driftMed: -2, nDrift: 5 })])!.actuel.endurance.decouplage, 100);
-  // F : 228 W sur une FTP de 285 W = 80 % → 50 ; 2 sorties avec capteur seulement → aux 2/3 de la puissance (0,30 × 50 × 2/3 = 10)
+  // F : 228 W sur une FTP de 285 W = 80 % → 50 ; 2 sorties avec capteur seulement → aux 2/3 de la puissance (0,35 × 50 × 2/3 = 11,67)
   const facile = niveauGlobal([mesure(2025, { w1200: 300, pRef: 228, nCourbes: 2, ctlMax: 80 })])!;
   assert.ok(Math.abs(facile.actuel.endurance.facilite! - 50) < 1e-9);
-  assert.ok(Math.abs(facile.actuel.piliers.endurance - 10) < 1e-9);
+  assert.ok(Math.abs(facile.actuel.piliers.endurance - 11.67) < 0.01);
   // H : ton meilleur cœur 125 bpm = 100 ; 132 bpm = (140 − 132) / 15 = 53,3 ; 140 bpm (15 de plus) = 0
   const coeurs = niveauGlobal([
     mesure(2019, { w1200: 300, fcRef: 140, nFc: 5 }),
@@ -231,21 +208,6 @@ test('niveauGlobal : endurance = 100 × (0,30 F + 0,25 H + 0,30 C + 0,15 D), cha
   assert.equal(parAn[2019], 0);
   assert.ok(Math.abs(parAn[2022]! - 53.33) < 0.01, `${parAn[2022]}`);
   assert.equal(parAn[2026], 100);
-  // D : un 20 min après fatigue à 91 % de ton meilleur 20 min de toujours vaut 50 (poids 15 % → 7,5), preuve de 3 sorties
-  const fatigue = niveauGlobal([mesure(2025, { w1200: 300, fat20: 273, nFat: 3, ctlMax: 80 })])!;
-  assert.ok(Math.abs(fatigue.actuel.endurance.fatigue! - 50) < 1e-9);
-  assert.ok(Math.abs(fatigue.actuel.piliers.endurance - 7.5) < 1e-9);
-});
-
-test('niveauGlobal : D se juge en watts contre ton meilleur 20 min frais de TOUS LES TEMPS, pas contre celui de l\'année', () => {
-  // 2019 : fatigue très bien tenue en ratio (240 / 250 = 96 %) mais niveau bas ; 2026 : ratio plus faible (270 / 300 = 90 %) mais 30 W plus haut
-  const g = niveauGlobal([
-    mesure(2019, { w1200: 250, fat20: 240, nFat: 5, ctlMax: 60 }),
-    mesure(2026, { w1200: 300, fat20: 270, nFat: 5, ctlMax: 80 }),
-  ])!;
-  // Meilleur 20 min de toujours = 300 W : 2019 : 240 / 300 = 80 % → 0 (le ratio de l'année, 96 %, aurait donné 92) ; 2026 : 270 / 300 = 90 % → 41,7
-  assert.equal(g.annees.find((a) => a.an === 2019)!.endurance.fatigue, 0);
-  assert.ok(Math.abs(g.annees.find((a) => a.an === 2026)!.endurance.fatigue! - 41.67) < 0.01);
 });
 
 test('notePuissanceDe : 100 au meilleur, 0 à 20 % en dessous, en ligne droite (plus exigeante que les autres piliers : 0 à 30 %)', () => {
@@ -307,4 +269,10 @@ test('niveauGlobal : sans la hauteur (base pas à jour) la régularité fait seu
   // La hauteur compte aussi aux 2/3 avec 2 sorties
   const deux = niveauGlobal([mesure(2025, { w300: 300, repN: 2, repRatio: 1, repW3: 300 })])!;
   assert.ok(Math.abs(deux.actuel.piliers.repetabilite - 66.67) < 0.01); // (100 + 100) / 2 × 2/3
+});
+
+test('piliers : la durabilité est retirée (quatre piliers) et les poids de l\'endurance font exactement 1', () => {
+  assert.deepEqual(PILIERS.map((p) => p.cle), ['puissance', 'endurance', 'repetabilite', 'charge']);
+  assert.ok(Math.abs(Object.values(POIDS_ENDURANCE).reduce((t, x) => t + x, 0) - 1) < 1e-9);
+  assert.deepEqual(Object.keys(POIDS_ENDURANCE), ['facilite', 'cardio', 'decouplage']);
 });

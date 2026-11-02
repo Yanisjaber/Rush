@@ -74,15 +74,15 @@ FTP d'une sortie = 95 % × meilleur 20 min (clé '1200' de power_curve) des sort
 
 ---
 
-## 4. Niveau global à vélo : 5 piliers, notés de 0 à 100
+## 4. Niveau global à vélo : 4 piliers, notés de 0 à 100
 
-Code : `native/src/data/bilan/piliers-niveau.ts`. Les mesures par année viennent de la fonction SQL `rpc_piliers_annuels` ; les notes sont calculées dans l'app. **Score global = moyenne des 5 piliers**, arrondie.
+Code : `native/src/data/bilan/piliers-niveau.ts`. Les mesures par année viennent de la fonction SQL `rpc_piliers_annuels` ; les notes sont calculées dans l'app. **Score global = moyenne des 4 piliers**, arrondie. La durabilité a été retirée (voir la fin de cette section).
 
 **Échelles** (une note linéaire entre deux bornes, bornée à 0 et 100) :
 
 | Échelle | 0 | 100 | Sert pour |
 |---|---|---|---|
-| `noteDe` | 70 % du meilleur | le meilleur | durabilité, régularité de la répétabilité, niveau par année, records |
+| `noteDe` | 70 % du meilleur | le meilleur | régularité de la répétabilité, niveau par année, records |
 | puissance | 80 % du meilleur | le meilleur | pilier Puissance (plus exigeante) |
 | hauteur | 50 % du record | le record | hauteur des efforts répétés |
 | charge | 40 % de la meilleure année | la meilleure année | pilier Capacité de charge (plus douce) |
@@ -109,9 +109,8 @@ P_ref  = 0,70 × FTP_toujours          // FTP_toujours = 0,95 × meilleur 20 min
 F = clamp( (P_ref / FTP_année − 0,90) / (0,70 − 0,90), 0, 1 )     // facilité : 70 % de la FTP = 1, 90 % = 0
 H = clamp( (FC_ref − (FC_min + 15)) / (FC_min − (FC_min + 15)), 0, 1 )   // coût cardio : ton meilleur (le plus bas) = 1, 15 bpm de plus = 0
 C = clamp( (12 − drift) / (12 − 2), 0, 1 )                         // fraîcheur à 2 h 30 : découplage 2 % = 1, 12 % = 0
-D = clamp( (ratio_dur − 0,85) / (0,97 − 0,85), 0, 1 )             // puissance après fatigue
 
-Endurance = 100 × ( 0,30·F + 0,25·H + 0,30·C + 0,15·D )
+Endurance = 100 × ( 0,35·F + 0,30·H + 0,35·C )
 ```
 
 | Ingrédient | Définition |
@@ -120,33 +119,22 @@ Endurance = 100 × ( 0,30·F + 0,25·H + 0,30·C + 0,15·D )
 | Sorties de référence | Plus de 2 h (durée non écartée), puissance (normalisée, sinon moyenne) à **±10 %** de `P_ref`. On garde les **10 plus récentes** de l'année (celles qui ont une FC moyenne pour `FC_ref`, celles qui ont un `drift` pour le découplage). |
 | `FC_ref` | **Médiane** de la FC moyenne des sorties de référence. `FC_min` = la plus basse `FC_ref` de toutes les années (années à ≥ 3 sorties de référence avec FC). Pas de % de LTHR : le profil n'en a pas toujours. |
 | `drift` | `(EF_1ère_moitié − EF_2ème_moitié) / EF_1ère_moitié × 100`, avec `EF = puissance normalisée / FC moyenne`, échauffement de 10 min mis à part (`_shared/derive.ts`). **Médiane** sur les sorties de référence. Une 2e moitié plus efficace (drift négatif) est plafonnée à 1. |
-| `ratio_dur` | `meilleur 20 min après fatigue (de l'année) / meilleur 20 min frais de TOUS LES TEMPS`. « Après fatigue » = une fois **30 kJ/kg** de travail cumulé (2100 kJ pour 70 kg ; poids du profil, 70 kg si absent), calculé seconde par seconde ; la fenêtre démarre après ce seuil (`_shared/fatigue.ts`, clé `fat20`). On compare en watts : un bon ratio sur une année plus faible ne rapporte rien. |
 
-Poids : facilité (F) 30 %, fraîcheur (C) 30 %, coût cardio (H) 25 %, fatigue (D) 15 %.
+Poids : facilité (F) 35 %, fraîcheur (C) 35 %, coût cardio (H) 30 %.
 
-Preuves : chaque lettre demande 3 sorties (3 sorties de référence avec FC, 3 avec découplage, 3 après fatigue, 3 avec capteur pour la FTP de l'année) et vaut au prorata si moins. Une lettre sans mesure vaut 0, et sa part de preuve aussi.
+Preuves : chaque lettre demande 3 sorties (3 sorties de référence avec FC, 3 avec découplage, 3 avec capteur pour la FTP de l'année) et vaut au prorata si moins. Une lettre sans mesure vaut 0, et sa part de preuve aussi.
 
-Exemple (compte de test, `P_ref` = 174 W) : 174 W vaut 82 % de la FTP en 2019, 70 % en 2026 ; FC moyenne à 174 W : 143 bpm en 2019, 127 en 2026 → endurance ≈ 42 en 2019, ≈ 87 en 2026.
+Exemple (compte de test, `P_ref` = 174 W ; chiffres calculés avec l'ancienne formule à 4 lettres, avant le retrait de la fatigue) : 174 W vaut 82 % de la FTP en 2019, 70 % en 2026 ; FC moyenne à 174 W : 143 bpm en 2019, 127 en 2026 → endurance ≈ 42 en 2019, ≈ 87 en 2026.
 
 Cas limites :
 - Peu de sorties de référence une année (par exemple 5 en 2022) : la note est réduite d'autant (preuve).
 - `FC_ref` se compare aux autres années du même compte : avec une seule année, H vaut 100 par définition.
 - Le découplage dépend de la FC : sans sangle cardio propre, C et H valent peu (le cardio écarté par l'utilisateur retire la FC et le `drift` de la sortie).
-- Les clés `fat20` et `drift` s'écrivent à l'import (`strava-streams`, version des courbes 8) ; les anciennes sorties les reçoivent au recalcul des courbes (écran Synchro).
+- La clé `drift` s'écrit à l'import (`strava-streams`, version des courbes 8) ; les anciennes sorties les reçoivent au recalcul des courbes (écran Synchro).
 
 Les bornes sont des estimations, pas une norme scientifique : à recaler sur de vraies sorties.
 
-### 4.3 Durabilité
-
-```
-ratio = moyenne( meilleur 5 min tardif ÷ meilleur 5 min de l'année ; meilleur 20 min tardif ÷ meilleur 20 min de l'année )
-Durabilité = noteDe( min(1, ratio) ) × preuve
-```
-
-- « Tardif » : la fenêtre démarre **après 2 h 30** de sortie (clés `late_300`, `late_1200`). 100 = aucune perte, 0 = 30 % de perte.
-- Preuve : `sorties longues de l'année ÷ 3`.
-
-### 4.4 Répétabilité
+### 4.3 Répétabilité
 
 Sur les sorties qui ont **trois vrais efforts de 5 min** (le 3e effort vaut au moins 50 % de ton meilleur 5 min de tous les temps) :
 
@@ -158,13 +146,17 @@ Répétabilité = moyenne( régularité ; hauteur ) × preuve
 
 - Sans la hauteur (base pas à jour), la régularité fait seule la note. Preuve : `sorties valides ÷ 3`.
 
-### 4.5 Capacité de charge
+### 4.4 Capacité de charge
 
 ```
 Charge = noteLinéaire( CTL max de l'année ÷ meilleur CTL max ; 0,40 → 0 ; 1,00 → 100 )
 ```
 
 - Preuve : 1 dès que l'année a une charge. Plus douce que les autres : la charge est une quantité d'entraînement, pas un niveau de performance.
+
+### Durabilité : retirée (2026-11-02)
+
+Le pilier Durabilité (meilleur 5 et 20 min après 2 h 30 ÷ meilleur à froid) et la lettre D de l'endurance (20 min après 30 kJ/kg) sont retirés. En sorties libres, un ratio bas peut venir de ce qu'on n'a pas osé faire en fin de sortie plutôt que d'un manque de durabilité : la mesure ne prouvait rien quand elle était basse. Les clés `late_300`, `late_1200`, `fat20` restent calculées côté base, l'app ne les lit plus. Détails dans `docs/native/PROGRESSION_NIVEAU.md`.
 
 ---
 
@@ -176,3 +168,4 @@ Charge = noteLinéaire( CTL max de l'année ÷ meilleur CTL max ; 0,40 → 0 ; 1
 - 2026-11-03 : endurance refaite à puissance fixe (F facilité, H coût cardio, C fraîcheur à 2 h 30, D fatigue) : la même puissance en watts pour toutes les années.
 - 2026-11-03 : endurance : D et R comparés en watts au meilleur 20 min de tous les temps (plus à celui de l'année).
 - 2026-11-03 : endurance mise en code (D sur 20 min après 30 kJ/kg, R sur le meilleur 2 h 30 de l'année, C sur les 10 sorties de plus de 2 h à la plus haute puissance normalisée de l'année) ; durabilité, répétabilité et charge ajoutées au recueil ; CTL/ATL décrits tels que la base les calcule.
+- 2026-11-02 : durabilité retirée (pilier et lettre D de l'endurance) ; l'endurance passe à 35 % F, 30 % H, 35 % C ; le niveau global devient la moyenne de 4 piliers.

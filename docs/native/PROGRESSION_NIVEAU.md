@@ -20,24 +20,23 @@ Un 5 min ou un 20 min isolé ne dit pas qui est le coureur. Sur le vélo, la pag
 Tout l'écran suit **l'année choisie** en haut du Bilan (le sélecteur est actif sur Progrès quand le niveau global du vélo s'affiche, grisé sinon) :
 1. **Le niveau de l’année choisie** en taille normale (« 80 / 100 », « — » si l'année n'a aucune mesure, sans autre texte) ;
 2. **Score par année** : la courbe du score global, le score sur chaque point, l'année choisie cerclée ;
-3. **Piliers par année** : la **carte de chaleur** (`ChaleurPiliers.tsx`) : une ligne par année (la plus récente en haut), une colonne par pilier (noms abrégés : Puiss., Endur., Durab., Répét., Charge), plus la case est bleue plus la note est haute (l'année choisie et les 4 d'avant, « Tout l'historique » pour toutes). Le texte de chaque case est choisi pour rester lisible sur sa teinte (`theme/contraste.ts`) ;
+3. **Piliers par année** : la **carte de chaleur** (`ChaleurPiliers.tsx`) : une ligne par année (la plus récente en haut), une colonne par pilier (noms abrégés : Puiss., Endur., Répét., Charge), plus la case est bleue plus la note est haute (l'année choisie et les 4 d'avant, « Tout l'historique » pour toutes). Le texte de chaque case est choisi pour rester lisible sur sa teinte (`theme/contraste.ts`) ;
 4. **La courbe des niveaux** : le sélecteur Sprint, 5, 20, 60 min, Forme et sa courbe sur les 5 ans qui finissent sur l'année choisie (`ProgresNiveau` en mode `courbeSeule`, sans dossard, liste, calcul ni phrase sous la courbe).
 
-Le score global est la **moyenne des 5 piliers**. Chaque pilier va de 0 à 100 :
+Le score global est la **moyenne des 4 piliers**. Chaque pilier va de 0 à 100 :
 
 | Pilier | Ce qui est mesuré | Note |
 |---|---|---|
 | Puissance | meilleurs sprint (5 s), 5, 20 et 60 min de l'année | moyenne des 4 notes, chacune = meilleur de l'année ÷ meilleur de toujours (100 = le meilleur, 0 = 30 % en dessous) ; au moins 3 sorties avec capteur (`n_courbes`), sinon l'année n'est pas notée et ne compte pas pour « le meilleur de toujours » |
-| Endurance | à **puissance fixe** : facilité (F), coût cardio (H), fraîcheur à 2 h 30 (C), fatigue (D) | 100 × (0,30 F + 0,25 H + 0,30 C + 0,15 D), voir « L'endurance » plus bas |
-| Durabilité | meilleur 5 et 20 min **après 2 h 30 de sortie** ÷ meilleur à froid | même échelle (100 = aucune perte, 0 = 30 % de perte) ; au moins 3 sorties longues |
+| Endurance | à **puissance fixe** : facilité (F), coût cardio (H), fraîcheur à 2 h 30 (C) | 100 × (0,35 F + 0,30 H + 0,35 C), voir « L'endurance » plus bas |
 | Répétabilité | **moyenne de deux notes** sur les sorties qui ont trois vrais efforts de 5 min (le 3e ≥ 50 % de ton **meilleur 5 min de tous les temps**, calculé sur les années à 3 sorties avec capteur ou plus) : **la régularité** (3e effort ÷ 1er, médiane des sorties : 100 = aucune perte, 0 = 30 % de perte) et **la hauteur** (3e effort médian, en watts, ÷ ton meilleur 5 min de tous les temps : 0 à 50 %, 100 à 100 %) | au moins 3 sorties (sinon réduite, voir plus bas). Depuis le 2 nov. 2026 : la régularité seule récompensait les efforts faibles (80 W en 2017 donnaient 83), puis ne voyait pas la progression (2021 : 170 W et 72 ; 2025 : 190 W et 61 à cause d'une perte plus grande entre le 1er et le 3e). La barre des vrais efforts est à 50 % du meilleur de toujours (à 75 %, 2022 n'avait aucune sortie valide : meilleur 3e effort 201 W pour un record de 293 W). Sans la hauteur (base pas à jour), la régularité fait seule la note |
 | Capacité de charge | charge chronique (CTL) maximale de l'année (`daily_metrics`) | CTL max ÷ meilleur CTL max, sur une **échelle plus douce** : 100 = ta meilleure année, **0 à 40 %** de ta meilleure année (les autres piliers : 0 à 70 %). La charge est une quantité d'entraînement, pas un niveau de performance : passer de 52 à 91 est presque doubler. Depuis le 2 nov. 2026 (2022 : 57 % du meilleur = 29 au lieu de 0) |
 
-Les mesures viennent de la fonction SQL `rpc_piliers_annuels` (une seule lecture, qui sert aussi au sélecteur de records). La durabilité (`late_300`, `late_1200`) et la répétabilité (`rep_1..3`) sont calculées par l'Edge Function `strava-streams` (`_shared/repetabilite.ts`) et stockées dans `power_curve` ; les anciennes sorties ont été rattrapées à la main depuis leurs streams.
+Les mesures viennent de la fonction SQL `rpc_piliers_annuels` (une seule lecture, qui sert aussi au sélecteur de records). La répétabilité (`rep_1..3`) est calculée par l'Edge Function `strava-streams` (`_shared/repetabilite.ts`) et stockée dans `power_curve` ; les anciennes sorties ont été rattrapées à la main depuis leurs streams. La base écrit toujours `late_300`, `late_1200` et `fat20`, mais l'app ne les lit plus depuis le retrait de la durabilité (voir plus bas).
 
 **La récupération physiologique n'est pas dans le score** : il n'y avait que 18 nuits de sommeil/HRV (du 21 sept. au 12 oct. 2026) et aucune mesure de santé. La capacité de charge est ce qu'on peut dire de l'entraînement encaissé. La vraie récupération (HRV, FC au repos) pourra devenir un sixième pilier quand elle sera mesurée sur plusieurs mois.
 
-Le calcul sur un vrai compte donne : 2022 : 33, 2023 : 73, 2024 : 85, 2025 : 86, 2026 : 60 (la capacité de charge de 2026 est basse : CTL max 70 contre 91, l'année n'est pas finie et l'entraînement a baissé). Ces chiffres datent d'avant la règle des preuves (ci-dessous).
+Le calcul sur un vrai compte donne : 2022 : 33, 2023 : 73, 2024 : 85, 2025 : 86, 2026 : 60 (la capacité de charge de 2026 est basse : CTL max 70 contre 91, l'année n'est pas finie et l'entraînement a baissé). Ces chiffres datent d'avant la règle des preuves (ci-dessous) et d'avant le retrait de la durabilité.
 
 ### Une note à chaque pilier (depuis le 2 nov. 2026)
 
@@ -48,12 +47,11 @@ Une case vide (« — ») ne disait pas pourquoi : 9 000 km dans l'année ne don
 | Pilier | Sorties demandées | Exemple |
 |---|---|---|
 | Puissance | 3 sorties avec capteur dans l'année | 1 sortie : un tiers de la note ; aucune : 0 |
-| Durabilité | 3 sorties de 2 h 30 et plus | 2 sorties : les deux tiers ; aucune : 0 |
 | Répétabilité | 3 sorties avec 3 vrais efforts | idem |
-| Endurance | chaque lettre (F, H, C, D) a sa preuve (3 sorties) | une lettre sans mesure vaut 0, et sa part de preuve aussi |
+| Endurance | chaque lettre (F, H, C) a sa preuve (3 sorties) | une lettre sans mesure vaut 0, et sa part de preuve aussi |
 | Charge | la charge de l'année | pas de charge mesurée : 0 |
 
-Sans aucune mesure, la note est 0. Le score global est la moyenne des 5 notes, preuves incomplètes comprises : une année pauvre en données a donc un score bas, jamais vide. Ton « meilleur de toujours » (le 100 de chaque durée) se lit toujours sur les années à 3 sorties avec capteur ou plus, pour qu'un capteur qui a menti en une sortie ne fixe pas la barre (sans aucune année fiable, sur celles qui ont au moins une sortie avec capteur). Dans la carte de chaleur, une note à preuve incomplète a un **contour en pointillés** (et VoiceOver dit « peu de mesures »). Le point fort et le point faible ne se disent que sur les piliers à preuve complète.
+Sans aucune mesure, la note est 0. Le score global est la moyenne des 4 notes, preuves incomplètes comprises : une année pauvre en données a donc un score bas, jamais vide. Ton « meilleur de toujours » (le 100 de chaque durée) se lit toujours sur les années à 3 sorties avec capteur ou plus, pour qu'un capteur qui a menti en une sortie ne fixe pas la barre (sans aucune année fiable, sur celles qui ont au moins une sortie avec capteur). Dans la carte de chaleur, une note à preuve incomplète a un **contour en pointillés** (et VoiceOver dit « peu de mesures »). Le point fort et le point faible ne se disent que sur les piliers à preuve complète.
 
 Pourquoi 3 sorties avec capteur pour la puissance (2 nov. 2026) : sur le compte de test, 2013 n'avait qu'une sortie avec capteur, en panne (1 W sur une heure). Sa puissance notée 0 et sa petite charge notée 0 donnaient un niveau global de 0. Une courbe qui n'a qu'un marqueur de version (`{"v": 6}`, sortie calculée sans capteur) ne compte pas. Le graphique « Score global par année » place chaque point selon son année : une année sans score laisse un trou.
 
@@ -76,14 +74,19 @@ Les watts à cardio égal mesurent la **forme** (l'efficacité aérobie) : ils r
 **Puissance de référence** : 70 % de ta FTP de **tous les temps** (FTP = 95 % de ton meilleur 20 min de toujours, sur les années à au moins 3 sorties avec capteur ; à défaut, sur celles qui en ont au moins une). Elle est la même pour toutes les années (`p_ref`, rendue par `rpc_piliers_annuels`).
 **Sorties de référence d'une année** : plus de 2 h (durée non écartée), puissance (normalisée, sinon moyenne) à **±10 %** de la puissance de référence. On garde les **10 plus récentes** de l'année (pour la FC, celles qui ont une FC moyenne et un cardio non écarté ; pour le découplage, celles qui ont un `drift`).
 
-**note = 100 × (0,30 F + 0,25 H + 0,30 C + 0,15 D)**, chaque lettre notée de 0 à 100 :
-- **F, facilité (30 %)** : puissance de référence ÷ FTP de l'année (95 % de son meilleur 20 min). 70 % de la FTP (ou moins) = 100, 90 % (ou plus) = 0. Exemple du compte de test : 174 W = 82 % de la FTP en 2019, 70 % en 2026 ;
-- **H, coût cardio (25 %)** : FC moyenne médiane des sorties de référence (`fc_ref`) contre ton meilleur (le plus bas) de tous les temps, sur les années à au moins 3 sorties de référence avec FC. 100 au meilleur, 0 à 15 battements de plus. Pas de % de LTHR : le profil n'en a pas toujours ; on compare aux autres années du compte. Exemple : 143 bpm en 2019, 132 en 2026 ;
-- **C, fraîcheur à 2 h 30 (30 %)** : découplage cardiaque médian de ces mêmes sorties (`drift_med`, EF = puissance normalisée ÷ FC, 1re contre 2e moitié, voir `_shared/derive.ts`). 12 % = 0, 2 % = 100 (une 2e moitié plus efficace est plafonnée à 100) ;
-- **D, fatigue (15 %)** : meilleur 20 min **après fatigue** (30 kJ/kg de travail cumulé, `_shared/fatigue.ts`, clé `fat20`) ÷ ton meilleur 20 min frais de **tous les temps**. 85 % = 0, 97 % = 100.
+**note = 100 × (0,35 F + 0,30 H + 0,35 C)**, chaque lettre notée de 0 à 100 :
+- **F, facilité (35 %)** : puissance de référence ÷ FTP de l'année (95 % de son meilleur 20 min). 70 % de la FTP (ou moins) = 100, 90 % (ou plus) = 0. Exemple du compte de test : 174 W = 82 % de la FTP en 2019, 70 % en 2026 ;
+- **H, coût cardio (30 %)** : FC moyenne médiane des sorties de référence (`fc_ref`) contre ton meilleur (le plus bas) de tous les temps, sur les années à au moins 3 sorties de référence avec FC. 100 au meilleur, 0 à 15 battements de plus. Pas de % de LTHR : le profil n'en a pas toujours ; on compare aux autres années du compte. Exemple : 143 bpm en 2019, 132 en 2026 ;
+- **C, fraîcheur à 2 h 30 (35 %)** : découplage cardiaque médian de ces mêmes sorties (`drift_med`, EF = puissance normalisée ÷ FC, 1re contre 2e moitié, voir `_shared/derive.ts`). 12 % = 0, 2 % = 100 (une 2e moitié plus efficace est plafonnée à 100) ;
 
-Preuves : chaque lettre demande 3 sorties (3 sorties de référence avec FC, 3 avec découplage, 3 après fatigue, 3 avec capteur pour la FTP de l'année) et vaut au prorata si moins. Une lettre sans mesure vaut 0 et sa part de preuve aussi. Le volume des sorties longues, le meilleur 2 h / 3 h / 2 h 30 ne comptent plus.
-Les mesures viennent de `rpc_piliers_annuels` (migration `2026-11-03_endurance_puissance_fixe.sql` : `p_ref`, `fc_ref`, `n_fc`, `drift_med`, `n_drift`, `fat20`, `n_fat`) ; les notes sont calculées dans `piliers-niveau.ts`. Les clés `fat20` et `drift` s'écrivent à l'import (`strava-streams`, version des courbes 8) ; les anciennes sorties les reçoivent au recalcul des courbes (écran Synchro, voir `SYNCHRO_STRAVA.md`).
+Preuves : chaque lettre demande 3 sorties (3 sorties de référence avec FC, 3 avec découplage, 3 avec capteur pour la FTP de l'année) et vaut au prorata si moins. Une lettre sans mesure vaut 0 et sa part de preuve aussi. Le volume des sorties longues, le meilleur 2 h / 3 h / 2 h 30 ne comptent plus.
+Les mesures viennent de `rpc_piliers_annuels` (migration `2026-11-03_endurance_puissance_fixe.sql` : `p_ref`, `fc_ref`, `n_fc`, `drift_med`, `n_drift`, `fat20`, `n_fat`, ces deux derniers ne sont plus lus par l'app) ; les notes sont calculées dans `piliers-niveau.ts`. La clé `drift` s'écrit à l'import (`strava-streams`, version des courbes 8, avec `fat20` que l'app n'utilise plus) ; les anciennes sorties les reçoivent au recalcul des courbes (écran Synchro, voir `SYNCHRO_STRAVA.md`).
+
+## Pourquoi la durabilité a été retirée (2026-11-02)
+
+La durabilité comparait ton meilleur 5 et 20 min **après 2 h 30 de sortie** (et, dans l'endurance, après 30 kJ/kg) à ton meilleur à froid. Avec des sorties libres, ce n'est pas une mesure fiable : le ratio dépend de ce que tu as **osé faire** en fin de sortie (si tu n'as jamais poussé fort après 2 h 30, la note est basse sans que ta durabilité le soit), de la chaleur, de la nourriture et du terrain. Une note haute prouve quelque chose, une note basse ne prouve rien. Yanis a décidé de la retirer.
+
+Ce qui a changé : le pilier Durabilité a disparu (4 piliers, score global = moyenne des 4), et l'endurance a perdu sa lettre D ; ses poids sont passés de 30 / 25 / 30 / 15 à **35 % F, 30 % H, 35 % C** (les trois anciens poids rapportés à 85 %, arrondis). La base et l'Edge Function n'ont pas changé : `late_300`, `late_1200`, `fat20` et `n_fat` sont toujours calculés, l'app les ignore. Si on veut un jour les revoir, il suffira de les relire.
 
 ## Forme par saison (depuis le 2 nov. 2026)
 
@@ -109,4 +112,4 @@ Sur les données du compte qui a servi aux tests (vélo, par année) : la forme 
 
 ## L'écran (2 nov. 2026)
 
-Une seule page qui défile, sans cartes à faire glisser ni texte d'explication (demande de Yanis) : en haut, le niveau global de l'année en taille normale (« 80 / 100 », écart avec l'an dernier, meilleur) ; puis la courbe du score global de toutes les années (le score sur chaque point, placés selon l'année) ; la carte de chaleur des cinq piliers par année ; et la courbe des niveaux avec le sélecteur Sprint / 5 / 20 / 60 min / Forme (`ProgresNiveau` en mode `courbeSeule` : ni dossard, ni liste par année, ni calcul). Un essai de « récit » (maquette 8 de `claude.ai/artifact/6Nbst9aEztcDWYa75d6cBc`) a été abandonné le même jour.
+Une seule page qui défile, sans cartes à faire glisser ni texte d'explication (demande de Yanis) : en haut, le niveau global de l'année en taille normale (« 80 / 100 », écart avec l'an dernier, meilleur) ; puis la courbe du score global de toutes les années (le score sur chaque point, placés selon l'année) ; la carte de chaleur des quatre piliers par année ; et la courbe des niveaux avec le sélecteur Sprint / 5 / 20 / 60 min / Forme (`ProgresNiveau` en mode `courbeSeule` : ni dossard, ni liste par année, ni calcul). Un essai de « récit » (maquette 8 de `claude.ai/artifact/6Nbst9aEztcDWYa75d6cBc`) a été abandonné le même jour.

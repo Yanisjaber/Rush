@@ -678,7 +678,7 @@ export function toursDemo(s: Seance): Tour[] {
 
 /**
  * Les mesures annuelles du niveau global du vélo en démo, sur cinq ans : les puissances de pointe viennent des records d'exemple ;
- * la durabilité, la répétabilité et la charge sont inventées mais cohérentes (elles montent doucement, la dernière année recule).
+ * la répétabilité et la charge sont inventées mais cohérentes (elles montent doucement, la dernière année recule).
  */
 export function piliersAnnuelsDemo(maintenant: Date = new Date()): MesuresAnnee[] {
   const records = recordsVeloDemo(maintenant);
@@ -691,9 +691,6 @@ export function piliersAnnuelsDemo(maintenant: Date = new Date()): MesuresAnnee[
     const w1200 = w(1200);
     return {
       an: a, w5: w(5), w300, w1200, w3600: w(3600),
-      late300: w300 ? Math.round(w300 * (0.86 + 0.015 * i)) : null,
-      late1200: w1200 ? Math.round(w1200 * (0.84 + 0.02 * i)) : null,
-      nLongues: 14 + i * 3,
       repRatio: 0.9 + 0.01 * (i % 3),
       repW3: w300 ? Math.round(w300 * (0.66 + 0.03 * i)) : null,
       repN: 8 + i * 2,
@@ -702,8 +699,6 @@ export function piliersAnnuelsDemo(maintenant: Date = new Date()): MesuresAnnee[
       pRef: 175,
       fcRef: 142 - 2 * i,
       nFc: 8 + i * 2,
-      fat20: w1200 ? Math.round(w1200 * (0.84 + 0.025 * i)) : null,
-      nFat: 6 + i * 2,
       driftMed: 9.5 - 1.2 * i,
       nDrift: 5 + i * 2,
     };

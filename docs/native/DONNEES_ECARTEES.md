@@ -9,7 +9,7 @@ Code : `native/src/data/calendrier/donnees-ecartees.ts` (liste des données, mas
 | Puce | Colonne de `activities` | Ce qui n'entre plus dans les calculs |
 |---|---|---|
 | Durée | `excl_duration` | le temps de l'activité : minutes et heures des totaux (calendrier, bilan, volume), records de durée, vitesse et allure ; l'activité sort aussi des progressions (qui demandent une durée minimale) ; et la charge, puisque toute charge se calcule avec la durée |
-| Puissance | `excl_power` | watts moyens et normalisés, pointe, énergie (kJ), courbe de puissance, records, forme, niveau global (pointes, durabilité, répétabilité, 2 h / 3 h, dérive, nombre de sorties avec capteur), courbe de couple, et la charge si elle vient de la puissance |
+| Puissance | `excl_power` | watts moyens et normalisés, pointe, énergie (kJ), courbe de puissance, records, forme, niveau global (pointes, répétabilité, 2 h / 3 h, dérive, nombre de sorties avec capteur), courbe de couple, et la charge si elle vient de la puissance |
 | Cardio | `excl_hr` | cardio moyen et max, courbe de cardio, forme (watts à cardio égal), dérive, progression course, et la charge si elle vient du cardio |
 | Cadence | `excl_cadence` | cadence moyenne, courbe de cadence et de couple |
 | Distance | `excl_distance` | distance, vitesse, allure, totaux, records, courbe de vitesse, progression course |

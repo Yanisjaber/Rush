@@ -5,7 +5,7 @@ import { piliersAnnuelsDemo } from '@/data/demo/demo';
 import { useAuth } from '@/stores/auth';
 import { auChangementDEcarts, useVersionEcarts } from '@/stores/ecarts';
 
-// Les mesures par année du niveau global du vélo (puissances de pointe, durabilité, répétabilité, charge) : une seule lecture (la fonction SQL rpc_piliers_annuels),
+// Les mesures par année du niveau global du vélo (puissances de pointe, répétabilité, charge) : une seule lecture (la fonction SQL rpc_piliers_annuels),
 // faite quand la page Progrès du vélo est ouverte (`actif`), puis gardée cinq minutes. En démo, des exemples.
 const DUREE_CACHE = 5 * 60 * 1000;
 const cache = new Map<string, { mesures: MesuresAnnee[]; a: number }>();

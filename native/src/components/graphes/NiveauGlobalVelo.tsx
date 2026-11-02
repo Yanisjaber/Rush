@@ -15,7 +15,7 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La page Progrès du vélo, sur une seule page qui défile (demande de Yanis, 2 nov. 2026) : le niveau global de l'année en taille normale (le chiffre seul),
-// la courbe du score global de toutes les années (le score sur chaque point), la carte de chaleur des cinq piliers par année,
+// la courbe du score global de toutes les années (le score sur chaque point), la carte de chaleur des quatre piliers par année,
 // puis la courbe des niveaux (Sprint, 5, 20, 60 min, Forme) avec son sélecteur, et la forme semaine par semaine de l'année choisie. Pas de texte d'explication.
 // Calculs : data/bilan/piliers-niveau.ts et docs/native/PROGRESSION_NIVEAU.md.
 interface Props {

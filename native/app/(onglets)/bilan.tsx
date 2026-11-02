@@ -233,7 +233,7 @@ export default function Bilan() {
       sortiesVelo: sorties,
     };
   }, [progresOuvert, historique.seances, hrMax, maintenant]);
-  // Les mesures par année (puissances de pointe, durabilité, répétabilité, charge) : une lecture, qui sert au niveau global et au sélecteur de records
+  // Les mesures par année (puissances de pointe, répétabilité, charge) : une lecture, qui sert au niveau global et au sélecteur de records
   const piliers = usePiliersAnnuels(progresOuvert && niveaux.velo !== null);
   const recordsAnnuels = useMemo(() => recordsDeMesures(piliers.mesures), [piliers.mesures]);
   const niveauGlobalVelo = useMemo(() => (niveaux.velo ? niveauGlobal(piliers.mesures) : null), [niveaux.velo, piliers.mesures]);

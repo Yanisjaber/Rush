@@ -7,7 +7,7 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La carte de chaleur des piliers : une ligne par année (la plus récente en haut), une colonne par pilier. Plus la case est bleue (la couleur du vélo), plus la note est haute ; un contour en pointillés dit que la note repose sur moins de sorties que demandé.
-// L'année choisie en haut du Bilan et les 4 d'avant s'affichent ; « Tout l'historique » montre toutes les années (l'année choisie reste en gras). Les noms des piliers sont abrégés pour que les 5 colonnes tiennent
+// L'année choisie en haut du Bilan et les 4 d'avant s'affichent ; « Tout l'historique » montre toutes les années (l'année choisie reste en gras). Les noms des piliers sont abrégés pour que les 4 colonnes tiennent
 // sur la largeur d'un téléphone (VoiceOver lit le nom complet).
 interface Props {
   annees: NiveauGlobalAnnee[];
@@ -20,7 +20,7 @@ const ANNEES_VISIBLES = 5;
 const LARGEUR_ANNEE = 48;
 const HAUTEUR_CASE = 40;
 const ECART = 4;
-const ABREGE: Record<PilierCle, string> = { puissance: 'Puiss.', endurance: 'Endur.', durabilite: 'Durab.', repetabilite: 'Répét.', charge: 'Charge' };
+const ABREGE: Record<PilierCle, string> = { puissance: 'Puiss.', endurance: 'Endur.', repetabilite: 'Répét.', charge: 'Charge' };
 
 export function ChaleurPiliers({ annees, couleur, annee }: Props) {
   const p = usePalette();
