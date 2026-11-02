@@ -8,9 +8,10 @@
 //                    - C fraîcheur à 2 h 30 : découplage cardiaque médian de ces mêmes sorties (EF = puissance normalisée / FC, 1re contre 2e moitié) ; 12 % = 0, 2 % = 100 ;
 //                  chaque lettre est multipliée par sa preuve (3 sorties demandées) ; une lettre sans mesure vaut 0 ;
 //                  (les watts à cardio égal, l'ancien pilier « Endurance », sont devenus la Forme : voir niveau-annees.ts et forme-saison.ts) ;
-//   répétabilité : reproduire les efforts, moyenne de deux notes (2 nov. 2026) :
-//                    - régularité : dans une sortie, le 3e effort de 5 min divisé par le 1er (100 = aucune perte, 0 = 30 % de perte) ;
-//                    - hauteur : le 3e effort (médiane de l'année) divisé par ton meilleur 5 min de TOUS LES TEMPS (0 à 50 %, 100 à 100 %) : répéter des efforts
+//   répétabilité : reproduire les efforts, moyenne de deux notes (2 nov. 2026), jugées sur les 10 MEILLEURES sorties de l'année (celles où le 3e effort est le plus fort : sur une sortie
+//                  facile, les « 3 meilleurs efforts » ne sont que trois morceaux un peu plus appuyés, et la médiane de toutes les sorties les tirait vers le bas, 3 nov. 2026) :
+//                    - régularité : dans une sortie, le 3e effort de 5 min divisé par le 1er (médiane des 10 ; 100 = aucune perte, 0 = 30 % de perte) ;
+//                    - hauteur : le 3e effort (médiane des 10) divisé par ton meilleur 5 min de TOUS LES TEMPS (0 à 50 %, 100 à 100 %) : répéter des efforts
 //                      plus forts compte plus que répéter des efforts faciles. Un « vrai effort » vaut au moins 50 % de ce record (calculé côté base) ;
 //   charge       : encaisser et enchaîner l'entraînement : la charge chronique (CTL) maximale de l'année (100 = ta meilleure année, 0 à 40 % de ta meilleure année :
 //                  une échelle plus douce que les autres piliers, car la charge est une quantité d'entraînement, pas un niveau de performance : passer de 52 à 91 est presque doubler).

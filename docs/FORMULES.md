@@ -136,11 +136,11 @@ Les bornes sont des estimations, pas une norme scientifique : à recaler sur de 
 
 ### 4.3 Répétabilité
 
-Sur les sorties qui ont **trois vrais efforts de 5 min** (le 3e effort vaut au moins 50 % de ton meilleur 5 min de tous les temps) :
+Sur les **10 meilleures sorties de l'année** (celles où le 3e effort est le plus fort), parmi les sorties qui ont **trois vrais efforts de 5 min** (le 3e effort vaut au moins 50 % de ton meilleur 5 min de tous les temps). Sur une sortie facile, les « 3 meilleurs efforts » ne sont que trois morceaux un peu plus appuyés : la médiane de toutes les sorties tirait la note vers le bas (3 nov. 2026) :
 
 ```
-régularité = noteDe( min(1, 3e effort ÷ 1er effort) )                    // médiane des sorties de l'année
-hauteur    = noteLinéaire( 3e effort médian ÷ meilleur 5 min de toujours ; 0,50 → 0 ; 1,00 → 100 )
+régularité = noteDe( min(1, 3e effort ÷ 1er effort) )                    // médiane des 10 meilleures sorties de l'année
+hauteur    = noteLinéaire( 3e effort médian (des 10) ÷ meilleur 5 min de toujours ; 0,50 → 0 ; 1,00 → 100 )
 Répétabilité = moyenne( régularité ; hauteur ) × preuve
 ```
 
@@ -165,6 +165,7 @@ Le pilier Durabilité (meilleur 5 et 20 min après 2 h 30 ÷ meilleur à froid) 
 - 2026-11-02 : création, ajout du TSS, du CTL/ATL/TSB, du score d'endurance et d'une proposition de score de puissance.
 - 2026-11-02 : TSS aligné sur le code (vrai capteur seulement, cardio seconde par seconde), FTP glissante, série de forme jusqu'à aujourd'hui.
 - 2026-11-02 : pilier Puissance sur une échelle plus exigeante (0 à 20 % sous le meilleur).
+- 2026-11-03 : répétabilité jugée sur les 10 meilleures sorties de l'année (le 3e effort le plus fort), plus sur toutes.
 - 2026-11-03 : endurance refaite à puissance fixe (F facilité, H coût cardio, C fraîcheur à 2 h 30, D fatigue) : la même puissance en watts pour toutes les années.
 - 2026-11-03 : endurance : D et R comparés en watts au meilleur 20 min de tous les temps (plus à celui de l'année).
 - 2026-11-03 : endurance mise en code (D sur 20 min après 30 kJ/kg, R sur le meilleur 2 h 30 de l'année, C sur les 10 sorties de plus de 2 h à la plus haute puissance normalisée de l'année) ; durabilité, répétabilité et charge ajoutées au recueil ; CTL/ATL décrits tels que la base les calcule.
