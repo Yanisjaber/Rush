@@ -18,17 +18,17 @@ La natation et la musculation gardent leur écran : leur comparaison est fixée 
 
 Un 5 min ou un 20 min isolé ne dit pas qui est le coureur. Sur le vélo, la page Progrès montre le **niveau global** sur une seule page qui défile (code : `NiveauGlobalVelo.tsx` ; calcul : `piliers-niveau.ts`) :
 Tout l'écran suit **l'année choisie** en haut du Bilan (le sélecteur est actif sur Progrès quand le niveau global du vélo s'affiche, grisé sinon) :
-1. **Le niveau de l’année choisie** en taille normale (« 80 / 100 », « — » si l'année n'a pas de score, sans autre texte) ;
+1. **Le niveau de l’année choisie** en taille normale (« 80 / 100 », « — » si l'année n'a aucune mesure, sans autre texte) ;
 2. **Score par année** : la courbe du score global, le score sur chaque point, l'année choisie cerclée ;
 3. **Piliers par année** : la **carte de chaleur** (`ChaleurPiliers.tsx`) : une ligne par année (la plus récente en haut), une colonne par pilier (noms abrégés : Puiss., Endur., Durab., Répét., Charge), plus la case est bleue plus la note est haute (l'année choisie et les 4 d'avant, « Tout l'historique » pour toutes). Le texte de chaque case est choisi pour rester lisible sur sa teinte (`theme/contraste.ts`) ;
 4. **La courbe des niveaux** : le sélecteur Sprint, 5, 20, 60 min, Forme et sa courbe sur les 5 ans qui finissent sur l'année choisie (`ProgresNiveau` en mode `courbeSeule`, sans dossard, liste, calcul ni phrase sous la courbe).
 
-Le score global est la **moyenne des piliers mesurés** (au moins 2). Chaque pilier va de 0 à 100 :
+Le score global est la **moyenne des 5 piliers**. Chaque pilier va de 0 à 100 :
 
 | Pilier | Ce qui est mesuré | Note |
 |---|---|---|
 | Puissance | meilleurs sprint (5 s), 5, 20 et 60 min de l'année | moyenne des 4 notes, chacune = meilleur de l'année ÷ meilleur de toujours (100 = le meilleur, 0 = 30 % en dessous) ; au moins 3 sorties avec capteur (`n_courbes`), sinon l'année n'est pas notée et ne compte pas pour « le meilleur de toujours » |
-| Endurance | puissance 2 h et 3 h, dérive cardiaque, heures de sorties longues | moyenne d'au moins 2 des 3 notes (voir plus bas) |
+| Endurance | puissance 2 h et 3 h, dérive cardiaque, heures de sorties longues | moyenne des notes mesurées, 2 demandées (voir plus bas) |
 | Durabilité | meilleur 5 et 20 min **après 2 h 30 de sortie** ÷ meilleur à froid | même échelle (100 = aucune perte, 0 = 30 % de perte) ; au moins 3 sorties longues |
 | Répétabilité | dans une sortie, le 3e meilleur effort de 5 min ÷ le 1er (médiane des sorties qui ont trois vrais efforts : le 3e ≥ 75 % de ton **meilleur 5 min de tous les temps**, calculé sur les années à 3 sorties avec capteur ou plus) | même échelle ; au moins 3 sorties. Depuis le 2 nov. 2026 : avant, la barre était le meilleur 5 min de l'année, et des efforts très faciles (80 W en 2017) donnaient 83 |
 | Capacité de charge | charge chronique (CTL) maximale de l'année (`daily_metrics`) | CTL max ÷ meilleur CTL max, même échelle |
@@ -37,7 +37,23 @@ Les mesures viennent de la fonction SQL `rpc_piliers_annuels` (une seule lecture
 
 **La récupération physiologique n'est pas dans le score** : il n'y avait que 18 nuits de sommeil/HRV (du 21 sept. au 12 oct. 2026) et aucune mesure de santé. La capacité de charge est ce qu'on peut dire de l'entraînement encaissé. La vraie récupération (HRV, FC au repos) pourra devenir un sixième pilier quand elle sera mesurée sur plusieurs mois.
 
-Le calcul sur un vrai compte donne : 2022 : 33, 2023 : 73, 2024 : 85, 2025 : 86, 2026 : 60 (la capacité de charge de 2026 est basse : CTL max 70 contre 91, l'année n'est pas finie et l'entraînement a baissé). Les années à moins de 2 piliers mesurés n'ont pas de score global ; l'écran le dit (« Calculé sur N piliers sur 5 »).
+Le calcul sur un vrai compte donne : 2022 : 33, 2023 : 73, 2024 : 85, 2025 : 86, 2026 : 60 (la capacité de charge de 2026 est basse : CTL max 70 contre 91, l'année n'est pas finie et l'entraînement a baissé). Ces chiffres datent d'avant la règle des preuves (ci-dessous).
+
+### Une note à chaque pilier (depuis le 2 nov. 2026)
+
+Une case vide (« — ») ne disait pas pourquoi : 9 000 km dans l'année ne donnent pas de répétabilité sans séances d'intervalles. Maintenant **chaque pilier a toujours une note**, calculée avec ce qui est mesuré puis **réduite de la part qui manque** :
+
+> note affichée = note calculée × preuve, où preuve = sorties disponibles ÷ sorties demandées (au plus 1)
+
+| Pilier | Sorties demandées | Exemple |
+|---|---|---|
+| Puissance | 3 sorties avec capteur dans l'année | 1 sortie : un tiers de la note ; aucune : 0 |
+| Durabilité | 3 sorties de 2 h 30 et plus | 2 sorties : les deux tiers ; aucune : 0 |
+| Répétabilité | 3 sorties avec 3 vrais efforts | idem |
+| Endurance | 2 notes parmi puissance 2-3 h, dérive, volume | le volume seul : la moitié de sa note ; la dérive se réduit elle-même avec moins de 3 sorties |
+| Charge | la charge de l'année | pas de charge mesurée : 0 |
+
+Sans aucune mesure, la note est 0. Le score global est la moyenne des 5 notes, preuves incomplètes comprises : une année pauvre en données a donc un score bas, jamais vide. Ton « meilleur de toujours » (le 100 de chaque durée) se lit toujours sur les années à 3 sorties avec capteur ou plus, pour qu'un capteur qui a menti en une sortie ne fixe pas la barre (sans aucune année fiable, sur celles qui ont au moins une sortie avec capteur). Dans la carte de chaleur, une note à preuve incomplète a un **contour en pointillés** (et VoiceOver dit « peu de mesures »). Le point fort et le point faible ne se disent que sur les piliers à preuve complète.
 
 Pourquoi 3 sorties avec capteur pour la puissance (2 nov. 2026) : sur le compte de test, 2013 n'avait qu'une sortie avec capteur, en panne (1 W sur une heure). Sa puissance notée 0 et sa petite charge notée 0 donnaient un niveau global de 0. Une courbe qui n'a qu'un marqueur de version (`{"v": 6}`, sortie calculée sans capteur) ne compte pas. Le graphique « Score global par année » place chaque point selon son année : une année sans score laisse un trou.
 
@@ -55,7 +71,7 @@ Le **score** va de 0 à 100 : **100 = ton meilleur niveau, 0 = un niveau 30 % en
 
 ## L'endurance (depuis le 2 nov. 2026)
 
-Les watts à cardio égal mesurent la **forme** (l'efficacité aérobie), pas la capacité à tenir longtemps : ils restent dans le sélecteur sous le nom « Forme ». Le pilier Endurance est la moyenne d'au moins 2 de ces 3 notes :
+Les watts à cardio égal mesurent la **forme** (l'efficacité aérobie), pas la capacité à tenir longtemps : ils restent dans le sélecteur sous le nom « Forme ». Le pilier Endurance est la moyenne de ces 3 notes (2 demandées, voir « Une note à chaque pilier ») :
 - **Puissance longue** : meilleur 2 h et meilleur 3 h de l'année (`power_curve` 7200 et 10800) ÷ meilleur de toujours, même échelle que la puissance ; mêmes conditions (3 sorties avec capteur) ;
 - **Dérive cardiaque** : médiane des sorties de 2 h et plus (au moins 3). Pour chaque sortie, `_shared/derive.ts` compare l'efficacité (watts ÷ cardio) des deux moitiés, sans les 10 premières minutes ni les secondes sans cardio (clé `derive` de `power_curve`, en %). Note = 100 × (1 − dérive ÷ 15), entre 0 et 100 : 0 % de dérive = 100, 15 % ou plus = 0 ;
 - **Volume long** : heures de sorties de 2 h et plus dans l'année (avec ou sans capteur) ÷ la meilleure année.

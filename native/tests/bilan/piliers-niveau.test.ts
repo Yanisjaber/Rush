@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { PointNiveau, SerieNiveau } from '../../src/data/bilan/niveau-annees.ts';
-import { ecartsPiliers, niveauGlobal, recordsDeMesures, type MesuresAnnee } from '../../src/data/bilan/piliers-niveau.ts';
+import { ecartsPiliers, niveauGlobal, preuveDe, recordsDeMesures, type MesuresAnnee } from '../../src/data/bilan/piliers-niveau.ts';
 
 const mesure = (an: number, extra: Partial<MesuresAnnee> = {}): MesuresAnnee => ({
   an, w5: null, w300: null, w1200: null, w3600: null, late300: null, late1200: null, nLongues: 0, repRatio: null, repN: 0, ctlMax: null, nCourbes: 50, w7200: null, w10800: null, deriveMed: null, nDerive: 0, heuresLongues: 0, ...extra,
@@ -32,9 +32,10 @@ test('niveauGlobal : les cinq piliers de chaque année et leur moyenne (vraies m
   assert.ok(Math.abs(par[2026].global! - 54) <= 3, `2026 : ${par[2026].global}`);
   assert.ok(par[2022].global! < par[2023].global!);
   assert.equal(par[2025].nbPiliers, 5);
-  // 2022 n'a que 2 sorties à trois vrais efforts : la répétabilité n'est pas jugée
-  assert.equal(par[2022].piliers.repetabilite, null);
-  assert.equal(par[2022].nbPiliers, 4);
+  // 2022 n'a que 2 sorties à trois vrais efforts : la répétabilité est notée, mais aux 2/3 : (0,907 − 0,7) / 0,3 = 69, × 2/3 = 46
+  assert.ok(Math.abs(par[2022].piliers.repetabilite - 46) < 0.5, `${par[2022].piliers.repetabilite}`);
+  assert.ok(Math.abs(par[2022].preuves.repetabilite - 2 / 3) < 1e-9);
+  assert.equal(par[2022].nbPiliers, 4); // les quatre autres ont toutes leurs preuves
 });
 
 test('niveauGlobal : l\'année actuelle, l\'année d\'avant, le meilleur, le point fort et le point faible', () => {
@@ -64,20 +65,45 @@ test('niveauGlobal : les notes des piliers sont ce qu\'on attend', () => {
   assert.ok(Math.abs(p.endurance! - 76.67) < 0.01, `${p.endurance}`);
 });
 
-test('niveauGlobal : une année à moins de 2 piliers n\'a pas de score ; sans aucune année à 2 piliers, pas de niveau global', () => {
-  assert.equal(niveauGlobal([mesure(2025, { w5: 1000 })]), null);
+test('niveauGlobal : chaque année a une note à chaque pilier, même sans mesure (0 quand rien n\'est mesuré)', () => {
+  assert.equal(niveauGlobal([]), null);
+  // Une année avec un seul sprint : la puissance vaut 100 (c'est son meilleur), tout le reste 0, soit un score de 100 / 5 = 20
+  const seul = niveauGlobal([mesure(2025, { w5: 1000 })])!;
+  assert.deepEqual(seul.actuel.piliers, { puissance: 100, endurance: 0, durabilite: 0, repetabilite: 0, charge: 0 });
+  assert.equal(seul.actuel.global, 20);
+  assert.equal(seul.actuel.nbPiliers, 1); // seule la puissance a toutes ses preuves
+  // Deux années : toutes les deux ont un score, comme avant seulement la 2e
   const g = niveauGlobal([mesure(2024, { w5: 1000 }), mesure(2025, { w5: 1100, w300: 310, ctlMax: 85 })])!;
-  // 2024 : puissance seule = 1 pilier : pas de score ; 2025 : puissance et charge = 2 piliers
-  assert.deepEqual(g.annees.map((a) => a.an), [2025]);
-  assert.equal(g.annees[0].nbPiliers, 2);
-  assert.equal(g.precedent, null);
+  assert.deepEqual(g.annees.map((a) => a.an), [2024, 2025]);
+  assert.equal(g.precedent!.an, 2024);
 });
 
-test('niveauGlobal : la durabilité demande 3 sorties longues', () => {
+test('preuveDe : la part de sorties demandées, entre 0 et 1', () => {
+  assert.equal(preuveDe(0, 3), 0);
+  assert.equal(preuveDe(1, 3), 1 / 3);
+  assert.equal(preuveDe(3, 3), 1);
+  assert.equal(preuveDe(40, 3), 1);
+  assert.equal(preuveDe(-2, 3), 0);
+});
+
+test('niveauGlobal : la durabilité demande 3 sorties longues : avec moins, la note est réduite ; sans aucune, 0', () => {
   const peu = niveauGlobal([mesure(2025, { w5: 1000, w300: 300, w1200: 250, late300: 270, late1200: 225, nLongues: 2, ctlMax: 80 })])!;
-  assert.equal(peu.actuel.piliers.durabilite, null);
+  assert.ok(Math.abs(peu.actuel.piliers.durabilite - 44.44) < 0.01, `${peu.actuel.piliers.durabilite}`); // 66,7 × 2/3
+  assert.ok(Math.abs(peu.actuel.preuves.durabilite - 2 / 3) < 1e-9);
+  const aucune = niveauGlobal([mesure(2025, { w5: 1000, w300: 300, w1200: 250, ctlMax: 80 })])!;
+  assert.equal(aucune.actuel.piliers.durabilite, 0);
+  assert.equal(aucune.actuel.preuves.durabilite, 0);
   const assez = niveauGlobal([mesure(2025, { w5: 1000, w300: 300, w1200: 250, late300: 270, late1200: 225, nLongues: 3, ctlMax: 80 })])!;
-  assert.equal(Math.round(assez.actuel.piliers.durabilite!), 67); // ratio 0,9 des deux : (0,9 − 0,7) / 0,3
+  assert.equal(Math.round(assez.actuel.piliers.durabilite), 67); // ratio 0,9 des deux : (0,9 − 0,7) / 0,3
+  assert.equal(assez.actuel.preuves.durabilite, 1);
+});
+
+test('niveauGlobal : la répétabilité aussi : 3 sorties = note complète, 1 sortie = le tiers, aucune = 0', () => {
+  const note = (repN: number, repRatio: number | null) => niveauGlobal([mesure(2025, { w5: 1000, w300: 300, ctlMax: 80, repN, repRatio })])!.actuel.piliers.repetabilite;
+  assert.ok(Math.abs(note(3, 0.9) - 66.67) < 0.01);
+  assert.ok(Math.abs(note(1, 0.9) - 22.22) < 0.01);
+  assert.equal(note(0, null), 0);
+  assert.equal(note(5, 1.2), 100); // plafonnée
 });
 
 test('niveauGlobal : une durabilité au-dessus de 100 % est plafonnée à 100', () => {
@@ -102,20 +128,31 @@ test('recordsDeMesures : les durées absentes ou nulles deviennent undefined', (
   assert.deepEqual(recordsDeMesures([mesure(2025, { w5: 1000, w300: 0, w1200: 250 })]), [{ an: 2025, w5: 1000, w300: undefined, w1200: 250, w3600: undefined }]);
 });
 
-test('niveauGlobal : une année à moins de 3 sorties avec capteur n\'a pas de note de puissance (cas du compte de test : 2013, un capteur en panne)', () => {
-  // 2013 : une seule sortie avec capteur, absurde (1 W sur une heure), et une petite charge : avant, puissance 0 + charge 0 = niveau global 0
+test('niveauGlobal : une année à moins de 3 sorties avec capteur ne fixe jamais ton « meilleur » et sa puissance est réduite (cas du compte de test : 2013, un capteur en panne)', () => {
+  // 2013 : une seule sortie avec capteur, absurde (1 W sur une heure), et une petite charge
   const mesures = [
     mesure(2013, { w5: 103, w300: 16, w1200: 4, w3600: 1, ctlMax: 55, nCourbes: 1 }),
     ...REEL,
   ];
   const g = niveauGlobal(mesures)!;
-  assert.deepEqual(g.annees.map((a) => a.an), [2022, 2023, 2024, 2025, 2026]); // 2013 n'a plus qu'un pilier : pas de score
+  assert.deepEqual(g.annees.map((a) => a.an), [2013, 2022, 2023, 2024, 2025, 2026]);
+  // 2013 a un score, mais tout en bas (puissance et charge sous 70 % du meilleur : 0), et sa puissance repose sur 1 sortie sur 3
+  assert.equal(g.annees[0].global, 0);
+  assert.ok(Math.abs(g.annees[0].preuves.puissance - 1 / 3) < 1e-9);
   // Les notes des autres années ne bougent pas
   const sans = niveauGlobal(REEL)!;
-  assert.deepEqual(g.annees.map((a) => a.global), sans.annees.map((a) => a.global));
-  // Une pointe absurde dans une année à 2 sorties ne devient pas « ton meilleur »
+  assert.deepEqual(g.annees.slice(1).map((a) => a.global), sans.annees.map((a) => a.global));
+  // Une pointe absurde dans une année à 2 sorties ne devient pas « ton meilleur » : les autres notes ne bougent pas, la sienne est plafonnée aux 2/3
   const pointe = niveauGlobal([mesure(2021, { w5: 3000, w300: 900, ctlMax: 40, nCourbes: 2 }), ...REEL])!;
-  assert.deepEqual(pointe.annees.map((a) => a.global), sans.annees.map((a) => a.global));
+  assert.deepEqual(pointe.annees.slice(1).map((a) => a.global), sans.annees.map((a) => a.global));
+  assert.ok(pointe.annees[0].piliers.puissance < 66.7, `${pointe.annees[0].piliers.puissance}`);
+});
+
+test('niveauGlobal : sans aucune année fiable, le meilleur de toujours se lit sur les années qui ont au moins une sortie avec capteur', () => {
+  const g = niveauGlobal([mesure(2024, { w5: 800, nCourbes: 2 }), mesure(2025, { w5: 1000, nCourbes: 2 })])!;
+  // 2025 est le meilleur sprint (1000) : 100 × 2/3 ; 2024 : 800/1000 = 80 % → (0,8 − 0,7) / 0,3 = 33,3 × 2/3
+  assert.ok(Math.abs(g.annees[1].piliers.puissance - 66.67) < 0.01);
+  assert.ok(Math.abs(g.annees[0].piliers.puissance - 22.22) < 0.01);
 });
 
 test('recordsDeMesures : sans les années à moins de 3 sorties avec capteur', () => {
@@ -123,13 +160,18 @@ test('recordsDeMesures : sans les années à moins de 3 sorties avec capteur', (
 });
 
 test('niveauGlobal : l\'endurance demande 2 de ses 3 notes ; la dérive demande 3 sorties ; une dérive de 15 % ou plus vaut 0', () => {
-  // Volume seul (pas de capteur, pas de dérive) : pas de note d'endurance
+  // Volume seul (pas de capteur, pas de dérive) : une note sur deux demandées, donc la moitié de la note du volume
   const seul = niveauGlobal([mesure(2025, { w5: 1000, w300: 300, ctlMax: 80, heuresLongues: 100 })])!;
-  assert.equal(seul.actuel.piliers.endurance, null);
+  assert.equal(seul.actuel.piliers.endurance, 50);
+  assert.equal(seul.actuel.preuves.endurance, 0.5);
   assert.equal(seul.actuel.endurance.volume, 100);
-  // 2 sorties avec dérive : pas assez pour la juger ; 3 : jugée
+  // Aucune heure longue du tout : 0
+  assert.equal(niveauGlobal([mesure(2025, { w5: 1000, ctlMax: 80 })])!.actuel.piliers.endurance, 0);
+  // 2 sorties avec dérive : la dérive est notée aux 2/3 (80 × 2/3 = 53,3) ; avec le volume, deux notes : endurance complète
   const deux = niveauGlobal([mesure(2025, { w5: 1000, w300: 300, ctlMax: 80, heuresLongues: 100, deriveMed: 3, nDerive: 2 })])!;
-  assert.equal(deux.actuel.endurance.derive, null);
+  assert.ok(Math.abs(deux.actuel.endurance.derive! - 53.33) < 0.01);
+  assert.ok(Math.abs(deux.actuel.piliers.endurance - 76.67) < 0.01);
+  assert.equal(deux.actuel.preuves.endurance, 1);
   const trois = niveauGlobal([mesure(2025, { w5: 1000, w300: 300, ctlMax: 80, heuresLongues: 100, deriveMed: 3, nDerive: 3 })])!;
   assert.ok(Math.abs(trois.actuel.endurance.derive! - 80) < 1e-9);
   assert.ok(Math.abs(trois.actuel.piliers.endurance! - 90) < 1e-9); // (80 + 100) / 2
@@ -138,7 +180,7 @@ test('niveauGlobal : l\'endurance demande 2 de ses 3 notes ; la dérive demande 
   assert.equal(forte.actuel.endurance.derive, 0);
   const negative = niveauGlobal([mesure(2025, { w5: 1000, ctlMax: 80, heuresLongues: 100, deriveMed: -2, nDerive: 5 })])!;
   assert.equal(negative.actuel.endurance.derive, 100);
-  // Une année à moins de 3 sorties avec capteur n'a pas de puissance longue (comme la puissance)
+  // Une année à 2 sorties avec capteur : la puissance longue compte, aux 2/3 (comme la puissance)
   const capteur = niveauGlobal([mesure(2025, { w7200: 200, ctlMax: 80, nCourbes: 2, heuresLongues: 100, deriveMed: 3, nDerive: 3 })])!;
-  assert.equal(capteur.actuel.endurance.puissanceLongue, null);
+  assert.ok(Math.abs(capteur.actuel.endurance.puissanceLongue! - 66.67) < 0.01);
 });
