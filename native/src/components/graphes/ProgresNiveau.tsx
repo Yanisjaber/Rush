@@ -28,7 +28,7 @@ type Choix = 'endurance' | DureeRecord;
 /** Le nombre d'années que la courbe montre avant qu'on l'élargisse. */
 const ANS_VISIBLES = 5;
 
-const NOMS_CHOIX: Record<Choix, string> = { endurance: 'Endurance', w5: 'Sprint', w300: '5 min', w1200: '20 min', w3600: '60 min' };
+const NOMS_CHOIX: Record<Choix, string> = { endurance: 'Forme', w5: 'Sprint', w300: '5 min', w1200: '20 min', w3600: '60 min' };
 const NOMS_RECORD: Record<DureeRecord, string> = { w5: 'Meilleur sprint (5 s)', w300: 'Meilleur 5 min', w1200: 'Meilleur 20 min', w3600: 'Meilleur 60 min' };
 
 /** Les deux flèches opposées (agrandir) ou face à face (réduire) du bouton en haut à droite de la courbe. */
@@ -46,7 +46,7 @@ function IconeElargir({ reduire, couleur }: { reduire: boolean; couleur: string 
 
 interface Props {
   famille: 'velo' | 'course';
-  /** Le niveau d'endurance (watts ou allure à cardio égal). */
+  /** La forme : watts ou allure à cardio égal (l'ancien « niveau d'endurance »). */
   serie: SerieNiveau;
   /** Les records de chaque année (vélo seulement ; vide en course ou le temps du chargement). */
   records: RecordsAnnee[];
