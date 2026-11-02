@@ -612,6 +612,7 @@ export default function Bilan() {
                       niveauGlobal={prog.famille === 'velo' ? niveauGlobalVelo : null}
                       annee={annee}
                       forme={prog.famille === 'velo' ? formeSaison : null}
+                      onChoisirAnnee={setAnneeChoisie}
                     />
                   ))
                 ) : (

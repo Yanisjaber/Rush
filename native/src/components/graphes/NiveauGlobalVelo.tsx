@@ -29,9 +29,11 @@ interface Props {
   annee: number;
   /** La forme semaine par semaine de l'année choisie ; null s'il n'y a pas de quoi la tracer. */
   forme: Forme | null;
+  /** Choisit l'année de tout le Bilan (toucher un point du score par année). */
+  onChoisirAnnee?: (an: number) => void;
 }
 
-export function NiveauGlobalVelo({ global: g, serie, records, preuve, jours, annee, forme }: Props) {
+export function NiveauGlobalVelo({ global: g, serie, records, preuve, jours, annee, forme, onChoisirAnnee }: Props) {
   const p = usePalette();
   const couleur = couleurSport(p, 'velo');
   // L'année choisie peut ne pas avoir de score (trop peu de sorties) : le niveau s'affiche alors « — »
@@ -56,6 +58,7 @@ export function NiveauGlobalVelo({ global: g, serie, records, preuve, jours, ann
           points={g.annees.map((a) => ({ an: a.an, score: a.global! }))}
           anneeCerclee={annee}
           couleur={couleur}
+          onChoisir={onChoisirAnnee}
           etiquette={`Score global par année : ${g.annees.map((a) => `${a.an} : ${a.global}`).join(', ')}, sur 100.`}
         />
       </Bloc>
