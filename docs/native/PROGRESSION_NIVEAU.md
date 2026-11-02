@@ -28,7 +28,7 @@ Le score global est la **moyenne des 5 piliers**. Chaque pilier va de 0 à 100 :
 | Pilier | Ce qui est mesuré | Note |
 |---|---|---|
 | Puissance | meilleurs sprint (5 s), 5, 20 et 60 min de l'année | moyenne des 4 notes, chacune = meilleur de l'année ÷ meilleur de toujours (100 = le meilleur, 0 = 30 % en dessous) ; au moins 3 sorties avec capteur (`n_courbes`), sinon l'année n'est pas notée et ne compte pas pour « le meilleur de toujours » |
-| Endurance | puissance 2 h et 3 h, dérive cardiaque, heures de sorties longues | moyenne des notes mesurées, 2 demandées (voir plus bas) |
+| Endurance | fatigue (D), longue durée (R), découplage cardiaque (C) | 100 × (0,20 D + 0,35 R + 0,45 C), voir « L'endurance » plus bas |
 | Durabilité | meilleur 5 et 20 min **après 2 h 30 de sortie** ÷ meilleur à froid | même échelle (100 = aucune perte, 0 = 30 % de perte) ; au moins 3 sorties longues |
 | Répétabilité | **moyenne de deux notes** sur les sorties qui ont trois vrais efforts de 5 min (le 3e ≥ 50 % de ton **meilleur 5 min de tous les temps**, calculé sur les années à 3 sorties avec capteur ou plus) : **la régularité** (3e effort ÷ 1er, médiane des sorties : 100 = aucune perte, 0 = 30 % de perte) et **la hauteur** (3e effort médian, en watts, ÷ ton meilleur 5 min de tous les temps : 0 à 50 %, 100 à 100 %) | au moins 3 sorties (sinon réduite, voir plus bas). Depuis le 2 nov. 2026 : la régularité seule récompensait les efforts faibles (80 W en 2017 donnaient 83), puis ne voyait pas la progression (2021 : 170 W et 72 ; 2025 : 190 W et 61 à cause d'une perte plus grande entre le 1er et le 3e). La barre des vrais efforts est à 50 % du meilleur de toujours (à 75 %, 2022 n'avait aucune sortie valide : meilleur 3e effort 201 W pour un record de 293 W). Sans la hauteur (base pas à jour), la régularité fait seule la note |
 | Capacité de charge | charge chronique (CTL) maximale de l'année (`daily_metrics`) | CTL max ÷ meilleur CTL max, sur une **échelle plus douce** : 100 = ta meilleure année, **0 à 40 %** de ta meilleure année (les autres piliers : 0 à 70 %). La charge est une quantité d'entraînement, pas un niveau de performance : passer de 52 à 91 est presque doubler. Depuis le 2 nov. 2026 (2022 : 57 % du meilleur = 29 au lieu de 0) |
@@ -69,14 +69,17 @@ Le **score** va de 0 à 100 : **100 = ton meilleur niveau, 0 = un niveau 30 % en
 
 **Le sommet (100)** est le meilleur niveau parmi les périodes d'au moins **8 sorties** : une période de 3 ou 4 sorties peut sortir très haut par hasard (une sortie en descente), elle ne doit pas fixer le sommet. Son score est alors plafonné à 100 (sa marge d'erreur, elle, peut dépasser).
 
-## L'endurance (depuis le 2 nov. 2026)
+## L'endurance (formule du 3 nov. 2026)
 
-Les watts à cardio égal mesurent la **forme** (l'efficacité aérobie), pas la capacité à tenir longtemps : ils restent dans le sélecteur sous le nom « Forme ». Le pilier Endurance est la moyenne de ces 3 notes (2 demandées, voir « Une note à chaque pilier ») :
-- **Puissance longue** : meilleur 2 h et meilleur 3 h de l'année (`power_curve` 7200 et 10800) ÷ meilleur de toujours, même échelle que la puissance ; mêmes conditions (3 sorties avec capteur) ;
-- **Dérive cardiaque** : médiane des sorties de 2 h et plus (au moins 3). Pour chaque sortie, `_shared/derive.ts` compare l'efficacité (watts ÷ cardio) des deux moitiés, sans les 10 premières minutes ni les secondes sans cardio (clé `derive` de `power_curve`, en %). Note = 100 × (1 − dérive ÷ 15), entre 0 et 100 : 0 % de dérive = 100, 15 % ou plus = 0 ;
-- **Volume long** : heures de sorties de 2 h et plus dans l'année (avec ou sans capteur) ÷ la meilleure année.
+Les watts à cardio égal mesurent la **forme** (l'efficacité aérobie), pas la capacité à tenir longtemps : ils restent dans le sélecteur sous le nom « Forme ». Le pilier Endurance est, pour chaque année :
 
-Les anciennes sorties ont été rattrapées depuis leurs streams le 2 nov. 2026 ; `strava-streams` calcule la dérive des nouvelles.
+**note = 100 × (0,20 D + 0,35 R + 0,45 C)**, chaque lettre remise entre 0 et 1 :
+- **D, fatigue (20 %)** : meilleur 20 min **après fatigue** ÷ meilleur 20 min frais de l'année ; 0 à 85 %, 1 à 97 %. « Après fatigue » = une fois 30 kJ par kg de travail cumulé (2100 kJ pour 70 kg ; poids du profil, 70 kg si absent), calculé seconde par seconde ; la fenêtre de 20 min démarre après ce seuil (`_shared/fatigue.ts`, clé `fat20` de `power_curve`) ;
+- **R, longue durée (35 %)** : meilleur 2 h 30 de l'année (clé `9000`) ÷ FTP de l'année (95 % de son meilleur 20 min) ; 0 à 65 %, 1 à 85 % ;
+- **C, découplage (45 %)** : sur les sorties **Z2** (puissance normalisée de la sortie entre 55 et 75 % de la FTP de l'année) de 90 min et plus, EF = puissance normalisée ÷ FC moyenne ; `drift` = (EF 1re moitié − EF 2e moitié) ÷ EF 1re moitié × 100, échauffement de 10 min mis à part (`_shared/derive.ts`, clé `drift`). On prend la **médiane des 10 dernières sorties Z2 de l'année** ; 12 % = 0, 2 % = 1 (une 2e moitié plus efficace est plafonnée à 1).
+
+Preuves : chaque lettre demande 3 sorties (3 sorties après fatigue, 3 sorties Z2, 3 sorties avec capteur pour la FTP de l'année) et vaut au prorata si moins ; une lettre sans mesure vaut 0 et sa part de preuve aussi. Le volume des sorties longues et les meilleurs 2 h / 3 h ne comptent plus.
+Les mesures viennent de `rpc_piliers_annuels` (`w9000`, `fat20`, `n_fat`, `drift_med`, `n_drift`) ; les notes sont calculées dans `piliers-niveau.ts`. Les clés `fat20` et `drift` s'écrivent à l'import (`strava-streams`, version des courbes 8) ; les anciennes sorties les reçoivent au recalcul des courbes.
 
 ## Forme par saison (depuis le 2 nov. 2026)
 

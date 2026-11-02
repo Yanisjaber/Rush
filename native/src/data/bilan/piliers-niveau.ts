@@ -1,9 +1,10 @@
 // Le niveau global de l'athlète à vélo : cinq piliers, chacun noté de 0 à 100, et leur moyenne. Calculs purs, testés dans tests/bilan/piliers-niveau.test.ts.
 //   puissance    : la force de pointe, moyenne des notes de ton meilleur sprint (5 s), 5, 20 et 60 minutes de l'année (100 = ton meilleur de chaque durée, 0 = 20 % en dessous ; les autres piliers gardent 30 %) ;
-//   endurance    : tenir longtemps, moyenne de trois notes (deux demandées ; une seule = la moitié de la note) :
-//                    - puissance longue : meilleurs 2 h et 3 h de l'année contre tes meilleurs de toujours (échelle des autres piliers : 0 à 30 % sous ton meilleur) ;
-//                    - dérive cardiaque : médiane de l'année (sorties de 2 h et plus) ; 0 % = 100, 15 % ou plus = 0 ;
-//                    - volume long : heures en sorties de 2 h et plus, contre ta meilleure année (en proportion : la moitié = 50) ;
+//   endurance    : tenir longtemps (formule de Yanis, 3 nov. 2026), note = 100 × (0,20 D + 0,35 R + 0,45 C), chaque lettre remise entre 0 et 1 :
+//                    - D fatigue : meilleur 20 min APRÈS 30 kJ/kg de travail cumulé ÷ meilleur 20 min frais de l'année ; 0 à 85 %, 1 à 97 % ;
+//                    - R longue durée : meilleur 2 h 30 de l'année ÷ FTP de l'année (95 % de son meilleur 20 min) ; 0 à 65 %, 1 à 85 % ;
+//                    - C découplage : médiane des 10 dernières sorties Z2 (55 à 75 % de la FTP) de 90 min et plus, EF = puissance normalisée / FC, 1re contre 2e moitié ; 12 % = 0, 2 % = 1 ;
+//                  chaque lettre est multipliée par sa preuve (3 sorties demandées) ; une lettre sans mesure vaut 0 ;
 //                  (les watts à cardio égal, l'ancien pilier « Endurance », sont devenus la Forme : voir niveau-annees.ts et forme-saison.ts) ;
 //   durabilité   : garder sa puissance fatigué : meilleur 5 et 20 min après 2 h 30 de sortie, divisé par le meilleur à froid (100 = aucune perte, 0 = 30 % de perte) ;
 //   répétabilité : reproduire les efforts, moyenne de deux notes (2 nov. 2026) :
@@ -21,7 +22,7 @@ import { noteDe } from './niveau-annees.ts';
 export type PilierCle = 'puissance' | 'endurance' | 'durabilite' | 'repetabilite' | 'charge';
 export const PILIERS: readonly { cle: PilierCle; nom: string; court: string; explication: string }[] = [
   { cle: 'puissance', nom: 'Puissance', court: 'Puissance', explication: 'Sprint, 5, 20 et 60 min' },
-  { cle: 'endurance', nom: 'Endurance', court: 'Endurance', explication: 'Puissance 2-3 h, dérive cardiaque, sorties longues' },
+  { cle: 'endurance', nom: 'Endurance', court: 'Endurance', explication: 'Puissance après fatigue, 2 h 30 contre ta FTP, découplage cardiaque' },
   { cle: 'durabilite', nom: 'Durabilité', court: 'Durabilité', explication: 'Puissance gardée après 2 h 30' },
   { cle: 'repetabilite', nom: 'Répétabilité', court: 'Répétabilité', explication: '3e effort contre le 1er' },
   { cle: 'charge', nom: 'Capacité de charge', court: 'Charge', explication: 'Charge chronique maximale' },
@@ -44,21 +45,24 @@ export interface MesuresAnnee {
   ctlMax: number | null;
   /** Combien de sorties de l'année ont une courbe de puissance (un capteur). */
   nCourbes: number;
-  /** Meilleures puissances sur 2 h et 3 h de l'année. */
-  w7200: number | null;
-  w10800: number | null;
-  /** Médiane de la dérive cardiaque des sorties de 2 h et plus (en %), et le nombre de sorties mesurées. */
-  deriveMed: number | null;
-  nDerive: number;
-  /** Heures passées dans des sorties de 2 h et plus. */
-  heuresLongues: number;
+  /** Meilleure puissance sur 2 h 30 de l'année. */
+  w9000: number | null;
+  /** Meilleur 20 min APRÈS fatigue (30 kJ/kg de travail déjà fait) de l'année, et le nombre de sorties qui en ont un. */
+  fat20: number | null;
+  nFat: number;
+  /** Médiane du découplage cardiaque (en %) des 10 dernières sorties Z2 de 90 min et plus de l'année, et le nombre de sorties qui ont compté. */
+  driftMed: number | null;
+  nDrift: number;
 }
 
-/** Les trois notes qui font l'endurance d'une année (null quand elle n'est pas mesurable ; le volume existe toujours). */
+/** Les trois notes (0 à 100, avant leur poids et leur preuve) qui font l'endurance d'une année ; null quand la mesure manque. */
 export interface DetailEndurance {
-  puissanceLongue: number | null;
-  derive: number | null;
-  volume: number;
+  /** D : meilleur 20 min après fatigue ÷ meilleur 20 min frais. */
+  fatigue: number | null;
+  /** R : meilleur 2 h 30 ÷ FTP de l'année. */
+  longue: number | null;
+  /** C : découplage cardiaque en Z2. */
+  decouplage: number | null;
 }
 
 /** Les deux notes qui font la répétabilité d'une année (null quand la mesure manque ; avant la hauteur, la régularité faisait seule la note). */
@@ -105,11 +109,22 @@ export interface NiveauGlobal {
 export const SORTIES_MINI_PUISSANCE = 3;
 export const SORTIES_MINI_DURABILITE = 3;
 export const SORTIES_MINI_REPETABILITE = 3;
-/** La dérive cardiaque d'une année se juge sur 3 sorties de 2 h et plus ; à 15 % de dérive (ou plus), la note est 0. */
-export const SORTIES_MINI_DERIVE = 3;
-export const DERIVE_ZERO = 15;
-/** L'endurance d'une année demande 2 de ses 3 notes (le volume est toujours là : les 2 autres viennent des capteurs). */
-export const NOTES_MINI_ENDURANCE = 2;
+/** L'endurance (formule de Yanis, 3 nov. 2026) : 20 % la fatigue (D), 35 % la longue durée (R), 45 % le découplage (C). Chaque note est un rapport remis entre 0 et 1 ; sa preuve
+ *  demande 3 sorties (3 sorties après fatigue, 3 sorties Z2, 3 sorties avec capteur pour la FTP de l'année) : avec moins, la note est réduite d'autant. */
+export const SORTIES_MINI_FATIGUE = 3;
+export const SORTIES_MINI_DECOUPLAGE = 3;
+export const POIDS_ENDURANCE = { fatigue: 0.2, longue: 0.35, decouplage: 0.45 } as const;
+/** D : le 20 min après fatigue vaut 0 à 85 % du 20 min frais (ou moins), 100 à 97 % (ou plus). */
+export const FATIGUE_ZERO = 0.85;
+export const FATIGUE_CENT = 0.97;
+/** R : le meilleur 2 h 30 vaut 0 à 65 % de la FTP (ou moins), 100 à 85 % (ou plus). */
+export const LONGUE_ZERO = 0.65;
+export const LONGUE_CENT = 0.85;
+/** C : un découplage de 12 % (ou plus) vaut 0, 2 % (ou moins) vaut 100. */
+export const DECOUPLAGE_ZERO = 12;
+export const DECOUPLAGE_CENT = 2;
+/** Une note linéaire entre `zero` (note 0) et `cent` (note 100), bornée ; marche dans les deux sens (le découplage : plus c'est bas, mieux c'est). */
+export const noteLineaire = (x: number, zero: number, cent: number): number => Math.max(0, Math.min(100, ((x - zero) / (cent - zero)) * 100));
 
 const moyenne = (v: number[]): number | null => (v.length ? v.reduce((s, x) => s + x, 0) / v.length : null);
 /** Les puissances d'une année sont fiables seulement avec assez de sorties avec capteur. */
@@ -144,10 +159,7 @@ export function niveauGlobal(mesures: readonly MesuresAnnee[]): NiveauGlobal | n
     w300: meilleurDe(reference.map((m) => m.w300)),
     w1200: meilleurDe(reference.map((m) => m.w1200)),
     w3600: meilleurDe(reference.map((m) => m.w3600)),
-    w7200: meilleurDe(reference.map((m) => m.w7200)),
-    w10800: meilleurDe(reference.map((m) => m.w10800)),
     ctl: meilleurDe(mesures.map((m) => m.ctlMax)),
-    heures: meilleurDe(mesures.map((m) => m.heuresLongues)),
   };
   const parAn = new Map<number, MesuresAnnee>(mesures.map((m) => [m.an, m]));
   const annees = [...parAn.keys()].sort((a, b) => a - b);
@@ -173,19 +185,25 @@ export function niveauGlobal(mesures: readonly MesuresAnnee[]): NiveauGlobal | n
     // Sans la hauteur (une ancienne version de la base ne la rend pas), la régularité fait seule la note
     const repetabilite = (moyenne([detailRepetabilite.regularite, detailRepetabilite.hauteur].filter((v): v is number => v !== null)) ?? 0) * preuveRepetabilite;
 
-    const longues = [['w7200', m.w7200], ['w10800', m.w10800]] as const;
-    const notesLongues = longues.filter(([cle, v]) => v !== null && v > 0 && meilleurs[cle] > 0).map(([cle, v]) => noteDe((v as number) / meilleurs[cle]));
+    // Endurance : D (fatigue), R (longue durée), C (découplage). La FTP de l'année = 95 % de son meilleur 20 min.
+    const ftpAnnee = m.w1200 !== null && m.w1200 > 0 ? 0.95 * m.w1200 : null;
     const endurance: DetailEndurance = {
-      puissanceLongue: notesLongues.length ? moyenne(notesLongues)! * preuvePuissance : null,
-      derive: m.deriveMed !== null && m.nDerive > 0 ? Math.max(0, Math.min(100, (1 - m.deriveMed / DERIVE_ZERO) * 100)) * preuveDe(m.nDerive, SORTIES_MINI_DERIVE) : null,
-      volume: meilleurs.heures > 0 ? (100 * m.heuresLongues) / meilleurs.heures : 0,
+      fatigue: m.fat20 !== null && m.w1200 !== null && m.w1200 > 0 ? noteLineaire(m.fat20 / m.w1200, FATIGUE_ZERO, FATIGUE_CENT) : null,
+      longue: m.w9000 !== null && ftpAnnee !== null ? noteLineaire(m.w9000 / ftpAnnee, LONGUE_ZERO, LONGUE_CENT) : null,
+      decouplage: m.driftMed !== null && m.nDrift > 0 ? noteLineaire(m.driftMed, DECOUPLAGE_ZERO, DECOUPLAGE_CENT) : null,
     };
-    const notesEndurance = [endurance.puissanceLongue, endurance.derive, endurance.volume].filter((v): v is number => v !== null);
-    const preuveEndurance = preuveDe(notesEndurance.length, NOTES_MINI_ENDURANCE);
+    // Chaque note compte pour son poids, multipliée par sa preuve ; une note qui manque vaut 0 et sa part de preuve aussi
+    const preuveFatigue = endurance.fatigue !== null ? preuveDe(m.nFat, SORTIES_MINI_FATIGUE) : 0;
+    const preuveLongue = endurance.longue !== null ? preuvePuissance : 0;
+    const preuveDecouplage = endurance.decouplage !== null ? preuveDe(m.nDrift, SORTIES_MINI_DECOUPLAGE) : 0;
+    const noteEndurance = POIDS_ENDURANCE.fatigue * (endurance.fatigue ?? 0) * preuveFatigue
+      + POIDS_ENDURANCE.longue * (endurance.longue ?? 0) * preuveLongue
+      + POIDS_ENDURANCE.decouplage * (endurance.decouplage ?? 0) * preuveDecouplage;
+    const preuveEndurance = POIDS_ENDURANCE.fatigue * preuveFatigue + POIDS_ENDURANCE.longue * preuveLongue + POIDS_ENDURANCE.decouplage * preuveDecouplage;
 
     const charge = m.ctlMax !== null && meilleurs.ctl > 0 ? noteChargeDe(m.ctlMax / meilleurs.ctl) : 0;
 
-    const piliers: NotesPiliers = { puissance, endurance: (moyenne(notesEndurance) ?? 0) * preuveEndurance, durabilite, repetabilite, charge };
+    const piliers: NotesPiliers = { puissance, endurance: noteEndurance, durabilite, repetabilite, charge };
     const preuves: PreuvesPiliers = { puissance: preuvePuissance, endurance: preuveEndurance, durabilite: preuveDurabilite, repetabilite: preuveRepetabilite, charge: m.ctlMax !== null ? 1 : 0 };
     const complets = PILIERS.filter((p) => preuves[p.cle] >= 1).length;
     resultat.push({ an, piliers, preuves, global: Math.round(moyenne(PILIERS.map((p) => piliers[p.cle]))!), nbPiliers: complets, endurance, detailRepetabilite });

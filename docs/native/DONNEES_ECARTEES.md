@@ -8,7 +8,7 @@ Code : `native/src/data/calendrier/donnees-ecartees.ts` (liste des données, mas
 
 | Puce | Colonne de `activities` | Ce qui n'entre plus dans les calculs |
 |---|---|---|
-| Durée | `excl_duration` | le temps de l'activité : minutes et heures des totaux (calendrier, bilan, volume), sorties longues du niveau global (endurance), records de durée, vitesse et allure ; l'activité sort aussi des progressions (qui demandent une durée minimale) ; et la charge, puisque toute charge se calcule avec la durée |
+| Durée | `excl_duration` | le temps de l'activité : minutes et heures des totaux (calendrier, bilan, volume), records de durée, vitesse et allure ; l'activité sort aussi des progressions (qui demandent une durée minimale) ; et la charge, puisque toute charge se calcule avec la durée |
 | Puissance | `excl_power` | watts moyens et normalisés, pointe, énergie (kJ), courbe de puissance, records, forme, niveau global (pointes, durabilité, répétabilité, 2 h / 3 h, dérive, nombre de sorties avec capteur), courbe de couple, et la charge si elle vient de la puissance |
 | Cardio | `excl_hr` | cardio moyen et max, courbe de cardio, forme (watts à cardio égal), dérive, progression course, et la charge si elle vient du cardio |
 | Cadence | `excl_cadence` | cadence moyenne, courbe de cadence et de couple |
@@ -24,7 +24,7 @@ La charge (TSS) d'une activité vient de la puissance si elle en a, sinon du car
 
 ## Comment les calculs ne voient plus la donnée
 
-- **Base** : `recalc_daily_metrics` (charge, forme, fatigue, minutes du jour), `rpc_piliers_annuels` (niveau global, heures de sorties longues), `rpc_courbe_puissance`, `rpc_courbe_signal` et `rpc_sorties_velo` (records) ignorent ce qui est écarté.
+- **Base** : `recalc_daily_metrics` (charge, forme, fatigue, minutes du jour), `rpc_piliers_annuels` (niveau global), `rpc_courbe_puissance`, `rpc_courbe_signal` et `rpc_sorties_velo` (records) ignorent ce qui est écarté.
 - **App** : les listes de séances (calendrier, accueil, historique de progression, bilan) passent par `sansDonneesEcarteesTout`, qui vide la donnée écartée (la séance d'origine n'est pas modifiée). Seul l'écran de l'activité lit la séance entière.
 - **Mise à jour** : quand on écarte ou remet une donnée, `ecartsChanges()` vide les caches (records, niveau global, courbes) et fait relire le calendrier, l'accueil, le bilan, la progression et les métriques.
 

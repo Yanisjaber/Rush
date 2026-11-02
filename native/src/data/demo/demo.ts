@@ -699,11 +699,11 @@ export function piliersAnnuelsDemo(maintenant: Date = new Date()): MesuresAnnee[
       repN: 8 + i * 2,
       ctlMax: 52 + i * 9 - (i === 4 ? 18 : 0),
       nCourbes: 60 + i * 15,
-      w7200: w(3600) ? Math.round(w(3600)! * (0.84 + 0.01 * i)) : null,
-      w10800: w(3600) ? Math.round(w(3600)! * (0.76 + 0.012 * i)) : null,
-      deriveMed: 7.5 - 0.8 * i,
-      nDerive: 10 + i * 3,
-      heuresLongues: 40 + i * 12,
+      w9000: w1200 ? Math.round(w1200 * (0.64 + 0.02 * i)) : null,
+      fat20: w1200 ? Math.round(w1200 * (0.84 + 0.025 * i)) : null,
+      nFat: 6 + i * 2,
+      driftMed: 9.5 - 1.2 * i,
+      nDrift: 5 + i * 2,
     };
   });
 }
