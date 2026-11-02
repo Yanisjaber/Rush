@@ -5,6 +5,8 @@ import { CHARGE_ZERO, DECOUPLAGE_CENT, DECOUPLAGE_ZERO, ecartsPiliers, FACILITE_
 
 const mesure = (an: number, extra: Partial<MesuresAnnee> = {}): MesuresAnnee => ({
   an, w5: null, w300: null, w1200: null, w3600: null, repRatio: null, repW3: null, repN: 0, ctlMax: null, nCourbes: 50, pRef: null, fcRef: null, nFc: 0, driftMed: null, nDrift: 0, ...extra,
+  // la charge moyenne de l'année : par défaut la valeur de ctlMax donnée au test (la note de charge se fait sur la moyenne)
+  ctlMoy: extra.ctlMoy !== undefined ? extra.ctlMoy : (extra.ctlMax ?? null),
 });
 /** Une série d'endurance réduite aux années et à leur score. */
 const endurance = (scores: Record<number, number>): SerieNiveau => {
@@ -29,7 +31,7 @@ test('niveauGlobal : les quatre piliers de chaque année et leur moyenne (vraies
   const par = Object.fromEntries(g.annees.map((a) => [a.an, a]));
   assert.ok(Math.abs(par[2025].global! - 83) <= 1, `2025 : ${par[2025].global}`);
   assert.ok(Math.abs(par[2024].global! - 84) <= 1, `2024 : ${par[2024].global}`);
-  assert.ok(Math.abs(par[2026].global! - 60) <= 1, `2026 : ${par[2026].global}`);
+  assert.ok(Math.abs(par[2026].global! - 62) <= 1, `2026 : ${par[2026].global}`);
   assert.ok(par[2022].global! < par[2023].global!);
   assert.equal(par[2025].nbPiliers, 4);
   // 2022 n'a que 2 sorties à trois vrais efforts : la répétabilité est notée, mais aux 2/3 :
@@ -44,7 +46,7 @@ test('niveauGlobal : l\'année actuelle, l\'année d\'avant, le meilleur, le poi
   assert.equal(g.actuel.an, 2026);
   assert.equal(g.precedent!.an, 2025);
   assert.ok(g.meilleur.an === 2025 || g.meilleur.an === 2024);
-  assert.equal(g.fort, 'endurance'); // 2026 : endurance ≈ 64 (effort relatif 81 % de la FTP, cœur à 1 bpm de ton meilleur, découplage de 6 %), devant la charge (61) et la puissance (60)
+  assert.equal(g.fort, 'charge'); // 2026 : charge ≈ 67 (CTL moyen 69,6 contre une référence de 87), juste devant l'endurance (≈ 64) et la puissance (60)
   assert.equal(g.faible, 'repetabilite'); // la répétabilité (≈ 56) est le plus bas des quatre
 });
 
@@ -55,7 +57,8 @@ test('niveauGlobal : les notes des piliers sont ce qu\'on attend', () => {
   const d = niveauGlobal(REEL)!.annees.find((a) => a.an === 2025)!.detailRepetabilite;
   assert.ok(Math.abs(d.regularite! - 78.33) < 0.01 && Math.abs(d.hauteur! - 29.69) < 0.01, `${d.regularite} ${d.hauteur}`);
   // Charge 2025 : 90,3 / 91 = 99,2 % → (0,992 − 0,4) / 0,6 = 98,7
-  assert.ok(Math.abs(p.charge - 98.72) < 0.1, `${p.charge}`);
+  // Charge 2025 : la référence est la moyenne des 3 meilleures années ((91 + 90,3 + 79,6) / 3 = 87) ; 90,3 est au-dessus → 100
+  assert.equal(p.charge, 100);
   // Puissance : la meilleure durée de chaque année vaut 100 pour son année record ; 2025 : sprint 1071/1157, 5 min 285/293, 20 min 100 %, 60 min 100 %
   assert.ok(p.puissance! > 85 && p.puissance! < 96, `${p.puissance}`);
   // Endurance 2025 : F = 172 / (0,95 × 259) = 69,9 % de la FTP → 100 ; H = 132 bpm = ton meilleur → 100 ; C = (12 − 4,5) / 10 → 75
@@ -101,7 +104,7 @@ test('ecartsPiliers : ce qui a bougé depuis l\'année d\'avant, seulement pour 
   const e = ecartsPiliers(g);
   assert.deepEqual(e.map((x) => x.cle), ['puissance', 'endurance', 'repetabilite', 'charge']);
   const charge = e.find((x) => x.cle === 'charge')!;
-  assert.ok(charge.ecart < -35, `charge ${charge.ecart}`); // CTL max 90 → 70 : le plus gros recul (99 → 61)
+  assert.ok(charge.ecart < -30, `charge ${charge.ecart}`); // CTL moyen 90 → 70 : le plus gros recul (100 → 67)
   assert.equal(e.find((x) => x.cle === 'endurance')!.ecart, -27); // 2026 (≈ 64) contre 2025 (≈ 91) : effort relatif de 81 % de la FTP au lieu de 70 %, découplage de 6 % au lieu de 4,5 %
   assert.ok(e.every((x) => x.maintenant - x.avant === x.ecart));
   // Sans année d'avant : rien à comparer
@@ -122,7 +125,7 @@ test('niveauGlobal : une année à moins de 3 sorties avec capteur ne fixe jamai
   const g = niveauGlobal(mesures)!;
   assert.deepEqual(g.annees.map((a) => a.an), [2013, 2022, 2023, 2024, 2025, 2026]);
   // 2013 a un score, mais tout en bas (puissance et charge sous 70 % du meilleur : 0), et sa puissance repose sur 1 sortie sur 3
-  assert.equal(g.annees[0].global, 9); // charge 55/91 = 60 % → 34 sur l'échelle douce, le reste 0 : 34 / 4 = 8,5, arrondi à 9
+  assert.equal(g.annees[0].global, 10); // charge 55 contre la référence de 87 (3 meilleures années) = 63 % → 39 sur l'échelle douce, le reste 0 : 39 / 4 = 9,7, arrondi à 10
   assert.ok(Math.abs(g.annees[0].preuves.puissance - 1 / 3) < 1e-9);
   // Les notes des autres années ne bougent pas
   const sans = niveauGlobal(REEL)!;
@@ -218,7 +221,7 @@ test('notePuissanceDe : 100 au meilleur, 0 à 20 % en dessous, en ligne droite (
   assert.equal(notePuissanceDe(1.1), 100);
 });
 
-test('noteChargeDe : 100 au meilleur, 0 à 40 % du meilleur, en ligne droite (plus douce que les autres piliers : 0 à 70 %)', () => {
+test('noteChargeDe : 100 à la référence, 0 à 40 % de la référence, en ligne droite (plus douce que les autres piliers : 0 à 70 %)', () => {
   assert.equal(CHARGE_ZERO, 0.4);
   assert.equal(noteChargeDe(1), 100);
   assert.equal(noteChargeDe(1.3), 100); // plafonnée
@@ -227,8 +230,27 @@ test('noteChargeDe : 100 au meilleur, 0 à 40 % du meilleur, en ligne droite (pl
   assert.ok(Math.abs(noteChargeDe(0.7) - 50) < 1e-9);
   // Le cas de 2022 : CTL 52 contre 91 = 57 % : 28,6 au lieu de 0 sur l'échelle des autres piliers
   assert.ok(Math.abs(noteChargeDe(52 / 91) - 28.57) < 0.01);
+  // Avec 2 années seulement, la référence est la moyenne des deux : (91 + 52) / 2 = 71,5 ; 52 / 71,5 = 72,7 % → 54,5
   const g = niveauGlobal([mesure(2024, { ctlMax: 91 }), mesure(2022, { ctlMax: 52 })])!;
-  assert.ok(Math.abs(g.annees[0].piliers.charge - 28.57) < 0.01, `${g.annees[0].piliers.charge}`);
+  assert.ok(Math.abs(g.annees[0].piliers.charge - 54.55) < 0.01, `${g.annees[0].piliers.charge}`);
+});
+
+test('niveauGlobal : la charge se juge sur la charge MOYENNE de l\'année contre la moyenne des 3 meilleures années : une année gonflée ne fixe pas le « 100 »', () => {
+  // 2022 : pic gonflé (FTP trop basse) ; les autres années sont stables. Référence = (150 + 64 + 62) / 3 = 92
+  const g = niveauGlobal([
+    mesure(2022, { ctlMax: 160, ctlMoy: 150 }),
+    mesure(2023, { ctlMax: 70, ctlMoy: 62 }),
+    mesure(2024, { ctlMax: 72, ctlMoy: 64 }),
+    mesure(2025, { ctlMax: 70, ctlMoy: 60 }),
+  ])!;
+  const charge = Object.fromEntries(g.annees.map((a) => [a.an, a.piliers.charge]));
+  assert.equal(charge[2022], 100); // au-dessus de la référence : plafonné
+  assert.ok(Math.abs(charge[2024] - 49.28) < 0.01, `${charge[2024]}`); // 64 / 92 = 69,6 % → 49,3 (contre 4,5 si la meilleure année fixait le 100)
+  // Seule la moyenne compte : un pic de 400 sur une année à CTL moyen de 62 ne change rien à sa note
+  const pic = niveauGlobal([mesure(2023, { ctlMax: 400, ctlMoy: 62 }), mesure(2024, { ctlMax: 72, ctlMoy: 62 })])!;
+  assert.equal(pic.annees[0].piliers.charge, pic.annees[1].piliers.charge);
+  // Sans charge moyenne (base pas à jour) : la note de charge est 0, jamais d'erreur
+  assert.equal(niveauGlobal([mesure(2025, { w5: 1000, ctlMax: 80, ctlMoy: null })])!.actuel.piliers.charge, 0);
 });
 
 test('noteHauteurDe : 0 à 50 % de ton meilleur 5 min de tous les temps, 100 à ton record', () => {

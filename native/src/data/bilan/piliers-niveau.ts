@@ -13,8 +13,9 @@
 //                    - régularité : dans une sortie, le 3e effort de 5 min divisé par le 1er (médiane des 10 ; 100 = aucune perte, 0 = 30 % de perte) ;
 //                    - hauteur : le 3e effort (médiane des 10) divisé par ton meilleur 5 min de TOUS LES TEMPS (0 à 50 %, 100 à 100 %) : répéter des efforts
 //                      plus forts compte plus que répéter des efforts faciles. Un « vrai effort » vaut au moins 50 % de ce record (calculé côté base) ;
-//   charge       : encaisser et enchaîner l'entraînement : la charge chronique (CTL) maximale de l'année (100 = ta meilleure année, 0 à 40 % de ta meilleure année :
-//                  une échelle plus douce que les autres piliers, car la charge est une quantité d'entraînement, pas un niveau de performance : passer de 52 à 91 est presque doubler).
+//   charge       : encaisser et enchaîner l'entraînement : la charge chronique (CTL) MOYENNE de l'année, la charge que tu tiens toute l'année et pas le pic d'un seul jour (3 nov. 2026),
+//                  contre la moyenne de tes 3 MEILLEURES années (une seule année gonflée, par exemple par une FTP estimée trop basse, ne fixe plus le « 100 »). 100 = cette référence
+//                  (ou plus), 0 à 40 % de la référence : une échelle plus douce que les autres piliers, car la charge est une quantité d'entraînement, pas un niveau de performance.
 // Une note existe toujours (2 nov. 2026) : quand il manque des sorties pour la juger, la note est calculée avec ce qu'il y a puis RÉDUITE de la part qui manque
 // (2 sorties sur les 3 demandées = 2/3 de la note ; aucune = 0). Chaque note a sa « preuve » (de 0 à 1) : 1 = toutes les sorties demandées sont là. L'écran marque
 // les notes à preuve incomplète. Le score global est la moyenne des 4 notes, preuve incomplète comprise.
@@ -42,6 +43,8 @@ export interface MesuresAnnee {
   repW3: number | null;
   repN: number;
   ctlMax: number | null;
+  /** La charge chronique (CTL) moyenne de l'année : la charge tenue toute l'année. La note de charge se fait dessus ; le pic (`ctlMax`) reste rendu. */
+  ctlMoy: number | null;
   /** Combien de sorties de l'année ont une courbe de puissance (un capteur). */
   nCourbes: number;
   /** Meilleure puissance sur 2 h 30 de l'année. */
@@ -132,7 +135,7 @@ const meilleurDe = (valeurs: (number | null)[]): number => Math.max(0, ...valeur
 export const HAUTEUR_ZERO = 0.5;
 export const noteHauteurDe = (rapport: number): number => Math.max(0, Math.min(100, ((rapport - HAUTEUR_ZERO) / (1 - HAUTEUR_ZERO)) * 100));
 
-/** La charge est notée de 0 (40 % de ta meilleure année ou moins) à 100 (ta meilleure année) : plus douce que `noteDe` (0 à 70 %), voir l'en-tête. */
+/** La charge est notée de 0 (40 % de la référence ou moins) à 100 (la référence : la moyenne de tes 3 meilleures années) : plus douce que `noteDe` (0 à 70 %), voir l'en-tête. */
 export const CHARGE_ZERO = 0.4;
 export const noteChargeDe = (rapport: number): number => Math.max(0, Math.min(100, ((rapport - CHARGE_ZERO) / (1 - CHARGE_ZERO)) * 100));
 
@@ -157,8 +160,10 @@ export function niveauGlobal(mesures: readonly MesuresAnnee[]): NiveauGlobal | n
     w300: meilleurDe(reference.map((m) => m.w300)),
     w1200: meilleurDe(reference.map((m) => m.w1200)),
     w3600: meilleurDe(reference.map((m) => m.w3600)),
-    ctl: meilleurDe(mesures.map((m) => m.ctlMax)),
   };
+  // La référence de charge : la moyenne de la charge moyenne de tes 3 meilleures années (ou de toutes si tu en as moins de 3) : une année aberrante ne fixe pas le « 100 »
+  const chargesAnnuelles = mesures.map((m) => m.ctlMoy).filter((v): v is number => v !== null && v > 0).sort((a, b) => b - a).slice(0, 3);
+  const chargeReference = chargesAnnuelles.length ? chargesAnnuelles.reduce((s, v) => s + v, 0) / chargesAnnuelles.length : 0;
   // Ton meilleur (le plus bas) cœur à la puissance de référence : sur les années à au moins 3 sorties de référence avec FC, sinon sur celles qui en ont au moins une
   const cardios = mesures.filter((m) => m.fcRef !== null && m.fcRef > 0);
   const cardiosFiables = cardios.filter((m) => m.nFc >= SORTIES_MINI_CARDIO);
@@ -201,10 +206,10 @@ export function niveauGlobal(mesures: readonly MesuresAnnee[]): NiveauGlobal | n
     const preuveEndurance = Math.round((POIDS_ENDURANCE.facilite * preuveFacilite + POIDS_ENDURANCE.cardio * preuveCardio
       + POIDS_ENDURANCE.decouplage * preuveDecouplage) * 1e9) / 1e9;
 
-    const charge = m.ctlMax !== null && meilleurs.ctl > 0 ? noteChargeDe(m.ctlMax / meilleurs.ctl) : 0;
+    const charge = m.ctlMoy !== null && chargeReference > 0 ? noteChargeDe(m.ctlMoy / chargeReference) : 0;
 
     const piliers: NotesPiliers = { puissance, endurance: noteEndurance, repetabilite, charge };
-    const preuves: PreuvesPiliers = { puissance: preuvePuissance, endurance: preuveEndurance, repetabilite: preuveRepetabilite, charge: m.ctlMax !== null ? 1 : 0 };
+    const preuves: PreuvesPiliers = { puissance: preuvePuissance, endurance: preuveEndurance, repetabilite: preuveRepetabilite, charge: m.ctlMoy !== null ? 1 : 0 };
     const complets = PILIERS.filter((p) => preuves[p.cle] >= 1).length;
     resultat.push({ an, piliers, preuves, global: Math.round(moyenne(PILIERS.map((p) => piliers[p.cle]))!), nbPiliers: complets, endurance, detailRepetabilite });
   }

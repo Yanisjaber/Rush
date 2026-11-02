@@ -52,7 +52,7 @@ export async function chargerPiliersAnnuels(): Promise<Resultat<MesuresAnnee[]>>
   return {
     data: res.data.map((l) => ({
       an: Number(l.an), w5: nombre(l.w5), w300: nombre(l.w300), w1200: nombre(l.w1200), w3600: nombre(l.w3600),
-      repRatio: nombre(l.rep_ratio), repW3: nombre(l.rep_w3), repN: Number(l.rep_n) || 0, ctlMax: nombre(l.ctl_max),
+      repRatio: nombre(l.rep_ratio), repW3: nombre(l.rep_w3), repN: Number(l.rep_n) || 0, ctlMax: nombre(l.ctl_max), ctlMoy: nombre(l.ctl_moy),
       nCourbes: Number(l.n_courbes) || 0,
       pRef: nombre(l.p_ref), fcRef: nombre(l.fc_ref), nFc: Number(l.n_fc) || 0,
       driftMed: nombre(l.drift_med), nDrift: Number(l.n_drift) || 0,
