@@ -31,7 +31,7 @@ TSS = 100 × hr_sq / ( LTHR² × 3600 )      // seconde par seconde : moyenne de
 
 - `hr_sq` = somme des carrés des fréquences cardiaques, seconde par seconde, et `hr_s` = nombre de secondes avec un cardio (`supabase/functions/_shared/cardio.ts`, rangés dans `power_curve`). Seules les FC entre 40 et 230 comptent.
 - Utilisé quand le flux cardio couvre **au moins 80 %** de la sortie. Sinon : `TSS = durée_h × (FC moyenne / LTHR)² × 100`.
-- `LTHR` : celle du profil, sinon 92 % de la FC max. Pourquoi seconde par seconde : la moyenne des carrés est plus grande que le carré de la moyenne, une sortie par intervalles paraissait trop facile avec la FC moyenne.
+- `LTHR` : celle du profil, sinon 92 % de la FC max du profil, **sinon déduite des sorties** (3 nov. 2026) : 92 % du 98e centile des FC max des sorties (entre 120 et 230 bpm, pour ignorer les capteurs qui déraillent ; il faut au moins 20 sorties avec une FC max). Sans ça, une sortie sans capteur de puissance gardait un TSS tiré de ses watts estimés par Strava, faux et trop haut. Compte de test : LTHR déduite de 181 bpm ; les sorties sans capteur passent de 79 à 61 points par heure en 2022 et de 83 à 64 en 2021, comme les sorties à capteur (57 à 65). C'est la base qui la déduit (`recalc_ftp_tss`, à la migration puis chaque nuit) ; à l'import, `charge.ts` n'a que celle du profil. Pourquoi seconde par seconde : la moyenne des carrés est plus grande que le carré de la moyenne, une sortie par intervalles paraissait trop facile avec la FC moyenne.
 
 **3. Sans rien** (affichage dans l'app, `chargeSeance` dans `native/src/data/bilan/synthese.ts`) : TSS enregistré s'il existe, sinon `durée_h × 45` si la FC moyenne est connue, sinon `durée_h × 35`. Estimation grossière, arrondie.
 
@@ -178,6 +178,7 @@ Le pilier Durabilité (meilleur 5 et 20 min après 2 h 30 ÷ meilleur à froid) 
 - 2026-11-02 : création, ajout du TSS, du CTL/ATL/TSB, du score d'endurance et d'une proposition de score de puissance.
 - 2026-11-02 : TSS aligné sur le code (vrai capteur seulement, cardio seconde par seconde), FTP glissante, série de forme jusqu'à aujourd'hui.
 - 2026-11-02 : pilier Puissance sur une échelle plus exigeante (0 à 20 % sous le meilleur).
+- 2026-11-03 : LTHR déduite des sorties quand le profil n'en a pas : le TSS cardio remplace le TSS tiré des watts estimés (CTL de 2022 : plus gonflé).
 - 2026-11-03 : nettoyage serveur : `rpc_piliers_annuels` sans les colonnes de la durabilité et de la fatigue, `fat20` n'est plus calculée.
 - 2026-11-03 : FTP glissante : fenêtre de ±90 jours (puis ±180, puis ±365) au lieu de ±45 (puis ±90, puis ±180) : la charge de 2022 n'est plus gonflée par une FTP trop basse.
 - 2026-11-03 : les watts estimés par Strava sont retirés de l'app (écartés d'office, rien supprimé en base).
