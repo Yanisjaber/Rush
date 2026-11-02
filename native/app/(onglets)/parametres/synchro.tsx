@@ -61,6 +61,7 @@ export default function SynchroStrava() {
   const reste =
     s.phase === 'fini' ? `Tes ${nb(s.total)} sorties sont importées avec leurs courbes.`
     : s.phase === 'erreur' ? `${nb(faites)} sorties sur ${nb(s.total)}. Rien n'est perdu : ça reprend à la sortie ${nb(faites + 1)}.`
+    : s.phase === 'calcul' && s.courbes > 0 ? `Tes ${nb(s.total)} sorties sont importées. Mise à jour des courbes (nouvelle formule) : il en reste ${nb(s.courbes)}.`
     : s.phase === 'calcul' ? `${nb(faites)} sorties sur ${nb(s.total)}, environ ${formaterDuree(calcul)} de calcul.`
     : s.phase === 'repos' ? `${nb(faites)} sorties sur ${nb(s.total)}.`
     : '';

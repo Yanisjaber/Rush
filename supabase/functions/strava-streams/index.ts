@@ -96,7 +96,11 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
 
     const body = await safeJson(req);
     const limit = clampInt(body?.limit, 1, 200, DEFAULT_LIMIT);
-    const recomputeOnly = !!body?.recompute_only;
+    // courbes_seulement : recalcule les courbes obsolètes d'un lot de sorties depuis leurs flux déjà stockés (aucun appel à Strava) ; le profil de puissance ne se recalcule qu'au dernier lot.
+    // compter_courbes : compte seulement combien de sorties ont une courbe obsolète, sans rien calculer (l'écran de synchro de l'app s'en sert pour savoir s'il doit recalculer).
+    const courbesSeulement = !!body?.courbes_seulement;
+    const compterCourbes = !!body?.compter_courbes;
+    const recomputeOnly = !!body?.recompute_only || courbesSeulement;
     const puissanceSeulement = !!body?.puissance_seulement;
     // profil_a_la_fin : le profil de puissance (et le rattrapage des anciennes courbes) ne se recalcule qu'au dernier lot, pas à chaque appel (l'écran de synchro de l'app).
     // parallele : combien de sorties se téléchargent à la fois (1 = une par une, comme avant ; l'app en demande plusieurs).
@@ -104,6 +108,11 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
     const parallele = clampInt(body?.parallele, 1, 6, 1);
 
     const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    if (compterCourbes) {
+      const obsoletes = await listerCourbesObsoletes(sbAdmin, user.id);
+      return json({ ok: true, power_curve_remaining: obsoletes.length });
+    }
 
     // Profil athlete (pour les metriques : TRIMP, eFTP, W'bal, CHO...).
     const { data: _prof } = await sbAdmin
@@ -222,8 +231,9 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
     // On recalcule le profil par sport à CHAQUE passage : il s'appuie sur les power_curve
     // déjà calculées, donc on obtient un profil partiel qui s'enrichit au fil du backfill
     // (au lieu de n'afficher RIEN tant que tout n'est pas téléchargé).
-    const ppRows = sauterFinitions ? 0 : await recomputePowerProfile(sbAdmin, user.id);
-    const ppSportRows = sauterFinitions ? 0 : await recomputePowerProfileBySport(sbAdmin, user.id);
+    const sauterProfil = sauterFinitions || (courbesSeulement && backfill.remaining > 0); // courbes_seulement : le profil attend la fin du rattrapage
+    const ppRows = sauterProfil ? 0 : await recomputePowerProfile(sbAdmin, user.id);
+    const ppSportRows = sauterProfil ? 0 : await recomputePowerProfileBySport(sbAdmin, user.id);
 
     const moreBackfill = backfill.remaining > 0;
     return json({
@@ -582,8 +592,13 @@ async function recomputePowerProfileBySport(sb: any, userId: string): Promise<nu
 // stockés, pour les activités dont la courbe est absente/obsolète. Lot limité
 // (idempotent, relançable). Renvoie { done, remaining }.
 const POWER_CURVE_VERSION = 8; // 8 : + puissance après fatigue (fat20) et découplage à la puissance normalisée (drift, remplace derive) ; 7 : + charge cardio (hr_s, hr_sq) ; bump quand on change les durées/calculs (force un re-backfill local)
-async function backfillPowerCurves(sb: any, userId: string, limit: number, ath: any): Promise<{ done: number; remaining: number }> {
-  // 1) Repère les activités obsolètes SANS charger les streams (power_curve est léger).
+// Obsolète = pas de power_curve OU version différente (durées étendues), ou courbes de signaux absentes ou d'une autre version.
+// Les deux se recalculent ensemble : le stream n'est décompressé qu'une fois.
+const courbeObsolete = (a: any): boolean => !a.power_curve || a.power_curve.v !== POWER_CURVE_VERSION;
+const signauxObsoletes = (a: any): boolean => !a.signal_curves || a.signal_curves.v !== SIGNAUX_VERSION;
+
+/** Les sorties (les plus récentes d'abord, 2000 au plus) qui ont leur flux stocké mais une courbe obsolète. Ne charge pas les flux (power_curve est léger). */
+async function listerCourbesObsoletes(sb: any, userId: string): Promise<any[]> {
   const { data, error } = await sb
     .from("activities")
     .select("id, sport, power_curve, signal_curves")
@@ -592,11 +607,12 @@ async function backfillPowerCurves(sb: any, userId: string, limit: number, ath: 
     .order("start_date_local", { ascending: false })
     .limit(2000);
   if (error) throw error;
-  // Obsolète = pas de power_curve OU version différente (durées étendues), ou courbes de signaux absentes ou d'une autre version.
-  // Les deux se recalculent ensemble : le stream n'est décompressé qu'une fois.
-  const courbeObsolete = (a: any): boolean => !a.power_curve || a.power_curve.v !== POWER_CURVE_VERSION;
-  const signauxObsoletes = (a: any): boolean => !a.signal_curves || a.signal_curves.v !== SIGNAUX_VERSION;
-  const stale = (data || []).filter((a: any) => courbeObsolete(a) || signauxObsoletes(a));
+  return (data || []).filter((a: any) => courbeObsolete(a) || signauxObsoletes(a));
+}
+
+async function backfillPowerCurves(sb: any, userId: string, limit: number, ath: any): Promise<{ done: number; remaining: number }> {
+  // 1) Repère les activités obsolètes SANS charger les streams (power_curve est léger).
+  const stale = await listerCourbesObsoletes(sb, userId);
   const todo = stale.slice(0, limit);
   let done = 0;
   // Budget de calcul : les Edge Functions coupent à ~2 s de CPU. Mesuré : ~20 ms pour une sortie de 3 h, ~85 ms pour 8 h

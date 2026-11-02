@@ -48,6 +48,46 @@ const messageLot = (statut: number, code: unknown): string => {
   return 'Le calcul s\'est interrompu. Rien n\'est perdu : il reprend là où il s\'est arrêté.';
 };
 
+/** Appelle strava-streams avec la session de l'utilisateur et rend le corps de la réponse (null si la réponse n'est pas lisible). */
+async function appelerStreams(corps: Record<string, unknown>): Promise<Resultat<Record<string, unknown>>> {
+  const { data: s } = await sb.auth.getSession();
+  const jeton = s.session?.access_token;
+  if (!jeton) return { data: null, erreur: messageLot(401, null) };
+  const coupure = new AbortController();
+  const minuteur = setTimeout(() => coupure.abort(), DELAI_LOT_MS);
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/strava-streams`, {
+      method: 'POST',
+      signal: coupure.signal,
+      headers: { Authorization: `Bearer ${jeton}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(corps),
+    });
+    const reponse = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+    if (!res.ok || !reponse) return { data: null, erreur: messageLot(res.ok ? 500 : res.status, reponse?.error) };
+    return { data: reponse, erreur: '' };
+  } catch {
+    return { data: null, erreur: messageLot(0, null) };
+  } finally {
+    clearTimeout(minuteur);
+  }
+}
+
+/** Combien de sorties ont une courbe obsolète (calculée avec une ancienne formule) : la fonction compte seulement, sans rien calculer ni appeler Strava. */
+export async function compterCourbesObsoletes(): Promise<Resultat<number>> {
+  const r = await appelerStreams({ compter_courbes: true });
+  if (!r.data) return { data: null, erreur: r.erreur };
+  const n = entierPositif(r.data.power_curve_remaining);
+  return n === null ? { data: null, erreur: messageLot(500, null) } : { data: n, erreur: '' };
+}
+
+/** Recalcule les courbes obsolètes d'un lot de sorties depuis leurs flux déjà stockés (aucun appel à Strava). Rend combien il en reste. */
+export async function recalculerLotCourbes(): Promise<Resultat<number>> {
+  const r = await appelerStreams({ courbes_seulement: true, limit: 1 });
+  if (!r.data) return { data: null, erreur: r.erreur };
+  const n = entierPositif(r.data.power_curve_remaining);
+  return n === null ? { data: null, erreur: messageLot(500, null) } : { data: n, erreur: '' };
+}
+
 /** Importe le flux et calcule les courbes d'un lot de sorties (les plus récentes d'abord). */
 export async function traiterLotSynchro(limite: number): Promise<Resultat<LotSynchro>> {
   const { data: s } = await sb.auth.getSession();

@@ -22,6 +22,11 @@ Deux options de `strava-streams`, demandées par l'app (le site, lui, garde l'an
 - **`profil_a_la_fin`** : le profil de puissance (`power_profile`, deux recalculs) et le rattrapage des anciennes courbes ne se font qu'au **dernier lot** (quand il ne reste plus de sorties), pas à chaque appel. C'était une attente fixe à chaque lot de 20.
 - **`parallele: 4`** : le serveur télécharge et écrit **quatre sorties à la fois**. Le calcul des courbes reste sur un seul fil (JavaScript), donc seules les attentes (réponse de Strava, écriture en base) se recouvrent : on gagne sur l'attente réseau, pas sur le calcul. Ça ne change pas la limite de Strava (une demande par sortie) ; si Strava refuse (429), les quatre s'arrêtent.
 
+## Recalculer les courbes quand la formule change (depuis le 3 nov. 2026)
+
+Quand on change ce que les courbes contiennent (la version `POWER_CURVE_VERSION` de `strava-streams`, par exemple la 8 : puissance après fatigue et découplage), les sorties déjà importées gardent leur ancienne courbe. Avant, rien ne les recalculait si tout était déjà importé : l'écran affichait « À jour » sans appeler la fonction.
+Maintenant, quand toutes les sorties sont importées (à l'ouverture de l'écran ou à la fin d'un import), l'écran **compte** les courbes obsolètes (`compter_courbes`, sans rien calculer) et, s'il y en a, les **recalcule par lots** (`courbes_seulement`, depuis les flux déjà stockés, **sans appeler Strava**, 30 sorties environ à la fois) en affichant « Mise à jour des courbes : il en reste N ». Le profil de puissance ne se recalcule qu'au dernier lot. Rouvrir l'écran reprend là où il s'était arrêté ; « Réessayer » reprend la bonne étape. Quand il n'en reste plus : « À jour ».
+
 Si tu t'arrêtes en route, le profil de puissance du site reste à son ancien état jusqu'à la fin du calcul (l'app lit les courbes directement, pas ce profil).
 
 ## Le temps

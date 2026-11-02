@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { chargerCompteurSynchro, traiterLotSynchro } from '@/data/acces/api';
+import { chargerCompteurSynchro, compterCourbesObsoletes, recalculerLotCourbes, traiterLotSynchro } from '@/data/acces/api';
 import { SECONDES_PAR_SORTIE_DEFAUT } from '@/data/synchro/estimation';
 import { useAuth } from '@/stores/auth';
 
@@ -18,13 +18,15 @@ export interface EtatSynchro {
   secParSortie: number;
   /** Pourquoi le calcul s'est arrêté (limite Strava, erreur), sinon vide. */
   message: string;
+  /** Sorties dont la courbe est recalculée parce que la formule a changé (0 hors de cette étape). Quand tout est importé, l'écran continue tant qu'il en reste. */
+  courbes: number;
 }
 
 /** Sorties demandées au serveur à chaque lot. */
 export const TAILLE_LOT = 20;
 const ESSAIS_MAX = 3;
 
-const INITIAL: EtatSynchro = { phase: 'chargement', total: 0, faites: 0, secParSortie: SECONDES_PAR_SORTIE_DEFAUT, message: '' };
+const INITIAL: EtatSynchro = { phase: 'chargement', total: 0, faites: 0, secParSortie: SECONDES_PAR_SORTIE_DEFAUT, message: '', courbes: 0 };
 const attendre = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 export function useSynchroStrava(): EtatSynchro & { demarrer: () => void; arreter: () => void } {
@@ -37,12 +39,68 @@ export function useSynchroStrava(): EtatSynchro & { demarrer: () => void; arrete
   const boucle = useRef(0);
 
   const maj = useCallback((m: Partial<EtatSynchro>) => setEtat((e) => ({ ...e, ...m })), []);
+  // L'étape en cours (importer les flux, puis recalculer les courbes obsolètes) : « Réessayer » reprend la bonne. Pendant la 2e, le compteur de sorties est déjà plein :
+  // le relevé du compteur ne doit pas conclure « fini » avant la fin du recalcul.
+  const etape = useRef<'import' | 'courbes'>('import');
+  const courbesEnCours = useRef(false);
+
+  // Les sorties dont la courbe date d'une ancienne formule (version des courbes) : recalculées par lots depuis leurs flux déjà stockés, sans Strava, jusqu'à la fin.
+  const rattraperCourbes = useCallback(async (mon: number): Promise<void> => {
+    const vivant = (): boolean => boucle.current === mon;
+    etape.current = 'courbes';
+    courbesEnCours.current = true;
+    const termine = (m: Partial<EtatSynchro>): void => {
+      courbesEnCours.current = false;
+      maj({ courbes: 0, ...m });
+    };
+    const depart = await compterCourbesObsoletes();
+    if (!vivant()) return;
+    if (depart.data === null) {
+      termine({ phase: 'erreur', message: depart.erreur });
+      return;
+    }
+    let reste = depart.data;
+    if (reste === 0) {
+      etape.current = 'import';
+      termine({ phase: 'fini', message: '' });
+      return;
+    }
+    maj({ phase: 'calcul', message: '', courbes: reste });
+    let echecs = 0;
+    let stagnation = 0;
+    while (vivant() && reste > 0) {
+      const r = await recalculerLotCourbes();
+      if (!vivant()) return;
+      if (r.data === null) {
+        if (++echecs >= ESSAIS_MAX) {
+          termine({ phase: 'erreur', message: r.erreur });
+          return;
+        }
+        await attendre(2000 * echecs);
+        continue;
+      }
+      echecs = 0;
+      if (r.data >= reste && ++stagnation >= ESSAIS_MAX) {
+        termine({ phase: 'erreur', message: 'Le recalcul des courbes n\'avance plus. Réessaie dans un moment.' });
+        return;
+      }
+      if (r.data < reste) stagnation = 0;
+      reste = r.data;
+      maj({ courbes: reste });
+    }
+    if (vivant()) {
+      etape.current = 'import';
+      termine({ phase: 'fini', message: '' });
+    }
+  }, [maj]);
 
   const lancer = useCallback(() => {
     const mon = ++boucle.current;
     const vivant = (): boolean => boucle.current === mon;
+    etape.current = 'import';
+    courbesEnCours.current = false;
     void (async () => {
-      maj({ phase: 'calcul', message: '' });
+      maj({ phase: 'calcul', message: '', courbes: 0 });
       let echecs = 0;
       let stagnation = 0;
       let cumulSecondes = 0;
@@ -73,7 +131,8 @@ export function useSynchroStrava(): EtatSynchro & { demarrer: () => void; arrete
         }
         maj({ faites: Math.max(avant.faites, avant.total - restantes), secParSortie: sec });
         if (restantes === 0) {
-          maj({ phase: 'fini' });
+          // Tout est importé : reste à recalculer les courbes d'une ancienne formule (s'il y en a)
+          void rattraperCourbes(mon);
           return;
         }
         if (limiteAtteinte) {
@@ -88,12 +147,19 @@ export function useSynchroStrava(): EtatSynchro & { demarrer: () => void; arrete
         if (nouvelles > 0) stagnation = 0;
       }
     })();
-  }, [maj]);
+  }, [maj, rattraperCourbes]);
 
   const arreter = useCallback(() => {
     boucle.current++;
+    courbesEnCours.current = false;
     maj({ phase: 'repos', message: '' });
   }, [maj]);
+
+  /** Lancer ou reprendre : l'étape où on s'était arrêté (importer les flux, ou recalculer les courbes). */
+  const demarrer = useCallback(() => {
+    if (etape.current === 'courbes') void rattraperCourbes(++boucle.current);
+    else lancer();
+  }, [lancer, rattraperCourbes]);
 
   // La base fait foi : tant que l'écran est en calcul, à l'arrêt ou en erreur, on relit le compteur toutes les 4 s. L'écran suit même si un lot tarde,
   // ou si un autre appareil (le même compte sur un autre téléphone) fait avancer la synchro ; à 100 %, la boucle s'arrête.
@@ -107,7 +173,7 @@ export function useSynchroStrava(): EtatSynchro & { demarrer: () => void; arrete
         setEtat((e) => {
           if (e.phase !== 'calcul' && e.phase !== 'repos' && e.phase !== 'erreur') return e;
           const plusHaut = Math.max(e.faites, faites);
-          if (total > 0 && plusHaut >= total) {
+          if (total > 0 && plusHaut >= total && !courbesEnCours.current) {
             boucle.current++;
             return { ...e, total, faites: total, phase: 'fini', message: '' };
           }
@@ -134,14 +200,14 @@ export function useSynchroStrava(): EtatSynchro & { demarrer: () => void; arrete
       const { total, faites } = r.data;
       maj({ total, faites });
       if (total === 0) maj({ phase: 'vide' });
-      else if (faites >= total) maj({ phase: 'fini' });
+      else if (faites >= total) void rattraperCourbes(++boucle.current); // tout est importé : « fini » seulement si aucune courbe n'est d'une ancienne formule
       else lancer();
     });
     return () => {
       annule = true;
       boucle.current++; // fermer l'écran arrête le calcul
     };
-  }, [demo, userId, lancer, maj]);
+  }, [demo, userId, lancer, rattraperCourbes, maj]);
 
-  return { ...etat, demarrer: lancer, arreter };
+  return { ...etat, demarrer, arreter };
 }
