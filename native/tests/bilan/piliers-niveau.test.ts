@@ -29,7 +29,7 @@ test('niveauGlobal : les cinq piliers de chaque année et leur moyenne (vraies m
   const par = Object.fromEntries(g.annees.map((a) => [a.an, a]));
   assert.ok(Math.abs(par[2025].global! - 77) <= 2, `2025 : ${par[2025].global}`);
   assert.ok(Math.abs(par[2024].global! - 77) <= 2, `2024 : ${par[2024].global}`);
-  assert.ok(Math.abs(par[2026].global! - 54) <= 2, `2026 : ${par[2026].global}`);
+  assert.ok(Math.abs(par[2026].global! - 51) <= 2, `2026 : ${par[2026].global}`);
   assert.ok(par[2022].global! < par[2023].global!);
   assert.equal(par[2025].nbPiliers, 5);
   // 2022 n'a que 2 sorties à trois vrais efforts : la répétabilité est notée, mais aux 2/3 :
@@ -121,7 +121,7 @@ test('ecartsPiliers : ce qui a bougé depuis l\'année d\'avant, seulement pour 
   assert.deepEqual(e.map((x) => x.cle), ['puissance', 'endurance', 'durabilite', 'repetabilite', 'charge']);
   const charge = e.find((x) => x.cle === 'charge')!;
   assert.ok(charge.ecart < -35, `charge ${charge.ecart}`); // CTL max 90 → 70 : le plus gros recul (99 → 61)
-  assert.equal(e.find((x) => x.cle === 'endurance')!.ecart, 41 - 71); // 2026 : 2 h 30 à 150 W, fatigue moins bien tenue, 3 sorties seulement
+  assert.equal(e.find((x) => x.cle === 'endurance')!.ecart, 27 - 71); // 2026 : 2 h 30 à 150 W et 195 W après fatigue contre un record de 259 W : D et R tombent à 0, seul le découplage reste (3 sorties)
   assert.ok(e.every((x) => x.maintenant - x.avant === x.ecart));
   // Sans année d'avant : rien à comparer
   const seul = niveauGlobal([REEL[3]])!;
@@ -175,6 +175,23 @@ test('noteLineaire : les bornes de la formule d\'endurance (D 85 → 97 %, R 65 
   assert.equal(noteLineaire(2, DECOUPLAGE_ZERO, DECOUPLAGE_CENT), 100);
   assert.equal(noteLineaire(-3, DECOUPLAGE_ZERO, DECOUPLAGE_CENT), 100); // 2e moitié plus efficace : plafonné
   assert.ok(Math.abs(noteLineaire(7, DECOUPLAGE_ZERO, DECOUPLAGE_CENT) - 50) < 1e-9);
+});
+
+test('niveauGlobal : D et R se jugent en watts contre ton meilleur 20 min frais de TOUS LES TEMPS, pas contre celui de l\'année', () => {
+  // 2019 : fatigue très bien tenue en ratio (240 / 250 = 96 %) mais niveau bas ; 2026 : ratio plus faible (270 / 300 = 90 %) mais 30 W plus haut
+  const g = niveauGlobal([
+    mesure(2019, { w1200: 250, fat20: 240, nFat: 5, w9000: 210, ctlMax: 60 }),
+    mesure(2026, { w1200: 300, fat20: 270, nFat: 5, w9000: 240, ctlMax: 80 }),
+  ])!;
+  const a2019 = g.annees.find((a) => a.an === 2019)!.endurance;
+  const a2026 = g.annees.find((a) => a.an === 2026)!.endurance;
+  // Meilleur 20 min de toujours = 300 W (FTP de toujours 285 W) : 2019 : 240 / 300 = 80 % → 0 (le ratio de l'année, 96 %, aurait donné 92) ; 210 / 285 = 73,7 % → 43,4
+  assert.equal(a2019.fatigue, 0);
+  assert.ok(Math.abs(a2019.longue! - 43.42) < 0.05, `${a2019.longue}`);
+  // 2026 : 270 / 300 = 90 % → 41,7 ; 240 / 285 = 84,2 % → 96,1
+  assert.ok(Math.abs(a2026.fatigue! - 41.67) < 0.01, `${a2026.fatigue}`);
+  assert.ok(Math.abs(a2026.longue! - 96.05) < 0.05, `${a2026.longue}`);
+  assert.ok(a2026.fatigue! > a2019.fatigue! && a2026.longue! > a2019.longue!);
 });
 
 test('niveauGlobal : endurance = 100 × (0,20 D + 0,35 R + 0,45 C), chaque lettre aux 3 sorties de preuve ; une lettre sans mesure vaut 0', () => {
