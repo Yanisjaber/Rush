@@ -1,7 +1,7 @@
 // Le niveau global de l'athlète à vélo : cinq piliers, chacun noté de 0 à 100, et leur moyenne. Calculs purs, testés dans tests/bilan/piliers-niveau.test.ts.
-//   puissance    : la force de pointe, moyenne des notes de ton meilleur sprint (5 s), 5, 20 et 60 minutes de l'année (100 = ton meilleur de chaque durée) ;
+//   puissance    : la force de pointe, moyenne des notes de ton meilleur sprint (5 s), 5, 20 et 60 minutes de l'année (100 = ton meilleur de chaque durée, 0 = 20 % en dessous ; les autres piliers gardent 30 %) ;
 //   endurance    : tenir longtemps, moyenne de trois notes (deux demandées ; une seule = la moitié de la note) :
-//                    - puissance longue : meilleurs 2 h et 3 h de l'année contre tes meilleurs de toujours (même échelle que la puissance) ;
+//                    - puissance longue : meilleurs 2 h et 3 h de l'année contre tes meilleurs de toujours (échelle des autres piliers : 0 à 30 % sous ton meilleur) ;
 //                    - dérive cardiaque : médiane de l'année (sorties de 2 h et plus) ; 0 % = 100, 15 % ou plus = 0 ;
 //                    - volume long : heures en sorties de 2 h et plus, contre ta meilleure année (en proportion : la moitié = 50) ;
 //                  (les watts à cardio égal, l'ancien pilier « Endurance », sont devenus la Forme : voir niveau-annees.ts et forme-saison.ts) ;
@@ -123,6 +123,10 @@ export const noteHauteurDe = (rapport: number): number => Math.max(0, Math.min(1
 export const CHARGE_ZERO = 0.4;
 export const noteChargeDe = (rapport: number): number => Math.max(0, Math.min(100, ((rapport - CHARGE_ZERO) / (1 - CHARGE_ZERO)) * 100));
 
+/** La puissance est notée de 0 (20 % sous ton meilleur de toujours ou moins) à 100 (ton meilleur) : plus exigeante que `noteDe` (0 à 30 % sous), qui reste l'échelle des autres piliers. */
+export const PUISSANCE_ZERO = 0.8;
+export const notePuissanceDe = (rapport: number): number => Math.max(0, Math.min(100, ((rapport - PUISSANCE_ZERO) / (1 - PUISSANCE_ZERO)) * 100));
+
 /** La part de preuve : `n` sorties sur les `requis` demandées, entre 0 et 1. */
 export const preuveDe = (n: number, requis: number): number => Math.max(0, Math.min(1, n / requis));
 
@@ -154,7 +158,7 @@ export function niveauGlobal(mesures: readonly MesuresAnnee[]): NiveauGlobal | n
     const preuvePuissance = preuveDe(m.nCourbes, SORTIES_MINI_PUISSANCE);
 
     const durees = [['w5', m.w5], ['w300', m.w300], ['w1200', m.w1200], ['w3600', m.w3600]] as const;
-    const notesPuissance = durees.filter(([cle, v]) => v !== null && v > 0 && meilleurs[cle] > 0).map(([cle, v]) => noteDe((v as number) / meilleurs[cle]));
+    const notesPuissance = durees.filter(([cle, v]) => v !== null && v > 0 && meilleurs[cle] > 0).map(([cle, v]) => notePuissanceDe((v as number) / meilleurs[cle]));
     const puissance = (moyenne(notesPuissance) ?? 0) * preuvePuissance;
 
     const ratiosDurabilite = [m.late300 && m.w300 ? m.late300 / m.w300 : null, m.late1200 && m.w1200 ? m.late1200 / m.w1200 : null].filter((r): r is number => r !== null);

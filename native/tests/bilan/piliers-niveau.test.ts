@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { PointNiveau, SerieNiveau } from '../../src/data/bilan/niveau-annees.ts';
-import { CHARGE_ZERO, ecartsPiliers, HAUTEUR_ZERO, niveauGlobal, noteChargeDe, noteHauteurDe, preuveDe, recordsDeMesures, type MesuresAnnee } from '../../src/data/bilan/piliers-niveau.ts';
+import { CHARGE_ZERO, ecartsPiliers, HAUTEUR_ZERO, niveauGlobal, noteChargeDe, noteHauteurDe, notePuissanceDe, preuveDe, recordsDeMesures, type MesuresAnnee } from '../../src/data/bilan/piliers-niveau.ts';
 
 const mesure = (an: number, extra: Partial<MesuresAnnee> = {}): MesuresAnnee => ({
   an, w5: null, w300: null, w1200: null, w3600: null, late300: null, late1200: null, nLongues: 0, repRatio: null, repW3: null, repN: 0, ctlMax: null, nCourbes: 50, w7200: null, w10800: null, deriveMed: null, nDerive: 0, heuresLongues: 0, ...extra,
@@ -44,7 +44,7 @@ test('niveauGlobal : l\'année actuelle, l\'année d\'avant, le meilleur, le poi
   assert.equal(g.actuel.an, 2026);
   assert.equal(g.precedent!.an, 2025);
   assert.ok(g.meilleur.an === 2025 || g.meilleur.an === 2024);
-  assert.equal(g.fort, 'puissance');
+  assert.equal(g.fort, 'charge'); // la puissance 2026 (≈ 60 avec l'échelle 0 à 20 % sous le record) passe juste sous la charge (61)
   assert.equal(g.faible, 'durabilite'); // 2026 : 6 sorties longues seulement, la durabilité (50) est le plus bas des cinq ; la charge (CTL 69,6 contre 91) est à 61
 });
 
@@ -152,10 +152,10 @@ test('niveauGlobal : une année à moins de 3 sorties avec capteur ne fixe jamai
 });
 
 test('niveauGlobal : sans aucune année fiable, le meilleur de toujours se lit sur les années qui ont au moins une sortie avec capteur', () => {
-  const g = niveauGlobal([mesure(2024, { w5: 800, nCourbes: 2 }), mesure(2025, { w5: 1000, nCourbes: 2 })])!;
-  // 2025 est le meilleur sprint (1000) : 100 × 2/3 ; 2024 : 800/1000 = 80 % → (0,8 − 0,7) / 0,3 = 33,3 × 2/3
+  const g = niveauGlobal([mesure(2024, { w5: 900, nCourbes: 2 }), mesure(2025, { w5: 1000, nCourbes: 2 })])!;
+  // 2025 est le meilleur sprint (1000) : 100 × 2/3 ; 2024 : 900/1000 = 90 % → (0,9 − 0,8) / 0,2 = 50 × 2/3
   assert.ok(Math.abs(g.annees[1].piliers.puissance - 66.67) < 0.01);
-  assert.ok(Math.abs(g.annees[0].piliers.puissance - 22.22) < 0.01);
+  assert.ok(Math.abs(g.annees[0].piliers.puissance - 33.33) < 0.01);
 });
 
 test('recordsDeMesures : sans les années à moins de 3 sorties avec capteur', () => {
@@ -186,6 +186,14 @@ test('niveauGlobal : l\'endurance demande 2 de ses 3 notes ; la dérive demande 
   // Une année à 2 sorties avec capteur : la puissance longue compte, aux 2/3 (comme la puissance)
   const capteur = niveauGlobal([mesure(2025, { w7200: 200, ctlMax: 80, nCourbes: 2, heuresLongues: 100, deriveMed: 3, nDerive: 3 })])!;
   assert.ok(Math.abs(capteur.actuel.endurance.puissanceLongue! - 66.67) < 0.01);
+});
+
+test('notePuissanceDe : 100 au meilleur, 0 à 20 % en dessous, en ligne droite (plus exigeante que les autres piliers : 0 à 30 %)', () => {
+  assert.equal(notePuissanceDe(1), 100);
+  assert.ok(Math.abs(notePuissanceDe(0.9) - 50) < 1e-9);
+  assert.equal(notePuissanceDe(0.8), 0);
+  assert.equal(notePuissanceDe(0.5), 0);
+  assert.equal(notePuissanceDe(1.1), 100);
 });
 
 test('noteChargeDe : 100 au meilleur, 0 à 40 % du meilleur, en ligne droite (plus douce que les autres piliers : 0 à 70 %)', () => {
