@@ -66,10 +66,11 @@ Lecture du TSB : ≥ 25 désentraînement · 5 à 25 frais, prêt à performer �
 Avant, toutes les vieilles sorties recevaient la FTP du jour d'import : la charge des vieilles années était fausse et l'évolution de la FTP plate. Maintenant (`recalc_ftp_tss`, `2026-11-02_ftp_glissante.sql`) :
 
 ```
-FTP d'une sortie = 95 % × meilleur 20 min (clé '1200' de power_curve) des sorties à vrai capteur situées dans les 45 jours avant ET après elle
+FTP d'une sortie = 95 % × meilleur 20 min (clé '1200' de power_curve) des sorties à vrai capteur situées dans les 90 jours avant ET après elle
 ```
 
-- Si la fenêtre ne contient aucun 20 min, elle s'élargit à ±90 puis ±180 jours. Sans rien, la sortie garde sa FTP d'avant.
+- Si la fenêtre ne contient aucun 20 min, elle s'élargit à ±180 puis ±365 jours. Sans rien, la sortie garde sa FTP d'avant.
+- **Pourquoi ±90 jours et pas ±45** (3 nov. 2026) : on ne fait pas un effort maximal de 20 min tous les 45 jours ; quand la fenêtre ne contient que des 20 min tranquilles, la FTP estimée tombe sous la vraie, l'intensité monte et le TSS gonfle. Compte de test, 2022 : FTP médiane 203 W (la meilleure puissance de l'année donne 216 W), 70 points par heure contre 57 à 65 les autres années. Avec ±90 : FTP 219 W et 60 points par heure ; les autres années bougent de 1 à 4 points par heure.
 - Sur les **90 derniers jours**, la FTP saisie dans le profil (`user_profiles.ftp`) l'emporte sur l'estimation.
 - Ignorés pour estimer : watts estimés par Strava, puissances écartées, étapes fusionnées, sports qui ne sont pas du vélo, vélo électrique.
 - Seules les sorties vélo avec vrai capteur et NP voient leur `ftp_at_time` et leur TSS mis à jour.
@@ -177,6 +178,7 @@ Le pilier Durabilité (meilleur 5 et 20 min après 2 h 30 ÷ meilleur à froid) 
 - 2026-11-02 : création, ajout du TSS, du CTL/ATL/TSB, du score d'endurance et d'une proposition de score de puissance.
 - 2026-11-02 : TSS aligné sur le code (vrai capteur seulement, cardio seconde par seconde), FTP glissante, série de forme jusqu'à aujourd'hui.
 - 2026-11-02 : pilier Puissance sur une échelle plus exigeante (0 à 20 % sous le meilleur).
+- 2026-11-03 : FTP glissante : fenêtre de ±90 jours (puis ±180, puis ±365) au lieu de ±45 (puis ±90, puis ±180) : la charge de 2022 n'est plus gonflée par une FTP trop basse.
 - 2026-11-03 : les watts estimés par Strava sont retirés de l'app (écartés d'office, rien supprimé en base).
 - 2026-11-03 : TSS plausible : jamais plus de 200 points par heure ni d'intensité de plus de 1,5 (106 sorties de 2011-2013 à plus de 1000 TSS réparées).
 - 2026-11-03 : capacité de charge : on compte aussi les heures (25 %) et les jours actifs (15 %), annualisés pour l'année en cours ; le CTL moyen fait 60 %.
