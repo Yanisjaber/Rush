@@ -698,6 +698,11 @@ export function piliersAnnuelsDemo(maintenant: Date = new Date()): MesuresAnnee[
       repN: 8 + i * 2,
       ctlMax: 52 + i * 9 - (i === 4 ? 18 : 0),
       nCourbes: 60 + i * 15,
+      w7200: w(3600) ? Math.round(w(3600)! * (0.84 + 0.01 * i)) : null,
+      w10800: w(3600) ? Math.round(w(3600)! * (0.76 + 0.012 * i)) : null,
+      deriveMed: 7.5 - 0.8 * i,
+      nDerive: 10 + i * 3,
+      heuresLongues: 40 + i * 12,
     };
   });
 }

@@ -234,7 +234,7 @@ export default function Bilan() {
   // Les mesures par année (puissances de pointe, durabilité, répétabilité, charge) : une lecture, qui sert au niveau global et au sélecteur de records
   const piliers = usePiliersAnnuels(progresOuvert && niveaux.velo !== null);
   const recordsAnnuels = useMemo(() => recordsDeMesures(piliers.mesures), [piliers.mesures]);
-  const niveauGlobalVelo = useMemo(() => (niveaux.velo ? niveauGlobal(piliers.mesures, niveaux.velo) : null), [niveaux.velo, piliers.mesures]);
+  const niveauGlobalVelo = useMemo(() => (niveaux.velo ? niveauGlobal(piliers.mesures) : null), [niveaux.velo, piliers.mesures]);
   const anneeInutile = onglet === 'progres' && !(niveauGlobalVelo && progres.some(({ prog }) => prog.famille === 'velo'));
 
   return (
