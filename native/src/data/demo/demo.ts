@@ -695,6 +695,7 @@ export function piliersAnnuelsDemo(maintenant: Date = new Date()): MesuresAnnee[
       late1200: w1200 ? Math.round(w1200 * (0.84 + 0.02 * i)) : null,
       nLongues: 14 + i * 3,
       repRatio: 0.9 + 0.01 * (i % 3),
+      repW3: w300 ? Math.round(w300 * (0.66 + 0.03 * i)) : null,
       repN: 8 + i * 2,
       ctlMax: 52 + i * 9 - (i === 4 ? 18 : 0),
       nCourbes: 60 + i * 15,

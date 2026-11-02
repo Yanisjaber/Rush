@@ -6,8 +6,10 @@
 //                    - volume long : heures en sorties de 2 h et plus, contre ta meilleure année (en proportion : la moitié = 50) ;
 //                  (les watts à cardio égal, l'ancien pilier « Endurance », sont devenus la Forme : voir niveau-annees.ts et forme-saison.ts) ;
 //   durabilité   : garder sa puissance fatigué : meilleur 5 et 20 min après 2 h 30 de sortie, divisé par le meilleur à froid (100 = aucune perte, 0 = 30 % de perte) ;
-//   répétabilité : reproduire les efforts : dans une sortie, le 3e effort de 5 min divisé par le 1er (même échelle). Un « vrai effort » vaut au moins 50 % de ton meilleur 5 min
-//                  de TOUS LES TEMPS (calculé côté base) : répéter des efforts faciles ne donne pas de note ;
+//   répétabilité : reproduire les efforts, moyenne de deux notes (2 nov. 2026) :
+//                    - régularité : dans une sortie, le 3e effort de 5 min divisé par le 1er (100 = aucune perte, 0 = 30 % de perte) ;
+//                    - hauteur : le 3e effort (médiane de l'année) divisé par ton meilleur 5 min de TOUS LES TEMPS (0 à 50 %, 100 à 100 %) : répéter des efforts
+//                      plus forts compte plus que répéter des efforts faciles. Un « vrai effort » vaut au moins 50 % de ce record (calculé côté base) ;
 //   charge       : encaisser et enchaîner l'entraînement : la charge chronique (CTL) maximale de l'année (100 = ta meilleure année, 0 à 40 % de ta meilleure année :
 //                  une échelle plus douce que les autres piliers, car la charge est une quantité d'entraînement, pas un niveau de performance : passer de 52 à 91 est presque doubler).
 // Une note existe toujours (2 nov. 2026) : quand il manque des sorties pour la juger, la note est calculée avec ce qu'il y a puis RÉDUITE de la part qui manque
@@ -36,6 +38,8 @@ export interface MesuresAnnee {
   late1200: number | null;
   nLongues: number;
   repRatio: number | null;
+  /** Médiane (en watts) du 3e effort de 5 min des sorties valides : la hauteur des efforts répétés. */
+  repW3: number | null;
   repN: number;
   ctlMax: number | null;
   /** Combien de sorties de l'année ont une courbe de puissance (un capteur). */
@@ -57,6 +61,12 @@ export interface DetailEndurance {
   volume: number;
 }
 
+/** Les deux notes qui font la répétabilité d'une année (null quand la mesure manque ; avant la hauteur, la régularité faisait seule la note). */
+export interface DetailRepetabilite {
+  regularite: number | null;
+  hauteur: number | null;
+}
+
 /** Une note de 0 à 100 par pilier : jamais vide. */
 export type NotesPiliers = Record<PilierCle, number>;
 /** La part de preuve de chaque note, de 0 (rien de mesuré) à 1 (toutes les sorties demandées sont là). */
@@ -73,6 +83,8 @@ export interface NiveauGlobalAnnee {
   nbPiliers: number;
   /** Le détail de la note d'endurance. */
   endurance: DetailEndurance;
+  /** Le détail de la note de répétabilité. */
+  detailRepetabilite: DetailRepetabilite;
 }
 
 export interface NiveauGlobal {
@@ -103,6 +115,10 @@ const moyenne = (v: number[]): number | null => (v.length ? v.reduce((s, x) => s
 /** Les puissances d'une année sont fiables seulement avec assez de sorties avec capteur. */
 const puissanceFiable = (m: MesuresAnnee): boolean => m.nCourbes >= SORTIES_MINI_PUISSANCE;
 const meilleurDe = (valeurs: (number | null)[]): number => Math.max(0, ...valeurs.filter((v): v is number => v !== null));
+/** La hauteur des efforts répétés est notée de 0 (3e effort à 50 % de ton meilleur 5 min de tous les temps, la barre d'un « vrai effort ») à 100 (3e effort égal à ton record). */
+export const HAUTEUR_ZERO = 0.5;
+export const noteHauteurDe = (rapport: number): number => Math.max(0, Math.min(100, ((rapport - HAUTEUR_ZERO) / (1 - HAUTEUR_ZERO)) * 100));
+
 /** La charge est notée de 0 (40 % de ta meilleure année ou moins) à 100 (ta meilleure année) : plus douce que `noteDe` (0 à 70 %), voir l'en-tête. */
 export const CHARGE_ZERO = 0.4;
 export const noteChargeDe = (rapport: number): number => Math.max(0, Math.min(100, ((rapport - CHARGE_ZERO) / (1 - CHARGE_ZERO)) * 100));
@@ -146,7 +162,12 @@ export function niveauGlobal(mesures: readonly MesuresAnnee[]): NiveauGlobal | n
     const durabilite = ratiosDurabilite.length ? noteDe(Math.min(1, moyenne(ratiosDurabilite)!)) * preuveDurabilite : 0;
 
     const preuveRepetabilite = preuveDe(m.repN, SORTIES_MINI_REPETABILITE);
-    const repetabilite = m.repRatio !== null ? noteDe(Math.min(1, m.repRatio)) * preuveRepetabilite : 0;
+    const detailRepetabilite: DetailRepetabilite = {
+      regularite: m.repRatio !== null ? noteDe(Math.min(1, m.repRatio)) : null,
+      hauteur: m.repW3 !== null && meilleurs.w300 > 0 ? noteHauteurDe(m.repW3 / meilleurs.w300) : null,
+    };
+    // Sans la hauteur (une ancienne version de la base ne la rend pas), la régularité fait seule la note
+    const repetabilite = (moyenne([detailRepetabilite.regularite, detailRepetabilite.hauteur].filter((v): v is number => v !== null)) ?? 0) * preuveRepetabilite;
 
     const longues = [['w7200', m.w7200], ['w10800', m.w10800]] as const;
     const notesLongues = longues.filter(([cle, v]) => v !== null && v > 0 && meilleurs[cle] > 0).map(([cle, v]) => noteDe((v as number) / meilleurs[cle]));
@@ -163,7 +184,7 @@ export function niveauGlobal(mesures: readonly MesuresAnnee[]): NiveauGlobal | n
     const piliers: NotesPiliers = { puissance, endurance: (moyenne(notesEndurance) ?? 0) * preuveEndurance, durabilite, repetabilite, charge };
     const preuves: PreuvesPiliers = { puissance: preuvePuissance, endurance: preuveEndurance, durabilite: preuveDurabilite, repetabilite: preuveRepetabilite, charge: m.ctlMax !== null ? 1 : 0 };
     const complets = PILIERS.filter((p) => preuves[p.cle] >= 1).length;
-    resultat.push({ an, piliers, preuves, global: Math.round(moyenne(PILIERS.map((p) => piliers[p.cle]))!), nbPiliers: complets, endurance });
+    resultat.push({ an, piliers, preuves, global: Math.round(moyenne(PILIERS.map((p) => piliers[p.cle]))!), nbPiliers: complets, endurance, detailRepetabilite });
   }
   const actuel = resultat[resultat.length - 1];
   const meilleur = resultat.reduce((m, a) => (a.global > m.global ? a : m));

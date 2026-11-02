@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { PointNiveau, SerieNiveau } from '../../src/data/bilan/niveau-annees.ts';
-import { CHARGE_ZERO, ecartsPiliers, niveauGlobal, noteChargeDe, preuveDe, recordsDeMesures, type MesuresAnnee } from '../../src/data/bilan/piliers-niveau.ts';
+import { CHARGE_ZERO, ecartsPiliers, HAUTEUR_ZERO, niveauGlobal, noteChargeDe, noteHauteurDe, preuveDe, recordsDeMesures, type MesuresAnnee } from '../../src/data/bilan/piliers-niveau.ts';
 
 const mesure = (an: number, extra: Partial<MesuresAnnee> = {}): MesuresAnnee => ({
-  an, w5: null, w300: null, w1200: null, w3600: null, late300: null, late1200: null, nLongues: 0, repRatio: null, repN: 0, ctlMax: null, nCourbes: 50, w7200: null, w10800: null, deriveMed: null, nDerive: 0, heuresLongues: 0, ...extra,
+  an, w5: null, w300: null, w1200: null, w3600: null, late300: null, late1200: null, nLongues: 0, repRatio: null, repW3: null, repN: 0, ctlMax: null, nCourbes: 50, w7200: null, w10800: null, deriveMed: null, nDerive: 0, heuresLongues: 0, ...extra,
 });
 /** Une série d'endurance réduite aux années et à leur score. */
 const endurance = (scores: Record<number, number>): SerieNiveau => {
@@ -14,11 +14,11 @@ const endurance = (scores: Record<number, number>): SerieNiveau => {
 
 // Les vraies mesures du compte de test, 2022 à 2026 (l'endurance : 2 h, 3 h, dérive et volume inventés, plausibles)
 const REEL: MesuresAnnee[] = [
-  mesure(2022, { w5: 939, w300: 265, w1200: 224, w3600: 171, late300: 198, late1200: 162, nLongues: 10, repRatio: 0.907, repN: 2, ctlMax: 52, w7200: 160, w10800: 140, deriveMed: 8, nDerive: 30, heuresLongues: 140 }),
-  mesure(2023, { w5: 1118, w300: 289, w1200: 227, w3600: 201, late300: 255, late1200: 222, nLongues: 46, repRatio: 0.929, repN: 16, ctlMax: 79.6, w7200: 185, w10800: 165, deriveMed: 6, nDerive: 60, heuresLongues: 220 }),
-  mesure(2024, { w5: 1157, w300: 293, w1200: 252, w3600: 201, late300: 254, late1200: 240, nLongues: 57, repRatio: 0.925, repN: 37, ctlMax: 91, w7200: 195, w10800: 175, deriveMed: 5, nDerive: 70, heuresLongues: 250 }),
-  mesure(2025, { w5: 1071, w300: 285, w1200: 259, w3600: 206, late300: 261, late1200: 237, nLongues: 40, repRatio: 0.935, repN: 26, ctlMax: 90.3, w7200: 200, w10800: 180, deriveMed: 4.5, nDerive: 40, heuresLongues: 150 }),
-  mesure(2026, { w5: 1103, w300: 271, w1200: 223, w3600: 194, late300: 242, late1200: 180, nLongues: 6, repRatio: 0.915, repN: 20, ctlMax: 69.6, w7200: 190, w10800: 170, deriveMed: 6, nDerive: 8, heuresLongues: 25 }),
+  mesure(2022, { w5: 939, w300: 265, w1200: 224, w3600: 171, late300: 198, late1200: 162, nLongues: 10, repRatio: 0.907, repW3: 200, repN: 2, ctlMax: 52, w7200: 160, w10800: 140, deriveMed: 8, nDerive: 30, heuresLongues: 140 }),
+  mesure(2023, { w5: 1118, w300: 289, w1200: 227, w3600: 201, late300: 255, late1200: 222, nLongues: 46, repRatio: 0.929, repW3: 215, repN: 16, ctlMax: 79.6, w7200: 185, w10800: 165, deriveMed: 6, nDerive: 60, heuresLongues: 220 }),
+  mesure(2024, { w5: 1157, w300: 293, w1200: 252, w3600: 201, late300: 254, late1200: 240, nLongues: 57, repRatio: 0.925, repW3: 220, repN: 37, ctlMax: 91, w7200: 195, w10800: 175, deriveMed: 5, nDerive: 70, heuresLongues: 250 }),
+  mesure(2025, { w5: 1071, w300: 285, w1200: 259, w3600: 206, late300: 261, late1200: 237, nLongues: 40, repRatio: 0.935, repW3: 190, repN: 26, ctlMax: 90.3, w7200: 200, w10800: 180, deriveMed: 4.5, nDerive: 40, heuresLongues: 150 }),
+  mesure(2026, { w5: 1103, w300: 271, w1200: 223, w3600: 194, late300: 242, late1200: 180, nLongues: 6, repRatio: 0.915, repW3: 205, repN: 20, ctlMax: 69.6, w7200: 190, w10800: 170, deriveMed: 6, nDerive: 8, heuresLongues: 25 }),
 ];
 
 test('niveauGlobal : les cinq piliers de chaque année et leur moyenne (vraies mesures)', () => {
@@ -27,13 +27,14 @@ test('niveauGlobal : les cinq piliers de chaque année et leur moyenne (vraies m
   assert.deepEqual(g.annees.map((a) => a.an), [2022, 2023, 2024, 2025, 2026]);
   // Le score global d'une année est la moyenne de ses piliers mesurés
   const par = Object.fromEntries(g.annees.map((a) => [a.an, a]));
-  assert.ok(Math.abs(par[2025].global! - 83) <= 2, `2025 : ${par[2025].global}`);
-  assert.ok(Math.abs(par[2024].global! - 85) <= 3, `2024 : ${par[2024].global}`);
-  assert.ok(Math.abs(par[2026].global! - 61) <= 3, `2026 : ${par[2026].global}`);
+  assert.ok(Math.abs(par[2025].global! - 79) <= 2, `2025 : ${par[2025].global}`);
+  assert.ok(Math.abs(par[2024].global! - 82) <= 3, `2024 : ${par[2024].global}`);
+  assert.ok(Math.abs(par[2026].global! - 58) <= 3, `2026 : ${par[2026].global}`);
   assert.ok(par[2022].global! < par[2023].global!);
   assert.equal(par[2025].nbPiliers, 5);
-  // 2022 n'a que 2 sorties à trois vrais efforts : la répétabilité est notée, mais aux 2/3 : (0,907 − 0,7) / 0,3 = 69, × 2/3 = 46
-  assert.ok(Math.abs(par[2022].piliers.repetabilite - 46) < 0.5, `${par[2022].piliers.repetabilite}`);
+  // 2022 n'a que 2 sorties à trois vrais efforts : la répétabilité est notée, mais aux 2/3 :
+  // régularité (0,907 − 0,7) / 0,3 = 69 ; hauteur : 200 W sur un record de 293 W = 68,3 % → (0,683 − 0,5) / 0,5 = 36,5 ; moyenne 52,8 ; × 2/3 = 35,2
+  assert.ok(Math.abs(par[2022].piliers.repetabilite - 35.2) < 0.5, `${par[2022].piliers.repetabilite}`);
   assert.ok(Math.abs(par[2022].preuves.repetabilite - 2 / 3) < 1e-9);
   assert.equal(par[2022].nbPiliers, 4); // les quatre autres ont toutes leurs preuves
 });
@@ -51,8 +52,10 @@ test('niveauGlobal : les notes des piliers sont ce qu\'on attend', () => {
   const p = niveauGlobal(REEL)!.annees.find((a) => a.an === 2025)!.piliers;
   // Durabilité 2025 : 261/285 = 91,6 % et 237/259 = 91,5 % → ratio moyen 0,916 → (0,916 − 0,7) / 0,3 = 72
   assert.ok(Math.abs(p.durabilite! - 72) < 1.5, `${p.durabilite}`);
-  // Répétabilité 2025 : 0,935 → 78
-  assert.ok(Math.abs(p.repetabilite! - 78.3) < 1, `${p.repetabilite}`);
+  // Répétabilité 2025 : régularité 0,935 → 78,3 ; hauteur 190 W sur 293 W = 64,8 % → 29,7 ; moyenne des deux : 54,0
+  assert.ok(Math.abs(p.repetabilite - 54) < 0.5, `${p.repetabilite}`);
+  const d = niveauGlobal(REEL)!.annees.find((a) => a.an === 2025)!.detailRepetabilite;
+  assert.ok(Math.abs(d.regularite! - 78.33) < 0.01 && Math.abs(d.hauteur! - 29.69) < 0.01, `${d.regularite} ${d.hauteur}`);
   // Charge 2025 : 90,3 / 91 = 99,2 % → (0,992 − 0,4) / 0,6 = 98,7
   assert.ok(Math.abs(p.charge - 98.72) < 0.1, `${p.charge}`);
   // Puissance : la meilleure durée de chaque année vaut 100 pour son année record ; 2025 : sprint 1071/1157, 5 min 285/293, 20 min 100 %, 60 min 100 %
@@ -196,4 +199,44 @@ test('noteChargeDe : 100 au meilleur, 0 à 40 % du meilleur, en ligne droite (pl
   assert.ok(Math.abs(noteChargeDe(52 / 91) - 28.57) < 0.01);
   const g = niveauGlobal([mesure(2024, { ctlMax: 91 }), mesure(2022, { ctlMax: 52 })])!;
   assert.ok(Math.abs(g.annees[0].piliers.charge - 28.57) < 0.01, `${g.annees[0].piliers.charge}`);
+});
+
+test('noteHauteurDe : 0 à 50 % de ton meilleur 5 min de tous les temps, 100 à ton record', () => {
+  assert.equal(HAUTEUR_ZERO, 0.5);
+  assert.equal(noteHauteurDe(0.5), 0);
+  assert.equal(noteHauteurDe(0.3), 0);
+  assert.ok(Math.abs(noteHauteurDe(0.75) - 50) < 1e-9);
+  assert.equal(noteHauteurDe(1), 100);
+  assert.equal(noteHauteurDe(1.2), 100);
+});
+
+test('niveauGlobal : la répétabilité combine la régularité et la hauteur (le cas 2021 contre 2025)', () => {
+  // 2021 : 3e effort médian 170 W, perte de 8 % (0,917) ; 2025 : 190 W, perte de 12 % (0,883) ; record de 5 min : 293 W (2024)
+  const g = niveauGlobal([
+    mesure(2021, { w300: 232, repRatio: 0.917, repW3: 170, repN: 22 }),
+    mesure(2024, { w300: 293, repRatio: 0.902, repW3: 215, repN: 168 }),
+    mesure(2025, { w300: 285, repRatio: 0.883, repW3: 190, repN: 94 }),
+  ])!;
+  const par = Object.fromEntries(g.annees.map((a) => [a.an, a]));
+  // Régularité seule : 2021 (72,3) battait 2025 (61,0) ; avec la hauteur, 2025 passe devant
+  assert.ok(Math.abs(par[2021].detailRepetabilite.regularite! - 72.33) < 0.01);
+  assert.ok(Math.abs(par[2025].detailRepetabilite.regularite! - 61) < 0.01);
+  assert.ok(Math.abs(par[2021].detailRepetabilite.hauteur! - 16.04) < 0.01, `${par[2021].detailRepetabilite.hauteur}`);
+  assert.ok(Math.abs(par[2025].detailRepetabilite.hauteur! - 29.69) < 0.01, `${par[2025].detailRepetabilite.hauteur}`);
+  assert.ok(Math.abs(par[2021].piliers.repetabilite - 44.19) < 0.05, `${par[2021].piliers.repetabilite}`);
+  assert.ok(Math.abs(par[2025].piliers.repetabilite - 45.35) < 0.05, `${par[2025].piliers.repetabilite}`);
+  assert.ok(par[2025].piliers.repetabilite > par[2021].piliers.repetabilite);
+});
+
+test('niveauGlobal : sans la hauteur (base pas à jour) la régularité fait seule la note ; sans rien, 0', () => {
+  const sans = niveauGlobal([mesure(2025, { w5: 1000, w300: 300, ctlMax: 80, repN: 3, repRatio: 0.9 })])!;
+  assert.equal(sans.actuel.detailRepetabilite.hauteur, null);
+  assert.ok(Math.abs(sans.actuel.piliers.repetabilite - 66.67) < 0.01);
+  // Une hauteur sans record de 5 min à comparer : la régularité seule
+  const sansRecord = niveauGlobal([mesure(2025, { w5: 1000, ctlMax: 80, repN: 3, repRatio: 0.9, repW3: 200 })])!;
+  assert.equal(sansRecord.actuel.detailRepetabilite.hauteur, null);
+  assert.equal(niveauGlobal([mesure(2025, { w5: 1000, ctlMax: 80 })])!.actuel.piliers.repetabilite, 0);
+  // La hauteur compte aussi aux 2/3 avec 2 sorties
+  const deux = niveauGlobal([mesure(2025, { w300: 300, repN: 2, repRatio: 1, repW3: 300 })])!;
+  assert.ok(Math.abs(deux.actuel.piliers.repetabilite - 66.67) < 0.01); // (100 + 100) / 2 × 2/3
 });

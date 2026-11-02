@@ -29,10 +29,10 @@ insert into public.activities (user_id, name, sport, start_date_local, power_cur
  ('00000000-0000-4000-8000-00000000000a', '2013 capteur fou', 'Ride', '2013-06-01 09:00+00', '{"300": 900, "rep_1": 900, "rep_2": 890, "rep_3": 880}');
 SQL
 # Les migrations dans l'ordre (la dernière est celle qu'on teste), deux fois : elles sont relançables
-for f in 2026-11-02_donnees_ecartees 2026-11-02_duree_ecartable 2026-11-02_repetabilite_niveau; do
+for f in 2026-11-02_donnees_ecartees 2026-11-02_duree_ecartable 2026-11-02_repetabilite_niveau 2026-11-02_repetabilite_hauteur; do
   bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/$f.sql
 done
-bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-02_repetabilite_niveau.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-02_repetabilite_hauteur.sql
 bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
 set role authenticated;
 set request.jwt.claim.sub = '00000000-0000-4000-8000-00000000000a';
@@ -41,6 +41,7 @@ select '2017 : des efforts de 75 à 80 W ne sont pas de vrais efforts quand ton 
 union all select '2024 : trois vrais efforts comptent (rapports 0,9 / 0,9 / 0,9), la sortie facile (3e effort 140 W < 150 W) non', (select rep_n = 3 and rep_ratio = 0.9 from rpc_piliers_annuels() where an = 2024)
 union all select '2013 : la sortie au capteur fou (900 W) n''a qu''une sortie à capteur cette année-là : elle ne fixe pas la barre, donc 2024 compte toujours', (select rep_n = 3 from rpc_piliers_annuels() where an = 2024)
 union all select '2013 : sa seule sortie passe la barre (880 W > 150 W) mais ne suffit pas : l''app demande 3 sorties pour noter une année', (select rep_n = 1 from rpc_piliers_annuels() where an = 2013)
+union all select '2024 : rep_w3 est la médiane des 3es efforts valides (270, 261, 252 : 261 W) ; 2017 : aucun effort valide, donc pas de hauteur', (select rep_w3 = 261 from rpc_piliers_annuels() where an = 2024) and (select rep_w3 is null from rpc_piliers_annuels() where an = 2017)
 union all select 'les meilleures puissances par année sont inchangées (2017 : 84 W, 2024 : 300 W)', (select (select w300 from rpc_piliers_annuels() where an = 2017) = 84 and (select w300 from rpc_piliers_annuels() where an = 2024) = 300);
 set request.jwt.claim.sub = '00000000-0000-4000-8000-00000000000b';
 select 'compte B : aucune ligne' as controle, (select count(*) from rpc_piliers_annuels()) = 0 as ok;
