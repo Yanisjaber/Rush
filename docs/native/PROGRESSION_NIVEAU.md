@@ -50,7 +50,7 @@ Une case vide (« — ») ne disait pas pourquoi : 9 000 km dans l'année ne don
 | Puissance | 3 sorties avec capteur dans l'année | 1 sortie : un tiers de la note ; aucune : 0 |
 | Durabilité | 3 sorties de 2 h 30 et plus | 2 sorties : les deux tiers ; aucune : 0 |
 | Répétabilité | 3 sorties avec 3 vrais efforts | idem |
-| Endurance | 2 notes parmi puissance 2-3 h, dérive, volume | le volume seul : la moitié de sa note ; la dérive se réduit elle-même avec moins de 3 sorties |
+| Endurance | chaque lettre (F, H, C, D) a sa preuve (3 sorties) | une lettre sans mesure vaut 0, et sa part de preuve aussi |
 | Charge | la charge de l'année | pas de charge mesurée : 0 |
 
 Sans aucune mesure, la note est 0. Le score global est la moyenne des 5 notes, preuves incomplètes comprises : une année pauvre en données a donc un score bas, jamais vide. Ton « meilleur de toujours » (le 100 de chaque durée) se lit toujours sur les années à 3 sorties avec capteur ou plus, pour qu'un capteur qui a menti en une sortie ne fixe pas la barre (sans aucune année fiable, sur celles qui ont au moins une sortie avec capteur). Dans la carte de chaleur, une note à preuve incomplète a un **contour en pointillés** (et VoiceOver dit « peu de mesures »). Le point fort et le point faible ne se disent que sur les piliers à preuve complète.
