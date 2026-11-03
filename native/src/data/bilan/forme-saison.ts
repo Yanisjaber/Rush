@@ -1,19 +1,16 @@
 // La forme vélo semaine par semaine sur une année civile (graphique « Forme par saison », maquette 7 choisie par Yanis le 2 nov. 2026).
-// Chaque semaine reçoit les watts à cardio égal calculés sur les 6 semaines qui finissent avec elle (fenêtre glissante) :
+// Chaque semaine reçoit les watts à cardio égal calculés sur les 3 dernières sorties mesurées avant la fin de la semaine (quelle que soit leur date) :
 // - la pente du cardio et la correction du home-trainer viennent d'une seule régression sur tout l'historique (une colonne par trimestre, comme la courbe Forme) ;
 // - les watts de chaque sortie de la fenêtre sont ramenés au cardio de référence, puis moyennés ; la marge d'erreur vient de leur dispersion ;
 // - le score utilise la même échelle que la courbe Forme (100 = ton meilleur trimestre, voir niveau-annees.ts).
-// - si les 6 semaines n'ont pas 3 sorties mesurées, la fenêtre passe à 10 semaines ;
-// - une semaine sans assez de sorties mesurées n'est pas un trou : la forme baisse quand on ne roule pas, donc son score est ESTIMÉ à partir de la dernière semaine mesurée et de la baisse de ta charge (CTL) depuis (voir `estimer`) ;
+// - après plus de 6 semaines sans sortie mesurée, ce n'est pas un trou : la forme baisse quand on ne roule pas, donc le score est ESTIMÉ à partir des 3 dernières sorties et de la baisse de ta charge (CTL) depuis la dernière ;
 // À côté : tes heures de vélo de chaque semaine, pour voir si la forme suit le volume.
 
 import { mediane, regression } from '../outils/regression.ts';
 import { lignesVelo, noteDe, noteLibre, SORTIES_MINI_PERIODE, type SerieNiveau, type SortieNiveauVelo } from './niveau-annees.ts';
 
-/** La fenêtre : la semaine et les 5 d'avant. */
+/** Après 6 semaines sans sortie mesurée, la forme n'est plus mesurée mais estimée. */
 export const SEMAINES_FENETRE = 6;
-/** Quand les 6 semaines n'ont pas 3 sorties mesurées, on élargit à 10 semaines avant d'estimer (on roule peut-être, mais sans capteur ou sans cardio). */
-export const SEMAINES_FENETRE_LARGE = 10;
 /** Comme la courbe Forme : la marge d'erreur vaut 1,8 fois l'incertitude. */
 const Z = 1.8;
 /** La forme baisse moitié moins vite que la charge (CTL) quand on arrête : estimation, pas une mesure. */
@@ -129,45 +126,45 @@ export function formeParSemaine(
 
   const ctl = ctlParJour(seances, Math.min(finAn, auj + 1));
   const meilleur = serie.meilleur.niveau;
-  // La dernière semaine mesurée : sa note, sa demi-marge et son CTL de fin de semaine (la référence de l'estimation)
-  let ref: { score: number; demi: number; ctl: number; index: number } | null = null;
+  const triees = [...corrigees].sort((a, b) => a.jour - b.jour);
   const semaines: SemaineForme[] = [];
   for (let i = 0; i < 52; i++) {
     const debut = debutAn + 7 * i;
     if (debut > auj) break;
     const fin = i === 51 ? finAn : debut + 7;
-    const dans = (semaines: number): number[] => corrigees.filter((c) => c.jour >= fin - 7 * semaines && c.jour < fin).map((c) => c.watts);
-    let fenetre = dans(SEMAINES_FENETRE);
-    if (fenetre.length < SORTIES_MINI_PERIODE) fenetre = dans(SEMAINES_FENETRE_LARGE);
     const heures = heuresParSemaine.get(i) ?? 0;
-    if (fenetre.length < SORTIES_MINI_PERIODE) {
-      const ctlSemaine = ctl.get(Math.min(fin, auj + 1) - 1);
-      if (ref && ref.ctl > 0 && ctlSemaine !== undefined) {
-        // Moins de charge qu'à la dernière semaine mesurée : la forme baisse, de moitié moins vite que le CTL
-        const perte = Math.max(0, 1 - ctlSemaine / ref.ctl);
-        const score = ref.score * (1 - PART_BAISSE_FORME * perte);
-        const marge = ref.demi + MARGE_PAR_SEMAINE * (i - ref.index);
-        semaines.push({ index: i, debut: dateDe(debut), score, bas: Math.max(0, score - marge), haut: Math.min(100, score + marge), estimee: true, n: fenetre.length, heures });
-      } else semaines.push({ index: i, debut: dateDe(debut), score: null, bas: null, haut: null, estimee: false, n: fenetre.length, heures });
+    // Les 3 dernières sorties mesurées avant la fin de la semaine, quelle que soit leur date
+    const avant = triees.filter((c) => c.jour < fin);
+    const dernieres = avant.slice(-SORTIES_MINI_PERIODE);
+    if (dernieres.length < SORTIES_MINI_PERIODE) {
+      semaines.push({ index: i, debut: dateDe(debut), score: null, bas: null, haut: null, estimee: false, n: dernieres.length, heures });
       continue;
     }
+    const fenetre = dernieres.map((c) => c.watts);
     const niveau = moyenne(fenetre);
-    const ecartType = Math.sqrt(fenetre.reduce((s, w) => s + (w - niveau) ** 2, 0) / (fenetre.length - 1));
+    const ecartType = Math.sqrt(fenetre.reduce((t, w) => t + (w - niveau) ** 2, 0) / (fenetre.length - 1));
     const demi = (Z * ecartType) / Math.sqrt(fenetre.length);
-    const score = noteDe(niveau / meilleur);
-    const bas = Math.min(noteDe((niveau - demi) / meilleur), score);
-    const haut = Math.max(noteLibre((niveau + demi) / meilleur), score);
-    ref = { score, demi: Math.max(score - bas, haut - score), ctl: ctl.get(Math.min(fin, auj + 1) - 1) ?? 0, index: i };
-    semaines.push({
-      index: i,
-      debut: dateDe(debut),
-      score,
-      bas,
-      haut,
-      estimee: false,
-      n: fenetre.length,
-      heures,
-    });
+    const mesure = noteDe(niveau / meilleur);
+    const mesureBas = Math.min(noteDe((niveau - demi) / meilleur), mesure);
+    const mesureHaut = Math.max(noteLibre((niveau + demi) / meilleur), mesure);
+    // Pas de sortie depuis plus de 6 semaines : on ne mesure plus, on estime. La forme baisse (de moitié moins vite que le CTL) depuis la dernière sortie
+    const derniereSortie = dernieres[dernieres.length - 1].jour;
+    const semainesSansSortie = (fin - 1 - derniereSortie) / 7;
+    const ctlSortie = ctl.get(derniereSortie);
+    const ctlSemaine = ctl.get(Math.min(fin, auj + 1) - 1);
+    if (semainesSansSortie > SEMAINES_FENETRE && ctlSortie && ctlSemaine !== undefined) {
+      const perte = Math.max(0, 1 - ctlSemaine / ctlSortie);
+      const score = mesure * (1 - PART_BAISSE_FORME * perte);
+      const marge = Math.max(mesure - mesureBas, mesureHaut - mesure) + MARGE_PAR_SEMAINE * (semainesSansSortie - SEMAINES_FENETRE);
+      semaines.push({ index: i, debut: dateDe(debut), score, bas: Math.max(0, score - marge), haut: Math.min(100, score + marge), estimee: true, n: fenetre.length, heures });
+      continue;
+    }
+    // Plus de sortie depuis 6 semaines et aucune charge connue : on ne sait rien, la semaine reste vide
+    if (semainesSansSortie > SEMAINES_FENETRE) {
+      semaines.push({ index: i, debut: dateDe(debut), score: null, bas: null, haut: null, estimee: false, n: fenetre.length, heures });
+      continue;
+    }
+    semaines.push({ index: i, debut: dateDe(debut), score: mesure, bas: mesureBas, haut: mesureHaut, estimee: false, n: fenetre.length, heures });
   }
   // La meilleure semaine se cherche parmi les semaines mesurées
   const notees = semaines.filter((s) => s.score !== null && !s.estimee);

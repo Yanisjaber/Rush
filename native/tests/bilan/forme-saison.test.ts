@@ -24,7 +24,7 @@ const HISTORIQUE = [...sorties('2024-01-01', '2024-12-31', () => 150), ...sortie
 const SERIE = niveauxVelo(HISTORIQUE);
 const FIN_ANNEE = new Date(2026, 5, 1);
 
-test('formeParSemaine : 52 semaines, la forme suit le niveau de la fenêtre de 6 semaines, sur l\'échelle de la courbe Forme', () => {
+test('formeParSemaine : 52 semaines, la forme suit le niveau des 3 dernières sorties, sur l\'échelle de la courbe Forme', () => {
   const f = formeParSemaine(HISTORIQUE, [], SERIE, 2025, FIN_ANNEE)!;
   assert.equal(f.semaines.length, 52);
   assert.equal(f.semaines[0].debut, '2025-01-01');
@@ -35,20 +35,21 @@ test('formeParSemaine : 52 semaines, la forme suit le niveau de la fenêtre de 6
   assert.ok(Math.abs(mars.score! - attendu) < 6, `mars ${mars.score} contre ${attendu}`);
   assert.ok(dec.score! > 95, `décembre ${dec.score}`);
   assert.ok(f.semaines[f.meilleure].score! >= dec.score! - 1e-9);
-  // Juillet : la fenêtre mélange les deux niveaux, la forme est entre les deux
+  // Juillet : les 3 dernières sorties sont déjà au nouveau niveau
   const juillet = f.semaines[28];
-  assert.ok(juillet.score! > mars.score! && juillet.score! < dec.score!, `juillet ${juillet.score}`);
-  // La marge entoure le score ; 14 sorties dans 6 semaines (une tous les 3 jours)
+  assert.ok(juillet.score! > mars.score!, `juillet ${juillet.score}`);
+  // La marge entoure le score ; toujours 3 sorties
   for (const s of [mars, juillet, dec]) assert.ok(s.bas! <= s.score! && s.haut! >= s.score!);
-  assert.ok(mars.n >= 13 && mars.n <= 15, `${mars.n}`);
+  assert.equal(mars.n, 3);
 });
 
-test('formeParSemaine : moins de 3 sorties dans la fenêtre = semaine vide ; l\'année en cours s\'arrête à la semaine d\'aujourd\'hui', () => {
-  // Une pause du 1er avril au 30 juin : à la mi-juin même la fenêtre élargie à 10 semaines (depuis le 16 avril) n'a plus rien
-  const avecPause = HISTORIQUE.filter((s) => s.date < '2025-04-01' || s.date >= '2025-07-01');
-  const f = formeParSemaine(avecPause, [], niveauxVelo(avecPause), 2025, FIN_ANNEE)!;
-  assert.equal(f.semaines[24].score, null); // semaine du 18 juin : fenêtres de 6 et 10 semaines vides
-  assert.equal(f.semaines[24].bas, null);
+test('formeParSemaine : avant la 3e sortie de l\'historique = semaine vide ; l\'année en cours s\'arrête à la semaine d\'aujourd\'hui', () => {
+  // Un historique qui commence le 1er mars : avant la 3e sortie, pas de score
+  const tard = HISTORIQUE.filter((x) => x.date >= '2025-03-01');
+  const f = formeParSemaine(tard, [], SERIE, 2025, FIN_ANNEE)!;
+  assert.equal(f.semaines[0].score, null);
+  assert.equal(f.semaines[0].bas, null);
+  assert.equal(f.semaines[0].n, 0);
   assert.ok(f.semaines[15].score !== null);
   // Le 20 mars 2025, l'année n'a que ses 12 premières semaines
   const enCours = formeParSemaine(HISTORIQUE, [], SERIE, 2025, new Date(2025, 2, 20))!;
@@ -112,12 +113,9 @@ test('formeParSemaine : sans assez de sorties la forme est estimée (elle baisse
   assert.equal(sansCharge.semaines[24].estimee, false);
 });
 
-test('formeParSemaine : avec peu de sorties mesurées (mais pas aucune), la fenêtre passe à 10 semaines au lieu d\'estimer', () => {
-  // Une sortie mesurée tous les 20 jours : 6 semaines n'en contiennent que 2, 10 semaines en contiennent 3 ou 4
+test('formeParSemaine : toujours les 3 dernières sorties, même espacées de plusieurs semaines (pas d\'estimation tant qu\'on a roulé il y a moins de 6 semaines)', () => {
+  // Une sortie tous les 20 jours : 6 semaines en contiennent 2, mais les 3 dernières existent toujours
   const rares = sorties('2024-01-01', '2025-12-31', () => 150, 20);
-  const seances: SeanceHeures[] = rares.map((s) => ({ sport: 'Ride', start_date_local: s.date, moving_time: 3600, tss: 60 }));
-  const f = formeParSemaine(rares, seances, niveauxVelo(rares), 2025, FIN_ANNEE)!;
-  const mesurees = f.semaines.filter((s) => s.score !== null && !s.estimee);
-  assert.ok(mesurees.length >= 40, `${mesurees.length} semaines mesurées sur 52`);
-  assert.ok(f.semaines.filter((s) => s.estimee).length <= 4);
+  const f = formeParSemaine(rares, [], niveauxVelo(rares), 2025, FIN_ANNEE)!;
+  assert.ok(f.semaines.every((s) => s.score !== null && !s.estimee && s.n === 3));
 });
