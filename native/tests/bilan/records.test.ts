@@ -157,12 +157,13 @@ test('enAnnee : « cette année » pour l\'année en cours, sinon l\'année écr
   assert.equal(EnAnnee(2025, maintenant), 'En 2025');
 });
 
-test('recordsBasiquesActivites : la course ajoute la vitesse moyenne (5 km ou plus), la muscu n\'a pas de distance', () => {
+test('recordsBasiquesActivites : la course ajoute l\'allure moyenne (5 km ou plus) et la FC moyenne, la muscu n\'a pas de distance', () => {
   const course = [act('2026-03-01', { famille: 'course', distance_km: 10, duree_min: 50, name: 'Footing' }), act('2026-03-02', { famille: 'course', distance_km: 3, duree_min: 10, name: 'Court' })];
   const r = recordsBasiquesActivites(course, 'course');
-  assert.deepEqual(r.map((x) => x.cle), ['duree', 'distance', 'dplus', 'tss', 'vmoy']);
-  assert.equal(r.find((x) => x.cle === 'vmoy')!.top.length, 1); // le 3 km ne compte pas
-  assert.equal(r.find((x) => x.cle === 'vmoy')!.top[0].valeur, 12);
+  assert.deepEqual(r.map((x) => x.cle), ['duree', 'distance', 'dplus', 'tss', 'allure']); // pas de FC dans ces sorties : pas de record de FC
+  assert.equal(r.find((x) => x.cle === 'allure')!.top.length, 1); // le 3 km ne compte pas
+  assert.equal(r.find((x) => x.cle === 'allure')!.top[0].valeur, 12); // 12 km/h = 5'00"/km
+  assert.equal(r.find((x) => x.cle === 'allure')!.unite, 'allure');
   const muscu = recordsBasiquesActivites([act('2026-03-01', { famille: 'muscu', distance_km: 0, d_plus: 0, duree_min: 70, tss: 40 })], 'muscu');
   assert.deepEqual(muscu.map((x) => x.cle), ['duree', 'tss']);
   assert.equal(muscu[0].libelle, 'Plus longue séance');

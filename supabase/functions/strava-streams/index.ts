@@ -35,6 +35,7 @@ import { clesRepetabilite } from "../_shared/repetabilite.ts";
 import { cleDerive } from "../_shared/derive.ts";
 import { cleCardio } from "../_shared/cardio.ts";
 import { calculerSignaux, SIGNAUX_VERSION } from "../_shared/signaux.ts";
+import { calculerSignauxCourse, SIGNAUX_COURSE_VERSION } from "../_shared/signaux-course.ts";
 import { joindreJetons, ecrireRenouvellementStrava } from "../_shared/jetons.ts";
 import { lireQuota, type QuotaStrava } from "../_shared/quota-strava.ts";
 
@@ -47,8 +48,18 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const STRAVA_API = "https://www.strava.com/api/v3";
 const DEFAULT_LIMIT = 40;          // activités traitées par appel
 const STREAM_FORMAT = "gzip+base64+json-array";
-// Les sports dont on calcule les courbes de signaux (FC, cadence, couple, vitesse, VAM, descente) : le vélo seulement.
+// Les sports dont on calcule les courbes de signaux : le vélo (FC, cadence, couple, vitesse, VAM, descente) et la course à pied (meilleurs temps par distance, meilleure distance par durée, FC).
 const SPORTS_VELO = new Set(["Ride", "VirtualRide", "GravelRide", "MountainBikeRide", "EBikeRide"]);
+const SPORTS_COURSE = new Set(["Run", "TrailRun", "VirtualRun"]);
+// La version attendue des courbes de signaux d'une séance : celle de la course pour une course, celle du vélo pour tout le reste (les autres sports n'ont qu'un marqueur).
+const LISTE_COURSE = [...SPORTS_COURSE].join(",");
+const versionSignaux = (sport: string): number => (SPORTS_COURSE.has(sport) ? SIGNAUX_COURSE_VERSION : SIGNAUX_VERSION);
+// Les courbes de signaux d'une séance depuis ses flux : vélo, course, ou un simple marqueur de version.
+function courbesSignaux(sport: string, f: { time?: any[]; watts?: any[]; heartrate?: any[]; cadence?: any[]; velocity_smooth?: any[]; altitude?: any[]; distance?: any[] }): Record<string, any> {
+  if (SPORTS_VELO.has(sport)) return calculerSignaux(f);
+  if (SPORTS_COURSE.has(sport)) return calculerSignauxCourse({ time: f.time, distance: f.distance, heartrate: f.heartrate });
+  return { v: versionSignaux(sport) };
+}
 
 // Durée (secondes) → nom de colonne de power_profile_sport (libellé lisible).
 const SEC_TO_COL: Record<number, string> = {
@@ -188,10 +199,10 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
         powerCurve._v = CLIENT_PC_VERSION; // marqueur attendu par le client (records sans recalcul manuel)
         const metrics = computeMetrics(watts, (raw?.heartrate?.data) || [], (raw?.time?.data) || [], ATH);
         // Les courbes des autres signaux (FC, cadence, couple, vitesse, VAM, descente) : voir _shared/signaux.ts
-        const signalCurves = SPORTS_VELO.has(a.sport) ? calculerSignaux({
+        const signalCurves = courbesSignaux(a.sport, {
           time: raw?.time?.data, watts: raw?.watts?.data, heartrate: raw?.heartrate?.data,
-          cadence: raw?.cadence?.data, velocity_smooth: raw?.velocity_smooth?.data, altitude: raw?.altitude?.data,
-        }) : { v: SIGNAUX_VERSION };
+          cadence: raw?.cadence?.data, velocity_smooth: raw?.velocity_smooth?.data, altitude: raw?.altitude?.data, distance: raw?.distance?.data,
+        });
         const gz = await gzipBase64(JSON.stringify(streamArray));
 
         const { error: upErr } = await sbAdmin.from("activities").update({
@@ -597,7 +608,7 @@ const POWER_CURVE_VERSION = 8; // 8 : + découplage à la puissance normalisée 
 // Les clés des sorties plus courtes (5 s, 5 min, 20 min, 60 min…) n'ont pas changé : leur ancienne courbe reste valable. Une sortie sans aucune courbe est toujours calculée.
 const DUREE_MINI_RECALCUL_S = 5400;
 const courbeObsolete = (a: any): boolean => a.pv == null || (Number(a.pv) !== POWER_CURVE_VERSION && Number(a.moving_time ?? 0) >= DUREE_MINI_RECALCUL_S);
-const signauxObsoletes = (a: any): boolean => a.sv == null || Number(a.sv) !== SIGNAUX_VERSION;
+const signauxObsoletes = (a: any): boolean => a.sv == null || Number(a.sv) !== versionSignaux(a.sport);
 
 /** Les sorties (les plus récentes d'abord, 2000 au plus) qui ont leur flux stocké mais une courbe obsolète. Ne charge ni les flux ni les courbes : seulement leur version. */
 async function listerCourbesObsoletes(sb: any, userId: string): Promise<any[]> {
@@ -608,7 +619,7 @@ async function listerCourbesObsoletes(sb: any, userId: string): Promise<any[]> {
     .not("streams_gz", "is", null)
     // Le filtre est fait par la base (pas sur les 2000 plus récentes seulement : un compte de 3000 sorties n'aurait jamais vu les plus anciennes).
     // Mêmes règles que courbeObsolete et signauxObsoletes ci-dessus.
-    .or(`power_curve.is.null,power_curve->>v.is.null,signal_curves.is.null,signal_curves->>v.neq.${SIGNAUX_VERSION},and(moving_time.gte.${DUREE_MINI_RECALCUL_S},power_curve->>v.neq.${POWER_CURVE_VERSION})`)
+    .or(`power_curve.is.null,power_curve->>v.is.null,signal_curves.is.null,and(sport.in.(${LISTE_COURSE}),signal_curves->>v.neq.${SIGNAUX_COURSE_VERSION}),and(sport.not.in.(${LISTE_COURSE}),signal_curves->>v.neq.${SIGNAUX_VERSION}),and(moving_time.gte.${DUREE_MINI_RECALCUL_S},power_curve->>v.neq.${POWER_CURVE_VERSION})`)
     .order("start_date_local", { ascending: false })
     .limit(2000);
   if (error) throw error;
@@ -631,7 +642,7 @@ async function backfillPowerCurves(sb: any, userId: string, limit: number, ath: 
       // 2) Charge le stream de CETTE activité uniquement (évite un gros payload global).
       const { data: row } = await sb.from("activities").select("streams_gz").eq("id", a.id).maybeSingle();
       if (!row || !row.streams_gz) {
-        await sb.from("activities").update({ power_curve: { v: POWER_CURVE_VERSION }, signal_curves: { v: SIGNAUX_VERSION } }).eq("id", a.id);
+        await sb.from("activities").update({ power_curve: { v: POWER_CURVE_VERSION }, signal_curves: { v: versionSignaux(a.sport) } }).eq("id", a.id);
         done++; continue;
       }
       const jsonStr = await gunzipBase64(row.streams_gz);
@@ -649,10 +660,10 @@ async function backfillPowerCurves(sb: any, userId: string, limit: number, ath: 
         maj.metrics = computeMetrics(watts, streamData(arr, "heartrate"), streamData(arr, "time"), ath);
       }
       if (signauxObsoletes(a)) {
-        maj.signal_curves = SPORTS_VELO.has(a.sport) ? calculerSignaux({
+        maj.signal_curves = courbesSignaux(a.sport, {
           time: streamData(arr, "time"), watts: streamData(arr, "watts"), heartrate: streamData(arr, "heartrate"),
-          cadence: streamData(arr, "cadence"), velocity_smooth: streamData(arr, "velocity_smooth"), altitude: streamData(arr, "altitude"),
-        }) : { v: SIGNAUX_VERSION };
+          cadence: streamData(arr, "cadence"), velocity_smooth: streamData(arr, "velocity_smooth"), altitude: streamData(arr, "altitude"), distance: streamData(arr, "distance"),
+        });
       }
       await sb.from("activities").update(maj).eq("id", a.id);
       done++;

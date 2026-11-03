@@ -15,6 +15,8 @@ interface Props {
   unite: string;
   /** Ce qu'on écrit sous la valeur de la première (« 3,8 W/kg ») ; rien sinon. */
   sousPremiere: string | null;
+  /** L'écart écrit sous la valeur des suivantes (par défaut « −12 W ») : la course écrit un écart d'allure (« +0'12"/km »). */
+  ecart?: (meilleure: number, valeur: number) => string;
   onOuvrir: (id: string) => void;
 }
 
@@ -25,7 +27,7 @@ const LIGNES_VISIBLES = 5;
 /** « Lundi 6 avril 2026 » : avec l'année, qui compte en « Tous temps ». */
 const dateAnnee = (iso: string): string => `${formatDateLongue(iso)} ${iso.slice(0, 4)}`;
 
-export function PodiumEfforts({ titre, entrees, unite, sousPremiere, onOuvrir }: Props) {
+export function PodiumEfforts({ titre, entrees, unite, sousPremiere, ecart, onOuvrir }: Props) {
   const p = usePalette();
   const meilleure = entrees[0]?.valeur ?? 0;
   return (
@@ -35,7 +37,7 @@ export function PodiumEfforts({ titre, entrees, unite, sousPremiere, onOuvrir }:
       </Text>
       <ScrollView nestedScrollEnabled showsVerticalScrollIndicator style={styles.zone} contentContainerStyle={styles.contenu} accessibilityLabel={`${titre}, ${entrees.length} séances`}>
         {entrees.map((e, i) => {
-          const sous = i === 0 ? sousPremiere : `−${texteRecordSimple(meilleure - e.valeur, unite)}`;
+          const sous = i === 0 ? sousPremiere : ecart ? ecart(meilleure, e.valeur) : `−${texteRecordSimple(meilleure - e.valeur, unite)}`;
           const etiquette = `${i + 1}, ${e.nom}, ${dateAnnee(e.iso)}, ${texteRecordSimple(e.valeur, unite)}${i > 0 ? `, ${sous} sur la première` : ''}`;
           return (
             <Pressable key={`${e.id}-${i}`} onPress={() => onOuvrir(e.id)} accessibilityRole="button" accessibilityLabel={`${etiquette}. Ouvrir la séance`} style={styles.ligne}>

@@ -221,7 +221,7 @@ const DISTANCE_MIN_VITESSE_COURSE = 5;
 
 /**
  * Les records basiques d'un autre sport (course, natation, musculation, Hyrox…), calculés sur les activités déjà chargées : la plus longue séance, la plus grande distance,
- * le plus gros dénivelé, la plus grosse charge, et la vitesse moyenne en course. Les meilleurs temps sur une distance (5 km, 10 km) viendront avec les courbes calculées côté serveur.
+ * le plus gros dénivelé, la plus grosse charge, et en course l'allure moyenne et la FC moyenne. Les meilleurs temps sur une distance (5 km, 10 km) viendront avec les courbes calculées côté serveur.
  */
 export function recordsBasiquesActivites(acts: ActiviteBilan[], famille: string): RecordTop[] {
   const entree = (a: ActiviteBilan, valeur: number): EntreeRecord => ({ valeur, nom: nomSeance(a), iso: a.iso, id: a.id });
@@ -233,7 +233,9 @@ export function recordsBasiquesActivites(acts: ActiviteBilan[], famille: string)
     fabrique('tss', 'Plus grosse charge', 'TSS', acts.map((a) => entree(a, a.tss))),
   ];
   if (famille === 'course') {
-    records.push(fabrique('vmoy', 'Vitesse moyenne', 'km/h', acts.filter((a) => a.distance_km >= DISTANCE_MIN_VITESSE_COURSE && a.duree_min > 0).map((a) => entree(a, a.distance_km / (a.duree_min / 60)))));
+    // L'allure moyenne se classe par vitesse (la plus haute gagne) et s'écrit en minutes par km ; la FC moyenne comme sur le vélo (30 minutes ou plus, valeurs de capteur crédibles)
+    records.push(fabrique('allure', 'Allure moyenne', 'allure', acts.filter((a) => a.distance_km >= DISTANCE_MIN_VITESSE_COURSE && a.duree_min > 0).map((a) => entree(a, a.distance_km / (a.duree_min / 60)))));
+    records.push(fabrique('fcmoy', 'Plus grosse FC moyenne', 'bpm', acts.filter((a) => a.duree_min >= DUREE_MIN_MOYENNE && (a.fc ?? 0) > 0 && (a.fc ?? 0) <= FC_MOYENNE_MAX_CREDIBLE).map((a) => entree(a, a.fc ?? 0))));
   }
   return records.filter((r) => r.top.length);
 }

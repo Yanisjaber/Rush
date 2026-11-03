@@ -1,6 +1,7 @@
 import { sb } from '../supabase';
 import { courbeDeLignes, sortieVeloDeLigne, type CleSignal, type EntreeCourbe, type LigneCourbe, type LigneVelo, type PointCourbe, type SortieVelo } from '../../bilan/records.ts';
 import type { MesuresAnnee } from '../../bilan/piliers-niveau.ts';
+import { courbeCourseDeLignes, type CleCourbeCourse, type LigneCourbeCourse } from '../../bilan/records-course.ts';
 import { resultat, type Resultat } from './commun';
 
 // Les sorties à vélo avec leurs colonnes de records basiques, et la courbe de puissance : les fonctions SQL rpc_sorties_velo et rpc_courbe_puissance ne renvoient que le compte connecté.
@@ -41,6 +42,21 @@ export async function chargerPodium(signal: CleSignal, duree: number, annee?: nu
   if (!res.data) return { data: null, erreur: res.erreur };
   const lignes: LigneCourbe[] = res.data.map((l) => ({ ...l, valeur: Number(l.valeur ?? l.watts) }));
   return { data: courbeDeLignes(lignes)[0]?.top ?? [], erreur: '' };
+}
+
+/** La courbe de la course à pied (allure par distance, distance par durée, FC par durée) : trois meilleures séances par point, d'une année ou de tout l'historique. */
+export async function chargerCourbeCourse(signal: CleCourbeCourse, annee?: number): Promise<Resultat<PointCourbe[]>> {
+  const r = await sb.rpc('rpc_courbe_course', { p_signal: signal, ...(annee ? { p_debut: `${annee}-01-01`, p_fin: `${annee}-12-31` } : {}) });
+  const res = resultat<LigneCourbeCourse[]>(r, 'Impossible de charger cette courbe.');
+  return res.data ? { data: courbeCourseDeLignes(signal, res.data), erreur: '' } : { data: null, erreur: res.erreur };
+}
+
+/** Le classement d'une distance (ou d'une durée) de la course : jusqu'à `n` séances (30 par défaut), la meilleure d'abord. */
+export async function chargerPodiumCourse(signal: CleCourbeCourse, cle: number, annee?: number, n = 30): Promise<Resultat<EntreeCourbe[]>> {
+  const dates = annee ? { p_debut: `${annee}-01-01`, p_fin: `${annee}-12-31` } : {};
+  const r = await sb.rpc('rpc_courbe_course', { p_signal: signal, ...dates, p_cle: cle, p_n: n });
+  const res = resultat<LigneCourbeCourse[]>(r, 'Impossible de charger le classement.');
+  return res.data ? { data: courbeCourseDeLignes(signal, res.data)[0]?.top ?? [], erreur: '' } : { data: null, erreur: res.erreur };
 }
 
 /** Les mesures par année du niveau global du vélo (puissances de pointe, répétabilité, charge) : la fonction SQL rpc_piliers_annuels, une ligne par année. */

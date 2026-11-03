@@ -9,6 +9,7 @@ import { BarresMois } from '@/components/graphes/BarresMois';
 import { CourbeSemaine } from '@/components/graphes/CourbeSemaine';
 import { OngletRecordsSport } from '@/components/bilan/OngletRecordsSport';
 import { OngletRecordsTous } from '@/components/bilan/OngletRecordsTous';
+import { OngletRecordsCourse } from '@/components/bilan/OngletRecordsCourse';
 import { OngletRecordsMuscu } from '@/components/bilan/OngletRecordsMuscu';
 import { OngletRecordsVelo } from '@/components/bilan/OngletRecordsVelo';
 import { RegulariteMois } from '@/components/graphes/RegulariteMois';
@@ -587,6 +588,14 @@ export default function Bilan() {
                   courbeTout={courbeTout}
                   chargement={chargementVelo}
                   erreur={erreurVelo}
+                  onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
+                />
+              ) : filtre === 'course' ? (
+                <OngletRecordsCourse
+                  portee={toutTemps ? 'tout' : 'annee'}
+                  toutes={filtrees}
+                  annee={anneeRecords}
+                  maintenant={maintenant}
                   onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
                 />
               ) : filtre === 'muscu' ? (

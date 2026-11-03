@@ -19,12 +19,25 @@ interface Props {
   dureeMin?: number;
   /** L'axe des valeurs ne part pas de zéro (la FC, la cadence) : sinon la courbe, qui reste entre 130 et 190, serait écrasée en haut. */
   serre?: boolean;
+  /** L'axe horizontal quand ce n'est pas une durée de 1 s à 5 h (la course : des distances de 400 m au marathon) : ses bornes, les repères écrits sous l'axe, les points marqués et la façon d'écrire une position. */
+  axe?: AxeCourbe;
+  /** Une valeur de l'axe vertical écrite sur ses repères (par défaut un nombre : « 357 ») ; la course y écrit des allures. */
+  formaterAxe?: (v: number) => string;
   /** La durée touchée (indice dans `courbe`), ou null. */
   selection: number | null;
   onSelection: (index: number | null) => void;
   couleur: string;
   /** Phrase lue par VoiceOver à la place du dessin. */
   etiquette: string;
+}
+
+/** Un axe horizontal logarithmique : de `min` à `max`, avec ses repères écrits, les points marqués d'une valeur (`cles`) et la façon d'écrire une position (« 5 km », « 20 min »). */
+export interface AxeCourbe {
+  min: number;
+  max: number;
+  reperes: [number, string][];
+  cles: number[];
+  texte: (v: number) => string;
 }
 
 const BULLE_H = 22;
@@ -45,11 +58,16 @@ const REPERES_DUREE: [number, string][] = [
   [18000, '5 h'],
 ];
 
-export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, etiquette, formater, dureeMin = DUREE_MIN, serre = false }: Props) {
+export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, etiquette, formater, dureeMin = DUREE_MIN, serre = false, axe, formaterAxe }: Props) {
   const p = usePalette();
-  const x = (secondes: number) => GAUCHE + ((Math.log(secondes) - Math.log(dureeMin)) / (Math.log(DUREE_MAX) - Math.log(dureeMin))) * (LARGEUR - GAUCHE - DROITE);
+  const mini = axe ? axe.min : dureeMin;
+  const maxi = axe ? axe.max : DUREE_MAX;
+  const cles = axe ? axe.cles : DUREES_CLES;
+  const texteX = axe ? axe.texte : texteDuree;
+  const texteAxeY = formaterAxe ?? ((v: number) => formatNum(v, 0));
+  const x = (secondes: number) => GAUCHE + ((Math.log(secondes) - Math.log(mini)) / (Math.log(maxi) - Math.log(mini))) * (LARGEUR - GAUCHE - DROITE);
   /** La durée sous un point de l'axe (le contraire de x), pour le toucher. */
-  const secondesDeX = (px: number) => Math.exp(Math.log(dureeMin) + ((px - GAUCHE) / (LARGEUR - GAUCHE - DROITE)) * (Math.log(DUREE_MAX) - Math.log(dureeMin)));
+  const secondesDeX = (px: number) => Math.exp(Math.log(mini) + ((px - GAUCHE) / (LARGEUR - GAUCHE - DROITE)) * (Math.log(maxi) - Math.log(mini)));
   const meilleurs = (c: PointCourbe[]) => c.filter((pt) => pt.top.length).map((pt) => ({ duree: pt.duree, valeur: pt.top[0].valeur }));
   const a = meilleurs(courbe);
   const b = autre ? meilleurs(autre) : [];
@@ -62,9 +80,9 @@ export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, 
   const trace = (pts: { duree: number; valeur: number }[]) => pts.map((pt, i) => `${i ? 'L' : 'M'}${x(pt.duree).toFixed(1)} ${y(pt.valeur).toFixed(1)}`).join(' ');
   const reperes = pas > 0 ? [pas, 2 * pas, 3 * pas].map((k) => plancher + k) : [];
   // Les durées écrites sous l'axe ; quand l'axe commence à 30 s, la première est « 30 s »
-  const reperesDuree: [number, string][] = [...(dureeMin >= 30 ? ([[30, '30 s']] as [number, string][]) : []), ...REPERES_DUREE.filter(([s]) => s >= dureeMin && !(dureeMin >= 30 && s === 30))];
+  const reperesDuree: [number, string][] = axe ? axe.reperes : [...(dureeMin >= 30 ? ([[30, '30 s']] as [number, string][]) : []), ...REPERES_DUREE.filter(([s]) => s >= dureeMin && !(dureeMin >= 30 && s === 30))];
   const choisi = selection != null ? courbe[selection] : null;
-  const texteBulle = choisi && choisi.top.length ? `${texteDuree(choisi.duree)} · ${formater(choisi.top[0].valeur)}` : '';
+  const texteBulle = choisi && choisi.top.length ? `${texteX(choisi.duree)} · ${formater(choisi.top[0].valeur)}` : '';
   const bulleL = texteBulle.length * 6.2 + 18;
   const pointX = choisi ? x(choisi.duree) : 0;
   const pointY = choisi && choisi.top.length ? y(choisi.top[0].valeur) : 0;
@@ -79,7 +97,7 @@ export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, 
   // Les valeurs de repère qu'on écrit : une valeur se cache quand elle toucherait la bulle, son point, ou une valeur déjà écrite (la bulle prime)
   const ecrites: number[] = [];
   const cadresEcrits: { g: number; d: number; h: number; b: number }[] = [];
-  for (const pt of a.filter((q) => DUREES_CLES.includes(q.duree) && q.duree !== choisi?.duree)) {
+  for (const pt of a.filter((q) => cles.includes(q.duree) && q.duree !== choisi?.duree)) {
     const r = cadre(pt);
     const gene = (choisi ? touche(r, bulleX, bulleY, bulleX + bulleL, bulleY + BULLE_H) || touche(r, pointX - 8, pointY - 8, pointX + 8, pointY + 8) : false) || cadresEcrits.some((c) => touche(r, c.g, c.h, c.d, c.b));
     if (!gene) {
@@ -94,7 +112,7 @@ export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, 
       ))}
       {[plancher, ...reperes].map((w) => (
         <TexteSvg key={`v${w}`} x={GAUCHE - 8} y={y(w) + 3} fontSize={9.5} fontFamily={police.texte400} fill={p.texteMuet} textAnchor="end">
-          {formatNum(w, 0)}
+          {texteAxeY(w)}
         </TexteSvg>
       ))}
       {reperesDuree.map(([s, t]) => (
@@ -107,7 +125,7 @@ export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, 
       {a.length ? <Path d={trace(a)} fill="none" stroke={couleur} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" /> : null}
       {/* Les durées clés : un point creux avec sa valeur (sauf près de la durée touchée, où la bulle parle) */}
       {a
-        .filter((pt) => DUREES_CLES.includes(pt.duree) && pt.duree !== choisi?.duree)
+        .filter((pt) => cles.includes(pt.duree) && pt.duree !== choisi?.duree)
         .map((pt) => (
           <Fragment key={`cle${pt.duree}`}>
             <Circle cx={x(pt.duree)} cy={y(pt.valeur)} r={3.5} fill={p.surface} stroke={couleur} strokeWidth={2} />
