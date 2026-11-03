@@ -24,10 +24,10 @@ import { TraitTirets } from '@/components/graphes/TraitTirets';
 import { ProgresSport } from '@/components/graphes/ProgresSport';
 import type { IconeOnglet } from '@/components/menus/OngletsIcones.types';
 import {
-  activitesAnnee, anneesDisponibles, avancement, cumulParAnnee, valeursParMois, moyennesParJourSemaine, semainesDeLAnnee, mesureParSemaine, MESURES_CUMUL, NOM_SPORT_BILAN, normaliser,
+  activitesAnnee, anneesDisponibles, avancement, avecForce, cumulParAnnee, valeursParMois, moyennesParJourSemaine, semainesDeLAnnee, mesureParSemaine, MESURES_CUMUL, mesureDef, mesureValide, mesuresDuSport, NOM_SPORT_BILAN, normaliser,
   regulariteAnnee, repartitionSport, sommer, familleBilanDuFiltre, decimalesObjectif, phraseVerdict, type MetriqueCumul,
 } from '@/data/bilan/bilan';
-import { formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
+import { formatAllure, formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
 import { nomDuType } from '@/data/sports/catalogue-sports';
 import { formeParSemaine } from '@/data/bilan/forme-saison';
 import { niveauxCourse, niveauxVelo } from '@/data/bilan/niveau-annees';
@@ -104,17 +104,17 @@ export default function Bilan() {
   const [selSemaine, setSelSemaine] = useState<number | null>(null);
   const [selJourSemaine, setSelJourSemaine] = useState<number | null>(null);
   const [selJour, setSelJour] = useState<{ mois: number; jour: number } | null>(null);
-  const metrique = mesures.cumul;
   const mesureRepartition = mesures.repartition;
   const { brutes, objectifs, chargement, erreur, pret, actualisation, recharger } = useDonneesBilan();
   const annee = anneeChoisie;
   // Progrès : l'historique long et le carnet de force ne se chargent qu'à la première ouverture de l'onglet
   const progresOuvert = onglet === 'progres';
   const historique = useHistoriqueProgression(brutes, progresOuvert);
-  const carnet = useSeriesForceProgression(progresOuvert);
+  // Le carnet de force sert au Progrès, et aux séries / répétitions / tonnage de la musculation sur tous les onglets
+  const carnet = useSeriesForceProgression(progresOuvert || filtre === 'muscu');
   const { hrMax } = useReferences(); // la même FC max que le widget de l'accueil : sinon les deux ne diraient pas la même chose
 
-  const toutes = useMemo(() => brutes.map(normaliser), [brutes]);
+  const toutes = useMemo(() => avecForce(brutes.map(normaliser), carnet.series), [brutes, carnet.series]);
   const annees = useMemo(() => anneesDisponibles(toutes, maintenant), [toutes, maintenant]);
   // Le filtre global de sport concerne les chiffres, records et graphiques ; pas les objectifs annuels
   const filtrees = useMemo(() => (filtre === 'tout' ? toutes : toutes.filter((a) => a.famille === filtre)), [toutes, filtre]);
@@ -128,11 +128,15 @@ export default function Bilan() {
       : courant.distance > 0
         ? { val: formatNum(courant.distance, 0), unite: 'km' }
         : { val: formatNum(courant.seances, 0), unite: courant.seances > 1 ? 'séances' : 'séance' };
-  const colonnes = [
-    courant.heures > 0 ? { cle: 'heures', libelle: 'Temps', val: formatNum(courant.heures, 0), unite: 'h' } : null,
-    courant.distance > 0 && courant.seances > 0 ? { cle: 'seances', libelle: 'Séances', val: formatNum(courant.seances, 0), unite: '' } : null,
-    courant.tss > 0 ? { cle: 'effort', libelle: 'Charge', val: formatNum(courant.tss, 0), unite: '' } : null,
-  ].filter((x): x is { cle: string; libelle: string; val: string; unite: string } => !!x);
+  // Les trois chiffres sous le grand : le temps, puis ce qui compte pour le sport (course : l'allure et la FC ; musculation : les séries et le tonnage ; sinon les séances et la charge)
+  const temps = courant.heures > 0 ? { cle: 'heures', libelle: 'Temps', val: formatNum(courant.heures, 0), unite: 'h' } : null;
+  const colonnes = (
+    filtre === 'course'
+      ? [temps, courant.allure > 0 ? { cle: 'allure', libelle: 'Allure', val: formatAllure(courant.allure * 60).replace('/km', ''), unite: '/km' } : null, courant.fc > 0 ? { cle: 'fc', libelle: 'FC moyenne', val: formatNum(courant.fc, 0), unite: 'bpm' } : null]
+      : filtre === 'muscu'
+        ? [temps, courant.series > 0 ? { cle: 'series', libelle: 'Séries', val: formatNum(courant.series, 0), unite: '' } : null, courant.tonnage > 0 ? { cle: 'tonnage', libelle: 'Tonnage', val: formatNum(courant.tonnage / 1000, 1), unite: 't' } : null]
+        : [temps, courant.distance > 0 && courant.seances > 0 ? { cle: 'seances', libelle: 'Séances', val: formatNum(courant.seances, 0), unite: '' } : null, courant.tss > 0 ? { cle: 'effort', libelle: 'Charge', val: formatNum(courant.tss, 0), unite: '' } : null]
+  ).filter((x): x is { cle: string; libelle: string; val: string; unite: string } => !!x);
 
   const familleFiltre = familleBilanDuFiltre(filtre);
   // Sur un onglet de sport, seulement les objectifs de ce sport : ceux « tous sports » n'apparaissent que sur l'onglet Tous
@@ -149,20 +153,26 @@ export default function Bilan() {
   // « Tout » se compare à cette année, jamais à l'année qu'on avait choisie avant dans le menu
   const anneeRecords = toutTemps ? anneeCourante : annee;
   const { sorties: sortiesVelo, poids: poidsVelo, courbeTout, courbeAnnee, chargement: chargementVelo, erreur: erreurVelo } = useRecordsVelo(onglet === 'records' && filtre === 'velo', anneeRecords);
+  // Les mesures des menus dépendent du sport (musculation : séries, tonnage ; course : allure, FC) ; le cumul sur 3 ans n'additionne que les mesures qui se somment
+  const mesuresSport = useMemo(() => mesuresDuSport(filtre), [filtre]);
+  const mesuresCumul = useMemo(() => mesuresSport.filter((m) => !m.moyenne), [mesuresSport]);
+  const metrique = mesureValide(mesures.cumul, mesuresCumul, 'distance_km');
   const cumul = useMemo(() => (onglet === 'resume' ? cumulParAnnee(filtrees, [annee, annee - 1, annee - 2], metrique, maintenant) : { etiquettes: [], series: [] }), [onglet, filtrees, annee, metrique, maintenant]);
-  const mesure = MESURES_CUMUL.find((m) => m.cle === metrique) ?? MESURES_CUMUL[0];
+  const mesure = mesureDef(metrique);
   // Rythme : par mois (en km, ou en heures quand le sport n'a pas de distance, comme la musculation), charge par semaine, régularité
   const enKm = courant.distance > 0;
-  const mesureMois: MetriqueCumul = mesures.mois ?? (enKm ? 'distance_km' : 'heures');
-  const mesureSemaine: MetriqueCumul = mesures.semaine ?? (enKm ? 'distance_km' : 'heures');
-  const mesureJour: MetriqueCumul = mesures.jour ?? (enKm ? 'distance_km' : 'heures');
+  const defautMesure: MetriqueCumul = filtre === 'muscu' ? 'tonnage' : enKm ? 'distance_km' : 'heures';
+  const mesureMois: MetriqueCumul = mesureValide(mesures.mois ?? defautMesure, mesuresSport, defautMesure);
+  const mesureSemaine: MetriqueCumul = mesureValide(mesures.semaine ?? defautMesure, mesuresSport, defautMesure);
+  const mesureJour: MetriqueCumul = mesureValide(mesures.jour ?? defautMesure, mesuresSport, defautMesure);
   const mesureRecords: MetriqueCumul = mesures.records ?? (enKm ? 'distance_km' : 'heures');
-  const mesureM = MESURES_CUMUL.find((m) => m.cle === mesureMois) ?? MESURES_CUMUL[0];
-  const decimalesMois = mesureMois === 'heures' ? 1 : 0;
+  const mesureM = mesureDef(mesureMois);
+  const decimalesMois = mesureM.decimales;
   // L'unité écrite sur les graphiques : « km », « m », « TSS », « h » ; pour les séances, le titre le dit déjà
-  const uniteGraphe = (m: { unite: string }) => (m.unite === 'séances' ? '' : m.unite);
-  const mesureS = MESURES_CUMUL.find((m) => m.cle === mesureSemaine) ?? MESURES_CUMUL[0];
-  const mesureJ = MESURES_CUMUL.find((m) => m.cle === mesureJour) ?? MESURES_CUMUL[0];
+  const uniteGraphe = (m: { unite: string }) => (m.unite === 'séances' || m.unite === 'séries' || m.unite === 'rép.' ? '' : m.unite);
+  const mesureS = mesureDef(mesureSemaine);
+  const mesureJ = mesureDef(mesureJour);
+  const totalMoyen = (m: MetriqueCumul): number => (m === 'allure' ? courant.allure : m === 'fc' ? courant.fc : 0);
   // Ce que le doigt touche s'efface quand on change d'année, de sport, d'onglet ou de mesure (les positions n'ont plus le même sens)
   useEffect(() => {
     setSelMois(null);
@@ -171,12 +181,18 @@ export default function Bilan() {
     setSelJour(null);
   }, [annee, filtre, onglet, mesureMois, mesureSemaine, mesureJour]);
   // Une valeur écrite avec son unité : « 4h12 » pour le temps, un simple nombre pour les séances (le titre le dit), « 1 040 km » sinon
-  const texteMesure = (v: number, cle: MetriqueCumul, unite: string, decimales = 0): string => (cle === 'heures' ? texteHM(Math.round(v * 60)) : cle === 'seances' ? `${formatNum(v, decimales)} ${v === 1 ? 'séance' : 'séances'}` : `${formatNum(v, decimales)} ${unite}`);
+  // L'allure se lit en minutes et secondes par km (la valeur calculée est en minutes par km : 5,5 → 5'30"/km) ; la FC en bpm
+  const texteMesure = (v: number, cle: MetriqueCumul, unite: string, decimales = 0): string =>
+    cle === 'heures' ? texteHM(Math.round(v * 60))
+      : cle === 'seances' ? `${formatNum(v, decimales)} ${v === 1 ? 'séance' : 'séances'}`
+        : cle === 'allure' ? (v > 0 ? formatAllure(v * 60) : '—')
+          : cle === 'fc' ? (v > 0 ? `${formatNum(v, 0)} bpm` : '—')
+            : `${formatNum(v, decimales)} ${unite}`;
   const majuscule = (t: string): string => t.charAt(0).toUpperCase() + t.slice(1);
   const jourMois = (iso: string): string => `${Number(iso.slice(8, 10))} ${NOMS_MOIS[Number(iso.slice(5, 7)) - 1]}`;
   // Une valeur de la semaine type écrite avec son unité : « 4h12 » pour le temps, « 18 » pour les séances (le titre le dit), « 1 040 km » sinon
-  const texteJour = (v: number, decimales = mesureJour === 'seances' ? 1 : 0): string => (mesureJour === 'heures' ? texteHM(Math.round(v * 60)) : mesureJour === 'seances' ? formatNum(v, decimales) : `${formatNum(v, decimales)} ${mesureJ.unite}`);
-  const decimalesSemaine = mesureSemaine === 'heures' || mesureSemaine === 'seances' ? 1 : 0;
+  const texteJour = (v: number, decimales = mesureJour === 'seances' ? 1 : mesureJ.decimales): string => (mesureJour === 'heures' || mesureJour === 'allure' || mesureJour === 'fc' ? texteMesure(v, mesureJour, mesureJ.unite, decimales) : mesureJour === 'seances' ? formatNum(v, decimales) : `${formatNum(v, decimales)} ${mesureJ.unite}`);
+  const decimalesSemaine = mesureSemaine === 'seances' ? 1 : mesureS.decimales;
   const moisEnCours = annee === maintenant.getFullYear() ? maintenant.getMonth() : null;
   const dernierMois = moisEnCours ?? 11;
   const rythme = useMemo(() => {
@@ -186,10 +202,10 @@ export default function Bilan() {
     const { lundis, derniere: derniereSemaine } = semainesDeLAnnee(annee, maintenant);
     const semaines = mesureParSemaine(filtrees, annee, mesureSemaine);
     const regularite = regulariteAnnee(filtrees, annee, maintenant);
-    const moyenneSemaine = semaines.reduce((t, v) => t + v, 0) / Math.max(1, regularite.jours / 7);
+    const moyenneSemaine = mesureS.moyenne ? totalMoyen(mesureSemaine) : semaines.reduce((t, v) => t + v, 0) / Math.max(1, regularite.jours / 7);
     const jourSemaine = moyennesParJourSemaine(activitesAnnee(filtrees, annee, maintenant), annee, maintenant, mesureJour);
     return { parMois, jourSemaine, lundis, derniereSemaine, meilleurMois: Math.max(0, ...parMois), semaines, moyenneSemaine, regularite };
-  }, [onglet, filtrees, annee, maintenant, mesureMois, mesureSemaine, mesureJour]);
+  }, [onglet, filtrees, annee, maintenant, mesureMois, mesureSemaine, mesureJour, courant, mesureS]);
   const repartition = useMemo(() => (onglet === 'resume' ? repartitionSport(activitesAnnee(filtrees, annee, maintenant), mesureRepartition, filtre !== 'tout') : []), [onglet, filtre, filtrees, annee, maintenant, mesureRepartition]);
   // `court` : pour le gros chiffre du haut, le mot « séances » est de trop (le libellé dessous le dit déjà)
   const texteRep = (v: number, court = false): string =>
@@ -200,20 +216,20 @@ export default function Bilan() {
   const { parMois, jourSemaine, lundis, derniereSemaine, meilleurMois, semaines, moyenneSemaine, regularite } = rythme ?? ({} as NonNullable<typeof rythme>);
   // La moyenne par mois : les mois terminés (le mois en cours ne l'est pas, comme la semaine en cours pour la moyenne par semaine) ; en janvier, le seul mois qu'on a
   const moisTermines = rythme ? (moisEnCours != null && moisEnCours > 0 ? parMois.slice(0, moisEnCours) : moisEnCours != null ? parMois.slice(0, 1) : parMois) : [];
-  const moyenneMois = moisTermines.length ? moisTermines.reduce((t, v) => t + v, 0) / moisTermines.length : 0;
+  const moyenneMois = mesureM.moyenne ? totalMoyen(mesureMois) : moisTermines.length ? moisTermines.reduce((t, v) => t + v, 0) / moisTermines.length : 0;
   const seancesParSemaine = (n: number) => (regularite?.jours ? n / (regularite.jours / 7) : 0);
   const heuresParSemaine = seancesParSemaine; // même calcul : une quantité divisée par le nombre de semaines écoulées
   // Les trois chiffres en haut de l'onglet Rythme
-  const statsRythme: { libelle: string; val: string; unite: string; note: string }[] = regularite ? [
-                      { libelle: 'Par semaine', val: texteHM(Math.round(heuresParSemaine(courant.heures) * 60)), unite: '', note: '' },
-                      { libelle: 'Jours actifs', val: String(regularite.joursActifs), unite: `/ ${regularite.jours}`, note: '' },
-                      {
-                        libelle: 'Par semaine',
-                        val: formatNum(seancesParSemaine(courant.seances), 1),
-                        unite: 'séances',
-                        note: '',
-                      },
-                    ] : [];
+  const parSemaineH = { libelle: 'Par semaine', val: texteHM(Math.round(heuresParSemaine(courant.heures) * 60)), unite: '', note: '' };
+  const seancesSemaine = { libelle: 'Par semaine', val: formatNum(seancesParSemaine(courant.seances), 1), unite: 'séances', note: '' };
+  // Course : l'allure et la FC de l'année ; musculation : les séances et les séries par semaine ; les autres sports : le temps, les jours actifs et les séances
+  const statsRythme: { libelle: string; val: string; unite: string; note: string }[] = regularite
+    ? filtre === 'course'
+      ? [parSemaineH, { libelle: 'Allure moy.', val: courant.allure > 0 ? formatAllure(courant.allure * 60).replace('/km', '') : '—', unite: courant.allure > 0 ? '/km' : '', note: '' }, { libelle: 'FC moy.', val: courant.fc > 0 ? formatNum(courant.fc, 0) : '—', unite: courant.fc > 0 ? 'bpm' : '', note: '' }]
+      : filtre === 'muscu'
+        ? [parSemaineH, seancesSemaine, { libelle: 'Par semaine', val: formatNum(seancesParSemaine(courant.series), 0), unite: 'séries', note: '' }]
+        : [parSemaineH, { libelle: 'Jours actifs', val: String(regularite.joursActifs), unite: `/ ${regularite.jours}`, note: '' }, seancesSemaine]
+    : [];
   // Un bloc par sport mesurable : celui du filtre, ou tous ceux que tu pratiques sur « Tout »
   const progres = useMemo(() => {
     if (!progresOuvert) return [];
@@ -374,7 +390,7 @@ export default function Bilan() {
                     <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
                       Cumul sur 3 ans
                     </Text>
-                    <MenuMesure etiquette="Mesure" valeur={metrique} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => choisirMesure('cumul', c as MetriqueCumul)} />
+                    <MenuMesure etiquette="Mesure" valeur={metrique} options={mesuresCumul.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => choisirMesure('cumul', c as MetriqueCumul)} />
                   </View>
                   <CumulAnnees
                     series={cumul.series}
@@ -459,12 +475,12 @@ export default function Bilan() {
                     <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
                       {mesureM.nom} par mois
                     </Text>
-                    <MenuMesure etiquette="Mesure par mois" valeur={mesureMois} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => choisirMesure('mois', c as MetriqueCumul)} />
+                    <MenuMesure etiquette="Mesure par mois" valeur={mesureMois} options={mesuresSport.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => choisirMesure('mois', c as MetriqueCumul)} />
                   </View>
                   <Text style={[typo.petit, styles.lecture, { color: selMois != null ? p.texte : p.texteMuet }]}>
                     {selMois != null
                       ? `${majuscule(NOMS_MOIS[selMois])} : ${texteMesure(parMois[selMois] ?? 0, mesureMois, mesureM.unite, decimalesMois)}`
-                      : `Moyenne : ${texteMesure(moyenneMois, mesureMois, mesureM.unite, decimalesMois)} par mois`}
+                      : `Moyenne : ${texteMesure(moyenneMois, mesureMois, mesureM.unite, decimalesMois)}${mesureM.moyenne ? '' : ' par mois'}`}
                   </Text>
                   <BarresMois
                     valeurs={parMois}
@@ -474,7 +490,7 @@ export default function Bilan() {
                     selection={selMois}
                     onSelection={setSelMois}
                     unite={uniteGraphe(mesureM)}
-                    etiquette={`${mesureM.nom} par mois en ${annee} (${mesureM.unite}) : ${parMois.map((v, i) => `${NOMS_MOIS[i]} ${formatNum(v, decimalesMois)}`).join(', ')}. Meilleur mois : ${formatNum(meilleurMois, decimalesMois)} ${mesureM.unite}.`}
+                    etiquette={`${mesureM.nom} par mois en ${annee} (${mesureM.unite}) : ${parMois.map((v, i) => `${NOMS_MOIS[i]} ${formatNum(v, decimalesMois)}`).join(', ')}. ${mesureM.moyenne ? '' : ` Meilleur mois : ${formatNum(meilleurMois, decimalesMois)} ${mesureM.unite}.`}`}
                   />
                 </Bloc>
 
@@ -483,7 +499,7 @@ export default function Bilan() {
                     <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
                       {mesureS.nom} par semaine
                     </Text>
-                    <MenuMesure etiquette="Mesure par semaine" valeur={mesureSemaine} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => choisirMesure('semaine', c as MetriqueCumul)} />
+                    <MenuMesure etiquette="Mesure par semaine" valeur={mesureSemaine} options={mesuresSport.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => choisirMesure('semaine', c as MetriqueCumul)} />
                   </View>
                   {mesureSemaine === 'tss' && semaines.every((v) => v === 0) ? (
                     <Text style={[typo.corps, { color: p.texteDoux, marginBottom: 12 }]}>Pas de charge (TSS) enregistrée sur cette période : les séances sans puissance ni cardio n'en ont pas.</Text>
@@ -491,7 +507,7 @@ export default function Bilan() {
                   <Text style={[typo.petit, styles.lecture, { color: selSemaine != null ? p.texte : p.texteMuet }]}>
                     {selSemaine != null
                       ? `Semaine du ${jourMois(lundis[selSemaine] < `${annee}-01-01` ? `${annee}-01-01` : lundis[selSemaine])}${enCours && selSemaine === derniereSemaine ? ' (en cours)' : ''} : ${texteMesure(semaines[selSemaine] ?? 0, mesureSemaine, mesureS.unite, decimalesSemaine)}`
-                      : `Moyenne : ${texteMesure(moyenneSemaine, mesureSemaine, mesureS.unite, decimalesSemaine)} par semaine`}
+                      : `Moyenne : ${texteMesure(moyenneSemaine, mesureSemaine, mesureS.unite, decimalesSemaine)}${mesureS.moyenne ? '' : ' par semaine'}`}
                   </Text>
                   <BarresHebdo
                     valeurs={semaines}
@@ -532,7 +548,7 @@ export default function Bilan() {
                     <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
                       Semaine type
                     </Text>
-                    <MenuMesure etiquette="Mesure de la semaine type" valeur={mesureJour} options={MESURES_CUMUL.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => choisirMesure('jour', c as MetriqueCumul)} />
+                    <MenuMesure etiquette="Mesure de la semaine type" valeur={mesureJour} options={mesuresSport.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => choisirMesure('jour', c as MetriqueCumul)} />
                   </View>
                   {jourSemaine.every((v) => v === 0) ? (
                     <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore d'activité en {annee}.</Text>
@@ -540,8 +556,8 @@ export default function Bilan() {
                     <>
                       <Text style={[typo.petit, styles.lecture, { color: selJourSemaine != null ? p.texte : p.texteMuet }]}>
                         {selJourSemaine != null
-                          ? `${majuscule(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'][selJourSemaine])} : ${texteMesure(jourSemaine[selJourSemaine] ?? 0, mesureJour, mesureJ.unite, mesureJour === 'seances' ? 1 : 0)} en moyenne`
-                          : `Moyenne : ${texteMesure(jourSemaine.reduce((t, v) => t + v, 0) / 7, mesureJour, mesureJ.unite, mesureJour === 'seances' ? 1 : 0)} par jour`}
+                          ? `${majuscule(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'][selJourSemaine])} : ${texteMesure(jourSemaine[selJourSemaine] ?? 0, mesureJour, mesureJ.unite, mesureJour === 'seances' ? 1 : mesureJ.decimales)}${mesureJ.moyenne ? '' : ' en moyenne'}`
+                          : (mesureJ.moyenne ? `Moyenne : ${texteMesure(totalMoyen(mesureJour), mesureJour, mesureJ.unite, mesureJ.decimales)}` : `Moyenne : ${texteMesure(jourSemaine.reduce((t, v) => t + v, 0) / 7, mesureJour, mesureJ.unite, mesureJour === 'seances' ? 1 : mesureJ.decimales)} par jour`)}
                       </Text>
                       <CourbeSemaine
                         valeurs={jourSemaine}

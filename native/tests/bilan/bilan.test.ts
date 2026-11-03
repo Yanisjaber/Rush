@@ -39,7 +39,7 @@ test('familleBilanDuFiltre : le filtre global vers la famille de bilan', () => {
 
 test('normaliser : une ligne de la base devient une activité de bilan, avec des nombres sûrs', () => {
   const a = normaliser({ id: 'x', name: null, sport: 'Run', start_date_local: '2026-03-02T18:00:00+00:00', moving_time: 3600, distance_km: null, total_elevation_gain: 120, tss: 55 });
-  assert.deepEqual(a, { id: 'x', name: '', iso: '2026-03-02', sport: 'course', famille: 'course', type: 'Run', duree_min: 60, distance_km: 0, d_plus: 120, tss: 55 });
+  assert.deepEqual(a, { id: 'x', name: '', iso: '2026-03-02', sport: 'course', famille: 'course', type: 'Run', duree_min: 60, distance_km: 0, d_plus: 120, tss: 55, fc: 0 });
 });
 
 test('activitesAnnee : du 1er janvier à aujourd\'hui pour l\'année en cours, l\'année entière sinon', () => {
@@ -55,8 +55,8 @@ test('activitesAnneePrecedente : l\'an dernier jusqu\'à la même date', () => {
 
 test('sommer et ecartPct', () => {
   const s = sommer([act('2026-01-01', 'course', 60, 10, 100, 50), act('2026-01-02', 'course', 30, 5, 20, 20)]);
-  assert.deepEqual(s, { distance: 15, heures: 1.5, seances: 2, tss: 70, d_plus: 120 });
-  assert.deepEqual(sommer([]), { distance: 0, heures: 0, seances: 0, tss: 0, d_plus: 0 });
+  assert.deepEqual(s, { distance: 15, heures: 1.5, seances: 2, tss: 70, d_plus: 120, series: 0, reps: 0, tonnage: 0, allure: 6, fc: 0 });
+  assert.deepEqual(sommer([]), { distance: 0, heures: 0, seances: 0, tss: 0, d_plus: 0, series: 0, reps: 0, tonnage: 0, allure: 0, fc: 0 });
   assert.equal(ecartPct(110, 100), 10);
   assert.equal(ecartPct(80, 100), -20);
   assert.equal(ecartPct(5, 0), null);

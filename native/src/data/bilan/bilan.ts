@@ -4,7 +4,7 @@
 // où `sport` est une famille de bilan : 'cyclisme' | 'course' | 'natation' | 'musculation' | 'autre'.
 import { familleAffichage } from '../sports/familles.ts';
 import { intensiteDeCharge, type CaseRegularite } from './synthese.ts';
-import type { Seance } from '../types.ts';
+import type { Seance, SerieForce } from '../types.ts';
 
 export type SportBilan = 'cyclisme' | 'course' | 'natation' | 'musculation' | 'hyrox' | 'triathlon' | 'duathlon' | 'autre';
 
@@ -21,6 +21,12 @@ export interface ActiviteBilan {
   distance_km: number;
   d_plus: number;
   tss: number;
+  /** FC moyenne de la séance (bpm), 0 si inconnue. */
+  fc?: number;
+  /** Musculation : séries, répétitions et tonnage (kg soulevés : poids × répétitions) du carnet de force, 0 sans carnet (voir avecForce). */
+  series?: number;
+  reps?: number;
+  tonnage?: number;
 }
 
 export const SPORTS_BILAN: [SportBilan, string][] = [
@@ -56,7 +62,7 @@ export function familleBilanDuFiltre(filtre: string | null | undefined): string 
 }
 
 /** Ligne de la table activities → activité de bilan. */
-export function normaliser(l: Pick<Seance, 'id' | 'name' | 'sport' | 'start_date_local' | 'moving_time' | 'distance_km' | 'total_elevation_gain' | 'tss'>): ActiviteBilan {
+export function normaliser(l: Pick<Seance, 'id' | 'name' | 'sport' | 'start_date_local' | 'moving_time' | 'distance_km' | 'total_elevation_gain' | 'tss'> & { avg_heartrate?: number | null }): ActiviteBilan {
   return {
     id: l.id,
     name: l.name || '',
@@ -68,7 +74,31 @@ export function normaliser(l: Pick<Seance, 'id' | 'name' | 'sport' | 'start_date
     distance_km: Number(l.distance_km) || 0,
     d_plus: Number(l.total_elevation_gain) || 0,
     tss: Number(l.tss) || 0,
+    fc: Number(l.avg_heartrate) || 0,
   };
+}
+
+/**
+ * Les séries du carnet de force rattachées à leurs séances : séries, répétitions et tonnage de chaque séance de musculation.
+ * Une série se range par l'identifiant de sa séance ; sans identifiant, dans la première séance de musculation du même jour. Les séries sans poids ou sans répétition ne comptent pas.
+ */
+export function avecForce(acts: ActiviteBilan[], series: readonly SerieForce[]): ActiviteBilan[] {
+  if (!series.length) return acts;
+  const parId = new Map<string, { series: number; reps: number; tonnage: number }>();
+  const premiereDuJour = new Map<string, string>();
+  for (const a of acts) if (a.sport === 'musculation' && !premiereDuJour.has(a.iso)) premiereDuJour.set(a.iso, a.id);
+  for (const s of series) {
+    const reps = Number(s.reps);
+    if (!(reps > 0)) continue;
+    const cle = s.activity_id ?? premiereDuJour.get(String(s.date).slice(0, 10));
+    if (!cle) continue;
+    const x = parId.get(cle) ?? { series: 0, reps: 0, tonnage: 0 };
+    x.series += 1;
+    x.reps += reps;
+    x.tonnage += (Number(s.weight_kg) || 0) * reps;
+    parId.set(cle, x);
+  }
+  return acts.map((a) => (parId.has(a.id) ? { ...a, ...parId.get(a.id)! } : a));
 }
 
 // --- Périodes -------------------------------------------------------------------------------------------------------------
@@ -107,13 +137,27 @@ export interface Totaux {
   seances: number;
   tss: number;
   d_plus: number;
+  /** Musculation : séries, répétitions, tonnage (kg). */
+  series: number;
+  reps: number;
+  tonnage: number;
+  /** Allure moyenne (minutes par km, sur les séances qui ont une distance) et FC moyenne (bpm, pondérée par la durée) ; 0 si inconnues. */
+  allure: number;
+  fc: number;
 }
 
 export function sommer(acts: ActiviteBilan[]): Totaux {
-  return acts.reduce(
-    (t, a) => ({ distance: t.distance + a.distance_km, heures: t.heures + a.duree_min / 60, seances: t.seances + 1, tss: t.tss + a.tss, d_plus: t.d_plus + a.d_plus }),
-    { distance: 0, heures: 0, seances: 0, tss: 0, d_plus: 0 },
+  const t = acts.reduce(
+    (t, a) => ({
+      distance: t.distance + a.distance_km, heures: t.heures + a.duree_min / 60, seances: t.seances + 1, tss: t.tss + a.tss, d_plus: t.d_plus + a.d_plus,
+      series: t.series + (a.series ?? 0), reps: t.reps + (a.reps ?? 0), tonnage: t.tonnage + (a.tonnage ?? 0),
+      minAllure: t.minAllure + (a.distance_km > 0 ? a.duree_min : 0), kmAllure: t.kmAllure + (a.distance_km > 0 ? a.distance_km : 0),
+      fcPonderee: t.fcPonderee + ((a.fc ?? 0) > 0 ? (a.fc ?? 0) * a.duree_min : 0), minFc: t.minFc + ((a.fc ?? 0) > 0 ? a.duree_min : 0),
+    }),
+    { distance: 0, heures: 0, seances: 0, tss: 0, d_plus: 0, series: 0, reps: 0, tonnage: 0, minAllure: 0, kmAllure: 0, fcPonderee: 0, minFc: 0 },
   );
+  const { minAllure, kmAllure, fcPonderee, minFc, ...totaux } = t;
+  return { ...totaux, allure: kmAllure > 0 ? minAllure / kmAllure : 0, fc: minFc > 0 ? fcPonderee / minFc : 0 };
 }
 
 /** Écart en % entre deux valeurs (null si pas de référence). */
@@ -315,7 +359,7 @@ export const recordRecent = (iso: string, maintenant: Date = new Date()): boolea
 // --- Séries pour les graphiques ------------------------------------------------------------------------------------------
 
 /** Ce qu'on peut cumuler dans le graphique « Cumul sur 3 ans ». */
-export type MetriqueCumul = 'distance_km' | 'd_plus' | 'seances' | 'tss' | 'heures';
+export type MetriqueCumul = 'distance_km' | 'd_plus' | 'seances' | 'tss' | 'heures' | 'series' | 'reps' | 'tonnage' | 'allure' | 'fc';
 
 /** Les mesures proposées dans le menu : le nom, l'unité écrite à côté des valeurs et la phrase lue par VoiceOver. */
 export const MESURES_CUMUL: { cle: MetriqueCumul; nom: string; unite: string; phrase: string }[] = [
@@ -326,8 +370,60 @@ export const MESURES_CUMUL: { cle: MetriqueCumul; nom: string; unite: string; ph
   { cle: 'heures', nom: 'Temps', unite: 'h', phrase: 'du temps' },
 ];
 
-/** Ce que vaut une activité pour la mesure choisie. */
-export const valeurCumul = (a: ActiviteBilan, m: MetriqueCumul): number => (m === 'd_plus' ? a.d_plus : m === 'seances' ? 1 : m === 'tss' ? a.tss : m === 'heures' ? a.duree_min / 60 : a.distance_km);
+/**
+ * Les mesures propres à un sport, en plus des cinq communes : la musculation compte des séries, des répétitions et un tonnage (en tonnes) ; la course (et les autres sports à distance) lit
+ * l'allure moyenne (en minutes par km : 5,5 = 5'30" par km) et la FC moyenne. Une mesure « moyenne » n'est pas une somme : on divise le total du haut (minutes, bpm × minutes) par le total du bas
+ * (km, minutes avec FC) sur la période.
+ */
+export interface MesureDef {
+  cle: MetriqueCumul;
+  nom: string;
+  unite: string;
+  phrase: string;
+  /** Vrai : une moyenne pondérée (allure, FC) ; le cumul sur 3 ans, qui additionne jour après jour, ne la propose pas. */
+  moyenne?: boolean;
+  /** Décimales écrites pour une valeur de la mesure. */
+  decimales: number;
+}
+const COMMUNES: MesureDef[] = MESURES_CUMUL.map((m) => ({ ...m, decimales: m.cle === 'heures' ? 1 : 0 }));
+const MESURES_FORCE: MesureDef[] = [
+  { cle: 'series', nom: 'Séries', unite: 'séries', phrase: 'du nombre de séries', decimales: 0 },
+  { cle: 'reps', nom: 'Répétitions', unite: 'rép.', phrase: 'du nombre de répétitions', decimales: 0 },
+  { cle: 'tonnage', nom: 'Tonnage', unite: 't', phrase: 'du tonnage (poids × répétitions)', decimales: 1 },
+];
+const MESURES_ALLURE: MesureDef[] = [
+  { cle: 'allure', nom: 'Allure', unite: 'min/km', phrase: "de l'allure moyenne", moyenne: true, decimales: 2 },
+  { cle: 'fc', nom: 'FC moyenne', unite: 'bpm', phrase: 'de la fréquence cardiaque moyenne', moyenne: true, decimales: 0 },
+];
+const parCle = (liste: MesureDef[], cles: MetriqueCumul[]): MesureDef[] => cles.map((c) => liste.find((m) => m.cle === c)!);
+const TOUTES = [...COMMUNES, ...MESURES_FORCE, ...MESURES_ALLURE];
+/** La définition d'une mesure (nom, unité, décimales) : les cinq communes, la force, l'allure et la FC. */
+export const mesureDef = (cle: MetriqueCumul): MesureDef => TOUTES.find((m) => m.cle === cle) ?? COMMUNES[0];
+/** Les mesures proposées dans les menus du Rythme et du cumul pour le sport du filtre (« muscu », « course »…) : la musculation compte en séries et en tonnage, la course lit l'allure et la FC. */
+export function mesuresDuSport(filtre: string): MesureDef[] {
+  if (filtre === 'muscu') return parCle(TOUTES, ['seances', 'heures', 'series', 'reps', 'tonnage', 'tss']);
+  if (filtre === 'course') return parCle(TOUTES, ['distance_km', 'allure', 'fc', 'd_plus', 'seances', 'heures', 'tss']);
+  return COMMUNES;
+}
+/** La mesure demandée si ce sport la propose, sinon la première de ses mesures (un menu choisi sur un sport ne doit pas fausser un autre). */
+export const mesureValide = (cle: MetriqueCumul, liste: MesureDef[], defaut: MetriqueCumul): MetriqueCumul =>
+  liste.some((m) => m.cle === cle) ? cle : liste.some((m) => m.cle === defaut) ? defaut : liste[0].cle;
+
+/** Ce que vaut une activité pour la mesure choisie (le haut de la fraction pour une mesure moyenne). */
+export const valeurCumul = (a: ActiviteBilan, m: MetriqueCumul): number =>
+  m === 'd_plus' ? a.d_plus
+    : m === 'seances' ? 1
+      : m === 'tss' ? a.tss
+        : m === 'heures' ? a.duree_min / 60
+          : m === 'series' ? a.series ?? 0
+            : m === 'reps' ? a.reps ?? 0
+              : m === 'tonnage' ? (a.tonnage ?? 0) / 1000
+                : m === 'allure' ? (a.distance_km > 0 ? a.duree_min : 0)
+                  : m === 'fc' ? ((a.fc ?? 0) > 0 ? (a.fc ?? 0) * a.duree_min : 0)
+                    : a.distance_km;
+/** Le bas de la fraction d'une mesure moyenne (km pour l'allure, minutes avec FC pour la FC) ; 1 pour une somme. */
+export const poidsCumul = (a: ActiviteBilan, m: MetriqueCumul): number => (m === 'allure' ? (a.distance_km > 0 ? a.distance_km : 0) : m === 'fc' ? ((a.fc ?? 0) > 0 ? a.duree_min : 0) : 1);
+export const estMoyenne = (m: MetriqueCumul): boolean => m === 'allure' || m === 'fc';
 
 /**
  * Cumul jour par jour de la mesure choisie (distance, dénivelé, séances, charge ou temps), pour plusieurs années : { etiquettes, series: [{ annee, valeurs }] }.
@@ -367,8 +463,14 @@ export function volumeMensuel(acts: ActiviteBilan[], annee: number): number[] {
 /** La mesure choisie (distance, dénivelé, séances, charge ou temps) par mois : 12 valeurs pour une année. */
 export function valeursParMois(acts: ActiviteBilan[], annee: number, mesure: MetriqueCumul): number[] {
   const mois = new Array(12).fill(0);
-  for (const a of acts) if (a.iso.startsWith(`${annee}-`)) mois[Number(a.iso.slice(5, 7)) - 1] += valeurCumul(a, mesure);
-  return mois;
+  const poids = new Array(12).fill(0);
+  for (const a of acts) {
+    if (!a.iso.startsWith(`${annee}-`)) continue;
+    const i = Number(a.iso.slice(5, 7)) - 1;
+    mois[i] += valeurCumul(a, mesure);
+    poids[i] += poidsCumul(a, mesure);
+  }
+  return estMoyenne(mesure) ? mois.map((v, i) => (poids[i] > 0 ? v / poids[i] : 0)) : mois;
 }
 
 /** Distance (km) par mois : 12 valeurs pour une année. */
@@ -394,7 +496,14 @@ const finDeAnnee = (annee: number, maintenant: Date) => (annee === maintenant.ge
  */
 export function moyennesParJourSemaine(acts: ActiviteBilan[], annee: number, maintenant: Date = new Date(), mesure: MetriqueCumul = 'seances'): number[] {
   const totaux = new Array(7).fill(0);
-  for (const a of acts) totaux[(dateDe(a.iso).getDay() + 6) % 7] += valeurCumul(a, mesure);
+  const poids = new Array(7).fill(0);
+  for (const a of acts) {
+    const j = (dateDe(a.iso).getDay() + 6) % 7;
+    totaux[j] += valeurCumul(a, mesure);
+    poids[j] += poidsCumul(a, mesure);
+  }
+  // Une mesure moyenne (allure, FC) se lit sur les séances de ce jour, pas divisée par le nombre de jours
+  if (estMoyenne(mesure)) return totaux.map((t, i) => (poids[i] > 0 ? t / poids[i] : 0));
   const nombre = new Array(7).fill(0);
   const fin = finDeAnnee(annee, maintenant);
   for (const d = new Date(annee, 0, 1, 12); d <= fin; d.setDate(d.getDate() + 1)) nombre[(d.getDay() + 6) % 7]++;
@@ -420,12 +529,16 @@ export function semainesDeLAnnee(annee: number, maintenant: Date = new Date()): 
 export function mesureParSemaine(acts: ActiviteBilan[], annee: number, mesure: MetriqueCumul = 'tss'): number[] {
   const lundi0 = lundiDe(new Date(annee, 0, 1, 12));
   const semaines = new Array(semainesDeLAnnee(annee).lundis.length).fill(0);
+  const poids = new Array(semaines.length).fill(0);
   for (const a of acts) {
     if (!a.iso.startsWith(`${annee}-`)) continue;
     const idx = Math.floor(joursEntre(lundi0, dateDe(a.iso)) / 7);
-    if (idx >= 0 && idx < semaines.length) semaines[idx] += valeurCumul(a, mesure);
+    if (idx >= 0 && idx < semaines.length) {
+      semaines[idx] += valeurCumul(a, mesure);
+      poids[idx] += poidsCumul(a, mesure);
+    }
   }
-  return semaines;
+  return estMoyenne(mesure) ? semaines.map((v, i) => (poids[i] > 0 ? v / poids[i] : 0)) : semaines;
 }
 
 export interface RegulariteAnnee {
