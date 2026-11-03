@@ -134,13 +134,12 @@ export default function Bilan() {
       : courant.distance > 0
         ? { val: formatNum(courant.distance, 0), unite: 'km' }
         : { val: formatNum(courant.seances, 0), unite: courant.seances > 1 ? 'séances' : 'séance' };
-  // Les trois chiffres sous le grand : le temps, puis ce qui compte pour le sport (course : l'allure et la FC ; musculation : les séries et le tonnage ; sinon les séances et la charge)
+  // Les trois chiffres sous le grand : le temps, puis ce qui compte pour le sport (musculation : les séries et le tonnage ; sinon, course comprise, les séances et la charge)
   // Moins de 10 h : « 0h30 », « 4h12 » (« 0 h » dirait que rien n'a été fait) ; au-delà, des heures rondes
   const temps = courant.heures > 0 ? (courant.heures < 10 ? { cle: 'heures', libelle: 'Temps', val: texteHM(Math.round(courant.heures * 60)), unite: '' } : { cle: 'heures', libelle: 'Temps', val: formatNum(courant.heures, 0), unite: 'h' }) : null;
   const colonnes = (
-    filtre === 'course'
-      ? [temps, courant.allure > 0 ? { cle: 'allure', libelle: 'Allure', val: formatAllure(courant.allure * 60).replace('/km', ''), unite: '/km' } : null, courant.fc > 0 ? { cle: 'fc', libelle: 'FC moyenne', val: formatNum(courant.fc, 0), unite: 'bpm' } : null]
-      : filtre === 'muscu'
+    // La course garde les trois chiffres des autres sports (demande de Yanis, 4 nov. 2026) : l'allure et la FC sont dans le Rythme
+    filtre === 'muscu'
         ? [temps, courant.series > 0 ? { cle: 'series', libelle: 'Séries', val: formatNum(courant.series, 0), unite: '' } : null, courant.tonnage > 0 ? { cle: 'tonnage', libelle: 'Tonnage', val: formatNum(courant.tonnage / 1000, 1), unite: 't' } : null]
         : [temps, courant.distance > 0 && courant.seances > 0 ? { cle: 'seances', libelle: 'Séances', val: formatNum(courant.seances, 0), unite: '' } : null, courant.tss > 0 ? { cle: 'effort', libelle: 'Charge', val: formatNum(courant.tss, 0), unite: '' } : null]
   ).filter((x): x is { cle: string; libelle: string; val: string; unite: string } => !!x);
