@@ -11,6 +11,8 @@ import { lignesVelo, noteDe, noteLibre, SORTIES_MINI_PERIODE, type SerieNiveau, 
 
 /** La mémoire de la forme : une sortie perd la moitié de son poids tous les 21 jours. */
 export const DEMI_VIE_JOURS = 21;
+/** Le poids des sorties des 6 dernières semaines (une sortie du jour = 1) qu'il faut pour croire la mesure : en dessous, la note est ramenée vers le bas (au plus de moitié, sans aucune sortie récente). */
+export const POIDS_MINI_PREUVE = 3;
 /** Au bout de 2 semaines sans sortie mesurée, la forme n'est plus mesurée mais estimée : elle baisse avec ta charge. */
 export const SEMAINES_SANS_MESURE = 2;
 /** Comme la courbe Forme : la marge d'erreur vaut 1,8 fois l'incertitude. */
@@ -148,9 +150,15 @@ export function formeParSemaine(
     const neff = (somme * somme) / poids.reduce((t, w) => t + w * w, 0);
     const variance = neff > 1.05 ? avant.reduce((t, c, k) => t + poids[k] * (c.watts - niveau) ** 2, 0) / (somme * (1 - 1 / neff)) : (0.15 * niveau) ** 2;
     const demi = (Z * Math.sqrt(variance)) / Math.sqrt(Math.max(neff, 1));
-    const mesure = noteDe(niveau / meilleur);
-    const mesureBas = Math.min(noteDe((niveau - demi) / meilleur), mesure);
-    const mesureHaut = Math.max(noteLibre((niveau + demi) / meilleur), mesure);
+    // Peu de sorties récentes (la moyenne ne repose que sur du vieux) : la mesure n'est pas crue en entier, la note est ramenée vers le bas
+    // (le poids des sorties des 6 dernières semaines seulement : les vieilles sorties, même nombreuses, ne prouvent pas la forme d'aujourd'hui)
+    const recent = avant.reduce((t, c, k) => (c.jour >= fin - 1 - 42 ? t + poids[k] : t), 0);
+    const preuve = Math.min(1, recent / POIDS_MINI_PREUVE);
+    const prudence = 1 - 0.5 * (1 - preuve);
+    const noteBrute = noteDe(niveau / meilleur);
+    const mesure = noteBrute * prudence;
+    const mesureBas = Math.min(noteDe((niveau - demi) / meilleur), noteBrute) * prudence;
+    const mesureHaut = Math.max(noteLibre((niveau + demi) / meilleur), noteBrute) * prudence;
     // Pas de sortie mesurée depuis plus de 2 semaines : on ne mesure plus, on estime. La forme baisse (de moitié moins vite que le CTL) depuis la dernière sortie
     const derniereSortie = avant[avant.length - 1].jour;
     const semainesSansSortie = (fin - 1 - derniereSortie) / 7;

@@ -101,8 +101,8 @@ test('formeParSemaine : sans assez de sorties la forme est estimée (elle baisse
   assert.ok(f.semaines[24].score! < f.semaines[19].score! || f.semaines[19].estimee);
   // Plus la pause dure, plus la marge s'élargit
   assert.ok(juin.haut! - juin.bas! > f.semaines[derniereMesuree.index].haut! - f.semaines[derniereMesuree.index].bas!);
-  // La baisse reste mesurée : au plus la moitié de la note (PART_BAISSE_FORME)
-  assert.ok(juin.score! >= derniereMesuree.score! * 0.5 - 1e-9);
+  // La baisse reste bornée : au plus la moitié (charge) puis la moitié (prudence sans sortie récente), soit le quart de la note
+  assert.ok(juin.score! >= derniereMesuree.score! * 0.25 - 1e-9);
   // À la reprise (fin juillet) on repasse sur la mesure
   assert.equal(f.semaines[31].estimee, false);
   // La meilleure semaine n'est jamais une semaine estimée
@@ -126,4 +126,15 @@ test('formeParSemaine : moyenne qui oublie doucement : une mauvaise sortie isol�
   const b = formeParSemaine([...sorties('2024-01-01', '2024-12-31', () => 150), ...mauvaise], [], niveauxVelo([...sorties('2024-01-01', '2024-12-31', () => 150), ...mauvaise]), 2025, FIN_ANNEE)!;
   const ecart = Math.max(...a.semaines.map((s, i) => Math.abs(s.score! - b.semaines[i].score!)));
   assert.ok(ecart < 12, `écart max ${ecart}`);
+});
+
+test('formeParSemaine : peu de sorties récentes = la note est ramenée vers le bas (la mesure ne repose que sur du vieux), jamais un « souvenir » du meilleur niveau', () => {
+  // Un an de sorties au même niveau, puis une seule sortie 45 jours plus tard : la moyenne pondérée redonnerait ce niveau, la prudence le baisse
+  const longue = sorties('2025-01-01', '2025-09-30', () => 150, 3);
+  const apres = sorties('2025-11-14', '2025-11-14', () => 150, 3);
+  const toutes = [...sorties('2024-01-01', '2024-12-31', () => 150), ...longue, ...apres];
+  const f = formeParSemaine(toutes, [], niveauxVelo(toutes), 2025, new Date(2025, 11, 31))!;
+  const avant = f.semaines.find((s) => s.debut === '2025-09-17')!; // des sorties tous les 3 jours : on y croit
+  const semaineApres = f.semaines.find((s) => s.debut === '2025-11-12')!; // une seule sortie dans les 6 semaines
+  assert.ok(semaineApres.score! < avant.score! - 10, `avant ${avant.score}, après ${semaineApres.score}`);
 });
