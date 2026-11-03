@@ -1,5 +1,6 @@
 // Écrire les records : leur valeur avec son unité, et le titre et la date de chaque entrée du podium. Fonctions pures.
 import { formatDateLongue, formatNum, texteHM } from '../outils/format.ts';
+import { ecrireTemps } from '../sports/hyrox.ts';
 import type { EntreeRecord, RecordTop } from './records.ts';
 
 const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
@@ -15,6 +16,8 @@ export function texteValeurRecord(valeur: number, unite: string): { nombre: stri
   if (unite === 'min') return { nombre: texteHM(Math.round(valeur)), unite: '' };
   if (unite === 'h') return { nombre: texteHM(Math.round(valeur * 60)), unite: '' };
   if (unite === 'km' || unite === 'km/h' || unite === 'N·m' || unite === 't') return { nombre: formatNum(valeur, 1), unite };
+  // Un chrono (Hyrox) : la valeur est en secondes, écrite « 4:52 » ou « 1:13:42 »
+  if (unite === 'chrono') return { nombre: ecrireTemps(valeur), unite: '' };
   // Un poids : sans décimale quand il est rond (100 kg), avec une sinon (102,5 kg)
   if (unite === 'kg') return { nombre: formatNum(valeur, Number.isInteger(valeur) ? 0 : 1), unite };
   // Une allure de natation : la valeur est une vitesse en km/h, écrite en minutes et secondes pour 100 m (3,4 km/h = 1'46"/100 m)
