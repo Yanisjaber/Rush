@@ -72,7 +72,7 @@ export function FormeSaison({ forme, couleur }: Props) {
     `Forme par semaine en ${forme.annee}, sur 100 : meilleure semaine ${Math.round(meilleure.score!)} début ${moisDe(meilleure)}, ` +
     `dernière semaine mesurée ${Math.round(derniere.score!)} début ${moisDe(derniere)}. ` +
     (nbEstimees ? `${nbEstimees} semaine${nbEstimees > 1 ? 's' : ''} estimée${nbEstimees > 1 ? 's' : ''} sans assez de sorties, en pointillé. ` : '') +
-    `${uniteBarres === 't' ? 'Tonnage' : 'Heures'} : ${formatHeures(totalHeures)} ${uniteBarres} sur ${forme.semaines.length} semaines, jusqu'à ${formatHeures(Math.max(...forme.semaines.map((s) => s.heures)))} ${uniteBarres} en une semaine.`;
+    `${uniteBarres === 't' ? 'Tonnage' : uniteBarres === 'km' ? 'Distance' : 'Heures'} : ${formatHeures(totalHeures)} ${uniteBarres} sur ${forme.semaines.length} semaines, jusqu'à ${formatHeures(Math.max(...forme.semaines.map((s) => s.heures)))} ${uniteBarres} en une semaine.`;
 
   return (
     <Bloc titre="Forme par saison">

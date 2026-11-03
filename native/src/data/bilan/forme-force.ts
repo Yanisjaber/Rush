@@ -24,10 +24,7 @@ const Z = 1.8;
 const jourDe = (date: string): number => Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10))) / 86400000;
 const dateDe = (jour: number): string => new Date(jour * 86400000).toISOString().slice(0, 10);
 
-interface Point {
-  jour: number;
-  ratio: number;
-}
+type Point = PointNiveauJour;
 
 /** Un point par exercice principal et par jour : le meilleur 1RM du jour contre le record de toujours. */
 export function pointsDeForce(series: readonly SerieForce[]): Point[] {
@@ -48,9 +45,9 @@ export function pointsDeForce(series: readonly SerieForce[]): Point[] {
 }
 
 /** La moyenne pondérée des points avant `fin` (jour exclu), le nombre de points qui comptent vraiment, le poids des 6 dernières semaines, l'écart-type et le dernier jour ; null avec trop peu de points. */
-function etatA(points: readonly Point[], fin: number): { moyenne: number; neff: number; recent: number; ecartType: number; dernier: number } | null {
+function etatA(points: readonly Point[], fin: number, pointsMini = POINTS_MINI_FORCE): { moyenne: number; neff: number; recent: number; ecartType: number; dernier: number } | null {
   const avant = points.filter((p) => p.jour < fin);
-  if (avant.length < POINTS_MINI_FORCE) return null;
+  if (avant.length < pointsMini) return null;
   const poids = avant.map((p) => 0.5 ** ((fin - 1 - p.jour) / DEMI_VIE_FORCE_JOURS));
   const somme = poids.reduce((t, w) => t + w, 0);
   const moyenne = avant.reduce((t, p, k) => t + poids[k] * p.ratio, 0) / somme;
@@ -60,38 +57,46 @@ function etatA(points: readonly Point[], fin: number): { moyenne: number; neff: 
   return { moyenne, neff, recent, ecartType: Math.sqrt(variance), dernier: avant[avant.length - 1].jour };
 }
 
+/** Un point de niveau : un jour et le rapport de ce jour à ton record (1 = ton record). */
+export interface PointNiveauJour {
+  jour: number;
+  ratio: number;
+}
+
 /**
- * La force de chaque semaine de `annee` (jusqu'à la semaine d'aujourd'hui pour l'année en cours) et le tonnage de la semaine (en tonnes, dans le champ `heures`, avec `unite: 't'`).
- * Null s'il n'y a pas assez de points de force pour noter une semaine de l'année.
+ * La forme de chaque semaine de `annee` (jusqu'à la semaine d'aujourd'hui pour l'année en cours) à partir de points de niveau (voir `pointsDeForce`) : la moyenne pondérée des points jusqu'à la fin de la semaine
+ * (chaque point pèse moitié moins tous les 28 jours), 100 = ta meilleure semaine, 0 = 30 % en dessous ; peu de points récents ramènent la note vers le bas ; après plus de 2 semaines sans point elle baisse
+ * (5 % par semaine, au plus de moitié) et passe en pointillé. `volumeParSemaine` : ce que montrent les barres du bas (dans le champ `heures`), semaine de l'année → valeur ; `unite` : « t », « km » ou « h ».
+ * Null s'il n'y a pas assez de points pour noter une semaine de l'année. `pointsMini` : le nombre de points avant lequel une semaine n'est pas notée.
  */
-export function formeForceParSemaine(series: readonly SerieForce[], annee: number, aujourdhui: Date): FormeSaison | null {
-  const points = pointsDeForce(series);
-  if (points.length < POINTS_MINI_FORCE) return null;
+export function formeDepuisPoints(
+  points: readonly PointNiveauJour[],
+  annee: number,
+  aujourdhui: Date,
+  volumeParSemaine: (debutAn: number, finAn: number) => Map<number, number>,
+  unite: 'h' | 't' | 'km',
+  pointsMini = POINTS_MINI_FORCE,
+): FormeSaison | null {
+  if (points.length < pointsMini) return null;
   const auj = jourDe(`${aujourdhui.getFullYear()}-${String(aujourdhui.getMonth() + 1).padStart(2, '0')}-${String(aujourdhui.getDate()).padStart(2, '0')}`);
   // Ta meilleure semaine, toutes années confondues : elle fixe le 100 (comme « ton meilleur trimestre » pour le vélo)
   let meilleure = 0;
   for (let fin = points[0].jour + 7; fin <= auj + 1; fin += 7) {
-    const e = etatA(points, fin);
+    const e = etatA(points, fin, pointsMini);
     if (e) meilleure = Math.max(meilleure, e.moyenne);
   }
   if (!(meilleure > 0)) return null;
 
   const debutAn = jourDe(`${annee}-01-01`);
   const finAn = jourDe(`${annee + 1}-01-01`);
-  const tonnage = new Map<number, number>();
-  for (const s of seriesAvecCharge(series)) {
-    const j = jourDe(String(s.date).slice(0, 10));
-    if (j < debutAn || j >= finAn) continue;
-    const i = Math.min(51, Math.floor((j - debutAn) / 7));
-    tonnage.set(i, (tonnage.get(i) ?? 0) + (Number(s.weight_kg) * Number(s.reps)) / 1000);
-  }
+  const volume = volumeParSemaine(debutAn, finAn);
   const semaines: SemaineForme[] = [];
   for (let i = 0; i < 52; i++) {
     const debut = debutAn + 7 * i;
     if (debut > auj) break;
     const fin = i === 51 ? finAn : debut + 7;
-    const heures = tonnage.get(i) ?? 0;
-    const e = etatA(points, fin);
+    const heures = volume.get(i) ?? 0;
+    const e = etatA(points, fin, pointsMini);
     if (!e) {
       semaines.push({ index: i, debut: dateDe(debut), score: null, bas: null, haut: null, estimee: false, n: 0, heures });
       continue;
@@ -114,5 +119,22 @@ export function formeForceParSemaine(series: readonly SerieForce[], annee: numbe
   }
   const notees = semaines.filter((s) => s.score !== null && !s.estimee);
   if (!notees.length) return null;
-  return { annee, semaines, meilleure: notees.reduce((a, s) => (s.score! > a.score! ? s : a)).index, unite: 't' };
+  return { annee, semaines, meilleure: notees.reduce((a, s) => (s.score! > a.score! ? s : a)).index, unite };
+}
+
+/**
+ * La force de chaque semaine de `annee` (jusqu'à la semaine d'aujourd'hui pour l'année en cours) et le tonnage de la semaine (en tonnes, dans le champ `heures`, avec `unite: 't'`).
+ * Null s'il n'y a pas assez de points de force pour noter une semaine de l'année.
+ */
+export function formeForceParSemaine(series: readonly SerieForce[], annee: number, aujourdhui: Date): FormeSaison | null {
+  return formeDepuisPoints(pointsDeForce(series), annee, aujourdhui, (debutAn, finAn) => {
+    const tonnage = new Map<number, number>();
+    for (const s of seriesAvecCharge(series)) {
+      const j = jourDe(String(s.date).slice(0, 10));
+      if (j < debutAn || j >= finAn) continue;
+      const i = Math.min(51, Math.floor((j - debutAn) / 7));
+      tonnage.set(i, (tonnage.get(i) ?? 0) + (Number(s.weight_kg) * Number(s.reps)) / 1000);
+    }
+    return tonnage;
+  }, 't');
 }

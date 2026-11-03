@@ -1,7 +1,7 @@
 import { useMemo, useState, type ComponentProps } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { OngletRecordsCourse } from '@/components/bilan/OngletRecordsCourse';
-import { OngletRecordsSport } from '@/components/bilan/OngletRecordsSport';
+import { OngletRecordsNatation } from '@/components/bilan/OngletRecordsNatation';
 import { OngletRecordsVelo } from '@/components/bilan/OngletRecordsVelo';
 import { TuilesRecords } from '@/components/bilan/TuilesRecords';
 import { Bloc } from '@/components/feuilles/Bloc';
@@ -64,7 +64,7 @@ export function OngletRecordsTriathlon({ portee, toutes, disciplines, annee, mai
       ) : actif === 'course' ? (
         <OngletRecordsCourse portee={portee} toutes={toutes.filter((a) => a.famille === 'course')} annee={annee} maintenant={maintenant} onOuvrir={onOuvrir} />
       ) : (
-        <OngletRecordsSport portee={portee} toutes={toutes.filter((a) => a.famille === 'natation')} annee={annee} maintenant={maintenant} filtre="natation" onOuvrir={onOuvrir} />
+        <OngletRecordsNatation portee={portee} toutes={toutes.filter((a) => a.famille === 'natation')} annee={annee} maintenant={maintenant} onOuvrir={onOuvrir} />
       )}
     </>
   );

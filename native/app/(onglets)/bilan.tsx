@@ -14,6 +14,7 @@ import { OngletRecordsTriathlon } from '@/components/bilan/OngletRecordsTriathlo
 import { OngletRecordsCourse } from '@/components/bilan/OngletRecordsCourse';
 import { OngletRecordsHyrox } from '@/components/bilan/OngletRecordsHyrox';
 import { OngletRecordsMuscu } from '@/components/bilan/OngletRecordsMuscu';
+import { OngletRecordsNatation } from '@/components/bilan/OngletRecordsNatation';
 import { OngletRecordsVelo } from '@/components/bilan/OngletRecordsVelo';
 import { RegulariteMois } from '@/components/graphes/RegulariteMois';
 import { Dossard } from '@/components/ui/Dossard';
@@ -26,6 +27,7 @@ import { ObjectifSegments } from '@/components/graphes/ObjectifSegments';
 import { OngletsIcones } from '@/components/menus/OngletsIcones';
 import { OngletsSegment } from '@/components/menus/OngletsSegment';
 import { TraitTirets } from '@/components/graphes/TraitTirets';
+import { FormeSaison as FormeSaisonGraphe } from '@/components/graphes/FormeSaison';
 import { NiveauGlobalSport } from '@/components/graphes/NiveauGlobalSport';
 import { ProgresHyroxTemps } from '@/components/graphes/ProgresHyroxTemps';
 import { ProgresSport } from '@/components/graphes/ProgresSport';
@@ -34,14 +36,16 @@ import {
   activitesAnnee, anneesDisponibles, avancement, avecForce, cumulParAnnee, dansLeFiltre, disciplinesDuFiltre, kmParDiscipline, valeursParMois, moyennesParJourSemaine, semainesDeLAnnee, mesureParSemaine, MESURES_CUMUL, mesureDef, mesureValide, mesuresDuSport, NOM_SPORT_BILAN, normaliser,
   regulariteAnnee, repartitionSport, sommer, familleBilanDuFiltre, decimalesObjectif, phraseVerdict, type MetriqueCumul,
 } from '@/data/bilan/bilan';
-import { formatAllure, formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
+import { formatAllure, formatAllure100m, formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
 import { ecrireTemps } from '@/data/sports/hyrox';
 import { nomDuType } from '@/data/sports/catalogue-sports';
 import { formeForceParSemaine } from '@/data/bilan/forme-force';
 import { niveauGlobalHyrox, recordTotal, testsDeLAnnee } from '@/data/bilan/hyrox-bilan';
+import { formeNatationParSemaine } from '@/data/bilan/forme-natation';
 import { formeCourseParSemaine, formeParSemaine } from '@/data/bilan/forme-saison';
 import { niveauxCourse, niveauxVelo } from '@/data/bilan/niveau-annees';
 import { mesuresCourse, niveauGlobalCourse } from '@/data/bilan/piliers-course';
+import { niveauGlobalNatation } from '@/data/bilan/piliers-natation';
 import { niveauGlobalMuscu } from '@/data/bilan/piliers-muscu';
 import { niveauGlobal, recordsDeMesures } from '@/data/bilan/piliers-niveau';
 import { mesuresMultisport, niveauGlobalMultisport } from '@/data/bilan/piliers-triathlon';
@@ -152,7 +156,7 @@ export default function Bilan() {
           ? { val: texteHM(Math.round(courant.heures * 60)), unite: '' }
           : { val: formatNum(courant.heures, 0), unite: 'h' }
         : courant.distance > 0 && filtre !== 'hyrox'
-        ? { val: formatNum(courant.distance, 0), unite: 'km' }
+        ? { val: formatNum(courant.distance, filtre === 'natation' && courant.distance < 100 ? 1 : 0), unite: 'km' }
         : { val: formatNum(courant.seances, 0), unite: courant.seances > 1 ? 'séances' : 'séance' };
   // Les trois chiffres sous le grand : le temps, puis ce qui compte pour le sport (musculation : les séries et le tonnage ; sinon, course comprise, les séances et la charge)
   // Moins de 10 h : « 0h30 », « 4h12 » (« 0 h » dirait que rien n'a été fait) ; au-delà, des heures rondes
@@ -207,7 +211,8 @@ export default function Bilan() {
   const uniteGraphe = (m: { unite: string }) => (m.unite === 'séances' || m.unite === 'séries' || m.unite === 'rép.' ? '' : m.unite);
   const mesureS = mesureDef(mesureSemaine);
   const mesureJ = mesureDef(mesureJour);
-  const totalMoyen = (m: MetriqueCumul): number => (m === 'allure' ? courant.allure : m === 'fc' ? courant.fc : 0);
+  // (courant.allure est en minutes par km : au 100 m, un dixième)
+  const totalMoyen = (m: MetriqueCumul): number => (m === 'allure' ? courant.allure : m === 'allure100' ? courant.allure / 10 : m === 'fc' ? courant.fc : 0);
   // Ce que le doigt touche s'efface quand on change d'année, de sport, d'onglet ou de mesure (les positions n'ont plus le même sens)
   useEffect(() => {
     setSelMois(null);
@@ -221,12 +226,13 @@ export default function Bilan() {
     cle === 'heures' ? texteHM(Math.round(v * 60))
       : cle === 'seances' ? `${formatNum(v, decimales)} ${v === 1 ? 'séance' : 'séances'}`
         : cle === 'allure' ? (v > 0 ? formatAllure(v * 60) : '—')
+          : cle === 'allure100' ? (v > 0 ? formatAllure100m(v * 60) : '—')
           : cle === 'fc' ? (v > 0 ? `${formatNum(v, 0)} bpm` : '—')
             : `${formatNum(v, decimales)} ${unite}`;
   const majuscule = (t: string): string => t.charAt(0).toUpperCase() + t.slice(1);
   const jourMois = (iso: string): string => `${Number(iso.slice(8, 10))} ${NOMS_MOIS[Number(iso.slice(5, 7)) - 1]}`;
   // Une valeur de la semaine type écrite avec son unité : « 4h12 » pour le temps, « 18 » pour les séances (le titre le dit), « 1 040 km » sinon
-  const texteJour = (v: number, decimales = mesureJour === 'seances' ? 1 : mesureJ.decimales): string => (mesureJour === 'heures' || mesureJour === 'allure' || mesureJour === 'fc' ? texteMesure(v, mesureJour, mesureJ.unite, decimales) : mesureJour === 'seances' ? formatNum(v, decimales) : `${formatNum(v, decimales)} ${mesureJ.unite}`);
+  const texteJour = (v: number, decimales = mesureJour === 'seances' ? 1 : mesureJ.decimales): string => (mesureJour === 'heures' || mesureJour === 'allure' || mesureJour === 'allure100' || mesureJour === 'fc' ? texteMesure(v, mesureJour, mesureJ.unite, decimales) : mesureJour === 'seances' ? formatNum(v, decimales) : `${formatNum(v, decimales)} ${mesureJ.unite}`);
   const decimalesSemaine = mesureSemaine === 'seances' ? 1 : mesureS.decimales;
   const moisEnCours = annee === maintenant.getFullYear() ? maintenant.getMonth() : null;
   const dernierMois = moisEnCours ?? 11;
@@ -316,8 +322,11 @@ export default function Bilan() {
   }, [progresOuvert, multisport, filtrees, disciplines, maintenant, niveauGlobalVelo, niveauCourse]);
   // Le niveau global de l'Hyrox : le meilleur temps total, les runs et les stations de l'année contre ton meilleur de toujours, et le volume
   const niveauHyrox = useMemo(() => (progresOuvert && filtre === 'hyrox' ? niveauGlobalHyrox(hyrox.tests, filtrees, maintenant) : null), [progresOuvert, filtre, hyrox.tests, filtrees, maintenant]);
-  // L'année choisie en haut ne sert que s'il y a un niveau global à lire (vélo, course, musculation, multisport ou Hyrox) ; sinon elle reste affichée mais grisée
-  const anneeInutile = onglet === 'progres' && !(niveauMultisport || niveauHyrox || progres.some(({ prog }) => (prog.famille === 'velo' && niveauGlobalVelo) || (prog.famille === 'course' && niveauCourse) || (prog.famille === 'muscu' && niveauMuscu)));
+  // Le niveau global de la natation : la vitesse, l'endurance, la régularité et le volume de l'année, et la forme semaine par semaine
+  const niveauNatation = useMemo(() => (progresOuvert && filtre === 'natation' ? niveauGlobalNatation(filtrees, maintenant) : null), [progresOuvert, filtre, filtrees, maintenant]);
+  const formeNatation = useMemo(() => (niveauNatation ? formeNatationParSemaine(filtrees, annee, maintenant) : null), [niveauNatation, filtrees, annee, maintenant]);
+  // L'année choisie en haut ne sert que s'il y a un niveau global à lire (vélo, course, musculation, natation, multisport ou Hyrox) ; sinon elle reste affichée mais grisée
+  const anneeInutile = onglet === 'progres' && !(niveauMultisport || niveauHyrox || niveauNatation || progres.some(({ prog }) => (prog.famille === 'velo' && niveauGlobalVelo) || (prog.famille === 'course' && niveauCourse) || (prog.famille === 'muscu' && niveauMuscu)));
 
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
@@ -662,6 +671,14 @@ export default function Bilan() {
                   erreur={erreurVelo}
                   onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
                 />
+              ) : filtre === 'natation' ? (
+                <OngletRecordsNatation
+                  portee={toutTemps ? 'tout' : 'annee'}
+                  toutes={filtrees}
+                  annee={anneeRecords}
+                  maintenant={maintenant}
+                  onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
+                />
               ) : filtre === 'hyrox' ? (
                 <OngletRecordsHyrox
                   portee={toutTemps ? 'tout' : 'annee'}
@@ -728,8 +745,13 @@ export default function Bilan() {
                   <View accessible accessibilityLabel="Chargement des progrès" style={styles.attente}>
                     <ActivityIndicator color={p.texteDoux} />
                   </View>
-                ) : progres.length || niveauMultisport || niveauHyrox ? (
+                ) : progres.length || niveauMultisport || niveauHyrox || niveauNatation ? (
                   <>
+                    {niveauNatation ? (
+                      <NiveauGlobalSport famille="natation" global={niveauNatation} annee={annee} onChoisirAnnee={setAnneeChoisie}>
+                        {formeNatation ? <FormeSaisonGraphe forme={formeNatation} couleur={couleurSport(p, 'natation')} /> : null}
+                      </NiveauGlobalSport>
+                    ) : null}
                     {niveauHyrox ? (
                       <NiveauGlobalSport famille="hyrox" global={niveauHyrox} annee={annee} onChoisirAnnee={setAnneeChoisie}>
                         <ProgresHyroxTemps tests={hyrox.tests} objectif={hyrox.objectif} annee={annee} />

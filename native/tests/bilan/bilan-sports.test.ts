@@ -117,3 +117,17 @@ test('triathlon : les mesures sont le temps, les séances, la charge et les kilo
   assert.equal(valeursParMois(acts, 2026, 'km_course')[0], 10);
   assert.equal(mesureDef('km_natation').decimales, 1);
 });
+
+test('natation : l\'allure au 100 m est une moyenne pondérée par la distance (minutes ÷ hectomètres), jamais une somme ; la distance a une décimale', () => {
+  assert.deepEqual(mesuresDuSport('natation').map((m) => m.cle), ['distance_km', 'allure100', 'fc', 'seances', 'heures', 'tss']);
+  assert.equal(mesuresDuSport('natation')[0].decimales, 1);
+  assert.equal(mesureDef('distance_km').decimales, 0); // les autres sports gardent leurs kilomètres entiers
+  assert.equal(mesureDef('allure100').moyenne, true);
+  const acts = [act('2026-01-05', 'natation', 45, 1.5), act('2026-01-12', 'natation', 30, 1), act('2026-02-03', 'natation', 20, 0.5)];
+  // Janvier : 75 minutes pour 2,5 km = 25 hectomètres : 3 min par 100 m ; février : 20 min pour 5 hectomètres = 4 min par 100 m
+  const mois = valeursParMois(acts, 2026, 'allure100');
+  assert.ok(Math.abs(mois[0] - 3) < 1e-9, `${mois[0]}`);
+  assert.ok(Math.abs(mois[1] - 4) < 1e-9, `${mois[1]}`);
+  assert.equal(mois[2], 0);
+  assert.ok(Math.abs(sommer(acts).allure / 10 - 95 / 30) < 1e-9); // allure moyenne de l'année : 95 min pour 30 hm
+});

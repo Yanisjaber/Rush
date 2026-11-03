@@ -47,8 +47,8 @@ export interface FormeSaison {
   semaines: SemaineForme[];
   /** L'index de la meilleure semaine. */
   meilleure: number;
-  /** Ce que mesurent les barres du bas, dans le champ `heures` de chaque semaine : des heures (« h », par défaut) ou, pour la musculation, des tonnes (« t »). */
-  unite?: 'h' | 't';
+  /** Ce que mesurent les barres du bas, dans le champ `heures` de chaque semaine : des heures (« h », par défaut), des tonnes pour la musculation (« t ») ou des kilomètres pour la natation (« km »). */
+  unite?: 'h' | 't' | 'km';
 }
 
 /** Les champs d'une séance utiles pour les heures (un sous-ensemble de `Seance`). */

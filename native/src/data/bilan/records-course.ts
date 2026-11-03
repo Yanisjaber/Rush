@@ -83,3 +83,34 @@ export function ecartAllure(meilleureKmh: number, kmh: number): string {
   const s = Math.round(3600 / kmh - 3600 / meilleureKmh);
   return `+${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"/km`;
 }
+
+/** Une vitesse (km/h) écrite en allure sur l'axe vertical : « 5'00" » par km (`facteur` 3600), « 1'45" » pour 100 m (`facteur` 360). */
+export function allureAxe(kmh: number, facteur = 3600): string {
+  if (!(kmh > 0)) return '';
+  const s = Math.round(facteur / kmh);
+  return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"`;
+}
+
+/**
+ * L'axe vertical d'une courbe d'allure : des allures rondes (toutes les `pasFin` secondes, ou toutes les `pasLarge` quand les allures s'étalent sur plus de 5 pas fins) qui encadrent les vitesses des courbes,
+ * en km/h pour que « plus haut = plus rapide ». Course : `facteur` 3600 (par km), pas de 30 s et 60 s ; natation : `facteur` 360 (pour 100 m), pas de 5 s et 10 s. Null s'il n'y a pas assez de points.
+ */
+export function echelleAllure(
+  courbes: readonly (readonly { top: readonly { valeur: number }[] }[])[],
+  facteur = 3600,
+  pasFin = 30,
+  pasLarge = 60,
+): { min: number; max: number; reperes: number[] } | null {
+  const vitesses = courbes.flatMap((c) => c.filter((x) => x.top.length).map((x) => x.top[0].valeur)).filter((v) => v > 0);
+  if (vitesses.length < 2) return null;
+  const allureMin = facteur / Math.max(...vitesses);
+  const allureMax = facteur / Math.min(...vitesses);
+  const pas = allureMax - allureMin < 5 * pasFin ? pasFin : pasLarge;
+  const haut = Math.floor(allureMin / pas) * pas;
+  const bas = Math.ceil(allureMax / pas) * pas;
+  const allures: number[] = [];
+  for (let a = Math.max(pas, haut); a <= bas; a += pas) allures.push(a);
+  if (allures.length < 2) return null;
+  const reperes = allures.map((a) => facteur / a).sort((x, y) => x - y);
+  return { min: reperes[0], max: reperes[reperes.length - 1], reperes };
+}

@@ -382,7 +382,7 @@ export const recordRecent = (iso: string, maintenant: Date = new Date()): boolea
 // --- Séries pour les graphiques ------------------------------------------------------------------------------------------
 
 /** Ce qu'on peut cumuler dans le graphique « Cumul sur 3 ans ». */
-export type MetriqueCumul = 'distance_km' | 'd_plus' | 'seances' | 'tss' | 'heures' | 'series' | 'reps' | 'tonnage' | 'allure' | 'fc' | 'km_natation' | 'km_velo' | 'km_course';
+export type MetriqueCumul = 'distance_km' | 'd_plus' | 'seances' | 'tss' | 'heures' | 'series' | 'reps' | 'tonnage' | 'allure' | 'fc' | 'km_natation' | 'km_velo' | 'km_course' | 'allure100';
 
 /** Les mesures proposées dans le menu : le nom, l'unité écrite à côté des valeurs et la phrase lue par VoiceOver. */
 export const MESURES_CUMUL: { cle: MetriqueCumul; nom: string; unite: string; phrase: string }[] = [
@@ -416,6 +416,8 @@ const MESURES_FORCE: MesureDef[] = [
 ];
 const MESURES_ALLURE: MesureDef[] = [
   { cle: 'allure', nom: 'Allure', unite: 'min/km', phrase: "de l'allure moyenne", moyenne: true, decimales: 2 },
+  // La natation : l'allure au 100 m (1,75 = 1'45" pour 100 m)
+  { cle: 'allure100', nom: 'Allure', unite: 'min/100 m', phrase: "de l'allure moyenne au 100 m", moyenne: true, decimales: 2 },
   { cle: 'fc', nom: 'FC moyenne', unite: 'bpm', phrase: 'de la fréquence cardiaque moyenne', moyenne: true, decimales: 0 },
 ];
 const parCle = (liste: MesureDef[], cles: MetriqueCumul[]): MesureDef[] => cles.map((c) => liste.find((m) => m.cle === c)!);
@@ -432,6 +434,8 @@ export const mesureDef = (cle: MetriqueCumul): MesureDef => TOUTES.find((m) => m
 export function mesuresDuSport(filtre: string): MesureDef[] {
   if (filtre === 'muscu') return parCle(TOUTES, ['seances', 'heures', 'series', 'reps', 'tonnage', 'tss']);
   if (filtre === 'course') return parCle(TOUTES, ['distance_km', 'allure', 'fc', 'd_plus', 'seances', 'heures', 'tss']);
+  // La natation : des distances courtes (des kilomètres avec une décimale), l'allure au 100 m et la FC
+  if (filtre === 'natation') return [{ ...mesureDef('distance_km'), decimales: 1 }, ...parCle(TOUTES, ['allure100', 'fc', 'seances', 'heures', 'tss'])];
   if (filtre === 'triathlon') return parCle(TOUTES, ['heures', 'seances', 'tss', 'km_natation', 'km_velo', 'km_course']);
   if (filtre === 'duathlon') return parCle(TOUTES, ['heures', 'seances', 'tss', 'km_velo', 'km_course']);
   return COMMUNES;
@@ -451,13 +455,14 @@ export const valeurCumul = (a: ActiviteBilan, m: MetriqueCumul): number =>
               : m === 'tonnage' ? (a.tonnage ?? 0) / 1000
                 : m === 'allure' ? (a.distance_km > 0 ? a.duree_min : 0)
                   : m === 'fc' ? ((a.fc ?? 0) > 0 ? (a.fc ?? 0) * a.duree_min : 0)
+                    : m === 'allure100' ? (a.distance_km > 0 ? a.duree_min : 0)
                     : m === 'km_natation' ? (a.famille === 'natation' ? a.distance_km : 0)
                       : m === 'km_velo' ? (a.famille === 'velo' ? a.distance_km : 0)
                         : m === 'km_course' ? (a.famille === 'course' ? a.distance_km : 0)
                           : a.distance_km;
 /** Le bas de la fraction d'une mesure moyenne (km pour l'allure, minutes avec FC pour la FC) ; 1 pour une somme. */
-export const poidsCumul = (a: ActiviteBilan, m: MetriqueCumul): number => (m === 'allure' ? (a.distance_km > 0 ? a.distance_km : 0) : m === 'fc' ? ((a.fc ?? 0) > 0 ? a.duree_min : 0) : 1);
-export const estMoyenne = (m: MetriqueCumul): boolean => m === 'allure' || m === 'fc';
+export const poidsCumul = (a: ActiviteBilan, m: MetriqueCumul): number => (m === 'allure100' ? (a.distance_km > 0 ? a.distance_km * 10 : 0) : m === 'allure' ? (a.distance_km > 0 ? a.distance_km : 0) : m === 'fc' ? ((a.fc ?? 0) > 0 ? a.duree_min : 0) : 1);
+export const estMoyenne = (m: MetriqueCumul): boolean => m === 'allure' || m === 'fc' || m === 'allure100';
 
 /**
  * Cumul jour par jour de la mesure choisie (distance, dénivelé, séances, charge ou temps), pour plusieurs années : { etiquettes, series: [{ annee, valeurs }] }.

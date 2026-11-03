@@ -7,7 +7,7 @@ import { CourbeEfforts, type AxeCourbe } from '@/components/graphes/CourbeEffort
 import { MenuMesure } from '@/components/menus/MenuMesure';
 import { activitesAnnee, type ActiviteBilan } from '@/data/bilan/bilan';
 import { indexDureeProche, recordsBasiquesActivites, texteDuree } from '@/data/bilan/records';
-import { chronoSurDistance, ecartAllure, SIGNAUX_COURSE, texteDistance, type CleCourbeCourse } from '@/data/bilan/records-course';
+import { allureAxe, chronoSurDistance, echelleAllure, ecartAllure, SIGNAUX_COURSE, texteDistance, type CleCourbeCourse } from '@/data/bilan/records-course';
 import { EnAnnee, enAnnee, texteRecordSimple } from '@/data/bilan/records-texte';
 import { formatDateLongue } from '@/data/outils/format';
 import { useCourbeCourse, usePodiumCourse } from '@/hooks/useCourbeCourse';
@@ -48,32 +48,6 @@ const DEPART: Record<CleCourbeCourse, number> = { pace: 5000, pacedur: 1200, dis
 
 /** « Lundi 6 avril 2026 » : avec l'année, qui compte en « Tous temps ». */
 const dateAnnee = (iso: string): string => `${formatDateLongue(iso)} ${iso.slice(0, 4)}`;
-/** Une vitesse (km/h) écrite en allure sur l'axe vertical : « 5'00" ». */
-const allureAxe = (kmh: number): string => {
-  if (!(kmh > 0)) return '';
-  const s = Math.round(3600 / kmh);
-  return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"`;
-};
-
-/**
- * L'axe vertical de la courbe d'allure : des allures rondes (toutes les 30 s ou toutes les minutes selon l'étendue) qui encadrent les vitesses de la courbe, en km/h pour que « plus haut = plus rapide ».
- * Null s'il n'y a pas assez de points.
- */
-function echelleAllure(courbes: readonly (readonly { top: readonly { valeur: number }[] }[])[]): { min: number; max: number; reperes: number[] } | null {
-  const vitesses = courbes.flatMap((c) => c.filter((x) => x.top.length).map((x) => x.top[0].valeur)).filter((v) => v > 0);
-  if (vitesses.length < 2) return null;
-  const allureMin = 3600 / Math.max(...vitesses);
-  const allureMax = 3600 / Math.min(...vitesses);
-  const pas = allureMax - allureMin < 150 ? 30 : 60;
-  const haut = Math.floor(allureMin / pas) * pas;
-  const bas = Math.ceil(allureMax / pas) * pas;
-  const allures: number[] = [];
-  for (let a = Math.max(pas, haut); a <= bas; a += pas) allures.push(a);
-  if (allures.length < 2) return null;
-  const reperes = allures.map((a) => 3600 / a).sort((x, y) => x - y);
-  return { min: reperes[0], max: reperes[reperes.length - 1], reperes };
-}
-
 export function OngletRecordsCourse({ portee, toutes, annee, maintenant, onOuvrir }: Props) {
   const p = usePalette();
   const couleur = couleurSport(p, 'course');
