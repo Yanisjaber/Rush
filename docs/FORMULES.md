@@ -173,6 +173,29 @@ Le pilier Durabilité (meilleur 5 et 20 min après 2 h 30 ÷ meilleur à froid) 
 
 ---
 
+## 5. Niveau global à la course à pied : 4 piliers (4 nov. 2026)
+
+Même mécanique que le vélo (section 4) : chaque pilier est noté de 0 à 100, une note est **réduite de la part de preuve qui manque**, le score global est la moyenne des 4 piliers **seulement si 3 piliers ont toutes leurs preuves** (sinon « — »), et la meilleure année se cherche parmi celles qui ont un score. Code : `native/src/data/bilan/piliers-course.ts` (+ `piliers-sport.ts` pour la mécanique commune).
+
+- **Vitesse** : moyenne des notes de ton meilleur **1 km** et de ta meilleure **distance en 5 minutes** de l'année. Chacune est comparée à ton meilleur de **tous les temps** (rapport = record ÷ temps, ou distance ÷ record) : 100 = ton record, 0 = 25 % moins vite (`COURSE_ZERO = 0,75`).
+- **Endurance** : moyenne des notes de ton meilleur **5 km**, **10 km** et de ta meilleure **distance en 1 heure** de l'année, même échelle. Une distance jamais courue cette année-là ne compte pas.
+- **Efficacité** : l'allure à cardio égal (et au dénivelé médian) de l'année, c'est-à-dire la note du niveau année après année (`niveau-annees.ts`, 100 = ton meilleur niveau). Courir plus vite avec le même cœur.
+- **Volume** : 40 % les kilomètres, 35 % les heures, 25 % les jours actifs de l'année (séances de course seulement), chacun contre la **moyenne de tes 3 meilleures années** ; 100 = cette référence, 0 à 40 % (comme la capacité de charge du vélo). Les totaux de l'année en cours et de la première année sont ramenés à 365 jours (× 365 ÷ jours couverts, à partir de 30 jours).
+- **Preuves** : vitesse et endurance demandent **3 courses avec courbes** dans l'année ; l'efficacité a sa preuve dans le niveau (3 courses au moins) ; le volume demande 30 jours de données.
+- **Meilleurs temps et distances** : calculés côté serveur depuis les flux (`signal_curves`, version 11, `_shared/signaux-course.ts`) : meilleur temps sur 400 m, 1 km, 1 mile, 3 km, 5 km, 10 km, 15 km, 20 km, semi, 30 km, marathon ; meilleure distance et meilleure FC sur 1 min à 3 h. Les **pauses** (trous de plus de 10 s) sont retirées et les **sauts de GPS** (un pas de plus de 12 m/s : 60 à 70 m en une seconde, vus dans l'historique) sont remplacés par le pas habituel ; sans cela un seul saut donnait « 400 m en 42 secondes ». Plafond de vitesse d'une fenêtre : 9,5 m/s sous 1 km, 8,5 m/s au-delà.
+- **Forme par saison** (course) : le même calcul que le vélo (section « Forme par saison » de `docs/native/PROGRESSION_NIVEAU.md`) sur l'allure à cardio égal ; une allure plus basse est un meilleur niveau (rapport = meilleur ÷ allure).
+
+## 6. Niveau global en musculation : 4 piliers (4 nov. 2026)
+
+Mêmes règles de preuve et de score global que la course. Code : `native/src/data/bilan/piliers-muscu.ts`. Données : le carnet de force (`strength_sets` : exercice, groupe musculaire, poids, répétitions) et les séances.
+
+- **Force** : pour tes **5 exercices les plus pratiqués** (au moins 6 séries au carnet), le meilleur **1RM estimé** de l'année (formule d'Epley : poids × (1 + répétitions ÷ 30), séries de 1 à 12 répétitions) contre ton meilleur de tous les temps sur cet exercice ; 100 = ton record, 0 = 30 % en dessous (`FORCE_ZERO = 0,7`) ; moyenne des exercices mesurés. Preuve : 3 exercices mesurés dans l'année.
+- **Volume** : 40 % le **tonnage** (poids × répétitions de toutes les séries), 20 % les **séries**, 40 % les **heures de séance**, chacun contre la moyenne de tes 3 meilleures années (échelle 0 à 40 %), annualisé comme la course. Une part sans mesure (pas de carnet cette année-là) ne compte pas.
+- **Régularité** : 50 % les **séances par semaine** (3 par semaine = 100) et 50 % la part des **semaines avec au moins une séance**, sur les semaines couvertes de l'année. Preuve : 30 jours de données.
+- **Équilibre** : l'**entropie** des séries entre les 6 groupes musculaires (jambes, dos, pectoraux, épaules, bras, tronc), normalisée par ln 6 : 0,5 = 0, 0,95 = 100. Preuve : 30 séries dans l'année.
+- Le carnet de force commence au premier import : les années d'avant n'ont ni force ni équilibre prouvés, donc pas de score global (« — »), mais leur volume (heures) et leur régularité restent affichés.
+- **Forme par saison** (musculation) : la force semaine par semaine (`forme-force.ts`) : chaque exercice principal donne un point par séance (son meilleur 1RM du jour ÷ son record) ; la force d'une semaine est la moyenne de ces points jusqu'à sa fin, chaque point pesant moitié moins tous les 28 jours ; 100 = ta meilleure semaine, 0 = 30 % en dessous. Peu de séances récentes ramènent la note vers le bas ; après plus de 2 semaines sans séance elle baisse de 5 % par semaine (au plus de moitié) et passe en pointillé. Barres du bas : le **tonnage** de la semaine (en tonnes).
+
 ## Historique
 
 - 2026-11-02 : création, ajout du TSS, du CTL/ATL/TSB, du score d'endurance et d'une proposition de score de puissance.
@@ -191,3 +214,4 @@ Le pilier Durabilité (meilleur 5 et 20 min après 2 h 30 ÷ meilleur à froid) 
 - 2026-11-03 : endurance : D et R comparés en watts au meilleur 20 min de tous les temps (plus à celui de l'année).
 - 2026-11-03 : endurance mise en code (D sur 20 min après 30 kJ/kg, R sur le meilleur 2 h 30 de l'année, C sur les 10 sorties de plus de 2 h à la plus haute puissance normalisée de l'année) ; durabilité, répétabilité et charge ajoutées au recueil ; CTL/ATL décrits tels que la base les calcule.
 - 2026-11-02 : durabilité retirée (pilier et lettre D de l'endurance) ; l'endurance passe à 35 % F, 30 % H, 35 % C ; le niveau global devient la moyenne de 4 piliers.
+- 2026-11-04 : niveau global de la course (vitesse, endurance, efficacité, volume) et de la musculation (force, volume, régularité, équilibre) sur le modèle du vélo ; forme par saison de la course (allure à cardio égal) et de la musculation (force) ; courbes de course côté serveur (meilleurs temps par distance, pauses et sauts de GPS écartés).

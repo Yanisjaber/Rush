@@ -92,10 +92,11 @@ export function OngletRecordsMuscu({ portee, toutes, series, chargement, annee, 
 
       {exercice && record ? (
         <Bloc>
-          <View style={styles.entete}>
-            <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
-              Par exercice
-            </Text>
+          <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte }]}>
+            Par exercice
+          </Text>
+          {/* Les deux menus sur leur propre ligne : avec le titre, « Développé couché » et « 1RM estimé » ne tiennent pas côte à côte */}
+          <View style={styles.menus}>
             <MenuMesure etiquette="Exercice" valeur={exercice.cle} options={exercices.map((e) => ({ cle: e.cle, nom: e.nom }))} onChoisir={(c) => setExerciceChoisi(c)} />
             <MenuMesure etiquette="Mesure" valeur={mesure} options={MESURES_EXERCICE.map((m) => ({ cle: m.cle, nom: m.nom }))} onChoisir={(c) => setMesure(c as MesureExercice)} />
           </View>
@@ -123,8 +124,8 @@ export function OngletRecordsMuscu({ portee, toutes, series, chargement, annee, 
       ) : null}
 
       {exercice && force.length ? (
-        <Bloc titre={`Charge par répétitions · ${exercice.nom}`}>
-          <Text style={[typo.petit, styles.explication, { color: p.texteMuet }]}>La charge la plus lourde tenue pour au moins ce nombre de répétitions.</Text>
+        <Bloc titre="Charge par répétitions">
+          <Text style={[typo.petit, styles.explication, { color: p.texteMuet }]}>{exercice.nom} : la charge la plus lourde tenue pour au moins ce nombre de répétitions.</Text>
           <View accessible accessibilityLabel={`Charge la plus lourde par nombre de répétitions, ${exercice.nom} : ${force.map((f) => `${f.reps} répétitions, ${texteRecordSimple(f.poids, 'kg')}`).join(' ; ')}`} style={styles.barres}>
             {force.map((f) => (
               <View key={f.reps} style={styles.ligne}>
@@ -147,7 +148,7 @@ export function OngletRecordsMuscu({ portee, toutes, series, chargement, annee, 
 }
 
 const styles = StyleSheet.create({
-  entete: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  menus: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 10 },
   lecture: { gap: 2 },
   valeur: { fontFamily: police.titre800, fontSize: 34, lineHeight: 38, fontVariant: ['tabular-nums'] },
   explication: { marginBottom: 10 },

@@ -80,17 +80,19 @@ export function normaliser(l: Pick<Seance, 'id' | 'name' | 'sport' | 'start_date
 
 /**
  * Les séries du carnet de force rattachées à leurs séances : séries, répétitions et tonnage de chaque séance de musculation.
- * Une série se range par l'identifiant de sa séance ; sans identifiant, dans la première séance de musculation du même jour. Les séries sans poids ou sans répétition ne comptent pas.
+ * Une série se range par l'identifiant de sa séance ; sans identifiant (ou avec un identifiant inconnu), dans la première séance de musculation du même jour. Les séries sans poids ou sans répétition ne comptent pas.
  */
 export function avecForce(acts: ActiviteBilan[], series: readonly SerieForce[]): ActiviteBilan[] {
   if (!series.length) return acts;
   const parId = new Map<string, { series: number; reps: number; tonnage: number }>();
+  const ids = new Set(acts.map((a) => a.id));
   const premiereDuJour = new Map<string, string>();
   for (const a of acts) if (a.sport === 'musculation' && !premiereDuJour.has(a.iso)) premiereDuJour.set(a.iso, a.id);
   for (const s of series) {
     const reps = Number(s.reps);
     if (!(reps > 0)) continue;
-    const cle = s.activity_id ?? premiereDuJour.get(String(s.date).slice(0, 10));
+    // Une série dont l'identifiant ne correspond à aucune séance chargée (séance fusionnée ou supprimée) se range comme une série sans identifiant : par le jour
+    const cle = s.activity_id && ids.has(s.activity_id) ? s.activity_id : premiereDuJour.get(String(s.date).slice(0, 10));
     if (!cle) continue;
     const x = parId.get(cle) ?? { series: 0, reps: 0, tonnage: 0 };
     x.series += 1;

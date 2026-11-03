@@ -34,10 +34,11 @@ export function ForceParExercice({ series, annee }: Props) {
 
   return (
     <Bloc>
-      <View style={styles.entete}>
-        <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte, flex: 1 }]}>
-          Force par exercice
-        </Text>
+      <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte }]}>
+        Force par exercice
+      </Text>
+      {/* Le menu sur sa propre ligne : à côté du titre, un nom d'exercice long le tronque */}
+      <View style={styles.menu}>
         <MenuMesure etiquette="Exercice" valeur={exercice.cle} options={exercices.map((e) => ({ cle: e.cle, nom: e.nom }))} onChoisir={(c) => setChoix(c)} />
       </View>
       {points.length >= 2 ? (
@@ -63,6 +64,6 @@ export function ForceParExercice({ series, annee }: Props) {
 }
 
 const styles = StyleSheet.create({
-  entete: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
+  menu: { flexDirection: 'row', marginTop: 8, marginBottom: 10 },
   lecture: { textAlign: 'center', marginBottom: 6 },
 });

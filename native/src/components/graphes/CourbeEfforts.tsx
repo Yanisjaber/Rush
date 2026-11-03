@@ -21,6 +21,8 @@ interface Props {
   serre?: boolean;
   /** L'axe horizontal quand ce n'est pas une durée de 1 s à 5 h (la course : des distances de 400 m au marathon) : ses bornes, les repères écrits sous l'axe, les points marqués et la façon d'écrire une position. */
   axe?: AxeCourbe;
+  /** L'axe vertical imposé (la course : des allures rondes comme 5'00" et 6'00", qui ne tombent pas sur des vitesses rondes) : ses bornes et les valeurs des repères ; sans lui, l'échelle se calcule d'après les valeurs. */
+  echelleY?: { min: number; max: number; reperes: number[] };
   /** Une valeur de l'axe vertical écrite sur ses repères (par défaut un nombre : « 357 ») ; la course y écrit des allures. */
   formaterAxe?: (v: number) => string;
   /** La durée touchée (indice dans `courbe`), ou null. */
@@ -58,7 +60,7 @@ const REPERES_DUREE: [number, string][] = [
   [18000, '5 h'],
 ];
 
-export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, etiquette, formater, dureeMin = DUREE_MIN, serre = false, axe, formaterAxe }: Props) {
+export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, etiquette, formater, dureeMin = DUREE_MIN, serre = false, axe, formaterAxe, echelleY }: Props) {
   const p = usePalette();
   const mini = axe ? axe.min : dureeMin;
   const maxi = axe ? axe.max : DUREE_MAX;
@@ -73,12 +75,12 @@ export function CourbeEfforts({ courbe, autre, selection, onSelection, couleur, 
   const b = autre ? meilleurs(autre) : [];
   const valeurs = [...a.map((pt) => pt.valeur), ...b.map((pt) => pt.valeur)];
   // Axe « serré » : il part d'un peu sous la plus basse valeur (une dizaine ronde), pas de zéro
-  const plancher = serre && valeurs.length ? Math.max(0, Math.floor((Math.min(...valeurs) * 0.85) / 10) * 10) : 0;
+  const plancher = echelleY ? echelleY.min : serre && valeurs.length ? Math.max(0, Math.floor((Math.min(...valeurs) * 0.85) / 10) * 10) : 0;
   const { haut, pas } = echelleRonde(Math.max(0, Math.max(0, ...valeurs) - plancher));
-  const etendue = Math.max(1, haut);
+  const etendue = echelleY ? Math.max(1e-6, echelleY.max - echelleY.min) : Math.max(1, haut);
   const y = (w: number) => HAUTEUR - BAS - ((w - plancher) / etendue) * (HAUTEUR - BAS - HAUT);
   const trace = (pts: { duree: number; valeur: number }[]) => pts.map((pt, i) => `${i ? 'L' : 'M'}${x(pt.duree).toFixed(1)} ${y(pt.valeur).toFixed(1)}`).join(' ');
-  const reperes = pas > 0 ? [pas, 2 * pas, 3 * pas].map((k) => plancher + k) : [];
+  const reperes = echelleY ? echelleY.reperes.filter((v) => v > plancher + 1e-9) : pas > 0 ? [pas, 2 * pas, 3 * pas].map((k) => plancher + k) : [];
   // Les durées écrites sous l'axe ; quand l'axe commence à 30 s, la première est « 30 s »
   const reperesDuree: [number, string][] = axe ? axe.reperes : [...(dureeMin >= 30 ? ([[30, '30 s']] as [number, string][]) : []), ...REPERES_DUREE.filter(([s]) => s >= dureeMin && !(dureeMin >= 30 && s === 30))];
   const choisi = selection != null ? courbe[selection] : null;

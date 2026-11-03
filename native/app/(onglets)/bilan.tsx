@@ -135,7 +135,8 @@ export default function Bilan() {
         ? { val: formatNum(courant.distance, 0), unite: 'km' }
         : { val: formatNum(courant.seances, 0), unite: courant.seances > 1 ? 'séances' : 'séance' };
   // Les trois chiffres sous le grand : le temps, puis ce qui compte pour le sport (course : l'allure et la FC ; musculation : les séries et le tonnage ; sinon les séances et la charge)
-  const temps = courant.heures > 0 ? { cle: 'heures', libelle: 'Temps', val: formatNum(courant.heures, 0), unite: 'h' } : null;
+  // Moins de 10 h : « 0h30 », « 4h12 » (« 0 h » dirait que rien n'a été fait) ; au-delà, des heures rondes
+  const temps = courant.heures > 0 ? (courant.heures < 10 ? { cle: 'heures', libelle: 'Temps', val: texteHM(Math.round(courant.heures * 60)), unite: '' } : { cle: 'heures', libelle: 'Temps', val: formatNum(courant.heures, 0), unite: 'h' }) : null;
   const colonnes = (
     filtre === 'course'
       ? [temps, courant.allure > 0 ? { cle: 'allure', libelle: 'Allure', val: formatAllure(courant.allure * 60).replace('/km', ''), unite: '/km' } : null, courant.fc > 0 ? { cle: 'fc', libelle: 'FC moyenne', val: formatNum(courant.fc, 0), unite: 'bpm' } : null]
@@ -167,7 +168,8 @@ export default function Bilan() {
   const mesure = mesureDef(metrique);
   // Rythme : par mois (en km, ou en heures quand le sport n'a pas de distance, comme la musculation), charge par semaine, régularité
   const enKm = courant.distance > 0;
-  const defautMesure: MetriqueCumul = filtre === 'muscu' ? 'tonnage' : enKm ? 'distance_km' : 'heures';
+  // Musculation : le tonnage dès qu'il y en a (le carnet de force est lié aux séances), sinon les heures
+  const defautMesure: MetriqueCumul = filtre === 'muscu' ? (courant.tonnage > 0 ? 'tonnage' : 'heures') : enKm ? 'distance_km' : 'heures';
   const mesureMois: MetriqueCumul = mesureValide(mesures.mois ?? defautMesure, mesuresSport, defautMesure);
   const mesureSemaine: MetriqueCumul = mesureValide(mesures.semaine ?? defautMesure, mesuresSport, defautMesure);
   const mesureJour: MetriqueCumul = mesureValide(mesures.jour ?? defautMesure, mesuresSport, defautMesure);

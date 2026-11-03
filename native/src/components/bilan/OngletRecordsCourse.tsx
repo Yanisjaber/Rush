@@ -55,6 +55,25 @@ const allureAxe = (kmh: number): string => {
   return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"`;
 };
 
+/**
+ * L'axe vertical de la courbe d'allure : des allures rondes (toutes les 30 s ou toutes les minutes selon l'étendue) qui encadrent les vitesses de la courbe, en km/h pour que « plus haut = plus rapide ».
+ * Null s'il n'y a pas assez de points.
+ */
+function echelleAllure(courbes: readonly (readonly { top: readonly { valeur: number }[] }[])[]): { min: number; max: number; reperes: number[] } | null {
+  const vitesses = courbes.flatMap((c) => c.filter((x) => x.top.length).map((x) => x.top[0].valeur)).filter((v) => v > 0);
+  if (vitesses.length < 2) return null;
+  const allureMin = 3600 / Math.max(...vitesses);
+  const allureMax = 3600 / Math.min(...vitesses);
+  const pas = allureMax - allureMin < 150 ? 30 : 60;
+  const haut = Math.floor(allureMin / pas) * pas;
+  const bas = Math.ceil(allureMax / pas) * pas;
+  const allures: number[] = [];
+  for (let a = Math.max(pas, haut); a <= bas; a += pas) allures.push(a);
+  if (allures.length < 2) return null;
+  const reperes = allures.map((a) => 3600 / a).sort((x, y) => x - y);
+  return { min: reperes[0], max: reperes[reperes.length - 1], reperes };
+}
+
 export function OngletRecordsCourse({ portee, toutes, annee, maintenant, onOuvrir }: Props) {
   const p = usePalette();
   const couleur = couleurSport(p, 'course');
@@ -140,6 +159,7 @@ export function OngletRecordsCourse({ portee, toutes, annee, maintenant, onOuvri
               formater={formater}
               axe={axe}
               formaterAxe={signal === 'pace' ? allureAxe : undefined}
+              echelleY={signal === 'pace' ? (echelleAllure([courbe, ...(portee === 'annee' ? [autre] : [])]) ?? undefined) : undefined}
               serre={signal !== 'dis'}
               selection={indexChoisi >= 0 ? indexChoisi : null}
               onSelection={(i) => setChoix(i == null ? null : (courbe[i]?.duree ?? null))}

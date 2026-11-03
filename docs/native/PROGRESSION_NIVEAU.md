@@ -98,6 +98,14 @@ Sous la courbe des niveaux, le bloc « Forme par saison » (maquette 7 de `claud
 
 L'année en cours s'arrête à la semaine d'aujourd'hui. La semaine 1 commence le 1er janvier ; la dernière va jusqu'au 31 décembre.
 
+## Course à pied et musculation (4 nov. 2026)
+
+Le Bilan de la course et celui de la musculation reprennent l'esprit de celui du vélo (formules : `docs/FORMULES.md`, sections 5 et 6) :
+- **Résumé** : le grand chiffre (km en course, séances en musculation) et trois colonnes propres au sport : course = temps, allure (min/km), FC moyenne ; musculation = temps, séries, tonnage. Le « Cumul sur 3 ans » propose les mesures qui se somment.
+- **Rythme** : les menus des graphiques par mois, par semaine et par jour de la semaine proposent les mesures du sport : course = distance, allure (en minutes par km, la barre est le temps mis pour 1 km), FC moyenne, dénivelé, séances, temps, charge ; musculation = séances, temps, séries, répétitions, tonnage (en tonnes), charge. Une mesure « moyenne » (allure, FC) est une moyenne pondérée (minutes ÷ km, FC × minutes ÷ minutes), jamais une somme.
+- **Records** : course = tuiles (durée, distance, D+, charge, allure moyenne, FC moyenne) puis « Meilleurs efforts » (allure par distance de 400 m au marathon, distance par durée, FC par durée, courbe tactile et classement de 30 séances) ; musculation = tuiles de séance (durée, tonnage, séries, répétitions, charge max, charge) puis « Par exercice » (un menu pour l'exercice, un pour la mesure : 1RM estimé, charge max, répétitions, volume de séance), la charge la plus lourde tenue pour 1 à 12 répétitions, et le classement.
+- **Progrès** : la même page que le vélo : niveau global de l'année choisie, score par année, carte de chaleur des 4 piliers ; puis, en course, la courbe de l'allure à cardio égal, en musculation la force par exercice (1RM trimestre après trimestre) ; enfin la forme par saison de l'année choisie. Sans courbe ni carnet (démo, compte sans streams), l'ancienne page de progrès reste.
+
 ## Les records
 
 Le sélecteur du vélo lit ton meilleur sprint (5 secondes) et tes meilleurs 5, 20 et 60 minutes de chaque année (fonction SQL `rpc_courbe_puissance`, une lecture par année). Chaque durée a son propre 100 (ta meilleure année sur cette durée). Pas de trimestres ni de marge d'erreur : un record n'est pas assez régulier (il demande un effort maximal ce jour-là).
