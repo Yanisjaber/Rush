@@ -24,7 +24,7 @@ const HISTORIQUE = [...sorties('2024-01-01', '2024-12-31', () => 150), ...sortie
 const SERIE = niveauxVelo(HISTORIQUE);
 const FIN_ANNEE = new Date(2026, 5, 1);
 
-test('formeParSemaine : 52 semaines, la forme suit le niveau des 3 dernières sorties, sur l\'échelle de la courbe Forme', () => {
+test('formeParSemaine : 52 semaines, la forme suit le niveau moyen des sorties récentes (poids divisé par 2 tous les 21 jours), sur l\'échelle de la courbe Forme', () => {
   const f = formeParSemaine(HISTORIQUE, [], SERIE, 2025, FIN_ANNEE)!;
   assert.equal(f.semaines.length, 52);
   assert.equal(f.semaines[0].debut, '2025-01-01');
@@ -35,12 +35,12 @@ test('formeParSemaine : 52 semaines, la forme suit le niveau des 3 dernières so
   assert.ok(Math.abs(mars.score! - attendu) < 6, `mars ${mars.score} contre ${attendu}`);
   assert.ok(dec.score! > 95, `décembre ${dec.score}`);
   assert.ok(f.semaines[f.meilleure].score! >= dec.score! - 1e-9);
-  // Juillet : les 3 dernières sorties sont déjà au nouveau niveau
+  // Juillet : la moyenne mélange encore l'ancien niveau, elle est entre les deux
   const juillet = f.semaines[28];
-  assert.ok(juillet.score! > mars.score!, `juillet ${juillet.score}`);
-  // La marge entoure le score ; toujours 3 sorties
+  assert.ok(juillet.score! > mars.score! && juillet.score! < dec.score!, `juillet ${juillet.score}`);
+  // La marge entoure le score ; une sortie tous les 3 jours : plusieurs sorties comptent vraiment
   for (const s of [mars, juillet, dec]) assert.ok(s.bas! <= s.score! && s.haut! >= s.score!);
-  assert.equal(mars.n, 3);
+  assert.ok(mars.n >= 8 && mars.n <= 25, `${mars.n}`);
 });
 
 test('formeParSemaine : avant la 3e sortie de l\'historique = semaine vide ; l\'année en cours s\'arrête à la semaine d\'aujourd\'hui', () => {
@@ -113,9 +113,15 @@ test('formeParSemaine : sans assez de sorties la forme est estimée (elle baisse
   assert.equal(sansCharge.semaines[24].estimee, false);
 });
 
-test('formeParSemaine : toujours les 3 dernières sorties, même espacées de plusieurs semaines (pas d\'estimation tant qu\'on a roulé il y a moins de 6 semaines)', () => {
-  // Une sortie tous les 20 jours : 6 semaines en contiennent 2, mais les 3 dernières existent toujours
+test('formeParSemaine : moyenne qui oublie doucement : une mauvaise sortie isolée ne fait pas plonger la courbe ; sans trou tant qu\'on a roulé il y a moins de 6 semaines', () => {
   const rares = sorties('2024-01-01', '2025-12-31', () => 150, 20);
   const f = formeParSemaine(rares, [], niveauxVelo(rares), 2025, FIN_ANNEE)!;
-  assert.ok(f.semaines.every((s) => s.score !== null && !s.estimee && s.n === 3));
+  assert.ok(f.semaines.every((s) => s.score !== null && !s.estimee));
+  // Une sortie 40 W plus basse au milieu de sorties tous les 3 jours : l'écart de score reste petit
+  const base = sorties('2025-01-01', '2025-12-31', () => 150, 3);
+  const mauvaise = base.map((s) => (s.date.startsWith('2025-06-1') && s.date.slice(8, 10) === '15' ? { ...s, watts: s.watts - 40 } : s));
+  const a = formeParSemaine([...sorties('2024-01-01', '2024-12-31', () => 150), ...base], [], niveauxVelo([...sorties('2024-01-01', '2024-12-31', () => 150), ...base]), 2025, FIN_ANNEE)!;
+  const b = formeParSemaine([...sorties('2024-01-01', '2024-12-31', () => 150), ...mauvaise], [], niveauxVelo([...sorties('2024-01-01', '2024-12-31', () => 150), ...mauvaise]), 2025, FIN_ANNEE)!;
+  const ecart = Math.max(...a.semaines.map((s, i) => Math.abs(s.score! - b.semaines[i].score!)));
+  assert.ok(ecart < 12, `écart max ${ecart}`);
 });
