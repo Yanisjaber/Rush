@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chronoSurDistance, courbeCourseDeLignes, ecartAllure, SIGNAUX_COURSE, texteDistance, valeurDeLigne, type LigneCourbeCourse } from '../../src/data/bilan/records-course.ts';
+import { chronoSurDistance, courbeCourseDeLignes, ecartAllure, SIGNAUX_COURSE, signalServeur, texteDistance, valeurDeLigne, type LigneCourbeCourse } from '../../src/data/bilan/records-course.ts';
 import { texteRecordSimple } from '../../src/data/bilan/records-texte.ts';
 
 const ligne = (cle: number, rang: number, valeur: number | string, name: string, date = '2026-03-01T09:00:00+00:00'): LigneCourbeCourse => ({ cle, rang, valeur, activity_id: `${name}-${cle}`, name, start_date_local: date });
@@ -9,6 +9,8 @@ test('valeurDeLigne : l\'allure devient une vitesse (distance ÷ temps), la dist
   assert.equal(valeurDeLigne('pace', 5000, 1500), 12); // 5 km en 25 min = 12 km/h = 5'00"/km
   assert.equal(valeurDeLigne('pace', 1000, 0), 0);
   assert.equal(valeurDeLigne('dis', 600, 2650), 2.65);
+  assert.equal(valeurDeLigne('pacedur', 1200, 4000), 12); // 4 km en 20 min = 12 km/h = 5'00"/km
+  assert.equal(valeurDeLigne('pacedur', 0, 4000), 0);
   assert.equal(valeurDeLigne('fc', 600, 172), 172);
 });
 
@@ -42,5 +44,16 @@ test('chronoSurDistance et ecartAllure : le chrono d\'un 5 km à 12 km/h, l\'éc
 });
 
 test('SIGNAUX_COURSE : l\'allure se lit par distance, la distance et la FC par durée', () => {
-  assert.deepEqual(SIGNAUX_COURSE.map((s) => [s.cle, s.axe, s.unite]), [['pace', 'distance', 'allure'], ['dis', 'duree', 'km'], ['fc', 'duree', 'bpm']]);
+  assert.deepEqual(SIGNAUX_COURSE.map((s) => [s.cle, s.axe, s.unite]), [['pacedur', 'duree', 'allure'], ['pace', 'distance', 'allure'], ['dis', 'duree', 'km'], ['fc', 'duree', 'bpm']]);
+  // L'allure par durée se déduit de la distance par durée : rien de plus à demander au serveur
+  assert.deepEqual((['pace', 'pacedur', 'dis', 'fc'] as const).map(signalServeur), ['pace', 'dis', 'dis', 'fc']);
+});
+
+test('courbeCourseDeLignes : l\'allure par durée classe les séances par distance faite (la plus grande gagne) et l\'écrit en allure', () => {
+  const c = courbeCourseDeLignes('pacedur', [ligne(1200, 2, 3800, 'B'), ligne(1200, 1, 4000, 'A'), ligne(300, 1, 1100, 'C')]);
+  assert.deepEqual(c.map((p) => p.duree), [300, 1200]);
+  assert.equal(c[1].top[0].nom, 'A');
+  assert.equal(c[1].top[0].valeur, 12);
+  assert.ok(Math.abs(c[0].top[0].valeur - 13.2) < 1e-9); // 1,1 km en 5 min = 13,2 km/h
+  assert.equal(texteRecordSimple(c[1].top[0].valeur, 'allure'), `5'00" /km`);
 });

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chargeParRepetitions, epley, exercicesDuCarnet, recordsExercice, recordsSeanceMuscu, rmParTrimestre, seriesDeLAnnee } from '../../src/data/bilan/records-muscu.ts';
+import { chargeParRepetitions, classementRepetitions, courbeForce, epley, exercicesDuCarnet, recordsExercice, recordsSeanceMuscu, rmParTrimestre, seriesDeLAnnee } from '../../src/data/bilan/records-muscu.ts';
 import { texteRecordSimple } from '../../src/data/bilan/records-texte.ts';
 import type { ActiviteBilan } from '../../src/data/bilan/bilan.ts';
 import type { SerieForce } from '../../src/data/types.ts';
@@ -100,4 +100,30 @@ test('rmParTrimestre : le meilleur 1RM de l\'exercice, trimestre après trimestr
   const deux = rmParTrimestre([...CARNET, serie('d', '2025-11-02', 'squat', 5, 90)], 'squat');
   assert.deepEqual(deux.map((x) => x.cle), ['2025-T4', '2026-T1']);
   assert.deepEqual(rmParTrimestre(CARNET, 'inconnu'), []);
+});
+
+test('classementRepetitions : une entrée par séance (sa charge la plus lourde tenue pour au moins n répétitions), la plus lourde d\'abord', () => {
+  // Squat, 5 répétitions ou plus : a = 100 (5 × 100), c = 105 (5 × 105), b = 70 (la série de 12 × 70 ; 110 × 3 ne compte pas)
+  const r = classementRepetitions(CARNET, 'squat', 5);
+  assert.deepEqual(r.map((e) => [e.id, e.valeur]), [['c', 105], ['a', 100], ['b', 70]]);
+  assert.equal(r[0].nom, 'Squat · 5 × 105 kg');
+  // 1 répétition ou plus : toutes les séries comptent : la meilleure charge de chaque séance
+  assert.deepEqual(classementRepetitions(CARNET, 'squat', 1).map((e) => [e.id, e.valeur]), [['b', 110], ['c', 105], ['a', 100]]);
+  // 12 répétitions : seule la série de 12 × 70
+  assert.deepEqual(classementRepetitions(CARNET, 'squat', 12).map((e) => [e.id, e.valeur]), [['b', 70]]);
+  assert.deepEqual(classementRepetitions(CARNET, 'squat', 13), []);
+  assert.equal(classementRepetitions(CARNET, 'squat', 1, 2).length, 2);
+  // Sans identifiant de séance : une entrée par jour, avec un id vide
+  const sans = classementRepetitions([serie(null, '2026-04-01', 'squat', 5, 90), serie(null, '2026-04-01', 'squat', 5, 95)], 'squat', 5);
+  assert.deepEqual(sans.map((e) => [e.id, e.valeur]), [['', 95]]);
+});
+
+test('courbeForce : un point par nombre de répétitions (1 à 12), le podium de 3 séances, la charge qui baisse quand les répétitions montent', () => {
+  const c = courbeForce(CARNET, 'squat');
+  assert.deepEqual(c.map((p) => p.duree), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  assert.equal(c[0].top[0].valeur, 110); // 1 répétition : la charge max
+  assert.equal(c[11].top[0].valeur, 70); // 12 répétitions
+  assert.equal(c[4].top.length, 3); // 5 répétitions : trois séances (c, a, b)
+  for (let i = 1; i < c.length; i++) assert.ok(c[i].top[0].valeur <= c[i - 1].top[0].valeur);
+  assert.deepEqual(courbeForce(CARNET, 'inconnu'), []);
 });

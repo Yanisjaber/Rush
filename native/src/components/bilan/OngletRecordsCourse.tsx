@@ -44,7 +44,7 @@ const AXE_DUREE: AxeCourbe = {
   texte: texteDuree,
 };
 /** Le point montré au départ : le 5 km pour l'allure, 30 minutes pour la distance, 20 minutes pour la FC. */
-const DEPART: Record<CleCourbeCourse, number> = { pace: 5000, dis: 1800, fc: 1200 };
+const DEPART: Record<CleCourbeCourse, number> = { pace: 5000, pacedur: 1200, dis: 1800, fc: 1200 };
 
 /** « Lundi 6 avril 2026 » : avec l'année, qui compte en « Tous temps ». */
 const dateAnnee = (iso: string): string => `${formatDateLongue(iso)} ${iso.slice(0, 4)}`;
@@ -77,7 +77,8 @@ function echelleAllure(courbes: readonly (readonly { top: readonly { valeur: num
 export function OngletRecordsCourse({ portee, toutes, annee, maintenant, onOuvrir }: Props) {
   const p = usePalette();
   const couleur = couleurSport(p, 'course');
-  const [signal, setSignal] = useState<CleCourbeCourse>('pace');
+  const [signal, setSignal] = useState<CleCourbeCourse>('pacedur'); // la courbe d'allure par durée d'abord : la plus proche de la courbe de puissance du vélo
+  const estAllure = signal === 'pace' || signal === 'pacedur';
   const [choix, setChoix] = useState<number | null>(null); // la distance ou la durée touchée ; null : celle de départ
   const info = SIGNAUX_COURSE.find((s) => s.cle === signal) ?? SIGNAUX_COURSE[0];
   const axe = info.axe === 'distance' ? AXE_DISTANCE : AXE_DUREE;
@@ -111,6 +112,8 @@ export function OngletRecordsCourse({ portee, toutes, annee, maintenant, onOuvri
   const formater = (v: number): string => texteRecordSimple(v, info.unite);
   // Le texte du point lu : le chrono pour l'allure (« 5 km en 23'23" »), sinon la valeur
   const chrono = point && meilleur && signal === 'pace' ? `${texteDistance(point.duree)} en ${chronoSurDistance(point.duree, meilleur.valeur)}` : null;
+  // L'allure par durée : la distance faite dans ce temps (« 20 min : 4,4 km »)
+  const distanceFaite = point && meilleur && signal === 'pacedur' ? `${texteRecordSimple((meilleur.valeur * point.duree) / 3600, 'km')} en ${texteDuree(point.duree)}` : null;
   const nomPoint = point ? (info.axe === 'distance' ? texteDistance(point.duree) : texteDuree(point.duree)) : '';
 
   if (chargement && !courbeTout.length && !basiques.length) {
@@ -158,8 +161,8 @@ export function OngletRecordsCourse({ portee, toutes, annee, maintenant, onOuvri
               autre={portee === 'annee' && autre.some((x) => x.top.length) ? autre : undefined}
               formater={formater}
               axe={axe}
-              formaterAxe={signal === 'pace' ? allureAxe : undefined}
-              echelleY={signal === 'pace' ? (echelleAllure([courbe, ...(portee === 'annee' ? [autre] : [])]) ?? undefined) : undefined}
+              formaterAxe={estAllure ? allureAxe : undefined}
+              echelleY={estAllure ? (echelleAllure([courbe, ...(portee === 'annee' ? [autre] : [])]) ?? undefined) : undefined}
               serre={signal !== 'dis'}
               selection={indexChoisi >= 0 ? indexChoisi : null}
               onSelection={(i) => setChoix(i == null ? null : (courbe[i]?.duree ?? null))}
@@ -172,7 +175,7 @@ export function OngletRecordsCourse({ portee, toutes, annee, maintenant, onOuvri
             {point && meilleur ? (
               <View accessible accessibilityLabel={`${nomPoint} : ${formater(meilleur.valeur)}${chrono ? `, ${chrono}` : ''}, ${meilleur.nom}, ${dateAnnee(meilleur.iso)}`} style={styles.lecture}>
                 <Text numberOfLines={2} style={[typo.petit, { color: p.texteDoux, textAlign: 'center' }]}>
-                  {chrono ? `${chrono} · ` : ''}
+                  {chrono ? `${chrono} · ` : distanceFaite ? `${distanceFaite} · ` : ''}
                   {dateAnnee(meilleur.iso)}
                 </Text>
                 {cmp ? (
@@ -196,8 +199,8 @@ export function OngletRecordsCourse({ portee, toutes, annee, maintenant, onOuvri
           titre={`Classement · ${nomPoint}`}
           entrees={podium}
           unite={info.unite}
-          sousPremiere={chrono ? chronoSurDistance(point.duree, podium[0].valeur) : null}
-          ecart={signal === 'pace' ? ecartAllure : undefined}
+          sousPremiere={chrono ? chronoSurDistance(point.duree, podium[0].valeur) : distanceFaite ? texteRecordSimple((podium[0].valeur * point.duree) / 3600, 'km') : null}
+          ecart={estAllure ? ecartAllure : undefined}
           onOuvrir={onOuvrir}
         />
       ) : null}

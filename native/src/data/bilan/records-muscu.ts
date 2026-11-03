@@ -3,7 +3,7 @@
 // (1RM estimé, charge max, répétitions max, charge par nombre de répétitions) qui se choisissent dans un menu.
 import type { SerieForce } from '../types.ts';
 import type { ActiviteBilan } from './bilan.ts';
-import type { EntreeRecord, RecordTop } from './records.ts';
+import type { EntreeCourbe, EntreeRecord, PointCourbe, RecordTop } from './records.ts';
 
 /** Au-delà de 12 répétitions, la formule d'Epley surestime : le 1RM estimé n'est calculé que sur 1 à 12 répétitions (comme la progression). */
 export const REPS_MAX_1RM = 12;
@@ -186,4 +186,38 @@ export function rmParTrimestre(series: readonly SerieForce[], cle: string): Poin
     if (!x || rm > x.rm) par.set(k, { cle: k, an, trimestre, rm });
   }
   return [...par.values()].sort((a, b) => (a.cle < b.cle ? -1 : 1));
+}
+
+/** Le nombre de répétitions le plus haut de la courbe de force (au-delà, ce n'est plus de la force mais de l'endurance musculaire). */
+export const REPETITIONS_COURBE_MAX = 12;
+
+/**
+ * Le classement des séances pour « au moins `reps` répétitions » sur un exercice : une entrée par séance (sa charge la plus lourde tenue pour au moins ce nombre de répétitions), la plus lourde d'abord,
+ * à égalité la plus ancienne. `nom` dit la série qui a fait la valeur (« Squat · 5 × 100 kg »). Les séances sans identifiant ont un `id` vide (on ne peut pas les ouvrir).
+ */
+export function classementRepetitions(series: readonly SerieForce[], cle: string, reps: number, n = CLASSEMENT): EntreeCourbe[] {
+  const par = new Map<string, SerieForce>();
+  for (const s of seriesAvecCharge(series)) {
+    if (s.exercise_key !== cle || Number(s.reps) < reps) continue;
+    const k = s.activity_id ?? `jour:${iso(s)}`;
+    const x = par.get(k);
+    if (!x || Number(s.weight_kg) > Number(x.weight_kg)) par.set(k, s);
+  }
+  return [...par.values()]
+    .sort((a, b) => Number(b.weight_kg) - Number(a.weight_kg) || (iso(a) < iso(b) ? -1 : iso(a) > iso(b) ? 1 : 0))
+    .slice(0, n)
+    .map((s) => ({ valeur: Number(s.weight_kg), id: s.activity_id ?? '', nom: `${s.exercise_name || s.exercise_key} · ${detailSerie(s)}`, iso: iso(s) }));
+}
+
+/**
+ * La courbe de meilleurs efforts d'un exercice, comme la courbe de puissance du vélo : pour chaque nombre de répétitions de 1 à 12, les trois séances qui ont tenu la charge la plus lourde pour au moins ce nombre.
+ * `duree` porte le nombre de répétitions (la courbe tactile du vélo se sert du même format). Les nombres de répétitions jamais faits sont absents.
+ */
+export function courbeForce(series: readonly SerieForce[], cle: string, n = 3): PointCourbe[] {
+  const points: PointCourbe[] = [];
+  for (let reps = 1; reps <= REPETITIONS_COURBE_MAX; reps++) {
+    const top = classementRepetitions(series, cle, reps, n);
+    if (top.length) points.push({ duree: reps, top });
+  }
+  return points;
 }

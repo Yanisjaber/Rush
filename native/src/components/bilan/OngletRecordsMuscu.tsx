@@ -3,10 +3,11 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PodiumEfforts } from '@/components/bilan/PodiumEfforts';
 import { TuilesRecords } from '@/components/bilan/TuilesRecords';
 import { Bloc } from '@/components/feuilles/Bloc';
+import { CourbeEfforts, type AxeCourbe } from '@/components/graphes/CourbeEfforts';
 import { MenuMesure } from '@/components/menus/MenuMesure';
 import { activitesAnnee, type ActiviteBilan } from '@/data/bilan/bilan';
-import type { EntreeCourbe } from '@/data/bilan/records';
-import { chargeParRepetitions, exercicesDuCarnet, recordsExercice, recordsSeanceMuscu, seriesDeLAnnee, type RecordsExercice } from '@/data/bilan/records-muscu';
+import { indexDureeProche, type EntreeCourbe } from '@/data/bilan/records';
+import { classementRepetitions, courbeForce, exercicesDuCarnet, recordsExercice, recordsSeanceMuscu, REPETITIONS_COURBE_MAX, seriesDeLAnnee, type RecordsExercice } from '@/data/bilan/records-muscu';
 import { EnAnnee, enAnnee, texteRecordSimple, texteValeurRecord } from '@/data/bilan/records-texte';
 import { formatDateLongue } from '@/data/outils/format';
 import type { SerieForce } from '@/data/types';
@@ -15,7 +16,7 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // L'onglet Records de la musculation : tes records de séance (mini tuiles : tonnage, séries, répétitions, charge la plus lourde, durée), puis tes records par exercice
-// (1RM estimé, charge max, répétitions max, volume de séance : on choisit l'exercice et la mesure dans deux menus), avec le classement des séances et la charge tenue pour 1 à 12 répétitions.
+// (1RM estimé, charge max, répétitions max, volume de séance : on choisit l'exercice et la mesure dans deux menus), avec le classement des séances, puis la courbe de tes meilleurs efforts (la charge la plus lourde tenue pour 1 à 12 répétitions, qu'on touche pour lire un nombre de répétitions et voir son classement).
 // Les séries viennent du carnet de force ; l'année choisie ou « Tout » (tout l'historique) change la période, et chaque record dit ce que vaut l'autre.
 interface Props {
   portee: 'annee' | 'tout';
@@ -28,6 +29,17 @@ interface Props {
   maintenant: Date;
   onOuvrir: (id: string) => void;
 }
+
+/** L'axe de la courbe de force : de 1 à 12 répétitions. */
+const AXE_REPETITIONS: AxeCourbe = {
+  min: 1,
+  max: REPETITIONS_COURBE_MAX,
+  reperes: [[1, '1'], [3, '3'], [5, '5'], [8, '8'], [12, '12']],
+  cles: [1, 3, 5, 8, 10], // pas le 12 : sa valeur écrite sortirait de la carte, à droite de l'axe
+  texte: (v) => `${v} rép.`,
+};
+/** Le point montré au départ : 5 répétitions (la série de force classique). */
+const REPETITIONS_DEPART = 5;
 
 type MesureExercice = keyof RecordsExercice;
 const MESURES_EXERCICE: { cle: MesureExercice; nom: string }[] = [
@@ -45,6 +57,7 @@ export function OngletRecordsMuscu({ portee, toutes, series, chargement, annee, 
   const couleur = couleurSport(p, 'muscu');
   const [exerciceChoisi, setExerciceChoisi] = useState<string | null>(null);
   const [mesure, setMesure] = useState<MesureExercice>('rm');
+  const [repsChoisies, setRepsChoisies] = useState<number | null>(null); // le nombre de répétitions touché sur la courbe ; null : 5
 
   const sortiesAnnee = useMemo(() => activitesAnnee(toutes, annee, maintenant), [toutes, annee, maintenant]);
   const seriesAnnee = useMemo(() => seriesDeLAnnee(series, annee), [series, annee]);
@@ -58,7 +71,14 @@ export function OngletRecordsMuscu({ portee, toutes, series, chargement, annee, 
   const exercice = exercices.find((e) => e.cle === exerciceChoisi) ?? exercices[0] ?? null;
   const records = useMemo(() => (exercice ? recordsExercice(seriesPortee, exercice.cle) : null), [exercice, seriesPortee]);
   const recordsAutre = useMemo(() => (exercice ? recordsExercice(seriesAutre, exercice.cle) : null), [exercice, seriesAutre]);
-  const force = useMemo(() => (exercice ? chargeParRepetitions(seriesPortee, exercice.cle) : []), [exercice, seriesPortee]);
+  // La courbe des meilleurs efforts de l'exercice : la période choisie, et l'autre en pointillés
+  const courbe = useMemo(() => (exercice ? courbeForce(seriesPortee, exercice.cle) : []), [exercice, seriesPortee]);
+  const courbeAutre = useMemo(() => (exercice ? courbeForce(seriesAutre, exercice.cle) : []), [exercice, seriesAutre]);
+  const indexChoisi = courbe.length ? indexDureeProche(courbe, repsChoisies ?? REPETITIONS_DEPART) : -1;
+  const point = indexChoisi >= 0 ? courbe[indexChoisi] : null;
+  const meilleurPoint = point?.top[0];
+  const pointAutre = point ? courbeAutre.find((x) => x.duree === point.duree) : undefined;
+  const classementReps = useMemo(() => (exercice && point ? classementRepetitions(seriesPortee, exercice.cle, point.duree) : []), [exercice, point, seriesPortee]);
   const mesureInfo = MESURES_EXERCICE.find((m) => m.cle === mesure) ?? MESURES_EXERCICE[0];
   const record = records?.[mesure] ?? null;
   const recordAutre = recordsAutre?.[mesure] ?? null;
@@ -75,7 +95,7 @@ export function OngletRecordsMuscu({ portee, toutes, series, chargement, annee, 
     return Math.abs(a - b) < 1e-9 ? { texte: `Fait ${enAnnee(annee, maintenant)}`, ok: true } : { texte: `${EnAnnee(annee, maintenant)} : ${texteRecordSimple(b, unite)}`, ok: false };
   };
   const cmp = record?.top[0] ? comparaison(record.top[0].valeur, recordAutre?.top[0]?.valeur, record.unite) : null;
-  const maxForce = Math.max(1, ...force.map((f) => f.poids));
+  const cmpPoint = meilleurPoint ? comparaison(meilleurPoint.valeur, pointAutre?.top[0]?.valeur, 'kg') : null;
 
   if (!basiques.length && !exercice) {
     return (
@@ -123,25 +143,48 @@ export function OngletRecordsMuscu({ portee, toutes, series, chargement, annee, 
         </Bloc>
       ) : null}
 
-      {exercice && force.length ? (
-        <Bloc titre="Charge par répétitions">
+      {exercice && courbe.length ? (
+        <Bloc>
+          <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte }]}>
+            Meilleurs efforts
+          </Text>
           <Text style={[typo.petit, styles.explication, { color: p.texteMuet }]}>{exercice.nom} : la charge la plus lourde tenue pour au moins ce nombre de répétitions.</Text>
-          <View accessible accessibilityLabel={`Charge la plus lourde par nombre de répétitions, ${exercice.nom} : ${force.map((f) => `${f.reps} répétitions, ${texteRecordSimple(f.poids, 'kg')}`).join(' ; ')}`} style={styles.barres}>
-            {force.map((f) => (
-              <View key={f.reps} style={styles.ligne}>
-                <Text style={[typo.petit, styles.reps, { color: p.texteDoux }]}>{f.reps} rép.</Text>
-                <View style={[styles.piste, { backgroundColor: p.surface2 }]}>
-                  <View style={{ width: `${Math.max(4, (f.poids / maxForce) * 100)}%`, height: '100%', borderRadius: 4, backgroundColor: couleur }} />
-                </View>
-                <Text style={[styles.poids, { color: p.texte }]}>{texteRecordSimple(f.poids, 'kg')}</Text>
-              </View>
-            ))}
-          </View>
+          <CourbeEfforts
+            courbe={courbe}
+            autre={portee === 'annee' && courbeAutre.length ? courbeAutre : undefined}
+            formater={(v) => texteRecordSimple(v, 'kg')}
+            axe={AXE_REPETITIONS}
+            serre
+            selection={indexChoisi >= 0 ? indexChoisi : null}
+            onSelection={(i) => setRepsChoisies(i == null ? null : (courbe[i]?.duree ?? null))}
+            couleur={couleur}
+            etiquette={`Courbe de force au ${exercice.nom}, ${portee === 'annee' ? annee : 'tous temps'} : ${courbe
+              .filter((x) => AXE_REPETITIONS.cles.includes(x.duree))
+              .map((x) => `${x.duree} répétitions ${texteRecordSimple(x.top[0].valeur, 'kg')}`)
+              .join(', ')}.`}
+          />
+          {point && meilleurPoint ? (
+            <View accessible accessibilityLabel={`${point.duree} répétitions : ${texteRecordSimple(meilleurPoint.valeur, 'kg')}, ${meilleurPoint.nom}, ${dateAnnee(meilleurPoint.iso)}`} style={styles.lectureCourbe}>
+              <Text numberOfLines={2} style={[typo.petit, { color: p.texteDoux, textAlign: 'center' }]}>
+                {meilleurPoint.nom} · {dateAnnee(meilleurPoint.iso)}
+              </Text>
+              {cmpPoint ? (
+                <Text style={[typo.petit, { color: cmpPoint.ok ? p.texte : p.texteMuet, textAlign: 'center' }]}>
+                  {cmpPoint.ok ? '✓ ' : ''}
+                  {cmpPoint.texte}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
         </Bloc>
       ) : null}
 
+      {exercice && point && classementReps.filter((e) => e.id).length > 1 ? (
+        <PodiumEfforts titre={`Classement · ${point.duree} rép. ou plus`} entrees={classementReps.filter((e) => e.id)} unite="kg" sousPremiere={null} onOuvrir={onOuvrir} />
+      ) : null}
+
       {exercice && classement.length > 1 ? (
-        <PodiumEfforts titre={`Classement · ${exercice.nom} · ${mesureInfo.nom}`} entrees={classement} unite={record?.unite ?? 'kg'} sousPremiere={null} onOuvrir={onOuvrir} />
+        <PodiumEfforts titre={`Classement · ${mesureInfo.nom}`} entrees={classement} unite={record?.unite ?? 'kg'} sousPremiere={null} onOuvrir={onOuvrir} />
       ) : null}
     </>
   );
@@ -152,9 +195,5 @@ const styles = StyleSheet.create({
   lecture: { gap: 2 },
   valeur: { fontFamily: police.titre800, fontSize: 34, lineHeight: 38, fontVariant: ['tabular-nums'] },
   explication: { marginBottom: 10 },
-  barres: { gap: 8 },
-  ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 28 },
-  reps: { width: 52 },
-  piste: { flex: 1, height: 10, borderRadius: 5, overflow: 'hidden' },
-  poids: { width: 74, textAlign: 'right', fontFamily: police.titre700, fontSize: 15, fontVariant: ['tabular-nums'] },
+  lectureCourbe: { alignItems: 'center', gap: 2, marginTop: 10 },
 });

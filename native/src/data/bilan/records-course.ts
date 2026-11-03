@@ -4,7 +4,11 @@
 import { formatChrono } from '../outils/format.ts';
 import type { EntreeCourbe, PointCourbe } from './records.ts';
 
-export type CleCourbeCourse = 'pace' | 'dis' | 'fc';
+/** `pace` : l'allure sur chaque distance ; `pacedur` : l'allure sur chaque durée (la courbe de meilleurs efforts comme la puissance du vélo : ta meilleure allure tenue 1 min, 5 min, 20 min, 1 h) ; `dis` : la distance sur chaque durée ; `fc` : la FC sur chaque durée. */
+export type CleCourbeCourse = 'pace' | 'pacedur' | 'dis' | 'fc';
+
+/** Le nom du signal côté serveur : l'allure par durée se déduit de la meilleure distance par durée (`dis`), il n'y a rien de plus à calculer. */
+export const signalServeur = (signal: CleCourbeCourse): 'pace' | 'dis' | 'fc' => (signal === 'pacedur' ? 'dis' : signal);
 
 export interface SignalCourse {
   cle: CleCourbeCourse;
@@ -19,7 +23,8 @@ export interface SignalCourse {
 }
 
 export const SIGNAUX_COURSE: SignalCourse[] = [
-  { cle: 'pace', court: 'Allure', nom: 'Allure', unite: 'allure', axe: 'distance' },
+  { cle: 'pacedur', court: 'Allure / durée', nom: 'Allure par durée', unite: 'allure', axe: 'duree' },
+  { cle: 'pace', court: 'Allure / distance', nom: 'Allure par distance', unite: 'allure', axe: 'distance' },
   { cle: 'dis', court: 'Distance', nom: 'Distance', unite: 'km', axe: 'duree' },
   { cle: 'fc', court: 'FC', nom: 'Fréquence cardiaque', unite: 'bpm', axe: 'duree' },
 ];
@@ -35,11 +40,13 @@ export interface LigneCourbeCourse {
 }
 
 /**
- * La valeur écrite d'une ligne : l'allure devient une vitesse en km/h (le meilleur temps sur la distance → distance ÷ temps), la plus haute gagne comme partout ;
+ * La valeur écrite d'une ligne : l'allure devient une vitesse en km/h (le meilleur temps sur la distance → distance ÷ temps, ou la meilleure distance sur la durée → distance ÷ durée), la plus haute gagne comme partout ;
  * la distance passe de mètres en km ; la FC reste en bpm.
  */
 export function valeurDeLigne(signal: CleCourbeCourse, cle: number, valeur: number): number {
   if (signal === 'pace') return valeur > 0 ? (cle / valeur) * 3.6 : 0;
+  // L'allure par durée : la meilleure distance (mètres) sur `cle` secondes → une vitesse en km/h
+  if (signal === 'pacedur') return cle > 0 ? (valeur / cle) * 3.6 : 0;
   if (signal === 'dis') return valeur / 1000;
   return valeur;
 }
