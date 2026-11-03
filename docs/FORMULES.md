@@ -196,6 +196,16 @@ Mêmes règles de preuve et de score global que la course. Code : `native/src/da
 - Le carnet de force commence au premier import : les années d'avant n'ont ni force ni équilibre prouvés, donc pas de score global (« — »), mais leur volume (heures) et leur régularité restent affichés.
 - **Forme par saison** (musculation) : la force semaine par semaine (`forme-force.ts`) : chaque exercice principal donne un point par séance (son meilleur 1RM du jour ÷ son record) ; la force d'une semaine est la moyenne de ces points jusqu'à sa fin, chaque point pesant moitié moins tous les 28 jours ; 100 = ta meilleure semaine, 0 = 30 % en dessous. Peu de séances récentes ramènent la note vers le bas ; après plus de 2 semaines sans séance elle baisse de 5 % par semaine (au plus de moitié) et passe en pointillé. Barres du bas : le **tonnage** de la semaine (en tonnes).
 
+## 7. Niveau global au triathlon et au duathlon (4 nov. 2026)
+
+Même mécanique que la course et la musculation (sections 5 et 6, `piliers-sport.ts`) : une note par pilier, réduite de la part de preuve qui manque, score global seulement si **3 piliers** ont toutes leurs preuves. Code : `native/src/data/bilan/piliers-triathlon.ts`. Les séances du filtre sont celles de la **natation, du vélo et de la course** (un triathlète a presque toutes ses séances dans ces sports, pas dans le type « Triathlon », propre à l'app) ; le duathlon garde le vélo et la course.
+
+- **Natation** (triathlon seulement) : l'allure **médiane** au 100 m des séances de 300 m ou plus de l'année, contre ta meilleure année (100 = ta meilleure, 0 = 25 % plus lent). Preuve : 3 séances de 300 m ou plus dans l'année.
+- **Vélo** : le score du niveau global du vélo de l'année (section 4). Sans score cette année-là (moins de 3 piliers mesurés), le pilier n'a pas de preuve.
+- **Course** : le score du niveau global de la course de l'année (section 5), même règle.
+- **Volume** : 50 % les heures, 25 % les jours actifs, 25 % les **journées multisport** (un jour avec au moins deux disciplines différentes : un enchaînement, ou « brick ») de l'année, contre la moyenne de tes 3 meilleures années (0 à 40 %), ramenés à 365 jours pour l'année en cours et la première (à partir de 30 jours).
+- Un triathlète sans natation mesurée a quand même un score avec vélo, course et volume ; un duathlète a 3 piliers et il les faut tous.
+
 ## Historique
 
 - 2026-11-02 : création, ajout du TSS, du CTL/ATL/TSB, du score d'endurance et d'une proposition de score de puissance.
@@ -215,3 +225,4 @@ Mêmes règles de preuve et de score global que la course. Code : `native/src/da
 - 2026-11-03 : endurance mise en code (D sur 20 min après 30 kJ/kg, R sur le meilleur 2 h 30 de l'année, C sur les 10 sorties de plus de 2 h à la plus haute puissance normalisée de l'année) ; durabilité, répétabilité et charge ajoutées au recueil ; CTL/ATL décrits tels que la base les calcule.
 - 2026-11-02 : durabilité retirée (pilier et lettre D de l'endurance) ; l'endurance passe à 35 % F, 30 % H, 35 % C ; le niveau global devient la moyenne de 4 piliers.
 - 2026-11-04 : niveau global de la course (vitesse, endurance, efficacité, volume) et de la musculation (force, volume, régularité, équilibre) sur le modèle du vélo ; forme par saison de la course (allure à cardio égal) et de la musculation (force) ; courbes de course côté serveur (meilleurs temps par distance, pauses et sauts de GPS écartés).
+- 2026-11-04 : Bilan du triathlon et du duathlon (filtre multisport, résumé, rythme, records par discipline, niveau global à 4 piliers) ; allure moyenne au 100 m dans les records de natation.
