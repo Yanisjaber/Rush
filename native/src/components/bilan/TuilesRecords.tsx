@@ -30,7 +30,7 @@ const dateAnnee = (iso: string): string => `${formatDateLongue(iso)} ${iso.slice
 const HAUTEUR_LIGNE = 70;
 
 /** Le nom d'un record sur une mini tuile (quatre par rangée, donc très étroite) : le détail, qui sort au toucher, donne le nom entier. */
-const NOM_TUILE: Record<string, string> = { duree: 'Durée', distance: 'Distance', dplus: 'D+', tss: 'Charge', vmoy: 'Vitesse moy.', pmoy: 'Puiss. moy.', fcmoy: 'FC moy.', kj: 'Énergie', tonnage: 'Tonnage', series: 'Séries', reps: 'Répét.', poids: 'Charge max', allure: 'Allure moy.' };
+const NOM_TUILE: Record<string, string> = { duree: 'Durée', distance: 'Distance', dplus: 'D+', tss: 'Charge', vmoy: 'Vitesse moy.', pmoy: 'Puiss. moy.', fcmoy: 'FC moy.', kj: 'Énergie', tonnage: 'Tonnage', series: 'Séries', reps: 'Répét.', poids: 'Charge max', allure: 'Allure moy.', allure100: 'Allure moy.', nat_distance: 'Natation', velo_distance: 'Vélo', course_distance: 'Course', velo_dplus: 'D+ vélo' };
 
 export function TuilesRecords({ records, recordsAutre, portee, annee, maintenant, couleur, onOuvrir }: Props) {
   const p = usePalette();

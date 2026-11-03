@@ -2,7 +2,7 @@
 //
 // Une « activité » de bilan est normalisée : { id, name, iso, sport, duree_min, distance_km, d_plus, tss }
 // où `sport` est une famille de bilan : 'cyclisme' | 'course' | 'natation' | 'musculation' | 'autre'.
-import { familleAffichage } from '../sports/familles.ts';
+import { DISCIPLINES_DU_FILTRE, familleAffichage } from '../sports/familles.ts';
 import { intensiteDeCharge, type CaseRegularite } from './synthese.ts';
 import type { Seance, SerieForce } from '../types.ts';
 
@@ -50,6 +50,27 @@ export function familleBilan(sportBrut: unknown): SportBilan {
   if (f === 'muscu') return 'musculation';
   if (f === 'hyrox' || f === 'triathlon' || f === 'duathlon') return f;
   return 'autre';
+}
+
+/**
+ * Une activité passe-t-elle le filtre de sport du Bilan ? Le sport du filtre ; mais « Triathlon » et « Duathlon » regroupent leurs disciplines (natation, vélo, course) : un triathlète a ses séances
+ * en natation, vélo et course, presque jamais en « triathlon » (type propre à l'app). « Tout » garde tout.
+ */
+export function dansLeFiltre(a: Pick<ActiviteBilan, 'famille'>, filtre: string): boolean {
+  if (filtre === 'tout') return true;
+  return Object.hasOwn(DISCIPLINES_DU_FILTRE, filtre) ? DISCIPLINES_DU_FILTRE[filtre].includes(a.famille) : a.famille === filtre;
+}
+
+/** Les disciplines d'un filtre multisport (triathlon : natation, vélo, course ; duathlon : course, vélo), vide pour un autre filtre. */
+export function disciplinesDuFiltre(filtre: string): ('natation' | 'velo' | 'course')[] {
+  return filtre === 'triathlon' ? ['natation', 'velo', 'course'] : filtre === 'duathlon' ? ['course', 'velo'] : [];
+}
+
+/** Les kilomètres de chaque discipline (natation, vélo, course) d'un groupe d'activités. */
+export function kmParDiscipline(acts: readonly ActiviteBilan[]): Record<'natation' | 'velo' | 'course', number> {
+  const km = { natation: 0, velo: 0, course: 0 };
+  for (const a of acts) if (a.famille === 'natation' || a.famille === 'velo' || a.famille === 'course') km[a.famille] += a.distance_km;
+  return km;
 }
 
 /** Famille de bilan correspondant à un filtre global de sport (« velo » → cyclisme, « muscu » → musculation…), ou null pour « tout ». */
@@ -361,7 +382,7 @@ export const recordRecent = (iso: string, maintenant: Date = new Date()): boolea
 // --- Séries pour les graphiques ------------------------------------------------------------------------------------------
 
 /** Ce qu'on peut cumuler dans le graphique « Cumul sur 3 ans ». */
-export type MetriqueCumul = 'distance_km' | 'd_plus' | 'seances' | 'tss' | 'heures' | 'series' | 'reps' | 'tonnage' | 'allure' | 'fc';
+export type MetriqueCumul = 'distance_km' | 'd_plus' | 'seances' | 'tss' | 'heures' | 'series' | 'reps' | 'tonnage' | 'allure' | 'fc' | 'km_natation' | 'km_velo' | 'km_course';
 
 /** Les mesures proposées dans le menu : le nom, l'unité écrite à côté des valeurs et la phrase lue par VoiceOver. */
 export const MESURES_CUMUL: { cle: MetriqueCumul; nom: string; unite: string; phrase: string }[] = [
@@ -398,13 +419,21 @@ const MESURES_ALLURE: MesureDef[] = [
   { cle: 'fc', nom: 'FC moyenne', unite: 'bpm', phrase: 'de la fréquence cardiaque moyenne', moyenne: true, decimales: 0 },
 ];
 const parCle = (liste: MesureDef[], cles: MetriqueCumul[]): MesureDef[] => cles.map((c) => liste.find((m) => m.cle === c)!);
-const TOUTES = [...COMMUNES, ...MESURES_FORCE, ...MESURES_ALLURE];
+/** Triathlon et duathlon : les kilomètres de chaque discipline (additionner natation, vélo et course n'aurait pas de sens). */
+const MESURES_DISCIPLINES: MesureDef[] = [
+  { cle: 'km_natation', nom: 'Natation', unite: 'km', phrase: 'des kilomètres de natation', decimales: 1 },
+  { cle: 'km_velo', nom: 'Vélo', unite: 'km', phrase: 'des kilomètres de vélo', decimales: 0 },
+  { cle: 'km_course', nom: 'Course', unite: 'km', phrase: 'des kilomètres de course', decimales: 0 },
+];
+const TOUTES = [...COMMUNES, ...MESURES_FORCE, ...MESURES_ALLURE, ...MESURES_DISCIPLINES];
 /** La définition d'une mesure (nom, unité, décimales) : les cinq communes, la force, l'allure et la FC. */
 export const mesureDef = (cle: MetriqueCumul): MesureDef => TOUTES.find((m) => m.cle === cle) ?? COMMUNES[0];
 /** Les mesures proposées dans les menus du Rythme et du cumul pour le sport du filtre (« muscu », « course »…) : la musculation compte en séries et en tonnage, la course lit l'allure et la FC. */
 export function mesuresDuSport(filtre: string): MesureDef[] {
   if (filtre === 'muscu') return parCle(TOUTES, ['seances', 'heures', 'series', 'reps', 'tonnage', 'tss']);
   if (filtre === 'course') return parCle(TOUTES, ['distance_km', 'allure', 'fc', 'd_plus', 'seances', 'heures', 'tss']);
+  if (filtre === 'triathlon') return parCle(TOUTES, ['heures', 'seances', 'tss', 'km_natation', 'km_velo', 'km_course']);
+  if (filtre === 'duathlon') return parCle(TOUTES, ['heures', 'seances', 'tss', 'km_velo', 'km_course']);
   return COMMUNES;
 }
 /** La mesure demandée si ce sport la propose, sinon la première de ses mesures (un menu choisi sur un sport ne doit pas fausser un autre). */
@@ -422,7 +451,10 @@ export const valeurCumul = (a: ActiviteBilan, m: MetriqueCumul): number =>
               : m === 'tonnage' ? (a.tonnage ?? 0) / 1000
                 : m === 'allure' ? (a.distance_km > 0 ? a.duree_min : 0)
                   : m === 'fc' ? ((a.fc ?? 0) > 0 ? (a.fc ?? 0) * a.duree_min : 0)
-                    : a.distance_km;
+                    : m === 'km_natation' ? (a.famille === 'natation' ? a.distance_km : 0)
+                      : m === 'km_velo' ? (a.famille === 'velo' ? a.distance_km : 0)
+                        : m === 'km_course' ? (a.famille === 'course' ? a.distance_km : 0)
+                          : a.distance_km;
 /** Le bas de la fraction d'une mesure moyenne (km pour l'allure, minutes avec FC pour la FC) ; 1 pour une somme. */
 export const poidsCumul = (a: ActiviteBilan, m: MetriqueCumul): number => (m === 'allure' ? (a.distance_km > 0 ? a.distance_km : 0) : m === 'fc' ? ((a.fc ?? 0) > 0 ? a.duree_min : 0) : 1);
 export const estMoyenne = (m: MetriqueCumul): boolean => m === 'allure' || m === 'fc';

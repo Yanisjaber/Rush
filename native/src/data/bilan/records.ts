@@ -216,6 +216,9 @@ export function recordsBasiquesVelo(sorties: SortieVelo[]): RecordTop[] {
   return records.filter((r) => r.top.length);
 }
 
+/** Une allure de natation n'a de sens qu'à partir de 300 m. */
+const DISTANCE_MIN_ALLURE_NATATION = 0.3;
+
 /** Une vitesse moyenne de course n'a de sens que sur une vraie sortie (5 km ou plus). */
 const DISTANCE_MIN_VITESSE_COURSE = 5;
 
@@ -236,6 +239,10 @@ export function recordsBasiquesActivites(acts: ActiviteBilan[], famille: string)
     // L'allure moyenne se classe par vitesse (la plus haute gagne) et s'écrit en minutes par km ; la FC moyenne comme sur le vélo (30 minutes ou plus, valeurs de capteur crédibles)
     records.push(fabrique('allure', 'Allure moyenne', 'allure', acts.filter((a) => a.distance_km >= DISTANCE_MIN_VITESSE_COURSE && a.duree_min > 0).map((a) => entree(a, a.distance_km / (a.duree_min / 60)))));
     records.push(fabrique('fcmoy', 'Plus grosse FC moyenne', 'bpm', acts.filter((a) => a.duree_min >= DUREE_MIN_MOYENNE && (a.fc ?? 0) > 0 && (a.fc ?? 0) <= FC_MOYENNE_MAX_CREDIBLE).map((a) => entree(a, a.fc ?? 0))));
+  }
+  if (famille === 'natation') {
+    // L'allure moyenne se classe par vitesse (la plus haute gagne) et s'écrit en minutes et secondes pour 100 m ; sous 300 m, l'allure n'est pas fiable (départs, plongeons, repos : même seuil que la progression)
+    records.push(fabrique('allure100', 'Allure moyenne', 'allure100', acts.filter((a) => a.distance_km >= DISTANCE_MIN_ALLURE_NATATION && a.duree_min > 0).map((a) => entree(a, a.distance_km / (a.duree_min / 60)))));
   }
   return records.filter((r) => r.top.length);
 }

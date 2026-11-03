@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  avecForce, mesureDef, mesureParSemaine, mesureValide, mesuresDuSport, moyennesParJourSemaine, sommer, valeursParMois, type ActiviteBilan,
+  avecForce, dansLeFiltre, disciplinesDuFiltre, kmParDiscipline, mesureDef, mesureParSemaine, mesureValide, mesuresDuSport, moyennesParJourSemaine, sommer, valeursParMois, type ActiviteBilan,
 } from '../../src/data/bilan/bilan.ts';
 import type { SerieForce } from '../../src/data/types.ts';
 
@@ -92,4 +92,28 @@ test('valeursParMois, mesureParSemaine, moyennesParJourSemaine : une mesure moye
   assert.equal(jours[6], 0);
   // Une somme reste une somme
   assert.equal(valeursParMois(course, 2026, 'distance_km')[0], 16);
+});
+
+test('dansLeFiltre : triathlon et duathlon regroupent leurs disciplines, les autres filtres gardent leur sport', () => {
+  const act = (famille: string): ActiviteBilan => ({ id: famille, name: famille, iso: '2026-01-01', sport: 'autre', famille, duree_min: 60, distance_km: 10, d_plus: 0, tss: 0 });
+  const tri = ['triathlon', 'natation', 'velo', 'course', 'muscu', 'autre'].filter((f) => dansLeFiltre(act(f), 'triathlon'));
+  assert.deepEqual(tri, ['triathlon', 'natation', 'velo', 'course']);
+  assert.deepEqual(['duathlon', 'natation', 'velo', 'course'].filter((f) => dansLeFiltre(act(f), 'duathlon')), ['duathlon', 'velo', 'course']);
+  assert.equal(dansLeFiltre(act('velo'), 'velo'), true);
+  assert.equal(dansLeFiltre(act('course'), 'velo'), false);
+  assert.equal(dansLeFiltre(act('muscu'), 'tout'), true);
+  assert.deepEqual(disciplinesDuFiltre('triathlon'), ['natation', 'velo', 'course']);
+  assert.deepEqual(disciplinesDuFiltre('duathlon'), ['course', 'velo']);
+  assert.deepEqual(disciplinesDuFiltre('velo'), []);
+});
+
+test('triathlon : les mesures sont le temps, les séances, la charge et les kilomètres de chaque discipline (jamais additionnés)', () => {
+  assert.deepEqual(mesuresDuSport('triathlon').map((m) => m.cle), ['heures', 'seances', 'tss', 'km_natation', 'km_velo', 'km_course']);
+  assert.deepEqual(mesuresDuSport('duathlon').map((m) => m.cle), ['heures', 'seances', 'tss', 'km_velo', 'km_course']);
+  const acts = [act('2026-01-05', 'natation', 40, 1.5, 0, 0, 'n'), act('2026-01-05', 'cyclisme', 90, 40, 0, 0, 'v'), act('2026-01-06', 'course', 50, 10, 0, 0, 'c')].map((a, i) => ({ ...a, famille: ['natation', 'velo', 'course'][i] }));
+  assert.deepEqual(kmParDiscipline(acts), { natation: 1.5, velo: 40, course: 10 });
+  assert.equal(valeursParMois(acts, 2026, 'km_velo')[0], 40);
+  assert.equal(valeursParMois(acts, 2026, 'km_natation')[0], 1.5);
+  assert.equal(valeursParMois(acts, 2026, 'km_course')[0], 10);
+  assert.equal(mesureDef('km_natation').decimales, 1);
 });

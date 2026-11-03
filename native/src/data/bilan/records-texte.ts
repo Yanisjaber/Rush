@@ -17,6 +17,11 @@ export function texteValeurRecord(valeur: number, unite: string): { nombre: stri
   if (unite === 'km' || unite === 'km/h' || unite === 'N·m' || unite === 't') return { nombre: formatNum(valeur, 1), unite };
   // Un poids : sans décimale quand il est rond (100 kg), avec une sinon (102,5 kg)
   if (unite === 'kg') return { nombre: formatNum(valeur, Number.isInteger(valeur) ? 0 : 1), unite };
+  // Une allure de natation : la valeur est une vitesse en km/h, écrite en minutes et secondes pour 100 m (3,4 km/h = 1'46"/100 m)
+  if (unite === 'allure100') {
+    const s = valeur > 0 ? Math.round(360 / valeur) : 0;
+    return { nombre: `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"`, unite: '/100 m' };
+  }
   // Une allure de course : la valeur est une vitesse en km/h (la plus haute gagne, comme pour les autres records), écrite en minutes et secondes par km
   if (unite === 'allure') {
     const s = valeur > 0 ? Math.round(3600 / valeur) : 0;

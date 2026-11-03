@@ -15,8 +15,8 @@ import { usePalette } from '@/theme/usePalette';
 // la carte de chaleur des quatre piliers par année, puis les blocs propres au sport (`children` : la courbe du niveau, la force par exercice, la forme semaine par semaine).
 // Calculs : data/bilan/piliers-course.ts, piliers-muscu.ts et docs/native/PROGRESSION_NIVEAU.md.
 interface Props {
-  /** Le sport : « course » ou « muscu » (icône, couleur). */
-  famille: 'course' | 'muscu';
+  /** Le sport : « course », « muscu », « triathlon » ou « duathlon » (icône, couleur). */
+  famille: 'course' | 'muscu' | 'triathlon' | 'duathlon';
   global: Niveau;
   /** L'année choisie en haut du Bilan : le niveau du haut, le point cerclé, la fenêtre de la carte des piliers. */
   annee: number;

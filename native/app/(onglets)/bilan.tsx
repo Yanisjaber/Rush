@@ -4,11 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarreSports } from '@/components/graphes/BarreSports';
+import { BarresEmpilees } from '@/components/graphes/BarresEmpilees';
 import { BarresHebdo } from '@/components/graphes/BarresHebdo';
 import { BarresMois } from '@/components/graphes/BarresMois';
 import { CourbeSemaine } from '@/components/graphes/CourbeSemaine';
 import { OngletRecordsSport } from '@/components/bilan/OngletRecordsSport';
 import { OngletRecordsTous } from '@/components/bilan/OngletRecordsTous';
+import { OngletRecordsTriathlon } from '@/components/bilan/OngletRecordsTriathlon';
 import { OngletRecordsCourse } from '@/components/bilan/OngletRecordsCourse';
 import { OngletRecordsMuscu } from '@/components/bilan/OngletRecordsMuscu';
 import { OngletRecordsVelo } from '@/components/bilan/OngletRecordsVelo';
@@ -23,10 +25,11 @@ import { ObjectifSegments } from '@/components/graphes/ObjectifSegments';
 import { OngletsIcones } from '@/components/menus/OngletsIcones';
 import { OngletsSegment } from '@/components/menus/OngletsSegment';
 import { TraitTirets } from '@/components/graphes/TraitTirets';
+import { NiveauGlobalSport } from '@/components/graphes/NiveauGlobalSport';
 import { ProgresSport } from '@/components/graphes/ProgresSport';
 import type { IconeOnglet } from '@/components/menus/OngletsIcones.types';
 import {
-  activitesAnnee, anneesDisponibles, avancement, avecForce, cumulParAnnee, valeursParMois, moyennesParJourSemaine, semainesDeLAnnee, mesureParSemaine, MESURES_CUMUL, mesureDef, mesureValide, mesuresDuSport, NOM_SPORT_BILAN, normaliser,
+  activitesAnnee, anneesDisponibles, avancement, avecForce, cumulParAnnee, dansLeFiltre, disciplinesDuFiltre, kmParDiscipline, valeursParMois, moyennesParJourSemaine, semainesDeLAnnee, mesureParSemaine, MESURES_CUMUL, mesureDef, mesureValide, mesuresDuSport, NOM_SPORT_BILAN, normaliser,
   regulariteAnnee, repartitionSport, sommer, familleBilanDuFiltre, decimalesObjectif, phraseVerdict, type MetriqueCumul,
 } from '@/data/bilan/bilan';
 import { formatAllure, formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
@@ -37,6 +40,7 @@ import { niveauxCourse, niveauxVelo } from '@/data/bilan/niveau-annees';
 import { mesuresCourse, niveauGlobalCourse } from '@/data/bilan/piliers-course';
 import { niveauGlobalMuscu } from '@/data/bilan/piliers-muscu';
 import { niveauGlobal, recordsDeMesures } from '@/data/bilan/piliers-niveau';
+import { mesuresMultisport, niveauGlobalMultisport } from '@/data/bilan/piliers-triathlon';
 import { courbeProgression, progressionTousSports, type PeriodeProgression } from '@/data/bilan/progression';
 import { sortiesCourse } from '@/data/bilan/progression-course';
 import { sortiesVelo as sortiesVeloProgres } from '@/data/bilan/progression-velo';
@@ -67,6 +71,7 @@ const ONGLETS: { cle: OngletBilan; nom: string; icone: IconeOnglet }[] = [
   { cle: 'progres', nom: 'Progrès', icone: 'progres' },
 ];
 const nomUnite = (u: string) => (u ? ` ${u}` : '');
+const NOM_DISCIPLINE: Record<string, string> = { natation: 'Natation', velo: 'Vélo', course: 'Course' };
 // Famille de bilan d'un objectif → famille de couleur de l'app (la couleur désigne le sport)
 const FAMILLE_COULEUR: Record<string, string> = { cyclisme: 'velo', course: 'course', natation: 'natation', musculation: 'muscu', hyrox: 'hyrox', triathlon: 'triathlon', duathlon: 'duathlon', autre: 'autre' };
 
@@ -123,23 +128,34 @@ export default function Bilan() {
   const toutes = useMemo(() => avecForce(brutes.map(normaliser), carnet.series), [brutes, carnet.series]);
   const annees = useMemo(() => anneesDisponibles(toutes, maintenant), [toutes, maintenant]);
   // Le filtre global de sport concerne les chiffres, records et graphiques ; pas les objectifs annuels
-  const filtrees = useMemo(() => (filtre === 'tout' ? toutes : toutes.filter((a) => a.famille === filtre)), [toutes, filtre]);
+  // (triathlon et duathlon regroupent leurs disciplines : natation, vélo, course)
+  const filtrees = useMemo(() => (filtre === 'tout' ? toutes : toutes.filter((a) => dansLeFiltre(a, filtre))), [toutes, filtre]);
+  const disciplines = useMemo(() => disciplinesDuFiltre(filtre), [filtre]);
+  const multisport = disciplines.length > 0;
 
   const courant = useMemo(() => sommer(activitesAnnee(filtrees, annee, maintenant)), [filtrees, annee, maintenant]);
   // Le grand chiffre : la distance de l'année (ou les séances quand le sport n'a pas de distance, comme la musculation), puis trois chiffres en colonnes
   const enCours = annee === maintenant.getFullYear();
+  // Triathlon et duathlon : le grand chiffre est le temps (additionner des km de natation, de vélo et de course n'a pas de sens) et les trois colonnes sont les km de chaque discipline
   const grand =
     courant.seances === 0
       ? null
-      : courant.distance > 0
+      : multisport
+        ? courant.heures < 10
+          ? { val: texteHM(Math.round(courant.heures * 60)), unite: '' }
+          : { val: formatNum(courant.heures, 0), unite: 'h' }
+        : courant.distance > 0
         ? { val: formatNum(courant.distance, 0), unite: 'km' }
         : { val: formatNum(courant.seances, 0), unite: courant.seances > 1 ? 'séances' : 'séance' };
   // Les trois chiffres sous le grand : le temps, puis ce qui compte pour le sport (musculation : les séries et le tonnage ; sinon, course comprise, les séances et la charge)
   // Moins de 10 h : « 0h30 », « 4h12 » (« 0 h » dirait que rien n'a été fait) ; au-delà, des heures rondes
   const temps = courant.heures > 0 ? (courant.heures < 10 ? { cle: 'heures', libelle: 'Temps', val: texteHM(Math.round(courant.heures * 60)), unite: '' } : { cle: 'heures', libelle: 'Temps', val: formatNum(courant.heures, 0), unite: 'h' }) : null;
+  const kmDisciplines = kmParDiscipline(activitesAnnee(filtrees, annee, maintenant));
   const colonnes = (
     // La course garde les trois chiffres des autres sports (demande de Yanis, 4 nov. 2026) : l'allure et la FC sont dans le Rythme
-    filtre === 'muscu'
+    multisport
+      ? disciplines.map((d) => ({ cle: d, libelle: NOM_DISCIPLINE[d], val: formatNum(kmDisciplines[d], d === 'natation' ? 1 : 0), unite: 'km' }))
+      : filtre === 'muscu'
         ? [temps, courant.series > 0 ? { cle: 'series', libelle: 'Séries', val: formatNum(courant.series, 0), unite: '' } : null, courant.tonnage > 0 ? { cle: 'tonnage', libelle: 'Tonnage', val: formatNum(courant.tonnage / 1000, 1), unite: 't' } : null]
         : [temps, courant.distance > 0 && courant.seances > 0 ? { cle: 'seances', libelle: 'Séances', val: formatNum(courant.seances, 0), unite: '' } : null, courant.tss > 0 ? { cle: 'effort', libelle: 'Charge', val: formatNum(courant.tss, 0), unite: '' } : null]
   ).filter((x): x is { cle: string; libelle: string; val: string; unite: string } => !!x);
@@ -158,7 +174,7 @@ export default function Bilan() {
   // Records : les sorties à vélo avec leurs colonnes en plus (puissance par durée, vitesse, énergie), chargées seulement sur l'onglet d'un sport vélo
   // « Tout » se compare à cette année, jamais à l'année qu'on avait choisie avant dans le menu
   const anneeRecords = toutTemps ? anneeCourante : annee;
-  const { sorties: sortiesVelo, poids: poidsVelo, courbeTout, courbeAnnee, chargement: chargementVelo, erreur: erreurVelo } = useRecordsVelo(onglet === 'records' && filtre === 'velo', anneeRecords);
+  const { sorties: sortiesVelo, poids: poidsVelo, courbeTout, courbeAnnee, chargement: chargementVelo, erreur: erreurVelo } = useRecordsVelo(onglet === 'records' && (filtre === 'velo' || (multisport && disciplines.includes('velo'))), anneeRecords);
   // Les mesures des menus dépendent du sport (musculation : séries, tonnage ; course : allure, FC) ; le cumul sur 3 ans n'additionne que les mesures qui se somment
   const mesuresSport = useMemo(() => mesuresDuSport(filtre), [filtre]);
   const mesuresCumul = useMemo(() => mesuresSport.filter((m) => !m.moyenne), [mesuresSport]);
@@ -168,7 +184,7 @@ export default function Bilan() {
   // Rythme : par mois (en km, ou en heures quand le sport n'a pas de distance, comme la musculation), charge par semaine, régularité
   const enKm = courant.distance > 0;
   // Musculation : le tonnage dès qu'il y en a (le carnet de force est lié aux séances), sinon les heures
-  const defautMesure: MetriqueCumul = filtre === 'muscu' ? (courant.tonnage > 0 ? 'tonnage' : 'heures') : enKm ? 'distance_km' : 'heures';
+  const defautMesure: MetriqueCumul = filtre === 'muscu' ? (courant.tonnage > 0 ? 'tonnage' : 'heures') : enKm && !multisport ? 'distance_km' : 'heures';
   const mesureMois: MetriqueCumul = mesureValide(mesures.mois ?? defautMesure, mesuresSport, defautMesure);
   const mesureSemaine: MetriqueCumul = mesureValide(mesures.semaine ?? defautMesure, mesuresSport, defautMesure);
   const mesureJour: MetriqueCumul = mesureValide(mesures.jour ?? defautMesure, mesuresSport, defautMesure);
@@ -240,10 +256,11 @@ export default function Bilan() {
   // Un bloc par sport mesurable : celui du filtre, ou tous ceux que tu pratiques sur « Tout »
   const progres = useMemo(() => {
     if (!progresOuvert) return [];
-    const familles = filtre === 'tout' ? [...new Set(toutes.map((a) => a.famille)), ...(carnet.series.length ? ['muscu'] : [])] : [filtre];
+    // Triathlon et duathlon : le progrès de chacune de leurs disciplines (en plus du niveau global multisport)
+    const familles = filtre === 'tout' ? [...new Set(toutes.map((a) => a.famille)), ...(carnet.series.length ? ['muscu'] : [])] : multisport ? [...disciplines] : [filtre];
     const donnees = { seances: historique.seances, series: carnet.series, hrMax: hrMax ?? null };
     return progressionTousSports(familles, donnees, JOURS_PROGRES, maintenant).map((prog) => ({ prog, courbe: courbeProgression(prog.famille, donnees, JOURS_PROGRES, maintenant) }));
-  }, [progresOuvert, filtre, toutes, historique.seances, carnet.series, hrMax, maintenant]);
+  }, [progresOuvert, filtre, multisport, disciplines, toutes, historique.seances, carnet.series, hrMax, maintenant]);
   // Le niveau année après année du vélo et de la course, sur tout l'historique
   const niveaux = useMemo(() => {
     if (!progresOuvert) return { velo: null, course: null, anneesVelo: [] as number[], sortiesVelo: [] as ReturnType<typeof sortiesVeloProgres> };
@@ -266,7 +283,7 @@ export default function Bilan() {
     [niveaux, historique.seances, annee, maintenant],
   );
   // Le niveau global de la course : les courbes du serveur (meilleurs temps et distances), le volume des séances et le niveau à cardio égal ; il ne remplace l'ancienne page que s'il a de quoi dire quelque chose
-  const piliersCourse = usePiliersCourse(progresOuvert && (filtre === 'course' || filtre === 'tout'));
+  const piliersCourse = usePiliersCourse(progresOuvert && (filtre === 'course' || filtre === 'tout' || disciplines.includes('course')));
   const niveauCourse = useMemo(() => {
     if (!progresOuvert || !toutes.some((a) => a.sport === 'course')) return null;
     const g = niveauGlobalCourse(mesuresCourse(piliersCourse.lignes, toutes, niveaux.course, maintenant));
@@ -279,8 +296,14 @@ export default function Bilan() {
   // Le niveau global de la musculation : le carnet de force (force, équilibre) et les séances (volume, régularité) ; sans carnet, l'ancienne page (1RM sur 12 mois) reste
   const niveauMuscu = useMemo(() => (progresOuvert && carnet.series.length ? niveauGlobalMuscu(carnet.series, toutes, maintenant) : null), [progresOuvert, carnet.series, toutes, maintenant]);
   const formeMuscu = useMemo(() => (progresOuvert && niveauMuscu ? formeForceParSemaine(carnet.series, annee, maintenant) : null), [progresOuvert, niveauMuscu, carnet.series, annee, maintenant]);
-  // L'année choisie en haut ne sert que s'il y a un niveau global à lire (vélo, course ou musculation) ; sinon elle reste affichée mais grisée
-  const anneeInutile = onglet === 'progres' && !progres.some(({ prog }) => (prog.famille === 'velo' && niveauGlobalVelo) || (prog.famille === 'course' && niveauCourse) || (prog.famille === 'muscu' && niveauMuscu));
+  // Le niveau global du triathlon et du duathlon : un pilier par discipline (le score du niveau global du vélo et de la course de chaque année, l'allure au 100 m en natation) et le volume
+  const niveauMultisport = useMemo(() => {
+    if (!progresOuvert || !multisport) return null;
+    const scores = (g: { annees: { an: number; global: number | null }[] } | null): Map<number, number | null> => new Map((g?.annees ?? []).map((a) => [a.an, a.global]));
+    return niveauGlobalMultisport(mesuresMultisport(filtrees, disciplines, maintenant), disciplines, scores(niveauGlobalVelo), scores(niveauCourse));
+  }, [progresOuvert, multisport, filtrees, disciplines, maintenant, niveauGlobalVelo, niveauCourse]);
+  // L'année choisie en haut ne sert que s'il y a un niveau global à lire (vélo, course, musculation ou multisport) ; sinon elle reste affichée mais grisée
+  const anneeInutile = onglet === 'progres' && !(niveauMultisport || progres.some(({ prog }) => (prog.famille === 'velo' && niveauGlobalVelo) || (prog.famille === 'course' && niveauCourse) || (prog.famille === 'muscu' && niveauMuscu)));
 
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
@@ -547,6 +570,21 @@ export default function Bilan() {
                   />
                 </Bloc>
 
+                {/* Triathlon et duathlon : le temps de chaque discipline, semaine après semaine (les heures de natation, de vélo et de course empilées) */}
+                {multisport ? (
+                  <Bloc titre="Temps par discipline">
+                    <Text style={[typo.petit, styles.lecture, { color: p.texteMuet }]}>
+                      {disciplines.map((d) => `${NOM_DISCIPLINE[d]} ${texteHM(Math.round(activitesAnnee(filtrees.filter((a) => a.famille === d), annee, maintenant).reduce((t, a) => t + a.duree_min, 0)))}`).join(' · ')}
+                    </Text>
+                    <BarresEmpilees
+                      series={disciplines.map((d) => ({ nom: NOM_DISCIPLINE[d], couleur: couleurSport(p, d), valeurs: mesureParSemaine(filtrees.filter((a) => a.famille === d), annee, 'heures').slice(0, derniereSemaine + 1) }))}
+                      etiquettes={[]}
+                      hauteur={140}
+                      etiquette={`Heures par semaine et par discipline en ${annee} : ${disciplines.map((d) => NOM_DISCIPLINE[d]).join(', ')}`}
+                    />
+                  </Bloc>
+                ) : null}
+
                 <Bloc titre="Régularité">
                   <Text style={[typo.petit, styles.lecture, { color: selJour ? p.texte : p.texteMuet }]}>
                     {(() => {
@@ -610,6 +648,16 @@ export default function Bilan() {
                   erreur={erreurVelo}
                   onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
                 />
+              ) : multisport ? (
+                <OngletRecordsTriathlon
+                  portee={toutTemps ? 'tout' : 'annee'}
+                  toutes={filtrees}
+                  disciplines={disciplines}
+                  annee={anneeRecords}
+                  maintenant={maintenant}
+                  velo={{ sorties: sortiesVelo, poids: poidsVelo, courbeAnnee, courbeTout, chargement: chargementVelo, erreur: erreurVelo }}
+                  onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
+                />
               ) : filtre === 'course' ? (
                 <OngletRecordsCourse
                   portee={toutTemps ? 'tout' : 'annee'}
@@ -656,8 +704,10 @@ export default function Bilan() {
                   <View accessible accessibilityLabel="Chargement des progrès" style={styles.attente}>
                     <ActivityIndicator color={p.texteDoux} />
                   </View>
-                ) : progres.length ? (
-                  progres.map(({ prog, courbe }) => (
+                ) : progres.length || niveauMultisport ? (
+                  <>
+                    {niveauMultisport ? <NiveauGlobalSport famille={filtre === 'duathlon' ? 'duathlon' : 'triathlon'} global={niveauMultisport} annee={annee} onChoisirAnnee={setAnneeChoisie} /> : null}
+                    {progres.map(({ prog, courbe }) => (
                     <ProgresSport
                       key={prog.famille}
                       progression={prog}
@@ -672,7 +722,8 @@ export default function Bilan() {
                       forme={prog.famille === 'velo' ? formeSaison : prog.famille === 'course' ? formeCourse : prog.famille === 'muscu' ? formeMuscu : null}
                       onChoisirAnnee={setAnneeChoisie}
                     />
-                  ))
+                    ))}
+                  </>
                 ) : (
                   <Bloc titre="Progrès">
                     <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de progression mesurable pour ce sport : on sait la suivre en course, vélo, natation et musculation.</Text>
