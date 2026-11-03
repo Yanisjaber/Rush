@@ -3,7 +3,7 @@
 // - la pente du cardio et la correction du home-trainer viennent d'une seule régression sur tout l'historique (une colonne par trimestre, comme la courbe Forme) ;
 // - les watts de chaque sortie de la fenêtre sont ramenés au cardio de référence, puis moyennés ; la marge d'erreur vient de leur dispersion ;
 // - le score utilise la même échelle que la courbe Forme (100 = ton meilleur trimestre, voir niveau-annees.ts).
-// - après plus de 6 semaines sans sortie mesurée, ce n'est pas un trou : la forme baisse quand on ne roule pas, donc le score est ESTIMÉ à partir de cette moyenne et de la baisse de ta charge (CTL) depuis la dernière ;
+// - après plus de 2 semaines sans sortie mesurée, ce n'est pas un trou : la forme baisse quand on ne roule pas, donc le score est ESTIMÉ à partir de cette moyenne et de la baisse de ta charge (CTL) depuis la dernière ;
 // À côté : tes heures de vélo de chaque semaine, pour voir si la forme suit le volume.
 
 import { mediane, regression } from '../outils/regression.ts';
@@ -11,8 +11,8 @@ import { lignesVelo, noteDe, noteLibre, SORTIES_MINI_PERIODE, type SerieNiveau, 
 
 /** La mémoire de la forme : une sortie perd la moitié de son poids tous les 21 jours. */
 export const DEMI_VIE_JOURS = 21;
-/** Après 6 semaines sans sortie mesurée, la forme n'est plus mesurée mais estimée. */
-export const SEMAINES_FENETRE = 6;
+/** Au bout de 2 semaines sans sortie mesurée, la forme n'est plus mesurée mais estimée : elle baisse avec ta charge. */
+export const SEMAINES_SANS_MESURE = 2;
 /** Comme la courbe Forme : la marge d'erreur vaut 1,8 fois l'incertitude. */
 const Z = 1.8;
 /** La forme baisse moitié moins vite que la charge (CTL) quand on arrête : estimation, pas une mesure. */
@@ -151,20 +151,22 @@ export function formeParSemaine(
     const mesure = noteDe(niveau / meilleur);
     const mesureBas = Math.min(noteDe((niveau - demi) / meilleur), mesure);
     const mesureHaut = Math.max(noteLibre((niveau + demi) / meilleur), mesure);
-    // Pas de sortie depuis plus de 6 semaines : on ne mesure plus, on estime. La forme baisse (de moitié moins vite que le CTL) depuis la dernière sortie
+    // Pas de sortie mesurée depuis plus de 2 semaines : on ne mesure plus, on estime. La forme baisse (de moitié moins vite que le CTL) depuis la dernière sortie
     const derniereSortie = avant[avant.length - 1].jour;
     const semainesSansSortie = (fin - 1 - derniereSortie) / 7;
     const ctlSortie = ctl.get(derniereSortie);
     const ctlSemaine = ctl.get(Math.min(fin, auj + 1) - 1);
-    if (semainesSansSortie > SEMAINES_FENETRE && ctlSortie && ctlSemaine !== undefined) {
+    // La baisse de la charge depuis la dernière sortie mesurée s'applique dès le premier jour (pas de palier plat) ; la semaine n'est dite « estimée » (pointillé) qu'au-delà de 2 semaines
+    if (ctlSortie && ctlSemaine !== undefined && semainesSansSortie > 0) {
       const perte = Math.max(0, 1 - ctlSemaine / ctlSortie);
       const score = mesure * (1 - PART_BAISSE_FORME * perte);
-      const marge = Math.max(mesure - mesureBas, mesureHaut - mesure) + MARGE_PAR_SEMAINE * (semainesSansSortie - SEMAINES_FENETRE);
-      semaines.push({ index: i, debut: dateDe(debut), score, bas: Math.max(0, score - marge), haut: Math.min(100, score + marge), estimee: true, n: Math.round(neff), heures });
+      const estimee = semainesSansSortie > SEMAINES_SANS_MESURE;
+      const marge = Math.max(mesure - mesureBas, mesureHaut - mesure) + MARGE_PAR_SEMAINE * Math.max(0, semainesSansSortie - SEMAINES_SANS_MESURE);
+      semaines.push({ index: i, debut: dateDe(debut), score, bas: Math.max(0, score - marge), haut: Math.min(100, score + marge), estimee, n: Math.round(neff), heures });
       continue;
     }
-    // Plus de sortie depuis 6 semaines et aucune charge connue : on ne sait rien, la semaine reste vide
-    if (semainesSansSortie > SEMAINES_FENETRE) {
+    // Plus de sortie mesurée depuis 2 semaines et aucune charge connue : on ne sait rien, la semaine reste vide
+    if (semainesSansSortie > SEMAINES_SANS_MESURE) {
       semaines.push({ index: i, debut: dateDe(debut), score: null, bas: null, haut: null, estimee: false, n: Math.round(neff), heures });
       continue;
     }

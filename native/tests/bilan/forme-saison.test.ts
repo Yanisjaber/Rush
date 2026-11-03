@@ -113,10 +113,12 @@ test('formeParSemaine : sans assez de sorties la forme est estimée (elle baisse
   assert.equal(sansCharge.semaines[24].estimee, false);
 });
 
-test('formeParSemaine : moyenne qui oublie doucement : une mauvaise sortie isolée ne fait pas plonger la courbe ; sans trou tant qu\'on a roulé il y a moins de 6 semaines', () => {
+test('formeParSemaine : moyenne qui oublie doucement : une mauvaise sortie isolée ne fait pas plonger la courbe ; sans trou ni palier', () => {
   const rares = sorties('2024-01-01', '2025-12-31', () => 150, 20);
-  const f = formeParSemaine(rares, [], niveauxVelo(rares), 2025, FIN_ANNEE)!;
-  assert.ok(f.semaines.every((s) => s.score !== null && !s.estimee));
+  const seancesRares: SeanceHeures[] = rares.map((r) => ({ sport: 'Ride', start_date_local: r.date, moving_time: 3600, tss: 60 }));
+  const f = formeParSemaine(rares, seancesRares, niveauxVelo(rares), 2025, FIN_ANNEE)!;
+  assert.ok(f.semaines.every((s) => s.score !== null));
+  assert.ok(f.semaines.filter((s) => s.estimee).length <= 20);
   // Une sortie 40 W plus basse au milieu de sorties tous les 3 jours : l'écart de score reste petit
   const base = sorties('2025-01-01', '2025-12-31', () => 150, 3);
   const mauvaise = base.map((s) => (s.date.startsWith('2025-06-1') && s.date.slice(8, 10) === '15' ? { ...s, watts: s.watts - 40 } : s));
