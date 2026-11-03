@@ -14,7 +14,14 @@ export const dateCourte = (iso: string): string => `${Number(iso.slice(8, 10))} 
 export function texteValeurRecord(valeur: number, unite: string): { nombre: string; unite: string } {
   if (unite === 'min') return { nombre: texteHM(Math.round(valeur)), unite: '' };
   if (unite === 'h') return { nombre: texteHM(Math.round(valeur * 60)), unite: '' };
-  if (unite === 'km' || unite === 'km/h' || unite === 'N·m') return { nombre: formatNum(valeur, 1), unite };
+  if (unite === 'km' || unite === 'km/h' || unite === 'N·m' || unite === 't') return { nombre: formatNum(valeur, 1), unite };
+  // Un poids : sans décimale quand il est rond (100 kg), avec une sinon (102,5 kg)
+  if (unite === 'kg') return { nombre: formatNum(valeur, Number.isInteger(valeur) ? 0 : 1), unite };
+  // Une allure de course : la valeur est une vitesse en km/h (la plus haute gagne, comme pour les autres records), écrite en minutes et secondes par km
+  if (unite === 'allure') {
+    const s = valeur > 0 ? Math.round(3600 / valeur) : 0;
+    return { nombre: `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"`, unite: '/km' };
+  }
   if (unite === 'séances') return { nombre: formatNum(valeur, 0), unite: valeur > 1 ? 'séances' : 'séance' };
   if (unite === 'jours') return { nombre: formatNum(valeur, 0), unite: valeur > 1 ? 'jours' : 'jour' };
   return { nombre: formatNum(valeur, 0), unite };
