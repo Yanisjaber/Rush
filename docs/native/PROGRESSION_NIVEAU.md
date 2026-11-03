@@ -114,6 +114,14 @@ L'onglet Triathlon (ou Duathlon) du Bilan regroupe les séances de ses disciplin
 - **Records** : un menu « Discipline » : **Tout** (la plus longue séance, la plus grosse charge, la plus longue natation, la plus longue sortie à vélo, la plus longue course, le plus gros D+ à vélo) ; **Natation** (tuiles dont l'allure moyenne au 100 m) ; **Vélo** (l'onglet Records complet du vélo : courbe de puissance, FC, cadence…) ; **Course** (l'onglet Records complet de la course : allure par durée et par distance).
 - **Progrès** : le niveau global multisport (4 piliers : natation, vélo, course, volume ; score par année ; carte de chaleur), puis le progrès de chacune des disciplines.
 
+## Hyrox (4 nov. 2026)
+
+Le Bilan de l'Hyrox lit les **tests et courses** (table `hyrox_tests`, 16 segments chacun) en plus des séances. Formules : `docs/FORMULES.md`, section 8.
+- **Résumé** : les séances en grand, puis le temps, le nombre de tests de l'année et ton meilleur temps total.
+- **Rythme** : les mesures communes (temps, séances, charge, distance) par mois, semaine et jour de la semaine.
+- **Records** : les tuiles de séance (durée, charge…), ton **meilleur temps total** (avec ce que vaut l'autre période : « Ton record absolu »), le **classement** de tes tests et courses par temps total (écart en minutes et secondes avec le meilleur), puis le **record de chacun des 16 segments** (les 8 runs d'1 km et les 8 stations) avec l'écart de ton dernier test.
+- **Progrès** : le niveau global (4 piliers : temps total, runs, stations, volume), le score par année, la carte de chaleur, puis « Temps total, test après test » (la courbe descend quand tu vas plus vite) avec ton objectif de temps et la dérive des runs du dernier test.
+
 ## Les records
 
 Le sélecteur du vélo lit ton meilleur sprint (5 secondes) et tes meilleurs 5, 20 et 60 minutes de chaque année (fonction SQL `rpc_courbe_puissance`, une lecture par année). Chaque durée a son propre 100 (ta meilleure année sur cette durée). Pas de trimestres ni de marge d'erreur : un record n'est pas assez régulier (il demande un effort maximal ce jour-là).

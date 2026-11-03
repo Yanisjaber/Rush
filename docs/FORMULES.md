@@ -206,6 +206,16 @@ Même mécanique que la course et la musculation (sections 5 et 6, `piliers-spor
 - **Volume** : 50 % les heures, 25 % les jours actifs, 25 % les **journées multisport** (un jour avec au moins deux disciplines différentes : un enchaînement, ou « brick ») de l'année, contre la moyenne de tes 3 meilleures années (0 à 40 %), ramenés à 365 jours pour l'année en cours et la première (à partir de 30 jours).
 - Un triathlète sans natation mesurée a quand même un score avec vélo, course et volume ; un duathlète a 3 piliers et il les faut tous.
 
+## 8. Niveau global à l'Hyrox : 4 piliers (4 nov. 2026)
+
+Même mécanique que les autres sports (`piliers-sport.ts`) : une note par pilier, réduite de la part de preuve qui manque, score global seulement si **3 piliers sur 4** ont toutes leurs preuves. Code : `native/src/data/bilan/hyrox-bilan.ts`. Données : les tests et courses (`hyrox_tests` : 16 segments, 8 runs d'1 km et 8 stations) et les séances de type Hyrox.
+
+- **Temps total** : ton meilleur temps total de l'année contre ton meilleur de **tous les temps** (rapport = record ÷ temps) ; 100 = ton record, 0 = 25 % plus lent (`HYROX_ZERO = 0,75`).
+- **Runs** : le temps moyen d'un run (la **médiane** des tests de l'année) contre ton meilleur, même échelle.
+- **Stations** : le temps total des stations (médiane des tests de l'année) contre ton meilleur, même échelle.
+- **Volume** : 60 % les heures, 25 % les jours actifs de séance Hyrox et 15 % le nombre de tests de l'année, contre la moyenne de tes 3 meilleures années (0 à 40 %), annualisés (à partir de 30 jours couverts).
+- **Preuves** : total, runs et stations demandent **2 tests** dans l'année ; le volume demande 30 jours de données.
+
 ## Historique
 
 - 2026-11-02 : création, ajout du TSS, du CTL/ATL/TSB, du score d'endurance et d'une proposition de score de puissance.
@@ -226,3 +236,4 @@ Même mécanique que la course et la musculation (sections 5 et 6, `piliers-spor
 - 2026-11-02 : durabilité retirée (pilier et lettre D de l'endurance) ; l'endurance passe à 35 % F, 30 % H, 35 % C ; le niveau global devient la moyenne de 4 piliers.
 - 2026-11-04 : niveau global de la course (vitesse, endurance, efficacité, volume) et de la musculation (force, volume, régularité, équilibre) sur le modèle du vélo ; forme par saison de la course (allure à cardio égal) et de la musculation (force) ; courbes de course côté serveur (meilleurs temps par distance, pauses et sauts de GPS écartés).
 - 2026-11-04 : Bilan du triathlon et du duathlon (filtre multisport, résumé, rythme, records par discipline, niveau global à 4 piliers) ; allure moyenne au 100 m dans les records de natation.
+- 2026-11-04 : Bilan de l'Hyrox (résumé, records par segment, niveau global à 4 piliers, temps total test après test).
