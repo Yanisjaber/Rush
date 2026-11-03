@@ -3,6 +3,7 @@
 // - la pente du cardio et la correction du home-trainer viennent d'une seule régression sur tout l'historique (une colonne par trimestre, comme la courbe Forme) ;
 // - les watts de chaque sortie de la fenêtre sont ramenés au cardio de référence, puis moyennés ; la marge d'erreur vient de leur dispersion ;
 // - le score utilise la même échelle que la courbe Forme (100 = ton meilleur trimestre, voir niveau-annees.ts).
+// - si les 6 semaines n'ont pas 3 sorties mesurées, la fenêtre passe à 10 semaines ;
 // - une semaine sans assez de sorties mesurées n'est pas un trou : la forme baisse quand on ne roule pas, donc son score est ESTIMÉ à partir de la dernière semaine mesurée et de la baisse de ta charge (CTL) depuis (voir `estimer`) ;
 // À côté : tes heures de vélo de chaque semaine, pour voir si la forme suit le volume.
 
@@ -11,6 +12,8 @@ import { lignesVelo, noteDe, noteLibre, SORTIES_MINI_PERIODE, type SerieNiveau, 
 
 /** La fenêtre : la semaine et les 5 d'avant. */
 export const SEMAINES_FENETRE = 6;
+/** Quand les 6 semaines n'ont pas 3 sorties mesurées, on élargit à 10 semaines avant d'estimer (on roule peut-être, mais sans capteur ou sans cardio). */
+export const SEMAINES_FENETRE_LARGE = 10;
 /** Comme la courbe Forme : la marge d'erreur vaut 1,8 fois l'incertitude. */
 const Z = 1.8;
 /** La forme baisse moitié moins vite que la charge (CTL) quand on arrête : estimation, pas une mesure. */
@@ -133,7 +136,9 @@ export function formeParSemaine(
     const debut = debutAn + 7 * i;
     if (debut > auj) break;
     const fin = i === 51 ? finAn : debut + 7;
-    const fenetre = corrigees.filter((c) => c.jour >= fin - 7 * SEMAINES_FENETRE && c.jour < fin).map((c) => c.watts);
+    const dans = (semaines: number): number[] => corrigees.filter((c) => c.jour >= fin - 7 * semaines && c.jour < fin).map((c) => c.watts);
+    let fenetre = dans(SEMAINES_FENETRE);
+    if (fenetre.length < SORTIES_MINI_PERIODE) fenetre = dans(SEMAINES_FENETRE_LARGE);
     const heures = heuresParSemaine.get(i) ?? 0;
     if (fenetre.length < SORTIES_MINI_PERIODE) {
       const ctlSemaine = ctl.get(Math.min(fin, auj + 1) - 1);

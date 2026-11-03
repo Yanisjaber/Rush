@@ -44,10 +44,10 @@ test('formeParSemaine : 52 semaines, la forme suit le niveau de la fenêtre de 6
 });
 
 test('formeParSemaine : moins de 3 sorties dans la fenêtre = semaine vide ; l\'année en cours s\'arrête à la semaine d\'aujourd\'hui', () => {
-  // Une pause du 1er mai au 30 juin : à partir de mi-juin la fenêtre n'a plus rien
-  const avecPause = HISTORIQUE.filter((s) => s.date < '2025-05-01' || s.date >= '2025-07-01');
+  // Une pause du 1er avril au 30 juin : à la mi-juin même la fenêtre élargie à 10 semaines (depuis le 16 avril) n'a plus rien
+  const avecPause = HISTORIQUE.filter((s) => s.date < '2025-04-01' || s.date >= '2025-07-01');
   const f = formeParSemaine(avecPause, [], niveauxVelo(avecPause), 2025, FIN_ANNEE)!;
-  assert.equal(f.semaines[24].score, null); // semaine du 18 juin : fenêtre du 8 mai au 24 juin, vide
+  assert.equal(f.semaines[24].score, null); // semaine du 18 juin : fenêtres de 6 et 10 semaines vides
   assert.equal(f.semaines[24].bas, null);
   assert.ok(f.semaines[15].score !== null);
   // Le 20 mars 2025, l'année n'a que ses 12 premières semaines
@@ -87,8 +87,8 @@ test('formeParSemaine : les heures de vélo de chaque semaine, sans le vélo él
 });
 
 test('formeParSemaine : sans assez de sorties la forme est estimée (elle baisse avec la charge), en pointillé ; elle revient à la mesure à la reprise', () => {
-  // Une pause du 1er mai au 30 juin ; chaque sortie du vélo a une charge de 60
-  const avecPause = HISTORIQUE.filter((s) => s.date < '2025-05-01' || s.date >= '2025-07-01');
+  // Une pause du 1er avril au 30 juin ; chaque sortie du vélo a une charge de 60
+  const avecPause = HISTORIQUE.filter((s) => s.date < '2025-04-01' || s.date >= '2025-07-01');
   const seances: SeanceHeures[] = avecPause.map((s) => ({ sport: 'Ride', start_date_local: s.date, moving_time: 3600, tss: 60 }));
   const f = formeParSemaine(avecPause, seances, niveauxVelo(avecPause), 2025, FIN_ANNEE)!;
   const juin = f.semaines[24]; // semaine du 18 juin : fenêtre vide
@@ -110,4 +110,14 @@ test('formeParSemaine : sans assez de sorties la forme est estimée (elle baisse
   const sansCharge = formeParSemaine(avecPause, [], niveauxVelo(avecPause), 2025, FIN_ANNEE)!;
   assert.equal(sansCharge.semaines[24].score, null);
   assert.equal(sansCharge.semaines[24].estimee, false);
+});
+
+test('formeParSemaine : avec peu de sorties mesurées (mais pas aucune), la fenêtre passe à 10 semaines au lieu d\'estimer', () => {
+  // Une sortie mesurée tous les 20 jours : 6 semaines n'en contiennent que 2, 10 semaines en contiennent 3 ou 4
+  const rares = sorties('2024-01-01', '2025-12-31', () => 150, 20);
+  const seances: SeanceHeures[] = rares.map((s) => ({ sport: 'Ride', start_date_local: s.date, moving_time: 3600, tss: 60 }));
+  const f = formeParSemaine(rares, seances, niveauxVelo(rares), 2025, FIN_ANNEE)!;
+  const mesurees = f.semaines.filter((s) => s.score !== null && !s.estimee);
+  assert.ok(mesurees.length >= 40, `${mesurees.length} semaines mesurées sur 52`);
+  assert.ok(f.semaines.filter((s) => s.estimee).length <= 4);
 });
