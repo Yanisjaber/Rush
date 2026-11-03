@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formeParSemaine, type SeanceHeures } from '../../src/data/bilan/forme-saison.ts';
-import { niveauxVelo, noteDe, type SortieNiveauVelo } from '../../src/data/bilan/niveau-annees.ts';
+import { formeCourseParSemaine, formeParSemaine, type SeanceHeures } from '../../src/data/bilan/forme-saison.ts';
+import { niveauxCourse, niveauxVelo, noteDe, type SortieNiveauCourse, type SortieNiveauVelo } from '../../src/data/bilan/niveau-annees.ts';
 
 // Un bruit fixe (pas de hasard : le test doit toujours donner le même résultat)
 const BRUIT = [-4, 2, -1, 3, 0, -3, 1, 4, -2, 0];
@@ -137,4 +137,41 @@ test('formeParSemaine : peu de sorties récentes = la note est ramenée vers le 
   const avant = f.semaines.find((s) => s.debut === '2025-09-17')!; // des sorties tous les 3 jours : on y croit
   const semaineApres = f.semaines.find((s) => s.debut === '2025-11-12')!; // une seule sortie dans les 6 semaines
   assert.ok(semaineApres.score! < avant.score! - 10, `avant ${avant.score}, après ${semaineApres.score}`);
+});
+
+/** Une course tous les `pas` jours : l'allure (s/km) suit le cardio (−3 s/km par bpm, plus on court vite plus le cœur monte), plus un niveau de base. */
+function courses(du: string, au: string, niveau: (jour: number) => number, pas = 3): SortieNiveauCourse[] {
+  const out: SortieNiveauCourse[] = [];
+  for (let j = jourDe(du), i = 0; j <= jourDe(au); j += pas, i++) {
+    const fc = FC[i % 10];
+    out.push({ date: iso(j), allure: niveau(j) - 3 * (fc - 149) + BRUIT[(i * 3) % 10], fc, denivele: 20 + (i % 5) * 10, tapis: false });
+  }
+  return out;
+}
+
+test('formeCourseParSemaine : une allure plus basse est un meilleur niveau ; 100 = ton meilleur ; les heures sont les heures de course', () => {
+  // 2024 : 330 s/km (5\'30"), 2025 : 330 puis, à partir de juillet, 300 s/km (5\'00") : un meilleur niveau
+  const MI = jourDe('2025-07-01');
+  const historique = [...courses('2024-01-01', '2024-12-31', () => 330), ...courses('2025-01-01', '2025-12-31', (j) => (j < MI ? 330 : 300))];
+  const serie = niveauxCourse(historique);
+  assert.ok(serie);
+  const seances: SeanceHeures[] = [
+    { sport: 'Run', start_date_local: '2025-01-02T08:00:00', moving_time: 3600 },
+    { sport: 'TrailRun', start_date_local: '2025-01-05T08:00:00', moving_time: 1800 },
+    { sport: 'Ride', start_date_local: '2025-01-03T08:00:00', moving_time: 7200 }, // le vélo ne compte pas dans les heures de course
+  ];
+  const f = formeCourseParSemaine(historique, seances, serie, 2025, FIN_ANNEE)!;
+  assert.equal(f.semaines.length, 52);
+  assert.ok(Math.abs(f.semaines[0].heures - 1.5) < 1e-9, `${f.semaines[0].heures}`);
+  const mars = f.semaines[10], dec = f.semaines[50];
+  assert.ok(dec.score! > mars.score! + 10, `décembre ${dec.score}, mars ${mars.score}`); // courir plus vite à cardio égal : la note monte
+  assert.ok(dec.score! > 90, `${dec.score}`);
+  assert.ok(f.semaines[f.meilleure].score! >= dec.score! - 1e-9);
+  for (const s of [mars, dec]) assert.ok(s.bas! <= s.score! && s.haut! >= s.score!);
+});
+
+test('formeCourseParSemaine : sans série ou sans course, rien', () => {
+  assert.equal(formeCourseParSemaine([], [], null, 2025, FIN_ANNEE), null);
+  const h = courses('2024-01-01', '2025-12-31', () => 330);
+  assert.equal(formeCourseParSemaine(h, [], null, 2025, FIN_ANNEE), null);
 });

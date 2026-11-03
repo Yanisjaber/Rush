@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chargeParRepetitions, epley, exercicesDuCarnet, recordsExercice, recordsSeanceMuscu, seriesDeLAnnee } from '../../src/data/bilan/records-muscu.ts';
+import { chargeParRepetitions, epley, exercicesDuCarnet, recordsExercice, recordsSeanceMuscu, rmParTrimestre, seriesDeLAnnee } from '../../src/data/bilan/records-muscu.ts';
 import { texteRecordSimple } from '../../src/data/bilan/records-texte.ts';
 import type { ActiviteBilan } from '../../src/data/bilan/bilan.ts';
 import type { SerieForce } from '../../src/data/types.ts';
@@ -90,4 +90,14 @@ test('recordsSeanceMuscu : tonnage, séries, répétitions, charge la plus lourd
   assert.equal(par('poids').top[0].valeur, 110);
   assert.equal(par('poids').top[0].id, 'b');
   assert.equal(r.find((x) => x.cle === 'tss'), undefined); // aucune charge : pas de record vide
+});
+
+test('rmParTrimestre : le meilleur 1RM de l\'exercice, trimestre après trimestre', () => {
+  const t = rmParTrimestre(CARNET, 'squat');
+  // Janvier et février : 110 × 3 → 121 (la meilleure série), mars : 105 × 5 → 122,5
+  assert.deepEqual(t.map((x) => x.cle), ['2026-T1']);
+  assert.ok(Math.abs(t[0].rm - 122.5) < 1e-9);
+  const deux = rmParTrimestre([...CARNET, serie('d', '2025-11-02', 'squat', 5, 90)], 'squat');
+  assert.deepEqual(deux.map((x) => x.cle), ['2025-T4', '2026-T1']);
+  assert.deepEqual(rmParTrimestre(CARNET, 'inconnu'), []);
 });

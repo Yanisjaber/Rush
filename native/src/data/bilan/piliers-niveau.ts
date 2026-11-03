@@ -149,7 +149,7 @@ export const JOURS_COUVERTS_MINI = 30;
 export const surUneAnnee = (v: number | null, joursCouverts: number): number | null =>
   v !== null && joursCouverts >= JOURS_COUVERTS_MINI ? (v * 365) / joursCouverts : null;
 /** La moyenne des `n` plus hautes valeurs positives (ou de toutes s'il y en a moins), 0 sans valeur. */
-const moyenneDesMeilleures = (valeurs: (number | null)[], n = 3): number => {
+export const moyenneDesMeilleures = (valeurs: (number | null)[], n = 3): number => {
   const top = valeurs.filter((v): v is number => v !== null && v > 0).sort((a, b) => b - a).slice(0, n);
   return top.length ? top.reduce((s, v) => s + v, 0) / top.length : 0;
 };

@@ -172,16 +172,21 @@ export interface SortieNiveauCourse {
 
 /** Niveau de la course par année et par semestre : l'allure à cardio égal et au dénivelé médian, sur route. Plus rapide = score plus haut. */
 export function niveauxCourse(sorties: readonly SortieNiveauCourse[]): SerieNiveau | null {
+  return construire(lignesCourse(sorties), { tranchesParAn: 2, z: 2, plusHautMieux: false });
+}
+
+/**
+ * Les courses prêtes pour la régression (aussi utilisées par la forme semaine par semaine) : l'allure (s/km), le cardio, et deux colonnes de correction : le dénivelé (écart au dénivelé médian)
+ * et, si on court aussi bien sur tapis que sur route (3 sorties chacun au moins), le tapis (1 sur tapis). Sinon, seul le type de sortie le plus fréquent est gardé.
+ */
+export function lignesCourse(sorties: readonly SortieNiveauCourse[]): LigneNiveau[] {
   const tapis = sorties.filter((s) => s.tapis).length;
   const route = sorties.length - tapis;
   const separe = tapis >= SORTIES_MINI_PERIODE && route >= SORTIES_MINI_PERIODE;
   const gardees = separe ? sorties : sorties.filter((s) => s.tapis === tapis > route);
-  if (!gardees.length) return null;
+  if (!gardees.length) return [];
   const deniveleRef = mediane(gardees.map((s) => s.denivele));
-  return construire(
-    gardees.map((s) => ({ date: s.date, valeur: s.allure, fc: s.fc, corrections: [s.denivele - deniveleRef, ...(separe ? [s.tapis ? 1 : 0] : [])] })),
-    { tranchesParAn: 2, z: 2, plusHautMieux: false },
-  );
+  return gardees.map((s) => ({ date: s.date, valeur: s.allure, fc: s.fc, corrections: [s.denivele - deniveleRef, ...(separe ? [s.tapis ? 1 : 0] : [])] }));
 }
 
 // --- Records ----------------------------------------------------------------------------------------------------------------

@@ -31,8 +31,11 @@ import {
 } from '@/data/bilan/bilan';
 import { formatAllure, formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
 import { nomDuType } from '@/data/sports/catalogue-sports';
-import { formeParSemaine } from '@/data/bilan/forme-saison';
+import { formeForceParSemaine } from '@/data/bilan/forme-force';
+import { formeCourseParSemaine, formeParSemaine } from '@/data/bilan/forme-saison';
 import { niveauxCourse, niveauxVelo } from '@/data/bilan/niveau-annees';
+import { mesuresCourse, niveauGlobalCourse } from '@/data/bilan/piliers-course';
+import { niveauGlobalMuscu } from '@/data/bilan/piliers-muscu';
 import { niveauGlobal, recordsDeMesures } from '@/data/bilan/piliers-niveau';
 import { courbeProgression, progressionTousSports, type PeriodeProgression } from '@/data/bilan/progression';
 import { sortiesCourse } from '@/data/bilan/progression-course';
@@ -44,6 +47,7 @@ import { useReferences } from '@/hooks/useReferences';
 import { useMenu } from '@/stores/menu';
 import { choisirMesure, useMesuresBilan } from '@/stores/mesures-bilan';
 import { usePiliersAnnuels } from '@/hooks/usePiliersAnnuels';
+import { usePiliersCourse } from '@/hooks/usePiliersCourse';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
 import { couleurSport, SPORTS } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
@@ -260,7 +264,22 @@ export default function Bilan() {
     () => (niveaux.velo ? formeParSemaine(niveaux.sortiesVelo, historique.seances, niveaux.velo, annee, maintenant) : null),
     [niveaux, historique.seances, annee, maintenant],
   );
-  const anneeInutile = onglet === 'progres' && !(niveauGlobalVelo && progres.some(({ prog }) => prog.famille === 'velo'));
+  // Le niveau global de la course : les courbes du serveur (meilleurs temps et distances), le volume des séances et le niveau à cardio égal ; il ne remplace l'ancienne page que s'il a de quoi dire quelque chose
+  const piliersCourse = usePiliersCourse(progresOuvert && (filtre === 'course' || filtre === 'tout'));
+  const niveauCourse = useMemo(() => {
+    if (!progresOuvert || !toutes.some((a) => a.sport === 'course')) return null;
+    const g = niveauGlobalCourse(mesuresCourse(piliersCourse.lignes, toutes, niveaux.course, maintenant));
+    return g && g.annees.some((a) => a.preuves.vitesse > 0 || a.global !== null) ? g : null;
+  }, [progresOuvert, toutes, piliersCourse.lignes, niveaux.course, maintenant]);
+  const formeCourse = useMemo(
+    () => (progresOuvert && niveauCourse && niveaux.course ? formeCourseParSemaine(sortiesCourse(historique.seances, hrMax ?? null), historique.seances, niveaux.course, annee, maintenant) : null),
+    [progresOuvert, niveauCourse, niveaux.course, historique.seances, hrMax, annee, maintenant],
+  );
+  // Le niveau global de la musculation : le carnet de force (force, équilibre) et les séances (volume, régularité) ; sans carnet, l'ancienne page (1RM sur 12 mois) reste
+  const niveauMuscu = useMemo(() => (progresOuvert && carnet.series.length ? niveauGlobalMuscu(carnet.series, toutes, maintenant) : null), [progresOuvert, carnet.series, toutes, maintenant]);
+  const formeMuscu = useMemo(() => (progresOuvert && niveauMuscu ? formeForceParSemaine(carnet.series, annee, maintenant) : null), [progresOuvert, niveauMuscu, carnet.series, annee, maintenant]);
+  // L'année choisie en haut ne sert que s'il y a un niveau global à lire (vélo, course ou musculation) ; sinon elle reste affichée mais grisée
+  const anneeInutile = onglet === 'progres' && !progres.some(({ prog }) => (prog.famille === 'velo' && niveauGlobalVelo) || (prog.famille === 'course' && niveauCourse) || (prog.famille === 'muscu' && niveauMuscu));
 
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
@@ -646,8 +665,10 @@ export default function Bilan() {
                       niveau={prog.famille === 'velo' ? niveaux.velo : prog.famille === 'course' ? niveaux.course : null}
                       records={prog.famille === 'velo' ? recordsAnnuels : undefined}
                       niveauGlobal={prog.famille === 'velo' ? niveauGlobalVelo : null}
+                      niveauSport={prog.famille === 'course' ? niveauCourse : prog.famille === 'muscu' ? niveauMuscu : null}
+                      series={prog.famille === 'muscu' ? carnet.series : undefined}
                       annee={annee}
-                      forme={prog.famille === 'velo' ? formeSaison : null}
+                      forme={prog.famille === 'velo' ? formeSaison : prog.famille === 'course' ? formeCourse : prog.famille === 'muscu' ? formeMuscu : null}
                       onChoisirAnnee={setAnneeChoisie}
                     />
                   ))

@@ -56,6 +56,8 @@ export function FormeSaison({ forme, couleur }: Props) {
   const reperes: number[] = [];
   for (let v = min; v <= 100; v += pas) reperes.push(v);
 
+  // Les barres du bas : des heures (vélo, course) ou des tonnes (musculation)
+  const uniteBarres = forme.unite ?? 'h';
   const heuresMax = Math.max(2, Math.ceil(Math.max(...forme.semaines.map((s) => s.heures)) / 2) * 2);
   const yh = (h: number): number => V_BAS - (h / heuresMax) * (V_BAS - V_HAUT);
   const largeurBarre = ((LARGEUR - G - D) / 52) * 0.7;
@@ -70,7 +72,7 @@ export function FormeSaison({ forme, couleur }: Props) {
     `Forme par semaine en ${forme.annee}, sur 100 : meilleure semaine ${Math.round(meilleure.score!)} début ${moisDe(meilleure)}, ` +
     `dernière semaine mesurée ${Math.round(derniere.score!)} début ${moisDe(derniere)}. ` +
     (nbEstimees ? `${nbEstimees} semaine${nbEstimees > 1 ? 's' : ''} estimée${nbEstimees > 1 ? 's' : ''} sans assez de sorties, en pointillé. ` : '') +
-    `Heures de vélo : ${formatHeures(totalHeures)} h sur ${forme.semaines.length} semaines, jusqu'à ${formatHeures(Math.max(...forme.semaines.map((s) => s.heures)))} h en une semaine.`;
+    `${uniteBarres === 't' ? 'Tonnage' : 'Heures'} : ${formatHeures(totalHeures)} ${uniteBarres} sur ${forme.semaines.length} semaines, jusqu'à ${formatHeures(Math.max(...forme.semaines.map((s) => s.heures)))} ${uniteBarres} en une semaine.`;
 
   return (
     <Bloc titre="Forme par saison">
@@ -118,7 +120,7 @@ export function FormeSaison({ forme, couleur }: Props) {
           {Math.round(meilleure.score!)}
         </TexteSvg>
 
-        <TexteSvg x={G - 7} y={V_HAUT + 4} fontSize={12} fontFamily={police.texte400} fill={p.texteMuet} textAnchor="end">{`${heuresMax} h`}</TexteSvg>
+        <TexteSvg x={G - 7} y={V_HAUT + 4} fontSize={12} fontFamily={police.texte400} fill={p.texteMuet} textAnchor="end">{`${heuresMax} ${uniteBarres}`}</TexteSvg>
         <TexteSvg x={G - 7} y={V_BAS} fontSize={12} fontFamily={police.texte400} fill={p.texteMuet} textAnchor="end">0</TexteSvg>
         <Line x1={G} x2={LARGEUR - D} y1={V_BAS} y2={V_BAS} stroke={p.trait} strokeWidth={1} />
         {forme.semaines.map((s) =>

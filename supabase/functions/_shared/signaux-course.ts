@@ -10,7 +10,7 @@ import { reechantillonner1Hz } from './flux.ts';
 import { medianeGlissante, meilleureMoyenne, reechantillonnerContinu, type CourbeSignal } from './signaux.ts';
 
 /** À augmenter quand les distances, les durées ou les calculs changent : les anciennes courses sont alors recalculées (la version du vélo est dans signaux.ts, c'est un autre nombre). */
-export const SIGNAUX_COURSE_VERSION = 10;
+export const SIGNAUX_COURSE_VERSION = 11;
 
 /** Les distances (mètres) des meilleurs temps : 400 m, 1 km, 1 mile, 3 km, 5 km, 10 km, 15 km, 20 km, semi-marathon, 30 km, marathon. */
 export const DISTANCES_COURSE = [400, 1000, 1609, 3000, 5000, 10000, 15000, 20000, 21097, 30000, 42195];
@@ -19,6 +19,8 @@ export const DUREES_COURSE = [60, 180, 300, 360, 420, 600, 720, 900, 1200, 1800,
 
 const VITESSE_MAX_COURTE = 9.5;
 const VITESSE_MAX_LONGUE = 8.5;
+/** Un saut de GPS donne 60 à 70 m en une seconde (vu dans l'historique) : au-delà de cette vitesse instantanée (m/s, soit 43 km/h), un pas de distance est une erreur de GPS, pas de la course. */
+const PAS_MAX_CREDIBLE = 12;
 const vitesseMax = (metres: number): number => (metres < 1000 ? VITESSE_MAX_COURTE : VITESSE_MAX_LONGUE);
 
 const FC_MAX_CREDIBLE = 215;
@@ -113,13 +115,32 @@ export function distanceEnMouvement(distance: any[], temps: any[]): number[] {
   return sortie;
 }
 
+/**
+ * Le cumul de distance sans les sauts de GPS : un pas (distance gagnée en une seconde) impossible (plus de 12 m/s, ou négatif) est remplacé par la médiane des 10 pas d'avant (0 au tout début).
+ * Sans cela, un seul saut de 60 m donne un « 400 m en 42 secondes » qui n'a jamais existé.
+ */
+export function distanceSansSauts(distance: number[]): number[] {
+  const sortie: number[] = distance.length ? [distance[0]] : [];
+  const pas: number[] = [];
+  for (let i = 1; i < distance.length; i++) {
+    let v = distance[i] - distance[i - 1];
+    if (!(v >= 0 && v <= PAS_MAX_CREDIBLE)) {
+      const recents = pas.slice(-10).sort((a, b) => a - b);
+      v = recents.length ? recents[Math.floor(recents.length / 2)] : 0;
+    }
+    pas.push(v);
+    sortie.push(sortie[i - 1] + v);
+  }
+  return sortie;
+}
+
 /** Les courbes d'une course. Un signal sans donnée (pas de GPS, pas de cardio) est absent du résultat. */
 export function calculerSignauxCourse(flux: FluxCourse): CourbesCourse {
   const temps = flux.time || [];
   const resultat: CourbesCourse = { v: SIGNAUX_COURSE_VERSION };
   if (flux.distance?.length) {
     // Le cumul de distance en temps de course : une pause (un trou de plus de 10 s) est retirée, un meilleur temps ne compte pas le feu rouge
-    const dist = distanceEnMouvement(flux.distance, temps);
+    const dist = distanceSansSauts(distanceEnMouvement(flux.distance, temps));
     const pace = meilleursTemps(dist, DISTANCES_COURSE);
     if (Object.keys(pace).length) resultat.pace = pace;
     const dis = meilleuresDistances(dist, DUREES_COURSE);

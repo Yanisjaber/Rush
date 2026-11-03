@@ -161,3 +161,29 @@ export function recordsSeanceMuscu(acts: ActiviteBilan[], series: readonly Serie
   ];
   return records.filter((r) => r.top.length);
 }
+
+export interface PointTrimestre {
+  /** « 2026-T1 ». */
+  cle: string;
+  an: number;
+  /** Le trimestre de l'année, de 1 à 4. */
+  trimestre: number;
+  /** Le meilleur 1RM estimé du trimestre pour l'exercice (kg). */
+  rm: number;
+}
+
+/** Le meilleur 1RM estimé d'un exercice, trimestre après trimestre (les trimestres sans série sont absents) : sert à la courbe « Force par exercice » du Progrès. */
+export function rmParTrimestre(series: readonly SerieForce[], cle: string): PointTrimestre[] {
+  const par = new Map<string, PointTrimestre>();
+  for (const s of seriesAvecCharge(series)) {
+    if (s.exercise_key !== cle || Number(s.reps) > REPS_MAX_1RM) continue;
+    const jour = iso(s);
+    const an = Number(jour.slice(0, 4));
+    const trimestre = Math.floor((Number(jour.slice(5, 7)) - 1) / 3) + 1;
+    const k = `${an}-T${trimestre}`;
+    const rm = epley(Number(s.weight_kg), Number(s.reps));
+    const x = par.get(k);
+    if (!x || rm > x.rm) par.set(k, { cle: k, an, trimestre, rm });
+  }
+  return [...par.values()].sort((a, b) => (a.cle < b.cle ? -1 : 1));
+}

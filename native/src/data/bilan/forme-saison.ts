@@ -7,7 +7,7 @@
 // À côté : tes heures de vélo de chaque semaine, pour voir si la forme suit le volume.
 
 import { mediane, regression } from '../outils/regression.ts';
-import { lignesVelo, noteDe, noteLibre, SORTIES_MINI_PERIODE, type SerieNiveau, type SortieNiveauVelo } from './niveau-annees.ts';
+import { lignesCourse, lignesVelo, noteDe, noteLibre, SORTIES_MINI_PERIODE, type LigneNiveau, type SerieNiveau, type SortieNiveauCourse, type SortieNiveauVelo } from './niveau-annees.ts';
 
 /** La mémoire de la forme : une sortie perd la moitié de son poids tous les 21 jours. */
 export const DEMI_VIE_JOURS = 21;
@@ -47,6 +47,8 @@ export interface FormeSaison {
   semaines: SemaineForme[];
   /** L'index de la meilleure semaine. */
   meilleure: number;
+  /** Ce que mesurent les barres du bas, dans le champ `heures` de chaque semaine : des heures (« h », par défaut) ou, pour la musculation, des tonnes (« t »). */
+  unite?: 'h' | 't';
 }
 
 /** Les champs d'une séance utiles pour les heures (un sous-ensemble de `Seance`). */
@@ -83,19 +85,28 @@ function ctlParJour(seances: readonly SeanceHeures[], fin: number): Map<number, 
   return out;
 }
 
-/** La pente du cardio (watts par bpm) et la correction home-trainer, estimées sur tout l'historique avec une colonne par trimestre. */
-function modele(lignes: ReturnType<typeof lignesVelo>, fcRef: number): { pente: number; salle: number } | null {
+/** Les courses comptent à pied, tapis compris (le Bilan de la course range tout cela dans « course »). */
+const SPORTS_HEURES_COURSE = new Set(['Run', 'TrailRun', 'VirtualRun']);
+
+/** La pente du cardio (watts ou secondes par km, par bpm) et les corrections (home-trainer ; dénivelé, tapis), estimées sur tout l'historique avec une colonne par trimestre. */
+function modele(lignes: readonly LigneNiveau[], fcRef: number): { pente: number; coefs: number[] } | null {
   const trimestre = (date: string) => `${date.slice(0, 4)}-${Math.floor((Number(date.slice(5, 7)) - 1) / 3)}`;
   const compte = new Map<string, number>();
   for (const l of lignes) compte.set(trimestre(l.date), (compte.get(trimestre(l.date)) ?? 0) + 1);
   const cles = [...compte].filter(([, n]) => n >= SORTIES_MINI_PERIODE).map(([cle]) => cle).sort();
   const retenues = lignes.filter((l) => cles.includes(trimestre(l.date)));
   if (!retenues.length || new Set(retenues.map((l) => l.fc)).size < 2) return null;
-  const avecSalle = retenues[0].corrections.length > 0 && new Set(retenues.map((l) => l.corrections[0])).size > 1;
-  const x = retenues.map((l) => [...cles.map((cle) => (trimestre(l.date) === cle ? 1 : 0)), l.fc - fcRef, ...(avecSalle ? [l.corrections[0]] : [])]);
+  // Une colonne de correction ne sert que si elle varie (sinon elle ferait doublon avec les colonnes de trimestre)
+  const nb = retenues[0].corrections.length;
+  const colonnes = Array.from({ length: nb }, (_, j) => j).filter((j) => new Set(retenues.map((l) => l.corrections[j])).size > 1);
+  const x = retenues.map((l) => [...cles.map((cle) => (trimestre(l.date) === cle ? 1 : 0)), l.fc - fcRef, ...colonnes.map((j) => l.corrections[j])]);
   const fit = regression(x, retenues.map((l) => l.valeur));
   if (!fit) return null;
-  return { pente: fit.b[cles.length], salle: avecSalle ? fit.b[cles.length + 1] : 0 };
+  const coefs = new Array<number>(nb).fill(0);
+  colonnes.forEach((j, k) => {
+    coefs[j] = fit.b[cles.length + 1 + k];
+  });
+  return { pente: fit.b[cles.length], coefs };
 }
 
 /**
@@ -109,19 +120,44 @@ export function formeParSemaine(
   annee: number,
   aujourdhui: Date,
 ): FormeSaison | null {
-  if (!serie || !serie.fcReference || !(serie.meilleur.niveau > 0)) return null;
-  const lignes = lignesVelo(sorties);
+  return formeGenerique(lignesVelo(sorties), seances, serie, annee, aujourdhui, true, SPORTS_HEURES);
+}
+
+/** La même forme pour la course : l'allure à cardio égal et au dénivelé médian (une allure plus basse est un meilleur niveau), et les heures de course par semaine. */
+export function formeCourseParSemaine(
+  sorties: readonly SortieNiveauCourse[],
+  seances: readonly SeanceHeures[],
+  serie: SerieNiveau | null,
+  annee: number,
+  aujourdhui: Date,
+): FormeSaison | null {
+  return formeGenerique(lignesCourse(sorties), seances, serie, annee, aujourdhui, false, SPORTS_HEURES_COURSE);
+}
+
+/** Le calcul commun : `plusHautMieux` vrai pour des watts, faux pour une allure (le rapport au meilleur niveau se lit alors à l'envers). */
+function formeGenerique(
+  lignes: readonly LigneNiveau[],
+  seances: readonly SeanceHeures[],
+  serie: SerieNiveau | null,
+  annee: number,
+  aujourdhui: Date,
+  plusHautMieux: boolean,
+  sportsHeures: ReadonlySet<string>,
+): FormeSaison | null {
+  if (!serie || !serie.fcReference || !(serie.meilleur.niveau > 0) || !lignes.length) return null;
   const fcRef = serie.fcReference ?? Math.round(mediane(lignes.map((l) => l.fc)));
   const m = modele(lignes, fcRef);
   if (!m) return null;
-  const corrigees = lignes.map((l) => ({ jour: jourDe(l.date), watts: l.valeur - m.pente * (l.fc - fcRef) - m.salle * (l.corrections[0] ?? 0) }));
+  const corrigees = lignes.map((l) => ({ jour: jourDe(l.date), watts: l.valeur - m.pente * (l.fc - fcRef) - m.coefs.reduce((t, c, j) => t + c * (l.corrections[j] ?? 0), 0) }));
+  // Le rapport au meilleur niveau (1 = le meilleur) : watts ÷ meilleur, ou meilleur ÷ allure (plus basse = mieux)
+  const rapport = (niveau: number): number => (plusHautMieux ? niveau / meilleur : meilleur / Math.max(1e-9, niveau));
 
   const debutAn = jourDe(`${annee}-01-01`);
   const finAn = jourDe(`${annee + 1}-01-01`);
   const auj = jourDe(`${aujourdhui.getFullYear()}-${String(aujourdhui.getMonth() + 1).padStart(2, '0')}-${String(aujourdhui.getDate()).padStart(2, '0')}`);
   const heuresParSemaine = new Map<number, number>();
   for (const s of seances) {
-    if (!SPORTS_HEURES.has(s.sport) || !(s.moving_time > 0)) continue;
+    if (!sportsHeures.has(s.sport) || !(s.moving_time > 0)) continue;
     const j = jourDe(s.start_date_local);
     if (j < debutAn || j >= finAn) continue;
     const i = Math.min(51, Math.floor((j - debutAn) / 7));
@@ -155,10 +191,13 @@ export function formeParSemaine(
     const recent = avant.reduce((t, c, k) => (c.jour >= fin - 1 - 42 ? t + poids[k] : t), 0);
     const preuve = Math.min(1, recent / POIDS_MINI_PREUVE);
     const prudence = 1 - 0.5 * (1 - preuve);
-    const noteBrute = noteDe(niveau / meilleur);
+    const noteBrute = noteDe(rapport(niveau));
     const mesure = noteBrute * prudence;
-    const mesureBas = Math.min(noteDe((niveau - demi) / meilleur), noteBrute) * prudence;
-    const mesureHaut = Math.max(noteLibre((niveau + demi) / meilleur), noteBrute) * prudence;
+    // La marge : le haut de la fourchette est le meilleur côté (plus de watts, ou une allure plus basse)
+    const rapportMoins = plusHautMieux ? rapport(niveau - demi) : rapport(niveau + demi);
+    const rapportPlus = plusHautMieux ? rapport(niveau + demi) : rapport(niveau - demi);
+    const mesureBas = Math.min(noteDe(rapportMoins), noteBrute) * prudence;
+    const mesureHaut = Math.max(noteLibre(rapportPlus), noteBrute) * prudence;
     // Pas de sortie mesurée depuis plus de 2 semaines : on ne mesure plus, on estime. La forme baisse (de moitié moins vite que le CTL) depuis la dernière sortie
     const derniereSortie = avant[avant.length - 1].jour;
     const semainesSansSortie = (fin - 1 - derniereSortie) / 7;

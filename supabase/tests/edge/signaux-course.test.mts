@@ -2,7 +2,7 @@
 // Lancer : node --experimental-strip-types --test supabase/tests/edge/signaux-course.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calculerSignauxCourse, DISTANCES_COURSE, distanceEnMouvement, meilleuresDistances, meilleursTemps, SIGNAUX_COURSE_VERSION } from '../../functions/_shared/signaux-course.ts';
+import { calculerSignauxCourse, DISTANCES_COURSE, distanceEnMouvement, distanceSansSauts, meilleuresDistances, meilleursTemps, SIGNAUX_COURSE_VERSION } from '../../functions/_shared/signaux-course.ts';
 
 /** Le cumul de distance d'une course à vitesse (m/s) donnée par morceaux : [secondes, m/s][]. */
 function cumul(morceaux: [number, number][]): number[] {
@@ -79,4 +79,18 @@ test('distanceEnMouvement : l\'enregistrement intelligent est interpolé, la pau
   const p = distanceEnMouvement([0, 10, 10, 20], [0, 5, 105, 110]); // pause de 100 s
   assert.equal(p.length, 1 + 5 + 1 + 5); // le point de départ, 5 s, la pause pour 1 s, 5 s
   assert.equal(distanceEnMouvement([0, 5, 9], []).join(','), '0,5,9');
+});
+
+test('distanceSansSauts : un saut de GPS de 60 m en une seconde est remplacé par le pas habituel (pas de « 400 m en 42 s »)', () => {
+  const d = cumul([[100, 3], [1, 63], [100, 3]]); // un pas de 63 m au milieu d'une course à 3 m/s
+  const propre = distanceSansSauts(d);
+  assert.equal(propre.length, d.length);
+  assert.ok(propre[propre.length - 1] < d[d.length - 1] - 55, `${propre[propre.length - 1]} contre ${d[d.length - 1]}`);
+  assert.deepEqual(distanceSansSauts([0, 3, 6, 9]), [0, 3, 6, 9]); // une course sans saut ne change pas
+  assert.equal(distanceSansSauts([5, 4, 7])[1], 5); // un cumul qui recule : pas à 0
+  assert.deepEqual(distanceSansSauts([]), []);
+  // Le meilleur 400 m d'une course à 3 m/s avec un saut reste un 400 m à ~3 m/s
+  const tout = cumul([[200, 3], [1, 63], [300, 3]]);
+  const c = calculerSignauxCourse({ time: tout.map((_, i) => i), distance: tout });
+  assert.ok(c.pace && c.pace['400'] > 120, `${c.pace?.['400']}`);
 });

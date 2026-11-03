@@ -2,6 +2,7 @@ import { sb } from '../supabase';
 import { courbeDeLignes, sortieVeloDeLigne, type CleSignal, type EntreeCourbe, type LigneCourbe, type LigneVelo, type PointCourbe, type SortieVelo } from '../../bilan/records.ts';
 import type { MesuresAnnee } from '../../bilan/piliers-niveau.ts';
 import { courbeCourseDeLignes, type CleCourbeCourse, type LigneCourbeCourse } from '../../bilan/records-course.ts';
+import type { LignePiliersCourse } from '../../bilan/piliers-course.ts';
 import { resultat, type Resultat } from './commun';
 
 // Les sorties à vélo avec leurs colonnes de records basiques, et la courbe de puissance : les fonctions SQL rpc_sorties_velo et rpc_courbe_puissance ne renvoient que le compte connecté.
@@ -73,6 +74,18 @@ export async function chargerPiliersAnnuels(): Promise<Resultat<MesuresAnnee[]>>
       pRef: nombre(l.p_ref), fcRef: nombre(l.fc_ref), nFc: Number(l.n_fc) || 0,
       driftMed: nombre(l.drift_med), nDrift: Number(l.n_drift) || 0,
     })),
+    erreur: '',
+  };
+}
+
+/** Les mesures par année du niveau global de la course (meilleurs temps et distances de l'année) : la fonction SQL rpc_piliers_course, une ligne par année. */
+export async function chargerPiliersCourse(): Promise<Resultat<LignePiliersCourse[]>> {
+  const r = await sb.rpc('rpc_piliers_course');
+  const res = resultat<Record<string, unknown>[]>(r, 'Impossible de charger ton niveau en course.');
+  if (!res.data) return { data: null, erreur: res.erreur };
+  const nombre = (v: unknown): number | null => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? null : Number(v));
+  return {
+    data: res.data.map((l) => ({ an: Number(l.an), t1000: nombre(l.t1000), t5000: nombre(l.t5000), t10000: nombre(l.t10000), d300: nombre(l.d300), d3600: nombre(l.d3600), nCourbes: Number(l.n_courbes) || 0 })),
     erreur: '',
   };
 }

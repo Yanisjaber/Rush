@@ -2,11 +2,16 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { CourbeLissee } from '@/components/graphes/CourbeLissee';
 import { ProgresCourse } from '@/components/graphes/ProgresCourse';
+import { FormeSaison as FormeSaisonGraphe } from '@/components/graphes/FormeSaison';
+import { ForceParExercice } from '@/components/graphes/ForceParExercice';
+import { NiveauGlobalSport } from '@/components/graphes/NiveauGlobalSport';
 import { NiveauGlobalVelo } from '@/components/graphes/NiveauGlobalVelo';
 import type { FormeSaison } from '@/data/bilan/forme-saison';
 import { ProgresNiveau } from '@/components/graphes/ProgresNiveau';
 import type { RecordsAnnee, SerieNiveau } from '@/data/bilan/niveau-annees';
 import type { NiveauGlobal } from '@/data/bilan/piliers-niveau';
+import type { NiveauGlobalSport as NiveauSport } from '@/data/bilan/piliers-sport';
+import type { SerieForce } from '@/data/types';
 import { ProgresVelo } from '@/components/graphes/ProgresVelo';
 import { IconeSport } from '@/components/ui/IconeSport';
 import { StatCle } from '@/components/ui/StatCle';
@@ -19,12 +24,22 @@ import { usePalette } from '@/theme/usePalette';
 
 // Le bloc d'un sport dans l'onglet Progrès du Bilan : le verdict en gros, la courbe de la période (100 = ton niveau d'avant), puis l'ancienne et la nouvelle valeur.
 // `courbe` : voir courbeProgression (data/progression.ts), vide quand il n'y a rien à tracer.
-export function ProgresSport({ progression, courbe, jours, niveau, records, niveauGlobal, annee, forme, onChoisirAnnee }: { progression: Progression; courbe: number[]; jours: PeriodeProgression; niveau?: SerieNiveau | null; records?: RecordsAnnee[]; niveauGlobal?: NiveauGlobal | null; annee: number; forme?: FormeSaison | null; onChoisirAnnee?: (an: number) => void }) {
+export function ProgresSport({ progression, courbe, jours, niveau, records, niveauGlobal, niveauSport, series, annee, forme, onChoisirAnnee }: { progression: Progression; courbe: number[]; jours: PeriodeProgression; niveau?: SerieNiveau | null; records?: RecordsAnnee[]; niveauGlobal?: NiveauGlobal | null; /** Le niveau global de la course ou de la musculation (quatre piliers par année) : la page de niveau global remplace alors l'ancienne. */ niveauSport?: NiveauSport | null; /** Le carnet de force (musculation : la courbe de force par exercice). */ series?: SerieForce[]; annee: number; forme?: FormeSaison | null; onChoisirAnnee?: (an: number) => void }) {
   const p = usePalette();
   // Le vélo et la course se lisent année après année (le niveau, avec la preuve du calcul derrière un bouton) quand l'historique le permet
   // Le vélo : le niveau global de l'athlète (une page, qui suit l'année choisie en haut du Bilan) quand on a de quoi le calculer
   if (progression.famille === 'velo' && niveau && niveauGlobal) {
     return <NiveauGlobalVelo global={niveauGlobal} serie={niveau} records={records ?? []} preuve={progression} jours={jours} annee={annee} forme={forme ?? null} onChoisirAnnee={onChoisirAnnee} />;
+  }
+  // La course et la musculation : le même niveau global que le vélo (quatre piliers, score par année), puis la courbe du niveau (course) ou de la force par exercice (musculation), et la forme semaine par semaine
+  if ((progression.famille === 'course' || progression.famille === 'muscu') && niveauSport) {
+    return (
+      <NiveauGlobalSport famille={progression.famille} global={niveauSport} annee={annee} onChoisirAnnee={onChoisirAnnee}>
+        {progression.famille === 'course' && niveau ? <ProgresNiveau famille="course" serie={niveau} records={[]} preuve={progression} jours={jours} courbeSeule jusquAn={annee} /> : null}
+        {progression.famille === 'muscu' && series?.length ? <ForceParExercice series={series} annee={annee} /> : null}
+        {forme ? <FormeSaisonGraphe forme={forme} couleur={couleurSport(p, progression.famille)} /> : null}
+      </NiveauGlobalSport>
+    );
   }
   if ((progression.famille === 'velo' || progression.famille === 'course') && niveau) {
     return <ProgresNiveau famille={progression.famille} serie={niveau} records={records ?? []} preuve={progression} jours={jours} />;
