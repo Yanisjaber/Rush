@@ -26,7 +26,7 @@ const HAUTEUR = 248;
 const MOIS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 const NOMS_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
-/** Les suites de semaines notées sans trou (une semaine vide coupe la courbe). */
+/** Les suites de semaines notées (mesurées ou estimées) sans trou : seule une semaine sans aucun score coupe la courbe. */
 function morceaux(semaines: readonly SemaineForme[]): SemaineForme[][] {
   const out: SemaineForme[][] = [];
   let cur: SemaineForme[] = [];
@@ -61,12 +61,15 @@ export function FormeSaison({ forme, couleur }: Props) {
   const largeurBarre = ((LARGEUR - G - D) / 52) * 0.7;
 
   const meilleure = forme.semaines[forme.meilleure];
-  const derniere = notees[notees.length - 1];
+  const mesurees = notees.filter((s) => !s.estimee);
+  const derniere = mesurees[mesurees.length - 1];
+  const nbEstimees = notees.length - mesurees.length;
   const moisDe = (s: SemaineForme): string => NOMS_MOIS[Number(s.debut.slice(5, 7)) - 1];
   const totalHeures = forme.semaines.reduce((t, s) => t + s.heures, 0);
   const etiquette =
     `Forme par semaine en ${forme.annee}, sur 100 : meilleure semaine ${Math.round(meilleure.score!)} début ${moisDe(meilleure)}, ` +
     `dernière semaine mesurée ${Math.round(derniere.score!)} début ${moisDe(derniere)}. ` +
+    (nbEstimees ? `${nbEstimees} semaine${nbEstimees > 1 ? 's' : ''} estimée${nbEstimees > 1 ? 's' : ''} sans assez de sorties, en pointillé. ` : '') +
     `Heures de vélo : ${formatHeures(totalHeures)} h sur ${forme.semaines.length} semaines, jusqu'à ${formatHeures(Math.max(...forme.semaines.map((s) => s.heures)))} h en une semaine.`;
 
   return (
@@ -87,7 +90,24 @@ export function FormeSaison({ forme, couleur }: Props) {
               />
             ) : null}
             {m.length > 1 ? (
-              <Path d={m.map((s, i) => `${i ? 'L' : 'M'}${xs(s)} ${y(s.score!)}`).join(' ')} fill="none" stroke={couleur} strokeWidth={2.4} strokeLinejoin="round" strokeLinecap="round" />
+              <>
+                {/* Trait plein sur les semaines mesurées, pointillé vers et sur les semaines estimées */}
+                {m.slice(1).map((s, i) => {
+                  const a = m[i];
+                  const estimee = s.estimee || a.estimee;
+                  return (
+                    <Path
+                      key={s.index}
+                      d={`M${xs(a)} ${y(a.score!)} L${xs(s)} ${y(s.score!)}`}
+                      fill="none"
+                      stroke={couleur}
+                      strokeWidth={2.4}
+                      strokeLinecap="round"
+                      strokeDasharray={estimee ? '2 4' : undefined}
+                    />
+                  );
+                })}
+              </>
             ) : (
               <Circle cx={xs(m[0])} cy={y(m[0].score!)} r={2.6} fill={couleur} />
             )}

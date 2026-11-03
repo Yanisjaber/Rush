@@ -85,3 +85,29 @@ test('formeParSemaine : les heures de vélo de chaque semaine, sans le vélo él
   assert.equal(f.semaines[51].heures, 0.5);
   assert.equal(f.semaines[20].heures, 0);
 });
+
+test('formeParSemaine : sans assez de sorties la forme est estimée (elle baisse avec la charge), en pointillé ; elle revient à la mesure à la reprise', () => {
+  // Une pause du 1er mai au 30 juin ; chaque sortie du vélo a une charge de 60
+  const avecPause = HISTORIQUE.filter((s) => s.date < '2025-05-01' || s.date >= '2025-07-01');
+  const seances: SeanceHeures[] = avecPause.map((s) => ({ sport: 'Ride', start_date_local: s.date, moving_time: 3600, tss: 60 }));
+  const f = formeParSemaine(avecPause, seances, niveauxVelo(avecPause), 2025, FIN_ANNEE)!;
+  const juin = f.semaines[24]; // semaine du 18 juin : fenêtre vide
+  assert.equal(juin.estimee, true);
+  assert.ok(juin.score !== null && juin.bas !== null && juin.haut !== null);
+  // Elle part de la dernière semaine mesurée et descend semaine après semaine
+  const derniereMesuree = [...f.semaines].filter((s) => !s.estimee && s.score !== null && s.index < 24).pop()!;
+  assert.ok(juin.score! < derniereMesuree.score!, `${juin.score} contre ${derniereMesuree.score}`);
+  assert.ok(f.semaines[24].score! < f.semaines[19].score! || f.semaines[19].estimee);
+  // Plus la pause dure, plus la marge s'élargit
+  assert.ok(juin.haut! - juin.bas! > f.semaines[derniereMesuree.index].haut! - f.semaines[derniereMesuree.index].bas!);
+  // La baisse reste mesurée : au plus la moitié de la note (PART_BAISSE_FORME)
+  assert.ok(juin.score! >= derniereMesuree.score! * 0.5 - 1e-9);
+  // À la reprise (fin juillet) on repasse sur la mesure
+  assert.equal(f.semaines[31].estimee, false);
+  // La meilleure semaine n'est jamais une semaine estimée
+  assert.equal(f.semaines[f.meilleure].estimee, false);
+  // Sans aucune charge connue (pas de séances), on ne peut rien estimer : la semaine reste vide
+  const sansCharge = formeParSemaine(avecPause, [], niveauxVelo(avecPause), 2025, FIN_ANNEE)!;
+  assert.equal(sansCharge.semaines[24].score, null);
+  assert.equal(sansCharge.semaines[24].estimee, false);
+});
