@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { donneesDemoAccueil } from '@/data/accueil/accueil';
 import { changerDonneeEcartee, chargerSeance, chargerTours } from '@/data/acces/api';
 import type { ColonneEcart } from '@/data/calendrier/donnees-ecartees';
-import { toursDemo } from '@/data/demo/demo';
+import { activitesBilanDemo, toursDemo } from '@/data/demo/demo';
 import { seanceDeLaDemo, useVersionAjouts } from '@/stores/ajouts';
 import { useAuth } from '@/stores/auth';
 import { ecartsChanges } from '@/stores/ecarts';
@@ -42,7 +42,9 @@ export function useSeance(id: string): RetourSeance {
       setEtat(initial);
     }
     if (demo) {
-      const s = seanceDeLaDemo(id, donneesDemoAccueil(new Date()).seances);
+      // Les sorties de l'historique de six ans (celles du Bilan, du classement des records) ne sont pas dans les 84 jours de l'accueil : on les cherche seulement si l'identifiant en vient
+      const base = id.startsWith('demo-bilan-') ? activitesBilanDemo(new Date()) : donneesDemoAccueil(new Date()).seances;
+      const s = seanceDeLaDemo(id, base);
       setEtat({ ...initial, seance: s, chargement: false, tours: s ? toursDemo(s) : null, erreur: s ? '' : 'Séance introuvable.' });
       return;
     }
