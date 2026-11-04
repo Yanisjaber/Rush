@@ -1,7 +1,7 @@
 // Les courbes de records de la démo, CALCULÉES à partir des streams générés (flux-demo.ts) avec les mêmes formules que le serveur :
 // supabase/functions/_shared/signaux.ts (vélo) et signaux-course.ts (course). Le code est copié ici (l'app mobile ne peut pas importer le dossier Deno) ;
 // tests/demo/courbes-demo.test.ts vérifie que les résultats sont identiques à ceux du serveur à 1 point par seconde.
-// Pour garder la démo rapide, les sorties à vélo sont calculées avec 1 point toutes les 5 secondes (`pas`) : les durées de 1 à 4 s n'existent pas dans la démo.
+// Pour garder la démo rapide, les sorties à vélo sont calculées avec 1 point toutes les 5 secondes (`pas`) ; seules les durées de 1 à 4 s se lisent sur le stream à 1 point par seconde.
 import type { Seance } from '../types.ts';
 import { genererFlux, type Flux } from './flux-demo.ts';
 
@@ -12,8 +12,8 @@ const arrondi = (x: number, decimales: number): number => {
   return Math.round(x * k) / k;
 };
 
-/** Les durées (secondes) des courbes du vélo : celles du serveur, à partir de 5 s et multiples de 5 (la démo calcule à 5 s près). */
-export const DUREES_VELO_DEMO = [5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 90, 120, 150, 180, 240, 300, 360, 420, 480, 600, 720, 900, 1080, 1200, 1500, 1800, 2400, 3000, 3600, 4500, 5400, 7200, 9000, 10800, 14400, 18000];
+/** Les durées (secondes) des courbes du vélo : celles du serveur, à partir de 5 s et multiples de 5 (la démo calcule à 5 s près, sauf 1 à 4 s, calculées sur le stream à 1 s). */
+export const DUREES_VELO_DEMO = [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 90, 120, 150, 180, 240, 300, 360, 420, 480, 600, 720, 900, 1080, 1200, 1500, 1800, 2400, 3000, 3600, 4500, 5400, 7200, 9000, 10800, 14400, 18000];
 export const DUREES_VAM_DEMO = DUREES_VELO_DEMO.filter((d) => d >= 30);
 
 /** La meilleure moyenne de la série sur chaque durée (fenêtre glissante) ; `pas` = secondes entre deux points de la série. Même formule que `meilleureMoyenne` du serveur. */
@@ -84,25 +84,45 @@ const MONTEE_MAX_MS = 1.3;
 const DESCENTE_MAX_MS = 4;
 
 /** Les courbes d'une sortie à vélo à partir de son stream (même logique que `calculerSignaux` du serveur). */
-export function courbesDuFluxVelo(flux: Flux, pas = 1): CourbesVelo {
+export function courbesDuFluxVelo(flux: Flux, pas = 1, durees: number[] = DUREES_VELO_DEMO): CourbesVelo {
   const watts = (flux.watts ?? []).map((x) => (x > 0 ? x : 0));
-  const sortie: CourbesVelo = { puissance: meilleureMoyenne(watts, DUREES_VELO_DEMO, 1, 0, pas) };
+  const sortie: CourbesVelo = { puissance: meilleureMoyenne(watts, durees, 1, 0, pas) };
   const ajoute = (cle: 'fc' | 'cad' | 'cou' | 'vit' | 'vam' | 'des', c: CourbeSignal): void => {
     if (Object.keys(c).length) sortie[cle] = c;
   };
   const fc = flux.heartrate.map((x) => (x >= FC_MIN && x <= FC_MAX ? x : 0));
-  ajoute('fc', meilleureMoyenne(fc, DUREES_VELO_DEMO, 1, 0, pas));
+  ajoute('fc', meilleureMoyenne(fc, durees, 1, 0, pas));
   if (flux.cadence) {
     const cad = flux.cadence.map((x) => (x > 0 && x <= CAD_MAX ? x : 0));
-    ajoute('cad', meilleureMoyenne(cad, DUREES_VELO_DEMO, 1, 0, pas));
+    ajoute('cad', meilleureMoyenne(cad, durees, 1, 0, pas));
     const couple = cad.map((c, i) => (watts[i] > 0 && c >= CAD_MIN_COUPLE ? watts[i] / ((c * 2 * Math.PI) / 60) : 0));
-    ajoute('cou', meilleureMoyenne(couple, DUREES_VELO_DEMO, 1, 1, pas));
+    ajoute('cou', meilleureMoyenne(couple, durees, 1, 1, pas));
   }
-  ajoute('vit', meilleureMoyenne(flux.velocity_smooth.map((x) => (x > 0 ? x : 0)), DUREES_VELO_DEMO, 3.6, 1, pas));
+  ajoute('vit', meilleureMoyenne(flux.velocity_smooth.map((x) => (x > 0 ? x : 0)), durees, 3.6, 1, pas));
   const alt = medianeGlissante(flux.altitude, Math.max(1, Math.round(FILTRE_ALTITUDE_S / pas) | 1));
-  ajoute('vam', meilleureVariation(alt, DUREES_VAM_DEMO, 1, MONTEE_MAX_MS, pas));
-  ajoute('des', meilleureVariation(alt, DUREES_VAM_DEMO, -1, DESCENTE_MAX_MS, pas));
+  ajoute('vam', meilleureVariation(alt, durees.filter((d) => d >= 30), 1, MONTEE_MAX_MS, pas));
+  ajoute('des', meilleureVariation(alt, durees.filter((d) => d >= 30), -1, DESCENTE_MAX_MS, pas));
   return sortie;
+}
+
+/** Le même stream avec 1 point par `pas` secondes : moyenne des `pas` secondes pour les grandeurs qui varient vite, valeur de la fin du bloc pour la distance et l'altitude. */
+function sousEchantillonner(f: Flux, pas: number): Flux {
+  const n = Math.floor(f.time.length / pas);
+  const moy = (a: number[], i: number): number => {
+    let somme = 0;
+    for (let k = 0; k < pas; k++) somme += a[i * pas + k];
+    return somme / pas;
+  };
+  const serie = (a: number[] | null): number[] | null => (a ? Array.from({ length: n }, (_, i) => moy(a, i)) : null);
+  return {
+    time: Array.from({ length: n }, (_, i) => i * pas),
+    distance: Array.from({ length: n }, (_, i) => f.distance[i * pas]),
+    velocity_smooth: serie(f.velocity_smooth) as number[],
+    heartrate: serie(f.heartrate) as number[],
+    watts: serie(f.watts),
+    cadence: serie(f.cadence),
+    altitude: Array.from({ length: n }, (_, i) => f.altitude[i * pas]),
+  };
 }
 
 /** Les courbes d'une sortie à vélo de la démo (stream à 5 s). Mémoïsé par identifiant et par contenu de la ligne. */
@@ -111,7 +131,14 @@ export function courbesVelo(s: Seance): CourbesVelo {
   const cle = `${s.id}|${s.moving_time}|${s.distance_km}|${s.total_elevation_gain}|${s.avg_watts}|${s.avg_heartrate}`;
   let c = memoVelo.get(cle);
   if (!c) {
-    c = courbesDuFluxVelo(genererFlux(s, 5), 5);
+    // Le stream à 1 s sert aux durées de 1 à 4 s ; le reste se calcule sur une version à 5 s (moyennes de 5 secondes), bien plus rapide
+    const f1 = genererFlux(s, 1);
+    c = courbesDuFluxVelo(sousEchantillonner(f1, 5), 5);
+    const courtes = courbesDuFluxVelo(f1, 1, [1, 2, 3, 4]);
+    for (const cle2 of Object.keys(c) as (keyof CourbesVelo)[]) {
+      const ajout = courtes[cle2];
+      if (ajout) c[cle2] = { ...ajout, ...c[cle2] };
+    }
     memoVelo.set(cle, c);
   }
   return c;
