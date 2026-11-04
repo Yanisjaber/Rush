@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { chargerCourbeCourse, chargerPodiumCourse } from '@/data/acces/api';
 import type { EntreeCourbe, PointCourbe } from '@/data/bilan/records';
-import type { CleCourbeCourse } from '@/data/bilan/records-course';
+import { courbeCourseDeLignes, signalServeur, type CleCourbeCourse } from '@/data/bilan/records-course';
+import { lignesCourbeCourseDemo } from '@/data/demo/records-course-demo';
 import { useAuth } from '@/stores/auth';
 import { auChangementDEcarts, useVersionEcarts } from '@/stores/ecarts';
 
@@ -59,6 +60,11 @@ export function useCourbeCourse(signal: CleCourbeCourse, annee: number, actif: b
     };
   }, [actif, userId, signal, annee, versionEcarts]);
 
+  const exemple = useMemo(
+    () => (demo && actif ? { tout: courbeCourseDeLignes(signal, lignesCourbeCourseDemo(new Date(), signalServeur(signal) as 'pace' | 'dis' | 'fc')), annee: courbeCourseDeLignes(signal, lignesCourbeCourseDemo(new Date(), signalServeur(signal) as 'pace' | 'dis' | 'fc', annee)) } : null),
+    [demo, actif, signal, annee],
+  );
+  if (exemple) return { courbeTout: exemple.tout, courbeAnnee: exemple.annee, chargement: false, erreur: '' };
   if (!actif || !userId) return { courbeTout: VIDE, courbeAnnee: VIDE, chargement: false, erreur: '' };
   return {
     courbeTout: cache.get(cleCache(userId, signal, undefined))?.data || VIDE,
@@ -99,6 +105,11 @@ export function usePodiumCourse(signal: CleCourbeCourse, cle: number | null, ann
     };
   }, [userId, signal, cle, annee, versionEcarts]);
 
+  const exemple = useMemo(
+    () => (demo && cle != null ? courbeCourseDeLignes(signal, lignesCourbeCourseDemo(new Date(), signalServeur(signal) as 'pace' | 'dis' | 'fc', annee ?? undefined, cle, 30))[0]?.top ?? null : null),
+    [demo, signal, cle, annee],
+  );
+  if (exemple) return exemple;
   if (!userId || cle == null) return null;
   return cachePodium.get(`${cleCache(userId, signal, annee ?? undefined)}|${cle}`)?.data ?? null;
 }

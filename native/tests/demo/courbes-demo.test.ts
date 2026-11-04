@@ -43,3 +43,14 @@ test('vélo à 5 s : la courbe de puissance baisse avec la durée et reste proch
   for (let i = 1; i < durees.length; i++) assert.ok(b[String(durees[i])] <= b[String(durees[i - 1])] * 1.04, String(durees[i]));
   for (const d of [300, 1200, 3600]) assert.ok(Math.abs(b[String(d)] - a[String(d)]) / a[String(d)] < 0.06, String(d));
 });
+
+test('records course de la démo : calculés sur les streams, classés du meilleur au moins bon', async () => {
+  const { lignesCourbeCourseDemo, piliersCourseDemo } = await import('../../src/data/demo/records-course-demo.ts');
+  const m = new Date(2026, 9, 19);
+  const l = lignesCourbeCourseDemo(m, 'pace', undefined, 5000, 5);
+  assert.equal(l.length, 5);
+  for (let i = 1; i < l.length; i++) assert.ok(Number(l[i].valeur) >= Number(l[i - 1].valeur));
+  assert.ok(Number(l[0].valeur) > 900 && Number(l[0].valeur) < 2000);
+  const p = piliersCourseDemo(m);
+  assert.ok(p.length >= 5 && p.every((x) => x.nCourbes > 0));
+});

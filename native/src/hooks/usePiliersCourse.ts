@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { chargerPiliersCourse } from '@/data/acces/api';
 import type { LignePiliersCourse } from '@/data/bilan/piliers-course';
+import { piliersCourseDemo } from '@/data/demo/records-course-demo';
 import { useAuth } from '@/stores/auth';
 import { auChangementDEcarts, useVersionEcarts } from '@/stores/ecarts';
 
 // Les mesures par année du niveau global de la course (meilleurs temps et distances de l'année) : une seule lecture (la fonction SQL rpc_piliers_course),
-// faite quand la page Progrès de la course est ouverte (`actif`), puis gardée cinq minutes. En démo, il n'y en a pas (les flux de démo n'ont pas de courbes) : le niveau de la course garde l'ancien écran.
+// faite quand la page Progrès de la course est ouverte (`actif`), puis gardée cinq minutes. En démo, elles sont calculées sur les streams des courses d'exemple.
 const DUREE_CACHE = 5 * 60 * 1000;
 const cache = new Map<string, { lignes: LignePiliersCourse[]; a: number }>();
 const VIDE: LignePiliersCourse[] = [];
@@ -41,6 +42,8 @@ export function usePiliersCourse(actif: boolean): { lignes: LignePiliersCourse[]
     };
   }, [userId, actif, versionEcarts]);
 
+  const exemple = useMemo(() => (demo && actif ? piliersCourseDemo(new Date()) : null), [demo, actif]);
+  if (exemple) return { lignes: exemple, chargement: false };
   if (!actif || !userId) return { lignes: VIDE, chargement: false };
   return { lignes: cache.get(userId)?.lignes || VIDE, chargement };
 }
