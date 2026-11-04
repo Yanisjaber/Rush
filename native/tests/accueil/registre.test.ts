@@ -170,7 +170,7 @@ test('construireContexte : « Tous » ne filtre rien, un sport filtre séances e
   assert.ok(course.planifiees.every((p) => p.sport === 'Run'));
   assert.equal(course.hrMax, 196);
   assert.equal(course.filtre, 'course');
-  assert.equal(course.hyrox.tests.length, 3);
+  assert.equal(course.hyrox.tests.length, 15);
   assert.equal(course.force.programmes.length, 3);
 });
 

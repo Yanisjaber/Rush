@@ -262,21 +262,16 @@ export function donneesDemo(aujourdhui: Date = new Date(), nbJours = 84, options
   }
 
   const plusJours = (n: number) => dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + n));
+  const debutFenetre = dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - nbJours + 1));
+  const recentes = activitesBilanDemo(aujourdhui).filter((l) => l.start_date_local.slice(0, 10) >= debutFenetre).sort((x, y) => (x.start_date_local < y.start_date_local ? 1 : -1));
+  const ftpProfil = [...activitesBilanDemo(aujourdhui)].reverse().find((l) => l.sport === 'Ride' && l.ftp_at_time)?.ftp_at_time ?? null;
 
   return {
-    profil: { ftp: null, hr_max: 196, lthr: null, weight: null, extras: { first_name: 'Yanis', last_name: 'Jaber', cp: 245, wprime: 19, threshold_speed: 15 } },
-    metriques,
-    seances,
-    puissance: [
-      { duration_s: 5, watts_90d: 674, watts_alltime: 790 },
-      { duration_s: 15, watts_90d: 560, watts_alltime: 640 },
-      { duration_s: 30, watts_90d: 470, watts_alltime: 520 },
-      { duration_s: 60, watts_90d: 380, watts_alltime: 430 },
-      { duration_s: 300, watts_90d: 290, watts_alltime: 330 },
-      { duration_s: 600, watts_90d: 255, watts_alltime: 290 },
-      { duration_s: 1200, watts_90d: 232, watts_alltime: 270 },
-      { duration_s: 3600, watts_90d: 205, watts_alltime: 245 },
-    ],
+    // La démo est un compte normal : ses séances, sa charge, son profil de puissance et sa FTP viennent de l'historique de six ans (activités créées, streams générés)
+    profil: { ftp: ftpProfil, hr_max: 196, lthr: null, weight: 72, extras: { first_name: 'Yanis', last_name: 'Jaber', cp: 245, wprime: 19, threshold_speed: 15 } },
+    metriques: metriquesDepuisHistorique(aujourdhui),
+    seances: recentes,
+    puissance: profilPuissanceDepuisHistorique(aujourdhui),
     planifiees: [
       // Les séances prévues aujourd'hui (toujours, quelle que soit la date) : trois par défaut, de trois sports ; le réglage de la démo
       // (Paramètres) en garde de 0 à 5, pour montrer chaque cas de la « Séance du jour ». La première est reliée à un programme de force.
@@ -339,40 +334,10 @@ export function programmesDemo(): ProgrammeForce[] {
   return PROGRAMMES_BASE.map((p) => ({ ...p, exercises: p.exercises.map((e) => ({ ...e })) }));
 }
 
-/** Séries d'exemple : les séances Push/Pull/Legs des 12 dernières semaines, avec des charges qui montent doucement. */
+/** Les séries de force des 84 derniers jours (celles de l'historique de six ans), de la plus récente à la plus ancienne. */
 export function seriesForceDemo(aujourdhui: Date = new Date()): SerieForce[] {
-  const { seances } = donneesDemo(aujourdhui);
-  const lignes: SerieForce[] = [];
-  for (const s of seances) {
-    if (s.sport !== 'WeightTraining' || !/^demo-\d{4}-\d{2}-\d{2}$/.test(s.id)) continue; // séances d'exemple seulement
-    const prog = PROGRAMMES_BASE.find((p) => p.name === String(s.name).toUpperCase());
-    if (!prog) continue;
-    const date = s.start_date_local.slice(0, 10);
-    const jours = Math.round(
-      (new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate()).getTime() - new Date(`${date}T00:00:00`).getTime()) / 86400000,
-    );
-    const progression = 0.86 + 0.14 * ((83 - jours) / 83); // de 86 % à 100 % des charges du programme
-    prog.exercises.forEach((e, position) => {
-      for (let n = 1; n <= e.sets; n++) {
-        const poids = e.weight ? Math.round((e.weight * progression) / 2.5) * 2.5 : 0;
-        lignes.push({
-          id: `demo-serie-${s.id}-${position}-${n}`,
-          activity_id: s.id,
-          date,
-          exercise_key: e.key,
-          exercise_name: e.name,
-          muscle_group: e.group,
-          position,
-          set_no: n,
-          reps: Math.max(1, e.reps - (n === e.sets ? 1 : 0)),
-          weight_kg: poids,
-          // Les 5 dernières semaines ont le RIR noté (les séries plus anciennes non : de quoi voir une couverture partielle)
-          ...(jours < 35 ? { rir: n === e.sets ? 0 : 2 + (n % 2) } : {}),
-        });
-      }
-    });
-  }
-  return lignes.sort((a, b) => (a.date < b.date ? 1 : -1));
+  const debut = dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - 83));
+  return seriesForceHistoriqueDemo(aujourdhui).filter((x) => x.date >= debut);
 }
 
 /** Tests Hyrox d'exemple : trois simulations qui progressent (runs plus rapides, stations mieux tenues), du plus récent au plus ancien. */
@@ -438,25 +403,78 @@ export function activitesBilanDemo(maintenant: Date = new Date()): Seance[] {
  */
 export function seriesForceHistoriqueDemo(maintenant: Date = new Date()): SerieForce[] {
   const lignes: SerieForce[] = [];
-  const premiere = maintenant.getFullYear() - 5;
+  const debutHistorique = new Date(maintenant.getFullYear() - 5, 0, 1, 12).getTime();
   for (const s of activitesBilanDemo(maintenant)) {
     if (s.sport !== 'WeightTraining') continue;
     const prog = PROGRAMMES_BASE.find((p) => p.name === String(s.name).split(/[ ,]/)[0].toUpperCase());
     if (!prog) continue;
     const date = s.start_date_local.slice(0, 10);
-    const an = Number(date.slice(0, 4));
-    const progression = 0.7 + 0.06 * (an - premiere); // 70 % en 2021 → 100 % en 2026
+    // Les charges montent doucement tout au long des six ans : 70 % des charges du programme au début, 100 % aujourd'hui (de nouveaux records tombent régulièrement)
+    const fraction = (new Date(`${date}T12:00:00`).getTime() - debutHistorique) / Math.max(1, maintenant.getTime() - debutHistorique);
+    const progression = 0.7 + 0.3 * Math.min(1, Math.max(0, fraction));
+    const jours = Math.round((new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate()).getTime() - new Date(`${date}T00:00:00`).getTime()) / 86400000);
     prog.exercises.forEach((e, position) => {
       for (let n = 1; n <= e.sets; n++) {
         lignes.push({
           id: `demo-serie-${s.id}-${position}-${n}`, activity_id: s.id, date, exercise_key: e.key, exercise_name: e.name, muscle_group: e.group, position, set_no: n,
           reps: Math.max(1, e.reps - (n === e.sets ? 1 : 0)),
           weight_kg: e.weight ? Math.round((e.weight * progression) / 2.5) * 2.5 : 0,
+          // Les 5 dernières semaines ont le RIR noté (les séries plus anciennes non : de quoi voir une couverture partielle)
+          ...(jours < 35 ? { rir: n === e.sets ? 0 : 2 + (n % 2) } : {}),
         });
       }
     });
   }
   return lignes.sort((x, y) => (x.date < y.date ? 1 : -1));
+}
+
+/** La charge de chaque jour (toutes les séances) : points de charge, minutes, nombre de séances. */
+function chargeParJour(lignes: Seance[]): Map<string, { tss: number; min: number; n: number }> {
+  const par = new Map<string, { tss: number; min: number; n: number }>();
+  for (const l of lignes) {
+    const iso = l.start_date_local.slice(0, 10);
+    const e = par.get(iso) ?? { tss: 0, min: 0, n: 0 };
+    e.tss += l.tss ?? 0;
+    e.min += l.moving_time / 60;
+    e.n++;
+    par.set(iso, e);
+  }
+  return par;
+}
+
+/** La forme, la fatigue et la fraîcheur des `nombre` derniers jours, calculées jour par jour sur toute l'historique (comme la table daily_metrics). */
+function metriquesDepuisHistorique(maintenant: Date, nombre = 90): Metrique[] {
+  const lignes = activitesBilanDemo(maintenant);
+  const par = chargeParJour(lignes);
+  const premier = lignes.length ? lignes[0].start_date_local.slice(0, 10) : dateIsoLocale(maintenant);
+  const sortie: Metrique[] = [];
+  let ctl = 0;
+  let atl = 0;
+  for (let t = new Date(`${premier}T12:00:00`); dateIsoLocale(t) <= dateIsoLocale(maintenant); t.setDate(t.getDate() + 1)) {
+    const iso = dateIsoLocale(t);
+    const e = par.get(iso);
+    const charge = e?.tss ?? 0;
+    ctl += (charge - ctl) / 42;
+    atl += (charge - atl) / 7;
+    sortie.push({ iso_date: iso, tss: charge, ctl: Math.round(ctl * 10) / 10, atl: Math.round(atl * 10) / 10, tsb: Math.round((ctl - atl) * 10) / 10, duration_min: Math.round(e?.min ?? 0), activity_count: e?.n ?? 0 });
+  }
+  return sortie.slice(-nombre);
+}
+
+/** Le profil de puissance (meilleure puissance sur 5 s à 1 h, 90 derniers jours et tous temps), lu sur les courbes des streams des sorties. */
+function profilPuissanceDepuisHistorique(maintenant: Date): PointPuissance[] {
+  const velos = activitesBilanDemo(maintenant).filter((l) => l.sport === 'Ride');
+  const limite = dateIsoLocale(new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate() - 90));
+  return [5, 15, 30, 60, 300, 600, 1200, 3600].map((duration_s) => {
+    let recent = 0;
+    let tout = 0;
+    for (const l of velos) {
+      const w = courbesVelo(l).puissance[String(duration_s)] ?? 0;
+      if (w > tout) tout = w;
+      if (l.start_date_local.slice(0, 10) >= limite && w > recent) recent = w;
+    }
+    return { duration_s, watts_90d: recent, watts_alltime: tout };
+  });
 }
 
 /** Les durées (en secondes) de la courbe de puissance d'exemple : de 1 s à 5 h, comme celles de la vraie base. */

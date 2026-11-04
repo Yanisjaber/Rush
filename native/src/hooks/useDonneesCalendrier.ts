@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { donneesDemoAccueil } from '@/data/accueil/accueil';
 import { chargerAnnotations, chargerCycles, chargerPlanifiees, chargerSeancesPeriode, chargerSeriesPeriode } from '@/data/acces/api';
 import { assemblerDonnees, bornesGrille, type DonneesCalendrier } from '@/data/calendrier/calendrier';
-import { annotationsDemo, seriesForceDemo } from '@/data/demo/demo';
+import { annotationsDemo, seriesForceHistoriqueDemo } from '@/data/demo/demo';
 import { useAuth } from '@/stores/auth';
 import { notesDeLaDemo, prevuesDeLaDemo, reposDeLaDemo, sortiesAjoutees, useVersionAjouts } from '@/stores/ajouts';
 import { useVersionEcarts } from '@/stores/ecarts';
@@ -42,7 +42,7 @@ export function useDonneesCalendrier(annee: number, mois: number): {
       notes: notesDeLaDemo(a.notes).filter((n) => n.from_date <= fin && n.to_date >= debut),
       repos: reposDeLaDemo(a.repos).filter((r) => dans(r)),
       cycles: cyclesDemo().filter((c) => c.from_date <= fin && c.to_date >= debut),
-      series: seriesForceDemo(maintenant).filter((x) => dans(String(x.date).slice(0, 10))).map((x) => ({ date: x.date })),
+      series: seriesForceHistoriqueDemo(maintenant).filter((x) => dans(String(x.date).slice(0, 10))).map((x) => ({ date: x.date })),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [demo, debut, fin, version]);

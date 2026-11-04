@@ -12,13 +12,13 @@ const date = new Date(2026, 9, 19);
 
 test('donneesDemoAccueil : toutes les parties de l\'enveloppe sont présentes', () => {
   const d = donneesDemoAccueil(date);
-  assert.equal(d.seances.length, 127);
-  assert.equal(d.dernieres.length, 127);
+  assert.ok(d.seances.length > 60 && d.seances.length < 130); // les 84 derniers jours de l'historique simulé
+  assert.equal(d.dernieres.length, d.seances.length);
   assert.equal(d.metriques.length, 90);
   assert.equal(d.puissance.length, 8);
   assert.equal(d.force.programmes.length, 3);
-  assert.equal(d.force.series.length, 407);
-  assert.equal(d.hyrox.tests.length, 3);
+  assert.ok(d.force.series.length > 1000); // six ans de séries de force
+  assert.equal(d.hyrox.tests.length, 15); // les 3 récents et 12 anciens
   assert.equal(d.hyrox.objectif?.total_s, 4200);
   assert.equal(d.sportsChoisis, null);
   assert.equal(d.erreur, '');
@@ -33,7 +33,7 @@ const vide = (): DonneesAccueil => ({
 test('famillesDe : les sports se déduisent des séances, de la force et du Hyrox', () => {
   assert.deepEqual(famillesDe(vide()), []);
   const demo = donneesDemoAccueil(date);
-  assert.deepEqual(new Set(famillesDe(demo)), new Set(['course', 'velo', 'natation', 'triathlon', 'duathlon', 'muscu', 'hyrox', 'autre']));
+  assert.deepEqual(new Set(famillesDe(demo)), new Set(['course', 'velo', 'natation', 'muscu', 'hyrox', 'autre'])); // le triathlon et le duathlon (une course par an) ne sont pas dans les 84 derniers jours
 });
 
 test('famillesDe : le trail est de la course, le VTT du vélo, le tennis va dans « Autres »', () => {

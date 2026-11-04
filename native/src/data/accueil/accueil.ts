@@ -1,6 +1,6 @@
 // Tout ce que l'Accueil affiche, chargé d'un coup : une enveloppe unique, la même pour la démo et pour un vrai compte.
 // Port de routes/Accueil.svelte. Ce fichier est pur (aucun réseau) : le chargement d'un vrai compte est dans chargement.ts.
-import { donneesDemo, objectifHyroxDemo, programmesDemo, seriesForceDemo, testsHyroxDemo } from '../demo/demo.ts';
+import { donneesDemo, objectifHyroxDemo, programmesDemo, seriesForceHistoriqueDemo, testsHyroxHistoriqueDemo } from '../demo/demo.ts';
 import { familleAffichage, familleSport } from '../sports/familles.ts';
 import { fusionnerFamilles } from '../sports/sports-choisis.ts';
 import type { Metrique, Objectif, ObjectifHyrox, PointPuissance, Prevue, Profil, ProgrammeForce, Seance, SerieForce, TestHyrox } from '../types.ts';
@@ -47,8 +47,8 @@ export function donneesDemoAccueil(aujourdhui: Date = new Date(), options: { pre
     objectifs: d.objectifs,
     puissance: d.puissance,
     planifiees: d.planifiees,
-    force: { series: seriesForceDemo(aujourdhui), programmes: programmesDemo() },
-    hyrox: { tests: testsHyroxDemo(aujourdhui), objectif: objectifHyroxDemo() },
+    force: { series: seriesForceHistoriqueDemo(aujourdhui), programmes: programmesDemo() },
+    hyrox: { tests: testsHyroxHistoriqueDemo(aujourdhui), objectif: objectifHyroxDemo() },
     sportsChoisis: null,
     connecte: false,
     erreur: '',
