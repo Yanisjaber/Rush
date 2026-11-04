@@ -3,7 +3,7 @@
 // (sans les retouches faites en démo, ni la puissance, le sommeil, Hyrox… qui viendront avec leurs écrans).
 import { completerSeance } from './flux-demo.ts';
 import { historiqueDemo } from './historique-demo.ts';
-import { avecFtpDesCourbes, courbesVelo, type CourbesVelo } from './courbes-demo.ts';
+import { avecFtpDesCourbes, courbesCourtesVelo, courbesVelo, type CourbesVelo } from './courbes-demo.ts';
 import { familleAffichage } from '../sports/familles.ts';
 import { dateIsoLocale } from '../outils/format.ts';
 import type { ObjectifAnnuel } from '../bilan/bilan.ts';
@@ -488,13 +488,27 @@ export function recordsVeloDemo(maintenant: Date = new Date()): { sorties: Sorti
     const candidates = sorties.map((s, k) => ({ s, k })).filter(({ s }) => annee == null || s.iso.startsWith(`${annee}-`));
     const parSortie = candidates.map(({ s, k }) => ({ s, c: (courbesDe(k)[cle] ?? {}) as Record<string, number> }));
     for (const { c } of parSortie) for (const d of Object.keys(c)) if (Number(d) >= minDuree) durees.add(Number(d));
+    // Les durées de 1 à 4 s se lisent sur le stream à 1 s, seulement pour les 40 sorties les plus fortes sur 5 s (les seules qui peuvent figurer au podium)
+    const courtes = new Map<string, Record<string, number>>();
+    if (cle !== 'vam' && cle !== 'des') {
+      const fortes = parSortie.filter(({ c }) => c['5'] != null).sort((x, y) => y.c['5'] - x.c['5']).slice(0, 40);
+      for (const { s, k } of fortes.map((x) => ({ s: x.s, k: sorties.indexOf(x.s) }))) {
+        const cc = (courbesCourtesVelo(lignes[k])[cle] ?? {}) as Record<string, number>;
+        // Les deux flux (1 s et 5 s) n'échantillonnent pas pareil : on garde la forme du stream à 1 s, recalée pour que son 5 s soit celui de la courbe à 5 s
+        const cinq = parSortie.find((x) => x.s.id === s.id)?.c['5'] ?? 0;
+        const echelle = cc['5'] > 0 && cinq > 0 ? cinq / cc['5'] : 1;
+        courtes.set(s.id, Object.fromEntries(Object.entries(cc).map(([d, v]) => [d, cle === 'cou' || cle === 'vit' ? Math.round(v * echelle * 10) / 10 : Math.round(v * echelle)])));
+      }
+      for (const d of [1, 2, 3, 4]) if ([...courtes.values()].some((cc) => cc[String(d)] != null)) durees.add(d);
+    }
+    const valeur = (c: Record<string, number>, id: string, duree: number): number | undefined => (duree <= 4 ? courtes.get(id)?.[String(duree)] : c[String(duree)]);
     return [...durees].sort((a, b) => a - b).map((duree) => ({
       duree,
       top: parSortie
-        .filter(({ c }) => c[String(duree)] != null)
-        .sort((a, b) => b.c[String(duree)] - a.c[String(duree)])
+        .filter(({ s, c }) => valeur(c, s.id, duree) != null)
+        .sort((a, b) => (valeur(b.c, b.s.id, duree) as number) - (valeur(a.c, a.s.id, duree) as number))
         .slice(0, n)
-        .map(({ s, c }) => ({ valeur: c[String(duree)], id: s.id, nom: s.name, iso: s.iso })),
+        .map(({ s, c }) => ({ valeur: valeur(c, s.id, duree) as number, id: s.id, nom: s.name, iso: s.iso })),
     }));
   };
   const courbe = (annee?: number, n = 3): PointCourbe[] => classer('puissance', annee, n, 1);

@@ -127,18 +127,22 @@ function sousEchantillonner(f: Flux, pas: number): Flux {
 
 /** Les courbes d'une sortie à vélo de la démo (stream à 5 s). Mémoïsé par identifiant et par contenu de la ligne. */
 const memoVelo = new Map<string, CourbesVelo>();
+/** Les courbes de 1 à 5 s d'une sortie (le 5 s sert à recaler sur la courbe à 5 s), lues sur son stream à 1 point par seconde (plus lourd : demandé seulement pour les sorties qui peuvent figurer au podium). */
+const memoCourtes = new Map<string, CourbesVelo>();
+export function courbesCourtesVelo(s: Seance): CourbesVelo {
+  let c = memoCourtes.get(s.id);
+  if (!c) {
+    c = courbesDuFluxVelo(genererFlux(s, 1), 1, [1, 2, 3, 4, 5]);
+    memoCourtes.set(s.id, c);
+  }
+  return c;
+}
+
 export function courbesVelo(s: Seance): CourbesVelo {
   const cle = `${s.id}|${s.moving_time}|${s.distance_km}|${s.total_elevation_gain}|${s.avg_watts}|${s.avg_heartrate}`;
   let c = memoVelo.get(cle);
   if (!c) {
-    // Le stream à 1 s sert aux durées de 1 à 4 s ; le reste se calcule sur une version à 5 s (moyennes de 5 secondes), bien plus rapide
-    const f1 = genererFlux(s, 1);
-    c = courbesDuFluxVelo(sousEchantillonner(f1, 5), 5);
-    const courtes = courbesDuFluxVelo(f1, 1, [1, 2, 3, 4]);
-    for (const cle2 of Object.keys(c) as (keyof CourbesVelo)[]) {
-      const ajout = courtes[cle2];
-      if (ajout) c[cle2] = { ...ajout, ...c[cle2] };
-    }
+    c = courbesDuFluxVelo(genererFlux(s, 5), 5);
     memoVelo.set(cle, c);
   }
   return c;
