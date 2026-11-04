@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { SPORTS_A_CHOISIR } from '@/data/sports/sports-choisis';
 
 // Quand les sports changent (bouton « + », Mes sports, onboarding), l'Accueil doit se recomposer.
 // Ce petit état partagé sert de signal : `version` augmente à chaque changement, l'Accueil recharge ses données.
@@ -8,7 +9,8 @@ interface EtatSports {
   demo: string[] | null;
 }
 
-let etat: EtatSports = { version: 0, demo: null };
+// En démo, tous les sports sont cochés au départ (course, vélo, natation, musculation, Hyrox, triathlon, duathlon, autres) : chacun a ses activités d'exemple
+let etat: EtatSports = { version: 0, demo: [...SPORTS_A_CHOISIR] };
 const ecouteurs = new Set<() => void>();
 
 function abonner(fn: () => void) {
