@@ -431,7 +431,8 @@ export function activitesBilanDemo(maintenant: Date = new Date()): Seance[] {
         name: `${nom} ${j}`,
         sport: m.sport,
         start_date_local: `${dateIsoLocale(d)}T18:00:00+00:00`,
-        moving_time: Math.round(m.min * 60 * v),
+        // Le coureur progresse : à distance égale, il court un peu plus vite chaque année (+2,5 % par an)
+        moving_time: Math.round((m.min * 60 * v) / (m.sport === 'Run' ? 0.94 + 0.025 * (a - (maintenant.getFullYear() - 5)) : 1)),
         distance_km: m.km ? Math.round(m.km * v * 100) / 100 : null,
         total_elevation_gain: m.d ? Math.round(m.d * v) : null,
         tss: Math.round(m.min * 0.9 * v),
