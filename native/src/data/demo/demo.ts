@@ -3,7 +3,7 @@
 // (sans les retouches faites en démo, ni la puissance, le sommeil, Hyrox… qui viendront avec leurs écrans).
 import { completerSeance } from './flux-demo.ts';
 import { historiqueDemo } from './historique-demo.ts';
-import { courbesVelo, type CourbesVelo } from './courbes-demo.ts';
+import { avecFtpDesCourbes, courbesVelo, type CourbesVelo } from './courbes-demo.ts';
 import { familleAffichage } from '../sports/familles.ts';
 import { dateIsoLocale } from '../outils/format.ts';
 import type { ObjectifAnnuel } from '../bilan/bilan.ts';
@@ -420,8 +420,16 @@ export function annotationsDemo(aujourdhui: Date = new Date()): { notes: Note[];
 }
 
 /** Activités d'exemple sur six ans (forme des lignes de la table activities), pour le bilan en démo : voir historique-demo.ts. */
+const memoBilan = new Map<string, Seance[]>();
 export function activitesBilanDemo(maintenant: Date = new Date()): Seance[] {
-  return historiqueDemo(maintenant);
+  const cle = dateIsoLocale(maintenant);
+  let liste = memoBilan.get(cle);
+  if (!liste) {
+    // La FTP de chaque sortie à vélo se lit sur les courbes de puissance des streams (95 % du meilleur 20 min sur ±90 jours), comme sur le serveur
+    liste = avecFtpDesCourbes(historiqueDemo(maintenant));
+    memoBilan.set(cle, liste);
+  }
+  return liste;
 }
 
 /**

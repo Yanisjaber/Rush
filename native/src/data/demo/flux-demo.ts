@@ -191,7 +191,7 @@ export function genererFlux(s: Seance, pas = 1): Flux {
     for (let i = 0; i < n; i++) watts[i] = Math.round(Math.min(1100, brut[i] * kP));
     if (km > 0) {
       const kV = (km * 1000) / (duree) / (moyenne(v) || 1);
-      for (let i = 0; i < n; i++) v[i] *= kV;
+      for (let i = 0; i < n; i++) v[i] = Math.min(16, v[i] * kV); // jamais plus de 58 km/h, même en descente
     }
     cadence = watts.map((p, i) => (p < 8 ? 0 : Math.round(borner(82 + 16 * (p / cibleP - 1) + 5 * bruit(g + 3, t[i], 5), 55, 118))));
   } else if (genre === 'course' || genre === 'glisse' || genre === 'multisport') {
@@ -336,8 +336,8 @@ export function puissanceMoyenneDemo(s: Seance): number {
   const km = Number(s.distance_km) || (duree / 3600) * 27;
   const v = (km * 1000) / duree;
   const montee = (Number(s.total_elevation_gain) || 0) / Math.max(km * 1000, 1); // pente moyenne montée
-  // Dans le stream, une partie de la montée est « rendue » en descente sans pédaler : on compte 70 % de l'énergie de montée
-  const pente = 0.7 * montee;
+  // Dans le stream, une partie de la montée est « rendue » en descente sans pédaler : on compte 50 % de l'énergie de montée
+  const pente = 0.5 * montee;
   return Math.round(Math.max(90, (v * (0.5 * VELO.rho * VELO.cda * v * v + VELO.masse * VELO.g * (VELO.crr + pente))) / VELO.eta));
 }
 

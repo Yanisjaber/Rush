@@ -192,3 +192,31 @@ export function courbesCourse(s: Seance): CourbesCourse {
   }
   return c;
 }
+
+// --- La FTP, déduite des courbes (comme recalc_ftp_tss du serveur) -------------------------------------------------------------
+
+const jourDe = (iso: string): number => Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10))) / 86400000;
+
+/**
+ * Donne à chaque sortie à vélo sa FTP : 95 % du meilleur 20 minutes dans les ±90 jours autour d'elle (puis ±180, puis ±365 s'il n'y en a pas), lu sur les courbes de puissance des streams.
+ * Sans aucun 20 minutes à portée, la sortie garde sa FTP de départ. Les autres sports ne changent pas.
+ */
+export function avecFtpDesCourbes(lignes: Seance[]): Seance[] {
+  const velos = lignes
+    .filter((s) => s.sport === 'Ride')
+    .map((s) => ({ jour: jourDe(String(s.start_date_local)), w: courbesVelo(s).puissance['1200'] }))
+    .filter((x): x is { jour: number; w: number } => x.w > 0);
+  const ftpDe = (jour: number): number | null => {
+    for (const fenetre of [90, 180, 365]) {
+      let m = 0;
+      for (const x of velos) if (Math.abs(x.jour - jour) <= fenetre && x.w > m) m = x.w;
+      if (m > 0) return Math.round(0.95 * m);
+    }
+    return null;
+  };
+  return lignes.map((s) => {
+    if (s.sport !== 'Ride') return s;
+    const ftp = ftpDe(jourDe(String(s.start_date_local)));
+    return ftp ? { ...s, ftp_at_time: ftp } : s;
+  });
+}
