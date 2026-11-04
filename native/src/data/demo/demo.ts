@@ -1,6 +1,8 @@
 // Données d'exemple pour le mode démo : mêmes formes que les réponses de l'API, générées de façon déterministe.
 // Elles servent à montrer et à tester l'interface sans être connecté. Port de app/src/lib/data/demo.js
 // (sans les retouches faites en démo, ni la puissance, le sommeil, Hyrox… qui viendront avec leurs écrans).
+import { completerSeance } from './flux-demo.ts';
+import { courbesVelo, type CourbesVelo } from './courbes-demo.ts';
 import { familleAffichage } from '../sports/familles.ts';
 import { dateIsoLocale } from '../outils/format.ts';
 import type { ObjectifAnnuel } from '../bilan/bilan.ts';
@@ -423,9 +425,10 @@ export function activitesBilanDemo(maintenant: Date = new Date()): Seance[] {
       const m = modele[d.getDay() === 0 ? 6 : d.getDay()];
       if (!m || (j * 7 + a) % 9 === 0) continue; // un jour sur neuf de repos en plus
       const v = (0.85 + ((j * 13) % 30) / 100) * progression;
-      lignes.push({
+      const nom = m.sport === 'Ride' ? (m.min >= 150 ? 'Sortie longue' : 'Endurance') : m.sport === 'Run' ? (m.km > 10 ? 'Tempo' : j % 2 ? 'Fractionné' : 'Footing') : m.sport === 'Swim' ? 'Natation' : 'Séance';
+      lignes.push(completerSeance({
         id: `demo-bilan-${a}-${j}`,
-        name: `${m.sport === 'Ride' ? 'Sortie vélo' : m.sport === 'Run' ? 'Footing' : m.sport === 'Swim' ? 'Natation' : 'Séance'} ${j}`,
+        name: `${nom} ${j}`,
         sport: m.sport,
         start_date_local: `${dateIsoLocale(d)}T18:00:00+00:00`,
         moving_time: Math.round(m.min * 60 * v),
@@ -437,7 +440,7 @@ export function activitesBilanDemo(maintenant: Date = new Date()): Seance[] {
         avg_watts: null,
         np: null,
         category: 'entrainement',
-      });
+      }));
     }
   }
   return lignes;
@@ -448,70 +451,42 @@ const DUREES_COURBE_DEMO = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 24
 
 /** Les données de l'onglet Records du vélo en démo : les sorties à vélo d'exemple, la courbe de puissance (tous temps ou d'une année) et un poids. */
 export function recordsVeloDemo(maintenant: Date = new Date()): { sorties: SortieVelo[]; poids: number; courbe: (annee?: number, n?: number) => PointCourbe[]; courbeSignal: (signal: CleSignal, annee?: number, n?: number) => PointCourbe[]; podium: (signal: CleSignal, duree: number, annee?: number) => EntreeCourbe[] } {
-  const sorties: SortieVelo[] = activitesBilanDemo(maintenant)
-    .filter((l) => l.sport === 'Ride')
-    .map((l, i) => {
-      const min = l.moving_time / 60;
-      const watts = 170 + ((i * 17) % 60) + Math.min(40, min / 5);
-      return {
-        id: l.id,
-        name: l.name || 'Sortie vélo',
-        iso: l.start_date_local.slice(0, 10),
-        sport: 'Ride',
-        distance_km: l.distance_km ?? 0,
-        duree_min: min,
-        d_plus: l.total_elevation_gain ?? 0,
-        kj: Math.round((watts * l.moving_time) / 1000),
-        tss: l.tss,
-        puissance_moyenne: Math.round(watts),
-        fc_moyenne: 128 + ((i * 7) % 30),
-      };
-    });
-  /** Le podium d'une durée : les trois sorties qui ont la plus forte puissance sur cette durée (une loi de puissance, qui baisse quand la durée augmente). */
-  const courbe = (annee?: number, n = 3): PointCourbe[] => {
-    const candidates = sorties.map((s, k) => ({ s, k })).filter(({ s }) => (annee == null || s.iso.startsWith(`${annee}-`)) && s.duree_min >= 20);
-    return DUREES_COURBE_DEMO.map((duree) => {
-      // Le « k » est le rang de la sortie dans la liste entière : sa part de hasard ne change pas d'une durée à l'autre, donc la courbe ne remonte jamais
-      const tenables = candidates.filter(({ s }) => s.duree_min * 60 >= duree);
-      const classees = tenables
-        .map(({ s, k }) => ({ s, valeur: Math.round((s.puissance_moyenne ?? 180) * (1.15 + 1.7 * Math.pow(duree, -0.32)) * (0.97 + ((k * 31) % 7) / 100)) }))
-        .sort((a, b) => b.valeur - a.valeur)
-        .slice(0, n);
-      return { duree, top: classees.map((c) => ({ valeur: c.valeur, id: c.s.id, nom: c.s.name, iso: c.s.iso })) };
-    }).filter((pt) => pt.top.length > 0);
-  };
-  /** Les autres signaux : une valeur de référence à 20 minutes pour chaque sortie, qui baisse quand la durée augmente (même idée que la puissance). */
-  const courbeSignal = (signal: CleSignal, annee?: number, n = 3): PointCourbe[] => {
-    // [valeur à 20 min d'une sortie, vitesse de baisse avec la durée, nombre de décimales]
-    const modele = (s: SortieVelo, k: number): [number, number, number] => {
-      const vitesse = s.duree_min > 0 ? s.distance_km / (s.duree_min / 60) : 25;
-      const montee = s.duree_min > 0 ? s.d_plus / (s.duree_min / 60) : 0;
-      switch (signal) {
-        case 'fc': return [(s.fc_moyenne ?? 140) + 16, 0.04, 0];
-        case 'cad': return [82 + ((k * 5) % 13), 0.03, 0];
-        case 'cou': return [34 + ((k * 3) % 9), 0.08, 1];
-        case 'vit': return [vitesse * 1.28, 0.1, 1];
-        case 'vam': return [650 + montee * 1.6 + ((k * 37) % 300), 0.12, 0];
-        default: return [1500 + montee * 2.2 + ((k * 53) % 600), 0.15, 0];
-      }
+  const lignes = activitesBilanDemo(maintenant).filter((l) => l.sport === 'Ride');
+  const sorties: SortieVelo[] = lignes.map((l) => {
+    const watts = l.avg_watts ?? 180;
+    return {
+      id: l.id,
+      name: l.name || 'Sortie vélo',
+      iso: l.start_date_local.slice(0, 10),
+      sport: 'Ride',
+      distance_km: l.distance_km ?? 0,
+      duree_min: l.moving_time / 60,
+      d_plus: l.total_elevation_gain ?? 0,
+      kj: Math.round((watts * l.moving_time) / 1000),
+      tss: l.tss,
+      puissance_moyenne: Math.round(watts),
+      fc_moyenne: l.avg_heartrate,
     };
-    const candidates = sorties.map((s, k) => ({ s, k })).filter(({ s }) => (annee == null || s.iso.startsWith(`${annee}-`)) && s.duree_min >= 20);
-    // Comme sur le serveur : la VAM et la descente commencent à 30 s, les autres signaux à 1 s
-    return DUREES_COURBE_DEMO.filter((d) => d >= (signal === 'vam' || signal === 'des' ? 30 : 1))
-      .map((duree) => {
-        const classees = candidates
-          .filter(({ s }) => s.duree_min * 60 >= duree)
-          .map(({ s, k }) => {
-            const [ref, b, dec] = modele(s, k);
-            const valeur = ref * Math.pow(duree / 1200, -b) * (0.97 + ((k * 31) % 7) / 100);
-            return { s, valeur: dec ? Math.round(valeur * 10 ** dec) / 10 ** dec : Math.round(valeur) };
-          })
-          .sort((a, b) => b.valeur - a.valeur)
-          .slice(0, n);
-        return { duree, top: classees.map((c) => ({ valeur: c.valeur, id: c.s.id, nom: c.s.name, iso: c.s.iso })) };
-      })
-      .filter((pt) => pt.top.length > 0);
+  });
+  // Les courbes de chaque sortie sont CALCULÉES sur son stream (courbes-demo.ts), au premier besoin, puis gardées en mémoire
+  const courbesDe = (k: number): CourbesVelo => courbesVelo(lignes[k]);
+  const classer = (cle: keyof CourbesVelo | 'puissance', annee: number | undefined, n: number, minDuree: number): PointCourbe[] => {
+    const durees = new Set<number>();
+    const candidates = sorties.map((s, k) => ({ s, k })).filter(({ s }) => annee == null || s.iso.startsWith(`${annee}-`));
+    const parSortie = candidates.map(({ s, k }) => ({ s, c: (courbesDe(k)[cle] ?? {}) as Record<string, number> }));
+    for (const { c } of parSortie) for (const d of Object.keys(c)) if (Number(d) >= minDuree) durees.add(Number(d));
+    return [...durees].sort((a, b) => a - b).map((duree) => ({
+      duree,
+      top: parSortie
+        .filter(({ c }) => c[String(duree)] != null)
+        .sort((a, b) => b.c[String(duree)] - a.c[String(duree)])
+        .slice(0, n)
+        .map(({ s, c }) => ({ valeur: c[String(duree)], id: s.id, nom: s.name, iso: s.iso })),
+    }));
   };
+  const courbe = (annee?: number, n = 3): PointCourbe[] => classer('puissance', annee, n, 1);
+  const courbeSignal = (signal: CleSignal, annee?: number, n = 3): PointCourbe[] =>
+    signal === 'puissance' ? courbe(annee, n) : classer(signal as keyof CourbesVelo, annee, n, signal === 'vam' || signal === 'des' ? 30 : 1);
   /** Le podium d'une durée : jusqu'à 30 séances. */
   const podium = (signal: CleSignal, duree: number, annee?: number): EntreeCourbe[] =>
     (signal === 'puissance' ? courbe(annee, 30) : courbeSignal(signal, annee, 30)).find((pt) => pt.duree === duree)?.top ?? [];

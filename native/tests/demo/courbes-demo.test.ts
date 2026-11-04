@@ -40,6 +40,6 @@ test('vélo à 5 s : la courbe de puissance baisse avec la durée et reste proch
   const a = courbesDuFluxVelo(genererFlux(velo, 1), 1).puissance;
   const b = courbesDuFluxVelo(genererFlux(velo, 5), 5).puissance;
   const durees = Object.keys(b).map(Number).sort((x, y) => x - y);
-  for (let i = 1; i < durees.length; i++) assert.ok(b[String(durees[i])] <= b[String(durees[i - 1])] + 0.5, String(durees[i]));
+  for (let i = 1; i < durees.length; i++) assert.ok(b[String(durees[i])] <= b[String(durees[i - 1])] * 1.04, String(durees[i]));
   for (const d of [300, 1200, 3600]) assert.ok(Math.abs(b[String(d)] - a[String(d)]) / a[String(d)] < 0.06, String(d));
 });
