@@ -216,6 +216,18 @@ Même mécanique que les autres sports (`piliers-sport.ts`) : une note par pilie
 - **Volume** : 60 % les heures, 25 % les jours actifs de séance Hyrox et 15 % le nombre de tests de l'année, contre la moyenne de tes 3 meilleures années (0 à 40 %), annualisés (à partir de 30 jours couverts).
 - **Preuves** : total, runs et stations demandent **2 tests** dans l'année ; le volume demande 30 jours de données.
 
+## 9. Niveau global à la natation : 4 piliers (4 nov. 2026)
+
+Même mécanique que les autres sports (`piliers-sport.ts`) : une note par pilier, réduite de la part de preuve qui manque, score global seulement si **3 piliers sur 4** ont toutes leurs preuves. Code : `native/src/data/bilan/piliers-natation.ts`. Données : la distance et la durée de chaque séance de natation (la piscine n'envoie presque jamais de flux détaillé à Strava : aucune courbe calculée côté serveur).
+
+- **Vitesse** : la moyenne de tes **3 allures au 100 m les plus rapides** de l'année (séances de 300 m ou plus) contre la même mesure dans ta meilleure année ; 100 = ta meilleure année, 0 = 25 % plus lent (`NATATION_ZERO = 0,75`).
+- **Endurance** : l'allure **médiane** au 100 m de tes séances de **1 500 m ou plus** de l'année, même échelle.
+- **Régularité** : 50 % les séances par semaine (2 par semaine = 100) et 50 % la part des semaines avec au moins une séance, sur les semaines couvertes.
+- **Volume** : 50 % les kilomètres, 30 % les heures, 20 % les jours actifs, contre la moyenne de tes 3 meilleures années (0 à 40 %), annualisés (à partir de 30 jours couverts).
+- **Preuves** : vitesse et endurance demandent 3 séances (de 300 m ou plus, de 1 500 m ou plus) dans l'année ; régularité et volume 30 jours de données.
+- **Records** : pas de flux, donc la « courbe de meilleurs efforts » lit les séances entières : pour chaque distance de séance (300 m, 500 m, 750 m, 1 km, 1,5 km, 2 km … 5 km), ta meilleure allure au 100 m sur une séance d'**au moins** cette distance (`records-natation.ts`) ; une séance de 3 km compte aussi pour 1 km.
+- **Forme par saison** : la forme de la musculation (`forme-force.ts`) appliquée à l'allure : chaque séance de 300 m ou plus donne un point (allure record ÷ allure de la séance), mémoire de 28 jours, 100 = ta meilleure semaine ; barres du bas : les kilomètres nagés par semaine.
+
 ## Historique
 
 - 2026-11-02 : création, ajout du TSS, du CTL/ATL/TSB, du score d'endurance et d'une proposition de score de puissance.
@@ -237,3 +249,4 @@ Même mécanique que les autres sports (`piliers-sport.ts`) : une note par pilie
 - 2026-11-04 : niveau global de la course (vitesse, endurance, efficacité, volume) et de la musculation (force, volume, régularité, équilibre) sur le modèle du vélo ; forme par saison de la course (allure à cardio égal) et de la musculation (force) ; courbes de course côté serveur (meilleurs temps par distance, pauses et sauts de GPS écartés).
 - 2026-11-04 : Bilan du triathlon et du duathlon (filtre multisport, résumé, rythme, records par discipline, niveau global à 4 piliers) ; allure moyenne au 100 m dans les records de natation.
 - 2026-11-04 : Bilan de l'Hyrox (résumé, records par segment, niveau global à 4 piliers, temps total test après test).
+- 2026-11-04 : Bilan de la natation (mesures d'allure au 100 m, courbe de meilleurs efforts par distance de séance, niveau global à 4 piliers, forme par saison).

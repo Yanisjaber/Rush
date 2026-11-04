@@ -122,6 +122,14 @@ Le Bilan de l'Hyrox lit les **tests et courses** (table `hyrox_tests`, 16 segmen
 - **Records** : les tuiles de séance (durée, charge…), ton **meilleur temps total** (avec ce que vaut l'autre période : « Ton record absolu »), le **classement** de tes tests et courses par temps total (écart en minutes et secondes avec le meilleur), puis le **record de chacun des 16 segments** (les 8 runs d'1 km et les 8 stations) avec l'écart de ton dernier test.
 - **Progrès** : le niveau global (4 piliers : temps total, runs, stations, volume), le score par année, la carte de chaleur, puis « Temps total, test après test » (la courbe descend quand tu vas plus vite) avec ton objectif de temps et la dérive des runs du dernier test.
 
+## Natation (4 nov. 2026)
+
+Formules : `docs/FORMULES.md`, section 9.
+- **Résumé** : les km (une décimale en dessous de 100 km), puis le temps, les séances et la charge.
+- **Rythme** : les menus proposent la distance (une décimale), l'**allure au 100 m** (minutes et secondes : la barre est le temps mis pour 100 m), la FC, les séances, le temps et la charge.
+- **Records** : tuiles (durée, distance, charge, **allure moyenne au 100 m**) puis « Meilleurs efforts » : la courbe de ta meilleure allure au 100 m par distance de séance (300 m à 5 km, séance d'au moins cette distance), qu'on touche pour lire une distance et voir son classement de 30 séances. Le même onglet sert dans le menu « Discipline » du triathlon.
+- **Progrès** : le niveau global (vitesse, endurance, régularité, volume), le score par année, la carte de chaleur, la forme par saison (allure, barres en km), puis la comparaison des 12 derniers mois aux 12 mois d'avant.
+
 ## Les records
 
 Le sélecteur du vélo lit ton meilleur sprint (5 secondes) et tes meilleurs 5, 20 et 60 minutes de chaque année (fonction SQL `rpc_courbe_puissance`, une lecture par année). Chaque durée a son propre 100 (ta meilleure année sur cette durée). Pas de trimestres ni de marge d'erreur : un record n'est pas assez régulier (il demande un effort maximal ce jour-là).
