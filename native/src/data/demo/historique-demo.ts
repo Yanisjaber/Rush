@@ -101,8 +101,15 @@ function seancesDuJour(d: Date, an: number, j: number, niveau: number): Plan[] {
     }
   } else if (jourSemaine === 3) {
     // Jeudi midi : natation ; le soir, muscu (pull) une semaine sur deux
-    const m = entre(45, 62, an, j, 12) * charge;
-    ajoute({ suffixe: 'na', nom: choisir(NOMS.nage, an, j, 13), sport: 'Swim', heure: '12:30:00', minutes: m, km: (m / 60) * (2.7 + 0.06 * niveau) * (1 + 0.08 * (alea(an, j, 14) - 0.5)), dPlus: null, tssMin: 0.62 });
+    // Chaque type de séance a sa durée et son allure : les séries courtes sont rapides, le travail technique et l'endurance plus lents (la courbe des meilleurs efforts a donc une vraie forme)
+    const nom = choisir(NOMS.nage, an, j, 13);
+    const profil: Record<string, [number, number, number]> = { // [minutes min, minutes max, km/h moyen avec les repos]
+      'Natation, technique': [42, 50, 2.1], 'Natation, séries de 400 m': [52, 62, 2.6], 'Natation, endurance': [58, 70, 2.4],
+      'Natation, 10 × 100 m': [22, 27, 3.0], 'Natation, pull-buoy et plaquettes': [45, 55, 2.3],
+    };
+    const [mini, maxi, vitesse] = profil[nom] ?? [45, 60, 2.7];
+    const m = entre(mini, maxi, an, j, 12) * charge;
+    ajoute({ suffixe: 'na', nom, sport: 'Swim', heure: '12:30:00', minutes: m, km: (m / 60) * (vitesse + 0.07 * niveau) * (1 + 0.06 * (alea(an, j, 14) - 0.5)), dPlus: null, tssMin: 0.62 });
     if (semaine % 2 === 0) ajoute({ suffixe: 'mu', nom: choisir(NOMS.pull, an, j, 15), sport: 'WeightTraining', heure: '19:00:00', minutes: entre(55, 70, an, j, 16) * charge, km: null, dPlus: null, tssMin: 0.55 });
   } else if (jourSemaine === 4) {
     // Vendredi : footing, ou Hyrox toutes les deux semaines depuis 2023 ; muscu (legs) en fin de journée une semaine sur deux
