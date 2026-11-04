@@ -182,10 +182,10 @@ test('validerObjectif : cible positive, valeur saisie valide pour un objectif ma
   assert.ok(validerObjectif({ sport: 'course', template: 'run_10k', cible: '40', actuel: '-5' }).erreurs.actuel);
 });
 
-test('démo : six ans d\'activités et quatre objectifs', () => {
+test('démo : sept ans d\'activités (depuis 2020) et quatre objectifs', () => {
   const liste = activitesBilanDemo(maintenant).map(normaliser);
   assert.ok(liste.length > 400);
-  assert.deepEqual(anneesDisponibles(liste, maintenant), [2026, 2025, 2024, 2023, 2022, 2021]);
+  assert.deepEqual(anneesDisponibles(liste, maintenant), [2026, 2025, 2024, 2023, 2022, 2021, 2020]);
   assert.equal(objectifsAnnuelsDemo(maintenant).length, 4);
   assert.ok(liste.every((a) => a.iso <= '2026-07-01'));
 });

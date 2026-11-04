@@ -47,7 +47,7 @@ interface Plan {
 }
 
 /**
- * Les séances d'un jour. `an` : l'année, `j` : le jour de l'année (0 = 1er janvier), `niveau` : 0 la première année → 5 la dernière.
+ * Les séances d'un jour. `an` : l'année, `j` : le jour de l'année (0 = 1er janvier), `niveau` : 0 la première année (2020) → 5 la dernière (l'athlète progresse de façon continue, quel que soit le nombre d'années).
  */
 function seancesDuJour(d: Date, an: number, j: number, niveau: number): Plan[] {
   const jourSemaine = (d.getDay() + 6) % 7; // 0 lundi … 6 dimanche
@@ -65,7 +65,7 @@ function seancesDuJour(d: Date, an: number, j: number, niveau: number): Plan[] {
   const recup = semaine % 4 === 3 ? 0.62 : 1;
   const vacances = mois === 7 && jourMois >= 8 && jourMois <= 22;
   const debutBlessure = 40 + ((an * 53) % 200);
-  const blesse = j >= debutBlessure && j < debutBlessure + 12 && niveau !== 5; // la dernière année n'a pas de blessure (l'athlète est en forme)
+  const blesse = j >= debutBlessure && j < debutBlessure + 12 && niveau < 4.99; // la dernière année n'a pas de blessure (l'athlète est en forme)
   const charge = saison * recup * (0.8 + 0.04 * niveau);
   const manque = alea(an, j, 3) < (recup < 1 ? 0.22 : 0.1); // un jour sans séance, de temps en temps
   const courir = !blesse && !vacances;
@@ -152,15 +152,19 @@ function seancesDuJour(d: Date, an: number, j: number, niveau: number): Plan[] {
   return plans;
 }
 
-/** Les activités des six dernières années (jusqu'à `maintenant`), de la plus ancienne à la plus récente, avec leurs chiffres complets. */
+/** L'historique commence en 2020 : le compte de démo a près de sept ans de séances. */
+export const DEBUT_HISTORIQUE = 2020;
+
+/** Les activités depuis 2020 (jusqu'à `maintenant`), de la plus ancienne à la plus récente, avec leurs chiffres complets. */
 export function historiqueDemo(maintenant: Date): Seance[] {
   const lignes: Seance[] = [];
-  const an0 = maintenant.getFullYear() - 5;
+  const an0 = DEBUT_HISTORIQUE;
+  const pasNiveau = 5 / Math.max(1, maintenant.getFullYear() - an0); // le niveau va de 0 à 5 sur toute la période
   for (let an = an0; an <= maintenant.getFullYear(); an++) {
     for (let j = 0; j < 366; j++) {
       const d = new Date(an, 0, 1 + j, 12);
       if (d.getFullYear() !== an || d > maintenant) continue;
-      for (const p of seancesDuJour(d, an, j, an - an0)) {
+      for (const p of seancesDuJour(d, an, j, (an - an0) * pasNiveau)) {
         lignes.push(completerSeance({
           id: `demo-bilan-${p.suffixe}-${an}-${j}`,
           name: p.nom,

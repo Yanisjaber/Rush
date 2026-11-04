@@ -2,7 +2,7 @@
 // Elles servent à montrer et à tester l'interface sans être connecté. Port de app/src/lib/data/demo.js
 // (sans les retouches faites en démo, ni la puissance, le sommeil, Hyrox… qui viendront avec leurs écrans).
 import { completerSeance } from './flux-demo.ts';
-import { historiqueDemo } from './historique-demo.ts';
+import { DEBUT_HISTORIQUE, historiqueDemo } from './historique-demo.ts';
 import { avecFtpDesCourbes, courbesCourtesVelo, courbesVelo, type CourbesVelo } from './courbes-demo.ts';
 import { familleAffichage } from '../sports/familles.ts';
 import { dateIsoLocale } from '../outils/format.ts';
@@ -403,7 +403,7 @@ export function activitesBilanDemo(maintenant: Date = new Date()): Seance[] {
  */
 export function seriesForceHistoriqueDemo(maintenant: Date = new Date()): SerieForce[] {
   const lignes: SerieForce[] = [];
-  const debutHistorique = new Date(maintenant.getFullYear() - 5, 0, 1, 12).getTime();
+  const debutHistorique = new Date(DEBUT_HISTORIQUE, 0, 1, 12).getTime();
   for (const s of activitesBilanDemo(maintenant)) {
     if (s.sport !== 'WeightTraining') continue;
     const prog = PROGRAMMES_BASE.find((p) => p.name === String(s.name).split(/[ ,]/)[0].toUpperCase());

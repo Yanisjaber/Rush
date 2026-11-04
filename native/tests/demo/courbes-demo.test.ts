@@ -63,7 +63,7 @@ test('piliers du vélo en démo : mêmes clés que le serveur (répétabilité, 
   assert.deepEqual(clesRepetabilite(flux.watts!), repServeur(flux.watts!));
   assert.deepEqual(cleDerive(flux.watts!, flux.heartrate), deriveServeur(flux.watts!, flux.heartrate));
   const mesures = piliersAnnuelsDemo(new Date(2026, 9, 19));
-  assert.equal(mesures.length, 6);
+  assert.equal(mesures.length, 7); // 2020 à 2026
   for (const m of mesures) {
     assert.ok(m.w300 != null && m.w1200 != null && m.nCourbes > 20, String(m.an));
     assert.ok(m.repN > 0 && m.repRatio! > 0.5 && m.repRatio! <= 1.05, String(m.an));

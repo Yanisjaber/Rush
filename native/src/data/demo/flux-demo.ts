@@ -356,5 +356,20 @@ export function completerSeance(s: Seance): Seance {
     sortie.ftp_at_time = Number(s.ftp_at_time) > 0 ? s.ftp_at_time : ftpDemo(String(s.start_date_local).slice(0, 10));
     sortie.device_watts = true;
   }
+  // Les autres capteurs de la fiche, déduits du modèle (comme une montre ou un capteur les rapporterait) : cadence, vitesse, temps écoulé, pic de puissance, énergie
+  const km = Number(s.distance_km) || 0;
+  const duree = Math.max(60, Number(s.moving_time) || 0);
+  const g = graine(String(s.id));
+  if (s.avg_speed_kmh == null && km > 0) sortie.avg_speed_kmh = Math.round((km / (duree / 3600)) * 10) / 10;
+  if (s.elapsed_time == null) sortie.elapsed_time = Math.round(duree * (genre === 'muscu' || genre === 'hyrox' ? 1.0 : genre === 'natation' ? 1.12 : genre === 'velo' ? 1.04 + 0.03 * Math.abs(alea(g, 21)) : 1.02 + 0.02 * Math.abs(alea(g, 21))));
+  if (s.avg_cadence == null) {
+    if (genre === 'velo') sortie.avg_cadence = Math.round(80 + 8 * alea(g, 22) + ((sortie.avg_watts ?? 150) - 150) / 25);
+    else if (genre === 'course' || genre === 'multisport' || genre === 'glisse') sortie.avg_cadence = Math.round(84 + 4 * alea(g, 22) + (km > 0 ? (km / (duree / 3600) - 11) * 0.8 : 0));
+  }
+  if (genre === 'velo') {
+    const w = Number(sortie.avg_watts) || 0;
+    if (s.max_watts == null) sortie.max_watts = Math.round(Math.min(1100, w * (sortieLongue(s) ? 3.6 : 3.1) + 40 * Math.abs(alea(g, 23))));
+    if (s.kj == null) sortie.kj = Math.round((w * duree) / 1000);
+  }
   return sortie;
 }
