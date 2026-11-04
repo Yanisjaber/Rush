@@ -97,7 +97,7 @@ function seancesDuJour(d: Date, an: number, j: number, niveau: number): Plan[] {
       ajoute({ suffixe: 'ht', nom: choisir(NOMS.trainer, an, j, 10), sport: 'Ride', heure: '18:00:00', minutes: m, km: (m / 60) * vVelo * 0.98, dPlus: 0, tssMin: 0.85 });
     } else {
       const m = entre(75, 110, an, j, 9) * charge;
-      ajoute({ suffixe: 've', nom: choisir(NOMS.endurance, an, j, 10), sport: 'Ride', heure: '17:45:00', minutes: m, km: (m / 60) * vVelo, dPlus: entre(250, 700, an, j, 11), tssMin: 0.62 });
+      ajoute({ suffixe: 've', nom: choisir(NOMS.endurance, an, j, 10), sport: 'Ride', heure: '17:45:00', minutes: m, km: (m / 60) * vVelo, dPlus: (m / 60) * entre(250, 450, an, j, 11), tssMin: 0.62 }); // le dénivelé suit la durée (m par heure)
     }
   } else if (jourSemaine === 3) {
     // Jeudi midi : natation ; le soir, muscu (pull) une semaine sur deux
@@ -126,7 +126,7 @@ function seancesDuJour(d: Date, an: number, j: number, niveau: number): Plan[] {
     const estCol = mois >= 5 && mois <= 8 && semaine % 3 === 0;
     ajoute({
       suffixe: 'vl', nom: estCol ? choisir(NOMS.col, an, j, 25) : choisir(NOMS.velolongue, an, j, 26), sport: 'Ride', heure: '08:00:00', minutes: m,
-      km: (m / 60) * vVelo * (estCol ? 0.8 : 1.02), dPlus: estCol ? entre(1500, 2300, an, j, 27) : entre(700, 1300, an, j, 27), tssMin: estCol ? 0.78 : 0.66,
+      km: (m / 60) * vVelo * (estCol ? 0.8 : 1.02), dPlus: (m / 60) * (estCol ? entre(650, 850, an, j, 27) : entre(380, 600, an, j, 27)), tssMin: estCol ? 0.78 : 0.66,
     });
     if (semaine % 4 === 1 && courir) ajoute({ suffixe: 'te', nom: choisir(NOMS.tempo, an, j, 28), sport: 'Run', heure: '17:30:00', minutes: entre(50, 62, an, j, 29) * charge, km: null, dPlus: entre(20, 60, an, j, 30), tssMin: 1.0 });
   } else if (jourSemaine === 6 && courir) {

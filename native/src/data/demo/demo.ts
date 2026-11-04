@@ -7,7 +7,6 @@ import { courbesVelo, type CourbesVelo } from './courbes-demo.ts';
 import { familleAffichage } from '../sports/familles.ts';
 import { dateIsoLocale } from '../outils/format.ts';
 import type { ObjectifAnnuel } from '../bilan/bilan.ts';
-import type { MesuresAnnee } from '../bilan/piliers-niveau.ts';
 import type { CleSignal, EntreeCourbe, PointCourbe, SortieVelo } from '../bilan/records.ts';
 import { valeurValide, type LigneMesure } from '../sante/sante-catalogue.ts';
 import type { Nuit, SegmentNuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Seance, SerieForce, TestHyrox, Tour } from '../types.ts';
@@ -654,38 +653,5 @@ export function toursDemo(s: Seance): Tour[] {
   return poids.map((w, i) => {
     const temps = Math.round((w / somme) * s.moving_time);
     return { index: i + 1, name: '', elapsed_time: temps, moving_time: temps, distance: i < entiers ? 1000 : Math.round(reste * 1000) };
-  });
-}
-
-/**
- * Les mesures annuelles du niveau global du vélo en démo, sur cinq ans : les puissances de pointe viennent des records d'exemple ;
- * la répétabilité et la charge sont inventées mais cohérentes (elles montent doucement, la dernière année recule).
- */
-export function piliersAnnuelsDemo(maintenant: Date = new Date()): MesuresAnnee[] {
-  const records = recordsVeloDemo(maintenant);
-  const an = maintenant.getFullYear();
-  return Array.from({ length: 5 }, (_, i) => {
-    const a = an - 4 + i;
-    const courbe = records.courbe(a, 1);
-    const w = (duree: number): number | null => courbe.find((p) => p.duree === duree)?.top[0]?.valeur ?? null;
-    const w300 = w(300);
-    const w1200 = w(1200);
-    return {
-      an: a, w5: w(5), w300, w1200, w3600: w(3600),
-      repRatio: 0.9 + 0.01 * (i % 3),
-      repW3: w300 ? Math.round(w300 * (0.66 + 0.03 * i)) : null,
-      repN: 8 + i * 2,
-      ctlMax: 52 + i * 9 - (i === 4 ? 18 : 0),
-      ctlMoy: 38 + i * 7 - (i === 4 ? 14 : 0),
-      heures: 300 + i * 40 - (i === 4 ? 60 : 0),
-      joursActifs: 160 + i * 10 - (i === 4 ? 25 : 0),
-      joursCouverts: 365,
-      nCourbes: 60 + i * 15,
-      pRef: 175,
-      fcRef: 142 - 2 * i,
-      nFc: 8 + i * 2,
-      driftMed: 9.5 - 1.2 * i,
-      nDrift: 5 + i * 2,
-    };
   });
 }

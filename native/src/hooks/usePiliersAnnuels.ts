@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { chargerPiliersAnnuels } from '@/data/acces/api';
 import type { MesuresAnnee } from '@/data/bilan/piliers-niveau';
-import { piliersAnnuelsDemo } from '@/data/demo/demo';
+import { piliersAnnuelsDemo } from '@/data/demo/piliers-demo';
 import { useAuth } from '@/stores/auth';
 import { auChangementDEcarts, useVersionEcarts } from '@/stores/ecarts';
 

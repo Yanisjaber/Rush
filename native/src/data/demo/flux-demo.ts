@@ -166,8 +166,8 @@ export function genererFlux(s: Seance, pas = 1): Flux {
     const forme = (x: number): number => {
       let f = 1 + 0.12 * bruit(g, x, 30) + 0.07 * bruit(g + 1, x, 6);
       if (longue) {
-        if (x > mi && x < mi + 20 * 60) f *= 1.28; // un gros effort de 20 minutes au milieu de la sortie
-        if (x > duree - 90) f *= 2.6; // un sprint final
+        if (x > mi && x < mi + 20 * 60) f *= 1.12; // un gros effort de 20 minutes au milieu de la sortie
+        if (x > duree - 12) f *= 2.6; // un sprint final de 12 secondes
       } else if ((x / 60) % 25 > 21) f *= 1.18; // des relances toutes les 25 minutes
       return f;
     };
@@ -179,7 +179,7 @@ export function genererFlux(s: Seance, pas = 1): Flux {
       const x = t[i];
       const p0 = borner(pente(x) / Math.max(vPrec, 2), -0.18, 0.18); // la pente : mètres montés par mètre roulé
       // Une montée demande plus de watts, une descente se fait sans pédaler ; des arrêts de pédalage ici et là
-      let p = cibleP * forme(x) * (1 + 6 * Math.max(0, p0));
+      let p = cibleP * forme(x) * (1 + 1.5 * Math.max(0, p0)); // une montée demande plus de watts, sans excès
       if (p0 < -0.02 || bruit(g + 2, x, 40) > 0.88) p = 0;
       brut[i] = p;
       v[i] = vPrec = vitessePuissance(p, p0, vPrec);
@@ -187,7 +187,8 @@ export function genererFlux(s: Seance, pas = 1): Flux {
     // On recale la puissance moyenne (watts de la fiche, ou 66 % de la FTP) et la vitesse moyenne (distance de la fiche)
     const moyP = moyenne(brut);
     const kP = moyP > 0 ? cibleP / moyP : 1;
-    for (let i = 0; i < n; i++) watts[i] = Math.round(brut[i] * kP);
+    // Aucun cycliste de la démo ne dépasse 1 100 W (son sprint) ni ne tient 20 minutes bien au-dessus de sa FTP
+    for (let i = 0; i < n; i++) watts[i] = Math.round(Math.min(1100, brut[i] * kP));
     if (km > 0) {
       const kV = (km * 1000) / (duree) / (moyenne(v) || 1);
       for (let i = 0; i < n; i++) v[i] *= kV;

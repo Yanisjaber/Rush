@@ -54,3 +54,19 @@ test('records course de la démo : calculés sur les streams, classés du meille
   const p = piliersCourseDemo(m);
   assert.ok(p.length >= 5 && p.every((x) => x.nCourbes > 0));
 });
+
+test('piliers du vélo en démo : mêmes clés que le serveur (répétabilité, découplage) et mesures annuelles tirées des streams', async () => {
+  const { clesRepetabilite: repServeur } = await import('../../../supabase/functions/_shared/repetabilite.ts');
+  const { cleDerive: deriveServeur } = await import('../../../supabase/functions/_shared/derive.ts');
+  const { clesRepetabilite, cleDerive, piliersAnnuelsDemo } = await import('../../src/data/demo/piliers-demo.ts');
+  const flux = genererFlux(velo, 1);
+  assert.deepEqual(clesRepetabilite(flux.watts!), repServeur(flux.watts!));
+  assert.deepEqual(cleDerive(flux.watts!, flux.heartrate), deriveServeur(flux.watts!, flux.heartrate));
+  const mesures = piliersAnnuelsDemo(new Date(2026, 9, 19));
+  assert.equal(mesures.length, 6);
+  for (const m of mesures) {
+    assert.ok(m.w300 != null && m.w1200 != null && m.nCourbes > 20, String(m.an));
+    assert.ok(m.repN > 0 && m.repRatio! > 0.5 && m.repRatio! <= 1.05, String(m.an));
+    assert.ok(m.ctlMax! > 0 && m.heures! > 100 && m.joursActifs > 100, String(m.an));
+  }
+});
