@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { chargerHistoriqueProgression, chargerSeriesForce } from '@/data/acces/api';
-import { donneesDemo, seriesForceDemo } from '@/data/demo/demo';
+import { donneesDemo, seriesForceHistoriqueDemo } from '@/data/demo/demo';
 import { useAuth } from '@/stores/auth';
 import { useVersionEcarts } from '@/stores/ecarts';
 import type { Seance, SerieForce } from '@/data/types';
@@ -44,7 +44,7 @@ export function useSeriesForceProgression(actif: boolean): { series: SerieForce[
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
   const [lu, setLu] = useState<{ userId: string; series: SerieForce[] } | null>(null);
-  const serieDemo = useMemo(() => seriesForceDemo(new Date()), []);
+  const serieDemo = useMemo(() => seriesForceHistoriqueDemo(new Date()), []);
 
   useEffect(() => {
     if (demo || !userId || !actif) return;

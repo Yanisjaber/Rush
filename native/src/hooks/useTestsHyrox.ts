@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { chargerObjectifHyrox, chargerTestsHyrox } from '@/data/acces/api';
-import { objectifHyroxDemo, testsHyroxDemo } from '@/data/demo/demo';
+import { objectifHyroxDemo, testsHyroxHistoriqueDemo } from '@/data/demo/demo';
 import type { ObjectifHyrox, TestHyrox } from '@/data/types';
 import { useAuth } from '@/stores/auth';
 
@@ -15,7 +15,7 @@ export function useTestsHyrox(actif: boolean): { tests: TestHyrox[]; objectif: O
   const userId = !demo ? (session?.user.id ?? null) : null;
   const [, rafraichir] = useState(0);
   const [chargement, setChargement] = useState(false);
-  const exemple = useMemo(() => (demo && actif ? { tests: testsHyroxDemo(new Date()), objectif: objectifHyroxDemo() } : null), [demo, actif]);
+  const exemple = useMemo(() => (demo && actif ? { tests: testsHyroxHistoriqueDemo(new Date()), objectif: objectifHyroxDemo() } : null), [demo, actif]);
 
   useEffect(() => {
     if (!userId || !actif) return;

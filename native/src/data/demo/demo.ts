@@ -391,6 +391,20 @@ export function testsHyroxDemo(aujourdhui: Date = new Date()): TestHyrox[] {
   ];
 }
 
+/** Tous les tests Hyrox d'exemple pour le Bilan : les trois récents puis un test tous les quatre mois depuis fin 2022, de plus en plus lents quand on remonte. */
+export function testsHyroxHistoriqueDemo(aujourdhui: Date = new Date()): TestHyrox[] {
+  const jour = (delta: number) => dateIsoLocale(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() + delta));
+  const anciens = Array.from({ length: 12 }, (_, k): TestHyrox => {
+    const f = 1 + 0.008 * (k + 1);
+    const runs = [305, 322, 336, 352, 366, 378, 388, 398].map((x) => Math.round(x * f));
+    const stations = [270, 292, 280, 298, 288, 250, 258, 322].map((x) => Math.round(x * f));
+    const segments: number[] = [];
+    runs.forEach((r, n) => segments.push(r, stations[n]));
+    return { id: `demo-hx-old-${k + 1}`, date: jour(-60 - 120 * (k + 1)), label: 'Test Hyrox', kind: 'test', segments, total_s: segments.reduce((a, b) => a + b, 0), source: 'manuel', activity_id: null, notes: null };
+  });
+  return [...testsHyroxDemo(aujourdhui), ...anciens];
+}
+
 /** Objectif Hyrox d'exemple : 1h10'00" au total. */
 export function objectifHyroxDemo(): ObjectifHyrox {
   return { total_s: 4200, segments: null };
@@ -422,10 +436,33 @@ export function activitesBilanDemo(maintenant: Date = new Date()): Seance[] {
     for (let j = 0; j < 366; j++) {
       const d = new Date(a, 0, 1 + j, 12);
       if (d.getFullYear() !== a || d > maintenant) continue;
+      // Les autres sports du menu : chacun a son rythme (Hyrox tous les 10 jours depuis 2023, tennis, aviron, randonnée et ski à tour de rôle toutes les ~2 semaines)
+      const ajouter = (suffixe: string, nom: string, sport: string, heure: string, min: number, km: number | null, dPlus: number | null, tss: number, vitesse = 1): void => {
+        lignes.push(completerSeance({
+          id: `demo-bilan-${suffixe}-${a}-${j}`, name: nom, sport, start_date_local: `${dateIsoLocale(d)}T${heure}+00:00`,
+          moving_time: Math.round((min * 60 * vitesse)), distance_km: km, total_elevation_gain: dPlus, tss: Math.round(tss * vitesse), avg_heartrate: null, ftp_at_time: null, avg_watts: null, np: null, category: 'entrainement',
+        }));
+      };
+      const anneeRelative = a - (maintenant.getFullYear() - 5);
+      if (a >= maintenant.getFullYear() - 3 && (j + a) % 10 === 4) ajouter('hx', ['Hyrox, stations', 'Hyrox, demi-simulation', 'Hyrox, runs et wall balls'][(j + a) % 3], 'Hyrox', '07:00:00', 55 + ((j * 7) % 20), null, null, 52);
+      if ((j * 3 + a) % 15 === 7) {
+        const rang = (j + a) % 6;
+        const hiver = j < 75 || j > 335;
+        if (rang === 0) ajouter('au', 'Randonnée en montagne', 'Hike', '10:00:00', 190 + ((j * 11) % 60), 12 + ((j * 5) % 6), 650 + ((j * 13) % 300), 60);
+        else if (rang === 1) ajouter('au', 'Tennis, match', 'Tennis', '17:00:00', 75, null, null, 45);
+        else if (rang === 2) ajouter('au', 'Aviron, sortie', 'Rowing', '08:00:00', 55, 10.5, null, 55);
+        else if (rang === 3) ajouter('au', hiver ? 'Ski de fond' : 'Ski à roulettes', hiver ? 'NordicSki' : 'RollerSki', '10:00:00', 100, 18, hiver ? 160 : 120, 85);
+        else if (rang === 4) ajouter('au', 'Padel', 'Padel', '19:00:00', 70, null, null, 42);
+        else ajouter('au', 'Escalade en salle', 'RockClimbing', '19:00:00', 90, null, null, 50);
+      }
+      // Un triathlon et un duathlon par an, un peu plus vite chaque année
+      const vite = 1.06 - 0.012 * anneeRelative;
+      if (d.getMonth() === 5 && d.getDate() === 27) ajouter('tri', 'Triathlon S de Castres', 'Triathlon', '09:30:00', 82, 25.75, 180, 95, vite);
+      if (d.getMonth() === 2 && d.getDate() === 14) ajouter('dua', 'Duathlon de Revel', 'Duathlon', '09:00:00', 95, 27, 240, 88, vite);
       const m = modele[d.getDay() === 0 ? 6 : d.getDay()];
       if (!m || (j * 7 + a) % 9 === 0) continue; // un jour sur neuf de repos en plus
       const v = (0.85 + ((j * 13) % 30) / 100) * progression;
-      const nom = m.sport === 'Ride' ? (m.min >= 150 ? 'Sortie longue' : 'Endurance') : m.sport === 'Run' ? (m.km > 10 ? 'Tempo' : j % 2 ? 'Fractionné' : 'Footing') : m.sport === 'Swim' ? 'Natation' : 'Séance';
+      const nom = m.sport === 'Ride' ? (m.min >= 150 ? 'Sortie longue' : 'Endurance') : m.sport === 'Run' ? (m.km > 10 ? 'Tempo' : j % 2 ? 'Fractionné' : 'Footing') : m.sport === 'Swim' ? 'Natation' : ['Push', 'Pull', 'Legs'][(j + a) % 3];
       lignes.push(completerSeance({
         id: `demo-bilan-${a}-${j}`,
         name: `${nom} ${j}`,
@@ -445,6 +482,33 @@ export function activitesBilanDemo(maintenant: Date = new Date()): Seance[] {
     }
   }
   return lignes;
+}
+
+/**
+ * Les séries de force des séances de muscu du bilan (six ans) : un programme Push, Pull ou Legs par séance, les charges montent d'année en année (70 % des charges du programme en 2021, 100 % en 2026).
+ * Elles correspondent aux séances de activitesBilanDemo (celles de l'accueil ont leurs séries dans seriesForceDemo).
+ */
+export function seriesForceHistoriqueDemo(maintenant: Date = new Date()): SerieForce[] {
+  const lignes: SerieForce[] = [];
+  const premiere = maintenant.getFullYear() - 5;
+  for (const s of activitesBilanDemo(maintenant)) {
+    if (s.sport !== 'WeightTraining') continue;
+    const prog = PROGRAMMES_BASE.find((p) => p.name === String(s.name).split(' ')[0].toUpperCase());
+    if (!prog) continue;
+    const date = s.start_date_local.slice(0, 10);
+    const an = Number(date.slice(0, 4));
+    const progression = 0.7 + 0.06 * (an - premiere); // 70 % en 2021 → 100 % en 2026
+    prog.exercises.forEach((e, position) => {
+      for (let n = 1; n <= e.sets; n++) {
+        lignes.push({
+          id: `demo-serie-${s.id}-${position}-${n}`, activity_id: s.id, date, exercise_key: e.key, exercise_name: e.name, muscle_group: e.group, position, set_no: n,
+          reps: Math.max(1, e.reps - (n === e.sets ? 1 : 0)),
+          weight_kg: e.weight ? Math.round((e.weight * progression) / 2.5) * 2.5 : 0,
+        });
+      }
+    });
+  }
+  return lignes.sort((x, y) => (x.date < y.date ? 1 : -1));
 }
 
 /** Les durées (en secondes) de la courbe de puissance d'exemple : de 1 s à 5 h, comme celles de la vraie base. */
