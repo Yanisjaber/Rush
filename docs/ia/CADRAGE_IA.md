@@ -108,9 +108,9 @@ Haiku 5.5 : prix valables jusqu'à 100 000 tokens de prompt. L'API en différé 
 
 ## Ordre de construction
 
-1. Fonction SQL de résumé (JSON), testée en local.
-2. Garde-fou et validateur en TypeScript dans `supabase/functions/_shared/` (tests `node --test`).
-3. Menu de séances et schéma JSON.
+1. **Fait** : fonction SQL de résumé `rpc_coach_resume` (JSON), testée en local (`supabase/tests/sql/coach_resume.sh`) et appliquée en base le 6 nov.
+2. **Fait** : garde-fou (`_shared/garde-fou.ts`) et validateur (`_shared/validateur.ts`) en TypeScript, tests `node --experimental-strip-types --test supabase/tests/edge/garde-fou.test.mts supabase/tests/edge/validateur.test.mts`. Seuils : un seul endroit chacun (`SEUILS` du garde-fou, `PLAFONDS` et `REGLAGES_DEFAUT` du validateur).
+3. **Fait pour le menu** (`_shared/menu-seances.ts`, endurance : vélo, course, natation ; TSS par heure de départ à affiner). Reste le schéma JSON de la réponse de Claude, avec l'Edge Function.
 4. Table `chat_messages` + Edge Function du chat (streaming, outils, prompt système).
 5. Écran du chat et carte de séance : **8 maquettes d'abord**.
 6. Compte rendu de sortie, puis analyse de demandes, puis prédiction.
