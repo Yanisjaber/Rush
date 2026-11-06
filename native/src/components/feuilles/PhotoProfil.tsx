@@ -1,4 +1,3 @@
-import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
@@ -26,7 +25,15 @@ export function PhotoProfil() {
     if (envoi || !userId) return;
     setErreur('');
     setMessage('');
-    const choix = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.4, allowsMultipleSelection: false });
+    // Chargé au clic (pas à l'ouverture de l'écran) : une app installée avant l'ajout du module natif ne plante pas, elle dit quoi faire
+    let choix: import('expo-image-picker').ImagePickerResult;
+    try {
+      const ImagePicker = await import('expo-image-picker');
+      choix = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.4, allowsMultipleSelection: false });
+    } catch {
+      setErreur("Le sélecteur de photos n'est pas dans cette version de l'app : il faut la réinstaller.");
+      return;
+    }
     if (choix.canceled || !choix.assets[0]) return;
     setEnvoi(true);
     const r = await envoyerAvatar(userId, choix.assets[0].uri);
