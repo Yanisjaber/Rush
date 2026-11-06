@@ -11,6 +11,9 @@ Tous les `.md` du projet sont ici, rangés par thème. Exceptions : `CLAUDE.md` 
 - `JETONS_VAULT.md` : jetons OAuth chiffrés dans Supabase Vault.
 - `AUDIT_2026-10-13.md` puis `AUDIT_2026-10-27_SUIVI.md` : audits de la base et suivi point par point.
 
+## `ia/` — IA de Rush
+- `CADRAGE_IA.md` : décisions sur le chatbot, les cartes de séances, la validation, le modèle et le prix, les erreurs, l'ordre de construction.
+
 ## `installation/` — guides pas à pas
 - `SETUP_SUPABASE.md` : réglages du projet Supabase (clés, auth, migrations, secrets).
 - `DEPLOY_EDGE_FUNCTION.md` : connexion Strava (`oauth-start` et `strava-oauth-callback`).
