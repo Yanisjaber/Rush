@@ -19,7 +19,7 @@
       "package": "TODO.rush",
       "allowBackup": false
     },
-    "plugins": ["expo-router"],
+    "plugins": ["expo-router", ["expo-image-picker", { "photosPermission": "Rush utilise ta photo pour ton profil." }]],
     "experiments": {
       "typedRoutes": true
     }
