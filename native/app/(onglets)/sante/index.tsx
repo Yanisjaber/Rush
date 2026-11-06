@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Boite, Emplacement, GrilleWidgets } from '@/components/widgets/GrilleWidgets';
 import { CourbeLissee } from '@/components/graphes/CourbeLissee';
 import { JaugePilier } from '@/components/graphes/JaugePilier';
+import { BoutonReglages } from '@/components/ui/BoutonReglages';
 import { Tuile } from '@/components/ui/Tuile';
 import { CLES_RESSENTI, jusquAuDernierIndice, serieEtatDeForme } from '@/data/sante/forme-sante';
 import { dateIsoLocale } from '@/data/outils/format';
@@ -73,7 +74,11 @@ export default function Sante() {
           <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>
             Santé
           </Text>
-          <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'capitalize' }]}>{demo ? 'Mode démo' : date}</Text>
+          <View style={styles.droite}>
+            <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'capitalize' }]}>{demo ? 'Mode démo' : date}</Text>
+            {/* Santé n'a pas la barre des sports : la roue dentée des Paramètres est ici, en haut à droite */}
+            <BoutonReglages />
+          </View>
         </View>
 
         {message ? (
@@ -199,7 +204,8 @@ export default function Sante() {
 const styles = StyleSheet.create({
   page: { flex: 1 },
   contenu: { paddingHorizontal: espace.e4, gap: espace.e3 },
-  entete: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  droite: { flexDirection: 'row', alignItems: 'center', gap: espace.e1, marginRight: -espace.e3 },
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
   avis: { borderRadius: 6, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
   motifs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

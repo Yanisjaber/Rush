@@ -1,15 +1,26 @@
+import { useEffect } from 'react';
 import { NativeTabs } from 'expo-router/native-tabs';
 import { police } from '@/theme/typo';
+import { useAuth } from '@/stores/auth';
+import { chargerAccesCoach, useAccesCoach } from '@/stores/coach';
 import { useMenu } from '@/stores/menu';
 import { couleurSport } from '@/theme/sports';
 import { usePalette } from '@/theme/usePalette';
 
-// Barre du bas native (iOS 26 : Liquid Glass ; Android : barre Material). Cinq onglets comme sur le web :
-// Accueil, Calendrier, Bilan, Santé, Paramètres. Le Plan s'ouvrira depuis le Calendrier.
+// Barre du bas native (iOS 26 : Liquid Glass ; Android : barre Material). Cinq onglets :
+// Accueil, Calendrier, Bilan, Santé, Coach. Les Paramètres ne sont plus un onglet : la roue dentée en haut à droite les ouvre en plein écran.
+// Le Plan s'ouvrira depuis le Calendrier. Le Coach n'apparaît que pour les comptes de la liste blanche.
 // Teinte active : la couleur du sport choisi dans la barre du haut, sinon la couleur du texte (charte §7).
 export default function OngletsLayout() {
   const p = usePalette();
   const { filtre } = useMenu();
+  const { session, demo } = useAuth();
+  const accesCoach = useAccesCoach();
+  // L'accès se relit à chaque changement de compte ; en démo (pas de vrai compte), jamais de Coach
+  const compte = demo ? null : session?.user.id ?? null;
+  useEffect(() => {
+    void chargerAccesCoach(compte);
+  }, [compte]);
   const teinte = filtre === 'tout' ? p.texte : couleurSport(p, filtre);
   return (
     <NativeTabs tintColor={teinte} labelStyle={{ fontFamily: police.texte600 }}>
@@ -29,9 +40,10 @@ export default function OngletsLayout() {
         <NativeTabs.Trigger.Label>Santé</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'heart', selected: 'heart.fill' }} md="favorite" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="parametres">
-        <NativeTabs.Trigger.Label>Paramètres</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: 'gearshape', selected: 'gearshape.fill' }} md="settings" />
+      {/* Le Coach : seulement pour les comptes autorisés (liste blanche). Caché, l'onglet n'est atteignable d'aucune façon. */}
+      <NativeTabs.Trigger name="coach" hidden={!accesCoach}>
+        <NativeTabs.Trigger.Label>Coach</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: 'bubble.left', selected: 'bubble.left.fill' }} md="chat" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );

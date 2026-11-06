@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, ScrollView, StyleSheet, Text, Pressable, View } from 'react-native';
 import { MenuSports } from '@/components/menus/MenuSports';
+import { BoutonReglages } from '@/components/ui/BoutonReglages';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { choisirFiltre, useMenu } from '@/stores/menu';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
@@ -8,7 +9,9 @@ import { police } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La barre des sports, fixe en haut de l'écran : « Tous » puis un sport par pastille (point de sa couleur).
-// Le choix est un filtre global : il reste quand on change d'écran. Les pastilles défilent s'il y en a beaucoup.
+// Le choix est un filtre global : il reste quand on change d'écran. Les pastilles défilent s'il y en a beaucoup,
+// et le « + » (ajouter ou retirer un sport) vient au bout de la rangée, après le dernier sport.
+// À droite, fixe : la roue dentée des Paramètres. Elle reste là même pour un compte sans sport (par là on gère son compte).
 // Retoucher le sport déjà choisi revient à « Tous » (comme sur le web).
 // La barre est posée tout en haut de l'écran : elle réserve elle-même la place de l'heure et de l'encoche.
 export function BarreSports() {
@@ -22,31 +25,38 @@ export function BarreSports() {
     Animated.timing(pivot, { toValue: ouvert ? 1 : 0, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [ouvert, pivot]);
   const rotation = pivot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] });
-  // Compte neuf sans aucun sport : pas de barre, c'est l'onboarding de l'Accueil qui propose d'en choisir
-  if (!familles.length) return null;
+  // Compte neuf sans aucun sport : pas de pastilles (c'est l'onboarding de l'Accueil qui propose d'en choisir), mais la roue dentée reste
+  const sansSport = !familles.length;
 
   return (
     <View style={[styles.barre, { borderBottomColor: p.trait, paddingTop: haut }]}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={styles.rangee} accessibilityRole="tablist">
-        <Onglet libelle="Tous" couleur={p.texte} actif={filtre === 'tout'} onPress={() => choisirFiltre('tout')} />
-        {familles.map((f) => (
-          <Onglet
-            key={f}
-            libelle={SPORTS[f as CleSport]?.court ?? SPORTS.autre.court}
-            couleur={couleurSport(p, f)}
-            actif={filtre === f}
-            onPress={() => choisirFiltre(f)}
-          />
-        ))}
-      </ScrollView>
-      <Pressable
-        onPress={() => setOuvert(true)}
-        accessibilityRole="button"
-        accessibilityLabel="Ajouter ou retirer un sport"
-        style={({ pressed }) => [styles.plus, { opacity: pressed ? 0.7 : 1 }]}
-      >
-        <Animated.Text style={[styles.plusTexte, { color: p.texte, transform: [{ rotate: rotation }] }]}>+</Animated.Text>
-      </Pressable>
+      {sansSport ? (
+        <Text style={[styles.vide, { color: p.texteMuet }]}>Aucun sport choisi</Text>
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={styles.rangee} accessibilityRole="tablist">
+          <Onglet libelle="Tous" couleur={p.texte} actif={filtre === 'tout'} onPress={() => choisirFiltre('tout')} />
+          {familles.map((f) => (
+            <Onglet
+              key={f}
+              libelle={SPORTS[f as CleSport]?.court ?? SPORTS.autre.court}
+              couleur={couleurSport(p, f)}
+              actif={filtre === f}
+              onPress={() => choisirFiltre(f)}
+            />
+          ))}
+          {/* Le « + » : au bout de la rangée, il apparaît quand on a fait défiler jusqu'au dernier sport */}
+          <Pressable
+            onPress={() => setOuvert(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Ajouter ou retirer un sport"
+            hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+            style={({ pressed }) => [styles.plus, { borderColor: p.contourChamp, opacity: pressed ? 0.7 : 1 }]}
+          >
+            <Animated.Text style={[styles.plusTexte, { color: p.texte, transform: [{ rotate: rotation }] }]}>+</Animated.Text>
+          </Pressable>
+        </ScrollView>
+      )}
+      <BoutonReglages />
       <MenuSports ouvert={ouvert} onFermer={() => setOuvert(false)} haut={haut} />
     </View>
   );
@@ -75,8 +85,10 @@ function Onglet({ libelle, couleur, actif, onPress }: { libelle: string; couleur
 
 const styles = StyleSheet.create({
   barre: { borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'flex-end' },
-  plus: { width: 48, height: 44, alignItems: 'center', justifyContent: 'center' },
-  plusTexte: { fontFamily: police.titre600, fontSize: 28, lineHeight: 32 },
+  // Une pastille en pointillé de 40 × 34 (la zone tactile dépasse grâce à hitSlop), alignée avec les onglets
+  plus: { width: 40, height: 34, borderWidth: 1, borderStyle: 'dashed', borderRadius: 6, alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
+  plusTexte: { fontFamily: police.titre600, fontSize: 24, lineHeight: 28 },
+  vide: { flex: 1, paddingLeft: 18, paddingBottom: 12, fontFamily: police.texte400, fontSize: 14, lineHeight: 20 },
   rangee: { gap: 22, paddingLeft: 18, paddingRight: 6 },
   // 44 pt de haut : la cible tactile minimale ; le trait chevauche le filet de la barre
   onglet: { height: 44, justifyContent: 'center' },

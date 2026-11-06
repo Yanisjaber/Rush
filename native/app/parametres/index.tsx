@@ -3,6 +3,7 @@ import { useRouter, type Href } from 'expo-router';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/ui/Bouton';
+import { BoutonRetour } from '@/components/ui/BoutonRetour';
 import { CadreWidget } from '@/components/widgets/CadreWidget';
 import { Boite, Emplacement, GrilleWidgets } from '@/components/widgets/GrilleWidgets';
 import { Pastille } from '@/components/ui/Pastille';
@@ -59,7 +60,8 @@ export default function Parametres() {
     <View style={{ flex: 1 }}>
       <FondDegrade />
       <ScrollView style={{ backgroundColor: 'transparent' }} contentContainerStyle={[styles.contenu, { paddingTop: insets.top + espace.e4, paddingBottom: insets.bottom + 72 }]}>
-      <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>
+      <BoutonRetour />
+      <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte, marginTop: -espace.e2 }]}>
         Paramètres
       </Text>
 

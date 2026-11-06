@@ -112,6 +112,8 @@ export default function RootLayout() {
           {/* Un objectif annuel du Bilan : créer, modifier ou supprimer */}
           <Stack.Screen name="objectif" options={{ headerShown: true, title: 'Objectif', headerStyle: { backgroundColor: palette.fond }, headerTintColor: palette.texte, headerTitleStyle: { fontFamily: 'BricolageGrotesque_700Bold' }, headerBackButtonDisplayMode: 'minimal', headerShadowVisible: false }} />
           <Stack.Screen name="cycle" options={{ headerShown: true, title: 'Cycle', headerStyle: { backgroundColor: palette.fond }, headerTintColor: palette.texte, headerTitleStyle: { fontFamily: 'BricolageGrotesque_700Bold' }, headerBackButtonDisplayMode: 'minimal', headerShadowVisible: false }} />
+          {/* Les Paramètres : plein écran par-dessus les onglets, ouverts par la roue dentée (en haut à droite). Leur propre pile gère ses en-têtes. */}
+          <Stack.Screen name="parametres" options={{ headerShown: false }} />
         </Stack.Protected>
         <Stack.Protected guard={!connecte}>
           <Stack.Screen name="connexion" />
