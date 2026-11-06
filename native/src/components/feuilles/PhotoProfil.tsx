@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { Bouton } from '@/components/ui/Bouton';
+import { RecadrageRond } from '@/components/feuilles/RecadrageRond';
 import { RondProfil } from '@/components/ui/RondProfil';
 import { envoyerAvatar, retirerAvatar } from '@/data/acces/api/avatar';
+import { COTE_AVATAR, type Rectangle } from '@/data/reglages/recadrage';
 import { definirAvatar, useAvatar } from '@/stores/avatar';
 import { useAuth } from '@/stores/auth';
 import { espace } from '@/theme/couleurs';
@@ -20,6 +22,7 @@ export function PhotoProfil() {
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
   const [message, setMessage] = useState('');
+  const [aRecadrer, setARecadrer] = useState<{ uri: string; w: number; h: number } | null>(null);
 
   async function choisir() {
     if (envoi || !userId) return;
@@ -29,14 +32,41 @@ export function PhotoProfil() {
     let choix: import('expo-image-picker').ImagePickerResult;
     try {
       const ImagePicker = await import('expo-image-picker');
-      choix = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.4, allowsMultipleSelection: false });
+      // Pas de recadrage d'Apple (carré) : on recadre nous-mêmes, dans un cercle (RecadrageRond)
+      choix = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: false, quality: 1, allowsMultipleSelection: false });
     } catch {
       setErreur("Le sélecteur de photos n'est pas dans cette version de l'app : il faut la réinstaller.");
       return;
     }
-    if (choix.canceled || !choix.assets[0]) return;
+    const a = choix.canceled ? null : choix.assets[0];
+    if (!a) return;
+    if (!(a.width > 0 && a.height > 0)) {
+      setErreur('Impossible de lire cette photo.');
+      return;
+    }
+    setARecadrer({ uri: a.uri, w: a.width, h: a.height });
+  }
+
+  // La photo choisie est recadrée par l'utilisateur ; on découpe le carré demandé, on le réduit, puis on l'envoie
+  async function valider(zone: Rectangle) {
+    const source = aRecadrer;
+    setARecadrer(null);
+    if (!source || !userId) return;
     setEnvoi(true);
-    const r = await envoyerAvatar(userId, choix.assets[0].uri);
+    let uriRecadree: string;
+    try {
+      const Manipulateur = await import('expo-image-manipulator');
+      const sortie = await Manipulateur.manipulateAsync(source.uri, [{ crop: zone }, { resize: { width: COTE_AVATAR, height: COTE_AVATAR } }], {
+        compress: 0.8,
+        format: Manipulateur.SaveFormat.JPEG,
+      });
+      uriRecadree = sortie.uri;
+    } catch {
+      setEnvoi(false);
+      setErreur("Impossible de recadrer la photo. Si ça continue, il faut réinstaller l'app.");
+      return;
+    }
+    const r = await envoyerAvatar(userId, uriRecadree);
     setEnvoi(false);
     if (r.erreur || !r.data) {
       setErreur(r.erreur);
@@ -63,6 +93,7 @@ export function PhotoProfil() {
 
   return (
     <Bloc titre="Photo de profil">
+      {aRecadrer ? <RecadrageRond uri={aRecadrer.uri} largeur={aRecadrer.w} hauteur={aRecadrer.h} onAnnuler={() => setARecadrer(null)} onValider={(z) => void valider(z)} /> : null}
       <View style={styles.ligne}>
         <RondProfil url={url} taille={72} />
         <View style={styles.actions}>
