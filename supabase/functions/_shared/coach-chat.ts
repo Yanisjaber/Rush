@@ -17,6 +17,8 @@
 //     qui revalide tout au moment du tap ;
 //   - une erreur n'écrit rien dans le calendrier et ne montre aucun détail technique.
 // ============================================================
+import { planifierPeriode } from './periode.ts';
+import type { DemandePeriode } from './periode.ts';
 import { structureSeance } from './structure-seance.ts';
 import { FONCTIONS_HISTORIQUE, MAX_PAR_NIVEAU, outilsExposes, trouverAction } from './coach-actions.ts';
 import type { FonctionHistorique } from './coach-actions.ts';
@@ -224,13 +226,14 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
   }
 
   // Replanification : UNE carte de planning par message, jamais mélangée à d'autres cartes
-  if (def.nom === 'proposer_replanification' || def.nom === 'modifier_planning' || def.nom === 'planifier_semaine') {
+  if (def.nom === 'proposer_replanification' || def.nom === 'modifier_planning' || def.nom === 'planifier_semaine' || def.nom === 'planifier_periode') {
     if (cartes.length > 0) return { contenu: "Une seule carte de planning à la fois, et pas avec une autre carte : attends que l'utilisateur la valide ou la refuse.", erreur: true };
     const lu = def.lire ? def.lire(appel.input) : { ok: false as const, erreur: 'Outil non lisible.' };
     if (!lu.ok) return { contenu: `Paramètres invalides : ${lu.erreur}`, erreur: true };
     const seances = seancesDepuisResume(resume);
     let operations: Operation[];
     let notes: string[] = [];
+    let resumePeriode: string[] = [];
     if (def.nom === 'planifier_semaine') {
       const res = planifierSemaine(lu.params.demande as DemandeSemaine, seances, ctx, habitudesDepuisResume(resume));
       if (!res.operations.length) {
@@ -238,6 +241,14 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
       }
       operations = res.operations;
       notes = res.abandons;
+    } else if (def.nom === 'planifier_periode') {
+      const res = planifierPeriode(lu.params.demande as DemandePeriode, seances, ctx, habitudesDepuisResume(resume));
+      if (!res.operations.length) {
+        return { contenu: `Je n'ai pas pu construire ce plan : ${res.abandons.join(' ') || 'aucune séance possible.'} Explique-le simplement à l'utilisateur, sans créer de carte, et propose une autre façon de faire.`, erreur: false };
+      }
+      operations = res.operations;
+      notes = res.abandons;
+      resumePeriode = res.semaines;
     } else if (def.nom === 'proposer_replanification') {
       operations = proposerReplanification(lu.params.contraintes as Contraintes, seances, ctx);
       if (!operations.length) return { contenu: "Rien à modifier : aucune séance prévue n'est touchée par cette contrainte. Dis-le simplement à l'utilisateur, sans créer de carte.", erreur: false };
@@ -257,7 +268,8 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
       charge_apres: r.chargeApres,
     };
     cartes.push(carte);
-    const detail = r.lignes.map((l) => `- ${l.texte}${l.raison ? ` (${l.raison})` : ''}`).join('\n');
+    // Un plan long : le modèle lit le résumé semaine par semaine, pas les centaines de lignes (la carte, elle, les montre toutes)
+    const detail = r.lignes.length > 30 && resumePeriode.length ? resumePeriode.map((l) => `- ${l}`).join('\n') : r.lignes.map((l) => `- ${l.texte}${l.raison ? ` (${l.raison})` : ''}`).join('\n');
     const signaux = [...notes, ...r.avertissements];
     const avert = signaux.length ? `\nÀ signaler à l'utilisateur : ${signaux.join(' ; ')}` : '';
     return {

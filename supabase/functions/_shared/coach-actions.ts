@@ -20,6 +20,8 @@ import type { Contraintes, Operation } from './planning.ts';
 import { SEANCES_PAR_SPORT_MAX } from './semaine.ts';
 import type { DemandeSemaine } from './semaine.ts';
 import { FAMILLES_COACH } from './menu-seances.ts';
+import { SEMAINES_MAX } from './periode.ts';
+import type { DemandePeriode } from './periode.ts';
 import type { OutilModele } from './modele.ts';
 import { OUTIL_PROPOSER_SEANCE, NOM_OUTIL_SEANCE } from './coach-prompt.ts';
 
@@ -127,6 +129,28 @@ function lireContraintes(o: Objet): { ok: true; contraintes: Contraintes } | { o
   return { ok: true, contraintes: c };
 }
 
+
+function lireDemandePeriode(o: Objet): { ok: true; demande: DemandePeriode } | { ok: false; erreur: string } {
+  const base = lireDemandeSemaine({ motif: o.motif, sports: o.sports, debut: o.debut, jours_libres: o.jours_libres, intensite: o.intensite });
+  if (!base.ok) return base;
+  const demande: DemandePeriode = { sports: base.demande.sports };
+  if (base.demande.debut) demande.debut = base.demande.debut;
+  if (base.demande.joursLibres) demande.joursLibres = base.demande.joursLibres;
+  if (base.demande.intensite) demande.intensite = base.demande.intensite;
+  if (o.semaines !== undefined) {
+    const s = entier(o.semaines, 1, SEMAINES_MAX);
+    if (!s) return { ok: false, erreur: `semaines : un entier de 1 à ${SEMAINES_MAX}.` };
+    demande.semaines = s;
+  }
+  if (o.objectif !== undefined) {
+    const d = dateIso(o.objectif);
+    if (!d) return { ok: false, erreur: 'objectif : la date de la course, AAAA-MM-JJ, qui existe.' };
+    demande.objectif = d;
+  }
+  if (demande.semaines === undefined && demande.objectif === undefined) return { ok: false, erreur: 'Donne soit semaines (la durée du plan), soit objectif (la date de la course).' };
+  if (demande.semaines !== undefined && demande.objectif !== undefined) return { ok: false, erreur: 'semaines ou objectif, pas les deux : avec une course, le plan va jusqu\'à sa veille.' };
+  return { ok: true, demande };
+}
 
 function lireDemandeSemaine(o: Objet): { ok: true; demande: DemandeSemaine } | { ok: false; erreur: string } {
   const brut = o.sports;
@@ -526,6 +550,47 @@ export const ACTIONS: DefinitionAction[] = [
       const motif = motifPlan(o?.motif);
       if (!o || !motif) return refus('motif : une phrase de 3 à 200 caractères.');
       const d = lireDemandeSemaine(o);
+      return d.ok ? { ok: true, params: { intention: motif, demande: d.demande } } : refus(d.erreur);
+    },
+  },
+  {
+    nom: 'planifier_periode',
+    niveau: 'carte',
+    disponible: true,
+    description:
+      "Construit un plan sur PLUSIEURS SEMAINES, jusqu'à 60 (un an et plus) : « prépare-moi mon marathon du 12 avril », « un plan de 3 mois avec 4 séances par semaine », « mon année d'entraînement ». " +
+      "Tu donnes seulement CE QUE VEUT L'UTILISATEUR : les sports, combien de séances PAR SEMAINE, et soit la durée en semaines, soit la date de la course visée (le plan s'arrête alors la veille, avec un affûtage). " +
+      "Le CODE construit tout : jours espacés, types, durées d'après son historique, structure de chaque séance, montée de charge sur 3 semaines puis semaine de récupération, affûtage avant la course. " +
+      "Crée UNE carte que l'utilisateur valide ; rien n'est ajouté avant. Pour une seule semaine, utilise planifier_semaine. Les dates se lisent dans prochains_jours (une date lointaine s'écrit telle que l'utilisateur la donne, avec l'année).",
+    schema: {
+      type: 'object',
+      properties: {
+        motif: { type: 'string', description: 'Une phrase (200 caractères au plus) affichée sur la carte. Par exemple : « Préparation marathon du 12 avril ».' },
+        sports: {
+          type: 'array',
+          minItems: 1,
+          maxItems: FAMILLES_COACH.length,
+          items: {
+            type: 'object',
+            properties: { sport: { type: 'string', enum: [...FAMILLES_COACH] }, seances: { type: 'integer', minimum: 1, maximum: SEANCES_PAR_SPORT_MAX, description: 'Nombre de séances de ce sport PAR SEMAINE.' } },
+            required: ['sport', 'seances'],
+            additionalProperties: false,
+          },
+        },
+        debut: { type: 'string', description: 'Facultatif : premier jour du plan, AAAA-MM-JJ. Par défaut demain.' },
+        semaines: { type: 'integer', minimum: 1, maximum: SEMAINES_MAX, description: 'Durée du plan en semaines (sans course visée).' },
+        objectif: { type: 'string', description: 'La date de la course visée, AAAA-MM-JJ (à la place de semaines).' },
+        jours_libres: { type: 'array', items: { type: 'string' }, maxItems: DATES_MAX_JOURS_BLOQUES, description: "Facultatif : dates sans aucune séance (voyage, « pas le mardi » = chaque mardi à lister)." },
+        intensite: { type: 'string', enum: ['facile', 'normale'], description: '« facile » : que des séances faciles. Par défaut « normale ».' },
+      },
+      required: ['motif', 'sports'],
+      additionalProperties: false,
+    },
+    lire: (input) => {
+      const o = objet(input, ['motif', 'sports', 'debut', 'semaines', 'objectif', 'jours_libres', 'intensite']);
+      const motif = motifPlan(o?.motif);
+      if (!o || !motif) return refus('motif : une phrase de 3 à 200 caractères.');
+      const d = lireDemandePeriode(o);
       return d.ok ? { ok: true, params: { intention: motif, demande: d.demande } } : refus(d.erreur);
     },
   },

@@ -169,3 +169,21 @@ test('modifier_planning : l\'opération « repos » est lue (poser par défaut, 
     assert.equal(lire(mauvais).ok, false, JSON.stringify(mauvais));
   }
 });
+
+test('planifier_periode : durée en semaines ou date de course (pas les deux, pas aucune), le reste est vérifié', () => {
+  const lire = (x: unknown) => trouverAction('planifier_periode')!.lire!(x);
+  const sports = [{ sport: 'course', seances: 3 }];
+  assert.deepEqual(lire({ motif: 'Marathon', sports, objectif: '2027-04-12' }), { ok: true, params: { intention: 'Marathon', demande: { sports, objectif: '2027-04-12' } } });
+  assert.deepEqual(lire({ motif: 'Un an', sports, semaines: 52, intensite: 'facile', debut: '2026-11-09' }), { ok: true, params: { intention: 'Un an', demande: { sports, semaines: 52, debut: '2026-11-09', intensite: 'facile' } } });
+  const mauvais: unknown[] = [
+    { motif: 'Marathon', sports },
+    { motif: 'Marathon', sports, semaines: 4, objectif: '2027-04-12' },
+    { motif: 'Marathon', sports, semaines: 0 },
+    { motif: 'Marathon', sports, semaines: 61 },
+    { motif: 'Marathon', sports, objectif: '2027-02-31' },
+    { motif: 'Marathon', sports: [], semaines: 4 },
+    { motif: 'Marathon', sports, semaines: 4, clef: 1 },
+    null,
+  ];
+  for (const m of mauvais) assert.equal(lire(m).ok, false, JSON.stringify(m)?.slice(0, 90));
+});

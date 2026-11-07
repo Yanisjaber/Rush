@@ -1059,3 +1059,25 @@ test('poser un repos un jour où une séance est prévue : refusé avec la raiso
   assert.equal(r.is_error, true);
   assert.match(r.content, /il reste vélo 120 min ce jour-là/);
 });
+
+test('planifier_periode : un plan d\'un an sur UNE carte, le modèle lit le résumé semaine par semaine, rien d\'écrit', async () => {
+  const w = await planPropose([outil('p', { motif: 'Mon année', sports: [{ sport: 'velo', seances: 2 }, { sport: 'course', seances: 2 }], semaines: 52 }, 'planifier_periode')], () => {});
+  const carte = w.evts.find((e) => e.type === 'carte') as Libre;
+  assert.equal(carte.carte.genre, 'planning');
+  assert.ok(carte.carte.operations.length > 150);
+  assert.ok(carte.carte.lignes.every((l: Libre) => typeof l.structure === 'string' && l.structure.length > 5));
+  const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.equal(r.is_error, undefined);
+  assert.match(r.content, /Semaine 52/);
+  assert.ok(r.content.length < 6000, 'le modèle ne reçoit pas des centaines de lignes');
+  assert.deepEqual(w.stockage.planAppliques, []);
+});
+test('planifier_periode : valider la carte écrit toute la période en une fois, chaque séance avec sa structure', async () => {
+  const w = await planPropose([outil('p', { motif: 'Trois mois', sports: [{ sport: 'course', seances: 3 }], semaines: 12 }, 'planifier_periode')], () => {});
+  const carte = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
+  await ajouterCarte(U, carte.id, w.deps);
+  assert.equal(w.stockage.planAppliques.length, 1);
+  const ops = (w.stockage.planAppliques[0] as Libre).ops ?? w.stockage.planAppliques[0];
+  const liste = (Array.isArray(ops) ? ops : []) as Libre[];
+  assert.ok(liste.length >= 30 && liste.every((o) => o.op === 'ajouter' && Array.isArray(o.structure) && o.structure.length >= 1));
+});
