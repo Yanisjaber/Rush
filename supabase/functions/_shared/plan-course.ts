@@ -517,6 +517,7 @@ export function messageBilan(b: Bilan): string {
   } else if (b.verdict === 'sans_donnees') {
     parts.push("Je n'ai pas assez de sorties de course pour estimer ton niveau : le plan est calé sur le temps que tu vises, à vérifier après les premières séances.");
   }
+  parts.push(`Plan à ${b.seancesParSemaine} séances par semaine (à garder identique si tu refais le plan, sauf demande de l'utilisateur).`);
   if (b.allures) {
     parts.push(`Allures (par km) : ${ALLURES_CLES.map((c) => `${NOM_ALLURE[c]} ${formaterAllure(b.allures![c])}`).join(', ')}.`);
     if (b.imposees.length) parts.push(`Allures imposées par l'utilisateur : ${b.imposees.map((c) => NOM_ALLURE[c]).join(', ')}.`);

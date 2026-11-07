@@ -182,3 +182,8 @@ test('allures imposées : remplacent celles du calcul (la VMA passe de 4:19 à 4
   assert.match(noms, /× 400 m à 4:30\/km/);
   assert.doesNotMatch(noms, /4:19/);
 });
+
+test('le bilan rappelle le nombre de séances par semaine pour qu\'un plan refait garde le même rythme', () => {
+  const r = planifierCourse({ ...DEMANDE, seancesParSemaine: 4 }, [], ctx(), YANIS);
+  assert.match(r.message, /Plan à 4 séances par semaine/);
+});
