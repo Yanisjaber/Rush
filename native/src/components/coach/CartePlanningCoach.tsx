@@ -233,7 +233,7 @@ function Legende({ vue, periode }: { vue: VueApercu; periode?: { type: string; d
           {periode ? (
             <Element libelle={`${nomPeriode(periode.type)}, ${jourCarte(periode.du)} → ${jourCarte(periode.au)}`}>
               <View style={[styles.echantillon, { overflow: 'hidden', borderRadius: 2 }]}>
-                <Hachure couleur={p.danger} trait={p.traitFort} />
+                <Hachure couleur={p.danger} trait={p.texteMuet} />
               </View>
             </Element>
           ) : null}

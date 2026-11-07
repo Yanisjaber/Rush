@@ -18,8 +18,8 @@ export function Hachure({ couleur, trait }: { couleur: string; trait: string }) 
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.hachure, { borderColor: couleur }]}>
       <Svg width="100%" height="100%">
         <Defs>
-          <Pattern id="hachure" patternUnits="userSpaceOnUse" width={7} height={7} patternTransform="rotate(45)">
-            <Line x1={0} y1={0} x2={0} y2={7} stroke={trait} strokeWidth={1} />
+          <Pattern id="hachure" patternUnits="userSpaceOnUse" width={7} height={7}>
+            <Line x1={-1} y1={8} x2={8} y2={-1} stroke={trait} strokeWidth={1.2} />
           </Pattern>
         </Defs>
         <Rect x={0} y={0} width="100%" height="100%" fill="url(#hachure)" />
@@ -62,7 +62,7 @@ export function CalendrierPlan({ lignes, vue, aujourdhui }: { lignes: LignePlan[
                 j.aujourdhui ? { borderWidth: 2, borderColor: p.texte } : null,
               ]}
             >
-              {j.periode ? <Hachure couleur={p.danger} trait={p.traitFort} /> : null}
+              {j.periode ? <Hachure couleur={p.danger} trait={p.texteMuet} /> : null}
               <Text style={[typo.micro, { color: p.texte, textTransform: 'none', letterSpacing: 0, fontVariant: ['tabular-nums'] }]}>{j.numero}</Text>
               <View style={{ gap: 3 }}>
                 {j.marques.map((m, k) => (
@@ -102,7 +102,7 @@ export function FrisePlan({ lignes, vue, aujourdhui }: { lignes: LignePlan[]; vu
       <View style={{ minHeight: Math.max(hauteurRangees, 56), paddingVertical: espace.e1 }}>
         {debut >= 0 ? (
           <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: `${(debut / n) * 100}%`, width: `${(longueur / n) * 100}%` }}>
-            <Hachure couleur={p.danger} trait={p.traitFort} />
+            <Hachure couleur={p.danger} trait={p.texteMuet} />
           </View>
         ) : null}
         {rangees.map((r) => {
