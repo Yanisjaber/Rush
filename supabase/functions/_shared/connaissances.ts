@@ -41,7 +41,9 @@ const MOTS_VIDES = new Set(
     'matin soir jour jours fois bien mal tout tous toute toutes aussi deja encore alors quoi apres avant depuis pendant ' +
     'bonjour salut merci coach ' +
     // Mots présents dans presque toutes les fiches : ils ne disent rien du sujet
-    'semaine semaines entrainement entrainements entrainer sport sportif').split(' '),
+    'semaine semaines entrainement entrainements entrainer sport sportif ' +
+    // « temps » (la météo, la durée, un chrono) est dans les étiquettes de plusieurs fiches de course et ne désigne aucun sujet
+    'temps').split(' '),
 );
 
 /** Minuscules, sans accents, sans ponctuation */
@@ -153,6 +155,45 @@ export function motsNonTrouves(question: string, ficheId: string): string[] {
     if (!sortie.includes(mot)) sortie.push(mot);
   }
   return sortie.slice(0, 6);
+}
+
+/** Une fiche en texte court pour le contexte du modèle : l'essentiel et les règles, tronqués, avec son niveau de preuve */
+function resumeFiche(f: Fiche, max: number): string {
+  const corps = `${f.essentiel}\nRègles : ${f.regles}`;
+  return `[${f.titre} | preuve : ${f.preuve}]\n${corps.length > max ? `${corps.slice(0, max)}…` : corps}`;
+}
+
+/**
+ * Les fiches à glisser AUTOMATIQUEMENT dans le contexte du modèle pour un message : le coach n'a pas à penser à les chercher.
+ * On classe la question (avec le message précédent de l'utilisateur pour les relances comme « et le test ? ») ; si rien ne ressort mais que
+ * le message parle de plan, de séance ou de course, la fiche des principes généraux de la course à pied sert de repli.
+ * Texte écrit par nous, jamais celui de l'utilisateur. Chaîne vide s'il n'y a rien de pertinent.
+ */
+export function extraitsConnaissance(question: string, precedent?: string, max = 2, caracteresParFiche = 1200, coureur = false): string {
+  const trouvees = classer(question).slice(0, max).map((s) => s.fiche);
+  // Un coureur (course à venir ou sorties récentes) qui demande un plan ou parle de son objectif : on part TOUJOURS des principes généraux de la course à pied
+  if (coureur && /\b(plan|programme|objectif|preparer|prepare)\b/.test(normaliser(question))) {
+    const base = FICHES.find((f) => f.id === 'course-principes-generaux');
+    if (base) {
+      const deja = trouvees.findIndex((f) => f.id === base.id);
+      if (deja >= 0) trouvees.splice(deja, 1);
+      trouvees.unshift(base);
+    }
+    trouvees.splice(max);
+  }
+  if (!trouvees.length && precedent) trouvees.push(...classer(`${precedent} ${question}`).slice(0, max).map((s) => s.fiche));
+  if (!trouvees.length && /\b(plan|seance|seances|objectif|course|courir|cours|allure|footing)\b/.test(normaliser(question))) {
+    const base = FICHES.find((f) => f.id === 'course-principes-generaux');
+    if (base) trouvees.push(base);
+  }
+  return trouvees.map((f) => resumeFiche(f, caracteresParFiche)).join('\n\n');
+}
+
+/** Les fondements d'un plan de course : la fiche de sa distance et celle de son calibrage, pour que le coach explique le POURQUOI avec les mêmes sources */
+export function fondementsPlanCourse(km: number, avecTest: boolean, caracteresParFiche = 900): string {
+  const idDistance = km <= 12 ? 'course-5k-10k-plans' : km <= 23 ? 'course-semi-marathon' : km <= 45 ? 'course-marathon-methodes' : 'course-trail-ultra';
+  const ids = [idDistance, avecTest ? 'course-tests-terrain' : 'course-periodisation-recuperation'];
+  return ids.map((id) => FICHES.find((f) => f.id === id)).filter((f): f is Fiche => !!f).map((f) => resumeFiche(f, caracteresParFiche)).join('\n\n');
 }
 
 const LIBELLE_PREUVE: Record<Preuve, string> = {

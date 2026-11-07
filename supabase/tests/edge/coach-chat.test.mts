@@ -1214,3 +1214,20 @@ test('preparer_course AVEC des sorties récentes : pas de sortie test', async ()
   const carte = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
   assert.equal(carte.lignes.filter((l: Libre) => /Sortie test/.test(l.texte)).length, 0);
 });
+
+test('le contexte du modèle contient AUTOMATIQUEMENT les fiches proches du message (il n\'a pas à les chercher)', async () => {
+  const w = monde([rep('Je regarde.')]);
+  await traiterMessage(U, 'Je prépare un trail de 50 km avec beaucoup de dénivelé', w.deps, w.emettre);
+  const envoye = JSON.stringify(w.modele.appels[0].messages);
+  assert.match(envoye, /connaissances_pertinentes/);
+  assert.match(envoye, /Trail et ultra/);
+  const sans = monde([rep('Salut.')]);
+  await traiterMessage(U, 'Bonjour', sans.deps, sans.emettre);
+  assert.doesNotMatch(JSON.stringify(sans.modele.appels[0].messages), /connaissances_pertinentes/);
+});
+test('preparer_course : le résultat donne au modèle les fondements du plan tirés des fiches (distance et calibrage)', async () => {
+  const w = await planPropose([outil('c', { motif: 'Plan' }, 'preparer_course')], avecCourse);
+  const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.match(r.content, /Fondements du plan, tirés de la base de connaissances/);
+  assert.match(r.content, /5 km ou un 10 km/);
+});
