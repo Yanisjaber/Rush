@@ -195,3 +195,23 @@ test('preparer_course : tout est facultatif sauf le motif ; valeurs vérifiées'
   const mauvais: unknown[] = [{}, { motif: 'x' }, { motif: 'Mon 10 km', date: '2026-02-31' }, { motif: 'Mon 10 km', km: 0 }, { motif: 'Mon 10 km', km: '10' }, { motif: 'Mon 10 km', temps_cible_minutes: 2 }, { motif: 'Mon 10 km', seances_par_semaine: 7 }, { motif: 'Mon 10 km', clef: 1 }, null];
   for (const m of mauvais) assert.equal(lire(m).ok, false, JSON.stringify(m)?.slice(0, 80));
 });
+
+test('preparer_course avec allures et ajuster_seance_course : lecture stricte', () => {
+  const lire = (nom: string, x: unknown) => trouverAction(nom)!.lire!(x);
+  assert.deepEqual((lire('preparer_course', { motif: 'Plan ajusté', allures: { vma: '4:30', tempo: "4'50" } }) as { params: { demande: unknown } }).params.demande, { allures: { vma: 270, tempo: 290 } });
+  for (const m of [{ allures: {} }, { allures: { vma: '4:99' } }, { allures: { turbo: '4:30' } }, { allures: 'vite' }]) assert.equal(lire('preparer_course', { motif: 'Plan ajusté', ...m }).ok, false, JSON.stringify(m));
+  const ok = lire('ajuster_seance_course', { motif: 'Jeudi plus court', date: '2026-11-19', genre: 'intervalles', reps: 5, metres: 600, allure: '4:30', recup_secondes: 90 });
+  assert.deepEqual(ok, { ok: true, params: { intention: 'Jeudi plus court', seance: { date: '2026-11-19', genre: 'intervalles', reps: 5, metres: 600, allure: 270, recupSecondes: 90 } } });
+  const mauvais: unknown[] = [
+    {}, { motif: 'Jeudi plus court' }, { motif: 'Jeudi plus court', date: '2026-11-19' },
+    { motif: 'Jeudi plus court', date: '2026-11-19', genre: 'intervalles' }, // sans reps ni metres
+    { motif: 'Jeudi plus court', date: '2026-11-19', genre: 'footing' }, // sans minutes
+    { motif: 'Jeudi plus court', date: '2026-11-19', genre: 'sprint', minutes: 30 },
+    { motif: 'Jeudi plus court', date: '2026-02-31', genre: 'footing', minutes: 30 },
+    { motif: 'Jeudi plus court', date: '2026-11-19', genre: 'footing', minutes: 5 },
+    { motif: 'Jeudi plus court', date: '2026-11-19', genre: 'footing', minutes: 30, allure: 'lent' },
+    { motif: 'Jeudi plus court', date: '2026-11-19', genre: 'footing', minutes: 30, clef: 1 },
+    null,
+  ];
+  for (const m of mauvais) assert.equal(lire('ajuster_seance_course', m).ok, false, JSON.stringify(m)?.slice(0, 90));
+});

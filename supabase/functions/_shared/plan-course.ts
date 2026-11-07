@@ -182,7 +182,7 @@ function assembler(nom: string, type: string, blocs: BlocStructure[], resume: st
 }
 
 /** Footing facile : un seul bloc à l'allure facile, avec des lignes droites en phase de base */
-function footing(minutes: number, a: Allures, lignesDroites: boolean): SeanceCourse {
+export function footing(minutes: number, a: Allures, lignesDroites: boolean): SeanceCourse {
   if (lignesDroites && minutes >= 30) {
     const reste = minutes - 6 * (20 / 60 + 1);
     return assembler(
@@ -195,7 +195,7 @@ function footing(minutes: number, a: Allures, lignesDroites: boolean): SeanceCou
   return assembler(`Footing ${minutes} min`, 'footing_facile', [bloc('steady', `Footing à ${ms(a.facile)}/km`, minutes, a.facile, a)], `${minutes} min à ${ms(a.facile)}/km`, "Allure facile : tu peux parler. C'est ici que se construit l'endurance.");
 }
 
-function sortieLongue(minutes: number, a: Allures, progressive: boolean): SeanceCourse {
+export function sortieLongue(minutes: number, a: Allures, progressive: boolean): SeanceCourse {
   if (progressive && minutes >= 50) {
     const fin = Math.round(minutes * 0.2);
     return assembler(
@@ -243,6 +243,82 @@ function qualite(phase: Phase, rang: number, a: Allures, second: boolean): Seanc
   return avec(`Rappel d'allure ${reps} × ${m} m`, 'seuil', intervalles(`${reps} × ${m} m à ${ms(allure)}/km, récup 2:00 trot`, reps, tempsAllure(m, allure), allure, 120, a), `${reps} × ${m} m à ${ms(allure)}/km (récup 2:00)`, "Un rappel d'allure court : les jambes gardent le rythme, mais tu arrives frais à la course.");
 }
 
+/** Une allure écrite « 4:30 » ou « 4'30 » → secondes par km ; null si elle n'a pas ce format ou sort de 2:30 à 15:00 /km */
+export function lireAllure(x: unknown): number | null {
+  if (typeof x === 'number' && Number.isFinite(x)) return x >= 150 && x <= 900 ? Math.round(x) : null;
+  if (typeof x !== 'string') return null;
+  const m = /^\s*(\d{1,2})\s*[:'’h]\s*(\d{1,2})\s*(?:\/\s*km)?\s*$/.exec(x);
+  if (!m || Number(m[2]) > 59) return null;
+  const s = Number(m[1]) * 60 + Number(m[2]);
+  return s >= 150 && s <= 900 ? s : null;
+}
+
+/** Une séance d'intervalles construite à la demande : « 5 × 600 m à 4:30/km, récup 1:30 » */
+export function seanceIntervalles(o: { reps: number; metres: number; allure: number; recupSecondes: number }, a: Allures): SeanceCourse {
+  const { reps, metres, allure, recupSecondes } = o;
+  const nom = `${reps} × ${metres} m à ${ms(allure)}/km`;
+  const but = allure <= a.cinqK * 1.02
+    ? 'Du travail rapide en séries courtes : il relève ta vitesse et rend ton allure de course plus facile à tenir.'
+    : allure <= a.seuil * 1.02 ? "Des répétitions à ton allure de course ou de seuil : ton corps apprend à tenir le rythme du jour J."
+    : "Des répétitions à allure modérée : un effort soutenu avec de la récupération.";
+  return assembler(
+    nom, allure <= a.cinqK * 1.02 ? 'fractionne' : 'seuil',
+    [bloc('warmup', `Échauffement à ${ms(a.facile)}/km`, ECHAUF, a.facile, a), intervalles(`${reps} × ${metres} m à ${ms(allure)}/km, récup ${recup(recupSecondes)} trot`, reps, tempsAllure(metres, allure), allure, recupSecondes, a), bloc('cooldown', `Retour au calme à ${ms(a.facile)}/km`, RETOUR, a.facile, a)],
+    `${ECHAUF} min d'échauffement · ${reps} × ${metres} m à ${ms(allure)}/km (récup ${recup(recupSecondes)}) · ${RETOUR} min de retour au calme`, but,
+  );
+}
+
+/** Un tempo continu construit à la demande : « 25 min à 4:56/km » */
+export function seanceTempoContinu(o: { minutes: number; allure: number }, a: Allures): SeanceCourse {
+  return assembler(
+    `Tempo continu ${o.minutes} min`, 'tempo',
+    [bloc('warmup', `Échauffement à ${ms(a.facile)}/km`, ECHAUF, a.facile, a), bloc('steady', `${o.minutes} min à ${ms(o.allure)}/km`, o.minutes, o.allure, a), bloc('cooldown', `Retour au calme à ${ms(a.facile)}/km`, RETOUR, a.facile, a)],
+    `${ECHAUF} min d'échauffement · ${o.minutes} min continues à ${ms(o.allure)}/km · ${RETOUR} min de retour au calme`,
+    "Un tempo d'une seule traite : tu apprends à tenir un effort soutenu sans te griser.",
+  );
+}
+
+// ---------- Calibrage : niveau, objectif jouable, allures ----------
+export interface Calibrage {
+  niveau: Niveau | null;
+  realiste: number | null;
+  cible: number | null;
+  objectifPlan: number | null;
+  verdict: 'realiste' | 'ambitieux' | 'sans_cible' | 'sans_donnees';
+}
+export function calibrer(km: number, tempsCibleMinutes: number | undefined, semaines: number, profil: ProfilCourse | null, aujourdhui: string): Calibrage {
+  const niveau = niveauActuel(profil, km, aujourdhui);
+  const cible = tempsCibleMinutes ? tempsCibleMinutes * 60 : null;
+  const realiste = niveau ? objectifRealiste(niveau.secondes, semaines) : null;
+  if (realiste !== null) {
+    return { niveau, realiste, cible, objectifPlan: cible !== null ? Math.max(cible, realiste) : realiste, verdict: cible === null ? 'sans_cible' : cible < realiste * 0.985 ? 'ambitieux' : 'realiste' };
+  }
+  return { niveau, realiste: null, cible, objectifPlan: cible, verdict: 'sans_donnees' };
+}
+
+/** Les noms des allures, pour que le coach sache à quoi correspond « 4:19 » quand l'utilisateur le dit */
+export const NOM_ALLURE: Record<keyof Allures, string> = {
+  vma: 'VMA (fractionné court, 400-800 m)', cinqK: 'allure 5 km', course: 'allure course', seuil: 'seuil', tempo: 'tempo', facile: 'footing facile', longue: 'sortie longue',
+};
+export const ALLURES_CLES = Object.keys(NOM_ALLURE) as (keyof Allures)[];
+
+/**
+ * Les allures d'un coureur à une date : calées sur la prochaine course à pied du calendrier (distance, temps visé, objectif jouable), sinon sur son niveau actuel ;
+ * sans aucune donnée, sur son allure facile récente (ou 6:00/km). Sert à adapter une séance sans refaire tout le plan.
+ */
+// deno-lint-ignore no-explicit-any
+export function alluresCoureur(resume: any, aujourdhui: string): Allures {
+  const profil = profilCourseDepuisResume(resume);
+  const courses = (Array.isArray(resume?.competitions) ? resume.competitions : []).filter((c: { sport?: string; date?: string }) => c?.sport === 'course' && typeof c.date === 'string' && c.date > aujourdhui);
+  const c = courses[0];
+  const km = typeof c?.km === 'number' && c.km > 0 ? c.km : 10;
+  const semaines = c ? Math.max(1, Math.ceil(ecartJours(aujourdhui, c.date) / 7)) : 6;
+  const cal = calibrer(km, typeof c?.temps_cible_min === 'number' ? c.temps_cible_min : undefined, semaines, profil, aujourdhui);
+  if (cal.objectifPlan !== null) return alluresDepuisCourse(cal.objectifPlan, km);
+  const facile = profil?.recent.allureMedianeSParKm ?? 360;
+  return alluresDepuisCourse((facile / FACILE_SUR_10K) * 10, 10);
+}
+
 // ---------- Le plan ----------
 export interface DemandeCourse {
   /** Jour de la course */
@@ -256,6 +332,8 @@ export interface DemandeCourse {
   /** Séances par semaine (défaut : d'après son rythme, entre 3 et 5) */
   seancesParSemaine?: number;
   joursLibres?: string[];
+  /** Allures imposées par l'utilisateur (« 4:19 c'est trop vite, mets 4:30 ») : elles remplacent celles du calcul */
+  allures?: Partial<Allures>;
 }
 
 export interface Bilan {
@@ -269,6 +347,8 @@ export interface Bilan {
   verdict: 'realiste' | 'ambitieux' | 'sans_cible' | 'sans_donnees';
   allures: Allures | null;
   seancesParSemaine: number;
+  /** Les allures que l'utilisateur a imposées */
+  imposees: (keyof Allures)[];
 }
 
 export interface ResultatCourse {
@@ -306,22 +386,13 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   if (jours > 60 * 7) return vide('Cette course est à plus de 60 semaines : fais un premier plan plus tard, quand elle sera plus proche.');
 
   // 1. niveau, objectif, allures
-  const niveau = niveauActuel(profil, km, aujourdhui);
-  const cible = d.tempsCibleMinutes ? d.tempsCibleMinutes * 60 : null;
-  const realiste = niveau ? objectifRealiste(niveau.secondes, nSemaines) : null;
-  let objectifPlan: number | null = null;
-  let verdict: Bilan['verdict'] = 'sans_donnees';
-  if (realiste !== null) {
-    objectifPlan = cible !== null ? Math.max(cible, realiste) : realiste;
-    verdict = cible === null ? 'sans_cible' : cible < realiste * 0.985 ? 'ambitieux' : 'realiste';
-  } else if (cible !== null) {
-    objectifPlan = cible;
-    verdict = 'sans_donnees';
-  }
+  const { niveau, realiste, cible, objectifPlan, verdict } = calibrer(km, d.tempsCibleMinutes, nSemaines, profil, aujourdhui);
   if (objectifPlan === null) {
     return vide("Je n'ai ni tes sorties de course ni un temps visé pour calibrer les allures : donne-moi le temps que tu vises, ou fais d'abord quelques sorties.");
   }
-  const a = alluresDepuisCourse(objectifPlan, km);
+  const calculees = alluresDepuisCourse(objectifPlan, km);
+  const imposees = ALLURES_CLES.filter((c) => d.allures?.[c] !== undefined);
+  const a: Allures = { ...calculees, ...Object.fromEntries(imposees.map((c) => [c, d.allures![c]!])) };
 
   // 2. rythme : séances par semaine et volume
   const frequence = profil && profil.recent.sorties > 0 ? profil.recent.sorties / 8 : 0;
@@ -428,7 +499,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     lignesSemaines.push(`Semaine ${w + 1} (${du}) : ${NOM_PHASE[phase]}${recuperation ? ', récupération' : ''}, ${posees} séance${posees > 1 ? 's' : ''}, ${totalSemaine} min`);
   }
 
-  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k };
+  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees };
   return { operations, abandons, semaines: lignesSemaines, bilan, message: messageBilan(bilan) };
 }
 
@@ -446,6 +517,9 @@ export function messageBilan(b: Bilan): string {
   } else if (b.verdict === 'sans_donnees') {
     parts.push("Je n'ai pas assez de sorties de course pour estimer ton niveau : le plan est calé sur le temps que tu vises, à vérifier après les premières séances.");
   }
-  if (b.allures) parts.push(`Allures : course ${formaterAllure(b.allures.course)}/km, seuil ${formaterAllure(b.allures.seuil)}, facile ${formaterAllure(b.allures.facile)}.`);
+  if (b.allures) {
+    parts.push(`Allures (par km) : ${ALLURES_CLES.map((c) => `${NOM_ALLURE[c]} ${formaterAllure(b.allures![c])}`).join(', ')}.`);
+    if (b.imposees.length) parts.push(`Allures imposées par l'utilisateur : ${b.imposees.map((c) => NOM_ALLURE[c]).join(', ')}.`);
+  }
   return parts.join(' ');
 }

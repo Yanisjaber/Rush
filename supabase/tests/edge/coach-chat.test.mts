@@ -1122,3 +1122,69 @@ test('preparer_course : aucune course à venir et pas de date = pas de carte, le
   const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
   assert.match(r.content, /aucune course à pied/);
 });
+
+// ---------- Parler à son coach : ajuster le plan ----------
+const ID_COURSE = (n: number) => `00000000-0000-4000-8000-0000000007${String(n).padStart(2, '0')}`;
+/** Un plan déjà ajouté au calendrier (séances de course créées par l'IA) */
+const avecPlanAjoute = (s: FauxStockage) => {
+  avecCourse(s);
+  s.resume.prevues = [
+    { id: ID_COURSE(1), date: '2026-11-12', sport: 'course', categorie: 'entrainement', minutes: 40, tss: 60, creee_par_ia: true },
+    { id: ID_COURSE(2), date: '2026-11-19', sport: 'course', categorie: 'entrainement', minutes: 45, tss: 70, creee_par_ia: true },
+    { id: ID_COURSE(3), date: '2026-11-20', sport: 'velo', categorie: 'entrainement', minutes: 60, tss: 50, creee_par_ia: false },
+  ];
+};
+test('preparer_course avec allures : « 4:19 trop haut, mets 4:30 » refait le plan, les anciennes séances de l\'IA sont remplacées (pas celles faites à la main)', async () => {
+  const w = await planPropose([outil('c', { motif: 'Plan ajusté', allures: { vma: '4:30' } }, 'preparer_course')], avecPlanAjoute);
+  const carte = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
+  const supprimees = carte.operations.filter((o: Libre) => o.op === 'supprimer').map((o: Libre) => o.seanceId);
+  assert.deepEqual(supprimees.sort(), [ID_COURSE(1), ID_COURSE(2)]);
+  assert.ok(!supprimees.includes(ID_COURSE(3)), 'la séance de vélo n\'est jamais touchée');
+  assert.equal(carte.operations.findIndex((o: Libre) => o.op === 'ajouter') >= 2, true, 'les suppressions passent avant les ajouts');
+  assert.ok(carte.lignes.some((l: Libre) => /× 400 m à 4:30\/km/.test(l.texte)));
+  assert.match(carte.bilan, /Allures imposées/);
+  const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.match(r.content, /VMA \(fractionné court, 400-800 m\) 4:30/);
+  assert.match(r.content, /2 séances de l'ancien plan sont remplacées/);
+});
+test('preparer_course : allure invalide refusée avec la raison ; le coach se souvient du bilan (allures) dans l\'historique', async () => {
+  const w = await planPropose([outil('c', { motif: 'Plan ajusté', allures: { vma: 'vite' } }, 'preparer_course')], avecCourse);
+  assert.equal(w.evts.filter((e) => e.type === 'carte').length, 0);
+  const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.equal(r.is_error, true);
+  assert.match(r.content, /m:ss/);
+  const bon = await planPropose([outil('c', { motif: 'Plan' }, 'preparer_course')], avecCourse);
+  const hist = historiquePourModele(bon.stockage.messages).map((m) => String(m.content)).join('\n');
+  assert.match(hist, /Bilan du code/);
+  assert.match(hist, /VMA \(fractionné court, 400-800 m\) \d:\d\d/);
+});
+test('ajuster_seance_course : « jeudi plutôt 5 × 600 m à 4:30 » remplace la séance de ce jour par une séance reconstruite en entier', async () => {
+  const w = await planPropose([outil('a', { motif: 'Jeudi : 5 × 600 m', date: '2026-11-19', genre: 'intervalles', reps: 5, metres: 600, allure: '4:30', recup_secondes: 90 }, 'ajuster_seance_course')], avecPlanAjoute);
+  const carte = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
+  assert.deepEqual(carte.operations.map((o: Libre) => o.op), ['supprimer', 'ajouter']);
+  assert.equal(carte.operations[0].seanceId, ID_COURSE(2));
+  const ajout = carte.operations[1];
+  assert.equal(ajout.proposition.date, '2026-11-19');
+  assert.match(ajout.detail.nom, /5 × 600 m à 4:30\/km/);
+  assert.deepEqual(ajout.detail.structure.map((b: Libre) => b.type), ['warmup', 'interval', 'cooldown']);
+  assert.equal(ajout.detail.structure[1].reps, 5);
+  assert.match(ajout.detail.structure[1].rec ? ajout.detail.structure[1].name : '', /récup 1:30/);
+});
+test('ajuster_seance_course : pas de séance de course ce jour-là = pas de carte, le modèle le sait ; réglages incomplets refusés', async () => {
+  const w = await planPropose([outil('a', { motif: 'Mardi plus doux', date: '2026-11-17', genre: 'footing', minutes: 30 }, 'ajuster_seance_course')], avecPlanAjoute);
+  assert.equal(w.evts.filter((e) => e.type === 'carte').length, 0);
+  assert.match(((w.modele.appels[1].messages.at(-1)?.content as Libre[])[0]).content, /Aucune séance de course/);
+  const mauvais = await planPropose([outil('a', { motif: 'Jeudi', date: '2026-11-19', genre: 'intervalles', reps: 5 }, 'ajuster_seance_course')], avecPlanAjoute);
+  assert.equal(((mauvais.modele.appels[1].messages.at(-1)?.content as Libre[])[0]).is_error, true);
+});
+test('un nouveau plan remplace les plans encore proposés plus haut : ils ne peuvent plus être ajoutés', async () => {
+  const w = monde([rep('Je regarde.', [outil('c', { motif: 'Plan' }, 'preparer_course')]), rep('Voilà.'), rep('Je refais.', [outil('c2', { motif: 'Plan ajusté', allures: { vma: '4:30' } }, 'preparer_course')]), rep('Refait.')], avecCourse);
+  await traiterMessage(U, 'Fais-moi un plan pour l\'objectif', w.deps, w.emettre);
+  const premiere = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
+  await traiterMessage(U, 'La VMA est trop haute, mets 4:30', w.deps, w.emettre);
+  const cartes = w.stockage.messages.flatMap((m) => m.cartes ?? []) as Libre[];
+  assert.equal(cartes.length, 2);
+  assert.equal(cartes.find((c) => c.id === premiere.id)!.etat, 'refusee');
+  assert.equal(cartes.find((c) => c.id !== premiere.id)!.etat, 'proposee');
+  await assert.rejects(() => ajouterCarte(U, premiere.id, w.deps), (e: Libre) => e.code === 'carte_non_ajoutable');
+});

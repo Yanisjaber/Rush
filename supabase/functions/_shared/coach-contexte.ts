@@ -45,6 +45,8 @@ export interface CartePlanning {
   charge_apres: number;
   /** Raison du refus (état « refusee ») */
   motif?: string;
+  /** Le bilan écrit par le code (niveau, objectif, allures) : le coach s'en souvient pour ajuster le plan */
+  bilan?: string;
   /** De quoi défaire le plan (écrit par le serveur après l'application) */
   inverse?: unknown[];
 }
@@ -149,7 +151,8 @@ const LIMITE_MESSAGE_HISTORIQUE = 1500;
 export function texteCarte(c: Carte): string {
   if (estPlanning(c)) {
     const etat = { proposee: 'pas encore appliqué', en_cours: "en cours d'application", ajoutee: "appliqué par l'utilisateur", refusee: 'refusé par les règles', annulee: "annulé par l'utilisateur" }[c.etat] ?? c.etat;
-    return `[Plan de modifications (${c.lignes.map((l) => l.texte).join(' ; ').slice(0, 400)}) : ${etat}]`;
+    const bilan = c.bilan ? `. Bilan du code : ${c.bilan.slice(0, 1200)}` : '';
+    return `[Plan de modifications (${c.lignes.map((l) => l.texte).join(' ; ').slice(0, 400)}) : ${etat}${bilan}]`;
   }
   const p = c.proposition;
   const etat = { proposee: 'pas encore ajoutée', en_cours: "en cours d'ajout", ajoutee: "ajoutée par l'utilisateur", refusee: 'refusée par les règles', annulee: "annulée par l'utilisateur" }[c.etat] ?? c.etat;

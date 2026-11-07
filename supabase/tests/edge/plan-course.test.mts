@@ -163,3 +163,22 @@ test('un plan long (20 semaines) : validé, 4e semaine plus légère, jamais plu
   assert.equal(evaluerPlan(r.operations, [], c).ok, true);
   assert.match(r.semaines[3], /récupération/);
 });
+
+test('allures imposées : remplacent celles du calcul (la VMA passe de 4:19 à 4:30), les autres restent, le bilan le dit', async () => {
+  const { lireAllure, ALLURES_CLES } = await import('../../functions/_shared/plan-course.ts');
+  assert.equal(lireAllure('4:30'), 270);
+  assert.equal(lireAllure("4'30"), 270);
+  assert.equal(lireAllure('4:30/km'), 270);
+  for (const m of ['4:75', 'vite', '', null, '1:00', '20:00', 12]) assert.equal(lireAllure(m), null, String(m));
+  assert.deepEqual(ALLURES_CLES, ['vma', 'cinqK', 'course', 'seuil', 'tempo', 'facile', 'longue']);
+  const avant = planifierCourse(DEMANDE, [], ctx(), YANIS);
+  const apres = planifierCourse({ ...DEMANDE, allures: { vma: 270 } }, [], ctx(), YANIS);
+  assert.equal(apres.bilan!.allures!.vma, 270);
+  assert.equal(apres.bilan!.allures!.course, avant.bilan!.allures!.course);
+  assert.deepEqual(apres.bilan!.imposees, ['vma']);
+  assert.match(apres.message, /Allures imposées/);
+  assert.match(apres.message, /VMA \(fractionné court, 400-800 m\) 4:30/);
+  const noms = ajouts(apres.operations).map((o) => o.detail!.nom).join(' | ');
+  assert.match(noms, /× 400 m à 4:30\/km/);
+  assert.doesNotMatch(noms, /4:19/);
+});

@@ -18,8 +18,8 @@
 //   - une erreur n'écrit rien dans le calendrier et ne montre aucun détail technique.
 // ============================================================
 import { planifierPeriode } from './periode.ts';
-import { planifierCourse, profilCourseDepuisResume } from './plan-course.ts';
-import type { DemandeCourse } from './plan-course.ts';
+import { alluresCoureur, footing, planifierCourse, profilCourseDepuisResume, seanceIntervalles, seanceTempoContinu, sortieLongue } from './plan-course.ts';
+import type { DemandeCourse, SeanceCourse } from './plan-course.ts';
 import type { DemandePeriode } from './periode.ts';
 import { structureSeance } from './structure-seance.ts';
 import { FONCTIONS_HISTORIQUE, MAX_PAR_NIVEAU, outilsExposes, trouverAction } from './coach-actions.ts';
@@ -228,7 +228,7 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
   }
 
   // Replanification : UNE carte de planning par message, jamais mélangée à d'autres cartes
-  if (def.nom === 'proposer_replanification' || def.nom === 'modifier_planning' || def.nom === 'planifier_semaine' || def.nom === 'planifier_periode' || def.nom === 'preparer_course') {
+  if (def.nom === 'proposer_replanification' || def.nom === 'modifier_planning' || def.nom === 'planifier_semaine' || def.nom === 'planifier_periode' || def.nom === 'preparer_course' || def.nom === 'ajuster_seance_course') {
     if (cartes.length > 0) return { contenu: "Une seule carte de planning à la fois, et pas avec une autre carte : attends que l'utilisateur la valide ou la refuse.", erreur: true };
     const lu = def.lire ? def.lire(appel.input) : { ok: false as const, erreur: 'Outil non lisible.' };
     if (!lu.ok) return { contenu: `Paramètres invalides : ${lu.erreur}`, erreur: true };
@@ -254,21 +254,49 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
       if (!date) {
         return { contenu: "Je ne trouve aucune course à pied à venir dans le calendrier et l'utilisateur n'a pas donné de date. Demande-lui la date de sa course (et, s'il le veut, la distance et le temps visé), sans créer de carte.", erreur: false };
       }
+      // Un plan déjà ajouté par le coach (séances de course créées par l'IA entre le début et la course) est REMPLACÉ : on retire les anciennes séances et on pose les nouvelles
+      const debutPlan = demande.debut && demande.debut > ctx.aujourdhui ? demande.debut : ctx.aujourdhui;
+      const anciennes = seances.filter((x) => x.creeeParIa && x.sport === 'course' && x.date >= debutPlan && x.date < date);
+      const ids = new Set(anciennes.map((x) => x.id));
       const res = planifierCourse({
+        allures: demande.allures,
         date,
         km: demande.km ?? (typeof calendrier?.km === 'number' && calendrier.km > 0 ? calendrier.km : 10),
         tempsCibleMinutes: demande.tempsCibleMinutes ?? (typeof calendrier?.temps_cible_min === 'number' ? calendrier.temps_cible_min : undefined),
         debut: demande.debut,
         seancesParSemaine: demande.seancesParSemaine,
         joursLibres: demande.joursLibres,
-      }, seances, ctx, profilCourseDepuisResume(resume));
+      }, seances.filter((x) => !ids.has(x.id)), ctx, profilCourseDepuisResume(resume));
       if (!res.operations.length) {
         return { contenu: `Je n'ai pas pu construire ce plan : ${res.abandons.join(' ') || 'aucune séance possible.'} Explique-le simplement à l'utilisateur, sans créer de carte, et propose une autre façon de faire.`, erreur: false };
       }
-      operations = res.operations;
+      operations = [...anciennes.map((x): Operation => ({ op: 'supprimer', seanceId: x.id, raison: 'remplacée par le plan mis à jour' })), ...res.operations];
       notes = res.abandons;
       resumePeriode = res.semaines;
       bilanTexte = res.message;
+      if (anciennes.length) notes = [`${anciennes.length} séance${anciennes.length > 1 ? 's' : ''} de l'ancien plan ${anciennes.length > 1 ? 'sont remplacées' : 'est remplacée'} par le nouveau`, ...notes];
+    } else if (def.nom === 'ajuster_seance_course') {
+      const spec = lu.params.seance as { date: string; genre: string; reps?: number; metres?: number; minutes?: number; allure?: number; recupSecondes?: number };
+      const ancienne = seances.find((x) => x.date === spec.date && x.sport === 'course');
+      if (!ancienne) {
+        return { contenu: `Aucune séance de course n'est prévue le ${spec.date}. Dis-le à l'utilisateur sans créer de carte (regarde prevues pour les dates), ou propose d'en ajouter une.`, erreur: false };
+      }
+      const a = alluresCoureur(resume, ctx.aujourdhui);
+      let nouvelle: SeanceCourse;
+      if (spec.genre === 'intervalles') {
+        const metres = spec.metres as number;
+        nouvelle = seanceIntervalles({ reps: spec.reps as number, metres, allure: spec.allure ?? (metres <= 800 ? a.vma : a.course), recupSecondes: spec.recupSecondes ?? (metres <= 400 ? 75 : metres <= 800 ? 90 : metres < 1500 ? 90 : 120) }, a);
+      } else if (spec.genre === 'tempo_continu') {
+        nouvelle = seanceTempoContinu({ minutes: spec.minutes as number, allure: spec.allure ?? a.tempo }, a);
+      } else if (spec.genre === 'sortie_longue') {
+        nouvelle = sortieLongue(spec.minutes as number, a, false);
+      } else {
+        nouvelle = footing(spec.minutes as number, a, false);
+      }
+      operations = [
+        { op: 'supprimer', seanceId: ancienne.id, raison: 'remplacée par la séance adaptée' },
+        { op: 'ajouter', proposition: { date: spec.date, sport: 'course', type: nouvelle.type, minutes: nouvelle.minutes }, justification: nouvelle.but, detail: nouvelle.detail },
+      ];
     } else if (def.nom === 'planifier_periode') {
       const res = planifierPeriode(lu.params.demande as DemandePeriode, seances, ctx, habitudesDepuisResume(resume));
       if (!res.operations.length) {
@@ -286,6 +314,7 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
     const r = evaluerPlan(operations, seances, ctx);
     if (!r.ok) return { contenu: `Plan refusé par les règles : ${r.erreurs.join(' | ')}`, erreur: true };
     const carte: CartePlanning = {
+      ...(bilanTexte ? { bilan: bilanTexte } : {}),
       id: uuid(),
       genre: 'planning',
       etat: 'proposee',
@@ -422,6 +451,16 @@ export async function traiterMessage(userId: string, texteBrut: unknown, deps: D
   await s.ecrireMessage(userId, { role: 'user', contenu: texte, cartes: null });
   const m = await s.ecrireMessage(userId, { role: 'assistant', contenu: reponseFinale, cartes: cartes.length ? cartes : null });
   for (const carte of cartes) emettre({ type: 'carte', message_id: m.id, carte });
+  // Un nouveau plan remplace les plans encore « proposés » plus haut dans la conversation : ils ne doivent plus pouvoir être ajoutés par erreur
+  if (cartes.some(estPlanning)) {
+    for (const ancien of depuis) {
+      for (const c of ancien.cartes ?? []) {
+        if (estPlanning(c) && c.etat === 'proposee') {
+          try { await s.changerEtatCarte(userId, c.id, 'proposee', 'refusee', 'Remplacé par un nouveau plan.'); } catch { console.error('coach-chat: ancien plan non retiré'); }
+        }
+      }
+    }
+  }
   emettre({ type: 'fin', message_id: m.id, texte: reponseFinale });
 
   try {

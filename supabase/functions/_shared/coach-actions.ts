@@ -21,7 +21,8 @@ import { SEANCES_PAR_SPORT_MAX } from './semaine.ts';
 import type { DemandeSemaine } from './semaine.ts';
 import { FAMILLES_COACH } from './menu-seances.ts';
 import { SEMAINES_MAX } from './periode.ts';
-import type { DemandeCourse } from './plan-course.ts';
+import { ALLURES_CLES, lireAllure, NOM_ALLURE } from './plan-course.ts';
+import type { Allures, DemandeCourse } from './plan-course.ts';
 import type { DemandePeriode } from './periode.ts';
 import type { OutilModele } from './modele.ts';
 import { OUTIL_PROPOSER_SEANCE, NOM_OUTIL_SEANCE } from './coach-prompt.ts';
@@ -616,12 +617,20 @@ export const ACTIONS: DefinitionAction[] = [
         seances_par_semaine: { type: 'integer', minimum: 2, maximum: 6, description: "Facultatif : séances par semaine. Par défaut d'après son rythme actuel (3 à 5)." },
         debut: { type: 'string', description: 'Facultatif : premier jour du plan, AAAA-MM-JJ. Par défaut demain.' },
         jours_libres: { type: 'array', items: { type: 'string' }, maxItems: DATES_MAX_JOURS_BLOQUES, description: 'Facultatif : dates sans aucune séance (voyage).' },
+        allures: {
+          type: 'object',
+          description:
+            "Facultatif : allures IMPOSÉES par l'utilisateur, au format « m:ss » par km, quand il trouve celles du plan trop rapides ou trop lentes (« 4:19 c'est trop vite, mets-moi 4:30 »). " +
+            "Retrouve de quelle allure il parle en lisant le bilan du plan précédent (par exemple 4:19 = vma). Seules celles à changer ; les autres restent calculées.",
+          properties: Object.fromEntries(ALLURES_CLES.map((c) => [c, { type: 'string', description: `${NOM_ALLURE[c]}, au format m:ss par km.` }])),
+          additionalProperties: false,
+        },
       },
       required: ['motif'],
       additionalProperties: false,
     },
     lire: (input) => {
-      const o = objet(input, ['motif', 'date', 'km', 'temps_cible_minutes', 'seances_par_semaine', 'debut', 'jours_libres']);
+      const o = objet(input, ['motif', 'date', 'km', 'temps_cible_minutes', 'seances_par_semaine', 'debut', 'jours_libres', 'allures']);
       const motif = motifPlan(o?.motif);
       if (!o || !motif) return refus('motif : une phrase de 3 à 200 caractères.');
       const demande: Partial<DemandeCourse> = {};
@@ -637,7 +646,62 @@ export const ACTIONS: DefinitionAction[] = [
         if (dates.some((d) => !d)) return refus('jours_libres : toutes les dates doivent être au format AAAA-MM-JJ et exister.');
         demande.joursLibres = [...new Set(dates as string[])];
       }
+      if (o.allures !== undefined) {
+        const brut = objet(o.allures, [...ALLURES_CLES]);
+        if (!brut || !Object.keys(brut).length) return refus(`allures : un objet avec au moins une allure parmi ${ALLURES_CLES.join(', ')}, chacune au format m:ss (par exemple « 4:30 »).`);
+        const allures: Partial<Allures> = {};
+        for (const cle of ALLURES_CLES) {
+          if (brut[cle] === undefined) continue;
+          const v = lireAllure(brut[cle]);
+          if (v === null) return refus(`allures.${cle} : une allure au format m:ss par km entre 2:30 et 15:00 (par exemple « 4:30 »).`);
+          allures[cle] = v;
+        }
+        demande.allures = allures;
+      }
       return { ok: true, params: { intention: motif, demande } };
+    },
+  },
+  {
+    nom: 'ajuster_seance_course',
+    niveau: 'carte',
+    disponible: true,
+    description:
+      "ADAPTE UNE SÉANCE DE COURSE À PIED déjà prévue, comme avec un entraîneur : « jeudi plutôt 5 × 600 m », « mets-moi plus doux », « fais-moi 20 minutes de tempo à 4:50 ». " +
+      "Tu désignes la séance par sa DATE (lue dans prevues) et tu dis ce que tu veux à la place : le genre de séance, les répétitions et la distance, l'allure, la récupération. " +
+      "Le CODE reconstruit la séance entière (échauffement, blocs, retour au calme, allures cohérentes avec le niveau et la course visée) et propose UNE carte qui remplace l'ancienne ; rien n'est modifié avant que l'utilisateur valide. " +
+      "Pour changer une allure dans TOUT le plan, utilise plutôt preparer_course avec allures.",
+    schema: {
+      type: 'object',
+      properties: {
+        motif: { type: 'string', description: 'Une phrase (200 caractères au plus) affichée sur la carte. Par exemple : « Jeudi : 5 × 600 m à la place des 400 m ».' },
+        date: { type: 'string', description: 'Le jour de la séance à remplacer, AAAA-MM-JJ (une séance de course prévue ce jour-là).' },
+        genre: { type: 'string', enum: ['intervalles', 'tempo_continu', 'footing', 'sortie_longue'], description: 'Le genre de séance voulu.' },
+        reps: { type: 'integer', minimum: 1, maximum: 40, description: 'Intervalles : nombre de répétitions.' },
+        metres: { type: 'integer', minimum: 100, maximum: 5000, description: 'Intervalles : distance de chaque répétition, en mètres.' },
+        minutes: { type: 'integer', minimum: 10, maximum: 360, description: 'Tempo continu, footing ou sortie longue : la durée totale en minutes (pour le tempo : la durée de l\'effort seul).' },
+        allure: { type: 'string', description: 'Facultatif : l\'allure de l\'effort, m:ss par km. Sinon l\'allure du plan.' },
+        recup_secondes: { type: 'integer', minimum: 15, maximum: 600, description: 'Intervalles : la récupération entre répétitions, en secondes.' },
+      },
+      required: ['motif', 'date', 'genre'],
+      additionalProperties: false,
+    },
+    lire: (input) => {
+      const o = objet(input, ['motif', 'date', 'genre', 'reps', 'metres', 'minutes', 'allure', 'recup_secondes']);
+      const motif = motifPlan(o?.motif);
+      if (!o || !motif) return refus('motif : une phrase de 3 à 200 caractères.');
+      const date = dateIso(o.date);
+      if (!date) return refus('date : le jour de la séance à remplacer, AAAA-MM-JJ.');
+      const genre = parmi(o.genre, ['intervalles', 'tempo_continu', 'footing', 'sortie_longue'] as const);
+      if (!genre) return refus('genre : intervalles, tempo_continu, footing ou sortie_longue.');
+      const spec: Record<string, unknown> = { date, genre };
+      if (o.reps !== undefined) { const n = entier(o.reps, 1, 40); if (!n) return refus('reps : un entier de 1 à 40.'); spec.reps = n; }
+      if (o.metres !== undefined) { const n = entier(o.metres, 100, 5000); if (!n) return refus('metres : un entier de 100 à 5000.'); spec.metres = n; }
+      if (o.minutes !== undefined) { const n = entier(o.minutes, 10, 360); if (!n) return refus('minutes : un entier de 10 à 360.'); spec.minutes = n; }
+      if (o.recup_secondes !== undefined) { const n = entier(o.recup_secondes, 15, 600); if (!n) return refus('recup_secondes : un entier de 15 à 600.'); spec.recupSecondes = n; }
+      if (o.allure !== undefined) { const v = lireAllure(o.allure); if (v === null) return refus('allure : une allure au format m:ss par km entre 2:30 et 15:00 (par exemple « 4:30 »).'); spec.allure = v; }
+      if (genre === 'intervalles' && (!spec.reps || !spec.metres)) return refus('intervalles : donne reps ET metres (par exemple 5 répétitions de 600 m).');
+      if ((genre === 'tempo_continu' || genre === 'footing' || genre === 'sortie_longue') && !spec.minutes) return refus('minutes : la durée est nécessaire pour ce genre de séance.');
+      return { ok: true, params: { intention: motif, seance: spec } };
     },
   },
   {
