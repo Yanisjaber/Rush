@@ -11,7 +11,7 @@
 // ============================================================
 import { ajouterJours, dateValide, ecartJours, entre } from './dates-iso.ts';
 import { estFamilleCoach, MENU } from './menu-seances.ts';
-import { estSeanceDure, PLAFONDS, validerDeplacement, validerSeance } from './validateur.ts';
+import { estSeanceDure, HORIZON_TECHNIQUE_JOURS, validerDeplacement, validerSeance } from './validateur.ts';
 import type { ContexteValidation, Proposition } from './validateur.ts';
 
 export type TypeIndispo = 'maladie' | 'blessure' | 'indisponible';
@@ -34,7 +34,12 @@ export interface SeancePrevue {
   creeeParIa: boolean;
 }
 
-export const MAX_OPERATIONS = 16;
+/** Un plan peut être long (un an, environ 250 séances) : la limite de 16 opérations a été supprimée le 8 nov. 2026. Garde-fou technique seulement. */
+export const MAX_OPERATIONS = 600;
+/** La charge « prévue » d'un plan est montrée sur ce nombre de jours (une mesure d'affichage, pas une limite) */
+export const FENETRE_CHARGE_JOURS = 14;
+/** Jusqu'où le moteur cherche un jour libre pour déplacer une séance après un imprévu */
+export const HORIZON_REPLANIFICATION_JOURS = 60;
 /** Une période déclarée dure 60 jours au plus, et peut commencer jusqu'à 14 jours avant aujourd'hui (« blessé depuis lundi ») */
 export const MAX_JOURS_INDISPO = 60;
 export const MAX_JOURS_ARRIERE = 14;
@@ -116,7 +121,7 @@ export interface ResultatPlan {
 }
 
 function chargePrevue(seances: { date: string; tss: number | null }[], aujourdhui: string): number {
-  const fin = ajouterJours(aujourdhui, PLAFONDS.horizonJours);
+  const fin = ajouterJours(aujourdhui, FENETRE_CHARGE_JOURS);
   return Math.round(seances.filter((s) => s.date >= aujourdhui && s.date <= fin).reduce((t, s) => t + (s.tss ?? 0), 0));
 }
 
@@ -179,12 +184,12 @@ export function evaluerPlan(operations: Operation[], seances: SeancePrevue[], ba
   // 1 bis. Les jours de repos posés ou retirés par le plan, vérifiés et appliqués d'abord (comme les périodes)
   const repos = [...base.joursDeRepos];
   const reposPoses: string[] = [];
-  const limite = ajouterJours(base.aujourdhui, PLAFONDS.horizonJours);
+  const limite = ajouterJours(base.aujourdhui, HORIZON_TECHNIQUE_JOURS);
   for (const o of operations) {
     if (o.op !== 'repos') continue;
     const ligne = `${o.poser ? 'Poser un jour de repos' : 'Retirer le jour de repos'} : ${etiquetteDate(o.date)}`;
     if (!dateValide(o.date) || o.date < base.aujourdhui || o.date > limite) {
-      echec(ligne, `le jour doit être entre aujourd'hui et ${PLAFONDS.horizonJours} jours`);
+      echec(ligne, "le jour doit être valide, et pas dans le passé");
     } else if (o.poser) {
       if (repos.includes(o.date)) echec(ligne, 'ce jour est déjà un jour de repos');
       else if (base.competitions.some((c) => c.date === o.date)) echec(ligne, 'tu as une compétition ce jour-là');
@@ -304,8 +309,9 @@ function versionReduite(s: SeancePrevue, jour: string, facteur: number): Proposi
   if (!estFamilleCoach(s.sport)) return null;
   const type = MENU[s.sport].find((t) => t.cle === TYPE_REPRISE[s.sport as string]);
   if (!type) return null;
-  const voulu = s.minutes ? Math.round((s.minutes * facteur) / 5) * 5 : type.minMinutes;
-  return { date: jour, sport: s.sport, type: type.cle, minutes: Math.min(type.maxMinutes, Math.max(type.minMinutes, voulu)) };
+  // Durée libre : la moitié (ou 70 %) de la séance d'origine, sans arrondi ni bornes, au moins 10 minutes
+  const minutes = s.minutes ? Math.max(10, Math.round(s.minutes * facteur)) : 30;
+  return { date: jour, sport: s.sport, type: type.cle, minutes };
 }
 
 /**
@@ -350,7 +356,7 @@ export function proposerReplanification(c: Contraintes, seances: SeancePrevue[],
   };
 
   const aujourdhui = base.aujourdhui;
-  const horizon = ajouterJours(aujourdhui, PLAFONDS.horizonJours);
+  const horizon = ajouterJours(aujourdhui, HORIZON_REPLANIFICATION_JOURS);
   const triees = [...seances].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
   const touchees = triees.filter((s) => motifDeplacement(s) !== null);
   const idsTouchees = new Set(touchees.map((s) => s.id));
@@ -389,7 +395,7 @@ export function proposerReplanification(c: Contraintes, seances: SeancePrevue[],
         break;
       }
     }
-    if (!fait) ops.push({ op: 'supprimer', seanceId: s.id, raison: `${raison} ; aucun jour libre qui respecte tes règles d'ici ${PLAFONDS.horizonJours} jours` });
+    if (!fait) ops.push({ op: 'supprimer', seanceId: s.id, raison: `${raison} ; aucun jour libre d'ici ${HORIZON_REPLANIFICATION_JOURS} jours` });
   }
   return ops;
 }

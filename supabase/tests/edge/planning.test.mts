@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { etiquetteDate, evaluerPlan, MAX_OPERATIONS, proposerReplanification, seancesDepuisResume } from '../../functions/_shared/planning.ts';
 import type { Contraintes, Operation, SeancePrevue } from '../../functions/_shared/planning.ts';
-import { estSeanceDure, REGLAGES_DEFAUT, validerDeplacement } from '../../functions/_shared/validateur.ts';
+import { estSeanceDure, validerDeplacement } from '../../functions/_shared/validateur.ts';
 import type { ContexteValidation } from '../../functions/_shared/validateur.ts';
 import type { DecisionGardeFou } from '../../functions/_shared/garde-fou.ts';
 import { ajouterJours, entre } from '../../functions/_shared/dates-iso.ts';
@@ -24,9 +24,9 @@ const SEANCES = [S1, S2, S3, S4, S5];
 
 function ctx(sur: Partial<ContexteValidation> = {}, seances: SeancePrevue[] = SEANCES): ContexteValidation {
   return {
-    aujourdhui: AUJ, ctl: 40, referenceHebdoTss: 600, joursPasses: [], prevues: seances.map((s) => ({ date: s.date, tss: s.tss })),
-    indisponibilites: [], joursDeRepos: [], competitions: [], plusLongueMinutes: { velo: 180, course: 90, natation: 45 },
-    gardeFou: LIBRE, reglages: { ...REGLAGES_DEFAUT }, ...sur,
+    aujourdhui: AUJ, ctl: 40, joursPasses: [], prevues: seances.map((s) => ({ date: s.date, tss: s.tss })),
+    indisponibilites: [], joursDeRepos: [], competitions: [], 
+    gardeFou: LIBRE, ...sur,
   };
 }
 const par = (ops: Operation[], op: Operation['op']) => ops.filter((o) => o.op === op);
@@ -55,13 +55,14 @@ test('etiquetteDate : jour de la semaine et jour/mois', () => {
 });
 
 // ---------- Déplacer une séance ----------
-test('validerDeplacement : jour libre accepté ; même jour, passé, hors horizon refusés', () => {
+test('validerDeplacement : jour libre accepté ; même jour, passé, la date absurde refusée', () => {
   const sans = SEANCES.filter((s) => s.id !== S4.id);
   const c = ctx({}, sans);
   assert.equal(validerDeplacement(S4, '2026-11-16', c).ok, true);
   assert.deepEqual(validerDeplacement(S4, '2026-11-12', c).erreurs.map((e) => e.code), ['meme_jour']);
   assert.ok(validerDeplacement(S4, '2026-11-05', c).erreurs.some((e) => e.code === 'date_passee'));
-  assert.ok(validerDeplacement(S4, '2026-11-25', c).erreurs.some((e) => e.code === 'date_trop_loin'));
+  assert.equal(validerDeplacement(S4, '2026-12-25', c).ok, true, 'plus d\'horizon de 14 jours');
+  assert.ok(validerDeplacement(S4, '2031-11-25', c).erreurs.some((e) => e.code === 'date_absurde'));
   assert.ok(validerDeplacement(S4, 'demain', c).erreurs.some((e) => e.code === 'date_invalide'));
 });
 
@@ -76,12 +77,10 @@ test('validerDeplacement : indisponibilité, repos posé, compétition, veille d
   assert.ok(validerDeplacement({ ...S3 }, '2026-11-19', ctx({ competitions: [{ date: '2026-11-20' }], joursDeRepos: [] }, SEANCES.filter((s) => s.id !== S3.id))).erreurs.some((e) => e.code === 'veille_competition'));
 });
 
-test('validerDeplacement : deux jours durs de suite et semaine trop chargée refusés', () => {
+test('validerDeplacement : plus de jours durs d\'affilée ni de limite de charge', () => {
   const sans = SEANCES.filter((s) => s.id !== S4.id);
-  // le 11/11 est collé à la séance dure du 10/11 (80 points) : deux jours durs d'affilée
-  assert.ok(validerDeplacement(S4, '2026-11-11', ctx({}, sans)).erreurs.some((e) => e.code === 'dures_affilee'));
-  // semaine plafonnée : base de 100 points, la séance de 150 points ne passe pas
-  assert.ok(validerDeplacement(S5, '2026-11-17', ctx({ referenceHebdoTss: 100 }, SEANCES.filter((s) => s.id !== S5.id))).erreurs.some((e) => e.code.startsWith('hausse_hebdo')));
+  assert.equal(validerDeplacement(S4, '2026-11-11', ctx({}, sans)).ok, true);
+  assert.equal(validerDeplacement(S5, '2026-11-17', ctx({}, SEANCES.filter((s) => s.id !== S5.id))).ok, true);
 });
 
 test('validerDeplacement : le garde-fou santé a le dernier mot (repos : rien ; prudence : pas de séance dure)', () => {
@@ -164,17 +163,11 @@ test('evaluerPlan : garde-fou « repos » — supprimer et déclarer une périod
 });
 
 test('evaluerPlan : ajouter est validé APRÈS les suppressions du même plan (le calendrier simulé change)', () => {
-  // base de 250 points par semaine : plafond à 275. Semaine du 09/11 au 15/11 : S3 (80) + S4 (80) + S5 (150) = 310 déjà prévus.
-  const c = ctx({ referenceHebdoTss: 250 }, SEANCES);
-  const ajout: Operation = { op: 'ajouter', proposition: { date: '2026-11-15', sport: 'velo', type: 'endurance', minutes: 120 }, justification: 'Entretien.' };
-  const seul = evaluerPlan([ajout], SEANCES, c);
-  assert.equal(seul.ok, false);
-  assert.match(seul.erreurs.join(' '), /semaine/);
-  // en retirant la sortie longue du 14/11 (150 points) dans le même plan : 80 + 80 + 100 = 260, sous le plafond
+  const c = ctx({}, SEANCES);
+  const ajout: Operation = { op: 'ajouter', proposition: { date: S5.date, sport: 'velo', type: 'endurance', minutes: 67 }, justification: 'Entretien.' };
   const avecSuppression = evaluerPlan([{ op: 'supprimer', seanceId: S5.id }, ajout], SEANCES, c);
   assert.equal(avecSuppression.ok, true, avecSuppression.erreurs.join('|'));
-  // l'ordre compte : l'ajout placé AVANT la suppression est vérifié sur l'ancien calendrier et refusé
-  assert.equal(evaluerPlan([ajout, { op: 'supprimer', seanceId: S5.id }], SEANCES, c).ok, false);
+  assert.equal(evaluerPlan([ajout], SEANCES, c).ok, true, 'une durée de 67 min est libre');
 });
 
 // ---------- Le moteur ----------
@@ -194,11 +187,9 @@ test('moteur : blessure de 10 jours — tout est réglé, la reprise est courte 
   // chaque ajout est une version courte (50 %) et facile (zone 2) de la séance qu'elle remplace
   const ajouts = par(ops, 'ajouter') as Extract<Operation, { op: 'ajouter' }>[];
   assert.ok(ajouts.length >= 1);
-  assert.deepEqual(ajouts.map((a) => `${a.proposition.sport}:${a.proposition.type}:${a.proposition.minutes}`), ['course:footing_facile:30', 'velo:endurance:60', 'course:footing_facile:30']);
+  assert.deepEqual(ajouts.map((a) => `${a.proposition.sport}:${a.proposition.type}:${a.proposition.minutes}`), ['course:footing_facile:30', 'velo:endurance:60', 'course:footing_facile:23', 'velo:endurance:45', 'velo:endurance:90']);
   // le moteur ne crée jamais plus de séances qu'il n'en retire
   assert.ok(ajouts.length <= par(ops, 'supprimer').length);
-  // celles qui n'ont pas de place sont supprimées avec la raison
-  assert.ok(par(ops, 'supprimer').some((o) => /aucun jour libre/.test((o as { raison?: string }).raison ?? '')));
   assert.ok(r.chargeApres < r.chargeAvant);
 });
 
@@ -259,16 +250,17 @@ test('moteur : garde-fou « prudence » — une séance dure bloquée n\'est pas
   assert.equal(evaluerPlan(ops, SEANCES, c).ok, true);
 });
 
-test('moteur : sans aucune place dans les 14 jours, la séance est supprimée avec une raison claire', () => {
-  const c = ctx({ referenceHebdoTss: 60 });
-  const ops = proposerReplanification({ joursBloques: ['2026-11-14'] }, SEANCES, c);
+test('moteur : sans aucune place dans les 60 jours, la séance est supprimée avec une raison claire', () => {
+  const c = ctx();
+  const tous = Array.from({ length: 70 }, (_, n) => ajouterJours(AUJ, n)).filter((d) => d !== S5.date);
+  const ops = proposerReplanification({ joursBloques: tous.concat([S5.date]) }, SEANCES, c);
   const o = ops.find((x) => 'seanceId' in x && x.seanceId === S5.id) as Extract<Operation, { op: 'supprimer' }> | undefined;
   assert.equal(o?.op, 'supprimer');
   assert.match(o!.raison!, /aucun jour libre/);
 });
 
-test('moteur : toutes les opérations proposées tiennent dans l\'horizon de 14 jours', () => {
-  const limite = ajouterJours(AUJ, 14);
+test('moteur : toutes les opérations proposées tiennent dans l\'horizon de replanification', () => {
+  const limite = ajouterJours(AUJ, 60);
   for (const c of [blessure, { joursBloques: ['2026-11-12'] }, { sportsExclus: { sports: ['velo', 'course'], du: '2026-11-06', au: '2026-11-13' } }] as Contraintes[]) {
     for (const o of proposerReplanification(c, SEANCES, ctx())) {
       if (o.op === 'deplacer') assert.ok(o.vers >= AUJ && o.vers <= limite);
@@ -308,7 +300,7 @@ test('repos : refusé si le jour est déjà un repos, une compétition, passé o
   assert.match(essai({ op: 'repos', date: '2026-11-16', poser: true }).erreurs.join(' '), /déjà un jour de repos/);
   assert.match(essai({ op: 'repos', date: '2026-11-18', poser: true }).erreurs.join(' '), /compétition/);
   assert.equal(essai({ op: 'repos', date: '2026-11-05', poser: true }).ok, false);
-  assert.equal(essai({ op: 'repos', date: '2026-11-25', poser: true }).ok, false);
+  assert.equal(essai({ op: 'repos', date: '2026-11-25', poser: true }).ok, true, 'plus d\'horizon de 14 jours');
   assert.equal(essai({ op: 'repos', date: '2026-02-31', poser: true }).ok, false);
   assert.match(essai({ op: 'repos', date: '2026-11-17', poser: false }).erreurs.join(' '), /n'est pas un jour de repos/);
   assert.equal(essai({ op: 'repos', date: '2026-11-16', poser: false }).ok, true);
@@ -342,12 +334,11 @@ test('repos : retirer un repos libère le jour pour une séance du même plan', 
   assert.equal(evaluerPlan([{ op: 'repos', date: '2026-11-17', poser: false }, ajout], SEANCES, c).ok, true);
 });
 
-test('plan : l\'ordre des opérations ne change pas le verdict — une semaine trop chargée est refusée dans tous les sens', () => {
-  // base 200 (limite 220 sur 7 jours) : trois séances de 100 points sur les jours 3, 4 et 1 font 260 sur la semaine qui finit le jour 4
-  const c = ctx({ referenceHebdoTss: 200, prevues: [] });
+test('plan : l\'ordre des opérations ne change pas le verdict — une semaine chargée passe dans tous les sens', () => {
+  const c = ctx({ prevues: [] });
   const ajout = (date: string, minutes: number): Operation => ({ op: 'ajouter', proposition: { date, sport: 'velo', type: 'endurance', minutes }, justification: 'x' });
   const ops = [ajout('2026-11-09', 120), ajout('2026-11-10', 120), ajout('2026-11-07', 120)];
   const permutations = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
   const verdicts = permutations.map((p) => evaluerPlan(p.map((i) => ops[i]), [], c).ok);
-  assert.deepEqual(new Set(verdicts), new Set([false]), `verdicts : ${verdicts.join(',')}`);
+  assert.deepEqual(new Set(verdicts), new Set([true]), `verdicts : ${verdicts.join(',')}`);
 });

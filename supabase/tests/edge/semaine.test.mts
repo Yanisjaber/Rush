@@ -6,7 +6,6 @@ import { habitudesDepuisResume, planifierSemaine, SEANCES_TOTAL_MAX } from '../.
 import type { DemandeSemaine, Habitude } from '../../functions/_shared/semaine.ts';
 import { evaluerPlan } from '../../functions/_shared/planning.ts';
 import type { Operation, SeancePrevue } from '../../functions/_shared/planning.ts';
-import { REGLAGES_DEFAUT } from '../../functions/_shared/validateur.ts';
 import type { ContexteValidation } from '../../functions/_shared/validateur.ts';
 import type { DecisionGardeFou } from '../../functions/_shared/garde-fou.ts';
 import { ajouterJours, ecartJours, entre, nomDuJour } from '../../functions/_shared/dates-iso.ts';
@@ -19,8 +18,8 @@ const REPOS: DecisionGardeFou = { niveau: 'repos', raisons: [], message: 'Repose
 
 function ctx(sur: Partial<ContexteValidation> = {}): ContexteValidation {
   return {
-    aujourdhui: AUJ, ctl: 40, referenceHebdoTss: 400, joursPasses: [], prevues: [], indisponibilites: [], joursDeRepos: [], competitions: [],
-    plusLongueMinutes: { velo: 180, course: 90, natation: 45 }, gardeFou: LIBRE, reglages: { ...REGLAGES_DEFAUT }, ...sur,
+    aujourdhui: AUJ, ctl: 40, joursPasses: [], prevues: [], indisponibilites: [], joursDeRepos: [], competitions: [],
+    gardeFou: LIBRE, ...sur,
   };
 }
 const HAB: Record<'velo' | 'course' | 'natation', Habitude> = {
@@ -125,22 +124,21 @@ test('garde-fou « prudence » : seulement du facile ; garde-fou « repos » : a
   assert.match(repos.abandons.join(' '), /Repose-toi/);
 });
 
-test('durées : d\'après l\'habitude de l\'utilisateur, arrondies à 5 minutes, dans la plage du type ; défaut raisonnable sans historique', () => {
+test('durées : d\'après l\'habitude de l\'utilisateur, en minutes entières, sans plage imposée ; défaut raisonnable sans historique', () => {
   const p = ajouts(plan(VC).operations);
-  assert.ok(p.every((x) => x.minutes % 5 === 0));
+  assert.ok(p.every((x) => Number.isInteger(x.minutes) && x.minutes >= 1));
   const facileVelo = p.find((x) => x.sport === 'velo' && x.type === 'endurance');
   assert.equal(facileVelo?.minutes, 90, 'sa moyenne');
   const nat = ajouts(plan({ sports: [{ sport: 'natation', seances: 2 }] }).operations);
-  assert.deepEqual(nat.map((x) => x.minutes), [30, 30], 'défaut natation sans historique');
+  assert.ok(nat.length === 2 && nat.every((x) => x.minutes > 0), 'défaut natation sans historique');
 });
 
-test('charge trop haute : les séances qui dépassent la limite sont raccourcies, puis abandonnées avec la raison — et le plan reste valide', () => {
-  const c = ctx({ referenceHebdoTss: 100 });
+test('plus de limite de charge : trois séances de vélo sont toutes placées, sans abandon', () => {
+  const c = ctx();
   const r = plan({ sports: [{ sport: 'velo', seances: 3 }] }, c);
-  assert.ok(r.abandons.length >= 1);
-  assert.match(r.abandons[0], /trop chargée/);
+  assert.equal(r.abandons.length, 0);
+  assert.equal(ajouts(r.operations).length, 3);
   assert.equal(evaluerPlan(r.operations, [], c).ok, true);
-  assert.ok(ajouts(r.operations).length >= 1);
 });
 
 test('la veille d\'une compétition : jamais de qualité ni de sortie longue', () => {
@@ -151,17 +149,15 @@ test('la veille d\'une compétition : jamais de qualité ni de sortie longue', (
   assert.ok(p.every((x) => x.date !== '2026-11-14'));
 });
 
-test('fenêtre : demain par défaut, un début donné est respecté, un début passé retombe sur demain, au-delà de 14 jours = refus clair', () => {
+test('fenêtre : demain par défaut, un début donné est respecté, un début passé retombe sur demain, un début lointain est accepté, une date absurde refusée', () => {
   assert.ok(ajouts(plan({ sports: [{ sport: 'course', seances: 2 }] }).operations).every((x) => x.date >= '2026-11-07'));
   const dec = ajouts(plan({ sports: [{ sport: 'course', seances: 2 }], debut: '2026-11-10', jours: 5 }).operations);
   assert.ok(dec.every((x) => entre(x.date, '2026-11-10', '2026-11-14')));
   const passe = ajouts(plan({ sports: [{ sport: 'course', seances: 2 }], debut: '2026-10-01' }).operations);
   assert.ok(passe.every((x) => x.date >= '2026-11-07'));
-  const loin = plan({ sports: [{ sport: 'course', seances: 2 }], debut: '2026-12-25' });
-  assert.deepEqual(loin.operations, []);
-  assert.match(loin.abandons[0], /14 jours à l'avance/);
-  const coupe = ajouts(plan({ sports: [{ sport: 'course', seances: 3 }], debut: '2026-11-18', jours: 14 }).operations);
-  assert.ok(coupe.every((x) => x.date <= '2026-11-20'), 'jamais au-delà de l\'horizon');
+  const loin = ajouts(plan({ sports: [{ sport: 'course', seances: 2 }], debut: '2026-12-25' }).operations);
+  assert.ok(loin.length === 2 && loin.every((x) => x.date >= '2026-12-25'), 'plus d\'horizon de 14 jours');
+  assert.deepEqual(plan({ sports: [{ sport: 'course', seances: 2 }], debut: '2032-01-01' }).operations, []);
 });
 
 test('deux semaines : au moins deux jours de repos, séances sur les deux semaines', () => {
@@ -196,42 +192,32 @@ test('les justifications sont écrites par le code (jamais par le modèle), cour
   assert.ok(new Set(ops.map((o) => o.justification)).size >= 2);
 });
 
-test('ajouter la semaine à un calendrier déjà chargé : la charge existante compte dans la limite', () => {
+test('ajouter la semaine à un calendrier déjà chargé : le plan reste valide', () => {
   const deja: SeancePrevue[] = [
     { id: '00000000-0000-4000-8000-000000000401', date: '2026-11-09', sport: 'velo', minutes: 180, tss: 150, creeeParIa: false },
     { id: '00000000-0000-4000-8000-000000000402', date: '2026-11-11', sport: 'course', minutes: 90, tss: 90, creeeParIa: false },
   ];
-  const c = ctx({ referenceHebdoTss: 250, prevues: deja.map((s) => ({ date: s.date, tss: s.tss })) });
+  const c = ctx({ prevues: deja.map((s) => ({ date: s.date, tss: s.tss })) });
   const r = plan(VC, c, deja);
   const ev = evaluerPlan(r.operations, deja, c);
   assert.equal(ev.ok, true, ev.erreurs.join('|'));
-  // chaque séance ajoutée respecte la limite de SA semaine glissante (7 jours qui finissent ce jour-là) : 250 × 1,1 = 275
-  const parJour = new Map<string, number>(deja.map((x) => [x.date, x.tss ?? 0]));
-  for (const p of ajouts(r.operations)) parJour.set(p.date, (parJour.get(p.date) ?? 0) + tssEstime(typeSeance(p.sport, p.type)!, p.minutes));
-  for (const p of ajouts(r.operations)) {
-    let somme = 0;
-    for (let i = 0; i < 7; i++) somme += parJour.get(ajouterJours(p.date, -i)) ?? 0;
-    assert.ok(somme <= 275, `semaine finissant le ${p.date} : ${somme}`);
-  }
   assert.ok(ajouts(r.operations).length >= 1);
 });
 
-test('un jour qui ne passe pas la limite de charge : la séance essaie les AUTRES jours libres avant d\'être abandonnée', () => {
-  // Une grosse semaine passée pèse sur les premiers jours de la fenêtre : le dimanche 8 refuse, mais plus tard dans la semaine ça passe
+test('après une grosse semaine passée : les séances sont quand même placées, sur des jours différents', () => {
   const passes = [0, 1, 2, 3, 4, 5].map((n) => ({ date: ajouterJours(AUJ, -n), tss: 70 }));
-  const c = ctx({ referenceHebdoTss: 200, joursPasses: passes });
+  const c = ctx({ joursPasses: passes });
   const r = plan({ sports: [{ sport: 'course', seances: 3 }], intensite: 'facile' }, c);
   const p = ajouts(r.operations);
   assert.equal(p.length, 3, `${p.length} séances placées, abandons : ${r.abandons.join(' | ')}`);
-  assert.equal(r.abandons.length, 0);
   assert.equal(new Set(p.map((x) => x.date)).size, 3);
   assert.equal(evaluerPlan(r.operations, [], c).ok, true);
 });
 
-test('quand AUCUN jour ne convient, la séance est quand même abandonnée avec la raison (pas de boucle, pas de séance forcée)', () => {
-  const c = ctx({ referenceHebdoTss: 60, joursPasses: [0, 1, 2, 3, 4, 5, 6].map((n) => ({ date: ajouterJours(AUJ, -n), tss: 60 })) });
+test('quand AUCUN jour ne convient (repos partout), la séance est abandonnée avec la raison', () => {
+  const jours = Array.from({ length: 70 }, (_, n) => ajouterJours(AUJ, n));
+  const c = ctx({ joursDeRepos: jours });
   const r = plan({ sports: [{ sport: 'velo', seances: 2 }] }, c);
+  assert.deepEqual(ajouts(r.operations), []);
   assert.ok(r.abandons.length >= 1);
-  assert.match(r.abandons[0], /trop chargée|limite/);
-  assert.equal(evaluerPlan(r.operations, [], c).ok, true);
 });

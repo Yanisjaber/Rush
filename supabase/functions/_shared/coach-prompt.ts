@@ -42,7 +42,7 @@ LES CONNAISSANCES
 LES SÉANCES
 - Pour proposer une séance, tu utilises l'outil proposer_seance. Tu ne peux JAMAIS ajouter une séance toi-même : l'utilisateur la voit sous forme de carte et l'ajoute lui-même en tapant sur Ajouter. Ne dis donc jamais que c'est ajouté.
 - Une carte à la fois dans la plupart des cas, trois au maximum. Tu n'en proposes que si l'utilisateur le demande ou si c'est clairement utile.
-- Les dates vont d'aujourd'hui à 14 jours au plus. Tu respectes les périodes d'indisponibilité, les jours de repos et les réglages de l'utilisateur donnés dans le contexte.
+- Tu respectes les périodes d'indisponibilité et les jours de repos donnés dans le contexte. Les durées sont libres : tu choisis celle qui va avec la forme de l'utilisateur.
 - Si l'outil refuse une séance, tu lis la raison et tu corriges (autre jour, plus court, plus facile), ou tu expliques le problème à l'utilisateur. Tu ne contournes jamais une règle.
 - Si la demande est floue (quel sport ? quel jour ?), tu poses d'abord une question courte.
 - Pour modifier une séance déjà proposée, tu proposes une nouvelle carte.
@@ -54,7 +54,7 @@ ACTIONS DANS L'APPLICATION
 
 LES DATES
 - Le contexte contient prochains_jours : chaque date des 15 prochains jours avec son jour de la semaine. Quand l'utilisateur dit « demain », « jeudi » ou « samedi prochain », tu LIS cette table pour trouver la date. Tu ne calcules jamais une date ni un jour de la semaine toi-même.
-- Si le jour demandé n'est pas dans la table (plus de 14 jours), tu le dis : tu ne planifies qu'à 14 jours au plus.
+- Si l'utilisateur donne une date exacte plus lointaine (« le 12 décembre »), tu l'écris telle quelle. S'il donne un jour de la semaine lointain (« dans trois semaines, un mardi »), tu poses la question plutôt que de calculer.
 
 LES IMPRÉVUS ET LES MODIFICATIONS DU PLANNING
 - Quand l'utilisateur annonce un imprévu (blessure, maladie, voyage, manque de temps, un sport à éviter), tu appelles proposer_replanification avec les contraintes. L'application calcule le nouveau plan : tu n'inventes pas de déplacements toi-même. Les dates sont au format AAAA-MM-JJ, calculées à partir de la date du jour du contexte.
@@ -70,7 +70,7 @@ CE QUE TU NE FAIS PAS
 
 /** La liste fermée des types de séance, par sport, rappelée au modèle dans la description de l'outil */
 function descriptionMenu(): string {
-  return FAMILLES_COACH.map((sport) => `${sport} : ${MENU[sport].map((t) => `${t.cle} (zone ${t.zone}, ${t.minMinutes}-${t.maxMinutes} min)`).join(', ')}`).join(' ; ');
+  return FAMILLES_COACH.map((sport) => `${sport} : ${MENU[sport].map((t) => `${t.cle} (zone ${t.zone})`).join(', ')}`).join(' ; ');
 }
 
 /** Toutes les clés de type, sans doublon (le schéma ne sait pas dire « selon le sport » : la combinaison sport + type est vérifiée par le code) */
@@ -89,10 +89,10 @@ export const OUTIL_PROPOSER_SEANCE: OutilModele = {
   input_schema: {
     type: 'object',
     properties: {
-      date: { type: 'string', description: "Jour de la séance, au format AAAA-MM-JJ, entre aujourd'hui et 14 jours." },
+      date: { type: 'string', description: 'Jour de la séance, au format AAAA-MM-JJ, à partir d\'aujourd\'hui.' },
       sport: { type: 'string', enum: [...FAMILLES_COACH] },
       type: { type: 'string', enum: toutesLesCles(), description: 'Un type du menu de ce sport.' },
-      minutes: { type: 'integer', description: 'Durée en minutes, dans la plage du type choisi.' },
+      minutes: { type: 'integer', description: 'Durée en minutes, un nombre entier : elle est libre, choisis celle qui convient à la forme de l\'utilisateur.' },
       justification: { type: 'string', description: "Une phrase, 200 caractères au plus, qui dit pourquoi cette séance (en français, tutoiement)." },
     },
     required: ['date', 'sport', 'type', 'minutes', 'justification'],

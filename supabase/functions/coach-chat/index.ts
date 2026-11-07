@@ -35,17 +35,10 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const TAILLE_MAX_CORPS = 10_000;
 
-function entierEnv(nom: string, defaut: number): number {
-  const n = Number(Deno.env.get(nom));
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : defaut;
-}
-
 function configDepuisEnv(): Config {
   return {
     ...CONFIG_PAR_DEFAUT,
     modele: Deno.env.get('COACH_MODELE') || CONFIG_PAR_DEFAUT.modele,
-    messagesParJour: entierEnv('COACH_MESSAGES_PAR_JOUR', CONFIG_PAR_DEFAUT.messagesParJour),
-    budgetMicroUsd: entierEnv('COACH_BUDGET_MICRO_USD', CONFIG_PAR_DEFAUT.budgetMicroUsd),
   };
 }
 

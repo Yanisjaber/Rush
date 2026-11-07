@@ -34,8 +34,8 @@ import { tssEstime, typeSeance } from './menu-seances.ts';
 import type { FamilleCoach } from './menu-seances.ts';
 import { ajouterUsage, ErreurModele, USAGE_NUL } from './modele.ts';
 import type { AppelModele, AppelOutil, ClientModele, MessageModele, Usage } from './modele.ts';
-import { normaliserReglages, validerSeance } from './validateur.ts';
-import type { ContexteValidation, Proposition, ReglagesCoach } from './validateur.ts';
+import { validerSeance } from './validateur.ts';
+import type { ContexteValidation, Proposition } from './validateur.ts';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Libre = any;
@@ -53,16 +53,16 @@ export class ErreurCoach extends Error {
 
 export interface Config {
   modele: string;
-  messagesParJour: number;
-  /** Coupe-circuit : dépense maximale du mois pour TOUS les comptes, en millionièmes de dollar (10 $ = 10 000 000) */
-  budgetMicroUsd: number;
   /** Nombre de messages récents renvoyés en entier au modèle */
   fenetre: number;
   /** Au-delà de ce nombre de messages non résumés, les plus anciens passent dans le résumé */
   seuilResume: number;
 }
 
-export const CONFIG_PAR_DEFAUT: Config = { modele: MODELE_PAR_DEFAUT, messagesParJour: 30, budgetMicroUsd: 10_000_000, fenetre: 20, seuilResume: 40 };
+/** Un message de l'utilisateur : la taille que la base accepte (plus de limite de 2000 caractères depuis le 8 nov. 2026) */
+export const LONGUE_MESSAGE_MAX = 8000;
+
+export const CONFIG_PAR_DEFAUT: Config = { modele: MODELE_PAR_DEFAUT, fenetre: 20, seuilResume: 40 };
 
 export interface SignauxSante {
   evenements: DonneesGardeFou['evenements'];
@@ -78,11 +78,7 @@ export interface LigneSeancePrevue {
 /** Tout ce que le chat lit et écrit en base. Implémentation réelle : coach-chat/stockage.ts. Chaque méthode reçoit l'identifiant vérifié de l'utilisateur. */
 export interface StockageCoach {
   aAcces(userId: string): Promise<boolean>;
-  lireReglages(userId: string): Promise<{ accord: boolean; categories: string[]; seuils: unknown } | null>;
-  /** Réserve un message du jour (atomique) : false = plafond atteint */
-  reserverMessage(userId: string, jour: string, max: number): Promise<boolean>;
-  /** Dépense du mois pour tous les comptes, en millionièmes de dollar. `mois` = « AAAA-MM-01 ». */
-  depenseDuMois(mois: string): Promise<number>;
+  lireReglages(userId: string): Promise<{ accord: boolean; categories: string[] } | null>;
   compter(userId: string, jour: string, usage: Usage, microUsd: number): Promise<void>;
   /** rpc_coach_resume, lu avec les droits de l'utilisateur */
   lireResume(userId: string, jour: string, categories: string[]): Promise<unknown>;
@@ -158,18 +154,16 @@ export function donneesGardeFou(jour: string, resume: Libre, signaux: SignauxSan
 }
 
 interface Preparation {
-  reglages: ReglagesCoach;
   resume: Libre;
   decision: DecisionGardeFou;
   ctx: ContexteValidation;
 }
 
-async function preparer(userId: string, jour: string, s: StockageCoach, categories: string[], seuils: unknown): Promise<Preparation> {
+async function preparer(userId: string, jour: string, s: StockageCoach, categories: string[]): Promise<Preparation> {
   const [resume, signaux] = await Promise.all([s.lireResume(userId, jour, categories), s.lireSignauxSante(userId, jour)]);
   if (!resume || typeof resume !== 'object') throw new ErreurCoach('donnees_indisponibles', 500, "Je n'arrive pas à lire tes données pour le moment.");
-  const reglages = normaliserReglages(seuils);
   const decision = evaluerGardeFou(donneesGardeFou(jour, resume, signaux));
-  return { reglages, resume, decision, ctx: contexteDepuisResume(resume, decision, reglages, jour) };
+  return { resume, decision, ctx: contexteDepuisResume(resume, decision, jour) };
 }
 
 // ---------- L'outil proposer_seance ----------
@@ -183,8 +177,8 @@ function lireProposition(input: unknown): { proposition: Proposition; justificat
 }
 
 const MAX_CARTES = 3;
-/** Un tour = un appel au modèle. Il faut de la place pour lire (1 tour), proposer (1 tour) et conclure. */
-const TOURS_MAX = 4;
+/** Un tour = un appel au modèle. Ce n'est plus une règle du produit mais un garde-fou technique contre une boucle d'outils sans fin (8 nov. 2026 : 4 → 12). */
+const TOURS_MAX = 12;
 
 interface EtatOutils {
   ctx: ContexteValidation;
@@ -204,7 +198,6 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
   if (!def || !def.disponible) return { contenu: "Cet outil n'existe pas.", erreur: true };
 
   if (def.niveau === 'lecture') {
-    if (nbLectures.n >= MAX_PAR_NIVEAU.lecture) return { contenu: `${MAX_PAR_NIVEAU.lecture} lectures au maximum par message : réponds avec ce que tu as.`, erreur: true };
     const lu = def.lire ? def.lire(appel.input) : { ok: false as const, erreur: 'Lecture non lisible.' };
     if (!lu.ok) return { contenu: `Paramètres invalides : ${lu.erreur}`, erreur: true };
     nbLectures.n++;
@@ -223,7 +216,6 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
   }
 
   if (def.niveau === 'direct') {
-    if (directes.length >= MAX_PAR_NIVEAU.direct) return { contenu: `${MAX_PAR_NIVEAU.direct} actions directes au maximum par message.`, erreur: true };
     const lu = def.lire ? def.lire(appel.input) : { ok: false as const, erreur: 'Action non lisible.' };
     if (!lu.ok) return { contenu: `Paramètres invalides : ${lu.erreur}`, erreur: true };
     directes.push({ nom: def.nom, params: lu.params });
@@ -314,21 +306,16 @@ export async function traiterMessage(userId: string, texteBrut: unknown, deps: D
   const { stockage: s, config, modele } = deps;
 
   const texte = typeof texteBrut === 'string' ? texteBrut.trim() : '';
-  if (!texte || texte.length > 2000) throw new ErreurCoach('message_invalide', 400, 'Ton message doit faire entre 1 et 2000 caractères.');
+  if (!texte || texte.length > LONGUE_MESSAGE_MAX) throw new ErreurCoach('message_invalide', 400, `Ton message doit faire entre 1 et ${LONGUE_MESSAGE_MAX} caractères.`);
 
   if (!(await s.aAcces(userId))) throw new ErreurCoach('acces_refuse', 403, "Le coach n'est pas encore ouvert pour ton compte.");
   const reglagesBrut = await s.lireReglages(userId);
   if (!reglagesBrut?.accord) throw new ErreurCoach('accord_requis', 403, "Avant de discuter, il faut que tu acceptes le partage de tes données avec le coach.");
 
+  // Plus de plafond de messages ni de coupe-circuit de dépense (supprimés le 8 nov. 2026). La dépense reste COMPTÉE (compter) mais ne bloque rien.
   const jour = jourLocal(deps.maintenant());
-  if ((await s.depenseDuMois(`${jour.slice(0, 7)}-01`)) >= config.budgetMicroUsd) {
-    throw new ErreurCoach('service_en_pause', 503, 'Le coach est indisponible pour le moment.');
-  }
-  if (!(await s.reserverMessage(userId, jour, config.messagesParJour))) {
-    throw new ErreurCoach('plafond_jour', 429, "Tu as atteint la limite de messages du jour. Reviens demain.");
-  }
 
-  const { reglages, resume, decision, ctx } = await preparer(userId, jour, s, reglagesBrut.categories, reglagesBrut.seuils);
+  const { resume, decision, ctx } = await preparer(userId, jour, s, reglagesBrut.categories);
 
   // Le garde-fou a parlé : réponse fixe, le modèle n'est pas appelé
   if (!decision.autoriserModele) {
@@ -343,7 +330,7 @@ export async function traiterMessage(userId: string, texteBrut: unknown, deps: D
   const memoire = await s.lireMemoire(userId);
   const depuis = await s.lireMessagesDepuis(userId, memoire?.jusqua ?? null);
   const historique = historiquePourModele(depuis.slice(-config.fenetre));
-  const contexte = blocContexte({ aujourdhui: jour, resume, memoire: memoire?.resume ?? null, reglages, decision });
+  const contexte = blocContexte({ aujourdhui: jour, resume, memoire: memoire?.resume ?? null, decision });
   let messages: MessageModele[] = avecMessageUtilisateur(historique, contexte, texte);
 
   const cartes: Carte[] = [];
@@ -496,9 +483,8 @@ async function appliquerPlanning(userId: string, carteId: string, carte: CartePl
   if (carte.etat !== 'proposee') throw new ErreurCoach('carte_non_ajoutable', 409, 'Cette carte ne peut plus être appliquée.');
 
   // Le calendrier a pu changer depuis la proposition : on revérifie TOUT le plan sur l'état d'aujourd'hui
-  const reglagesBrut = await s.lireReglages(userId);
   const jour = jourLocal(deps.maintenant());
-  const { ctx, resume } = await preparer(userId, jour, s, [], reglagesBrut?.seuils);
+  const { ctx, resume } = await preparer(userId, jour, s, []);
   const verdict = evaluerPlan(carte.operations, seancesDepuisResume(resume), ctx);
   if (!verdict.ok) {
     await s.changerEtatCarte(userId, carteId, 'proposee', 'refusee', verdict.erreurs[0]);
@@ -540,9 +526,8 @@ export async function ajouterCarte(userId: string, carteId: unknown, deps: Depen
   if (lue.carte.etat === 'en_cours') throw new ErreurCoach('deja_en_cours', 409, "Cette séance est déjà en train d'être ajoutée.");
   if (lue.carte.etat !== 'proposee') throw new ErreurCoach('carte_non_ajoutable', 409, 'Cette carte ne peut plus être ajoutée.');
 
-  const reglagesBrut = await s.lireReglages(userId);
   const jour = jourLocal(deps.maintenant());
-  const { ctx } = await preparer(userId, jour, s, [], reglagesBrut?.seuils);
+  const { ctx } = await preparer(userId, jour, s, []);
   const verdict = validerSeance(lue.carte.proposition, ctx);
   if (!verdict.ok) {
     await s.changerEtatCarte(userId, carteId, 'proposee', 'refusee', verdict.erreurs[0]?.message);

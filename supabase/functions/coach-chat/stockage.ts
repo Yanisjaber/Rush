@@ -33,22 +33,10 @@ export function creerStockage(sbUser: any, sbAdmin: any): StockageCoach {
     },
 
     async lireReglages(userId) {
-      const { data, error } = await sbUser.from('coach_reglages').select('accord_donnees, sante_categories, seuils').eq('user_id', userId).maybeSingle();
+      const { data, error } = await sbUser.from('coach_reglages').select('accord_donnees, sante_categories').eq('user_id', userId).maybeSingle();
       if (error) echec('lecture des réglages', error);
       if (!data) return null;
-      return { accord: data.accord_donnees === true, categories: Array.isArray(data.sante_categories) ? data.sante_categories : [], seuils: data.seuils };
-    },
-
-    async reserverMessage(userId, jour, max) {
-      const { data, error } = await sbAdmin.rpc('coach_reserver', { p_user: userId, p_jour: jour, p_max: max });
-      if (error) echec('réservation du message', error);
-      return data === true;
-    },
-
-    async depenseDuMois(mois) {
-      const { data, error } = await sbAdmin.from('coach_depense').select('micro_usd').eq('mois', mois).maybeSingle();
-      if (error) echec('lecture de la dépense', error);
-      return Number(data?.micro_usd ?? 0);
+      return { accord: data.accord_donnees === true, categories: Array.isArray(data.sante_categories) ? data.sante_categories : [] };
     },
 
     async compter(userId, jour, usage: Usage, microUsd) {

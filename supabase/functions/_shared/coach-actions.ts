@@ -50,8 +50,8 @@ function joursEntre(du: string, au: string): number {
   return Math.round((Date.parse(`${au}T00:00:00Z`) - Date.parse(`${du}T00:00:00Z`)) / 86_400_000);
 }
 
-/** Combien d'actions de chaque niveau dans un même message de réponse */
-export const MAX_PAR_NIVEAU: Record<NiveauAction, number> = { lecture: 4, direct: 3, carte: 3, confirmation: 1 };
+/** Combien de cartes de séance et de cartes à confirmer dans un même message (les lectures et les actions directes ne sont plus limitées, 8 nov. 2026) */
+export const MAX_PAR_NIVEAU = { carte: 3, confirmation: 1 } as const;
 
 // ---------- Petits lecteurs ----------
 

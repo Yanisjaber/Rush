@@ -8,11 +8,11 @@
 // avec la raison. Le résultat est un plan d'ajouts, vérifié et présenté sur UNE carte, comme tous les plans.
 // ============================================================
 import { ajouterJours, ecartJours, entre, nomDuJour } from './dates-iso.ts';
-import { MENU, PLAFOND_MINUTES } from './menu-seances.ts';
+import { MENU } from './menu-seances.ts';
 import type { FamilleCoach } from './menu-seances.ts';
 import { ctxAvec, etiquetteDate } from './planning.ts';
 import type { Operation, SeancePrevue } from './planning.ts';
-import { PLAFONDS, validerSeance } from './validateur.ts';
+import { HORIZON_TECHNIQUE_JOURS, validerSeance } from './validateur.ts';
 import type { ContexteValidation, Proposition } from './validateur.ts';
 
 export interface DemandeSemaine {
@@ -37,7 +37,13 @@ export interface Habitude {
 
 export const SEANCES_PAR_SPORT_MAX = 6;
 export const SEANCES_TOTAL_MAX = 10;
-const JOURS_MAX = 14;
+const JOURS_MAX = 60;
+/** Une bonne habitude du générateur (pas un refus du validateur) : au moins un jour sans séance sur chaque période de 7 jours */
+const REPOS_PAR_SEMAINE = 1;
+/** Une séance plus courte que ça n'a pas de sens : plancher des durées calculées */
+const DUREE_MINI = 15;
+/** La sortie longue n'est proposée que si la plus longue séance récente du sport atteint ce seuil (minutes) */
+const LONGUE_MINI: Record<FamilleCoach, number> = { velo: 120, course: 60, natation: 0 };
 
 const FACILE: Record<FamilleCoach, string> = { velo: 'endurance', course: 'footing_facile', natation: 'endurance' };
 const QUALITE: Record<FamilleCoach, string> = { velo: 'tempo', course: 'tempo', natation: 'seuil' };
@@ -55,7 +61,6 @@ const JUSTIFICATION: Record<Role, string> = {
   longue: 'Ta sortie longue de la semaine, à un rythme tranquille.',
 };
 
-const arrondi5 = (m: number) => Math.round(m / 5) * 5;
 const borner = (x: number, min: number, max: number) => Math.min(max, Math.max(min, x));
 
 /** Les habitudes de l'utilisateur par sport, lues dans le résumé (volume_par_sport) */
@@ -113,11 +118,11 @@ export interface ResultatSemaine {
 export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], base: ContexteValidation, habitudes: Record<FamilleCoach, Habitude>): ResultatSemaine {
   const abandons: string[] = [];
   const aujourdhui = base.aujourdhui;
-  const horizon = ajouterJours(aujourdhui, PLAFONDS.horizonJours);
+  const horizon = ajouterJours(aujourdhui, HORIZON_TECHNIQUE_JOURS);
   const debut = d.debut && d.debut > aujourdhui ? d.debut : d.debut === aujourdhui ? aujourdhui : ajouterJours(aujourdhui, 1);
   const jours = borner(Math.round(d.jours ?? 7), 1, JOURS_MAX);
   const fin = ajouterJours(debut, jours - 1) > horizon ? horizon : ajouterJours(debut, jours - 1);
-  if (debut > horizon) return { operations: [], abandons: [`Je planifie au plus ${PLAFONDS.horizonJours} jours à l'avance.`] };
+  if (debut > horizon) return { operations: [], abandons: ["Cette date est trop lointaine pour être vraie : vérifie l'année."] };
 
   // Les jours où une séance est possible : ni libre demandé, ni indisponible, ni repos, ni compétition, ni déjà occupé
   const pris = new Set(seances.map((s) => s.date));
@@ -133,7 +138,7 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
   const demandes = d.sports.filter((s) => s.seances > 0);
   let total = Math.min(SEANCES_TOTAL_MAX, demandes.reduce((t, s) => t + Math.min(SEANCES_PAR_SPORT_MAX, s.seances), 0));
   // Au moins un jour sans séance par semaine (le réglage de l'utilisateur) : on ne remplit jamais tous les jours
-  const reposMin = Math.max(1, base.reglages.reposMinParSemaine);
+  const reposMin = REPOS_PAR_SEMAINE;
   const maxSeances = Math.max(1, jours - Math.ceil(jours / 7) * reposMin - pris.size);
   if (total > maxSeances) {
     abandons.push(`Je limite à ${maxSeances} séance${maxSeances > 1 ? 's' : ''} : il te faut au moins ${reposMin} jour${reposMin > 1 ? 's' : ''} de repos par semaine.`);
@@ -164,7 +169,7 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
     for (const [sport, positions] of parSport) {
       const h = habitudes[sport];
       const typeLongue = LONGUE[sport] ? MENU[sport].find((t) => t.cle === LONGUE[sport]) : undefined;
-      const longuePossible = !!typeLongue && h.plusLongueMinutes !== null && h.plusLongueMinutes >= typeLongue.minMinutes * 0.8 && positions.length >= 2;
+      const longuePossible = !!typeLongue && h.plusLongueMinutes !== null && h.plusLongueMinutes >= LONGUE_MINI[sport] && positions.length >= 2;
       if (longuePossible) roles[positions[positions.length - 1]] = 'longue';
       const qualitePossible = base.ctl !== null && base.ctl >= CTL_MINI_QUALITE && positions.length >= 3;
       if (qualitePossible) roles[positions[Math.floor(positions.length / 2)]] = 'qualite';
@@ -182,12 +187,12 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
     [roles[i], roles[cible]] = [roles[cible], roles[i]];
   }
 
-  const duree = (sport: FamilleCoach, type: string, role: Role): number => {
-    const t = MENU[sport].find((x) => x.cle === type)!;
+  // Les durées sont LIBRES : d'après ce que l'utilisateur fait déjà (sa moyenne, sa plus longue séance), en minutes entières, sans arrondi ni borne de type
+  const duree = (sport: FamilleCoach, role: Role): number => {
     const h = habitudes[sport];
     const moyenne = h.moyenneMinutes ?? DUREE_PAR_DEFAUT[sport];
-    const voulu = role === 'longue' ? (h.plusLongueMinutes ?? t.minMinutes) * 1.05 : role === 'qualite' ? moyenne * 0.85 : moyenne;
-    return arrondi5(borner(voulu, t.minMinutes, Math.min(t.maxMinutes, PLAFOND_MINUTES[sport])));
+    const voulu = role === 'longue' ? (h.plusLongueMinutes ?? moyenne) * 1.05 : role === 'qualite' ? moyenne * 0.85 : moyenne;
+    return Math.max(DUREE_MINI, Math.round(voulu));
   };
 
   const operations: Operation[] = [];
@@ -200,18 +205,15 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
     const role = roles[i];
     const typeCle = role === 'longue' ? (LONGUE[sport] as string) : role === 'qualite' ? QUALITE[sport] : FACILE[sport];
 
-    /** Essaie de placer cette séance CE jour-là : d'abord telle quelle, puis raccourcie, puis adoucie. Renvoie la raison du premier refus, ou null si elle est placée. */
+    /** Essaie de placer cette séance CE jour-là, telle quelle, puis en version facile. Renvoie la raison du premier refus, ou null si elle est placée. */
     const tenter = (jour: string): string | null => {
       // La veille d'une compétition : jamais de qualité
       const veilleCompetition = base.competitions.some((c) => c.date === ajouterJours(jour, 1));
       const roleInitial: Role = veilleCompetition && role !== 'facile' ? 'facile' : role;
       const typeInitial = roleInitial === 'facile' ? FACILE[sport] : typeCle;
-      const minutes = duree(sport, typeInitial, roleInitial);
-      const tMin = MENU[sport].find((x) => x.cle === typeInitial)!.minMinutes;
-      const essais: { role: Role; type: string; minutes: number }[] = [{ role: roleInitial, type: typeInitial, minutes }];
-      for (const f of [0.85, 0.7]) essais.push({ role: roleInitial, type: typeInitial, minutes: Math.max(tMin, arrondi5(minutes * f)) });
-      // Dernier recours : la séance facile du sport, à sa durée minimale
-      essais.push({ role: 'facile', type: FACILE[sport], minutes: MENU[sport].find((x) => x.cle === FACILE[sport])!.minMinutes });
+      const essais: { role: Role; type: string; minutes: number }[] = [{ role: roleInitial, type: typeInitial, minutes: duree(sport, roleInitial) }];
+      // Dernier recours : la séance facile du sport
+      if (roleInitial !== 'facile') essais.push({ role: 'facile', type: FACILE[sport], minutes: duree(sport, 'facile') });
 
       let erreur = '';
       for (const e of essais) {
