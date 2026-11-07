@@ -87,8 +87,8 @@ export interface Niveau {
   fiabilite: Fiabilite;
 }
 
-/** Un effort récent n'est presque jamais maximal : on le convertit puis on le prend pour 7 % plus lent qu'un vrai effort de course */
-const EFFORT_RECENT_FACTEUR = 0.93;
+/** Un effort récent converti tel quel : sans correction optimiste (un test réel de Yanis a montré qu'enlever 7 % était trop beau) */
+const EFFORT_RECENT_FACTEUR = 1;
 /** Un vieux record vieillit de 1,5 % par mois d'ancienneté, 30 % au plus (on a perdu beaucoup de niveau) */
 const VIEILLISSEMENT_MENSUEL = 0.015;
 const VIEILLISSEMENT_MAX = 0.3;

@@ -36,8 +36,8 @@ test('niveau : fixé par les sorties des 90 derniers jours, JAMAIS par le record
   const n = niveauActuel(YANIS, 10.15, AUJ)!;
   assert.equal(n.fiabilite, 'recente');
   assert.match(n.source, /sorties récentes/);
-  // 6 km en 35:00 converti sur 10,15 km (≈ 1 h 01), pris pour 7 % plus lent qu'un vrai effort : autour de 57 min, très loin des 48:50 de l'ancien calcul
-  assert.ok(n.secondes > 3300 && n.secondes < 3500, String(n.secondes));
+  // 6 km en 35:00 converti sur 10,15 km : environ 1 h 01, très loin des 48:50 de l'ancien calcul fondé sur un chrono de 2024
+  assert.ok(n.secondes > 3550 && n.secondes < 3800, String(n.secondes));
   // sans sortie récente : le vieux record est très vieilli (+30 % après 2 ans), estimation « ancienne »
   const ancien = niveauActuel({ ...YANIS, effortRecent: null, recent: { ...YANIS.recent, sorties: 0 } }, 10.15, AUJ)!;
   assert.equal(ancien.fiabilite, 'ancienne');
@@ -137,7 +137,7 @@ test('plan de Yanis : le volume monte puis baisse à l\'affûtage ; la dernière
   assert.ok(longues[1] >= longues[0]);
 });
 test('une cible réaliste est confirmée, et sans cible le plan est calé sur le jouable', () => {
-  const facile = planifierCourse({ ...DEMANDE, tempsCibleMinutes: 55 }, [], ctx(), YANIS);
+  const facile = planifierCourse({ ...DEMANDE, tempsCibleMinutes: 62 }, [], ctx(), YANIS);
   assert.equal(facile.bilan?.verdict, 'realiste');
   assert.match(facile.message, /réaliste/);
   const sans = planifierCourse({ date: COURSE, km: 10.15 }, [], ctx(), YANIS);
