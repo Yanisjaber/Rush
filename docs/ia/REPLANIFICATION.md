@@ -54,6 +54,14 @@ Avant les imprévus, les demandes de tous les jours :
   - Ces repères (seuils, proportions) sont des pratiques de terrain, pas des lois : ils sont réunis en haut de `semaine.ts`.
 - **Jours de repos** : l'opération `repos` de `modifier_planning` pose (ou retire) un jour de repos. Règle dure : on ne pose pas un repos un jour où il reste une séance, sauf si le même plan la déplace ou la supprime. SQL : `supabase/migrations/2026-11-08_coach_repos.sql` (annulation comprise : seuls les repos posés par le coach sont retirés).
 
+## Premier essai réel avec Haiku (7 nov. 2026)
+
+Premier appel de bout en bout (vraie clé, vrai compte, 12 messages, environ 0,02 $ au total). Ce qu'il a appris :
+- **Les outils en `strict: true` étaient refusés par l'API** (bornes `minimum`/`maximum` des schémas). Retiré de `coach-chat/modele-anthropic.ts` : sans danger, le registre revalide chaque paramètre.
+- **Défaut du validateur trouvé** : il ne vérifiait que la semaine qui *finit* le jour de la séance ajoutée. Une séance posée avant d'autres déjà prévues pouvait faire dépasser leur semaine. Il regarde maintenant **toutes** les semaines glissantes qui contiennent le jour (charge et repos), donc l'ordre d'ajout ne change plus le verdict (tests `validateur.test.mts` et `planning.test.mts`).
+- **`planifier_semaine`** essaie les autres jours libres avant d'abandonner une séance : sur « trois footings, pas le mardi », elle est passée de 2 à 3 séances placées.
+- Constatés et bons : lecture de l'historique sur trois mois, niveau de preuve repris des fiches, refus d'ignorer les consignes, douleur à la poitrine (arrêt, médecin, 15 ou 112, aucune séance), mémoire de la conversation (le coach refuse de planifier de la course après une douleur à la poitrine signalée plus tôt).
+
 ## Dans l'app (`native/`)
 
 - **La carte de planning** (`src/components/coach/CartePlanningCoach.tsx`) est le mélange 7 + 2 + 3 des maquettes : interrupteur « Aujourd'hui / Avec le plan », calendrier de 3 semaines ou frise de 14 jours (`PlanApercu.tsx`), légende, détail ligne par ligne, puis « Valider le plan » (états : proposée, application en cours, appliquée avec « Annuler le plan » et « Voir au calendrier », refusée avec « Refaire le plan », annulée).
