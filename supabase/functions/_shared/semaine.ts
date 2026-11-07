@@ -192,35 +192,53 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
 
   const operations: Operation[] = [];
   let restantes: SeancePrevue[] = seances.map((s) => ({ ...s }));
-  joursChoisis.forEach((jour, i) => {
+  const noms = (sport: FamilleCoach) => (sport === 'velo' ? 'vélo' : sport === 'course' ? 'course' : 'natation');
+  const utilises = new Set<string>();
+
+  joursChoisis.forEach((jourChoisi, i) => {
     const sport = sports[i];
     const role = roles[i];
     const typeCle = role === 'longue' ? (LONGUE[sport] as string) : role === 'qualite' ? QUALITE[sport] : FACILE[sport];
-    // La veille d'une compétition : jamais de qualité
-    const veilleCompetition = base.competitions.some((c) => c.date === ajouterJours(jour, 1));
-    const essais: { role: Role; type: string; minutes: number }[] = [];
-    const roleInitial: Role = veilleCompetition && role !== 'facile' ? 'facile' : role;
-    const typeInitial = roleInitial === 'facile' ? FACILE[sport] : typeCle;
-    const minutes = duree(sport, typeInitial, roleInitial);
-    essais.push({ role: roleInitial, type: typeInitial, minutes });
-    const tMin = MENU[sport].find((x) => x.cle === typeInitial)!.minMinutes;
-    for (const f of [0.85, 0.7]) essais.push({ role: roleInitial, type: typeInitial, minutes: Math.max(tMin, arrondi5(minutes * f)) });
-    // Dernier recours : la séance facile du sport, à sa durée minimale
-    const facileMin = MENU[sport].find((x) => x.cle === FACILE[sport])!.minMinutes;
-    essais.push({ role: 'facile', type: FACILE[sport], minutes: facileMin });
 
-    let erreur = '';
-    for (const e of essais) {
-      const p: Proposition = { date: jour, sport, type: e.type, minutes: e.minutes };
-      const v = validerSeance(p, ctxAvec(base, restantes, base.indisponibilites));
-      if (v.ok) {
-        operations.push({ op: 'ajouter', proposition: p, justification: JUSTIFICATION[e.role] });
-        restantes = [...restantes, { id: `nouvelle-${operations.length}`, date: jour, sport, minutes: e.minutes, tss: v.tssEstime, creeeParIa: true }];
-        return;
+    /** Essaie de placer cette séance CE jour-là : d'abord telle quelle, puis raccourcie, puis adoucie. Renvoie la raison du premier refus, ou null si elle est placée. */
+    const tenter = (jour: string): string | null => {
+      // La veille d'une compétition : jamais de qualité
+      const veilleCompetition = base.competitions.some((c) => c.date === ajouterJours(jour, 1));
+      const roleInitial: Role = veilleCompetition && role !== 'facile' ? 'facile' : role;
+      const typeInitial = roleInitial === 'facile' ? FACILE[sport] : typeCle;
+      const minutes = duree(sport, typeInitial, roleInitial);
+      const tMin = MENU[sport].find((x) => x.cle === typeInitial)!.minMinutes;
+      const essais: { role: Role; type: string; minutes: number }[] = [{ role: roleInitial, type: typeInitial, minutes }];
+      for (const f of [0.85, 0.7]) essais.push({ role: roleInitial, type: typeInitial, minutes: Math.max(tMin, arrondi5(minutes * f)) });
+      // Dernier recours : la séance facile du sport, à sa durée minimale
+      essais.push({ role: 'facile', type: FACILE[sport], minutes: MENU[sport].find((x) => x.cle === FACILE[sport])!.minMinutes });
+
+      let erreur = '';
+      for (const e of essais) {
+        const p: Proposition = { date: jour, sport, type: e.type, minutes: e.minutes };
+        const v = validerSeance(p, ctxAvec(base, restantes, base.indisponibilites));
+        if (v.ok) {
+          operations.push({ op: 'ajouter', proposition: p, justification: JUSTIFICATION[e.role] });
+          restantes = [...restantes, { id: `nouvelle-${operations.length}`, date: jour, sport, minutes: e.minutes, tss: v.tssEstime, creeeParIa: true }];
+          utilises.add(jour);
+          return null;
+        }
+        if (!erreur) erreur = v.erreurs[0]?.message ?? '';
       }
-      if (!erreur) erreur = v.erreurs[0]?.message ?? '';
-    }
-    abandons.push(`${etiquetteDate(jour)} : je n'ai pas pu placer la séance de ${sport === 'velo' ? 'vélo' : sport === 'course' ? 'course' : 'natation'} (${erreur.replace(/\.$/, '')}).`);
+      return erreur;
+    };
+
+    const refus = tenter(jourChoisi);
+    if (refus === null) return;
+
+    // Le jour choisi ne passe pas : on essaie les autres jours libres, les plus proches d'abord, en évitant les jours collés à une autre séance
+    const autres = libres
+      .filter((j) => j !== jourChoisi && !utilises.has(j) && !joursChoisis.includes(j))
+      .map((j) => ({ j, colle: [...utilises, ...joursChoisis].some((u) => Math.abs(ecartJours(u, j)) === 1) ? 1 : 0, distance: Math.abs(ecartJours(jourChoisi, j)) }))
+      .sort((a, b) => a.colle - b.colle || a.distance - b.distance || a.j.localeCompare(b.j));
+    for (const { j } of autres) if (tenter(j) === null) return;
+
+    abandons.push(`${etiquetteDate(jourChoisi)} : je n'ai pas pu placer la séance de ${noms(sport)} (${refus.replace(/\.$/, '')}).`);
   });
 
   return { operations, abandons };

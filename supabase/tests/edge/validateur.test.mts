@@ -230,3 +230,29 @@ test('plusieurs problèmes : toutes les erreurs sont listées, avec un message l
   for (const e of r.erreurs) assert.ok(e.message.length > 10 && e.message.endsWith('.'));
   assert.equal(r.tssEstime, 125);
 });
+
+// ---------- Toutes les semaines glissantes qui contiennent le jour (défaut trouvé à l'essai réel du 7 nov. 2026) ----------
+test('charge : une séance ajoutée AVANT des séances déjà prévues est refusée si elle alourdit leur semaine, pas seulement la sienne', () => {
+  // base 200 : limite à 220 points sur 7 jours. Deux séances de 100 points les 3 et 4 : 200 sur la semaine qui finit le 4, c'est permis.
+  const c = ctx({ referenceHebdoTss: 200, prevues: [jour(3, 100), jour(4, 100)] });
+  // 60 points le jour 1 : la semaine qui FINIT le jour 1 ne fait que 60, mais celle qui finit le jour 4 ferait 260 (> 220)
+  const r = validerSeance(velo(ajouterJours(AUJ, 1), 'endurance', 70), c);
+  assert.equal(r.ok, false);
+  assert.ok(codes(r).includes('hausse_hebdo') || codes(r).includes('hausse_hebdo_plafond'), codes(r).join(','));
+  // la même séance APRÈS les deux autres est jugée de la même façon : l'ordre d'ajout ne change plus le verdict
+  const apres = validerSeance(velo(ajouterJours(AUJ, 5), 'endurance', 70), c);
+  assert.equal(apres.ok, false);
+  // et une séance qui tient dans toutes les semaines passe toujours
+  assert.equal(validerSeance(velo(ajouterJours(AUJ, 12), 'endurance', 70), c).ok, true);
+});
+
+test('repos : un jour de repos par semaine est exigé sur TOUTES les semaines glissantes qui contiennent la séance ajoutée', () => {
+  const c = ctx({ reglages: { ...REGLAGES_DEFAUT, reposMinParSemaine: 2 }, referenceHebdoTss: 2000, prevues: [2, 3, 4, 5, 6].map((n) => jour(n, 20)) });
+  // le jour 1 : la semaine qui finit ce jour-là n'a qu'une séance, mais celle qui finit le jour 6 en aurait six (un seul jour de repos)
+  const r = validerSeance(velo(ajouterJours(AUJ, 1), 'recuperation', 30), c);
+  assert.equal(r.ok, false);
+  assert.ok(codes(r).includes('repos_hebdo'), codes(r).join(','));
+  // avec un seul jour de repos exigé, c'est permis
+  const permis = ctx({ reglages: { ...REGLAGES_DEFAUT, reposMinParSemaine: 1 }, referenceHebdoTss: 2000, prevues: [2, 3, 4, 5, 6].map((n) => jour(n, 20)) });
+  assert.equal(validerSeance(velo(ajouterJours(AUJ, 1), 'recuperation', 30), permis).ok, true);
+});

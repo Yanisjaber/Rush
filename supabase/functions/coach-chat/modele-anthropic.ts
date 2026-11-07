@@ -8,7 +8,8 @@
 //   - effort « low » : la décision est cadrée, et la réflexion compte comme de la sortie (donc de l'argent) ;
 //   - pas de température ni de top_p (refusés par ce modèle) ;
 //   - cache de prompt sur le texte système, qui est identique d'un appel à l'autre ;
-//   - outils en `strict: true` : les paramètres respectent exactement le schéma. Le code les revalide quand même (coach-chat.ts).
+//   - PAS de `strict: true` sur les outils : l'API le refuse avec nos schémas (bornes minimum/maximum, tailles de listes). Ce n'est pas un
+//     risque : le registre (coach-actions.ts) relit et valide CHAQUE paramètre écrit par le modèle avant de s'en servir (essai réel du 7 nov.).
 //   - pas de nouvel essai du SDK (maxRetries 0) : le chat en fait un seul lui-même, et seulement si rien n'est parti vers l'utilisateur.
 // ============================================================
 import Anthropic from 'npm:@anthropic-ai/sdk@1.1.0';
@@ -49,7 +50,7 @@ export function creerClientAnthropic(opts: { apiKey: string; modele: string }): 
           model: opts.modele,
           max_tokens: appel.maxTokens,
           system: [{ type: 'text', text: appel.system, cache_control: { type: 'ephemeral' } }],
-          tools: appel.outils.map((o) => ({ ...o, input_schema: o.input_schema as Anthropic.Tool.InputSchema, strict: true })),
+          tools: appel.outils.map((o) => ({ ...o, input_schema: o.input_schema as Anthropic.Tool.InputSchema })),
           messages: appel.messages as Anthropic.MessageParam[],
           output_config: { effort: 'low' },
         });

@@ -157,27 +157,34 @@ function controlerCharge(
     if (c.competitions.some((x) => x.date === ajouterJours(date, 1))) echec('veille_competition', 'Pas de séance dure la veille d\'une compétition.');
   }
 
-  // 7. Hausse de charge : la semaine glissante qui se termine ce jour-là, comparée à la moyenne des 4 dernières semaines
-  const debutSemaine = ajouterJours(date, -6);
-  let chargeSemaine = 0;
-  let joursActifs = 0;
-  for (let i = 0; i < 7; i++) {
-    const t = avec.get(ajouterJours(debutSemaine, i)) ?? 0;
-    chargeSemaine += t;
-    if (t > 0) joursActifs++;
-  }
+  // 7 et 8. Charge et repos de la semaine. On regarde TOUTES les semaines glissantes de 7 jours qui contiennent ce jour (celle qui finit ce
+  // jour-là, mais aussi les six suivantes) : ajouter une séance avant d'autres déjà prévues alourdit leurs semaines à elles aussi, et un
+  // plan construit dans le désordre ne doit pas passer entre les mailles (défaut trouvé à l'essai réel du 7 nov. 2026).
   const ref = Math.max(0, c.referenceHebdoTss);
   // arrondis au dixième : 100 × 1,1 vaut 110,00000000000001 en virgule flottante, et une séance qui tombe pile sur la limite doit passer
   const plafondUtilisateur = Math.max(PLAFONDS.plancherHebdoTss, Math.round(ref * (1 + c.reglages.hausseHebdoMaxPct / 100) * 10) / 10);
   const plafondAbsolu = Math.max(PLAFONDS.plancherHebdoTss, Math.round(ref * (1 + PLAFONDS.hausseHebdoMaxPct / 100) * 10) / 10);
-  if (chargeSemaine > plafondAbsolu) {
-    echec('hausse_hebdo_plafond', `Ça ferait une semaine bien trop chargée (${Math.round(chargeSemaine)} points pour une base de ${Math.round(ref)}) : c'est au-dessus de la limite de sécurité.`);
-  } else if (chargeSemaine > plafondUtilisateur) {
-    echec('hausse_hebdo', `Ça ferait une semaine à ${Math.round(chargeSemaine)} points, alors que ta limite est à ${Math.round(plafondUtilisateur)} (+${c.reglages.hausseHebdoMaxPct} % sur tes 4 dernières semaines).`);
+  let pireCharge = 0;
+  let moinsDeRepos = 7;
+  for (let k = 0; k < 7; k++) {
+    const debutSemaine = ajouterJours(date, k - 6);
+    let chargeSemaine = 0;
+    let joursActifs = 0;
+    for (let i = 0; i < 7; i++) {
+      const t = avec.get(ajouterJours(debutSemaine, i)) ?? 0;
+      chargeSemaine += t;
+      if (t > 0) joursActifs++;
+    }
+    pireCharge = Math.max(pireCharge, chargeSemaine);
+    moinsDeRepos = Math.min(moinsDeRepos, 7 - joursActifs);
   }
-
-  // 8. Au moins N jours sans séance sur 7 jours glissants
-  if (7 - joursActifs < c.reglages.reposMinParSemaine) {
+  if (pireCharge > plafondAbsolu) {
+    echec('hausse_hebdo_plafond', `Ça ferait une semaine bien trop chargée (${Math.round(pireCharge)} points pour une base de ${Math.round(ref)}) : c'est au-dessus de la limite de sécurité.`);
+  } else if (pireCharge > plafondUtilisateur) {
+    echec('hausse_hebdo', `Ça ferait une semaine à ${Math.round(pireCharge)} points, alors que ta limite est à ${Math.round(plafondUtilisateur)} (+${c.reglages.hausseHebdoMaxPct} % sur tes 4 dernières semaines).`);
+  }
+  // Au moins N jours sans séance sur chaque période de 7 jours glissants
+  if (moinsDeRepos < c.reglages.reposMinParSemaine) {
     echec('repos_hebdo', `Il te faut au moins ${c.reglages.reposMinParSemaine} jour(s) sans séance sur 7 jours.`);
   }
 }

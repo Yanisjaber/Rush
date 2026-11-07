@@ -24,7 +24,7 @@ const SEANCES = [S1, S2, S3, S4, S5];
 
 function ctx(sur: Partial<ContexteValidation> = {}, seances: SeancePrevue[] = SEANCES): ContexteValidation {
   return {
-    aujourdhui: AUJ, ctl: 40, referenceHebdoTss: 400, joursPasses: [], prevues: seances.map((s) => ({ date: s.date, tss: s.tss })),
+    aujourdhui: AUJ, ctl: 40, referenceHebdoTss: 600, joursPasses: [], prevues: seances.map((s) => ({ date: s.date, tss: s.tss })),
     indisponibilites: [], joursDeRepos: [], competitions: [], plusLongueMinutes: { velo: 180, course: 90, natation: 45 },
     gardeFou: LIBRE, reglages: { ...REGLAGES_DEFAUT }, ...sur,
   };
@@ -340,4 +340,14 @@ test('repos : retirer un repos libère le jour pour une séance du même plan', 
   const ajout: Operation = { op: 'ajouter', proposition: { date: '2026-11-17', sport: 'course', type: 'footing_facile', minutes: 40 }, justification: 'x' };
   assert.equal(evaluerPlan([ajout], SEANCES, c).ok, false, 'jour de repos');
   assert.equal(evaluerPlan([{ op: 'repos', date: '2026-11-17', poser: false }, ajout], SEANCES, c).ok, true);
+});
+
+test('plan : l\'ordre des opérations ne change pas le verdict — une semaine trop chargée est refusée dans tous les sens', () => {
+  // base 200 (limite 220 sur 7 jours) : trois séances de 100 points sur les jours 3, 4 et 1 font 260 sur la semaine qui finit le jour 4
+  const c = ctx({ referenceHebdoTss: 200, prevues: [] });
+  const ajout = (date: string, minutes: number): Operation => ({ op: 'ajouter', proposition: { date, sport: 'velo', type: 'endurance', minutes }, justification: 'x' });
+  const ops = [ajout('2026-11-09', 120), ajout('2026-11-10', 120), ajout('2026-11-07', 120)];
+  const permutations = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+  const verdicts = permutations.map((p) => evaluerPlan(p.map((i) => ops[i]), [], c).ok);
+  assert.deepEqual(new Set(verdicts), new Set([false]), `verdicts : ${verdicts.join(',')}`);
 });

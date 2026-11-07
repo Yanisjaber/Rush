@@ -215,3 +215,23 @@ test('ajouter la semaine à un calendrier déjà chargé : la charge existante c
   }
   assert.ok(ajouts(r.operations).length >= 1);
 });
+
+test('un jour qui ne passe pas la limite de charge : la séance essaie les AUTRES jours libres avant d\'être abandonnée', () => {
+  // Une grosse semaine passée pèse sur les premiers jours de la fenêtre : le dimanche 8 refuse, mais plus tard dans la semaine ça passe
+  const passes = [0, 1, 2, 3, 4, 5].map((n) => ({ date: ajouterJours(AUJ, -n), tss: 70 }));
+  const c = ctx({ referenceHebdoTss: 200, joursPasses: passes });
+  const r = plan({ sports: [{ sport: 'course', seances: 3 }], intensite: 'facile' }, c);
+  const p = ajouts(r.operations);
+  assert.equal(p.length, 3, `${p.length} séances placées, abandons : ${r.abandons.join(' | ')}`);
+  assert.equal(r.abandons.length, 0);
+  assert.equal(new Set(p.map((x) => x.date)).size, 3);
+  assert.equal(evaluerPlan(r.operations, [], c).ok, true);
+});
+
+test('quand AUCUN jour ne convient, la séance est quand même abandonnée avec la raison (pas de boucle, pas de séance forcée)', () => {
+  const c = ctx({ referenceHebdoTss: 60, joursPasses: [0, 1, 2, 3, 4, 5, 6].map((n) => ({ date: ajouterJours(AUJ, -n), tss: 60 })) });
+  const r = plan({ sports: [{ sport: 'velo', seances: 2 }] }, c);
+  assert.ok(r.abandons.length >= 1);
+  assert.match(r.abandons[0], /trop chargée|limite/);
+  assert.equal(evaluerPlan(r.operations, [], c).ok, true);
+});
