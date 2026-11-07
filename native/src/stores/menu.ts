@@ -59,6 +59,13 @@ export function choisirFiltre(famille: string) {
   ecouteurs.forEach((fn) => fn());
 }
 
+/** Impose ce sport comme filtre (contrairement à choisirFiltre, ne revient pas à « Tous » s'il est déjà choisi). Un sport absent du menu est ignoré. */
+export function imposerFiltre(famille: string) {
+  if (famille === etat.filtre || !etat.familles.includes(famille)) return;
+  etat = { ...etat, filtre: famille };
+  ecouteurs.forEach((fn) => fn());
+}
+
 /** Le menu courant ; le filtre est déjà vérifié (un sport retiré du menu donne « tout »). */
 export function useMenu(): EtatMenu {
   const e = useSyncExternalStore(abonner, () => etat, () => etat);

@@ -1,6 +1,6 @@
 // Les mots affichés sur une carte de séance du coach. Le menu complet vit côté serveur (supabase/functions/_shared/menu-seances.ts) :
 // ici, seulement les noms. Un test (tests/coach/libelles.test.ts) vérifie que les deux listes restent les mêmes.
-import type { CarteSeance, EtatCarte } from './types.ts';
+import type { CarteSeance, CartePlanning, EtatCarte, LignePlan } from './types.ts';
 
 export const NOM_SPORT_COACH: Record<string, string> = { velo: 'Vélo', course: 'Course', natation: 'Natation' };
 
@@ -59,4 +59,61 @@ export const MOT_ETAT: Record<EtatCarte, string> = {
 export function descriptionCarte(c: CarteSeance): string {
   const p = c.proposition;
   return `Séance proposée, ${nomSport(p.sport)}, ${nomType(p.sport, p.type)}, ${dureeMinutes(p.minutes)}, ${jourCarte(p.date)}, charge estimée ${Math.round(c.tss_estime)} points. ${MOT_ETAT[c.etat]}.`;
+}
+
+// ---------- La carte de planning ----------
+
+/** Chaque état d'un plan se dit avec un MOT (jamais la couleur seule) */
+export const MOT_ETAT_PLAN: Record<EtatCarte, string> = {
+  proposee: 'En attente de ton accord',
+  en_cours: 'Application en cours…',
+  ajoutee: 'Appliqué à ton calendrier',
+  refusee: 'Refusé par les règles',
+  annulee: 'Plan annulé',
+};
+
+const NOM_PERIODE: Record<string, string> = { maladie: 'maladie', blessure: 'blessure', indisponible: 'indisponibilité' };
+const accord = (n: number, un: string, plusieurs: string) => `${n} ${n > 1 ? plusieurs : un}`;
+
+/** Le nom d'une période déclarée : « blessure », « maladie », « indisponibilité » */
+export const nomPeriode = (type?: string): string => (type && Object.hasOwn(NOM_PERIODE, type) ? NOM_PERIODE[type] : 'période');
+
+/** Les ajouts qui REMPLACENT une séance retirée (la reprise après maladie ou blessure), reconnus à la raison écrite par le serveur */
+const estRemplacement = (l: LignePlan): boolean => l.op === 'ajouter' && l.raison === 'reprise progressive';
+
+/** « 1 blessure · 3 séances remplacées · 2 retirées » : le plan en une ligne */
+export function resumePlan(lignes: LignePlan[]): string {
+  const periodes = lignes.filter((l) => l.op === 'indisponibilite');
+  const remplacees = lignes.filter(estRemplacement).length;
+  const retirees = Math.max(0, lignes.filter((l) => l.op === 'supprimer').length - remplacees);
+  const deplacees = lignes.filter((l) => l.op === 'deplacer').length;
+  const ajoutees = lignes.filter((l) => l.op === 'ajouter' && !estRemplacement(l)).length;
+  const morceaux: string[] = [];
+  for (const t of new Set(periodes.map((l) => l.type))) {
+    const n = periodes.filter((l) => l.type === t).length;
+    morceaux.push(accord(n, nomPeriode(t), `${nomPeriode(t)}s`));
+  }
+  if (deplacees) morceaux.push(accord(deplacees, 'séance déplacée', 'séances déplacées'));
+  if (remplacees) morceaux.push(accord(remplacees, 'séance remplacée', 'séances remplacées'));
+  if (retirees) morceaux.push(accord(retirees, 'retirée', 'retirées'));
+  if (ajoutees) morceaux.push(accord(ajoutees, 'séance ajoutée', 'séances ajoutées'));
+  return morceaux.join(' · ');
+}
+
+/** « 6 changements » */
+export const nombreChangements = (lignes: LignePlan[]): string => accord(lignes.length, 'changement', 'changements');
+
+/** La phrase lue par VoiceOver pour une carte de planning entière */
+export function descriptionPlan(c: CartePlanning): string {
+  const titre = c.intention || 'Plan de modifications';
+  return `Plan de modifications, ${titre}, ${nombreChangements(c.lignes)}, charge prévue sur 14 jours : ${Math.round(c.charge_avant)} points avant, ${Math.round(c.charge_apres)} après. ${MOT_ETAT_PLAN[c.etat]}.`;
+}
+
+/** Ce que dit la carte annulée : combien de lignes remises, et combien laissées telles quelles */
+export function phraseAnnulation(c: CartePlanning): string {
+  const base = MOT_ETAT_PLAN.annulee;
+  const a = c.annulation;
+  if (!a) return `${base}.`;
+  if (a.ignorees > 0) return `${base} : ${accord(a.annulees, 'changement défait', 'changements défaits')}. ${accord(a.ignorees, 'ligne que tu avais déjà modifiée à la main est restée', 'lignes que tu avais déjà modifiées à la main sont restées')} telle${a.ignorees > 1 ? 's' : ''} quelle${a.ignorees > 1 ? 's' : ''}.`;
+  return `${base} : tout est revenu comme avant.`;
 }

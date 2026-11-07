@@ -2,7 +2,7 @@ import { fetch as fetchFlux } from 'expo/fetch';
 import { SUPABASE_URL } from '@/config';
 import { decouperEvenements, lireCarte, viderTampon } from '@/data/coach/flux';
 import { MESSAGE_ERREUR_PAR_DEFAUT, phraseErreur } from '@/data/coach/fil';
-import type { CarteSeance, EvenementCoach, LigneMessage } from '@/data/coach/types';
+import type { Carte, EvenementCoach, LigneMessage } from '@/data/coach/types';
 import { sb } from '../supabase';
 import type { Resultat } from './commun';
 
@@ -105,7 +105,8 @@ export async function envoyerMessageCoach(texte: string, surEvenement: (e: Evene
   if (!termine) transmettre(erreurReseau());
 }
 
-type ReponseCarte = { ok: true; carte: CarteSeance | null } | { ok: false; message: string };
+/** `bilan` : après l'annulation d'un plan, combien de lignes ont été remises et combien laissées telles quelles */
+type ReponseCarte = { ok: true; carte: Carte | null; bilan?: { annulees: number; ignorees: number } } | { ok: false; message: string };
 
 async function actionCarte(action: 'ajouter' | 'annuler', carteId: string): Promise<ReponseCarte> {
   const j = await jeton();
@@ -116,8 +117,11 @@ async function actionCarte(action: 'ajouter' | 'annuler', carteId: string): Prom
       headers: { Authorization: `Bearer ${j}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, carte_id: carteId }),
     });
-    const corps = (await res.json().catch(() => null)) as { ok?: boolean; error?: string; message?: string; carte?: unknown; erreurs?: { message?: string }[] } | null;
-    if (res.ok && corps?.ok) return { ok: true, carte: lireCarte(corps.carte) };
+    const corps = (await res.json().catch(() => null)) as { ok?: boolean; error?: string; message?: string; carte?: unknown; erreurs?: { message?: string }[]; annulees?: unknown; ignorees?: unknown } | null;
+    if (res.ok && corps?.ok) {
+      const bilan = typeof corps.annulees === 'number' && typeof corps.ignorees === 'number' ? { annulees: corps.annulees, ignorees: corps.ignorees } : undefined;
+      return { ok: true, carte: lireCarte(corps.carte), ...(bilan ? { bilan } : {}) };
+    }
     // Refusée par les règles au moment du tap : on dit pourquoi
     if (res.ok && corps?.erreurs?.length) return { ok: false, message: corps.erreurs[0].message || 'Cette séance ne peut pas être ajoutée.' };
     return { ok: false, message: phraseErreur(corps?.error ?? '', corps?.message) };
@@ -126,7 +130,7 @@ async function actionCarte(action: 'ajouter' | 'annuler', carteId: string): Prom
   }
 }
 
-/** Le tap sur « Ajouter » : le serveur revalide, écrit la séance avec TES droits, et renvoie la carte à jour */
+/** Le tap sur « Ajouter » (une séance) ou « Valider le plan » : le serveur revalide, écrit avec TES droits, et renvoie la carte à jour */
 export const ajouterCarteCoach = (carteId: string) => actionCarte('ajouter', carteId);
-/** Annule une séance ajoutée depuis une carte */
+/** Annule une séance ajoutée depuis une carte, ou défait tout un plan */
 export const annulerCarteCoach = (carteId: string) => actionCarte('annuler', carteId);

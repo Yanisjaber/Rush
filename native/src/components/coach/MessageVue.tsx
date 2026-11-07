@@ -1,8 +1,10 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import type { CarteSeance, MessageCoach } from '@/data/coach/types';
+import { estPlanning } from '@/data/coach/types';
+import type { Carte, MessageCoach } from '@/data/coach/types';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
+import { CartePlanningCoach } from './CartePlanningCoach';
 import { CarteSeanceCoach } from './CarteSeanceCoach';
 
 // Un message du fil (maquette « fil classique ») : des blocs sobres, pas de grosses bulles. Toi à droite sur une surface pleine,
@@ -15,11 +17,15 @@ interface Props {
   /** Proposer « Réessayer » sous un message en échec */
   peutReessayer: boolean;
   onReessayer: (texte: string) => void;
-  onAjouter: (c: CarteSeance) => void;
-  onAnnuler: (c: CarteSeance) => void;
+  /** « Ajouter » (une séance) ou « Valider le plan » (un plan) */
+  onAjouter: (c: Carte) => void;
+  onAnnuler: (c: Carte) => void;
+  /** « Refaire le plan » : redemande au coach de recalculer */
+  onRefaire: () => void;
+  onVoirCalendrier: () => void;
 }
 
-export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onReessayer, onAjouter, onAnnuler }: Props) {
+export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onReessayer, onAjouter, onAnnuler, onRefaire, onVoirCalendrier }: Props) {
   const p = usePalette();
   const moi = message.role === 'user';
   const attente = message.enCours && !message.texte;
@@ -49,7 +55,11 @@ export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onR
 
       {message.cartes.map((c) => (
         <View key={c.id} style={styles.carte}>
-          <CarteSeanceCoach carte={c} occupee={!!occupees[c.id]} erreur={erreursCarte[c.id]} onAjouter={() => onAjouter(c)} onAnnuler={() => onAnnuler(c)} />
+          {estPlanning(c) ? (
+            <CartePlanningCoach carte={c} occupee={!!occupees[c.id]} erreur={erreursCarte[c.id]} onValider={() => onAjouter(c)} onAnnuler={() => onAnnuler(c)} onRefaire={onRefaire} onVoirCalendrier={onVoirCalendrier} />
+          ) : (
+            <CarteSeanceCoach carte={c} occupee={!!occupees[c.id]} erreur={erreursCarte[c.id]} onAjouter={() => onAjouter(c)} onAnnuler={() => onAnnuler(c)} />
+          )}
         </View>
       ))}
 

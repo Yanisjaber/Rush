@@ -88,3 +88,25 @@ test('phrases d\'erreur : celle du serveur d\'abord, sinon une phrase connue, si
   assert.doesNotMatch(phraseErreur('base_indisponible'), /base_indisponible/);
   assert.ok(ERREURS_SANS_REESSAI.includes('plafond_jour') && !ERREURS_SANS_REESSAI.includes('modele_indisponible'));
 });
+
+// ---------- Plans et actions dans le fil ----------
+const planCarte = { id: 'p1', genre: 'planning' as const, etat: 'proposee' as const, intention: 'Blessure', lignes: [{ op: 'supprimer' as const, texte: 'Supprimer : course 60 min', sport: 'course', de: '2026-11-07' }], charge_avant: 460, charge_apres: 100 };
+
+test('une carte de planning qui change d\'état est remplacée à sa place, sans toucher aux autres cartes', () => {
+  const messages: MessageCoach[] = [{ id: 'm', role: 'assistant', texte: 'Voilà', cartes: [carte, planCarte] }];
+  const suite = majCarte(messages, { ...planCarte, etat: 'ajoutee' });
+  assert.equal(suite[0].cartes[0].etat, 'proposee');
+  assert.equal(suite[0].cartes[1].etat, 'ajoutee');
+  assert.equal((suite[0].cartes[1] as typeof planCarte).intention, 'Blessure');
+});
+
+test('une action du serveur ne change pas le fil (c\'est l\'écran qui l\'exécute)', () => {
+  const m = debutEnvoi(vide, 'Montre-moi jeudi', 'local-1');
+  assert.deepEqual(appliquerEvenement(m, { type: 'action', nom: 'ouvrir_calendrier', params: { date: '2026-11-12' } }), m);
+});
+
+test('une carte de planning arrive dans la réponse en cours, comme une carte de séance', () => {
+  const m = appliquerEvenement(debutEnvoi(vide, 'Blessé 10 jours', 'local-1'), { type: 'carte', message_id: 'x', carte: planCarte });
+  assert.equal(m[1].cartes.length, 1);
+  assert.equal((m[1].cartes[0] as typeof planCarte).genre, 'planning');
+});

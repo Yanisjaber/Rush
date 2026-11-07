@@ -1,7 +1,7 @@
 // L'état du fil de discussion : des fonctions pures, une par chose qui peut arriver (le serveur envoie un événement, l'utilisateur écrit…).
 // L'écran ne fait que les appeler et afficher le résultat.
 import { lireCartes } from './flux.ts';
-import type { CarteSeance, EvenementCoach, LigneMessage, MessageCoach } from './types.ts';
+import type { Carte, EvenementCoach, LigneMessage, MessageCoach } from './types.ts';
 
 /** Le message du coach en train de s'écrire porte toujours cet identifiant, jusqu'à ce que le serveur donne le vrai */
 export const ID_REPONSE_EN_COURS = 'reponse-en-cours';
@@ -39,6 +39,9 @@ export function appliquerEvenement(messages: MessageCoach[], e: EvenementCoach):
       return remplacer({ ...m, id: e.message_id, texte: e.texte, enCours: false });
     case 'erreur':
       return erreurEnvoi(messages, e.message || MESSAGE_ERREUR_PAR_DEFAUT);
+    case 'action':
+      // Une action (ouvrir un écran…) ne change pas le fil : c'est l'écran qui l'exécute
+      return messages;
   }
 }
 
@@ -63,7 +66,7 @@ export function dernierEnEchec(messages: MessageCoach[]): MessageCoach | null {
 }
 
 /** Une carte a changé d'état (ajoutée, refusée, annulée) : on remplace la carte, où qu'elle soit dans le fil */
-export function majCarte(messages: MessageCoach[], carte: CarteSeance): MessageCoach[] {
+export function majCarte(messages: MessageCoach[], carte: Carte): MessageCoach[] {
   return messages.map((m) => (m.cartes.some((c) => c.id === carte.id) ? { ...m, cartes: m.cartes.map((c) => (c.id === carte.id ? carte : c)) } : m));
 }
 

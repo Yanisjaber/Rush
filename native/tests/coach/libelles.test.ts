@@ -45,3 +45,52 @@ test('titre et description d\'une carte : chaque état se dit avec un mot', () =
   assert.equal(descriptionCarte(carte), 'Séance proposée, Vélo, Endurance, 1 h 30, dim. 8 nov., charge estimée 75 points. Proposée.');
   for (const etat of ['proposee', 'en_cours', 'ajoutee', 'refusee', 'annulee'] as const) assert.ok(MOT_ETAT[etat].length > 3);
 });
+
+// ---------- Les mots d'une carte de planning ----------
+import { descriptionPlan, MOT_ETAT_PLAN, nombreChangements, nomPeriode, phraseAnnulation, resumePlan } from '../../src/data/coach/libelles.ts';
+import { cartePlanExemple, lignesPlanExemple } from '../../src/data/coach/exemple-plan.ts';
+
+test('plan : chaque état se dit avec un mot, jamais la couleur seule', () => {
+  assert.deepEqual(Object.keys(MOT_ETAT_PLAN).sort(), ['ajoutee', 'annulee', 'en_cours', 'proposee', 'refusee']);
+  for (const mot of Object.values(MOT_ETAT_PLAN)) assert.ok(mot.length > 5);
+});
+
+test('plan : le résumé d\'une ligne — blessure, séances remplacées, séances retirées', () => {
+  assert.equal(resumePlan(lignesPlanExemple('2026-11-06')), '1 blessure · 3 séances remplacées · 2 retirées');
+  assert.equal(nombreChangements(lignesPlanExemple('2026-11-06')), '9 changements');
+  assert.equal(nombreChangements(lignesPlanExemple('2026-11-06').slice(0, 1)), '1 changement');
+});
+
+test('plan : le résumé gère les déplacements, les ajouts libres et plusieurs périodes', () => {
+  assert.equal(resumePlan([{ op: 'deplacer', texte: 'x', de: '2026-11-12', vers: '2026-11-16', sport: 'velo' }]), '1 séance déplacée');
+  assert.equal(resumePlan([{ op: 'ajouter', texte: 'x', sport: 'velo', vers: '2026-11-16' }, { op: 'ajouter', texte: 'y', sport: 'course', vers: '2026-11-17' }]), '2 séances ajoutées');
+  assert.equal(resumePlan([{ op: 'supprimer', texte: 'x', sport: 'velo', de: '2026-11-12' }]), '1 retirée');
+  assert.equal(
+    resumePlan([{ op: 'indisponibilite', texte: 'a', type: 'maladie', du: '2026-11-07', au: '2026-11-08' }, { op: 'indisponibilite', texte: 'b', type: 'indisponible', du: '2026-11-10', au: '2026-11-12' }]),
+    '1 maladie · 1 indisponibilité',
+  );
+  assert.equal(resumePlan([]), '');
+});
+
+test('plan : nom d\'une période, jamais de valeur inconnue en clair', () => {
+  assert.equal(nomPeriode('blessure'), 'blessure');
+  assert.equal(nomPeriode('indisponible'), 'indisponibilité');
+  assert.equal(nomPeriode('toString'), 'période');
+  assert.equal(nomPeriode(undefined), 'période');
+});
+
+test('plan : la phrase lue par VoiceOver dit le titre, le nombre de changements, la charge et l\'état', () => {
+  const d = descriptionPlan(cartePlanExemple('2026-11-06'));
+  assert.match(d, /Blessure au genou, 10 jours/);
+  assert.match(d, /9 changements/);
+  assert.match(d, /460 points avant, 100 après/);
+  assert.match(d, /En attente de ton accord\.$/);
+});
+
+test('plan annulé : tout est revenu, ou combien de lignes sont restées telles quelles', () => {
+  const base = cartePlanExemple('2026-11-06');
+  assert.equal(phraseAnnulation(base), 'Plan annulé.');
+  assert.equal(phraseAnnulation({ ...base, annulation: { annulees: 9, ignorees: 0 } }), 'Plan annulé : tout est revenu comme avant.');
+  assert.match(phraseAnnulation({ ...base, annulation: { annulees: 8, ignorees: 1 } }), /8 changements défaits\. 1 ligne que tu avais déjà modifiée à la main est restée telle quelle\./);
+  assert.match(phraseAnnulation({ ...base, annulation: { annulees: 6, ignorees: 3 } }), /3 lignes que tu avais déjà modifiées à la main sont restées telles quelles\./);
+});

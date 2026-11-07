@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MessageVue } from '@/components/coach/MessageVue';
 import { SaisieCoach } from '@/components/coach/SaisieCoach';
 import { BarreSports } from '@/components/graphes/BarreSports';
 import { FondDegrade } from '@/components/ui/FondDegrade';
+import { ROUTE_ECRAN, type ActionApp } from '@/data/coach/actions';
 import { useCoach } from '@/hooks/useCoach';
 import { useAuth } from '@/stores/auth';
 import { useAccesCoach } from '@/stores/coach';
+import { demanderJour } from '@/stores/jour-demande';
+import { imposerFiltre } from '@/stores/menu';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -37,7 +41,16 @@ export default function Coach() {
   const insets = useSafeAreaInsets();
   const { session } = useAuth();
   const acces = useAccesCoach();
-  const c = useCoach(acces ? session?.user.id ?? null : null);
+  const router = useRouter();
+  // Les actions sans danger que le coach fait exécuter (liste blanche : data/coach/actions.ts). Aucune ne change une donnée.
+  const executer = (a: ActionApp) => {
+    if (a.type === 'ecran') router.navigate(ROUTE_ECRAN[a.ecran]);
+    else if (a.type === 'jour') {
+      demanderJour(a.date);
+      router.navigate('/calendrier');
+    } else imposerFiltre(a.sport);
+  };
+  const c = useCoach(acces ? session?.user.id ?? null : null, executer);
   const clavier = useClavierOuvert();
   // La liste est « inversée » (le plus récent en bas, le clavier ne la cache pas) : on lui donne les messages du plus récent au plus ancien
   const donnees = useMemo(() => [...c.messages].reverse(), [c.messages]);
@@ -56,9 +69,12 @@ export default function Coach() {
       <BarreSports />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.page}>
         <View style={styles.entete}>
-          <Text accessibilityRole="header" style={[typo.titre2, { color: p.texte }]}>
-            Coach
-          </Text>
+          {/* Mode développement : un appui long sur le titre pose une carte de plan d'exemple (sans serveur) pour voir l'écran */}
+          <Pressable onLongPress={c.insererExemple} disabled={!c.insererExemple} accessible={false}>
+            <Text accessibilityRole="header" style={[typo.titre2, { color: p.texte }]}>
+              Coach
+            </Text>
+          </Pressable>
           {c.messages.length > 0 && !c.envoi ? (
             <Pressable onPress={confirmerEffacement} accessibilityRole="button" accessibilityLabel="Effacer la conversation" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.effacer}>
               <Text style={[typo.petit, { color: p.texteDoux }]}>Effacer</Text>
@@ -100,6 +116,8 @@ export default function Coach() {
                 onReessayer={(texte) => void c.envoyer(texte)}
                 onAjouter={(carte) => void c.ajouter(carte)}
                 onAnnuler={(carte) => void c.annuler(carte)}
+                onRefaire={() => void c.envoyer('Refais le plan : mon calendrier a changé.')}
+                onVoirCalendrier={() => router.navigate('/calendrier')}
               />
             )}
           />

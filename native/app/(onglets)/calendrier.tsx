@@ -26,6 +26,7 @@ import { dateIsoLocale, formatDistanceSport, formatDuree, formatHeuresMinutes, f
 import { useAjouts } from '@/hooks/useAjouts';
 import { useAujourdhui } from '@/hooks/useAujourdhui';
 import { useDonneesCalendrier } from '@/hooks/useDonneesCalendrier';
+import { consommerJour, useJourDemande } from '@/stores/jour-demande';
 import { useMenu } from '@/stores/menu';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
@@ -55,6 +56,14 @@ export default function Calendrier() {
   const [choisi, setChoisi] = useState(aujourdhui);
   const [moisOuvert, setMoisOuvert] = useState(false);
   const [basTitre, setBasTitre] = useState(0);
+  // Le coach peut demander un jour (« montre-moi jeudi ») : on saute à son mois et on le sélectionne, une seule fois
+  const jourDemande = useJourDemande();
+  useEffect(() => {
+    if (!jourDemande) return;
+    setCible({ annee: Number(jourDemande.slice(0, 4)), mois: Number(jourDemande.slice(5, 7)) - 1 });
+    setChoisi(jourDemande);
+    consommerJour();
+  }, [jourDemande]);
   const titreRef = useRef<ComponentRef<typeof View>>(null);
   // On mesure où est le titre pour poser le panneau juste dessous
   const ouvrirMois = () =>

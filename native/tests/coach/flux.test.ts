@@ -71,3 +71,92 @@ test('fin du flux : un dernier événement sans sa ligne vide est quand même lu
   assert.deepEqual(viderTampon('   '), []);
   assert.deepEqual(viderTampon(''), []);
 });
+
+// ---------- La carte de planning et les actions ----------
+const plan = {
+  id: 'p1',
+  genre: 'planning',
+  etat: 'proposee',
+  intention: 'Blessure au genou, 10 jours',
+  operations: [{ op: 'indisponibilite', type: 'blessure', du: '2026-11-07', au: '2026-11-16' }],
+  lignes: [
+    { op: 'indisponibilite', texte: 'Déclarer : blessure du sam. 07/11 au lun. 16/11', type: 'blessure', du: '2026-11-07', au: '2026-11-16' },
+    { op: 'supprimer', texte: 'Supprimer : course 60 min du sam. 07/11', raison: 'blessure', sport: 'course', minutes: 60, de: '2026-11-07' },
+    { op: 'ajouter', texte: 'Ajouter : course Footing facile 30 min le mer. 18/11', raison: 'reprise progressive', sport: 'course', minutes: 30, vers: '2026-11-18' },
+  ],
+  charge_avant: 460,
+  charge_apres: 100,
+};
+
+test('carte de planning : relue avec ses lignes structurées ; les opérations du serveur ne sont pas gardées', () => {
+  const c = lireCarte(plan) as Record<string, unknown>;
+  assert.equal(c.genre, 'planning');
+  assert.equal(c.intention, 'Blessure au genou, 10 jours');
+  assert.equal((c.lignes as unknown[]).length, 3);
+  assert.deepEqual((c.lignes as Record<string, unknown>[])[1], { op: 'supprimer', texte: 'Supprimer : course 60 min du sam. 07/11', raison: 'blessure', sport: 'course', minutes: 60, de: '2026-11-07' });
+  assert.equal(c.charge_avant, 460);
+  assert.equal('operations' in c, false);
+});
+
+test('carte de planning : tout ce qui est faux ou dangereux est écarté, sans casser la carte', () => {
+  const c = lireCarte({
+    ...plan,
+    intention: 'x'.repeat(500),
+    charge_avant: 'beaucoup',
+    lignes: [
+      { op: 'detruire', texte: 'ligne inconnue' },
+      { op: 'supprimer', texte: '' },
+      { op: 'supprimer', texte: 'ok', de: '2026-02-31x', vers: 'demain', minutes: 'longtemps', type: 'vacances', sport: 'a'.repeat(100) },
+      'pas un objet',
+      null,
+    ],
+  }) as Record<string, unknown>;
+  assert.equal((c.intention as string).length, 200);
+  assert.equal(c.charge_avant, 0);
+  const l = (c.lignes as Record<string, unknown>[]);
+  assert.equal(l.length, 1);
+  assert.deepEqual(Object.keys(l[0]).sort(), ['op', 'sport', 'texte']);
+  assert.equal((l[0].sport as string).length, 40);
+});
+
+test('carte de planning : sans ligne lisible, mal formée ou d\'un état inconnu = pas de carte', () => {
+  assert.equal(lireCarte({ ...plan, lignes: [] }), null);
+  assert.equal(lireCarte({ ...plan, lignes: [{ op: 'detruire', texte: 'x' }] }), null);
+  assert.equal(lireCarte({ ...plan, lignes: 'x' }), null);
+  assert.equal(lireCarte({ ...plan, etat: 'inconnu' }), null);
+  assert.equal(lireCarte({ ...plan, id: 5 }), null);
+  assert.equal(lireCarte({ ...plan, genre: 'autre' }), null, 'sans genre « planning », c\'est une carte de séance : elle n\'a pas de proposition');
+});
+
+test('carte de planning : 20 lignes au plus', () => {
+  const lignes = Array.from({ length: 30 }, (_, i) => ({ op: 'supprimer', texte: `ligne ${i}`, sport: 'velo', de: '2026-11-07' }));
+  assert.equal(((lireCarte({ ...plan, lignes }) as Record<string, unknown[]>).lignes).length, 20);
+});
+
+test('carte de planning annulée : le bilan de l\'annulation est relu seulement s\'il est complet', () => {
+  assert.deepEqual((lireCarte({ ...plan, etat: 'annulee', annulation: { annulees: 3, ignorees: 1 } }) as Record<string, unknown>).annulation, { annulees: 3, ignorees: 1 });
+  assert.equal('annulation' in (lireCarte({ ...plan, annulation: { annulees: 3 } }) as Record<string, unknown>), false);
+});
+
+test('les cartes de séance continuent de passer, mélangées aux plans dans un même message', () => {
+  const cartes = lireCartes([carte, plan, { id: 'z' }, plan]);
+  assert.equal(cartes.length, 3);
+  assert.equal((cartes[0] as Record<string, unknown>).genre, undefined);
+  assert.equal((cartes[1] as Record<string, unknown>).genre, 'planning');
+});
+
+test('flux : une carte de planning arrive comme les autres', () => {
+  const r = decouperEvenements(ligne({ type: 'carte', message_id: 'm1', carte: plan }));
+  assert.equal(r.evenements.length, 1);
+  assert.equal(r.evenements[0].type, 'carte');
+});
+
+test('flux : une action est relue (nom et paramètres), une action mal formée est ignorée', () => {
+  const r = decouperEvenements(
+    ligne({ type: 'action', nom: 'ouvrir_ecran', params: { ecran: 'calendrier' } }) +
+      ligne({ type: 'action', nom: 'ouvrir_ecran' }) +
+      ligne({ type: 'action', nom: 42, params: {} }) +
+      ligne({ type: 'action', nom: 'x', params: [1, 2] }),
+  );
+  assert.deepEqual(r.evenements, [{ type: 'action', nom: 'ouvrir_ecran', params: { ecran: 'calendrier' } }]);
+});
