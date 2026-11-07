@@ -19,7 +19,7 @@ test('les fiches embarquées sont à jour : elles viennent bien de docs/ia/conna
 test('chaque fiche est complète et ses liens internes existent', () => {
   const ids = new Set(FICHES.map((f) => f.id));
   assert.equal(ids.size, FICHES.length, 'identifiants uniques');
-  assert.ok(FICHES.length >= 25);
+  assert.ok(FICHES.length >= 45);
   for (const f of FICHES) {
     assert.ok(f.titre && f.essentiel.length > 50 && f.regles.length > 50 && f.pieges.length > 20 && f.recherche.length > 50, f.id);
     assert.ok(['etabli', 'probable', 'debattu', 'pratique'].includes(f.preuve), f.id);
@@ -42,11 +42,11 @@ const QUESTIONS: [string, string, number][] = [
   ["C'est quoi la zone 2 ?", 'zone-2', 1],
   ['Je dois augmenter mon kilométrage de 10% par semaine ?', 'progression-charge-blessures', 1],
   ["Je reprends après 3 semaines d'arrêt, comment faire ?", 'reprise-apres-arret', 1],
-  ['Combien de glucides par heure pendant la course ?', 'nutrition-glucides', 1],
+  ['Combien de glucides par heure pendant la course ?', 'nutrition-glucides', 2],
   ['Je dors mal depuis une semaine, ça joue sur mes perfs ?', 'sommeil', 1],
   ['Je peux prendre du café avant une compétition ?', 'proteines-cafeine', 1],
   ['Combien de protéines par jour ?', 'proteines-cafeine', 1],
-  ['Je veux faire de la musculation en plus de la course', 'force-pour-endurants', 2],
+  ['Je veux faire de la musculation en plus de la course', 'force-pour-endurants', 3],
   ['Quelles sont mes zones de puissance avec mon FTP ?', 'velo-zones-ftp', 1],
   ['Comment faire le test de CSS en natation ?', 'natation-css', 1],
   ['Comment me préparer pour un Hyrox avec le traîneau ?', 'hyrox', 1],
@@ -60,13 +60,28 @@ const QUESTIONS: [string, string, number][] = [
   ['Je pars trop vite en marathon, quelle stratégie d\'allure ?', 'allure-course-marathon', 1],
   ['Je veux perdre du poids en m\'entraînant beaucoup', 'energie-reds', 1],
   ['Ma HRV est basse ce matin', 'hrv-suivi-recuperation', 1],
-  ['Polarisé ou pyramidal, que choisir ?', 'intensite-distribution', 1],
-  ['Que penser des 4x4 minutes pour la VO2max ?', 'intervalles-haute-intensite', 1],
+  ['Polarisé ou pyramidal, que choisir ?', 'intensite-distribution', 2],
+  ['Que penser des 4x4 minutes pour la VO2max ?', 'intervalles-haute-intensite', 2],
   ['Faut-il une semaine allégée toutes les 4 semaines ?', 'periodisation', 2],
   ['Combien de séries par semaine pour prendre du muscle ?', 'musculation-bases', 1],
   ['Faire de la force et du cardio le même jour ?', 'entrainement-concurrent', 1],
   ["Un stage en altitude, ça vaut le coup ?", 'chaleur-altitude', 1],
   ['Est-ce que le sweet spot est vraiment efficace ?', 'velo-zones-ftp', 1],
+  // Course à pied (fiches course-*, recherche du 9 nov. 2026)
+  ["Je n'ai pas de chrono récent, comment calibrer mon plan avec un test de 3 km ?", 'course-tests-terrain', 1],
+  ['Je prépare un trail de 50 km avec beaucoup de dénivelé et de descentes', 'course-trail-ultra', 1],
+  ['Quelle différence entre la méthode Pfitzinger et Hansons pour un marathon ?', 'course-marathon-methodes', 2],
+  ['Lydiard ou Canova, quelle école de coaching choisir ?', 'course-ecoles-coaching', 1],
+  ['Combien de séances de force pour améliorer mon économie de course ?', 'course-force-economie', 1],
+  ['Je prépare un 10 km, comment organiser mes séances de fractionné et de tempo ?', 'course-5k-10k-plans', 2],
+  ['Je veux préparer un 800 m, quelles séances de vitesse et de lactate ?', 'course-vitesse-courte-distance', 1],
+  ['Comment répartir mon allure sur un 10 km, partir vite ou lentement ?', 'course-pacing-course', 1],
+  ['Quelle paire de chaussures à plaque carbone pour courir un semi ?', 'course-chaussures-cadence', 1],
+  ['Comment calculer mes allures avec le VDOT de Daniels ?', 'course-vdot-allures', 1],
+  ['Je commence la course à pied, comment débuter avec alternance marche et course ?', 'course-reprise-debutants', 1],
+  ['Combien de gels par heure sur un marathon et faut-il boire à la soif ?', 'course-nutrition-hydratation', 1],
+  ['Est-ce que la règle des 10 % évite vraiment les blessures de course ?', 'course-blessures-progression', 2],
+  ['Quel volume et quelle sortie longue pour préparer un semi-marathon ?', 'course-semi-marathon', 2],
 ];
 
 for (const [question, attendue, rang] of QUESTIONS) {
@@ -120,7 +135,7 @@ test('les fiches « débattu » rappellent leur niveau de preuve au modèle', ()
 });
 
 test('mot banal seul (« course », « repos ») : ne suffit pas à ramener une fiche', () => {
-  for (const q of ["J'ai mal au genou quand je cours", 'Quelle paire de chaussures pour courir un semi ?', 'Comment faire une course ?']) {
+  for (const q of ["J'ai mal au genou quand je cours", 'Comment faire mon échauffement avant de courir ?', 'Comment faire une course ?']) {
     assert.deepEqual(classer(q), [], q);
   }
 });

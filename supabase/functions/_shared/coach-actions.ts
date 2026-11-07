@@ -256,7 +256,7 @@ export const ACTIONS: DefinitionAction[] = [
     niveau: 'lecture',
     disponible: true,
     description:
-      "Cherche dans la base de connaissances de l'application (fiches sourcées sur l'entraînement : intensités, charge, affûtage, reprise, sommeil, nutrition sportive, force, chaleur, sports, profils). " +
+      "Cherche dans la base de connaissances de l'application (fiches sourcées sur l'entraînement : intensités, charge, affûtage, reprise, sommeil, nutrition sportive, force, chaleur, sports, profils, et une grande base de COURSE À PIED : plans 5 km, 10 km, semi et marathon, trail et ultra, courte distance, allures et VDOT, tests de terrain, seuil, VO2max, force et économie de course, chaussures et cadence, blessures, débutants et reprise, stratégie d'allure, nutrition en course). Pour toute question de fond sur la course à pied (« pourquoi cette séance ? », « comment s'entraîne-t-on pour un trail ? »), consulte-la avant de répondre. " +
       "À appeler AVANT de répondre à une question de méthode ou de science de l'entraînement, au lieu de répondre de mémoire. Rend jusqu'à 3 fiches avec leur niveau de preuve, ou aucune si la base ne couvre pas le sujet.",
     schema: {
       type: 'object',
