@@ -13,6 +13,7 @@ import type { DecisionGardeFou } from './garde-fou.ts';
 import { FAMILLES_COACH } from './menu-seances.ts';
 import type { FamilleCoach } from './menu-seances.ts';
 import type { MessageModele } from './modele.ts';
+import type { LignePlan, Operation } from './planning.ts';
 import type { ContexteValidation, Proposition, ReglagesCoach } from './validateur.ts';
 
 export type EtatCarte = 'proposee' | 'en_cours' | 'ajoutee' | 'refusee' | 'annulee';
@@ -29,11 +30,37 @@ export interface CarteSeance {
   seance_id?: string;
 }
 
+/**
+ * Une carte « planning » : plusieurs modifications du calendrier (déplacer, supprimer, remplacer des séances, déclarer une
+ * maladie ou une blessure) validées EN UNE FOIS par l'utilisateur. Rien n'est écrit tant qu'il n'a pas validé.
+ * Le champ `motif` est réservé à la raison d'un refus (écrit par la base) ; ce que le modèle dit va dans `intention`.
+ */
+export interface CartePlanning {
+  id: string;
+  genre: 'planning';
+  etat: EtatCarte;
+  intention: string;
+  operations: Operation[];
+  lignes: LignePlan[];
+  charge_avant: number;
+  charge_apres: number;
+  /** Raison du refus (état « refusee ») */
+  motif?: string;
+  /** De quoi défaire le plan (écrit par le serveur après l'application) */
+  inverse?: unknown[];
+}
+
+export type Carte = CarteSeance | CartePlanning;
+
+export function estPlanning(c: Carte): c is CartePlanning {
+  return (c as CartePlanning).genre === 'planning';
+}
+
 export interface MessageStocke {
   id: string;
   role: 'user' | 'assistant';
   contenu: string;
-  cartes: CarteSeance[] | null;
+  cartes: Carte[] | null;
   created_at: string;
 }
 
@@ -117,9 +144,13 @@ export function blocContexte(e: { aujourdhui: string; resume: Libre; memoire: st
 const LIMITE_MESSAGE_HISTORIQUE = 1500;
 
 /** Une phrase par carte, pour que le modèle sache ce qu'il a déjà proposé et ce que l'utilisateur en a fait */
-export function texteCarte(c: CarteSeance): string {
+export function texteCarte(c: Carte): string {
+  if (estPlanning(c)) {
+    const etat = { proposee: 'pas encore appliqué', en_cours: "en cours d'application", ajoutee: "appliqué par l'utilisateur", refusee: 'refusé par les règles', annulee: "annulé par l'utilisateur" }[c.etat] ?? c.etat;
+    return `[Plan de modifications (${c.lignes.map((l) => l.texte).join(' ; ').slice(0, 400)}) : ${etat}]`;
+  }
   const p = c.proposition;
-  const etat = { proposee: 'pas encore ajoutée', en_cours: 'en cours d\'ajout', ajoutee: 'ajoutée par l\'utilisateur', refusee: 'refusée par les règles', annulee: 'annulée par l\'utilisateur' }[c.etat] ?? c.etat;
+  const etat = { proposee: 'pas encore ajoutée', en_cours: "en cours d'ajout", ajoutee: "ajoutée par l'utilisateur", refusee: 'refusée par les règles', annulee: "annulée par l'utilisateur" }[c.etat] ?? c.etat;
   return `[Carte ${p.sport} ${p.type}, ${p.minutes} min, le ${p.date} : ${etat}]`;
 }
 

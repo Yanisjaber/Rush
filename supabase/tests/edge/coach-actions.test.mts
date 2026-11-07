@@ -20,7 +20,7 @@ test('registre : noms uniques, niveau valide, schéma fermé (additionalProperti
 test('registre : le modèle ne voit que les actions disponibles', () => {
   const vus = outilsExposes().map((o) => o.name);
   assert.deepEqual(vus, actionsDisponibles().map((a) => a.nom));
-  assert.ok(vus.includes('proposer_seance') && vus.includes('ouvrir_ecran'));
+  assert.ok(vus.includes('proposer_seance') && vus.includes('ouvrir_ecran') && vus.includes('modifier_planning') && vus.includes('proposer_replanification'));
   assert.ok(!vus.includes('supprimer_compte'), 'une action irréversible non branchée reste invisible');
 });
 
@@ -34,7 +34,8 @@ test('sécurité : aucune action « carte » ou « confirmation » n\'est exécu
   // le coach ne peut proposer de supprimer son propre compte que sous « confirmation »
   assert.equal(trouverAction('supprimer_compte')?.niveau, 'confirmation');
   assert.equal(trouverAction('deconnecter_integration')?.niveau, 'confirmation');
-  assert.equal(trouverAction('supprimer_seance')?.niveau, 'carte');
+  assert.equal(trouverAction('modifier_planning')?.niveau, 'carte');
+  assert.equal(trouverAction('proposer_replanification')?.niveau, 'carte');
 });
 
 test('ouvrir_ecran / ouvrir_calendrier / filtrer_sport : valeurs valides acceptées, le reste refusé', () => {
@@ -50,19 +51,73 @@ test('ouvrir_ecran / ouvrir_calendrier / filtrer_sport : valeurs valides accept�
   assert.equal(lire('filtrer_sport', { sport: 'golf' }).ok, false);
 });
 
-test('actions de niveau carte et confirmation (déclarées, pas encore branchées) : leurs paramètres sont déjà vérifiés', () => {
+test('actions de niveau confirmation (déclarées, pas encore branchées) : leurs paramètres sont déjà vérifiés et le modèle ne les voit pas', () => {
   const lire = (nom: string, x: unknown) => trouverAction(nom)!.lire!(x);
-  assert.equal(lire('deplacer_seance', { seance_id: ID, date: '2026-11-10' }).ok, true);
-  assert.equal(lire('deplacer_seance', { seance_id: 'abc', date: '2026-11-10' }).ok, false);
-  assert.equal(lire('supprimer_seance', { seance_id: ID }).ok, true);
-  assert.equal(lire('supprimer_seance', { seance_id: "x'; drop table activities;--" }).ok, false);
-  assert.equal(lire('declarer_indisponibilite', { type: 'blessure', du: '2026-11-08', au: '2026-11-18' }).ok, true);
-  assert.equal(lire('declarer_indisponibilite', { type: 'blessure', du: '2026-11-18', au: '2026-11-08' }).ok, false, 'fin avant le début');
-  assert.equal(lire('declarer_indisponibilite', { type: 'vacances', du: '2026-11-08', au: '2026-11-18' }).ok, false);
   assert.equal(lire('deconnecter_integration', { service: 'strava' }).ok, true);
   assert.equal(lire('deconnecter_integration', { service: 'whoop' }).ok, false);
   assert.equal(lire('supprimer_compte', {}).ok, true);
   assert.equal(lire('supprimer_compte', { confirme: true }).ok, false, 'le modèle ne peut pas « confirmer » lui-même');
+  assert.equal(trouverAction('supprimer_compte')!.disponible, false);
+  assert.equal(trouverAction('deconnecter_integration')!.disponible, false);
+});
+
+test('proposer_replanification : contraintes valides acceptées, le reste refusé avec une raison', () => {
+  const lire = (x: unknown) => trouverAction('proposer_replanification')!.lire!(x);
+  const ok = lire({ motif: 'Genou, 10 jours', indisponibilite: { type: 'blessure', du: '2026-11-07', au: '2026-11-16' } });
+  assert.deepEqual(ok, { ok: true, params: { intention: 'Genou, 10 jours', contraintes: { indisponibilite: { type: 'blessure', du: '2026-11-07', au: '2026-11-16' } } } });
+  assert.deepEqual((lire({ motif: 'Voyage', jours_bloques: ['2026-11-12', '2026-11-12', '2026-11-13'] }) as { params: { contraintes: unknown } }).params.contraintes, { joursBloques: ['2026-11-12', '2026-11-13'] });
+  assert.deepEqual((lire({ motif: 'Pas de vélo', sports_exclus: { sports: ['velo', 'velo'], du: '2026-11-06', au: '2026-11-12' } }) as { params: { contraintes: unknown } }).params.contraintes, { sportsExclus: { sports: ['velo'], du: '2026-11-06', au: '2026-11-12' } });
+  const mauvais: unknown[] = [
+    { motif: 'x' }, // aucune contrainte
+    { motif: 'ok ok', indisponibilite: { type: 'vacances', du: '2026-11-07', au: '2026-11-09' } },
+    { motif: 'ok ok', indisponibilite: { type: 'blessure', du: '2026-11-09', au: '2026-11-07' } },
+    { motif: 'ok ok', indisponibilite: { type: 'blessure', du: '2026-02-31', au: '2026-03-05' } },
+    { motif: 'ok ok', jours_bloques: [] },
+    { motif: 'ok ok', jours_bloques: Array.from({ length: 15 }, (_, i) => `2026-11-${String(i + 10).padStart(2, '0')}`) },
+    { motif: 'ok ok', jours_bloques: ['demain'] },
+    { motif: 'ok ok', sports_exclus: { sports: ['golf'], du: '2026-11-06', au: '2026-11-12' } },
+    { motif: 'ok ok', sports_exclus: { sports: ['velo'], du: '2026-11-06', au: '2027-01-12' } },
+    { motif: '', jours_bloques: ['2026-11-12'] },
+    { motif: 'a'.repeat(201), jours_bloques: ['2026-11-12'] },
+    { motif: 'ok ok', jours_bloques: ['2026-11-12'], clef_inconnue: 1 },
+    null,
+  ];
+  for (const m of mauvais) assert.equal(lire(m).ok, false, JSON.stringify(m)?.slice(0, 90));
+});
+
+test('modifier_planning : les quatre opérations sont lues, nettoyées et strictement vérifiées', () => {
+  const lire = (x: unknown) => trouverAction('modifier_planning')!.lire!(x);
+  const r = lire({ motif: 'Décalage', operations: [
+    { op: 'deplacer', seance_id: ID.toUpperCase(), vers: '2026-11-10' },
+    { op: 'supprimer', seance_id: ID },
+    { op: 'ajouter', date: '2026-11-11', sport: 'velo', type_seance: 'endurance', minutes: 60, justification: '  Entretien.  ' },
+    { op: 'indisponibilite', type_periode: 'maladie', du: '2026-11-08', au: '2026-11-09' },
+  ] }) as { ok: true; params: { operations: unknown[] } };
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.params.operations, [
+    { op: 'deplacer', seanceId: ID, vers: '2026-11-10' },
+    { op: 'supprimer', seanceId: ID },
+    { op: 'ajouter', proposition: { date: '2026-11-11', sport: 'velo', type: 'endurance', minutes: 60 }, justification: 'Entretien.' },
+    { op: 'indisponibilite', type: 'maladie', du: '2026-11-08', au: '2026-11-09' },
+  ]);
+  const base = { motif: 'Test ok' };
+  const mauvais: unknown[] = [
+    { ...base, operations: [] },
+    { ...base, operations: Array.from({ length: 9 }, () => ({ op: 'supprimer', seance_id: ID })) },
+    { ...base, operations: [{ op: 'detruire', seance_id: ID }] },
+    { ...base, operations: [{ op: 'supprimer', seance_id: 'abc' }] },
+    { ...base, operations: [{ op: 'supprimer', seance_id: "x'; drop table activities;--" }] },
+    { ...base, operations: [{ op: 'supprimer', seance_id: ID, vers: '2026-11-10' }] }, // clé en trop
+    { ...base, operations: [{ op: 'deplacer', seance_id: ID }] },
+    { ...base, operations: [{ op: 'deplacer', seance_id: ID, vers: '2026-02-31' }] },
+    { ...base, operations: [{ op: 'ajouter', date: '2026-11-11', sport: 'golf', type_seance: 'x', minutes: 60, justification: 'a' }] },
+    { ...base, operations: [{ op: 'ajouter', date: '2026-11-11', sport: 'velo', type_seance: 'endurance', minutes: 60.5, justification: 'a' }] },
+    { ...base, operations: [{ op: 'ajouter', date: '2026-11-11', sport: 'velo', type_seance: 'endurance', minutes: 60 }] },
+    { ...base, operations: [{ op: 'indisponibilite', type_periode: 'vacances', du: '2026-11-08', au: '2026-11-09' }] },
+    { ...base, operations: 'tout supprimer' },
+    { motif: '', operations: [{ op: 'supprimer', seance_id: ID }] },
+  ];
+  for (const m of mauvais) assert.equal(lire(m).ok, false, JSON.stringify(m)?.slice(0, 110));
 });
 
 test('lectures de l\'historique : chaque requête SQL est dans la liste fermée, et une lecture a soit une réponse du résumé, soit une requête', () => {

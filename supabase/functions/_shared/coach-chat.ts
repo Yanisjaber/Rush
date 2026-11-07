@@ -21,11 +21,14 @@ import { FONCTIONS_HISTORIQUE, MAX_PAR_NIVEAU, outilsExposes, trouverAction } fr
 import type { FonctionHistorique } from './coach-actions.ts';
 import { coutMicroUsd } from './coach-couts.ts';
 import { avecMessageUtilisateur, blocContexte, contexteDepuisResume, historiquePourModele, texteAncienPourResume } from './coach-contexte.ts';
-import type { CarteSeance, EtatCarte, MessageStocke } from './coach-contexte.ts';
+import { estPlanning } from './coach-contexte.ts';
+import type { Carte, CartePlanning, CarteSeance, EtatCarte, MessageStocke } from './coach-contexte.ts';
 import { MAX_TOKENS_REPONSE, MODELE_PAR_DEFAUT, NOM_OUTIL_SEANCE, PROMPT_SYSTEME } from './coach-prompt.ts';
 import { evaluerGardeFou } from './garde-fou.ts';
 import type { DecisionGardeFou, DonneesGardeFou } from './garde-fou.ts';
-import { typeSeance } from './menu-seances.ts';
+import { evaluerPlan, proposerReplanification, seancesDepuisResume } from './planning.ts';
+import type { Contraintes, Operation } from './planning.ts';
+import { tssEstime, typeSeance } from './menu-seances.ts';
 import type { FamilleCoach } from './menu-seances.ts';
 import { ajouterUsage, ErreurModele, USAGE_NUL } from './modele.ts';
 import type { AppelModele, AppelOutil, ClientModele, MessageModele, Usage } from './modele.ts';
@@ -87,12 +90,18 @@ export interface StockageCoach {
   lireMemoire(userId: string): Promise<{ resume: string; jusqua: string } | null>;
   /** Messages après `jusqua` (tous si null), du plus ancien au plus récent, 200 au plus (les plus récents) */
   lireMessagesDepuis(userId: string, jusqua: string | null): Promise<MessageStocke[]>;
-  ecrireMessage(userId: string, m: { role: 'user' | 'assistant'; contenu: string; cartes: CarteSeance[] | null }): Promise<{ id: string; created_at: string }>;
+  ecrireMessage(userId: string, m: { role: 'user' | 'assistant'; contenu: string; cartes: Carte[] | null }): Promise<{ id: string; created_at: string }>;
   ecrireMemoire(userId: string, resume: string, jusqua: string): Promise<void>;
   /** Lit une carte (vers = null) ou change son état si elle est dans l'état `de` : voir coach_carte_etat. null = introuvable ou pas dans l'état attendu. */
-  changerEtatCarte(userId: string, carteId: string, de: EtatCarte | null, vers: EtatCarte | null, motif?: string, seanceId?: string): Promise<{ messageId: string; carte: CarteSeance } | null>;
+  changerEtatCarte(userId: string, carteId: string, de: EtatCarte | null, vers: EtatCarte | null, motif?: string, seanceId?: string): Promise<{ messageId: string; carte: Carte } | null>;
   /** Crée la séance prévue AVEC les droits de l'utilisateur (la RLS s'applique). Renvoie son identifiant. */
   insererSeance(userId: string, ligne: LigneSeancePrevue): Promise<string>;
+  /** Applique un plan de modifications EN UNE TRANSACTION, avec les droits de l'utilisateur (coach_appliquer_plan). Renvoie de quoi le défaire. Lève une erreur dont le message est le code de la base. */
+  appliquerPlan(userId: string, operations: Record<string, unknown>[]): Promise<unknown[]>;
+  /** Défait un plan appliqué (coach_annuler_plan). Au mieux : les lignes que l'utilisateur a modifiées depuis sont ignorées et comptées. */
+  annulerPlan(userId: string, inverse: unknown[]): Promise<{ annulees: number; ignorees: number }>;
+  /** Garde dans la carte de quoi annuler (null pour le retirer) */
+  memoriserInverse(userId: string, carteId: string, inverse: unknown[] | null): Promise<void>;
   /** Supprime une séance créée par l'IA (jamais une autre). Renvoie false si elle n'existe plus. */
   supprimerSeanceIA(userId: string, seanceId: string): Promise<boolean>;
 }
@@ -107,7 +116,7 @@ export interface Dependances {
 
 export type EvenementCoach =
   | { type: 'texte'; delta: string }
-  | { type: 'carte'; message_id: string; carte: CarteSeance }
+  | { type: 'carte'; message_id: string; carte: Carte }
   /** Action sans danger (ouvrir un écran…) que l'application exécute tout de suite. Elle n'est pas enregistrée : on ne la rejoue pas au rechargement. */
   | { type: 'action'; nom: string; params: Record<string, unknown> }
   | { type: 'fin'; message_id: string; texte: string }
@@ -180,7 +189,7 @@ interface EtatOutils {
   resume: Libre;
   jour: string;
   nbLectures: { n: number };
-  cartes: CarteSeance[];
+  cartes: Carte[];
   directes: { nom: string; params: Record<string, unknown> }[];
   uuid: () => string;
   lireHistorique: (fonction: FonctionHistorique, args: Record<string, unknown>) => Promise<unknown>;
@@ -219,13 +228,50 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
     return { contenu: "Fait : l'application exécute l'action tout de suite.", erreur: false };
   }
 
-  // Niveaux « carte » et « confirmation » : seul proposer_seance est branché pour l'instant
+  // Replanification : UNE carte de planning par message, jamais mélangée à d'autres cartes
+  if (def.nom === 'proposer_replanification' || def.nom === 'modifier_planning') {
+    if (cartes.length > 0) return { contenu: "Une seule carte de planning à la fois, et pas avec une autre carte : attends que l'utilisateur la valide ou la refuse.", erreur: true };
+    const lu = def.lire ? def.lire(appel.input) : { ok: false as const, erreur: 'Outil non lisible.' };
+    if (!lu.ok) return { contenu: `Paramètres invalides : ${lu.erreur}`, erreur: true };
+    const seances = seancesDepuisResume(resume);
+    let operations: Operation[];
+    if (def.nom === 'proposer_replanification') {
+      operations = proposerReplanification(lu.params.contraintes as Contraintes, seances, ctx);
+      if (!operations.length) return { contenu: "Rien à modifier : aucune séance prévue n'est touchée par cette contrainte. Dis-le simplement à l'utilisateur, sans créer de carte.", erreur: false };
+    } else {
+      operations = lu.params.operations as Operation[];
+    }
+    const r = evaluerPlan(operations, seances, ctx);
+    if (!r.ok) return { contenu: `Plan refusé par les règles : ${r.erreurs.join(' | ')}`, erreur: true };
+    const carte: CartePlanning = {
+      id: uuid(),
+      genre: 'planning',
+      etat: 'proposee',
+      intention: String(lu.params.intention),
+      operations,
+      lignes: r.lignes,
+      charge_avant: r.chargeAvant,
+      charge_apres: r.chargeApres,
+    };
+    cartes.push(carte);
+    const detail = r.lignes.map((l) => `- ${l.texte}${l.raison ? ` (${l.raison})` : ''}`).join('\n');
+    const avert = r.avertissements.length ? `\nÀ signaler : ${r.avertissements.join(' ; ')}` : '';
+    return {
+      contenu:
+        `Carte de planning créée (${r.lignes.length} modification(s), charge prévue sur 14 jours : ${r.chargeAvant} → ${r.chargeApres} points) :\n${detail}${avert}\n` +
+        "L'utilisateur la verra et la validera lui-même : rien n'est modifié tant qu'il n'a pas validé, ne dis donc jamais que c'est fait. Explique le plan en quelques phrases simples, avec les raisons.",
+      erreur: false,
+    };
+  }
+
+  // Niveaux « carte » et « confirmation » : seul proposer_seance reste à traiter
   if (def.nom !== NOM_OUTIL_SEANCE) return { contenu: "Cet outil n'existe pas.", erreur: true };
+  if (cartes.some(estPlanning)) return { contenu: "Une carte de planning est déjà proposée dans ce message : n'ajoute pas d'autre carte.", erreur: true };
   if (cartes.length >= MAX_CARTES) return { contenu: `Trois cartes au maximum par message : ne propose pas d'autre séance.`, erreur: true };
   const lue = lireProposition(appel.input);
   if (!lue) return { contenu: 'Paramètres invalides : date, sport, type, minutes et justification sont obligatoires.', erreur: true };
   // Les cartes déjà proposées dans ce message comptent comme prévues : trois cartes qui passent chacune seule ne doivent pas dépasser la limite ensemble
-  const ctxTour: ContexteValidation = { ...ctx, prevues: [...ctx.prevues, ...cartes.map((c) => ({ date: c.proposition.date, tss: c.tss_estime }))] };
+  const ctxTour: ContexteValidation = { ...ctx, prevues: [...ctx.prevues, ...cartes.filter((c): c is CarteSeance => !estPlanning(c)).map((c) => ({ date: c.proposition.date, tss: c.tss_estime }))] };
   const r = validerSeance(lue.proposition, ctxTour);
   if (!r.ok) return { contenu: `Séance refusée par les règles : ${r.erreurs.map((e) => e.message).join(' ')}`, erreur: true };
   cartes.push({ id: uuid(), etat: 'proposee', proposition: lue.proposition, tss_estime: r.tssEstime ?? 0, justification: lue.justification });
@@ -289,7 +335,7 @@ export async function traiterMessage(userId: string, texteBrut: unknown, deps: D
   const contexte = blocContexte({ aujourdhui: jour, resume, memoire: memoire?.resume ?? null, reglages, decision });
   let messages: MessageModele[] = avecMessageUtilisateur(historique, contexte, texte);
 
-  const cartes: CarteSeance[] = [];
+  const cartes: Carte[] = [];
   const directes: { nom: string; params: Record<string, unknown> }[] = [];
   const nbLectures = { n: 0 };
   const textes: string[] = [];
@@ -387,8 +433,86 @@ export function ligneSeancePrevue(carte: CarteSeance, userId: string): LigneSean
 }
 
 export type ResultatAjout =
-  | { ok: true; seanceId: string; carte: CarteSeance }
+  | { ok: true; seanceId: string | null; carte: Carte }
   | { ok: false; code: 'refusee'; erreurs: { code: string; message: string }[] };
+
+/** Les opérations d'une carte de planning, dans le format de la fonction SQL coach_appliquer_plan (mêmes champs que l'ajout à la main) */
+export function operationsPourEcriture(operations: Operation[], carteId: string): Record<string, unknown>[] {
+  return operations.map((o, i): Record<string, unknown> => {
+    switch (o.op) {
+      case 'indisponibilite':
+        return { op: 'indisponibilite', type: o.type, du: o.du, au: o.au, client_id: `coach-${carteId}-${i}` };
+      case 'deplacer':
+        return { op: 'deplacer', seance_id: o.seanceId, vers: o.vers };
+      case 'supprimer':
+        return { op: 'supprimer', seance_id: o.seanceId };
+      case 'ajouter': {
+        const p = o.proposition;
+        const sport = p.sport as FamilleCoach;
+        const type = typeSeance(sport, p.type);
+        return {
+          op: 'ajouter',
+          date: p.date,
+          name: `${NOM_SPORT[sport]} · ${type?.nom ?? p.type}`,
+          sport: SPORT_BRUT[sport],
+          duration: p.minutes,
+          tss: type ? tssEstime(type, p.minutes) : 0,
+          notes: o.justification ? o.justification.slice(0, 500) : null,
+          start: `${p.date}T09:00:00`,
+          client_id: `coach-${carteId}-${i}`,
+        };
+      }
+    }
+  });
+}
+
+/** Ce que l'utilisateur lit quand la base refuse un plan (jamais le détail technique) */
+function messageEchecPlan(e: unknown): string {
+  const code = e instanceof Error ? e.message : '';
+  if (code.includes('seance_introuvable')) return "Une des séances n'est plus dans ton calendrier : le plan a changé, demande-moi de le refaire.";
+  if (code.includes('seance_trop_lourde')) return "Une des séances contient un fichier (trace, structure détaillée) : je ne la supprime pas moi-même. Supprime-la à la main, puis revalide.";
+  if (code.includes('annulation_trop_lourde')) return "Ce plan est trop gros pour être annulé d'un tap : demande-le en deux fois.";
+  return "Je n'ai pas réussi à appliquer le plan. Rien n'a été modifié. Réessaie.";
+}
+
+/** Valider une carte de planning : tout est revérifié, appliqué en UNE transaction, et de quoi annuler est gardé dans la carte. */
+async function appliquerPlanning(userId: string, carteId: string, carte: CartePlanning, deps: Dependances): Promise<ResultatAjout> {
+  const { stockage: s } = deps;
+  if (carte.etat === 'ajoutee') return { ok: true, seanceId: null, carte };
+  if (carte.etat === 'en_cours') throw new ErreurCoach('deja_en_cours', 409, 'Ce plan est déjà en train d\'être appliqué.');
+  if (carte.etat !== 'proposee') throw new ErreurCoach('carte_non_ajoutable', 409, 'Cette carte ne peut plus être appliquée.');
+
+  // Le calendrier a pu changer depuis la proposition : on revérifie TOUT le plan sur l'état d'aujourd'hui
+  const reglagesBrut = await s.lireReglages(userId);
+  const jour = jourLocal(deps.maintenant());
+  const { ctx, resume } = await preparer(userId, jour, s, [], reglagesBrut?.seuils);
+  const verdict = evaluerPlan(carte.operations, seancesDepuisResume(resume), ctx);
+  if (!verdict.ok) {
+    await s.changerEtatCarte(userId, carteId, 'proposee', 'refusee', verdict.erreurs[0]);
+    return { ok: false, code: 'refusee', erreurs: verdict.erreurs.map((message) => ({ code: 'plan', message })) };
+  }
+
+  // Une seule requête passe de « proposee » à « en_cours » : un double tap s'arrête ici
+  const prise = await s.changerEtatCarte(userId, carteId, 'proposee', 'en_cours');
+  if (!prise) throw new ErreurCoach('deja_en_cours', 409, 'Ce plan est déjà en train d\'être appliqué.');
+
+  let inverse: unknown[];
+  try {
+    inverse = await s.appliquerPlan(userId, operationsPourEcriture(carte.operations, carteId));
+  } catch (e) {
+    await s.changerEtatCarte(userId, carteId, 'en_cours', 'proposee');
+    console.error('coach-chat: application du plan échouée');
+    throw new ErreurCoach('ecriture_echouee', 500, messageEchecPlan(e));
+  }
+  try {
+    await s.memoriserInverse(userId, carteId, inverse);
+  } catch {
+    // Le plan EST appliqué : on ne le renie pas. Seule l'annulation automatique sera indisponible.
+    console.error("coach-chat: mémorisation de l'annulation échouée");
+  }
+  const finale = await s.changerEtatCarte(userId, carteId, 'en_cours', 'ajoutee');
+  return { ok: true, seanceId: null, carte: finale?.carte ?? { ...prise.carte, etat: 'ajoutee' } };
+}
 
 /** L'utilisateur tape « Ajouter » : tout est revalidé avec les données du moment, puis la séance est écrite avec SES droits. */
 export async function ajouterCarte(userId: string, carteId: unknown, deps: Dependances): Promise<ResultatAjout> {
@@ -398,6 +522,7 @@ export async function ajouterCarte(userId: string, carteId: unknown, deps: Depen
 
   const lue = await s.changerEtatCarte(userId, carteId, null, null);
   if (!lue) throw new ErreurCoach('carte_introuvable', 404, "Cette carte n'existe plus.");
+  if (estPlanning(lue.carte)) return appliquerPlanning(userId, carteId, lue.carte, deps);
   if (lue.carte.etat === 'ajoutee' && lue.carte.seance_id) return { ok: true, seanceId: lue.carte.seance_id, carte: lue.carte };
   if (lue.carte.etat === 'en_cours') throw new ErreurCoach('deja_en_cours', 409, "Cette séance est déjà en train d'être ajoutée.");
   if (lue.carte.etat !== 'proposee') throw new ErreurCoach('carte_non_ajoutable', 409, 'Cette carte ne peut plus être ajoutée.');
@@ -414,6 +539,7 @@ export async function ajouterCarte(userId: string, carteId: unknown, deps: Depen
   // Une seule requête passe de « proposee » à « en_cours » : un double tap s'arrête ici
   const prise = await s.changerEtatCarte(userId, carteId, 'proposee', 'en_cours');
   if (!prise) throw new ErreurCoach('deja_en_cours', 409, "Cette séance est déjà en train d'être ajoutée.");
+  if (estPlanning(prise.carte)) throw new ErreurCoach('carte_non_ajoutable', 409, 'Cette carte ne peut plus être ajoutée.');
 
   let seanceId: string;
   try {
@@ -428,12 +554,39 @@ export async function ajouterCarte(userId: string, carteId: unknown, deps: Depen
 }
 
 /** L'utilisateur annule une séance qu'il avait ajoutée depuis une carte : la séance part du calendrier, la carte passe à « annulée ». */
-export async function annulerCarte(userId: string, carteId: unknown, deps: Dependances): Promise<{ ok: true }> {
+export async function annulerCarte(userId: string, carteId: unknown, deps: Dependances): Promise<{ ok: true; annulees?: number; ignorees?: number }> {
   const { stockage: s } = deps;
   if (typeof carteId !== 'string' || !carteId || carteId.length > 80) throw new ErreurCoach('carte_invalide', 400, 'Carte invalide.');
   if (!(await s.aAcces(userId))) throw new ErreurCoach('acces_refuse', 403, "Le coach n'est pas encore ouvert pour ton compte.");
   const lue = await s.changerEtatCarte(userId, carteId, null, null);
   if (!lue) throw new ErreurCoach('carte_introuvable', 404, "Cette carte n'existe plus.");
+
+  // Un plan : on le défait en une transaction, puis la carte passe à « annulée »
+  if (estPlanning(lue.carte)) {
+    if (lue.carte.etat !== 'ajoutee') throw new ErreurCoach('carte_non_annulable', 409, "Ce plan n'est pas appliqué à ton calendrier.");
+    const inverse = lue.carte.inverse;
+    if (!Array.isArray(inverse) || inverse.length === 0) {
+      throw new ErreurCoach('annulation_indisponible', 409, "Je ne peux pas annuler ce plan automatiquement : remets les séances à la main dans ton calendrier.");
+    }
+    // Passer à « annulée » d'abord : un double tap ne défait pas deux fois
+    const prise = await s.changerEtatCarte(userId, carteId, 'ajoutee', 'annulee');
+    if (!prise) throw new ErreurCoach('carte_non_annulable', 409, "Ce plan n'est plus annulable.");
+    let bilan: { annulees: number; ignorees: number };
+    try {
+      bilan = await s.annulerPlan(userId, inverse);
+    } catch {
+      await s.changerEtatCarte(userId, carteId, 'annulee', 'ajoutee');
+      console.error("coach-chat: annulation du plan échouée");
+      throw new ErreurCoach('annulation_echouee', 500, "Je n'ai pas réussi à annuler le plan. Rien n'a été modifié. Réessaie.");
+    }
+    try {
+      await s.memoriserInverse(userId, carteId, null);
+    } catch {
+      console.error("coach-chat: nettoyage de l'annulation échoué");
+    }
+    return { ok: true, annulees: bilan.annulees, ignorees: bilan.ignorees };
+  }
+
   if (lue.carte.etat !== 'ajoutee') throw new ErreurCoach('carte_non_annulable', 409, "Cette séance n'est pas dans ton calendrier.");
   // Si la séance a déjà été supprimée à la main, on marque quand même la carte comme annulée
   if (lue.carte.seance_id) await s.supprimerSeanceIA(userId, lue.carte.seance_id);

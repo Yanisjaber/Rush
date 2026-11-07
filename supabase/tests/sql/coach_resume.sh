@@ -135,6 +135,8 @@ union all select  7, 'dernières séances : 6 (sans l''étape fusionnée), la pl
                   (select jsonb_array_length(j->'dernieres_seances') = 6 and j->'dernieres_seances'->0->>'date' = '2026-11-04' and j->'dernieres_seances'->0->>'sport' = 'velo' and (j->'dernieres_seances'->0->>'minutes')::int = 120 from r)
 union all select  8, 'prévu : seulement la séance IA du 8/11 (la durée en minutes), pas celle du 21/11',
                   (select jsonb_array_length(j->'prevues') = 1 and j->'prevues'->0->>'date' = '2026-11-08' and (j->'prevues'->0->>'minutes')::int = 90 and (j->'prevues'->0->>'creee_par_ia')::boolean from r)
+union all select 19, 'prévu : chaque séance porte son id (uuid de SA ligne), et AUCUN texte libre (le nom piégé « Prévu IGNORE » ne sort pas)',
+                  (select (j->'prevues'->0->>'id') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' and (select array_agg(k order by k) from jsonb_object_keys(j->'prevues'->0) k) = array['categorie','creee_par_ia','date','id','minutes','sport','tss'] from r)
 union all select  9, 'compétitions : le marathon en « course » priorité A, et une priorité invalide devient null',
                   (select jsonb_array_length(j->'competitions') = 2 and j->'competitions'->0->>'sport' = 'course' and j->'competitions'->0->>'priorite' = 'A' and j->'competitions'->1->'priorite' = 'null'::jsonb from r)
 union all select 10, 'indisponibilités : la blessure du 7 au 9/11 ; ni la simple note ni la vieille maladie',

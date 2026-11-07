@@ -28,7 +28,7 @@ Aujourd'hui le résumé complet est renvoyé à chaque tour (voir `_shared/coach
 1. **Registre d'actions** par niveau de risque (type, validation des entrées, carte ou direct).
 2. **Outils de lecture** + résumé allégé.
 3. **Base de connaissances** (documents courts et sourcés : périodisation, affûtage, reprise après blessure, nutrition, spécifique par sport) + recherche.
-4. **Replanification sur imprévu** : analyse de demande en contraintes, moteur, validateur.
+4. **Replanification sur imprévu** : **fait (7 nov.)**, voir `docs/ia/REPLANIFICATION.md`.
 5. **Banc d'essai** 1 000 à 2 000 cas (pièges inclus), puis comparaison Haiku / Sonnet.
 6. Compte rendu de sortie, prédiction.
 

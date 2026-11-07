@@ -182,6 +182,7 @@ begin
 
   -- Séances prévues dans les 14 prochains jours (durée en minutes, sport d'une liste fermée)
   select coalesce(jsonb_agg(jsonb_build_object(
+           'id', id,
            'date', date,
            'categorie', category,
            'sport', case when sport in ('velo', 'course', 'natation', 'muscu', 'hyrox', 'triathlon', 'duathlon', 'autre') then sport

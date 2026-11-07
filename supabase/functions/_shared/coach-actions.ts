@@ -16,6 +16,7 @@
 // `disponible: false` = déclaré mais pas encore branché (il manque l'exécuteur au tap) : jamais montré au modèle.
 // ============================================================
 import { chercherConnaissance, SPORTS_CONNAISSANCE } from './connaissances.ts';
+import type { Contraintes, Operation } from './planning.ts';
 import { FAMILLES_COACH } from './menu-seances.ts';
 import type { OutilModele } from './modele.ts';
 import { OUTIL_PROPOSER_SEANCE, NOM_OUTIL_SEANCE } from './coach-prompt.ts';
@@ -83,6 +84,89 @@ function uuid(x: unknown): string | null {
 }
 
 const refus = (erreur: string): LectureAction => ({ ok: false, erreur });
+
+/** « motif » : une phrase du modèle qui explique le plan à l'utilisateur (affichée sur la carte) */
+function motifPlan(x: unknown): string | null {
+  if (typeof x !== 'string') return null;
+  const t = x.trim().replace(/\s+/g, ' ');
+  return t.length >= 3 && t.length <= 200 ? t : null;
+}
+
+const DATES_MAX_JOURS_BLOQUES = 14;
+
+function lireContraintes(o: Objet): { ok: true; contraintes: Contraintes } | { ok: false; erreur: string } {
+  const c: Contraintes = {};
+  if (o.indisponibilite !== undefined) {
+    const i = objet(o.indisponibilite, ['type', 'du', 'au']);
+    const type = parmi(i?.type, INDISPONIBILITES);
+    const du = dateIso(i?.du);
+    const au = dateIso(i?.au);
+    if (!i || !type || !du || !au) return { ok: false, erreur: "indisponibilite : il faut type (maladie, blessure, indisponible), du et au (AAAA-MM-JJ)." };
+    if (au < du) return { ok: false, erreur: 'indisponibilite : la fin doit être le même jour que le début, ou après.' };
+    c.indisponibilite = { type, du, au };
+  }
+  if (o.jours_bloques !== undefined) {
+    const l = o.jours_bloques;
+    if (!Array.isArray(l) || l.length < 1 || l.length > DATES_MAX_JOURS_BLOQUES) return { ok: false, erreur: `jours_bloques : une liste de 1 à ${DATES_MAX_JOURS_BLOQUES} dates AAAA-MM-JJ.` };
+    const dates = l.map(dateIso);
+    if (dates.some((d) => !d)) return { ok: false, erreur: 'jours_bloques : toutes les dates doivent être au format AAAA-MM-JJ et exister.' };
+    c.joursBloques = [...new Set(dates as string[])];
+  }
+  if (o.sports_exclus !== undefined) {
+    const x = objet(o.sports_exclus, ['sports', 'du', 'au']);
+    const du = dateIso(x?.du);
+    const au = dateIso(x?.au);
+    const sports = Array.isArray(x?.sports) ? (x!.sports as unknown[]).map((v) => parmi(v, SPORTS_LECTURE)) : [];
+    if (!x || !du || !au || sports.length < 1 || sports.length > 5 || sports.some((v) => !v)) return { ok: false, erreur: `sports_exclus : sports (1 à 5 parmi ${SPORTS_LECTURE.join(', ')}), du et au (AAAA-MM-JJ).` };
+    if (au < du || joursEntre(du, au) > 31) return { ok: false, erreur: 'sports_exclus : la fin doit être après le début, 31 jours au plus.' };
+    c.sportsExclus = { sports: [...new Set(sports as string[])], du, au };
+  }
+  if (!c.indisponibilite && !c.joursBloques && !c.sportsExclus) return { ok: false, erreur: 'Donne au moins une contrainte : indisponibilite, jours_bloques ou sports_exclus.' };
+  return { ok: true, contraintes: c };
+}
+
+const OPS_MODIFIER_MAX = 8;
+
+function lireOperations(liste: unknown): { ok: true; operations: Operation[] } | { ok: false; erreur: string } {
+  if (!Array.isArray(liste) || liste.length < 1 || liste.length > OPS_MODIFIER_MAX) return { ok: false, erreur: `operations : une liste de 1 à ${OPS_MODIFIER_MAX} opérations.` };
+  const operations: Operation[] = [];
+  for (let n = 0; n < liste.length; n++) {
+    const brut = liste[n];
+    const nom = (typeof brut === 'object' && brut !== null ? (brut as Objet).op : undefined) as unknown;
+    const err = (m: string) => ({ ok: false as const, erreur: `operations[${n}] : ${m}` });
+    if (nom === 'deplacer') {
+      const o = objet(brut, ['op', 'seance_id', 'vers']);
+      const seanceId = uuid(o?.seance_id);
+      const vers = dateIso(o?.vers);
+      if (!seanceId || !vers) return err("deplacer demande seance_id (celui d'une séance prévue) et vers (AAAA-MM-JJ).");
+      operations.push({ op: 'deplacer', seanceId, vers });
+    } else if (nom === 'supprimer') {
+      const o = objet(brut, ['op', 'seance_id']);
+      const seanceId = uuid(o?.seance_id);
+      if (!seanceId) return err("supprimer demande seance_id (celui d'une séance prévue).");
+      operations.push({ op: 'supprimer', seanceId });
+    } else if (nom === 'ajouter') {
+      const o = objet(brut, ['op', 'date', 'sport', 'type_seance', 'minutes', 'justification']);
+      const date = dateIso(o?.date);
+      const sport = parmi(o?.sport, FAMILLES_COACH);
+      const minutes = typeof o?.minutes === 'number' && Number.isInteger(o.minutes) ? o.minutes : null;
+      if (!o || !date || !sport || typeof o.type_seance !== 'string' || minutes === null || typeof o.justification !== 'string') {
+        return err('ajouter demande date, sport, type_seance, minutes (entier) et justification.');
+      }
+      operations.push({ op: 'ajouter', proposition: { date, sport, type: o.type_seance, minutes }, justification: o.justification.trim().slice(0, 300) });
+    } else if (nom === 'indisponibilite') {
+      const o = objet(brut, ['op', 'type_periode', 'du', 'au']);
+      const type = parmi(o?.type_periode, INDISPONIBILITES);
+      const du = dateIso(o?.du);
+      const au = dateIso(o?.au);
+      if (!type || !du || !au) return err('indisponibilite demande type_periode (maladie, blessure, indisponible), du et au (AAAA-MM-JJ).');
+      operations.push({ op: 'indisponibilite', type, du, au });
+    } else {
+      return err("op inconnue (deplacer, supprimer, ajouter ou indisponibilite).");
+    }
+  }
+  return { ok: true, operations };
+}
 
 // ---------- Les écrans que le coach peut ouvrir ----------
 
@@ -322,63 +406,89 @@ export const ACTIONS: DefinitionAction[] = [
     // pas de `lire` : la séance est vérifiée par validerSeance (coach-chat.ts)
   },
   {
-    nom: 'deplacer_seance',
+    nom: 'proposer_replanification',
     niveau: 'carte',
-    disponible: false,
-    description: "Propose de déplacer une séance prévue à un autre jour (carte à valider). Ça ne déplace rien tant que l'utilisateur n'a pas validé.",
-    schema: {
-      type: 'object',
-      properties: { seance_id: { type: 'string', description: 'Identifiant de la séance prévue.' }, date: { type: 'string', description: 'Nouveau jour, AAAA-MM-JJ.' } },
-      required: ['seance_id', 'date'],
-      additionalProperties: false,
-    },
-    lire: (input) => {
-      const o = objet(input, ['seance_id', 'date']);
-      const seance_id = uuid(o?.seance_id);
-      const date = dateIso(o?.date);
-      return seance_id && date ? { ok: true, params: { seance_id, date } } : refus('Il faut un identifiant de séance valide et une date AAAA-MM-JJ.');
-    },
-  },
-  {
-    nom: 'supprimer_seance',
-    niveau: 'carte',
-    disponible: false,
-    description: "Propose de supprimer une séance prévue (carte à valider). Ça ne supprime rien tant que l'utilisateur n'a pas validé.",
-    schema: {
-      type: 'object',
-      properties: { seance_id: { type: 'string', description: 'Identifiant de la séance prévue.' } },
-      required: ['seance_id'],
-      additionalProperties: false,
-    },
-    lire: (input) => {
-      const o = objet(input, ['seance_id']);
-      const seance_id = uuid(o?.seance_id);
-      return seance_id ? { ok: true, params: { seance_id } } : refus('Il faut un identifiant de séance valide.');
-    },
-  },
-  {
-    nom: 'declarer_indisponibilite',
-    niveau: 'carte',
-    disponible: false,
-    description: "Propose de déclarer une période de maladie, blessure ou indisponibilité (carte à valider).",
+    disponible: true,
+    description:
+      "Replanifie le calendrier après un IMPRÉVU, à partir de contraintes : maladie ou blessure (indisponibilite), jours où l'utilisateur ne peut pas s'entraîner (jours_bloques), sport à éviter pendant une période (sports_exclus). " +
+      "Le CODE calcule le plan : il déplace, remplace par des séances courtes et faciles à la reprise, ou supprime, en respectant toutes les règles, puis crée UNE carte que l'utilisateur valide. Rien n'est modifié avant sa validation. " +
+      "Les dates sont au format AAAA-MM-JJ ; calcule-les à partir de la date du jour du contexte.",
     schema: {
       type: 'object',
       properties: {
-        type: { type: 'string', enum: [...INDISPONIBILITES] },
-        du: { type: 'string', description: 'Premier jour, AAAA-MM-JJ.' },
-        au: { type: 'string', description: 'Dernier jour, AAAA-MM-JJ (même jour ou après).' },
+        motif: { type: 'string', description: "Une phrase (200 caractères au plus) qui dit pourquoi, affichée sur la carte. Par exemple : « Blessure au genou, 10 jours de repos »." },
+        indisponibilite: {
+          type: 'object',
+          description: "Maladie, blessure ou indisponibilité à déclarer sur le calendrier.",
+          properties: { type: { type: 'string', enum: [...INDISPONIBILITES] }, du: { type: 'string' }, au: { type: 'string' } },
+          required: ['type', 'du', 'au'],
+          additionalProperties: false,
+        },
+        jours_bloques: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: DATES_MAX_JOURS_BLOQUES, description: "Dates où l'utilisateur ne peut pas s'entraîner (voyage, travail), sans que ce soit de la santé." },
+        sports_exclus: {
+          type: 'object',
+          description: 'Sports à éviter pendant une période (par exemple pas de vélo cette semaine).',
+          properties: { sports: { type: 'array', items: { type: 'string', enum: [...SPORTS_LECTURE] }, minItems: 1, maxItems: 5 }, du: { type: 'string' }, au: { type: 'string' } },
+          required: ['sports', 'du', 'au'],
+          additionalProperties: false,
+        },
       },
-      required: ['type', 'du', 'au'],
+      required: ['motif'],
       additionalProperties: false,
     },
     lire: (input) => {
-      const o = objet(input, ['type', 'du', 'au']);
-      const type = parmi(o?.type, INDISPONIBILITES);
-      const du = dateIso(o?.du);
-      const au = dateIso(o?.au);
-      if (!type || !du || !au) return refus('Il faut un type (maladie, blessure, indisponible) et deux dates AAAA-MM-JJ.');
-      if (au < du) return refus("La date de fin doit être le même jour que le début, ou après.");
-      return { ok: true, params: { type, du, au } };
+      const o = objet(input, ['motif', 'indisponibilite', 'jours_bloques', 'sports_exclus']);
+      const motif = motifPlan(o?.motif);
+      if (!o || !motif) return refus('motif : une phrase de 3 à 200 caractères.');
+      const c = lireContraintes(o);
+      return c.ok ? { ok: true, params: { intention: motif, contraintes: c.contraintes } } : refus(c.erreur);
+    },
+  },
+  {
+    nom: 'modifier_planning',
+    niveau: 'carte',
+    disponible: true,
+    description:
+      "Modifie le calendrier avec des opérations PRÉCISES quand l'utilisateur le demande en termes simples : « décale ma sortie de demain à jeudi » (deplacer), « supprime ma séance de samedi » (supprimer), « ajoute une sortie facile dimanche » (ajouter), « je suis malade jusqu'à mardi » (indisponibilite). " +
+      "Les séances prévues sont dans le contexte avec leur id ; utilise ces id, n'en invente jamais. Crée UNE carte que l'utilisateur valide ; rien n'est modifié avant. Si l'imprévu touche plusieurs séances, préfère proposer_replanification. " +
+      `${OPS_MODIFIER_MAX} opérations au plus.`,
+    schema: {
+      type: 'object',
+      properties: {
+        motif: { type: 'string', description: 'Une phrase (200 caractères au plus) qui dit pourquoi, affichée sur la carte.' },
+        operations: {
+          type: 'array',
+          minItems: 1,
+          maxItems: OPS_MODIFIER_MAX,
+          items: {
+            type: 'object',
+            properties: {
+              op: { type: 'string', enum: ['deplacer', 'supprimer', 'ajouter', 'indisponibilite'] },
+              seance_id: { type: 'string', description: "deplacer, supprimer : l'id d'une séance prévue du contexte." },
+              vers: { type: 'string', description: 'deplacer : le nouveau jour, AAAA-MM-JJ.' },
+              date: { type: 'string', description: 'ajouter : le jour, AAAA-MM-JJ.' },
+              sport: { type: 'string', enum: [...FAMILLES_COACH], description: 'ajouter : le sport.' },
+              type_seance: { type: 'string', description: 'ajouter : un type du menu de ce sport.' },
+              minutes: { type: 'integer', description: 'ajouter : la durée.' },
+              justification: { type: 'string', description: 'ajouter : une phrase, 200 caractères au plus.' },
+              type_periode: { type: 'string', enum: [...INDISPONIBILITES], description: 'indisponibilite : le type de période.' },
+              du: { type: 'string', description: 'indisponibilite : premier jour, AAAA-MM-JJ.' },
+              au: { type: 'string', description: 'indisponibilite : dernier jour, AAAA-MM-JJ.' },
+            },
+            required: ['op'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['motif', 'operations'],
+      additionalProperties: false,
+    },
+    lire: (input) => {
+      const o = objet(input, ['motif', 'operations']);
+      const motif = motifPlan(o?.motif);
+      if (!o || !motif) return refus('motif : une phrase de 3 à 200 caractères.');
+      const l = lireOperations(o.operations);
+      return l.ok ? { ok: true, params: { intention: motif, operations: l.operations } } : refus(l.erreur);
     },
   },
 

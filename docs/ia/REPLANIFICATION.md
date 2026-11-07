@@ -1,0 +1,49 @@
+# Replanification : diriger le planning depuis le chat (7 nov. 2026)
+
+Le cœur du coach : l'utilisateur dit une phrase simple (« je me suis blessé au genou, 10 jours », « décale ma sortie de demain à jeudi », « pas de vélo cette semaine »), le coach propose **une carte**, l'utilisateur la valide d'un tap. Rien n'est écrit avant.
+
+## Qui fait quoi
+
+| | Rôle |
+|---|---|
+| **Le modèle** | Traduit la phrase en contraintes ou en opérations, puis explique le plan. Il ne calcule aucun déplacement. |
+| **Le code** (`_shared/planning.ts`) | Calcule le plan avec les mêmes règles que le validateur, vérifie le plan entier, refuse les plans dangereux. |
+| **La base** (`coach_appliquer_plan`) | Applique tout en une transaction, avec le jeton de l'utilisateur (RLS). |
+
+## Deux outils pour le modèle
+
+- **`proposer_replanification`** : un imprévu. Contraintes : `indisponibilite` (maladie, blessure, indisponible), `jours_bloques` (voyage, travail), `sports_exclus` (pas de vélo du… au…). Le moteur déplace, remplace ou supprime.
+- **`modifier_planning`** : une modification précise, jusqu'à 8 opérations : `deplacer`, `supprimer`, `ajouter`, `indisponibilite`. Les `seance_id` viennent du contexte (`prevues` du résumé, ajoutées dans `rpc_coach_resume`).
+
+## Ce que fait le moteur (`proposerReplanification`)
+
+Chaque séance touchée est :
+1. **déplacée** au premier jour libre qui respecte toutes les règles (vers l'avant ; vers l'arrière seulement si ce n'est pas une affaire de santé) ;
+2. **remplacée** par une version courte et facile pendant la **semaine de reprise** après une maladie ou une blessure d'au moins 3 jours : retour 1 jour (maladie) ou 2 jours (blessure) après la fin, durée à 70 % (arrêt de moins d'une semaine) ou 50 % (une semaine ou plus), type facile du menu ;
+3. **supprimée**, avec la raison, s'il n'y a aucune place dans les 14 jours.
+
+Les séances touchées sont retirées toutes ensemble avant le placement (elles ne se bloquent pas entre elles). Un jour qui a déjà une séance est évité. Le moteur ne crée jamais plus de séances qu'il n'en retire. Les repères de reprise sont des pratiques de terrain (fiche `reprise-apres-arret`), pas des lois, et sont réunis dans `fenetreReprise`.
+
+## Règles de sécurité
+
+- **Règle dure** : un plan qui laisse une séance pendant une période qu'il déclare est refusé.
+- Les règles du validateur s'appliquent au nouveau jour : indisponibilité, repos posé, compétition, veille de compétition, jours durs d'affilée, hausse de charge de la semaine, repos de la semaine, horizon de 14 jours.
+- **Garde-fou santé** : en « repos », on peut **supprimer** et déclarer une période, mais ni déplacer ni ajouter. En « prudence », pas de séance dure.
+- Une carte de planning par message, jamais avec une autre carte.
+- Au tap : tout le plan est **revérifié** sur le calendrier d'aujourd'hui ; si quelque chose a changé, la carte est refusée et rien n'est écrit.
+- La base ne touche que les séances d'**entraînement** de l'utilisateur (jamais une compétition), refuse de supprimer une séance volumineuse (fichier GPX), et plafonne à 16 opérations.
+- **Annuler** défait le plan en une transaction ; ne supprime que ce que le coach a créé ; au mieux (une ligne modifiée à la main depuis est ignorée et comptée).
+
+## Fichiers
+
+- Moteur et vérification : `supabase/functions/_shared/planning.ts` (+ `validerDeplacement` dans `validateur.ts`).
+- Outils : `_shared/coach-actions.ts` ; cartes, validation, annulation : `_shared/coach-chat.ts` ; carte `planning` : `_shared/coach-contexte.ts`.
+- SQL : `supabase/migrations/2026-11-07_coach_planning.sql` (test : `bash supabase/tests/sql/coach_planning.sh`) et `id` dans `prevues` de `2026-11-06_rpc_coach_resume.sql`.
+- Tests : `tests/edge/planning.test.mts`, `coach-chat.test.mts`, `coach-actions.test.mts`.
+
+## Reste à faire
+
+- **L'écran** : la carte de planning dans le chat (aperçu avant/après, « Valider », « Annuler ») et l'exécution des actions directes. **8 maquettes d'abord.**
+- Réactions à la carte : « Modifier » (le coach la refait) et un aperçu visuel dans le calendrier.
+- Plus d'imprévus : « moins de temps cette semaine » (plafond d'heures), « fatigué » (alléger sans supprimer), compétition qui bouge.
+- Essai avec un vrai modèle (clé Anthropic) pour juger la compréhension des phrases : banc d'essai de phrases d'imprévus.

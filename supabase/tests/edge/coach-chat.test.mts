@@ -2,7 +2,7 @@
 // Lancer : node --experimental-strip-types --test supabase/tests/edge/coach-chat.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ajouterCarte, annulerCarte, CONFIG_PAR_DEFAUT, ErreurCoach, jourLocal, ligneSeancePrevue, maintenirMemoire, traiterMessage } from '../../functions/_shared/coach-chat.ts';
+import { ajouterCarte, annulerCarte, CONFIG_PAR_DEFAUT, ErreurCoach, jourLocal, ligneSeancePrevue, maintenirMemoire, operationsPourEcriture, traiterMessage } from '../../functions/_shared/coach-chat.ts';
 import type { Dependances, EvenementCoach, SignauxSante, StockageCoach } from '../../functions/_shared/coach-chat.ts';
 import { blocContexte, contexteDepuisResume, historiquePourModele, resumeLeger, texteCarte } from '../../functions/_shared/coach-contexte.ts';
 import type { CarteSeance, EtatCarte, MessageStocke } from '../../functions/_shared/coach-contexte.ts';
@@ -44,6 +44,30 @@ function resumeBase(): Libre {
 }
 
 class FauxStockage implements StockageCoach {
+  planAppliques: Record<string, unknown>[][] = [];
+  planAnnules: unknown[][] = [];
+  planEchoue: string | null = null;
+  annulationEchoue = false;
+  inverseEchoue = false;
+  async appliquerPlan(_u: string, ops: Record<string, unknown>[]) {
+    if (this.planEchoue) throw new Error(this.planEchoue);
+    this.planAppliques.push(structuredClone(ops));
+    return ops.map((o, i) => ({ op: `inverse-${o.op}`, i }));
+  }
+  async annulerPlan(_u: string, inverse: unknown[]) {
+    if (this.annulationEchoue) throw new Error('boum (ne doit jamais sortir)');
+    this.planAnnules.push(structuredClone(inverse));
+    return { annulees: inverse.length, ignorees: 0 };
+  }
+  async memoriserInverse(_u: string, carteId: string, inverse: unknown[] | null) {
+    if (this.inverseEchoue) throw new Error('boum');
+    for (const m of this.messages) {
+      const c = m.cartes?.find((x) => x.id === carteId) as Libre;
+      if (!c) continue;
+      if (inverse) c.inverse = inverse;
+      else delete c.inverse;
+    }
+  }
   historiqueAppels: { fonction: string; args: Record<string, unknown> }[] = [];
   historiqueReponse: unknown = [];
   historiqueErreur = false;
@@ -212,11 +236,11 @@ test('actions directes : trois au maximum par message', async () => {
   assert.equal(retours[3].is_error, true);
 });
 
-test('actions pas encore branchées (déplacer, supprimer, compte…) : le modèle ne les voit pas et, s\'il les invente, elles n\'existent pas', async () => {
-  const w = monde([rep('', [outil('a', { seance_id: '00000000-0000-4000-8000-000000000001' }, 'supprimer_seance'), outil('b', {}, 'supprimer_compte')]), rep('Je ne peux pas.')]);
+test('actions pas encore branchées (supprimer le compte, déconnecter Strava…) : le modèle ne les voit pas et, s\'il les invente, elles n\'existent pas', async () => {
+  const w = monde([rep('', [outil('a', { service: 'strava' }, 'deconnecter_integration'), outil('b', {}, 'supprimer_compte')]), rep('Je ne peux pas.')]);
   await traiterMessage(U, 'Supprime tout', w.deps, w.emettre);
   const noms = w.modele.appels[0].outils.map((o: Libre) => o.name);
-  assert.ok(!noms.includes('supprimer_seance') && !noms.includes('supprimer_compte'));
+  assert.ok(!noms.includes('deconnecter_integration') && !noms.includes('supprimer_compte'));
   const retours = w.modele.appels[1].messages.at(-1)?.content as Libre[];
   assert.ok(retours.every((r) => r.is_error === true && /n'existe pas/.test(r.content)));
   assert.equal(w.stockage.seances.length, 0);
@@ -759,4 +783,202 @@ test('le jour local suit Paris, pas UTC', () => {
   assert.equal(jourLocal(new Date('2026-11-06T23:30:00Z')), '2026-11-07');
   assert.equal(jourLocal(new Date('2026-11-06T10:00:00Z')), '2026-11-06');
   assert.equal(jourLocal(new Date('2026-07-01T22:30:00Z')), '2026-07-02');
+});
+
+// ---------- La replanification : proposer, valider, annuler ----------
+const PID = (n: number) => `00000000-0000-4000-8000-00000000020${n}`;
+const PREVUES = [
+  { id: PID(1), date: '2026-11-07', categorie: 'entrainement', sport: 'course', minutes: 60, tss: 50, creee_par_ia: false },
+  { id: PID(2), date: '2026-11-08', categorie: 'entrainement', sport: 'velo', minutes: 120, tss: 100, creee_par_ia: false },
+  { id: PID(3), date: '2026-11-10', categorie: 'entrainement', sport: 'course', minutes: 45, tss: 80, creee_par_ia: false },
+  { id: PID(4), date: '2026-11-12', categorie: 'entrainement', sport: 'velo', minutes: 90, tss: 80, creee_par_ia: false },
+  { id: PID(5), date: '2026-11-14', categorie: 'entrainement', sport: 'velo', minutes: 180, tss: 150, creee_par_ia: false },
+];
+const avecPrevues = (s: FauxStockage) => { s.resume.prevues = structuredClone(PREVUES); s.resume.charge.moyenne_hebdo_28_jours = 400; };
+const BLESSURE = { motif: 'Blessure au genou, 10 jours', indisponibilite: { type: 'blessure', du: '2026-11-07', au: '2026-11-16' } };
+
+/** Une conversation où le coach propose un plan : renvoie le monde, avec la carte « carte-1 » enregistrée */
+async function planPropose(outils: { id: string; name: string; input: unknown }[] = [outil('r', BLESSURE, 'proposer_replanification')], surStockage: (s: FauxStockage) => void = avecPrevues) {
+  const w = monde([rep('Je regarde.', outils), rep('Voilà le plan.')], surStockage);
+  await traiterMessage(U, 'Je me suis blessé au genou, 10 jours sans sport', w.deps, w.emettre);
+  return w;
+}
+
+test('proposer_replanification : une carte de planning est créée (rien n\'est écrit), le modèle reçoit le détail et la consigne de ne pas dire « c\'est fait »', async () => {
+  const w = await planPropose();
+  const carte = w.evts.find((e) => e.type === 'carte') as Libre;
+  assert.equal(carte.carte.genre, 'planning');
+  assert.equal(carte.carte.etat, 'proposee');
+  assert.equal(carte.carte.intention, 'Blessure au genou, 10 jours');
+  assert.equal(carte.carte.operations[0].op, 'indisponibilite');
+  assert.ok(carte.carte.lignes.length >= 2);
+  assert.ok(carte.carte.charge_apres < carte.carte.charge_avant, 'une blessure allège le planning');
+  const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.equal(r.is_error, undefined);
+  assert.match(r.content, /Carte de planning créée/);
+  assert.match(r.content, /Déclarer : blessure/);
+  assert.match(r.content, /ne dis donc jamais que c'est fait/);
+  assert.deepEqual(w.stockage.planAppliques, [], 'AUCUNE écriture avant la validation');
+  assert.equal(w.stockage.seances.length, 0);
+  assert.equal((w.stockage.messages[1].cartes as Libre[])[0].id, 'carte-1');
+});
+
+test('modifier_planning : décaler une séance donne une carte ; id inconnu, date impossible ou plan dangereux sont refusés avec la raison', async () => {
+  const bon = await planPropose([outil('a', { motif: 'Décalage', operations: [{ op: 'deplacer', seance_id: PID(4), vers: '2026-11-16' }] }, 'modifier_planning')]);
+  const carte = bon.evts.find((e) => e.type === 'carte') as Libre;
+  assert.deepEqual(carte.carte.operations, [{ op: 'deplacer', seanceId: PID(4), vers: '2026-11-16' }]);
+  assert.equal(carte.carte.lignes[0].texte, 'Déplacer : vélo 90 min du jeu. 12/11 → lun. 16/11');
+
+  const w = await planPropose([
+    outil('a', { motif: 'Test ok', operations: [{ op: 'supprimer', seance_id: PID(9) }] }, 'modifier_planning'),
+    outil('b', { motif: 'Test ok', operations: [{ op: 'deplacer', seance_id: PID(1), vers: '2026-02-31' }] }, 'modifier_planning'),
+    outil('c', { motif: 'Test ok', operations: [{ op: 'deplacer', seance_id: PID(1), vers: '2026-11-05' }] }, 'modifier_planning'),
+  ]);
+  const r = w.modele.appels[1].messages.at(-1)?.content as Libre[];
+  assert.ok(r.every((x) => x.is_error === true));
+  assert.match(r[0].content, /n'existe pas/);
+  assert.match(r[1].content, /Paramètres invalides/);
+  assert.match(r[2].content, /déjà passée/);
+  assert.equal(w.evts.filter((e) => e.type === 'carte').length, 0);
+});
+
+test('RÈGLE DURE : déclarer une blessure sans régler les séances de la période est refusé, le modèle voit laquelle reste', async () => {
+  const w = await planPropose([outil('a', { motif: 'Blessure', operations: [{ op: 'indisponibilite', type_periode: 'blessure', du: '2026-11-07', au: '2026-11-16' }] }, 'modifier_planning')]);
+  const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.equal(r.is_error, true);
+  assert.match(r.content, /il reste course 60 min le sam\. 07\/11/);
+  assert.equal(w.evts.filter((e) => e.type === 'carte').length, 0);
+});
+
+test('une seule carte de planning par message, jamais mélangée à une carte de séance (dans les deux sens)', async () => {
+  const deux = await planPropose([outil('a', BLESSURE, 'proposer_replanification'), outil('b', { motif: 'Autre', jours_bloques: ['2026-11-12'] }, 'proposer_replanification')]);
+  const r = deux.modele.appels[1].messages.at(-1)?.content as Libre[];
+  assert.equal(r[0].is_error, undefined);
+  assert.equal(r[1].is_error, true);
+  assert.match(r[1].content, /Une seule carte de planning/);
+  const apres = await planPropose([outil('a', BLESSURE, 'proposer_replanification'), outil('b', seance('2026-11-19', 'footing_facile', 40, 'course'), 'proposer_seance')]);
+  assert.equal(((apres.modele.appels[1].messages.at(-1)?.content as Libre[])[1]).is_error, true);
+  assert.equal(apres.evts.filter((e) => e.type === 'carte').length, 1);
+  const seule = await planPropose([outil('a', seance('2026-11-19', 'footing_facile', 40, 'course'), 'proposer_seance')]);
+  assert.equal(seule.evts.filter((e) => e.type === 'carte').length, 1, 'cette séance est valide quand elle est seule');
+  const avant = await planPropose([outil('a', seance('2026-11-19', 'footing_facile', 40, 'course'), 'proposer_seance'), outil('b', BLESSURE, 'proposer_replanification')]);
+  assert.equal(((avant.modele.appels[1].messages.at(-1)?.content as Libre[])[1]).is_error, true);
+});
+
+test('une contrainte qui ne touche aucune séance : pas de carte, le modèle l\'apprend sans erreur', async () => {
+  const w = await planPropose([outil('a', { motif: 'Voyage', jours_bloques: ['2026-11-20'] }, 'proposer_replanification')]);
+  const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.equal(r.is_error, undefined);
+  assert.match(r.content, /Rien à modifier/);
+  assert.equal(w.evts.filter((e) => e.type === 'carte').length, 0);
+  assert.equal(w.stockage.messages[1].cartes, null);
+});
+
+test('valider un plan : tout est revérifié, appliqué en UNE fois avec les bons champs, de quoi annuler est gardé dans la carte', async () => {
+  const w = await planPropose();
+  const r = await ajouterCarte(U, 'carte-1', w.deps);
+  assert.equal(r.ok, true);
+  assert.equal(w.stockage.planAppliques.length, 1);
+  const ops = w.stockage.planAppliques[0];
+  const carte = (w.stockage.messages[1].cartes as Libre[])[0];
+  assert.equal(ops.length, carte.operations.length);
+  assert.deepEqual(ops[0], { op: 'indisponibilite', type: 'blessure', du: '2026-11-07', au: '2026-11-16', client_id: 'coach-carte-1-0' });
+  assert.equal(carte.etat, 'ajoutee');
+  assert.equal(carte.inverse.length, ops.length);
+  assert.equal((r as Libre).carte.etat, 'ajoutee');
+  // les séances ajoutées portent les champs de l'application (sport brut, nom, charge estimée)
+  const ajout = ops.find((o) => o.op === 'ajouter') as Libre;
+  assert.ok(ajout && ['Run', 'Ride', 'Swim'].includes(ajout.sport) && ajout.tss > 0 && /· /.test(ajout.name) && /^coach-carte-1-\d+$/.test(ajout.client_id));
+});
+
+test('valider deux fois (ou deux taps en même temps) : le plan n\'est appliqué qu\'UNE seule fois', async () => {
+  const w = await planPropose();
+  const [a, b] = await Promise.allSettled([ajouterCarte(U, 'carte-1', w.deps), ajouterCarte(U, 'carte-1', w.deps)]);
+  assert.equal(w.stockage.planAppliques.length, 1);
+  assert.ok([a, b].some((x) => x.status === 'fulfilled'));
+  const encore = await ajouterCarte(U, 'carte-1', w.deps);
+  assert.equal(encore.ok, true, 'déjà appliqué : réponse idempotente');
+  assert.equal(w.stockage.planAppliques.length, 1);
+});
+
+test('valider : si le calendrier a changé depuis la proposition, le plan est refusé et RIEN n\'est écrit', async () => {
+  const w = await planPropose();
+  w.stockage.resume.prevues = w.stockage.resume.prevues.filter((p: Libre) => p.id !== PID(1)); // l'utilisateur a supprimé la séance du 07/11
+  const r = await ajouterCarte(U, 'carte-1', w.deps);
+  assert.equal(r.ok, false);
+  assert.equal((r as Libre).code, 'refusee');
+  assert.match((r as Libre).erreurs[0].message, /n'existe pas/);
+  assert.deepEqual(w.stockage.planAppliques, []);
+  assert.equal((w.stockage.messages[1].cartes as Libre[])[0].etat, 'refusee');
+  await assert.rejects(ajouterCarte(U, 'carte-1', w.deps), (e: unknown) => e instanceof ErreurCoach && e.code === 'carte_non_ajoutable');
+});
+
+test('valider : la base refuse (séance disparue, séance lourde) → carte rejouable, message poli, aucun détail technique', async () => {
+  for (const [code, attendu] of [['seance_introuvable', /n'est plus dans ton calendrier/], ['seance_trop_lourde', /contient un fichier/], ['quelque chose de bizarre', /Rien n'a été modifié/]] as const) {
+    const w = await planPropose();
+    w.stockage.planEchoue = code;
+    await assert.rejects(ajouterCarte(U, 'carte-1', w.deps), (e: unknown) => e instanceof ErreurCoach && e.code === 'ecriture_echouee' && attendu.test(e.message) && !/seance_introuvable|seance_trop_lourde|bizarre/.test(e.message));
+    assert.equal((w.stockage.messages[1].cartes as Libre[])[0].etat, 'proposee', 'on peut réessayer');
+  }
+});
+
+test('annuler un plan : tout est défait en une fois, la carte passe à « annulée », pas de double annulation', async () => {
+  const w = await planPropose();
+  await ajouterCarte(U, 'carte-1', w.deps);
+  const inverse = structuredClone((w.stockage.messages[1].cartes as Libre[])[0].inverse);
+  const r = await annulerCarte(U, 'carte-1', w.deps);
+  assert.deepEqual(r, { ok: true, annulees: inverse.length, ignorees: 0 });
+  assert.deepEqual(w.stockage.planAnnules, [inverse]);
+  const carte = (w.stockage.messages[1].cartes as Libre[])[0];
+  assert.equal(carte.etat, 'annulee');
+  assert.equal(carte.inverse, undefined);
+  await assert.rejects(annulerCarte(U, 'carte-1', w.deps), (e: unknown) => e instanceof ErreurCoach && e.code === 'carte_non_annulable');
+  assert.equal(w.stockage.planAnnules.length, 1);
+});
+
+test('annuler : seulement un plan appliqué ; sans inverse = impossible ; si la base échoue, le plan reste appliqué', async () => {
+  const w = await planPropose();
+  await assert.rejects(annulerCarte(U, 'carte-1', w.deps), (e: unknown) => e instanceof ErreurCoach && e.code === 'carte_non_annulable', 'pas encore appliqué');
+  await ajouterCarte(U, 'carte-1', w.deps);
+  w.stockage.annulationEchoue = true;
+  await assert.rejects(annulerCarte(U, 'carte-1', w.deps), (e: unknown) => e instanceof ErreurCoach && e.code === 'annulation_echouee' && !/boum/.test(e.message));
+  const carte = (w.stockage.messages[1].cartes as Libre[])[0];
+  assert.equal(carte.etat, 'ajoutee', 'toujours annulable plus tard');
+  assert.ok(carte.inverse.length > 0);
+  // inverse perdu : on le dit clairement
+  delete carte.inverse;
+  w.stockage.annulationEchoue = false;
+  await assert.rejects(annulerCarte(U, 'carte-1', w.deps), (e: unknown) => e instanceof ErreurCoach && e.code === 'annulation_indisponible' && /à la main/.test(e.message));
+});
+
+test('si la mémorisation de l\'annulation échoue, le plan appliqué n\'est pas renié (seule l\'annulation automatique manque)', async () => {
+  const w = await planPropose();
+  w.stockage.inverseEchoue = true;
+  const r = await ajouterCarte(U, 'carte-1', w.deps);
+  assert.equal(r.ok, true);
+  assert.equal((w.stockage.messages[1].cartes as Libre[])[0].etat, 'ajoutee');
+});
+
+test('operationsPourEcriture : le format exact attendu par coach_appliquer_plan', () => {
+  const ops = operationsPourEcriture([
+    { op: 'indisponibilite', type: 'maladie', du: '2026-11-07', au: '2026-11-09' },
+    { op: 'deplacer', seanceId: PID(1), vers: '2026-11-12' },
+    { op: 'supprimer', seanceId: PID(2) },
+    { op: 'ajouter', proposition: { date: '2026-11-13', sport: 'course', type: 'footing_facile', minutes: 30 }, justification: 'Reprise douce.' },
+  ], 'abc');
+  assert.deepEqual(ops, [
+    { op: 'indisponibilite', type: 'maladie', du: '2026-11-07', au: '2026-11-09', client_id: 'coach-abc-0' },
+    { op: 'deplacer', seance_id: PID(1), vers: '2026-11-12' },
+    { op: 'supprimer', seance_id: PID(2) },
+    { op: 'ajouter', date: '2026-11-13', name: 'Course · Footing facile', sport: 'Run', duration: 30, tss: 25, notes: 'Reprise douce.', start: '2026-11-13T09:00:00', client_id: 'coach-abc-3' },
+  ]);
+});
+
+test('le coach se souvient d\'un plan : la carte de planning est rappelée au modèle avec son état', async () => {
+  const w = await planPropose();
+  await ajouterCarte(U, 'carte-1', w.deps);
+  const hist = historiquePourModele(w.stockage.messages);
+  const dernier = String(hist.at(-1)?.content);
+  assert.match(dernier, /\[Plan de modifications \(Déclarer : blessure/);
+  assert.match(dernier, /appliqué par l'utilisateur\]/);
 });

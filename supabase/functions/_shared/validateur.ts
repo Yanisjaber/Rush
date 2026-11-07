@@ -112,37 +112,8 @@ export function seuilJourDur(ctl: number | null): number {
   return Math.max(60, 1.6 * (ctl && Number.isFinite(ctl) ? ctl : 0));
 }
 
-export function validerSeance(p: Proposition, c: ContexteValidation): ResultatValidation {
-  const erreurs: Probleme[] = [];
-  const avertissements: Probleme[] = [];
-  const echec = (code: string, message: string) => erreurs.push({ code, message });
-
-  // 1. La forme de la proposition (tout vient du modèle : on ne lui fait pas confiance)
-  if (!dateValide(p?.date)) echec('date_invalide', "La date n'est pas valide.");
-  if (!estFamilleCoach(p?.sport)) echec('sport_inconnu', 'Ce sport ne fait pas partie de ceux que je sais planifier.');
-  const type = typeSeance(p?.sport, p?.type);
-  if (estFamilleCoach(p?.sport) && !type) echec('type_inconnu', "Ce type de séance n'existe pas pour ce sport.");
-  const minutes = p?.minutes;
-  if (typeof minutes !== 'number' || !Number.isFinite(minutes) || minutes <= 0) echec('minutes_invalides', 'La durée doit être un nombre de minutes positif.');
-  if (erreurs.length || !type || typeof minutes !== 'number') return { ok: false, erreurs, avertissements, tssEstime: null };
-
-  const sport = p.sport as FamilleCoach;
-  const date = p.date;
-  const tss = tssEstime(type, minutes);
-
-  // 2. Durée : dans le menu, sous le plafond du sport, et pas démesurée par rapport à ce que fait l'utilisateur
-  if (minutes < type.minMinutes || minutes > type.maxMinutes) {
-    echec('duree_hors_menu', `Pour « ${type.nom} », la durée doit être entre ${type.minMinutes} et ${type.maxMinutes} minutes.`);
-  }
-  if (minutes > PLAFOND_MINUTES[sport]) echec('duree_plafond', `Une séance de plus de ${PLAFOND_MINUTES[sport]} minutes dépasse la limite de sécurité.`);
-  const plusLongue = c.plusLongueMinutes[sport];
-  const limiteLongueur = plusLongue
-    ? Math.max(PLAFONDS.minutesToujoursPermises, Math.round(c.reglages.facteurLongueMax * plusLongue))
-    : PLAFONDS.minutesSansHistorique;
-  if (minutes > limiteLongueur) {
-    echec('seance_trop_longue', `Ce serait trop long par rapport à ce que tu fais en ce moment (au plus ${limiteLongueur} minutes pour l'instant).`);
-  }
-
+/** Règles du JOUR choisi : ni passé, ni trop loin, ni indisponible, ni repos déclaré, ni compétition. Commun à l'ajout et au déplacement. */
+function controlerJour(date: string, c: ContexteValidation, echec: (code: string, message: string) => void): void {
   // 3. Le jour : ni passé, ni trop loin, ni indisponible, ni repos déclaré, ni jour de compétition
   if (date < c.aujourdhui) echec('date_passee', 'Cette date est déjà passée.');
   if (ecartJours(c.aujourdhui, date) > PLAFONDS.horizonJours) echec('date_trop_loin', `Je planifie au plus ${PLAFONDS.horizonJours} jours à l'avance.`);
@@ -150,11 +121,17 @@ export function validerSeance(p: Proposition, c: ContexteValidation): ResultatVa
   if (indispo) echec('jour_indisponible', `Pas de séance ce jour-là : tu as déclaré une ${NOM_PERIODE[indispo.type]}.`);
   if (c.joursDeRepos.includes(date)) echec('jour_de_repos', "Ce jour est un jour de repos que tu as posé.");
   if (c.competitions.some((x) => x.date === date)) echec('jour_de_competition', 'Ce jour-là, tu as une compétition.');
+}
 
-  // 4. Le garde-fou santé a le dernier mot
-  if (!c.gardeFou.autoriserCartes) echec('garde_fou', c.gardeFou.message ?? "Pas de séance pour l'instant.");
-  else if (c.gardeFou.intensiteMax === 'facile' && type.zone > 2) echec('intensite_trop_haute', "Pour l'instant, je ne propose que des séances faciles (zones 1 et 2).");
-
+/** Règles de CHARGE d'un jour qui reçoit une séance de `tss` points : jours durs d'affilée, hausse de la semaine, repos de la semaine. Commun à l'ajout et au déplacement. */
+function controlerCharge(
+  date: string,
+  tss: number,
+  dure: boolean,
+  c: ContexteValidation,
+  echec: (code: string, message: string) => void,
+  avertissements: Probleme[],
+): void {
   // 5. La charge de chaque jour : le passé (réel) et l'avenir (prévu), séances prévues déjà passées ignorées
   const chargeDuJour = new Map<string, number>();
   for (const j of c.joursPasses) if (j.date <= c.aujourdhui) chargeDuJour.set(j.date, (chargeDuJour.get(j.date) ?? 0) + (j.tss || 0));
@@ -166,7 +143,7 @@ export function validerSeance(p: Proposition, c: ContexteValidation): ResultatVa
 
   // 6. Pas trop de jours durs d'affilée
   const seuilDur = seuilJourDur(c.ctl);
-  const estDur = (jour: string) => (jour === date ? type.dure || (avec.get(jour) ?? 0) >= seuilDur : (avec.get(jour) ?? 0) >= seuilDur);
+  const estDur = (jour: string) => (jour === date ? dure || (avec.get(jour) ?? 0) >= seuilDur : (avec.get(jour) ?? 0) >= seuilDur);
   if (estDur(date)) {
     let serie = 1;
     for (let i = 1; estDur(ajouterJours(date, -i)); i++) serie++;
@@ -203,6 +180,90 @@ export function validerSeance(p: Proposition, c: ContexteValidation): ResultatVa
   if (7 - joursActifs < c.reglages.reposMinParSemaine) {
     echec('repos_hebdo', `Il te faut au moins ${c.reglages.reposMinParSemaine} jour(s) sans séance sur 7 jours.`);
   }
+}
 
+export function validerSeance(p: Proposition, c: ContexteValidation): ResultatValidation {
+  const erreurs: Probleme[] = [];
+  const avertissements: Probleme[] = [];
+  const echec = (code: string, message: string) => erreurs.push({ code, message });
+
+  // 1. La forme de la proposition (tout vient du modèle : on ne lui fait pas confiance)
+  if (!dateValide(p?.date)) echec('date_invalide', "La date n'est pas valide.");
+  if (!estFamilleCoach(p?.sport)) echec('sport_inconnu', 'Ce sport ne fait pas partie de ceux que je sais planifier.');
+  const type = typeSeance(p?.sport, p?.type);
+  if (estFamilleCoach(p?.sport) && !type) echec('type_inconnu', "Ce type de séance n'existe pas pour ce sport.");
+  const minutes = p?.minutes;
+  if (typeof minutes !== 'number' || !Number.isFinite(minutes) || minutes <= 0) echec('minutes_invalides', 'La durée doit être un nombre de minutes positif.');
+  if (erreurs.length || !type || typeof minutes !== 'number') return { ok: false, erreurs, avertissements, tssEstime: null };
+
+  const sport = p.sport as FamilleCoach;
+  const date = p.date;
+  const tss = tssEstime(type, minutes);
+
+  // 2. Durée : dans le menu, sous le plafond du sport, et pas démesurée par rapport à ce que fait l'utilisateur
+  if (minutes < type.minMinutes || minutes > type.maxMinutes) {
+    echec('duree_hors_menu', `Pour « ${type.nom} », la durée doit être entre ${type.minMinutes} et ${type.maxMinutes} minutes.`);
+  }
+  if (minutes > PLAFOND_MINUTES[sport]) echec('duree_plafond', `Une séance de plus de ${PLAFOND_MINUTES[sport]} minutes dépasse la limite de sécurité.`);
+  const plusLongue = c.plusLongueMinutes[sport];
+  const limiteLongueur = plusLongue
+    ? Math.max(PLAFONDS.minutesToujoursPermises, Math.round(c.reglages.facteurLongueMax * plusLongue))
+    : PLAFONDS.minutesSansHistorique;
+  if (minutes > limiteLongueur) {
+    echec('seance_trop_longue', `Ce serait trop long par rapport à ce que tu fais en ce moment (au plus ${limiteLongueur} minutes pour l'instant).`);
+  }
+
+  controlerJour(date, c, echec);
+
+  // 4. Le garde-fou santé a le dernier mot
+  if (!c.gardeFou.autoriserCartes) echec('garde_fou', c.gardeFou.message ?? "Pas de séance pour l'instant.");
+  else if (c.gardeFou.intensiteMax === 'facile' && type.zone > 2) echec('intensite_trop_haute', "Pour l'instant, je ne propose que des séances faciles (zones 1 et 2).");
+
+  controlerCharge(date, tss, type.dure, c, echec, avertissements);
+
+  return { ok: erreurs.length === 0, erreurs, avertissements, tssEstime: tss };
+}
+
+// ============================================================
+// Déplacer une séance DÉJÀ prévue (replanification, docs/ia/PLAN_COACH_COMPLET.md)
+// ============================================================
+
+export interface SeanceADeplacer {
+  date: string;
+  sport: string | null;
+  minutes: number | null;
+  tss: number | null;
+}
+
+/** Une séance prévue n'a pas de « type » du menu : on la juge dure d'après sa charge par heure (75 points par heure ou plus). */
+export function estSeanceDure(tss: number | null, minutes: number | null): boolean {
+  return typeof tss === 'number' && typeof minutes === 'number' && minutes > 0 && (tss * 60) / minutes >= 75;
+}
+
+/**
+ * Peut-on mettre cette séance prévue à une autre date ? Mêmes règles de JOUR et de CHARGE que pour une nouvelle séance.
+ * L'appelant retire la séance de `c.prevues` avant (sinon elle compterait deux fois).
+ */
+export function validerDeplacement(s: SeanceADeplacer, vers: string, c: ContexteValidation): ResultatValidation {
+  const erreurs: Probleme[] = [];
+  const avertissements: Probleme[] = [];
+  const echec = (code: string, message: string) => erreurs.push({ code, message });
+  if (!dateValide(vers)) {
+    echec('date_invalide', "La nouvelle date n'est pas valide.");
+    return { ok: false, erreurs, avertissements, tssEstime: null };
+  }
+  if (vers === s.date) {
+    echec('meme_jour', 'La séance est déjà prévue ce jour-là.');
+    return { ok: false, erreurs, avertissements, tssEstime: null };
+  }
+  const tss = s.tss ?? 0;
+  if (s.tss === null) avertissements.push({ code: 'charge_inconnue', message: "La charge de cette séance n'est pas connue : je ne peux pas vérifier la semaine." });
+  const dure = estSeanceDure(s.tss, s.minutes);
+
+  controlerJour(vers, c, echec);
+  // Le garde-fou santé a le dernier mot, comme pour une nouvelle séance
+  if (!c.gardeFou.autoriserCartes) echec('garde_fou', c.gardeFou.message ?? "Pas de séance pour l'instant.");
+  else if (c.gardeFou.intensiteMax === 'facile' && dure) echec('intensite_trop_haute', "Pour l'instant, je ne place que des séances faciles (zones 1 et 2).");
+  controlerCharge(vers, tss, dure, c, echec, avertissements);
   return { ok: erreurs.length === 0, erreurs, avertissements, tssEstime: tss };
 }

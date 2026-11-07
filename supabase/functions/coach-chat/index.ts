@@ -24,7 +24,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.117.3';
 import { ajouterCarte, annulerCarte, CONFIG_PAR_DEFAUT, ErreurCoach, maintenirMemoire, traiterMessage } from '../_shared/coach-chat.ts';
 import type { Config, Dependances, EvenementCoach } from '../_shared/coach-chat.ts';
-import type { CarteSeance } from '../_shared/coach-contexte.ts';
+import type { Carte } from '../_shared/coach-contexte.ts';
 import { corsHeadersFor } from '../_shared/cors.ts';
 import { creerClientAnthropic } from './modele-anthropic.ts';
 import { creerStockage } from './stockage.ts';
@@ -122,7 +122,7 @@ function planifierMemoire(userId: string, deps: Dependances) {
 }
 
 async function messageJson(userId: string, texte: unknown, deps: Dependances, json: (b: any, s?: number) => Response): Promise<Response> {
-  const cartes: CarteSeance[] = [];
+  const cartes: Carte[] = [];
   const actions: { nom: string; params: Record<string, unknown> }[] = [];
   let fin: Extract<EvenementCoach, { type: 'fin' }> | null = null;
   await traiterMessage(userId, texte, deps, (e) => {

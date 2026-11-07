@@ -11,7 +11,7 @@
 // Un échec de lecture des signaux de santé fait échouer la requête (on ne laisse pas le garde-fou passer « par défaut »).
 // ============================================================
 // deno-lint-ignore-file no-explicit-any
-import type { CarteSeance, EtatCarte, MessageStocke } from '../_shared/coach-contexte.ts';
+import type { Carte, EtatCarte, MessageStocke } from '../_shared/coach-contexte.ts';
 import { FONCTIONS_HISTORIQUE } from '../_shared/coach-actions.ts';
 import { ErreurCoach } from '../_shared/coach-chat.ts';
 import type { LigneSeancePrevue, SignauxSante, StockageCoach } from '../_shared/coach-chat.ts';
@@ -142,7 +142,7 @@ export function creerStockage(sbUser: any, sbAdmin: any): StockageCoach {
       });
       if (error) echec('état de la carte', error);
       if (!data) return null;
-      return { messageId: String(data.message_id), carte: data.carte as CarteSeance };
+      return { messageId: String(data.message_id), carte: data.carte as Carte };
     },
 
     async insererSeance(_userId, ligne: LigneSeancePrevue) {
@@ -150,6 +150,24 @@ export function creerStockage(sbUser: any, sbAdmin: any): StockageCoach {
       const { data, error } = await sbUser.from('activity_planned').insert(ligne).select('id').single();
       if (error) throw new Error(error.code || 'insertion');
       return String(data.id);
+    },
+
+    async appliquerPlan(_userId, operations) {
+      // Avec les droits de l'utilisateur : la fonction SQL ne touche que ses lignes (RLS), en une seule transaction
+      const { data, error } = await sbUser.rpc('coach_appliquer_plan', { p_ops: operations });
+      if (error) throw new Error(error.message || error.code || 'plan');
+      return Array.isArray(data) ? data : [];
+    },
+
+    async annulerPlan(_userId, inverse) {
+      const { data, error } = await sbUser.rpc('coach_annuler_plan', { p_inverse: inverse });
+      if (error) throw new Error(error.message || error.code || 'annulation');
+      return { annulees: Number(data?.annulees ?? 0), ignorees: Number(data?.ignorees ?? 0) };
+    },
+
+    async memoriserInverse(userId, carteId, inverse) {
+      const { error } = await sbAdmin.rpc('coach_carte_inverse', { p_user: userId, p_carte: carteId, p_inverse: inverse });
+      if (error) echec("mémorisation de l'annulation", error);
     },
 
     async supprimerSeanceIA(_userId, seanceId) {
