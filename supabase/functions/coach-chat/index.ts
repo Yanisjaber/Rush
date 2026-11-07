@@ -123,14 +123,16 @@ function planifierMemoire(userId: string, deps: Dependances) {
 
 async function messageJson(userId: string, texte: unknown, deps: Dependances, json: (b: any, s?: number) => Response): Promise<Response> {
   const cartes: CarteSeance[] = [];
+  const actions: { nom: string; params: Record<string, unknown> }[] = [];
   let fin: Extract<EvenementCoach, { type: 'fin' }> | null = null;
   await traiterMessage(userId, texte, deps, (e) => {
     if (e.type === 'carte') cartes.push(e.carte);
+    if (e.type === 'action') actions.push({ nom: e.nom, params: e.params });
     if (e.type === 'fin') fin = e;
   });
   planifierMemoire(userId, deps);
   const f = fin as Extract<EvenementCoach, { type: 'fin' }> | null;
-  return json({ ok: true, message_id: f?.message_id, texte: f?.texte ?? '', cartes });
+  return json({ ok: true, message_id: f?.message_id, texte: f?.texte ?? '', cartes, actions });
 }
 
 function messageFlux(userId: string, texte: unknown, deps: Dependances, corsHeaders: Record<string, string>): Response {

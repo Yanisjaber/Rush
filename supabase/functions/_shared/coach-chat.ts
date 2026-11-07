@@ -17,10 +17,11 @@
 //     qui revalide tout au moment du tap ;
 //   - une erreur n'écrit rien dans le calendrier et ne montre aucun détail technique.
 // ============================================================
+import { MAX_PAR_NIVEAU, outilsExposes, trouverAction } from './coach-actions.ts';
 import { coutMicroUsd } from './coach-couts.ts';
 import { avecMessageUtilisateur, blocContexte, contexteDepuisResume, historiquePourModele, texteAncienPourResume } from './coach-contexte.ts';
 import type { CarteSeance, EtatCarte, MessageStocke } from './coach-contexte.ts';
-import { MAX_TOKENS_REPONSE, MODELE_PAR_DEFAUT, NOM_OUTIL_SEANCE, OUTIL_PROPOSER_SEANCE, PROMPT_SYSTEME } from './coach-prompt.ts';
+import { MAX_TOKENS_REPONSE, MODELE_PAR_DEFAUT, NOM_OUTIL_SEANCE, PROMPT_SYSTEME } from './coach-prompt.ts';
 import { evaluerGardeFou } from './garde-fou.ts';
 import type { DecisionGardeFou, DonneesGardeFou } from './garde-fou.ts';
 import { typeSeance } from './menu-seances.ts';
@@ -104,6 +105,8 @@ export interface Dependances {
 export type EvenementCoach =
   | { type: 'texte'; delta: string }
   | { type: 'carte'; message_id: string; carte: CarteSeance }
+  /** Action sans danger (ouvrir un écran…) que l'application exécute tout de suite. Elle n'est pas enregistrée : on ne la rejoue pas au rechargement. */
+  | { type: 'action'; nom: string; params: Record<string, unknown> }
   | { type: 'fin'; message_id: string; texte: string }
   | { type: 'erreur'; code: string; message: string };
 
@@ -167,8 +170,21 @@ function lireProposition(input: unknown): { proposition: Proposition; justificat
 
 const MAX_CARTES = 3;
 
-function traiterOutil(appel: AppelOutil, ctx: ContexteValidation, cartes: CarteSeance[], uuid: () => string): { contenu: string; erreur: boolean } {
-  if (appel.name !== NOM_OUTIL_SEANCE) return { contenu: "Cet outil n'existe pas.", erreur: true };
+function traiterOutil(appel: AppelOutil, ctx: ContexteValidation, cartes: CarteSeance[], directes: { nom: string; params: Record<string, unknown> }[], uuid: () => string): { contenu: string; erreur: boolean } {
+  const def = trouverAction(appel.name);
+  // Un outil absent du registre, ou pas encore branché, n'existe pas pour le modèle (même s'il l'invente)
+  if (!def || !def.disponible) return { contenu: "Cet outil n'existe pas.", erreur: true };
+
+  if (def.niveau === 'direct') {
+    if (directes.length >= MAX_PAR_NIVEAU.direct) return { contenu: `${MAX_PAR_NIVEAU.direct} actions directes au maximum par message.`, erreur: true };
+    const lu = def.lire ? def.lire(appel.input) : { ok: false as const, erreur: 'Action non lisible.' };
+    if (!lu.ok) return { contenu: `Paramètres invalides : ${lu.erreur}`, erreur: true };
+    directes.push({ nom: def.nom, params: lu.params });
+    return { contenu: "Fait : l'application exécute l'action tout de suite.", erreur: false };
+  }
+
+  // Niveaux « carte » et « confirmation » : seul proposer_seance est branché pour l'instant
+  if (def.nom !== NOM_OUTIL_SEANCE) return { contenu: "Cet outil n'existe pas.", erreur: true };
   if (cartes.length >= MAX_CARTES) return { contenu: `Trois cartes au maximum par message : ne propose pas d'autre séance.`, erreur: true };
   const lue = lireProposition(appel.input);
   if (!lue) return { contenu: 'Paramètres invalides : date, sport, type, minutes et justification sont obligatoires.', erreur: true };
@@ -238,6 +254,7 @@ export async function traiterMessage(userId: string, texteBrut: unknown, deps: D
   let messages: MessageModele[] = avecMessageUtilisateur(historique, contexte, texte);
 
   const cartes: CarteSeance[] = [];
+  const directes: { nom: string; params: Record<string, unknown> }[] = [];
   const textes: string[] = [];
   let usage = USAGE_NUL;
   let refus = false;
@@ -246,7 +263,7 @@ export async function traiterMessage(userId: string, texteBrut: unknown, deps: D
     let premierDelta = true;
     const reponse = await appelerModele(
       modele,
-      { system: PROMPT_SYSTEME, messages, outils: [OUTIL_PROPOSER_SEANCE], maxTokens: MAX_TOKENS_REPONSE },
+      { system: PROMPT_SYSTEME, messages, outils: outilsExposes(), maxTokens: MAX_TOKENS_REPONSE },
       (delta) => {
         // Un deuxième tour (après un outil) continue le texte du premier : un saut de ligne les sépare
         if (premierDelta && textes.length) emettre({ type: 'texte', delta: '\n\n' });
@@ -264,7 +281,9 @@ export async function traiterMessage(userId: string, texteBrut: unknown, deps: D
     if (!reponse.outils.length || reponse.arret === 'longueur') break;
 
     const resultats = reponse.outils.map((o) => {
-      const r = traiterOutil(o, ctx, cartes, deps.uuid);
+      const avant = directes.length;
+      const r = traiterOutil(o, ctx, cartes, directes, deps.uuid);
+      for (const d of directes.slice(avant)) emettre({ type: 'action', nom: d.nom, params: d.params });
       return { type: 'tool_result', tool_use_id: o.id, content: r.contenu, ...(r.erreur ? { is_error: true } : {}) };
     });
     messages = [...messages, { role: 'assistant', content: reponse.brut }, { role: 'user', content: resultats }];

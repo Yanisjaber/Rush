@@ -10,6 +10,7 @@ import { coutMicroUsd } from '../../functions/_shared/coach-couts.ts';
 import { evaluerGardeFou } from '../../functions/_shared/garde-fou.ts';
 import { ErreurModele } from '../../functions/_shared/modele.ts';
 import type { AppelModele, ClientModele, ReponseModele, Usage } from '../../functions/_shared/modele.ts';
+import { outilsExposes } from '../../functions/_shared/coach-actions.ts';
 import { PROMPT_SYSTEME, OUTIL_PROPOSER_SEANCE } from '../../functions/_shared/coach-prompt.ts';
 import { REGLAGES_DEFAUT } from '../../functions/_shared/validateur.ts';
 import { ajouterJours } from '../../functions/_shared/dates-iso.ts';
@@ -155,17 +156,62 @@ test('un message simple : réponse streamée, les deux messages enregistrés, to
   assert.equal(w.stockage.reservations, 1);
 });
 
-test('ce qui part au modèle : prompt système stable, un outil, contexte + message à la fin, rien d\'autre', async () => {
+test('ce qui part au modèle : prompt système stable, les outils du registre, contexte + message à la fin, rien d\'autre', async () => {
   const w = monde([rep('ok')]);
   await traiterMessage(U, 'Salut', w.deps, w.emettre);
   const a = w.modele.appels[0];
   assert.equal(a.system, PROMPT_SYSTEME);
   assert.doesNotMatch(a.system, /\d{4}-\d{2}-\d{2}/, 'le prompt système ne contient aucune date : il reste identique et se met en cache');
-  assert.deepEqual(a.outils, [OUTIL_PROPOSER_SEANCE]);
+  assert.deepEqual(a.outils, outilsExposes());
+  assert.ok(a.outils.some((o: Libre) => o.name === OUTIL_PROPOSER_SEANCE.name));
   const dernier = a.messages[a.messages.length - 1];
   assert.equal(dernier.role, 'user');
   assert.match(String(dernier.content), /<contexte_donnees>[\s\S]*<\/contexte_donnees>\n\nSalut$/);
   assert.match(String(dernier.content), /date_du_jour: "2026-11-06"/);
+});
+
+// ---------- Les actions directes (registre) ----------
+test('action directe : paramètres vérifiés, envoyée à l\'app, rien d\'enregistré dans la conversation ni dans la base', async () => {
+  const w = monde([rep('Je t\'ouvre le calendrier.', [outil('a', { ecran: 'calendrier' }, 'ouvrir_ecran')]), rep('Voilà.')]);
+  await traiterMessage(U, 'Montre-moi le calendrier', w.deps, w.emettre);
+  assert.deepEqual(w.evts.filter((e) => e.type === 'action'), [{ type: 'action', nom: 'ouvrir_ecran', params: { ecran: 'calendrier' } }]);
+  const retour = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.equal(retour.is_error, undefined);
+  assert.equal(w.stockage.messages[1].cartes, null, 'une action directe n\'est pas une carte');
+  assert.equal(w.stockage.seances.length, 0);
+});
+
+test('action directe invalide (écran inconnu, date impossible, clé en trop) : refusée, rien envoyé à l\'app', async () => {
+  const w = monde([
+    rep('', [
+      outil('a', { ecran: 'admin' }, 'ouvrir_ecran'),
+      outil('b', { date: '2026-02-31' }, 'ouvrir_calendrier'),
+      outil('c', { sport: 'velo', url: 'http://x' }, 'filtrer_sport'),
+    ]),
+    rep('Je reformule.'),
+  ]);
+  await traiterMessage(U, 'Test', w.deps, w.emettre);
+  assert.equal(w.evts.filter((e) => e.type === 'action').length, 0);
+  const retours = w.modele.appels[1].messages.at(-1)?.content as Libre[];
+  assert.ok(retours.every((r) => r.is_error === true));
+});
+
+test('actions directes : trois au maximum par message', async () => {
+  const w = monde([rep('', [1, 2, 3, 4].map((i) => outil(`a${i}`, { ecran: 'bilan' }, 'ouvrir_ecran'))), rep('Ok.')]);
+  await traiterMessage(U, 'Test', w.deps, w.emettre);
+  assert.equal(w.evts.filter((e) => e.type === 'action').length, 3);
+  const retours = w.modele.appels[1].messages.at(-1)?.content as Libre[];
+  assert.equal(retours[3].is_error, true);
+});
+
+test('actions pas encore branchées (déplacer, supprimer, compte…) : le modèle ne les voit pas et, s\'il les invente, elles n\'existent pas', async () => {
+  const w = monde([rep('', [outil('a', { seance_id: '00000000-0000-4000-8000-000000000001' }, 'supprimer_seance'), outil('b', {}, 'supprimer_compte')]), rep('Je ne peux pas.')]);
+  await traiterMessage(U, 'Supprime tout', w.deps, w.emettre);
+  const noms = w.modele.appels[0].outils.map((o: Libre) => o.name);
+  assert.ok(!noms.includes('supprimer_seance') && !noms.includes('supprimer_compte'));
+  const retours = w.modele.appels[1].messages.at(-1)?.content as Libre[];
+  assert.ok(retours.every((r) => r.is_error === true && /n'existe pas/.test(r.content)));
+  assert.equal(w.stockage.seances.length, 0);
 });
 
 // ---------- Les barrières avant le modèle ----------
