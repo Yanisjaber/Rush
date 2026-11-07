@@ -41,9 +41,18 @@ Les séances touchées sont retirées toutes ensemble avant le placement (elles 
 - SQL : `supabase/migrations/2026-11-07_coach_planning.sql` (test : `bash supabase/tests/sql/coach_planning.sh`) et `id` dans `prevues` de `2026-11-06_rpc_coach_resume.sql`.
 - Tests : `tests/edge/planning.test.mts`, `coach-chat.test.mts`, `coach-actions.test.mts`.
 
+## Dans l'app (`native/`)
+
+- **La carte de planning** (`src/components/coach/CartePlanningCoach.tsx`) est le mélange 7 + 2 + 3 des maquettes : interrupteur « Aujourd'hui / Avec le plan », calendrier de 3 semaines ou frise de 14 jours (`PlanApercu.tsx`), légende, détail ligne par ligne, puis « Valider le plan » (états : proposée, application en cours, appliquée avec « Annuler le plan » et « Voir au calendrier », refusée avec « Refaire le plan », annulée).
+- **Ce que l'app dessine** vient des lignes du plan (sport, durée, jour d'origine, jour d'arrivée, période), calculées par `data/coach/apercu-plan.ts` (testé). Elle ne dessine que ce que le plan touche, pas les séances qu'il laisse en place.
+- **Actions directes** du coach (`data/coach/actions.ts`) : liste blanche stricte (ouvrir un écran, ouvrir un jour du calendrier, filtrer un sport). Tout le reste est ignoré. « Ouvrir un jour » passe par `stores/jour-demande.ts` et le Calendrier saute au mois et au jour demandés.
+- Après un plan appliqué ou défait, le Calendrier se recharge (`ajoutsChanges`).
+- **Mode développement seulement** : un appui long sur le titre « Coach » pose une carte de plan d'exemple dans le fil (sans serveur ni modèle) et joue les états Valider et Annuler, pour voir l'écran sans clé Anthropic. Ces cartes (identifiant `exemple-…`) ne partent jamais au serveur.
+
 ## Reste à faire
 
-- **L'écran** : la carte de planning dans le chat (aperçu avant/après, « Valider », « Annuler ») et l'exécution des actions directes. **8 maquettes d'abord.**
-- Réactions à la carte : « Modifier » (le coach la refait) et un aperçu visuel dans le calendrier.
+- Voir le plan **réel** de bout en bout (serveur, base, app) : demande une clé Anthropic valide.
+- **Écran d'accord de partage** et réglages des seuils (8 maquettes avant le code) : sans accord enregistré, le chat répond « accord requis ».
 - Plus d'imprévus : « moins de temps cette semaine » (plafond d'heures), « fatigué » (alléger sans supprimer), compétition qui bouge.
-- Essai avec un vrai modèle (clé Anthropic) pour juger la compréhension des phrases : banc d'essai de phrases d'imprévus.
+- Valider un plan **partiel** (garder seulement certaines séances de reprise) : demande de revérifier le sous-plan côté serveur.
+- Banc d'essai de phrases d'imprévus pour juger la compréhension du modèle.
