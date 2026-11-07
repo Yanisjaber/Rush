@@ -19,7 +19,7 @@ test('les fiches embarquées sont à jour : elles viennent bien de docs/ia/conna
 test('chaque fiche est complète et ses liens internes existent', () => {
   const ids = new Set(FICHES.map((f) => f.id));
   assert.equal(ids.size, FICHES.length, 'identifiants uniques');
-  assert.ok(FICHES.length >= 45);
+  assert.ok(FICHES.length >= 46);
   for (const f of FICHES) {
     assert.ok(f.titre && f.essentiel.length > 50 && f.regles.length > 50 && f.pieges.length > 20 && f.recherche.length > 50, f.id);
     assert.ok(['etabli', 'probable', 'debattu', 'pratique'].includes(f.preuve), f.id);
@@ -82,6 +82,8 @@ const QUESTIONS: [string, string, number][] = [
   ['Combien de gels par heure sur un marathon et faut-il boire à la soif ?', 'course-nutrition-hydratation', 1],
   ['Est-ce que la règle des 10 % évite vraiment les blessures de course ?', 'course-blessures-progression', 2],
   ['Quel volume et quelle sortie longue pour préparer un semi-marathon ?', 'course-semi-marathon', 2],
+  ['Que pensent les études de la monotonie de Foster dans un plan toujours pareil ?', 'course-monotonie-variation', 1],
+  ['Mon plan est répétitif, les mêmes séances les mêmes jours chaque semaine, est-ce un problème ?', 'course-monotonie-variation', 2],
 ];
 
 for (const [question, attendue, rang] of QUESTIONS) {

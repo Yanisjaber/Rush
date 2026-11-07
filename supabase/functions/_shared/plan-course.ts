@@ -216,6 +216,18 @@ export function footing(minutes: number, a: Allures, lignesDroites: boolean): Se
   return assembler(`Footing ${minutes} min`, 'footing_facile', [bloc('steady', `Footing à ${ms(a.facile)}/km`, minutes, a.facile, a)], `${minutes} min à ${ms(a.facile)}/km`, "Allure facile : tu peux parler. C'est ici que se construit l'endurance.");
 }
 
+/** Footing progressif : les 8 dernières minutes un peu plus vite (entre l'allure facile et l'allure tempo), sans jamais forcer */
+export function footingProgressif(minutes: number, a: Allures): SeanceCourse {
+  const fin = 8;
+  const milieu = (a.facile + a.tempo) / 2;
+  return assembler(
+    `Footing progressif ${minutes} min`, 'footing_facile',
+    [bloc('steady', `Footing à ${ms(a.facile)}/km`, minutes - fin, a.facile, a), bloc('steady', `8 dernières minutes à ${ms(milieu)}/km`, fin, milieu, a)],
+    `${minutes - fin} min à ${ms(a.facile)}/km · 8 min à ${ms(milieu)}/km`,
+    "Un footing qui finit un peu plus vite : tu varies l'allure sans fatiguer, et tu apprends à relancer en fin de séance.",
+  );
+}
+
 export function sortieLongue(minutes: number, a: Allures, progressive: boolean): SeanceCourse {
   if (progressive && minutes >= 50) {
     const fin = Math.round(minutes * 0.2);
@@ -227,6 +239,56 @@ export function sortieLongue(minutes: number, a: Allures, progressive: boolean):
     );
   }
   return assembler(`Sortie longue ${minutes} min`, 'sortie_longue', [bloc('steady', `Sortie longue à ${ms(a.longue)}/km`, minutes, a.longue, a)], `${minutes} min à ${ms(a.longue)}/km`, "Ta sortie longue de la semaine, tranquille : elle développe l'endurance et la solidité.");
+}
+
+/** Le footing change d'une semaine à l'autre (avec lignes droites, simple, progressif) pour ne pas répéter la même séance ; seulement simple en phase spécifique et à l'affûtage */
+function varianteFooting(minutes: number, a: Allures, phase: Phase, semaine: number): SeanceCourse {
+  if (phase === 'specifique' || phase === 'affutage' || minutes < FOOTING_MINI) return footing(minutes, a, false);
+  const v = semaine % 3;
+  if (v === 0) return footing(minutes, a, true);
+  if (v === 1) return footing(minutes, a, false);
+  return footingProgressif(minutes, a);
+}
+
+/**
+ * Pose les rôles (facile, qualité, longue) sur les jours libres d'une fenêtre. Toutes les façons de placer les séances sont essayées (au plus 7 jours, 6 séances :
+ * quelques milliers de cas) ; on garde la moins coûteuse. Coûts : 1000 par paire de séances dures collées (y compris à une séance dure déjà posée dans la fenêtre précédente),
+ * 300 si la sortie longue n'est pas un jour de week-end alors qu'un week-end est libre, 30 si un rôle retombe sur le même jour de la semaine que dans la fenêtre précédente, 4 par jour de décalage par rapport au premier choix.
+ */
+export function meilleurPlacement(libres: string[], roles: Role[], initial: string[], joursDurs: Set<string>, weekend: (j: string) => boolean, precedent: Map<Role, Set<string>> = new Map()): string[] | null {
+  const n = roles.length;
+  if (n === 0 || n > libres.length || libres.length > 9) return null;
+  const durs = roles.map((r) => r !== 'facile');
+  const weekendLibre = libres.some(weekend);
+  let meilleur: string[] | null = null;
+  let coutMin = Infinity;
+  const pris: string[] = [];
+  const utilise = new Array(libres.length).fill(false);
+  const evaluer = () => {
+    let cout = 0;
+    for (let a = 0; a < n; a++) {
+      if (durs[a]) {
+        if (joursDurs.has(ajouterJours(pris[a], -1)) || joursDurs.has(ajouterJours(pris[a], 1))) cout += 1000;
+        for (let b = a + 1; b < n; b++) if (durs[b] && Math.abs(ecartJours(pris[a], pris[b])) === 1) cout += 1000;
+      }
+      if (roles[a] === 'longue' && weekendLibre && !weekend(pris[a])) cout += 300;
+      cout += 4 * Math.abs(ecartJours(pris[a], initial[a]));
+      // Variété : on évite de remettre un rôle sur le même jour de la semaine que la fenêtre précédente (30 par séance qui se répète)
+      if (precedent.get(roles[a])?.has(nomDuJour(pris[a]))) cout += 30;
+    }
+    if (cout < coutMin) { coutMin = cout; meilleur = [...pris]; }
+  };
+  const rec = (a: number) => {
+    if (a === n) { evaluer(); return; }
+    for (let k = 0; k < libres.length; k++) {
+      if (utilise[k]) continue;
+      utilise[k] = true; pris[a] = libres[k];
+      rec(a + 1);
+      utilise[k] = false;
+    }
+  };
+  rec(0);
+  return meilleur;
 }
 
 const ECHAUF = 12;
@@ -412,6 +474,9 @@ export interface Bilan {
   seancesParSemaine: number;
   /** Fiabilité du niveau : chrono (mesuré), recente (sorties des 90 jours), ancienne (vieux record vieilli), null (aucune donnée) */
   niveauFiabilite: Fiabilite | null;
+  /** Volume de la première semaine (minutes) et ce qu'il a couru ses 7 derniers jours glissants */
+  volumeDepart: number;
+  derniers7: number;
   /** Les allures que l'utilisateur a imposées */
   imposees: (keyof Allures)[];
 }
@@ -440,12 +505,13 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   const debut = d.debut && d.debut > aujourdhui ? d.debut : d.debut === aujourdhui ? aujourdhui : ajouterJours(aujourdhui, 1);
   if (d.date <= debut) return vide('La course est avant le début du plan : vérifie les dates.');
   const jours = ecartJours(debut, d.date);
-  // Les semaines vont du lundi au dimanche (la sortie longue tombe le week-end, deux séances dures ne se touchent pas d'une semaine à l'autre) :
-  // la première commence au début du plan, la dernière s'arrête la veille de la course
+  // Les semaines sont des fenêtres de 7 JOURS GLISSANTS ancrées sur le premier jour du plan (le jour 1 est le début du plan, pas un lundi) ;
+  // la dernière s'arrête la veille de la course. Les jours choisis varient d'une semaine à l'autre et une séance dure n'est jamais collée à une autre,
+  // même d'une fenêtre à la suivante.
   const fenetres: { du: string; fin: string }[] = [];
-  for (let du = debut; du < d.date; du = ajouterJours(du, 8 - jourSemaine(du))) {
-    const dimanche = ajouterJours(du, 7 - jourSemaine(du));
-    fenetres.push({ du, fin: dimanche >= d.date ? ajouterJours(d.date, -1) : dimanche });
+  for (let du = debut; du < d.date; du = ajouterJours(du, 7)) {
+    const fin = ajouterJours(du, 6);
+    fenetres.push({ du, fin: fin >= d.date ? ajouterJours(d.date, -1) : fin });
   }
   const nSemaines = Math.min(60, fenetres.length);
   if (jours > 60 * 7) return vide('Cette course est à plus de 60 semaines : fais un premier plan plus tard, quand elle sera plus proche.');
@@ -467,8 +533,10 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   const k = Math.min(6, Math.max(2, Math.round(d.seancesParSemaine ?? Math.min(5, Math.max(3, Math.round(frequence) + 1)))));
   const quatreDernieres = profil ? profil.semaines.slice(-4) : [];
   const moyenne4 = quatreDernieres.length ? quatreDernieres.reduce((t, s) => t + s.minutes, 0) / quatreDernieres.length : 0;
-  // Le volume de départ : un peu plus que ce qu'il fait en ce moment, jamais moins de 38 min par séance
-  const volumeDepart = Math.min(MAX_HEBDO, Math.max(k * 38, Math.round(moyenne4 * 1.1)));
+  // Le volume de départ part de ce que la personne fait VRAIMENT : ses 7 derniers jours glissants (la dernière case des semaines du profil, qui se terminent aujourd'hui) ou sa moyenne
+  // sur 4 fenêtres de 7 jours, si elle est plus haute ; un peu plus (+10 %), jamais moins de 38 min par séance. Ainsi, un plan refait en cours de route repart de la charge réelle.
+  const derniers7 = profil && profil.semaines.length ? profil.semaines[profil.semaines.length - 1].minutes : 0;
+  const volumeDepart = Math.min(MAX_HEBDO, Math.max(k * 38, Math.round(Math.max(moyenne4, derniers7) * 1.1)));
   const longueMax = Math.min(110, Math.max(60, Math.round((objectifPlan / 60) * 1.6)));
   let longuePrecedente = Math.max(LONGUE_MINI, Math.min(longueMax, profil?.recent.plusLongueMinutes || LONGUE_MINI));
 
@@ -480,6 +548,10 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   let toutes: SeancePrevue[] = seances.map((s) => ({ ...s }));
   const interdits = new Set(d.joursLibres ?? []);
   const noms = new Set<string>();
+  /** Les jours des séances dures déjà posées (qualité et sortie longue) */
+  const joursDurs = new Set<string>();
+  /** Les jours de la semaine (« lundi »…) utilisés par chaque rôle dans la fenêtre précédente : on évite de les répéter */
+  let joursParRole = new Map<Role, Set<string>>();
 
   for (let w = 0; w < nSemaines; w++) {
     const { du, fin: finSemaine } = fenetres[w];
@@ -488,8 +560,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     const derniere = w === nSemaines - 1;
     const recuperation = phase !== 'affutage' && w % 4 === 3 && nSemaines - w > 2;
     const facteur = phase === 'affutage' ? (w === nSemaines - 1 ? 0.55 : 0.75) : recuperation ? 0.8 : Math.pow(1.1, w - Math.floor(w / 4));
-    const partielle = Math.min(1, Math.max(0.5, (ecartJours(du, finSemaine) + 1) / 7));
-    const volume = Math.min(MAX_HEBDO, Math.round(volumeDepart * facteur * (w === 0 ? partielle : 1)));
+    const volume = Math.min(MAX_HEBDO, Math.round(volumeDepart * facteur));
 
     // les jours possibles de la semaine
     const pris = new Set(toutes.map((s) => s.date));
@@ -500,7 +571,9 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
       libres.push(j);
     }
     const duree = ecartJours(du, finSemaine) + 1;
-    const kSemaine = Math.max(1, Math.min(libres.length, phase === 'affutage' ? Math.min(k, w === nSemaines - 1 ? 3 : 4) : k, duree - 1 || 1));
+    // Le nombre de séances varie : une séance de moins en semaine de récupération (à partir de 4 séances par semaine), moins à l'affûtage
+    const kBase = recuperation && k >= 4 ? k - 1 : k;
+    const kSemaine = Math.max(1, Math.min(libres.length, phase === 'affutage' ? Math.min(k, w === nSemaines - 1 ? 3 : 4) : kBase, duree - 1 || 1));
     if (!libres.length) { abandons.push(`Semaine ${w + 1} : aucun jour libre.`); lignesSemaines.push(`Semaine ${w + 1} (${du}) : ${NOM_PHASE[phase]}, aucun jour libre`); continue; }
 
     // les rôles : une qualité, une sortie longue, le reste facile ; une seconde qualité à partir de 4 séances, hors base et affûtage
@@ -514,17 +587,44 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     // la semaine de la course n'a pas de sortie longue : un dernier footing léger à la place
     if (derniere) { if (kSemaine >= 3) roles.push('facile'); } else if (kSemaine >= 2) roles.push('longue');
     while (roles.length > kSemaine) roles.splice(roles.indexOf('facile'), 1);
-    const choisis = choisirJours(libres, roles.length);
-    // la sortie longue va le week-end quand il y en a un
+    // La sortie longue va sur un jour de week-end libre quand il y en a un (samedi une semaine, dimanche la suivante) ; les autres séances se répartissent autour,
+    // sans coller la qualité à la sortie longue quand c'est possible
     const wk = (j: string) => nomDuJour(j) === 'samedi' || nomDuJour(j) === 'dimanche';
     const iLongue = roles.indexOf('longue');
-    if (iLongue >= 0 && !wk(choisis[iLongue])) {
-      const cible2 = choisis.map((j, i) => (wk(j) && roles[i] !== 'longue' ? i : -1)).filter((i) => i >= 0).pop();
-      if (cible2 !== undefined) [roles[iLongue], roles[cible2]] = [roles[cible2], roles[iLongue]];
+    const weekends = libres.filter(wk);
+    let choisis: string[];
+    if (iLongue >= 0 && weekends.length) {
+      const jourLong = weekends[w % weekends.length];
+      const reste = libres.filter((j) => j !== jourLong);
+      const loinDeLaLongue = reste.filter((j) => Math.abs(ecartJours(j, jourLong)) > 1);
+      const candidats = loinDeLaLongue.length >= roles.length - 1 ? loinDeLaLongue : reste;
+      const autresJours = choisirJours(candidats, roles.length - 1);
+      choisis = [];
+      let k2 = 0;
+      roles.forEach((r) => choisis.push(r === 'longue' ? jourLong : autresJours[k2++]));
+    } else {
+      choisis = choisirJours(libres, roles.length);
     }
 
+    // Les jours ne sont pas les mêmes chaque semaine : on décale les séances qui ne sont pas la sortie longue d'un jour (0, +1, −1, 0…) quand le jour est libre
+    const decalage = [0, 1, -1][w % 3];
+    if (decalage !== 0) {
+      roles.forEach((r, i) => {
+        if (r === 'longue') return;
+        const cand = ajouterJours(choisis[i], decalage);
+        if (libres.includes(cand) && !choisis.includes(cand)) choisis[i] = cand;
+      });
+    }
+    // Le meilleur placement des jours : on essaie toutes les façons de poser les séances sur les jours libres et on garde la moins coûteuse :
+    // jamais deux séances dures collées (la qualité et la sortie longue), même avec la fenêtre précédente ; la sortie longue au week-end ; le moins de décalage possible
+    const placement = meilleurPlacement(libres, roles, choisis, joursDurs, wk, joursParRole);
+    if (placement) choisis = placement;
+
     // les durées
-    const seancesQualite = roles.map((r) => (r === 'qualite1' ? (w === 0 && avecTest ? seanceTest(a) : qualite(phase, rang, a, false)) : r === 'qualite2' ? qualite(phase, rang, a, true) : null));
+    // Le contenu alterne : en développement avec 3 séances, une semaine de VMA puis une semaine de tempo ; la semaine de récupération a une qualité légère (fartlek)
+    const qualiteAlternee = phase === 'developpement' && kSemaine < 4 && rang % 2 === 1;
+    const qualiteDeLaSemaine = (): SeanceCourse => (recuperation ? qualite('base', 0, a, false) : qualite(phase, rang, a, qualiteAlternee));
+    const seancesQualite = roles.map((r) => (r === 'qualite1' ? (w === 0 && avecTest ? seanceTest(a) : qualiteDeLaSemaine()) : r === 'qualite2' ? qualite(phase, rang, a, true) : null));
     const minutesQualite = seancesQualite.reduce((t, s) => t + (s?.minutes ?? 0), 0);
     const nLongue = roles.filter((r) => r === 'longue').length;
     const nFaciles = roles.filter((r) => r === 'facile').length;
@@ -539,13 +639,14 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     if (nLongue && !recuperation && phase !== 'affutage') longuePrecedente = longue;
 
     // poser chaque séance (essai du jour choisi, puis des autres jours libres de la semaine)
+    const joursCetteFenetre = new Map<Role, Set<string>>();
     let totalSemaine = 0;
     let posees = 0;
     roles.forEach((role, i) => {
       const s: SeanceCourse =
         role === 'qualite1' || role === 'qualite2' ? seancesQualite[i]! :
-        role === 'longue' ? sortieLongue(longue, a, phase === 'specifique' && longue >= 60) :
-        footing(facile, a, (phase === 'base' || phase === 'developpement') && facile >= FOOTING_MINI);
+        role === 'longue' ? sortieLongue(longue, a, (phase === 'specifique' && longue >= 60) || (phase === 'developpement' && w % 2 === 1 && longue >= 55)) :
+        varianteFooting(facile, a, phase, w);
       const essais = [choisis[i], ...libres.filter((j) => !choisis.includes(j) && !operations.some((o) => o.op === 'ajouter' && o.proposition.date === j))];
       let raisonRefus = '';
       for (const jour of essais) {
@@ -558,16 +659,19 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
           totalSemaine += s.minutes;
           posees++;
           noms.add(jour);
+          if (p.type !== 'footing_facile' && p.type !== 'footing_recuperation') joursDurs.add(jour);
+          joursCetteFenetre.set(role, (joursCetteFenetre.get(role) ?? new Set<string>()).add(nomDuJour(jour)));
           return;
         }
         if (!raisonRefus) raisonRefus = v.erreurs[0]?.message ?? '';
       }
       if (abandons.length < 12) abandons.push(`Semaine ${w + 1}, ${etiquetteDate(choisis[i])} : je n'ai pas pu placer « ${s.detail.nom} » (${raisonRefus.replace(/\.$/, '')}).`);
     });
+    joursParRole = joursCetteFenetre;
     lignesSemaines.push(`Semaine ${w + 1} (${du}) : ${NOM_PHASE[phase]}${recuperation ? ', récupération' : ''}, ${posees} séance${posees > 1 ? 's' : ''}, ${totalSemaine} min`);
   }
 
-  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null };
+  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null, volumeDepart, derniers7 };
   return { operations, abandons, semaines: lignesSemaines, bilan, message: messageBilan(bilan) };
 }
 
@@ -588,6 +692,7 @@ export function messageBilan(b: Bilan): string {
   } else if (b.verdict === 'sans_donnees') {
     parts.push("Je n'ai pas assez de sorties de course pour estimer ton niveau : le plan est calé sur le temps que tu vises, à vérifier après les premières séances.");
   }
+  parts.push(`Volume de départ : ${b.volumeDepart} min la première semaine, calé sur tes 7 derniers jours glissants (${b.derniers7} min) et ta moyenne des 4 dernières fenêtres de 7 jours ; les semaines du plan sont des fenêtres de 7 jours glissants à partir du premier jour du plan.`);
   parts.push(`Plan à ${b.seancesParSemaine} séances par semaine (à garder identique si tu refais le plan, sauf demande de l'utilisateur).`);
   if (b.allures) {
     parts.push(`Allures (par km) : ${ALLURES_CLES.map((c) => `${NOM_ALLURE[c]} ${formaterAllure(b.allures![c])}`).join(', ')}.`);
