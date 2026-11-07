@@ -78,3 +78,13 @@ Premier appel de bout en bout (vraie clé, vrai compte, 12 messages, environ 0,0
 - Plus d'imprévus : « moins de temps cette semaine » (plafond d'heures), « fatigué » (alléger sans supprimer), compétition qui bouge.
 - Valider un plan **partiel** (garder seulement certaines séances de reprise) : demande de revérifier le sous-plan côté serveur.
 - Banc d'essai de phrases d'imprévus pour juger la compréhension du modèle.
+
+## Mise à jour du 9 nov. 2026 : règles supprimées, structure, plans longs
+
+Décisions de Yanis (8 nov.) appliquées :
+
+- **Plus aucun refus pour ces raisons** : les 4 réglages, la hausse de charge, l'horizon de 14 jours, les bornes de durée (une séance dure 1 à 1440 min, 67 min est permis), la limite « sans historique », tout le bloc « chat et coût » (quotas, longueur de message, coupe-circuit de dépense, plafonds de lectures et d'actions par message). Restent des bornes **techniques** : date absurde (plus de 1100 jours), 12 tours d'outils par message, 600 opérations par plan évalué.
+- **Gardés** : accord de partage, catégories de santé, liste blanche, garde-fou santé, jour passé / indisponible / repos / compétition, veille de compétition sans séance dure. Les **bonnes habitudes** des générateurs (alterner dur et facile, un jour sans séance par semaine, montée sur 3 semaines puis récupération, affûtage) ne sont pas des refus.
+- **Structure** : toute séance ajoutée par le coach porte une structure (échauffement, corps, retour au calme) construite par le code (`_shared/structure-seance.ts`) d'après le type et la durée exacte ; la somme des blocs = la durée. Écrite dans `activity_planned.structure`. La phrase de structure s'affiche sur chaque ligne de la carte.
+- **Plans longs** : `planifier_periode` (`_shared/periode.ts`) construit jusqu'à 60 semaines sur UNE carte, avec une date de course (affûtage, rien le jour J). Migrations `2026-11-09_*` : 2000 opérations par plan, cartes jusqu'à 1 Mo, résumé et historique sur 400 jours.
+- **Reste** : l'écran de la carte d'un plan d'un an (8 maquettes d'abord), les imprévus, l'écran d'accord de partage.
