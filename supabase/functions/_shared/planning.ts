@@ -86,6 +86,17 @@ export interface LignePlan {
   op: Operation['op'];
   texte: string;
   raison?: string;
+  /**
+   * De quoi DESSINER le plan dans l'application (calendrier, frise) sans relire les phrases : le sport (« velo »…), la durée,
+   * le jour d'origine (`de`) et le jour d'arrivée (`vers`). Pour une période déclarée : `type`, `du` et `au`.
+   */
+  sport?: string | null;
+  minutes?: number | null;
+  de?: string;
+  vers?: string;
+  type?: TypeIndispo;
+  du?: string;
+  au?: string;
 }
 
 export interface ResultatPlan {
@@ -160,7 +171,7 @@ export function evaluerPlan(operations: Operation[], seances: SeancePrevue[], ba
   const surAjouts: { date: string; tss: number | null }[] = [];
   for (const o of operations) {
     if (o.op === 'indisponibilite') {
-      lignes.push({ op: o.op, texte: `Déclarer : ${NOM_INDISPO[o.type] ?? 'période'} du ${etiquetteDate(o.du)} au ${etiquetteDate(o.au)}`, raison: o.raison });
+      lignes.push({ op: o.op, texte: `Déclarer : ${NOM_INDISPO[o.type] ?? 'période'} du ${etiquetteDate(o.du)} au ${etiquetteDate(o.au)}`, raison: o.raison, type: o.type, du: o.du, au: o.au });
       continue;
     }
     if (o.op === 'supprimer' || o.op === 'deplacer') {
@@ -180,11 +191,11 @@ export function evaluerPlan(operations: Operation[], seances: SeancePrevue[], ba
       touchees.add(s.id);
       if (o.op === 'supprimer') {
         restantes = restantes.filter((r) => r.id !== s.id);
-        lignes.push({ op: o.op, texte: `Supprimer : ${base_}`, raison: o.raison });
+        lignes.push({ op: o.op, texte: `Supprimer : ${base_}`, raison: o.raison, sport: s.sport, minutes: s.minutes, de: s.date });
         continue;
       }
       const ligne = `Déplacer : ${base_} → ${etiquetteDate(o.vers)}`;
-      lignes.push({ op: o.op, texte: ligne, raison: o.raison });
+      lignes.push({ op: o.op, texte: ligne, raison: o.raison, sport: s.sport, minutes: s.minutes, de: s.date, vers: o.vers });
       restantes = restantes.filter((r) => r.id !== s.id);
       const v = validerDeplacement(s, o.vers, ctxAvec(base, restantes, indispos));
       if (!v.ok) echec(ligne, v.erreurs.map((e) => e.message).join(' '));
@@ -196,7 +207,7 @@ export function evaluerPlan(operations: Operation[], seances: SeancePrevue[], ba
     const p = o.proposition;
     const nom = estFamilleCoach(p?.sport) ? (MENU[p.sport].find((t) => t.cle === p.type)?.nom ?? p.type) : String(p?.type ?? '');
     const ligne = `Ajouter : ${SPORTS_NOMS[p?.sport] ?? 'séance'} ${nom} ${p?.minutes} min le ${etiquetteDate(p?.date)}`;
-    lignes.push({ op: o.op, texte: ligne, raison: o.raison ?? o.justification });
+    lignes.push({ op: o.op, texte: ligne, raison: o.raison ?? o.justification, sport: p?.sport ?? null, minutes: p?.minutes ?? null, vers: p?.date });
     const v = validerSeance(p, ctxAvec(base, restantes, indispos));
     if (!v.ok) echec(ligne, v.erreurs.map((e) => e.message).join(' '));
     for (const a of v.avertissements) avertissements.push(`${ligne} : ${a.message}`);

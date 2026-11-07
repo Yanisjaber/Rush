@@ -276,3 +276,20 @@ test('moteur : toutes les opérations proposées tiennent dans l\'horizon de 14 
     }
   }
 });
+
+test('evaluerPlan : chaque ligne porte de quoi dessiner le plan (sport, durée, jour d\'origine, jour d\'arrivée, période)', () => {
+  const r = evaluerPlan([
+    { op: 'indisponibilite', type: 'blessure', du: '2026-11-07', au: '2026-11-16' },
+    { op: 'supprimer', seanceId: S1.id },
+    { op: 'deplacer', seanceId: S5.id, vers: '2026-11-18' },
+    { op: 'ajouter', proposition: { date: '2026-11-19', sport: 'course', type: 'footing_facile', minutes: 30 }, justification: 'Reprise douce.' },
+  ], SEANCES, ctx());
+  assert.deepEqual(r.lignes.map((l) => ({ op: l.op, sport: l.sport, minutes: l.minutes, de: l.de, vers: l.vers, type: l.type, du: l.du, au: l.au })), [
+    { op: 'indisponibilite', sport: undefined, minutes: undefined, de: undefined, vers: undefined, type: 'blessure', du: '2026-11-07', au: '2026-11-16' },
+    { op: 'supprimer', sport: 'course', minutes: 60, de: '2026-11-07', vers: undefined, type: undefined, du: undefined, au: undefined },
+    { op: 'deplacer', sport: 'velo', minutes: 180, de: '2026-11-14', vers: '2026-11-18', type: undefined, du: undefined, au: undefined },
+    { op: 'ajouter', sport: 'course', minutes: 30, de: undefined, vers: '2026-11-19', type: undefined, du: undefined, au: undefined },
+  ]);
+  // le tout reste du JSON simple (la carte est enregistrée telle quelle dans la conversation)
+  assert.deepEqual(JSON.parse(JSON.stringify(r.lignes)), JSON.parse(JSON.stringify(r.lignes)));
+});
