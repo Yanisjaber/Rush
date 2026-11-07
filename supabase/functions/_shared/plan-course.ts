@@ -456,8 +456,9 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     return vide("Je n'ai ni tes sorties de course ni un temps visé pour calibrer les allures : donne-moi le temps que tu vises, ou fais d'abord quelques sorties.");
   }
   const calculees = plafonnerFacile(alluresDepuisCourse(objectifPlan, km), profil);
-  // Le niveau n'est pas mesuré (pas de chrono) : la première sortie est un test, sauf si l'utilisateur n'en veut pas ou si le plan est trop court pour s'en servir
-  const avecTest = !d.chrono && !d.sansTest && nSemaines >= 2;
+  // Sortie test SEULEMENT sans donnée récente (ni chrono, ni sorties des 90 derniers jours) : avec des sorties récentes, le niveau est déjà connu.
+  // Pas de test non plus si l'utilisateur n'en veut pas ou si le plan est trop court pour s'en servir.
+  const avecTest = !d.chrono && !d.sansTest && nSemaines >= 2 && niveau?.fiabilite !== 'recente';
   const imposees = ALLURES_CLES.filter((c) => d.allures?.[c] !== undefined);
   const a: Allures = { ...calculees, ...Object.fromEntries(imposees.map((c) => [c, d.allures![c]!])) };
 
@@ -575,7 +576,7 @@ export function messageBilan(b: Bilan): string {
   const parts: string[] = [];
   if (b.niveau) parts.push(`Niveau estimé aujourd'hui sur ${b.km} km : ${formaterTemps(b.niveau.secondes)} (d'après ${b.niveau.source}).`);
   if (b.niveauFiabilite === 'ancienne') parts.push("Attention : je n'ai AUCUNE sortie récente, cette estimation est très fragile (on a pu perdre beaucoup de niveau).");
-  else if (b.niveauFiabilite === 'recente') parts.push("Cette estimation vient de tes sorties récentes, qui ne sont pas des efforts maximaux : elle reste à confirmer.");
+  else if (b.niveauFiabilite === 'recente') parts.push("Cette estimation vient de tes sorties récentes : pas de sortie test nécessaire. Si l'utilisateur trouve les allures trop rapides ou trop lentes, il peut les ajuster.");
   if (b.test) parts.push("La première sortie du plan est un TEST (3 km chrono) : dès que l'utilisateur donne son temps, rappelle preparer_course avec chrono_km et chrono_temps pour recalibrer toutes les allures. Dis-lui de la faire dès que possible.");
   if (b.realiste !== null) parts.push(`En ${b.semaines} semaine${b.semaines > 1 ? 's' : ''} d'entraînement, un temps jouable est d'environ ${formaterTemps(b.realiste)}.`);
   if (b.verdict === 'ambitieux' && b.cible !== null && b.realiste !== null) {

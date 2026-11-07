@@ -199,24 +199,32 @@ test('le bilan rappelle le nombre de séances par semaine pour qu\'un plan refai
   assert.match(r.message, /Plan à 4 séances par semaine/);
 });
 
-test('première sortie = TEST (3 km chrono) quand le niveau n\'est pas mesuré : en semaine 1, avec ses blocs, et le bilan demande le temps', () => {
+test('AVEC des sorties récentes : pas de test, la première semaine est une vraie semaine de plan', () => {
   const r = planifierCourse(DEMANDE, [], ctx(), YANIS);
+  assert.equal(r.bilan?.niveauFiabilite, 'recente');
+  assert.equal(r.bilan?.test, false);
+  assert.ok(ajouts(r.operations).every((o) => !/Sortie test/.test(o.detail!.nom)));
+  assert.doesNotMatch(r.message, /TEST/);
+  assert.match(r.message, /pas de sortie test nécessaire/);
+});
+test('sans AUCUNE donnée récente : la première sortie est un TEST (3 km chrono), avec ses blocs, et le bilan demande le temps', () => {
+  const r = planifierCourse(DEMANDE, [], ctx(), { ...YANIS, effortRecent: null, sorties90: 0, recent: { ...YANIS.recent, sorties: 0, allureMedianeSParKm: null } });
   assert.equal(r.bilan?.test, true);
   const a = ajouts(r.operations);
   const test = a.filter((o) => /Sortie test/.test(o.detail!.nom));
   assert.equal(test.length, 1);
-  assert.ok(test[0].proposition.date <= '2026-11-16', test[0].proposition.date);
+  assert.ok(test[0].proposition.date <= '2026-11-22', test[0].proposition.date);
   assert.deepEqual(test[0].detail!.structure.map((b) => b.type), ['warmup', 'steady', 'cooldown']);
   assert.match(test[0].detail!.structure[1].name, /3 km chrono/);
   assert.match(test[0].justification, /donne-moi ton temps/);
   assert.match(r.message, /TEST \(3 km chrono\)/);
   assert.match(r.message, /chrono_km et chrono_temps/);
-  assert.match(r.message, /ne sont pas des efforts maximaux/);
+  assert.match(r.message, /AUCUNE sortie récente/);
   assert.equal(evaluerPlan(r.operations, [], ctx()).ok, true);
 });
 test('chrono réel : plus de test, niveau mesuré, tout le plan recalibré dessus (allures plus rapides qu\'avec l\'estimation)', () => {
   const avant = planifierCourse(DEMANDE, [], ctx(), YANIS);
-  const apres = planifierCourse({ ...DEMANDE, chrono: { km: 3, secondes: 840 } }, [], ctx(), YANIS); // 3 km en 14:00
+  const apres = planifierCourse({ ...DEMANDE, chrono: { km: 3, secondes: 840 } }, [], ctx(), YANIS); // 3 km en 14:00 : plus rapide que l'estimation
   assert.equal(apres.bilan?.test, false);
   assert.equal(apres.bilan?.niveauFiabilite, 'chrono');
   assert.ok(ajouts(apres.operations).every((o) => !/Sortie test/.test(o.detail!.nom)));
@@ -225,7 +233,7 @@ test('chrono réel : plus de test, niveau mesuré, tout le plan recalibré dessu
   assert.ok(apres.bilan!.allures!.course < avant.bilan!.allures!.course);
 });
 test('sans_test, plan trop court, ou sans aucune donnée : pas de test quand il ne sert à rien ; avec une vieille donnée seulement : message d\'alerte', () => {
-  assert.equal(planifierCourse({ ...DEMANDE, sansTest: true }, [], ctx(), YANIS).bilan?.test, false);
+  assert.equal(planifierCourse({ ...DEMANDE, sansTest: true }, [], ctx(), { ...YANIS, effortRecent: null, sorties90: 0, recent: { ...YANIS.recent, sorties: 0, allureMedianeSParKm: null } }).bilan?.test, false);
   const c = ctx({ competitions: [{ date: '2026-11-15' }] });
   assert.equal(planifierCourse({ date: '2026-11-15', km: 10, tempsCibleMinutes: 60 }, [], c, YANIS).bilan?.test, false);
   const ancien = planifierCourse(DEMANDE, [], ctx(), { ...YANIS, effortRecent: null, recent: { ...YANIS.recent, sorties: 0, allureMedianeSParKm: null } });

@@ -1202,9 +1202,15 @@ test('preparer_course avec le chrono du test : « j\'ai fait 15:10 sur 3 km » r
   const t = await planPropose([outil('c', { motif: 'Plan', chrono_km: 3, chrono_temps: 'vite' }, 'preparer_course')], avecCourse);
   assert.match(((t.modele.appels[1].messages.at(-1)?.content as Libre[])[0]).content, /mm:ss/);
 });
-test('preparer_course sans chrono : la première sortie est un test, le modèle reçoit la consigne de demander le temps', async () => {
-  const w = await planPropose([outil('c', { motif: 'Plan' }, 'preparer_course')], avecCourse);
+test('preparer_course sans AUCUNE donnée récente : la première sortie est un test, le modèle reçoit la consigne de demander le temps', async () => {
+  const w = await planPropose([outil('c', { motif: 'Plan' }, 'preparer_course')], (st) => { avecCourse(st); st.resume.profil_course = { ...PROFIL_YANIS, meilleur_effort_recent: null, sorties_90_jours: 0, recent: { sorties: 0, km: 0, minutes: 0, plus_longue_minutes: 0, allure_mediane_s_par_km: null } }; });
   const carte = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
   assert.equal(carte.lignes.filter((l: Libre) => /Sortie test/.test(l.texte)).length, 1);
   assert.match(((w.modele.appels[1].messages.at(-1)?.content as Libre[])[0]).content, /chrono_km et chrono_temps/);
+});
+
+test('preparer_course AVEC des sorties récentes : pas de sortie test', async () => {
+  const w = await planPropose([outil('c', { motif: 'Plan' }, 'preparer_course')], avecCourse);
+  const carte = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
+  assert.equal(carte.lignes.filter((l: Libre) => /Sortie test/.test(l.texte)).length, 0);
 });
