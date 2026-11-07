@@ -2,6 +2,8 @@
 // Le registre des actions du coach (docs/ia/PLAN_COACH_COMPLET.md).
 //
 // Une seule liste : un outil n'existe pour le modèle que s'il est déclaré ici, avec son niveau de risque.
+//   - « lecture »      : le modèle va chercher un détail (jours, sorties, volumes…). Le serveur répond avec le résumé déjà chargé
+//                        (aucun nouvel accès à la base, la santé reste filtrée par catégorie autorisée). Ne change rien.
 //   - « direct »       : ne change aucune donnée (ouvrir un écran…). Le serveur vérifie les paramètres puis les envoie à l'app,
 //                        qui les exécute elle-même (liste blanche côté app).
 //   - « carte »        : modifie les données de l'utilisateur. Le modèle ne fait que PROPOSER : une carte apparaît, rien n'est
@@ -17,7 +19,7 @@ import { FAMILLES_COACH } from './menu-seances.ts';
 import type { OutilModele } from './modele.ts';
 import { OUTIL_PROPOSER_SEANCE, NOM_OUTIL_SEANCE } from './coach-prompt.ts';
 
-export type NiveauAction = 'direct' | 'carte' | 'confirmation';
+export type NiveauAction = 'lecture' | 'direct' | 'carte' | 'confirmation';
 
 export type LectureAction = { ok: true; params: Record<string, unknown> } | { ok: false; erreur: string };
 
@@ -30,10 +32,12 @@ export interface DefinitionAction {
   schema: Record<string, unknown>;
   /** Vérifie et nettoie les paramètres écrits par le modèle (jamais crus tels quels). Absent seulement pour proposer_seance, validée par validerSeance. */
   lire?: (input: unknown) => LectureAction;
+  /** Niveau « lecture » seulement : ce qu'on répond au modèle, à partir du résumé déjà chargé */
+  repondre?: (params: Record<string, unknown>, resume: unknown) => unknown;
 }
 
 /** Combien d'actions de chaque niveau dans un même message de réponse */
-export const MAX_PAR_NIVEAU: Record<NiveauAction, number> = { direct: 3, carte: 3, confirmation: 1 };
+export const MAX_PAR_NIVEAU: Record<NiveauAction, number> = { lecture: 4, direct: 3, carte: 3, confirmation: 1 };
 
 // ---------- Petits lecteurs ----------
 
@@ -56,6 +60,13 @@ function parmi<T extends string>(x: unknown, valeurs: readonly T[]): T | null {
   return typeof x === 'string' && (valeurs as readonly string[]).includes(x) ? (x as T) : null;
 }
 
+function entier(x: unknown, min: number, max: number): number | null {
+  return typeof x === 'number' && Number.isInteger(x) && x >= min && x <= max ? x : null;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const liste = (x: unknown): any[] => (Array.isArray(x) ? x : []);
+
 function uuid(x: unknown): string | null {
   return typeof x === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x) ? x.toLowerCase() : null;
 }
@@ -65,11 +76,86 @@ const refus = (erreur: string): LectureAction => ({ ok: false, erreur });
 // ---------- Les écrans que le coach peut ouvrir ----------
 
 export const ECRANS = ['accueil', 'calendrier', 'bilan', 'sante', 'coach', 'parametres'] as const;
+/** Les familles de sport que porte le résumé (« autre » et « muscu » comprises) */
+export const SPORTS_LECTURE = ['velo', 'course', 'natation', 'muscu', 'autre'] as const;
 export const INDISPONIBILITES = ['maladie', 'blessure', 'indisponible'] as const;
 
 // ---------- Le registre ----------
 
 export const ACTIONS: DefinitionAction[] = [
+  // ----- Niveau 0 : lecture (le détail que le résumé léger ne contient pas) -----
+  {
+    nom: 'lire_jours',
+    niveau: 'lecture',
+    disponible: true,
+    description: "Lit la charge d'entraînement jour par jour (points de charge, minutes, nombre de séances, sports) sur les derniers jours, jusqu'à 14.",
+    schema: {
+      type: 'object',
+      properties: { nb: { type: 'integer', minimum: 1, maximum: 14, description: 'Nombre de jours en arrière, aujourd\'hui compris.' } },
+      required: ['nb'],
+      additionalProperties: false,
+    },
+    lire: (input) => {
+      const nb = entier(objet(input, ['nb'])?.nb, 1, 14);
+      return nb ? { ok: true, params: { nb } } : refus('nb doit être un entier entre 1 et 14.');
+    },
+    repondre: (p, resume) => liste((resume as Objet)?.derniers_jours).slice(-(p.nb as number)),
+  },
+  {
+    nom: 'lire_seances_recentes',
+    niveau: 'lecture',
+    disponible: true,
+    description: "Lit les dernières séances réalisées (date, sport, minutes, km, fréquence cardiaque moyenne), les plus récentes d'abord, jusqu'à 8. Sans le nom des séances.",
+    schema: {
+      type: 'object',
+      properties: {
+        nb: { type: 'integer', minimum: 1, maximum: 8 },
+        sport: { type: 'string', enum: [...SPORTS_LECTURE], description: 'Facultatif : un seul sport.' },
+      },
+      required: ['nb'],
+      additionalProperties: false,
+    },
+    lire: (input) => {
+      const o = objet(input, ['nb', 'sport']);
+      const nb = entier(o?.nb, 1, 8);
+      if (!o || !nb) return refus('nb doit être un entier entre 1 et 8.');
+      if (o.sport === undefined) return { ok: true, params: { nb } };
+      const sport = parmi(o.sport, SPORTS_LECTURE);
+      return sport ? { ok: true, params: { nb, sport } } : refus(`Sport inconnu. Choix possibles : ${SPORTS_LECTURE.join(', ')}.`);
+    },
+    repondre: (p, resume) =>
+      liste((resume as Objet)?.dernieres_seances)
+        .filter((s) => p.sport === undefined || s?.sport === p.sport)
+        .slice(0, p.nb as number),
+  },
+  {
+    nom: 'lire_volume',
+    niveau: 'lecture',
+    disponible: true,
+    description: 'Lit le volume par sport sur 7 et 28 jours (séances, minutes, km, séance la plus longue).',
+    schema: { type: 'object', properties: {}, additionalProperties: false },
+    lire: (input) => (objet(input, []) ? { ok: true, params: {} } : refus('Cet outil ne prend aucun paramètre.')),
+    repondre: (_p, resume) => (resume as Objet)?.volume_par_sport ?? {},
+  },
+  {
+    nom: 'lire_sante',
+    niveau: 'lecture',
+    disponible: true,
+    description: "Lit les mesures de santé des 7 derniers jours (seulement les catégories que l'utilisateur a autorisées à partager). Liste vide = rien d'autorisé ou rien de saisi.",
+    schema: { type: 'object', properties: {}, additionalProperties: false },
+    lire: (input) => (objet(input, []) ? { ok: true, params: {} } : refus('Cet outil ne prend aucun paramètre.')),
+    repondre: (_p, resume) => ({ mesures: liste((resume as Objet)?.sante) }),
+  },
+  {
+    nom: 'lire_cycles',
+    niveau: 'lecture',
+    disponible: true,
+    description: "Lit les cycles d'entraînement prévus dans les 60 prochains jours (dates et sport).",
+    schema: { type: 'object', properties: {}, additionalProperties: false },
+    lire: (input) => (objet(input, []) ? { ok: true, params: {} } : refus('Cet outil ne prend aucun paramètre.')),
+    repondre: (_p, resume) => ({ cycles: liste((resume as Objet)?.cycles) }),
+  },
+
   // ----- Niveau 1 : direct (ne change rien) -----
   {
     nom: 'ouvrir_ecran',

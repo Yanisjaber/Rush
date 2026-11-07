@@ -169,11 +169,21 @@ function lireProposition(input: unknown): { proposition: Proposition; justificat
 }
 
 const MAX_CARTES = 3;
+/** Un tour = un appel au modèle. Il faut de la place pour lire (1 tour), proposer (1 tour) et conclure. */
+const TOURS_MAX = 4;
 
-function traiterOutil(appel: AppelOutil, ctx: ContexteValidation, cartes: CarteSeance[], directes: { nom: string; params: Record<string, unknown> }[], uuid: () => string): { contenu: string; erreur: boolean } {
+function traiterOutil(appel: AppelOutil, ctx: ContexteValidation, resume: Libre, nbLectures: { n: number }, cartes: CarteSeance[], directes: { nom: string; params: Record<string, unknown> }[], uuid: () => string): { contenu: string; erreur: boolean } {
   const def = trouverAction(appel.name);
   // Un outil absent du registre, ou pas encore branché, n'existe pas pour le modèle (même s'il l'invente)
   if (!def || !def.disponible) return { contenu: "Cet outil n'existe pas.", erreur: true };
+
+  if (def.niveau === 'lecture') {
+    if (nbLectures.n >= MAX_PAR_NIVEAU.lecture) return { contenu: `${MAX_PAR_NIVEAU.lecture} lectures au maximum par message : réponds avec ce que tu as.`, erreur: true };
+    const lu = def.lire ? def.lire(appel.input) : { ok: false as const, erreur: 'Lecture non lisible.' };
+    if (!lu.ok || !def.repondre) return { contenu: `Paramètres invalides : ${lu.ok ? 'lecture non branchée' : lu.erreur}`, erreur: true };
+    nbLectures.n++;
+    return { contenu: JSON.stringify(def.repondre(lu.params, resume)), erreur: false };
+  }
 
   if (def.niveau === 'direct') {
     if (directes.length >= MAX_PAR_NIVEAU.direct) return { contenu: `${MAX_PAR_NIVEAU.direct} actions directes au maximum par message.`, erreur: true };
@@ -255,11 +265,12 @@ export async function traiterMessage(userId: string, texteBrut: unknown, deps: D
 
   const cartes: CarteSeance[] = [];
   const directes: { nom: string; params: Record<string, unknown> }[] = [];
+  const nbLectures = { n: 0 };
   const textes: string[] = [];
   let usage = USAGE_NUL;
   let refus = false;
 
-  for (let tour = 0; tour < 3; tour++) {
+  for (let tour = 0; tour < TOURS_MAX; tour++) {
     let premierDelta = true;
     const reponse = await appelerModele(
       modele,
@@ -282,7 +293,7 @@ export async function traiterMessage(userId: string, texteBrut: unknown, deps: D
 
     const resultats = reponse.outils.map((o) => {
       const avant = directes.length;
-      const r = traiterOutil(o, ctx, cartes, directes, deps.uuid);
+      const r = traiterOutil(o, ctx, resume, nbLectures, cartes, directes, deps.uuid);
       for (const d of directes.slice(avant)) emettre({ type: 'action', nom: d.nom, params: d.params });
       return { type: 'tool_result', tool_use_id: o.id, content: r.contenu, ...(r.erreur ? { is_error: true } : {}) };
     });

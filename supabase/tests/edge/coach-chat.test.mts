@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ajouterCarte, annulerCarte, CONFIG_PAR_DEFAUT, ErreurCoach, jourLocal, ligneSeancePrevue, maintenirMemoire, traiterMessage } from '../../functions/_shared/coach-chat.ts';
 import type { Dependances, EvenementCoach, SignauxSante, StockageCoach } from '../../functions/_shared/coach-chat.ts';
-import { blocContexte, contexteDepuisResume, historiquePourModele, texteCarte } from '../../functions/_shared/coach-contexte.ts';
+import { blocContexte, contexteDepuisResume, historiquePourModele, resumeLeger, texteCarte } from '../../functions/_shared/coach-contexte.ts';
 import type { CarteSeance, EtatCarte, MessageStocke } from '../../functions/_shared/coach-contexte.ts';
 import { coutMicroUsd } from '../../functions/_shared/coach-couts.ts';
 import { evaluerGardeFou } from '../../functions/_shared/garde-fou.ts';
@@ -214,6 +214,78 @@ test('actions pas encore branchées (déplacer, supprimer, compte…) : le modè
   assert.equal(w.stockage.seances.length, 0);
 });
 
+// ---------- Résumé léger et outils de lecture ----------
+const SEANCES = [
+  { date: '2026-11-05', sport: 'course', minutes: 50, km: 10, fc_moyenne: 148 },
+  { date: '2026-11-03', sport: 'velo', minutes: 120, km: 55, fc_moyenne: 135 },
+  { date: '2026-11-02', sport: 'course', minutes: 40, km: 8, fc_moyenne: 150 },
+];
+const avecDetail = (s: FauxStockage) => { s.resume.dernieres_seances = SEANCES; s.resume.cycles = [{ du: '2026-11-10', au: '2026-11-30', sport: 'course' }]; };
+
+test('résumé léger : l\'essentiel reste, le détail part derrière les outils, et c\'est bien plus court', () => {
+  const r = resumeBase(); r.dernieres_seances = SEANCES; r.cycles = [{ du: '2026-11-10', au: '2026-11-30', sport: 'course' }];
+  const l = resumeLeger(r);
+  for (const cle of ['forme', 'charge', 'prevues', 'competitions', 'indisponibilites', 'objectifs', 'qualite']) assert.ok(cle in l, cle);
+  for (const cle of ['derniers_jours', 'dernieres_seances', 'volume_par_sport', 'sante', 'cycles']) assert.ok(!(cle in l), `${cle} ne part plus à chaque message`);
+  assert.ok(JSON.stringify(l).length < JSON.stringify(r).length / 2);
+  assert.deepEqual(resumeLeger(null), {});
+  assert.deepEqual(resumeLeger('x'), {});
+});
+
+test('le modèle ne reçoit que le résumé léger, mais le garde-fou et le validateur lisent le résumé COMPLET', async () => {
+  const w = monde([rep('ok')], (s) => { avecDetail(s); s.resume.indisponibilites = [{ type: 'blessure', du: '2026-11-06', au: '2026-11-20' }]; });
+  await traiterMessage(U, 'Salut', w.deps, w.emettre);
+  const envoye = String(w.modele.appels[0].messages.at(-1)?.content);
+  assert.doesNotMatch(envoye, /"(derniers_jours|dernieres_seances|volume_par_sport|cycles|sante)":/);
+  assert.match(envoye, /detail_via_outils/);
+  // le validateur voit toujours la blessure et les 14 jours : une séance dans la période blessée reste refusée
+  const v = monde([rep('', [outil('a', seance('2026-11-08'))]), rep('Ok.')], (s) => { avecDetail(s); s.resume.indisponibilites = [{ type: 'blessure', du: '2026-11-06', au: '2026-11-20' }]; });
+  await traiterMessage(U, 'Une sortie ?', v.deps, v.emettre);
+  assert.equal(v.stockage.messages[1].cartes, null);
+});
+
+test('outils de lecture : le modèle lit un détail, reçoit des données, rien n\'est enregistré ni envoyé à l\'app', async () => {
+  const w = monde([rep('', [outil('a', { nb: 2 }, 'lire_seances_recentes'), outil('b', { nb: 3 }, 'lire_jours')]), rep('Tu as couru deux fois.')], avecDetail);
+  await traiterMessage(U, 'Mes dernières sorties ?', w.deps, w.emettre);
+  const retours = w.modele.appels[1].messages.at(-1)?.content as Libre[];
+  assert.equal(retours[0].is_error, undefined);
+  assert.deepEqual(JSON.parse(retours[0].content), SEANCES.slice(0, 2));
+  assert.equal(JSON.parse(retours[1].content).length, 3);
+  assert.equal(JSON.parse(retours[1].content).at(-1).date, JOUR, 'les jours les plus récents, aujourd\'hui compris');
+  assert.equal(w.evts.filter((e) => e.type === 'action' || e.type === 'carte').length, 0);
+  assert.equal(w.stockage.messages[1].cartes, null);
+});
+
+test('lire_seances_recentes filtre par sport ; lire_cycles et lire_volume rendent le résumé ; lire_sante est vide sans accord', async () => {
+  const w = monde([rep('', [outil('a', { nb: 8, sport: 'course' }, 'lire_seances_recentes'), outil('b', {}, 'lire_cycles'), outil('c', {}, 'lire_volume'), outil('d', {}, 'lire_sante')]), rep('Ok.')], avecDetail);
+  await traiterMessage(U, 'Détails', w.deps, w.emettre);
+  const r = w.modele.appels[1].messages.at(-1)?.content as Libre[];
+  assert.deepEqual(JSON.parse(r[0].content).map((x: Libre) => x.date), ['2026-11-05', '2026-11-02']);
+  assert.equal(JSON.parse(r[1].content).cycles.length, 1);
+  assert.equal(JSON.parse(r[2].content).velo.plus_longue_minutes_28_jours, 180);
+  assert.deepEqual(JSON.parse(r[3].content), { mesures: [] });
+});
+
+test('outils de lecture : paramètres hors limites ou en trop refusés, quatre lectures au maximum par message', async () => {
+  const w = monde([
+    rep('', [outil('a', { nb: 99 }, 'lire_jours'), outil('b', { nb: 2, x: 1 }, 'lire_jours'), outil('c', { nb: 2, sport: 'golf' }, 'lire_seances_recentes'), outil('d', { nb: 1.5 }, 'lire_jours')]),
+    rep('', [1, 2, 3, 4, 5].map((i) => outil(`e${i}`, {}, 'lire_volume'))),
+    rep('Voilà.'),
+  ], avecDetail);
+  await traiterMessage(U, 'x', w.deps, w.emettre);
+  const premier = w.modele.appels[1].messages.at(-1)?.content as Libre[];
+  assert.ok(premier.every((r) => r.is_error === true));
+  const second = w.modele.appels[2].messages.at(-1)?.content as Libre[];
+  assert.equal(second.filter((r) => r.is_error).length, 1, 'la cinquième lecture est refusée');
+});
+
+test('sécurité : aucune lecture ne renvoie de texte libre (noms de séances, notes) — que des nombres, dates et mots de listes fermées', async () => {
+  const w = monde([rep('', [outil('a', { nb: 8 }, 'lire_seances_recentes')]), rep('Ok.')], avecDetail);
+  await traiterMessage(U, 'x', w.deps, w.emettre);
+  const cles = new Set(JSON.parse(((w.modele.appels[1].messages.at(-1)?.content as Libre[])[0]).content).flatMap((x: Libre) => Object.keys(x)));
+  assert.deepEqual([...cles].sort(), ['date', 'fc_moyenne', 'km', 'minutes', 'sport']);
+});
+
 // ---------- Les barrières avant le modèle ----------
 test('messages invalides : refusés avant tout (rien réservé, rien lu)', async () => {
   for (const texte of ['', '   ', 'x'.repeat(2001), 42, null, { a: 1 }]) {
@@ -377,16 +449,16 @@ test('appels d\'outil mal formés ou inconnus : refusés sans planter', async ()
   assert.ok(retours.every((r) => r.is_error === true));
   assert.equal(w.stockage.messages[1].cartes, null);
 });
-test('texte vide avec carte : un texte par défaut ; refus du modèle sans texte : un message poli ; au plus 3 tours', async () => {
+test('texte vide avec carte : un texte par défaut ; refus du modèle sans texte : un message poli ; au plus 4 tours', async () => {
   const a = monde([rep('', [outil('t1', seance('2026-11-08'))]), rep('')]);
   await traiterMessage(U, 'x', a.deps, a.emettre);
   assert.equal(a.stockage.messages[1].contenu, 'Voilà ce que je te propose.');
   const b = monde([rep('', [], 'refus')]);
   await traiterMessage(U, 'x', b.deps, b.emettre);
   assert.match(b.stockage.messages[1].contenu, /Je ne peux pas répondre/);
-  const c = monde([rep('', [outil('1', seance('2026-11-07', 'recuperation', 40))]), rep('', [outil('2', seance('2026-11-09', 'recuperation', 40))]), rep('', [outil('3', seance('2026-11-11', 'recuperation', 40))]), rep('ne doit pas être appelé')]);
+  const c = monde([rep('', [outil('1', seance('2026-11-07', 'recuperation', 40))]), rep('', [outil('2', seance('2026-11-09', 'recuperation', 40))]), rep('', [outil('3', seance('2026-11-11', 'recuperation', 40))]), rep('', [outil('3b', { ecran: 'bilan' }, 'ouvrir_ecran')]), rep('ne doit pas être appelé')]);
   await traiterMessage(U, 'x', c.deps, c.emettre);
-  assert.equal(c.modele.appels.length, 3, 'la boucle s\'arrête à trois tours');
+  assert.equal(c.modele.appels.length, 4, 'la boucle s\'arrête à quatre tours');
 });
 test('une réponse coupée (longueur) n\'exécute jamais ses outils', async () => {
   const w = monde([rep('Je te propose', [outil('t1', seance('2026-11-08'))], 'longueur')]);

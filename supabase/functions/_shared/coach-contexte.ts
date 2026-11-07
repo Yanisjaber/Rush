@@ -67,6 +67,28 @@ export function contexteDepuisResume(resume: Libre, decision: DecisionGardeFou, 
   };
 }
 
+/**
+ * Ce que le modèle voit du résumé à chaque message : l'essentiel seulement. Le détail (jours, sorties, volumes, santé, cycles)
+ * est derrière les outils de lecture (coach-actions.ts), que le modèle appelle quand il en a besoin.
+ * Le validateur et le garde-fou, eux, lisent toujours le résumé COMPLET : ce tri ne change rien à leurs décisions.
+ */
+export function resumeLeger(resume: Libre): Libre {
+  if (!resume || typeof resume !== 'object') return {};
+  const r = resume;
+  return {
+    date: r.date,
+    forme: r.forme,
+    charge: r.charge,
+    prevues: r.prevues,
+    competitions: r.competitions,
+    indisponibilites: r.indisponibilites,
+    jours_de_repos: liste(r.jours_de_repos),
+    objectifs: r.objectifs,
+    qualite: r.qualite,
+    detail_via_outils: ['jours', 'seances_recentes', 'volume', 'sante', 'cycles'],
+  };
+}
+
 /** JSON sûr à poser dans un bloc : « < » devient <, donc aucune balise ne peut s'y former */
 function jsonSur(x: unknown): string {
   return JSON.stringify(x).replace(/</g, '\\u003c');
@@ -87,7 +109,7 @@ export function blocContexte(e: { aujourdhui: string; resume: Libre; memoire: st
     `consigne_securite: ${jsonSur(consigneSecurite(e.decision))}`,
     `reglages_utilisateur: ${jsonSur(e.reglages)}`,
     `memoire: ${jsonSur(e.memoire ?? '')}`,
-    `resume: ${jsonSur(e.resume ?? {})}`,
+    `resume: ${jsonSur(resumeLeger(e.resume))}`,
     '</contexte_donnees>',
   ].join('\n');
 }

@@ -10,7 +10,7 @@ test('registre : noms uniques, niveau valide, schéma fermé (additionalProperti
   const noms = ACTIONS.map((a) => a.nom);
   assert.equal(new Set(noms).size, noms.length);
   for (const a of ACTIONS) {
-    assert.ok(['direct', 'carte', 'confirmation'].includes(a.niveau), a.nom);
+    assert.ok(['lecture', 'direct', 'carte', 'confirmation'].includes(a.niveau), a.nom);
     assert.equal((a.schema as { additionalProperties?: unknown }).additionalProperties, false, `${a.nom} : schéma fermé`);
     assert.ok(a.description.length > 10, a.nom);
     if (a.nom !== 'proposer_seance') assert.equal(typeof a.lire, 'function', `${a.nom} : paramètres vérifiés`);
