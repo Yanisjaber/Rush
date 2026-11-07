@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ajouterCarte, annulerCarte, CONFIG_PAR_DEFAUT, ErreurCoach, jourLocal, ligneSeancePrevue, maintenirMemoire, operationsPourEcriture, traiterMessage } from '../../functions/_shared/coach-chat.ts';
 import type { Dependances, EvenementCoach, SignauxSante, StockageCoach } from '../../functions/_shared/coach-chat.ts';
-import { blocContexte, contexteDepuisResume, historiquePourModele, resumeLeger, texteCarte } from '../../functions/_shared/coach-contexte.ts';
+import { blocContexte, contexteDepuisResume, historiquePourModele, prochainsJours, resumeLeger, texteCarte } from '../../functions/_shared/coach-contexte.ts';
 import type { CarteSeance, EtatCarte, MessageStocke } from '../../functions/_shared/coach-contexte.ts';
 import { coutMicroUsd } from '../../functions/_shared/coach-couts.ts';
 import { evaluerGardeFou } from '../../functions/_shared/garde-fou.ts';
@@ -966,6 +966,10 @@ test('operationsPourEcriture : le format exact attendu par coach_appliquer_plan'
     { op: 'supprimer', seanceId: PID(2) },
     { op: 'ajouter', proposition: { date: '2026-11-13', sport: 'course', type: 'footing_facile', minutes: 30 }, justification: 'Reprise douce.' },
   ], 'abc');
+  assert.deepEqual(operationsPourEcriture([{ op: 'repos', date: '2026-11-12', poser: true }, { op: 'repos', date: '2026-11-13', poser: false }], 'abc'), [
+    { op: 'poser_repos', date: '2026-11-12' },
+    { op: 'retirer_repos', date: '2026-11-13' },
+  ]);
   assert.deepEqual(ops, [
     { op: 'indisponibilite', type: 'maladie', du: '2026-11-07', au: '2026-11-09', client_id: 'coach-abc-0' },
     { op: 'deplacer', seance_id: PID(1), vers: '2026-11-12' },
@@ -981,4 +985,112 @@ test('le coach se souvient d\'un plan : la carte de planning est rappelée au mo
   const dernier = String(hist.at(-1)?.content);
   assert.match(dernier, /\[Plan de modifications \(Déclarer : blessure/);
   assert.match(dernier, /appliqué par l'utilisateur\]/);
+});
+
+// ---------- Les dates en mots ----------
+test('prochains jours : 15 jours, aujourd\'hui et demain repérés, bons jours de la semaine (le 6 nov. 2026 est un vendredi)', () => {
+  const j = prochainsJours('2026-11-06');
+  assert.equal(j.length, 15);
+  assert.deepEqual(j[0], { date: '2026-11-06', jour: 'vendredi', repere: "aujourd'hui" });
+  assert.deepEqual(j[1], { date: '2026-11-07', jour: 'samedi', repere: 'demain' });
+  assert.deepEqual(j.slice(2, 8).map((x) => `${x.jour} ${x.date.slice(8)}`), ['dimanche 08', 'lundi 09', 'mardi 10', 'mercredi 11', 'jeudi 12', 'vendredi 13']);
+  assert.equal(j[14].date, '2026-11-20');
+  assert.equal(j[14].jour, 'vendredi');
+  assert.equal(j.filter((x) => x.repere).length, 2);
+});
+
+test('prochains jours : passage de mois, d\'année et de février bissextile, sans décalage', () => {
+  assert.deepEqual(prochainsJours('2026-12-30').slice(0, 4).map((x) => `${x.date} ${x.jour}`), ['2026-12-30 mercredi', '2026-12-31 jeudi', '2027-01-01 vendredi', '2027-01-02 samedi']);
+  assert.deepEqual(prochainsJours('2028-02-28').slice(0, 3).map((x) => x.date), ['2028-02-28', '2028-02-29', '2028-03-01']);
+  assert.deepEqual(prochainsJours('2026-03-27').slice(0, 3).map((x) => `${x.date} ${x.jour}`), ['2026-03-27 vendredi', '2026-03-28 samedi', '2026-03-29 dimanche'], 'changement d\'heure : pas de jour perdu');
+});
+
+test('le modèle reçoit la table des jours dans le contexte, et le prompt lui interdit de calculer une date', async () => {
+  const w = monde([rep('ok')]);
+  await traiterMessage(U, 'Mets-moi une séance jeudi', w.deps, w.emettre);
+  const envoye = String(w.modele.appels[0].messages.at(-1)?.content);
+  assert.match(envoye, /prochains_jours: \[\{"date":"2026-11-06","jour":"vendredi","repere":"aujourd'hui"\}/);
+  assert.match(envoye, /\{"date":"2026-11-12","jour":"jeudi"\}/);
+  assert.match(PROMPT_SYSTEME, /Tu ne calcules jamais une date/);
+});
+
+// ---------- « Fais-moi ma semaine » ----------
+const SEMAINE = { motif: 'Ma semaine : deux sorties vélo et deux footings', sports: [{ sport: 'velo', seances: 2 }, { sport: 'course', seances: 2 }] };
+
+test('planifier_semaine : une carte de planning avec des ajouts choisis par le CODE, rien d\'écrit, le modèle reçoit le détail', async () => {
+  const w = await planPropose([outil('s', SEMAINE, 'planifier_semaine')], () => {});
+  const carte = w.evts.find((e) => e.type === 'carte') as Libre;
+  assert.equal(carte.carte.genre, 'planning');
+  assert.equal(carte.carte.intention, SEMAINE.motif);
+  assert.ok(carte.carte.operations.length >= 3);
+  assert.ok(carte.carte.operations.every((o: Libre) => o.op === 'ajouter'));
+  assert.ok(carte.carte.lignes.every((l: Libre) => l.op === 'ajouter' && l.sport && l.minutes && l.vers));
+  const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.equal(r.is_error, undefined);
+  assert.match(r.content, /Carte de planning créée/);
+  assert.match(r.content, /ne dis donc jamais que c'est fait/);
+  assert.deepEqual(w.stockage.planAppliques, []);
+  assert.equal(w.stockage.seances.length, 0);
+});
+
+test('planifier_semaine : valider la carte écrit toutes les séances EN UNE FOIS, avec les champs de l\'application', async () => {
+  const w = await planPropose([outil('s', SEMAINE, 'planifier_semaine')], () => {});
+  const r = await ajouterCarte(U, 'carte-1', w.deps);
+  assert.equal(r.ok, true);
+  assert.equal(w.stockage.planAppliques.length, 1);
+  const ops = w.stockage.planAppliques[0];
+  assert.ok(ops.length >= 3 && ops.every((o) => o.op === 'ajouter'));
+  for (const o of ops as Libre[]) assert.ok(['Run', 'Ride', 'Swim'].includes(o.sport) && o.tss > 0 && o.duration >= 20 && /^coach-carte-1-\d+$/.test(o.client_id) && /^2026-11-(0[7-9]|1[0-3])$/.test(o.date));
+});
+
+test('planifier_semaine : demande impossible (rien de libre) = pas de carte, le modèle reçoit la raison sans erreur', async () => {
+  const w = await planPropose([outil('s', SEMAINE, 'planifier_semaine')], (s) => { s.resume.indisponibilites = [{ type: 'maladie', du: '2026-11-06', au: '2026-11-30' }]; });
+  const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.equal(r.is_error, undefined);
+  assert.match(r.content, /Je n'ai pas pu construire cette semaine/);
+  assert.match(r.content, /Aucun jour libre/);
+  assert.equal(w.evts.filter((e) => e.type === 'carte').length, 0);
+});
+
+test('planifier_semaine : le calendrier déjà chargé est respecté (jours occupés évités) et les abandons sont signalés', async () => {
+  const w = await planPropose([outil('s', { motif: 'Ma semaine chargée', sports: [{ sport: 'velo', seances: 3 }] }, 'planifier_semaine')], (s) => { avecPrevues(s); s.resume.charge.moyenne_hebdo_28_jours = 120; });
+  const carte = w.evts.find((e) => e.type === 'carte') as Libre | undefined;
+  const dates = (carte?.carte.lignes ?? []).map((l: Libre) => l.vers);
+  for (const d of dates) assert.ok(!PREVUES.some((p) => p.date === d), `${d} est déjà pris`);
+  const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.equal(r.is_error, undefined);
+});
+
+test('planifier_semaine : paramètres invalides refusés ; une seule carte de planning par message', async () => {
+  const w = await planPropose([
+    outil('a', { motif: 'x', sports: [] }, 'planifier_semaine'),
+    outil('b', { motif: 'Ma semaine', sports: [{ sport: 'golf', seances: 2 }] }, 'planifier_semaine'),
+  ], () => {});
+  const r = w.modele.appels[1].messages.at(-1)?.content as Libre[];
+  assert.ok(r.every((x) => x.is_error === true));
+  const deux = await planPropose([outil('a', SEMAINE, 'planifier_semaine'), outil('b', SEMAINE, 'planifier_semaine')], () => {});
+  const r2 = deux.modele.appels[1].messages.at(-1)?.content as Libre[];
+  assert.equal(r2[0].is_error, undefined);
+  assert.equal(r2[1].is_error, true);
+  assert.equal(deux.evts.filter((e) => e.type === 'carte').length, 1);
+});
+
+test('le prompt explique quand appeler planifier_semaine et de ne pas inventer les séances soi-même', () => {
+  assert.match(PROMPT_SYSTEME, /planifier_semaine/);
+  assert.match(PROMPT_SYSTEME, /l'application choisit les jours, les types et les durées/);
+});
+
+test('« mets-moi un repos jeudi » : une carte avec le jour de repos, écrite par le bon opérateur au moment de valider', async () => {
+  const w = await planPropose([outil('r', { motif: 'Repos jeudi', operations: [{ op: 'repos', date: '2026-11-12' }] }, 'modifier_planning')], () => {});
+  const carte = w.evts.find((e) => e.type === 'carte') as Libre;
+  assert.equal(carte.carte.lignes[0].texte, 'Poser un jour de repos : jeu. 12/11');
+  await ajouterCarte(U, 'carte-1', w.deps);
+  assert.deepEqual(w.stockage.planAppliques[0], [{ op: 'poser_repos', date: '2026-11-12' }]);
+});
+
+test('poser un repos un jour où une séance est prévue : refusé avec la raison, le modèle doit déplacer ou supprimer la séance dans le même plan', async () => {
+  const w = await planPropose([outil('r', { motif: 'Repos dimanche', operations: [{ op: 'repos', date: '2026-11-08' }] }, 'modifier_planning')]);
+  const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.equal(r.is_error, true);
+  assert.match(r.content, /il reste vélo 120 min ce jour-là/);
 });

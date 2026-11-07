@@ -29,3 +29,10 @@ export function ecartJours(a: string, b: string): number {
 export function entre(date: string, du: string, au: string): boolean {
   return date >= du && date <= au;
 }
+
+const NOMS_JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'] as const;
+
+/** Le nom du jour de la semaine (« jeudi »), calculé en UTC : jamais de décalage selon le fuseau. */
+export function nomDuJour(date: string): string {
+  return NOMS_JOURS[new Date(`${date}T00:00:00Z`).getUTCDay()];
+}

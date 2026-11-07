@@ -293,3 +293,51 @@ test('evaluerPlan : chaque ligne porte de quoi dessiner le plan (sport, durée, 
   // le tout reste du JSON simple (la carte est enregistrée telle quelle dans la conversation)
   assert.deepEqual(JSON.parse(JSON.stringify(r.lignes)), JSON.parse(JSON.stringify(r.lignes)));
 });
+
+// ---------- Les jours de repos ----------
+test('repos : poser un jour libre est accepté, la ligne dit lequel ; la charge ne bouge pas', () => {
+  const r = evaluerPlan([{ op: 'repos', date: '2026-11-09', poser: true }], SEANCES, ctx());
+  assert.equal(r.ok, true, r.erreurs.join('|'));
+  assert.deepEqual(r.lignes.map((l) => [l.op, l.texte, l.vers, l.poser]), [['repos', 'Poser un jour de repos : lun. 09/11', '2026-11-09', true]]);
+  assert.equal(r.chargeAvant, r.chargeApres);
+});
+
+test('repos : refusé si le jour est déjà un repos, une compétition, passé ou trop loin ; retirer demande un vrai repos', () => {
+  const c = ctx({ joursDeRepos: ['2026-11-16'], competitions: [{ date: '2026-11-18' }] });
+  const essai = (o: Extract<Operation, { op: 'repos' }>) => evaluerPlan([o], SEANCES, c);
+  assert.match(essai({ op: 'repos', date: '2026-11-16', poser: true }).erreurs.join(' '), /déjà un jour de repos/);
+  assert.match(essai({ op: 'repos', date: '2026-11-18', poser: true }).erreurs.join(' '), /compétition/);
+  assert.equal(essai({ op: 'repos', date: '2026-11-05', poser: true }).ok, false);
+  assert.equal(essai({ op: 'repos', date: '2026-11-25', poser: true }).ok, false);
+  assert.equal(essai({ op: 'repos', date: '2026-02-31', poser: true }).ok, false);
+  assert.match(essai({ op: 'repos', date: '2026-11-17', poser: false }).erreurs.join(' '), /n'est pas un jour de repos/);
+  assert.equal(essai({ op: 'repos', date: '2026-11-16', poser: false }).ok, true);
+});
+
+test('repos : RÈGLE DURE — poser un repos un jour où il reste une séance est refusé, sauf si le plan la déplace ou la supprime', () => {
+  const seul = evaluerPlan([{ op: 'repos', date: '2026-11-08', poser: true }], SEANCES, ctx());
+  assert.equal(seul.ok, false);
+  assert.match(seul.erreurs.join(' '), /il reste vélo 120 min ce jour-là/);
+  assert.equal(evaluerPlan([{ op: 'repos', date: '2026-11-08', poser: true }, { op: 'supprimer', seanceId: S2.id }], SEANCES, ctx()).ok, true);
+  assert.equal(evaluerPlan([{ op: 'supprimer', seanceId: S2.id }, { op: 'repos', date: '2026-11-08', poser: true }], SEANCES, ctx()).ok, true, 'l\'ordre ne compte pas');
+  assert.equal(evaluerPlan([{ op: 'repos', date: '2026-11-08', poser: true }, { op: 'deplacer', seanceId: S2.id, vers: '2026-11-16' }], SEANCES, ctx()).ok, true);
+});
+
+test('repos : un repos posé par le plan compte pour tout le plan — on ne peut pas y ajouter ni y déplacer une séance, quel que soit l\'ordre', () => {
+  const ajout: Operation = { op: 'ajouter', proposition: { date: '2026-11-17', sport: 'course', type: 'footing_facile', minutes: 40 }, justification: 'x' };
+  const repos: Operation = { op: 'repos', date: '2026-11-17', poser: true };
+  assert.equal(evaluerPlan([ajout], SEANCES, ctx()).ok, true, 'sans repos, l\'ajout passe');
+  for (const ops of [[repos, ajout], [ajout, repos]]) {
+    const r = evaluerPlan(ops, SEANCES, ctx());
+    assert.equal(r.ok, false);
+    assert.match(r.erreurs.join(' '), /jour de repos/);
+  }
+  assert.equal(evaluerPlan([{ op: 'repos', date: '2026-11-16', poser: true }, { op: 'deplacer', seanceId: S4.id, vers: '2026-11-16' }], SEANCES, ctx()).ok, false);
+});
+
+test('repos : retirer un repos libère le jour pour une séance du même plan', () => {
+  const c = ctx({ joursDeRepos: ['2026-11-17'] });
+  const ajout: Operation = { op: 'ajouter', proposition: { date: '2026-11-17', sport: 'course', type: 'footing_facile', minutes: 40 }, justification: 'x' };
+  assert.equal(evaluerPlan([ajout], SEANCES, c).ok, false, 'jour de repos');
+  assert.equal(evaluerPlan([{ op: 'repos', date: '2026-11-17', poser: false }, ajout], SEANCES, c).ok, true);
+});

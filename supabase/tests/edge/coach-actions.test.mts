@@ -134,3 +134,38 @@ test('lire_seances_periode : 92 jours exactement acceptés, 93 refusés', () => 
   assert.equal(lire({ du: '2026-08-01', au: '2026-11-01' }).ok, true);   // 92 jours
   assert.equal(lire({ du: '2026-07-31', au: '2026-11-01' }).ok, false);  // 93 jours
 });
+
+test('planifier_semaine : une demande valide est lue et nettoyée, le reste est refusé avec la raison', () => {
+  const lire = (x: unknown) => trouverAction('planifier_semaine')!.lire!(x);
+  const ok = lire({ motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2 }, { sport: 'course', seances: 3 }], debut: '2026-11-09', jours: 7, jours_libres: ['2026-11-10', '2026-11-10'], intensite: 'facile' });
+  assert.deepEqual(ok, { ok: true, params: { intention: 'Ma semaine', demande: { sports: [{ sport: 'velo', seances: 2 }, { sport: 'course', seances: 3 }], debut: '2026-11-09', jours: 7, joursLibres: ['2026-11-10'], intensite: 'facile' } } });
+  assert.deepEqual(lire({ motif: 'Ma semaine', sports: [{ sport: 'course', seances: 1 }] }), { ok: true, params: { intention: 'Ma semaine', demande: { sports: [{ sport: 'course', seances: 1 }] } } });
+  const mauvais: unknown[] = [
+    { motif: 'Ma semaine' },
+    { motif: 'Ma semaine', sports: [] },
+    { motif: 'Ma semaine', sports: [{ sport: 'golf', seances: 2 }] },
+    { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 0 }] },
+    { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 7 }] },
+    { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2.5 }] },
+    { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2 }, { sport: 'velo', seances: 1 }] },
+    { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2, extra: 1 }] },
+    { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2 }], debut: 'demain' },
+    { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2 }], jours: 15 },
+    { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2 }], jours_libres: ['2026-02-31'] },
+    { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2 }], jours_libres: Array.from({ length: 15 }, (_, i) => `2026-11-${String(i + 10).padStart(2, '0')}`) },
+    { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2 }], intensite: 'extreme' },
+    { motif: '', sports: [{ sport: 'velo', seances: 2 }] },
+    { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2 }], clef: 1 },
+    null,
+  ];
+  for (const m of mauvais) assert.equal(lire(m).ok, false, JSON.stringify(m)?.slice(0, 100));
+});
+
+test('modifier_planning : l\'opération « repos » est lue (poser par défaut, retirer avec poser: false) et strictement vérifiée', () => {
+  const lire = (op: unknown) => trouverAction('modifier_planning')!.lire!({ motif: 'Repos', operations: [op] }) as { ok: boolean; params?: { operations: unknown[] } };
+  assert.deepEqual(lire({ op: 'repos', date: '2026-11-12' }).params?.operations, [{ op: 'repos', date: '2026-11-12', poser: true }]);
+  assert.deepEqual(lire({ op: 'repos', date: '2026-11-12', poser: false }).params?.operations, [{ op: 'repos', date: '2026-11-12', poser: false }]);
+  for (const mauvais of [{ op: 'repos' }, { op: 'repos', date: 'jeudi' }, { op: 'repos', date: '2026-02-31' }, { op: 'repos', date: '2026-11-12', poser: 'oui' }, { op: 'repos', date: '2026-11-12', extra: 1 }]) {
+    assert.equal(lire(mauvais).ok, false, JSON.stringify(mauvais));
+  }
+});

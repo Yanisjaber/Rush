@@ -27,6 +27,8 @@ import { MAX_TOKENS_REPONSE, MODELE_PAR_DEFAUT, NOM_OUTIL_SEANCE, PROMPT_SYSTEME
 import { evaluerGardeFou } from './garde-fou.ts';
 import type { DecisionGardeFou, DonneesGardeFou } from './garde-fou.ts';
 import { evaluerPlan, proposerReplanification, seancesDepuisResume } from './planning.ts';
+import { habitudesDepuisResume, planifierSemaine } from './semaine.ts';
+import type { DemandeSemaine } from './semaine.ts';
 import type { Contraintes, Operation } from './planning.ts';
 import { tssEstime, typeSeance } from './menu-seances.ts';
 import type { FamilleCoach } from './menu-seances.ts';
@@ -229,13 +231,21 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
   }
 
   // Replanification : UNE carte de planning par message, jamais mélangée à d'autres cartes
-  if (def.nom === 'proposer_replanification' || def.nom === 'modifier_planning') {
+  if (def.nom === 'proposer_replanification' || def.nom === 'modifier_planning' || def.nom === 'planifier_semaine') {
     if (cartes.length > 0) return { contenu: "Une seule carte de planning à la fois, et pas avec une autre carte : attends que l'utilisateur la valide ou la refuse.", erreur: true };
     const lu = def.lire ? def.lire(appel.input) : { ok: false as const, erreur: 'Outil non lisible.' };
     if (!lu.ok) return { contenu: `Paramètres invalides : ${lu.erreur}`, erreur: true };
     const seances = seancesDepuisResume(resume);
     let operations: Operation[];
-    if (def.nom === 'proposer_replanification') {
+    let notes: string[] = [];
+    if (def.nom === 'planifier_semaine') {
+      const res = planifierSemaine(lu.params.demande as DemandeSemaine, seances, ctx, habitudesDepuisResume(resume));
+      if (!res.operations.length) {
+        return { contenu: `Je n'ai pas pu construire cette semaine : ${res.abandons.join(' ') || 'aucune séance possible.'} Explique-le simplement à l'utilisateur, sans créer de carte, et propose une autre façon de faire.`, erreur: false };
+      }
+      operations = res.operations;
+      notes = res.abandons;
+    } else if (def.nom === 'proposer_replanification') {
       operations = proposerReplanification(lu.params.contraintes as Contraintes, seances, ctx);
       if (!operations.length) return { contenu: "Rien à modifier : aucune séance prévue n'est touchée par cette contrainte. Dis-le simplement à l'utilisateur, sans créer de carte.", erreur: false };
     } else {
@@ -255,7 +265,8 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
     };
     cartes.push(carte);
     const detail = r.lignes.map((l) => `- ${l.texte}${l.raison ? ` (${l.raison})` : ''}`).join('\n');
-    const avert = r.avertissements.length ? `\nÀ signaler : ${r.avertissements.join(' ; ')}` : '';
+    const signaux = [...notes, ...r.avertissements];
+    const avert = signaux.length ? `\nÀ signaler à l'utilisateur : ${signaux.join(' ; ')}` : '';
     return {
       contenu:
         `Carte de planning créée (${r.lignes.length} modification(s), charge prévue sur 14 jours : ${r.chargeAvant} → ${r.chargeApres} points) :\n${detail}${avert}\n` +
@@ -446,6 +457,8 @@ export function operationsPourEcriture(operations: Operation[], carteId: string)
         return { op: 'deplacer', seance_id: o.seanceId, vers: o.vers };
       case 'supprimer':
         return { op: 'supprimer', seance_id: o.seanceId };
+      case 'repos':
+        return { op: o.poser ? 'poser_repos' : 'retirer_repos', date: o.date };
       case 'ajouter': {
         const p = o.proposition;
         const sport = p.sport as FamilleCoach;

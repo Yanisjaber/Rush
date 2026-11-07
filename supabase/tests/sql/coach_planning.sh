@@ -29,10 +29,14 @@ do $$ declare t text; begin
     execute format('create policy %I on public.%I to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id)', t || '_own', t);
   end loop;
 end $$;
+create table public.rest_day (user_id uuid not null references auth.users(id) on delete cascade, iso_date date not null, created_by_ia boolean not null default false, primary key (user_id, iso_date));
+alter table public.rest_day enable row level security;
+create policy rest_day_own on public.rest_day to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create function public.echoue(cmd text) returns boolean language plpgsql as $$
 begin execute cmd; return false; exception when others then return true; end $$;
 grant execute on function public.echoue(text) to anon, authenticated, service_role;
 
+insert into public.rest_day (user_id, iso_date, created_by_ia) values ('00000000-0000-4000-8000-00000000000a', '2026-11-25', false), ('00000000-0000-4000-8000-00000000000b', '2026-11-26', false);
 insert into public.activity_planned (id, user_id, category, name, date, start_date_local, sport, duration, tss, notes, created_by_ia) values
  ('11111111-1111-4111-8111-000000000001','00000000-0000-4000-8000-00000000000a','entrainement','Course · Footing','2026-11-07','2026-11-07 07:30+00','Run',60,50,'ma note', false),
  ('11111111-1111-4111-8111-000000000002','00000000-0000-4000-8000-00000000000a','entrainement','Vélo · Sortie','2026-11-08','2026-11-08 09:00+00','Ride',120,100,null, false),
@@ -44,6 +48,8 @@ SQL
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-06_coach_chat.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-07_coach_planning.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-07_coach_planning.sql   # relançable
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-08_coach_repos.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-08_coach_repos.sql   # relançable
 bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
 \pset tuples_only on
 \set A '00000000-0000-4000-8000-00000000000a'
@@ -138,12 +144,41 @@ select 'annuler : « retirer » ne supprime pas une séance créée à la main (
 select 'annuler : ne touche jamais la séance d''un autre compte (recréer une ligne de B échoue ou est ignoré)' as controle,
        (select count(*) from public.activity_planned where user_id = '00000000-0000-4000-8000-00000000000b') = 0 as ok;
 
+
+-- ===== Les jours de repos =====
+select public.coach_appliquer_plan('[
+  {"op":"poser_repos","date":"2026-11-23"},
+  {"op":"poser_repos","date":"2026-11-25"},
+  {"op":"retirer_repos","date":"2026-11-25"}
+]'::jsonb) as invr \gset
+select controle, ok from (
+          select  1 as n, 'repos : un jour posé par le coach (created_by_ia), le jour déjà posé par l''utilisateur est retiré' as controle,
+                  (select created_by_ia from public.rest_day where user_id = :'A' and iso_date = '2026-11-23') and not exists (select 1 from public.rest_day where user_id = :'A' and iso_date = '2026-11-25') as ok
+union all select  2, 'repos : l''inverse ne garde que ce qui a changé (retirer le 23, remettre le 25 avec son origine « à la main »)',
+                  (select jsonb_array_length(:'invr'::jsonb) = 2 and (:'invr'::jsonb->0->>'op') = 'retirer_repos' and (:'invr'::jsonb->1->>'op') = 'remettre_repos' and (:'invr'::jsonb->1->>'ia')::boolean = false)
+union all select  3, 'repos : retirer un jour qui n''est pas un repos échoue, et rien d''autre n''est appliqué (tout ou rien)',
+                  public.echoue($q$select public.coach_appliquer_plan('[{"op":"poser_repos","date":"2026-11-24"},{"op":"retirer_repos","date":"2026-11-30"}]'::jsonb)$q$) and not exists (select 1 from public.rest_day where iso_date = '2026-11-24')
+union all select  4, 'repos : A ne peut pas retirer le repos de B (la RLS le lui cache : « introuvable »)',
+                  public.echoue($q$select public.coach_appliquer_plan('[{"op":"retirer_repos","date":"2026-11-26"}]'::jsonb)$q$)
+union all select  5, 'repos : poser deux fois le même jour ne fait pas d''erreur ni de doublon (rien à défaire la 2e fois)',
+                  (select jsonb_array_length(public.coach_appliquer_plan('[{"op":"poser_repos","date":"2026-11-23"}]'::jsonb)) = 0) and (select count(*) = 1 from public.rest_day where user_id = :'A' and iso_date = '2026-11-23')
+) t order by n;
+select public.coach_annuler_plan(:'invr'::jsonb) as resr \gset
+select controle, ok from (
+          select  1 as n, 'annuler un plan de repos : le repos posé par le coach disparaît, celui de l''utilisateur revient « à la main »' as controle,
+                  not exists (select 1 from public.rest_day where user_id = :'A' and iso_date = '2026-11-23') and (select not created_by_ia from public.rest_day where user_id = :'A' and iso_date = '2026-11-25') and (:'resr'::jsonb->>'annulees')::int = 2 as ok
+) t order by n;
+insert into public.rest_day (user_id, iso_date, created_by_ia) values ('00000000-0000-4000-8000-00000000000a', '2026-11-27', false);
+select 'annuler : « retirer_repos » ne supprime jamais un repos posé à la main' as controle,
+       (public.coach_annuler_plan('[{"op":"retirer_repos","date":"2026-11-27"}]'::jsonb)->>'ignorees')::int = 1 and exists (select 1 from public.rest_day where user_id = :'A' and iso_date = '2026-11-27') as ok;
+
 -- ===== Les droits =====
 set request.jwt.claim.sub = '';
 select 'sans connexion : exception (appliquer et annuler)' as controle,
        public.echoue($q$select public.coach_appliquer_plan('[{"op":"supprimer","seance_id":"11111111-1111-4111-8111-000000000001"}]'::jsonb)$q$)
        and public.echoue($q$select public.coach_annuler_plan('[{"op":"retirer","seance_id":"11111111-1111-4111-8111-000000000001"}]'::jsonb)$q$) as ok;
 reset role;
+select 'repos : le repos de B est resté intact après toutes les tentatives de A' as controle, exists (select 1 from public.rest_day where user_id = '00000000-0000-4000-8000-00000000000b' and iso_date = '2026-11-26') as ok;
 select 'anon refusé, authenticated autorisé, service_role n''a pas besoin, security invoker' as controle,
        not has_function_privilege('anon', 'public.coach_appliquer_plan(jsonb)', 'execute')
        and not has_function_privilege('anon', 'public.coach_annuler_plan(jsonb)', 'execute')

@@ -17,6 +17,8 @@
 // ============================================================
 import { chercherConnaissance, SPORTS_CONNAISSANCE } from './connaissances.ts';
 import type { Contraintes, Operation } from './planning.ts';
+import { SEANCES_PAR_SPORT_MAX } from './semaine.ts';
+import type { DemandeSemaine } from './semaine.ts';
 import { FAMILLES_COACH } from './menu-seances.ts';
 import type { OutilModele } from './modele.ts';
 import { OUTIL_PROPOSER_SEANCE, NOM_OUTIL_SEANCE } from './coach-prompt.ts';
@@ -125,6 +127,45 @@ function lireContraintes(o: Objet): { ok: true; contraintes: Contraintes } | { o
   return { ok: true, contraintes: c };
 }
 
+
+function lireDemandeSemaine(o: Objet): { ok: true; demande: DemandeSemaine } | { ok: false; erreur: string } {
+  const brut = o.sports;
+  if (!Array.isArray(brut) || brut.length < 1 || brut.length > FAMILLES_COACH.length) return { ok: false, erreur: `sports : une liste de 1 à ${FAMILLES_COACH.length} sports, chacun avec son nombre de séances.` };
+  const sports: DemandeSemaine['sports'] = [];
+  for (const x of brut) {
+    const e = objet(x, ['sport', 'seances']);
+    const sport = parmi(e?.sport, FAMILLES_COACH);
+    const seances = entier(e?.seances, 1, SEANCES_PAR_SPORT_MAX);
+    if (!e || !sport || !seances) return { ok: false, erreur: `sports : chaque entrée demande un sport (${FAMILLES_COACH.join(', ')}) et seances (entier de 1 à ${SEANCES_PAR_SPORT_MAX}).` };
+    if (sports.some((s) => s.sport === sport)) return { ok: false, erreur: `sports : « ${sport} » est en double.` };
+    sports.push({ sport, seances });
+  }
+  const demande: DemandeSemaine = { sports };
+  if (o.debut !== undefined) {
+    const debut = dateIso(o.debut);
+    if (!debut) return { ok: false, erreur: 'debut : une date AAAA-MM-JJ qui existe (lis-la dans prochains_jours).' };
+    demande.debut = debut;
+  }
+  if (o.jours !== undefined) {
+    const jours = entier(o.jours, 1, 14);
+    if (!jours) return { ok: false, erreur: 'jours : un entier de 1 à 14.' };
+    demande.jours = jours;
+  }
+  if (o.jours_libres !== undefined) {
+    const l = o.jours_libres;
+    if (!Array.isArray(l) || l.length > DATES_MAX_JOURS_BLOQUES) return { ok: false, erreur: `jours_libres : au plus ${DATES_MAX_JOURS_BLOQUES} dates AAAA-MM-JJ.` };
+    const dates = l.map(dateIso);
+    if (dates.some((d) => !d)) return { ok: false, erreur: 'jours_libres : toutes les dates doivent être au format AAAA-MM-JJ et exister.' };
+    demande.joursLibres = [...new Set(dates as string[])];
+  }
+  if (o.intensite !== undefined) {
+    const i = parmi(o.intensite, ['facile', 'normale'] as const);
+    if (!i) return { ok: false, erreur: 'intensite : « facile » ou « normale ».' };
+    demande.intensite = i;
+  }
+  return { ok: true, demande };
+}
+
 const OPS_MODIFIER_MAX = 8;
 
 function lireOperations(liste: unknown): { ok: true; operations: Operation[] } | { ok: false; erreur: string } {
@@ -154,6 +195,11 @@ function lireOperations(liste: unknown): { ok: true; operations: Operation[] } |
         return err('ajouter demande date, sport, type_seance, minutes (entier) et justification.');
       }
       operations.push({ op: 'ajouter', proposition: { date, sport, type: o.type_seance, minutes }, justification: o.justification.trim().slice(0, 300) });
+    } else if (nom === 'repos') {
+      const o = objet(brut, ['op', 'date', 'poser']);
+      const date = dateIso(o?.date);
+      if (!o || !date || (o.poser !== undefined && typeof o.poser !== 'boolean')) return err('repos demande date (AAAA-MM-JJ) et, si tu veux le retirer, poser: false.');
+      operations.push({ op: 'repos', date, poser: o.poser !== false });
     } else if (nom === 'indisponibilite') {
       const o = objet(brut, ['op', 'type_periode', 'du', 'au']);
       const type = parmi(o?.type_periode, INDISPONIBILITES);
@@ -162,7 +208,7 @@ function lireOperations(liste: unknown): { ok: true; operations: Operation[] } |
       if (!type || !du || !au) return err('indisponibilite demande type_periode (maladie, blessure, indisponible), du et au (AAAA-MM-JJ).');
       operations.push({ op: 'indisponibilite', type, du, au });
     } else {
-      return err("op inconnue (deplacer, supprimer, ajouter ou indisponibilite).");
+      return err("op inconnue (deplacer, supprimer, ajouter, repos ou indisponibilite).");
     }
   }
   return { ok: true, operations };
@@ -445,11 +491,50 @@ export const ACTIONS: DefinitionAction[] = [
     },
   },
   {
+    nom: 'planifier_semaine',
+    niveau: 'carte',
+    disponible: true,
+    description:
+      "Construit une semaine d'entraînement : « fais-moi ma semaine », « prépare mes séances », « je veux courir trois fois et faire deux sorties vélo ». " +
+      "Tu donnes seulement CE QUE VEUT L'UTILISATEUR (les sports, combien de séances, les jours sans séance, facile ou non) : le CODE choisit les jours (bien espacés, sorties longues le week-end), les types de séance et les durées d'après son historique, en respectant toutes ses règles. " +
+      "Crée UNE carte que l'utilisateur valide ; rien n'est ajouté avant. Les dates se lisent dans prochains_jours. Pour UNE séance précise, utilise proposer_seance ou modifier_planning.",
+    schema: {
+      type: 'object',
+      properties: {
+        motif: { type: 'string', description: 'Une phrase (200 caractères au plus) affichée sur la carte. Par exemple : « Ma semaine : deux sorties vélo et deux footings ».' },
+        sports: {
+          type: 'array',
+          minItems: 1,
+          maxItems: FAMILLES_COACH.length,
+          items: {
+            type: 'object',
+            properties: { sport: { type: 'string', enum: [...FAMILLES_COACH] }, seances: { type: 'integer', minimum: 1, maximum: SEANCES_PAR_SPORT_MAX, description: 'Nombre de séances de ce sport sur la période.' } },
+            required: ['sport', 'seances'],
+            additionalProperties: false,
+          },
+        },
+        debut: { type: 'string', description: 'Facultatif : premier jour à planifier, AAAA-MM-JJ. Par défaut demain.' },
+        jours: { type: 'integer', minimum: 1, maximum: 14, description: 'Facultatif : nombre de jours à planifier. Par défaut 7.' },
+        jours_libres: { type: 'array', items: { type: 'string' }, maxItems: DATES_MAX_JOURS_BLOQUES, description: "Facultatif : dates où l'utilisateur ne veut aucune séance (« pas le mardi »)." },
+        intensite: { type: 'string', enum: ['facile', 'normale'], description: '« facile » : que des séances faciles. Par défaut « normale ».' },
+      },
+      required: ['motif', 'sports'],
+      additionalProperties: false,
+    },
+    lire: (input) => {
+      const o = objet(input, ['motif', 'sports', 'debut', 'jours', 'jours_libres', 'intensite']);
+      const motif = motifPlan(o?.motif);
+      if (!o || !motif) return refus('motif : une phrase de 3 à 200 caractères.');
+      const d = lireDemandeSemaine(o);
+      return d.ok ? { ok: true, params: { intention: motif, demande: d.demande } } : refus(d.erreur);
+    },
+  },
+  {
     nom: 'modifier_planning',
     niveau: 'carte',
     disponible: true,
     description:
-      "Modifie le calendrier avec des opérations PRÉCISES quand l'utilisateur le demande en termes simples : « décale ma sortie de demain à jeudi » (deplacer), « supprime ma séance de samedi » (supprimer), « ajoute une sortie facile dimanche » (ajouter), « je suis malade jusqu'à mardi » (indisponibilite). " +
+      "Modifie le calendrier avec des opérations PRÉCISES quand l'utilisateur le demande en termes simples : « décale ma sortie de demain à jeudi » (deplacer), « supprime ma séance de samedi » (supprimer), « ajoute une sortie facile dimanche » (ajouter), « je suis malade jusqu'à mardi » (indisponibilite), « mets-moi un jour de repos jeudi » (repos). " +
       "Les séances prévues sont dans le contexte avec leur id ; utilise ces id, n'en invente jamais. Crée UNE carte que l'utilisateur valide ; rien n'est modifié avant. Si l'imprévu touche plusieurs séances, préfère proposer_replanification. " +
       `${OPS_MODIFIER_MAX} opérations au plus.`,
     schema: {
@@ -463,10 +548,11 @@ export const ACTIONS: DefinitionAction[] = [
           items: {
             type: 'object',
             properties: {
-              op: { type: 'string', enum: ['deplacer', 'supprimer', 'ajouter', 'indisponibilite'] },
+              op: { type: 'string', enum: ['deplacer', 'supprimer', 'ajouter', 'repos', 'indisponibilite'] },
+              poser: { type: 'boolean', description: 'repos : vrai (défaut) pour poser le jour de repos, faux pour le retirer. Le jour se lit dans date.' },
               seance_id: { type: 'string', description: "deplacer, supprimer : l'id d'une séance prévue du contexte." },
               vers: { type: 'string', description: 'deplacer : le nouveau jour, AAAA-MM-JJ.' },
-              date: { type: 'string', description: 'ajouter : le jour, AAAA-MM-JJ.' },
+              date: { type: 'string', description: 'ajouter ou repos : le jour, AAAA-MM-JJ.' },
               sport: { type: 'string', enum: [...FAMILLES_COACH], description: 'ajouter : le sport.' },
               type_seance: { type: 'string', description: 'ajouter : un type du menu de ce sport.' },
               minutes: { type: 'integer', description: 'ajouter : la durée.' },

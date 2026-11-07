@@ -20,6 +20,8 @@ export type Operation =
   | { op: 'indisponibilite'; type: TypeIndispo; du: string; au: string; raison?: string }
   | { op: 'deplacer'; seanceId: string; vers: string; raison?: string }
   | { op: 'supprimer'; seanceId: string; raison?: string }
+  /** Poser (ou retirer) un jour de repos */
+  | { op: 'repos'; date: string; poser: boolean; raison?: string }
   | { op: 'ajouter'; proposition: Proposition; justification: string; raison?: string };
 
 /** Une séance déjà prévue au calendrier (prevues du résumé) */
@@ -97,6 +99,8 @@ export interface LignePlan {
   type?: TypeIndispo;
   du?: string;
   au?: string;
+  /** Jour de repos : posé (vrai) ou retiré (faux) */
+  poser?: boolean;
 }
 
 export interface ResultatPlan {
@@ -116,8 +120,13 @@ function chargePrevue(seances: { date: string; tss: number | null }[], aujourdhu
   return Math.round(seances.filter((s) => s.date >= aujourdhui && s.date <= fin).reduce((t, s) => t + (s.tss ?? 0), 0));
 }
 
-function ctxAvec(base: ContexteValidation, restantes: { date: string; tss: number | null }[], indispos: ContexteValidation['indisponibilites']): ContexteValidation {
-  return { ...base, prevues: restantes.map((r) => ({ date: r.date, tss: r.tss })), indisponibilites: indispos };
+export function ctxAvec(
+  base: ContexteValidation,
+  restantes: { date: string; tss: number | null }[],
+  indispos: ContexteValidation['indisponibilites'],
+  repos: string[] = base.joursDeRepos,
+): ContexteValidation {
+  return { ...base, prevues: restantes.map((r) => ({ date: r.date, tss: r.tss })), indisponibilites: indispos, joursDeRepos: repos };
 }
 
 /**
@@ -167,11 +176,38 @@ export function evaluerPlan(operations: Operation[], seances: SeancePrevue[], ba
     }
   }
 
+  // 1 bis. Les jours de repos posés ou retirés par le plan, vérifiés et appliqués d'abord (comme les périodes)
+  const repos = [...base.joursDeRepos];
+  const reposPoses: string[] = [];
+  const limite = ajouterJours(base.aujourdhui, PLAFONDS.horizonJours);
+  for (const o of operations) {
+    if (o.op !== 'repos') continue;
+    const ligne = `${o.poser ? 'Poser un jour de repos' : 'Retirer le jour de repos'} : ${etiquetteDate(o.date)}`;
+    if (!dateValide(o.date) || o.date < base.aujourdhui || o.date > limite) {
+      echec(ligne, `le jour doit être entre aujourd'hui et ${PLAFONDS.horizonJours} jours`);
+    } else if (o.poser) {
+      if (repos.includes(o.date)) echec(ligne, 'ce jour est déjà un jour de repos');
+      else if (base.competitions.some((c) => c.date === o.date)) echec(ligne, 'tu as une compétition ce jour-là');
+      else {
+        repos.push(o.date);
+        reposPoses.push(o.date);
+      }
+    } else if (!repos.includes(o.date)) {
+      echec(ligne, "ce jour n'est pas un jour de repos");
+    } else {
+      repos.splice(repos.indexOf(o.date), 1);
+    }
+  }
+
   // 2. Les autres opérations, dans l'ordre
   const surAjouts: { date: string; tss: number | null }[] = [];
   for (const o of operations) {
     if (o.op === 'indisponibilite') {
       lignes.push({ op: o.op, texte: `Déclarer : ${NOM_INDISPO[o.type] ?? 'période'} du ${etiquetteDate(o.du)} au ${etiquetteDate(o.au)}`, raison: o.raison, type: o.type, du: o.du, au: o.au });
+      continue;
+    }
+    if (o.op === 'repos') {
+      lignes.push({ op: o.op, texte: `${o.poser ? 'Poser un jour de repos' : 'Retirer le jour de repos'} : ${etiquetteDate(o.date)}`, raison: o.raison, vers: o.date, poser: o.poser });
       continue;
     }
     if (o.op === 'supprimer' || o.op === 'deplacer') {
@@ -197,7 +233,7 @@ export function evaluerPlan(operations: Operation[], seances: SeancePrevue[], ba
       const ligne = `Déplacer : ${base_} → ${etiquetteDate(o.vers)}`;
       lignes.push({ op: o.op, texte: ligne, raison: o.raison, sport: s.sport, minutes: s.minutes, de: s.date, vers: o.vers });
       restantes = restantes.filter((r) => r.id !== s.id);
-      const v = validerDeplacement(s, o.vers, ctxAvec(base, restantes, indispos));
+      const v = validerDeplacement(s, o.vers, ctxAvec(base, restantes, indispos, repos));
       if (!v.ok) echec(ligne, v.erreurs.map((e) => e.message).join(' '));
       for (const a of v.avertissements) avertissements.push(`${ligne} : ${a.message}`);
       restantes.push({ ...s, date: o.vers });
@@ -208,7 +244,7 @@ export function evaluerPlan(operations: Operation[], seances: SeancePrevue[], ba
     const nom = estFamilleCoach(p?.sport) ? (MENU[p.sport].find((t) => t.cle === p.type)?.nom ?? p.type) : String(p?.type ?? '');
     const ligne = `Ajouter : ${SPORTS_NOMS[p?.sport] ?? 'séance'} ${nom} ${p?.minutes} min le ${etiquetteDate(p?.date)}`;
     lignes.push({ op: o.op, texte: ligne, raison: o.raison ?? o.justification, sport: p?.sport ?? null, minutes: p?.minutes ?? null, vers: p?.date });
-    const v = validerSeance(p, ctxAvec(base, restantes, indispos));
+    const v = validerSeance(p, ctxAvec(base, restantes, indispos, repos));
     if (!v.ok) echec(ligne, v.erreurs.map((e) => e.message).join(' '));
     for (const a of v.avertissements) avertissements.push(`${ligne} : ${a.message}`);
     const nouvelle: SeancePrevue = { id: `nouvelle-${surAjouts.length + 1}`, date: p?.date, sport: p?.sport ?? null, minutes: p?.minutes ?? null, tss: v.tssEstime, creeeParIa: true };
@@ -222,6 +258,13 @@ export function evaluerPlan(operations: Operation[], seances: SeancePrevue[], ba
       if (entre(r.date, n.du, n.au)) {
         echec(`${NOM_INDISPO[n.type]} ${etiquetteDate(n.du)} → ${etiquetteDate(n.au)}`, `il reste ${libelleSeance(r)} le ${etiquetteDate(r.date)} pendant cette période : déplace-la ou supprime-la dans le même plan`);
       }
+    }
+  }
+
+  // Règle dure bis : aucune séance ne reste un jour de repos que le plan pose
+  for (const jour of reposPoses) {
+    for (const r of restantes) {
+      if (r.date === jour) echec(`Repos ${etiquetteDate(jour)}`, `il reste ${libelleSeance(r)} ce jour-là : déplace-la ou supprime-la dans le même plan`);
     }
   }
 
