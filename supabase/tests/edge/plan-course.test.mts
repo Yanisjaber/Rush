@@ -2,7 +2,7 @@
 // Lancer : node --experimental-strip-types --test supabase/tests/edge/plan-course.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { alluresDepuisCourse, equivalent, formaterAllure, formaterTemps, niveauActuel, objectifRealiste, phases, planifierCourse, profilCourseDepuisResume } from '../../functions/_shared/plan-course.ts';
+import { alluresDepuisCourse, equivalent, footingProgressif, formaterAllure, formaterTemps, niveauActuel, objectifRealiste, phases, planifierCourse, profilCourseDepuisResume } from '../../functions/_shared/plan-course.ts';
 import type { ProfilCourse } from '../../functions/_shared/plan-course.ts';
 import { evaluerPlan } from '../../functions/_shared/planning.ts';
 import type { Operation } from '../../functions/_shared/planning.ts';
@@ -253,4 +253,91 @@ test('temps : mm:ss et h:mm:ss', async () => {
   assert.equal(lireTemps('15:10'), 910);
   assert.equal(lireTemps('1:05:30'), 3930);
   for (const m of ['15', '15:75', 'vite', '', null, '0:30', '25:00:00']) assert.equal(lireTemps(m), null, String(m));
+});
+
+// ---------- Semaines glissantes, variété (pas de plan monotone) ----------
+import { nomDuJour } from '../../functions/_shared/dates-iso.ts';
+const dur = (o: { proposition: { type: string } }) => !['footing_facile', 'footing_recuperation'].includes(o.proposition.type);
+
+test('semaines GLISSANTES : la première fenêtre commence au jour de départ du plan, chaque fenêtre dure 7 jours, la dernière s\'arrête la veille de la course', () => {
+  const r = planifierCourse({ ...DEMANDE, debut: '2026-11-11' }, [], ctx(), YANIS);
+  assert.equal(r.bilan?.semaines, 5);
+  assert.match(r.semaines[0], /Semaine 1 \(2026-11-11\)/);
+  assert.match(r.semaines[1], /Semaine 2 \(2026-11-18\)/);
+  assert.match(r.semaines[4], /Semaine 5 \(2026-12-09\)/);
+  const a = ajouts(r.operations);
+  assert.ok(a.every((o) => o.proposition.date >= '2026-11-11' && o.proposition.date < COURSE));
+});
+test('jamais deux séances dures (qualité, sortie longue) collées, même d\'une semaine à l\'autre : 3 à 5 séances, 7 jours de départ, 4 à 16 semaines', () => {
+  for (let jourDepart = 0; jourDepart < 7; jourDepart++) {
+    for (const k of [3, 4, 5]) {
+      for (const semaines of [4, 6, 9, 14]) {
+        const debut = ajouterJours('2026-11-09', jourDepart);
+        const course = ajouterJours(debut, semaines * 7);
+        const c = ctx({ competitions: [{ date: course }], aujourdhui: ajouterJours(debut, -1) });
+        const r = planifierCourse({ date: course, km: 10, tempsCibleMinutes: 55, debut, seancesParSemaine: k, sansTest: true }, [], c, YANIS);
+        const durs = ajouts(r.operations).filter(dur).map((o) => o.proposition.date).sort();
+        for (let i = 1; i < durs.length; i++) assert.ok(ecartJours(durs[i - 1], durs[i]) >= 2, `départ +${jourDepart}, ${k} séances, ${semaines} sem. : ${durs[i - 1]} et ${durs[i]} collés`);
+        assert.equal(evaluerPlan(r.operations, [], c).ok, true);
+      }
+    }
+  }
+});
+test('la sortie longue va le week-end, une semaine le samedi et la suivante le dimanche, et les jours des séances changent d\'une semaine à l\'autre', () => {
+  const r = planifierCourse({ ...DEMANDE, seancesParSemaine: 4, semaines: undefined } as never, [], ctx(), YANIS);
+  const a = ajouts(planifierCourse({ date: ajouterJours(AUJ, 63), km: 10, tempsCibleMinutes: 58, seancesParSemaine: 4, sansTest: true }, [], ctx({ competitions: [{ date: ajouterJours(AUJ, 63) }] }), YANIS).operations);
+  const longues = a.filter((o) => o.proposition.type === 'sortie_longue').map((o) => nomDuJour(o.proposition.date));
+  assert.ok(longues.length >= 7);
+  assert.ok(longues.filter((j) => j === 'samedi' || j === 'dimanche').length >= longues.length - 1, longues.join(','));
+  assert.ok(longues.includes('samedi') && longues.includes('dimanche'), longues.join(','));
+  // la forme de la semaine (jours de la semaine des séances) n'est pas la même chaque semaine
+  const formes = new Set<string>();
+  for (let w = 0; w < 6; w++) {
+    const du = ajouterJours(AUJ, 1 + w * 7);
+    formes.add(a.filter((o) => o.proposition.date >= du && o.proposition.date < ajouterJours(du, 7)).map((o) => nomDuJour(o.proposition.date)).sort().join('-'));
+  }
+  assert.ok(formes.size >= 3, [...formes].join(' | '));
+  assert.ok(r.bilan);
+});
+test('le nombre de séances varie : une de moins en semaine de récupération à partir de 4 séances par semaine ; la qualité de cette semaine est légère', () => {
+  const course = ajouterJours(AUJ, 70);
+  const r = planifierCourse({ date: course, km: 10, tempsCibleMinutes: 58, seancesParSemaine: 4, sansTest: true }, [], ctx({ competitions: [{ date: course }] }), YANIS);
+  const nb = r.semaines.map((l) => Number(/, (\d+) séances?,/.exec(l)![1]));
+  const iRecup = r.semaines.findIndex((l) => /récupération/.test(l));
+  assert.ok(iRecup > 0);
+  assert.ok(nb[iRecup] < nb[iRecup - 1], nb.join(','));
+  assert.ok(new Set(nb).size >= 2, nb.join(','));
+  const sem = ajouts(r.operations).filter((o) => o.proposition.date >= ajouterJours(AUJ, 1 + iRecup * 7) && o.proposition.date < ajouterJours(AUJ, 8 + iRecup * 7));
+  assert.ok(sem.some((o) => /Fartlek/.test(o.detail!.nom)), 'qualité légère en récupération');
+});
+test('les contenus alternent : footings (lignes droites, simple, progressif), VMA puis tempo en développement, sortie longue qui finit plus vite une semaine sur deux', () => {
+  const course = ajouterJours(AUJ, 70);
+  const r = planifierCourse({ date: course, km: 10, tempsCibleMinutes: 58, seancesParSemaine: 3, sansTest: true }, [], ctx({ competitions: [{ date: course }] }), YANIS);
+  const noms = ajouts(r.operations).map((o) => o.detail!.nom);
+  assert.ok(noms.some((n) => /lignes droites/.test(n)), 'lignes droites');
+  assert.ok(noms.some((n) => /Footing progressif/.test(n)), 'progressif');
+  assert.ok(noms.some((n) => /^Footing \d+ min$/.test(n)), 'simple');
+  assert.ok(noms.some((n) => /^Tempo/.test(n)), 'tempo');
+  assert.ok(noms.some((n) => /× \d+ m à \d:\d\d\/km$/.test(n)), 'VMA');
+  assert.ok(noms.some((n) => /fin à allure tempo/.test(n)), 'sortie longue progressive');
+  assert.ok(new Set(noms).size >= noms.length * 0.6, `${new Set(noms).size} noms différents sur ${noms.length}`);
+});
+test('footing progressif : les 8 dernières minutes plus vite, somme exacte', () => {
+  const a = { vma: 270, cinqK: 290, course: 300, seuil: 310, tempo: 320, facile: 380, longue: 390 };
+  const s = footingProgressif(36, a);
+  assert.deepEqual(s.detail.structure.map((b) => b.type), ['steady', 'steady']);
+  assert.equal(s.minutes, 36);
+  assert.ok(s.detail.structure[1].work.int > s.detail.structure[0].work.int);
+});
+
+test('« bien repartir » : le volume de départ suit les 7 derniers jours glissants quand ils dépassent la moyenne ; le bilan le dit', () => {
+  const calme = planifierCourse({ ...DEMANDE, sansTest: true }, [], ctx(), YANIS);
+  const charge = { ...YANIS, semaines: [...YANIS.semaines.slice(0, 7), { km: 25, minutes: 150, sorties: 4 }] };
+  const apres = planifierCourse({ ...DEMANDE, sansTest: true }, [], ctx(), charge);
+  assert.equal(calme.bilan?.derniers7, 35);
+  assert.equal(apres.bilan?.derniers7, 150);
+  assert.ok(apres.bilan!.volumeDepart >= Math.round(150 * 1.1), String(apres.bilan!.volumeDepart));
+  assert.ok(apres.bilan!.volumeDepart > calme.bilan!.volumeDepart);
+  assert.match(apres.message, /calé sur tes 7 derniers jours glissants \(150 min\)/);
+  assert.match(apres.message, /fenêtres de 7 jours glissants/);
 });
