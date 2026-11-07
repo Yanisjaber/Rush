@@ -17,6 +17,7 @@
 //     qui revalide tout au moment du tap ;
 //   - une erreur n'écrit rien dans le calendrier et ne montre aucun détail technique.
 // ============================================================
+import { extraitsConnaissance, fondementsPlanCourse } from './connaissances.ts';
 import { planifierPeriode } from './periode.ts';
 import { alluresCoureur, footing, planifierCourse, profilCourseDepuisResume, seanceIntervalles, seanceTempoContinu, sortieLongue } from './plan-course.ts';
 import type { DemandeCourse, SeanceCourse } from './plan-course.ts';
@@ -238,6 +239,8 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
     let resumePeriode: string[] = [];
     // Ce que le code dit du niveau et de l'objectif : le modèle le reprend tel quel
     let bilanTexte = '';
+    // Les fiches qui fondent le plan (distance, calibrage) : le coach explique le pourquoi avec les mêmes sources que le moteur
+    let fondements = '';
     if (def.nom === 'planifier_semaine') {
       const res = planifierSemaine(lu.params.demande as DemandeSemaine, seances, ctx, habitudesDepuisResume(resume));
       if (!res.operations.length) {
@@ -276,6 +279,7 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
       notes = res.abandons;
       resumePeriode = res.semaines;
       bilanTexte = res.message;
+      fondements = fondementsPlanCourse(res.bilan?.km ?? 10, res.bilan?.test ?? false);
       if (anciennes.length) notes = [`${anciennes.length} séance${anciennes.length > 1 ? 's' : ''} de l'ancien plan ${anciennes.length > 1 ? 'sont remplacées' : 'est remplacée'} par le nouveau`, ...notes];
     } else if (def.nom === 'ajuster_seance_course') {
       const spec = lu.params.seance as { date: string; genre: string; reps?: number; metres?: number; minutes?: number; allure?: number; recupSecondes?: number };
@@ -331,10 +335,11 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
     const detail = r.lignes.length > 30 && resumePeriode.length ? resumePeriode.map((l) => `- ${l}`).join('\n') : r.lignes.map((l) => `- ${l.texte}${l.raison ? ` (${l.raison})` : ''}`).join('\n');
     const signaux = [...notes, ...r.avertissements];
     const bilan = bilanTexte ? `\nBilan établi par le code (à reprendre fidèlement, sans l'adoucir) : ${bilanTexte}\nSemaines :\n${resumePeriode.map((l) => `- ${l}`).join('\n')}` : '';
+    const base = fondements ? `\nFondements du plan, tirés de la base de connaissances (pour expliquer le POURQUOI des séances ; n'invente aucun chiffre absent de ces fiches) :\n${fondements}` : '';
     const avert = signaux.length ? `\nÀ signaler à l'utilisateur : ${signaux.join(' ; ')}` : '';
     return {
       contenu:
-        `Carte de planning créée (${r.lignes.length} modification(s), charge prévue sur 14 jours : ${r.chargeAvant} → ${r.chargeApres} points) :\n${detail}${bilan}${avert}\n` +
+        `Carte de planning créée (${r.lignes.length} modification(s), charge prévue sur 14 jours : ${r.chargeAvant} → ${r.chargeApres} points) :\n${detail}${bilan}${base}${avert}\n` +
         "L'utilisateur la verra et la validera lui-même : rien n'est modifié tant qu'il n'a pas validé, ne dis donc jamais que c'est fait. Explique le plan en quelques phrases simples, avec les raisons.",
       erreur: false,
     };
@@ -403,7 +408,9 @@ export async function traiterMessage(userId: string, texteBrut: unknown, deps: D
   const memoire = await s.lireMemoire(userId);
   const depuis = await s.lireMessagesDepuis(userId, memoire?.jusqua ?? null);
   const historique = historiquePourModele(depuis.slice(-config.fenetre));
-  const contexte = blocContexte({ aujourdhui: jour, resume, memoire: memoire?.resume ?? null, decision });
+  // Les fiches de la base de connaissances proches de ce message sont glissées dans le contexte : le coach s'en sert sans avoir à les chercher
+  const dernierMessage = [...depuis].reverse().find((m) => m.role === 'user')?.contenu;
+  const contexte = blocContexte({ aujourdhui: jour, resume, memoire: memoire?.resume ?? null, decision, connaissances: extraitsConnaissance(texte, dernierMessage, 2, 1200, estCoureur(resume)) });
   let messages: MessageModele[] = avecMessageUtilisateur(historique, contexte, texte);
 
   const cartes: Carte[] = [];
@@ -518,6 +525,14 @@ export type ResultatAjout =
   | { ok: false; code: 'refusee'; erreurs: { code: string; message: string }[] };
 
 /** Les opérations d'une carte de planning, dans le format de la fonction SQL coach_appliquer_plan (mêmes champs que l'ajout à la main) */
+/** Le résumé décrit-il un coureur ? (une course à pied à venir, ou des sorties de course sur les 90 derniers jours) */
+// deno-lint-ignore no-explicit-any
+function estCoureur(resume: any): boolean {
+  const courses = Array.isArray(resume?.competitions) ? resume.competitions.some((c: { sport?: string }) => c?.sport === 'course') : false;
+  const sorties = typeof resume?.profil_course?.sorties_90_jours === 'number' ? resume.profil_course.sorties_90_jours : 0;
+  return courses || sorties > 0;
+}
+
 export function operationsPourEcriture(operations: Operation[], carteId: string): Record<string, unknown>[] {
   return operations.map((o, i): Record<string, unknown> => {
     switch (o.op) {
