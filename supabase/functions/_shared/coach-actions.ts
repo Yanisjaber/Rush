@@ -94,7 +94,7 @@ function motifPlan(x: unknown): string | null {
   return t.length >= 3 && t.length <= 200 ? t : null;
 }
 
-const DATES_MAX_JOURS_BLOQUES = 14;
+const DATES_MAX_JOURS_BLOQUES = 400;
 
 function lireContraintes(o: Objet): { ok: true; contraintes: Contraintes } | { ok: false; erreur: string } {
   const c: Contraintes = {};
@@ -166,7 +166,7 @@ function lireDemandeSemaine(o: Objet): { ok: true; demande: DemandeSemaine } | {
   return { ok: true, demande };
 }
 
-const OPS_MODIFIER_MAX = 8;
+const OPS_MODIFIER_MAX = 200;
 
 function lireOperations(liste: unknown): { ok: true; operations: Operation[] } | { ok: false; erreur: string } {
   if (!Array.isArray(liste) || liste.length < 1 || liste.length > OPS_MODIFIER_MAX) return { ok: false, erreur: `operations : une liste de 1 à ${OPS_MODIFIER_MAX} opérations.` };
@@ -300,12 +300,12 @@ export const ACTIONS: DefinitionAction[] = [
     niveau: 'lecture',
     disponible: true,
     description:
-      "Lit le bilan semaine par semaine sur une longue période, jusqu'à 52 semaines (du plus ancien au plus récent) : séances, minutes, km, et pour tous les sports ensemble la charge, les jours actifs et la forme de fond en fin de semaine. " +
+      "Lit le bilan semaine par semaine sur une longue période, jusqu'à 260 semaines (du plus ancien au plus récent) : séances, minutes, km, et pour tous les sports ensemble la charge, les jours actifs et la forme de fond en fin de semaine. " +
       "À utiliser pour comparer des périodes (ce mois-ci contre il y a trois mois), voir une tendance ou une saison. Les semaines sont des blocs de 7 jours qui finissent aujourd'hui.",
     schema: {
       type: 'object',
       properties: {
-        nb: { type: 'integer', minimum: 1, maximum: 52, description: 'Nombre de semaines en arrière.' },
+        nb: { type: 'integer', minimum: 1, maximum: 260, description: 'Nombre de semaines en arrière.' },
         sport: { type: 'string', enum: ['velo', 'course', 'natation', 'muscu'], description: 'Facultatif : un seul sport (sans charge ni forme de fond).' },
       },
       required: ['nb'],
@@ -313,8 +313,8 @@ export const ACTIONS: DefinitionAction[] = [
     },
     lire: (input) => {
       const o = objet(input, ['nb', 'sport']);
-      const nb = entier(o?.nb, 1, 52);
-      if (!o || !nb) return refus('nb doit être un entier entre 1 et 52.');
+      const nb = entier(o?.nb, 1, 260);
+      if (!o || !nb) return refus('nb doit être un entier entre 1 et 260.');
       if (o.sport === undefined) return { ok: true, params: { nb } };
       const sport = parmi(o.sport, ['velo', 'course', 'natation', 'muscu'] as const);
       return sport ? { ok: true, params: { nb, sport } } : refus('Sport inconnu. Choix possibles : velo, course, natation, muscu.');
@@ -326,15 +326,15 @@ export const ACTIONS: DefinitionAction[] = [
     niveau: 'lecture',
     disponible: true,
     description:
-      "Lit les séances réalisées sur une période de 92 jours au plus (date, sport, minutes, km, fréquence cardiaque moyenne), les plus récentes d'abord, 30 au plus. Sans le nom des séances. " +
+      "Lit les séances réalisées sur une période de 400 jours au plus (date, sport, minutes, km, fréquence cardiaque moyenne), les plus récentes d'abord, 100 au plus. Sans le nom des séances. " +
       "À utiliser pour une période précise dans le passé (par exemple « la semaine avant ma course »).",
     schema: {
       type: 'object',
       properties: {
         du: { type: 'string', description: 'Premier jour, AAAA-MM-JJ.' },
-        au: { type: 'string', description: 'Dernier jour, AAAA-MM-JJ (92 jours après le premier au plus).' },
+        au: { type: 'string', description: 'Dernier jour, AAAA-MM-JJ (400 jours après le premier au plus).' },
         sport: { type: 'string', enum: [...SPORTS_LECTURE], description: 'Facultatif : un seul sport.' },
-        nb: { type: 'integer', minimum: 1, maximum: 30, description: 'Nombre de séances au plus (20 par défaut).' },
+        nb: { type: 'integer', minimum: 1, maximum: 100, description: 'Nombre de séances au plus (20 par défaut).' },
       },
       required: ['du', 'au'],
       additionalProperties: false,
@@ -345,7 +345,7 @@ export const ACTIONS: DefinitionAction[] = [
       const au = dateIso(o?.au);
       if (!o || !du || !au) return refus('du et au doivent être des dates AAAA-MM-JJ qui existent.');
       if (au < du) return refus('La date de fin doit être le même jour que le début, ou après.');
-      if (joursEntre(du, au) > 92) return refus('92 jours au plus entre du et au : découpe en plusieurs lectures.');
+      if (joursEntre(du, au) > 400) return refus('400 jours au plus entre du et au : découpe en plusieurs lectures.');
       const params: Record<string, unknown> = { du, au };
       if (o.sport !== undefined) {
         const sport = parmi(o.sport, SPORTS_LECTURE);
@@ -353,8 +353,8 @@ export const ACTIONS: DefinitionAction[] = [
         params.sport = sport;
       }
       if (o.nb !== undefined) {
-        const nb = entier(o.nb, 1, 30);
-        if (!nb) return refus('nb doit être un entier entre 1 et 30.');
+        const nb = entier(o.nb, 1, 100);
+        if (!nb) return refus('nb doit être un entier entre 1 et 100.');
         params.nb = nb;
       }
       return { ok: true, params };

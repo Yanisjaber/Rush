@@ -33,6 +33,8 @@ export interface LignePlan {
   op: TypeOperation;
   texte: string;
   raison?: string;
+  /** Séance ajoutée : sa structure en une phrase (échauffement, corps, retour au calme) */
+  structure?: string;
   sport?: string | null;
   minutes?: number | null;
   de?: string;

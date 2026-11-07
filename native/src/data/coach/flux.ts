@@ -9,7 +9,7 @@ const estObjet = (x: unknown): x is Record<string, unknown> => !!x && typeof x =
 const OPERATIONS: readonly string[] = ['indisponibilite', 'deplacer', 'supprimer', 'ajouter', 'repos'];
 const PERIODES: readonly string[] = ['maladie', 'blessure', 'indisponible'];
 const DATE_ISO = /^\d{4}-\d{2}-\d{2}$/;
-const MAX_LIGNES = 20;
+const MAX_LIGNES = 2000;
 const MAX_TEXTE = 300;
 
 const texte = (x: unknown, max = MAX_TEXTE): string => (typeof x === 'string' ? x.slice(0, max) : '');
@@ -20,6 +20,7 @@ const date = (x: unknown): string | undefined => (typeof x === 'string' && DATE_
 function lireLigne(x: unknown): LignePlan | null {
   if (!estObjet(x) || !OPERATIONS.includes(String(x.op)) || typeof x.texte !== 'string' || !x.texte) return null;
   const raison = texte(x.raison);
+  const structure = texte(x.structure, 400);
   const minutes = nombre(x.minutes);
   const de = date(x.de);
   const vers = date(x.vers);
@@ -29,6 +30,7 @@ function lireLigne(x: unknown): LignePlan | null {
     op: x.op as TypeOperation,
     texte: texte(x.texte),
     ...(raison ? { raison } : {}),
+    ...(structure ? { structure } : {}),
     ...(typeof x.sport === 'string' ? { sport: x.sport.slice(0, 40) } : {}),
     ...(minutes !== undefined ? { minutes } : {}),
     ...(de ? { de } : {}),

@@ -73,7 +73,7 @@ test('proposer_replanification : contraintes valides acceptées, le reste refus�
     { motif: 'ok ok', indisponibilite: { type: 'blessure', du: '2026-11-09', au: '2026-11-07' } },
     { motif: 'ok ok', indisponibilite: { type: 'blessure', du: '2026-02-31', au: '2026-03-05' } },
     { motif: 'ok ok', jours_bloques: [] },
-    { motif: 'ok ok', jours_bloques: Array.from({ length: 15 }, (_, i) => `2026-11-${String(i + 10).padStart(2, '0')}`) },
+    { motif: 'ok ok', jours_bloques: Array.from({ length: 401 }, (_, i) => new Date(Date.UTC(2026, 10, 10 + i)).toISOString().slice(0, 10)) },
     { motif: 'ok ok', jours_bloques: ['demain'] },
     { motif: 'ok ok', sports_exclus: { sports: ['golf'], du: '2026-11-06', au: '2026-11-12' } },
     { motif: 'ok ok', sports_exclus: { sports: ['velo'], du: '2026-11-06', au: '2027-01-12' } },
@@ -103,7 +103,7 @@ test('modifier_planning : les quatre opérations sont lues, nettoyées et strict
   const base = { motif: 'Test ok' };
   const mauvais: unknown[] = [
     { ...base, operations: [] },
-    { ...base, operations: Array.from({ length: 9 }, () => ({ op: 'supprimer', seance_id: ID })) },
+    { ...base, operations: Array.from({ length: 201 }, () => ({ op: 'supprimer', seance_id: ID })) },
     { ...base, operations: [{ op: 'detruire', seance_id: ID }] },
     { ...base, operations: [{ op: 'supprimer', seance_id: 'abc' }] },
     { ...base, operations: [{ op: 'supprimer', seance_id: "x'; drop table activities;--" }] },
@@ -129,10 +129,10 @@ test('lectures de l\'historique : chaque requête SQL est dans la liste fermée,
   assert.deepEqual([...FONCTIONS_HISTORIQUE].sort(), ['rpc_coach_semaines', 'rpc_coach_seances'].sort());
 });
 
-test('lire_seances_periode : 92 jours exactement acceptés, 93 refusés', () => {
+test('lire_seances_periode : 400 jours exactement acceptés, 401 refusés', () => {
   const lire = (x: unknown) => trouverAction('lire_seances_periode')!.lire!(x);
-  assert.equal(lire({ du: '2026-08-01', au: '2026-11-01' }).ok, true);   // 92 jours
-  assert.equal(lire({ du: '2026-07-31', au: '2026-11-01' }).ok, false);  // 93 jours
+  assert.equal(lire({ du: '2025-09-27', au: '2026-11-01' }).ok, true);   // 400 jours
+  assert.equal(lire({ du: '2025-09-26', au: '2026-11-01' }).ok, false);  // 401 jours
 });
 
 test('planifier_semaine : une demande valide est lue et nettoyée, le reste est refusé avec la raison', () => {
@@ -152,7 +152,7 @@ test('planifier_semaine : une demande valide est lue et nettoyée, le reste est 
     { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2 }], debut: 'demain' },
     { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2 }], jours: 15 },
     { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2 }], jours_libres: ['2026-02-31'] },
-    { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2 }], jours_libres: Array.from({ length: 15 }, (_, i) => `2026-11-${String(i + 10).padStart(2, '0')}`) },
+    { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2 }], jours_libres: Array.from({ length: 401 }, (_, i) => new Date(Date.UTC(2026, 10, 10 + i)).toISOString().slice(0, 10)) },
     { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2 }], intensite: 'extreme' },
     { motif: '', sports: [{ sport: 'velo', seances: 2 }] },
     { motif: 'Ma semaine', sports: [{ sport: 'velo', seances: 2 }], clef: 1 },

@@ -264,6 +264,7 @@ function Detail({ carte }: { carte: CartePlanning }) {
           <View style={{ flex: 1 }}>
             <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{l.texte}</Text>
             {l.raison ? <Text style={[typo.petit, { color: p.texteDoux }]}>{l.raison}</Text> : null}
+            {l.structure ? <Text style={[typo.petit, { color: p.texteDoux }]}>{l.structure}</Text> : null}
           </View>
         </View>
       ))}

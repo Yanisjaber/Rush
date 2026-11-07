@@ -75,7 +75,7 @@ insert into public.activities (user_id, name, sport, start_date_local, moving_ti
  ('00000000-0000-4000-8000-00000000000a','Très vieille','Run','2025-03-01 08:00+00', 3000, 10, 150, null, null),
  ('00000000-0000-4000-8000-00000000000b','Séance de B','Ride','2026-11-02 08:00+00', 3600, 99, 130, null, null);
 insert into public.daily_metrics (user_id, iso_date, tss, duration_min, activity_count, ctl, atl, tsb) values ('00000000-0000-4000-8000-00000000000b','2026-11-02', 500, 60, 1, 90, 80, 10);
--- 40 séances de course sur 40 jours pour le compte A (pour tester la limite de 30 séances et la fenêtre de 92 jours)
+-- 40 séances de course sur 40 jours pour le compte A (pour tester la limite de 30 séances et la fenêtre de 400 jours)
 insert into public.activities (user_id, name, sport, start_date_local, moving_time, distance_km)
 select '00000000-0000-4000-8000-00000000000a', 'Footing ' || i, 'Run', timestamptz '2026-09-01 07:00+00' + (i || ' days')::interval, 1800, 5 from generate_series(0, 39) i;
 
@@ -84,6 +84,7 @@ SQL
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-06_rpc_coach_resume.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-07_rpc_coach_historique.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-07_rpc_coach_historique.sql   # relançable
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-09_rpc_coach_historique_long.sql
 bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
 \pset tuples_only on
 set role authenticated;
@@ -104,8 +105,8 @@ union all select  5, 'semaine sans séance ni donnée (il y a un an) : des zéro
                   (select (j->0->>'seances')::int = 0 and (j->0->>'tss')::numeric = 0 and j->0->'ctl_fin' = 'null'::jsonb from (select public.rpc_coach_semaines('2026-11-06', 52) as j) x)
 union all select  6, 'filtre vélo : pas de tss ni de CTL (ils mélangent les sports), seulement séances/minutes/km du vélo',
                   (select not (j->3 ? 'tss') and not (j->3 ? 'ctl_fin') and (j->3->>'seances')::int = 3 and (j->3->>'km')::numeric = 130.0 from sv)
-union all select  7, 'bornes : 0 semaine → 1 ; 500 semaines → 52 ; null → 12',
-                  (select jsonb_array_length(public.rpc_coach_semaines('2026-11-06', 0)) = 1 and jsonb_array_length(public.rpc_coach_semaines('2026-11-06', 500)) = 52 and jsonb_array_length(public.rpc_coach_semaines('2026-11-06', null)) = 12)
+union all select  7, 'bornes : 0 semaine → 1 ; 500 semaines → 260 ; null → 12',
+                  (select jsonb_array_length(public.rpc_coach_semaines('2026-11-06', 0)) = 1 and jsonb_array_length(public.rpc_coach_semaines('2026-11-06', 500)) = 260 and jsonb_array_length(public.rpc_coach_semaines('2026-11-06', null)) = 12)
 union all select  8, 'sport inconnu ou piégé : liste vide, jamais d''erreur',
                   (select public.rpc_coach_semaines('2026-11-06', 4, 'golf') = '[]'::jsonb and public.rpc_coach_semaines('2026-11-06', 4, ''' or 1=1 --') = '[]'::jsonb)
 union all select  9, 'séances d''une période : seulement celles du 1 au 6/11, la plus récente d''abord, sans l''étape fusionnée',
@@ -114,9 +115,9 @@ union all select 10, 'séance : date, sport (famille), minutes, km, FC moyenne �
                   (select (select array_agg(k order by k) from jsonb_object_keys(j->0) k) = array['date','fc_moyenne','km','minutes','sport'] from sc)
 union all select 11, 'AUCUN texte externe ne sort : ni nom d''activité ni balise piégée (semaines et séances)',
                   (select position('IGNORE' in (s.j::text || sc.j::text)) = 0 and position('onerror' in (s.j::text || sc.j::text)) = 0 and position('Footing' in (s.j::text || sc.j::text)) = 0 from s, sc)
-union all select 12, 'limite : 40 séances sur la période → 30 au plus ; limite demandée à 5 → 5',
-                  (select jsonb_array_length(public.rpc_coach_seances('2026-09-01', '2026-12-01', null, 500)) = 30 and jsonb_array_length(public.rpc_coach_seances('2026-09-01', '2026-12-01', 'course', 5)) = 5)
-union all select 13, 'fenêtre de 92 jours : une demande plus large garde la FIN de la période (la séance de mars 2025 ne sort pas)',
+union all select 12, 'limite : 40 séances sur la période → les 40 (100 au plus) ; limite demandée à 5 → 5',
+                  (select jsonb_array_length(public.rpc_coach_seances('2026-09-01', '2026-12-01', null, 500)) between 40 and 100 and jsonb_array_length(public.rpc_coach_seances('2026-09-01', '2026-12-01', 'course', 5)) = 5)
+union all select 13, 'fenêtre de 400 jours : une demande plus large garde la FIN de la période (la séance de mars 2025 ne sort pas)',
                   (select position('2025-03-01' in public.rpc_coach_seances('2020-01-01', '2026-11-06', null, 30)::text) = 0)
 union all select 14, 'période à l''envers, dates absentes, sport inconnu : liste vide',
                   (select public.rpc_coach_seances('2026-11-06', '2026-11-01') = '[]'::jsonb and public.rpc_coach_seances(null, '2026-11-01') = '[]'::jsonb and public.rpc_coach_seances('2026-10-01', '2026-11-01', 'golf') = '[]'::jsonb)

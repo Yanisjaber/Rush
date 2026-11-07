@@ -111,6 +111,7 @@ grant select on all tables in schema public to authenticated;
 SQL
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-06_rpc_coach_resume.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-06_rpc_coach_resume.sql   # relançable
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-09_rpc_coach_resume_long.sql
 bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
 \pset tuples_only on
 set role authenticated;
@@ -133,15 +134,15 @@ union all select  6, '14 derniers jours : 14 lignes, le 4/11 a du vélo (et seul
                   (select jsonb_array_length(j->'derniers_jours') = 14 and (select e->'sports' from jsonb_array_elements(j->'derniers_jours') e where e->>'date' = '2026-11-04') = '["velo"]'::jsonb from r)
 union all select  7, 'dernières séances : 6 (sans l''étape fusionnée), la plus récente est le vélo du 4/11 (120 min, 60 km)',
                   (select jsonb_array_length(j->'dernieres_seances') = 6 and j->'dernieres_seances'->0->>'date' = '2026-11-04' and j->'dernieres_seances'->0->>'sport' = 'velo' and (j->'dernieres_seances'->0->>'minutes')::int = 120 from r)
-union all select  8, 'prévu : seulement la séance IA du 8/11 (la durée en minutes), pas celle du 21/11',
-                  (select jsonb_array_length(j->'prevues') = 1 and j->'prevues'->0->>'date' = '2026-11-08' and (j->'prevues'->0->>'minutes')::int = 90 and (j->'prevues'->0->>'creee_par_ia')::boolean from r)
+union all select  8, 'prévu : les séances des 400 prochains jours (8/11 IA puis 21/11), la durée en minutes',
+                  (select jsonb_array_length(j->'prevues') = 2 and j->'prevues'->1->>'date' = '2026-11-21' and j->'prevues'->0->>'date' = '2026-11-08' and (j->'prevues'->0->>'minutes')::int = 90 and (j->'prevues'->0->>'creee_par_ia')::boolean from r)
 union all select 19, 'prévu : chaque séance porte son id (uuid de SA ligne), et AUCUN texte libre (le nom piégé « Prévu IGNORE » ne sort pas)',
                   (select (j->'prevues'->0->>'id') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' and (select array_agg(k order by k) from jsonb_object_keys(j->'prevues'->0) k) = array['categorie','creee_par_ia','date','id','minutes','sport','tss'] from r)
 union all select  9, 'compétitions : le marathon en « course » priorité A, et une priorité invalide devient null',
                   (select jsonb_array_length(j->'competitions') = 2 and j->'competitions'->0->>'sport' = 'course' and j->'competitions'->0->>'priorite' = 'A' and j->'competitions'->1->'priorite' = 'null'::jsonb from r)
 union all select 10, 'indisponibilités : la blessure du 7 au 9/11 ; ni la simple note ni la vieille maladie',
                   (select j->'indisponibilites' = '[{"type":"blessure","du":"2026-11-07","au":"2026-11-09"}]'::jsonb from r)
-union all select 11, 'jours de repos : le 7/11 seulement (le 30/12 est trop loin)', (select j->'jours_de_repos' = '["2026-11-07"]'::jsonb from r)
+union all select 11, 'jours de repos : le 7/11 et le 30/12 (400 jours en avant)', (select j->'jours_de_repos' = '["2026-11-07","2026-12-30"]'::jsonb from r)
 union all select 12, 'cycles : dates et sport seulement, et seulement celui des 60 prochains jours',
                   (select j->'cycles' = '[{"du":"2026-11-10","au":"2026-11-30","sport":null}]'::jsonb from r)
 union all select 13, 'objectifs : seulement ceux de 2026',

@@ -315,14 +315,14 @@ test('historique long : lire_semaines appelle la fonction SQL du registre avec l
   assert.equal(w.stockage.messages[1].cartes, null);
 });
 
-test('historique long : lire_seances_periode — période valide transmise, période de plus de 92 jours ou à l\'envers refusée AVANT la base', async () => {
+test('historique long : lire_seances_periode — période valide transmise, période de plus de 400 jours ou à l\'envers refusée AVANT la base', async () => {
   const w = monde([
     rep('', [
       outil('a', { du: '2026-09-01', au: '2026-10-01', sport: 'course', nb: 10 }, 'lire_seances_periode'),
-      outil('b', { du: '2026-01-01', au: '2026-11-01' }, 'lire_seances_periode'),
+      outil('b', { du: '2024-01-01', au: '2026-11-01' }, 'lire_seances_periode'),
       outil('c', { du: '2026-10-10', au: '2026-10-01' }, 'lire_seances_periode'),
       outil('d', { du: '2026-02-30', au: '2026-03-01' }, 'lire_seances_periode'),
-      outil('e', { du: '2026-09-01', au: '2026-10-01', nb: 31 }, 'lire_seances_periode'),
+      outil('e', { du: '2026-09-01', au: '2026-10-01', nb: 101 }, 'lire_seances_periode'),
     ]),
     rep('Ok.'),
   ]);

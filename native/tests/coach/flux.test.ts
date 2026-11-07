@@ -128,9 +128,11 @@ test('carte de planning : sans ligne lisible, mal formée ou d\'un état inconnu
   assert.equal(lireCarte({ ...plan, genre: 'autre' }), null, 'sans genre « planning », c\'est une carte de séance : elle n\'a pas de proposition');
 });
 
-test('carte de planning : 20 lignes au plus', () => {
-  const lignes = Array.from({ length: 30 }, (_, i) => ({ op: 'supprimer', texte: `ligne ${i}`, sport: 'velo', de: '2026-11-07' }));
-  assert.equal(((lireCarte({ ...plan, lignes }) as Record<string, unknown[]>).lignes).length, 20);
+test('carte de planning : un plan d\'un an (300 lignes) est gardé en entier, avec la structure de chaque séance', () => {
+  const lignes = Array.from({ length: 300 }, (_, i) => ({ op: 'ajouter', texte: `ligne ${i}`, sport: 'velo', vers: '2027-01-07', structure: '10 min d\'échauffement · 50 min continues' }));
+  const c = lireCarte({ ...plan, lignes }) as unknown as { lignes: { structure?: string }[] };
+  assert.equal(c.lignes.length, 300);
+  assert.equal(c.lignes[0].structure, '10 min d\'échauffement · 50 min continues');
 });
 
 test('carte de planning annulée : le bilan de l\'annulation est relu seulement s\'il est complet', () => {
