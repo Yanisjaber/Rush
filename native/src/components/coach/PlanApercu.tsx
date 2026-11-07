@@ -87,7 +87,6 @@ export function FrisePlan({ lignes, vue, aujourdhui }: { lignes: LignePlan[]; vu
   const dansPeriode = jours.map((j, i) => (j.periode ? i : -1)).filter((i) => i >= 0);
   const debut = dansPeriode.length ? dansPeriode[0] : -1;
   const longueur = dansPeriode.length;
-  const hauteurRangees = rangees.length * (CASE_FRISE + 20) + espace.e2;
 
   return (
     <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ gap: 4 }}>
@@ -99,27 +98,37 @@ export function FrisePlan({ lignes, vue, aujourdhui }: { lignes: LignePlan[]; vu
           </View>
         ))}
       </View>
-      <View style={{ minHeight: Math.max(hauteurRangees, 56), paddingVertical: espace.e1 }}>
-        {debut >= 0 ? (
-          <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: `${(debut / n) * 100}%`, width: `${(longueur / n) * 100}%` }}>
-            <Hachure couleur={p.danger} trait={p.texteMuet} />
-          </View>
-        ) : null}
+      <View style={{ paddingVertical: espace.e1 }}>
         {rangees.map((r) => {
           const couleur = couleurSport(p, r.sport);
           return (
             <View key={r.sport} style={{ gap: 3, marginBottom: espace.e2 }}>
               <Text style={[typo.micro, { color: p.texteDoux, textTransform: 'none', letterSpacing: 0, paddingLeft: 4 }]}>{nomSport(r.sport)}</Text>
-              <View style={styles.rang}>
-                {r.cases.map((c) => (
-                  <View key={c.iso} style={{ flex: 1, height: CASE_FRISE }}>
-                    <CaseFrise etat={c.etat} couleur={couleur} />
+              {/* Les hachures de la période sont posées sous les cases de CETTE rangée : le nom du sport reste lisible */}
+              <View style={{ height: CASE_FRISE }}>
+                {debut >= 0 ? (
+                  <View pointerEvents="none" style={{ position: 'absolute', top: -2, bottom: -2, left: `${(debut / n) * 100}%`, width: `${(longueur / n) * 100}%` }}>
+                    <Hachure couleur={p.danger} trait={p.texteMuet} />
                   </View>
-                ))}
+                ) : null}
+                <View style={styles.rang}>
+                  {r.cases.map((c) => (
+                    <View key={c.iso} style={{ flex: 1, height: CASE_FRISE }}>
+                      <CaseFrise etat={c.etat} couleur={couleur} />
+                    </View>
+                  ))}
+                </View>
               </View>
             </View>
           );
         })}
+        {rangees.length === 0 && debut >= 0 ? (
+          <View style={{ height: 40 }}>
+            <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: `${(debut / n) * 100}%`, width: `${(longueur / n) * 100}%` }}>
+              <Hachure couleur={p.danger} trait={p.texteMuet} />
+            </View>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -128,7 +137,8 @@ export function FrisePlan({ lignes, vue, aujourdhui }: { lignes: LignePlan[]; vu
 function CaseFrise({ etat, couleur }: { etat: 'vide' | EtatMarque; couleur: string }) {
   const p = usePalette();
   if (etat === 'vide') return <View style={[styles.caseFrise, { backgroundColor: p.surface2, opacity: 0.55 }]} />;
-  if (etat === 'retiree') return <View style={[styles.caseFrise, { borderWidth: 1, borderStyle: 'dashed', borderColor: p.texteMuet }]} />;
+  // Une case retirée garde un fond : elle reste lisible même sur les hachures
+  if (etat === 'retiree') return <View style={[styles.caseFrise, { backgroundColor: p.surface, borderWidth: 1, borderStyle: 'dashed', borderColor: p.texte }]} />;
   return <View style={[styles.caseFrise, { backgroundColor: couleur }]} />;
 }
 
