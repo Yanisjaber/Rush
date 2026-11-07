@@ -107,6 +107,12 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
 
 // Suppression de l'utilisateur Supabase Auth ; on journalise la vraie cause en cas d'échec (jamais de jeton)
 async function supprimerUtilisateur(sbAdmin: any, userId: string, json: (body: any, status?: number) => Response): Promise<Response> {
+  // La photo de profil (bucket privé « avatars », un fichier par compte) part avec le compte ; un échec ici ne bloque pas la suppression
+  try {
+    await sbAdmin.storage.from("avatars").remove([`${userId}/avatar.jpg`]);
+  } catch (_e) {
+    console.error("delete-account: photo de profil non supprimée");
+  }
   const { error: delErr } = await sbAdmin.auth.admin.deleteUser(userId);
   if (delErr) {
     console.error("delete-account: deleteUser a échoué", delErr.status || "", delErr.code || "", String(delErr.message || "").slice(0, 200));
