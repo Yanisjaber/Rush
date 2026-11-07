@@ -17,6 +17,7 @@
 //     qui revalide tout au moment du tap ;
 //   - une erreur n'écrit rien dans le calendrier et ne montre aucun détail technique.
 // ============================================================
+import { structureSeance } from './structure-seance.ts';
 import { FONCTIONS_HISTORIQUE, MAX_PAR_NIVEAU, outilsExposes, trouverAction } from './coach-actions.ts';
 import type { FonctionHistorique } from './coach-actions.ts';
 import { coutMicroUsd } from './coach-couts.ts';
@@ -459,6 +460,8 @@ export function operationsPourEcriture(operations: Operation[], carteId: string)
           tss: type ? tssEstime(type, p.minutes) : 0,
           notes: o.justification ? o.justification.slice(0, 500) : null,
           start: `${p.date}T09:00:00`,
+          // jamais de séance « vierge » : la structure est toujours construite par le code, d'après le type et la durée exacte
+          structure: structureSeance(sport, p.type, p.minutes),
           client_id: `coach-${carteId}-${i}`,
         };
       }

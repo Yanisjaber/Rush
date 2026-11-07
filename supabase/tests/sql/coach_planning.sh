@@ -43,13 +43,15 @@ insert into public.activity_planned (id, user_id, category, name, date, start_da
  ('11111111-1111-4111-8111-000000000003','00000000-0000-4000-8000-00000000000a','competition','Marathon','2026-11-20',null,'Run',null,null,null, false),
  ('11111111-1111-4111-8111-000000000004','00000000-0000-4000-8000-00000000000b','entrainement','Séance de B','2026-11-07','2026-11-07 09:00+00','Ride',90,70,null, false);
 insert into public.activity_planned (id, user_id, category, name, date, sport, duration, tss, gpx_content) values
- ('11111111-1111-4111-8111-000000000005','00000000-0000-4000-8000-00000000000a','entrainement','Séance avec GPX','2026-11-09','Run',60,50, repeat('x', 6000));
+ ('11111111-1111-4111-8111-000000000005','00000000-0000-4000-8000-00000000000a','entrainement','Séance avec GPX','2026-11-09','Run',60,50, repeat('x', 20000));
 SQL
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-06_coach_chat.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-07_coach_planning.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-07_coach_planning.sql   # relançable
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-08_coach_repos.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-08_coach_repos.sql   # relançable
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-09_coach_structure_plans_longs.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-09_coach_structure_plans_longs.sql   # relançable
 bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
 \pset tuples_only on
 \set A '00000000-0000-4000-8000-00000000000a'
@@ -97,16 +99,16 @@ select 'une séance volumineuse (GPX) n''est jamais supprimée : l''annulation n
        and exists (select 1 from public.activity_planned where id = '11111111-1111-4111-8111-000000000005') as ok;
 
 -- ===== Bornes =====
-select 'bornes : 0 ou 17 opérations, opération inconnue, null, pas un tableau' as controle,
+select 'bornes : 0 ou 2001 opérations, opération inconnue, null, pas un tableau' as controle,
        public.echoue($q$select public.coach_appliquer_plan('[]'::jsonb)$q$)
-       and public.echoue($q$select public.coach_appliquer_plan((select jsonb_agg('{"op":"supprimer","seance_id":"11111111-1111-4111-8111-0000000000ff"}'::jsonb) from generate_series(1,17)))$q$)
+       and public.echoue($q$select public.coach_appliquer_plan((select jsonb_agg('{"op":"supprimer","seance_id":"11111111-1111-4111-8111-0000000000ff"}'::jsonb) from generate_series(1,2001)))$q$)
        and public.echoue($q$select public.coach_appliquer_plan('[{"op":"detruire_tout"}]'::jsonb)$q$)
        and public.echoue($q$select public.coach_appliquer_plan(null)$q$)
        and public.echoue($q$select public.coach_appliquer_plan('{"op":"supprimer"}'::jsonb)$q$) as ok;
-select 'ajouter : sport brut hors liste, durée 0 ou 601, charge négative, refusés' as controle,
+select 'ajouter : sport brut hors liste, durée 0 ou 1441, charge négative, refusés' as controle,
        public.echoue($q$select public.coach_appliquer_plan('[{"op":"ajouter","date":"2026-11-19","sport":"Walk","duration":30,"tss":25}]'::jsonb)$q$)
        and public.echoue($q$select public.coach_appliquer_plan('[{"op":"ajouter","date":"2026-11-19","sport":"Run","duration":0,"tss":25}]'::jsonb)$q$)
-       and public.echoue($q$select public.coach_appliquer_plan('[{"op":"ajouter","date":"2026-11-19","sport":"Run","duration":601,"tss":25}]'::jsonb)$q$)
+       and public.echoue($q$select public.coach_appliquer_plan('[{"op":"ajouter","date":"2026-11-19","sport":"Run","duration":1441,"tss":25}]'::jsonb)$q$)
        and public.echoue($q$select public.coach_appliquer_plan('[{"op":"ajouter","date":"2026-11-19","sport":"Run","duration":30,"tss":-5}]'::jsonb)$q$) as ok;
 select 'période : type inconnu, fin avant début, plus de 60 jours, date impossible, refusés' as controle,
        public.echoue($q$select public.coach_appliquer_plan('[{"op":"indisponibilite","type":"vacances","du":"2026-11-07","au":"2026-11-09"}]'::jsonb)$q$)
@@ -198,10 +200,27 @@ select 'carte_inverse : garde l''inverse dans la carte, puis le retire (null)' a
 select 'carte_inverse : carte inconnue ou compte sans cette carte = faux' as controle,
        not public.coach_carte_inverse('00000000-0000-4000-8000-00000000000a', 'zzz', '[]'::jsonb)
        and not public.coach_carte_inverse('00000000-0000-4000-8000-00000000000b', 'p1', '[]'::jsonb) as ok;
-select 'cartes : 20 Ko acceptés (plan + inverse), 30 Ko refusés, 4 cartes refusées' as controle,
-       not public.echoue($q$insert into public.chat_messages (user_id, role, contenu, cartes) values ('00000000-0000-4000-8000-00000000000a','assistant','gros', jsonb_build_array(jsonb_build_object('id','g1','texte', repeat('é', 10000))))$q$)
-       and public.echoue($q$insert into public.chat_messages (user_id, role, contenu, cartes) values ('00000000-0000-4000-8000-00000000000a','assistant','énorme', jsonb_build_array(jsonb_build_object('id','g2','texte', repeat('é', 15500))))$q$)
+select 'cartes : 200 Ko acceptés (plan d''un an + inverse), 2 Mo refusés, 4 cartes refusées' as controle,
+       not public.echoue($q$insert into public.chat_messages (user_id, role, contenu, cartes) values ('00000000-0000-4000-8000-00000000000a','assistant','gros', jsonb_build_array(jsonb_build_object('id','g1','texte', repeat('é', 100000))))$q$)
+       and public.echoue($q$insert into public.chat_messages (user_id, role, contenu, cartes) values ('00000000-0000-4000-8000-00000000000a','assistant','énorme', jsonb_build_array(jsonb_build_object('id','g2','texte', repeat(md5(random()::text), 70000))))$q$)
        and public.echoue($q$insert into public.chat_messages (user_id, role, contenu, cartes) values ('00000000-0000-4000-8000-00000000000a','assistant','quatre', '[{"id":"a"},{"id":"b"},{"id":"c"},{"id":"d"}]')$q$) as ok;
+
+set role authenticated;
+set request.jwt.claim.sub = '00000000-0000-4000-8000-00000000000a';
+-- ===== Structure des séances et plans longs =====
+select public.coach_appliquer_plan('[
+  {"op":"ajouter","date":"2026-12-01","name":"Vélo · Seuil","sport":"Ride","duration":67,"tss":106,"start":"2026-12-01T09:00:00","client_id":"coach-s1-0",
+   "structure":[{"type":"warmup","name":"Échauffement","reps":1,"metric":"power","unit":"zone","work":{"min":10,"int":40,"intHi":55}},{"type":"cooldown","name":"Retour au calme","reps":1,"metric":"power","unit":"zone","work":{"min":57,"int":40,"intHi":55}}]}
+]'::jsonb) as inv2 \gset
+select 'structure : enregistrée telle quelle sur la séance, durée de 67 min acceptée' as controle,
+       (select jsonb_array_length(structure) = 2 and duration = 67 from public.activity_planned where client_id = 'coach-s1-0') as ok;
+select 'structure : mal formée (pas un tableau, vide, 41 blocs, trop lourde) = tout le plan refusé' as controle,
+       public.echoue($q$select public.coach_appliquer_plan('[{"op":"ajouter","date":"2026-12-02","sport":"Run","duration":30,"tss":25,"structure":{"a":1}}]'::jsonb)$q$)
+       and public.echoue($q$select public.coach_appliquer_plan('[{"op":"ajouter","date":"2026-12-02","sport":"Run","duration":30,"tss":25,"structure":[]}]'::jsonb)$q$)
+       and public.echoue($q$select public.coach_appliquer_plan(jsonb_build_array(jsonb_build_object('op','ajouter','date','2026-12-02','sport','Run','duration',30,'tss',25,'structure',(select jsonb_agg(jsonb_build_object('type','steady')) from generate_series(1,41)))))$q$)
+       and public.echoue($q$select public.coach_appliquer_plan(jsonb_build_array(jsonb_build_object('op','ajouter','date','2026-12-02','sport','Run','duration',30,'tss',25,'structure',jsonb_build_array(jsonb_build_object('name',repeat('x',9000))))))$q$) as ok;
+select 'plan d''un an : 300 séances ajoutées en une fois, puis annulées en une fois' as controle,
+       (select (public.coach_annuler_plan(public.coach_appliquer_plan((select jsonb_agg(jsonb_build_object('op','ajouter','date',(date '2027-01-01' + g)::text,'name','Vélo','sport','Ride','duration',60+g,'tss',50,'client_id','an-'||g)) from generate_series(1,300) g))) ->> 'annulees')::int = 300) as ok;
 reset role;
 select 'carte_inverse : réservée au service role (ni anon, ni connecté)' as controle,
        not has_function_privilege('anon', 'public.coach_carte_inverse(uuid, text, jsonb)', 'execute')

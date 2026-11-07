@@ -931,12 +931,16 @@ test('operationsPourEcriture : le format exact attendu par coach_appliquer_plan'
     { op: 'poser_repos', date: '2026-11-12' },
     { op: 'retirer_repos', date: '2026-11-13' },
   ]);
-  assert.deepEqual(ops, [
+  assert.deepEqual(ops.slice(0, 3), [
     { op: 'indisponibilite', type: 'maladie', du: '2026-11-07', au: '2026-11-09', client_id: 'coach-abc-0' },
     { op: 'deplacer', seance_id: PID(1), vers: '2026-11-12' },
     { op: 'supprimer', seance_id: PID(2) },
-    { op: 'ajouter', date: '2026-11-13', name: 'Course · Footing facile', sport: 'Run', duration: 30, tss: 25, notes: 'Reprise douce.', start: '2026-11-13T09:00:00', client_id: 'coach-abc-3' },
   ]);
+  // toute séance ajoutée porte une structure complète, construite par le code, dont la somme fait exactement la durée
+  const { structure, ...ajout } = ops[3] as Libre;
+  assert.deepEqual(ajout, { op: 'ajouter', date: '2026-11-13', name: 'Course · Footing facile', sport: 'Run', duration: 30, tss: 25, notes: 'Reprise douce.', start: '2026-11-13T09:00:00', client_id: 'coach-abc-3' });
+  assert.deepEqual((structure as Libre[]).map((b) => b.type), ['warmup', 'steady', 'cooldown']);
+  assert.equal((structure as Libre[]).reduce((t, b) => t + (b.work as Libre).min, 0), 30);
 });
 
 test('le coach se souvient d\'un plan : la carte de planning est rappelée au modèle avec son état', async () => {

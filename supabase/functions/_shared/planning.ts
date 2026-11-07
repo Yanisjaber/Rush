@@ -9,6 +9,7 @@
 // Règle dure : un plan qui laisse une séance un jour de maladie, de blessure ou d'indisponibilité qu'il vient de déclarer
 // est REFUSÉ. On ne peut pas déclarer une blessure et oublier les séances de la semaine.
 // ============================================================
+import { resumeStructure, structureSeance } from './structure-seance.ts';
 import { ajouterJours, dateValide, ecartJours, entre } from './dates-iso.ts';
 import { estFamilleCoach, MENU } from './menu-seances.ts';
 import { estSeanceDure, HORIZON_TECHNIQUE_JOURS, validerDeplacement, validerSeance } from './validateur.ts';
@@ -106,6 +107,8 @@ export interface LignePlan {
   au?: string;
   /** Jour de repos : posé (vrai) ou retiré (faux) */
   poser?: boolean;
+  /** Séance ajoutée : sa structure en une phrase (échauffement, corps, retour au calme) */
+  structure?: string;
 }
 
 export interface ResultatPlan {
@@ -248,7 +251,7 @@ export function evaluerPlan(operations: Operation[], seances: SeancePrevue[], ba
     const p = o.proposition;
     const nom = estFamilleCoach(p?.sport) ? (MENU[p.sport].find((t) => t.cle === p.type)?.nom ?? p.type) : String(p?.type ?? '');
     const ligne = `Ajouter : ${SPORTS_NOMS[p?.sport] ?? 'séance'} ${nom} ${p?.minutes} min le ${etiquetteDate(p?.date)}`;
-    lignes.push({ op: o.op, texte: ligne, raison: o.raison ?? o.justification, sport: p?.sport ?? null, minutes: p?.minutes ?? null, vers: p?.date });
+    lignes.push({ op: o.op, texte: ligne, raison: o.raison ?? o.justification, sport: p?.sport ?? null, minutes: p?.minutes ?? null, vers: p?.date, structure: resumeLigneStructure(p) });
     const v = validerSeance(p, ctxAvec(base, restantes, indispos, repos));
     if (!v.ok) echec(ligne, v.erreurs.map((e) => e.message).join(' '));
     for (const a of v.avertissements) avertissements.push(`${ligne} : ${a.message}`);
@@ -398,4 +401,10 @@ export function proposerReplanification(c: Contraintes, seances: SeancePrevue[],
     if (!fait) ops.push({ op: 'supprimer', seanceId: s.id, raison: `${raison} ; aucun jour libre d'ici ${HORIZON_REPLANIFICATION_JOURS} jours` });
   }
   return ops;
+}
+
+/** La structure d'une séance ajoutée, en une phrase ; rien si la proposition est invalide (le validateur la refusera) */
+function resumeLigneStructure(p: Proposition): string | undefined {
+  if (!estFamilleCoach(p?.sport) || !Number.isInteger(p?.minutes) || p.minutes < 1 || p.minutes > 1440) return undefined;
+  return resumeStructure(structureSeance(p.sport, p.type, p.minutes));
 }

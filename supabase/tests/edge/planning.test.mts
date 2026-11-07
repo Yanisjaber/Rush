@@ -342,3 +342,10 @@ test('plan : l\'ordre des opérations ne change pas le verdict — une semaine c
   const verdicts = permutations.map((p) => evaluerPlan(p.map((i) => ops[i]), [], c).ok);
   assert.deepEqual(new Set(verdicts), new Set([true]), `verdicts : ${verdicts.join(',')}`);
 });
+
+test('evaluerPlan : une séance ajoutée porte sa structure en une phrase ; une proposition invalide n\'en porte pas', () => {
+  const ok = evaluerPlan([{ op: 'ajouter', proposition: { date: '2026-11-20', sport: 'velo', type: 'seuil', minutes: 67 }, justification: 'x' }], [], ctx({}, []));
+  assert.match(ok.lignes[0].structure ?? '', /échauffement.*retour au calme/);
+  const ko = evaluerPlan([{ op: 'ajouter', proposition: { date: '2026-11-20', sport: 'velo', type: 'seuil', minutes: 0 }, justification: 'x' }], [], ctx({}, []));
+  assert.equal(ko.lignes[0].structure, undefined);
+});
