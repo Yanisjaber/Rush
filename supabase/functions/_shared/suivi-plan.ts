@@ -6,15 +6,22 @@
 // Signaux (le code les calcule, le modèle ne calcule rien) :
 //   - test_fait         : la sortie test a été faite, mais le temps des 3 km n'est pas connu (une sortie contient échauffement et retour au calme) → on le demande ;
 //   - seances_manquees  : 2 séances ratées sur les 7 derniers jours, ou 3 sur 14, depuis le dernier plan → on cherche la cause et on allège ;
-//   - blessure_a_venir  : une maladie ou blessure déclarée tombe sur des séances prévues par le coach → on replanifie.
+//   - blessure_a_venir  : une maladie ou blessure déclarée tombe sur des séances prévues par le coach → on replanifie ;
+//   - allure_trop_rapide / allure_trop_lente : sur les footings et sorties longues (là où la moyenne de la sortie est comparable à l'allure prévue),
+//     l'allure courue s'écarte de plus de 5 % (plus vite) ou de 8 % (plus lent) de celle du plan sur au moins 2 sorties → le niveau est mal estimé.
 // Rien n'est répété : une alerte ne se lève pas si un plan a déjà été proposé après les faits.
 // ============================================================
 import { entre } from './dates-iso.ts';
 
+/** Écarts qui déclenchent une alerte : plus de 5 % plus vite, ou plus de 8 % plus lent, que l'allure prévue (moyenne d'au moins 2 sorties) */
+export const ECART_RAPIDE = 0.95;
+export const ECART_LENT = 1.08;
+const allure = (s: number) => `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 60).padStart(2, '0')}`;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Libre = any;
 
-export type CodeAlerte = 'test_fait' | 'seances_manquees' | 'blessure_a_venir';
+export type CodeAlerte = 'test_fait' | 'seances_manquees' | 'blessure_a_venir' | 'allure_trop_rapide' | 'allure_trop_lente';
 
 export interface AlerteSuivi {
   code: CodeAlerte;
@@ -34,9 +41,21 @@ const liste = (dates: string[]) => dates.map(jourCourt).join(', ');
 
 export function detecterSuivi(resume: Libre, aujourdhui: string, h: HistoriqueSuivi): AlerteSuivi[] {
   const alertes: AlerteSuivi[] = [];
-  const passees: { date: string; est_test: boolean; faite: boolean }[] = (Array.isArray(resume?.plan_suivi) ? resume.plan_suivi : [])
+  const passees: { date: string; est_test: boolean; faite: boolean; ratio: number | null; reel: number | null; cible: number | null; rpe: number | null }[] = (Array.isArray(resume?.plan_suivi) ? resume.plan_suivi : [])
     .filter((p: Libre) => typeof p?.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.date))
-    .map((p: Libre) => ({ date: p.date, est_test: p.est_test === true, faite: p.faite === true }));
+    .map((p: Libre) => {
+      const km = Number(p.activite?.km);
+      const sec = Number(p.activite?.secondes);
+      const cible = Number(p.allure_cible_s);
+      // Comparable seulement : séance d'allure unique, faite, d'au moins 2 km, avec une allure prévue lisible
+      const comparable = p.faite === true && p.continue === true && !p.est_test && km >= 2 && sec > 0 && cible >= 150 && cible <= 900;
+      const rpe = Number(p.activite?.rpe);
+      return {
+        date: p.date, est_test: p.est_test === true, faite: p.faite === true,
+        ratio: comparable ? sec / km / cible : null, reel: comparable ? sec / km : null, cible: comparable ? cible : null,
+        rpe: Number.isFinite(rpe) && rpe >= 1 && rpe <= 10 ? rpe : null,
+      };
+    });
   const depuis = h.dernierPlan ?? '0000-00-00';
 
   // 1. La sortie test est faite : le temps des 3 km manque
@@ -59,6 +78,31 @@ export function detecterSuivi(resume: Libre, aujourdhui: string, h: HistoriqueSu
       constat: `Tu n'as pas fait ${dates.length} séances prévues (${liste(dates)}).`,
       action: "Demande-lui simplement ce qui s'est passé (fatigue, manque de temps, douleur, motivation), sans reproche. Selon sa réponse, propose de refaire le plan : moins de séances par semaine ou plus légères (preparer_course avec seances_par_semaine réduit), ou un congé (proposer_replanification). S'il parle de douleur, applique le garde-fou santé.",
     });
+  }
+
+  // 2 bis. L'allure courue s'écarte de celle du plan (footings et sorties longues faits depuis le dernier plan)
+  const mesurees = passees.filter((p) => p.ratio !== null && p.date > depuis);
+  if (mesurees.length >= 2) {
+    const moy = (xs: number[]) => xs.reduce((t, x) => t + x, 0) / xs.length;
+    const ratio = moy(mesurees.map((p) => p.ratio as number));
+    const reel = moy(mesurees.map((p) => p.reel as number));
+    const cible = moy(mesurees.map((p) => p.cible as number));
+    const rpes = mesurees.map((p) => p.rpe).filter((x): x is number => x !== null);
+    const effort = rpes.length ? ` Tu notes l'effort à ${Math.round(moy(rpes) * 10) / 10}/10 en moyenne.` : '';
+    const pct = Math.round(Math.abs(1 - ratio) * 100);
+    if (ratio <= ECART_RAPIDE) {
+      alertes.push({
+        code: 'allure_trop_rapide',
+        constat: `Sur tes ${mesurees.length} dernières sorties à allure facile ou longue, tu cours en moyenne ${allure(reel)}/km au lieu de ${allure(cible)}/km prévu (${pct} % plus vite).${effort}`,
+        action: "Demande-lui comment c'était (ressenti sur 10, essoufflement, peut-il parler ?). Si c'était vraiment facile, son niveau est au-dessus de l'estimation : propose de recalibrer le plan (demande un effort récent ou un chrono, puis preparer_course avec chrono_km et chrono_temps, ou avec des allures plus rapides). Si c'était dur, explique que le footing doit rester facile, avec la raison, et ne change pas le plan.",
+      });
+    } else if (ratio >= ECART_LENT) {
+      alertes.push({
+        code: 'allure_trop_lente',
+        constat: `Sur tes ${mesurees.length} dernières sorties à allure facile ou longue, tu cours en moyenne ${allure(reel)}/km au lieu de ${allure(cible)}/km prévu (${pct} % plus lentement).${effort}`,
+        action: "Demande si c'est la fatigue, la chaleur, le relief, une douleur ou un simple choix, sans reproche. Si ça dure sans raison, le plan est trop ambitieux : propose de le recalibrer plus doux (preparer_course avec des allures facile et longue plus lentes, ou une sortie test pour mesurer le niveau). S'il parle de douleur, applique le garde-fou santé.",
+      });
+    }
   }
 
   // 3. Une maladie ou une blessure déclarée tombe sur des séances prévues par le coach

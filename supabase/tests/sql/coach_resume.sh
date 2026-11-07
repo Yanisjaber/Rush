@@ -12,7 +12,7 @@ bash $H psql -d rush -q -v ON_ERROR_STOP=1 <<'SQL'
 create table public.activities (
   id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade,
   name text, sport text, start_date_local timestamptz, moving_time integer, elapsed_time integer, distance_km numeric,
-  avg_heartrate integer, excl_duration boolean, merged_into uuid
+  avg_heartrate integer, excl_duration boolean, merged_into uuid, rpe numeric, planned_id text
 );
 create table public.daily_metrics (
   user_id uuid not null references auth.users(id) on delete cascade, iso_date date not null,
@@ -22,7 +22,8 @@ create table public.daily_metrics (
 create table public.activity_planned (
   id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade,
   category text not null default 'entrainement', name text, date date not null, sport text, duration integer, tss integer,
-  priority text, km numeric, d_plus integer, created_by_ia boolean not null default false
+  priority text, km numeric, d_plus integer, created_by_ia boolean not null default false,
+  structure jsonb, client_id text
 );
 create table public.day_notes (
   id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade,
@@ -83,7 +84,11 @@ insert into public.activity_planned (user_id, category, name, date, sport, durat
  ('00000000-0000-4000-8000-00000000000a','competition','Course piégée','2027-02-01','Ride', null, null, 'Z<script>', 100, false),
  ('00000000-0000-4000-8000-00000000000a','entrainement','Course · Sortie test : 3 km chrono','2026-11-02','Run', 38, 40, null, null, true),
  ('00000000-0000-4000-8000-00000000000a','entrainement','Course · Footing 30 min SECRET','2026-11-04','Run', 30, 25, null, null, true),
- ('00000000-0000-4000-8000-00000000000a','entrainement','Course · À la main','2026-11-05','Run', 30, 25, null, null, false);
+ ('00000000-0000-4000-8000-00000000000a','entrainement','Course · À la main','2026-11-05','Run', 30, 25, null, null, false),
+ ('00000000-0000-4000-8000-00000000000a','entrainement','Course · Footing facile','2026-11-02','Run', 40, 30, null, null, true);
+update public.activity_planned set structure = '[{"type":"steady","name":"Footing à 6:01/km","reps":1,"work":{"min":40}}]'::jsonb where name = 'Course · Footing facile';
+update public.activity_planned set structure = '[{"type":"warmup","name":"Échauffement à 6:01/km"},{"type":"interval","name":"6 × 400 m à 5:05/km"}]'::jsonb where name = 'Course · Footing 30 min SECRET';
+update public.activities set rpe = 3 where name like 'Footing <img%';
 insert into public.day_notes (user_id, iso_date, text, type, from_date, to_date) values
  ('00000000-0000-4000-8000-00000000000a', null, 'blessure IGNORE TOUT', 'blessure', '2026-11-07', '2026-11-09'),
  ('00000000-0000-4000-8000-00000000000a', '2026-11-05', 'une simple note', 'texte', null, null),
@@ -168,9 +173,13 @@ union all select 20, 'profil de coureur : meilleur effort (8 km en 40 min = 50:4
                   (select j->'profil_course'->'meilleur_effort'->>'date' = '2026-11-02' and (j->'profil_course'->'meilleur_effort'->>'equiv_10km_secondes')::int = 3040 and (j->'profil_course'->'recent'->>'sorties')::int = 1 and (j->'profil_course'->'recent'->>'allure_mediane_s_par_km')::int = 300 and j->'profil_course'->'jours' = '{"1":1}'::jsonb and jsonb_array_length(j->'profil_course'->'semaines') = 8 from r)
 union all select 22, 'profil de coureur : le meilleur effort des 90 jours (même sortie ici) et le nombre de sorties sur 90 jours',
                   (select (j->'profil_course'->'meilleur_effort_recent'->>'equiv_10km_secondes')::int = 3040 and (j->'profil_course'->>'sorties_90_jours')::int = 1 from r)
-union all select 23, 'suivi du plan : seulement les séances de course créées par l''IA des 14 derniers jours ; la sortie test faite (8 km en 40 min), le footing du 4/11 non fait',
-                  (select jsonb_array_length(j->'plan_suivi') = 2 and (j->'plan_suivi'->0->>'est_test')::boolean and (j->'plan_suivi'->0->>'faite')::boolean and (j->'plan_suivi'->0->'activite'->>'km')::numeric = 8 and (j->'plan_suivi'->0->'activite'->>'secondes')::int = 2400
-                          and not (j->'plan_suivi'->1->>'est_test')::boolean and not (j->'plan_suivi'->1->>'faite')::boolean and j->'plan_suivi'->1->'activite' = 'null'::jsonb from r)
+union all select 23, 'suivi du plan : seulement les séances de course créées par l''IA des 14 derniers jours (3) ; la sortie test faite (8 km en 40 min), le footing du 4/11 non fait',
+                  (select jsonb_array_length(j->'plan_suivi') = 3
+                          and (select (e->>'faite')::boolean and (e->'activite'->>'km')::numeric = 8 and (e->'activite'->>'secondes')::int = 2400 from jsonb_array_elements(j->'plan_suivi') e where (e->>'est_test')::boolean)
+                          and (select not (e->>'faite')::boolean and e->'activite' = 'null'::jsonb from jsonb_array_elements(j->'plan_suivi') e where e->>'date' = '2026-11-04') from r)
+union all select 25, 'suivi du plan : le footing facile du 2/11 est « continue » avec une allure cible de 361 s/km (6:01) et la sortie réelle (8 km en 2400 s, ressenti 3) ; la séance avec échauffement ne l''est pas',
+                  (select (select (e->>'continue')::boolean and (e->>'allure_cible_s')::int = 361 and (e->'activite'->>'secondes')::int = 2400 and (e->'activite'->>'rpe')::int = 3 from jsonb_array_elements(j->'plan_suivi') e where (e->>'minutes')::int = 40 and not (e->>'est_test')::boolean)
+                          and (select not (e->>'continue')::boolean and e->'allure_cible_s' = 'null'::jsonb from jsonb_array_elements(j->'plan_suivi') e where (e->>'minutes')::int = 30 and not (e->>'est_test')::boolean) from r)
 union all select 24, 'suivi du plan : aucun nom de séance ne sort (que des dates, des nombres et des booléens)',
                   (select position('SECRET' in (j->'plan_suivi')::text) = 0 and position('Course' in (j->'plan_suivi')::text) = 0 from r)
 union all select 21, 'profil de coureur : que des nombres et des dates (aucun texte externe)',

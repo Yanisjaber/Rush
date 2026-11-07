@@ -1267,3 +1267,18 @@ test('suivi du plan : la sortie test faite ne dit PAS le chrono (rien lu dans l\
   assert.match(envoye, /temps de ses 3 km/);
   assert.doesNotMatch(envoye, /2400/);
 });
+
+test('suivi du plan : l\'allure courue plus vite que prévu est glissée dans le contexte, et le chrono réel de l\'activité n\'est pas exposé', async () => {
+  const w = monde([rep('Je regarde.')], (s) => {
+    avecCourse(s);
+    s.resume.plan_suivi = [
+      { date: '2026-11-02', minutes: 40, est_test: false, faite: true, continue: true, allure_cible_s: 361, activite: { km: 6, secondes: 1800, rpe: 3 } },
+      { date: '2026-11-04', minutes: 40, est_test: false, faite: true, continue: true, allure_cible_s: 361, activite: { km: 6, secondes: 1830, rpe: 3 } },
+    ];
+  });
+  await traiterMessage(U, 'Salut', w.deps, w.emettre);
+  const envoye = JSON.stringify(w.modele.appels[0].messages);
+  assert.match(envoye, /plus vite/);
+  assert.match(envoye, /Tu notes l'effort à 3\/10/);
+  assert.doesNotMatch(envoye, /1800|1830/);
+});
