@@ -121,7 +121,6 @@ export interface LignePrevue {
   gpx_name?: string | null;
   gpx_content?: string | null;
   /** Compétition seulement : le temps cible (en minutes, écrit en texte comme sur le site), le nombre de tours, la fédération, le niveau et le format de triathlon. */
-  target?: string | null;
   laps?: number | null;
   federation?: string | null;
   race_level?: string | null;
@@ -243,11 +242,11 @@ export function validerCompetition(f: FormulaireCompetition, date: string, parco
       type: epreuve || null,
       km: km == null ? null : Math.round(km * 1000) / 1000,
       d_plus: dplus,
-      duration: null,
+      // Le temps cible d'une compétition vit dans `duration` (minutes) : la colonne `target` n'existe plus en base depuis juin
+      duration: cible.minutes == null ? null : Math.round(cible.minutes),
       tss: tss == null ? null : Math.round(tss),
       rpe: f.rpe,
       notes: notes || null,
-      target: cible.minutes == null ? null : String(cible.minutes),
       laps: tours,
       federation: federation || null,
       race_level: niveau || null,
@@ -271,13 +270,16 @@ const distanceEcrite = (km: number | null | undefined, type: string): string =>
 
 const textOuVide = (v: unknown): string => (v == null ? '' : String(v));
 
+/** Le temps cible (minutes, en texte) d'une compétition : il est stocké dans `duration`. Une séance n'en a pas. */
+export const tempsCibleDepuisDuree = (categorie: string | undefined, duree: number | null | undefined): string | null => (categorie === 'competition' && duree != null && duree > 0 ? String(duree) : null);
+
 /** Une ligne qu'on vient d'écrire, vue comme la base la rend quand on la relit (les colonnes absentes de la ligne valent null). Sert à la démo, qui n'a pas de base. */
 export const prevueDepuisLigne = (id: string, l: LignePrevue): PrevueComplete => ({
   id, name: l.name, date: l.date, sport: l.sport, duration: l.duration, tss: l.tss, category: l.category, km: l.km, d_plus: l.d_plus,
   start_date_local: l.start_date_local, rpe: l.rpe, notes: l.notes, structure: l.structure ?? null,
   est_watts: l.est_watts ?? null, est_bpm: l.est_bpm ?? null, est_kj: l.est_kj ?? null, est_if: l.est_if ?? null,
   gpx_name: l.gpx_name ?? null, gpx_content: l.gpx_content ?? null,
-  priority: l.priority ?? null, type: l.type ?? null, target: l.target ?? null, laps: l.laps ?? null,
+  priority: l.priority ?? null, type: l.type ?? null, target: tempsCibleDepuisDuree(l.category, l.duration), laps: l.laps ?? null,
   federation: l.federation ?? null, race_level: l.race_level ?? null, tri_format: l.tri_format ?? null,
 });
 

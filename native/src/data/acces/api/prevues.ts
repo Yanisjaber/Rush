@@ -2,7 +2,7 @@ import { avertissementLimite } from '../../calendrier/calendrier';
 import { dateIsoLocale } from '../../outils/format';
 import { sb } from '../supabase';
 import type { Objectif, Prevue, PrevueComplete } from '../../types';
-import type { LignePrevue } from '../../calendrier/ajouts';
+import { tempsCibleDepuisDuree, type LignePrevue } from '../../calendrier/ajouts';
 import type { Modele } from '../../calendrier/modeles';
 import { COLONNES_PLANIFIEE, resultat, UUID, type Resultat } from './commun';
 
@@ -59,7 +59,7 @@ export async function creerPrevue(userId: string, ligne: LignePrevue): Promise<R
   return resultat(r, ligne.category === 'competition' ? "Impossible d'enregistrer cette compétition." : "Impossible d'enregistrer cette séance.");
 }
 
-const COLONNES_PREVUE_COMPLETE = `${COLONNES_PLANIFIEE},est_watts,est_bpm,est_kj,est_if,gpx_content,priority,type,target,laps,federation,race_level,tri_format`;
+const COLONNES_PREVUE_COMPLETE = `${COLONNES_PLANIFIEE},est_watts,est_bpm,est_kj,est_if,gpx_content,priority,type,laps,federation,race_level,tri_format`;
 
 /** Une séance prévue ou une compétition de l'utilisateur avec toutes ses colonnes. Un identifiant qui n'est pas un UUID n'existe pas (pas de requête). */
 export async function chargerPrevue(userId: string, id: string): Promise<Resultat<PrevueComplete | null>> {
@@ -67,6 +67,8 @@ export async function chargerPrevue(userId: string, id: string): Promise<Resulta
   const r = await sb.from('activity_planned').select(COLONNES_PREVUE_COMPLETE).eq('user_id', userId).eq('id', id).maybeSingle();
   const res = resultat<PrevueComplete | null>(r, 'Impossible de charger cette séance.');
   if (!res.erreur && !res.data) return { data: null, erreur: 'Séance introuvable.' };
+  // La colonne `target` n'existe plus : le temps cible d'une compétition est dans `duration`
+  if (res.data) res.data = { ...res.data, target: tempsCibleDepuisDuree(res.data.category, res.data.duration) };
   return res;
 }
 

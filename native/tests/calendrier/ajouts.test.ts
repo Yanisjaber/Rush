@@ -257,7 +257,7 @@ test('validerCompetition : tous les champs de l\'ancien site, bornés', () => {
   assert.ok(r.ok);
   if (r.ok) {
     assert.equal(r.ligne.start_date_local, '2027-04-18T09:30:00');
-    assert.equal(r.ligne.target, '225'); // minutes, comme sur l'ancien site
+    assert.equal(r.ligne.duration, 225); // le temps cible est stocké dans `duration` (minutes) : la colonne `target` n'existe plus
     assert.equal(r.ligne.d_plus, 120);
     assert.equal(r.ligne.laps, 1);
     assert.equal(r.ligne.federation, 'FFA');
@@ -271,7 +271,7 @@ test('validerCompetition : tous les champs de l\'ancien site, bornés', () => {
   const vide = validerCompetition({ ...formulaireCompetitionVide(), nom: 'x' }, date);
   assert.ok(vide.ok);
   if (vide.ok) {
-    assert.equal(vide.ligne.target, null);
+    assert.equal(vide.ligne.duration, null);
     assert.equal(vide.ligne.federation, null);
     assert.equal('gpx_name' in vide.ligne, false); // sans parcours, aucune colonne GPX n'est écrite
   }
@@ -430,4 +430,12 @@ test('validerNote : une ancienne note de plus de 90 jours reste modifiable tant 
   assert.equal(validerNote(longue).ok, false); // en création : trop longue
   assert.equal(validerNote(longue, { de: '2026-01-01', a: '2026-06-30' }).ok, true); // en modification, période inchangée
   assert.equal(validerNote({ ...longue, a: '2026-07-15' }, { de: '2026-01-01', a: '2026-06-30' }).ok, false); // période changée : la règle revient
+});
+
+test('temps cible d\'une compétition : lu dans la durée (minutes), jamais pour une séance', async () => {
+  const { tempsCibleDepuisDuree } = await import('../../src/data/calendrier/ajouts.ts');
+  assert.equal(tempsCibleDepuisDuree('competition', 40), '40');
+  assert.equal(tempsCibleDepuisDuree('competition', null), null);
+  assert.equal(tempsCibleDepuisDuree('competition', 0), null);
+  assert.equal(tempsCibleDepuisDuree('entrainement', 60), null);
 });
