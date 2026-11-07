@@ -17,7 +17,8 @@
 //     qui revalide tout au moment du tap ;
 //   - une erreur n'écrit rien dans le calendrier et ne montre aucun détail technique.
 // ============================================================
-import { MAX_PAR_NIVEAU, outilsExposes, trouverAction } from './coach-actions.ts';
+import { FONCTIONS_HISTORIQUE, MAX_PAR_NIVEAU, outilsExposes, trouverAction } from './coach-actions.ts';
+import type { FonctionHistorique } from './coach-actions.ts';
 import { coutMicroUsd } from './coach-couts.ts';
 import { avecMessageUtilisateur, blocContexte, contexteDepuisResume, historiquePourModele, texteAncienPourResume } from './coach-contexte.ts';
 import type { CarteSeance, EtatCarte, MessageStocke } from './coach-contexte.ts';
@@ -80,6 +81,8 @@ export interface StockageCoach {
   compter(userId: string, jour: string, usage: Usage, microUsd: number): Promise<void>;
   /** rpc_coach_resume, lu avec les droits de l'utilisateur */
   lireResume(userId: string, jour: string, categories: string[]): Promise<unknown>;
+  /** Historique long : une des fonctions SQL de lecture (rpc_coach_semaines, rpc_coach_seances), avec les droits de l'utilisateur */
+  lireHistorique(userId: string, fonction: FonctionHistorique, args: Record<string, unknown>): Promise<unknown>;
   lireSignauxSante(userId: string, jour: string): Promise<SignauxSante>;
   lireMemoire(userId: string): Promise<{ resume: string; jusqua: string } | null>;
   /** Messages après `jusqua` (tous si null), du plus ancien au plus récent, 200 au plus (les plus récents) */
@@ -172,7 +175,19 @@ const MAX_CARTES = 3;
 /** Un tour = un appel au modèle. Il faut de la place pour lire (1 tour), proposer (1 tour) et conclure. */
 const TOURS_MAX = 4;
 
-function traiterOutil(appel: AppelOutil, ctx: ContexteValidation, resume: Libre, nbLectures: { n: number }, cartes: CarteSeance[], directes: { nom: string; params: Record<string, unknown> }[], uuid: () => string): { contenu: string; erreur: boolean } {
+interface EtatOutils {
+  ctx: ContexteValidation;
+  resume: Libre;
+  jour: string;
+  nbLectures: { n: number };
+  cartes: CarteSeance[];
+  directes: { nom: string; params: Record<string, unknown> }[];
+  uuid: () => string;
+  lireHistorique: (fonction: FonctionHistorique, args: Record<string, unknown>) => Promise<unknown>;
+}
+
+async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu: string; erreur: boolean }> {
+  const { ctx, resume, nbLectures, cartes, directes, uuid } = e;
   const def = trouverAction(appel.name);
   // Un outil absent du registre, ou pas encore branché, n'existe pas pour le modèle (même s'il l'invente)
   if (!def || !def.disponible) return { contenu: "Cet outil n'existe pas.", erreur: true };
@@ -180,8 +195,19 @@ function traiterOutil(appel: AppelOutil, ctx: ContexteValidation, resume: Libre,
   if (def.niveau === 'lecture') {
     if (nbLectures.n >= MAX_PAR_NIVEAU.lecture) return { contenu: `${MAX_PAR_NIVEAU.lecture} lectures au maximum par message : réponds avec ce que tu as.`, erreur: true };
     const lu = def.lire ? def.lire(appel.input) : { ok: false as const, erreur: 'Lecture non lisible.' };
-    if (!lu.ok || !def.repondre) return { contenu: `Paramètres invalides : ${lu.ok ? 'lecture non branchée' : lu.erreur}`, erreur: true };
+    if (!lu.ok) return { contenu: `Paramètres invalides : ${lu.erreur}`, erreur: true };
     nbLectures.n++;
+    if (def.requete) {
+      // Historique long : la fonction vient du registre (liste fermée), jamais du modèle
+      if (!FONCTIONS_HISTORIQUE.includes(def.requete.fonction)) return { contenu: "Cet outil n'existe pas.", erreur: true };
+      try {
+        return { contenu: JSON.stringify(await e.lireHistorique(def.requete.fonction, def.requete.args(lu.params, e.jour))), erreur: false };
+      } catch {
+        console.error('coach-chat: lecture de l\'historique échouée');
+        return { contenu: "Je n'arrive pas à lire l'historique pour le moment. Réponds avec ce que tu as déjà.", erreur: true };
+      }
+    }
+    if (!def.repondre) return { contenu: 'Lecture non branchée.', erreur: true };
     return { contenu: JSON.stringify(def.repondre(lu.params, resume)), erreur: false };
   }
 
@@ -291,12 +317,15 @@ export async function traiterMessage(userId: string, texteBrut: unknown, deps: D
     // Pas d'outil, ou une réponse coupée (jamais d'outil lancé sur une entrée tronquée) : fini
     if (!reponse.outils.length || reponse.arret === 'longueur') break;
 
-    const resultats = reponse.outils.map((o) => {
+    const etat: EtatOutils = { ctx, resume, jour, nbLectures, cartes, directes, uuid: deps.uuid, lireHistorique: (f, a) => s.lireHistorique(userId, f, a) };
+    const resultats: { type: string; tool_use_id: string; content: string; is_error?: boolean }[] = [];
+    // Un par un, dans l'ordre : les cartes d'un même tour se comptent ensemble
+    for (const o of reponse.outils) {
       const avant = directes.length;
-      const r = traiterOutil(o, ctx, resume, nbLectures, cartes, directes, deps.uuid);
+      const r = await traiterOutil(o, etat);
       for (const d of directes.slice(avant)) emettre({ type: 'action', nom: d.nom, params: d.params });
-      return { type: 'tool_result', tool_use_id: o.id, content: r.contenu, ...(r.erreur ? { is_error: true } : {}) };
-    });
+      resultats.push({ type: 'tool_result', tool_use_id: o.id, content: r.contenu, ...(r.erreur ? { is_error: true } : {}) });
+    }
     messages = [...messages, { role: 'assistant', content: reponse.brut }, { role: 'user', content: resultats }];
   }
 

@@ -44,6 +44,14 @@ function resumeBase(): Libre {
 }
 
 class FauxStockage implements StockageCoach {
+  historiqueAppels: { fonction: string; args: Record<string, unknown> }[] = [];
+  historiqueReponse: unknown = [];
+  historiqueErreur = false;
+  async lireHistorique(_u: string, fonction: string, args: Record<string, unknown>) {
+    this.historiqueAppels.push({ fonction, args });
+    if (this.historiqueErreur) throw new Error('boum (ne doit jamais sortir)');
+    return this.historiqueReponse;
+  }
   acces = true;
   reglages: { accord: boolean; categories: string[]; seuils: unknown } | null = { accord: true, categories: [], seuils: {} };
   resume: Libre = resumeBase();
@@ -284,6 +292,52 @@ test('sécurité : aucune lecture ne renvoie de texte libre (noms de séances, n
   await traiterMessage(U, 'x', w.deps, w.emettre);
   const cles = new Set(JSON.parse(((w.modele.appels[1].messages.at(-1)?.content as Libre[])[0]).content).flatMap((x: Libre) => Object.keys(x)));
   assert.deepEqual([...cles].sort(), ['date', 'fc_moyenne', 'km', 'minutes', 'sport']);
+});
+
+test('historique long : lire_semaines appelle la fonction SQL du registre avec la date du jour, les bornes et le sport', async () => {
+  const w = monde([rep('', [outil('a', { nb: 12, sport: 'velo' }, 'lire_semaines'), outil('b', { nb: 4 }, 'lire_semaines')]), rep('Tu as monté.')], (s) => { s.historiqueReponse = [{ du: '2026-10-31', au: '2026-11-06', seances: 3 }]; });
+  await traiterMessage(U, 'Compare avec cet été', w.deps, w.emettre);
+  assert.deepEqual(w.stockage.historiqueAppels, [
+    { fonction: 'rpc_coach_semaines', args: { p_date: JOUR, p_nb: 12, p_sport: 'velo' } },
+    { fonction: 'rpc_coach_semaines', args: { p_date: JOUR, p_nb: 4, p_sport: null } },
+  ]);
+  const r = w.modele.appels[1].messages.at(-1)?.content as Libre[];
+  assert.equal(r[0].is_error, undefined);
+  assert.deepEqual(JSON.parse(r[0].content), [{ du: '2026-10-31', au: '2026-11-06', seances: 3 }]);
+  assert.equal(w.stockage.messages[1].cartes, null);
+});
+
+test('historique long : lire_seances_periode — période valide transmise, période de plus de 92 jours ou à l\'envers refusée AVANT la base', async () => {
+  const w = monde([
+    rep('', [
+      outil('a', { du: '2026-09-01', au: '2026-10-01', sport: 'course', nb: 10 }, 'lire_seances_periode'),
+      outil('b', { du: '2026-01-01', au: '2026-11-01' }, 'lire_seances_periode'),
+      outil('c', { du: '2026-10-10', au: '2026-10-01' }, 'lire_seances_periode'),
+      outil('d', { du: '2026-02-30', au: '2026-03-01' }, 'lire_seances_periode'),
+      outil('e', { du: '2026-09-01', au: '2026-10-01', nb: 31 }, 'lire_seances_periode'),
+    ]),
+    rep('Ok.'),
+  ]);
+  await traiterMessage(U, 'x', w.deps, w.emettre);
+  assert.deepEqual(w.stockage.historiqueAppels, [{ fonction: 'rpc_coach_seances', args: { p_du: '2026-09-01', p_au: '2026-10-01', p_sport: 'course', p_limite: 10 } }]);
+  const r = w.modele.appels[1].messages.at(-1)?.content as Libre[];
+  assert.deepEqual(r.map((x) => x.is_error === true), [false, true, true, true, true]);
+});
+
+test('historique long : une panne de la base ne casse pas le chat et ne montre aucun détail technique au modèle', async () => {
+  const w = monde([rep('', [outil('a', { nb: 8 }, 'lire_semaines')]), rep('Je n\'ai pas pu lire plus loin.')], (s) => { s.historiqueErreur = true; });
+  await traiterMessage(U, 'x', w.deps, w.emettre);
+  const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.equal(r.is_error, true);
+  assert.doesNotMatch(r.content, /boum/);
+  assert.equal(w.stockage.messages.length, 2, 'la conversation est quand même enregistrée');
+});
+
+test('historique long : compte dans la limite de quatre lectures par message', async () => {
+  const w = monde([rep('', [1, 2, 3, 4, 5].map((i) => outil(`s${i}`, { nb: 4 }, 'lire_semaines'))), rep('Ok.')]);
+  await traiterMessage(U, 'x', w.deps, w.emettre);
+  assert.equal(w.stockage.historiqueAppels.length, 4);
+  assert.equal(((w.modele.appels[1].messages.at(-1)?.content as Libre[])[4]).is_error, true);
 });
 
 // ---------- Les barrières avant le modèle ----------

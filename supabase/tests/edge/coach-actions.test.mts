@@ -2,7 +2,7 @@
 // Lancer : node --experimental-strip-types --test supabase/tests/edge/coach-actions.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ACTIONS, actionsDisponibles, MAX_PAR_NIVEAU, outilsExposes, trouverAction } from '../../functions/_shared/coach-actions.ts';
+import { ACTIONS, FONCTIONS_HISTORIQUE, actionsDisponibles, MAX_PAR_NIVEAU, outilsExposes, trouverAction } from '../../functions/_shared/coach-actions.ts';
 
 const ID = '00000000-0000-4000-8000-000000000001';
 
@@ -63,4 +63,19 @@ test('actions de niveau carte et confirmation (déclarées, pas encore branchée
   assert.equal(lire('deconnecter_integration', { service: 'whoop' }).ok, false);
   assert.equal(lire('supprimer_compte', {}).ok, true);
   assert.equal(lire('supprimer_compte', { confirme: true }).ok, false, 'le modèle ne peut pas « confirmer » lui-même');
+});
+
+test('lectures de l\'historique : chaque requête SQL est dans la liste fermée, et une lecture a soit une réponse du résumé, soit une requête', () => {
+  for (const a of ACTIONS.filter((x) => x.niveau === 'lecture')) {
+    assert.ok(a.repondre || a.requete, a.nom);
+    assert.ok(!(a.repondre && a.requete), `${a.nom} : une seule source`);
+    if (a.requete) assert.ok(FONCTIONS_HISTORIQUE.includes(a.requete.fonction), a.nom);
+  }
+  assert.deepEqual([...FONCTIONS_HISTORIQUE].sort(), ['rpc_coach_semaines', 'rpc_coach_seances'].sort());
+});
+
+test('lire_seances_periode : 92 jours exactement acceptés, 93 refusés', () => {
+  const lire = (x: unknown) => trouverAction('lire_seances_periode')!.lire!(x);
+  assert.equal(lire({ du: '2026-08-01', au: '2026-11-01' }).ok, true);   // 92 jours
+  assert.equal(lire({ du: '2026-07-31', au: '2026-11-01' }).ok, false);  // 93 jours
 });

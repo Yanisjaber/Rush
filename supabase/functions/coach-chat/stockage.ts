@@ -12,6 +12,7 @@
 // ============================================================
 // deno-lint-ignore-file no-explicit-any
 import type { CarteSeance, EtatCarte, MessageStocke } from '../_shared/coach-contexte.ts';
+import { FONCTIONS_HISTORIQUE } from '../_shared/coach-actions.ts';
 import { ErreurCoach } from '../_shared/coach-chat.ts';
 import type { LigneSeancePrevue, SignauxSante, StockageCoach } from '../_shared/coach-chat.ts';
 import { ajouterJours } from '../_shared/dates-iso.ts';
@@ -65,6 +66,14 @@ export function creerStockage(sbUser: any, sbAdmin: any): StockageCoach {
       // rpc_coach_resume ne lit que auth.uid() (le JWT) : userId n'est pas un paramètre
       const { data, error } = await sbUser.rpc('rpc_coach_resume', { p_date: jour, p_sante: categories });
       if (error) echec('lecture du résumé', error);
+      return data;
+    },
+
+    async lireHistorique(_userId, fonction, args) {
+      // Mêmes droits que le résumé (jeton de l'utilisateur, RLS) ; la fonction ne lit que auth.uid()
+      if (!FONCTIONS_HISTORIQUE.includes(fonction)) throw new Error('fonction non autorisée');
+      const { data, error } = await sbUser.rpc(fonction, args);
+      if (error) echec("lecture de l'historique", error);
       return data;
     },
 

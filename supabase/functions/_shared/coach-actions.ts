@@ -34,6 +34,16 @@ export interface DefinitionAction {
   lire?: (input: unknown) => LectureAction;
   /** Niveau « lecture » seulement : ce qu'on répond au modèle, à partir du résumé déjà chargé */
   repondre?: (params: Record<string, unknown>, resume: unknown) => unknown;
+  /** Niveau « lecture » seulement : lecture de l'historique long, par une fonction SQL (droits de l'utilisateur, RLS). Liste fermée de fonctions. */
+  requete?: { fonction: FonctionHistorique; args: (params: Record<string, unknown>, jour: string) => Record<string, unknown> };
+}
+
+export type FonctionHistorique = 'rpc_coach_semaines' | 'rpc_coach_seances';
+export const FONCTIONS_HISTORIQUE: readonly FonctionHistorique[] = ['rpc_coach_semaines', 'rpc_coach_seances'];
+
+/** Nombre de jours entre deux dates AAAA-MM-JJ valides */
+function joursEntre(du: string, au: string): number {
+  return Math.round((Date.parse(`${au}T00:00:00Z`) - Date.parse(`${du}T00:00:00Z`)) / 86_400_000);
 }
 
 /** Combien d'actions de chaque niveau dans un même message de réponse */
@@ -127,6 +137,72 @@ export const ACTIONS: DefinitionAction[] = [
       liste((resume as Objet)?.dernieres_seances)
         .filter((s) => p.sport === undefined || s?.sport === p.sport)
         .slice(0, p.nb as number),
+  },
+  {
+    nom: 'lire_semaines',
+    niveau: 'lecture',
+    disponible: true,
+    description:
+      "Lit le bilan semaine par semaine sur une longue période, jusqu'à 52 semaines (du plus ancien au plus récent) : séances, minutes, km, et pour tous les sports ensemble la charge, les jours actifs et la forme de fond en fin de semaine. " +
+      "À utiliser pour comparer des périodes (ce mois-ci contre il y a trois mois), voir une tendance ou une saison. Les semaines sont des blocs de 7 jours qui finissent aujourd'hui.",
+    schema: {
+      type: 'object',
+      properties: {
+        nb: { type: 'integer', minimum: 1, maximum: 52, description: 'Nombre de semaines en arrière.' },
+        sport: { type: 'string', enum: ['velo', 'course', 'natation', 'muscu'], description: 'Facultatif : un seul sport (sans charge ni forme de fond).' },
+      },
+      required: ['nb'],
+      additionalProperties: false,
+    },
+    lire: (input) => {
+      const o = objet(input, ['nb', 'sport']);
+      const nb = entier(o?.nb, 1, 52);
+      if (!o || !nb) return refus('nb doit être un entier entre 1 et 52.');
+      if (o.sport === undefined) return { ok: true, params: { nb } };
+      const sport = parmi(o.sport, ['velo', 'course', 'natation', 'muscu'] as const);
+      return sport ? { ok: true, params: { nb, sport } } : refus('Sport inconnu. Choix possibles : velo, course, natation, muscu.');
+    },
+    requete: { fonction: 'rpc_coach_semaines', args: (p, jour) => ({ p_date: jour, p_nb: p.nb, p_sport: p.sport ?? null }) },
+  },
+  {
+    nom: 'lire_seances_periode',
+    niveau: 'lecture',
+    disponible: true,
+    description:
+      "Lit les séances réalisées sur une période de 92 jours au plus (date, sport, minutes, km, fréquence cardiaque moyenne), les plus récentes d'abord, 30 au plus. Sans le nom des séances. " +
+      "À utiliser pour une période précise dans le passé (par exemple « la semaine avant ma course »).",
+    schema: {
+      type: 'object',
+      properties: {
+        du: { type: 'string', description: 'Premier jour, AAAA-MM-JJ.' },
+        au: { type: 'string', description: 'Dernier jour, AAAA-MM-JJ (92 jours après le premier au plus).' },
+        sport: { type: 'string', enum: [...SPORTS_LECTURE], description: 'Facultatif : un seul sport.' },
+        nb: { type: 'integer', minimum: 1, maximum: 30, description: 'Nombre de séances au plus (20 par défaut).' },
+      },
+      required: ['du', 'au'],
+      additionalProperties: false,
+    },
+    lire: (input) => {
+      const o = objet(input, ['du', 'au', 'sport', 'nb']);
+      const du = dateIso(o?.du);
+      const au = dateIso(o?.au);
+      if (!o || !du || !au) return refus('du et au doivent être des dates AAAA-MM-JJ qui existent.');
+      if (au < du) return refus('La date de fin doit être le même jour que le début, ou après.');
+      if (joursEntre(du, au) > 92) return refus('92 jours au plus entre du et au : découpe en plusieurs lectures.');
+      const params: Record<string, unknown> = { du, au };
+      if (o.sport !== undefined) {
+        const sport = parmi(o.sport, SPORTS_LECTURE);
+        if (!sport) return refus(`Sport inconnu. Choix possibles : ${SPORTS_LECTURE.join(', ')}.`);
+        params.sport = sport;
+      }
+      if (o.nb !== undefined) {
+        const nb = entier(o.nb, 1, 30);
+        if (!nb) return refus('nb doit être un entier entre 1 et 30.');
+        params.nb = nb;
+      }
+      return { ok: true, params };
+    },
+    requete: { fonction: 'rpc_coach_seances', args: (p) => ({ p_du: p.du, p_au: p.au, p_sport: p.sport ?? null, p_limite: p.nb ?? 20 }) },
   },
   {
     nom: 'lire_volume',

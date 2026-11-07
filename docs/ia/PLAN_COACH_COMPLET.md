@@ -20,7 +20,8 @@ Aujourd'hui le résumé complet est renvoyé à chaque tour (voir `_shared/coach
 2. **Outils de lecture** pour le détail (sorties, volumes, ressenti, calendrier), regroupés par domaine et chargés à la demande.
 3. **Contexte en couches** : socle stable en tête (prompt, profil, mémoire) pour le cache de prompt, données du jour après.
 4. **Base de connaissances en recherche**, jamais collée en entier dans le contexte.
-5. Plus tard : mémoire en faits typés, fenêtre variable selon le sujet.
+5. **Fait (7 nov.)** : résumé léger + outils de lecture (jours, séances récentes, volume, santé, cycles) lus dans le résumé déjà chargé ; historique long par deux fonctions SQL appliquées en base (`rpc_coach_semaines` jusqu'à 52 semaines, `rpc_coach_seances` 92 jours et 30 séances au plus, test `bash supabase/tests/sql/coach_historique.sh`), outils `lire_semaines` et `lire_seances_periode`.
+6. Plus tard : mémoire en faits typés, fenêtre variable selon le sujet.
 
 ## Ordre de construction
 
