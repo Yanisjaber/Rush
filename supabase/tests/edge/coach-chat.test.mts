@@ -1081,3 +1081,44 @@ test('planifier_periode : valider la carte écrit toute la période en une fois,
   const liste = (Array.isArray(ops) ? ops : []) as Libre[];
   assert.ok(liste.length >= 30 && liste.every((o) => o.op === 'ajouter' && Array.isArray(o.structure) && o.structure.length >= 1));
 });
+
+// ---------- Préparer une course à pied ----------
+const PROFIL_YANIS = {
+  meilleur_effort: { date: '2024-12-15', km: 5, secondes: 1308, equiv_10km_secondes: 2730 },
+  recent: { sorties: 5, km: 27, minutes: 160, plus_longue_minutes: 41, allure_mediane_s_par_km: 350 },
+  semaines: [{ km: 0, minutes: 0, sorties: 0 }, { km: 0, minutes: 0, sorties: 0 }, { km: 0, minutes: 0, sorties: 0 }, { km: 0, minutes: 0, sorties: 0 }, { km: 0, minutes: 0, sorties: 0 }, { km: 10.8, minutes: 71, sorties: 2 }, { km: 12.2, minutes: 75, sorties: 2 }, { km: 6, minutes: 35, sorties: 1 }],
+  jours: { '1': 3, '4': 2 },
+};
+const avecCourse = (s: FauxStockage) => {
+  s.resume.competitions = [{ date: '2026-12-13', sport: 'course', priorite: 'A', km: 10.15, d_plus: null, temps_cible_min: 40 }];
+  s.resume.profil_course = PROFIL_YANIS;
+};
+test('preparer_course : sans rien demander, la course, le temps visé et le profil viennent du calendrier et de l\'historique ; le bilan du code est donné au modèle', async () => {
+  const w = await planPropose([outil('c', { motif: 'Préparation 10 km' }, 'preparer_course')], avecCourse);
+  const carte = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
+  assert.equal(carte.genre, 'planning');
+  assert.ok(carte.operations.length >= 12);
+  assert.ok(carte.operations.every((o: Libre) => o.op === 'ajouter' && o.detail?.nom && o.proposition.date < '2026-12-13'));
+  assert.ok(carte.lignes.some((l: Libre) => /\d × \d+ m à \d:\d\d\/km/.test(l.texte)));
+  const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.equal(r.is_error, undefined);
+  assert.match(r.content, /Bilan établi par le code/);
+  assert.match(r.content, /très ambitieux/);
+  assert.deepEqual(w.stockage.planAppliques, []);
+});
+test('preparer_course : valider la carte écrit chaque séance avec SON nom et SES blocs précis (pas la structure générique)', async () => {
+  const w = await planPropose([outil('c', { motif: 'Préparation 10 km' }, 'preparer_course')], avecCourse);
+  const carte = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
+  await ajouterCarte(U, carte.id, w.deps);
+  const ops = ((w.stockage.planAppliques[0] as Libre).ops ?? w.stockage.planAppliques[0]) as Libre[];
+  assert.ok(ops.some((o) => /\d × \d+ m à \d:\d\d\/km/.test(o.name)));
+  assert.ok(ops.every((o) => Array.isArray(o.structure) && o.structure.length >= 1 && o.structure.every((b: Libre) => b.metric === 'pace')));
+  assert.ok(ops.some((o) => o.structure.some((b: Libre) => b.type === 'interval' && /\d:\d\d\/km/.test(b.name))));
+});
+test('preparer_course : aucune course à venir et pas de date = pas de carte, le modèle doit demander la date', async () => {
+  const w = monde([rep('', [outil('c', { motif: 'Préparation course' }, 'preparer_course')]), rep('Quelle date ?')], (s) => { s.resume.profil_course = PROFIL_YANIS; });
+  await traiterMessage(U, 'Prépare ma course', w.deps, w.emettre);
+  assert.equal(w.evts.filter((e) => e.type === 'carte').length, 0);
+  const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.match(r.content, /aucune course à pied/);
+});

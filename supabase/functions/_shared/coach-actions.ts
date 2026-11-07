@@ -21,6 +21,7 @@ import { SEANCES_PAR_SPORT_MAX } from './semaine.ts';
 import type { DemandeSemaine } from './semaine.ts';
 import { FAMILLES_COACH } from './menu-seances.ts';
 import { SEMAINES_MAX } from './periode.ts';
+import type { DemandeCourse } from './plan-course.ts';
 import type { DemandePeriode } from './periode.ts';
 import type { OutilModele } from './modele.ts';
 import { OUTIL_PROPOSER_SEANCE, NOM_OUTIL_SEANCE } from './coach-prompt.ts';
@@ -592,6 +593,51 @@ export const ACTIONS: DefinitionAction[] = [
       if (!o || !motif) return refus('motif : une phrase de 3 à 200 caractères.');
       const d = lireDemandePeriode(o);
       return d.ok ? { ok: true, params: { intention: motif, demande: d.demande } } : refus(d.erreur);
+    },
+  },
+  {
+    nom: 'preparer_course',
+    niveau: 'carte',
+    disponible: true,
+    description:
+      "Construit un VRAI plan d'entraînement de course à pied vers une course visée : « prépare-moi mon 10 km », « je veux courir en 45 minutes le 13 décembre ». " +
+      "C'est l'outil à utiliser dès qu'il y a une course à préparer en course à pied. Tu ne demandes RIEN que l'application sait déjà : sans date, la course visée est la prochaine course à pied du calendrier (distance et temps visé compris) ; " +
+      "le niveau, les allures, le volume et les jours habituels sont lus dans l'historique. Tu ne donnes que ce que dit l'utilisateur. " +
+      "Le CODE estime son niveau, dit franchement si l'objectif est réaliste (et cale alors le plan sur le jouable), calcule ses allures, choisit les phases (base, développement, spécifique, affûtage) " +
+      "et écrit chaque séance avec son contenu précis (« 5 × 1000 m à 4:37/km, récup 1:30 ») et son but. Crée UNE carte que l'utilisateur valide ; rien n'est ajouté avant. " +
+      "Après l'outil, tu expliques le plan en reprenant ce que le code dit sur le niveau et l'objectif, sans rien inventer ni arrondir en ta faveur.",
+    schema: {
+      type: 'object',
+      properties: {
+        motif: { type: 'string', description: 'Une phrase (200 caractères au plus) affichée sur la carte. Par exemple : « Préparation 10 km du 13 décembre ».' },
+        date: { type: 'string', description: "Facultatif : le jour de la course, AAAA-MM-JJ. Par défaut, la prochaine course à pied du calendrier." },
+        km: { type: 'number', description: 'Facultatif : la distance de la course en km (par défaut celle du calendrier, sinon 10).' },
+        temps_cible_minutes: { type: 'number', description: 'Facultatif : le temps visé en minutes (par exemple 45). Par défaut celui du calendrier.' },
+        seances_par_semaine: { type: 'integer', minimum: 2, maximum: 6, description: "Facultatif : séances par semaine. Par défaut d'après son rythme actuel (3 à 5)." },
+        debut: { type: 'string', description: 'Facultatif : premier jour du plan, AAAA-MM-JJ. Par défaut demain.' },
+        jours_libres: { type: 'array', items: { type: 'string' }, maxItems: DATES_MAX_JOURS_BLOQUES, description: 'Facultatif : dates sans aucune séance (voyage).' },
+      },
+      required: ['motif'],
+      additionalProperties: false,
+    },
+    lire: (input) => {
+      const o = objet(input, ['motif', 'date', 'km', 'temps_cible_minutes', 'seances_par_semaine', 'debut', 'jours_libres']);
+      const motif = motifPlan(o?.motif);
+      if (!o || !motif) return refus('motif : une phrase de 3 à 200 caractères.');
+      const demande: Partial<DemandeCourse> = {};
+      if (o.date !== undefined) { const d = dateIso(o.date); if (!d) return refus('date : le jour de la course, AAAA-MM-JJ, qui existe.'); demande.date = d; }
+      if (o.debut !== undefined) { const d = dateIso(o.debut); if (!d) return refus('debut : une date AAAA-MM-JJ qui existe.'); demande.debut = d; }
+      if (o.km !== undefined) { if (typeof o.km !== 'number' || !(o.km >= 1 && o.km <= 250)) return refus('km : un nombre entre 1 et 250.'); demande.km = o.km; }
+      if (o.temps_cible_minutes !== undefined) { if (typeof o.temps_cible_minutes !== 'number' || !(o.temps_cible_minutes >= 5 && o.temps_cible_minutes <= 1440)) return refus('temps_cible_minutes : un nombre de minutes entre 5 et 1440.'); demande.tempsCibleMinutes = o.temps_cible_minutes; }
+      if (o.seances_par_semaine !== undefined) { const n = entier(o.seances_par_semaine, 2, 6); if (!n) return refus('seances_par_semaine : un entier de 2 à 6.'); demande.seancesParSemaine = n; }
+      if (o.jours_libres !== undefined) {
+        const l = o.jours_libres;
+        if (!Array.isArray(l) || l.length > DATES_MAX_JOURS_BLOQUES) return refus(`jours_libres : au plus ${DATES_MAX_JOURS_BLOQUES} dates AAAA-MM-JJ.`);
+        const dates = l.map(dateIso);
+        if (dates.some((d) => !d)) return refus('jours_libres : toutes les dates doivent être au format AAAA-MM-JJ et exister.');
+        demande.joursLibres = [...new Set(dates as string[])];
+      }
+      return { ok: true, params: { intention: motif, demande } };
     },
   },
   {

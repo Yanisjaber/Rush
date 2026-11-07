@@ -112,6 +112,8 @@ SQL
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-06_rpc_coach_resume.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-06_rpc_coach_resume.sql   # relançable
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-09_rpc_coach_resume_long.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-10_rpc_coach_resume_profil_course.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-10_rpc_coach_resume_profil_course.sql   # relançable
 bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
 \pset tuples_only on
 set role authenticated;
@@ -157,6 +159,10 @@ union all select 17, 'santé : ressenti + corps + événement + cycle = 5 mesure
                   (select jsonb_array_length(j->'sante') = 5 and position('zzz' in j::text) = 0 from rt)
 union all select 18, 'qualité : assez de données pour le compte A (29 jours d''historique, 8 séances sur 28 jours)',
                   (select (j->'qualite'->>'historique_jours')::int = 29 and (j->'qualite'->>'seances_28_jours')::int = 8 and (j->'qualite'->>'peu_de_donnees')::boolean = false from r)
+union all select 20, 'profil de coureur : meilleur effort (8 km en 40 min = 50:40 sur 10 km, Riegel), 1 sortie récente, allure médiane 300 s/km, lundi',
+                  (select j->'profil_course'->'meilleur_effort'->>'date' = '2026-11-02' and (j->'profil_course'->'meilleur_effort'->>'equiv_10km_secondes')::int = 3040 and (j->'profil_course'->'recent'->>'sorties')::int = 1 and (j->'profil_course'->'recent'->>'allure_mediane_s_par_km')::int = 300 and j->'profil_course'->'jours' = '{"1":1}'::jsonb and jsonb_array_length(j->'profil_course'->'semaines') = 8 from r)
+union all select 21, 'profil de coureur : que des nombres et des dates (aucun texte externe)',
+                  (select position('Footing' in (j->'profil_course')::text) = 0 and position('onerror' in (j->'profil_course')::text) = 0 from r)
 ) t order by n;
 set request.jwt.claim.sub = '00000000-0000-4000-8000-00000000000b';
 with r as (select public.rpc_coach_resume('2026-11-06', array['ressenti','corps','evenement','cycle']) as j)

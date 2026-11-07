@@ -18,6 +18,8 @@
 //   - une erreur n'écrit rien dans le calendrier et ne montre aucun détail technique.
 // ============================================================
 import { planifierPeriode } from './periode.ts';
+import { planifierCourse, profilCourseDepuisResume } from './plan-course.ts';
+import type { DemandeCourse } from './plan-course.ts';
 import type { DemandePeriode } from './periode.ts';
 import { structureSeance } from './structure-seance.ts';
 import { FONCTIONS_HISTORIQUE, MAX_PAR_NIVEAU, outilsExposes, trouverAction } from './coach-actions.ts';
@@ -226,7 +228,7 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
   }
 
   // Replanification : UNE carte de planning par message, jamais mélangée à d'autres cartes
-  if (def.nom === 'proposer_replanification' || def.nom === 'modifier_planning' || def.nom === 'planifier_semaine' || def.nom === 'planifier_periode') {
+  if (def.nom === 'proposer_replanification' || def.nom === 'modifier_planning' || def.nom === 'planifier_semaine' || def.nom === 'planifier_periode' || def.nom === 'preparer_course') {
     if (cartes.length > 0) return { contenu: "Une seule carte de planning à la fois, et pas avec une autre carte : attends que l'utilisateur la valide ou la refuse.", erreur: true };
     const lu = def.lire ? def.lire(appel.input) : { ok: false as const, erreur: 'Outil non lisible.' };
     if (!lu.ok) return { contenu: `Paramètres invalides : ${lu.erreur}`, erreur: true };
@@ -234,6 +236,8 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
     let operations: Operation[];
     let notes: string[] = [];
     let resumePeriode: string[] = [];
+    // Ce que le code dit du niveau et de l'objectif : le modèle le reprend tel quel
+    let bilanTexte = '';
     if (def.nom === 'planifier_semaine') {
       const res = planifierSemaine(lu.params.demande as DemandeSemaine, seances, ctx, habitudesDepuisResume(resume));
       if (!res.operations.length) {
@@ -241,6 +245,30 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
       }
       operations = res.operations;
       notes = res.abandons;
+    } else if (def.nom === 'preparer_course') {
+      const demande = lu.params.demande as Partial<DemandeCourse>;
+      // La course visée : celle que dit l'utilisateur, sinon la prochaine course à pied du calendrier (distance et temps visé compris)
+      const courses = (Array.isArray(resume?.competitions) ? resume.competitions : []).filter((c: { sport?: string; date?: string }) => c?.sport === 'course' && typeof c.date === 'string' && c.date > ctx.aujourdhui);
+      const calendrier = demande.date ? courses.find((c: { date: string }) => c.date === demande.date) : courses[0];
+      const date = demande.date ?? calendrier?.date;
+      if (!date) {
+        return { contenu: "Je ne trouve aucune course à pied à venir dans le calendrier et l'utilisateur n'a pas donné de date. Demande-lui la date de sa course (et, s'il le veut, la distance et le temps visé), sans créer de carte.", erreur: false };
+      }
+      const res = planifierCourse({
+        date,
+        km: demande.km ?? (typeof calendrier?.km === 'number' && calendrier.km > 0 ? calendrier.km : 10),
+        tempsCibleMinutes: demande.tempsCibleMinutes ?? (typeof calendrier?.temps_cible_min === 'number' ? calendrier.temps_cible_min : undefined),
+        debut: demande.debut,
+        seancesParSemaine: demande.seancesParSemaine,
+        joursLibres: demande.joursLibres,
+      }, seances, ctx, profilCourseDepuisResume(resume));
+      if (!res.operations.length) {
+        return { contenu: `Je n'ai pas pu construire ce plan : ${res.abandons.join(' ') || 'aucune séance possible.'} Explique-le simplement à l'utilisateur, sans créer de carte, et propose une autre façon de faire.`, erreur: false };
+      }
+      operations = res.operations;
+      notes = res.abandons;
+      resumePeriode = res.semaines;
+      bilanTexte = res.message;
     } else if (def.nom === 'planifier_periode') {
       const res = planifierPeriode(lu.params.demande as DemandePeriode, seances, ctx, habitudesDepuisResume(resume));
       if (!res.operations.length) {
@@ -271,10 +299,11 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
     // Un plan long : le modèle lit le résumé semaine par semaine, pas les centaines de lignes (la carte, elle, les montre toutes)
     const detail = r.lignes.length > 30 && resumePeriode.length ? resumePeriode.map((l) => `- ${l}`).join('\n') : r.lignes.map((l) => `- ${l.texte}${l.raison ? ` (${l.raison})` : ''}`).join('\n');
     const signaux = [...notes, ...r.avertissements];
+    const bilan = bilanTexte ? `\nBilan établi par le code (à reprendre fidèlement, sans l'adoucir) : ${bilanTexte}\nSemaines :\n${resumePeriode.map((l) => `- ${l}`).join('\n')}` : '';
     const avert = signaux.length ? `\nÀ signaler à l'utilisateur : ${signaux.join(' ; ')}` : '';
     return {
       contenu:
-        `Carte de planning créée (${r.lignes.length} modification(s), charge prévue sur 14 jours : ${r.chargeAvant} → ${r.chargeApres} points) :\n${detail}${avert}\n` +
+        `Carte de planning créée (${r.lignes.length} modification(s), charge prévue sur 14 jours : ${r.chargeAvant} → ${r.chargeApres} points) :\n${detail}${bilan}${avert}\n` +
         "L'utilisateur la verra et la validera lui-même : rien n'est modifié tant qu'il n'a pas validé, ne dis donc jamais que c'est fait. Explique le plan en quelques phrases simples, avec les raisons.",
       erreur: false,
     };
@@ -466,14 +495,14 @@ export function operationsPourEcriture(operations: Operation[], carteId: string)
         return {
           op: 'ajouter',
           date: p.date,
-          name: `${NOM_SPORT[sport]} · ${type?.nom ?? p.type}`,
+          name: `${NOM_SPORT[sport]} · ${o.detail?.nom ?? type?.nom ?? p.type}`.slice(0, 120),
           sport: SPORT_BRUT[sport],
           duration: p.minutes,
           tss: type ? tssEstime(type, p.minutes) : 0,
           notes: o.justification ? o.justification.slice(0, 500) : null,
           start: `${p.date}T09:00:00`,
           // jamais de séance « vierge » : la structure est toujours construite par le code, d'après le type et la durée exacte
-          structure: structureSeance(sport, p.type, p.minutes),
+          structure: o.detail?.structure ?? structureSeance(sport, p.type, p.minutes),
           client_id: `coach-${carteId}-${i}`,
         };
       }

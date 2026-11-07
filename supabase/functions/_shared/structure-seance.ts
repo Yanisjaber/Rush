@@ -16,7 +16,7 @@ export interface BlocStructure {
   name: string;
   reps: number;
   metric: 'power' | 'hr' | 'pace';
-  unit: 'zone';
+  unit: 'zone' | 'pct';
   work: SegmentStructure;
   rec?: SegmentStructure;
 }

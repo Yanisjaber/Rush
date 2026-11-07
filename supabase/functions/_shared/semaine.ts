@@ -94,7 +94,7 @@ function sequenceSports(sports: { sport: FamilleCoach; seances: number }[]): Fam
 }
 
 /** n jours parmi ceux qui sont libres, le plus espacés possible (jamais deux jours collés quand on peut l'éviter) */
-function choisirJours(libres: string[], n: number): string[] {
+export function choisirJours(libres: string[], n: number): string[] {
   const m = libres.length;
   if (n >= m) return [...libres];
   if (n === 1) return [libres[Math.floor(m / 2)]];

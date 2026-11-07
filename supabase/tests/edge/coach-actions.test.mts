@@ -187,3 +187,11 @@ test('planifier_periode : durée en semaines ou date de course (pas les deux, pa
   ];
   for (const m of mauvais) assert.equal(lire(m).ok, false, JSON.stringify(m)?.slice(0, 90));
 });
+
+test('preparer_course : tout est facultatif sauf le motif ; valeurs vérifiées', () => {
+  const lire = (x: unknown) => trouverAction('preparer_course')!.lire!(x);
+  assert.deepEqual(lire({ motif: 'Mon 10 km' }), { ok: true, params: { intention: 'Mon 10 km', demande: {} } });
+  assert.deepEqual(lire({ motif: 'Mon 10 km', date: '2026-12-13', km: 10.15, temps_cible_minutes: 45, seances_par_semaine: 4 }), { ok: true, params: { intention: 'Mon 10 km', demande: { date: '2026-12-13', km: 10.15, tempsCibleMinutes: 45, seancesParSemaine: 4 } } });
+  const mauvais: unknown[] = [{}, { motif: 'x' }, { motif: 'Mon 10 km', date: '2026-02-31' }, { motif: 'Mon 10 km', km: 0 }, { motif: 'Mon 10 km', km: '10' }, { motif: 'Mon 10 km', temps_cible_minutes: 2 }, { motif: 'Mon 10 km', seances_par_semaine: 7 }, { motif: 'Mon 10 km', clef: 1 }, null];
+  for (const m of mauvais) assert.equal(lire(m).ok, false, JSON.stringify(m)?.slice(0, 80));
+});
