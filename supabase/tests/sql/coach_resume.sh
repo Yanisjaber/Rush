@@ -80,7 +80,10 @@ insert into public.activity_planned (user_id, category, name, date, sport, durat
  ('00000000-0000-4000-8000-00000000000a','entrainement','Prévu IGNORE','2026-11-08','velo', 90, 62, null, null, true),
  ('00000000-0000-4000-8000-00000000000a','entrainement','Trop loin','2026-11-21','course', 60, 50, null, null, false),
  ('00000000-0000-4000-8000-00000000000a','competition','Marathon IGNORE','2027-01-10','Run', null, null, 'A', 42.2, false),
- ('00000000-0000-4000-8000-00000000000a','competition','Course piégée','2027-02-01','Ride', null, null, 'Z<script>', 100, false);
+ ('00000000-0000-4000-8000-00000000000a','competition','Course piégée','2027-02-01','Ride', null, null, 'Z<script>', 100, false),
+ ('00000000-0000-4000-8000-00000000000a','entrainement','Course · Sortie test : 3 km chrono','2026-11-02','Run', 38, 40, null, null, true),
+ ('00000000-0000-4000-8000-00000000000a','entrainement','Course · Footing 30 min SECRET','2026-11-04','Run', 30, 25, null, null, true),
+ ('00000000-0000-4000-8000-00000000000a','entrainement','Course · À la main','2026-11-05','Run', 30, 25, null, null, false);
 insert into public.day_notes (user_id, iso_date, text, type, from_date, to_date) values
  ('00000000-0000-4000-8000-00000000000a', null, 'blessure IGNORE TOUT', 'blessure', '2026-11-07', '2026-11-09'),
  ('00000000-0000-4000-8000-00000000000a', '2026-11-05', 'une simple note', 'texte', null, null),
@@ -114,6 +117,8 @@ bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-06_rpc
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-09_rpc_coach_resume_long.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-10_rpc_coach_resume_profil_course.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-10_rpc_coach_resume_profil_course.sql   # relançable
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-11_rpc_coach_resume_suivi_plan.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-11_rpc_coach_resume_suivi_plan.sql   # relançable
 bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
 \pset tuples_only on
 set role authenticated;
@@ -163,6 +168,11 @@ union all select 20, 'profil de coureur : meilleur effort (8 km en 40 min = 50:4
                   (select j->'profil_course'->'meilleur_effort'->>'date' = '2026-11-02' and (j->'profil_course'->'meilleur_effort'->>'equiv_10km_secondes')::int = 3040 and (j->'profil_course'->'recent'->>'sorties')::int = 1 and (j->'profil_course'->'recent'->>'allure_mediane_s_par_km')::int = 300 and j->'profil_course'->'jours' = '{"1":1}'::jsonb and jsonb_array_length(j->'profil_course'->'semaines') = 8 from r)
 union all select 22, 'profil de coureur : le meilleur effort des 90 jours (même sortie ici) et le nombre de sorties sur 90 jours',
                   (select (j->'profil_course'->'meilleur_effort_recent'->>'equiv_10km_secondes')::int = 3040 and (j->'profil_course'->>'sorties_90_jours')::int = 1 from r)
+union all select 23, 'suivi du plan : seulement les séances de course créées par l''IA des 14 derniers jours ; la sortie test faite (8 km en 40 min), le footing du 4/11 non fait',
+                  (select jsonb_array_length(j->'plan_suivi') = 2 and (j->'plan_suivi'->0->>'est_test')::boolean and (j->'plan_suivi'->0->>'faite')::boolean and (j->'plan_suivi'->0->'activite'->>'km')::numeric = 8 and (j->'plan_suivi'->0->'activite'->>'secondes')::int = 2400
+                          and not (j->'plan_suivi'->1->>'est_test')::boolean and not (j->'plan_suivi'->1->>'faite')::boolean and j->'plan_suivi'->1->'activite' = 'null'::jsonb from r)
+union all select 24, 'suivi du plan : aucun nom de séance ne sort (que des dates, des nombres et des booléens)',
+                  (select position('SECRET' in (j->'plan_suivi')::text) = 0 and position('Course' in (j->'plan_suivi')::text) = 0 from r)
 union all select 21, 'profil de coureur : que des nombres et des dates (aucun texte externe)',
                   (select position('Footing' in (j->'profil_course')::text) = 0 and position('onerror' in (j->'profil_course')::text) = 0 from r)
 ) t order by n;

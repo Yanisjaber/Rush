@@ -18,6 +18,7 @@
 //   - une erreur n'écrit rien dans le calendrier et ne montre aucun détail technique.
 // ============================================================
 import { extraitsConnaissance, fondementsPlanCourse } from './connaissances.ts';
+import { detecterSuivi, texteSuivi } from './suivi-plan.ts';
 import { planifierPeriode } from './periode.ts';
 import { alluresCoureur, footing, planifierCourse, profilCourseDepuisResume, seanceIntervalles, seanceTempoContinu, sortieLongue } from './plan-course.ts';
 import type { DemandeCourse, SeanceCourse } from './plan-course.ts';
@@ -410,7 +411,7 @@ export async function traiterMessage(userId: string, texteBrut: unknown, deps: D
   const historique = historiquePourModele(depuis.slice(-config.fenetre));
   // Les fiches de la base de connaissances proches de ce message sont glissées dans le contexte : le coach s'en sert sans avoir à les chercher
   const dernierMessage = [...depuis].reverse().find((m) => m.role === 'user')?.contenu;
-  const contexte = blocContexte({ aujourdhui: jour, resume, memoire: memoire?.resume ?? null, decision, connaissances: extraitsConnaissance(texte, dernierMessage, 2, 1200, estCoureur(resume)) });
+  const contexte = blocContexte({ aujourdhui: jour, resume, memoire: memoire?.resume ?? null, decision, connaissances: extraitsConnaissance(texte, dernierMessage, 2, 1200, estCoureur(resume)), suivi: texteSuivi(detecterSuivi(resume, jour, { dernierPlan: dernierPlanLe(depuis) })) });
   let messages: MessageModele[] = avecMessageUtilisateur(historique, contexte, texte);
 
   const cartes: Carte[] = [];
@@ -525,6 +526,17 @@ export type ResultatAjout =
   | { ok: false; code: 'refusee'; erreurs: { code: string; message: string }[] };
 
 /** Les opérations d'une carte de planning, dans le format de la fonction SQL coach_appliquer_plan (mêmes champs que l'ajout à la main) */
+/** La date du dernier plan proposé ou appliqué dans la conversation (ni refusé ni annulé) : le suivi ne relève pas deux fois la même alerte */
+function dernierPlanLe(messages: MessageStocke[]): string | null {
+  let dernier: string | null = null;
+  for (const m of messages) {
+    if (!m.cartes?.some((c) => estPlanning(c) && c.etat !== 'refusee' && c.etat !== 'annulee')) continue;
+    const jour = String(m.created_at ?? '').slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(jour) && (dernier === null || jour > dernier)) dernier = jour;
+  }
+  return dernier;
+}
+
 /** Le résumé décrit-il un coureur ? (une course à pied à venir, ou des sorties de course sur les 90 derniers jours) */
 // deno-lint-ignore no-explicit-any
 function estCoureur(resume: any): boolean {

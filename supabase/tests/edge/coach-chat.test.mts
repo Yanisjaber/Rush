@@ -1231,3 +1231,39 @@ test('preparer_course : le résultat donne au modèle les fondements du plan tir
   assert.match(r.content, /Fondements du plan, tirés de la base de connaissances/);
   assert.match(r.content, /5 km ou un 10 km/);
 });
+
+// ---------- Le coach détecte seul ce qui demande de refaire le plan ----------
+const avecSeancesRatees = (s: FauxStockage) => {
+  avecCourse(s);
+  s.resume.plan_suivi = [
+    { date: '2026-11-01', minutes: 40, est_test: false, faite: false, activite: null },
+    { date: '2026-11-03', minutes: 45, est_test: false, faite: false, activite: null },
+  ];
+};
+test('suivi du plan : des séances ratées sont glissées dans le contexte AVEC la consigne d\'en parler en premier, sans que l\'utilisateur ait rien demandé', async () => {
+  const w = monde([rep('Je regarde.')], avecSeancesRatees);
+  await traiterMessage(U, 'Salut, comment ça va ?', w.deps, w.emettre);
+  const envoye = JSON.stringify(w.modele.appels[0].messages);
+  assert.match(envoye, /suivi_du_plan/);
+  assert.match(envoye, /Tu n'as pas fait 2 séances prévues/);
+  assert.match(envoye, /EN PREMIER/);
+  assert.match(w.modele.appels[0].system ?? '', /suivi_du_plan/);
+});
+test('suivi du plan : rien à signaler = pas de bloc ; un plan proposé depuis les faits fait taire l\'alerte', async () => {
+  const sans = monde([rep('Salut.')], avecCourse);
+  await traiterMessage(U, 'Bonjour', sans.deps, sans.emettre);
+  assert.doesNotMatch(JSON.stringify(sans.modele.appels[0].messages), /suivi_du_plan/);
+  const w = monde([rep('Je regarde.', [outil('c', { motif: 'Plan allégé' }, 'preparer_course')]), rep('Voilà.'), rep('Ok.')], avecSeancesRatees);
+  await traiterMessage(U, 'Refais-moi le plan', w.deps, w.emettre);
+  await traiterMessage(U, 'Merci', w.deps, w.emettre);
+  const dernier = JSON.stringify(w.modele.appels[w.modele.appels.length - 1].messages.at(-1));
+  assert.doesNotMatch(dernier, /Tu n'as pas fait 2 séances prévues/);
+});
+test('suivi du plan : la sortie test faite ne dit PAS le chrono (rien lu dans l\'activité) : le coach doit demander le temps des 3 km', async () => {
+  const w = monde([rep('Je regarde.')], (s) => { avecCourse(s); s.resume.plan_suivi = [{ date: '2026-11-05', minutes: 38, est_test: true, faite: true, activite: { km: 8, secondes: 2400 } }]; });
+  await traiterMessage(U, 'Salut', w.deps, w.emettre);
+  const envoye = JSON.stringify(w.modele.appels[0].messages);
+  assert.match(envoye, /Tu as fait ta sortie test le 05\/11/);
+  assert.match(envoye, /temps de ses 3 km/);
+  assert.doesNotMatch(envoye, /2400/);
+});
