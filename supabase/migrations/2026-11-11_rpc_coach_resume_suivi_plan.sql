@@ -269,24 +269,37 @@ begin
   ) into v_course;
 
   -- Suivi du plan : les séances de course créées par le coach dans les 14 derniers jours, avec ce que l'utilisateur en a fait.
-  --   faite : une sortie de course existe ce jour-là ; activite : la plus longue sortie de course du jour (km, secondes) ;
-  --   est_test : la séance est la « sortie test » du coach (seulement un booléen : le nom, texte libre, ne sort jamais).
+  --   faite : une sortie de course existe pour cette séance (lien planned_id, sinon la plus longue sortie de course du jour) ;
+  --   activite : km, secondes et ressenti (rpe) de cette sortie ;
+  --   est_test : la séance est la « sortie test » du coach (seulement un booléen : le nom, texte libre, ne sort jamais) ;
+  --   continue : séance d'allure unique (aucun échauffement, un seul bloc continu) : seule la moyenne de la sortie est comparable à l'allure prévue ;
+  --   allure_cible_s : l'allure prévue (secondes par km) lue dans le nom du bloc continu écrit par le coach (m:ss/km) ; seulement un nombre en sortie.
   select coalesce(jsonb_agg(jsonb_build_object(
            'date', pl.date, 'minutes', pl.duration, 'est_test', coalesce(pl.name ilike '%sortie test%', false),
-           'faite', a.km is not null, 'activite', case when a.km is not null then jsonb_build_object('km', round(a.km, 2), 'secondes', a.t) end
+           'faite', a.km is not null,
+           'activite', case when a.km is not null then jsonb_build_object('km', round(a.km, 2), 'secondes', a.t, 'rpe', a.rpe) end,
+           'continue', pl.continue, 'allure_cible_s', pl.cible
          ) order by pl.date), '[]'::jsonb)
     into v_suivi
   from (
-    select date, duration, name from activity_planned
-    where user_id = v_uid and category = 'entrainement' and created_by_ia = true
-      and public.coach_famille_sport(sport) = 'course' and date >= p_date - 14 and date < p_date
-    order by date limit 40
+    select p.id, p.client_id, p.date, p.duration, p.name,
+           (jsonb_typeof(p.structure) = 'array'
+             and not exists (select 1 from jsonb_array_elements(p.structure) b where b->>'type' = 'warmup')
+             and (select count(*) from jsonb_array_elements(p.structure) b where b->>'type' = 'steady') = 1) as continue,
+           (select (m)[1]::int * 60 + (m)[2]::int
+              from jsonb_array_elements(case when jsonb_typeof(p.structure) = 'array' then p.structure else '[]'::jsonb end) b,
+                   lateral regexp_match(b->>'name', '(\d{1,2}):(\d{2})/km') m
+              where b->>'type' = 'steady' and m is not null limit 1) as cible
+    from activity_planned p
+    where p.user_id = v_uid and p.category = 'entrainement' and p.created_by_ia = true
+      and public.coach_famille_sport(p.sport) = 'course' and p.date >= p_date - 14 and p.date < p_date
+    order by p.date limit 40
   ) pl
   left join lateral (
-    select distance_km::numeric as km, moving_time as t from activities
+    select distance_km::numeric as km, moving_time as t, rpe from activities
     where user_id = v_uid and merged_into is null and public.coach_famille_sport(sport) = 'course'
-      and start_date_local::date = pl.date and distance_km > 0
-    order by distance_km desc limit 1
+      and distance_km > 0 and (planned_id in (pl.id::text, pl.client_id) or start_date_local::date = pl.date)
+    order by (planned_id in (pl.id::text, pl.client_id)) desc nulls last, distance_km desc limit 1
   ) a on true;
 
   -- Périodes indisponibles (maladie, blessure, indisponible) qui touchent les 7 jours passés ou les 14 jours à venir
