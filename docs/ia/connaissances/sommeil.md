@@ -2,7 +2,7 @@
 id: sommeil
 titre: Sommeil et récupération
 sports: [course, velo, natation, triathlon, muscu, hyrox]
-mots_cles: [sommeil, dormir, insomnie, sieste, fatigue, nuit, récupération, dette de sommeil, couché tard]
+mots_cles: [sommeil, dormir, insomnie, sieste, fatigue, nuit, récupération, dette de sommeil, couché tard, dors, dort, dormi, nuit blanche, dodo]
 preuve: probable
 maj: 2026-11-07
 ---

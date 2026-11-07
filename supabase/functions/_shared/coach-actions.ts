@@ -15,6 +15,7 @@
 //
 // `disponible: false` = déclaré mais pas encore branché (il manque l'exécuteur au tap) : jamais montré au modèle.
 // ============================================================
+import { chercherConnaissance, SPORTS_CONNAISSANCE } from './connaissances.ts';
 import { FAMILLES_COACH } from './menu-seances.ts';
 import type { OutilModele } from './modele.ts';
 import { OUTIL_PROPOSER_SEANCE, NOM_OUTIL_SEANCE } from './coach-prompt.ts';
@@ -94,6 +95,32 @@ export const INDISPONIBILITES = ['maladie', 'blessure', 'indisponible'] as const
 
 export const ACTIONS: DefinitionAction[] = [
   // ----- Niveau 0 : lecture (le détail que le résumé léger ne contient pas) -----
+  {
+    nom: 'chercher_connaissance',
+    niveau: 'lecture',
+    disponible: true,
+    description:
+      "Cherche dans la base de connaissances de l'application (fiches sourcées sur l'entraînement : intensités, charge, affûtage, reprise, sommeil, nutrition sportive, force, chaleur, sports, profils). " +
+      "À appeler AVANT de répondre à une question de méthode ou de science de l'entraînement, au lieu de répondre de mémoire. Rend jusqu'à 3 fiches avec leur niveau de preuve, ou aucune si la base ne couvre pas le sujet.",
+    schema: {
+      type: 'object',
+      properties: {
+        question: { type: 'string', description: "La question ou les mots-clés du sujet, en français (3 à 200 caractères). Par exemple : « affûtage avant un marathon »." },
+        sport: { type: 'string', enum: [...SPORTS_CONNAISSANCE], description: "Facultatif : le sport de l'utilisateur, pour mettre en avant les fiches qui le concernent." },
+      },
+      required: ['question'],
+      additionalProperties: false,
+    },
+    lire: (input) => {
+      const o = objet(input, ['question', 'sport']);
+      const question = typeof o?.question === 'string' ? o.question.trim() : '';
+      if (!o || question.length < 3 || question.length > 200) return refus('question doit faire entre 3 et 200 caractères.');
+      if (o.sport === undefined) return { ok: true, params: { question } };
+      const sport = parmi(o.sport, SPORTS_CONNAISSANCE);
+      return sport ? { ok: true, params: { question, sport } } : refus(`Sport inconnu. Choix possibles : ${SPORTS_CONNAISSANCE.join(', ')}.`);
+    },
+    repondre: (p) => chercherConnaissance(p.question as string, p.sport as string | undefined),
+  },
   {
     nom: 'lire_jours',
     niveau: 'lecture',

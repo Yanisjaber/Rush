@@ -2,7 +2,7 @@
 id: cycle-menstruel
 titre: Cycle menstruel et entraînement
 sports: [course, velo, natation, triathlon, muscu, hyrox]
-mots_cles: [cycle menstruel, règles, phase lutéale, phase folliculaire, contraception, hormones, syndrome prémenstruel, femmes, aménorrhée]
+mots_cles: [cycle menstruel, règles, phase lutéale, phase folliculaire, contraception, hormones, syndrome prémenstruel, femmes, aménorrhée, mes règles, menstruations]
 preuve: debattu
 maj: 2026-11-07
 ---

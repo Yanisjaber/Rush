@@ -2,7 +2,7 @@
 id: chaleur-altitude
 titre: Chaleur et altitude
 sports: [course, velo, triathlon, natation]
-mots_cles: [chaleur, canicule, acclimatation, altitude, stage en altitude, live high train low, sauna, hydratation, coup de chaleur, hypoxie]
+mots_cles: [chaleur, canicule, acclimatation, altitude, stage en altitude, live high train low, sauna, hydratation, coup de chaleur, hypoxie, chaud, chaude, température, soleil, déshydratation]
 preuve: probable
 maj: 2026-11-07
 ---

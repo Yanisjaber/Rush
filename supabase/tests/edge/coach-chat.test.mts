@@ -340,6 +340,45 @@ test('historique long : compte dans la limite de quatre lectures par message', a
   assert.equal(((w.modele.appels[1].messages.at(-1)?.content as Libre[])[4]).is_error, true);
 });
 
+// ---------- La base de connaissances ----------
+test('chercher_connaissance : le modèle reçoit les fiches, avec niveau de preuve, sans rien enregistrer ni envoyer à l\'app', async () => {
+  const w = monde([rep('', [outil('a', { question: 'combien de jours d\'affûtage avant un marathon', sport: 'course' }, 'chercher_connaissance')]), rep('Environ deux semaines.')]);
+  await traiterMessage(U, 'Je prépare un marathon, je réduis quand ?', w.deps, w.emettre);
+  const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.equal(r.is_error, undefined);
+  const donnees = JSON.parse(r.content);
+  assert.equal(donnees.resultats[0].id, 'affutage');
+  assert.match(donnees.resultats[0].niveau_de_preuve, /établi/);
+  assert.ok(donnees.resultats[0].regles_pour_le_coach.length > 50);
+  assert.equal(w.evts.filter((e) => e.type === 'action' || e.type === 'carte').length, 0);
+  assert.equal(w.stockage.messages[1].cartes, null);
+  assert.equal(w.stockage.historiqueAppels.length, 0, 'aucun accès à la base de données');
+});
+
+test('chercher_connaissance : sujet non couvert = résultat vide avec consigne de ne rien inventer ; paramètres invalides refusés', async () => {
+  const w = monde([
+    rep('', [
+      outil('a', { question: 'quelle est la capitale de la France' }, 'chercher_connaissance'),
+      outil('b', { question: 'x' }, 'chercher_connaissance'),
+      outil('c', { question: 'affûtage', sport: 'golf' }, 'chercher_connaissance'),
+      outil('d', { question: 'affûtage', extra: 1 }, 'chercher_connaissance'),
+      outil('e', { question: 'a'.repeat(201) }, 'chercher_connaissance'),
+    ]),
+    rep('Je n\'ai pas de source précise.'),
+  ]);
+  await traiterMessage(U, 'x', w.deps, w.emettre);
+  const r = w.modele.appels[1].messages.at(-1)?.content as Libre[];
+  assert.deepEqual(JSON.parse(r[0].content).resultats, []);
+  assert.match(JSON.parse(r[0].content).note, /n'invente/);
+  assert.deepEqual(r.slice(1).map((x) => x.is_error === true), [true, true, true, true]);
+});
+
+test('le prompt demande de chercher avant de répondre et de ne jamais inventer une étude', () => {
+  assert.match(PROMPT_SYSTEME, /chercher_connaissance/);
+  assert.match(PROMPT_SYSTEME, /niveau de preuve/);
+  assert.match(PROMPT_SYSTEME, /n'inventes jamais une étude/);
+});
+
 // ---------- Les barrières avant le modèle ----------
 test('messages invalides : refusés avant tout (rien réservé, rien lu)', async () => {
   for (const texte of ['', '   ', 'x'.repeat(2001), 42, null, { a: 1 }]) {
