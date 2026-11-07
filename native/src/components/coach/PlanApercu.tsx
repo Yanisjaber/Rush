@@ -64,6 +64,7 @@ export function CalendrierPlan({ lignes, vue, aujourdhui }: { lignes: LignePlan[
             >
               {j.periode ? <Hachure couleur={p.danger} trait={p.texteMuet} /> : null}
               <Text style={[typo.micro, { color: p.texte, textTransform: 'none', letterSpacing: 0, fontVariant: ['tabular-nums'] }]}>{j.numero}</Text>
+              {j.repos ? <Text style={[typo.micro, { color: p.texteDoux, textTransform: 'none', letterSpacing: 0 }]}>repos</Text> : null}
               <View style={{ gap: 3 }}>
                 {j.marques.map((m, k) => (
                   <BarreMarque key={k} marque={m} hauteur={8} />

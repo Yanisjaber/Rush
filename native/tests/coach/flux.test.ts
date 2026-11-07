@@ -160,3 +160,16 @@ test('flux : une action est relue (nom et paramètres), une action mal formée e
   );
   assert.deepEqual(r.evenements, [{ type: 'action', nom: 'ouvrir_ecran', params: { ecran: 'calendrier' } }]);
 });
+
+test('plan : une ligne de repos est gardée (le jour est dans « vers », « poser » vrai ou faux), pas écartée', () => {
+  const c = lireCarte({ ...plan, lignes: [
+    { op: 'repos', texte: 'Poser un jour de repos : jeu. 12/11', vers: '2026-11-12', poser: true },
+    { op: 'repos', texte: 'Retirer le jour de repos : ven. 13/11', vers: '2026-11-13', poser: false },
+    { op: 'repos', texte: 'Poser un jour de repos : sam. 14/11', vers: '2026-11-14', poser: 'oui' },
+  ] }) as Record<string, unknown>;
+  const l = c.lignes as Record<string, unknown>[];
+  assert.equal(l.length, 3);
+  assert.deepEqual(l[0], { op: 'repos', texte: 'Poser un jour de repos : jeu. 12/11', vers: '2026-11-12', poser: true });
+  assert.equal(l[1].poser, false);
+  assert.equal('poser' in l[2], false, 'un « poser » qui n\'est pas un booléen est ignoré');
+});

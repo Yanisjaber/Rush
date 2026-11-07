@@ -110,3 +110,55 @@ test('frise : un plan sans séance (seulement une période) a des jours mais pas
   assert.equal(f.jours[0].periode, 'maladie');
   assert.equal(friseApercu([], 'apres', AUJ).jours[0].iso, '2026-11-07', 'sans rien : à partir de demain');
 });
+
+import { reposDuPlan } from '../../src/data/coach/apercu-plan.ts';
+
+test('repos : un repos posé se voit « après », un repos retiré se voit « avant », jamais les deux', () => {
+  const l = [
+    { op: 'repos' as const, texte: 'a', vers: '2026-11-09', poser: true },
+    { op: 'repos' as const, texte: 'b', vers: '2026-11-10', poser: false },
+    { op: 'supprimer' as const, texte: 'c', sport: 'velo', de: '2026-11-11' },
+  ];
+  assert.deepEqual([...reposDuPlan(l, 'apres')], ['2026-11-09']);
+  assert.deepEqual([...reposDuPlan(l, 'avant')], ['2026-11-10']);
+  const jours = calendrierApercu(l, 'apres', AUJ).semaines.flat();
+  assert.equal(jours.find((j) => j.iso === '2026-11-09')!.repos, true);
+  assert.equal(jours.find((j) => j.iso === '2026-11-10')!.repos, false);
+  assert.ok(calendrierApercu(l, 'apres', AUJ).semaines.flat().filter((j) => j.repos).length === 1);
+});
+
+test('repos : un plan qui ne contient qu\'un repos cadre quand même la frise sur ce jour', () => {
+  const f = friseApercu([{ op: 'repos', texte: 'a', vers: '2026-11-12', poser: true }], 'apres', AUJ);
+  assert.equal(f.jours[0].iso, '2026-11-12');
+  assert.deepEqual(f.rangees, []);
+});
+
+import { cartePlanReposExemple, cartePlanSemaineExemple, EXEMPLES, PREFIXE_EXEMPLE } from '../../src/data/coach/exemple-plan.ts';
+import { resumePlan } from '../../src/data/coach/libelles.ts';
+import { lireCarte } from '../../src/data/coach/flux.ts';
+
+test('cartes d\'essai : trois exemples, tous relus sans perte par le lecteur de cartes, identifiants préfixés', () => {
+  assert.equal(EXEMPLES.length, 3);
+  for (const fabrique of EXEMPLES) {
+    const c = fabrique(AUJ);
+    assert.ok(c.id.startsWith(PREFIXE_EXEMPLE));
+    const relue = lireCarte(JSON.parse(JSON.stringify(c))) as { lignes: unknown[] };
+    assert.ok(relue, c.id);
+    assert.equal(relue.lignes.length, c.lignes.length);
+  }
+});
+
+test('carte de semaine d\'essai : quatre séances à venir, dessinées « nouvelles » dans les deux vues utiles', () => {
+  const c = cartePlanSemaineExemple(AUJ);
+  assert.equal(resumePlan(c.lignes), '4 séances ajoutées');
+  const apres = calendrierApercu(c.lignes, 'apres', AUJ).semaines.flat();
+  assert.equal(apres.flatMap((j) => j.marques).filter((m) => m.etat === 'nouvelle').length, 4);
+  assert.equal(calendrierApercu(c.lignes, 'avant', AUJ).semaines.flat().flatMap((j) => j.marques).length, 0, 'avant : rien n\'était prévu');
+  assert.ok(c.lignes.every((l) => (l.vers ?? '') > AUJ));
+});
+
+test('carte de repos d\'essai : un repos posé dans trois jours', () => {
+  const c = cartePlanReposExemple(AUJ);
+  assert.equal(resumePlan(c.lignes), '1 jour de repos posé');
+  assert.equal(c.lignes[0].vers, '2026-11-09');
+});

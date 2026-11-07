@@ -6,7 +6,7 @@ const ETATS: readonly string[] = ['proposee', 'en_cours', 'ajoutee', 'refusee', 
 
 const estObjet = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
 
-const OPERATIONS: readonly string[] = ['indisponibilite', 'deplacer', 'supprimer', 'ajouter'];
+const OPERATIONS: readonly string[] = ['indisponibilite', 'deplacer', 'supprimer', 'ajouter', 'repos'];
 const PERIODES: readonly string[] = ['maladie', 'blessure', 'indisponible'];
 const DATE_ISO = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_LIGNES = 20;
@@ -36,6 +36,7 @@ function lireLigne(x: unknown): LignePlan | null {
     ...(PERIODES.includes(String(x.type)) ? { type: x.type as TypePeriode } : {}),
     ...(du ? { du } : {}),
     ...(au ? { au } : {}),
+    ...(typeof x.poser === 'boolean' ? { poser: x.poser } : {}),
   };
 }
 

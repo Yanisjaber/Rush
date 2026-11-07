@@ -93,6 +93,10 @@ export function resumePlan(lignes: LignePlan[]): string {
     const n = periodes.filter((l) => l.type === t).length;
     morceaux.push(accord(n, nomPeriode(t), `${nomPeriode(t)}s`));
   }
+  const reposPoses = lignes.filter((l) => l.op === 'repos' && l.poser !== false).length;
+  const reposRetires = lignes.filter((l) => l.op === 'repos' && l.poser === false).length;
+  if (reposPoses) morceaux.push(accord(reposPoses, 'jour de repos posé', 'jours de repos posés'));
+  if (reposRetires) morceaux.push(accord(reposRetires, 'jour de repos retiré', 'jours de repos retirés'));
   if (deplacees) morceaux.push(accord(deplacees, 'séance déplacée', 'séances déplacées'));
   if (remplacees) morceaux.push(accord(remplacees, 'séance remplacée', 'séances remplacées'));
   if (retirees) morceaux.push(accord(retirees, 'retirée', 'retirées'));

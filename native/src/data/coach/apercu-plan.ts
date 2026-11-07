@@ -18,6 +18,8 @@ export interface JourCalendrier {
   marques: Marque[];
   /** Pendant une période déclarée (vue « après » seulement) */
   periode: TypePeriode | null;
+  /** Un jour de repos que le plan pose (vue « après ») ou retire (vue « avant ») */
+  repos: boolean;
   aujourdhui: boolean;
   passe: boolean;
 }
@@ -70,6 +72,16 @@ export function marquesDuPlan(lignes: LignePlan[], vue: VueApercu): Map<string, 
   return carte;
 }
 
+/** Les jours de repos que le plan touche : ceux qu'il pose (visibles « après ») ou qu'il retire (visibles « avant ») */
+export function reposDuPlan(lignes: LignePlan[], vue: VueApercu): Set<string> {
+  const jours = new Set<string>();
+  for (const l of lignes) {
+    if (l.op !== 'repos' || !l.vers) continue;
+    if (vue === 'apres' ? l.poser !== false : l.poser === false) jours.add(l.vers);
+  }
+  return jours;
+}
+
 /** Tous les jours que le plan touche (séances et périodes), pour cadrer l'aperçu */
 function joursDuPlan(lignes: LignePlan[]): string[] {
   const jours: string[] = [];
@@ -87,6 +99,7 @@ export function calendrierApercu(lignes: LignePlan[], vue: VueApercu, aujourdhui
   const nbSemaines = Math.min(4, Math.max(3, Math.floor((enMs(plusLoin) - enMs(debut)) / JOUR_MS / 7) + 1));
   const marques = marquesDuPlan(lignes, vue);
   const periodes = vue === 'apres' ? periodesDuPlan(lignes) : [];
+  const repos = reposDuPlan(lignes, vue);
   const semaines: JourCalendrier[][] = [];
   for (let s = 0; s < nbSemaines; s++) {
     const semaine: JourCalendrier[] = [];
@@ -97,6 +110,7 @@ export function calendrierApercu(lignes: LignePlan[], vue: VueApercu, aujourdhui
         numero: Number(iso.slice(8, 10)),
         marques: marques.get(iso) ?? [],
         periode: periodes.find((p) => entre(iso, p.du, p.au))?.type ?? null,
+        repos: repos.has(iso),
         aujourdhui: iso === aujourdhui,
         passe: iso < aujourdhui,
       });

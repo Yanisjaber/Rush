@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ajouterCarteCoach, annulerCarteCoach, chargerMessagesCoach, effacerConversationCoach, envoyerMessageCoach } from '@/data/acces/api/coach';
 import { lireAction, type ActionApp } from '@/data/coach/actions';
 import { appliquerEvenement, debutEnvoi, ERREURS_SANS_REESSAI, majCarte, messagesDepuisLignes } from '@/data/coach/fil';
-import { cartePlanExemple, PREFIXE_EXEMPLE } from '@/data/coach/exemple-plan';
+import { EXEMPLES, PREFIXE_EXEMPLE } from '@/data/coach/exemple-plan';
 import { estPlanning, type Carte, type MessageCoach } from '@/data/coach/types';
 import { dateIsoLocale } from '@/data/outils/format';
 import { ajoutsChanges } from '@/stores/ajouts';
@@ -115,13 +115,16 @@ export function useCoach(userId: string | null, surAction?: (a: ActionApp) => vo
     }
   }, [charger]);
 
-  /** Mode développement : pose une carte de plan d'exemple dans le fil, sans serveur ni modèle (pour voir l'écran) */
+  /** Mode développement : pose une carte de plan d'exemple dans le fil, sans serveur ni modèle (pour voir l'écran). Chaque appui propose la suivante : blessure, semaine, repos. */
+  const prochainExemple = useRef(0);
   const insererExemple = useCallback(() => {
     if (!__DEV__) return;
     const jour = dateIsoLocale(new Date());
+    const fabrique = EXEMPLES[prochainExemple.current % EXEMPLES.length];
+    prochainExemple.current++;
     setMessages((m) => [
       ...m,
-      { id: `${PREFIXE_EXEMPLE}msg-${Date.now()}`, role: 'assistant', texte: "(Carte d'essai, rien n'est enregistré.) Aïe. Voilà ce que je change, tu valides ou pas.", cartes: [cartePlanExemple(jour, `${PREFIXE_EXEMPLE}${Date.now()}`)] },
+      { id: `${PREFIXE_EXEMPLE}msg-${Date.now()}`, role: 'assistant', texte: "(Carte d'essai, rien n'est enregistré.) Voilà ce que je propose, tu valides ou pas.", cartes: [fabrique(jour, `${PREFIXE_EXEMPLE}${Date.now()}`)] },
     ]);
   }, []);
 

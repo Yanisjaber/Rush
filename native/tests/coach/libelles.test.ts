@@ -94,3 +94,10 @@ test('plan annulé : tout est revenu, ou combien de lignes sont restées telles 
   assert.match(phraseAnnulation({ ...base, annulation: { annulees: 8, ignorees: 1 } }), /8 changements défaits\. 1 ligne que tu avais déjà modifiée à la main est restée telle quelle\./);
   assert.match(phraseAnnulation({ ...base, annulation: { annulees: 6, ignorees: 3 } }), /3 lignes que tu avais déjà modifiées à la main sont restées telles quelles\./);
 });
+
+test('plan : le résumé compte les jours de repos posés et retirés', () => {
+  assert.equal(resumePlan([{ op: 'repos', texte: 'x', vers: '2026-11-12', poser: true }]), '1 jour de repos posé');
+  assert.equal(resumePlan([{ op: 'repos', texte: 'x', vers: '2026-11-12', poser: true }, { op: 'repos', texte: 'y', vers: '2026-11-13', poser: true }]), '2 jours de repos posés');
+  assert.equal(resumePlan([{ op: 'repos', texte: 'x', vers: '2026-11-12', poser: false }]), '1 jour de repos retiré');
+  assert.equal(resumePlan([{ op: 'repos', texte: 'x', vers: '2026-11-12' }, { op: 'supprimer', texte: 'y', sport: 'velo', de: '2026-11-12' }]), '1 jour de repos posé · 1 retirée');
+});

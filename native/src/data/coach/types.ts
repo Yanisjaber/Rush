@@ -22,7 +22,7 @@ export interface CarteSeance {
   seance_id?: string;
 }
 
-export type TypeOperation = 'indisponibilite' | 'deplacer' | 'supprimer' | 'ajouter';
+export type TypeOperation = 'indisponibilite' | 'deplacer' | 'supprimer' | 'ajouter' | 'repos';
 export type TypePeriode = 'maladie' | 'blessure' | 'indisponible';
 
 /**
@@ -40,6 +40,8 @@ export interface LignePlan {
   type?: TypePeriode;
   du?: string;
   au?: string;
+  /** Jour de repos : posé (vrai) ou retiré (faux) ; le jour est dans `vers` */
+  poser?: boolean;
 }
 
 /**
