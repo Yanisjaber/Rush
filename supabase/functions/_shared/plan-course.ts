@@ -253,9 +253,9 @@ function varianteFooting(minutes: number, a: Allures, phase: Phase, semaine: num
 /**
  * Pose les rôles (facile, qualité, longue) sur les jours libres d'une fenêtre. Toutes les façons de placer les séances sont essayées (au plus 7 jours, 6 séances :
  * quelques milliers de cas) ; on garde la moins coûteuse. Coûts : 1000 par paire de séances dures collées (y compris à une séance dure déjà posée dans la fenêtre précédente),
- * 300 si la sortie longue n'est pas un jour de week-end alors qu'un week-end est libre, 4 par jour de décalage par rapport au premier choix.
+ * 300 si la sortie longue n'est pas un jour de week-end alors qu'un week-end est libre, 30 si un rôle retombe sur le même jour de la semaine que dans la fenêtre précédente, 4 par jour de décalage par rapport au premier choix.
  */
-export function meilleurPlacement(libres: string[], roles: Role[], initial: string[], joursDurs: Set<string>, weekend: (j: string) => boolean): string[] | null {
+export function meilleurPlacement(libres: string[], roles: Role[], initial: string[], joursDurs: Set<string>, weekend: (j: string) => boolean, precedent: Map<Role, Set<string>> = new Map()): string[] | null {
   const n = roles.length;
   if (n === 0 || n > libres.length || libres.length > 9) return null;
   const durs = roles.map((r) => r !== 'facile');
@@ -273,6 +273,8 @@ export function meilleurPlacement(libres: string[], roles: Role[], initial: stri
       }
       if (roles[a] === 'longue' && weekendLibre && !weekend(pris[a])) cout += 300;
       cout += 4 * Math.abs(ecartJours(pris[a], initial[a]));
+      // Variété : on évite de remettre un rôle sur le même jour de la semaine que la fenêtre précédente (30 par séance qui se répète)
+      if (precedent.get(roles[a])?.has(nomDuJour(pris[a]))) cout += 30;
     }
     if (cout < coutMin) { coutMin = cout; meilleur = [...pris]; }
   };
@@ -548,6 +550,8 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   const noms = new Set<string>();
   /** Les jours des séances dures déjà posées (qualité et sortie longue) */
   const joursDurs = new Set<string>();
+  /** Les jours de la semaine (« lundi »…) utilisés par chaque rôle dans la fenêtre précédente : on évite de les répéter */
+  let joursParRole = new Map<Role, Set<string>>();
 
   for (let w = 0; w < nSemaines; w++) {
     const { du, fin: finSemaine } = fenetres[w];
@@ -613,7 +617,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     }
     // Le meilleur placement des jours : on essaie toutes les façons de poser les séances sur les jours libres et on garde la moins coûteuse :
     // jamais deux séances dures collées (la qualité et la sortie longue), même avec la fenêtre précédente ; la sortie longue au week-end ; le moins de décalage possible
-    const placement = meilleurPlacement(libres, roles, choisis, joursDurs, wk);
+    const placement = meilleurPlacement(libres, roles, choisis, joursDurs, wk, joursParRole);
     if (placement) choisis = placement;
 
     // les durées
@@ -635,6 +639,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     if (nLongue && !recuperation && phase !== 'affutage') longuePrecedente = longue;
 
     // poser chaque séance (essai du jour choisi, puis des autres jours libres de la semaine)
+    const joursCetteFenetre = new Map<Role, Set<string>>();
     let totalSemaine = 0;
     let posees = 0;
     roles.forEach((role, i) => {
@@ -655,12 +660,14 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
           posees++;
           noms.add(jour);
           if (p.type !== 'footing_facile' && p.type !== 'footing_recuperation') joursDurs.add(jour);
+          joursCetteFenetre.set(role, (joursCetteFenetre.get(role) ?? new Set<string>()).add(nomDuJour(jour)));
           return;
         }
         if (!raisonRefus) raisonRefus = v.erreurs[0]?.message ?? '';
       }
       if (abandons.length < 12) abandons.push(`Semaine ${w + 1}, ${etiquetteDate(choisis[i])} : je n'ai pas pu placer « ${s.detail.nom} » (${raisonRefus.replace(/\.$/, '')}).`);
     });
+    joursParRole = joursCetteFenetre;
     lignesSemaines.push(`Semaine ${w + 1} (${du}) : ${NOM_PHASE[phase]}${recuperation ? ', récupération' : ''}, ${posees} séance${posees > 1 ? 's' : ''}, ${totalSemaine} min`);
   }
 
