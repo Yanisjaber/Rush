@@ -21,7 +21,7 @@ import { SEANCES_PAR_SPORT_MAX } from './semaine.ts';
 import type { DemandeSemaine } from './semaine.ts';
 import { FAMILLES_COACH } from './menu-seances.ts';
 import { SEMAINES_MAX } from './periode.ts';
-import { ALLURES_CLES, lireAllure, NOM_ALLURE } from './plan-course.ts';
+import { ALLURES_CLES, lireAllure, lireTemps, NOM_ALLURE } from './plan-course.ts';
 import type { Allures, DemandeCourse } from './plan-course.ts';
 import type { DemandePeriode } from './periode.ts';
 import type { OutilModele } from './modele.ts';
@@ -617,6 +617,9 @@ export const ACTIONS: DefinitionAction[] = [
         seances_par_semaine: { type: 'integer', minimum: 2, maximum: 6, description: "Facultatif : séances par semaine. Par défaut d'après son rythme actuel (3 à 5)." },
         debut: { type: 'string', description: 'Facultatif : premier jour du plan, AAAA-MM-JJ. Par défaut demain.' },
         jours_libres: { type: 'array', items: { type: 'string' }, maxItems: DATES_MAX_JOURS_BLOQUES, description: 'Facultatif : dates sans aucune séance (voyage).' },
+        chrono_km: { type: 'number', description: "Facultatif : la distance d'un chrono RÉEL de l'utilisateur, en km (par exemple 3 pour la sortie test). Avec chrono_temps." },
+        chrono_temps: { type: 'string', description: "Facultatif : le temps de ce chrono, « mm:ss » ou « h:mm:ss » (par exemple « 15:10 »). Le niveau est alors MESURÉ : tout le plan est recalibré dessus et la sortie test disparaît." },
+        sans_test: { type: 'boolean', description: "Facultatif : vrai si l'utilisateur ne veut pas de sortie test en première séance." },
         allures: {
           type: 'object',
           description:
@@ -630,10 +633,18 @@ export const ACTIONS: DefinitionAction[] = [
       additionalProperties: false,
     },
     lire: (input) => {
-      const o = objet(input, ['motif', 'date', 'km', 'temps_cible_minutes', 'seances_par_semaine', 'debut', 'jours_libres', 'allures']);
+      const o = objet(input, ['motif', 'date', 'km', 'temps_cible_minutes', 'seances_par_semaine', 'debut', 'jours_libres', 'allures', 'chrono_km', 'chrono_temps', 'sans_test']);
       const motif = motifPlan(o?.motif);
       if (!o || !motif) return refus('motif : une phrase de 3 à 200 caractères.');
       const demande: Partial<DemandeCourse> = {};
+      if (o.sans_test !== undefined) { if (typeof o.sans_test !== 'boolean') return refus('sans_test : vrai ou faux.'); demande.sansTest = o.sans_test; }
+      if ((o.chrono_km === undefined) !== (o.chrono_temps === undefined)) return refus('chrono_km et chrono_temps vont ensemble : la distance ET le temps du chrono.');
+      if (o.chrono_km !== undefined) {
+        if (typeof o.chrono_km !== 'number' || !(o.chrono_km >= 0.4 && o.chrono_km <= 100)) return refus('chrono_km : un nombre de km entre 0,4 et 100.');
+        const t = lireTemps(o.chrono_temps);
+        if (t === null) return refus('chrono_temps : un temps au format mm:ss ou h:mm:ss (par exemple « 15:10 »).');
+        demande.chrono = { km: o.chrono_km, secondes: t };
+      }
       if (o.date !== undefined) { const d = dateIso(o.date); if (!d) return refus('date : le jour de la course, AAAA-MM-JJ, qui existe.'); demande.date = d; }
       if (o.debut !== undefined) { const d = dateIso(o.debut); if (!d) return refus('debut : une date AAAA-MM-JJ qui existe.'); demande.debut = d; }
       if (o.km !== undefined) { if (typeof o.km !== 'number' || !(o.km >= 1 && o.km <= 250)) return refus('km : un nombre entre 1 et 250.'); demande.km = o.km; }
@@ -669,7 +680,7 @@ export const ACTIONS: DefinitionAction[] = [
       "ADAPTE UNE SÉANCE DE COURSE À PIED déjà prévue, comme avec un entraîneur : « jeudi plutôt 5 × 600 m », « mets-moi plus doux », « fais-moi 20 minutes de tempo à 4:50 ». " +
       "Tu désignes la séance par sa DATE (lue dans prevues) et tu dis ce que tu veux à la place : le genre de séance, les répétitions et la distance, l'allure, la récupération. " +
       "Le CODE reconstruit la séance entière (échauffement, blocs, retour au calme, allures cohérentes avec le niveau et la course visée) et propose UNE carte qui remplace l'ancienne ; rien n'est modifié avant que l'utilisateur valide. " +
-      "Pour changer une allure dans TOUT le plan, utilise plutôt preparer_course avec allures.",
+      "Pour changer une allure dans TOUT le plan, utilise plutôt preparer_course avec allures. Si le plan a été recalibré sur un chrono de test, donne TOUJOURS l'allure voulue explicitement (lue dans le bilan du plan) pour que la séance reste cohérente avec le reste.",
     schema: {
       type: 'object',
       properties: {

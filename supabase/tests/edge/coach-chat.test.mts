@@ -1085,6 +1085,8 @@ test('planifier_periode : valider la carte écrit toute la période en une fois,
 // ---------- Préparer une course à pied ----------
 const PROFIL_YANIS = {
   meilleur_effort: { date: '2024-12-15', km: 5, secondes: 1308, equiv_10km_secondes: 2730 },
+  meilleur_effort_recent: { date: '2026-11-04', km: 6, secondes: 2100, equiv_10km_secondes: 3609 },
+  sorties_90_jours: 11,
   recent: { sorties: 5, km: 27, minutes: 160, plus_longue_minutes: 41, allure_mediane_s_par_km: 350 },
   semaines: [{ km: 0, minutes: 0, sorties: 0 }, { km: 0, minutes: 0, sorties: 0 }, { km: 0, minutes: 0, sorties: 0 }, { km: 0, minutes: 0, sorties: 0 }, { km: 0, minutes: 0, sorties: 0 }, { km: 10.8, minutes: 71, sorties: 2 }, { km: 12.2, minutes: 75, sorties: 2 }, { km: 6, minutes: 35, sorties: 1 }],
   jours: { '1': 3, '4': 2 },
@@ -1187,4 +1189,22 @@ test('un nouveau plan remplace les plans encore proposés plus haut : ils ne peu
   assert.equal(cartes.find((c) => c.id === premiere.id)!.etat, 'refusee');
   assert.equal(cartes.find((c) => c.id !== premiere.id)!.etat, 'proposee');
   await assert.rejects(() => ajouterCarte(U, premiere.id, w.deps), (e: Libre) => e.code === 'carte_non_ajoutable');
+});
+
+test('preparer_course avec le chrono du test : « j\'ai fait 15:10 sur 3 km » recalibre tout le plan, remplace les anciennes séances, plus de test', async () => {
+  const w = await planPropose([outil('c', { motif: 'Plan recalibré', chrono_km: 3, chrono_temps: '15:10' }, 'preparer_course')], avecPlanAjoute);
+  const carte = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
+  assert.ok(carte.operations.filter((o: Libre) => o.op === 'supprimer').length === 2);
+  assert.ok(carte.lignes.every((l: Libre) => !/Sortie test/.test(l.texte)));
+  assert.match(carte.bilan, /ton chrono de test \(3 km en 15:10\)/);
+  const mauvais = await planPropose([outil('c', { motif: 'Plan recalibré', chrono_km: 3 }, 'preparer_course')], avecCourse);
+  assert.equal(((mauvais.modele.appels[1].messages.at(-1)?.content as Libre[])[0]).is_error, true);
+  const t = await planPropose([outil('c', { motif: 'Plan', chrono_km: 3, chrono_temps: 'vite' }, 'preparer_course')], avecCourse);
+  assert.match(((t.modele.appels[1].messages.at(-1)?.content as Libre[])[0]).content, /mm:ss/);
+});
+test('preparer_course sans chrono : la première sortie est un test, le modèle reçoit la consigne de demander le temps', async () => {
+  const w = await planPropose([outil('c', { motif: 'Plan' }, 'preparer_course')], avecCourse);
+  const carte = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
+  assert.equal(carte.lignes.filter((l: Libre) => /Sortie test/.test(l.texte)).length, 1);
+  assert.match(((w.modele.appels[1].messages.at(-1)?.content as Libre[])[0]).content, /chrono_km et chrono_temps/);
 });

@@ -220,7 +220,9 @@ begin
   ) c;
 
   -- Profil de coureur (que des nombres et des dates) : de quoi bâtir un vrai plan de course, comme un entraîneur qui ouvre le dossier.
-  --   meilleur_effort : le meilleur effort des 24 derniers mois sur une course d'au moins 4,8 km, converti en équivalent 10 km (formule de Riegel, exposant 1,06)
+  --   meilleur_effort_recent : le meilleur effort des 90 derniers jours (sorties d'au moins 3 km), converti en équivalent 10 km : il fixe le niveau d'aujourd'hui
+  --   meilleur_effort : le meilleur effort des 24 derniers mois (ancien : sert seulement de dernier recours, très vieilli)
+  --   (meilleur effort ci-dessous) sur une course d'au moins 4,8 km, converti en équivalent 10 km (formule de Riegel, exposant 1,06)
   --   récent : les 8 dernières semaines (sorties, km, minutes, plus longue sortie, allure médiane = allure facile en secondes par km)
   --   semaines : les 8 dernières semaines une par une (km, minutes, sorties), de la plus ancienne à la plus récente
   --   jours : combien de sorties par jour de la semaine (1 = lundi) sur 90 jours
@@ -233,6 +235,12 @@ begin
   meilleur as (
     select d, km, t, t * power(10 / km, 1.06) as equiv10
     from c where km >= 4.8 and d >= p_date - 730
+    order by t * power(10 / km, 1.06) asc limit 1
+  ),
+  -- le meilleur effort des 90 derniers jours (sorties d'au moins 3 km) : c'est LUI qui fixe le niveau d'aujourd'hui, pas un vieux record
+  recent_effort as (
+    select d, km, t, t * power(10 / km, 1.06) as equiv10
+    from c where km >= 3 and d > p_date - 90
     order by t * power(10 / km, 1.06) asc limit 1
   ),
   recent as (select * from c where d > p_date - 56),
@@ -248,6 +256,8 @@ begin
   )
   select jsonb_build_object(
     'meilleur_effort', (select jsonb_build_object('date', d, 'km', round(km, 2), 'secondes', round(t), 'equiv_10km_secondes', round(equiv10)) from meilleur),
+    'meilleur_effort_recent', (select jsonb_build_object('date', d, 'km', round(km, 2), 'secondes', round(t), 'equiv_10km_secondes', round(equiv10)) from recent_effort),
+    'sorties_90_jours', (select count(*) from c where d > p_date - 90),
     'recent', (select jsonb_build_object(
         'sorties', count(*), 'km', coalesce(round(sum(km), 1), 0), 'minutes', coalesce(round(sum(t) / 60.0), 0),
         'plus_longue_km', max(km), 'plus_longue_minutes', coalesce(round(max(t) / 60.0), 0),

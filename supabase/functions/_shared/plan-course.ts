@@ -24,7 +24,11 @@ import type { ContexteValidation, Proposition } from './validateur.ts';
 
 // ---------- Le profil du coureur ----------
 export interface ProfilCourse {
+  /** Le meilleur effort des 24 derniers mois : ANCIEN, dernier recours seulement */
   meilleurEffort: { date: string; km: number; secondes: number; equiv10Secondes: number } | null;
+  /** Le meilleur effort des 90 derniers jours (sorties d'au moins 3 km) : il fixe le niveau d'aujourd'hui */
+  effortRecent: { date: string; km: number; secondes: number; equiv10Secondes: number } | null;
+  sorties90: number;
   recent: { sorties: number; km: number; minutes: number; plusLongueMinutes: number; allureMedianeSParKm: number | null };
   /** Les 8 dernières semaines, de la plus ancienne à la plus récente */
   semaines: { km: number; minutes: number; sorties: number }[];
@@ -44,6 +48,11 @@ export function profilCourseDepuisResume(resume: any): ProfilCourse | null {
   const meilleurEffort = m && typeof m.date === 'string' && eq !== null && eq > 0
     ? { date: m.date, km: nb(m.km) ?? 0, secondes: nb(m.secondes) ?? 0, equiv10Secondes: eq }
     : null;
+  const mr = p.meilleur_effort_recent;
+  const eqr = nb(mr?.equiv_10km_secondes);
+  const effortRecent = mr && typeof mr.date === 'string' && eqr !== null && eqr > 0
+    ? { date: mr.date, km: nb(mr.km) ?? 0, secondes: nb(mr.secondes) ?? 0, equiv10Secondes: eqr }
+    : null;
   const r = p.recent ?? {};
   const semaines = Array.isArray(p.semaines)
     ? p.semaines.slice(-8).map((s: Record<string, unknown>) => ({ km: nb(s?.km) ?? 0, minutes: nb(s?.minutes) ?? 0, sorties: nb(s?.sorties) ?? 0 }))
@@ -52,6 +61,8 @@ export function profilCourseDepuisResume(resume: any): ProfilCourse | null {
   if (p.jours && typeof p.jours === 'object') for (const [k, v] of Object.entries(p.jours)) { const j = Number(k); const n = nb(v); if (j >= 1 && j <= 7 && n !== null && n > 0) jours[j] = n; }
   return {
     meilleurEffort,
+    effortRecent,
+    sorties90: nb(p.sorties_90_jours) ?? 0,
     recent: { sorties: nb(r.sorties) ?? 0, km: nb(r.km) ?? 0, minutes: nb(r.minutes) ?? 0, plusLongueMinutes: nb(r.plus_longue_minutes) ?? 0, allureMedianeSParKm: nb(r.allure_mediane_s_par_km) },
     semaines,
     jours,
@@ -65,36 +76,46 @@ export const equivalent = (secondes: number, kmDe: number, kmA: number): number 
 /** Rapport entre l'allure facile et l'allure 10 km chez un coureur loisir (≈ 1,27) */
 const FACILE_SUR_10K = 1.27;
 
+export type Fiabilite = 'chrono' | 'recente' | 'ancienne';
+
 export interface Niveau {
   /** Son temps estimé AUJOURD'HUI sur la distance de la course */
   secondes: number;
   /** Une phrase qui dit d'où vient l'estimation */
   source: string;
+  /** chrono : un temps donné par l'utilisateur (test) · recente : ses sorties des 90 derniers jours · ancienne : un vieux record, très vieilli (estimation fragile) */
+  fiabilite: Fiabilite;
 }
 
+/** Un effort récent n'est presque jamais maximal : on le convertit puis on le prend pour 7 % plus lent qu'un vrai effort de course */
+const EFFORT_RECENT_FACTEUR = 0.93;
+/** Un vieux record vieillit de 1,5 % par mois d'ancienneté, 30 % au plus (on a perdu beaucoup de niveau) */
+const VIEILLISSEMENT_MENSUEL = 0.015;
+const VIEILLISSEMENT_MAX = 0.3;
+
 /**
- * Son niveau d'aujourd'hui sur `km` : le meilleur effort converti (vieilli de 0,5 % par mois d'ancienneté, 6 % au plus : un record de l'an dernier n'est
- * plus la forme du jour), croisé à 30 % avec ce que dit son allure facile récente. Null sans aucune donnée.
+ * Son niveau d'aujourd'hui sur `km`, du plus fiable au moins fiable :
+ *   1. un CHRONO donné par l'utilisateur (une sortie test) : pris tel quel ;
+ *   2. ses SORTIES DES 90 DERNIERS JOURS (au moins 3 sorties sur 8 semaines) : le meilleur effort converti, jamais un vieux record ;
+ *   3. sinon un VIEUX record, très vieilli : on part du principe qu'il a beaucoup perdu.
+ * Null sans aucune donnée.
  */
-export function niveauActuel(p: ProfilCourse | null, km: number, aujourdhui: string): Niveau | null {
+export function niveauActuel(p: ProfilCourse | null, km: number, aujourdhui: string, chrono?: { km: number; secondes: number } | null): Niveau | null {
+  if (chrono && chrono.km > 0 && chrono.secondes > 0) {
+    return { secondes: Math.round(equivalent(chrono.secondes, chrono.km, km)), source: `ton chrono de test (${chrono.km} km en ${formaterTemps(chrono.secondes)})`, fiabilite: 'chrono' };
+  }
   if (!p) return null;
-  const parts: { poids: number; valeur: number }[] = [];
-  const sources: string[] = [];
+  if (p.effortRecent && p.recent.sorties >= 3) {
+    const e = p.effortRecent;
+    return { secondes: Math.round(equivalent(e.equiv10Secondes, 10, km) * EFFORT_RECENT_FACTEUR), source: `tes sorties récentes (ta meilleure : ${e.km} km en ${formaterTemps(e.secondes)} le ${e.date})`, fiabilite: 'recente' };
+  }
   const ref = p.meilleurEffort;
   if (ref) {
     const mois = Math.max(0, ecartJours(ref.date, aujourdhui) / 30.4);
-    const vieillissement = 1 + Math.min(0.06, 0.005 * mois);
-    parts.push({ poids: 0.7, valeur: equivalent(ref.equiv10Secondes, 10, km) * vieillissement });
-    sources.push(`ton meilleur effort (${ref.km} km le ${ref.date}), vieilli de ${Math.round((vieillissement - 1) * 1000) / 10} %`);
+    const vieillissement = 1 + Math.min(VIEILLISSEMENT_MAX, VIEILLISSEMENT_MENSUEL * mois);
+    return { secondes: Math.round(equivalent(ref.equiv10Secondes, 10, km) * vieillissement), source: `un ancien effort (${ref.km} km le ${ref.date}), vieilli de ${Math.round((vieillissement - 1) * 100)} % faute de sorties récentes`, fiabilite: 'ancienne' };
   }
-  const facile = p.recent.allureMedianeSParKm;
-  if (facile && p.recent.sorties >= 3) {
-    parts.push({ poids: 0.3, valeur: (facile / FACILE_SUR_10K) * km });
-    sources.push(`ton allure facile récente (${formaterAllure(facile)}/km)`);
-  }
-  if (!parts.length) return null;
-  const total = parts.reduce((t, x) => t + x.poids, 0);
-  return { secondes: Math.round(parts.reduce((t, x) => t + x.valeur * x.poids, 0) / total), source: sources.join(' et ') };
+  return null;
 }
 
 /** Le temps jouable pour la course : le niveau actuel, amélioré de 0,6 % par semaine d'entraînement (8 % au plus) */
@@ -243,6 +264,42 @@ function qualite(phase: Phase, rang: number, a: Allures, second: boolean): Seanc
   return avec(`Rappel d'allure ${reps} × ${m} m`, 'seuil', intervalles(`${reps} × ${m} m à ${ms(allure)}/km, récup 2:00 trot`, reps, tempsAllure(m, allure), allure, 120, a), `${reps} × ${m} m à ${ms(allure)}/km (récup 2:00)`, "Un rappel d'allure court : les jambes gardent le rythme, mais tu arrives frais à la course.");
 }
 
+/** Un temps écrit « 15:10 » (minutes:secondes) ou « 1:05:30 » (heures:minutes:secondes) → secondes ; null si le format est faux ou le temps absurde (moins de 1 min ou plus de 24 h) */
+export function lireTemps(x: unknown): number | null {
+  if (typeof x !== 'string') return null;
+  const m = /^\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*$/.exec(x);
+  if (!m) return null;
+  const [a, b, c] = [Number(m[1]), Number(m[2]), m[3] === undefined ? null : Number(m[3])];
+  if (b > 59 || (c !== null && c > 59)) return null;
+  const s = c === null ? a * 60 + b : a * 3600 + b * 60 + c;
+  return s >= 60 && s <= 86400 ? s : null;
+}
+
+/**
+ * Le footing ne peut pas être bien plus LENT que ce que le coureur court vraiment (sinon le plan lui demande de ralentir sans raison) :
+ * on plafonne les allures facile et longue à son allure médiane récente (+3 % et +6 %). Sans sorties récentes, rien ne change.
+ */
+export function plafonnerFacile(a: Allures, profil: ProfilCourse | null): Allures {
+  const m = profil && profil.recent.sorties >= 3 ? profil.recent.allureMedianeSParKm : null;
+  if (!m) return a;
+  return { ...a, facile: Math.min(a.facile, m * 1.03), longue: Math.min(a.longue, m * 1.06) };
+}
+
+/** La sortie test : un 3 km chrono, la première séance quand le niveau n'est pas sûr. Son résultat sert à recalibrer tout le plan. */
+export function seanceTest(a: Allures): SeanceCourse {
+  const minutes = tempsAllure(3000, a.cinqK);
+  return assembler(
+    'Sortie test : 3 km chrono', 'seuil',
+    [
+      bloc('warmup', `Échauffement à ${ms(a.facile)}/km`, ECHAUF, a.facile, a),
+      bloc('steady', '3 km chrono : aussi vite que tu peux, allure régulière', minutes, a.cinqK, a),
+      bloc('cooldown', `Retour au calme à ${ms(a.facile)}/km`, RETOUR, a.facile, a),
+    ],
+    `${ECHAUF} min d'échauffement · 3 km chrono, aussi vite que tu peux tenir, allure régulière · ${RETOUR} min de retour au calme`,
+    "Ta première sortie : elle mesure où tu en es vraiment. Cours les 3 km le plus vite possible en gardant une allure régulière (pars prudent), puis donne-moi ton temps : je recalibre toutes les allures du plan dessus.",
+  );
+}
+
 /** Une allure écrite « 4:30 » ou « 4'30 » → secondes par km ; null si elle n'a pas ce format ou sort de 2:30 à 15:00 /km */
 export function lireAllure(x: unknown): number | null {
   if (typeof x === 'number' && Number.isFinite(x)) return x >= 150 && x <= 900 ? Math.round(x) : null;
@@ -286,8 +343,8 @@ export interface Calibrage {
   objectifPlan: number | null;
   verdict: 'realiste' | 'ambitieux' | 'sans_cible' | 'sans_donnees';
 }
-export function calibrer(km: number, tempsCibleMinutes: number | undefined, semaines: number, profil: ProfilCourse | null, aujourdhui: string): Calibrage {
-  const niveau = niveauActuel(profil, km, aujourdhui);
+export function calibrer(km: number, tempsCibleMinutes: number | undefined, semaines: number, profil: ProfilCourse | null, aujourdhui: string, chrono?: { km: number; secondes: number } | null): Calibrage {
+  const niveau = niveauActuel(profil, km, aujourdhui, chrono);
   const cible = tempsCibleMinutes ? tempsCibleMinutes * 60 : null;
   const realiste = niveau ? objectifRealiste(niveau.secondes, semaines) : null;
   if (realiste !== null) {
@@ -314,7 +371,7 @@ export function alluresCoureur(resume: any, aujourdhui: string): Allures {
   const km = typeof c?.km === 'number' && c.km > 0 ? c.km : 10;
   const semaines = c ? Math.max(1, Math.ceil(ecartJours(aujourdhui, c.date) / 7)) : 6;
   const cal = calibrer(km, typeof c?.temps_cible_min === 'number' ? c.temps_cible_min : undefined, semaines, profil, aujourdhui);
-  if (cal.objectifPlan !== null) return alluresDepuisCourse(cal.objectifPlan, km);
+  if (cal.objectifPlan !== null) return plafonnerFacile(alluresDepuisCourse(cal.objectifPlan, km), profil);
   const facile = profil?.recent.allureMedianeSParKm ?? 360;
   return alluresDepuisCourse((facile / FACILE_SUR_10K) * 10, 10);
 }
@@ -332,6 +389,10 @@ export interface DemandeCourse {
   /** Séances par semaine (défaut : d'après son rythme, entre 3 et 5) */
   seancesParSemaine?: number;
   joursLibres?: string[];
+  /** Un chrono réel (par exemple la sortie test : 3 km en 15:10) : il fixe le niveau, et le plan est recalibré dessus */
+  chrono?: { km: number; secondes: number };
+  /** Pas de sortie test en première séance (par défaut il y en a une quand le niveau n'est pas mesuré) */
+  sansTest?: boolean;
   /** Allures imposées par l'utilisateur (« 4:19 c'est trop vite, mets 4:30 ») : elles remplacent celles du calcul */
   allures?: Partial<Allures>;
 }
@@ -346,7 +407,11 @@ export interface Bilan {
   objectifPlan: number | null;
   verdict: 'realiste' | 'ambitieux' | 'sans_cible' | 'sans_donnees';
   allures: Allures | null;
+  /** Y a-t-il une sortie test en première séance ? */
+  test: boolean;
   seancesParSemaine: number;
+  /** Fiabilité du niveau : chrono (mesuré), recente (sorties des 90 jours), ancienne (vieux record vieilli), null (aucune donnée) */
+  niveauFiabilite: Fiabilite | null;
   /** Les allures que l'utilisateur a imposées */
   imposees: (keyof Allures)[];
 }
@@ -386,11 +451,13 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   if (jours > 60 * 7) return vide('Cette course est à plus de 60 semaines : fais un premier plan plus tard, quand elle sera plus proche.');
 
   // 1. niveau, objectif, allures
-  const { niveau, realiste, cible, objectifPlan, verdict } = calibrer(km, d.tempsCibleMinutes, nSemaines, profil, aujourdhui);
+  const { niveau, realiste, cible, objectifPlan, verdict } = calibrer(km, d.tempsCibleMinutes, nSemaines, profil, aujourdhui, d.chrono);
   if (objectifPlan === null) {
     return vide("Je n'ai ni tes sorties de course ni un temps visé pour calibrer les allures : donne-moi le temps que tu vises, ou fais d'abord quelques sorties.");
   }
-  const calculees = alluresDepuisCourse(objectifPlan, km);
+  const calculees = plafonnerFacile(alluresDepuisCourse(objectifPlan, km), profil);
+  // Le niveau n'est pas mesuré (pas de chrono) : la première sortie est un test, sauf si l'utilisateur n'en veut pas ou si le plan est trop court pour s'en servir
+  const avecTest = !d.chrono && !d.sansTest && nSemaines >= 2;
   const imposees = ALLURES_CLES.filter((c) => d.allures?.[c] !== undefined);
   const a: Allures = { ...calculees, ...Object.fromEntries(imposees.map((c) => [c, d.allures![c]!])) };
 
@@ -456,7 +523,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     }
 
     // les durées
-    const seancesQualite = roles.map((r) => (r === 'qualite1' ? qualite(phase, rang, a, false) : r === 'qualite2' ? qualite(phase, rang, a, true) : null));
+    const seancesQualite = roles.map((r) => (r === 'qualite1' ? (w === 0 && avecTest ? seanceTest(a) : qualite(phase, rang, a, false)) : r === 'qualite2' ? qualite(phase, rang, a, true) : null));
     const minutesQualite = seancesQualite.reduce((t, s) => t + (s?.minutes ?? 0), 0);
     const nLongue = roles.filter((r) => r === 'longue').length;
     const nFaciles = roles.filter((r) => r === 'facile').length;
@@ -499,7 +566,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     lignesSemaines.push(`Semaine ${w + 1} (${du}) : ${NOM_PHASE[phase]}${recuperation ? ', récupération' : ''}, ${posees} séance${posees > 1 ? 's' : ''}, ${totalSemaine} min`);
   }
 
-  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees };
+  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null };
   return { operations, abandons, semaines: lignesSemaines, bilan, message: messageBilan(bilan) };
 }
 
@@ -507,6 +574,9 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
 export function messageBilan(b: Bilan): string {
   const parts: string[] = [];
   if (b.niveau) parts.push(`Niveau estimé aujourd'hui sur ${b.km} km : ${formaterTemps(b.niveau.secondes)} (d'après ${b.niveau.source}).`);
+  if (b.niveauFiabilite === 'ancienne') parts.push("Attention : je n'ai AUCUNE sortie récente, cette estimation est très fragile (on a pu perdre beaucoup de niveau).");
+  else if (b.niveauFiabilite === 'recente') parts.push("Cette estimation vient de tes sorties récentes, qui ne sont pas des efforts maximaux : elle reste à confirmer.");
+  if (b.test) parts.push("La première sortie du plan est un TEST (3 km chrono) : dès que l'utilisateur donne son temps, rappelle preparer_course avec chrono_km et chrono_temps pour recalibrer toutes les allures. Dis-lui de la faire dès que possible.");
   if (b.realiste !== null) parts.push(`En ${b.semaines} semaine${b.semaines > 1 ? 's' : ''} d'entraînement, un temps jouable est d'environ ${formaterTemps(b.realiste)}.`);
   if (b.verdict === 'ambitieux' && b.cible !== null && b.realiste !== null) {
     parts.push(`L'objectif de ${formaterTemps(b.cible)} est très ambitieux : il faudrait gagner ${formaterTemps(b.realiste - b.cible)} en ${b.semaines} semaines. Le plan est calé sur ${formaterTemps(b.objectifPlan ?? b.realiste)} (${formaterAllure((b.objectifPlan ?? b.realiste) / b.km)}/km). Si les séances passent facilement, on remontera les allures.`);

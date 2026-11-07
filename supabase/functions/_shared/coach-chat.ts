@@ -260,6 +260,8 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
       const ids = new Set(anciennes.map((x) => x.id));
       const res = planifierCourse({
         allures: demande.allures,
+        chrono: demande.chrono,
+        sansTest: demande.sansTest,
         date,
         km: demande.km ?? (typeof calendrier?.km === 'number' && calendrier.km > 0 ? calendrier.km : 10),
         tempsCibleMinutes: demande.tempsCibleMinutes ?? (typeof calendrier?.temps_cible_min === 'number' ? calendrier.temps_cible_min : undefined),

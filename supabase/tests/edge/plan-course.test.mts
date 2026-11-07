@@ -15,9 +15,11 @@ const COURSE = '2026-12-13';
 const LIBRE: DecisionGardeFou = { niveau: 'normal', raisons: [], message: null, autoriserModele: true, autoriserCartes: true, intensiteMax: 'normale' };
 const ctx = (sur: Partial<ContexteValidation> = {}): ContexteValidation => ({ aujourdhui: AUJ, ctl: 40, joursPasses: [], prevues: [], indisponibilites: [], joursDeRepos: [], competitions: [{ date: COURSE }], gardeFou: LIBRE, ...sur });
 
-/** Le profil réel de Yanis (nov. 2026) : 5 km en 21:48 en déc. 2024, ~6 km à 5:50/km en ce moment */
+/** Le profil réel de Yanis (nov. 2026) : 5 km en 21:48 en déc. 2024 (ANCIEN), ~6 km à 5:50/km en ce moment */
 const YANIS: ProfilCourse = {
   meilleurEffort: { date: '2024-12-15', km: 5, secondes: 1308, equiv10Secondes: Math.round(equivalent(1308, 5, 10)) },
+  effortRecent: { date: '2026-11-04', km: 6, secondes: 2100, equiv10Secondes: Math.round(equivalent(2100, 6, 10)) },
+  sorties90: 11,
   recent: { sorties: 5, km: 27, minutes: 160, plusLongueMinutes: 41, allureMedianeSParKm: 350 },
   semaines: [{ km: 0, minutes: 0, sorties: 0 }, { km: 0, minutes: 0, sorties: 0 }, { km: 0, minutes: 0, sorties: 0 }, { km: 0, minutes: 0, sorties: 0 }, { km: 0, minutes: 0, sorties: 0 }, { km: 10.8, minutes: 71, sorties: 2 }, { km: 12.2, minutes: 75, sorties: 2 }, { km: 6, minutes: 35, sorties: 1 }],
   jours: { 1: 3, 3: 2, 5: 1 },
@@ -30,14 +32,23 @@ test('formats : allure et temps', () => {
   assert.equal(formaterTemps(2400), '40:00');
   assert.equal(formaterTemps(3900), '1 h 05');
 });
-test('niveau : le meilleur effort vieillit, l\'allure facile le corrige ; null sans donnée', () => {
+test('niveau : fixé par les sorties des 90 derniers jours, JAMAIS par le record de 2024 ; chrono > récent > ancien ; null sans donnée', () => {
   const n = niveauActuel(YANIS, 10.15, AUJ)!;
-  assert.ok(n.secondes > 2700 && n.secondes < 3100, String(n.secondes)); // entre 45:00 et 51:40
-  assert.match(n.source, /meilleur effort/);
-  assert.match(n.source, /allure facile/);
+  assert.equal(n.fiabilite, 'recente');
+  assert.match(n.source, /sorties récentes/);
+  // 6 km en 35:00 converti sur 10,15 km (≈ 1 h 01), pris pour 7 % plus lent qu'un vrai effort : autour de 57 min, très loin des 48:50 de l'ancien calcul
+  assert.ok(n.secondes > 3300 && n.secondes < 3500, String(n.secondes));
+  // sans sortie récente : le vieux record est très vieilli (+30 % après 2 ans), estimation « ancienne »
+  const ancien = niveauActuel({ ...YANIS, effortRecent: null, recent: { ...YANIS.recent, sorties: 0 } }, 10.15, AUJ)!;
+  assert.equal(ancien.fiabilite, 'ancienne');
+  assert.ok(ancien.secondes > 3500, String(ancien.secondes));
+  assert.match(ancien.source, /faute de sorties récentes/);
+  // un chrono réel écrase tout : 3 km en 15:00 → environ 54:36 sur 10,15 km
+  const c = niveauActuel(YANIS, 10.15, AUJ, { km: 3, secondes: 900 })!;
+  assert.equal(c.fiabilite, 'chrono');
+  assert.ok(c.secondes > 3200 && c.secondes < 3350, String(c.secondes));
   assert.equal(niveauActuel(null, 10, AUJ), null);
-  const sans = niveauActuel({ ...YANIS, meilleurEffort: null, recent: { ...YANIS.recent, sorties: 1 } }, 10, AUJ);
-  assert.equal(sans, null);
+  assert.equal(niveauActuel({ ...YANIS, effortRecent: null, meilleurEffort: null }, 10, AUJ), null);
 });
 test('objectif réaliste : 0,6 % par semaine, 8 % au plus', () => {
   assert.equal(objectifRealiste(3000, 5), 2910);
@@ -117,10 +128,10 @@ test('plan de Yanis : la qualité suit les phases (VMA en développement, allure
 test('plan de Yanis : le volume monte puis baisse à l\'affûtage ; la dernière semaine est la plus légère ; la sortie longue progresse sans dépasser 80 min', () => {
   const r = planifierCourse(DEMANDE, [], ctx(), YANIS);
   const a = ajouts(r.operations);
-  const minutes = (x: string, y: string) => a.filter((o) => o.proposition.date >= x && o.proposition.date <= y).reduce((t, o) => t + o.proposition.minutes, 0);
-  const v = [minutes('2026-11-10', '2026-11-16'), minutes('2026-11-17', '2026-11-23'), minutes('2026-11-24', '2026-11-30'), minutes('2026-12-01', '2026-12-07'), minutes('2026-12-08', '2026-12-12')];
-  assert.ok(v[2] > v[0], v.join(','));
-  assert.ok(v[4] < v[3] && v[4] < v[2], v.join(','));
+  const v = r.semaines.map((l) => Number(/(\d+) min$/.exec(l)![1]));
+  assert.equal(v.length, 5);
+  assert.ok(v[3] > v[0], v.join(','));
+  assert.ok(v[4] < v[3] && v[4] === Math.min(...v), v.join(','));
   const longues = a.filter((o) => o.proposition.type === 'sortie_longue').map((o) => o.proposition.minutes);
   assert.ok(longues.length >= 3 && Math.max(...longues) <= 80, longues.join(','));
   assert.ok(longues[1] >= longues[0]);
@@ -186,4 +197,52 @@ test('allures imposées : remplacent celles du calcul (la VMA passe de 4:19 à 4
 test('le bilan rappelle le nombre de séances par semaine pour qu\'un plan refait garde le même rythme', () => {
   const r = planifierCourse({ ...DEMANDE, seancesParSemaine: 4 }, [], ctx(), YANIS);
   assert.match(r.message, /Plan à 4 séances par semaine/);
+});
+
+test('première sortie = TEST (3 km chrono) quand le niveau n\'est pas mesuré : en semaine 1, avec ses blocs, et le bilan demande le temps', () => {
+  const r = planifierCourse(DEMANDE, [], ctx(), YANIS);
+  assert.equal(r.bilan?.test, true);
+  const a = ajouts(r.operations);
+  const test = a.filter((o) => /Sortie test/.test(o.detail!.nom));
+  assert.equal(test.length, 1);
+  assert.ok(test[0].proposition.date <= '2026-11-16', test[0].proposition.date);
+  assert.deepEqual(test[0].detail!.structure.map((b) => b.type), ['warmup', 'steady', 'cooldown']);
+  assert.match(test[0].detail!.structure[1].name, /3 km chrono/);
+  assert.match(test[0].justification, /donne-moi ton temps/);
+  assert.match(r.message, /TEST \(3 km chrono\)/);
+  assert.match(r.message, /chrono_km et chrono_temps/);
+  assert.match(r.message, /ne sont pas des efforts maximaux/);
+  assert.equal(evaluerPlan(r.operations, [], ctx()).ok, true);
+});
+test('chrono réel : plus de test, niveau mesuré, tout le plan recalibré dessus (allures plus rapides qu\'avec l\'estimation)', () => {
+  const avant = planifierCourse(DEMANDE, [], ctx(), YANIS);
+  const apres = planifierCourse({ ...DEMANDE, chrono: { km: 3, secondes: 840 } }, [], ctx(), YANIS); // 3 km en 14:00
+  assert.equal(apres.bilan?.test, false);
+  assert.equal(apres.bilan?.niveauFiabilite, 'chrono');
+  assert.ok(ajouts(apres.operations).every((o) => !/Sortie test/.test(o.detail!.nom)));
+  assert.match(apres.message, /ton chrono de test \(3 km en 14:00\)/);
+  assert.ok(apres.bilan!.niveau!.secondes < avant.bilan!.niveau!.secondes);
+  assert.ok(apres.bilan!.allures!.course < avant.bilan!.allures!.course);
+});
+test('sans_test, plan trop court, ou sans aucune donnée : pas de test quand il ne sert à rien ; avec une vieille donnée seulement : message d\'alerte', () => {
+  assert.equal(planifierCourse({ ...DEMANDE, sansTest: true }, [], ctx(), YANIS).bilan?.test, false);
+  const c = ctx({ competitions: [{ date: '2026-11-15' }] });
+  assert.equal(planifierCourse({ date: '2026-11-15', km: 10, tempsCibleMinutes: 60 }, [], c, YANIS).bilan?.test, false);
+  const ancien = planifierCourse(DEMANDE, [], ctx(), { ...YANIS, effortRecent: null, recent: { ...YANIS.recent, sorties: 0, allureMedianeSParKm: null } });
+  assert.equal(ancien.bilan?.niveauFiabilite, 'ancienne');
+  assert.match(ancien.message, /AUCUNE sortie récente/);
+  assert.equal(ancien.bilan?.test, true);
+});
+test('le footing n\'est jamais plus lent que ce que le coureur court vraiment (plafond à son allure médiane récente +3 %)', () => {
+  const r = planifierCourse(DEMANDE, [], ctx(), YANIS);
+  assert.ok(r.bilan!.allures!.facile <= 350 * 1.03 + 0.5, String(r.bilan!.allures!.facile));
+  assert.ok(r.bilan!.allures!.longue <= 350 * 1.06 + 0.5);
+  const sans = planifierCourse({ ...DEMANDE, tempsCibleMinutes: 40 }, [], ctx(), { ...YANIS, recent: { ...YANIS.recent, sorties: 0 } });
+  assert.ok(sans.bilan!.allures!.facile > 350 * 1.03);
+});
+test('temps : mm:ss et h:mm:ss', async () => {
+  const { lireTemps } = await import('../../functions/_shared/plan-course.ts');
+  assert.equal(lireTemps('15:10'), 910);
+  assert.equal(lireTemps('1:05:30'), 3930);
+  for (const m of ['15', '15:75', 'vite', '', null, '0:30', '25:00:00']) assert.equal(lireTemps(m), null, String(m));
 });
