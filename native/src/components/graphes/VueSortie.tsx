@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { ActivityIndicator, PanResponder, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CarteTrace } from '@/components/graphes/CarteTrace';
 import { EnteteFlottante, HAUT_ENTETE } from '@/components/graphes/EnteteFlottante';
@@ -68,8 +68,25 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
 
   const aller = (i: number) => {
     setIndex(i);
+    setSurCourbe(false); // par sécurité : un doigt levé ailleurs ne doit pas laisser le défilement des pages bloqué
     defilement.current?.scrollTo({ x: i * dims.pager, animated: true });
   };
+  // Le haut de la feuille (date, chiffres, pastilles) change de page lui aussi : glisser vers la gauche va à la page suivante, vers la droite à la précédente.
+  // (Sur la première page, la droite ne fait rien ici : c'est le retour par le bord de l'écran qui s'en charge.)
+  const etatPages = useRef({ index, nombre: pages.length, aller });
+  etatPages.current = { index, nombre: pages.length, aller };
+  const balayage = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+        onPanResponderRelease: (_, g) => {
+          const { index: i, nombre, aller: va } = etatPages.current;
+          if (g.dx < -40 && i < nombre - 1) va(i + 1);
+          else if (g.dx > 40 && i > 0) va(i - 1);
+        },
+      }),
+    [],
+  );
   const apresDefilement = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (dims.pager > 0) setIndex(Math.round(e.nativeEvent.contentOffset.x / dims.pager));
   };
@@ -97,6 +114,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
         onLayout={(e: LayoutChangeEvent) => setDims((d) => ({ ...d, feuille: e.nativeEvent.layout.height }))}
         style={[styles.feuille, { backgroundColor: p.fond, borderColor: p.trait, paddingBottom: bas + espace.e3 }]}
       >
+        <View {...balayage.panHandlers} style={{ gap: espace.e2 }}>
         {date ? <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2 }]}>{date}</Text> : null}
         {chiffres}
 
@@ -116,6 +134,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
         <Text style={[typo.micro, { color: p.texteMuet, letterSpacing: 1.2 }]}>
           {NOMS[pageActuelle].toUpperCase()} · PAGE {Math.min(index, pages.length - 1) + 1} SUR {pages.length}
         </Text>
+        </View>
 
         <View style={{ height: HAUTEUR_PAGE }} onLayout={(e: LayoutChangeEvent) => setDims((d) => ({ ...d, pager: e.nativeEvent.layout.width }))}>
           {dims.pager > 0 ? (
