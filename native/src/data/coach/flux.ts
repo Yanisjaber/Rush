@@ -1,6 +1,8 @@
 // Lecture du flux du coach (SSE) : le serveur envoie « data: {json} » suivi d'une ligne vide, pour chaque événement.
 // Logique pure : les morceaux de texte arrivent coupés n'importe où, on garde ce qui n'est pas fini pour le morceau suivant.
-import type { BlocStructure, Carte, CarteSeance, CartePlanning, EtatCarte, EvenementCoach, LignePlan, SegmentBloc, TypeBloc, TypeOperation, TypePeriode } from './types.ts';
+import { MAX_BLOCS, METRIQUES, TYPES_BLOC } from '../calendrier/structure.ts';
+import type { Bloc, Segment, TypeBloc } from '../calendrier/structure.ts';
+import type { BlocStructure, Carte, CarteSeance, CartePlanning, EtatCarte, EvenementCoach, LignePlan, TypeOperation, TypePeriode } from './types.ts';
 
 const ETATS: readonly string[] = ['proposee', 'en_cours', 'ajoutee', 'refusee', 'annulee'];
 
@@ -16,11 +18,7 @@ const texte = (x: unknown, max = MAX_TEXTE): string => (typeof x === 'string' ? 
 const nombre = (x: unknown): number | undefined => (typeof x === 'number' && Number.isFinite(x) ? x : undefined);
 const date = (x: unknown): string | undefined => (typeof x === 'string' && DATE_ISO.test(x) ? x : undefined);
 
-const TYPES_BLOC: readonly string[] = ['warmup', 'interval', 'steady', 'recovery', 'cooldown'];
-const METRIQUES: readonly string[] = ['power', 'hr', 'pace'];
-const MAX_BLOCS = 20;
-
-function lireSegment(x: unknown): SegmentBloc | null {
+function lireSegment(x: unknown): Segment | null {
   if (!estObjet(x)) return null;
   const min = nombre(x.min);
   const int = nombre(x.int);
@@ -34,12 +32,12 @@ export function lireBlocs(x: unknown): BlocStructure[] | undefined {
   if (!Array.isArray(x) || x.length === 0 || x.length > MAX_BLOCS) return undefined;
   const blocs: BlocStructure[] = [];
   for (const b of x) {
-    if (!estObjet(b) || !TYPES_BLOC.includes(String(b.type)) || !METRIQUES.includes(String(b.metric))) return undefined;
+    if (!estObjet(b) || !TYPES_BLOC.includes(b.type as TypeBloc) || !METRIQUES.includes(b.metric as Bloc['metric'])) return undefined;
     const reps = nombre(b.reps);
     const work = lireSegment(b.work);
     const rec = b.rec === undefined ? undefined : lireSegment(b.rec);
     if (reps === undefined || !Number.isInteger(reps) || reps < 1 || reps > 200 || !work || rec === null) return undefined;
-    blocs.push({ type: b.type as TypeBloc, name: texte(b.name, 80), reps, metric: b.metric as BlocStructure['metric'], unit: b.unit === 'pct' ? 'pct' : 'zone', work, ...(rec ? { rec } : {}) });
+    blocs.push({ type: b.type as TypeBloc, name: texte(b.name, 80), reps, metric: b.metric as Bloc['metric'], unit: b.unit === 'pct' ? 'pct' : 'zone', work, ...(rec ? { rec } : {}) });
   }
   return blocs;
 }

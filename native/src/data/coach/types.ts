@@ -1,6 +1,8 @@
 // Les formes échangées avec le Coach IA (voir docs/ia/CADRAGE_IA.md et la fonction serveur supabase/functions/coach-chat).
 // L'état d'une carte vient du serveur : l'app ne le décide jamais toute seule.
 
+import type { Bloc } from '../calendrier/structure.ts';
+
 export type EtatCarte = 'proposee' | 'en_cours' | 'ajoutee' | 'refusee' | 'annulee';
 
 export interface Proposition {
@@ -10,22 +12,8 @@ export interface Proposition {
   minutes: number;
 }
 
-/** Un bloc de la structure d'une séance (construite par le serveur : supabase/functions/_shared/structure-seance.ts) */
-export type TypeBloc = 'warmup' | 'interval' | 'steady' | 'recovery' | 'cooldown';
-export interface SegmentBloc {
-  min: number;
-  int: number;
-  intHi: number | null;
-}
-export interface BlocStructure {
-  type: TypeBloc;
-  name: string;
-  reps: number;
-  metric: 'power' | 'hr' | 'pace';
-  unit: 'zone' | 'pct';
-  work: SegmentBloc;
-  rec?: SegmentBloc;
-}
+/** Un bloc de la structure d'une séance (construite par le serveur) : le même format que celui du calendrier (data/calendrier/structure.ts) */
+export type BlocStructure = Bloc;
 
 export interface CarteSeance {
   id: string;

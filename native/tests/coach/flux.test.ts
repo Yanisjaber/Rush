@@ -194,7 +194,7 @@ test('blocs : un seul bloc douteux et toute la structure est écartée (le profi
   assert.equal(lireBlocs([{ ...BLOC_OK, work: { ...SEG, min: -3 } }]), undefined);
   assert.equal(lireBlocs([{ ...BLOC_OK, work: { ...SEG, min: 'dix' } }]), undefined);
   assert.equal(lireBlocs([{ ...BLOC_OK, rec: { min: 'x' } }]), undefined);
-  assert.equal(lireBlocs(Array.from({ length: 21 }, () => BLOC_OK)), undefined);
+  assert.equal(lireBlocs(Array.from({ length: 41 }, () => BLOC_OK)), undefined);
 });
 test('une carte séance et une ligne de plan gardent leurs blocs ; sans blocs valides, la carte reste lisible', () => {
   const seance = { id: 'c1', etat: 'proposee', proposition: { date: '2026-11-12', sport: 'course', type: 'fractionne', minutes: 10 }, tss_estime: 20, justification: 'ok', blocs: [BLOC_OK] };

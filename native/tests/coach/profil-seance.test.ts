@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dureeProfil, niveauDepuisPourcent, profilSeance, resumeBlocs } from '../../src/data/coach/profil-seance.ts';
+import { dureeProfil, profilSeance, resumeBlocs } from '../../src/data/coach/profil-seance.ts';
 import type { BlocStructure } from '../../src/data/coach/types.ts';
 
 const seg = (min: number, int: number) => ({ min, int, intHi: null });
@@ -10,11 +10,10 @@ const blocs: BlocStructure[] = [
   { type: 'cooldown', name: 'Retour au calme', reps: 1, metric: 'pace', unit: 'zone', work: seg(10, 60) },
 ];
 
-test('le niveau reste entre 0,2 et 1, quelle que soit la valeur reçue', () => {
-  assert.equal(niveauDepuisPourcent(40), 0.2);
-  assert.equal(niveauDepuisPourcent(125), 1);
-  assert.equal(niveauDepuisPourcent(10), 0.2);
-  assert.equal(niveauDepuisPourcent(300), 1);
+test('le niveau reste entre 0,2 et 1 : plus la zone est haute, plus la barre est haute', () => {
+  const p = profilSeance([{ type: 'steady', name: 'x', reps: 1, metric: 'pace', unit: 'zone', work: seg(10, 10) }, { type: 'steady', name: 'x', reps: 1, metric: 'pace', unit: 'zone', work: seg(10, 300) }]);
+  assert.equal(p[0].niveau, 0.2);
+  assert.equal(p[1].niveau, 1);
 });
 test('les intervalles alternent travail et récupération, et la durée totale est celle de la séance', () => {
   const p = profilSeance(blocs);
