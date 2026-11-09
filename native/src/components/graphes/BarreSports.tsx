@@ -57,9 +57,9 @@ export function BarreSports({ titre }: { titre: string }) {
                   et une pastille de couleur sur l'anneau pour chaque sport coché */}
               <View style={[styles.anneau, { backgroundColor: p.surface2, borderColor: selection.length ? couleurSport(p, filtre) : p.traitFort }]}>
                 <View style={styles.filtre}>
-                  <View style={[styles.trait, { width: 18, backgroundColor: p.texteDoux }]} />
-                  <View style={[styles.trait, { width: 12, backgroundColor: p.texteDoux }]} />
-                  <View style={[styles.trait, { width: 6, backgroundColor: p.texteDoux }]} />
+                  <View style={[styles.trait, { width: 24, backgroundColor: p.texteDoux }]} />
+                  <View style={[styles.trait, { width: 16, backgroundColor: p.texteDoux }]} />
+                  <View style={[styles.trait, { width: 8, backgroundColor: p.texteDoux }]} />
                 </View>
               </View>
               {selection.map((f, i) => {
@@ -140,8 +140,8 @@ const styles = StyleSheet.create({
   // Le bouton rond : 42 pt de cible tactile, un anneau de 38 pt dedans (les pastilles de sport se posent sur l'anneau)
   declencheur: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   anneau: { width: 38, height: 38, borderRadius: 19, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  filtre: { alignItems: 'center', gap: 3.5 },
-  trait: { height: 2.5, borderRadius: 2 },
+  filtre: { alignItems: 'center', gap: 4 },
+  trait: { height: 3, borderRadius: 2 },
   pastille: { position: 'absolute', width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
   point: { width: 10, height: 10, borderRadius: 5 },
   panneau: { position: 'absolute', left: 12, width: 260, maxHeight: '70%', borderWidth: 1, borderRadius: rayon.bloc, overflow: 'hidden' },
