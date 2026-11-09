@@ -1,4 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
+import { repereHeure } from '@/data/coach/libelles';
 import { estPlanning } from '@/data/coach/types';
 import type { Carte, MessageCoach } from '@/data/coach/types';
 import { espace, rayon } from '@/theme/couleurs';
@@ -10,6 +12,9 @@ import { CarteSeanceCoach } from './CarteSeanceCoach';
 // Un message du fil (façon Messages d'iOS, variante « sans queue, serré ») : des capsules rondes. Toi à droite en couleur de sport (course),
 // le coach à gauche sur une surface neutre. Les cartes de séance du coach se posent sous son message, en pleine largeur.
 // Le texte s'affiche tel quel (jamais interprété comme du HTML ou du lien).
+/** Largeur de la colonne d'heures qui apparaît quand on glisse le fil vers la gauche */
+export const HEURE_LARGEUR = 44;
+
 interface Props {
   message: MessageCoach;
   occupees: Record<string, boolean>;
@@ -27,15 +32,24 @@ interface Props {
   onBascule?: () => void;
   /** Le message suivant (plus récent) est du même auteur : on le colle contre celui-ci */
   colle?: boolean;
+  /** De combien le fil est tiré vers la gauche (0 au repos, négatif quand on glisse) : l'heure de chaque message apparaît à droite, comme dans Messages */
+  decalage?: SharedValue<number>;
 }
 
-export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onReessayer, onAjouter, onAnnuler, onRefaire, onVoirCalendrier, onBascule, colle }: Props) {
+export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onReessayer, onAjouter, onAnnuler, onRefaire, onVoirCalendrier, onBascule, colle, decalage }: Props) {
   const p = usePalette();
+  const heure = message.date ? repereHeure(message.date)?.heure : undefined;
+  const glisse = useAnimatedStyle(() => ({ transform: [{ translateX: decalage ? decalage.value : 0 }] }));
   const moi = message.role === 'user';
   const attente = message.enCours && !message.texte;
 
   return (
-    <View style={[styles.ligne, moi ? styles.droite : styles.gauche, { marginBottom: colle ? espace.e1 / 2 : espace.e3 }]}>
+    <Animated.View style={[styles.ligne, moi ? styles.droite : styles.gauche, { marginBottom: colle ? espace.e1 / 2 : espace.e3 }, glisse]}>
+      {heure && !message.enCours ? (
+        <Text accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[typo.micro, styles.heure, { color: p.texteMuet }]}>
+          {heure}
+        </Text>
+      ) : null}
       {moi || message.texte || attente ? (
         <View
           style={[
@@ -84,12 +98,13 @@ export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onR
           ) : null}
         </View>
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   ligne: { gap: espace.e2 },
+  heure: { position: 'absolute', right: -(HEURE_LARGEUR + espace.e4), top: 9, width: HEURE_LARGEUR, textTransform: 'none', letterSpacing: 0 },
   droite: { alignItems: 'flex-end' },
   gauche: { alignItems: 'flex-start' },
   bloc: { borderRadius: rayon.bulle, paddingHorizontal: 14, paddingVertical: 9 },

@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Keyboard, KeyboardAvoidingView, type NativeScrollEvent, type NativeSyntheticEvent, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
+import { useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MessageVue } from '@/components/coach/MessageVue';
+import { HEURE_LARGEUR, MessageVue } from '@/components/coach/MessageVue';
 import { SaisieCoach } from '@/components/coach/SaisieCoach';
 import { BoutonReglages } from '@/components/ui/BoutonReglages';
 import { FondDegrade } from '@/components/ui/FondDegrade';
@@ -70,6 +72,19 @@ export default function Coach() {
     const { contenu, vue } = tailles.current;
     liste.current?.scrollToOffset({ offset: Math.max(0, contenu - vue), animated: false });
   };
+  // Glisser le fil vers la gauche montre l'heure de chaque message à droite (comme Messages) ; on lâche, il revient
+  const decalage = useSharedValue(0);
+  const glissement = usePanGesture({
+    runOnJS: true,
+    activeOffsetX: [-12, 10000],
+    failOffsetY: [-12, 12],
+    onUpdate: (e) => {
+      decalage.value = Math.max(-(HEURE_LARGEUR + espace.e4), Math.min(0, e.translationX));
+    },
+    onFinalize: () => {
+      decalage.value = withSpring(0, { damping: 22, stiffness: 260 });
+    },
+  });
   const vide = !c.chargement && !c.erreur && c.messages.length === 0;
 
   function confirmerEffacement() {
@@ -119,6 +134,7 @@ export default function Coach() {
         ) : vide ? (
           <Etat titre="Ton coach" texte="Pose une question sur ton entraînement, ta récupération ou ta semaine. Pour une séance, demande-la : elle apparaîtra ici sous forme de carte, et c'est toi qui l'ajoutes à ton calendrier." />
         ) : (
+          <GestureDetector gesture={glissement}>
           <FlatList
             ref={liste}
             data={c.messages}
@@ -165,6 +181,7 @@ export default function Coach() {
                   onAjouter={(carte) => void c.ajouter(carte)}
                   onAnnuler={(carte) => void c.annuler(carte)}
                   onRefaire={() => void c.envoyer('Refais le plan : mon calendrier a changé.')}
+                  decalage={decalage}
                   onVoirCalendrier={() => router.navigate('/calendrier')}
                   onBascule={() => {
                     // L'utilisateur déplie ou replie : on ne tire plus la liste vers le bas, le haut de la carte reste en place
@@ -175,6 +192,7 @@ export default function Coach() {
               );
             }}
           />
+          </GestureDetector>
         )}
 
         {acces ? <SaisieCoach envoi={c.envoi} basse={clavier ? espace.e2 : insets.bottom + BARRE_ONGLETS} onEnvoyer={(t) => {
