@@ -201,7 +201,7 @@ export default function Prevue() {
           <View style={styles.tuiles}>
             {chiffres.slice(0, 3).map((c) => (
               <View key={c.cle} style={[styles.tuile, { backgroundColor: p.surface }]}>
-                <StatCle etiquette={c.libelle} valeur={c.valeur} unite={c.unite} petit />
+                <StatCle etiquette={c.libelle.replace(/^Allure (cible|prévue)$/, 'Allure')} valeur={c.valeur} unite={c.unite} petit />
               </View>
             ))}
           </View>
