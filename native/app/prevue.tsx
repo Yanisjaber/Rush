@@ -1,10 +1,10 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { Bouton } from '@/components/ui/Bouton';
-import { ParcoursOnglets } from '@/components/graphes/ParcoursOnglets';
+import { aUnParcours, ParcoursOnglets } from '@/components/graphes/ParcoursOnglets';
 import { IconeSport } from '@/components/ui/IconeSport';
 import { ProfilSeance } from '@/components/graphes/ProfilSeance';
 import { StatCle } from '@/components/ui/StatCle';
@@ -93,11 +93,16 @@ export default function Prevue() {
       },
     ]);
 
+  // Avec un parcours (carte ou profil), l'écran se construit autour de lui : en-tête léger, onglets, grande carte, trois chiffres, fichier. Sans parcours, la mise en page reste celle d'avant.
+  const modeParcours = aUnParcours(parcours);
+  const enveloppe = (contenu: ReactNode) =>
+    modeParcours ? <View style={{ gap: espace.e3 }}>{contenu}</View> : <Bloc titre={`Blocs (${blocs.length})`}>{contenu}</Bloc>;
+
   return (
     <View style={styles.page}>
       <Stack.Screen options={{ title: titreEntete }} />
       <ScrollView contentContainerStyle={styles.contenu} contentInsetAdjustmentBehavior="automatic">
-        <View style={[styles.entete, { backgroundColor: p.surface, borderLeftColor: couleur }]}>
+        <View style={modeParcours ? styles.enteteLegere : [styles.entete, { backgroundColor: p.surface, borderLeftColor: couleur }]}>
           <View style={styles.sport}>
             <IconeSport sport={prevue.sport} />
             <Text style={[typo.petit, { color: p.texteDoux }]}>
@@ -113,7 +118,7 @@ export default function Prevue() {
           </Text>
         </View>
 
-        {chiffres.length ? (
+        {chiffres.length && !modeParcours ? (
           <Bloc titre={competition ? "L'épreuve" : 'Les chiffres'}>
             <View style={styles.grille}>
               {chiffres.map((c) => (
@@ -125,13 +130,12 @@ export default function Prevue() {
           </Bloc>
         ) : null}
 
-        {blocs.length || prevue.gpx_content ? (
-          <Bloc titre={prevue.gpx_content ? 'Parcours' : `Blocs (${blocs.length})`}>
+        {blocs.length || modeParcours
+          ? enveloppe(
             <ParcoursOnglets
               parcours={parcours}
               couleur={couleur}
               km={prevue.km}
-              nomFichier={prevue.gpx_name}
               plan={
                 blocs.length ? (
                   <View style={{ gap: espace.e3 }}>
@@ -164,8 +168,27 @@ export default function Prevue() {
                   </View>
                 ) : null
               }
-            />
-          </Bloc>
+            />,
+          )
+          : null}
+
+        {modeParcours && chiffres.length ? (
+          <View style={styles.tuiles}>
+            {chiffres.slice(0, 3).map((c) => (
+              <View key={c.cle} style={[styles.tuile, { backgroundColor: p.surface }]}>
+                <StatCle etiquette={c.libelle} valeur={c.valeur} unite={c.unite} petit />
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {modeParcours && prevue.gpx_name ? (
+          <View accessible style={[styles.fichier, { backgroundColor: p.surface }]}>
+            <Text style={[typo.corps, { color: p.texteDoux }]}>Fichier du parcours</Text>
+            <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flexShrink: 1 }]}>
+              {prevue.gpx_name}
+            </Text>
+          </View>
         ) : null}
 
         {notes ? (
@@ -205,6 +228,10 @@ const styles = StyleSheet.create({
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: espace.e5 },
   contenu: { padding: espace.e4, gap: espace.e3, paddingBottom: espace.e5 },
   entete: { borderRadius: rayon.bloc, borderLeftWidth: 6, padding: espace.e4, gap: 4 },
+  enteteLegere: { paddingHorizontal: espace.e1, gap: 4 },
+  tuiles: { flexDirection: 'row', gap: espace.e2 },
+  tuile: { flex: 1, borderRadius: rayon.base, padding: espace.e3 },
+  fichier: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espace.e3, minHeight: 44, borderRadius: rayon.base, paddingHorizontal: espace.e4, paddingVertical: espace.e3 },
   sport: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   grille: { flexDirection: 'row', flexWrap: 'wrap', rowGap: espace.e4 },
   case: { width: '50%', paddingRight: espace.e3 },
