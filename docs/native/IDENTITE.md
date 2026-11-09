@@ -73,7 +73,7 @@ Les polices sont embarquées dans l'app (aucun appel à Google). Le texte suit l
 ## 6. Forme, espacement, toucher
 
 - Espacement : échelle de 4 (`e1` 4 → `e7` 48), marges d'écran `e4` (16).
-- Rayons : 5 / 6 / 8 px, **jamais plus** (sauf pastilles rondes). Pas de cartes très arrondies avec ombre douce.
+- Rayons : 5 / 6 / 8 px, **jamais plus** (sauf pastilles rondes et les bulles du chat Coach, `rayon.bulle` = 18 px, décision du 9 nov : le chat ressemble à Messages d'iOS). Pas de cartes très arrondies avec ombre douce.
 - Hiérarchie par **surface et trait fin** (`surface`, `surface2`, `trait`), pas par ombres.
 - Cible tactile : **44 pt minimum**, 8 pt d'écart entre cibles voisines.
 - Zone de sécurité (encoche, barre d'accueil) respectée partout.

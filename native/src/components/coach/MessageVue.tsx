@@ -7,8 +7,8 @@ import { usePalette } from '@/theme/usePalette';
 import { CartePlanningCoach } from './CartePlanningCoach';
 import { CarteSeanceCoach } from './CarteSeanceCoach';
 
-// Un message du fil (maquette « fil classique ») : des blocs sobres, pas de grosses bulles. Toi à droite sur une surface pleine,
-// le coach à gauche sur une surface avec un trait fin. Les cartes de séance du coach se posent sous son message, en pleine largeur.
+// Un message du fil (façon Messages d'iOS, variante « sans queue, serré ») : des capsules rondes. Toi à droite en couleur de sport (course),
+// le coach à gauche sur une surface neutre. Les cartes de séance du coach se posent sous son message, en pleine largeur.
 // Le texte s'affiche tel quel (jamais interprété comme du HTML ou du lien).
 interface Props {
   message: MessageCoach;
@@ -23,22 +23,24 @@ interface Props {
   /** « Refaire le plan » : redemande au coach de recalculer */
   onRefaire: () => void;
   onVoirCalendrier: () => void;
+  /** Le message suivant (plus récent) est du même auteur : on le colle contre celui-ci */
+  colle?: boolean;
 }
 
-export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onReessayer, onAjouter, onAnnuler, onRefaire, onVoirCalendrier }: Props) {
+export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onReessayer, onAjouter, onAnnuler, onRefaire, onVoirCalendrier, colle }: Props) {
   const p = usePalette();
   const moi = message.role === 'user';
   const attente = message.enCours && !message.texte;
 
   return (
-    <View style={[styles.ligne, moi ? styles.droite : styles.gauche]}>
+    <View style={[styles.ligne, moi ? styles.droite : styles.gauche, { marginBottom: colle ? espace.e1 / 2 : espace.e3 }]}>
       {moi || message.texte || attente ? (
         <View
           style={[
             styles.bloc,
             moi
-              ? { backgroundColor: p.surface2, maxWidth: '86%' }
-              : { backgroundColor: p.surface, borderColor: p.trait, borderWidth: StyleSheet.hairlineWidth, maxWidth: '92%' },
+              ? { backgroundColor: p.sportCourse, maxWidth: '82%' }
+              : { backgroundColor: p.surface2, maxWidth: '86%' },
           ]}
         >
           {attente ? (
@@ -46,7 +48,7 @@ export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onR
               <ActivityIndicator color={p.texteDoux} />
             </View>
           ) : (
-            <Text selectable accessibilityLabel={`${moi ? 'Toi' : 'Coach'} : ${message.texte}`} style={[typo.corps, { color: p.texte }]}>
+            <Text selectable accessibilityLabel={`${moi ? 'Toi' : 'Lía'} : ${message.texte}`} style={[typo.corps, { color: moi ? p.encreSurCouleur : p.texte }]}>
               {message.texte}
             </Text>
           )}
@@ -88,7 +90,7 @@ const styles = StyleSheet.create({
   ligne: { gap: espace.e2 },
   droite: { alignItems: 'flex-end' },
   gauche: { alignItems: 'flex-start' },
-  bloc: { borderRadius: rayon.l, paddingHorizontal: espace.e3, paddingVertical: espace.e2 },
+  bloc: { borderRadius: rayon.bulle, paddingHorizontal: 14, paddingVertical: 9 },
   attente: { minHeight: 24, minWidth: 40, justifyContent: 'center' },
   carte: { alignSelf: 'stretch' },
   echec: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: espace.e2, flexWrap: 'wrap' },

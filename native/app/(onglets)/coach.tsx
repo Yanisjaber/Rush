@@ -71,8 +71,8 @@ export default function Coach() {
         <View style={styles.entete}>
           {/* Mode développement : un appui long sur le titre pose une carte de plan d'exemple (sans serveur) pour voir l'écran */}
           <Pressable onLongPress={c.insererExemple} disabled={!c.insererExemple} accessible={false}>
-            <Text accessibilityRole="header" style={[typo.titre2, { color: p.texte }]}>
-              Coach
+            <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte }]}>
+              Lía
             </Text>
           </Pressable>
           {c.messages.length > 0 && !c.envoi ? (
@@ -107,9 +107,10 @@ export default function Coach() {
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
             contentContainerStyle={styles.liste}
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <MessageVue
                 message={item}
+                colle={index > 0 && donnees[index - 1].role === item.role && item.cartes.length === 0}
                 occupees={c.occupees}
                 erreursCarte={c.erreursCarte}
                 peutReessayer={!c.sansReessai && !c.envoi}
@@ -143,9 +144,9 @@ function Etat({ titre, texte }: { titre: string; texte: string }) {
 
 const styles = StyleSheet.create({
   page: { flex: 1 },
-  entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: espace.e4, paddingTop: espace.e3, paddingBottom: espace.e2, minHeight: 44 },
-  effacer: { minHeight: 44, justifyContent: 'center' },
-  liste: { paddingHorizontal: espace.e4, paddingVertical: espace.e3, gap: espace.e3 },
+  entete: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: espace.e4, paddingTop: espace.e2, paddingBottom: espace.e2, minHeight: 44 },
+  effacer: { position: 'absolute', right: espace.e4, top: 0, bottom: 0, minWidth: 44, justifyContent: 'center', alignItems: 'flex-end' },
+  liste: { paddingHorizontal: espace.e4, paddingVertical: espace.e3 },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: espace.e3, paddingHorizontal: espace.e5 },
   avis: { borderLeftWidth: 3, borderRadius: rayon.base, padding: espace.e3, alignSelf: 'stretch' },
   recharger: { minHeight: 44, paddingHorizontal: espace.e4, borderWidth: 1, borderRadius: rayon.base, alignItems: 'center', justifyContent: 'center' },
