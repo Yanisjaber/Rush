@@ -1,6 +1,7 @@
 import { sb } from '../supabase';
 import type { LigneProfil } from '../../reglages/profil.ts';
 import type { Profil } from '../../types';
+import { oublierReferences } from '../references-memoire';
 import { resultat, type Reponse, type Resultat } from './commun';
 
 const COLONNES_PROFIL = 'ftp,hr_max,lthr,weight,extras';
@@ -42,6 +43,7 @@ export async function enregistrerProfil(userId: string, colonnes: Record<string,
     .select(COLONNES_PROFIL_COMPLET)
     .maybeSingle();
   if (!r.error && !r.data) return { data: null, erreur: 'Profil introuvable : reconnecte-toi puis réessaie.' };
+  if (!r.error) oublierReferences();
   return resultat<LigneProfil>(r as Reponse, "Impossible d'enregistrer ton profil.");
 }
 
