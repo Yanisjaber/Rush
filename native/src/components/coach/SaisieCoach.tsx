@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { espace, rayon } from '@/theme/couleurs';
+import { clair, espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -16,15 +16,62 @@ interface Props {
 
 export const LIMITE_MESSAGE = 2000;
 
+// Sur iOS 26 et plus, le champ et le bouton d'envoi sont les vrais composants d'Apple (SwiftUI, en verre) : saisie, curseur, loupe, correcteur et retour au toucher natifs.
+// Le module natif (@expo/ui) n'existe que dans une app recompilée après son ajout, et le verre à partir d'iOS 26 : sinon (ou si l'import échoue) on garde le champ en JS plus bas.
+type Natif = { ui: typeof import('@expo/ui/swift-ui'); modifs: typeof import('@expo/ui/swift-ui/modifiers') };
+function chargerNatif(): Natif | null {
+  try {
+    const { isLiquidGlassAvailable } = require('expo-glass-effect') as typeof import('expo-glass-effect');
+    if (!isLiquidGlassAvailable()) return null;
+    return { ui: require('@expo/ui/swift-ui'), modifs: require('@expo/ui/swift-ui/modifiers') };
+  } catch {
+    return null;
+  }
+}
+const NATIF = chargerNatif();
+
 export function SaisieCoach({ envoi, basse, onEnvoyer }: Props) {
   const p = usePalette();
   const [texte, setTexte] = useState('');
+  const champ = useRef<import('@expo/ui/swift-ui').TextFieldRef>(null);
   const pret = texte.trim().length > 0 && !envoi;
 
   function envoyer() {
     if (!pret) return;
     onEnvoyer(texte);
     setTexte('');
+    void champ.current?.clear();
+  }
+
+  if (NATIF) {
+    const { Host, TextField, Button } = NATIF.ui;
+    const { lineLimit, padding, glassEffect, foregroundStyle, buttonStyle, buttonBorderShape, controlSize, labelStyle, tint, disabled, font } = NATIF.modifs;
+    // Le thème de l'app (clair ou sombre) s'impose aux composants, pas celui du téléphone
+    const schema = p.fond === clair.fond ? 'light' : 'dark';
+    return (
+      <View style={[styles.barre, { paddingBottom: basse, alignItems: 'flex-end' }]}>
+        <Host matchContents={{ vertical: true }} colorScheme={schema} style={styles.champNatif}>
+          <TextField
+            ref={champ}
+            axis="vertical"
+            placeholder="Message au coach"
+            maxLength={LIMITE_MESSAGE}
+            onTextChange={setTexte}
+            modifiers={[font({ size: 17 }), foregroundStyle(p.texte), lineLimit({ min: 1, max: 5 }), padding({ horizontal: 16, vertical: 11 }), glassEffect({ glass: { variant: 'regular' }, shape: 'roundedRectangle', cornerRadius: 22 })]}
+          />
+        </Host>
+        <View accessible accessibilityRole="button" accessibilityLabel="Envoyer" accessibilityState={{ disabled: !pret }} onAccessibilityTap={envoyer}>
+          <Host matchContents colorScheme={schema}>
+            <Button
+              label="Envoyer"
+              systemImage="arrow.up"
+              onPress={envoyer}
+              modifiers={[labelStyle('iconOnly'), buttonStyle('glassProminent'), buttonBorderShape('circle'), controlSize('large'), tint(p.sportCourse), foregroundStyle(p.encreSurCouleur), disabled(!pret)]}
+            />
+          </Host>
+        </View>
+      </View>
+    );
   }
 
   return (
@@ -58,5 +105,6 @@ export function SaisieCoach({ envoi, basse, onEnvoyer }: Props) {
 const styles = StyleSheet.create({
   barre: { flexDirection: 'row', alignItems: 'flex-end', gap: espace.e2, paddingHorizontal: espace.e3, paddingTop: espace.e2 },
   champ: { flex: 1, minHeight: 44, maxHeight: 132, borderWidth: 1, borderRadius: 22, paddingHorizontal: 16, paddingTop: 6, paddingBottom: 12, textAlignVertical: 'top' },
+  champNatif: { flex: 1, minHeight: 44 },
   envoi: { width: 44, height: 44, borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center' },
 });
