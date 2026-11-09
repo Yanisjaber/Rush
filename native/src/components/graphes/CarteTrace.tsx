@@ -14,13 +14,17 @@ interface Props {
   region: RegionCarte;
   couleur: string;
   hauteur?: number;
+  /** La carte remplit tout son parent (plein fond, sans coins arrondis), au lieu d'avoir une hauteur. */
+  plein?: boolean;
+  /** Un point à montrer sur la trace (le curseur du profil d'altitude). */
+  curseur?: PointCarte | null;
 }
 
 export function CarteTrace(props: Props) {
   const p = usePalette();
-  const { hauteur = 240 } = props;
+  const { hauteur = 240, plein } = props;
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel="Carte du parcours" style={[styles.cadre, { height: hauteur, backgroundColor: p.surface2 }]}>
+    <View accessible accessibilityRole="image" accessibilityLabel="Carte du parcours" style={plein ? [StyleSheet.absoluteFill, { backgroundColor: p.surface2 }] : [styles.cadre, { height: hauteur, backgroundColor: p.surface2 }]}>
       <RepliSiErreur repli={<TraceSeule {...props} />}>
         <CarteNative {...props} />
       </RepliSiErreur>
@@ -28,7 +32,7 @@ export function CarteTrace(props: Props) {
   );
 }
 
-function CarteNative({ trace, region, couleur }: Props) {
+function CarteNative({ trace, region, couleur, curseur }: Props) {
   const p = usePalette();
   const sombre = useColorScheme() !== 'light';
   const [cartes, setCartes] = useState<typeof import('react-native-maps') | null | false>(null);
@@ -63,6 +67,11 @@ function CarteNative({ trace, region, couleur }: Props) {
       <Marker coordinate={trace[trace.length - 1]} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false} accessibilityLabel="Arrivée">
         {point(couleur)}
       </Marker>
+      {curseur ? (
+        <Marker coordinate={curseur} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false} accessibilityLabel="Position sur le profil" zIndex={10}>
+          <View style={[styles.curseur, { backgroundColor: p.texte, borderColor: couleur }]} />
+        </Marker>
+      ) : null}
     </MapView>
   );
 }
@@ -99,5 +108,6 @@ function TraceSeule({ trace, region, couleur }: Props) {
 const styles = StyleSheet.create({
   cadre: { borderRadius: rayon.bloc, overflow: 'hidden' },
   point: { width: 16, height: 16, borderRadius: 8, borderWidth: 3 },
+  curseur: { width: 22, height: 22, borderRadius: 11, borderWidth: 5 },
   note: { position: 'absolute', left: 12, bottom: 8 },
 });

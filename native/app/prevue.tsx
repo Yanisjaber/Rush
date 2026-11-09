@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { Bouton } from '@/components/ui/Bouton';
 import { aUnParcours, ParcoursOnglets } from '@/components/graphes/ParcoursOnglets';
+import { VueParcours } from '@/components/graphes/VueParcours';
 import { IconeSport } from '@/components/ui/IconeSport';
 import { ProfilSeance } from '@/components/graphes/ProfilSeance';
 import { StatCle } from '@/components/ui/StatCle';
@@ -96,12 +97,41 @@ export default function Prevue() {
 
   // Avec un parcours (carte ou profil), l'écran se construit autour de lui : en-tête léger, onglets, grande carte, trois chiffres, fichier. Sans parcours, la mise en page reste celle d'avant.
   const modeParcours = aUnParcours(parcours);
+  // Carte et profil sans blocs à montrer : l'écran « parcours » plein fond (carte, feuille avec profil et curseur). Avec des blocs, on garde la vue à onglets.
+  const vueFixe = !!parcours && !!parcours.region && parcours.trace.length > 1 && parcours.profil.length > 1 && parcours.altitudeMin != null && parcours.altitudeMax != null && !blocs.length;
   const enveloppe = (contenu: ReactNode) =>
     modeParcours ? <View style={{ gap: espace.e3 }}>{contenu}</View> : <Bloc titre={`Blocs (${blocs.length})`}>{contenu}</Bloc>;
 
   return (
     <View style={styles.page}>
       <Stack.Screen options={{ title: titreEntete, headerShown: !modeParcours }} />
+      {vueFixe && parcours && parcours.altitudeMin != null && parcours.altitudeMax != null && parcours.region ? (
+        <VueParcours
+          trace={parcours.trace}
+          region={parcours.region}
+          profil={parcours.profil}
+          altitudeMin={parcours.altitudeMin}
+          altitudeMax={parcours.altitudeMax}
+          km={prevue.km ?? null}
+          couleur={couleur}
+          titre={
+            <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte }]}>
+              {nom}
+            </Text>
+          }
+          chiffres={
+            chiffres.length ? (
+              <View style={styles.tuiles}>
+                {chiffres.slice(0, 3).map((c) => (
+                  <View key={c.cle} style={[styles.tuile, { backgroundColor: p.surface }]}>
+                    <StatCle etiquette={c.libelle.replace(/^Allure (cible|prévue)$/, 'Allure')} valeur={c.valeur} unite={c.unite} petit />
+                  </View>
+                ))}
+              </View>
+            ) : null
+          }
+        />
+      ) : (
       <ScrollView contentContainerStyle={[styles.contenu, modeParcours && { paddingTop: haut + espace.e2 }]} contentInsetAdjustmentBehavior={modeParcours ? 'never' : 'automatic'}>
         {modeParcours ? (
           <View style={styles.enteteParcours}>
@@ -217,6 +247,7 @@ export default function Prevue() {
         ) : null}
 
       </ScrollView>
+      )}
 
       {/* L'erreur de suppression est dans la barre fixe du bas : on la voit toujours, même avec une longue séance */}
       {erreurSuppression ? (
