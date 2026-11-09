@@ -92,13 +92,6 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
         <>
           <Semaine lignes={carte.lignes} aujourdhui={aujourdhui} />
 
-          <Text accessible accessibilityLabel={`Charge prévue sur 14 jours : ${Math.round(carte.charge_avant)} points avant, ${Math.round(carte.charge_apres)} après`} style={[typo.petit, { color: p.texteDoux }]}>
-            Charge sur 14 jours :{' '}
-            <Text style={{ color: p.texte, fontFamily: police.texte600, fontVariant: ['tabular-nums'] }}>
-              {Math.round(carte.charge_avant)} → {Math.round(carte.charge_apres)} points
-            </Text>
-          </Text>
-
           <View>
             {visibles.map((l, i) => {
               const ouverte = !!ouvertes[i];
@@ -244,7 +237,6 @@ function Semaine({ lignes, aujourdhui }: { lignes: LignePlan[]; aujourdhui: stri
   const semaine = semaines.find((s) => s.some(touche)) ?? semaines[0];
   const periode = periodesDuPlan(lignes)[0];
   const aDesRetirees = semaine.some((j) => j.marques.some((m) => m.etat === 'retiree'));
-  const aDesNouvelles = semaine.some((j) => j.marques.some((m) => m.etat === 'nouvelle'));
   const aDuRepos = semaine.some((j) => j.repos);
 
   return (
@@ -267,7 +259,6 @@ function Semaine({ lignes, aujourdhui }: { lignes: LignePlan[]; aujourdhui: stri
         })}
       </View>
       <View style={styles.legende}>
-        {aDesNouvelles ? <Legende motif={<View style={[styles.point, { backgroundColor: p.texte }]} />} libelle="séance nouvelle (couleur du sport)" /> : null}
         {aDesRetirees ? <Legende motif={<View style={[styles.point, { borderWidth: 1, borderStyle: 'dashed', borderColor: p.texteMuet }]} />} libelle="retirée" /> : null}
         {aDuRepos ? <Legende motif={<Text style={[typo.micro, { color: p.texteDoux }]}>R</Text>} libelle="repos" /> : null}
         {periode && semaine.some((j) => j.periode) ? (

@@ -64,7 +64,7 @@ export function carteSeanceExemple(aujourdhui: string, id = `${PREFIXE_EXEMPLE}s
 export function cartePlanSemaineExemple(aujourdhui: string, id = `${PREFIXE_EXEMPLE}semaine-${aujourdhui}`): CartePlanning {
   const j = (n: number) => ajouterJours(aujourdhui, n);
   const ajout = (sport: string, minutes: number, jour: number, nom: string): LignePlan => ({
-    op: 'ajouter', texte: `Ajouter : ${sport === 'velo' ? 'vélo' : 'course'} ${nom} ${minutes} min`, sport, minutes, vers: j(jour), nom, blocs: minutes === 52 ? blocsFractionneExemple : blocsContinusExemple(minutes), raison: 'dans la logique de ta semaine',
+    op: 'ajouter', texte: `Ajouter : ${sport === 'velo' ? 'vélo' : 'course'} ${nom} ${minutes} min`, sport, minutes, vers: j(jour), nom, blocs: minutes === 52 ? blocsFractionneExemple : blocsContinusExemple(minutes), raison: minutes === 52 ? 'séance de vitesse, 2 jours après un footing facile' : minutes >= 120 ? 'ta sortie longue, la veille d\'un jour de repos' : 'footing facile pour récupérer', 
   });
   return {
     id,

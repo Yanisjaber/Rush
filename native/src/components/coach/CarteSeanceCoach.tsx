@@ -40,7 +40,7 @@ export function CarteSeanceCoach({ carte, occupee, erreur, onAjouter, onAnnuler 
   return (
     <View style={[styles.carte, { backgroundColor: p.surface, borderColor: p.trait }]}>
       <View accessible accessibilityLabel={descriptionCarte(carte)}>
-        <TicketSeance couleur={couleur} jour={jourCarte(prop.date)} titre={nomType(prop.sport, prop.type)} minutes={prop.minutes} blocs={carte.blocs} charge={carte.tss_estime} raison={carte.justification} />
+        <TicketSeance couleur={couleur} jour={jourCarte(prop.date)} titre={nomType(prop.sport, prop.type)} minutes={prop.minutes} blocs={carte.blocs} raison={carte.justification} />
       </View>
 
       <View style={[styles.etat, { borderTopColor: p.trait }]}>
