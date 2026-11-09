@@ -20,7 +20,8 @@ interface Props {
   /** Le message d'erreur de la dernière action (réseau, règle refusée au moment du tap…) */
   erreur?: string;
   onAjouter: () => void;
-  onAnnuler: () => void;
+  /** Absent quand d'autres messages ont suivi : on ne défait plus un plan ou une séance sur lequel la conversation a continué */
+  onAnnuler?: () => void;
   /** Appelé juste AVANT qu'on déplie ou replie la carte : l'écran garde alors son haut en place (le contenu s'ouvre vers le bas) */
   onBascule?: () => void;
 }
@@ -95,7 +96,7 @@ export function CarteSeanceCoach({ carte, occupee, erreur, onAjouter, onAnnuler,
           <View style={styles.ligne}>
             <Picto nom="ok" couleur={p.ok} />
             <Text style={[typo.petit, { color: p.texte, flex: 1 }]}>{MOT_ETAT.ajoutee}</Text>
-            <BoutonCompact libelle="Annuler" accessibilityLabel="Annuler : retirer cette séance de mon calendrier" desactive={occupee} onPress={onAnnuler} />
+            {onAnnuler ? <BoutonCompact libelle="Annuler" accessibilityLabel="Annuler : retirer cette séance de mon calendrier" desactive={occupee} onPress={onAnnuler} /> : null}
             <BoutonCompact
               largeur={96}
               libelle={deplie ? 'Masquer' : 'Voir'}

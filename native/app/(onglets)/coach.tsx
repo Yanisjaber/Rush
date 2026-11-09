@@ -181,6 +181,7 @@ export default function Coach() {
                   peutReessayer={!c.sansReessai && !c.envoi}
                   onReessayer={(texte) => void c.envoyer(texte)}
                   onAjouter={(carte) => void c.ajouter(carte)}
+                  peutAnnuler={index === c.messages.length - 1}
                   onAnnuler={(carte) => void c.annuler(carte)}
                   onRefaire={() => void c.envoyer('Refais le plan : mon calendrier a changé.')}
                   decalage={decalage}

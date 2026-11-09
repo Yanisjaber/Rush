@@ -25,7 +25,8 @@ interface Props {
   /** Le message d'erreur de la dernière action (réseau, plan refusé au moment du tap…) */
   erreur?: string;
   onValider: () => void;
-  onAnnuler: () => void;
+  /** Absent quand d'autres messages ont suivi : on ne défait plus un plan ou une séance sur lequel la conversation a continué */
+  onAnnuler?: () => void;
   /** « Refaire le plan » : demande au coach de recalculer (envoie un message) */
   onRefaire: () => void;
   onVoirCalendrier: () => void;
@@ -296,7 +297,7 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
 
         {etat === 'ajoutee' ? (
           <View style={styles.boutons}>
-            <BoutonCompact libelle="Annuler" accessibilityLabel="Annuler le plan : remettre ton calendrier comme avant" desactive={occupee} onPress={onAnnuler} />
+            {onAnnuler ? <BoutonCompact libelle="Annuler" accessibilityLabel="Annuler le plan : remettre ton calendrier comme avant" desactive={occupee} onPress={onAnnuler} /> : null}
             <BoutonCompact libelle="Calendrier" accessibilityLabel="Voir au calendrier" onPress={onVoirCalendrier} />
             <BoutonCompact
               largeur={96}

@@ -24,6 +24,8 @@ interface Props {
   onReessayer: (texte: string) => void;
   /** « Ajouter » (une séance) ou « Valider le plan » (un plan) */
   onAjouter: (c: Carte) => void;
+  /** Faux dès qu'un message a suivi celui-ci : plus de bouton « Annuler » sur ses cartes */
+  peutAnnuler: boolean;
   onAnnuler: (c: Carte) => void;
   /** « Refaire le plan » : redemande au coach de recalculer */
   onRefaire: () => void;
@@ -36,7 +38,7 @@ interface Props {
   decalage?: SharedValue<number>;
 }
 
-export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onReessayer, onAjouter, onAnnuler, onRefaire, onVoirCalendrier, onBascule, colle, decalage }: Props) {
+export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onReessayer, onAjouter, peutAnnuler, onAnnuler, onRefaire, onVoirCalendrier, onBascule, colle, decalage }: Props) {
   const p = usePalette();
   const heure = message.date ? repereHeure(message.date)?.heure : undefined;
   const glisse = useAnimatedStyle(() => ({ transform: [{ translateX: decalage ? decalage.value : 0 }] }));
@@ -74,9 +76,9 @@ export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onR
       {message.cartes.map((c) => (
         <View key={c.id} style={styles.carte}>
           {estPlanning(c) ? (
-            <CartePlanningCoach carte={c} occupee={!!occupees[c.id]} erreur={erreursCarte[c.id]} onValider={() => onAjouter(c)} onAnnuler={() => onAnnuler(c)} onRefaire={onRefaire} onVoirCalendrier={onVoirCalendrier} onBascule={onBascule} />
+            <CartePlanningCoach carte={c} occupee={!!occupees[c.id]} erreur={erreursCarte[c.id]} onValider={() => onAjouter(c)} onAnnuler={peutAnnuler ? () => onAnnuler(c) : undefined} onRefaire={onRefaire} onVoirCalendrier={onVoirCalendrier} onBascule={onBascule} />
           ) : (
-            <CarteSeanceCoach carte={c} occupee={!!occupees[c.id]} erreur={erreursCarte[c.id]} onAjouter={() => onAjouter(c)} onAnnuler={() => onAnnuler(c)} onBascule={onBascule} />
+            <CarteSeanceCoach carte={c} occupee={!!occupees[c.id]} erreur={erreursCarte[c.id]} onAjouter={() => onAjouter(c)} onAnnuler={peutAnnuler ? () => onAnnuler(c) : undefined} onBascule={onBascule} />
           )}
         </View>
       ))}
