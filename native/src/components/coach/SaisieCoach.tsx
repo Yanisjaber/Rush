@@ -34,7 +34,7 @@ export function SaisieCoach({ envoi, basse, onEnvoyer }: Props) {
         onChangeText={setTexte}
         multiline
         maxLength={LIMITE_MESSAGE}
-        placeholder="Message à Lía"
+        placeholder="Message au coach"
         placeholderTextColor={p.texteMuet}
         accessibilityLabel="Message pour le coach"
         style={[typo.corps, styles.champ, { color: p.texte, backgroundColor: p.surface, borderColor: p.contourChamp }]}

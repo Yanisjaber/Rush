@@ -48,7 +48,7 @@ export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onR
               <ActivityIndicator color={p.texteDoux} />
             </View>
           ) : (
-            <Text selectable accessibilityLabel={`${moi ? 'Toi' : 'Lía'} : ${message.texte}`} style={[typo.corps, { color: moi ? p.encreSurCouleur : p.texte }]}>
+            <Text selectable accessibilityLabel={`${moi ? 'Toi' : 'Coach'} : ${message.texte}`} style={[typo.corps, { color: moi ? p.encreSurCouleur : p.texte }]}>
               {message.texte}
             </Text>
           )}

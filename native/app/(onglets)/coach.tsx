@@ -71,7 +71,7 @@ export default function Coach() {
           {/* Mode développement : un appui long sur le titre pose une carte de plan d'exemple (sans serveur) pour voir l'écran */}
           <Pressable onLongPress={c.insererExemple} disabled={!c.insererExemple} accessible={false}>
             <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>
-              Lía
+              Coach
             </Text>
           </Pressable>
           <View style={styles.droite}>
