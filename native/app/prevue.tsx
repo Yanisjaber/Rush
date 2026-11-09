@@ -120,7 +120,7 @@ export default function Prevue() {
               <View accessible accessibilityLabel={`${nomSport}, ${formatDateCourte(prevue.date)}${heure ? `, ${heure}` : ''}`} style={styles.etiquetteParcours}>
                 <IconeSport sport={prevue.sport} />
                 <Text numberOfLines={1} style={[typo.micro, { color: p.fond === sombre.fond ? couleur : p.texteDoux, letterSpacing: 1.2, flexShrink: 1 }]}>
-                  {`${formatDateCourte(prevue.date)}${heure ? ` ${heure}` : ''}`.toUpperCase()}
+                  {`${formatDateCourte(prevue.date).replace(/\./g, '')}${heure ? ` · ${heure}` : ''}`.toUpperCase()}
                 </Text>
               </View>
               <Text accessibilityRole="header" numberOfLines={2} style={[typo.titre2, { color: p.texte }]}>
