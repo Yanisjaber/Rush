@@ -3,6 +3,7 @@ import { PanResponder, StyleSheet, Text, View, type LayoutChangeEvent } from 're
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop, Text as TexteSvg } from 'react-native-svg';
 import { aireSousCourbe, echelle, lisse } from '@/data/outils/courbes';
 import { formatKm, formatNombre } from '@/data/outils/format';
+import { placerPastille } from '@/data/outils/pastille';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -22,6 +23,8 @@ interface Props {
   onGlisse?: (actif: boolean) => void;
 }
 
+const HAUTEUR_PASTILLE = 28; // hauteur de la pastille du curseur (texte de 13 pt, marges et bord)
+const FLECHE = { dessus: '▼', dessous: '▲', gauche: '▶', droite: '◀' } as const; // la flèche montre le point depuis la pastille
 const MARGE = 10; // assez pour que le rond du curseur (rayon 6 + contour 3) ne soit jamais coupé
 const GAUCHE = 28; // la place des repères d'altitude, à gauche (trois chiffres de 11 pt)
 
@@ -91,7 +94,8 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
   const distance = km != null && km > 0 && n > 1 ? (index / (n - 1)) * km : null;
   const altitude = profil[index];
   const texteBulle = `${formatNombre(altitude ?? min)} m${distance != null ? ` · km ${formatKm(distance, 1)}` : ''}`;
-  const gaucheBulle = curseur ? Math.min(Math.max(curseur[0] - largeurBulle / 2, 0), Math.max(largeur - largeurBulle, 0)) : 0;
+  // La pastille se place là où elle touche le moins la courbe (au-dessus, en dessous, décalée ou sur le côté)
+  const place = curseur ? placerPastille(points, curseur, { largeur: largeurBulle, hauteur: HAUTEUR_PASTILLE }, { largeur, hauteur }) : null;
   const idFondu = 'fondu-curseur';
 
   return (
@@ -141,15 +145,15 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
             ) : null}
           </Svg>
         ) : null}
-        {curseur ? (
-          // La pastille est posée sur la courbe, au-dessus du point (en dessous si le point est trop haut pour qu'elle tienne), reliée au point par le trait pointillé
+        {curseur && place ? (
+          // La pastille est posée près du point, là où elle recouvre le moins la courbe ; le trait pointillé relie le point au bas du graphique
           <View
             pointerEvents="none"
             onLayout={(e: LayoutChangeEvent) => setLargeurBulle(e.nativeEvent.layout.width)}
-            style={[styles.bulle, { left: gaucheBulle, top: curseur[1] > 44 ? curseur[1] - 40 : curseur[1] + 14, backgroundColor: p.fond, borderColor: p.texteDoux }]}
+            style={[styles.bulle, { left: place.left, top: place.top, backgroundColor: p.fond, borderColor: p.texteDoux }]}
           >
             <Text style={[typo.corpsFort, { color: p.texte, fontSize: 13 }]}>
-              {curseur[1] > 44 ? '▼' : '▲'} {texteBulle}
+              {FLECHE[place.position]} {texteBulle}
             </Text>
           </View>
         ) : null}
