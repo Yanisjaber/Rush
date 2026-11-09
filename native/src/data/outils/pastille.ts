@@ -34,9 +34,9 @@ export function chevauchement(courbe: Point[], r: { left: number; top: number; l
 }
 
 /**
- * La place d'une pastille de `largeur` × `hauteur` près du point `curseur`, toujours au-dessus ou en dessous, et dans le graphique (`cadre.gauche` à `cadre.largeur` en
- * largeur, 0 à `cadre.hauteur` en hauteur : la colonne des altitudes, à gauche, reste libre). On essaie, dans l'ordre : au-dessus centrée, en dessous centrée, puis
- * décalée vers la gauche ou la droite, au-dessus puis en dessous. On garde la première place qui ne recouvre pas la courbe de plus de TOLERANCE points de plus
+ * La place d'une pastille de `largeur` × `hauteur` près du point `curseur`, toujours au-dessus du point (jamais en dessous), et dans le graphique (`cadre.gauche` à `cadre.largeur` en
+ * largeur, 0 à `cadre.hauteur` en hauteur : la colonne des altitudes, à gauche, reste libre). On essaie, dans l'ordre : au-dessus centrée, puis
+ * décalée vers la gauche ou la droite. On garde la première place qui ne recouvre pas la courbe de plus de TOLERANCE points de plus
  * que la meilleure : elle ne saute donc pas pour un détail.
  */
 export function placerPastille(
@@ -51,11 +51,11 @@ export function placerPastille(
   const bornes = (v: number, min: number, max: number) => Math.min(Math.max(v, min), Math.max(max, min));
   const brut: Placement[] = [
     { left: x - w / 2, top: y - h - ECART, position: 'dessus' },
-    { left: x - w / 2, top: y + ECART, position: 'dessous' },
     { left: x - w + 24, top: y - h - ECART, position: 'dessus' },
     { left: x - 24, top: y - h - ECART, position: 'dessus' },
-    { left: x - w + 24, top: y + ECART, position: 'dessous' },
-    { left: x - 24, top: y + ECART, position: 'dessous' },
+    // Dernier recours (point tout en haut du graphique, pas la place au-dessus) : à côté du point, en haut, plutôt qu'en dessous ou sur le point
+    { left: x - w - 10, top: y - h - ECART, position: 'dessus' },
+    { left: x + 10, top: y - h - ECART, position: 'dessus' },
   ];
   const candidats = brut.map((c) => ({
     ...c,

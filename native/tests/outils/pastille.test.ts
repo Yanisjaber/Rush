@@ -32,11 +32,12 @@ test('placerPastille : elle reste toujours dans le cadre, même contre les bords
   }
 });
 
-test('placerPastille : un point en haut de la courbe met la pastille en dessous', () => {
+test('placerPastille : un point en haut de la courbe ne met jamais la pastille en dessous', () => {
   const courbe: Point[] = Array.from({ length: 35 }, (_, i) => [i * 10, 130]);
   courbe[17] = [170, 10]; // un pic tout en haut
   const p = placerPastille(courbe, [170, 10], taille, cadre);
-  assert.notEqual(p.position, 'dessus');
+  assert.equal(p.position, 'dessus');
+  assert.ok(p.top + taille.hauteur <= 10 + 1 || p.left + taille.largeur < 170 || p.left > 170, 'pas sur le point');
 });
 
 test('placerPastille : la pastille ne recouvre jamais le point touché', () => {
