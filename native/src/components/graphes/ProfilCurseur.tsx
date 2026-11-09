@@ -22,8 +22,8 @@ interface Props {
   onGlisse?: (actif: boolean) => void;
 }
 
-const MARGE = 12; // assez pour que le rond du curseur (rayon 6 + contour 3) ne soit jamais coupé
-const GAUCHE = 42; // la place des repères d'altitude, à gauche
+const MARGE = 10; // assez pour que le rond du curseur (rayon 6 + contour 3) ne soit jamais coupé
+const GAUCHE = 28; // la place des repères d'altitude, à gauche (trois chiffres de 11 pt)
 const BULLE = 30; // la hauteur réservée à la bulle, au-dessus du graphe
 
 /** Un pas rond pour les repères d'altitude : on veut au plus 5 intervalles (assez de repères pour lire, pas trop pour rester propre). */
@@ -130,7 +130,7 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
             ))}
             {reperes.map((v, i) => (
               <TexteSvg key={`t${v}`} x={0} y={yDe(v) + 4} fontSize={11} fill={p.texteMuet}>
-                {formatNombre(v)}
+                {v === bas ? 'm' : formatNombre(v)}
               </TexteSvg>
             ))}
             {zone ? <Path d={zone} fill={`url(#${idFondu})`} /> : null}
@@ -144,9 +144,8 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
           </Svg>
         ) : null}
       </View>
-      {/* La ligne du bas : l'unité des altitudes (« m ») sous leur colonne, puis les repères de distance : départ, milieu et arrivée (le « km » n'est dit qu'au départ) */}
+      {/* La ligne du bas : les repères de distance, départ, milieu et arrivée (le « km » n'est dit qu'au départ). L'unité des altitudes est dans la colonne, à la place de la graduation de base. */}
       <View style={[styles.axe, { paddingLeft: GAUCHE + MARGE, paddingRight: MARGE }]}>
-        <Text style={[typo.petit, styles.unite, { color: p.texteMuet }]}>m</Text>
         {km != null && km > 0 ? (
           <>
             <Text style={[typo.petit, styles.repere, { color: p.texteMuet, textAlign: 'left' }]}>0 km</Text>
@@ -162,6 +161,5 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
 const styles = StyleSheet.create({
   axe: { flexDirection: 'row', marginTop: 4 },
   repere: { flex: 1, fontSize: 11, lineHeight: 14 },
-  unite: { position: 'absolute', left: 0, fontSize: 11, lineHeight: 14 },
   bulle: { position: 'absolute', top: 0, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 },
 });
