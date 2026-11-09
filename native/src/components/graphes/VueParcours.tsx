@@ -5,7 +5,7 @@ import { CarteTrace } from '@/components/graphes/CarteTrace';
 import { EnteteFlottante, HAUT_ENTETE } from '@/components/graphes/EnteteFlottante';
 import { ProfilCurseur } from '@/components/graphes/ProfilCurseur';
 import type { PointCarte, RegionCarte } from '@/data/calendrier/apercu-import';
-import { longueurKm, pointAuFraction, regionPourZone } from '@/data/outils/trace';
+import { longueurKm, pointAuFraction } from '@/data/outils/trace';
 import { espace, rayon } from '@/theme/couleurs';
 import { usePalette } from '@/theme/usePalette';
 
@@ -30,20 +30,20 @@ interface Props {
 export function VueParcours({ trace, region, profil, altitudeMin, altitudeMax, km, couleur, titre, chiffres, onModifier }: Props) {
   const p = usePalette();
   const { top: haut, bottom: bas } = useSafeAreaInsets();
-  const [dims, setDims] = useState({ page: 0, feuille: 0 });
+  const [dims, setDims] = useState({ feuille: 0 });
   const [fraction, setFraction] = useState<number | null>(null);
   // L'axe suit la longueur réelle du parcours (celle de la trace), pas la distance saisie sur la séance : le profil et la trace couvrent le même tracé
   const kmTrace = useMemo(() => longueurKm(trace), [trace]);
   const curseur = useMemo(() => (fraction == null ? null : pointAuFraction(trace, fraction)), [trace, fraction]);
-  // La trace doit rester entière dans la zone libre (sous l'en-tête, au-dessus de la feuille) : on décale la carte en conséquence
-  const regionAffichee = useMemo(() => regionPourZone(region, { hauteur: dims.page, haut: haut + HAUT_ENTETE, bas: dims.feuille }), [region, dims, haut]);
+  // La trace doit rester entière dans la zone libre (sous l'en-tête, au-dessus de la feuille) : la carte la cadre avec ces marges
+  const marges = useMemo(() => ({ haut: haut + HAUT_ENTETE, bas: dims.feuille }), [haut, dims.feuille]);
 
   return (
-    <View style={styles.page} onLayout={(e: LayoutChangeEvent) => setDims((d) => ({ ...d, page: e.nativeEvent.layout.height }))}>
-      <CarteTrace plein trace={trace} region={regionAffichee} couleur={couleur} curseur={curseur} />
+    <View style={styles.page}>
+      <CarteTrace plein trace={trace} region={region} couleur={couleur} curseur={curseur} marges={marges} />
       <EnteteFlottante titre={titre} onModifier={onModifier} />
       <View
-        onLayout={(e: LayoutChangeEvent) => setDims((d) => ({ ...d, feuille: e.nativeEvent.layout.height }))}
+        onLayout={(e: LayoutChangeEvent) => setDims({ feuille: e.nativeEvent.layout.height })}
         style={[styles.feuille, { backgroundColor: p.fond, borderColor: p.trait, paddingBottom: bas + espace.e4 }]}
       >
         <ProfilCurseur profil={profil} min={altitudeMin} max={altitudeMax} km={kmTrace > 0 ? kmTrace : km} couleur={couleur} hauteur={110} onChange={setFraction} />

@@ -4,24 +4,6 @@ export interface PointTrace {
   longitude: number;
 }
 
-export interface RegionPlate extends PointTrace {
-  latitudeDelta: number;
-  longitudeDelta: number;
-}
-
-/**
- * La région à donner à une carte plein écran dont le haut (en-tête) et le bas (feuille) sont masqués : on dézoome et on décale pour que toute la trace
- * reste visible dans la zone libre, centrée. `hauteur`, `haut` et `bas` sont en pixels.
- */
-export function regionPourZone<R extends RegionPlate>(region: R, { hauteur, haut, bas }: { hauteur: number; haut: number; bas: number }): R {
-  const visible = hauteur - haut - bas;
-  if (hauteur <= 0 || visible <= 0) return region;
-  const echelle = hauteur / visible;
-  const latitudeDelta = region.latitudeDelta * echelle;
-  const decalage = (hauteur / 2 - (haut + visible / 2)) / hauteur; // > 0 : la zone libre est au-dessus du centre de l'écran
-  return { ...region, latitude: region.latitude - latitudeDelta * decalage, latitudeDelta, longitudeDelta: region.longitudeDelta * echelle };
-}
-
 /** Distance approchée (m) entre deux points proches (projection à plat, suffisante pour une trace de quelques km). */
 function distance(a: PointTrace, b: PointTrace): number {
   const k = Math.cos((((a.latitude + b.latitude) / 2) * Math.PI) / 180);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, useColorScheme, View } from 'react-native';
 import Svg, { Circle, Polyline } from 'react-native-svg';
 import type { PointCarte, RegionCarte } from '@/data/calendrier/apercu-import';
@@ -18,6 +18,8 @@ interface Props {
   plein?: boolean;
   /** Un point à montrer sur la trace (le curseur du profil d'altitude). */
   curseur?: PointCarte | null;
+  /** Ce qui masque la carte en haut (en-tête) et en bas (feuille), en pixels : la trace est cadrée entière dans la zone libre. */
+  marges?: { haut: number; bas: number };
 }
 
 export function CarteTrace(props: Props) {
@@ -32,10 +34,17 @@ export function CarteTrace(props: Props) {
   );
 }
 
-function CarteNative({ trace, region, couleur, curseur }: Props) {
+function CarteNative({ trace, region, couleur, curseur, marges }: Props) {
   const p = usePalette();
   const sombre = useColorScheme() !== 'light';
   const [cartes, setCartes] = useState<typeof import('react-native-maps') | null | false>(null);
+  const carte = useRef<{ fitToCoordinates: (points: PointCarte[], options: { edgePadding: { top: number; right: number; bottom: number; left: number }; animated: boolean }) => void } | null>(null);
+  // Cadre toute la trace dans la zone libre (sous l'en-tête, au-dessus de la feuille) : au chargement de la carte, puis quand la trace ou les marges changent
+  const ajuster = () => {
+    if (!marges || !carte.current || trace.length < 2) return;
+    carte.current.fitToCoordinates(trace, { edgePadding: { top: marges.haut + 24, bottom: marges.bas + 24, left: 32, right: 32 }, animated: false });
+  };
+  useEffect(ajuster, [trace, marges?.haut, marges?.bas, cartes]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     let vivant = true;
     import('react-native-maps').then(
@@ -52,6 +61,10 @@ function CarteNative({ trace, region, couleur, curseur }: Props) {
   const point = (fond: string) => <View style={[styles.point, { backgroundColor: fond, borderColor: p.fond }]} />;
   return (
     <MapView
+      ref={(m) => {
+        carte.current = m as typeof carte.current;
+      }}
+      onMapReady={ajuster}
       style={StyleSheet.absoluteFill}
       initialRegion={region}
       userInterfaceStyle={sombre ? 'dark' : 'light'}

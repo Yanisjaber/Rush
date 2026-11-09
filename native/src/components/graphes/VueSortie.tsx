@@ -6,7 +6,7 @@ import { EnteteFlottante, HAUT_ENTETE } from '@/components/graphes/EnteteFlottan
 import { ProfilCurseur } from '@/components/graphes/ProfilCurseur';
 import { Dossard } from '@/components/ui/Dossard';
 import type { PointCarte, RegionCarte } from '@/data/calendrier/apercu-import';
-import { longueurKm, pointAuFraction, regionPourZone } from '@/data/outils/trace';
+import { longueurKm, pointAuFraction } from '@/data/outils/trace';
 import { espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -54,7 +54,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
   const pages = useMemo(() => [...(avecProfil ? (['profil'] as const) : []), 'tours' as const, 'donnees' as const], [avecProfil]);
   const NOMS = { profil: 'Profil', tours: 'Tours', donnees: 'Notes et données' } as const;
 
-  const [dims, setDims] = useState({ page: 0, feuille: 0, pager: 0 });
+  const [dims, setDims] = useState({ feuille: 0, pager: 0 });
   const [fraction, setFraction] = useState<number | null>(null);
   const [index, setIndex] = useState(0);
   const defilement = useRef<ComponentRef<typeof ScrollView>>(null);
@@ -62,11 +62,8 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
   const pageActuelle = pages[Math.min(index, pages.length - 1)];
   // Le point du curseur n'a de sens que sur la page Profil
   const curseur = useMemo(() => (pageActuelle === 'profil' && fraction != null && parcours ? pointAuFraction(parcours.trace, fraction) : null), [parcours, fraction, pageActuelle]);
-  // La trace doit rester entière dans la zone libre (sous l'en-tête, au-dessus de la feuille)
-  const region = useMemo(
-    () => (avecCarte && parcours?.region ? regionPourZone(parcours.region, { hauteur: dims.page, haut: haut + HAUT_ENTETE, bas: dims.feuille }) : null),
-    [avecCarte, parcours, dims, haut],
-  );
+  // La trace doit rester entière dans la zone libre (sous l'en-tête, au-dessus de la feuille) : la carte la cadre avec ces marges
+  const marges = useMemo(() => ({ haut: haut + HAUT_ENTETE, bas: dims.feuille }), [haut, dims.feuille]);
 
   const aller = (i: number) => {
     setIndex(i);
@@ -77,9 +74,9 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
   };
 
   return (
-    <View style={styles.page} onLayout={(e: LayoutChangeEvent) => setDims((d) => ({ ...d, page: e.nativeEvent.layout.height }))}>
-      {avecCarte && parcours && region ? (
-        <CarteTrace plein trace={parcours.trace} region={region} couleur={couleur} curseur={curseur} />
+    <View style={styles.page}>
+      {avecCarte && parcours && parcours.region ? (
+        <CarteTrace plein trace={parcours.trace} region={parcours.region} couleur={couleur} curseur={curseur} marges={marges} />
       ) : (
         <View style={[styles.sansCarte, { paddingTop: haut + HAUT_ENTETE + espace.e4 }]}>
           {chargementCarte ? (
