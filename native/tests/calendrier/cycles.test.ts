@@ -109,13 +109,12 @@ test('cycle et sport : un sport de la liste ou aucun, rien d\'autre', () => {
   assert.ok(SPORTS_CYCLE.includes('hyrox') && SPORTS_CYCLE.includes('autre'));
 });
 
-test('cycleVisible : « Tous » les voit tous, un sport voit les siens et ceux sans sport, Triathlon voit ses disciplines', () => {
+test('cycleVisible : « Tous » les voit tous, un sport voit les siens et ceux sans sport, plusieurs sports voient ceux de chacun', () => {
   assert.equal(cycleVisible({ sport: 'muscu' }, 'tout'), true);
   assert.equal(cycleVisible({ sport: 'muscu' }, 'muscu'), true);
   assert.equal(cycleVisible({ sport: 'muscu' }, 'course'), false);
   assert.equal(cycleVisible({ sport: null }, 'course'), true);
   assert.equal(cycleVisible({}, 'hyrox'), true);
-  assert.equal(cycleVisible({ sport: 'natation' }, 'triathlon'), true);
-  assert.equal(cycleVisible({ sport: 'natation' }, 'duathlon'), false);
-  assert.equal(cycleVisible({ sport: 'velo' }, 'duathlon'), true);
+  assert.equal(cycleVisible({ sport: 'velo' }, 'course+velo'), true);
+  assert.equal(cycleVisible({ sport: 'natation' }, 'course+velo'), false);
 });

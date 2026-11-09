@@ -37,8 +37,8 @@ export const CATALOGUE: readonly SportCatalogue[] = [
   { type: 'Yoga', nom: 'Yoga', court: 'Yoga', famille: 'muscu', groupe: null, couleur: { sombre: '#bb91f3', clair: '#6416ca' } },
   { type: 'Pilates', nom: 'Pilates', court: 'Pilates', famille: 'muscu', groupe: null, couleur: { sombre: '#d9a5e9', clair: '#942db4' } },
   { type: 'Hyrox', nom: 'Hyrox', court: 'Hyrox', famille: 'hyrox', groupe: null, couleur: { sombre: '#ffd60a', clair: '#c99a00' } },
-  { type: 'Triathlon', nom: 'Triathlon', court: 'Triathlon', famille: 'triathlon', groupe: null, couleur: { sombre: '#f53d68', clair: '#b80a32' } },
-  { type: 'Duathlon', nom: 'Duathlon', court: 'Duathlon', famille: 'duathlon', groupe: null, couleur: { sombre: '#ff8595', clair: '#e0001e' } },
+  { type: 'Triathlon', nom: 'Triathlon', court: 'Triathlon', famille: 'autre', groupe: 'Divers', couleur: { sombre: '#f53d68', clair: '#b80a32' } },
+  { type: 'Duathlon', nom: 'Duathlon', court: 'Duathlon', famille: 'autre', groupe: 'Divers', couleur: { sombre: '#ff8595', clair: '#e0001e' } },
   { type: 'NordicSki', nom: 'Ski de fond', court: 'Ski de fond', famille: 'autre', groupe: 'Hiver', couleur: { sombre: '#8bcbf9', clair: '#0b81d5' } },
   { type: 'AlpineSki', nom: 'Ski alpin', court: 'Ski alpin', famille: 'autre', groupe: 'Hiver', couleur: { sombre: '#718bf4', clair: '#1137d0' } },
   { type: 'BackcountrySki', nom: 'Ski de randonnée', court: 'Ski rando', famille: 'autre', groupe: 'Hiver', couleur: { sombre: '#a097ed', clair: '#3122bf' } },
@@ -94,10 +94,10 @@ export function couleurDuType(type: unknown, theme: 'sombre' | 'clair'): string 
 export const GROUPES_AUTRES: readonly string[] = ['Hiver', 'Eau', 'Montagne et marche', 'Raquettes et balles', 'Roulettes', 'Divers'];
 
 /** Les sports de la barre du haut, dans l'ordre de la liste de choix. */
-export const FAMILLES_PRINCIPALES: readonly string[] = ['course', 'velo', 'natation', 'muscu', 'hyrox', 'triathlon', 'duathlon'];
+export const FAMILLES_PRINCIPALES: readonly string[] = ['course', 'velo', 'natation', 'muscu', 'hyrox'];
 
 /** Le sport de base d'une famille de la barre du haut (course → Run…), pour dessiner ou nommer une famille. « autre » donne `Other`. */
-export const TYPE_DE_FAMILLE: Readonly<Record<string, string>> = { course: 'Run', velo: 'Ride', natation: 'Swim', muscu: 'WeightTraining', hyrox: 'Hyrox', triathlon: 'Triathlon', duathlon: 'Duathlon', autre: 'Other' };
+export const TYPE_DE_FAMILLE: Readonly<Record<string, string>> = { course: 'Run', velo: 'Ride', natation: 'Swim', muscu: 'WeightTraining', hyrox: 'Hyrox', autre: 'Other' };
 
 /** Le type du catalogue à dessiner pour un sport donné : un type connu, une famille (course…) ou, à défaut, `Other`. */
 export function typeADessiner(sport: unknown): string {

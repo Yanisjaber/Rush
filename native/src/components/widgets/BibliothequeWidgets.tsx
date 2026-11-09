@@ -14,7 +14,6 @@ const COULEUR_RAYON: Record<string, 'sportCourse' | 'sportVelo' | 'sportNatation
   'Course à pied': 'sportCourse',
   Vélo: 'sportVelo',
   Natation: 'sportNatation',
-  'Triathlon et duathlon': 'sportVelo',
   Musculation: 'sportMuscu',
   Hyrox: 'sportHybride',
   'Ski de fond': 'sportNeutre',

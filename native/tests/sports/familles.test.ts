@@ -55,12 +55,14 @@ test('garderSeance : Muscu garde le CrossFit et le HIIT', () => {
   assert.equal(garderSeance({ sport: 'Run' }, 'muscu'), false);
 });
 
-test('garderSeance : Triathlon garde natation, vélo et course ; Duathlon garde course et vélo, pas la natation', () => {
-  for (const sport of ['Swim', 'Ride', 'Run', 'TrailRun', 'MountainBikeRide', 'Triathlon']) assert.equal(garderSeance({ sport }, 'triathlon'), true, `triathlon : ${sport}`);
-  assert.equal(garderSeance({ sport: 'WeightTraining' }, 'triathlon'), false);
-  assert.equal(garderSeance({ sport: 'Swim' }, 'duathlon'), false);
-  for (const sport of ['Run', 'Ride', 'Duathlon']) assert.equal(garderSeance({ sport }, 'duathlon'), true, `duathlon : ${sport}`);
-  assert.equal(garderSeance({ sport: 'Triathlon' }, 'duathlon'), false);
+test('garderSeance : plusieurs sports cochés gardent les séances de chacun, pas des autres', () => {
+  for (const sport of ['Swim', 'Ride', 'Run', 'TrailRun', 'MountainBikeRide']) assert.equal(garderSeance({ sport }, 'course+velo+natation'), true, `trois sports : ${sport}`);
+  assert.equal(garderSeance({ sport: 'WeightTraining' }, 'course+velo+natation'), false);
+  assert.equal(garderSeance({ sport: 'Swim' }, 'course+velo'), false);
+  for (const sport of ['Run', 'Ride']) assert.equal(garderSeance({ sport }, 'course+velo'), true, `deux sports : ${sport}`);
+  // Un triathlon (course de l'app) est rangé dans « Autres » : il ne passe que sous « Tous » ou « Autres »
+  assert.equal(garderSeance({ sport: 'Triathlon' }, 'course+velo'), false);
+  assert.equal(garderSeance({ sport: 'Triathlon' }, 'autre'), true);
   // Les autres filtres ne changent pas : Course ne garde toujours que la course
   assert.equal(garderSeance({ sport: 'Ride' }, 'course'), false);
 });

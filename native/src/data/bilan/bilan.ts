@@ -2,11 +2,12 @@
 //
 // Une « activité » de bilan est normalisée : { id, name, iso, sport, duree_min, distance_km, d_plus, tss }
 // où `sport` est une famille de bilan : 'cyclisme' | 'course' | 'natation' | 'musculation' | 'autre'.
-import { DISCIPLINES_DU_FILTRE, familleAffichage } from '../sports/familles.ts';
+import { familleAffichage } from '../sports/familles.ts';
+import { famillesDuFiltre, filtreGarde } from '../sports/filtre.ts';
 import { intensiteDeCharge, type CaseRegularite } from './synthese.ts';
 import type { Seance, SerieForce } from '../types.ts';
 
-export type SportBilan = 'cyclisme' | 'course' | 'natation' | 'musculation' | 'hyrox' | 'triathlon' | 'duathlon' | 'autre';
+export type SportBilan = 'cyclisme' | 'course' | 'natation' | 'musculation' | 'hyrox' | 'autre';
 
 /** Une activité de bilan : la ligne de la base ramenée à ce dont le bilan a besoin. */
 export interface ActiviteBilan {
@@ -35,8 +36,6 @@ export const SPORTS_BILAN: [SportBilan, string][] = [
   ['natation', 'Natation'],
   ['musculation', 'Musculation'],
   ['hyrox', 'Hyrox'],
-  ['triathlon', 'Triathlon'],
-  ['duathlon', 'Duathlon'],
   ['autre', 'Autre'],
 ];
 export const NOM_SPORT_BILAN: Record<string, string> = { ...Object.fromEntries(SPORTS_BILAN), tous: 'Tous sports' };
@@ -48,22 +47,19 @@ export function familleBilan(sportBrut: unknown): SportBilan {
   if (f === 'course') return 'course';
   if (f === 'natation') return 'natation';
   if (f === 'muscu') return 'musculation';
-  if (f === 'hyrox' || f === 'triathlon' || f === 'duathlon') return f;
+  if (f === 'hyrox') return f;
   return 'autre';
 }
 
-/**
- * Une activité passe-t-elle le filtre de sport du Bilan ? Le sport du filtre ; mais « Triathlon » et « Duathlon » regroupent leurs disciplines (natation, vélo, course) : un triathlète a ses séances
- * en natation, vélo et course, presque jamais en « triathlon » (type propre à l'app). « Tout » garde tout.
- */
+/** Une activité passe-t-elle le filtre de sport du Bilan ? Un ou plusieurs sports cochés (« course+velo ») ; « tout » garde tout. */
 export function dansLeFiltre(a: Pick<ActiviteBilan, 'famille'>, filtre: string): boolean {
-  if (filtre === 'tout') return true;
-  return Object.hasOwn(DISCIPLINES_DU_FILTRE, filtre) ? DISCIPLINES_DU_FILTRE[filtre].includes(a.famille) : a.famille === filtre;
+  return filtreGarde(filtre, a.famille);
 }
 
-/** Les disciplines d'un filtre multisport (triathlon : natation, vélo, course ; duathlon : course, vélo), vide pour un autre filtre. */
-export function disciplinesDuFiltre(filtre: string): ('natation' | 'velo' | 'course')[] {
-  return filtre === 'triathlon' ? ['natation', 'velo', 'course'] : filtre === 'duathlon' ? ['course', 'velo'] : [];
+/** Les sports d'un filtre à plusieurs sports (« course+velo » → course, vélo), vide pour « tout » ou un seul sport. */
+export function disciplinesDuFiltre(filtre: string): string[] {
+  const liste = famillesDuFiltre(filtre);
+  return liste && liste.length > 1 ? liste : [];
 }
 
 /** Les kilomètres de chaque discipline (natation, vélo, course) d'un groupe d'activités. */
@@ -75,10 +71,10 @@ export function kmParDiscipline(acts: readonly ActiviteBilan[]): Record<'natatio
 
 /** Famille de bilan correspondant à un filtre global de sport (« velo » → cyclisme, « muscu » → musculation…), ou null pour « tout ». */
 export function familleBilanDuFiltre(filtre: string | null | undefined): string | null {
-  if (!filtre || filtre === 'tout') return null;
+  if (!filtre || filtre === 'tout' || filtre.includes('+')) return null; // plusieurs sports : pas de famille unique
   if (filtre === 'velo') return 'cyclisme';
   if (filtre === 'muscu') return 'musculation';
-  if (['course', 'natation', 'hyrox', 'triathlon', 'duathlon'].includes(filtre)) return filtre;
+  if (['course', 'natation', 'hyrox'].includes(filtre)) return filtre;
   return 'autre';
 }
 
@@ -227,8 +223,6 @@ export const CATALOGUE: Record<string, ModeleObjectif[]> = {
     o('mus_dips', 'Dips max consécutifs', 'reps', 'manual'), o('mus_plank', 'Gainage durée max', 's', 'manual'), o('mus_bw', 'Poids corporel cible', 'kg', 'manual_proche'),
   ],
   hyrox: [o('hyrox_hours', 'Heures annuelles', 'h', 'sum_hours'), o('hyrox_sess_w', 'Séances par semaine', '/sem', 'avg_sess_week')],
-  triathlon: [o('tri_hours', 'Heures annuelles', 'h', 'sum_hours'), o('tri_dist', 'Distance annuelle', 'km', 'sum_dist'), o('tri_sess_w', 'Séances par semaine', '/sem', 'avg_sess_week')],
-  duathlon: [o('dua_hours', 'Heures annuelles', 'h', 'sum_hours'), o('dua_dist', 'Distance annuelle', 'km', 'sum_dist'), o('dua_sess_w', 'Séances par semaine', '/sem', 'avg_sess_week')],
   autre: [o('autre_hours', 'Heures annuelles', 'h', 'sum_hours'), o('autre_sess_w', 'Séances par semaine', '/sem', 'avg_sess_week'), o('autre_dist', 'Distance annuelle', 'km', 'sum_dist')],
   tous: [
     o('all_hours', 'Heures totales annuelles', 'h', 'sum_hours'), o('all_sess', 'Séances totales annuelles', '', 'sum_sess'), o('all_tss', 'Charge cumulée annuelle', 'TSS', 'sum_tss'),
@@ -421,7 +415,7 @@ const MESURES_ALLURE: MesureDef[] = [
   { cle: 'fc', nom: 'FC moyenne', unite: 'bpm', phrase: 'de la fréquence cardiaque moyenne', moyenne: true, decimales: 0 },
 ];
 const parCle = (liste: MesureDef[], cles: MetriqueCumul[]): MesureDef[] => cles.map((c) => liste.find((m) => m.cle === c)!);
-/** Triathlon et duathlon : les kilomètres de chaque discipline (additionner natation, vélo et course n'aurait pas de sens). */
+/** Plusieurs sports cochés : les kilomètres de chaque discipline (additionner natation, vélo et course n'aurait pas de sens). */
 const MESURES_DISCIPLINES: MesureDef[] = [
   { cle: 'km_natation', nom: 'Natation', unite: 'km', phrase: 'des kilomètres de natation', decimales: 1 },
   { cle: 'km_velo', nom: 'Vélo', unite: 'km', phrase: 'des kilomètres de vélo', decimales: 0 },
@@ -436,8 +430,12 @@ export function mesuresDuSport(filtre: string): MesureDef[] {
   if (filtre === 'course') return parCle(TOUTES, ['distance_km', 'allure', 'fc', 'd_plus', 'seances', 'heures', 'tss']);
   // La natation : des distances courtes (des kilomètres avec une décimale), l'allure au 100 m et la FC
   if (filtre === 'natation') return [{ ...mesureDef('distance_km'), decimales: 1 }, ...parCle(TOUTES, ['allure100', 'fc', 'seances', 'heures', 'tss'])];
-  if (filtre === 'triathlon') return parCle(TOUTES, ['heures', 'seances', 'tss', 'km_natation', 'km_velo', 'km_course']);
-  if (filtre === 'duathlon') return parCle(TOUTES, ['heures', 'seances', 'tss', 'km_velo', 'km_course']);
+  // Plusieurs sports : le temps, les séances, la charge, puis les kilomètres de chaque discipline cochée
+  const choisis = famillesDuFiltre(filtre) ?? [];
+  if (choisis.length > 1) {
+    const km = (['natation', 'velo', 'course'] as const).filter((d) => choisis.includes(d)).map((d) => `km_${d}` as MetriqueCumul);
+    return parCle(TOUTES, ['heures', 'seances', 'tss', ...km]);
+  }
   return COMMUNES;
 }
 /** La mesure demandée si ce sport la propose, sinon la première de ses mesures (un menu choisi sur un sport ne doit pas fausser un autre). */

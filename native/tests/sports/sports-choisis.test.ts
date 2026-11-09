@@ -19,4 +19,7 @@ test('Autres : une seule case pour ski, rando, combat, aviron… ; un ancien cho
   assert.deepEqual(fusionnerFamilles(['course', 'autre'], ['velo']), ['velo', 'course', 'autre']);
   assert.deepEqual(nettoyerSports(['course', 'escalade', 'pagaie', 'athletisme', 'muscu']), ['course', 'autre', 'muscu']);
   assert.deepEqual(nettoyerSports(['ski']), ['autre']);
+  // Triathlon et Duathlon n'existent plus : un ancien choix devient ses disciplines
+  assert.deepEqual(nettoyerSports(['triathlon']), ['natation', 'velo', 'course']);
+  assert.deepEqual(nettoyerSports(['velo', 'duathlon']), ['velo', 'course']);
 });

@@ -10,7 +10,6 @@ import { BarresMois } from '@/components/graphes/BarresMois';
 import { CourbeSemaine } from '@/components/graphes/CourbeSemaine';
 import { OngletRecordsSport } from '@/components/bilan/OngletRecordsSport';
 import { OngletRecordsTous } from '@/components/bilan/OngletRecordsTous';
-import { OngletRecordsTriathlon } from '@/components/bilan/OngletRecordsTriathlon';
 import { OngletRecordsCourse } from '@/components/bilan/OngletRecordsCourse';
 import { OngletRecordsHyrox } from '@/components/bilan/OngletRecordsHyrox';
 import { OngletRecordsMuscu } from '@/components/bilan/OngletRecordsMuscu';
@@ -39,6 +38,7 @@ import {
 import { formatAllure, formatAllure100m, formatDateLongue, formatNum, texteHM } from '@/data/outils/format';
 import { ecrireTemps } from '@/data/sports/hyrox';
 import { nomDuType } from '@/data/sports/catalogue-sports';
+import { estMultiple } from '@/data/sports/filtre';
 import { formeForceParSemaine } from '@/data/bilan/forme-force';
 import { niveauGlobalHyrox, recordTotal, testsDeLAnnee } from '@/data/bilan/hyrox-bilan';
 import { formeNatationParSemaine } from '@/data/bilan/forme-natation';
@@ -48,7 +48,6 @@ import { mesuresCourse, niveauGlobalCourse } from '@/data/bilan/piliers-course';
 import { niveauGlobalNatation } from '@/data/bilan/piliers-natation';
 import { niveauGlobalMuscu } from '@/data/bilan/piliers-muscu';
 import { niveauGlobal, recordsDeMesures } from '@/data/bilan/piliers-niveau';
-import { mesuresMultisport, niveauGlobalMultisport } from '@/data/bilan/piliers-triathlon';
 import { courbeProgression, progressionTousSports, type PeriodeProgression } from '@/data/bilan/progression';
 import { sortiesCourse } from '@/data/bilan/progression-course';
 import { sortiesVelo as sortiesVeloProgres } from '@/data/bilan/progression-velo';
@@ -82,7 +81,7 @@ const ONGLETS: { cle: OngletBilan; nom: string; icone: IconeOnglet }[] = [
 const nomUnite = (u: string) => (u ? ` ${u}` : '');
 const NOM_DISCIPLINE: Record<string, string> = { natation: 'Natation', velo: 'Vélo', course: 'Course' };
 // Famille de bilan d'un objectif → famille de couleur de l'app (la couleur désigne le sport)
-const FAMILLE_COULEUR: Record<string, string> = { cyclisme: 'velo', course: 'course', natation: 'natation', musculation: 'muscu', hyrox: 'hyrox', triathlon: 'triathlon', duathlon: 'duathlon', autre: 'autre' };
+const FAMILLE_COULEUR: Record<string, string> = { cyclisme: 'velo', course: 'course', natation: 'natation', musculation: 'muscu', hyrox: 'hyrox', autre: 'autre' };
 
 // Le bilan d'une année, en trois onglets : Résumé (une phrase, les objectifs, cumul sur 3 ans, répartition), Rythme (mois, semaines, régularité) et Records.
 // Toucher un objectif l'ouvre pour le modifier ou le supprimer ; « Ajouter un objectif » en crée un (écran « objectif »). Toucher un record ouvre sa séance.
@@ -139,15 +138,21 @@ export default function Bilan() {
   const toutes = useMemo(() => avecForce(brutes.map(normaliser), carnet.series), [brutes, carnet.series]);
   const annees = useMemo(() => anneesDisponibles(toutes, maintenant), [toutes, maintenant]);
   // Le filtre global de sport concerne les chiffres, records et graphiques ; pas les objectifs annuels
-  // (triathlon et duathlon regroupent leurs disciplines : natation, vélo, course)
+  // (plusieurs sports cochés : « course+velo » garde les séances de chacun)
   const filtrees = useMemo(() => (filtre === 'tout' ? toutes : toutes.filter((a) => dansLeFiltre(a, filtre))), [toutes, filtre]);
-  const disciplines = useMemo(() => disciplinesDuFiltre(filtre), [filtre]);
+  // Plusieurs sports d'endurance cochés (natation, vélo, course) : le temps et les kilomètres se lisent discipline par discipline ;
+  // avec de la muscu, de l'Hyrox ou un autre sport dans la sélection, on garde la lecture générale (comme sur « Tous »)
+  const disciplines = useMemo(() => {
+    const choisies = disciplinesDuFiltre(filtre);
+    return choisies.every((d) => d in NOM_DISCIPLINE) ? choisies : [];
+  }, [filtre]);
   const multisport = disciplines.length > 0;
+  const kmDe = (d: string): number => (kmDisciplines as Record<string, number>)[d] ?? 0;
 
   const courant = useMemo(() => sommer(activitesAnnee(filtrees, annee, maintenant)), [filtrees, annee, maintenant]);
   // Le grand chiffre : la distance de l'année (ou les séances quand le sport n'a pas de distance, comme la musculation), puis trois chiffres en colonnes
   const enCours = annee === maintenant.getFullYear();
-  // Triathlon et duathlon : le grand chiffre est le temps (additionner des km de natation, de vélo et de course n'a pas de sens) et les trois colonnes sont les km de chaque discipline
+  // Plusieurs sports d'endurance : le grand chiffre est le temps (additionner des km de natation, de vélo et de course n'a pas de sens) et les trois colonnes sont les km de chaque discipline
   const grand =
     courant.seances === 0
       ? null
@@ -170,7 +175,7 @@ export default function Bilan() {
     filtre === 'hyrox'
       ? [temps, testsHyroxAnnee.length ? { cle: 'tests', libelle: testsHyroxAnnee.length > 1 ? 'Tests' : 'Test', val: formatNum(testsHyroxAnnee.length, 0), unite: '' } : null, meilleurTotalAnnee ? { cle: 'meilleur', libelle: 'Meilleur total', val: ecrireTemps(meilleurTotalAnnee.valeur), unite: '' } : null]
       : multisport
-      ? disciplines.map((d) => ({ cle: d, libelle: NOM_DISCIPLINE[d], val: formatNum(kmDisciplines[d], d === 'natation' ? 1 : 0), unite: 'km' }))
+      ? disciplines.map((d) => ({ cle: d, libelle: NOM_DISCIPLINE[d], val: formatNum(kmDe(d), d === 'natation' ? 1 : 0), unite: 'km' }))
       : filtre === 'muscu'
         ? [temps, courant.series > 0 ? { cle: 'series', libelle: 'Séries', val: formatNum(courant.series, 0), unite: '' } : null, courant.tonnage > 0 ? { cle: 'tonnage', libelle: 'Tonnage', val: formatNum(courant.tonnage / 1000, 1), unite: 't' } : null]
         : [temps, courant.distance > 0 && courant.seances > 0 ? { cle: 'seances', libelle: 'Séances', val: formatNum(courant.seances, 0), unite: '' } : null, courant.tss > 0 ? { cle: 'effort', libelle: 'Charge', val: formatNum(courant.tss, 0), unite: '' } : null]
@@ -190,7 +195,7 @@ export default function Bilan() {
   // Records : les sorties à vélo avec leurs colonnes en plus (puissance par durée, vitesse, énergie), chargées seulement sur l'onglet d'un sport vélo
   // « Tout » se compare à cette année, jamais à l'année qu'on avait choisie avant dans le menu
   const anneeRecords = toutTemps ? anneeCourante : annee;
-  const { sorties: sortiesVelo, poids: poidsVelo, courbeTout, courbeAnnee, chargement: chargementVelo, erreur: erreurVelo } = useRecordsVelo(onglet === 'records' && (filtre === 'velo' || (multisport && disciplines.includes('velo'))), anneeRecords);
+  const { sorties: sortiesVelo, poids: poidsVelo, courbeTout, courbeAnnee, chargement: chargementVelo, erreur: erreurVelo } = useRecordsVelo(onglet === 'records' && filtre === 'velo', anneeRecords);
   // Les mesures des menus dépendent du sport (musculation : séries, tonnage ; course : allure, FC) ; le cumul sur 3 ans n'additionne que les mesures qui se somment
   const mesuresSport = useMemo(() => mesuresDuSport(filtre), [filtre]);
   const mesuresCumul = useMemo(() => mesuresSport.filter((m) => !m.moyenne), [mesuresSport]);
@@ -274,7 +279,7 @@ export default function Bilan() {
   // Un bloc par sport mesurable : celui du filtre, ou tous ceux que tu pratiques sur « Tout »
   const progres = useMemo(() => {
     if (!progresOuvert) return [];
-    // Triathlon et duathlon : le progrès de chacune de leurs disciplines (en plus du niveau global multisport)
+    // Plusieurs sports cochés : le progrès de chacun
     const familles = filtre === 'tout' ? [...new Set(toutes.map((a) => a.famille)), ...(carnet.series.length ? ['muscu'] : [])] : multisport ? [...disciplines] : [filtre];
     const donnees = { seances: historique.seances, series: carnet.series, hrMax: hrMax ?? null };
     return progressionTousSports(familles, donnees, JOURS_PROGRES, maintenant).map((prog) => ({ prog, courbe: courbeProgression(prog.famille, donnees, JOURS_PROGRES, maintenant) }));
@@ -314,24 +319,18 @@ export default function Bilan() {
   // Le niveau global de la musculation : le carnet de force (force, équilibre) et les séances (volume, régularité) ; sans carnet, l'ancienne page (1RM sur 12 mois) reste
   const niveauMuscu = useMemo(() => (progresOuvert && carnet.series.length ? niveauGlobalMuscu(carnet.series, toutes, maintenant) : null), [progresOuvert, carnet.series, toutes, maintenant]);
   const formeMuscu = useMemo(() => (progresOuvert && niveauMuscu ? formeForceParSemaine(carnet.series, annee, maintenant) : null), [progresOuvert, niveauMuscu, carnet.series, annee, maintenant]);
-  // Le niveau global du triathlon et du duathlon : un pilier par discipline (le score du niveau global du vélo et de la course de chaque année, l'allure au 100 m en natation) et le volume
-  const niveauMultisport = useMemo(() => {
-    if (!progresOuvert || !multisport) return null;
-    const scores = (g: { annees: { an: number; global: number | null }[] } | null): Map<number, number | null> => new Map((g?.annees ?? []).map((a) => [a.an, a.global]));
-    return niveauGlobalMultisport(mesuresMultisport(filtrees, disciplines, maintenant), disciplines, scores(niveauGlobalVelo), scores(niveauCourse));
-  }, [progresOuvert, multisport, filtrees, disciplines, maintenant, niveauGlobalVelo, niveauCourse]);
   // Le niveau global de l'Hyrox : le meilleur temps total, les runs et les stations de l'année contre ton meilleur de toujours, et le volume
   const niveauHyrox = useMemo(() => (progresOuvert && filtre === 'hyrox' ? niveauGlobalHyrox(hyrox.tests, filtrees, maintenant) : null), [progresOuvert, filtre, hyrox.tests, filtrees, maintenant]);
   // Le niveau global de la natation : la vitesse, l'endurance, la régularité et le volume de l'année, et la forme semaine par semaine
   const niveauNatation = useMemo(() => (progresOuvert && filtre === 'natation' ? niveauGlobalNatation(filtrees, maintenant) : null), [progresOuvert, filtre, filtrees, maintenant]);
   const formeNatation = useMemo(() => (niveauNatation ? formeNatationParSemaine(filtrees, annee, maintenant) : null), [niveauNatation, filtrees, annee, maintenant]);
-  // L'année choisie en haut ne sert que s'il y a un niveau global à lire (vélo, course, musculation, natation, multisport ou Hyrox) ; sinon elle reste affichée mais grisée
-  const anneeInutile = onglet === 'progres' && !(niveauMultisport || niveauHyrox || niveauNatation || progres.some(({ prog }) => (prog.famille === 'velo' && niveauGlobalVelo) || (prog.famille === 'course' && niveauCourse) || (prog.famille === 'muscu' && niveauMuscu)));
+  // L'année choisie en haut ne sert que s'il y a un niveau global à lire (vélo, course, musculation, natation ou Hyrox) ; sinon elle reste affichée mais grisée
+  const anneeInutile = onglet === 'progres' && !(niveauHyrox || niveauNatation || progres.some(({ prog }) => (prog.famille === 'velo' && niveauGlobalVelo) || (prog.famille === 'course' && niveauCourse) || (prog.famille === 'muscu' && niveauMuscu)));
 
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
       <FondDegrade />
-      <BarreSports />
+      <BarreSports titre="Bilan" />
       <ScrollView
         contentContainerStyle={[styles.contenu, { paddingBottom: bas + BARRE_ONGLETS }]}
         refreshControl={<RefreshControl refreshing={actualisation} onRefresh={recharger} tintColor={p.texteDoux} />}
@@ -593,7 +592,7 @@ export default function Bilan() {
                   />
                 </Bloc>
 
-                {/* Triathlon et duathlon : le temps de chaque discipline, semaine après semaine (les heures de natation, de vélo et de course empilées) */}
+                {/* Plusieurs sports d'endurance : le temps de chaque discipline, semaine après semaine (les heures de natation, de vélo et de course empilées) */}
                 {multisport ? (
                   <Bloc titre="Temps par discipline">
                     <Text style={[typo.petit, styles.lecture, { color: p.texteMuet }]}>
@@ -689,16 +688,6 @@ export default function Bilan() {
                   maintenant={maintenant}
                   onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
                 />
-              ) : multisport ? (
-                <OngletRecordsTriathlon
-                  portee={toutTemps ? 'tout' : 'annee'}
-                  toutes={filtrees}
-                  disciplines={disciplines}
-                  annee={anneeRecords}
-                  maintenant={maintenant}
-                  velo={{ sorties: sortiesVelo, poids: poidsVelo, courbeAnnee, courbeTout, chargement: chargementVelo, erreur: erreurVelo }}
-                  onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
-                />
               ) : filtre === 'course' ? (
                 <OngletRecordsCourse
                   portee={toutTemps ? 'tout' : 'annee'}
@@ -717,7 +706,7 @@ export default function Bilan() {
                   maintenant={maintenant}
                   onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
                 />
-              ) : filtre === 'tout' ? (
+              ) : filtre === 'tout' || estMultiple(filtre) ? (
                 <OngletRecordsTous
                   portee={toutTemps ? 'tout' : 'annee'}
                   toutes={toutes}
@@ -745,7 +734,7 @@ export default function Bilan() {
                   <View accessible accessibilityLabel="Chargement des progrès" style={styles.attente}>
                     <ActivityIndicator color={p.texteDoux} />
                   </View>
-                ) : progres.length || niveauMultisport || niveauHyrox || niveauNatation ? (
+                ) : progres.length || niveauHyrox || niveauNatation ? (
                   <>
                     {niveauNatation ? (
                       <NiveauGlobalSport famille="natation" global={niveauNatation} annee={annee} onChoisirAnnee={setAnneeChoisie}>
@@ -757,7 +746,6 @@ export default function Bilan() {
                         <ProgresHyroxTemps tests={hyrox.tests} objectif={hyrox.objectif} annee={annee} />
                       </NiveauGlobalSport>
                     ) : null}
-                    {niveauMultisport ? <NiveauGlobalSport famille={filtre === 'duathlon' ? 'duathlon' : 'triathlon'} global={niveauMultisport} annee={annee} onChoisirAnnee={setAnneeChoisie} /> : null}
                     {progres.map(({ prog, courbe }) => (
                     <ProgresSport
                       key={prog.famille}

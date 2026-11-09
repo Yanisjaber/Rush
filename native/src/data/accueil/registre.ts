@@ -151,38 +151,6 @@ export const WIDGETS = {
     tailles: ['xs', 's', 'm', 'l'],
     taille: 's',
   },
-  triequilibre: {
-    nom: "Répartition par discipline",
-    description: "Où passe ton temps entre natation, vélo et course, semaine après semaine.",
-    categorie: "Triathlon et duathlon",
-    sports: ['triathlon', 'duathlon'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
-  trifraicheur: {
-    nom: "Dernière séance par discipline",
-    description: "Depuis combien de jours tu n’as pas fait chaque discipline.",
-    categorie: "Triathlon et duathlon",
-    sports: ['triathlon', 'duathlon'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
-  tribricks: {
-    nom: "Enchaînements",
-    description: "Tes enchaînements vélo puis course dans la foulée, avec leur nombre sur 4 semaines.",
-    categorie: "Triathlon et duathlon",
-    sports: ['triathlon', 'duathlon'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
-  trireperes: {
-    nom: "Repères par discipline",
-    description: "Ton niveau du moment : allure en natation, watts à vélo, allure en course.",
-    categorie: "Triathlon et duathlon",
-    sports: ['triathlon', 'duathlon'],
-    tailles: ['xs', 's', 'm', 'l'],
-    taille: 's',
-  },
   natcourbe: {
     nom: "Allure semaine après semaine",
     description: "Ton allure de natation au 100 m, semaine après semaine : elle baisse quand tu progresses.",
@@ -468,7 +436,7 @@ export const ORDRE_ONGLET: Record<string, readonly string[]> = {
   hyrox: ['hyroxdossard', 'semaine', 'hyroxevolution', 'hyroxhebdo', 'hyroxtest', 'hyroxrunsstations', 'hyroxderive', 'hyroxallure', 'hyroxgains', 'chargeforce', 'dernieres'],
 };
 
-/** La liste par défaut d'un onglet de sport libre (Course, Vélo, Natation, Triathlon, Duathlon, Ski de fond) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course et Vélo : les dispositions de Yanis ; Natation, Triathlon, Duathlon et Ski de fond : pensées pour l'usage. */
+/** La liste par défaut d'un onglet de sport libre (Course, Vélo, Natation, Ski de fond) : un sport qui n'en a pas prend sa composition automatique (compositionSport). Course et Vélo : les dispositions de Yanis ; Natation et Ski de fond : pensées pour l'usage. */
 export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
   course: [
     { id: 'kmhebdo', taille: 'm' },
@@ -480,31 +448,6 @@ export const LISTES_PAR_DEFAUT: Record<string, readonly WidgetPlace[]> = {
     { id: 'avenir', taille: 's' },
     { id: 'forme', taille: 's' },
     { id: 'charge', taille: 'l' },
-    { id: 'dernieres', taille: 'm' },
-  ],
-  // Triathlon et duathlon : la semaine (toutes disciplines) en héros, puis la prochaine course, ce qui est délaissé et les enchaînements, la répartition du temps, la charge, les repères
-  triathlon: [
-    { id: 'semaine', taille: 'm' },
-    { id: 'objectif', taille: 'xs' },
-    { id: 'trifraicheur', taille: 's' },
-    { id: 'tribricks', taille: 's' },
-    { id: 'triequilibre', taille: 'l' },
-    { id: 'charge', taille: 'm' },
-    { id: 'trireperes', taille: 'm' },
-    { id: 'avenir', taille: 's' },
-    { id: 'forme', taille: 's' },
-    { id: 'dernieres', taille: 'm' },
-  ],
-  duathlon: [
-    { id: 'semaine', taille: 'm' },
-    { id: 'objectif', taille: 'xs' },
-    { id: 'trifraicheur', taille: 's' },
-    { id: 'tribricks', taille: 's' },
-    { id: 'triequilibre', taille: 'l' },
-    { id: 'charge', taille: 'm' },
-    { id: 'trireperes', taille: 'm' },
-    { id: 'avenir', taille: 's' },
-    { id: 'forme', taille: 's' },
     { id: 'dernieres', taille: 'm' },
   ],
   // Natation : les mètres par semaine en héros, puis le contexte, l'allure et le mois côte à côte, l'allure selon la distance, les records, la charge
@@ -567,9 +510,6 @@ export const SIGNATURES: Record<string, readonly Signature[]> = {
   hyrox: [{ id: 'hyroxallure' }, { id: 'chargeforce' }, { id: 'hyroxgains' }],
 };
 
-// Triathlon et duathlon : un sport à part sur la barre, mais ce sont des courses, du vélo et de la natation sur l'accueil
-const SPORTS_DE = (famille: string): string[] => (famille === 'triathlon' || famille === 'duathlon' ? ['course', 'velo', 'natation'] : [famille]);
-
 const definition = (id: string): DefinitionWidget => (WIDGETS as Record<string, DefinitionWidget>)[id];
 
 /**
@@ -581,20 +521,12 @@ export function existe(id: unknown): id is IdWidget {
   return typeof id === 'string' && Object.hasOwn(WIDGETS, id);
 }
 
-/** Les onglets qui regroupent plusieurs sports : les widgets de tous ces sports leur conviennent. */
-const SPORTS_VOISINS: Record<string, readonly string[]> = {
-  triathlon: ['triathlon', 'natation', 'velo', 'course'],
-  duathlon: ['duathlon', 'velo', 'course'],
-};
-
 /** Un widget est-il pertinent pour au moins un des sports de l'utilisateur ? */
 export function estPertinent(id: string, familles: readonly string[]): boolean {
   if (!existe(id)) return false;
   const def = definition(id);
   if (def.sports === 'tous') return true;
-  // Triathlon et Duathlon montrent les widgets de leurs disciplines (natation, vélo, course)
-  const dessous = familles.flatMap((f) => SPORTS_VOISINS[f] ?? [f]);
-  return def.sports.some((s) => dessous.includes(s));
+  return def.sports.some((s) => familles.includes(s));
 }
 
 /**
@@ -626,7 +558,7 @@ export function compositionAuto(_familles: readonly string[] = []): WidgetPlace[
  *  4. La charge d'entraînement (celle de la muscu quand on ne fait que de la muscu), puis les dernières séances.
  */
 export function compositionSport(familles: readonly string[] = []): WidgetPlace[] {
-  const sports = [...new Set(familles.flatMap(SPORTS_DE))].filter((s) => Object.hasOwn(SIGNATURES, s));
+  const sports = [...new Set(familles)].filter((s) => Object.hasOwn(SIGNATURES, s));
   const parts = sports.length <= 1 ? 4 : sports.length === 2 ? 2 : 1;
   const vus = new Set<string>();
   const signatures: Signature[] = [];
@@ -739,7 +671,7 @@ export function normaliser(brut: unknown): Disposition | null {
 }
 
 /** Les onglets de sport dont la bibliothèque reste ouverte : on peut y ajouter n'importe quel widget qui concerne le sport. */
-export const SPORTS_LIBRES: string[] = ['course', 'velo', 'natation', 'triathlon', 'duathlon', 'autre'];
+export const SPORTS_LIBRES: string[] = ['course', 'velo', 'natation', 'autre'];
 /** Les onglets de sport qui ont leur propre composition modifiable (Muscu, Hyrox, et les sports libres). */
 export const ONGLETS_PERSONNALISABLES: string[] = [...Object.keys(ORDRE_ONGLET), ...SPORTS_LIBRES];
 /** Onglets dont la bibliothèque est limitée à leurs propres widgets (ceux de ORDRE_ONGLET). */

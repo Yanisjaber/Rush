@@ -1,6 +1,6 @@
 // Cycles d'entraînement : la palette, la validation d'un cycle et la règle « deux cycles au plus le même jour ». Fonctions pures, sans réseau
 // (testées dans tests/cycles.test.ts). Le calendrier affiche chaque cycle en bande de couleur sous les jours qu'il couvre.
-import { DISCIPLINES_DU_FILTRE } from '../sports/familles.ts';
+import { filtreGarde } from '../sports/filtre.ts';
 import type { Cycle } from '../types.ts';
 
 /** Au plus deux cycles le même jour : le calendrier n'a la place que pour deux bandes (la base le garantit aussi). */
@@ -10,16 +10,15 @@ export const JOURS_MAX_CYCLE = 366;
 export const NOM_MAX_CYCLE = 60;
 
 /** Les sports auxquels un cycle peut être lié (clés de theme/sports) ; sans sport, un cycle concerne tous les sports. La base refait la même vérification. */
-export const SPORTS_CYCLE: string[] = ['course', 'velo', 'natation', 'muscu', 'hyrox', 'triathlon', 'duathlon', 'autre'];
+export const SPORTS_CYCLE: string[] = ['course', 'velo', 'natation', 'muscu', 'hyrox', 'autre'];
 
 /**
  * Un cycle se voit-il sous cette pastille de la barre des sports ? Sous « Tous », tous les cycles ; sous un sport, ceux de ce sport et ceux sans sport.
- * Triathlon et Duathlon regroupent leurs disciplines : un cycle de natation, de vélo ou de course s'y voit aussi.
+ * Plusieurs sports cochés (« course+velo ») : les cycles de chacun de ces sports.
  */
 export function cycleVisible(c: { sport?: string | null }, filtre: string): boolean {
   if (filtre === 'tout' || !c.sport) return true;
-  const disciplines = DISCIPLINES_DU_FILTRE[filtre];
-  return disciplines ? disciplines.includes(c.sport) : c.sport === filtre;
+  return filtreGarde(filtre, c.sport);
 }
 
 /** Les couleurs proposées : des teintes terreuses, volontairement éloignées des couleurs des sports (orange, bleu, cyan, corail, jaune). */

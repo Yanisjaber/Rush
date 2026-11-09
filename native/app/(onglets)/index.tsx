@@ -21,6 +21,7 @@ import { useDonneesAccueil } from '@/hooks/useDonneesAccueil';
 import { useAuth } from '@/stores/auth';
 import { useBandeauConnexion } from '@/stores/bandeau-connexion';
 import { ajouter, annulerEdition, changerTaille, chargerDisposition, deplacerWidget, demarrerEdition, listeEnEdition, reinitialiserAuto, retirer, terminerEdition, useDisposition } from '@/stores/disposition';
+import { estMultiple, famillesDuFiltre } from '@/data/sports/filtre';
 import { useMenu } from '@/stores/menu';
 import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
@@ -80,7 +81,8 @@ export default function Accueil() {
     if (enEdition) return listeEnEdition(disp);
     // Un onglet de sport reçoit sa propre composition automatique (tout l'écran pour ce sport) tant que l'accueil n'est pas personnalisé ;
     // sinon, ce que l'utilisateur a choisi, filtré pour ce sport
-    const liste = filtre === 'tout' ? base : disp.auto && !ONGLETS_PERSONNALISABLES.includes(filtre) ? compositionSport([filtre]) : composerOnglet(base, filtre, disp.onglets);
+    // Plusieurs sports cochés : la composition automatique de ces sports ensemble (on ne personnalise que « Tous » et un sport seul)
+    const liste = filtre === 'tout' ? base : estMultiple(filtre) ? compositionSport(famillesDuFiltre(filtre) ?? []) : disp.auto && !ONGLETS_PERSONNALISABLES.includes(filtre) ? compositionSport([filtre]) : composerOnglet(base, filtre, disp.onglets);
     return liste;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [disp, base, filtre, enEdition]);
@@ -124,7 +126,7 @@ export default function Accueil() {
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
       <FondDegrade />
-      <BarreSports />
+      <BarreSports titre="Accueil" />
       <ScrollView
         ref={defile}
         scrollEnabled={!enGlisse}

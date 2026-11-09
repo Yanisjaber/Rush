@@ -9,7 +9,7 @@ interface EtatSports {
   demo: string[] | null;
 }
 
-// En démo, tous les sports sont cochés au départ (course, vélo, natation, musculation, Hyrox, triathlon, duathlon, autres) : chacun a ses activités d'exemple
+// En démo, tous les sports sont cochés au départ (course, vélo, natation, musculation, Hyrox, autres) : chacun a ses activités d'exemple
 let etat: EtatSports = { version: 0, demo: [...SPORTS_A_CHOISIR] };
 const ecouteurs = new Set<() => void>();
 

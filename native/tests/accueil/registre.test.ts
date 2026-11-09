@@ -12,9 +12,9 @@ test('existe : seuls les vrais widgets, pas les propriétés héritées', () => 
   assert.equal(existe(42), false);
 });
 
-test('registre : 53 widgets, chacun avec une taille par défaut permise', () => {
+test('registre : 49 widgets, chacun avec une taille par défaut permise', () => {
   const ids = Object.keys(WIDGETS);
-  assert.equal(ids.length, 53);
+  assert.equal(ids.length, 49);
   for (const id of ids) {
     const d = (WIDGETS as Record<string, { tailles: readonly string[]; taille: string }>)[id];
     assert.ok(d.tailles.includes(d.taille), id);
@@ -81,9 +81,9 @@ test('compositionSport : un seul sport a toute la place, trois sports ou plus n\
   assert.equal(multi.includes('natallure'), false);
 });
 
-test('compositionSport : triathlon donne course, vélo et natation', () => {
-  const tri = ids(['triathlon']);
-  assert.ok(tri.includes('predictions') && tri.includes('puissance') && tri.includes('natvolume'));
+test('compositionSport : plusieurs sports cochés donnent la part de chacun', () => {
+  const trois = ids(['course', 'velo', 'natation']);
+  assert.ok(trois.includes('predictions') && trois.includes('puissance') && trois.includes('natvolume'));
 });
 
 test('compositionSport : un sport sans widget propre (aviron, ski…) reçoit le socle', () => {
@@ -118,11 +118,10 @@ test('estPertinent : Autres voit les widgets de ski de fond, Course et Vélo non
   assert.equal(estPertinent('predictions', ['autre']), false);
 });
 
-test('estPertinent : Triathlon voit natation, vélo et course, Duathlon pas la natation', () => {
-  for (const id of ['natvolume', 'puissance', 'predictions', 'tribricks']) assert.ok(estPertinent(id, ['triathlon']), `triathlon : ${id}`);
-  assert.equal(estPertinent('natvolume', ['duathlon']), false);
-  assert.ok(estPertinent('puissance', ['duathlon']) && estPertinent('predictions', ['duathlon']) && estPertinent('tribricks', ['duathlon']));
-  assert.equal(estPertinent('tribricks', ['course']), false);
+test('estPertinent : un widget convient à un des sports de la liste', () => {
+  for (const id of ['natvolume', 'puissance', 'predictions']) assert.ok(estPertinent(id, ['natation', 'velo', 'course']), id);
+  assert.equal(estPertinent('natvolume', ['velo', 'course']), false);
+  assert.equal(estPertinent('triequilibre', ['natation', 'velo', 'course']), false); // les widgets de triathlon n'existent plus
 });
 
 test('LISTES_PAR_DEFAUT : chaque liste ne contient que des widgets du sport ou pour tous, des tailles permises, sans doublon', () => {

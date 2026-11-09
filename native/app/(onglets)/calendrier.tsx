@@ -124,7 +124,7 @@ export default function Calendrier() {
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
       <FondDegrade />
-      <BarreSports />
+      <BarreSports titre="Calendrier" />
       <ScrollView
         contentContainerStyle={[styles.contenu, { paddingBottom: bas + BARRE_ONGLETS }]}
         refreshControl={<RefreshControl refreshing={actualisation} onRefresh={recharger} tintColor={p.texteDoux} />}

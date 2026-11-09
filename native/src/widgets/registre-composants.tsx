@@ -50,10 +50,6 @@ import { WidgetTonnage } from './muscu/WidgetTonnage';
 import { WidgetSkiIntensite } from './ski/WidgetSkiIntensite';
 import { WidgetSkiPrepa } from './ski/WidgetSkiPrepa';
 import { WidgetSkiSurfaces } from './ski/WidgetSkiSurfaces';
-import { WidgetTriBricks } from './triathlon/WidgetTriBricks';
-import { WidgetTriEquilibre } from './triathlon/WidgetTriEquilibre';
-import { WidgetTriFraicheur } from './triathlon/WidgetTriFraicheur';
-import { WidgetTriReperes } from './triathlon/WidgetTriReperes';
 import { WidgetVolume } from './general/WidgetVolume';
 import { WidgetWattsCardio } from './velo/WidgetWattsCardio';
 import { WidgetZonesAllure } from './course/WidgetZonesAllure';
@@ -81,10 +77,6 @@ export const COMPOSANTS: Record<string, ComponentType<WidgetProps>> = {
   ftp: WidgetFtp,
   zonespuissance: WidgetZonesPuissance,
   wattscardio: WidgetWattsCardio,
-  triequilibre: WidgetTriEquilibre,
-  trifraicheur: WidgetTriFraicheur,
-  tribricks: WidgetTriBricks,
-  trireperes: WidgetTriReperes,
   natcourbe: WidgetNatCourbe,
   natmois: WidgetNatMois,
   natrythmes: WidgetNatRythmes,

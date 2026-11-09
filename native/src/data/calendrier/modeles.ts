@@ -19,7 +19,7 @@ export interface Modele {
   structure: unknown;
 }
 
-const CATEGORIE_VERS_CLE: Record<string, string> = { cyclisme: 'velo', vtt: 'velo', course: 'course', trail: 'course', natation: 'natation', musculation: 'muscu', triathlon: 'triathlon' };
+const CATEGORIE_VERS_CLE: Record<string, string> = { cyclisme: 'velo', vtt: 'velo', course: 'course', trail: 'course', natation: 'natation', musculation: 'muscu', triathlon: 'autre' };
 
 /** La clé de sport (course, velo…) d'un modèle : son type brut s'il est connu, sinon sa catégorie. */
 export function cleDuModele(m: Pick<Modele, 'sport' | 'sport_raw'>): string {

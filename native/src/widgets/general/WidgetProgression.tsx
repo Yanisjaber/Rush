@@ -4,7 +4,8 @@ import { CadreWidget } from '@/components/widgets/CadreWidget';
 import { IconeSport } from '@/components/ui/IconeSport';
 import { OngletsSegment } from '@/components/menus/OngletsSegment';
 import { Tuile } from '@/components/ui/Tuile';
-import { DISCIPLINES_DU_FILTRE, familleAffichage } from '@/data/sports/familles';
+import { familleAffichage } from '@/data/sports/familles';
+import { famillesDuFiltre } from '@/data/sports/filtre';
 import { PERIODES_PROGRESSION, progressionTousSports, type PeriodeProgression, type Progression } from '@/data/bilan/progression';
 import { MOT, formatPct, formatValeurProgression, variationTexte } from '@/data/bilan/progression-texte';
 import type { WidgetProps } from '@/data/types';
@@ -18,7 +19,8 @@ import { usePalette } from '@/theme/usePalette';
 const NOM_SPORT = (famille: string): string => (SPORTS as Record<string, { court: string }>)[famille]?.court ?? famille;
 // Les sports à mesurer : celui de l'onglet ouvert, ou tous ceux que l'utilisateur pratique sur « Tout »
 function famillesDuContexte(filtre: string, seances: { sport: string }[], aDesSeriesDeForce: boolean): string[] {
-  if (filtre !== 'tout') return DISCIPLINES_DU_FILTRE[filtre] ? [...DISCIPLINES_DU_FILTRE[filtre]] : [filtre];
+  const choisis = famillesDuFiltre(filtre);
+  if (choisis) return [...choisis];
   const f = new Set(seances.map((s) => familleAffichage(s.sport)));
   if (aDesSeriesDeForce) f.add('muscu');
   return [...f];

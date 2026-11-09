@@ -1,13 +1,16 @@
 import { useSyncExternalStore } from 'react';
-import { filtreApres, filtreValide } from '@/data/accueil/menu';
+import { filtreDeSelection } from '@/data/sports/filtre';
 import { fusionnerFamilles } from '@/data/sports/sports-choisis';
 
-// État du menu des sports : les sports proposés et le filtre choisi. Partagé par tous les écrans
-// (on choisit « Course » sur l'Accueil, le Calendrier reste sur « Course »).
+// État du menu des sports : les sports proposés et ceux qui sont cochés (un, plusieurs ou aucun = « Tous »). Partagé par tous les écrans
+// (on coche « Course » sur l'Accueil, le Calendrier reste sur « Course »).
 // Les sports viennent des données chargées : les sports choisis dans le compte (user_preferences) plus ceux que les séances
 // révèlent (une séance de muscu, un programme, un test Hyrox…). Voir famillesDe (data/accueil.ts).
 interface EtatMenu {
   familles: string[];
+  /** Les sports cochés dans le menu ; vide = « Tous ». */
+  selection: string[];
+  /** Le filtre qui en découle, utilisé par tous les écrans : « tout », « course » ou « course+velo » (voir data/sports/filtre.ts). */
   filtre: string;
 }
 
@@ -15,7 +18,7 @@ interface EtatMenu {
 // On les garde pour pouvoir recomposer la barre tout de suite quand il coche un sport, sans attendre un rechargement.
 let deDonnees: string[] = [];
 let choisis: string[] | null = null;
-let etat: EtatMenu = { familles: [], filtre: 'tout' };
+let etat: { familles: string[]; selection: string[] } = { familles: [], selection: [] };
 const ecouteurs = new Set<() => void>();
 
 function abonner(fn: () => void) {
@@ -51,23 +54,23 @@ export function definirSportsCoches(coches: string[]) {
   definirFamilles(composer());
 }
 
-/** Choisit le sport affiché ; recliquer sur le sport déjà choisi revient à « Tous ». */
-export function choisirFiltre(famille: string) {
-  const filtre = filtreApres(etat.filtre, famille);
-  if (filtre === etat.filtre) return;
-  etat = { ...etat, filtre };
+/** Applique la sélection de sports cochés dans le menu (liste vide ou tout coché = « Tous »). Un sport absent de la barre est ignoré. */
+export function definirSelection(selection: string[]) {
+  const propre = etat.familles.filter((f) => selection.includes(f));
+  if (propre.length === etat.selection.length && propre.every((f, i) => f === etat.selection[i])) return;
+  etat = { ...etat, selection: propre };
   ecouteurs.forEach((fn) => fn());
 }
 
-/** Impose ce sport comme filtre (contrairement à choisirFiltre, ne revient pas à « Tous » s'il est déjà choisi). Un sport absent du menu est ignoré. */
+/** Impose ce seul sport comme filtre (depuis le Coach, par exemple). Un sport absent du menu est ignoré. */
 export function imposerFiltre(famille: string) {
-  if (famille === etat.filtre || !etat.familles.includes(famille)) return;
-  etat = { ...etat, filtre: famille };
-  ecouteurs.forEach((fn) => fn());
+  if (!etat.familles.includes(famille)) return;
+  definirSelection([famille]);
 }
 
-/** Le menu courant ; le filtre est déjà vérifié (un sport retiré du menu donne « tout »). */
+/** Le menu courant : les sports de la barre, la sélection cochée et le filtre qui en découle (« tout », « course » ou « course+velo »). Un sport retiré de la barre sort de la sélection. */
 export function useMenu(): EtatMenu {
   const e = useSyncExternalStore(abonner, () => etat, () => etat);
-  return { familles: e.familles, filtre: filtreValide(e.filtre, e.familles) };
+  const selection = e.familles.filter((f) => e.selection.includes(f));
+  return { familles: e.familles, selection, filtre: filtreDeSelection(selection, e.familles) };
 }

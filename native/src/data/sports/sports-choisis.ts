@@ -5,7 +5,7 @@
 export const SPORTS_PRINCIPAUX: string[] = ['course', 'velo', 'natation', 'muscu', 'hyrox'];
 
 /** Les autres sports de performance : ils ont leur pastille de couleur et leurs séances, sans widgets dédiés. */
-export const SPORTS_AUTRES: string[] = ['triathlon', 'duathlon', 'autre'];
+export const SPORTS_AUTRES: string[] = ['autre'];
 
 /** Tout ce qu'on peut cocher, dans l'ordre de l'écran. */
 export const SPORTS_A_CHOISIR: string[] = [...SPORTS_PRINCIPAUX, ...SPORTS_AUTRES];
@@ -13,7 +13,7 @@ export const SPORTS_A_CHOISIR: string[] = [...SPORTS_PRINCIPAUX, ...SPORTS_AUTRE
 /** Les sports rangés par thème pour l'écran de choix (chaque sport proposé apparaît dans un seul groupe). */
 export const GROUPES_SPORTS: { titre: string; sports: string[] }[] = [
   { titre: 'Course', sports: ['course'] },
-  { titre: 'Vélo & multisport', sports: ['velo', 'triathlon', 'duathlon'] },
+  { titre: 'Vélo', sports: ['velo'] },
   { titre: 'Eau', sports: ['natation'] },
   { titre: 'Force & hybride', sports: ['muscu', 'hyrox'] },
   { titre: 'Autres', sports: ['autre'] },
@@ -32,7 +32,9 @@ export function nettoyerSports(brut: unknown): string[] | null {
   const connus = new Set(SPORTS_A_CHOISIR);
   const vus = new Set<string>();
   const liste: string[] = [];
-  for (const brutS of brut) {
+  // Triathlon et Duathlon n'existent plus comme sports : un ancien choix enregistré devient ses disciplines (on filtre en cochant plusieurs sports)
+  const aplati = brut.flatMap((b) => (b === 'triathlon' ? ['natation', 'velo', 'course'] : b === 'duathlon' ? ['velo', 'course'] : [b]));
+  for (const brutS of aplati) {
     // Les anciens sports (ski, randonnée, combat…) sont maintenant dans « Autres » : un ancien choix enregistré n'est pas perdu
     const s = typeof brutS === 'string' && ANCIENS_SPORTS.includes(brutS) ? 'autre' : brutS;
     if (typeof s === 'string' && connus.has(s) && !vus.has(s)) {

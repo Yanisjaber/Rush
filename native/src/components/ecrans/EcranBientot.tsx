@@ -20,7 +20,7 @@ export function EcranBientot({ titre, description, avecSports = false }: Props) 
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
       <FondDegrade />
-      {avecSports ? <BarreSports /> : null}
+      {avecSports ? <BarreSports titre={titre} /> : null}
       {/* Sans barre des sports, c'est le contenu qui réserve la place de l'heure et de l'encoche */}
       <View style={[styles.contenu, !avecSports && { paddingTop: haut + espace.e4 }]}>
         <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>

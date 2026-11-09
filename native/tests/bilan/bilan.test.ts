@@ -21,8 +21,7 @@ test('familleBilan : vélo (VTT et gravel compris) → cyclisme, trail → cours
   assert.equal(familleBilan('Swim'), 'natation');
   assert.equal(familleBilan('WeightTraining'), 'musculation');
   assert.equal(familleBilan('Hyrox'), 'hyrox');
-  assert.equal(familleBilan('Triathlon'), 'triathlon');
-  assert.equal(familleBilan('Duathlon'), 'duathlon');
+  assert.equal(familleBilan('Triathlon'), 'autre'); // plus un sport à part : une course de triathlon se range dans « Autres »
   assert.equal(familleBilan('Soccer'), 'autre');
   assert.equal(familleBilan(null), 'autre');
 });
@@ -33,7 +32,7 @@ test('familleBilanDuFiltre : le filtre global vers la famille de bilan', () => {
   assert.equal(familleBilanDuFiltre('muscu'), 'musculation');
   assert.equal(familleBilanDuFiltre('course'), 'course');
   assert.equal(familleBilanDuFiltre('hyrox'), 'hyrox');
-  assert.equal(familleBilanDuFiltre('triathlon'), 'triathlon');
+  assert.equal(familleBilanDuFiltre('course+velo'), null); // plusieurs sports : pas de famille unique
   assert.equal(familleBilanDuFiltre('football'), 'autre');
 });
 
