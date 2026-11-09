@@ -24,7 +24,6 @@ interface Props {
 
 const MARGE = 10; // assez pour que le rond du curseur (rayon 6 + contour 3) ne soit jamais coupé
 const GAUCHE = 28; // la place des repères d'altitude, à gauche (trois chiffres de 11 pt)
-const BULLE = 30; // la hauteur réservée à la bulle, au-dessus du graphe
 
 /** Un pas rond pour les repères d'altitude : on veut au plus 5 intervalles (assez de repères pour lire, pas trop pour rester propre). */
 function pasRond(ecart: number): number {
@@ -91,36 +90,12 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
   const curseur = actif ? points[index] : undefined;
   const distance = km != null && km > 0 && n > 1 ? (index / (n - 1)) * km : null;
   const altitude = profil[index];
-  const texteBulle = `${distance != null ? `km ${formatKm(distance, 1)} · ` : ''}${formatNombre(altitude ?? min)} m`;
+  const texteBulle = `${formatNombre(altitude ?? min)} m${distance != null ? ` · km ${formatKm(distance, 1)}` : ''}`;
   const gaucheBulle = curseur ? Math.min(Math.max(curseur[0] - largeurBulle / 2, 0), Math.max(largeur - largeurBulle, 0)) : 0;
   const idFondu = 'fondu-curseur';
 
   return (
     <View>
-      <View style={{ height: BULLE }}>
-        {curseur ? (
-          <View
-            onLayout={(e: LayoutChangeEvent) => setLargeurBulle(e.nativeEvent.layout.width)}
-            style={[styles.bulle, { left: gaucheBulle, backgroundColor: p.texte }]}
-          >
-            <Text style={[typo.corpsFort, { color: p.fond, fontSize: 13 }]}>{texteBulle}</Text>
-          </View>
-        ) : (
-          // Au repos : une aide discrète à la place de la bulle (elle disparaît dès que le doigt se pose)
-          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.aide}>
-            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M9 11 V5.5 a1.5 1.5 0 0 1 3 0 V11 M12 10 a1.5 1.5 0 0 1 3 0 M15 11 a1.5 1.5 0 0 1 3 0 V15 a6 6 0 0 1 -6 6 h-1 a6 6 0 0 1 -5 -3 L4 14.5 a1.5 1.5 0 0 1 2.5 -1.5 L9 15"
-                stroke={p.texteMuet}
-                strokeWidth={1.8}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-            <Text style={[typo.petit, { color: p.texteDoux }]}>Touche la courbe pour voir un point</Text>
-          </View>
-        )}
-      </View>
       <View
         {...gestes.panHandlers}
         // Dès que le doigt se pose (avant même le glissement) : l'écran suspend le retour par balayage, qui sinon fermerait la page
@@ -160,11 +135,23 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
             {ligne ? <Path d={ligne} fill="none" stroke={couleur} strokeWidth={2.6} strokeLinecap="round" /> : null}
             {curseur ? (
               <>
-                <Line x1={curseur[0]} y1={0} x2={curseur[0]} y2={hauteur} stroke={p.texte} strokeWidth={1.5} />
+                <Line x1={curseur[0]} y1={0} x2={curseur[0]} y2={hauteur} stroke={p.texteDoux} strokeWidth={1.5} strokeDasharray="3 4" />
                 <Circle cx={curseur[0]} cy={curseur[1]} r={6} fill={p.texte} stroke={couleur} strokeWidth={3} />
               </>
             ) : null}
           </Svg>
+        ) : null}
+        {curseur ? (
+          // La pastille est posée sur la courbe, au-dessus du point (en dessous si le point est trop haut pour qu'elle tienne), reliée au point par le trait pointillé
+          <View
+            pointerEvents="none"
+            onLayout={(e: LayoutChangeEvent) => setLargeurBulle(e.nativeEvent.layout.width)}
+            style={[styles.bulle, { left: gaucheBulle, top: curseur[1] > 44 ? curseur[1] - 40 : curseur[1] + 14, backgroundColor: p.fond, borderColor: p.texteDoux }]}
+          >
+            <Text style={[typo.corpsFort, { color: p.texte, fontSize: 13 }]}>
+              {curseur[1] > 44 ? '▼' : '▲'} {texteBulle}
+            </Text>
+          </View>
         ) : null}
       </View>
       {/* La ligne du bas : les repères de distance, départ, milieu et arrivée (le « km » n'est dit qu'au départ). L'unité des altitudes est dans la colonne, à la place de la graduation de base. */}
@@ -184,6 +171,5 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
 const styles = StyleSheet.create({
   axe: { flexDirection: 'row', marginTop: 4 },
   repere: { flex: 1, fontSize: 11, lineHeight: 14 },
-  aide: { height: BULLE, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  bulle: { position: 'absolute', top: 0, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 },
+  bulle: { position: 'absolute', borderRadius: 999, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 4 },
 });

@@ -44,7 +44,7 @@ interface Props {
   onModifier?: () => void;
 }
 
-const HAUTEUR_PAGE = 194; // juste la hauteur du profil (bulle, courbe, repères de distance) ; les pages Tours et Notes défilent dedans
+const HAUTEUR_PAGE = 166; // juste la hauteur du profil (courbe et repères de distance) ; les pages Tours et Notes défilent dedans
 
 export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, hero, chiffres, pageTours, pageDonnees, onModifier }: Props) {
   const p = usePalette();
