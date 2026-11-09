@@ -105,7 +105,21 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
           >
             <Text style={[typo.corpsFort, { color: p.fond, fontSize: 13 }]}>{texteBulle}</Text>
           </View>
-        ) : null}
+        ) : (
+          // Au repos : une aide discrète à la place de la bulle (elle disparaît dès que le doigt se pose)
+          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.aide}>
+            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M9 11 V5.5 a1.5 1.5 0 0 1 3 0 V11 M12 10 a1.5 1.5 0 0 1 3 0 M15 11 a1.5 1.5 0 0 1 3 0 V15 a6 6 0 0 1 -6 6 h-1 a6 6 0 0 1 -5 -3 L4 14.5 a1.5 1.5 0 0 1 2.5 -1.5 L9 15"
+                stroke={p.texteMuet}
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+            <Text style={[typo.petit, { color: p.texteDoux }]}>Touche la courbe pour voir un point</Text>
+          </View>
+        )}
       </View>
       <View
         {...gestes.panHandlers}
@@ -170,5 +184,6 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
 const styles = StyleSheet.create({
   axe: { flexDirection: 'row', marginTop: 4 },
   repere: { flex: 1, fontSize: 11, lineHeight: 14 },
+  aide: { height: BULLE, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   bulle: { position: 'absolute', top: 0, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 },
 });
