@@ -147,7 +147,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
 
         <View style={{ height: HAUTEUR_PAGE }} onLayout={(e: LayoutChangeEvent) => setDims((d) => ({ ...d, pager: e.nativeEvent.layout.width }))}>
           {dims.pager > 0 ? (
-            <ScrollView ref={defilement} horizontal pagingEnabled scrollEnabled={!surCourbe} showsHorizontalScrollIndicator={false} onMomentumScrollEnd={apresDefilement} style={{ flex: 1 }}>
+            <ScrollView ref={defilement} horizontal pagingEnabled scrollEnabled={!surCourbe} delaysContentTouches={false} showsHorizontalScrollIndicator={false} onMomentumScrollEnd={apresDefilement} style={{ flex: 1 }}>
               {pages.map((nom) => (
                 <View key={nom} style={{ width: dims.pager, height: HAUTEUR_PAGE }}>
                   {nom === 'profil' && parcours && parcours.altitudeMin != null && parcours.altitudeMax != null ? (
