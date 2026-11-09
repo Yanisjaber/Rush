@@ -17,64 +17,69 @@ interface Props {
   children?: ReactNode;
 }
 
-const RUBRIQUES: { titre: string; cles: string[] }[] = [
-  { titre: 'EFFORT', cles: ['charge', 'rpe'] },
-  { titre: 'RYTHME', cles: ['allure', 'vitesse', 'cadence'] },
-  { titre: 'CŒUR', cles: ['fc'] },
-  { titre: 'RELIEF', cles: ['denivele'] },
-  { titre: 'ÉNERGIE', cles: ['watts', 'energie'] },
-];
+interface Tuile {
+  cle: string;
+  libelle: string;
+  valeur: string;
+  unite?: string;
+  ecarte?: boolean;
+}
 
 export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, children }: Props) {
   const p = usePalette();
   const parCle = (cle: string) => chiffres.find((c) => c.cle === cle);
+  const tuile = (cle: string, libelle?: string): Tuile[] => {
+    const c = parCle(cle);
+    return c ? [{ cle, libelle: libelle ?? c.libelle, valeur: c.valeur, unite: c.unite, ecarte: ecarte(cle) }] : [];
+  };
   const principaux = ['distance', 'duree'].map(parCle).filter((c): c is ChiffreSeance => !!c);
+  // Le cardio max est la note du chiffre « Cardio moyen » (« max 181 ») : on en fait une tuile à part
+  const fc = parCle('fc');
+  const fcMax = /\d+/.exec(fc?.note ?? '')?.[0];
+  const rubriques: { titre: string; tuiles: Tuile[] }[] = [
+    { titre: 'EFFORT', tuiles: [...tuile('charge'), ...tuile('rpe', 'Effort ressenti')] },
+    { titre: 'CŒUR', tuiles: [...tuile('fc', 'FC moyenne'), ...(fcMax ? [{ cle: 'fcmax', libelle: 'FC max', valeur: fcMax, unite: 'bpm' }] : [])] },
+    { titre: 'RYTHME', tuiles: [...tuile('allure'), ...tuile('vitesse'), ...tuile('cadence')] },
+    {
+      titre: 'RELIEF',
+      tuiles: [
+        ...tuile('denivele', 'Dénivelé +'),
+        ...(altitude ? [{ cle: 'haut', libelle: 'Plus haut', valeur: String(Math.round(altitude.max)), unite: 'm' }, { cle: 'bas', libelle: 'Plus bas', valeur: String(Math.round(altitude.min)), unite: 'm' }] : []),
+      ],
+    },
+    { titre: 'ÉNERGIE', tuiles: [...tuile('watts'), ...tuile('energie')] },
+  ];
   return (
     <>
       {principaux.length ? (
         <View style={styles.principaux}>
           {principaux.map((c) => (
             <View key={c.cle} accessible accessibilityLabel={`${c.libelle} ${c.valeur} ${c.unite ?? ''}`}>
-              <Text style={[typo.micro, { color: p.texteDoux }]}>{c.libelle.toUpperCase()}</Text>
               <Text style={[styles.grand, { color: p.texte }]}>
                 {c.valeur}
                 {c.unite ? <Text style={[typo.corpsFort, { color: p.texteDoux }]}> {c.unite}</Text> : null}
               </Text>
-              {c.note ? <Text style={[typo.petit, { color: p.texteDoux }]}>{c.note}</Text> : null}
             </View>
           ))}
         </View>
       ) : null}
 
-      {RUBRIQUES.map((r) => {
-        const tuiles = r.cles.map(parCle).filter((c): c is ChiffreSeance => !!c);
-        const reliefExtra = r.titre === 'RELIEF' && altitude;
-        if (!tuiles.length && !reliefExtra) return null;
-        return (
-          <View key={r.titre} style={[styles.carte, { backgroundColor: p.surface }]}>
-            <Text style={[typo.micro, { color: p.texteDoux }]}>{r.titre}</Text>
+      {rubriques.map((r) =>
+        r.tuiles.length ? (
+          <View key={r.titre} style={{ gap: espace.e2 }}>
+            <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2 }]}>{r.titre}</Text>
             <View style={styles.grille}>
-              {tuiles.map((c) => (
-                <View key={c.cle} style={styles.tuile}>
-                  <StatCle etiquette={c.libelle} valeur={c.valeur} unite={c.unite} note={c.note} petit ecarte={ecarte(c.cle)} />
+              {r.tuiles.map((c) => (
+                <View key={c.cle} style={[styles.tuile, { backgroundColor: p.surface }]}>
+                  <StatCle etiquette={c.libelle} valeur={c.valeur} unite={c.unite} petit ecarte={c.ecarte} />
                 </View>
               ))}
-              {reliefExtra ? (
-                <>
-                  <View style={styles.tuile}>
-                    <StatCle etiquette="Point le plus haut" valeur={String(Math.round(altitude.max))} unite="m" petit />
-                  </View>
-                  <View style={styles.tuile}>
-                    <StatCle etiquette="Point le plus bas" valeur={String(Math.round(altitude.min))} unite="m" petit />
-                  </View>
-                </>
-              ) : null}
             </View>
             {/* Jauge de l'effort ressenti : dix segments, remplis jusqu'à la note */}
             {r.titre === 'EFFORT' && parCle('rpe') ? <JaugeRpe note={Number(parCle('rpe')!.valeur)} couleur={couleur} /> : null}
           </View>
-        );
-      })}
+        ) : null,
+      )}
       {children}
     </>
   );
@@ -92,11 +97,10 @@ function JaugeRpe({ note, couleur }: { note: number; couleur: string }) {
 }
 
 const styles = StyleSheet.create({
-  principaux: { flexDirection: 'row', gap: espace.e5, paddingHorizontal: 2 },
-  grand: { fontFamily: police.titre700, fontSize: 40, lineHeight: 46, fontVariant: ['tabular-nums'] },
-  carte: { borderRadius: rayon.base, padding: espace.e3, gap: espace.e2 },
-  grille: { flexDirection: 'row', flexWrap: 'wrap', rowGap: espace.e3 },
-  tuile: { width: '50%', paddingRight: espace.e2 },
+  principaux: { flexDirection: 'row', alignItems: 'baseline', gap: espace.e5, paddingHorizontal: 2 },
+  grand: { fontFamily: police.titre700, fontSize: 34, lineHeight: 40, fontVariant: ['tabular-nums'] },
+  grille: { flexDirection: 'row', flexWrap: 'wrap', gap: espace.e2 },
+  tuile: { flexGrow: 1, flexBasis: '30%', borderRadius: rayon.base, paddingVertical: 8, paddingHorizontal: espace.e3 },
   jauge: { flexDirection: 'row', gap: 4 },
   segment: { flex: 1, height: 8, borderRadius: 4 },
 });

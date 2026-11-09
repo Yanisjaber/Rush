@@ -90,6 +90,17 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
     </View>
   );
 
+  const ligneDate = date ? (
+    <View accessible accessibilityLabel={`${nomSport ?? ''} ${date}`.trim()} style={styles.ligneDate}>
+      <View style={styles.gaucheDate}>
+        <IconeSport sport={sport} taille={16} />
+        {/* Le nom du sport dans sa couleur en thème sombre (en thème clair la couleur de sport reste réservée aux aplats : contraste insuffisant en petit texte, voir IDENTITE.md) */}
+        {nomSport ? <Text style={[typo.petit, { color: p.fond === sombre.fond ? couleur : p.texteDoux }]}>{nomSport}</Text> : null}
+      </View>
+      <Text style={[typo.micro, { color: p.texte, letterSpacing: 1.2 }]}>{date}</Text>
+    </View>
+  ) : null;
+
   return (
     <View style={styles.page}>
       {/* bounces désactivé : sur la page 1, le balayage vers la droite part au bord gauche de l'écran (retour), pas dans ce défilement */}
@@ -111,16 +122,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
           )}
 
           <View onLayout={(e: LayoutChangeEvent) => setFeuille(e.nativeEvent.layout.height)} style={[styles.feuille, { backgroundColor: p.fond, borderColor: p.trait, paddingBottom: bas + espace.e3 }]}>
-            {date ? (
-              <View accessible accessibilityLabel={`${nomSport ?? ''} ${date}`.trim()} style={styles.ligneDate}>
-                <View style={styles.gaucheDate}>
-                  <IconeSport sport={sport} taille={16} />
-                  {/* Le nom du sport dans sa couleur en thème sombre (en thème clair la couleur de sport reste réservée aux aplats : contraste insuffisant en petit texte, voir IDENTITE.md) */}
-                  {nomSport ? <Text style={[typo.petit, { color: p.fond === sombre.fond ? couleur : p.texteDoux }]}>{nomSport}</Text> : null}
-                </View>
-                <Text style={[typo.micro, { color: p.texte, letterSpacing: 1.2 }]}>{date}</Text>
-              </View>
-            ) : null}
+            {ligneDate}
             {chiffres}
             {pastilles}
             {avecProfil && parcours && parcours.altitudeMin != null && parcours.altitudeMax != null ? (
@@ -134,6 +136,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
         <View style={{ width: largeur, height: hauteur, backgroundColor: p.fond }}>
           <ScrollView contentContainerStyle={{ paddingTop: haut + HAUT_ENTETE + espace.e2, paddingHorizontal: espace.e4, paddingBottom: bas + espace.e5, gap: espace.e3 }} showsVerticalScrollIndicator={false}>
             {pastilles}
+            {ligneDate}
             {pageDetails}
           </ScrollView>
         </View>
