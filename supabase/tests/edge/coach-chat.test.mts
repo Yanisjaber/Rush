@@ -467,7 +467,11 @@ test('le modèle propose une séance valide : une carte est créée, le modèle 
   assert.deepEqual(w.modele.appels[1].messages.at(-2), { role: 'assistant', content: rep('Une sortie facile dimanche.', [outil('t1', seance('2026-11-08'))]).brut });
   const assistant = w.stockage.messages[1];
   assert.equal(assistant.contenu, 'Une sortie facile dimanche.\n\nVoilà, dis-moi si ça te va.');
-  assert.deepEqual(assistant.cartes, [{ id: 'carte-1', etat: 'proposee', proposition: { date: '2026-11-08', sport: 'velo', type: 'endurance', minutes: 90 }, tss_estime: 75, justification: 'Pour entretenir ton endurance.' }]);
+  // la carte porte la structure construite par le code (échauffement, corps, retour au calme) : la somme des blocs vaut exactement la durée
+  const { blocs, ...carte } = assistant.cartes![0] as CarteSeance;
+  assert.deepEqual([carte], [{ id: 'carte-1', etat: 'proposee', proposition: { date: '2026-11-08', sport: 'velo', type: 'endurance', minutes: 90 }, tss_estime: 75, justification: 'Pour entretenir ton endurance.' }]);
+  assert.ok(blocs && blocs.length >= 2, 'la carte a ses blocs');
+  assert.equal(blocs.reduce((t, x) => t + x.work.min * x.reps + (x.rec ? x.rec.min * x.reps : 0), 0), 90);
   const types = w.evts.map((e) => e.type);
   assert.deepEqual(types.filter((t) => t !== 'texte'), ['carte', 'fin']);
   assert.equal(w.evts.filter((e) => e.type === 'texte').map((e) => (e as Libre).delta).join(''), 'Une sortie facile dimanche.\n\nVoilà, dis-moi si ça te va.');

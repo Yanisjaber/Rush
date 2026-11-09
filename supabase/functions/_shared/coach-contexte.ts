@@ -13,6 +13,7 @@ import { ajouterJours, nomDuJour } from './dates-iso.ts';
 import type { DecisionGardeFou } from './garde-fou.ts';
 import type { MessageModele } from './modele.ts';
 import type { LignePlan, Operation } from './planning.ts';
+import type { BlocStructure } from './structure-seance.ts';
 import type { ContexteValidation, Proposition } from './validateur.ts';
 
 export type EtatCarte = 'proposee' | 'en_cours' | 'ajoutee' | 'refusee' | 'annulee';
@@ -23,6 +24,8 @@ export interface CarteSeance {
   proposition: Proposition;
   tss_estime: number;
   justification: string;
+  /** Structure de la séance (échauffement, corps, retour au calme), construite par le code : sert à dessiner le profil d'intensité */
+  blocs?: BlocStructure[];
   /** Raison du refus (état « refusee ») */
   motif?: string;
   /** Identifiant de la séance créée dans le calendrier (état « ajoutee ») */

@@ -120,6 +120,9 @@ export interface LignePlan {
   poser?: boolean;
   /** Séance ajoutée : sa structure en une phrase (échauffement, corps, retour au calme) */
   structure?: string;
+  /** Séance ajoutée : ses blocs (échauffement, répétitions, retour au calme) pour dessiner le profil d'intensité, et son nom */
+  blocs?: BlocStructure[];
+  nom?: string;
 }
 
 export interface ResultatPlan {
@@ -262,7 +265,7 @@ export function evaluerPlan(operations: Operation[], seances: SeancePrevue[], ba
     const p = o.proposition;
     const nom = estFamilleCoach(p?.sport) ? (MENU[p.sport].find((t) => t.cle === p.type)?.nom ?? p.type) : String(p?.type ?? '');
     const ligne = `Ajouter : ${SPORTS_NOMS[p?.sport] ?? 'séance'} ${o.detail?.nom ?? nom} ${p?.minutes} min le ${etiquetteDate(p?.date)}`;
-    lignes.push({ op: o.op, texte: ligne, raison: o.raison ?? o.justification, sport: p?.sport ?? null, minutes: p?.minutes ?? null, vers: p?.date, structure: o.detail?.resume ?? resumeLigneStructure(p) });
+    lignes.push({ op: o.op, texte: ligne, raison: o.raison ?? o.justification, sport: p?.sport ?? null, minutes: p?.minutes ?? null, vers: p?.date, structure: o.detail?.resume ?? resumeLigneStructure(p), blocs: o.detail?.structure ?? blocsLigneStructure(p), nom: o.detail?.nom });
     const v = validerSeance(p, ctxAvec(base, restantes, indispos, repos));
     if (!v.ok) echec(ligne, v.erreurs.map((e) => e.message).join(' '));
     for (const a of v.avertissements) avertissements.push(`${ligne} : ${a.message}`);
@@ -416,6 +419,12 @@ export function proposerReplanification(c: Contraintes, seances: SeancePrevue[],
 
 /** La structure d'une séance ajoutée, en une phrase ; rien si la proposition est invalide (le validateur la refusera) */
 function resumeLigneStructure(p: Proposition): string | undefined {
+  const blocs = blocsLigneStructure(p);
+  return blocs ? resumeStructure(blocs) : undefined;
+}
+
+/** Les blocs d'une séance ajoutée (construits par le code) ; rien si la proposition est invalide */
+export function blocsLigneStructure(p: Proposition): BlocStructure[] | undefined {
   if (!estFamilleCoach(p?.sport) || !Number.isInteger(p?.minutes) || p.minutes < 1 || p.minutes > 1440) return undefined;
-  return resumeStructure(structureSeance(p.sport, p.type, p.minutes));
+  return structureSeance(p.sport, p.type, p.minutes);
 }

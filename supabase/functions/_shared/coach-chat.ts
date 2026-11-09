@@ -33,7 +33,7 @@ import type { Carte, CartePlanning, CarteSeance, EtatCarte, MessageStocke } from
 import { MAX_TOKENS_REPONSE, MODELE_PAR_DEFAUT, NOM_OUTIL_SEANCE, PROMPT_SYSTEME } from './coach-prompt.ts';
 import { evaluerGardeFou } from './garde-fou.ts';
 import type { DecisionGardeFou, DonneesGardeFou } from './garde-fou.ts';
-import { evaluerPlan, proposerReplanification, seancesDepuisResume } from './planning.ts';
+import { blocsLigneStructure, evaluerPlan, proposerReplanification, seancesDepuisResume } from './planning.ts';
 import { habitudesDepuisResume, planifierSemaine } from './semaine.ts';
 import type { DemandeSemaine } from './semaine.ts';
 import type { Contraintes, Operation } from './planning.ts';
@@ -356,7 +356,7 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
   const ctxTour: ContexteValidation = { ...ctx, prevues: [...ctx.prevues, ...cartes.filter((c): c is CarteSeance => !estPlanning(c)).map((c) => ({ date: c.proposition.date, tss: c.tss_estime }))] };
   const r = validerSeance(lue.proposition, ctxTour);
   if (!r.ok) return { contenu: `Séance refusée par les règles : ${r.erreurs.map((e) => e.message).join(' ')}`, erreur: true };
-  cartes.push({ id: uuid(), etat: 'proposee', proposition: lue.proposition, tss_estime: r.tssEstime ?? 0, justification: lue.justification });
+  cartes.push({ id: uuid(), etat: 'proposee', proposition: lue.proposition, tss_estime: r.tssEstime ?? 0, justification: lue.justification, blocs: blocsLigneStructure(lue.proposition) });
   return { contenu: `Carte créée (charge estimée : ${r.tssEstime} points). L'utilisateur la verra et l'ajoutera lui-même à son calendrier.`, erreur: false };
 }
 
