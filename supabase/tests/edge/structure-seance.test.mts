@@ -2,7 +2,7 @@
 // Lancer : node --experimental-strip-types --test supabase/tests/edge/structure-seance.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dureeStructure, resumeStructure, structureSeance } from '../../functions/_shared/structure-seance.ts';
+import { dureeStructure, resumeStructure, structureSeance, structureSurMesure } from '../../functions/_shared/structure-seance.ts';
 import { MENU } from '../../functions/_shared/menu-seances.ts';
 import type { FamilleCoach } from '../../functions/_shared/menu-seances.ts';
 
@@ -37,4 +37,27 @@ test('endurance : échauffement, corps continu en zone 2, retour au calme', () =
 });
 test('séance très courte : un seul bloc', () => {
   assert.equal(structureSeance('natation', 'technique', 7).length, 1);
+});
+
+test('sur mesure : « 4 × 8 min au seuil, 3 min de récup » donne échauffement, intervalles, retour au calme, et la durée totale est la somme exacte', () => {
+  const r = structureSurMesure('velo', { genre: 'intervalles', zone: 4, reps: 4, minutesTravail: 8, minutesRecup: 3 });
+  assert.deepEqual(r.structure.map((b) => b.type), ['warmup', 'interval', 'cooldown']);
+  assert.equal(r.structure[1].reps, 4);
+  assert.equal(r.structure[1].work.min, 8);
+  assert.equal(r.structure[1].rec?.min, 3);
+  assert.equal(r.type, 'seuil');
+  assert.equal(r.nom, '4 × 8 min en zone 4');
+  assert.equal(r.minutes, dureeStructure(r.structure), 'durée annoncée = somme des blocs');
+  assert.equal(r.minutes, 13 + 44 + 9, 'échauffement 13 (30 % de 44), 4 × 11 min, retour 9');
+});
+test('sur mesure : effort continu, le type du menu suit la zone, la durée est exacte, natation comprise', () => {
+  const v = structureSurMesure('velo', { genre: 'continu', zone: 2, minutes: 60 });
+  assert.equal(v.type, 'endurance');
+  assert.equal(v.minutes, dureeStructure(v.structure));
+  assert.equal(v.structure[1].work.min, 60);
+  const n = structureSurMesure('natation', { genre: 'intervalles', zone: 5, reps: 8, minutesTravail: 2, minutesRecup: 1 });
+  assert.equal(n.type, 'vitesse');
+  assert.equal(n.minutes, dureeStructure(n.structure));
+  assert.equal(structureSurMesure('velo', { genre: 'continu', zone: 1, minutes: 30 }).type, 'recuperation');
+  assert.equal(structureSurMesure('velo', { genre: 'continu', zone: 9, minutes: 30 }).type, 'vo2max', 'une zone hors bornes est ramenée à 5');
 });

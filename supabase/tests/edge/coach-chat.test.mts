@@ -1286,3 +1286,26 @@ test('suivi du plan : l\'allure courue plus vite que prévu est glissée dans le
   assert.match(envoye, /Tu notes l'effort à 3\/10/);
   assert.doesNotMatch(envoye, /1800|1830/);
 });
+
+test('ajuster_seance : « jeudi plutôt 4 × 8 min au seuil » remplace la séance de vélo de ce jour par une séance construite en entier', async () => {
+  const w = await planPropose([outil('a', { motif: 'Vendredi : 4 × 8 min au seuil', date: '2026-11-20', sport: 'velo', genre: 'intervalles', zone: 4, reps: 4, minutes_travail: 8, minutes_recup: 3 }, 'ajuster_seance')], avecPlanAjoute);
+  const carte = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
+  assert.deepEqual(carte.operations.map((o: Libre) => o.op), ['supprimer', 'ajouter']);
+  assert.equal(carte.operations[0].seanceId, ID_COURSE(3));
+  const ajout = carte.operations[1];
+  assert.equal(ajout.proposition.sport, 'velo');
+  assert.equal(ajout.proposition.type, 'seuil');
+  assert.equal(ajout.proposition.minutes, 66);
+  assert.equal(ajout.detail.nom, '4 × 8 min en zone 4');
+  assert.deepEqual(ajout.detail.structure.map((b: Libre) => b.type), ['warmup', 'interval', 'cooldown']);
+  const ligne = carte.lignes.find((l: Libre) => l.op === 'ajouter');
+  assert.equal(ligne.blocs.length, 3, 'la carte porte les blocs pour dessiner le profil');
+  assert.equal(ligne.nom, '4 × 8 min en zone 4');
+});
+test('ajuster_seance : pas de séance de ce sport ce jour-là = pas de carte, le modèle le sait ; réglages incomplets refusés', async () => {
+  const w = await planPropose([outil('a', { motif: 'Jeudi plus doux', date: '2026-11-19', sport: 'velo', genre: 'continu', zone: 2, minutes: 60 }, 'ajuster_seance')], avecPlanAjoute);
+  assert.equal(w.evts.filter((e) => e.type === 'carte').length, 0);
+  assert.match(((w.modele.appels[1].messages.at(-1)?.content as Libre[])[0]).content, /Aucune séance de vélo/);
+  const mauvais = await planPropose([outil('a', { motif: 'Vendredi', date: '2026-11-20', sport: 'velo', genre: 'intervalles', zone: 4, reps: 4 }, 'ajuster_seance')], avecPlanAjoute);
+  assert.equal(((mauvais.modele.appels[1].messages.at(-1)?.content as Libre[])[0]).is_error, true);
+});

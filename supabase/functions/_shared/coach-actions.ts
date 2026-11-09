@@ -716,6 +716,60 @@ export const ACTIONS: DefinitionAction[] = [
     },
   },
   {
+    nom: 'ajuster_seance',
+    niveau: 'carte',
+    disponible: true,
+    description:
+      "ADAPTE LA STRUCTURE D'UNE SÉANCE DE VÉLO OU DE NATATION déjà prévue : « jeudi plutôt 4 × 8 min au seuil », « mets-moi plus doux », « une heure en endurance ». " +
+      "Tu désignes la séance par sa DATE et son sport (lus dans prevues) et tu dis ce que tu veux : des intervalles (répétitions, durée de l'effort, durée de la récupération) ou un effort continu, dans une zone de 1 à 5 (1 récupération, 2 endurance, 3 tempo, 4 seuil, 5 VO2max). " +
+      "Le CODE construit la séance entière (échauffement, blocs, retour au calme) et propose UNE carte qui remplace l'ancienne ; rien n'est modifié avant que l'utilisateur valide. " +
+      "Pour la course à pied, utilise ajuster_seance_course (il connaît les allures de l'objectif).",
+    schema: {
+      type: 'object',
+      properties: {
+        motif: { type: 'string', description: 'Une phrase (200 caractères au plus) affichée sur la carte. Par exemple : « Jeudi : 4 × 8 min au seuil à la place du tempo ».' },
+        date: { type: 'string', description: 'Le jour de la séance à remplacer, AAAA-MM-JJ (une séance de ce sport prévue ce jour-là).' },
+        sport: { type: 'string', enum: ['velo', 'natation'], description: 'Le sport de la séance.' },
+        genre: { type: 'string', enum: ['intervalles', 'continu'], description: 'Intervalles (répétitions) ou effort continu.' },
+        zone: { type: 'integer', minimum: 1, maximum: 5, description: "La zone de l'effort : 1 récupération, 2 endurance, 3 tempo, 4 seuil, 5 VO2max." },
+        reps: { type: 'integer', minimum: 1, maximum: 40, description: 'Intervalles : nombre de répétitions.' },
+        minutes_travail: { type: 'integer', minimum: 1, maximum: 120, description: "Intervalles : durée de chaque effort, en minutes." },
+        minutes_recup: { type: 'integer', minimum: 1, maximum: 60, description: 'Intervalles : durée de la récupération entre deux efforts, en minutes.' },
+        minutes: { type: 'integer', minimum: 10, maximum: 360, description: "Effort continu : la durée de l'effort seul, en minutes (l'échauffement et le retour au calme s'ajoutent)." },
+      },
+      required: ['motif', 'date', 'sport', 'genre', 'zone'],
+      additionalProperties: false,
+    },
+    lire: (input) => {
+      const o = objet(input, ['motif', 'date', 'sport', 'genre', 'zone', 'reps', 'minutes_travail', 'minutes_recup', 'minutes']);
+      const motif = motifPlan(o?.motif);
+      if (!o || !motif) return refus('motif : une phrase de 3 à 200 caractères.');
+      const date = dateIso(o.date);
+      if (!date) return refus('date : le jour de la séance à remplacer, AAAA-MM-JJ.');
+      const sport = parmi(o.sport, ['velo', 'natation'] as const);
+      if (!sport) return refus('sport : velo ou natation (pour la course, utilise ajuster_seance_course).');
+      const genre = parmi(o.genre, ['intervalles', 'continu'] as const);
+      if (!genre) return refus('genre : intervalles ou continu.');
+      const zone = entier(o.zone, 1, 5);
+      if (!zone) return refus('zone : un entier de 1 à 5.');
+      const seance: Record<string, unknown> = { date, sport, genre, zone };
+      if (genre === 'intervalles') {
+        const reps = entier(o.reps, 1, 40);
+        const travail = entier(o.minutes_travail, 1, 120);
+        const recup = entier(o.minutes_recup, 1, 60);
+        if (!reps || !travail || !recup) return refus('intervalles : donne reps (1 à 40), minutes_travail (1 à 120) ET minutes_recup (1 à 60), par exemple 4 répétitions de 8 minutes, 3 minutes de récupération.');
+        if (o.minutes !== undefined) return refus('minutes ne sert qu\'à un effort continu.');
+        Object.assign(seance, { reps, minutesTravail: travail, minutesRecup: recup });
+      } else {
+        const minutes = entier(o.minutes, 10, 360);
+        if (!minutes) return refus('minutes : la durée de l\'effort continu, un entier de 10 à 360.');
+        if (o.reps !== undefined || o.minutes_travail !== undefined || o.minutes_recup !== undefined) return refus('reps, minutes_travail et minutes_recup ne servent qu\'aux intervalles.');
+        seance.minutes = minutes;
+      }
+      return { ok: true, params: { intention: motif, seance } };
+    },
+  },
+  {
     nom: 'modifier_planning',
     niveau: 'carte',
     disponible: true,

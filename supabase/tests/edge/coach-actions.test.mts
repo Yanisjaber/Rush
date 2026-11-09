@@ -215,3 +215,24 @@ test('preparer_course avec allures et ajuster_seance_course : lecture stricte', 
   ];
   for (const m of mauvais) assert.equal(lire('ajuster_seance_course', m).ok, false, JSON.stringify(m)?.slice(0, 90));
 });
+
+test('ajuster_seance : lecture stricte (vélo et natation, intervalles ou continu)', () => {
+  const lire = (x: unknown) => trouverAction('ajuster_seance')!.lire!(x);
+  const base = { motif: 'Jeudi au seuil', date: '2026-11-19', sport: 'velo', zone: 4 };
+  assert.deepEqual(lire({ ...base, genre: 'intervalles', reps: 4, minutes_travail: 8, minutes_recup: 3 }), { ok: true, params: { intention: 'Jeudi au seuil', seance: { date: '2026-11-19', sport: 'velo', genre: 'intervalles', zone: 4, reps: 4, minutesTravail: 8, minutesRecup: 3 } } });
+  assert.deepEqual(lire({ ...base, sport: 'natation', genre: 'continu', minutes: 45 }), { ok: true, params: { intention: 'Jeudi au seuil', seance: { date: '2026-11-19', sport: 'natation', genre: 'continu', zone: 4, minutes: 45 } } });
+  const mauvais: unknown[] = [
+    null, {}, base,
+    { ...base, genre: 'intervalles' }, // sans reps ni durées
+    { ...base, genre: 'intervalles', reps: 4, minutes_travail: 8 }, // sans récupération
+    { ...base, genre: 'intervalles', reps: 4, minutes_travail: 8, minutes_recup: 3, minutes: 30 }, // mélange des deux genres
+    { ...base, genre: 'continu' }, // sans durée
+    { ...base, genre: 'continu', minutes: 5 },
+    { ...base, genre: 'continu', minutes: 30, reps: 4 },
+    { ...base, genre: 'continu', minutes: 30, zone: 6 },
+    { ...base, genre: 'continu', minutes: 30, sport: 'course' }, // la course a son propre outil
+    { ...base, genre: 'continu', minutes: 30, date: '2026-02-31' },
+    { ...base, genre: 'continu', minutes: 30, clef: 1 },
+  ];
+  for (const m of mauvais) assert.equal(lire(m).ok, false, JSON.stringify(m)?.slice(0, 90));
+});

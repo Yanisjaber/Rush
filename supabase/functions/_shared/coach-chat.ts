@@ -23,7 +23,8 @@ import { planifierPeriode } from './periode.ts';
 import { alluresCoureur, footing, planifierCourse, profilCourseDepuisResume, seanceIntervalles, seanceTempoContinu, sortieLongue } from './plan-course.ts';
 import type { DemandeCourse, SeanceCourse } from './plan-course.ts';
 import type { DemandePeriode } from './periode.ts';
-import { structureSeance } from './structure-seance.ts';
+import { structureSeance, structureSurMesure } from './structure-seance.ts';
+import type { SpecSurMesure } from './structure-seance.ts';
 import { FONCTIONS_HISTORIQUE, MAX_PAR_NIVEAU, outilsExposes, trouverAction } from './coach-actions.ts';
 import type { FonctionHistorique } from './coach-actions.ts';
 import { coutMicroUsd } from './coach-couts.ts';
@@ -230,7 +231,7 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
   }
 
   // Replanification : UNE carte de planning par message, jamais mélangée à d'autres cartes
-  if (def.nom === 'proposer_replanification' || def.nom === 'modifier_planning' || def.nom === 'planifier_semaine' || def.nom === 'planifier_periode' || def.nom === 'preparer_course' || def.nom === 'ajuster_seance_course') {
+  if (def.nom === 'proposer_replanification' || def.nom === 'modifier_planning' || def.nom === 'planifier_semaine' || def.nom === 'planifier_periode' || def.nom === 'preparer_course' || def.nom === 'ajuster_seance_course' || def.nom === 'ajuster_seance') {
     if (cartes.length > 0) return { contenu: "Une seule carte de planning à la fois, et pas avec une autre carte : attends que l'utilisateur la valide ou la refuse.", erreur: true };
     const lu = def.lire ? def.lire(appel.input) : { ok: false as const, erreur: 'Outil non lisible.' };
     if (!lu.ok) return { contenu: `Paramètres invalides : ${lu.erreur}`, erreur: true };
@@ -303,6 +304,17 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
       operations = [
         { op: 'supprimer', seanceId: ancienne.id, raison: 'remplacée par la séance adaptée' },
         { op: 'ajouter', proposition: { date: spec.date, sport: 'course', type: nouvelle.type, minutes: nouvelle.minutes }, justification: nouvelle.but, detail: nouvelle.detail },
+      ];
+    } else if (def.nom === 'ajuster_seance') {
+      const spec = lu.params.seance as SpecSurMesure & { date: string; sport: 'velo' | 'natation' };
+      const ancienne = seances.find((x) => x.date === spec.date && x.sport === spec.sport);
+      if (!ancienne) {
+        return { contenu: `Aucune séance de ${spec.sport === 'velo' ? 'vélo' : 'natation'} n'est prévue le ${spec.date}. Dis-le à l'utilisateur sans créer de carte (regarde prevues pour les dates), ou propose d'en ajouter une.`, erreur: false };
+      }
+      const nouvelle = structureSurMesure(spec.sport, spec);
+      operations = [
+        { op: 'supprimer', seanceId: ancienne.id, raison: 'remplacée par la séance adaptée' },
+        { op: 'ajouter', proposition: { date: spec.date, sport: spec.sport, type: nouvelle.type, minutes: nouvelle.minutes }, justification: String(lu.params.intention), detail: { nom: nouvelle.nom, structure: nouvelle.structure, resume: nouvelle.resume } },
       ];
     } else if (def.nom === 'planifier_periode') {
       const res = planifierPeriode(lu.params.demande as DemandePeriode, seances, ctx, habitudesDepuisResume(resume));

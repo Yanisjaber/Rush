@@ -94,3 +94,65 @@ export function dureeStructure(blocs: BlocStructure[]): number {
 export function resumeStructure(blocs: BlocStructure[]): string {
   return blocs.map((b) => (b.type === 'interval' ? b.name : `${b.work.min} min ${b.type === 'warmup' ? 'd\'échauffement' : b.type === 'cooldown' ? 'de retour au calme' : 'continues'}`)).join(' · ');
 }
+
+// ---------- Une séance sur mesure (« jeudi plutôt 4 × 8 min au seuil ») ----------
+
+/** Ce que l'utilisateur veut : des intervalles (répétitions, durée de l'effort, durée de la récupération) ou un effort continu, dans une zone de 1 à 5 */
+export interface SpecSurMesure {
+  genre: 'intervalles' | 'continu';
+  zone: number;
+  /** Intervalles : nombre de répétitions, durée de l'effort et de la récupération (minutes entières) */
+  reps?: number;
+  minutesTravail?: number;
+  minutesRecup?: number;
+  /** Continu : la durée de l'effort seul (l'échauffement et le retour au calme s'ajoutent) */
+  minutes?: number;
+}
+
+export interface SeanceSurMesure {
+  structure: BlocStructure[];
+  /** Durée totale (échauffement et retour au calme compris) */
+  minutes: number;
+  /** La clé du menu (récupération, endurance, tempo, seuil…) la plus proche de la zone : le validateur s'en sert pour la charge et l'intensité */
+  type: string;
+  nom: string;
+  resume: string;
+}
+
+/** Le type du menu qui correspond à une zone : c'est lui que le validateur lit (charge estimée, séance dure ou non) */
+const TYPE_PAR_ZONE: Record<FamilleCoach, string[]> = {
+  velo: ['recuperation', 'endurance', 'tempo', 'seuil', 'vo2max'],
+  course: ['footing_recuperation', 'footing_facile', 'tempo', 'seuil', 'fractionne'],
+  natation: ['technique', 'endurance', 'seuil', 'seuil', 'vitesse'],
+};
+
+const borner = (x: number, min: number, max: number) => Math.min(max, Math.max(min, x));
+
+/**
+ * Construit la structure demandée, avec un échauffement et un retour au calme proportionnés. La durée totale est la somme EXACTE des blocs.
+ * Les nombres sont supposés déjà vérifiés par la lecture de l'outil (entiers, bornes) ; ici on ne fait que construire.
+ */
+export function structureSurMesure(sport: FamilleCoach, spec: SpecSurMesure): SeanceSurMesure {
+  const metric = METRIQUE[sport];
+  const zone = borner(Math.round(spec.zone), 1, 5);
+  const type = TYPE_PAR_ZONE[sport][zone - 1];
+  let corps: BlocStructure;
+  let duree: number;
+  let nom: string;
+  if (spec.genre === 'intervalles') {
+    const reps = Math.round(spec.reps as number);
+    const travail = Math.round(spec.minutesTravail as number);
+    const recup = Math.max(1, Math.round(spec.minutesRecup as number));
+    duree = reps * (travail + recup);
+    nom = `${reps} × ${travail} min en zone ${zone}`;
+    corps = { type: 'interval', name: nom, reps, metric, unit: 'zone', work: segment(metric, zone, travail), rec: segment(metric, 1, recup) };
+  } else {
+    duree = Math.round(spec.minutes as number);
+    nom = `${duree} min en zone ${zone}`;
+    corps = bloc('steady', nom, metric, zone, duree);
+  }
+  const echauf = borner(Math.round(duree * (spec.genre === 'intervalles' ? 0.3 : 0.15)), spec.genre === 'intervalles' ? 8 : 5, 15);
+  const retour = borner(Math.round(duree * (spec.genre === 'intervalles' ? 0.2 : 0.1)), 5, 10);
+  const structure = [bloc('warmup', 'Échauffement', metric, 1, echauf), corps, bloc('cooldown', 'Retour au calme', metric, 1, retour)];
+  return { structure, minutes: echauf + duree + retour, type, nom, resume: resumeStructure(structure) };
+}
