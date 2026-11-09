@@ -57,9 +57,9 @@ export function BarreSports({ titre }: { titre: string }) {
                   et une pastille de couleur sur l'anneau pour chaque sport coché */}
               <View style={[styles.anneau, { backgroundColor: p.surface2, borderColor: selection.length ? couleurSport(p, filtre) : p.traitFort }]}>
                 <View style={styles.filtre}>
-                  <View style={[styles.trait, { width: 24, backgroundColor: p.texteDoux }]} />
-                  <View style={[styles.trait, { width: 16, backgroundColor: p.texteDoux }]} />
-                  <View style={[styles.trait, { width: 8, backgroundColor: p.texteDoux }]} />
+                  <View style={[styles.trait, { width: 20, backgroundColor: p.texteDoux }]} />
+                  <View style={[styles.trait, { width: 13, backgroundColor: p.texteDoux }]} />
+                  <View style={[styles.trait, { width: 7, backgroundColor: p.texteDoux }]} />
                 </View>
               </View>
               {selection.map((f, i) => {
