@@ -23,6 +23,7 @@ interface Props {
   onGlisse?: (actif: boolean) => void;
 }
 
+const LARGEUR_REPERE = 52; // la largeur donnée à chaque repère de distance (« 100,0 » tient largement)
 const HAUTEUR_PASTILLE = 24; // hauteur de la pastille du curseur (texte de 13 pt et marges)
 const MARGE = 10; // assez pour que le rond du curseur (rayon 6 + contour 3) ne soit jamais coupé
 const GAUCHE = 28; // la place des repères d'altitude, à gauche (trois chiffres de 11 pt)
@@ -156,23 +157,27 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
           </View>
         ) : null}
       </View>
-      {/* La ligne du bas : les repères de distance, départ, milieu et arrivée (le « km » n'est dit qu'au départ). L'unité des altitudes est dans la colonne, à la place de la graduation de base. */}
-      <View style={[styles.axe, { paddingLeft: GAUCHE + MARGE, paddingRight: MARGE }]}>
-        {km != null && km > 0 ? (
-          <>
-            <Text style={[typo.petit, styles.repere, { color: p.texteMuet, textAlign: 'left' }]}>0 km</Text>
-            <Text style={[typo.petit, styles.repere, { color: p.texteMuet, textAlign: 'center' }]}>{formatKm(km / 2, km >= 100 ? 0 : 1)}</Text>
-            <Text style={[typo.petit, styles.repere, { color: p.texteMuet, textAlign: 'right' }]}>{formatKm(km, km >= 100 ? 0 : 1)}</Text>
-          </>
-        ) : null}
+      {/* La ligne du bas : cinq repères de distance, aux quarts du parcours (0, 25 %, 50 %, 75 %, 100 %), calés sur la courbe ; le « km » n'est dit qu'au départ. L'unité des altitudes est dans la colonne, à la place de la graduation de base. */}
+      <View style={styles.axe}>
+        {km != null && km > 0 && largeur > GAUCHE
+          ? [0, 1, 2, 3, 4].map((k) => {
+              const x = GAUCHE + MARGE + (k / 4) * (largeur - GAUCHE - 2 * MARGE);
+              const place = k === 0 ? x : k === 4 ? x - LARGEUR_REPERE : x - LARGEUR_REPERE / 2;
+              return (
+                <Text key={k} style={[typo.petit, styles.repere, { left: place, width: LARGEUR_REPERE, color: p.texteMuet, textAlign: k === 0 ? 'left' : k === 4 ? 'right' : 'center' }]}>
+                  {k === 0 ? '0 km' : formatKm((km * k) / 4, km >= 100 ? 0 : 1)}
+                </Text>
+              );
+            })
+          : null}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  axe: { flexDirection: 'row', marginTop: 4 },
-  repere: { flex: 1, fontSize: 11, lineHeight: 14 },
+  axe: { marginTop: 4, height: 14 },
+  repere: { position: 'absolute', top: 0, fontSize: 11, lineHeight: 14 },
   // La pastille claire du dossard (maquette 2 « claire, point orange ») : le point a la couleur du sport
   bulle: { position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
   pointBulle: { width: 7, height: 7, borderRadius: 3.5 },
