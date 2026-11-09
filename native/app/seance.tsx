@@ -93,7 +93,7 @@ export default function Seance() {
         couleur={couleur}
         sport={seance.sport}
         titre={seance.name || nomSport}
-        date={date}
+        date={`${nomSport} · ${date}`.toUpperCase()}
         hero={principal ? { etiquette: principal.libelle.toUpperCase(), valeur: principal.valeur, unite: principal.unite, detail: `${nomSport} · ${date}` } : null}
         onModifier={() => router.push({ pathname: '/ajout-sortie', params: { id: seance.id } })}
         chiffres={

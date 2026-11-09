@@ -5,6 +5,7 @@ import { CarteTrace } from '@/components/graphes/CarteTrace';
 import { EnteteFlottante, HAUT_ENTETE } from '@/components/graphes/EnteteFlottante';
 import { ProfilCurseur } from '@/components/graphes/ProfilCurseur';
 import { Dossard } from '@/components/ui/Dossard';
+import { IconeSport } from '@/components/ui/IconeSport';
 import type { PointCarte, RegionCarte } from '@/data/calendrier/apercu-import';
 import { longueurKm, pointAuFraction } from '@/data/outils/trace';
 import { espace, rayon } from '@/theme/couleurs';
@@ -33,7 +34,7 @@ interface Props {
   /** Clé de sport, pour la couleur du dossard sans GPS. */
   sport: string;
   titre: string;
-  /** La date et l'heure, en petit au-dessus des chiffres (« MER 4 NOV · 20:19 »). */
+  /** Le sport, la date et l'heure, en petit au-dessus des chiffres (« COURSE À PIED · MER 4 NOV · 20:19 »), après l'icône du sport. */
   date?: string;
   /** Le chiffre principal du dossard sans GPS (la distance, ou la durée à défaut). */
   hero: { etiquette: string; valeur: string; unite?: string; detail?: string } | null;
@@ -125,7 +126,12 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
         style={[styles.feuille, { backgroundColor: p.fond, borderColor: p.trait, paddingBottom: bas + espace.e3 }]}
       >
         <View {...balayage} style={{ gap: espace.e2 }}>
-        {date ? <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2 }]}>{date}</Text> : null}
+        {date ? (
+          <View accessible accessibilityLabel={date} style={styles.ligneDate}>
+            <IconeSport sport={sport} taille={16} />
+            <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2 }]}>{date}</Text>
+          </View>
+        ) : null}
         {chiffres}
 
         <View accessible={false} style={styles.pastilles}>
@@ -171,6 +177,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
 const styles = StyleSheet.create({
   page: { flex: 1 },
   sansCarte: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, paddingHorizontal: espace.e4 },
+  ligneDate: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   attente: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
   feuille: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: rayon.bloc, borderTopRightRadius: rayon.bloc, borderTopWidth: 1, paddingTop: espace.e4, paddingHorizontal: espace.e4, gap: espace.e2 },
   pastilles: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, height: 20 },
