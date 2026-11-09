@@ -43,7 +43,7 @@ export function BoutonCompact(props: PropsBoutonCompact) {
       accessibilityLabel={props.accessibilityLabel ?? props.libelle}
       accessibilityState={{ expanded: props.deplie, disabled: props.desactive }}
       onAccessibilityTap={props.desactive ? undefined : declencher}
-      style={{ alignSelf: 'center', ...(props.largeur ? { width: props.largeur, alignItems: 'center' } : null) }}
+      style={{ alignSelf: 'center', ...(props.largeur ? { width: props.largeur, alignItems: 'flex-end' } : null) }}
     >
       {/* Un bouton « small » d'Apple fait environ 30 pt de haut : la marge autour (qui déclenche aussi l'action) ramène la zone de toucher à 44 pt */}
       <Pressable onPress={props.desactive ? undefined : declencher} accessible={false} style={{ paddingVertical: principal ? 4 : 7, paddingHorizontal: 4 }}>

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Keyboard, KeyboardAvoidingView, type NativeScrollEvent, type NativeSyntheticEvent, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MessageVue } from '@/components/coach/MessageVue';
@@ -52,14 +52,23 @@ export default function Coach() {
   };
   const c = useCoach(acces ? session?.user.id ?? null : null, executer);
   const clavier = useClavierOuvert();
-  // La liste est « inversée » (le plus récent en bas, le clavier ne la cache pas) : on lui donne les messages du plus récent au plus ancien
-  const donnees = useMemo(() => [...c.messages].reverse(), [c.messages]);
-  // La liste est inversée : quand une carte grandit, elle pousse vers le HAUT. Pour que son haut reste en place et que le contenu s'ouvre vers le bas
-  // (et se referme de même), on décale le défilement de la différence de hauteur, mais seulement quand c'est l'utilisateur qui vient de déplier ou replier.
-  const liste = useRef<FlatList<(typeof donnees)[number]>>(null);
-  const decalage = useRef(0);
-  const hauteurs = useRef<Record<string, number>>({});
-  const ancrage = useRef<string | null>(null);
+  // Une liste NORMALE ancrée en bas (le plus récent en bas). Elle reste collée au bas tant que l'utilisateur n'a pas remonté ni déplié une carte :
+// un message qui arrive ou s'écrit reste visible, et une carte qu'on déplie s'ouvre vers le bas (son haut ne bouge pas), sans aucun décalage à rattraper.
+  const liste = useRef<FlatList<(typeof c.messages)[number]>>(null);
+  const colleAuBas = useRef(true);
+  /** Vrai pendant que l'utilisateur fait glisser la liste : lui seul peut la « décoller » du bas (un défilement automatique en cours ne compte pas) */
+  const glisse = useRef(false);
+  const mesurerBas = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    colleAuBas.current = contentSize.height - (contentOffset.y + layoutMeasurement.height) < 80;
+  };
+  /** Les hauteurs réelles (contenu et zone visible) : `scrollToEnd` se fie à une estimation, fausse tant que les cartes ne sont pas toutes mesurées */
+  const tailles = useRef({ contenu: 0, vue: 0 });
+  const descendre = () => {
+    if (!colleAuBas.current) return;
+    const { contenu, vue } = tailles.current;
+    liste.current?.scrollToOffset({ offset: Math.max(0, contenu - vue), animated: false });
+  };
   const vide = !c.chargement && !c.erreur && c.messages.length === 0;
 
   function confirmerEffacement() {
@@ -111,31 +120,36 @@ export default function Coach() {
         ) : (
           <FlatList
             ref={liste}
-            inverted
-            onScroll={(e) => {
-              decalage.current = e.nativeEvent.contentOffset.y;
-            }}
-            scrollEventThrottle={16}
-            data={donnees}
+            data={c.messages}
             keyExtractor={(m) => m.id}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
             contentContainerStyle={styles.liste}
+            scrollEventThrottle={16}
+            onScrollBeginDrag={() => {
+              glisse.current = true;
+            }}
+            onScroll={(e) => {
+              if (glisse.current) mesurerBas(e);
+            }}
+            onScrollEndDrag={(e) => {
+              mesurerBas(e);
+              glisse.current = false;
+            }}
+            onMomentumScrollEnd={mesurerBas}
+            onContentSizeChange={(_, hauteur) => {
+              tailles.current.contenu = hauteur;
+              descendre();
+            }}
+            onLayout={(e) => {
+              tailles.current.vue = e.nativeEvent.layout.height;
+              descendre();
+            }}
             renderItem={({ item, index }) => (
-              <View
-                onLayout={(e) => {
-                  const h = e.nativeEvent.layout.height;
-                  const avant = hauteurs.current[item.id];
-                  hauteurs.current[item.id] = h;
-                  if (avant === undefined || ancrage.current !== item.id) return;
-                  ancrage.current = null;
-                  const ecart = h - avant;
-                  if (ecart !== 0) liste.current?.scrollToOffset({ offset: Math.max(0, decalage.current + ecart), animated: false });
-                }}
-              >
+              <View>
                 <MessageVue
                   message={item}
-                  colle={index > 0 && donnees[index - 1].role === item.role && item.cartes.length === 0}
+                  colle={index < c.messages.length - 1 && c.messages[index + 1].role === item.role && item.cartes.length === 0}
                   occupees={c.occupees}
                   erreursCarte={c.erreursCarte}
                   peutReessayer={!c.sansReessai && !c.envoi}
@@ -145,7 +159,8 @@ export default function Coach() {
                   onRefaire={() => void c.envoyer('Refais le plan : mon calendrier a changé.')}
                   onVoirCalendrier={() => router.navigate('/calendrier')}
                   onBascule={() => {
-                    ancrage.current = item.id;
+                    // L'utilisateur déplie ou replie : on ne tire plus la liste vers le bas, le haut de la carte reste en place
+                    colleAuBas.current = false;
                   }}
                 />
               </View>
@@ -153,7 +168,10 @@ export default function Coach() {
           />
         )}
 
-        {acces ? <SaisieCoach envoi={c.envoi} basse={clavier ? espace.e2 : insets.bottom + BARRE_ONGLETS} onEnvoyer={(t) => void c.envoyer(t)} /> : null}
+        {acces ? <SaisieCoach envoi={c.envoi} basse={clavier ? espace.e2 : insets.bottom + BARRE_ONGLETS} onEnvoyer={(t) => {
+            colleAuBas.current = true;
+            void c.envoyer(t);
+          }} /> : null}
       </KeyboardAvoidingView>
     </View>
   );
@@ -176,7 +194,7 @@ const styles = StyleSheet.create({
   entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: espace.e4, paddingBottom: espace.e2 },
   droite: { flexDirection: 'row', alignItems: 'center', gap: espace.e1, marginRight: -espace.e3 },
   effacer: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center' },
-  liste: { paddingHorizontal: espace.e4, paddingVertical: espace.e3 },
+  liste: { flexGrow: 1, justifyContent: 'flex-end', paddingHorizontal: espace.e4, paddingVertical: espace.e3 },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: espace.e3, paddingHorizontal: espace.e5 },
   avis: { borderLeftWidth: 3, borderRadius: rayon.base, padding: espace.e3, alignSelf: 'stretch' },
   recharger: { minHeight: 44, paddingHorizontal: espace.e4, borderWidth: 1, borderRadius: rayon.base, alignItems: 'center', justifyContent: 'center' },
