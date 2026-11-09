@@ -207,15 +207,6 @@ export default function Prevue() {
           </View>
         ) : null}
 
-        {modeParcours && prevue.gpx_name ? (
-          <View accessible style={[styles.fichier, { backgroundColor: p.surface }]}>
-            <Text style={[typo.corps, { color: p.texteDoux }]}>Fichier du parcours</Text>
-            <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flexShrink: 1 }]}>
-              {prevue.gpx_name}
-            </Text>
-          </View>
-        ) : null}
-
         {notes ? (
           <Bloc titre="Notes">
             <Text style={[typo.corps, { color: p.texte }]}>{notes}</Text>
@@ -257,7 +248,6 @@ const styles = StyleSheet.create({
   rondRetour: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   tuiles: { flexDirection: 'row', gap: espace.e2 },
   tuile: { flex: 1, borderRadius: rayon.base, padding: espace.e3 },
-  fichier: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espace.e3, minHeight: 44, borderRadius: rayon.base, paddingHorizontal: espace.e4, paddingVertical: espace.e3 },
   sport: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   grille: { flexDirection: 'row', flexWrap: 'wrap', rowGap: espace.e4 },
   case: { width: '50%', paddingRight: espace.e3 },
