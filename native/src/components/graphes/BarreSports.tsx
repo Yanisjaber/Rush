@@ -53,9 +53,9 @@ export function BarreSports({ titre }: { titre: string }) {
               accessibilityState={{ expanded: menuOuvert }}
               style={({ pressed }) => [styles.declencheur, { opacity: pressed ? 0.7 : 1 }]}
             >
-              {/* Un anneau de la couleur du sport (le mélange s'il y en a plusieurs ; gris sur « Tous »), le symbole du filtre au centre,
+              {/* Un anneau de la couleur du sport (le mélange s'il y en a plusieurs ; comme les trois traits, en plus fin, sur « Tous »), le symbole du filtre au centre,
                   et une pastille de couleur sur l'anneau pour chaque sport coché */}
-              <View style={[styles.anneau, { borderColor: selection.length ? couleurSport(p, filtre) : p.contourChamp }]}>
+              <View style={[styles.anneau, selection.length ? { borderColor: couleurSport(p, filtre) } : { borderColor: p.texte, borderWidth: 1.5 }]}>
                 <View style={styles.filtre}>
                   <View style={[styles.trait, { width: 18, backgroundColor: p.texte }]} />
                   <View style={[styles.trait, { width: 12, backgroundColor: p.texte }]} />
