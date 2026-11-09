@@ -57,6 +57,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
   const [dims, setDims] = useState({ feuille: 0, pager: 0 });
   const [fraction, setFraction] = useState<number | null>(null);
   const [index, setIndex] = useState(0);
+  const [surCourbe, setSurCourbe] = useState(false); // le doigt est sur la courbe : on suspend le balayage des pages, sinon il emporterait la page avec lui
   const defilement = useRef<ComponentRef<typeof ScrollView>>(null);
   const kmTrace = useMemo(() => (parcours ? longueurKm(parcours.trace) : 0), [parcours]);
   const pageActuelle = pages[Math.min(index, pages.length - 1)];
@@ -118,11 +119,11 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
 
         <View style={{ height: HAUTEUR_PAGE }} onLayout={(e: LayoutChangeEvent) => setDims((d) => ({ ...d, pager: e.nativeEvent.layout.width }))}>
           {dims.pager > 0 ? (
-            <ScrollView ref={defilement} horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={apresDefilement} style={{ flex: 1 }}>
+            <ScrollView ref={defilement} horizontal pagingEnabled scrollEnabled={!surCourbe} showsHorizontalScrollIndicator={false} onMomentumScrollEnd={apresDefilement} style={{ flex: 1 }}>
               {pages.map((nom) => (
                 <View key={nom} style={{ width: dims.pager, height: HAUTEUR_PAGE }}>
                   {nom === 'profil' && parcours && parcours.altitudeMin != null && parcours.altitudeMax != null ? (
-                    <ProfilCurseur profil={parcours.profil} min={parcours.altitudeMin} max={parcours.altitudeMax} km={kmTrace > 0 ? kmTrace : km} couleur={couleur} hauteur={140} onChange={setFraction} />
+                    <ProfilCurseur profil={parcours.profil} min={parcours.altitudeMin} max={parcours.altitudeMax} km={kmTrace > 0 ? kmTrace : km} couleur={couleur} hauteur={140} onChange={setFraction} onGlisse={setSurCourbe} />
                   ) : (
                     <ScrollView nestedScrollEnabled showsVerticalScrollIndicator contentContainerStyle={{ paddingBottom: espace.e2 }}>
                       {nom === 'tours' ? pageTours : pageDonnees}

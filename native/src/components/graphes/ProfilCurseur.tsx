@@ -18,6 +18,8 @@ interface Props {
   couleur: string;
   hauteur?: number;
   onChange?: (fraction: number) => void;
+  /** Le doigt est posé sur la courbe (true) ou levé (false) : l'écran peut suspendre un défilement qui gênerait le geste. */
+  onGlisse?: (actif: boolean) => void;
 }
 
 const MARGE = 12; // assez pour que le rond du curseur (rayon 6 + contour 3) ne soit jamais coupé
@@ -29,15 +31,15 @@ function pasRond(ecart: number): number {
   return [5, 10, 20, 50, 100, 200, 500, 1000].find((s) => ecart / s <= 4) ?? 1000;
 }
 
-export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, onChange }: Props) {
+export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, onChange, onGlisse }: Props) {
   const p = usePalette();
   const [largeur, setLargeur] = useState(0);
   const [largeurBulle, setLargeurBulle] = useState(120);
   const n = profil.length;
   const indexHaut = useMemo(() => profil.indexOf(Math.max(...profil)), [profil]);
   const [index, setIndex] = useState(indexHaut);
-  const refs = useRef({ largeur: 0, n, onChange });
-  refs.current = { largeur, n, onChange };
+  const refs = useRef({ largeur: 0, n, onChange, onGlisse });
+  refs.current = { largeur, n, onChange, onGlisse };
 
   // Le curseur démarre sur le point haut : on prévient la carte une fois
   useEffect(() => {
@@ -62,8 +64,13 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
         onPanResponderTerminationRequest: () => false,
-        onPanResponderGrant: (e) => aller(versX(e.nativeEvent.locationX)),
+        onPanResponderGrant: (e) => {
+          refs.current.onGlisse?.(true);
+          aller(versX(e.nativeEvent.locationX));
+        },
         onPanResponderMove: (e) => aller(versX(e.nativeEvent.locationX)),
+        onPanResponderRelease: () => refs.current.onGlisse?.(false),
+        onPanResponderTerminate: () => refs.current.onGlisse?.(false),
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
