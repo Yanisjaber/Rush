@@ -25,7 +25,6 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 110, on
   const n = profil.length;
   const indexHaut = useMemo(() => profil.indexOf(Math.max(...profil)), [profil]);
   const [index, setIndex] = useState(indexHaut);
-  const [touche, setTouche] = useState(false); // le curseur a-t-il déjà bougé ? (sinon on dit « point haut »)
   const refs = useRef({ largeur: 0, n, onChange });
   refs.current = { largeur, n, onChange };
 
@@ -38,7 +37,6 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 110, on
   const aller = (i: number) => {
     const borne = Math.min(refs.current.n - 1, Math.max(0, Math.round(i)));
     setIndex(borne);
-    setTouche(true);
     refs.current.onChange?.(refs.current.n > 1 ? borne / (refs.current.n - 1) : 0);
   };
   const versX = (x: number) => {
@@ -70,13 +68,6 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 110, on
 
   return (
     <View>
-      <View style={styles.ligne}>
-        <Text style={[typo.micro, { color: p.texteMuet, letterSpacing: 1.2 }]}>PROFIL D'ALTITUDE</Text>
-        <Text style={[typo.petit, { color: p.texteDoux }]}>
-          {distance != null ? `km ${formatKm(distance, 1)} · ` : ''}
-          {formatNombre(altitude ?? min)} m{!touche ? ' (point haut)' : ''}
-        </Text>
-      </View>
       <View
         {...gestes.panHandlers}
         onLayout={(e: LayoutChangeEvent) => setLargeur(e.nativeEvent.layout.width)}
