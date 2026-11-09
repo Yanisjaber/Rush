@@ -36,3 +36,8 @@ Aujourd'hui le résumé complet est renvoyé à chaque tour (voir `_shared/coach
 
 - Format et sources de la base de connaissances (qui l'écrit, comment on la relit).
 - Écran : cartes pour les niveaux 2 et 3 (8 maquettes avant le code).
+
+## À faire plus tard (décision de Yanis, 9 nov. 2026)
+
+- **La vraie création d'un coach, avec un vrai plan.** Les plans actuels (moteurs `planifier_semaine`, `planifier_periode`, `preparer_course`) sont jugés douteux : ils ne tiennent pas la route face à un vrai plan d'entraînement. À cadrer avec Yanis avant de coder : ce qu'est un « vrai plan » (progression, périodisation, séances types, personnalisation selon le niveau et l'historique), d'où vient la méthode (base de connaissances, sources), et comment on le vérifie (banc d'essai, relecture par Yanis). Rien n'est à toucher aux moteurs actuels d'ici là, sauf les bugs.
+
