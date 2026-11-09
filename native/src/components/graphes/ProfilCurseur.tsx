@@ -26,9 +26,9 @@ const MARGE = 12; // assez pour que le rond du curseur (rayon 6 + contour 3) ne 
 const GAUCHE = 42; // la place des repères d'altitude, à gauche
 const BULLE = 30; // la hauteur réservée à la bulle, au-dessus du graphe
 
-/** Un pas rond pour les repères d'altitude : on veut au plus 4 intervalles. */
+/** Un pas rond pour les repères d'altitude : on veut au plus 5 intervalles (assez de repères pour lire, pas trop pour rester propre). */
 function pasRond(ecart: number): number {
-  return [5, 10, 20, 50, 100, 200, 500, 1000].find((s) => ecart / s <= 4) ?? 1000;
+  return [5, 10, 20, 50, 100, 200, 500, 1000].find((s) => ecart / s <= 5) ?? 1000;
 }
 
 export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, onChange, onGlisse }: Props) {
@@ -81,12 +81,12 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
   const bas = Math.floor(min / pas) * pas;
   const haut = Math.max(Math.ceil(max / pas) * pas, bas + pas);
   const reperes: number[] = [];
-  for (let v = bas + pas; v < haut; v += pas) reperes.push(v);
+  for (let v = bas; v <= haut; v += pas) reperes.push(v); // de la base (la plus basse graduation) jusqu'en haut
   const yDe = (v: number) => hauteur - MARGE - ((v - bas) / (haut - bas)) * (hauteur - 2 * MARGE);
 
   const points = largeur > GAUCHE ? echelle(profil, largeur - GAUCHE, hauteur, MARGE, bas, haut).map(([x, y]): [number, number] => [x + GAUCHE, y]) : [];
   const ligne = lisse(points);
-  const zone = aireSousCourbe(ligne, points, hauteur);
+  const zone = aireSousCourbe(ligne, points, yDe(bas)); // le remplissage s'arrête sur la ligne de base
   const curseur = points[index];
   const distance = km != null && km > 0 && n > 1 ? (index / (n - 1)) * km : null;
   const altitude = profil[index];
@@ -126,14 +126,13 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
               </LinearGradient>
             </Defs>
             {reperes.map((v, i) => (
-              <Line key={v} x1={GAUCHE} y1={yDe(v)} x2={largeur} y2={yDe(v)} stroke={p.trait} strokeWidth={1} />
+              <Line key={v} x1={GAUCHE} y1={yDe(v)} x2={largeur} y2={yDe(v)} stroke={v === bas ? p.traitFort : p.trait} strokeWidth={1} />
             ))}
             {reperes.map((v, i) => (
               <TexteSvg key={`t${v}`} x={0} y={yDe(v) + 4} fontSize={11} fill={p.texteMuet}>
                 {formatNombre(v)}
               </TexteSvg>
             ))}
-            <Line x1={GAUCHE} y1={hauteur - 1} x2={largeur} y2={hauteur - 1} stroke={p.traitFort} strokeWidth={1} />
             {zone ? <Path d={zone} fill={`url(#${idFondu})`} /> : null}
             {ligne ? <Path d={ligne} fill="none" stroke={couleur} strokeWidth={2.6} strokeLinecap="round" /> : null}
             {curseur ? (
