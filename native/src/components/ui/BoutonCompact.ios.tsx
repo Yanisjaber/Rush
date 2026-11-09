@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Pressable, View } from 'react-native';
 import { clair } from '@/theme/couleurs';
 import { usePalette } from '@/theme/usePalette';
@@ -22,6 +23,14 @@ const NATIF = chargerNatif();
 
 export function BoutonCompact(props: PropsBoutonCompact) {
   const p = usePalette();
+  // Un toucher peut atteindre À LA FOIS le bouton natif et sa marge : sans garde, l'action part deux fois (une carte qui se déplie puis se replie aussitôt).
+  const dernier = useRef(0);
+  const declencher = () => {
+    const maintenant = Date.now();
+    if (maintenant - dernier.current < 600) return;
+    dernier.current = maintenant;
+    props.onPress();
+  };
   if (!NATIF) return <BoutonCompactJs {...props} />;
   const { Host, Button } = NATIF.ui;
   const { buttonStyle, controlSize, tint, foregroundStyle, disabled } = NATIF.modifs;
@@ -33,14 +42,14 @@ export function BoutonCompact(props: PropsBoutonCompact) {
       accessibilityRole="button"
       accessibilityLabel={props.accessibilityLabel ?? props.libelle}
       accessibilityState={{ expanded: props.deplie, disabled: props.desactive }}
-      onAccessibilityTap={props.desactive ? undefined : props.onPress}
+      onAccessibilityTap={props.desactive ? undefined : declencher}
       style={{ alignSelf: 'center' }}
     >
       {/* Un bouton « small » d'Apple fait environ 30 pt de haut : la marge autour (qui déclenche aussi l'action) ramène la zone de toucher à 44 pt */}
-      <Pressable onPress={props.desactive ? undefined : props.onPress} accessible={false} style={{ paddingVertical: principal ? 4 : 7, paddingHorizontal: 4 }}>
+      <Pressable onPress={props.desactive ? undefined : declencher} accessible={false} style={{ paddingVertical: principal ? 4 : 7, paddingHorizontal: 4 }}>
         {/* Le thème de l'app (clair ou sombre) s'impose au bouton, pas celui du téléphone */}
         <Host matchContents colorScheme={p.fond === clair.fond ? 'light' : 'dark'}>
-          <Button onPress={props.onPress} label={props.libelle} modifiers={modifiers} />
+          <Button onPress={declencher} label={props.libelle} modifiers={modifiers} />
         </Host>
       </Pressable>
     </View>
