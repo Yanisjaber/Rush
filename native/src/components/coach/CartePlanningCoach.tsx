@@ -139,6 +139,7 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
               sport={l.sport ?? undefined}
               resume={l.structure}
               raison={l.raison}
+              compact
             />
           </View>
         ) : null}

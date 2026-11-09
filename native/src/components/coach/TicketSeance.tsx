@@ -27,9 +27,12 @@ interface Props {
   raison?: string;
   /** Sans liseré (quand le ticket est déjà dans une carte qui a le sien) */
   sansLisere?: boolean;
+  /** Version réduite, dans un plan : le jour et le nom sont déjà sur la ligne juste au-dessus, on ne les répète pas, le profil est plus bas et les zones abrégées */
+  compact?: boolean;
 }
 
 const HAUTEUR_PROFIL = 44;
+const HAUTEUR_PROFIL_COMPACT = 30;
 
 /** Le sport du coach → le type de sport de l'app (celui que lit `texteCible`) */
 const SPORT_APP: Record<string, string> = { course: 'Run', velo: 'Ride', natation: 'Swim' };
@@ -43,7 +46,10 @@ function cible(seg: Segment, metric: BlocStructure['metric'], reference: Referen
   return texteCible(seg, metric, reference, sport);
 }
 
-export function TicketSeance({ couleur, jour, titre, minutes, blocs, resume, sport, raison, sansLisere }: Props) {
+/** « Z1 Footing » devient « Z1 » en version réduite (le nom du bloc dit déjà ce qu'on fait) */
+const zone = (texte: string, compact?: boolean): string => (compact ? texte.replace(/^(Z\d)\s[^·]*$/, '$1') : texte);
+
+export function TicketSeance({ couleur, jour, titre, minutes, blocs, resume, sport, raison, sansLisere, compact }: Props) {
   const p = usePalette();
   const reference = useReferences();
   const sportApp = SPORT_APP[sport ?? ''] ?? 'Run';
@@ -53,29 +59,37 @@ export function TicketSeance({ couleur, jour, titre, minutes, blocs, resume, spo
   return (
     <View>
       {sansLisere ? null : <View style={[styles.lisere, { backgroundColor: couleur }]} />}
-      <View style={styles.corps}>
-        <Text style={[typo.micro, { color: p.texteMuet }]}>
-          {jour ? `${jour} · ` : ''}
-          {dureeMinutes(minutes)}
-        </Text>
-        <Text style={[typo.titre2, { color: p.texte }]}>{titre}</Text>
+      <View style={[styles.corps, compact && styles.corpsCompact]}>
+        {compact ? null : (
+          <>
+            <Text style={[typo.micro, { color: p.texteMuet }]}>
+              {jour ? `${jour} · ` : ''}
+              {dureeMinutes(minutes)}
+            </Text>
+            <Text style={[typo.titre2, { color: p.texte }]}>{titre}</Text>
+          </>
+        )}
 
         {blocs && blocs.length > 0 ? (
           <View accessible accessibilityLabel={phrase ? `Profil de la séance : ${phrase}` : 'Profil de la séance'}>
-            <ProfilSeance blocs={blocs} hauteur={HAUTEUR_PROFIL} />
+            <ProfilSeance blocs={blocs} hauteur={compact ? HAUTEUR_PROFIL_COMPACT : HAUTEUR_PROFIL} />
           </View>
         ) : null}
         {lignes ? (
           <View>
             {blocs.map((b, i) => (
-              <View key={i} style={[styles.bloc, i > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }]}>
-                <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{b.name}</Text>
-                <Text style={[typo.petit, { color: p.texteDoux }]}>
-                  {b.type === 'interval' && b.reps > 1 ? `${b.reps} × ${texteDuree(b.work.min)}` : texteDuree(b.work.min)} · {cible(b.work, b.metric, reference, sportApp)}
-                </Text>
+              <View key={i} style={[styles.bloc, compact && styles.blocCompact, i > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }]}>
+                <View style={styles.blocLigne}>
+                  <Text numberOfLines={2} style={[typo.petit, { color: p.texte, fontFamily: police.texte600, flex: 1 }]}>
+                    {b.name}
+                  </Text>
+                  <Text style={[typo.petit, { color: p.texteDoux, textAlign: 'right', fontVariant: ['tabular-nums'] }]}>
+                    {b.type === 'interval' && b.reps > 1 ? `${b.reps} × ${texteDuree(b.work.min)}` : texteDuree(b.work.min)} · {zone(cible(b.work, b.metric, reference, sportApp), compact)}
+                  </Text>
+                </View>
                 {b.type === 'interval' && b.rec ? (
                   <Text style={[typo.petit, { color: p.texteMuet }]}>
-                    récupération {texteDuree(b.rec.min)} · {cible(b.rec, b.metric, reference, sportApp)}
+                    récupération {texteDuree(b.rec.min)} · {zone(cible(b.rec, b.metric, reference, sportApp), compact)}
                   </Text>
                 ) : null}
               </View>
@@ -94,5 +108,8 @@ export function TicketSeance({ couleur, jour, titre, minutes, blocs, resume, spo
 const styles = StyleSheet.create({
   lisere: { height: 4 },
   corps: { padding: espace.e3, gap: espace.e2 },
+  corpsCompact: { padding: espace.e2, gap: espace.e1 },
   bloc: { paddingVertical: espace.e2, gap: 1 },
+  blocCompact: { paddingVertical: 6 },
+  blocLigne: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: espace.e2 },
 });
