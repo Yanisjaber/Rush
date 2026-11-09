@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CarteTrace } from '@/components/graphes/CarteTrace';
 import { EnteteFlottante, HAUT_ENTETE } from '@/components/graphes/EnteteFlottante';
@@ -76,6 +77,8 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
 
   return (
     <View style={styles.page}>
+      {/* Le retour par balayage reste partout, sauf pendant que le doigt est sur la courbe du profil */}
+      <Stack.Screen options={{ gestureEnabled: !surCourbe }} />
       {avecCarte && parcours && parcours.region ? (
         <CarteTrace plein trace={parcours.trace} region={parcours.region} couleur={couleur} curseur={curseur} marges={marges} />
       ) : (

@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CarteTrace } from '@/components/graphes/CarteTrace';
 import { EnteteFlottante, HAUT_ENTETE } from '@/components/graphes/EnteteFlottante';
@@ -32,6 +33,7 @@ export function VueParcours({ trace, region, profil, altitudeMin, altitudeMax, k
   const { top: haut, bottom: bas } = useSafeAreaInsets();
   const [dims, setDims] = useState({ feuille: 0 });
   const [fraction, setFraction] = useState<number | null>(null);
+  const [surCourbe, setSurCourbe] = useState(false); // le doigt est sur la courbe : le retour par balayage est suspendu
   // L'axe suit la longueur réelle du parcours (celle de la trace), pas la distance saisie sur la séance : le profil et la trace couvrent le même tracé
   const kmTrace = useMemo(() => longueurKm(trace), [trace]);
   const curseur = useMemo(() => (fraction == null ? null : pointAuFraction(trace, fraction)), [trace, fraction]);
@@ -40,13 +42,15 @@ export function VueParcours({ trace, region, profil, altitudeMin, altitudeMax, k
 
   return (
     <View style={styles.page}>
+      {/* Le retour par balayage reste partout, sauf pendant que le doigt est sur la courbe du profil */}
+      <Stack.Screen options={{ gestureEnabled: !surCourbe }} />
       <CarteTrace plein trace={trace} region={region} couleur={couleur} curseur={curseur} marges={marges} />
       <EnteteFlottante titre={titre} onModifier={onModifier} />
       <View
         onLayout={(e: LayoutChangeEvent) => setDims({ feuille: e.nativeEvent.layout.height })}
         style={[styles.feuille, { backgroundColor: p.fond, borderColor: p.trait, paddingBottom: bas + espace.e4 }]}
       >
-        <ProfilCurseur profil={profil} min={altitudeMin} max={altitudeMax} km={kmTrace > 0 ? kmTrace : km} couleur={couleur} hauteur={110} onChange={setFraction} />
+        <ProfilCurseur profil={profil} min={altitudeMin} max={altitudeMax} km={kmTrace > 0 ? kmTrace : km} couleur={couleur} hauteur={110} onChange={setFraction} onGlisse={setSurCourbe} />
         {chiffres}
       </View>
     </View>

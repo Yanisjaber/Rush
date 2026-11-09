@@ -84,8 +84,7 @@ export default function Seance() {
 
   return (
     <View style={styles.page}>
-      {/* Pas de retour par balayage : glisser le doigt sur la courbe ou entre les pages fermerait l'écran. Le bouton retour rond en haut à gauche reste. */}
-      <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <VueSortie
         parcours={trace}
         chargementCarte={chargementTrace}

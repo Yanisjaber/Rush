@@ -108,6 +108,10 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
       </View>
       <View
         {...gestes.panHandlers}
+        // Dès que le doigt se pose (avant même le glissement) : l'écran suspend le retour par balayage, qui sinon fermerait la page
+        onTouchStart={() => refs.current.onGlisse?.(true)}
+        onTouchEnd={() => refs.current.onGlisse?.(false)}
+        onTouchCancel={() => refs.current.onGlisse?.(false)}
         onLayout={(e: LayoutChangeEvent) => setLargeur(e.nativeEvent.layout.width)}
         accessible
         accessibilityRole="adjustable"
