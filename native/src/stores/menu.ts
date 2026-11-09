@@ -1,11 +1,8 @@
 import { useSyncExternalStore } from 'react';
 import { filtreDeSelection } from '@/data/sports/filtre';
-import { fusionnerFamilles } from '@/data/sports/sports-choisis';
 
 // État du menu des sports : les sports proposés et ceux qui sont cochés (un, plusieurs ou aucun = « Tous »). Partagé par tous les écrans
 // (on coche « Course » sur l'Accueil, le Calendrier reste sur « Course »).
-// Les sports viennent des données chargées : les sports choisis dans le compte (user_preferences) plus ceux que les séances
-// révèlent (une séance de muscu, un programme, un test Hyrox…). Voir famillesDe (data/accueil.ts).
 interface EtatMenu {
   familles: string[];
   /** Les sports cochés dans le menu ; vide = « Tous ». */
@@ -14,11 +11,11 @@ interface EtatMenu {
   filtre: string;
 }
 
-// Les deux sources de la liste : les sports que les données révèlent, et les sports que l'utilisateur a cochés.
-// On les garde pour pouvoir recomposer la barre tout de suite quand il coche un sport, sans attendre un rechargement.
-let deDonnees: string[] = [];
-let choisis: string[] | null = null;
-let etat: { familles: string[]; selection: string[] } = { familles: [], selection: [] };
+// Les sports du menu sont fixes (décision du 9 nov. 2026) : Course, Vélo, Natation et Musculation, pour tout le monde.
+// Plus de « + » pour en ajouter ou en retirer. Les sports cochés dans le compte et ceux que les séances révèlent ne changent plus le menu.
+export const SPORTS_DU_MENU: readonly string[] = ['course', 'velo', 'natation', 'muscu'];
+
+let etat: { familles: string[]; selection: string[] } = { familles: [...SPORTS_DU_MENU], selection: [] };
 const ecouteurs = new Set<() => void>();
 
 function abonner(fn: () => void) {
@@ -28,31 +25,11 @@ function abonner(fn: () => void) {
   };
 }
 
-/** Remplace la liste des sports du menu (après chargement des données). Sans changement réel, rien ne se redessine. */
-export function definirFamilles(familles: string[]) {
-  if (familles.length === etat.familles.length && familles.every((f, i) => f === etat.familles[i])) return;
-  etat = { ...etat, familles };
-  ecouteurs.forEach((fn) => fn());
-}
+/** Après le chargement des données : le menu reste le même (ses sports sont fixes). Gardée pour les appelants existants. */
+export function definirSources(_donnees: string[], _coches: string[] | null) {}
 
-// Règle : si l'utilisateur a choisi des sports, SA liste décide (ce qui est coché = ce qui est affiché, il peut tout décocher).
-// Ses séances ne décident que tant qu'il n'a rien choisi (compte jamais configuré, ou « Passer »).
-function composer(): string[] {
-  return choisis && choisis.length ? fusionnerFamilles([], choisis) : fusionnerFamilles(deDonnees, choisis);
-}
-
-/** Après le chargement des données : mémorise les deux sources et recompose la barre. */
-export function definirSources(donnees: string[], coches: string[] | null) {
-  deDonnees = donnees;
-  choisis = coches;
-  definirFamilles(composer());
-}
-
-/** L'utilisateur vient de cocher ou décocher un sport : la barre se recompose immédiatement. */
-export function definirSportsCoches(coches: string[]) {
-  choisis = coches;
-  definirFamilles(composer());
-}
+/** L'utilisateur vient de cocher ou décocher un sport dans ses préférences : le menu ne change pas (ses sports sont fixes). */
+export function definirSportsCoches(_coches: string[]) {}
 
 /** Applique la sélection de sports cochés dans le menu (liste vide ou tout coché = « Tous »). Un sport absent de la barre est ignoré. */
 export function definirSelection(selection: string[]) {

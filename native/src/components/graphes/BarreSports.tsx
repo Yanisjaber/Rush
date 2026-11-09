@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { MenuSports } from '@/components/menus/MenuSports';
+import { useState } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BoutonReglages } from '@/components/ui/BoutonReglages';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { basculerSport } from '@/data/accueil/menu';
@@ -11,7 +10,7 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La barre du haut, fixe : à gauche le menu des sports (un déclencheur avec les points des sports cochés), au centre le nom de l'écran,
-// à droite le « + » (ajouter ou retirer un sport) et le rond de profil (Paramètres). Elle reste là même pour un compte sans sport.
+// à droite le rond de profil (Paramètres). Les quatre sports (Course, Vélo, Natation, Musculation) sont fixes : plus de « + ».
 // Le menu s'ouvre sous la barre : une case par sport, on en coche un ou plusieurs (course et vélo, par exemple), puis « Appliquer ».
 // Rien de coché = « Tous ». Le choix est un filtre global : il reste quand on change d'écran.
 // La barre est posée tout en haut de l'écran : elle réserve elle-même la place de l'heure et de l'encoche.
@@ -19,17 +18,9 @@ export function BarreSports({ titre }: { titre: string }) {
   const p = usePalette();
   const haut = useSafeAreaInsets().top;
   const { familles, selection } = useMenu();
-  const [plusOuvert, setPlusOuvert] = useState(false);
   const [menuOuvert, setMenuOuvert] = useState(false);
   // Les cases cochées dans le menu ouvert : une copie de travail, appliquée seulement par « Appliquer »
   const [brouillon, setBrouillon] = useState<string[]>([]);
-  // Le « + » pivote d'un huitième de tour (45°) en s'ouvrant et revient en se fermant : 0 = « + », 1 = croix
-  const pivot = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.timing(pivot, { toValue: plusOuvert ? 1 : 0, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-  }, [plusOuvert, pivot]);
-  const rotation = pivot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] });
-  // Compte neuf sans aucun sport : pas de menu (c'est l'onboarding de l'Accueil qui propose d'en choisir), mais le titre et la roue dentée restent
   const sansSport = !familles.length;
 
   const nom = (f: string) => SPORTS[f as CleSport]?.nom ?? SPORTS.autre.nom;
@@ -90,20 +81,9 @@ export function BarreSports({ titre }: { titre: string }) {
           )}
         </View>
         <View style={styles.droite}>
-          <Pressable
-            onPress={() => setPlusOuvert(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Ajouter ou retirer un sport"
-            hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-            style={({ pressed }) => [styles.plus, { borderColor: p.contourChamp, opacity: pressed ? 0.7 : 1 }]}
-          >
-            <Animated.Text style={[styles.plusTexte, { color: p.texte, transform: [{ rotate: rotation }] }]}>+</Animated.Text>
-          </Pressable>
           <BoutonReglages />
         </View>
       </View>
-
-      <MenuSports ouvert={plusOuvert} onFermer={() => setPlusOuvert(false)} haut={haut} />
 
       {/* Le menu des sports : toucher à côté le ferme sans rien changer */}
       <Modal visible={menuOuvert} transparent animationType="fade" onRequestClose={() => setMenuOuvert(false)}>
@@ -169,9 +149,6 @@ const styles = StyleSheet.create({
   point: { width: 10, height: 10, borderRadius: 5 },
   pile: { flexDirection: 'row', alignItems: 'center' },
   pointPile: { width: 16, height: 16, borderRadius: 8, borderWidth: 2 },
-  // Une pastille en pointillé de 40 × 34 (la zone tactile dépasse grâce à hitSlop), alignée avec le rond de profil
-  plus: { width: 40, height: 34, borderWidth: 1, borderStyle: 'dashed', borderRadius: 6, alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
-  plusTexte: { fontFamily: police.titre600, fontSize: 24, lineHeight: 28 },
   panneau: { position: 'absolute', left: 12, width: 260, maxHeight: '70%', borderWidth: 1, borderRadius: rayon.bloc, overflow: 'hidden' },
   ligne: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, borderRadius: 6 },
   case: { width: 22, height: 22, borderWidth: 1.5, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
