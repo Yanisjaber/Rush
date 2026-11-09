@@ -7,9 +7,9 @@ import type { PointCarte, RegionCarte } from '@/data/calendrier/apercu-import';
 import { espace, rayon } from '@/theme/couleurs';
 import { usePalette } from '@/theme/usePalette';
 
-// Le parcours et le plan d'une séance prévue, en trois onglets : Carte (grande carte avec départ, arrivée et ouverture dans Plans posés dessus), Profil (altitude) et Plan (les blocs, passés en `plan`).
+// Le parcours et le plan d'une séance prévue : la carte et le profil d'altitude sont dans la même vue (« Parcours »), le plan (les blocs, passés en `plan`) dans un second onglet.
 // Seuls les onglets qui ont du contenu s'affichent ; s'il n'y en a qu'un, on le montre directement, sans barre d'onglets.
-type Onglet = 'carte' | 'profil' | 'plan';
+type Onglet = 'parcours' | 'plan';
 
 interface Parcours {
   trace: PointCarte[];
@@ -27,7 +27,7 @@ interface Props {
   plan?: ReactNode;
 }
 
-const NOMS: Record<Onglet, string> = { carte: 'Carte', profil: 'Profil', plan: 'Plan' };
+const NOMS: Record<Onglet, string> = { parcours: 'Parcours', plan: 'Plan' };
 
 /** Vrai si le parcours a de quoi remplir au moins la carte ou le profil. */
 export function aUnParcours(parcours: Parcours | null): boolean {
@@ -39,7 +39,7 @@ export function ParcoursOnglets({ parcours, couleur, km, plan }: Props) {
   const p = usePalette();
   const aCarte = !!parcours?.region && parcours.trace.length > 1;
   const aProfil = !!parcours && parcours.profil.length > 1 && parcours.altitudeMin != null && parcours.altitudeMax != null;
-  const disponibles: Onglet[] = [...(aCarte ? (['carte'] as const) : []), ...(aProfil ? (['profil'] as const) : []), ...(plan ? (['plan'] as const) : [])];
+  const disponibles: Onglet[] = [...(aCarte || aProfil ? (['parcours'] as const) : []), ...(plan ? (['plan'] as const) : [])];
   const [choix, setChoix] = useState<Onglet>(disponibles[0] ?? 'plan');
   if (!disponibles.length) return null;
   const actuel = disponibles.includes(choix) ? choix : disponibles[0];
@@ -48,14 +48,15 @@ export function ParcoursOnglets({ parcours, couleur, km, plan }: Props) {
     <View style={styles.cadre}>
       {disponibles.length > 1 ? <OngletsSegment onglets={disponibles.map((cle) => ({ cle, nom: NOMS[cle] }))} actuel={actuel} onChoisir={setChoix} etiquette="Vue de la séance" /> : null}
 
-      {actuel === 'carte' && parcours?.region ? (
-        <CarteTrace trace={parcours.trace} region={parcours.region} couleur={couleur} hauteur={400} />
-      ) : null}
-
-      {actuel === 'profil' && parcours && parcours.altitudeMin != null && parcours.altitudeMax != null ? (
-        <View style={[styles.carteProfil, { backgroundColor: p.surface }]}>
-          <ProfilAltitude profil={parcours.profil} min={parcours.altitudeMin} max={parcours.altitudeMax} km={km ?? null} couleur={couleur} hauteur={160} />
-        </View>
+      {actuel === 'parcours' ? (
+        <>
+          {aCarte && parcours?.region ? <CarteTrace trace={parcours.trace} region={parcours.region} couleur={couleur} hauteur={aProfil ? 320 : 400} /> : null}
+          {aProfil && parcours && parcours.altitudeMin != null && parcours.altitudeMax != null ? (
+            <View style={[styles.carteProfil, { backgroundColor: p.surface }]}>
+              <ProfilAltitude profil={parcours.profil} min={parcours.altitudeMin} max={parcours.altitudeMax} km={km ?? null} couleur={couleur} hauteur={72} />
+            </View>
+          ) : null}
+        </>
       ) : null}
 
       {actuel === 'plan' ? plan : null}
