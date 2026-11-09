@@ -11,9 +11,9 @@ interface EtatMenu {
   filtre: string;
 }
 
-// Les sports du menu sont fixes (décision du 9 nov. 2026) : Course, Vélo, Natation et Musculation, pour tout le monde.
+// Les sports du menu sont fixes (décision du 9 nov. 2026) : Course, Vélo, Natation, Musculation et Autres (ski, rando, tennis…), pour tout le monde.
 // Plus de « + » pour en ajouter ou en retirer. Les sports cochés dans le compte et ceux que les séances révèlent ne changent plus le menu.
-export const SPORTS_DU_MENU: readonly string[] = ['course', 'velo', 'natation', 'muscu'];
+export const SPORTS_DU_MENU: readonly string[] = ['course', 'velo', 'natation', 'muscu', 'autre'];
 
 let etat: { familles: string[]; selection: string[] } = { familles: [...SPORTS_DU_MENU], selection: [] };
 const ecouteurs = new Set<() => void>();

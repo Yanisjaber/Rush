@@ -10,7 +10,7 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La barre du haut, fixe : à gauche le menu des sports (un déclencheur avec les points des sports cochés), au centre le nom de l'écran,
-// à droite le rond de profil (Paramètres). Les quatre sports (Course, Vélo, Natation, Musculation) sont fixes : plus de « + ».
+// à droite le rond de profil (Paramètres). Les cinq entrées (Course, Vélo, Natation, Musculation, Autres) sont fixes : plus de « + ».
 // Le menu s'ouvre sous la barre : une case par sport, on en coche un ou plusieurs (course et vélo, par exemple), puis « Appliquer ».
 // Rien de coché = « Tous ». Le choix est un filtre global : il reste quand on change d'écran.
 // La barre est posée tout en haut de l'écran : elle réserve elle-même la place de l'heure et de l'encoche.
