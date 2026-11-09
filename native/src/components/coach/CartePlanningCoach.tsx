@@ -11,6 +11,7 @@ import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
+import { BoutonCompact } from '@/components/ui/BoutonCompact';
 import { TicketSeance } from './TicketSeance';
 
 // La carte d'un plan de modifications du calendrier, posée comme une grande bulle du coach : l'état, la phrase du coach, puis UNE LIGNE PAR SEMAINE
@@ -86,7 +87,6 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
   const sports = new Set(carte.lignes.map((l) => l.sport).filter((s): s is string => !!s));
   const sportPlan = sports.size === 1 ? [...sports][0] : undefined;
   const teinte = sportPlan ? couleurSport(p, sportPlan) : p.texte;
-  const encreTeinte = sportPlan ? p.encreSurCouleur : p.fond;
   // Ce qui compte d'abord : les séances ajoutées ou déplacées, les repos, les périodes. Les séances retirées (souvent des dizaines, toutes « remplacée par le plan mis à jour ») se regroupent en une ligne.
   const retirees = carte.lignes.filter((l) => l.op === 'supprimer');
   const semaines = useMemo(() => semainesDuPlan(carte.lignes), [carte.lignes]);
@@ -114,18 +114,15 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
             {l.raison && !avecDetail ? <Text style={[typo.petit, { color: p.texteDoux }]}>{l.raison}</Text> : null}
           </View>
           {avecDetail ? (
-            <Pressable
+            <BoutonCompact
+              libelle={ouverte ? 'Masquer' : 'Détail'}
+              deplie={ouverte}
+              accessibilityLabel={`${ouverte ? 'Masquer' : 'Voir'} le détail de la séance : ${texteLigne(l)}`}
               onPress={() => {
                 onBascule?.();
                 setOuvertes((o) => ({ ...o, [cle]: !o[cle] }));
               }}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: ouverte }}
-              accessibilityLabel={`${ouverte ? 'Masquer' : 'Voir'} le détail de la séance : ${texteLigne(l)}`}
-              style={({ pressed }) => [styles.detail, { borderColor: p.contourChamp, opacity: pressed ? 0.7 : 1 }]}
-            >
-              <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{ouverte ? 'Masquer' : 'Détail'}</Text>
-            </Pressable>
+            />
           ) : null}
         </View>
         {avecDetail && ouverte && l.minutes ? (
@@ -236,18 +233,15 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
                     <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{retirees.length > 1 ? `${retirees.length} séances retirées` : '1 séance retirée'}</Text>
                     {raisonRetirees ? <Text style={[typo.petit, { color: p.texteDoux }]}>{raisonRetirees}</Text> : null}
                   </View>
-                  <Pressable
+                  <BoutonCompact
+                    libelle={voirRetirees ? 'Masquer' : 'Voir'}
+                    deplie={voirRetirees}
+                    accessibilityLabel={voirRetirees ? 'Masquer les séances retirées' : `Voir les ${retirees.length} séances retirées`}
                     onPress={() => {
                       onBascule?.();
                       setVoirRetirees((v) => !v);
                     }}
-                    accessibilityRole="button"
-                    accessibilityState={{ expanded: voirRetirees }}
-                    accessibilityLabel={voirRetirees ? 'Masquer les séances retirées' : `Voir les ${retirees.length} séances retirées`}
-                    style={({ pressed }) => [styles.detail, { borderColor: p.contourChamp, opacity: pressed ? 0.7 : 1 }]}
-                  >
-                    <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{voirRetirees ? 'Masquer' : 'Voir'}</Text>
-                  </Pressable>
+                  />
                 </View>
                 {voirRetirees
                   ? retirees.map((l, i) => (
@@ -266,14 +260,13 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
 
       <View style={styles.etat}>
         {etat === 'proposee' ? (
-          <Pressable
-            onPress={onValider}
-            accessibilityRole="button"
+          <BoutonCompact
+            style="principal"
+            teinte={sportPlan ? teinte : undefined}
+            libelle="Valider le plan"
             accessibilityLabel={`Valider le plan : ${carte.intention}. ${nombreChangements(carte.lignes)} seront appliqués à ton calendrier.`}
-            style={({ pressed }) => [styles.valider, { backgroundColor: teinte, opacity: pressed ? 0.8 : 1 }]}
-          >
-            <Text style={[typo.corpsFort, { color: encreTeinte }]}>Valider le plan</Text>
-          </Pressable>
+            onPress={onValider}
+          />
         ) : null}
 
         {etat === 'en_cours' ? (
@@ -285,35 +278,17 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
 
         {etat === 'ajoutee' ? (
           <View style={styles.boutons}>
-            <Pressable
-              onPress={onAnnuler}
-              disabled={occupee}
-              accessibilityRole="button"
-              accessibilityLabel="Annuler le plan : remettre ton calendrier comme avant"
-              style={({ pressed }) => [styles.secondaire, { borderColor: p.contourChamp, opacity: occupee ? 0.5 : pressed ? 0.7 : 1 }]}
-            >
-              <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>Annuler</Text>
-            </Pressable>
-            <Pressable
-              onPress={onVoirCalendrier}
-              accessibilityRole="button"
-              accessibilityLabel="Voir au calendrier"
-              style={({ pressed }) => [styles.secondaire, { borderColor: p.contourChamp, opacity: pressed ? 0.7 : 1 }]}
-            >
-              <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>Calendrier</Text>
-            </Pressable>
-            <Pressable
+            <BoutonCompact libelle="Annuler" accessibilityLabel="Annuler le plan : remettre ton calendrier comme avant" desactive={occupee} onPress={onAnnuler} />
+            <BoutonCompact libelle="Calendrier" accessibilityLabel="Voir au calendrier" onPress={onVoirCalendrier} />
+            <BoutonCompact
+              libelle={deplie ? 'Masquer' : 'Détail'}
+              deplie={deplie}
+              accessibilityLabel={deplie ? 'Masquer le détail du plan' : 'Revoir le détail du plan'}
               onPress={() => {
                 onBascule?.();
                 setDeplie((d) => !d);
               }}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: deplie }}
-              accessibilityLabel={deplie ? 'Masquer le détail du plan' : 'Revoir le détail du plan'}
-              style={({ pressed }) => [styles.secondaire, { borderColor: p.contourChamp, opacity: pressed ? 0.7 : 1 }]}
-            >
-              <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{deplie ? 'Masquer' : 'Détail'}</Text>
-            </Pressable>
+            />
           </View>
         ) : null}
 
@@ -322,18 +297,14 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
             <View accessible accessibilityLabel={`${MOT_ETAT_PLAN.refusee}. ${carte.motif ?? ''}`} style={[styles.ligne, { alignItems: 'flex-start' }]}>
               <Text style={[typo.petit, { color: p.texte, flex: 1 }]}>{carte.motif ?? 'Ton calendrier a changé depuis la proposition.'} Rien n’a été modifié.</Text>
             </View>
-            <Pressable onPress={onRefaire} accessibilityRole="button" accessibilityLabel="Demander au coach de refaire le plan" style={({ pressed }) => [styles.valider, { backgroundColor: teinte, opacity: pressed ? 0.8 : 1 }]}>
-              <Text style={[typo.corpsFort, { color: encreTeinte }]}>Refaire le plan</Text>
-            </Pressable>
+            <BoutonCompact style="principal" teinte={sportPlan ? teinte : undefined} libelle="Refaire le plan" accessibilityLabel="Demander au coach de refaire le plan" onPress={onRefaire} />
           </>
         ) : null}
 
         {etat === 'annulee' ? (
           <>
             <Text style={[typo.petit, { color: p.texteDoux }]}>{phraseAnnulation(carte)}</Text>
-            <Pressable onPress={onRefaire} accessibilityRole="button" accessibilityLabel="Demander au coach un nouveau plan" style={({ pressed }) => [styles.secondaire, { borderColor: p.contourChamp, opacity: pressed ? 0.7 : 1 }]}>
-              <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>Refaire un plan</Text>
-            </Pressable>
+            <BoutonCompact libelle="Refaire un plan" accessibilityLabel="Demander au coach un nouveau plan" onPress={onRefaire} />
           </>
         ) : null}
 
@@ -394,6 +365,6 @@ const styles = StyleSheet.create({
   autres: { borderTopWidth: StyleSheet.hairlineWidth, minHeight: 44, justifyContent: 'center' },
   etat: { gap: espace.e2 },
   valider: { minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  boutons: { flexDirection: 'row', gap: espace.e2 },
+  boutons: { flexDirection: 'row', gap: espace.e2, justifyContent: 'space-between', alignItems: 'center' },
   secondaire: { flex: 1, minHeight: 44, paddingHorizontal: espace.e2, borderWidth: 1, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });

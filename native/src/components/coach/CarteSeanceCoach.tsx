@@ -7,6 +7,7 @@ import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
+import { BoutonCompact } from '@/components/ui/BoutonCompact';
 import { TicketSeance } from './TicketSeance';
 
 // La carte d'une séance proposée par le coach : le ticket (jour, nom, profil d'intensité, chiffres) puis le bouton. Elle n'ajoute RIEN toute seule :
@@ -63,15 +64,13 @@ export function CarteSeanceCoach({ carte, occupee, erreur, onAjouter, onAnnuler,
 
       <View style={[styles.etat, { borderTopColor: p.trait }]}>
         {etat === 'proposee' ? (
-          <Pressable
-            onPress={onAjouter}
-            accessibilityRole="button"
+          <BoutonCompact
+            style="principal"
+            teinte={couleur}
+            libelle="Ajouter"
             accessibilityLabel={`Ajouter la séance ${nomType(prop.sport, prop.type)}, ${jourCarte(prop.date)}, à mon calendrier`}
-            style={({ pressed }) => [styles.ajouter, { backgroundColor: couleur, opacity: pressed ? 0.8 : 1 }]}
-          >
-            <Picto nom="plus" couleur={p.encreSurCouleur} />
-            <Text style={[typo.corpsFort, { color: p.encreSurCouleur }]}>Ajouter</Text>
-          </Pressable>
+            onPress={onAjouter}
+          />
         ) : null}
 
         {etat === 'en_cours' ? (
@@ -85,27 +84,16 @@ export function CarteSeanceCoach({ carte, occupee, erreur, onAjouter, onAnnuler,
           <View style={styles.ligne}>
             <Picto nom="ok" couleur={p.ok} />
             <Text style={[typo.petit, { color: p.texte, flex: 1 }]}>{MOT_ETAT.ajoutee}</Text>
-            <Pressable
-              onPress={onAnnuler}
-              disabled={occupee}
-              accessibilityRole="button"
-              accessibilityLabel="Annuler : retirer cette séance de mon calendrier"
-              style={({ pressed }) => [styles.annuler, { borderColor: p.contourChamp, opacity: occupee ? 0.5 : pressed ? 0.7 : 1 }]}
-            >
-              <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>Annuler</Text>
-            </Pressable>
-            <Pressable
+            <BoutonCompact libelle="Annuler" accessibilityLabel="Annuler : retirer cette séance de mon calendrier" desactive={occupee} onPress={onAnnuler} />
+            <BoutonCompact
+              libelle={deplie ? 'Masquer' : 'Voir'}
+              deplie={deplie}
+              accessibilityLabel={deplie ? 'Masquer le détail de la séance' : 'Revoir le détail de la séance'}
               onPress={() => {
                 onBascule?.();
                 setDeplie((d) => !d);
               }}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: deplie }}
-              accessibilityLabel={deplie ? 'Masquer le détail de la séance' : 'Revoir le détail de la séance'}
-              style={styles.revoir}
-            >
-              <Text style={[typo.petit, { color: p.texteDoux, fontFamily: police.texte600 }]}>{deplie ? 'Masquer' : 'Voir'}</Text>
-            </Pressable>
+            />
           </View>
         ) : null}
 
