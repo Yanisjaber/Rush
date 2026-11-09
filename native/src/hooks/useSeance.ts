@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { donneesDemoAccueil } from '@/data/accueil/accueil';
-import { changerDonneeEcartee, chargerSeance, chargerTours } from '@/data/acces/api';
+import { changerDonneeEcartee, chargerSeance, chargerTours, chargerTrace } from '@/data/acces/api';
+import { apercuDeTrace } from '@/data/calendrier/apercu-import';
 import type { ColonneEcart } from '@/data/calendrier/donnees-ecartees';
 import { activitesBilanDemo, toursDemo } from '@/data/demo/demo';
 import { seanceDeLaDemo, useVersionAjouts } from '@/stores/ajouts';
@@ -16,9 +17,15 @@ interface Etat {
   chargementTours: boolean;
   erreur: string;
   erreurTours: string;
+  /** La carte et le profil d'altitude ; null sans GPS, ou tant qu'ils ne sont pas chargés. */
+  trace: ApercuTrace | null;
+  chargementTrace: boolean;
+  erreurTrace: string;
 }
 
-const initial: Etat = { seance: null, tours: null, chargement: true, chargementTours: false, erreur: '', erreurTours: '' };
+type ApercuTrace = NonNullable<ReturnType<typeof apercuDeTrace>>;
+
+const initial: Etat = { seance: null, tours: null, chargement: true, chargementTours: false, erreur: '', erreurTours: '', trace: null, chargementTrace: false, erreurTrace: '' };
 
 /** L'état de la séance, et de quoi écarter (ou remettre) une de ses données : renvoie un message d'erreur, vide si tout s'est bien passé. */
 export interface RetourSeance extends Etat {
@@ -54,12 +61,22 @@ export function useSeance(id: string): RetourSeance {
       if (annule) return;
       if (!r.data) return setEtat({ ...initial, chargement: false, erreur: r.erreur || 'Séance introuvable.' });
       const s = r.data;
+      // La carte : demandée en même temps que les tours, sans jamais bloquer la fiche (une sortie sans GPS n'a simplement pas de carte)
+      const traceDemandee = chargerTrace(userId, id, s.strava_id).then((t) => {
+        if (annule) return;
+        const apercu = t.data ? apercuDeTrace(t.data) : null;
+        setEtat((e) => ({ ...e, chargementTrace: false, trace: apercu, erreurTrace: t.erreur }));
+      });
       // Pas de tours pour une séance saisie à la main : rien à demander à Strava
-      if (!s.strava_id) return setEtat({ ...initial, seance: s, chargement: false, erreurTours: "Cette séance ne vient pas de Strava : ses tours ne sont pas disponibles." });
-      setEtat({ ...initial, seance: s, chargement: false, chargementTours: true });
+      if (!s.strava_id) {
+        setEtat({ ...initial, seance: s, chargement: false, chargementTrace: true, erreurTours: "Cette séance ne vient pas de Strava : ses tours ne sont pas disponibles." });
+        return void (await traceDemandee);
+      }
+      setEtat({ ...initial, seance: s, chargement: false, chargementTours: true, chargementTrace: true });
       const t = await chargerTours(id);
       if (annule) return;
       setEtat((e) => ({ ...e, chargementTours: false, tours: t.data, erreurTours: t.erreur }));
+      await traceDemandee;
     })();
     return () => {
       annule = true;

@@ -118,6 +118,14 @@ export function apercuImport(a: ActiviteImportee, type: string): ApercuImport {
   };
 }
 
+/** La carte et le profil d'altitude d'une sortie réalisée, depuis sa trace (positions, altitude et distance cumulée en mètres) ; null sans deux positions. */
+export function apercuDeTrace(t: { latlng: [number, number][]; altitude: number[]; distance: number[] }): Pick<ApercuImport, 'trace' | 'region' | 'profil' | 'altitudeMin' | 'altitudeMax'> | null {
+  if (t.latlng.length < 2) return null;
+  const trace = echantillonner(t.latlng.map(([latitude, longitude]) => ({ latitude, longitude })), POINTS_TRACE);
+  const profil = t.altitude.length === t.latlng.length ? profilAltitude(t.altitude, t.distance.length === t.latlng.length ? t.distance : null) : [];
+  return { trace, region: regionDeTrace(trace), profil, altitudeMin: profil.length ? Math.min(...profil) : null, altitudeMax: profil.length ? Math.max(...profil) : null };
+}
+
 /** La carte et le profil d'altitude d'un parcours GPX déjà enregistré (celui d'une séance prévue ou d'une compétition) ; null si le fichier n'a pas assez de points. */
 export function apercuDeGpx(contenu: string): Pick<ApercuImport, 'trace' | 'region' | 'profil' | 'altitudeMin' | 'altitudeMax'> | null {
   const { points } = lireGpx(contenu);

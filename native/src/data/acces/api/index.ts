@@ -12,6 +12,7 @@
 export type { Resultat } from './commun';
 export { invaliderRetouches } from './retouches-cache';
 export * from './seances';
+export * from './traces';
 export * from './forme';
 export * from './prevues';
 export * from './notes';
