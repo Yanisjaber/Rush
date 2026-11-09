@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Keyboard, KeyboardAvoidingView, type NativeScrollEvent, type NativeSyntheticEvent, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
-import { useSharedValue, withSpring } from 'react-native-reanimated';
+import { Easing, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HEURE_LARGEUR, MessageVue } from '@/components/coach/MessageVue';
 import { SaisieCoach } from '@/components/coach/SaisieCoach';
@@ -82,7 +82,7 @@ export default function Coach() {
       decalage.value = Math.max(-(HEURE_LARGEUR + espace.e4), Math.min(0, e.translationX));
     },
     onFinalize: () => {
-      decalage.value = withSpring(0, { damping: 22, stiffness: 260 });
+      decalage.value = withTiming(0, { duration: 180, easing: Easing.out(Easing.cubic) });
     },
   });
   const vide = !c.chargement && !c.erreur && c.messages.length === 0;
