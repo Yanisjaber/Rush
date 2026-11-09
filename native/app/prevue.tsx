@@ -115,11 +115,7 @@ export default function Prevue() {
           km={prevue.km ?? null}
           couleur={couleur}
           onModifier={modifier}
-          titre={
-            <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte }]}>
-              {nom}
-            </Text>
-          }
+          titre={nom}
           chiffres={
             chiffres.length ? (
               <View style={styles.tuiles}>
