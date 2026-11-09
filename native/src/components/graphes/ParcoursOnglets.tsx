@@ -4,7 +4,7 @@ import { CarteTrace } from '@/components/graphes/CarteTrace';
 import { ProfilAltitude } from '@/components/graphes/ProfilAltitude';
 import { OngletsSegment } from '@/components/menus/OngletsSegment';
 import type { PointCarte, RegionCarte } from '@/data/calendrier/apercu-import';
-import { espace, rayon } from '@/theme/couleurs';
+import { avecAlpha, espace, rayon } from '@/theme/couleurs';
 import { usePalette } from '@/theme/usePalette';
 
 // Le parcours et le plan d'une séance prévue : la carte et le profil d'altitude sont dans la même vue (« Parcours »), le plan (les blocs, passés en `plan`) dans un second onglet.
@@ -50,10 +50,20 @@ export function ParcoursOnglets({ parcours, couleur, km, plan }: Props) {
 
       {actuel === 'parcours' ? (
         <>
-          {aCarte && parcours?.region ? <CarteTrace trace={parcours.trace} region={parcours.region} couleur={couleur} hauteur={aProfil ? 320 : 400} /> : null}
-          {aProfil && parcours && parcours.altitudeMin != null && parcours.altitudeMax != null ? (
+          {aCarte && parcours?.region ? (
+            <View>
+              <CarteTrace trace={parcours.trace} region={parcours.region} couleur={couleur} hauteur={aProfil ? 480 : 400} />
+              {/* Le profil d'altitude posé sur le bas de la carte, comme une feuille (maquette 7) */}
+              {aProfil && parcours.altitudeMin != null && parcours.altitudeMax != null ? (
+                <View pointerEvents="none" style={[styles.feuilleProfil, { backgroundColor: avecAlpha(p.fond, 0.97) }]}>
+                  <ProfilAltitude profil={parcours.profil} min={parcours.altitudeMin} max={parcours.altitudeMax} km={km ?? null} couleur={couleur} hauteur={80} />
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+          {!aCarte && aProfil && parcours && parcours.altitudeMin != null && parcours.altitudeMax != null ? (
             <View style={[styles.carteProfil, { backgroundColor: p.surface }]}>
-              <ProfilAltitude profil={parcours.profil} min={parcours.altitudeMin} max={parcours.altitudeMax} km={km ?? null} couleur={couleur} hauteur={72} />
+              <ProfilAltitude profil={parcours.profil} min={parcours.altitudeMin} max={parcours.altitudeMax} km={km ?? null} couleur={couleur} hauteur={120} />
             </View>
           ) : null}
         </>
@@ -67,4 +77,5 @@ export function ParcoursOnglets({ parcours, couleur, km, plan }: Props) {
 const styles = StyleSheet.create({
   cadre: { gap: espace.e3 },
   carteProfil: { borderRadius: rayon.bloc, padding: espace.e3 },
+  feuilleProfil: { position: 'absolute', left: 8, right: 8, bottom: 8, borderRadius: rayon.base, padding: espace.e3, gap: 6 },
 });
