@@ -23,7 +23,7 @@ interface Props {
   onGlisse?: (actif: boolean) => void;
 }
 
-const HAUTEUR_PASTILLE = 28; // hauteur de la pastille du curseur (texte de 13 pt, marges et bord)
+const HAUTEUR_PASTILLE = 30; // hauteur de la pastille du curseur (texte de 13 pt et marges)
 const MARGE = 10; // assez pour que le rond du curseur (rayon 6 + contour 3) ne soit jamais coupé
 const GAUCHE = 28; // la place des repères d'altitude, à gauche (trois chiffres de 11 pt)
 
@@ -149,11 +149,10 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
           <View
             pointerEvents="none"
             onLayout={(e: LayoutChangeEvent) => setLargeurBulle(e.nativeEvent.layout.width)}
-            style={[styles.bulle, { left: place.left, top: place.top, backgroundColor: p.fond, borderColor: p.texteDoux }]}
+            style={[styles.bulle, { left: place.left, top: place.top, backgroundColor: p.dossardFond }]}
           >
-            <Text style={[typo.corpsFort, { color: p.texte, fontSize: 13 }]}>
-              {texteBulle}
-            </Text>
+            <View style={[styles.pointBulle, { backgroundColor: couleur }]} />
+            <Text style={[typo.corpsFort, { color: p.dossardTexte, fontSize: 13 }]}>{texteBulle}</Text>
           </View>
         ) : null}
       </View>
@@ -174,5 +173,7 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
 const styles = StyleSheet.create({
   axe: { flexDirection: 'row', marginTop: 4 },
   repere: { flex: 1, fontSize: 11, lineHeight: 14 },
-  bulle: { position: 'absolute', borderRadius: 999, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 4 },
+  // La pastille claire du dossard (maquette 2 « claire, point orange ») : le point a la couleur du sport
+  bulle: { position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
+  pointBulle: { width: 8, height: 8, borderRadius: 4 },
 });
