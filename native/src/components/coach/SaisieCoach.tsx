@@ -57,6 +57,6 @@ export function SaisieCoach({ envoi, basse, onEnvoyer }: Props) {
 
 const styles = StyleSheet.create({
   barre: { flexDirection: 'row', alignItems: 'flex-end', gap: espace.e2, paddingHorizontal: espace.e3, paddingTop: espace.e2 },
-  champ: { flex: 1, minHeight: 44, maxHeight: 132, borderWidth: 1, borderRadius: 22, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10, textAlignVertical: 'top' },
+  champ: { flex: 1, minHeight: 44, maxHeight: 132, borderWidth: 1, borderRadius: 22, paddingHorizontal: 16, paddingTop: 6, paddingBottom: 12, textAlignVertical: 'top' },
   envoi: { width: 44, height: 44, borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center' },
 });
