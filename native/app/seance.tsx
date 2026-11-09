@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { PageDetailsSortie } from '@/components/graphes/PageDetailsSortie';
 import { VueSortie } from '@/components/graphes/VueSortie';
 import { ListeTours } from '@/components/ui/ListeTours';
 import { PucesEcart } from '@/components/ui/PucesEcart';
@@ -17,9 +18,8 @@ import { couleurSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Le détail d'une sortie réalisée (maquette « Pages qu'on balaie ») : la carte en plein fond (ou, sans GPS, un dossard), les trois chiffres clés, puis trois pages qu'on balaie
-// dans la feuille : Profil d'altitude, Tours et Notes et données. On y arrive depuis le calendrier. Une activité saisie à la main peut être modifiée (crayon) et supprimée
-// (en bas de la page Notes et données) ; celles de Strava appartiennent à Strava.
+// Le détail d'une sortie réalisée (maquette « Pages qu'on balaie ») : la carte en plein fond (ou, sans GPS, un dossard), les trois chiffres clés, puis le profil d'altitude ; balayer vers la gauche ouvre la page 2 (toutes les infos, sans carte : rubriques, tours, notes et données). On y arrive depuis le calendrier. Une activité saisie à la main peut être modifiée (crayon) et supprimée
+// (en bas de la page 2) ; celles de Strava appartiennent à Strava.
 export default function Seance() {
   const p = usePalette();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -108,9 +108,15 @@ export default function Seance() {
             </View>
           ) : null
         }
-        pageTours={<ListeTours lignes={lignes} chargement={chargementTours} erreur={erreurTours} />}
-        pageDonnees={
-          <View style={{ gap: espace.e3 }}>
+        pageDetails={
+          <PageDetailsSortie
+            chiffres={chiffres}
+            ecarte={(cle) => chiffreEcarte(seance, cle)}
+            altitude={trace && trace.altitudeMin != null && trace.altitudeMax != null ? { min: trace.altitudeMin, max: trace.altitudeMax } : null}
+            couleur={couleur}
+          >
+            <Text style={[typo.micro, { color: p.texteDoux }]}>TOURS</Text>
+            <ListeTours lignes={lignes} chargement={chargementTours} erreur={erreurTours} />
             {notes ? (
               <View style={[styles.notes, { backgroundColor: p.surface }]}>
                 <Text style={[typo.micro, { color: p.texteDoux }]}>NOTES</Text>
@@ -147,7 +153,7 @@ export default function Seance() {
                 </Pressable>
               </View>
             ) : null}
-          </View>
+          </PageDetailsSortie>
         }
       />
     </View>
