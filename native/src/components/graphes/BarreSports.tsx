@@ -9,7 +9,7 @@ import { couleurSport, SPORTS, type CleSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// La barre du haut, fixe : à gauche le menu des sports (un déclencheur avec les points des sports cochés), au centre le nom de l'écran,
+// La barre du haut, fixe : à gauche le menu des sports (un bouton rond, avec une pastille de couleur sur l'anneau par sport coché), au centre le nom de l'écran,
 // à droite le rond de profil (Paramètres). Les cinq entrées (Course, Vélo, Natation, Musculation, Autres) sont fixes : plus de « + ».
 // Le menu s'ouvre sous la barre : une case par sport, on en coche un ou plusieurs (course et vélo, par exemple), puis « Appliquer ».
 // Rien de coché = « Tous ». Le choix est un filtre global : il reste quand on change d'écran.
@@ -17,14 +17,13 @@ import { usePalette } from '@/theme/usePalette';
 export function BarreSports({ titre }: { titre: string }) {
   const p = usePalette();
   const haut = useSafeAreaInsets().top;
-  const { familles, selection } = useMenu();
+  const { familles, selection, filtre } = useMenu();
   const [menuOuvert, setMenuOuvert] = useState(false);
   // Les cases cochées dans le menu ouvert : une copie de travail, appliquée seulement par « Appliquer »
   const [brouillon, setBrouillon] = useState<string[]>([]);
   const sansSport = !familles.length;
 
   const nom = (f: string) => SPORTS[f as CleSport]?.nom ?? SPORTS.autre.nom;
-  const court = (f: string) => SPORTS[f as CleSport]?.court ?? SPORTS.autre.court;
   const resume = selection.length ? selection.map(nom).join(', ') : 'Tous les sports';
 
   const ouvrirMenu = () => {
@@ -52,31 +51,30 @@ export function BarreSports({ titre }: { titre: string }) {
               accessibilityRole="button"
               accessibilityLabel={`Sports : ${resume}. Changer`}
               accessibilityState={{ expanded: menuOuvert }}
-              style={({ pressed }) => [styles.declencheur, { borderColor: p.contourChamp, backgroundColor: p.surface, opacity: pressed ? 0.7 : 1 }]}
+              style={({ pressed }) => [styles.declencheur, { opacity: pressed ? 0.7 : 1 }]}
             >
-              {selection.length === 0 ? (
-                <>
-                  <View style={[styles.point, { backgroundColor: p.sportNeutre }]} />
-                  <Text numberOfLines={1} style={[styles.declencheurTexte, { color: p.texte }]}>
-                    Tous
-                  </Text>
-                </>
-              ) : selection.length === 1 ? (
-                <>
-                  <View style={[styles.point, { backgroundColor: couleurSport(p, selection[0]) }]} />
-                  <Text numberOfLines={1} style={[styles.declencheurTexte, { color: p.texte }]}>
-                    {court(selection[0])}
-                  </Text>
-                </>
-              ) : (
-                // Plusieurs sports : une pile de points (trois au plus), chacun de la couleur de son sport
-                <View style={styles.pile}>
-                  {selection.slice(0, 3).map((f, i) => (
-                    <View key={f} style={[styles.pointPile, { backgroundColor: couleurSport(p, f), borderColor: p.surface, marginLeft: i === 0 ? 0 : -6 }]} />
-                  ))}
+              {/* Un anneau de la couleur du sport (le mélange s'il y en a plusieurs ; gris sur « Tous »), le symbole du filtre au centre,
+                  et une pastille de couleur sur l'anneau pour chaque sport coché */}
+              <View style={[styles.anneau, { borderColor: selection.length ? couleurSport(p, filtre) : p.contourChamp }]}>
+                <View style={styles.filtre}>
+                  <View style={[styles.trait, { width: 18, backgroundColor: p.texte }]} />
+                  <View style={[styles.trait, { width: 12, backgroundColor: p.texte }]} />
+                  <View style={[styles.trait, { width: 6, backgroundColor: p.texte }]} />
                 </View>
-              )}
-              <Chevron couleur={p.texteDoux} />
+              </View>
+              {selection.map((f, i) => {
+                // Les pastilles se rangent sur l'anneau, en partant du haut à droite et en tournant dans le sens des aiguilles d'une montre
+                const angle = ((-50 + i * 42) * Math.PI) / 180;
+                return (
+                  <View
+                    key={f}
+                    style={[
+                      styles.pastille,
+                      { backgroundColor: couleurSport(p, f), borderColor: p.fond, left: 21 + 19 * Math.cos(angle) - 6, top: 21 + 19 * Math.sin(angle) - 6 },
+                    ]}
+                  />
+                );
+              })}
             </Pressable>
           )}
         </View>
@@ -132,10 +130,6 @@ function Ligne({ nom, couleur, coche, onPress, role }: { nom: string; couleur: s
   );
 }
 
-function Chevron({ couleur }: { couleur: string }) {
-  return <Text style={{ color: couleur, fontSize: 12, lineHeight: 14, fontFamily: police.titre700 }}>⌄</Text>;
-}
-
 const styles = StyleSheet.create({
   barre: { borderBottomWidth: StyleSheet.hairlineWidth },
   rangee: { height: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 14 },
@@ -143,12 +137,13 @@ const styles = StyleSheet.create({
   titre: { fontFamily: police.titre700, fontSize: 17, lineHeight: 22, letterSpacing: -0.2, maxWidth: '40%' },
   gauche: { flexShrink: 1, flexDirection: 'row', alignItems: 'center' },
   droite: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  // 44 pt de haut : la cible tactile minimale
-  declencheur: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 11, borderWidth: 1, borderRadius: rayon.bloc, maxWidth: 140 },
-  declencheurTexte: { fontFamily: police.texte600, fontSize: 14, lineHeight: 20, flexShrink: 1 },
+  // Le bouton rond : 42 pt de cible tactile, un anneau de 38 pt dedans (les pastilles de sport se posent sur l'anneau)
+  declencheur: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
+  anneau: { width: 38, height: 38, borderRadius: 19, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center' },
+  filtre: { alignItems: 'center', gap: 3.5 },
+  trait: { height: 2.5, borderRadius: 2 },
+  pastille: { position: 'absolute', width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
   point: { width: 10, height: 10, borderRadius: 5 },
-  pile: { flexDirection: 'row', alignItems: 'center' },
-  pointPile: { width: 16, height: 16, borderRadius: 8, borderWidth: 2 },
   panneau: { position: 'absolute', left: 12, width: 260, maxHeight: '70%', borderWidth: 1, borderRadius: rayon.bloc, overflow: 'hidden' },
   ligne: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, borderRadius: 6 },
   case: { width: 22, height: 22, borderWidth: 1.5, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
