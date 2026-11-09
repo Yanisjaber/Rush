@@ -8,7 +8,7 @@ import { ChoixEffort } from '@/components/champs/ChoixEffort';
 import { EcranAjout } from '@/components/ecrans/EcranAjout';
 import { MenuDeroulantSport } from '@/components/menus/MenuDeroulantSport';
 import { ChampDate } from '@/components/champs/ChampDate';
-import { chargeEstimeeSortie, distanceEnMetres, formulaireDepuisSortie, formulaireSortieVide, ligneDeModification, sortieModifiable, SPORTS_AJOUT, validerSortie } from '@/data/calendrier/ajouts';
+import { chargeEstimeeSortie, distanceEnMetres, formulaireDepuisSortie, formulaireSortieVide, ligneDeModification, SPORTS_AJOUT, validerSortie } from '@/data/calendrier/ajouts';
 import { champsValides } from '@/data/calendrier/import-activite';
 import { dateIsoLocale } from '@/data/outils/format';
 import { dureeDepuisHeure, heureDepuisDuree, texteDureeSaisie } from '@/data/outils/heure';
@@ -38,11 +38,11 @@ export default function EcranAjoutSortie() {
       </View>
     );
   }
-  if (modif && (!seance || !sortieModifiable(seance))) {
+  if (modif && !seance) {
     return (
       <View style={styles.centre}>
         <Text accessibilityRole="alert" style={[typo.corps, { color: p.texteDoux, textAlign: 'center' }]}>
-          {seance ? 'Seule une activité saisie à la main peut se modifier.' : erreur || 'Activité introuvable.'}
+          {erreur || 'Activité introuvable.'}
         </Text>
       </View>
     );

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CATALOGUE } from '../../src/data/sports/catalogue-sports.ts';
 import { normaliser, sportAvecStructure } from '../../src/data/calendrier/structure.ts';
-import { formulaireDepuisSortie, ligneDeModification, sortieModifiable, distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, chargeEstimeeSortie, typeInitial, SPORTS_AJOUT, blocsDePrevue, formulaireDepuisCompetition, formulaireDepuisSeance, parcoursDePrevue, prevueDepuisLigne, type LignePrevue } from '../../src/data/calendrier/ajouts.ts';
+import { formulaireDepuisSortie, ligneDeModification, sortieModifiable, sortieSupprimable, distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, chargeEstimeeSortie, typeInitial, SPORTS_AJOUT, blocsDePrevue, formulaireDepuisCompetition, formulaireDepuisSeance, parcoursDePrevue, prevueDepuisLigne, type LignePrevue } from '../../src/data/calendrier/ajouts.ts';
 import type { PrevueComplete } from '../../src/data/types.ts';
 
 const date = '2026-10-23';
@@ -419,10 +419,33 @@ test('ligneDeModification : une valeur seulement arrondie par le formulaire gard
   assert.deepEqual([changee.moving_time, changee.avg_heartrate, changee.total_elevation_gain], [3000, 150, 60.4]);
 });
 
-test('sortieModifiable : seulement une activité saisie à la main', () => {
+test('sortieModifiable : toute activité réalisée se modifie, sortieSupprimable : seulement celle saisie à la main', () => {
   assert.equal(sortieModifiable({ source: 'manual' }), true);
-  assert.equal(sortieModifiable({ source: 'strava' }), false);
-  assert.equal(sortieModifiable({}), false);
+  assert.equal(sortieModifiable({ source: 'strava' }), true);
+  assert.equal(sortieModifiable({}), true);
+  assert.equal(sortieSupprimable({ source: 'manual' }), true);
+  assert.equal(sortieSupprimable({ source: 'strava' }), false);
+  assert.equal(sortieSupprimable({}), false);
+});
+
+test("ligneDeModification : la charge d'origine (ex. calculée sur les watts) est gardée tant que rien ne change", () => {
+  const origine = { moving_time: 2731, avg_heartrate: 147.6, total_elevation_gain: 60.4, tss: 63.4, rpe: null };
+  const f = formulaireDepuisSortie({ name: 'x', sport: 'Run', start_date_local: '2026-10-22T07:30:00', ...origine, distance_km: 8, user_notes: null }).f;
+  const r = validerSortie(f, '2026-10-22', '2026-10-30', 'Course');
+  assert.ok(r.ok);
+  if (!r.ok) return;
+  assert.equal(ligneDeModification(origine, r.ligne).tss, 63.4, "rien changé : la charge reste celle d'origine, pas une estimation");
+});
+
+test("ligneDeModification : une charge qui n'était que l'estimation est recalculée quand la durée change", () => {
+  const origine = { moving_time: 2760, avg_heartrate: 147.6, total_elevation_gain: 60.4, tss: estimerTss(46, 5), rpe: null };
+  const f = formulaireDepuisSortie({ name: 'x', sport: 'Run', start_date_local: '2026-10-22T07:30:00', ...origine, distance_km: 8, user_notes: null }).f;
+  const r = validerSortie({ ...f, minutes: '55' }, '2026-10-22', '2026-10-30', 'Course');
+  assert.ok(r.ok);
+  if (!r.ok) return;
+  const l = ligneDeModification(origine, r.ligne);
+  assert.equal(l.tss, estimerTss(55, 5));
+  assert.notEqual(l.tss, origine.tss);
 });
 
 test('validerNote : une ancienne note de plus de 90 jours reste modifiable tant qu\'on ne touche pas à sa période', () => {
@@ -438,4 +461,18 @@ test('temps cible d\'une compétition : lu dans la durée (minutes), jamais pour
   assert.equal(tempsCibleDepuisDuree('competition', null), null);
   assert.equal(tempsCibleDepuisDuree('competition', 0), null);
   assert.equal(tempsCibleDepuisDuree('entrainement', 60), null);
+});
+
+test("ligneDeModification : un sport que le formulaire ne propose pas n'est pas remplacé par « course »", () => {
+  const origine = { moving_time: 3600, avg_heartrate: null, total_elevation_gain: null, tss: 40, rpe: null, sport: 'Kayaking' };
+  const f = formulaireDepuisSortie({ name: 'x', sport: 'Kayaking', start_date_local: '2026-10-22T07:30:00', ...origine, distance_km: 5, user_notes: null }).f;
+  const r = validerSortie(f, '2026-10-22', '2026-10-30', 'Course');
+  assert.ok(r.ok);
+  if (!r.ok) return;
+  assert.equal(ligneDeModification(origine, r.ligne).sport, 'Kayaking');
+  // un sport connu, lui, suit le formulaire
+  const r2 = validerSortie({ ...f, type: 'Ride' }, '2026-10-22', '2026-10-30', 'Vélo');
+  assert.ok(r2.ok);
+  if (!r2.ok) return;
+  assert.equal(ligneDeModification(origine, r2.ligne).sport, 'Ride');
 });

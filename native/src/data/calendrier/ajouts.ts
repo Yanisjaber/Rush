@@ -481,8 +481,14 @@ export function validerSortie(f: FormulaireSortie, date: string, aujourdhui: str
 
 // --- Rouvrir une activité saisie à la main pour la modifier ---------------------------------------------------------------------------
 
-/** Seule une activité saisie à la main (source « manual ») se modifie ou se supprime : celles de Strava appartiennent à Strava. */
-export const sortieModifiable = (s: { source?: string | null }): boolean => s.source === 'manual';
+/**
+ * Toute activité réalisée se modifie (décision de Yanis, 9 nov. 2026), même celle de Strava : la prochaine synchro Strava peut réécrire ces changements.
+ * La modification ne touche jamais à `source` ni à `category` (voir modifierSortie).
+ */
+export const sortieModifiable = (_s: { source?: string | null }): boolean => true;
+
+/** Seule une activité saisie à la main (source « manual ») se supprime : une activité Strava supprimée reviendrait à la synchro suivante. */
+export const sortieSupprimable = (s: { source?: string | null }): boolean => s.source === 'manual';
 
 /** Le formulaire d'une activité déjà enregistrée, et son jour. La charge n'est reprise que si elle a été saisie à la main (différente de l'estimation). */
 export function formulaireDepuisSortie(s: {
@@ -523,13 +529,25 @@ export function formulaireDepuisSortie(s: {
  * La ligne à écrire quand on modifie une activité : celle du formulaire, mais une valeur que le formulaire n'a fait qu'arrondir (la durée à la minute, la FC et le dénivelé au
  * nombre entier) garde sa valeur exacte d'origine tant qu'on n'y a pas touché. Une activité importée garde ainsi ses secondes et ses décimales.
  */
-export function ligneDeModification(origine: { moving_time: number; avg_heartrate: number | null; total_elevation_gain: number | null }, ligne: LigneSortie): LigneSortie {
+export function ligneDeModification(
+  origine: { moving_time: number; avg_heartrate: number | null; total_elevation_gain: number | null; tss?: number | null; rpe?: number | null; sport?: string },
+  ligne: LigneSortie,
+): LigneSortie {
   const garde = (nouvelle: number | null, ancienne: number | null | undefined, arrondi: (n: number) => number): number | null =>
     nouvelle != null && ancienne != null && arrondi(Number(ancienne)) === nouvelle ? Number(ancienne) : nouvelle;
+  // La charge : le formulaire en met une estimée (durée et effort) quand on n'en a pas saisi. Si la durée et l'effort n'ont pas changé, on garde la charge d'origine
+  // (par exemple celle calculée sur les watts d'une sortie Strava) au lieu de la remplacer par l'estimation.
+  const minutesOrigine = Math.round((Number(origine.moving_time) || 0) / 60);
+  const estimeeOrigine = minutesOrigine > 0 ? estimerTss(minutesOrigine, origine.rpe ?? 5) : null;
+  const tssOrigine = origine.tss != null ? Number(origine.tss) : null;
+  const tss = tssOrigine != null && (ligne.tss === Math.round(tssOrigine) || ligne.tss === estimeeOrigine) ? tssOrigine : ligne.tss;
   return {
     ...ligne,
     moving_time: garde(ligne.moving_time, origine.moving_time, (n) => Math.round(n / 60) * 60) ?? ligne.moving_time,
     avg_heartrate: garde(ligne.avg_heartrate, origine.avg_heartrate, Math.round),
     total_elevation_gain: garde(ligne.total_elevation_gain, origine.total_elevation_gain, Math.round),
+    tss,
+    // Un sport que le formulaire ne propose pas (randonnée, rameur…) y apparaît comme « course » : tant que c'est ce repli qui est choisi, on garde le vrai sport d'origine
+    sport: origine.sport && !TYPES.has(origine.sport) && ligne.sport === 'Run' ? origine.sport : ligne.sport,
   };
 }

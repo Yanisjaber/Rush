@@ -11,12 +11,13 @@ export async function creerSortie(userId: string, ligne: LigneSortie): Promise<R
 }
 
 /**
- * Modifie une activité saisie à la main (ligne validée par validerSortie). Le filtre `source = 'manual'` est là en plus de la RLS : une activité Strava ne se modifie jamais d'ici.
+ * Modifie une activité réalisée (ligne validée par validerSortie), de n'importe quelle source : la source et la catégorie d'origine ne sont jamais écrasées (retirées de la ligne ci-dessous).
+ * Une activité Strava modifiée ici peut être réécrite par la synchro Strava suivante.
  */
 export async function modifierSortie(userId: string, id: string, ligne: LigneSortie): Promise<Resultat<Seance>> {
   if (!UUID.test(String(id))) return { data: null, erreur: 'Activité introuvable.' };
   const { source: _source, category: _categorie, ...colonnes } = ligne;
-  const r = await sb.from('activities').update(colonnes).eq('user_id', userId).eq('id', id).eq('source', 'manual').select(COLONNES_SEANCE).maybeSingle();
+  const r = await sb.from('activities').update(colonnes).eq('user_id', userId).eq('id', id).select(COLONNES_SEANCE).maybeSingle();
   const res = resultat<Seance | null>(r, "Impossible de modifier cette activité.");
   return res.erreur ? { data: null, erreur: res.erreur } : res.data ? { data: res.data, erreur: '' } : { data: null, erreur: 'Activité introuvable.' };
 }

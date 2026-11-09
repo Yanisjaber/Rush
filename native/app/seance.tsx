@@ -5,7 +5,7 @@ import { VueSortie } from '@/components/graphes/VueSortie';
 import { ListeTours } from '@/components/ui/ListeTours';
 import { PucesEcart } from '@/components/ui/PucesEcart';
 import { StatCle } from '@/components/ui/StatCle';
-import { sortieModifiable } from '@/data/calendrier/ajouts';
+import { sortieSupprimable } from '@/data/calendrier/ajouts';
 import { chiffreEcarte, pucesEcart } from '@/data/calendrier/donnees-ecartees';
 import { chiffresSeance, lignesTours, troisChiffres } from '@/data/calendrier/seance-detail';
 import { formatDateCourte } from '@/data/outils/format';
@@ -57,7 +57,7 @@ export default function Seance() {
   const lignes = tours ? lignesTours(tours, seance.sport) : [];
   const puces = pucesEcart(seance);
   const notes = (seance.user_notes ?? '').trim();
-  const modifiable = sortieModifiable(seance);
+  const supprimable = sortieSupprimable(seance);
   const jour = String(seance.start_date_local).slice(0, 10);
   const heureLue = /T(\d{2}:\d{2})/.exec(String(seance.start_date_local ?? ''))?.[1];
   const date = `${formatDateCourte(jour).replace(/\./g, '')}${heureLue && heureLue !== '00:00' ? ` · ${heureLue}` : ''}`.toUpperCase();
@@ -95,7 +95,7 @@ export default function Seance() {
         titre={seance.name || nomSport}
         date={date}
         hero={principal ? { etiquette: principal.libelle.toUpperCase(), valeur: principal.valeur, unite: principal.unite, detail: `${nomSport} · ${date}` } : null}
-        onModifier={modifiable ? () => router.push({ pathname: '/ajout-sortie', params: { id: seance.id } }) : undefined}
+        onModifier={() => router.push({ pathname: '/ajout-sortie', params: { id: seance.id } })}
         chiffres={
           cles.length ? (
             <View style={styles.tuiles}>
@@ -128,7 +128,7 @@ export default function Seance() {
                 }}
               />
             ) : null}
-            {modifiable ? (
+            {supprimable ? (
               <View style={{ gap: espace.e2 }}>
                 {erreurSuppression ? (
                   <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>
