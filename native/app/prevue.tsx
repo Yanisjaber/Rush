@@ -117,9 +117,12 @@ export default function Prevue() {
             </Pressable>
             <View style={{ flex: 1 }}>
               {/* Thème clair : la couleur du sport reste réservée aux aplats (contraste), l'étiquette passe en gris */}
-              <Text numberOfLines={1} style={[typo.micro, { color: p.fond === sombre.fond ? couleur : p.texteDoux, letterSpacing: 1.2 }]}>
-                {`${nomSport} · ${formatDateCourte(prevue.date)}${heure ? ` · ${heure}` : ''}`.toUpperCase()}
-              </Text>
+              <View accessible accessibilityLabel={`${nomSport}, ${formatDateCourte(prevue.date)}${heure ? `, ${heure}` : ''}`} style={styles.etiquetteParcours}>
+                <IconeSport sport={prevue.sport} />
+                <Text numberOfLines={1} style={[typo.micro, { color: p.fond === sombre.fond ? couleur : p.texteDoux, letterSpacing: 1.2, flexShrink: 1 }]}>
+                  {`${formatDateCourte(prevue.date)}${heure ? ` · ${heure}` : ''}`.toUpperCase()}
+                </Text>
+              </View>
               <Text accessibilityRole="header" numberOfLines={2} style={[typo.titre2, { color: p.texte }]}>
                 {nom}
               </Text>
@@ -244,6 +247,7 @@ const styles = StyleSheet.create({
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: espace.e5 },
   contenu: { padding: espace.e4, gap: espace.e3, paddingBottom: espace.e5 },
   entete: { borderRadius: rayon.bloc, borderLeftWidth: 6, padding: espace.e4, gap: 4 },
+  etiquetteParcours: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   enteteParcours: { flexDirection: 'row', alignItems: 'center', gap: espace.e3 },
   rondRetour: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   tuiles: { flexDirection: 'row', gap: espace.e2 },
