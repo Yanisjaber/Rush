@@ -19,7 +19,8 @@ test('placerPastille : sur une pente, elle s\'écarte pour ne pas couvrir la cou
   const courbe: Point[] = Array.from({ length: 35 }, (_, i) => [i * 10, 20 + i * 2.5]);
   const point: Point = [170, 20 + 17 * 2.5];
   const p = placerPastille(courbe, point, taille, cadre);
-  assert.equal(chevauchement(courbe, rect(p)), 0, 'aucun point de courbe sous la pastille');
+  assert.ok(chevauchement(courbe, rect(p)) <= 4, 'presque aucun point de courbe sous la pastille');
+  assert.notEqual(p.position, undefined);
 });
 
 test('placerPastille : elle reste toujours dans le cadre, même contre les bords', () => {
@@ -44,4 +45,20 @@ test('placerPastille : la pastille ne recouvre jamais le point touché', () => {
   const p = placerPastille(courbe, point, taille, cadre);
   const sur = point[0] >= p.left && point[0] <= p.left + taille.largeur && point[1] >= p.top && point[1] <= p.top + taille.hauteur;
   assert.equal(sur, false);
+});
+
+test('placerPastille : jamais sur un côté, toujours au-dessus ou en dessous, et en dehors de la colonne des altitudes', () => {
+  const courbe: Point[] = Array.from({ length: 35 }, (_, i) => [30 + i * 9, 70 + Math.sin(i / 2) * 40]);
+  for (const x of [30, 60, 170, 330]) {
+    const p = placerPastille(courbe, [x, 70], taille, { gauche: 30, largeur: 340, hauteur: 140 });
+    assert.ok(p.position === 'dessus' || p.position === 'dessous');
+    assert.ok(p.left >= 30, `la pastille ne passe pas sur la colonne des altitudes (x=${x}, left=${p.left})`);
+  }
+});
+
+test('placerPastille : elle ne saute pas pour un détail (reste au-dessus centrée si la courbe la touche à peine)', () => {
+  const courbe: Point[] = Array.from({ length: 35 }, (_, i) => [i * 10, 110]);
+  courbe[17] = [170, 98]; // une petite bosse qui effleure la pastille placée au-dessus
+  const p = placerPastille(courbe, [170, 98], taille, cadre);
+  assert.equal(p.position, 'dessus');
 });

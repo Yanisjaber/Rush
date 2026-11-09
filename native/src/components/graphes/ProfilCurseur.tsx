@@ -24,7 +24,7 @@ interface Props {
 }
 
 const HAUTEUR_PASTILLE = 28; // hauteur de la pastille du curseur (texte de 13 pt, marges et bord)
-const FLECHE = { dessus: '▼', dessous: '▲', gauche: '▶', droite: '◀' } as const; // la flèche montre le point depuis la pastille
+const FLECHE = { dessus: '▼', dessous: '▲' } as const; // la flèche montre le point depuis la pastille
 const MARGE = 10; // assez pour que le rond du curseur (rayon 6 + contour 3) ne soit jamais coupé
 const GAUCHE = 28; // la place des repères d'altitude, à gauche (trois chiffres de 11 pt)
 
@@ -94,8 +94,8 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
   const distance = km != null && km > 0 && n > 1 ? (index / (n - 1)) * km : null;
   const altitude = profil[index];
   const texteBulle = `${formatNombre(altitude ?? min)} m${distance != null ? ` · km ${formatKm(distance, 1)}` : ''}`;
-  // La pastille se place là où elle touche le moins la courbe (au-dessus, en dessous, décalée ou sur le côté)
-  const place = curseur ? placerPastille(points, curseur, { largeur: largeurBulle, hauteur: HAUTEUR_PASTILLE }, { largeur, hauteur }) : null;
+  // La pastille se place là où elle touche le moins la courbe (au-dessus ou en dessous, éventuellement décalée), dans le graphique
+  const place = curseur ? placerPastille(points, curseur, { largeur: largeurBulle, hauteur: HAUTEUR_PASTILLE }, { gauche: GAUCHE, largeur, hauteur }) : null;
   const idFondu = 'fondu-curseur';
 
   return (

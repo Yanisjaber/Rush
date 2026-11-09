@@ -1,15 +1,16 @@
-// Placer la pastille du curseur (altitude et km) sur le profil d'altitude de façon à toucher le moins possible la courbe. Fonction pure, sans écran.
+// Placer la pastille du curseur (altitude et km) sur le profil d'altitude de façon à toucher peu la courbe, en restant dans le graphique. Fonction pure, sans écran.
 export type Point = [number, number];
 
 export interface Placement {
   left: number;
   top: number;
-  /** Où est la pastille par rapport au point : au-dessus, en dessous, ou sur un côté. Sert à choisir la flèche. */
-  position: 'dessus' | 'dessous' | 'gauche' | 'droite';
+  /** Au-dessus ou en dessous du point : sert à choisir la flèche (▼ ou ▲). */
+  position: 'dessus' | 'dessous';
 }
 
 const ECART = 14; // distance entre le point et la pastille
 const MARGE_COURBE = 4; // marge autour de la pastille pour compter un point de courbe comme « dessous »
+const TOLERANCE = 4; // points de courbe qu'on accepte sous la pastille avant de la déplacer : évite qu'elle saute d'une place à l'autre pour presque rien
 
 /** Des points de la courbe, resserrés (4 de plus entre deux points voisins), pour que le comptage ne rate pas un tronçon qui traverse la pastille sans y poser un sommet. */
 function echantillon(courbe: Point[]): Point[] {
@@ -33,13 +34,21 @@ export function chevauchement(courbe: Point[], r: { left: number; top: number; l
 }
 
 /**
- * La meilleure place pour une pastille de `largeur` × `hauteur` autour du point `curseur`, dans un cadre de `cadre` : celle qui couvre le moins de courbe.
- * À égalité, on préfère au-dessus et centrée, puis en dessous, puis décalée, puis sur le côté. La pastille reste toujours dans le cadre.
+ * La place d'une pastille de `largeur` × `hauteur` près du point `curseur`, toujours au-dessus ou en dessous, et dans le graphique (`cadre.gauche` à `cadre.largeur` en
+ * largeur, 0 à `cadre.hauteur` en hauteur : la colonne des altitudes, à gauche, reste libre). On essaie, dans l'ordre : au-dessus centrée, en dessous centrée, puis
+ * décalée vers la gauche ou la droite, au-dessus puis en dessous. On garde la première place qui ne recouvre pas la courbe de plus de TOLERANCE points de plus
+ * que la meilleure : elle ne saute donc pas pour un détail.
  */
-export function placerPastille(courbe: Point[], curseur: Point, taille: { largeur: number; hauteur: number }, cadre: { largeur: number; hauteur: number }): Placement {
+export function placerPastille(
+  courbe: Point[],
+  curseur: Point,
+  taille: { largeur: number; hauteur: number },
+  cadre: { gauche?: number; largeur: number; hauteur: number },
+): Placement {
   const [x, y] = curseur;
   const { largeur: w, hauteur: h } = taille;
-  const dans = (v: number, max: number) => Math.min(Math.max(v, 0), Math.max(max, 0));
+  const gauche = cadre.gauche ?? 0;
+  const bornes = (v: number, min: number, max: number) => Math.min(Math.max(v, min), Math.max(max, min));
   const brut: Placement[] = [
     { left: x - w / 2, top: y - h - ECART, position: 'dessus' },
     { left: x - w / 2, top: y + ECART, position: 'dessous' },
@@ -47,20 +56,18 @@ export function placerPastille(courbe: Point[], curseur: Point, taille: { largeu
     { left: x - 24, top: y - h - ECART, position: 'dessus' },
     { left: x - w + 24, top: y + ECART, position: 'dessous' },
     { left: x - 24, top: y + ECART, position: 'dessous' },
-    { left: x - w - ECART, top: y - h / 2, position: 'gauche' },
-    { left: x + ECART, top: y - h / 2, position: 'droite' },
   ];
-  const candidats = brut.map((c) => ({ ...c, left: dans(c.left, cadre.largeur - w), top: dans(c.top, cadre.hauteur - h) }));
-  let meilleur = candidats[0];
-  let moins = Infinity;
-  for (const c of candidats) {
+  const candidats = brut.map((c) => ({
+    ...c,
+    left: bornes(c.left, gauche, cadre.largeur - w),
+    top: bornes(c.top, 0, cadre.hauteur - h),
+  }));
+  const scores = candidats.map((c) => {
     // Une pastille qui recouvre le point lui-même (cadre trop étroit) ne vaut rien : on l'écarte
     const surLePoint = x >= c.left && x <= c.left + w && y >= c.top && y <= c.top + h;
-    const score = chevauchement(courbe, { left: c.left, top: c.top, largeur: w, hauteur: h }) + (surLePoint ? 1000 : 0);
-    if (score < moins) {
-      moins = score;
-      meilleur = c;
-    }
-  }
-  return meilleur;
+    return chevauchement(courbe, { left: c.left, top: c.top, largeur: w, hauteur: h }) + (surLePoint ? 1000 : 0);
+  });
+  const moins = Math.min(...scores);
+  const i = scores.findIndex((s) => s <= moins + TOLERANCE);
+  return candidats[i];
 }
