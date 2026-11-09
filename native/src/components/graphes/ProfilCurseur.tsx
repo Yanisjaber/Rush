@@ -42,6 +42,7 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
   const [actif, setActif] = useState(false); // le curseur n'est montré que tant que le doigt est posé
   const refs = useRef({ largeur: 0, n, onChange, onGlisse });
   refs.current = { largeur, n, onChange, onGlisse };
+  const depart = useRef(0); // l'abscisse du doigt sur la courbe au moment où il s'est posé
 
   const aller = (i: number) => {
     const borne = Math.min(refs.current.n - 1, Math.max(0, Math.round(i)));
@@ -69,9 +70,12 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
         onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: (e) => {
           refs.current.onGlisse?.(true);
-          aller(versX(e.nativeEvent.locationX));
+          // On retient où le doigt s'est posé sur la courbe : locationX saute quand le doigt passe sur un élément enfant, alors on ne s'en sert qu'ici
+          depart.current = e.nativeEvent.locationX;
+          aller(versX(depart.current));
         },
-        onPanResponderMove: (e) => aller(versX(e.nativeEvent.locationX)),
+        // Ensuite on suit le déplacement du doigt (pageX), qui est stable d'un bout à l'autre du geste
+        onPanResponderMove: (e, g) => aller(versX(depart.current + (g.moveX - g.x0))),
         onPanResponderRelease: () => fin(),
         onPanResponderTerminate: () => fin(),
       }),
@@ -106,7 +110,8 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
         onTouchStart={(e) => {
           refs.current.onGlisse?.(true);
           // Le curseur se place dès que le doigt se pose : un simple appui suffit, sans attendre que le système de gestes prenne la main
-          aller(versX(e.nativeEvent.locationX));
+          depart.current = e.nativeEvent.locationX;
+          aller(versX(depart.current));
         }}
         onTouchEnd={() => fin()}
         onTouchCancel={() => fin()}
