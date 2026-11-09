@@ -130,10 +130,12 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
         <View {...balayage} style={{ gap: espace.e2 }}>
         {date ? (
           <View accessible accessibilityLabel={`${nomSport ?? ''} ${date}`.trim()} style={styles.ligneDate}>
-            <IconeSport sport={sport} taille={16} />
-            {/* Le nom du sport dans sa couleur en thème sombre (en thème clair la couleur de sport reste réservée aux aplats : contraste insuffisant en petit texte, voir IDENTITE.md), puis la date et l'heure en blanc et en capitales */}
-            {nomSport ? <Text style={[typo.petit, { color: p.fond === sombre.fond ? couleur : p.texteDoux }]}>{nomSport}</Text> : null}
-            <Text style={[typo.micro, { color: p.texte, letterSpacing: 1.2 }]}>{nomSport ? '· ' : ''}{date}</Text>
+            <View style={styles.gaucheDate}>
+              <IconeSport sport={sport} taille={16} />
+              {/* Le nom du sport dans sa couleur en thème sombre (en thème clair la couleur de sport reste réservée aux aplats : contraste insuffisant en petit texte, voir IDENTITE.md), puis la date et l'heure en blanc et en capitales */}
+              {nomSport ? <Text style={[typo.petit, { color: p.fond === sombre.fond ? couleur : p.texteDoux }]}>{nomSport}</Text> : null}
+            </View>
+            <Text style={[typo.micro, { color: p.texte, letterSpacing: 1.2 }]}>{date}</Text>
           </View>
         ) : null}
         {chiffres}
@@ -181,7 +183,8 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
 const styles = StyleSheet.create({
   page: { flex: 1 },
   sansCarte: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, paddingHorizontal: espace.e4 },
-  ligneDate: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  ligneDate: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
+  gaucheDate: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
   attente: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
   feuille: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: rayon.bloc, borderTopRightRadius: rayon.bloc, borderTopWidth: 1, paddingTop: espace.e4, paddingHorizontal: espace.e4, gap: espace.e2 },
   pastilles: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, height: 20 },
