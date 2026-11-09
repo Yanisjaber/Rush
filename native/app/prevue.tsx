@@ -4,9 +4,8 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { Bouton } from '@/components/ui/Bouton';
-import { CarteTrace } from '@/components/graphes/CarteTrace';
+import { ParcoursOnglets } from '@/components/graphes/ParcoursOnglets';
 import { IconeSport } from '@/components/ui/IconeSport';
-import { ProfilAltitude } from '@/components/graphes/ProfilAltitude';
 import { ProfilSeance } from '@/components/graphes/ProfilSeance';
 import { StatCle } from '@/components/ui/StatCle';
 import { apercuDeGpx } from '@/data/calendrier/apercu-import';
@@ -126,12 +125,18 @@ export default function Prevue() {
           </Bloc>
         ) : null}
 
-        {blocs.length ? (
-          <>
-            <Bloc titre="Profil">
-              <ProfilSeance blocs={blocs} hauteur={56} />
-            </Bloc>
-            <Bloc titre={`Blocs (${blocs.length})`}>
+        {blocs.length || prevue.gpx_content ? (
+          <Bloc titre={prevue.gpx_content ? 'Parcours' : `Blocs (${blocs.length})`}>
+            <ParcoursOnglets
+              parcours={parcours}
+              couleur={couleur}
+              km={prevue.km}
+              nomFichier={prevue.gpx_name}
+              plan={
+                blocs.length ? (
+                  <View style={{ gap: espace.e3 }}>
+                    <ProfilSeance blocs={blocs} hauteur={56} />
+                    <View>
               {blocs.map((b, i) => {
                 const z = indiceZone(milieu(b.work), b.metric);
                 return (
@@ -155,17 +160,11 @@ export default function Prevue() {
                   </View>
                 );
               })}
-            </Bloc>
-          </>
-        ) : null}
-
-        {prevue.gpx_content ? (
-          <Bloc titre="Parcours">
-            {parcours?.region && parcours.trace.length > 1 ? <CarteTrace trace={parcours.trace} region={parcours.region} couleur={couleur} hauteur={170} /> : null}
-            {parcours && parcours.profil.length > 1 && parcours.altitudeMin != null && parcours.altitudeMax != null ? (
-              <ProfilAltitude profil={parcours.profil} min={parcours.altitudeMin} max={parcours.altitudeMax} km={prevue.km} couleur={couleur} hauteur={56} />
-            ) : null}
-            {prevue.gpx_name ? <Text style={[typo.petit, { color: p.texteDoux }]}>{prevue.gpx_name}</Text> : null}
+                    </View>
+                  </View>
+                ) : null
+              }
+            />
           </Bloc>
         ) : null}
 
