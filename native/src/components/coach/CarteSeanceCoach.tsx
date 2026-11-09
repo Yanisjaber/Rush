@@ -86,6 +86,7 @@ export function CarteSeanceCoach({ carte, occupee, erreur, onAjouter, onAnnuler,
             <Text style={[typo.petit, { color: p.texte, flex: 1 }]}>{MOT_ETAT.ajoutee}</Text>
             <BoutonCompact libelle="Annuler" accessibilityLabel="Annuler : retirer cette séance de mon calendrier" desactive={occupee} onPress={onAnnuler} />
             <BoutonCompact
+              largeur={96}
               libelle={deplie ? 'Masquer' : 'Voir'}
               deplie={deplie}
               accessibilityLabel={deplie ? 'Masquer le détail de la séance' : 'Revoir le détail de la séance'}

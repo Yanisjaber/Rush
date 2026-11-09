@@ -115,6 +115,7 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
           </View>
           {avecDetail ? (
             <BoutonCompact
+              largeur={96}
               libelle={ouverte ? 'Masquer' : 'Détail'}
               deplie={ouverte}
               accessibilityLabel={`${ouverte ? 'Masquer' : 'Voir'} le détail de la séance : ${texteLigne(l)}`}
@@ -234,6 +235,7 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
                     {raisonRetirees ? <Text style={[typo.petit, { color: p.texteDoux }]}>{raisonRetirees}</Text> : null}
                   </View>
                   <BoutonCompact
+                    largeur={96}
                     libelle={voirRetirees ? 'Masquer' : 'Voir'}
                     deplie={voirRetirees}
                     accessibilityLabel={voirRetirees ? 'Masquer les séances retirées' : `Voir les ${retirees.length} séances retirées`}
@@ -281,6 +283,7 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
             <BoutonCompact libelle="Annuler" accessibilityLabel="Annuler le plan : remettre ton calendrier comme avant" desactive={occupee} onPress={onAnnuler} />
             <BoutonCompact libelle="Calendrier" accessibilityLabel="Voir au calendrier" onPress={onVoirCalendrier} />
             <BoutonCompact
+              largeur={96}
               libelle={deplie ? 'Masquer' : 'Détail'}
               deplie={deplie}
               accessibilityLabel={deplie ? 'Masquer le détail du plan' : 'Revoir le détail du plan'}

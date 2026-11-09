@@ -16,9 +16,11 @@ export interface PropsBoutonCompact {
   /** Couleur du bouton principal (la couleur du sport) ; sans elle, le texte de l'app */
   teinte?: string;
   desactive?: boolean;
+  /** Largeur fixe du bouton : à donner quand son texte change (Détail / Masquer), pour que la ligne ne se réajuste pas */
+  largeur?: number;
 }
 
-export function BoutonCompact({ libelle, onPress, accessibilityLabel, deplie, style = 'secondaire', teinte, desactive }: PropsBoutonCompact) {
+export function BoutonCompact({ libelle, onPress, accessibilityLabel, deplie, style = 'secondaire', teinte, desactive, largeur }: PropsBoutonCompact) {
   const p = usePalette();
   const principal = style === 'principal';
   const fond = teinte ?? p.texte;
@@ -31,7 +33,7 @@ export function BoutonCompact({ libelle, onPress, accessibilityLabel, deplie, st
       accessibilityLabel={accessibilityLabel ?? libelle}
       accessibilityState={{ expanded: deplie, disabled: desactive }}
       hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-      style={({ pressed }) => [styles.pilule, principal ? { backgroundColor: fond } : { borderColor: p.contourChamp, borderWidth: 1 }, { opacity: desactive ? 0.4 : pressed ? 0.7 : 1 }]}
+      style={({ pressed }) => [styles.pilule, largeur ? { width: largeur } : null, principal ? { backgroundColor: fond } : { borderColor: p.contourChamp, borderWidth: 1 }, { opacity: desactive ? 0.4 : pressed ? 0.7 : 1 }]}
     >
       <Text style={[typo.petit, { color: principal ? encre : p.texte, fontFamily: police.texte600 }]}>{libelle}</Text>
     </Pressable>
