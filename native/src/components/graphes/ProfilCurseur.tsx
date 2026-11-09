@@ -24,7 +24,6 @@ interface Props {
 }
 
 const HAUTEUR_PASTILLE = 28; // hauteur de la pastille du curseur (texte de 13 pt, marges et bord)
-const FLECHE = { dessus: '▼', dessous: '▲' } as const; // la flèche montre le point depuis la pastille
 const MARGE = 10; // assez pour que le rond du curseur (rayon 6 + contour 3) ne soit jamais coupé
 const GAUCHE = 28; // la place des repères d'altitude, à gauche (trois chiffres de 11 pt)
 
@@ -153,7 +152,7 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
             style={[styles.bulle, { left: place.left, top: place.top, backgroundColor: p.fond, borderColor: p.texteDoux }]}
           >
             <Text style={[typo.corpsFort, { color: p.texte, fontSize: 13 }]}>
-              {FLECHE[place.position]} {texteBulle}
+              {texteBulle}
             </Text>
           </View>
         ) : null}
