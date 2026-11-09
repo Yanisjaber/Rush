@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { periodesDuPlan } from '@/data/coach/apercu-plan';
-import { descriptionPlan, dureeMinutes, jourCarte, MOT_ETAT_PLAN, nombreChangements, nomPeriode, nomSport, phraseAnnulation, resumePlan } from '@/data/coach/libelles';
+import { descriptionPlan, dureeMinutes, jourCarte, MOT_ETAT_PLAN, nombreChangements, nomPeriode, nomSport, phraseAnnulation, resumeAnnulation, resumePlan } from '@/data/coach/libelles';
 import { plageSemaine, semainesDuPlan } from '@/data/coach/semaines-plan';
 import type { JourSemaine, SemainePlan } from '@/data/coach/semaines-plan';
 import type { CartePlanning, LignePlan } from '@/data/coach/types';
@@ -145,11 +145,27 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
     );
   };
 
+  // Annulé : plus qu'un bandeau discret en pointillés (« Plan annulé · 4 changements défaits · Refaire »)
+  if (etat === 'annulee') {
+    const suite = resumeAnnulation(carte);
+    return (
+      <View style={[styles.annule, { borderColor: p.traitFort }]}>
+        <View accessible accessibilityLabel={phraseAnnulation(carte)} style={styles.annuleTexte}>
+          <Text numberOfLines={2} style={[typo.petit, { color: p.texteMuet }]}>
+            <Text style={{ fontFamily: police.texte600, color: p.texteDoux }}>{MOT_ETAT_PLAN.annulee}</Text>
+            {suite ? ` · ${suite}` : ''}
+          </Text>
+        </View>
+        <BoutonCompact libelle="Refaire" accessibilityLabel="Demander au coach un nouveau plan" onPress={onRefaire} />
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.bulle, { backgroundColor: p.surface2 }]}>
       <View accessible accessibilityLabel={descriptionPlan(carte)} style={{ gap: 2 }}>
         <View style={styles.ligne}>
-          <Picto nom={etat === 'ajoutee' ? 'ok' : etat === 'refusee' ? 'alerte' : etat === 'annulee' ? 'retour' : 'attente'} couleur={couleurEtat} />
+          <Picto nom={etat === 'ajoutee' ? 'ok' : etat === 'refusee' ? 'alerte' : 'attente'} couleur={couleurEtat} />
           <Text style={[typo.petit, { color: couleurEtat, fontFamily: police.texte600 }]}>{compact ? 'Plan validé' : MOT_ETAT_PLAN[etat]}</Text>
         </View>
         <Text numberOfLines={2} style={[compact ? typo.corpsFort : typo.titre3, { color: p.texte }]}>
@@ -304,12 +320,6 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
           </>
         ) : null}
 
-        {etat === 'annulee' ? (
-          <>
-            <Text style={[typo.petit, { color: p.texteDoux }]}>{phraseAnnulation(carte)}</Text>
-            <BoutonCompact libelle="Refaire un plan" accessibilityLabel="Demander au coach un nouveau plan" onPress={onRefaire} />
-          </>
-        ) : null}
 
         {erreur ? (
           <View accessibilityRole="alert" style={styles.ligne}>
@@ -350,6 +360,8 @@ function Chevron({ ouvert, couleur }: { ouvert: boolean; couleur: string }) {
 }
 
 const styles = StyleSheet.create({
+  annule: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, borderWidth: 1, borderStyle: 'dashed', borderRadius: rayon.carte, paddingLeft: espace.e3, paddingRight: espace.e1 },
+  annuleTexte: { flex: 1, paddingVertical: espace.e2 },
   bulle: { borderRadius: rayon.bulle + 2, padding: espace.e3, gap: espace.e3 },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: espace.e2 },
   semaine: { borderWidth: 1, borderRadius: 12, paddingHorizontal: espace.e3, marginTop: espace.e1 },

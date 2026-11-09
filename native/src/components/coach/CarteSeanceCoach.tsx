@@ -44,6 +44,17 @@ export function CarteSeanceCoach({ carte, occupee, erreur, onAjouter, onAnnuler,
   const [deplie, setDeplie] = useState(false);
   const compact = etat === 'ajoutee' && !deplie;
 
+  // Annulée : un bandeau discret en pointillés, plus de ticket
+  if (etat === 'annulee') {
+    return (
+      <View accessible accessibilityLabel={`${MOT_ETAT.annulee} : ${nomType(prop.sport, prop.type)}, ${jourCarte(prop.date)}`} style={[styles.annule, { borderColor: p.traitFort }]}>
+        <Text numberOfLines={2} style={[typo.petit, { color: p.texteMuet }]}>
+          <Text style={{ fontFamily: police.texte600, color: p.texteDoux }}>Séance annulée</Text> · {nomType(prop.sport, prop.type)}, {jourCarte(prop.date)}
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.carte, { backgroundColor: p.surface, borderColor: p.trait }]}>
       <View accessible accessibilityLabel={descriptionCarte(carte)}>
@@ -107,8 +118,6 @@ export function CarteSeanceCoach({ carte, occupee, erreur, onAjouter, onAnnuler,
           </View>
         ) : null}
 
-        {etat === 'annulee' ? <Text style={[typo.petit, { color: p.texteMuet }]}>{MOT_ETAT.annulee}</Text> : null}
-
         {erreur ? (
           <View accessibilityRole="alert" style={styles.ligne}>
             <Picto nom="alerte" couleur={p.danger} />
@@ -121,6 +130,7 @@ export function CarteSeanceCoach({ carte, occupee, erreur, onAjouter, onAnnuler,
 }
 
 const styles = StyleSheet.create({
+  annule: { borderWidth: 1, borderStyle: 'dashed', borderRadius: rayon.carte, paddingHorizontal: espace.e3, paddingVertical: espace.e3 },
   carte: { borderWidth: StyleSheet.hairlineWidth, borderRadius: rayon.carte, overflow: 'hidden' },
   etat: { borderTopWidth: StyleSheet.hairlineWidth, padding: espace.e3, gap: espace.e2 },
   ajouter: { minHeight: 48, borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },

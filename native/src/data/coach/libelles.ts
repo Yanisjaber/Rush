@@ -126,6 +126,14 @@ export function descriptionPlan(c: CartePlanning): string {
   return `Plan de modifications, ${titre}, ${nombreChangements(c.lignes)}, charge prévue sur 14 jours : ${Math.round(c.charge_avant)} points avant, ${Math.round(c.charge_apres)} après. ${MOT_ETAT_PLAN[c.etat]}.`;
 }
 
+/** La suite courte du bandeau « Plan annulé » : « 4 changements défaits » (+ « 2 gardés » si l'utilisateur les avait modifiés à la main) */
+export function resumeAnnulation(c: CartePlanning): string {
+  const a = c.annulation;
+  if (!a) return '';
+  const defaits = accord(a.annulees, 'changement défait', 'changements défaits');
+  return a.ignorees > 0 ? `${defaits}, ${a.ignorees} gardé${a.ignorees > 1 ? 's' : ''}` : defaits;
+}
+
 /** Ce que dit la carte annulée : combien de lignes remises, et combien laissées telles quelles */
 export function phraseAnnulation(c: CartePlanning): string {
   const base = MOT_ETAT_PLAN.annulee;

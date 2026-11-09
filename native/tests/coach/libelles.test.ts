@@ -47,7 +47,7 @@ test('titre et description d\'une carte : chaque état se dit avec un mot', () =
 });
 
 // ---------- Les mots d'une carte de planning ----------
-import { descriptionPlan, MOT_ETAT_PLAN, nombreChangements, nomPeriode, phraseAnnulation, resumePlan } from '../../src/data/coach/libelles.ts';
+import { descriptionPlan, MOT_ETAT_PLAN, nombreChangements, nomPeriode, phraseAnnulation, resumeAnnulation, resumePlan } from '../../src/data/coach/libelles.ts';
 import { cartePlanExemple, lignesPlanExemple } from '../../src/data/coach/exemple-plan.ts';
 
 test('plan : chaque état se dit avec un mot, jamais la couleur seule', () => {
@@ -93,6 +93,9 @@ test('plan annulé : tout est revenu, ou combien de lignes sont restées telles 
   assert.equal(phraseAnnulation({ ...base, annulation: { annulees: 9, ignorees: 0 } }), 'Plan annulé : tout est revenu comme avant.');
   assert.match(phraseAnnulation({ ...base, annulation: { annulees: 8, ignorees: 1 } }), /8 changements défaits\. 1 ligne que tu avais déjà modifiée à la main est restée telle quelle\./);
   assert.match(phraseAnnulation({ ...base, annulation: { annulees: 6, ignorees: 3 } }), /3 lignes que tu avais déjà modifiées à la main sont restées telles quelles\./);
+  assert.equal(resumeAnnulation(base), '');
+  assert.equal(resumeAnnulation({ ...base, annulation: { annulees: 4, ignorees: 0 } }), '4 changements défaits');
+  assert.equal(resumeAnnulation({ ...base, annulation: { annulees: 8, ignorees: 1 } }), '8 changements défaits, 1 gardé');
 });
 
 test('plan : le résumé compte les jours de repos posés et retirés', () => {
