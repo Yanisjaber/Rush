@@ -8,7 +8,7 @@ import { Dossard } from '@/components/ui/Dossard';
 import { IconeSport } from '@/components/ui/IconeSport';
 import type { PointCarte, RegionCarte } from '@/data/calendrier/apercu-import';
 import { longueurKm, pointAuFraction } from '@/data/outils/trace';
-import { espace, rayon } from '@/theme/couleurs';
+import { espace, rayon, sombre } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -129,7 +129,8 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
         {date ? (
           <View accessible accessibilityLabel={date} style={styles.ligneDate}>
             <IconeSport sport={sport} taille={16} />
-            <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2 }]}>{date}</Text>
+            {/* Couleur du sport en thème sombre ; en thème clair la couleur de sport reste réservée aux aplats (contraste insuffisant en petit texte, voir IDENTITE.md) */}
+            <Text style={[typo.petit, { color: p.fond === sombre.fond ? couleur : p.texteDoux, letterSpacing: 0.3 }]}>{date}</Text>
           </View>
         ) : null}
         {chiffres}
