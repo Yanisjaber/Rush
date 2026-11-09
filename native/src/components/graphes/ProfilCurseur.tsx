@@ -129,7 +129,7 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
               <Line key={v} x1={GAUCHE} y1={yDe(v)} x2={largeur} y2={yDe(v)} stroke={v === bas ? p.traitFort : p.trait} strokeWidth={1} />
             ))}
             {reperes.map((v, i) => (
-              <TexteSvg key={`t${v}`} x={0} y={yDe(v) + 4} fontSize={11} fill={p.texteMuet}>
+              <TexteSvg key={`t${v}`} x={GAUCHE - 6} y={yDe(v) + 4} fontSize={11} fill={p.texteMuet} textAnchor="end">
                 {v === bas ? 'm' : formatNombre(v)}
               </TexteSvg>
             ))}
