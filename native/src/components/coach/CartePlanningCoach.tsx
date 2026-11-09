@@ -63,10 +63,13 @@ const texteLigne = (l: LignePlan): string => (l.op === 'ajouter' && l.nom && l.m
 export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnuler, onRefaire, onVoirCalendrier }: Props) {
   const p = usePalette();
   const [tout, setTout] = useState(false);
+  /** Une fois validé, le plan se réduit à une ligne ; ce bouton le déplie pour le relire */
+  const [deplie, setDeplie] = useState(false);
   const [ouvertes, setOuvertes] = useState<Record<number, boolean>>({});
   const aujourdhui = useMemo(() => dateIsoLocale(new Date()), []);
   const etat = occupee && carte.etat === 'proposee' ? 'en_cours' : carte.etat;
-  const montrerPlan = etat === 'proposee' || etat === 'en_cours' || etat === 'ajoutee';
+  const compact = etat === 'ajoutee' && !deplie;
+  const montrerPlan = (etat === 'proposee' || etat === 'en_cours' || etat === 'ajoutee') && !compact;
   const couleurEtat = { proposee: p.texte, en_cours: p.texte, ajoutee: p.ok, refusee: p.danger, annulee: p.texteMuet }[etat];
   // La couleur du bouton principal : celle du sport du plan s'il n'y en a qu'un (sinon neutre : la couleur désigne UN sport)
   const sports = new Set(carte.lignes.map((l) => l.sport).filter((s): s is string => !!s));
@@ -80,9 +83,9 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
       <View accessible accessibilityLabel={descriptionPlan(carte)} style={{ gap: 2 }}>
         <View style={styles.ligne}>
           <Picto nom={etat === 'ajoutee' ? 'ok' : etat === 'refusee' ? 'alerte' : etat === 'annulee' ? 'retour' : 'attente'} couleur={couleurEtat} />
-          <Text style={[typo.petit, { color: couleurEtat, fontFamily: police.texte600 }]}>{MOT_ETAT_PLAN[etat]}</Text>
+          <Text style={[typo.petit, { color: couleurEtat, fontFamily: police.texte600 }]}>{compact ? 'Plan validé' : MOT_ETAT_PLAN[etat]}</Text>
         </View>
-        <Text style={[typo.titre3, { color: p.texte }]}>{carte.intention || 'Plan de modifications'}</Text>
+        <Text style={[compact ? typo.corpsFort : typo.titre3, { color: p.texte }]}>{carte.intention || 'Plan de modifications'}</Text>
         <Text style={[typo.petit, { color: p.texteDoux }]}>
           {nombreChangements(carte.lignes)} · {resumePlan(carte.lignes)}
         </Text>
@@ -181,7 +184,7 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
               accessibilityLabel="Annuler le plan : remettre ton calendrier comme avant"
               style={({ pressed }) => [styles.secondaire, { borderColor: p.contourChamp, opacity: occupee ? 0.5 : pressed ? 0.7 : 1 }]}
             >
-              <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>Annuler le plan</Text>
+              <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>Annuler</Text>
             </Pressable>
             <Pressable
               onPress={onVoirCalendrier}
@@ -189,7 +192,16 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
               accessibilityLabel="Voir au calendrier"
               style={({ pressed }) => [styles.secondaire, { borderColor: p.contourChamp, opacity: pressed ? 0.7 : 1 }]}
             >
-              <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>Voir au calendrier</Text>
+              <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>Calendrier</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setDeplie((d) => !d)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: deplie }}
+              accessibilityLabel={deplie ? 'Masquer le détail du plan' : 'Revoir le détail du plan'}
+              style={({ pressed }) => [styles.secondaire, { borderColor: p.contourChamp, opacity: pressed ? 0.7 : 1 }]}
+            >
+              <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{deplie ? 'Masquer' : 'Détail'}</Text>
             </Pressable>
           </View>
         ) : null}
@@ -297,5 +309,5 @@ const styles = StyleSheet.create({
   etat: { gap: espace.e2 },
   valider: { minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   boutons: { flexDirection: 'row', gap: espace.e2 },
-  secondaire: { flex: 1, minHeight: 44, paddingHorizontal: espace.e3, borderWidth: 1, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  secondaire: { flex: 1, minHeight: 44, paddingHorizontal: espace.e2, borderWidth: 1, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });

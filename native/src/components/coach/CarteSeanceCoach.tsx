@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { descriptionCarte, jourCarte, MOT_ETAT, nomType, sportDeCarte } from '@/data/coach/libelles';
+import { descriptionCarte, dureeMinutes, jourCarte, MOT_ETAT, nomType, sportDeCarte } from '@/data/coach/libelles';
 import type { CarteSeance } from '@/data/coach/types';
 import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
@@ -36,11 +37,26 @@ export function CarteSeanceCoach({ carte, occupee, erreur, onAjouter, onAnnuler 
   const couleur = couleurSport(p, sportDeCarte(carte));
   const prop = carte.proposition;
   const etat = occupee && carte.etat === 'proposee' ? 'en_cours' : carte.etat;
+  /** Une fois ajoutée, la séance se réduit à une ligne ; « Voir la séance » rouvre le ticket */
+  const [deplie, setDeplie] = useState(false);
+  const compact = etat === 'ajoutee' && !deplie;
 
   return (
     <View style={[styles.carte, { backgroundColor: p.surface, borderColor: p.trait }]}>
       <View accessible accessibilityLabel={descriptionCarte(carte)}>
-        <TicketSeance couleur={couleur} jour={jourCarte(prop.date)} titre={nomType(prop.sport, prop.type)} minutes={prop.minutes} blocs={carte.blocs} raison={carte.justification} />
+        {compact ? (
+          <View style={styles.compact}>
+            <View style={[styles.repere, { backgroundColor: couleur }]} />
+            <View style={{ flex: 1 }}>
+              <Text style={[typo.corpsFort, { color: p.texte }]}>{nomType(prop.sport, prop.type)}</Text>
+              <Text style={[typo.petit, { color: p.texteDoux }]}>
+                {jourCarte(prop.date)} · {dureeMinutes(prop.minutes)}
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <TicketSeance couleur={couleur} jour={jourCarte(prop.date)} titre={nomType(prop.sport, prop.type)} minutes={prop.minutes} blocs={carte.blocs} raison={carte.justification} />
+        )}
       </View>
 
       <View style={[styles.etat, { borderTopColor: p.trait }]}>
@@ -76,6 +92,15 @@ export function CarteSeanceCoach({ carte, occupee, erreur, onAjouter, onAnnuler 
             >
               <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>Annuler</Text>
             </Pressable>
+            <Pressable
+              onPress={() => setDeplie((d) => !d)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: deplie }}
+              accessibilityLabel={deplie ? 'Masquer le détail de la séance' : 'Revoir le détail de la séance'}
+              style={styles.revoir}
+            >
+              <Text style={[typo.petit, { color: p.texteDoux, fontFamily: police.texte600 }]}>{deplie ? 'Masquer' : 'Voir'}</Text>
+            </Pressable>
           </View>
         ) : null}
 
@@ -106,5 +131,8 @@ const styles = StyleSheet.create({
   etat: { borderTopWidth: StyleSheet.hairlineWidth, padding: espace.e3, gap: espace.e2 },
   ajouter: { minHeight: 48, borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: espace.e2 },
+  compact: { flexDirection: 'row', alignItems: 'center', gap: espace.e3, padding: espace.e3 },
+  repere: { width: 4, alignSelf: 'stretch', borderRadius: 2 },
+  revoir: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center' },
   annuler: { minHeight: 44, paddingHorizontal: espace.e4, borderWidth: 1, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });
