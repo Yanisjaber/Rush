@@ -24,14 +24,16 @@ interface Props {
   titre: ReactNode;
   /** Sous le profil : les chiffres clés. */
   chiffres?: ReactNode;
+  /** Le crayon en haut à droite : ouvre le formulaire de modification. */
+  onModifier?: () => void;
 }
 
 const HAUT_ENTETE = 64; // la hauteur du retour et du titre flottants, sous la zone de sécurité
 
-export function VueParcours({ trace, region, profil, altitudeMin, altitudeMax, km, couleur, titre, chiffres }: Props) {
+export function VueParcours({ trace, region, profil, altitudeMin, altitudeMax, km, couleur, titre, chiffres, onModifier }: Props) {
   const p = usePalette();
   const router = useRouter();
-  const haut = useSafeAreaInsets().top;
+  const { top: haut, bottom: bas } = useSafeAreaInsets();
   const [dims, setDims] = useState({ page: 0, feuille: 0 });
   const [fraction, setFraction] = useState<number | null>(null);
   const curseur = useMemo(() => (fraction == null ? null : pointAuFraction(trace, fraction)), [trace, fraction]);
@@ -54,12 +56,26 @@ export function VueParcours({ trace, region, profil, altitudeMin, altitudeMax, k
             <Path d="M15 5l-7 7 7 7" stroke={p.texte} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
           </Svg>
         </Pressable>
-        <View style={[styles.pastilleTitre, { backgroundColor: verre }]}>{titre}</View>
+        <View style={styles.zoneTitre}>
+          <View style={[styles.pastilleTitre, { backgroundColor: verre }]}>{titre}</View>
+        </View>
+        {onModifier ? (
+          <Pressable
+            onPress={onModifier}
+            accessibilityRole="button"
+            accessibilityLabel="Modifier"
+            style={({ pressed }) => [styles.rondRetour, { backgroundColor: verre, borderColor: p.contourChamp, opacity: pressed ? 0.7 : 1 }]}
+          >
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+              <Path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke={p.texte} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
+          </Pressable>
+        ) : null}
       </View>
 
       <View
         onLayout={(e: LayoutChangeEvent) => setDims((d) => ({ ...d, feuille: e.nativeEvent.layout.height }))}
-        style={[styles.feuille, { backgroundColor: p.fond, borderColor: p.trait }]}
+        style={[styles.feuille, { backgroundColor: p.fond, borderColor: p.trait, paddingBottom: bas + espace.e4 }]}
       >
         <ProfilCurseur profil={profil} min={altitudeMin} max={altitudeMax} km={km} couleur={couleur} hauteur={110} onChange={setFraction} />
         {chiffres}
@@ -72,6 +88,7 @@ const styles = StyleSheet.create({
   page: { flex: 1 },
   entete: { position: 'absolute', left: espace.e4, right: espace.e4, flexDirection: 'row', alignItems: 'center', gap: espace.e2 },
   rondRetour: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  zoneTitre: { flex: 1, alignItems: 'flex-start' },
   pastilleTitre: { flexShrink: 1, borderRadius: rayon.base, paddingHorizontal: espace.e3, paddingVertical: 6 },
   feuille: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: rayon.bloc, borderTopRightRadius: rayon.bloc, borderTopWidth: 1, padding: espace.e4, gap: espace.e3 },
 });

@@ -114,6 +114,7 @@ export default function Prevue() {
           altitudeMax={parcours.altitudeMax}
           km={prevue.km ?? null}
           couleur={couleur}
+          onModifier={modifier}
           titre={
             <Text accessibilityRole="header" numberOfLines={1} style={[typo.titre3, { color: p.texte }]}>
               {nom}
@@ -250,25 +251,27 @@ export default function Prevue() {
       )}
 
       {/* L'erreur de suppression est dans la barre fixe du bas : on la voit toujours, même avec une longue séance */}
-      {erreurSuppression ? (
+      {vueFixe ? null : erreurSuppression ? (
         <Text accessibilityRole="alert" style={[typo.petit, styles.erreurBas, { color: p.danger, backgroundColor: p.fond }]}>
           {erreurSuppression}
         </Text>
       ) : null}
-      <View style={[styles.bas, { backgroundColor: p.fond, borderTopColor: p.trait, paddingBottom: bas + espace.e3 }]}>
-        <View style={{ flex: 1 }}>
-          <Bouton onPress={modifier}>Modifier</Bouton>
+      {vueFixe ? null : (
+        <View style={[styles.bas, { backgroundColor: p.fond, borderTopColor: p.trait, paddingBottom: bas + espace.e3 }]}>
+          <View style={{ flex: 1 }}>
+            <Bouton onPress={modifier}>Modifier</Bouton>
+          </View>
+          <Pressable
+            onPress={confirmerSuppression}
+            disabled={enCours}
+            accessibilityRole="button"
+            accessibilityLabel={competition ? 'Supprimer la compétition' : 'Supprimer la séance'}
+            style={({ pressed }) => [styles.supprimer, { borderColor: p.danger, opacity: pressed || enCours ? 0.6 : 1 }]}
+          >
+            <Text style={[typo.corpsFort, { color: p.danger }]}>{enCours ? 'Suppression…' : 'Supprimer'}</Text>
+          </Pressable>
         </View>
-        <Pressable
-          onPress={confirmerSuppression}
-          disabled={enCours}
-          accessibilityRole="button"
-          accessibilityLabel={competition ? 'Supprimer la compétition' : 'Supprimer la séance'}
-          style={({ pressed }) => [styles.supprimer, { borderColor: p.danger, opacity: pressed || enCours ? 0.6 : 1 }]}
-        >
-          <Text style={[typo.corpsFort, { color: p.danger }]}>{enCours ? 'Suppression…' : 'Supprimer'}</Text>
-        </Pressable>
-      </View>
+      )}
     </View>
   );
 }
