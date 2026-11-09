@@ -14,7 +14,7 @@ import { EcranAjout } from '@/components/ecrans/EcranAjout';
 import { MenuDeroulantChoix } from '@/components/menus/MenuDeroulantChoix';
 import { MenuDeroulantSport } from '@/components/menus/MenuDeroulantSport';
 import { OngletsSegment } from '@/components/menus/OngletsSegment';
-import { distanceEnMetres, formulaireCompetitionVide, formulaireDepuisCompetition, parcoursDePrevue, validerCompetition } from '@/data/calendrier/ajouts';
+import { champDistanceDepuisKm, distanceEnMetres, formulaireCompetitionVide, formulaireDepuisCompetition, parcoursDePrevue, validerCompetition } from '@/data/calendrier/ajouts';
 import { resumerGpx } from '@/data/outils/gpx';
 import type { PrevueComplete } from '@/data/types';
 import { aUnFormat, allureMoyenne, champNiveau, federationsDuSport, FORMATS_TRI, lireTempsCible, TYPES_EPREUVE_VELO } from '@/data/calendrier/competition';
@@ -199,11 +199,13 @@ function FormulaireCompetition({ prevue }: { prevue: PrevueComplete | null }) {
             <ChampParcoursGpx
               etiquette="Parcours GPX (facultatif)"
               parcours={parcours}
-              onChange={setParcours}
+              onChange={(choisi) => {
+                // Choisir (ou rechoisir) un parcours : sa distance remplace celle du champ ; ce qu'on modifie ensuite est gardé jusqu'au prochain choix
+                setParcours(choisi);
+                if (choisi) change({ ...f, distance: champDistanceDepuisKm(choisi.resume.distanceKm, f.type) });
+              }}
               onErreur={setErreur}
-              onReprendre={({ distanceKm, denivele }) =>
-                change({ ...f, distance: distanceEnMetres(f.type) ? String(Math.round(distanceKm * 1000)) : String(distanceKm).replace('.', ','), dplus: denivele != null ? String(denivele) : f.dplus })
-              }
+              onReprendre={({ distanceKm, denivele }) => change({ ...f, distance: champDistanceDepuisKm(distanceKm, f.type), dplus: denivele != null ? String(denivele) : f.dplus })}
             />
           </>
         ) : null}

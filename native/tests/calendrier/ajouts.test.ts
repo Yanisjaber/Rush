@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CATALOGUE } from '../../src/data/sports/catalogue-sports.ts';
 import { normaliser, sportAvecStructure } from '../../src/data/calendrier/structure.ts';
-import { formulaireDepuisSortie, ligneDeModification, sortieModifiable, sortieSupprimable, distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, chargeEstimeeSortie, typeInitial, SPORTS_AJOUT, blocsDePrevue, formulaireDepuisCompetition, formulaireDepuisSeance, parcoursDePrevue, prevueDepuisLigne, type LignePrevue } from '../../src/data/calendrier/ajouts.ts';
+import { champDistanceDepuisKm, formulaireDepuisSortie, ligneDeModification, sortieModifiable, sortieSupprimable, distanceEnMetres, estimerTss, formulaireCompetitionVide, formulaireNoteVide, formulaireSeanceVide, validerCompetition, validerNote, validerSeance, validerSortie, formulaireSortieVide, cleDuType, typeDeCle, chargeEstimee, chargeEstimeeSortie, typeInitial, SPORTS_AJOUT, blocsDePrevue, formulaireDepuisCompetition, formulaireDepuisSeance, parcoursDePrevue, prevueDepuisLigne, type LignePrevue } from '../../src/data/calendrier/ajouts.ts';
 import type { PrevueComplete } from '../../src/data/types.ts';
 
 const date = '2026-10-23';
@@ -475,4 +475,11 @@ test("ligneDeModification : un sport que le formulaire ne propose pas n'est pas 
   assert.ok(r2.ok);
   if (!r2.ok) return;
   assert.equal(ligneDeModification(origine, r2.ligne).sport, 'Ride');
+});
+
+test('champDistanceDepuisKm : kilomètres avec virgule, ou mètres entiers pour la natation', () => {
+  assert.equal(champDistanceDepuisKm(5.162, 'Run'), '5,162');
+  assert.equal(champDistanceDepuisKm(10, 'Run'), '10');
+  assert.equal(champDistanceDepuisKm(1.8, 'Swim'), '1800');
+  assert.equal(champDistanceDepuisKm(0.4286, 'Swim'), '429');
 });

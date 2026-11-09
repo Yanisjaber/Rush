@@ -551,3 +551,11 @@ export function ligneDeModification(
     sport: origine.sport && !TYPES.has(origine.sport) && ligne.sport === 'Run' ? origine.sport : ligne.sport,
   };
 }
+
+/**
+ * Ce qu'on écrit dans le champ « Distance » d'un formulaire quand on reprend celle d'un parcours GPX : en kilomètres avec une virgule, ou en mètres entiers pour les sports
+ * dont la distance se saisit en mètres (natation). Charger un parcours remplit ce champ ; ce qu'on y modifie ensuite est gardé, jusqu'au prochain chargement d'un parcours.
+ */
+export function champDistanceDepuisKm(distanceKm: number, type: string): string {
+  return distanceEnMetres(type) ? String(Math.round(distanceKm * 1000)) : String(distanceKm).replace('.', ',');
+}

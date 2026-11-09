@@ -13,7 +13,7 @@ import { ProfilSeance } from '@/components/graphes/ProfilSeance';
 import { ChampDate } from '@/components/champs/ChampDate';
 import { AvecPrevue } from '@/components/calendrier/AvecPrevue';
 import type { PrevueComplete } from '@/data/types';
-import { blocsDePrevue, chargeEstimee, distanceEnMetres, formulaireDepuisSeance, formulaireSeanceVide, parcoursDePrevue, validerSeance } from '@/data/calendrier/ajouts';
+import { blocsDePrevue, champDistanceDepuisKm, chargeEstimee, distanceEnMetres, formulaireDepuisSeance, formulaireSeanceVide, parcoursDePrevue, validerSeance } from '@/data/calendrier/ajouts';
 import { deplacerBloc, nomDuBloc, peutAjouterBloc } from '@/data/calendrier/blocs-formulaire';
 import { resumerGpx, type ResumeGpx } from '@/data/outils/gpx';
 import { COULEURS_ZONE, indiceZone, metriquesDuSport, milieu, NOM_TYPE, resume, sportAvecStructure, texteCible, texteDuree, tousSegments, type Bloc } from '@/data/calendrier/structure';
@@ -89,9 +89,15 @@ function FormulaireSeance({ prevue }: { prevue: PrevueComplete | null }) {
   const utiliserParcours = ({ distanceKm, denivele }: ResumeGpx) => {
     change({
       ...f,
-      distance: distanceEnMetres(f.type) ? String(Math.round(distanceKm * 1000)) : String(distanceKm).replace('.', ','),
+      distance: champDistanceDepuisKm(distanceKm, f.type),
       dplus: denivele != null ? String(denivele) : f.dplus,
     });
+  };
+
+  // Choisir (ou rechoisir) un parcours : sa distance remplace celle du champ. Ce qu'on modifie ensuite dans le champ est gardé, jusqu'au prochain choix d'un parcours.
+  const choisirParcours = (choisi: ParcoursChoisi | null) => {
+    setParcours(choisi);
+    if (choisi) change({ ...f, distance: champDistanceDepuisKm(choisi.resume.distanceKm, f.type) });
   };
 
   const enregistrerBloc = (b: Bloc) => {
@@ -208,7 +214,7 @@ function FormulaireSeance({ prevue }: { prevue: PrevueComplete | null }) {
         </View>
         <ChoixEffort valeur={f.rpe} onChange={(v) => change({ ...f, rpe: v })} etiquette="Effort estimé (facultatif)" />
         <View style={{ gap: 6 }}>
-          <ChampParcoursGpx etiquette="Parcours GPX (facultatif)" parcours={parcours} onChange={setParcours} onErreur={setErreur} onReprendre={utiliserParcours} />
+          <ChampParcoursGpx etiquette="Parcours GPX (facultatif)" parcours={parcours} onChange={choisirParcours} onErreur={setErreur} onReprendre={utiliserParcours} />
         </View>
         <ChampTexte etiquette="Notes (facultatif)" value={f.notes} onChangeText={(t) => change({ ...f, notes: t })} maxLength={2000} multiline />
       </EcranAjout>
