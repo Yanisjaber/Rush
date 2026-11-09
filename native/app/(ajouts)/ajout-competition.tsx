@@ -44,7 +44,7 @@ export default function EcranAjoutCompetition() {
 function FormulaireCompetition({ prevue }: { prevue: PrevueComplete | null }) {
   const p = usePalette();
   const router = useRouter();
-  const { creerPrevue, modifierPrevue } = useAjouts();
+  const { creerPrevue, modifierPrevue, supprimerPrevue } = useAjouts();
   const { filtre, familles } = useMenu(); // le sport où l'on était (ou le premier de la barre sur « Tous ») est pré-sélectionné
   const [onglet, setOnglet] = useState<Onglet>('epreuve');
   const dateParDefaut = useDateAjout();
@@ -110,7 +110,14 @@ function FormulaireCompetition({ prevue }: { prevue: PrevueComplete | null }) {
   return (
     <>
     <Stack.Screen options={{ title: prevue ? 'Modifier la compétition' : 'Compétition' }} />
-      <EcranAjout bouton={prevue ? 'Enregistrer' : 'Ajouter la compétition'} enCours={enCours} erreur={erreur} onValider={() => void enregistrer()} entete={entete}>
+      <EcranAjout
+        bouton={prevue ? 'Enregistrer' : 'Ajouter la compétition'}
+        enCours={enCours}
+        erreur={erreur}
+        onValider={() => void enregistrer()}
+        entete={entete}
+        supprimer={prevue ? { libelle: 'Supprimer la compétition', titre: 'Supprimer cette compétition ?', message: 'Elle disparaîtra du calendrier. Cette action est définitive.', onConfirmer: () => supprimerPrevue(prevue.id) } : undefined}
+      >
         {onglet === 'epreuve' ? (
           <>
             <ChampTexte etiquette="Nom" value={f.nom} onChangeText={(t) => change({ ...f, nom: t })} maxLength={120} placeholder="Marathon de Toulouse" returnKeyType="done" />

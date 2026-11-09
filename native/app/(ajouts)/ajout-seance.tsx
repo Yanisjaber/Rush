@@ -37,7 +37,7 @@ export default function EcranAjoutSeance() {
 function FormulaireSeance({ prevue }: { prevue: PrevueComplete | null }) {
   const p = usePalette();
   const router = useRouter();
-  const { creerPrevue, modifierPrevue } = useAjouts();
+  const { creerPrevue, modifierPrevue, supprimerPrevue } = useAjouts();
   const reference = useReferences();
   const { filtre, familles } = useMenu(); // le sport où l'on était (ou le premier de la barre sur « Tous ») est pré-sélectionné
   const dateParDefaut = useDateAjout();
@@ -107,7 +107,13 @@ function FormulaireSeance({ prevue }: { prevue: PrevueComplete | null }) {
   return (
     <>
       <Stack.Screen options={{ title: prevue ? 'Modifier la séance' : 'Séance prévue' }} />
-      <EcranAjout bouton={prevue ? 'Enregistrer' : 'Planifier'} enCours={enCours} erreur={erreur} onValider={() => void enregistrer()}>
+      <EcranAjout
+        bouton={prevue ? 'Enregistrer' : 'Planifier'}
+        enCours={enCours}
+        erreur={erreur}
+        onValider={() => void enregistrer()}
+        supprimer={prevue ? { libelle: 'Supprimer la séance', titre: 'Supprimer cette séance ?', message: 'Elle disparaîtra du calendrier. Cette action est définitive.', onConfirmer: () => supprimerPrevue(prevue.id) } : undefined}
+      >
         <ChampDate date={date} onChange={(iso) => { setDate(iso); setErreur(''); }} />
         <View style={styles.ligne}>
           <View style={{ flex: 1.4, gap: 6 }}>

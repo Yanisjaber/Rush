@@ -8,7 +8,7 @@ import { ChoixEffort } from '@/components/champs/ChoixEffort';
 import { EcranAjout } from '@/components/ecrans/EcranAjout';
 import { MenuDeroulantSport } from '@/components/menus/MenuDeroulantSport';
 import { ChampDate } from '@/components/champs/ChampDate';
-import { chargeEstimeeSortie, distanceEnMetres, formulaireDepuisSortie, formulaireSortieVide, ligneDeModification, SPORTS_AJOUT, validerSortie } from '@/data/calendrier/ajouts';
+import { chargeEstimeeSortie, distanceEnMetres, formulaireDepuisSortie, formulaireSortieVide, ligneDeModification, sortieSupprimable, SPORTS_AJOUT, validerSortie } from '@/data/calendrier/ajouts';
 import { champsValides } from '@/data/calendrier/import-activite';
 import { dateIsoLocale } from '@/data/outils/format';
 import { dureeDepuisHeure, heureDepuisDuree, texteDureeSaisie } from '@/data/outils/heure';
@@ -53,7 +53,7 @@ export default function EcranAjoutSortie() {
 function FormulaireSortie({ seance }: { seance: Seance | null }) {
   const p = usePalette();
   const router = useRouter();
-  const { creerSortie, modifierSortie } = useAjouts();
+  const { creerSortie, modifierSortie, supprimerSortie } = useAjouts();
   const { filtre, familles } = useMenu(); // le sport où l'on était (ou le premier de la barre sur « Tous ») est pré-sélectionné
   const aujourdhui = dateIsoLocale(new Date());
   const depart = useDateAjout();
@@ -88,7 +88,13 @@ function FormulaireSortie({ seance }: { seance: Seance | null }) {
 
   const etiquette = (t: string) => <Text style={[typo.petit, styles.etiquette, { color: p.texteDoux }]}>{t}</Text>;
   return (
-    <EcranAjout bouton="Enregistrer" enCours={enCours} erreur={erreur} onValider={() => void enregistrer()}>
+    <EcranAjout
+      bouton="Enregistrer"
+      enCours={enCours}
+      erreur={erreur}
+      onValider={() => void enregistrer()}
+      supprimer={seance && sortieSupprimable(seance) ? { libelle: 'Supprimer cette activité', titre: 'Supprimer cette activité ?', message: 'Elle disparaîtra du calendrier et de tes totaux. Cette action est définitive.', onConfirmer: () => supprimerSortie(seance.id) } : undefined}
+    >
       {seance ? <Stack.Screen options={{ title: "Modifier l'activité" }} /> : null}
       <ChampDate date={date} max={aujourdhui} onChange={(iso) => { setDate(iso > aujourdhui ? aujourdhui : iso); setErreur(''); }} />
       <View style={styles.ligne}>
