@@ -109,7 +109,7 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
               </View>
             </View>
             <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{texteLigne(l)}</Text>
-            {l.raison && !ouverte ? <Text style={[typo.petit, { color: p.texteDoux }]}>{l.raison}</Text> : null}
+            {l.raison && !avecDetail ? <Text style={[typo.petit, { color: p.texteDoux }]}>{l.raison}</Text> : null}
           </View>
           {avecDetail ? (
             <Pressable
