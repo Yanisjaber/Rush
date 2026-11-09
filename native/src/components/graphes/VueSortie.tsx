@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react';
-import { ActivityIndicator, PanResponder, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, type GestureResponderEvent, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CarteTrace } from '@/components/graphes/CarteTrace';
 import { EnteteFlottante, HAUT_ENTETE } from '@/components/graphes/EnteteFlottante';
@@ -75,18 +75,27 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
   // (Sur la première page, la droite ne fait rien ici : c'est le retour par le bord de l'écran qui s'en charge.)
   const etatPages = useRef({ index, nombre: pages.length, aller });
   etatPages.current = { index, nombre: pages.length, aller };
-  const balayage = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
-        onPanResponderRelease: (_, g) => {
-          const { index: i, nombre, aller: va } = etatPages.current;
-          if (g.dx < -40 && i < nombre - 1) va(i + 1);
-          else if (g.dx > 40 && i > 0) va(i - 1);
-        },
-      }),
-    [],
-  );
+  // Détection directe (début et fin du doigt) plutôt que le système de gestes, qui peut se faire voler le toucher par les éléments voisins
+  const debutDoigt = useRef<{ x: number; y: number } | null>(null);
+  const balayage = {
+    onTouchStart: (e: GestureResponderEvent) => {
+      debutDoigt.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
+    },
+    onTouchEnd: (e: GestureResponderEvent) => {
+      const d = debutDoigt.current;
+      debutDoigt.current = null;
+      if (!d) return;
+      const dx = e.nativeEvent.pageX - d.x;
+      const dy = e.nativeEvent.pageY - d.y;
+      if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // un vrai balayage horizontal, pas un appui ni un geste vertical
+      const { index: i, nombre, aller: va } = etatPages.current;
+      if (dx < 0 && i < nombre - 1) va(i + 1);
+      else if (dx > 0 && i > 0) va(i - 1);
+    },
+    onTouchCancel: () => {
+      debutDoigt.current = null;
+    },
+  };
   const apresDefilement = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (dims.pager > 0) setIndex(Math.round(e.nativeEvent.contentOffset.x / dims.pager));
   };
@@ -114,7 +123,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
         onLayout={(e: LayoutChangeEvent) => setDims((d) => ({ ...d, feuille: e.nativeEvent.layout.height }))}
         style={[styles.feuille, { backgroundColor: p.fond, borderColor: p.trait, paddingBottom: bas + espace.e3 }]}
       >
-        <View {...balayage.panHandlers} style={{ gap: espace.e2 }}>
+        <View {...balayage} style={{ gap: espace.e2 }}>
         {date ? <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2 }]}>{date}</Text> : null}
         {chiffres}
 
