@@ -8,7 +8,7 @@ export interface Placement {
   position: 'dessus' | 'dessous';
 }
 
-const ECART = 14; // distance entre le point et la pastille
+const ECART = 28; // distance entre le point et la pastille (le trait pointillé la relie au point)
 const MARGE_COURBE = 4; // marge autour de la pastille pour compter un point de courbe comme « dessous »
 const TOLERANCE = 4; // points de courbe qu'on accepte sous la pastille avant de la déplacer : évite qu'elle saute d'une place à l'autre pour presque rien
 
