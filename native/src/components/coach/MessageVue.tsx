@@ -23,11 +23,13 @@ interface Props {
   /** « Refaire le plan » : redemande au coach de recalculer */
   onRefaire: () => void;
   onVoirCalendrier: () => void;
+  /** Une carte va se déplier ou se replier : l'écran compense pour que son haut reste en place */
+  onBascule?: () => void;
   /** Le message suivant (plus récent) est du même auteur : on le colle contre celui-ci */
   colle?: boolean;
 }
 
-export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onReessayer, onAjouter, onAnnuler, onRefaire, onVoirCalendrier, colle }: Props) {
+export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onReessayer, onAjouter, onAnnuler, onRefaire, onVoirCalendrier, onBascule, colle }: Props) {
   const p = usePalette();
   const moi = message.role === 'user';
   const attente = message.enCours && !message.texte;
@@ -58,9 +60,9 @@ export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onR
       {message.cartes.map((c) => (
         <View key={c.id} style={styles.carte}>
           {estPlanning(c) ? (
-            <CartePlanningCoach carte={c} occupee={!!occupees[c.id]} erreur={erreursCarte[c.id]} onValider={() => onAjouter(c)} onAnnuler={() => onAnnuler(c)} onRefaire={onRefaire} onVoirCalendrier={onVoirCalendrier} />
+            <CartePlanningCoach carte={c} occupee={!!occupees[c.id]} erreur={erreursCarte[c.id]} onValider={() => onAjouter(c)} onAnnuler={() => onAnnuler(c)} onRefaire={onRefaire} onVoirCalendrier={onVoirCalendrier} onBascule={onBascule} />
           ) : (
-            <CarteSeanceCoach carte={c} occupee={!!occupees[c.id]} erreur={erreursCarte[c.id]} onAjouter={() => onAjouter(c)} onAnnuler={() => onAnnuler(c)} />
+            <CarteSeanceCoach carte={c} occupee={!!occupees[c.id]} erreur={erreursCarte[c.id]} onAjouter={() => onAjouter(c)} onAnnuler={() => onAnnuler(c)} onBascule={onBascule} />
           )}
         </View>
       ))}

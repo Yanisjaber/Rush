@@ -28,6 +28,8 @@ interface Props {
   /** « Refaire le plan » : demande au coach de recalculer (envoie un message) */
   onRefaire: () => void;
   onVoirCalendrier: () => void;
+  /** Appelé juste AVANT qu'on déplie ou replie quelque chose : l'écran garde alors le haut de la carte en place (le contenu s'ouvre vers le bas) */
+  onBascule?: () => void;
 }
 
 type Pictogramme = 'attente' | 'ok' | 'alerte' | 'retour';
@@ -65,7 +67,7 @@ const texteLigne = (l: LignePlan): string => {
   return /\b\d+\s*min\b/.test(l.nom) ? l.nom : `${l.nom} · ${dureeMinutes(l.minutes)}`;
 };
 
-export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnuler, onRefaire, onVoirCalendrier }: Props) {
+export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnuler, onRefaire, onVoirCalendrier, onBascule }: Props) {
   const p = usePalette();
   const [toutesSemaines, setToutesSemaines] = useState(false);
   /** Les semaines dépliées (la première l'est d'office, tant qu'on n'a rien touché) */
@@ -113,7 +115,10 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
           </View>
           {avecDetail ? (
             <Pressable
-              onPress={() => setOuvertes((o) => ({ ...o, [cle]: !o[cle] }))}
+              onPress={() => {
+                onBascule?.();
+                setOuvertes((o) => ({ ...o, [cle]: !o[cle] }));
+              }}
               accessibilityRole="button"
               accessibilityState={{ expanded: ouverte }}
               accessibilityLabel={`${ouverte ? 'Masquer' : 'Voir'} le détail de la séance : ${texteLigne(l)}`}
@@ -165,7 +170,10 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
               return (
                 <View key={sem.numero} style={[styles.semaine, { borderTopColor: p.trait }]}>
                   <Pressable
-                    onPress={() => setSemOuvertes((o) => ({ ...o, [sem.numero]: !ouverte }))}
+                    onPress={() => {
+                      onBascule?.();
+                      setSemOuvertes((o) => ({ ...o, [sem.numero]: !ouverte }));
+                    }}
                     accessibilityRole="button"
                     accessibilityState={{ expanded: ouverte }}
                     accessibilityLabel={`Semaine ${sem.numero}${sem.phase ? `, ${sem.phase}` : ''}, ${plage}, ${sem.seances} séance${sem.seances > 1 ? 's' : ''}${sem.minutes > 0 ? `, ${dureeMinutes(sem.minutes)}` : ''}. ${ouverte ? 'Replier' : 'Déplier'}`}
@@ -193,7 +201,10 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
             })}
             {semaines.length > SEMAINES_VISIBLES ? (
               <Pressable
-                onPress={() => setToutesSemaines((t) => !t)}
+                onPress={() => {
+                  onBascule?.();
+                  setToutesSemaines((t) => !t);
+                }}
                 accessibilityRole="button"
                 accessibilityState={{ expanded: toutesSemaines }}
                 accessibilityLabel={toutesSemaines ? 'Replier la liste des semaines' : `Voir les ${semaines.length - SEMAINES_VISIBLES} autres semaines`}
@@ -225,7 +236,10 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
                     {raisonRetirees ? <Text style={[typo.petit, { color: p.texteDoux }]}>{raisonRetirees}</Text> : null}
                   </View>
                   <Pressable
-                    onPress={() => setVoirRetirees((v) => !v)}
+                    onPress={() => {
+                      onBascule?.();
+                      setVoirRetirees((v) => !v);
+                    }}
                     accessibilityRole="button"
                     accessibilityState={{ expanded: voirRetirees }}
                     accessibilityLabel={voirRetirees ? 'Masquer les séances retirées' : `Voir les ${retirees.length} séances retirées`}
@@ -288,7 +302,10 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
               <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>Calendrier</Text>
             </Pressable>
             <Pressable
-              onPress={() => setDeplie((d) => !d)}
+              onPress={() => {
+                onBascule?.();
+                setDeplie((d) => !d);
+              }}
               accessibilityRole="button"
               accessibilityState={{ expanded: deplie }}
               accessibilityLabel={deplie ? 'Masquer le détail du plan' : 'Revoir le détail du plan'}

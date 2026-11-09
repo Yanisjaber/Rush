@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -54,6 +54,12 @@ export default function Coach() {
   const clavier = useClavierOuvert();
   // La liste est « inversée » (le plus récent en bas, le clavier ne la cache pas) : on lui donne les messages du plus récent au plus ancien
   const donnees = useMemo(() => [...c.messages].reverse(), [c.messages]);
+  // La liste est inversée : quand une carte grandit, elle pousse vers le HAUT. Pour que son haut reste en place et que le contenu s'ouvre vers le bas
+  // (et se referme de même), on décale le défilement de la différence de hauteur, mais seulement quand c'est l'utilisateur qui vient de déplier ou replier.
+  const liste = useRef<FlatList<(typeof donnees)[number]>>(null);
+  const decalage = useRef(0);
+  const hauteurs = useRef<Record<string, number>>({});
+  const ancrage = useRef<string | null>(null);
   const vide = !c.chargement && !c.erreur && c.messages.length === 0;
 
   function confirmerEffacement() {
@@ -104,25 +110,45 @@ export default function Coach() {
           <Etat titre="Ton coach" texte="Pose une question sur ton entraînement, ta récupération ou ta semaine. Pour une séance, demande-la : elle apparaîtra ici sous forme de carte, et c'est toi qui l'ajoutes à ton calendrier." />
         ) : (
           <FlatList
+            ref={liste}
             inverted
+            onScroll={(e) => {
+              decalage.current = e.nativeEvent.contentOffset.y;
+            }}
+            scrollEventThrottle={16}
             data={donnees}
             keyExtractor={(m) => m.id}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
             contentContainerStyle={styles.liste}
             renderItem={({ item, index }) => (
-              <MessageVue
-                message={item}
-                colle={index > 0 && donnees[index - 1].role === item.role && item.cartes.length === 0}
-                occupees={c.occupees}
-                erreursCarte={c.erreursCarte}
-                peutReessayer={!c.sansReessai && !c.envoi}
-                onReessayer={(texte) => void c.envoyer(texte)}
-                onAjouter={(carte) => void c.ajouter(carte)}
-                onAnnuler={(carte) => void c.annuler(carte)}
-                onRefaire={() => void c.envoyer('Refais le plan : mon calendrier a changé.')}
-                onVoirCalendrier={() => router.navigate('/calendrier')}
-              />
+              <View
+                onLayout={(e) => {
+                  const h = e.nativeEvent.layout.height;
+                  const avant = hauteurs.current[item.id];
+                  hauteurs.current[item.id] = h;
+                  if (avant === undefined || ancrage.current !== item.id) return;
+                  ancrage.current = null;
+                  const ecart = h - avant;
+                  if (ecart !== 0) liste.current?.scrollToOffset({ offset: Math.max(0, decalage.current + ecart), animated: false });
+                }}
+              >
+                <MessageVue
+                  message={item}
+                  colle={index > 0 && donnees[index - 1].role === item.role && item.cartes.length === 0}
+                  occupees={c.occupees}
+                  erreursCarte={c.erreursCarte}
+                  peutReessayer={!c.sansReessai && !c.envoi}
+                  onReessayer={(texte) => void c.envoyer(texte)}
+                  onAjouter={(carte) => void c.ajouter(carte)}
+                  onAnnuler={(carte) => void c.annuler(carte)}
+                  onRefaire={() => void c.envoyer('Refais le plan : mon calendrier a changé.')}
+                  onVoirCalendrier={() => router.navigate('/calendrier')}
+                  onBascule={() => {
+                    ancrage.current = item.id;
+                  }}
+                />
+              </View>
             )}
           />
         )}

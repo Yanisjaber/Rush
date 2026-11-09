@@ -20,6 +20,8 @@ interface Props {
   erreur?: string;
   onAjouter: () => void;
   onAnnuler: () => void;
+  /** Appelé juste AVANT qu'on déplie ou replie la carte : l'écran garde alors son haut en place (le contenu s'ouvre vers le bas) */
+  onBascule?: () => void;
 }
 
 function Picto({ nom, couleur, taille = 18 }: { nom: 'plus' | 'ok' | 'alerte'; couleur: string; taille?: number }) {
@@ -32,7 +34,7 @@ function Picto({ nom, couleur, taille = 18 }: { nom: 'plus' | 'ok' | 'alerte'; c
   );
 }
 
-export function CarteSeanceCoach({ carte, occupee, erreur, onAjouter, onAnnuler }: Props) {
+export function CarteSeanceCoach({ carte, occupee, erreur, onAjouter, onAnnuler, onBascule }: Props) {
   const p = usePalette();
   const couleur = couleurSport(p, sportDeCarte(carte));
   const prop = carte.proposition;
@@ -93,7 +95,10 @@ export function CarteSeanceCoach({ carte, occupee, erreur, onAjouter, onAnnuler 
               <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>Annuler</Text>
             </Pressable>
             <Pressable
-              onPress={() => setDeplie((d) => !d)}
+              onPress={() => {
+                onBascule?.();
+                setDeplie((d) => !d);
+              }}
               accessibilityRole="button"
               accessibilityState={{ expanded: deplie }}
               accessibilityLabel={deplie ? 'Masquer le détail de la séance' : 'Revoir le détail de la séance'}
