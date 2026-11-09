@@ -24,9 +24,9 @@ export function BoutonCompact(props: PropsBoutonCompact) {
   const p = usePalette();
   if (!NATIF) return <BoutonCompactJs {...props} />;
   const { Host, Button } = NATIF.ui;
-  const { buttonStyle, controlSize, tint, disabled } = NATIF.modifs;
+  const { buttonStyle, controlSize, tint, foregroundStyle, disabled } = NATIF.modifs;
   const principal = props.style === 'principal';
-  const modifiers = [buttonStyle(principal ? 'glassProminent' : 'glass'), controlSize(principal ? 'regular' : 'small'), ...(principal && props.teinte ? [tint(props.teinte)] : []), ...(props.desactive ? [disabled(true)] : [])];
+  const modifiers = [buttonStyle(principal ? 'glassProminent' : 'glass'), controlSize(principal ? 'regular' : 'small'), ...(principal ? [tint(props.teinte ?? p.texte), foregroundStyle(props.teinte ? p.encreSurCouleur : p.fond)] : []), ...(props.desactive ? [disabled(true)] : [])];
   return (
     <View
       accessible
