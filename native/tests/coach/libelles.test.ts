@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { descriptionCarte, dureeMinutes, jourCarte, MOT_ETAT, nomSport, nomType, NOM_SPORT_COACH, NOM_TYPE_COACH, sportDeCarte, titreCarte } from '../../src/data/coach/libelles.ts';
+import { descriptionCarte, dureeBloc, dureeMinutes, jourCarte, MOT_ETAT, nomSport, nomType, NOM_SPORT_COACH, NOM_TYPE_COACH, sportDeCarte, titreCarte } from '../../src/data/coach/libelles.ts';
 import { MENU } from '../../../supabase/functions/_shared/menu-seances.ts';
 import type { CarteSeance } from '../../src/data/coach/types.ts';
 
@@ -100,4 +100,15 @@ test('plan : le résumé compte les jours de repos posés et retirés', () => {
   assert.equal(resumePlan([{ op: 'repos', texte: 'x', vers: '2026-11-12', poser: true }, { op: 'repos', texte: 'y', vers: '2026-11-13', poser: true }]), '2 jours de repos posés');
   assert.equal(resumePlan([{ op: 'repos', texte: 'x', vers: '2026-11-12', poser: false }]), '1 jour de repos retiré');
   assert.equal(resumePlan([{ op: 'repos', texte: 'x', vers: '2026-11-12' }, { op: 'supprimer', texte: 'y', sport: 'velo', de: '2026-11-12' }]), '1 jour de repos posé · 1 retirée');
+});
+
+test('durée d\'un bloc : secondes arrondies à 5, minutes entières au-delà de 10 min, jamais « 22:12 »', () => {
+  assert.equal(dureeBloc(0.3), '20 s', '18 s s\'écrit 20 s, comme le nom de la séance');
+  assert.equal(dureeBloc(0.5), '30 s');
+  assert.equal(dureeBloc(1), '1 min');
+  assert.equal(dureeBloc(1.5), '1 min 30 s');
+  assert.equal(dureeBloc(3), '3 min');
+  assert.equal(dureeBloc(22.2), '22 min');
+  assert.equal(dureeBloc(75), '1 h 15');
+  assert.equal(dureeBloc(0), '0 s');
 });

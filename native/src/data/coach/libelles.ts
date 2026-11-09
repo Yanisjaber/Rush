@@ -32,6 +32,19 @@ export function dureeMinutes(minutes: number): string {
   return reste ? `${h} h ${String(reste).padStart(2, '0')}` : `${h} h`;
 }
 
+/**
+ * La durée d'un bloc, lisible d'un coup d'œil : les secondes s'arrondissent à 5 (0,3 min = 18 s s'écrit « 20 s », comme le nom de la séance), au-delà de 10 minutes on arrondit à la minute.
+ * 0,3 → « 20 s », 1 → « 1 min », 1,5 → « 1 min 30 s », 22,2 → « 22 min », 75 → « 1 h 15 ».
+ */
+export function dureeBloc(minutes: number): string {
+  const s = Math.max(0, Math.round((minutes * 60) / 5) * 5);
+  if (s < 60) return `${s} s`;
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  if (minutes >= 10 || (minutes >= 3 && r === 0)) return dureeMinutes(minutes);
+  return r ? `${m} min ${r} s` : `${m} min`;
+}
+
 const JOURS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
 const MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 

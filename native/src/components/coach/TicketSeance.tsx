@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { ProfilSeance } from '@/components/graphes/ProfilSeance';
 import { resumeBlocs } from '@/data/coach/profil-seance';
-import { dureeMinutes } from '@/data/coach/libelles';
+import { dureeBloc, dureeMinutes } from '@/data/coach/libelles';
 import type { BlocStructure } from '@/data/coach/types';
-import { indiceZone, milieu, texteCible, texteDuree, ZONES } from '@/data/calendrier/structure';
+import { indiceZone, milieu, texteCible, ZONES } from '@/data/calendrier/structure';
 import type { Reference, Segment } from '@/data/calendrier/structure';
 import { useReferences } from '@/hooks/useReferences';
 import { espace } from '@/theme/couleurs';
@@ -49,6 +49,15 @@ function cible(seg: Segment, metric: BlocStructure['metric'], reference: Referen
 /** « Z1 Footing » devient « Z1 » en version réduite (le nom du bloc dit déjà ce qu'on fait) */
 const zone = (texte: string, compact?: boolean): string => (compact ? texte.replace(/^(Z\d)\s[^·]*$/, '$1') : texte);
 
+/**
+ * Ce que la colonne de droite dit d'un bloc, AVANT sa zone. Un bloc d'intervalles dont le nom dit déjà les répétitions (« 6 lignes droites de 20 s à 4:46/km »)
+ * n'a rien à ajouter ; sinon « 6 × 3 min ». Un bloc continu dit sa durée.
+ */
+function detailBloc(b: BlocStructure): string {
+  if (b.type === 'interval' && b.reps > 1) return b.name.includes(String(b.reps)) ? '' : `${b.reps} × ${dureeBloc(b.work.min)} · `;
+  return `${dureeBloc(b.work.min)} · `;
+}
+
 export function TicketSeance({ couleur, jour, titre, minutes, blocs, resume, sport, raison, sansLisere, compact }: Props) {
   const p = usePalette();
   const reference = useReferences();
@@ -58,7 +67,7 @@ export function TicketSeance({ couleur, jour, titre, minutes, blocs, resume, spo
 
   return (
     <View>
-      {sansLisere ? null : <View style={[styles.lisere, { backgroundColor: couleur }]} />}
+      {sansLisere || compact ? null : <View style={[styles.lisere, { backgroundColor: couleur }]} />}
       <View style={[styles.corps, compact && styles.corpsCompact]}>
         {compact ? null : (
           <>
@@ -84,12 +93,13 @@ export function TicketSeance({ couleur, jour, titre, minutes, blocs, resume, spo
                     {b.name}
                   </Text>
                   <Text style={[typo.petit, { color: p.texteDoux, textAlign: 'right', fontVariant: ['tabular-nums'] }]}>
-                    {b.type === 'interval' && b.reps > 1 ? `${b.reps} × ${texteDuree(b.work.min)}` : texteDuree(b.work.min)} · {zone(cible(b.work, b.metric, reference, sportApp), compact)}
+                    {detailBloc(b)}
+                    {zone(cible(b.work, b.metric, reference, sportApp), compact)}
                   </Text>
                 </View>
                 {b.type === 'interval' && b.rec ? (
                   <Text style={[typo.petit, { color: p.texteMuet }]}>
-                    récupération {texteDuree(b.rec.min)} · {zone(cible(b.rec, b.metric, reference, sportApp), compact)}
+                    récup. {dureeBloc(b.rec.min)} · {zone(cible(b.rec, b.metric, reference, sportApp), compact)}
                   </Text>
                 ) : null}
               </View>
@@ -99,7 +109,9 @@ export function TicketSeance({ couleur, jour, titre, minutes, blocs, resume, spo
           <Text style={[typo.petit, { color: p.texteDoux }]}>{phrase}</Text>
         ) : null}
 
-        {raison ? <Text style={[typo.petit, { color: p.texteDoux, fontFamily: police.texte400 }]}>{raison}</Text> : null}
+        {raison ? (
+          <Text style={[typo.petit, { color: p.texteMuet, borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: espace.e2, marginTop: espace.e1 }]}>{raison}</Text>
+        ) : null}
       </View>
     </View>
   );
