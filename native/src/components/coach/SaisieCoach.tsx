@@ -28,7 +28,7 @@ export function SaisieCoach({ envoi, basse, onEnvoyer }: Props) {
   }
 
   return (
-    <View style={[styles.barre, { backgroundColor: p.fond, paddingBottom: basse }]}>
+    <View style={[styles.barre, { paddingBottom: basse }]}>
       <TextInput
         value={texte}
         onChangeText={setTexte}

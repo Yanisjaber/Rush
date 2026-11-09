@@ -16,7 +16,7 @@ import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-const BARRE_ONGLETS = 72;
+const BARRE_ONGLETS = 24;
 
 /** Le clavier est-il ouvert ? Quand il l'est, la barre d'onglets est cachée dessous : plus besoin de lui laisser de la place. */
 function useClavierOuvert(): boolean {
