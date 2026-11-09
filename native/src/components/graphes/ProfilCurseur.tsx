@@ -112,7 +112,7 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 110, on
   );
 }
 
-const MARGE = 6;
+const MARGE = 12; // assez pour que le rond du curseur (rayon 6 + contour 3) ne soit jamais coupé, au point haut comme au point bas
 
 const styles = StyleSheet.create({
   axe: { flexDirection: 'row', marginTop: 4 },
