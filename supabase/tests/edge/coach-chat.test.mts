@@ -662,10 +662,14 @@ test('ajouter : la séance est écrite avec les bons champs, une seule fois, et 
   const r = await ajouterCarte(U, 'c1', w.deps);
   assert.deepEqual(r.ok && r.seanceId, 'seance-1');
   assert.equal(w.stockage.seances.length, 1);
-  assert.deepEqual(w.stockage.seances[0], {
+  const { structure, ...ligne } = w.stockage.seances[0] as Libre;
+  assert.deepEqual(ligne, {
     user_id: U, category: 'entrainement', name: 'Vélo · Endurance', date: '2026-11-08', start_date_local: '2026-11-08T09:00:00', sport: 'Ride',
     duration: 90, tss: 75, notes: 'Pour entretenir ton endurance.', created_by_ia: true, client_id: 'coach-c1',
   });
+  // la séance n'est jamais « vierge » : une structure est écrite, dont la durée totale est celle de la séance
+  assert.ok(Array.isArray(structure) && structure.length >= 2);
+  assert.equal(structure.reduce((t: number, b: Libre) => t + b.reps * (b.work.min + (b.rec?.min ?? 0)), 0), 90);
   const carte = w.stockage.messages[0].cartes![0];
   assert.equal(carte.etat, 'ajoutee');
   assert.equal(carte.seance_id, 'seance-1');
@@ -678,6 +682,13 @@ test('ajouter : la course et la natation s\'écrivent avec les types bruts de l\
   const base: CarteSeance = { id: 'x', etat: 'proposee', proposition: { date: '2026-11-08', sport: 'course', type: 'footing_facile', minutes: 45 }, tss_estime: 38, justification: '' };
   assert.equal(ligneSeancePrevue(base, U).sport, 'Run');
   assert.equal(ligneSeancePrevue(base, U).notes, null);
+  // une séance créée depuis une carte a TOUJOURS une structure, dont la somme des durées est celle de la séance (ancienne carte sans blocs comprise)
+  const dureeBlocs = (x: unknown) => (x as { reps: number; work: { min: number }; rec?: { min: number } }[]).reduce((t, b) => t + b.reps * (b.work.min + (b.rec?.min ?? 0)), 0);
+  const structure = ligneSeancePrevue(base, U).structure;
+  assert.ok(Array.isArray(structure) && structure.length >= 2);
+  assert.equal(dureeBlocs(structure), base.proposition.minutes);
+  const blocsCarte = [{ type: 'steady', name: 'Tout en un', reps: 1, metric: 'power', unit: 'zone', work: { min: base.proposition.minutes, int: 60, intHi: 75 } }];
+  assert.deepEqual(ligneSeancePrevue({ ...base, blocs: blocsCarte } as CarteSeance, U).structure, blocsCarte, 'la structure de la carte est celle qui est écrite');
   assert.equal(ligneSeancePrevue({ ...base, proposition: { ...base.proposition, sport: 'natation', type: 'technique' } }, U).sport, 'Swim');
 });
 test('ajouter : tout est revalidé au moment du tap — si le calendrier a changé, la carte est refusée et RIEN n\'est écrit', async () => {

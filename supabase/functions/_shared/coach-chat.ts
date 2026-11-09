@@ -526,6 +526,8 @@ export function ligneSeancePrevue(carte: CarteSeance, userId: string): LigneSean
     sport: SPORT_BRUT[sport],
     duration: p.minutes,
     tss: carte.tss_estime,
+    // Jamais de séance « vierge » : la structure (celle de la carte, sinon reconstruite par le code d'après le type et la durée) est toujours écrite
+    structure: carte.blocs ?? structureSeance(sport, p.type, p.minutes),
     notes: carte.justification ? carte.justification.slice(0, 500) : null,
     created_by_ia: true,
     // Une clé stable par carte : deux « Ajouter » sur la même carte ne peuvent désigner qu'une seule séance
