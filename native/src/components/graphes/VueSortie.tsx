@@ -34,8 +34,10 @@ interface Props {
   /** Clé de sport, pour la couleur du dossard sans GPS. */
   sport: string;
   titre: string;
-  /** Le sport, la date et l'heure, en petit au-dessus des chiffres (« COURSE À PIED · MER 4 NOV · 20:19 »), après l'icône du sport. */
+  /** La date et l'heure, en petit au-dessus des chiffres (« MER 4 NOV · 20:19 »), après l'icône et le nom du sport. */
   date?: string;
+  /** Le nom du sport (« Course à pied »), écrit après l'icône dans la couleur du sport. */
+  nomSport?: string;
   /** Le chiffre principal du dossard sans GPS (la distance, ou la durée à défaut). */
   hero: { etiquette: string; valeur: string; unite?: string; detail?: string } | null;
   /** Les trois chiffres clés, sous la pastille de pagination. */
@@ -47,7 +49,7 @@ interface Props {
 
 const HAUTEUR_PAGE = 166; // juste la hauteur du profil (courbe et repères de distance) ; les pages Tours et Notes défilent dedans
 
-export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, hero, chiffres, pageTours, pageDonnees, onModifier }: Props) {
+export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, hero, chiffres, pageTours, pageDonnees, onModifier }: Props) {
   const p = usePalette();
   const { top: haut, bottom: bas } = useSafeAreaInsets();
   const avecCarte = !!parcours?.region && parcours.trace.length > 1;
@@ -127,10 +129,11 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
       >
         <View {...balayage} style={{ gap: espace.e2 }}>
         {date ? (
-          <View accessible accessibilityLabel={date} style={styles.ligneDate}>
+          <View accessible accessibilityLabel={`${nomSport ?? ''} ${date}`.trim()} style={styles.ligneDate}>
             <IconeSport sport={sport} taille={16} />
-            {/* Couleur du sport en thème sombre ; en thème clair la couleur de sport reste réservée aux aplats (contraste insuffisant en petit texte, voir IDENTITE.md) */}
-            <Text style={[typo.petit, { color: p.fond === sombre.fond ? couleur : p.texteDoux, letterSpacing: 0.3 }]}>{date}</Text>
+            {/* Le nom du sport dans sa couleur en thème sombre (en thème clair la couleur de sport reste réservée aux aplats : contraste insuffisant en petit texte, voir IDENTITE.md), puis la date et l'heure en blanc et en capitales */}
+            {nomSport ? <Text style={[typo.petit, { color: p.fond === sombre.fond ? couleur : p.texteDoux }]}>{nomSport}</Text> : null}
+            <Text style={[typo.micro, { color: p.texte, letterSpacing: 1.2 }]}>{nomSport ? '· ' : ''}{date}</Text>
           </View>
         ) : null}
         {chiffres}
