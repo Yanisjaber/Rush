@@ -34,7 +34,7 @@ export function CarteTrace(props: Props) {
   );
 }
 
-function CarteNative({ trace, region, couleur, curseur, marges }: Props) {
+function CarteNative({ trace, region, couleur, curseur, marges, plein }: Props) {
   const p = usePalette();
   const sombre = useColorScheme() !== 'light';
   const [cartes, setCartes] = useState<typeof import('react-native-maps') | null | false>(null);
@@ -68,6 +68,10 @@ function CarteNative({ trace, region, couleur, curseur, marges }: Props) {
       style={StyleSheet.absoluteFill}
       initialRegion={region}
       userInterfaceStyle={sombre ? 'dark' : 'light'}
+      // Carte plein écran : la trace est déjà cadrée, et la carte ne se déplace pas. Sinon un balayage depuis le bord gauche (pour revenir en arrière) la faisait glisser, et une bande blanche
+      // (tuiles pas encore chargées) apparaissait à gauche.
+      scrollEnabled={!plein}
+      zoomEnabled={!plein}
       rotateEnabled={false}
       pitchEnabled={false}
       showsUserLocation={false}
