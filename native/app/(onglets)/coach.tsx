@@ -141,6 +141,8 @@ export default function Coach() {
             keyExtractor={(m) => m.id}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
+            // iOS natif : si de la hauteur change au-dessus de ce que tu regardes (carte dépliée plus haut), le contenu visible ne bouge pas
+            maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
             contentContainerStyle={styles.liste}
             scrollEventThrottle={16}
             onScrollBeginDrag={() => {
