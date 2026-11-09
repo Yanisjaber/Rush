@@ -175,3 +175,33 @@ test('plan : une ligne de repos est gardée (le jour est dans « vers », « pos
   assert.equal(l[1].poser, false);
   assert.equal('poser' in l[2], false, 'un « poser » qui n\'est pas un booléen est ignoré');
 });
+
+// ---------- La structure des séances (blocs) ----------
+import { lireBlocs, lireCarte as lireCarteBlocs } from '../../src/data/coach/flux.ts';
+
+const SEG = { min: 10, int: 60, intHi: 75 };
+const BLOC_OK = { type: 'warmup', name: 'Échauffement', reps: 1, metric: 'pace', unit: 'zone', work: SEG };
+
+test('blocs : une structure valide est gardée telle quelle, une absente donne rien', () => {
+  assert.deepEqual(lireBlocs([BLOC_OK]), [BLOC_OK]);
+  assert.equal(lireBlocs(undefined), undefined);
+  assert.equal(lireBlocs([]), undefined);
+});
+test('blocs : un seul bloc douteux et toute la structure est écartée (le profil ne s\'affiche pas)', () => {
+  assert.equal(lireBlocs([BLOC_OK, { ...BLOC_OK, type: 'inconnu' }]), undefined);
+  assert.equal(lireBlocs([{ ...BLOC_OK, reps: 0 }]), undefined);
+  assert.equal(lireBlocs([{ ...BLOC_OK, reps: 1.5 }]), undefined);
+  assert.equal(lireBlocs([{ ...BLOC_OK, work: { ...SEG, min: -3 } }]), undefined);
+  assert.equal(lireBlocs([{ ...BLOC_OK, work: { ...SEG, min: 'dix' } }]), undefined);
+  assert.equal(lireBlocs([{ ...BLOC_OK, rec: { min: 'x' } }]), undefined);
+  assert.equal(lireBlocs(Array.from({ length: 21 }, () => BLOC_OK)), undefined);
+});
+test('une carte séance et une ligne de plan gardent leurs blocs ; sans blocs valides, la carte reste lisible', () => {
+  const seance = { id: 'c1', etat: 'proposee', proposition: { date: '2026-11-12', sport: 'course', type: 'fractionne', minutes: 10 }, tss_estime: 20, justification: 'ok', blocs: [BLOC_OK] };
+  assert.deepEqual((lireCarteBlocs(seance) as { blocs?: unknown }).blocs, [BLOC_OK]);
+  assert.equal((lireCarteBlocs({ ...seance, blocs: [{ type: 'x' }] }) as { blocs?: unknown }).blocs, undefined);
+  const plan = { id: 'p1', genre: 'planning', etat: 'proposee', intention: 'x', charge_avant: 1, charge_apres: 2, lignes: [{ op: 'ajouter', texte: 'Ajouter', sport: 'course', minutes: 10, vers: '2026-11-12', nom: '6 × 800 m', blocs: [BLOC_OK] }] };
+  const l = (lireCarteBlocs(plan) as { lignes: { nom?: string; blocs?: unknown }[] }).lignes[0];
+  assert.equal(l.nom, '6 × 800 m');
+  assert.deepEqual(l.blocs, [BLOC_OK]);
+});

@@ -1,6 +1,6 @@
 // Lecture du flux du coach (SSE) : le serveur envoie « data: {json} » suivi d'une ligne vide, pour chaque événement.
 // Logique pure : les morceaux de texte arrivent coupés n'importe où, on garde ce qui n'est pas fini pour le morceau suivant.
-import type { Carte, CarteSeance, CartePlanning, EtatCarte, EvenementCoach, LignePlan, TypeOperation, TypePeriode } from './types.ts';
+import type { BlocStructure, Carte, CarteSeance, CartePlanning, EtatCarte, EvenementCoach, LignePlan, SegmentBloc, TypeBloc, TypeOperation, TypePeriode } from './types.ts';
 
 const ETATS: readonly string[] = ['proposee', 'en_cours', 'ajoutee', 'refusee', 'annulee'];
 
@@ -16,11 +16,41 @@ const texte = (x: unknown, max = MAX_TEXTE): string => (typeof x === 'string' ? 
 const nombre = (x: unknown): number | undefined => (typeof x === 'number' && Number.isFinite(x) ? x : undefined);
 const date = (x: unknown): string | undefined => (typeof x === 'string' && DATE_ISO.test(x) ? x : undefined);
 
+const TYPES_BLOC: readonly string[] = ['warmup', 'interval', 'steady', 'recovery', 'cooldown'];
+const METRIQUES: readonly string[] = ['power', 'hr', 'pace'];
+const MAX_BLOCS = 20;
+
+function lireSegment(x: unknown): SegmentBloc | null {
+  if (!estObjet(x)) return null;
+  const min = nombre(x.min);
+  const int = nombre(x.int);
+  const intHi = x.intHi === null || x.intHi === undefined ? null : nombre(x.intHi);
+  if (min === undefined || min < 0 || min > 1440 || int === undefined || int < 0 || int > 300 || intHi === undefined || (intHi !== null && (intHi < 0 || intHi > 300))) return null;
+  return { min, int, intHi };
+}
+
+/** La structure d'une séance (blocs construits par le serveur), vérifiée bloc par bloc : un seul bloc douteux et on n'affiche pas de profil (la séance reste lisible sans). */
+export function lireBlocs(x: unknown): BlocStructure[] | undefined {
+  if (!Array.isArray(x) || x.length === 0 || x.length > MAX_BLOCS) return undefined;
+  const blocs: BlocStructure[] = [];
+  for (const b of x) {
+    if (!estObjet(b) || !TYPES_BLOC.includes(String(b.type)) || !METRIQUES.includes(String(b.metric))) return undefined;
+    const reps = nombre(b.reps);
+    const work = lireSegment(b.work);
+    const rec = b.rec === undefined ? undefined : lireSegment(b.rec);
+    if (reps === undefined || !Number.isInteger(reps) || reps < 1 || reps > 200 || !work || rec === null) return undefined;
+    blocs.push({ type: b.type as TypeBloc, name: texte(b.name, 80), reps, metric: b.metric as BlocStructure['metric'], unit: b.unit === 'pct' ? 'pct' : 'zone', work, ...(rec ? { rec } : {}) });
+  }
+  return blocs;
+}
+
 /** Une ligne de plan, vérifiée : une ligne sans opération connue ou sans texte est écartée. */
 function lireLigne(x: unknown): LignePlan | null {
   if (!estObjet(x) || !OPERATIONS.includes(String(x.op)) || typeof x.texte !== 'string' || !x.texte) return null;
   const raison = texte(x.raison);
   const structure = texte(x.structure, 400);
+  const nom = texte(x.nom, 80);
+  const blocs = lireBlocs(x.blocs);
   const minutes = nombre(x.minutes);
   const de = date(x.de);
   const vers = date(x.vers);
@@ -31,6 +61,8 @@ function lireLigne(x: unknown): LignePlan | null {
     texte: texte(x.texte),
     ...(raison ? { raison } : {}),
     ...(structure ? { structure } : {}),
+    ...(nom ? { nom } : {}),
+    ...(blocs ? { blocs } : {}),
     ...(typeof x.sport === 'string' ? { sport: x.sport.slice(0, 40) } : {}),
     ...(minutes !== undefined ? { minutes } : {}),
     ...(de ? { de } : {}),
@@ -66,6 +98,7 @@ function lireSeance(x: Record<string, unknown>): CarteSeance | null {
   if (typeof x.id !== 'string' || !ETATS.includes(String(x.etat))) return null;
   const p = x.proposition;
   if (!estObjet(p) || typeof p.date !== 'string' || typeof p.sport !== 'string' || typeof p.type !== 'string' || typeof p.minutes !== 'number') return null;
+  const blocs = lireBlocs(x.blocs);
   const tss = typeof x.tss_estime === 'number' && Number.isFinite(x.tss_estime) ? x.tss_estime : 0;
   return {
     id: x.id,
@@ -73,6 +106,7 @@ function lireSeance(x: Record<string, unknown>): CarteSeance | null {
     proposition: { date: p.date, sport: p.sport, type: p.type, minutes: p.minutes },
     tss_estime: tss,
     justification: typeof x.justification === 'string' ? x.justification : '',
+    ...(blocs ? { blocs } : {}),
     ...(typeof x.motif === 'string' ? { motif: x.motif } : {}),
     ...(typeof x.seance_id === 'string' ? { seance_id: x.seance_id } : {}),
   };

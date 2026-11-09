@@ -10,12 +10,31 @@ export interface Proposition {
   minutes: number;
 }
 
+/** Un bloc de la structure d'une séance (construite par le serveur : supabase/functions/_shared/structure-seance.ts) */
+export type TypeBloc = 'warmup' | 'interval' | 'steady' | 'recovery' | 'cooldown';
+export interface SegmentBloc {
+  min: number;
+  int: number;
+  intHi: number | null;
+}
+export interface BlocStructure {
+  type: TypeBloc;
+  name: string;
+  reps: number;
+  metric: 'power' | 'hr' | 'pace';
+  unit: 'zone' | 'pct';
+  work: SegmentBloc;
+  rec?: SegmentBloc;
+}
+
 export interface CarteSeance {
   id: string;
   etat: EtatCarte;
   proposition: Proposition;
   tss_estime: number;
   justification: string;
+  /** Structure de la séance (échauffement, corps, retour au calme) : absente des anciennes cartes */
+  blocs?: BlocStructure[];
   /** Raison du refus (état « refusee ») */
   motif?: string;
   /** La séance créée dans le calendrier (état « ajoutee ») */
@@ -35,6 +54,9 @@ export interface LignePlan {
   raison?: string;
   /** Séance ajoutée : sa structure en une phrase (échauffement, corps, retour au calme) */
   structure?: string;
+  /** Séance ajoutée : ses blocs (pour le profil d'intensité) et son nom (« 6 × 800 m ») ; absents des anciennes cartes */
+  blocs?: BlocStructure[];
+  nom?: string;
   sport?: string | null;
   minutes?: number | null;
   de?: string;

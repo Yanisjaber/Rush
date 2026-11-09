@@ -137,14 +137,15 @@ import { cartePlanReposExemple, cartePlanSemaineExemple, EXEMPLES, PREFIXE_EXEMP
 import { resumePlan } from '../../src/data/coach/libelles.ts';
 import { lireCarte } from '../../src/data/coach/flux.ts';
 
-test('cartes d\'essai : trois exemples, tous relus sans perte par le lecteur de cartes, identifiants préfixés', () => {
-  assert.equal(EXEMPLES.length, 3);
+test('cartes d\'essai : quatre exemples, tous relus sans perte par le lecteur de cartes, identifiants préfixés', () => {
+  assert.equal(EXEMPLES.length, 4);
   for (const fabrique of EXEMPLES) {
     const c = fabrique(AUJ);
     assert.ok(c.id.startsWith(PREFIXE_EXEMPLE));
-    const relue = lireCarte(JSON.parse(JSON.stringify(c))) as { lignes: unknown[] };
+    const relue = lireCarte(JSON.parse(JSON.stringify(c))) as { lignes?: unknown[] };
     assert.ok(relue, c.id);
-    assert.equal(relue.lignes.length, c.lignes.length);
+    if ('lignes' in c) assert.equal(relue.lignes?.length, c.lignes.length);
+    assert.deepEqual(relue, c, 'rien ne se perd à la relecture (blocs et noms compris)');
   }
 });
 
