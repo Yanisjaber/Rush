@@ -29,7 +29,6 @@ interface Props {
   onAnnuler?: () => void;
   /** « Refaire le plan » : demande au coach de recalculer (envoie un message) */
   onRefaire: () => void;
-  onVoirCalendrier: () => void;
   /** Appelé juste AVANT qu'on déplie ou replie quelque chose : l'écran garde alors le haut de la carte en place (le contenu s'ouvre vers le bas) */
   onBascule?: () => void;
 }
@@ -69,7 +68,7 @@ const texteLigne = (l: LignePlan): string => {
   return /\b\d+\s*min\b/.test(l.nom) ? l.nom : `${l.nom} · ${dureeMinutes(l.minutes)}`;
 };
 
-export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnuler, onRefaire, onVoirCalendrier, onBascule }: Props) {
+export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnuler, onRefaire, onBascule }: Props) {
   const p = usePalette();
   const [toutesSemaines, setToutesSemaines] = useState(false);
   /** Les semaines dépliées (la première l'est d'office, tant qu'on n'a rien touché) */
@@ -297,8 +296,7 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
 
         {etat === 'ajoutee' ? (
           <View style={styles.boutons}>
-            {onAnnuler ? <BoutonCompact libelle="Annuler" accessibilityLabel="Annuler le plan : remettre ton calendrier comme avant" desactive={occupee} onPress={onAnnuler} /> : null}
-            <BoutonCompact libelle="Calendrier" accessibilityLabel="Voir au calendrier" onPress={onVoirCalendrier} />
+            {onAnnuler ? <BoutonCompact libelle="Annuler" accessibilityLabel="Annuler le plan : remettre ton calendrier comme avant" desactive={occupee} onPress={onAnnuler} /> : <View style={{ flex: 1 }} />}
             <BoutonCompact
               largeur={96}
               libelle={deplie ? 'Masquer' : 'Détail'}

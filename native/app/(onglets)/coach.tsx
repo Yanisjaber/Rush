@@ -185,7 +185,6 @@ export default function Coach() {
                   onAnnuler={(carte) => void c.annuler(carte)}
                   onRefaire={() => void c.envoyer('Refais le plan : mon calendrier a changé.')}
                   decalage={decalage}
-                  onVoirCalendrier={() => router.navigate('/calendrier')}
                   onBascule={() => {
                     // L'utilisateur déplie ou replie : on ne tire plus la liste vers le bas, le haut de la carte reste en place
                     colleAuBas.current = false;
