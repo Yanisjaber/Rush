@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chiffresSeance, formatDureeTour, lignesTours, messageTours, toursValides } from '../../src/data/calendrier/seance-detail.ts';
+import { chiffresSeance, formatDureeTour, lignesTours, messageTours, toursValides, troisChiffres } from '../../src/data/calendrier/seance-detail.ts';
 import { toursDemo } from '../../src/data/demo/demo.ts';
 import type { Seance } from '../../src/data/types.ts';
 
@@ -104,4 +104,18 @@ test('chiffresSeance : des watts estimés par Strava (device_watts faux) ne sont
   assert.ok(vraie.some((c) => c.cle === 'watts'));
   assert.equal(vraie.find((c) => c.cle === 'energie')?.unite, 'kJ');
   assert.ok(cles(seance({ ...velo, device_watts: null })).includes('watts')); // inconnu : on ne présume rien
+});
+
+test('troisChiffres : distance, durée puis allure ou vitesse, dans cet ordre', () => {
+  const ch = (cle: string) => ({ cle, libelle: cle, valeur: '1' });
+  assert.deepEqual(troisChiffres([ch('duree'), ch('distance'), ch('allure'), ch('denivele'), ch('fc')]).map((c) => c.cle), ['distance', 'duree', 'allure']);
+  assert.deepEqual(troisChiffres([ch('duree'), ch('distance'), ch('vitesse'), ch('watts')]).map((c) => c.cle), ['distance', 'duree', 'vitesse']);
+});
+
+test('troisChiffres : un chiffre absent est remplacé par le suivant, et on ne dépasse jamais trois', () => {
+  const ch = (cle: string) => ({ cle, libelle: cle, valeur: '1' });
+  // Sans distance (muscu) : la durée, puis les suivants
+  assert.deepEqual(troisChiffres([ch('duree'), ch('fc'), ch('charge'), ch('rpe')]).map((c) => c.cle), ['duree', 'fc', 'charge']);
+  assert.deepEqual(troisChiffres([ch('duree')]).map((c) => c.cle), ['duree']);
+  assert.deepEqual(troisChiffres([]), []);
 });

@@ -54,6 +54,19 @@ export function chiffresSeance(s: Seance): ChiffreSeance[] {
   return liste;
 }
 
+/**
+ * Les trois chiffres clés sous le profil d'une sortie : distance, durée, puis allure (course, natation) ou vitesse (vélo). Un chiffre absent est remplacé par le suivant
+ * de la liste (dénivelé, cardio…), pour toujours en montrer trois quand la sortie en a trois.
+ */
+export function troisChiffres(chiffres: ChiffreSeance[]): ChiffreSeance[] {
+  const voulus = ['distance', 'duree', 'allure', 'vitesse']
+    .map((cle) => chiffres.find((c) => c.cle === cle))
+    .filter((c): c is ChiffreSeance => !!c)
+    .slice(0, 3);
+  const reste = chiffres.filter((c) => !voulus.includes(c));
+  return [...voulus, ...reste].slice(0, 3);
+}
+
 export interface LigneTour {
   cle: string;
   numero: number;

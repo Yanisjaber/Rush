@@ -1,0 +1,151 @@
+import { useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CarteTrace } from '@/components/graphes/CarteTrace';
+import { EnteteFlottante, HAUT_ENTETE } from '@/components/graphes/EnteteFlottante';
+import { ProfilCurseur } from '@/components/graphes/ProfilCurseur';
+import { Dossard } from '@/components/ui/Dossard';
+import type { PointCarte, RegionCarte } from '@/data/calendrier/apercu-import';
+import { longueurKm, pointAuFraction, regionPourZone } from '@/data/outils/trace';
+import { espace, rayon } from '@/theme/couleurs';
+import { typo } from '@/theme/typo';
+import { usePalette } from '@/theme/usePalette';
+
+// L'écran d'une sortie réalisée (maquette 3 « Pages qu'on balaie ») : la carte en plein fond (ou, sans GPS, un dossard avec le chiffre principal),
+// le retour, le titre et le crayon flottants, et une feuille en bas avec les trois chiffres clés puis trois pages qu'on balaie : Profil, Tours, Notes et données.
+// Sur la page Profil, on glisse le doigt sur la courbe : un point suit sur la carte. Les pastilles de pagination se touchent aussi.
+interface ParcoursSortie {
+  trace: PointCarte[];
+  region: RegionCarte | null;
+  profil: number[];
+  altitudeMin: number | null;
+  altitudeMax: number | null;
+}
+
+interface Props {
+  /** La carte et le profil ; null sans GPS (ou tant qu'ils ne sont pas là). */
+  parcours: ParcoursSortie | null;
+  /** La carte est en cours de chargement (une sortie Strava la demande à Strava). */
+  chargementCarte?: boolean;
+  /** La distance enregistrée sur la sortie, pour l'axe quand la trace n'a pas sa propre longueur. */
+  km: number | null;
+  couleur: string;
+  /** Clé de sport, pour la couleur du dossard sans GPS. */
+  sport: string;
+  titre: string;
+  /** La date et l'heure, en petit au-dessus des chiffres (« MER 4 NOV · 20:19 »). */
+  date?: string;
+  /** Le chiffre principal du dossard sans GPS (la distance, ou la durée à défaut). */
+  hero: { etiquette: string; valeur: string; unite?: string; detail?: string } | null;
+  /** Les trois chiffres clés, sous la pastille de pagination. */
+  chiffres: ReactNode;
+  pageTours: ReactNode;
+  pageDonnees: ReactNode;
+  onModifier?: () => void;
+}
+
+const HAUTEUR_PAGE = 236;
+
+export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, hero, chiffres, pageTours, pageDonnees, onModifier }: Props) {
+  const p = usePalette();
+  const { top: haut, bottom: bas } = useSafeAreaInsets();
+  const avecCarte = !!parcours?.region && parcours.trace.length > 1;
+  const avecProfil = !!parcours && parcours.profil.length > 1 && parcours.altitudeMin != null && parcours.altitudeMax != null;
+  const pages = useMemo(() => [...(avecProfil ? (['profil'] as const) : []), 'tours' as const, 'donnees' as const], [avecProfil]);
+  const NOMS = { profil: 'Profil', tours: 'Tours', donnees: 'Notes et données' } as const;
+
+  const [dims, setDims] = useState({ page: 0, feuille: 0, pager: 0 });
+  const [fraction, setFraction] = useState<number | null>(null);
+  const [index, setIndex] = useState(0);
+  const defilement = useRef<ComponentRef<typeof ScrollView>>(null);
+  const kmTrace = useMemo(() => (parcours ? longueurKm(parcours.trace) : 0), [parcours]);
+  const pageActuelle = pages[Math.min(index, pages.length - 1)];
+  // Le point du curseur n'a de sens que sur la page Profil
+  const curseur = useMemo(() => (pageActuelle === 'profil' && fraction != null && parcours ? pointAuFraction(parcours.trace, fraction) : null), [parcours, fraction, pageActuelle]);
+  // La trace doit rester entière dans la zone libre (sous l'en-tête, au-dessus de la feuille)
+  const region = useMemo(
+    () => (avecCarte && parcours?.region ? regionPourZone(parcours.region, { hauteur: dims.page, haut: haut + HAUT_ENTETE, bas: dims.feuille }) : null),
+    [avecCarte, parcours, dims, haut],
+  );
+
+  const aller = (i: number) => {
+    setIndex(i);
+    defilement.current?.scrollTo({ x: i * dims.pager, animated: true });
+  };
+  const apresDefilement = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (dims.pager > 0) setIndex(Math.round(e.nativeEvent.contentOffset.x / dims.pager));
+  };
+
+  return (
+    <View style={styles.page} onLayout={(e: LayoutChangeEvent) => setDims((d) => ({ ...d, page: e.nativeEvent.layout.height }))}>
+      {avecCarte && parcours && region ? (
+        <CarteTrace plein trace={parcours.trace} region={region} couleur={couleur} curseur={curseur} />
+      ) : (
+        <View style={[styles.sansCarte, { paddingTop: haut + HAUT_ENTETE + espace.e4 }]}>
+          {chargementCarte ? (
+            <View accessible accessibilityLabel="Chargement de la carte" style={styles.attente}>
+              <ActivityIndicator color={p.texteDoux} />
+              <Text style={[typo.petit, { color: p.texteDoux }]}>Chargement de la carte…</Text>
+            </View>
+          ) : hero ? (
+            <Dossard etiquette={hero.etiquette} valeur={hero.valeur} uniteValeur={hero.unite} detail={hero.detail} sport={sport} taille="l" chiffreMax={72} />
+          ) : null}
+        </View>
+      )}
+
+      <EnteteFlottante titre={titre} onModifier={onModifier} />
+
+      <View
+        onLayout={(e: LayoutChangeEvent) => setDims((d) => ({ ...d, feuille: e.nativeEvent.layout.height }))}
+        style={[styles.feuille, { backgroundColor: p.fond, borderColor: p.trait, paddingBottom: bas + espace.e3 }]}
+      >
+        {date ? <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2 }]}>{date}</Text> : null}
+        {chiffres}
+
+        <View accessible={false} style={styles.pastilles}>
+          {pages.map((nom, i) => (
+            <Pressable
+              key={nom}
+              onPress={() => aller(i)}
+              hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }}
+              accessibilityRole="button"
+              accessibilityLabel={`${NOMS[nom]}, page ${i + 1} sur ${pages.length}`}
+              accessibilityState={{ selected: i === index }}
+              style={[styles.pastille, i === index ? { width: 22, backgroundColor: p.texte } : { backgroundColor: p.traitFort }]}
+            />
+          ))}
+        </View>
+        <Text style={[typo.micro, { color: p.texteMuet, letterSpacing: 1.2 }]}>
+          {NOMS[pageActuelle].toUpperCase()} · PAGE {Math.min(index, pages.length - 1) + 1} SUR {pages.length}
+        </Text>
+
+        <View style={{ height: HAUTEUR_PAGE }} onLayout={(e: LayoutChangeEvent) => setDims((d) => ({ ...d, pager: e.nativeEvent.layout.width }))}>
+          {dims.pager > 0 ? (
+            <ScrollView ref={defilement} horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={apresDefilement} style={{ flex: 1 }}>
+              {pages.map((nom) => (
+                <View key={nom} style={{ width: dims.pager, height: HAUTEUR_PAGE }}>
+                  {nom === 'profil' && parcours && parcours.altitudeMin != null && parcours.altitudeMax != null ? (
+                    <ProfilCurseur profil={parcours.profil} min={parcours.altitudeMin} max={parcours.altitudeMax} km={kmTrace > 0 ? kmTrace : km} couleur={couleur} hauteur={140} onChange={setFraction} />
+                  ) : (
+                    <ScrollView nestedScrollEnabled showsVerticalScrollIndicator contentContainerStyle={{ paddingBottom: espace.e2 }}>
+                      {nom === 'tours' ? pageTours : pageDonnees}
+                    </ScrollView>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+          ) : null}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  page: { flex: 1 },
+  sansCarte: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, paddingHorizontal: espace.e4 },
+  attente: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
+  feuille: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: rayon.bloc, borderTopRightRadius: rayon.bloc, borderTopWidth: 1, paddingTop: espace.e4, paddingHorizontal: espace.e4, gap: espace.e2 },
+  pastilles: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, height: 20 },
+  pastille: { width: 8, height: 8, borderRadius: 4 },
+});

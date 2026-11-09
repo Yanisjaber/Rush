@@ -1,33 +1,30 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { nomDuType } from '@/data/sports/catalogue-sports';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bloc } from '@/components/feuilles/Bloc';
-import { Bouton } from '@/components/ui/Bouton';
-import { IconeSport } from '@/components/ui/IconeSport';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { VueSortie } from '@/components/graphes/VueSortie';
+import { ListeTours } from '@/components/ui/ListeTours';
 import { PucesEcart } from '@/components/ui/PucesEcart';
 import { StatCle } from '@/components/ui/StatCle';
 import { sortieModifiable } from '@/data/calendrier/ajouts';
 import { chiffreEcarte, pucesEcart } from '@/data/calendrier/donnees-ecartees';
-import { familleAffichage } from '@/data/sports/familles';
-import { formatDateLongue } from '@/data/outils/format';
-import { chiffresSeance, lignesTours } from '@/data/calendrier/seance-detail';
+import { chiffresSeance, lignesTours, troisChiffres } from '@/data/calendrier/seance-detail';
+import { formatDateCourte } from '@/data/outils/format';
+import { nomDuType } from '@/data/sports/catalogue-sports';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useSeance } from '@/hooks/useSeance';
 import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
-import { police, typo } from '@/theme/typo';
+import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Le détail d'une séance faite, en lecture : son nom, ses chiffres (selon le sport), ses notes et ses tours (laps) quand la montre en a marqué.
-// On y arrive depuis le calendrier. Une activité saisie à la main a en plus Modifier et Supprimer (celles de Strava appartiennent à Strava) ; les tours serviront à détailler une séance Hyrox.
+// Le détail d'une sortie réalisée (maquette « Pages qu'on balaie ») : la carte en plein fond (ou, sans GPS, un dossard), les trois chiffres clés, puis trois pages qu'on balaie
+// dans la feuille : Profil d'altitude, Tours et Notes et données. On y arrive depuis le calendrier. Une activité saisie à la main peut être modifiée (crayon) et supprimée
+// (en bas de la page Notes et données) ; celles de Strava appartiennent à Strava.
 export default function Seance() {
   const p = usePalette();
-  const bas = useSafeAreaInsets().bottom;
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { seance, tours, chargement, chargementTours, erreur, erreurTours, basculerDonnee } = useSeance(String(id ?? ''));
+  const { seance, tours, trace, chargement, chargementTours, chargementTrace, erreur, erreurTours, basculerDonnee } = useSeance(String(id ?? ''));
   const [erreurEcart, setErreurEcart] = useState('');
   const { supprimerSortie } = useAjouts();
   const [enCours, setEnCours] = useState(false);
@@ -53,14 +50,19 @@ export default function Seance() {
     );
   }
 
-  const famille = familleAffichage(seance.sport);
   const couleur = couleurSport(p, seance.sport);
   const nomSport = nomDuType(seance.sport);
   const chiffres = chiffresSeance(seance);
+  const cles = troisChiffres(chiffres);
   const lignes = tours ? lignesTours(tours, seance.sport) : [];
   const puces = pucesEcart(seance);
   const notes = (seance.user_notes ?? '').trim();
   const modifiable = sortieModifiable(seance);
+  const jour = String(seance.start_date_local).slice(0, 10);
+  const heureLue = /T(\d{2}:\d{2})/.exec(String(seance.start_date_local ?? ''))?.[1];
+  const date = `${formatDateCourte(jour).replace(/\./g, '')}${heureLue && heureLue !== '00:00' ? ` · ${heureLue}` : ''}`.toUpperCase();
+  const principal = chiffres.find((c) => c.cle === 'distance') ?? chiffres.find((c) => c.cle === 'duree');
+
   const confirmerSuppression = () =>
     Alert.alert('Supprimer cette activité ?', 'Elle disparaîtra du calendrier et de tes totaux. Cette action est définitive.', [
       { text: 'Annuler', style: 'cancel' },
@@ -82,120 +84,79 @@ export default function Seance() {
 
   return (
     <View style={styles.page}>
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.contenu, { paddingBottom: (modifiable ? espace.e5 : bas + espace.e5) }]} contentInsetAdjustmentBehavior="automatic">
-      <View style={[styles.entete, { backgroundColor: p.surface, borderLeftColor: couleur }]}>
-        <View style={styles.sport}>
-          <IconeSport sport={seance.sport} />
-          <Text style={[typo.petit, { color: p.texteDoux }]}>{nomSport}</Text>
-        </View>
-        <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>
-          {seance.name || nomSport}
-        </Text>
-        <Text style={[typo.corps, { color: p.texteDoux }]}>{formatDateLongue(String(seance.start_date_local).slice(0, 10))}</Text>
-      </View>
-
-      {chiffres.length ? (
-        <Bloc titre="Les chiffres">
-          <View style={styles.grille}>
-            {chiffres.map((c) => (
-              <View key={c.cle} style={styles.case}>
-                <StatCle etiquette={c.libelle} valeur={c.valeur} unite={c.unite} note={c.note} petit ecarte={chiffreEcarte(seance, c.cle)} />
+      <Stack.Screen options={{ headerShown: false }} />
+      <VueSortie
+        parcours={trace}
+        chargementCarte={chargementTrace}
+        km={seance.distance_km ?? null}
+        couleur={couleur}
+        sport={seance.sport}
+        titre={seance.name || nomSport}
+        date={date}
+        hero={principal ? { etiquette: principal.libelle.toUpperCase(), valeur: principal.valeur, unite: principal.unite, detail: `${nomSport} · ${date}` } : null}
+        onModifier={modifiable ? () => router.push({ pathname: '/ajout-sortie', params: { id: seance.id } }) : undefined}
+        chiffres={
+          cles.length ? (
+            <View style={styles.tuiles}>
+              {cles.map((c) => (
+                <View key={c.cle} style={[styles.tuile, { backgroundColor: p.surface }]}>
+                  <StatCle etiquette={c.libelle} valeur={c.valeur} unite={c.unite} petit ecarte={chiffreEcarte(seance, c.cle)} />
+                </View>
+              ))}
+            </View>
+          ) : null
+        }
+        pageTours={<ListeTours lignes={lignes} chargement={chargementTours} erreur={erreurTours} />}
+        pageDonnees={
+          <View style={{ gap: espace.e3 }}>
+            {notes ? (
+              <View style={[styles.notes, { backgroundColor: p.surface }]}>
+                <Text style={[typo.micro, { color: p.texteDoux }]}>NOTES</Text>
+                <Text style={[typo.corps, { color: p.texte }]}>{notes}</Text>
               </View>
-            ))}
-          </View>
-        </Bloc>
-      ) : null}
-
-      {puces.length ? (
-        <PucesEcart
-          puces={puces}
-          couleur={couleur}
-          erreur={erreurEcart}
-          onBasculer={(puce) => {
-            void (async () => setErreurEcart(await basculerDonnee(puce.colonne, !puce.ecartee)))();
-          }}
-        />
-      ) : null}
-
-      {notes ? (
-        <Bloc titre="Notes">
-          <Text style={[typo.corps, { color: p.texte }]}>{notes}</Text>
-        </Bloc>
-      ) : null}
-
-      <Bloc titre={lignes.length ? `Tours (${lignes.length})` : 'Tours'}>
-        {chargementTours ? (
-          <View accessible accessibilityLabel="Chargement des tours" style={styles.attente}>
-            <ActivityIndicator color={p.texteDoux} />
-            <Text style={[typo.petit, { color: p.texteDoux }]}>Chargement des tours…</Text>
-          </View>
-        ) : erreurTours ? (
-          <Text style={[typo.corps, { color: p.texteDoux }]}>{erreurTours}</Text>
-        ) : lignes.length ? (
-          lignes.map((l, i) => (
-            <View
-              key={l.cle}
-              accessible
-              accessibilityLabel={`Tour ${l.numero}${l.nom ? `, ${l.nom}` : ''}, ${l.duree}${l.distance ? `, ${l.distance}` : ''}${l.rythme ? `, ${l.rythme}` : ''}`}
-              style={[styles.tour, i > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }]}
-            >
-              <Text style={[typo.petit, styles.numero, { color: p.texteDoux }]}>{l.numero}</Text>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={[styles.duree, { color: p.texte }]}>{l.duree}</Text>
-                {l.nom || l.distance ? (
-                  <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>
-                    {[l.nom, l.distance].filter(Boolean).join(' · ')}
+            ) : (
+              <Text style={[typo.corps, { color: p.texteMuet }]}>Pas de note sur cette sortie.</Text>
+            )}
+            {puces.length ? (
+              <PucesEcart
+                puces={puces}
+                couleur={couleur}
+                erreur={erreurEcart}
+                onBasculer={(puce) => {
+                  void (async () => setErreurEcart(await basculerDonnee(puce.colonne, !puce.ecartee)))();
+                }}
+              />
+            ) : null}
+            {modifiable ? (
+              <View style={{ gap: espace.e2 }}>
+                {erreurSuppression ? (
+                  <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>
+                    {erreurSuppression}
                   </Text>
                 ) : null}
+                <Pressable
+                  onPress={confirmerSuppression}
+                  disabled={enCours}
+                  accessibilityRole="button"
+                  accessibilityLabel="Supprimer l'activité"
+                  style={({ pressed }) => [styles.supprimer, { borderColor: p.danger, opacity: pressed || enCours ? 0.6 : 1 }]}
+                >
+                  <Text style={[typo.corpsFort, { color: p.danger }]}>{enCours ? 'Suppression…' : 'Supprimer cette activité'}</Text>
+                </Pressable>
               </View>
-              {l.rythme ? <Text style={[typo.corpsFort, { color: p.texte }]}>{l.rythme}</Text> : null}
-            </View>
-          ))
-        ) : (
-          <Text style={[typo.corps, { color: p.texteDoux }]}>Pas de tour sur cette séance. Ils apparaissent quand ta montre en marque (bouton « lap »).</Text>
-        )}
-      </Bloc>
-    </ScrollView>
-    {modifiable ? (
-      <View>
-        {erreurSuppression ? (
-          <Text accessibilityRole="alert" style={[typo.petit, styles.erreurBas, { color: p.danger, backgroundColor: p.fond }]}>
-            {erreurSuppression}
-          </Text>
-        ) : null}
-        <View style={[styles.bas, { backgroundColor: p.fond, borderTopColor: p.trait, paddingBottom: bas + espace.e3 }]}>
-          <View style={{ flex: 1 }}>
-            <Bouton onPress={() => router.push({ pathname: '/ajout-sortie', params: { id: seance.id } })}>Modifier</Bouton>
+            ) : null}
           </View>
-          <Pressable
-            onPress={confirmerSuppression}
-            disabled={enCours}
-            accessibilityRole="button"
-            accessibilityLabel="Supprimer l'activité"
-            style={({ pressed }) => [styles.supprimer, { borderColor: p.danger, opacity: pressed || enCours ? 0.6 : 1 }]}
-          >
-            <Text style={[typo.corpsFort, { color: p.danger }]}>{enCours ? 'Suppression…' : 'Supprimer'}</Text>
-          </Pressable>
-        </View>
-      </View>
-    ) : null}
+        }
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   page: { flex: 1 },
-  erreurBas: { paddingHorizontal: espace.e4, paddingTop: espace.e2 },
-  bas: { flexDirection: 'row', gap: espace.e2, paddingHorizontal: espace.e4, paddingTop: espace.e3, borderTopWidth: 1 },
-  supprimer: { flex: 1, minHeight: 44, borderRadius: rayon.base, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: espace.e5 },
-  contenu: { padding: espace.e4, gap: espace.e3 },
-  entete: { borderRadius: rayon.bloc, borderLeftWidth: 6, padding: espace.e4, gap: 4 },
-  sport: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  grille: { flexDirection: 'row', flexWrap: 'wrap', rowGap: espace.e4 },
-  case: { width: '50%', paddingRight: espace.e3 },
-  attente: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
-  tour: { flexDirection: 'row', alignItems: 'center', gap: espace.e3, minHeight: 52, paddingVertical: 6 },
-  numero: { width: 24, fontFamily: police.texte600, fontVariant: ['tabular-nums'] },
-  duree: { fontFamily: police.titre700, fontSize: 18, lineHeight: 22, fontVariant: ['tabular-nums'] },
+  tuiles: { flexDirection: 'row', gap: espace.e2 },
+  tuile: { flex: 1, borderRadius: rayon.base, padding: espace.e3 },
+  notes: { borderRadius: rayon.base, padding: espace.e3, gap: 4 },
+  supprimer: { minHeight: 44, borderRadius: rayon.base, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });
