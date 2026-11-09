@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MessageVue } from '@/components/coach/MessageVue';
 import { SaisieCoach } from '@/components/coach/SaisieCoach';
-import { BarreSports } from '@/components/graphes/BarreSports';
+import { BoutonReglages } from '@/components/ui/BoutonReglages';
 import { FondDegrade } from '@/components/ui/FondDegrade';
 import { ROUTE_ECRAN, type ActionApp } from '@/data/coach/actions';
 import { useCoach } from '@/hooks/useCoach';
@@ -66,20 +66,23 @@ export default function Coach() {
   return (
     <View style={styles.page}>
       <FondDegrade />
-      <BarreSports />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.page}>
-        <View style={styles.entete}>
+        <View style={[styles.entete, { paddingTop: insets.top + espace.e2 }]}>
           {/* Mode développement : un appui long sur le titre pose une carte de plan d'exemple (sans serveur) pour voir l'écran */}
           <Pressable onLongPress={c.insererExemple} disabled={!c.insererExemple} accessible={false}>
-            <Text accessibilityRole="header" style={[typo.titre3, { color: p.texte }]}>
+            <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>
               Lía
             </Text>
           </Pressable>
-          {c.messages.length > 0 && !c.envoi ? (
-            <Pressable onPress={confirmerEffacement} accessibilityRole="button" accessibilityLabel="Effacer la conversation" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.effacer}>
-              <Text style={[typo.petit, { color: p.texteDoux }]}>Effacer</Text>
-            </Pressable>
-          ) : null}
+          <View style={styles.droite}>
+            {c.messages.length > 0 && !c.envoi ? (
+              <Pressable onPress={confirmerEffacement} accessibilityRole="button" accessibilityLabel="Effacer la conversation" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.effacer}>
+                <Text style={[typo.petit, { color: p.texteDoux }]}>Effacer</Text>
+              </Pressable>
+            ) : null}
+            {/* Comme Santé : pas de barre des sports, la roue des Paramètres est ici, en haut à droite */}
+            <BoutonReglages />
+          </View>
         </View>
 
         {!acces ? (
@@ -144,8 +147,9 @@ function Etat({ titre, texte }: { titre: string; texte: string }) {
 
 const styles = StyleSheet.create({
   page: { flex: 1 },
-  entete: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: espace.e4, paddingTop: espace.e2, paddingBottom: espace.e2, minHeight: 44 },
-  effacer: { position: 'absolute', right: espace.e4, top: 0, bottom: 0, minWidth: 44, justifyContent: 'center', alignItems: 'flex-end' },
+  entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: espace.e4, paddingBottom: espace.e2 },
+  droite: { flexDirection: 'row', alignItems: 'center', gap: espace.e1, marginRight: -espace.e3 },
+  effacer: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center' },
   liste: { paddingHorizontal: espace.e4, paddingVertical: espace.e3 },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: espace.e3, paddingHorizontal: espace.e5 },
   avis: { borderLeftWidth: 3, borderRadius: rayon.base, padding: espace.e3, alignSelf: 'stretch' },
