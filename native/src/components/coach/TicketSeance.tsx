@@ -3,6 +3,9 @@ import { ProfilSeance } from '@/components/graphes/ProfilSeance';
 import { resumeBlocs } from '@/data/coach/profil-seance';
 import { dureeMinutes } from '@/data/coach/libelles';
 import type { BlocStructure } from '@/data/coach/types';
+import { indiceZone, milieu, texteCible, texteDuree, ZONES } from '@/data/calendrier/structure';
+import type { Reference, Segment } from '@/data/calendrier/structure';
+import { useReferences } from '@/hooks/useReferences';
 import { espace } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -18,6 +21,8 @@ interface Props {
   blocs?: BlocStructure[];
   /** La structure en une phrase, si le serveur l'a envoyée ; sinon on la tire des blocs */
   resume?: string;
+  /** Le sport du coach (course, velo, natation) : sert à traduire les pourcentages en watts ou en battements */
+  sport?: string;
   /** Pourquoi le coach la propose */
   raison?: string;
   /** Sans liseré (quand le ticket est déjà dans une carte qui a le sien) */
@@ -26,9 +31,24 @@ interface Props {
 
 const HAUTEUR_PROFIL = 44;
 
-export function TicketSeance({ couleur, jour, titre, minutes, blocs, resume, raison, sansLisere }: Props) {
+/** Le sport du coach → le type de sport de l'app (celui que lit `texteCible`) */
+const SPORT_APP: Record<string, string> = { course: 'Run', velo: 'Ride', natation: 'Swim' };
+
+/**
+ * La cible d'un segment. Watts et battements se calculent d'après le profil du sportif (FTP, FC max). Pour une allure on ne calcule RIEN :
+ * l'allure de base du sportif n'est pas connue ici (une valeur par défaut serait fausse), le nom du bloc écrit par le serveur porte déjà la vraie allure ; on ne garde que la zone.
+ */
+function cible(seg: Segment, metric: BlocStructure['metric'], reference: Reference, sport: string): string {
+  if (metric === 'pace') return ZONES.pace.noms[indiceZone(milieu(seg), 'pace')];
+  return texteCible(seg, metric, reference, sport);
+}
+
+export function TicketSeance({ couleur, jour, titre, minutes, blocs, resume, sport, raison, sansLisere }: Props) {
   const p = usePalette();
+  const reference = useReferences();
+  const sportApp = SPORT_APP[sport ?? ''] ?? 'Run';
   const phrase = resume || resumeBlocs(blocs);
+  const lignes = blocs && blocs.length > 0;
 
   return (
     <View>
@@ -45,7 +65,25 @@ export function TicketSeance({ couleur, jour, titre, minutes, blocs, resume, rai
             <ProfilSeance blocs={blocs} hauteur={HAUTEUR_PROFIL} />
           </View>
         ) : null}
-        {phrase ? <Text style={[typo.petit, { color: p.texteDoux }]}>{phrase}</Text> : null}
+        {lignes ? (
+          <View>
+            {blocs.map((b, i) => (
+              <View key={i} style={[styles.bloc, i > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }]}>
+                <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{b.name}</Text>
+                <Text style={[typo.petit, { color: p.texteDoux }]}>
+                  {b.type === 'interval' && b.reps > 1 ? `${b.reps} × ${texteDuree(b.work.min)}` : texteDuree(b.work.min)} · {cible(b.work, b.metric, reference, sportApp)}
+                </Text>
+                {b.type === 'interval' && b.rec ? (
+                  <Text style={[typo.petit, { color: p.texteMuet }]}>
+                    récupération {texteDuree(b.rec.min)} · {cible(b.rec, b.metric, reference, sportApp)}
+                  </Text>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        ) : phrase ? (
+          <Text style={[typo.petit, { color: p.texteDoux }]}>{phrase}</Text>
+        ) : null}
 
         {raison ? <Text style={[typo.petit, { color: p.texteDoux, fontFamily: police.texte400 }]}>{raison}</Text> : null}
       </View>
@@ -56,4 +94,5 @@ export function TicketSeance({ couleur, jour, titre, minutes, blocs, resume, rai
 const styles = StyleSheet.create({
   lisere: { height: 4 },
   corps: { padding: espace.e3, gap: espace.e2 },
+  bloc: { paddingVertical: espace.e2, gap: 1 },
 });

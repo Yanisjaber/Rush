@@ -133,6 +133,7 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
                         titre={l.nom ?? texteLigne(l)}
                         minutes={l.minutes}
                         blocs={l.blocs}
+                        sport={l.sport ?? undefined}
                         resume={l.structure}
                         raison={l.raison}
                       />

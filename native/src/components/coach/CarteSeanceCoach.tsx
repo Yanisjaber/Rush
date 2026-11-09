@@ -55,7 +55,7 @@ export function CarteSeanceCoach({ carte, occupee, erreur, onAjouter, onAnnuler 
             </View>
           </View>
         ) : (
-          <TicketSeance couleur={couleur} jour={jourCarte(prop.date)} titre={nomType(prop.sport, prop.type)} minutes={prop.minutes} blocs={carte.blocs} raison={carte.justification} />
+          <TicketSeance couleur={couleur} jour={jourCarte(prop.date)} titre={nomType(prop.sport, prop.type)} minutes={prop.minutes} blocs={carte.blocs} sport={prop.sport} raison={carte.justification} />
         )}
       </View>
 
