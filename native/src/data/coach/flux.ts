@@ -48,6 +48,7 @@ function lireLigne(x: unknown): LignePlan | null {
   const raison = texte(x.raison);
   const structure = texte(x.structure, 400);
   const nom = texte(x.nom, 80);
+  const phase = texte(x.phase, 30);
   const blocs = lireBlocs(x.blocs);
   const minutes = nombre(x.minutes);
   const de = date(x.de);
@@ -60,6 +61,7 @@ function lireLigne(x: unknown): LignePlan | null {
     ...(raison ? { raison } : {}),
     ...(structure ? { structure } : {}),
     ...(nom ? { nom } : {}),
+    ...(phase ? { phase } : {}),
     ...(blocs ? { blocs } : {}),
     ...(typeof x.sport === 'string' ? { sport: x.sport.slice(0, 40) } : {}),
     ...(minutes !== undefined ? { minutes } : {}),

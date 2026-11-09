@@ -24,7 +24,7 @@ export type Operation =
   | { op: 'supprimer'; seanceId: string; raison?: string }
   /** Poser (ou retirer) un jour de repos */
   | { op: 'repos'; date: string; poser: boolean; raison?: string }
-  | { op: 'ajouter'; proposition: Proposition; justification: string; raison?: string; detail?: DetailSeance };
+  | { op: 'ajouter'; proposition: Proposition; justification: string; raison?: string; detail?: DetailSeance; phase?: string };
 
 /**
  * Le contenu réel d'une séance bâtie par un moteur de plan (course visée) : un nom qui dit ce qu'on fait (« 6 × 400 m à 4:23/km »),
@@ -123,6 +123,8 @@ export interface LignePlan {
   /** Séance ajoutée : ses blocs (échauffement, répétitions, retour au calme) pour dessiner le profil d'intensité, et son nom */
   blocs?: BlocStructure[];
   nom?: string;
+  /** Le but de la semaine où tombe la séance, écrit par le moteur de plan (Base, Développement, Spécifique, Affûtage, Récupération, Montée) */
+  phase?: string;
 }
 
 export interface ResultatPlan {
@@ -265,7 +267,7 @@ export function evaluerPlan(operations: Operation[], seances: SeancePrevue[], ba
     const p = o.proposition;
     const nom = estFamilleCoach(p?.sport) ? (MENU[p.sport].find((t) => t.cle === p.type)?.nom ?? p.type) : String(p?.type ?? '');
     const ligne = `Ajouter : ${SPORTS_NOMS[p?.sport] ?? 'séance'} ${o.detail?.nom ?? nom} ${p?.minutes} min le ${etiquetteDate(p?.date)}`;
-    lignes.push({ op: o.op, texte: ligne, raison: o.raison ?? o.justification, sport: p?.sport ?? null, minutes: p?.minutes ?? null, vers: p?.date, structure: o.detail?.resume ?? resumeLigneStructure(p), blocs: o.detail?.structure ?? blocsLigneStructure(p), nom: o.detail?.nom });
+    lignes.push({ op: o.op, texte: ligne, raison: o.raison ?? o.justification, sport: p?.sport ?? null, minutes: p?.minutes ?? null, vers: p?.date, structure: o.detail?.resume ?? resumeLigneStructure(p), blocs: o.detail?.structure ?? blocsLigneStructure(p), nom: o.detail?.nom, ...(o.phase ? { phase: o.phase } : {}) });
     const v = validerSeance(p, ctxAvec(base, restantes, indispos, repos));
     if (!v.ok) echec(ligne, v.erreurs.map((e) => e.message).join(' '));
     for (const a of v.avertissements) avertissements.push(`${ligne} : ${a.message}`);

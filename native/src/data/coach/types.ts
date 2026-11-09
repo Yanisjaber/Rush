@@ -45,6 +45,8 @@ export interface LignePlan {
   /** Séance ajoutée : ses blocs (pour le profil d'intensité) et son nom (« 6 × 800 m ») ; absents des anciennes cartes */
   blocs?: BlocStructure[];
   nom?: string;
+  /** Le but de la semaine où tombe la séance (« Base », « Développement », « Affûtage »…), écrit par le moteur de plan */
+  phase?: string;
   sport?: string | null;
   minutes?: number | null;
   de?: string;

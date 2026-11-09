@@ -63,3 +63,10 @@ test('jours libres et repos respectés ; calendrier déjà chargé : les séance
   assert.ok(ajouts(r.operations).every((p) => p.date !== '2026-11-10' && p.date !== '2026-11-12'));
   assert.ok(r.operations.every((o) => o.op === 'ajouter'));
 });
+
+test('un plan sur plusieurs semaines : chaque séance porte le but de sa semaine (Reprise, Montée, Récupération)', () => {
+  const r = planifierPeriode({ sports: [{ sport: 'course', seances: 2 }], semaines: 8 }, [], ctx(), HAB);
+  const phases = r.operations.filter((o): o is Extract<Operation, { op: 'ajouter' }> => o.op === 'ajouter').map((o) => o.phase);
+  assert.ok(phases.length >= 8 && phases.every(Boolean));
+  for (const attendu of ['Reprise', 'Montée', 'Récupération']) assert.ok(phases.includes(attendu), `manque ${attendu} : ${[...new Set(phases)]}`);
+});

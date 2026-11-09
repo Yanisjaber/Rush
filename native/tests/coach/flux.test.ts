@@ -203,5 +203,6 @@ test('une carte séance et une ligne de plan gardent leurs blocs ; sans blocs va
   const plan = { id: 'p1', genre: 'planning', etat: 'proposee', intention: 'x', charge_avant: 1, charge_apres: 2, lignes: [{ op: 'ajouter', texte: 'Ajouter', sport: 'course', minutes: 10, vers: '2026-11-12', nom: '6 × 800 m', blocs: [BLOC_OK] }] };
   const l = (lireCarteBlocs(plan) as { lignes: { nom?: string; blocs?: unknown }[] }).lignes[0];
   assert.equal(l.nom, '6 × 800 m');
+  assert.equal((lireCarteBlocs({ ...plan, lignes: [{ ...plan.lignes[0], phase: 'Développement' }] }) as { lignes: { phase?: string }[] }).lignes[0].phase, 'Développement');
   assert.deepEqual(l.blocs, [BLOC_OK]);
 });

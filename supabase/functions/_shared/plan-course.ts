@@ -143,6 +143,9 @@ export const formaterTemps = (s: number): string => {
 export type Phase = 'base' | 'developpement' | 'specifique' | 'affutage';
 export const NOM_PHASE: Record<Phase, string> = { base: 'base', developpement: 'développement', specifique: 'spécifique', affutage: 'affûtage' };
 
+/** Le but de la semaine, tel que l'écran l'affiche en titre : « Base », « Développement »… ou « Récupération » pour une semaine allégée */
+export const butDeLaSemaine = (phase: Phase, recuperation: boolean): string => (recuperation ? 'Récupération' : NOM_PHASE[phase].charAt(0).toUpperCase() + NOM_PHASE[phase].slice(1));
+
 /** La phase de chaque semaine pour un plan de n semaines (la dernière est la semaine de la course) */
 export function phases(n: number): Phase[] {
   const affutage = n >= 8 ? 2 : n >= 3 ? 1 : n;
@@ -653,7 +656,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
         const p: Proposition = { date: jour, sport: 'course', type: s.type, minutes: s.minutes };
         const v = validerSeance(p, ctxAvec(base, toutes, base.indisponibilites));
         if (v.ok) {
-          operations.push({ op: 'ajouter', proposition: p, justification: s.but, detail: s.detail });
+          operations.push({ op: 'ajouter', proposition: p, justification: s.but, detail: s.detail, phase: butDeLaSemaine(phase, recuperation) });
           const t = typeSeance('course', s.type);
           toutes = [...toutes, { id: `course-${operations.length}`, date: jour, sport: 'course', minutes: s.minutes, tss: t ? tssEstime(t, s.minutes) : null, creeeParIa: true }];
           totalSemaine += s.minutes;

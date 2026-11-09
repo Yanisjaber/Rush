@@ -341,3 +341,17 @@ test('« bien repartir » : le volume de départ suit les 7 derniers jours gliss
   assert.match(apres.message, /calé sur tes 7 derniers jours glissants \(150 min\)/);
   assert.match(apres.message, /fenêtres de 7 jours glissants/);
 });
+
+test('plan de Yanis : chaque séance porte le but de sa semaine (Base, Développement, Spécifique, Affûtage), repris par les lignes de la carte', () => {
+  const c = ctx();
+  const r = planifierCourse(DEMANDE, [], c, YANIS);
+  const a = ajouts(r.operations);
+  assert.ok(a.every((o) => typeof o.phase === 'string' && o.phase.length > 2), 'toutes les séances ont un but de semaine');
+  const dans = (debut: string, fin: string) => new Set(a.filter((o) => o.proposition.date >= debut && o.proposition.date <= fin).map((o) => o.phase));
+  assert.deepEqual([...dans('2026-11-09', '2026-11-15')], ['Base']);
+  assert.deepEqual([...dans('2026-12-07', '2026-12-13')], ['Affûtage']);
+  const ev = evaluerPlan(r.operations, [], c);
+  const lignes = ev.lignes.filter((l) => l.op === 'ajouter');
+  assert.equal(lignes.length, a.length);
+  assert.ok(lignes.every((l) => l.phase), 'la carte reçoit la phase de chaque ligne');
+});

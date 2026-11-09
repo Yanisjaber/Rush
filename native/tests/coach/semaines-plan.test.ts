@@ -49,3 +49,10 @@ test('la plage d\'une semaine : un seul mois ou deux', () => {
   assert.equal(plageSemaine('2026-11-09', '2026-11-15'), '9–15 nov.');
   assert.equal(plageSemaine('2026-11-30', '2026-12-06'), '30 nov.–6 déc.');
 });
+
+test('le but de la semaine est celui de ses séances (le plus fréquent), absent quand le plan n\'en dit pas', () => {
+  const avecPhase = (vers: string, phase?: string): LignePlan => ({ ...ajout(vers, 30), ...(phase ? { phase } : {}) });
+  const s = semainesDuPlan([avecPhase('2026-11-10', 'Base'), avecPhase('2026-11-12', 'Base'), avecPhase('2026-11-14', 'Récupération'), avecPhase('2026-11-17'), avecPhase('2026-11-19')]);
+  assert.equal(s[0].phase, 'Base');
+  assert.equal(s[1].phase, undefined);
+});

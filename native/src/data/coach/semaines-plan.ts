@@ -21,6 +21,8 @@ export interface SemainePlan {
   debut: string;
   fin: string;
   jours: JourSemaine[];
+  /** Le but de la semaine (« Base », « Développement »…) quand le plan le dit : celui de ses séances ajoutées, le plus fréquent si elles diffèrent */
+  phase?: string;
   /** Volume des séances ajoutées, en minutes */
   minutes: number;
   /** Séances ajoutées ou déplacées */
@@ -81,7 +83,11 @@ export function semainesDuPlan(lignes: LignePlan[]): SemainePlan[] {
   return lundis.map((lundi) => {
     const s = parSemaine.get(lundi)!;
     const ajoutees = s.lignes.filter((l) => l.op === 'ajouter');
+    const compte = new Map<string, number>();
+    for (const l of ajoutees) if (l.phase) compte.set(l.phase, (compte.get(l.phase) ?? 0) + 1);
+    const phase = [...compte.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
     return {
+      ...(phase ? { phase } : {}),
       numero: Math.round((Date.parse(`${lundi}T00:00:00Z`) - Date.parse(`${premier}T00:00:00Z`)) / (7 * 86_400_000)) + 1,
       debut: lundi,
       fin: ajouterJours(lundi, 6),

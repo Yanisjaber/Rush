@@ -168,12 +168,16 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
                     onPress={() => setSemOuvertes((o) => ({ ...o, [sem.numero]: !ouverte }))}
                     accessibilityRole="button"
                     accessibilityState={{ expanded: ouverte }}
-                    accessibilityLabel={`Semaine ${sem.numero}, ${plage}, ${sem.seances} séance${sem.seances > 1 ? 's' : ''}${sem.minutes > 0 ? `, ${dureeMinutes(sem.minutes)}` : ''}. ${ouverte ? 'Replier' : 'Déplier'}`}
+                    accessibilityLabel={`Semaine ${sem.numero}${sem.phase ? `, ${sem.phase}` : ''}, ${plage}, ${sem.seances} séance${sem.seances > 1 ? 's' : ''}${sem.minutes > 0 ? `, ${dureeMinutes(sem.minutes)}` : ''}. ${ouverte ? 'Replier' : 'Déplier'}`}
                     style={styles.semaineTete}
                   >
-                    <View style={{ width: 98 }}>
-                      <Text style={[typo.corpsFort, { color: p.texte }]}>S{sem.numero}</Text>
-                      <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none', letterSpacing: 0 }]}>{plage}</Text>
+                    <View style={{ width: 118 }}>
+                      <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte }]}>
+                        {sem.phase ?? `S${sem.numero}`}
+                      </Text>
+                      <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none', letterSpacing: 0 }]}>
+                        {sem.phase ? `S${sem.numero} · ${plage}` : plage}
+                      </Text>
                     </View>
                     <View style={styles.jours} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
                       {sem.jours.map((j) => (
@@ -358,9 +362,9 @@ const styles = StyleSheet.create({
   ligne: { flexDirection: 'row', alignItems: 'center', gap: espace.e2 },
   semaine: { borderTopWidth: StyleSheet.hairlineWidth },
   semaineTete: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, minHeight: 48, paddingVertical: 4 },
-  jours: { flexDirection: 'row', gap: 4, flex: 1, justifyContent: 'center' },
-  pastille: { width: 13, height: 13, borderRadius: 3, alignItems: 'center', justifyContent: 'center' },
-  volume: { minWidth: 52, textAlign: 'right', fontVariant: ['tabular-nums'] },
+  jours: { flexDirection: 'row', gap: 3, flex: 1, justifyContent: 'center' },
+  pastille: { width: 12, height: 12, borderRadius: 3, alignItems: 'center', justifyContent: 'center' },
+  volume: { minWidth: 46, textAlign: 'right', fontVariant: ['tabular-nums'] },
   echantillon: { width: 12, height: 10, borderRadius: 3, borderWidth: 1.5 },
   legende: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: espace.e2 },
   ligneDuPlan: { borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: espace.e2, gap: espace.e2 },

@@ -39,6 +39,14 @@ export interface ResultatPeriode {
   semaines: string[];
 }
 
+/** Le but de la semaine tel que l'écran l'affiche en titre (« Montée », « Récupération », « Affûtage », « Reprise ») */
+export function butSemaine(nom: string): string {
+  if (nom.includes('affûtage')) return 'Affûtage';
+  if (nom === 'récupération') return 'Récupération';
+  if (nom === 'reprise du cycle') return 'Reprise';
+  return 'Montée';
+}
+
 /** Le coefficient de volume d'une semaine : montée (1, 1,05, 1,10), récupération (0,75) toutes les 4 semaines, affûtage avant la course */
 export function coefficientSemaine(index: number, semainesAvantCourse: number | null): { facteur: number; nom: string } {
   if (semainesAvantCourse === 0) return { facteur: 0.5, nom: 'dernière semaine, affûtage' };
@@ -94,6 +102,7 @@ export function planifierPeriode(d: DemandePeriode, seances: SeancePrevue[], bas
     const sports = d.sports.map((s) => ({ sport: s.sport, seances: avantCourse === 0 ? Math.max(1, s.seances - 1) : s.seances }));
     const r = planifierSemaine({ sports, debut: du, jours: 7, joursLibres: libres, intensite: avantCourse !== null && avantCourse <= 1 ? 'facile' : d.intensite }, toutes.filter((x) => x.date >= du && x.date <= fin7), base, h);
     for (const o of r.operations) {
+      if (o.op === 'ajouter') o.phase = butSemaine(nom);
       operations.push(o);
       if (o.op === 'ajouter') toutes.push({ id: `periode-${operations.length}`, date: o.proposition.date, sport: o.proposition.sport, minutes: o.proposition.minutes, tss: (() => { const t = typeSeance(o.proposition.sport, o.proposition.type); return t ? tssEstime(t, o.proposition.minutes) : null; })(), creeeParIa: true });
     }
