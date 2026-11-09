@@ -142,3 +142,26 @@ export function phraseAnnulation(c: CartePlanning): string {
   if (a.ignorees > 0) return `${base} : ${accord(a.annulees, 'changement défait', 'changements défaits')}. ${accord(a.ignorees, 'ligne que tu avais déjà modifiée à la main est restée', 'lignes que tu avais déjà modifiées à la main sont restées')} telle${a.ignorees > 1 ? 's' : ''} quelle${a.ignorees > 1 ? 's' : ''}.`;
   return `${base} : tout est revenu comme avant.`;
 }
+
+// ---------- Les repères d'heure du fil (comme Messages d'iOS) ----------
+
+const debutDeJour = (d: Date): number => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+const heure = (d: Date): string => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+
+/** Le repère d'un message : « Aujourd'hui », « Hier », « lun. » (cette semaine) ou « 3 nov. » (plus ancien), puis l'heure à part. Heure locale. */
+export function repereHeure(iso: string, maintenant: Date = new Date()): { jour: string; heure: string } | null {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const ecart = Math.round((debutDeJour(maintenant) - debutDeJour(d)) / 86_400_000);
+  const jour = ecart <= 0 ? "Aujourd'hui" : ecart === 1 ? 'Hier' : ecart < 7 ? JOURS[d.getDay()] : `${d.getDate()} ${MOIS[d.getMonth()]}${d.getFullYear() !== maintenant.getFullYear() ? ` ${d.getFullYear()}` : ''}`;
+  return { jour, heure: heure(d) };
+}
+
+/** Faut-il poser un repère d'heure avant ce message ? Oui pour le premier, au changement de jour, et après une pause d'une heure ou plus. */
+export function afficherRepere(precedent: string | undefined, courant: string | undefined): boolean {
+  if (!courant || Number.isNaN(new Date(courant).getTime())) return false;
+  if (!precedent || Number.isNaN(new Date(precedent).getTime())) return true;
+  const a = new Date(precedent);
+  const b = new Date(courant);
+  return debutDeJour(a) !== debutDeJour(b) || b.getTime() - a.getTime() >= 3_600_000;
+}

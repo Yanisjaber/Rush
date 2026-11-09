@@ -11,15 +11,15 @@ export function messagesDepuisLignes(lignes: LigneMessage[]): MessageCoach[] {
   return [...lignes]
     .filter((l) => (l.role === 'user' || l.role === 'assistant') && typeof l.contenu === 'string')
     .sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0))
-    .map((l) => ({ id: l.id, role: l.role as 'user' | 'assistant', texte: l.contenu, cartes: lireCartes(l.cartes) }));
+    .map((l) => ({ id: l.id, role: l.role as 'user' | 'assistant', texte: l.contenu, cartes: lireCartes(l.cartes), date: l.created_at }));
 }
 
 /** L'utilisateur envoie : son message apparaît tout de suite, suivi d'une réponse vide qui va se remplir */
-export function debutEnvoi(messages: MessageCoach[], texte: string, idLocal: string): MessageCoach[] {
+export function debutEnvoi(messages: MessageCoach[], texte: string, idLocal: string, date: string = new Date().toISOString()): MessageCoach[] {
   return [
     ...messages.filter((m) => !m.echec),
-    { id: idLocal, role: 'user', texte, cartes: [] },
-    { id: ID_REPONSE_EN_COURS, role: 'assistant', texte: '', cartes: [], enCours: true },
+    { id: idLocal, role: 'user', texte, cartes: [], date },
+    { id: ID_REPONSE_EN_COURS, role: 'assistant', texte: '', cartes: [], enCours: true, date },
   ];
 }
 

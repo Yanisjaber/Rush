@@ -7,6 +7,7 @@ import { SaisieCoach } from '@/components/coach/SaisieCoach';
 import { BoutonReglages } from '@/components/ui/BoutonReglages';
 import { FondDegrade } from '@/components/ui/FondDegrade';
 import { ROUTE_ECRAN, type ActionApp } from '@/data/coach/actions';
+import { afficherRepere, repereHeure } from '@/data/coach/libelles';
 import { useCoach } from '@/hooks/useCoach';
 import { useAuth } from '@/stores/auth';
 import { useAccesCoach } from '@/stores/coach';
@@ -145,8 +146,15 @@ export default function Coach() {
               tailles.current.vue = e.nativeEvent.layout.height;
               descendre();
             }}
-            renderItem={({ item, index }) => (
+            renderItem={({ item, index }) => {
+              const repere = afficherRepere(c.messages[index - 1]?.date, item.date) ? repereHeure(item.date ?? '') : null;
+              return (
               <View>
+                {repere ? (
+                  <Text accessibilityLabel={`${repere.jour} à ${repere.heure}`} style={[typo.micro, styles.repere, { color: p.texteMuet }]}>
+                    <Text style={{ fontFamily: police.texte600 }}>{repere.jour}</Text> {repere.heure}
+                  </Text>
+                ) : null}
                 <MessageVue
                   message={item}
                   colle={index < c.messages.length - 1 && c.messages[index + 1].role === item.role && item.cartes.length === 0}
@@ -164,7 +172,8 @@ export default function Coach() {
                   }}
                 />
               </View>
-            )}
+              );
+            }}
           />
         )}
 
@@ -194,6 +203,7 @@ const styles = StyleSheet.create({
   entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: espace.e4, paddingBottom: espace.e2 },
   droite: { flexDirection: 'row', alignItems: 'center', gap: espace.e1, marginRight: -espace.e3 },
   effacer: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center' },
+  repere: { textAlign: 'center', textTransform: 'none', letterSpacing: 0, marginTop: espace.e2, marginBottom: espace.e2 },
   liste: { flexGrow: 1, justifyContent: 'flex-end', paddingHorizontal: espace.e4, paddingVertical: espace.e3 },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: espace.e3, paddingHorizontal: espace.e5 },
   avis: { borderLeftWidth: 3, borderRadius: rayon.base, padding: espace.e3, alignSelf: 'stretch' },

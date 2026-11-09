@@ -47,7 +47,7 @@ test('titre et description d\'une carte : chaque état se dit avec un mot', () =
 });
 
 // ---------- Les mots d'une carte de planning ----------
-import { descriptionPlan, MOT_ETAT_PLAN, nombreChangements, nomPeriode, phraseAnnulation, resumeAnnulation, resumePlan } from '../../src/data/coach/libelles.ts';
+import { descriptionPlan, MOT_ETAT_PLAN, nombreChangements, nomPeriode, afficherRepere, phraseAnnulation, repereHeure, resumeAnnulation, resumePlan } from '../../src/data/coach/libelles.ts';
 import { cartePlanExemple, lignesPlanExemple } from '../../src/data/coach/exemple-plan.ts';
 
 test('plan : chaque état se dit avec un mot, jamais la couleur seule', () => {
@@ -114,4 +114,19 @@ test('durée d\'un bloc : secondes arrondies à 5, minutes entières au-delà de
   assert.equal(dureeBloc(22.2), '22 min');
   assert.equal(dureeBloc(75), '1 h 15');
   assert.equal(dureeBloc(0), '0 s');
+});
+
+test('repères d\'heure du fil', () => {
+  const nu = new Date(2026, 10, 9, 15, 0);
+  const iso = (j: number, h: number, m = 0) => new Date(2026, 10, j, h, m).toISOString();
+  assert.deepEqual(repereHeure(iso(9, 9, 5), nu), { jour: "Aujourd'hui", heure: '09:05' });
+  assert.deepEqual(repereHeure(iso(8, 18, 30), nu), { jour: 'Hier', heure: '18:30' });
+  assert.deepEqual(repereHeure(iso(5, 8), nu), { jour: 'jeu.', heure: '08:00' });
+  assert.deepEqual(repereHeure(iso(1, 8), nu), { jour: '1 nov.', heure: '08:00' });
+  assert.equal(repereHeure('nimporte quoi', nu), null);
+  assert.equal(afficherRepere(undefined, iso(9, 9)), true);
+  assert.equal(afficherRepere(iso(9, 9), iso(9, 9, 40)), false);
+  assert.equal(afficherRepere(iso(9, 9), iso(9, 10)), true);
+  assert.equal(afficherRepere(iso(8, 23, 50), iso(9, 0, 5)), true);
+  assert.equal(afficherRepere(iso(9, 9), undefined), false);
 });

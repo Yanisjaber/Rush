@@ -88,6 +88,8 @@ export interface MessageCoach {
   role: 'user' | 'assistant';
   texte: string;
   cartes: Carte[];
+  /** Quand il a été écrit (date ISO complète) : sert aux repères « Aujourd'hui 14:32 » du fil */
+  date?: string;
   /** Le coach est en train d'écrire ce message (le texte arrive au fil de l'eau) */
   enCours?: boolean;
   /** Un message de l'utilisateur qui n'est pas parti : le texte reste pour pouvoir réessayer */
