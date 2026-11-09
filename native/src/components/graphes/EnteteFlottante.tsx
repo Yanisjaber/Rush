@@ -73,7 +73,9 @@ export function EnteteFlottante({ titre, onModifier }: Props) {
               <Path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke={p.texte} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
             </Svg>
           </Pressable>
-        ) : null}
+        ) : (
+          <View style={styles.vide} /> // même largeur que le retour : le titre reste centré même sans crayon
+        )}
       </View>
 
       <Modal transparent animationType="fade" visible={titreOuvert} onRequestClose={() => setTitreOuvert(false)}>
@@ -93,8 +95,9 @@ export function EnteteFlottante({ titre, onModifier }: Props) {
 const styles = StyleSheet.create({
   entete: { position: 'absolute', left: espace.e4, right: espace.e4, flexDirection: 'row', alignItems: 'center', gap: espace.e2 },
   rond: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  zoneTitre: { flex: 1, alignItems: 'flex-start' },
-  pastilleTitre: { flexShrink: 1, borderRadius: rayon.base, paddingHorizontal: espace.e3, paddingVertical: 6 },
+  vide: { width: 44, height: 44 },
+  zoneTitre: { flex: 1, alignItems: 'center' },
+  pastilleTitre: { flexShrink: 1, borderRadius: 16, paddingHorizontal: espace.e3, paddingVertical: 6 },
   // Le texte de mesure : invisible, posé sur le vrai titre, sans limite de lignes (s'il passe sur 2 lignes, le titre est coupé)
   mesure: { position: 'absolute', left: espace.e3, right: espace.e3, top: 6, opacity: 0 },
   voile: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: espace.e5, backgroundColor: 'rgba(0,0,0,0.55)' },
