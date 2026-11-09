@@ -411,45 +411,6 @@ test('sans accord de partage des données (absent ou refusé) : 403, aucun appel
 });
 
 // ---------- Le garde-fou ----------
-test('garde-fou « pro » (FC de repos qui explose) : réponse fixe, le modèle n\'est PAS appelé, rien n\'est compté', async () => {
-  const fc = (de: number, a: number, bpm: number) => { const l = []; for (let i = de; i >= a; i--) l.push({ date: ajouterJours(JOUR, -i), bpm }); return l; };
-  const w = monde([rep('ne doit pas partir')], (s) => { s.signaux.fcRepos = [...fc(30, 3, 50), ...fc(2, 0, 66)]; });
-  await traiterMessage(U, 'Je peux faire une séance de seuil ?', w.deps, w.emettre);
-  assert.equal(w.modele.appels.length, 0);
-  const reponse = w.stockage.messages[1].contenu;
-  assert.match(reponse, /professionnel de santé/);
-  assert.doesNotMatch(reponse, /\d/, 'aucune donnée de santé dans le message');
-  assert.equal(w.stockage.comptes.length, 0);
-  assert.equal(w.evts[w.evts.length - 1].type, 'fin');
-});
-test('garde-fou « repos » (malade) : le modèle discute mais le contexte lui interdit les séances, et l\'outil refuse', async () => {
-  const w = monde(
-    [
-      rep('Je regarde.', [outil('t1', seance('2026-11-08', 'recuperation', 40))]),
-      rep("Aujourd'hui c'est repos. On en reparle quand ça va mieux."),
-    ],
-    (s) => { s.signaux.evenements = [{ date: JOUR, malade: true, blesse: false }]; },
-  );
-  await traiterMessage(U, 'Mets-moi une séance', w.deps, w.emettre);
-  assert.match(String(w.modele.appels[0].messages.at(-1)?.content), /Ne propose aucune séance/);
-  const retour = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
-  assert.equal(retour.type, 'tool_result');
-  assert.equal(retour.is_error, true);
-  assert.match(retour.content, /repos/);
-  assert.equal(w.stockage.messages[1].cartes, null);
-});
-test('ce que le modèle apprend du garde-fou : la consigne seulement, jamais la raison (maladie, FC de repos…)', async () => {
-  const fc = (de: number, a: number, bpm: number) => { const l = []; for (let i = de; i >= a; i--) l.push({ date: ajouterJours(JOUR, -i), bpm }); return l; };
-  const w = monde([rep('ok')], (s) => {
-    s.signaux.evenements = [{ date: JOUR, malade: false, blesse: true }];
-    s.signaux.fcRepos = [...fc(30, 3, 50), ...fc(2, 0, 58)];
-    s.reglages = { accord: true, categories: [] };
-  });
-  await traiterMessage(U, 'Salut', w.deps, w.emettre);
-  const contexte = String(w.modele.appels[0].messages.at(-1)?.content);
-  assert.match(contexte, /séances faciles/);
-  for (const mot of ['fc_repos', 'blessure', 'malade', 'hrv', 'raisons', 'evt_']) assert.doesNotMatch(contexte, new RegExp(mot), mot);
-});
 test('les catégories de santé autorisées sont transmises au résumé, et seulement elles', async () => {
   const w = monde([rep('ok')], (s) => { s.reglages = { accord: true, categories: ['ressenti', 'corps'] }; });
   await traiterMessage(U, 'Salut', w.deps, w.emettre);
@@ -701,13 +662,6 @@ test('ajouter : tout est revalidé au moment du tap — si le calendrier a chang
   const carte = w.stockage.messages[0].cartes![0];
   assert.equal(carte.etat, 'refusee');
   assert.match(carte.motif ?? '', /maladie/);
-});
-test('ajouter : le garde-fou santé passe aussi au moment du tap', async () => {
-  const w = monde([], avecCarte());
-  w.stockage.signaux.evenements = [{ date: JOUR, malade: true, blesse: false }];
-  const r = await ajouterCarte(U, 'c1', w.deps);
-  assert.equal(r.ok, false);
-  assert.equal(w.stockage.seances.length, 0);
 });
 test('ajouter : un double tap simultané ne crée qu\'une séance', async () => {
   const w = monde([], avecCarte());
@@ -1319,4 +1273,18 @@ test('ajuster_seance : pas de séance de ce sport ce jour-là = pas de carte, le
   assert.match(((w.modele.appels[1].messages.at(-1)?.content as Libre[])[0]).content, /Aucune séance de vélo/);
   const mauvais = await planPropose([outil('a', { motif: 'Vendredi', date: '2026-11-20', sport: 'velo', genre: 'intervalles', zone: 4, reps: 4 }, 'ajuster_seance')], avecPlanAjoute);
   assert.equal(((mauvais.modele.appels[1].messages.at(-1)?.content as Libre[])[0]).is_error, true);
+});
+
+test('plus de garde-fou santé : même malade, fatigué ou avec une FC de repos qui explose, le modèle est appelé et une séance dure est proposée (la prudence reste au jugement du coach)', async () => {
+  const fc = (de: number, a: number, bpm: number) => { const l = []; for (let i = de; i >= a; i--) l.push({ date: ajouterJours(JOUR, -i), bpm }); return l; };
+  const w = monde([rep('Je te propose ça.', [outil('t1', seance('2026-11-08', 'seuil', 60))]), rep('Voilà, dis-moi si ça te va.')], (s) => {
+    s.signaux.fcRepos = [...fc(30, 3, 50), ...fc(2, 0, 66)];
+    s.signaux.evenements = [{ date: JOUR, malade: true, blesse: true }];
+  });
+  await traiterMessage(U, 'Je peux faire une séance de seuil ?', w.deps, w.emettre);
+  assert.equal(w.modele.appels.length, 2, 'le modèle est appelé, la réponse n\'est pas figée');
+  assert.doesNotMatch(String(w.modele.appels[0].messages.at(-1)?.content), /Ne propose aucune séance|que des séances faciles/);
+  const cartes = w.stockage.messages[1].cartes!;
+  assert.equal(cartes.length, 1, 'la carte de séance de seuil est créée');
+  assert.equal((cartes[0] as CarteSeance).proposition.type, 'seuil');
 });

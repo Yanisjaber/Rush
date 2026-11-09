@@ -32,7 +32,6 @@ import { avecMessageUtilisateur, blocContexte, contexteDepuisResume, historiqueP
 import { estPlanning } from './coach-contexte.ts';
 import type { Carte, CartePlanning, CarteSeance, EtatCarte, MessageStocke } from './coach-contexte.ts';
 import { MAX_TOKENS_REPONSE, MODELE_PAR_DEFAUT, NOM_OUTIL_SEANCE, PROMPT_SYSTEME } from './coach-prompt.ts';
-import { evaluerGardeFou } from './garde-fou.ts';
 import type { DecisionGardeFou, DonneesGardeFou } from './garde-fou.ts';
 import { blocsLigneStructure, evaluerPlan, proposerReplanification, seancesDepuisResume } from './planning.ts';
 import { habitudesDepuisResume, planifierSemaine } from './semaine.ts';
@@ -167,11 +166,15 @@ interface Preparation {
   ctx: ContexteValidation;
 }
 
+/** La décision « tout est permis » : plus rien ne limite l'intensité, ne refuse une séance ni ne coupe le modèle */
+const DECISION_LIBRE: DecisionGardeFou = { niveau: 'normal', raisons: [], message: null, autoriserModele: true, autoriserCartes: true, intensiteMax: 'normale' };
+
 async function preparer(userId: string, jour: string, s: StockageCoach, categories: string[]): Promise<Preparation> {
-  const [resume, signaux] = await Promise.all([s.lireResume(userId, jour, categories), s.lireSignauxSante(userId, jour)]);
+  const resume = await s.lireResume(userId, jour, categories);
   if (!resume || typeof resume !== 'object') throw new ErreurCoach('donnees_indisponibles', 500, "Je n'arrive pas à lire tes données pour le moment.");
-  const decision = evaluerGardeFou(donneesGardeFou(jour, resume, signaux));
-  return { resume, decision, ctx: contexteDepuisResume(resume, decision, jour) };
+  // Plus de garde-fou santé (supprimé à la demande de Yanis, 9 nov. 2026) : le coach propose ce qu'on lui demande, sans limite d'intensité ni refus automatique.
+  // Il reste prudent par jugement (section SANTÉ du prompt : douleur ou blessure = adapter la charge, voir un professionnel si ça dure) et les périodes déclarées « blessure » ou « maladie » interdisent toujours des séances ces jours-là (validateur).
+  return { resume, decision: DECISION_LIBRE, ctx: contexteDepuisResume(resume, DECISION_LIBRE, jour) };
 }
 
 // ---------- L'outil proposer_seance ----------
