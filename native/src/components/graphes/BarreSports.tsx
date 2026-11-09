@@ -53,9 +53,9 @@ export function BarreSports({ titre }: { titre: string }) {
               accessibilityState={{ expanded: menuOuvert }}
               style={({ pressed }) => [styles.declencheur, { opacity: pressed ? 0.7 : 1 }]}
             >
-              {/* Un anneau de la couleur du sport (le mélange s'il y en a plusieurs ; comme les trois traits (la couleur de l'icône du compte), en plus fin, sur « Tous »), le symbole du filtre au centre,
+              {/* Un anneau de la couleur du sport (le mélange s'il y en a plusieurs) ; sur « Tous », exactement comme le rond de profil (même taille, fond et contour), le symbole du filtre au centre,
                   et une pastille de couleur sur l'anneau pour chaque sport coché */}
-              <View style={[styles.anneau, selection.length ? { borderColor: couleurSport(p, filtre) } : { borderColor: p.texteDoux, borderWidth: 1.5 }]}>
+              <View style={[styles.anneau, { backgroundColor: p.surface2, borderColor: selection.length ? couleurSport(p, filtre) : p.traitFort }]}>
                 <View style={styles.filtre}>
                   <View style={[styles.trait, { width: 18, backgroundColor: p.texteDoux }]} />
                   <View style={[styles.trait, { width: 12, backgroundColor: p.texteDoux }]} />
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   droite: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   // Le bouton rond : 42 pt de cible tactile, un anneau de 38 pt dedans (les pastilles de sport se posent sur l'anneau)
   declencheur: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
-  anneau: { width: 38, height: 38, borderRadius: 19, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center' },
+  anneau: { width: 38, height: 38, borderRadius: 19, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   filtre: { alignItems: 'center', gap: 3.5 },
   trait: { height: 2.5, borderRadius: 2 },
   pastille: { position: 'absolute', width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
