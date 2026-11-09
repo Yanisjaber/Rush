@@ -130,7 +130,7 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
             ))}
             {reperes.map((v, i) => (
               <TexteSvg key={`t${v}`} x={0} y={yDe(v) + 4} fontSize={11} fill={p.texteMuet}>
-                {`${formatNombre(v)}${i === 0 ? ' m' : ''}`}
+                {formatNombre(v)}
               </TexteSvg>
             ))}
             <Line x1={GAUCHE} y1={hauteur - 1} x2={largeur} y2={hauteur - 1} stroke={p.traitFort} strokeWidth={1} />
@@ -145,14 +145,17 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
           </Svg>
         ) : null}
       </View>
-      {km != null && km > 0 ? (
-        // Les repères de distance : départ, milieu et arrivée, petits et discrets (le « km » n'est dit qu'au départ)
-        <View style={[styles.axe, { paddingLeft: GAUCHE + MARGE, paddingRight: MARGE }]}>
-          <Text style={[typo.petit, styles.repere, { color: p.texteMuet, textAlign: 'left' }]}>0 km</Text>
-          <Text style={[typo.petit, styles.repere, { color: p.texteMuet, textAlign: 'center' }]}>{formatKm(km / 2, km >= 100 ? 0 : 1)}</Text>
-          <Text style={[typo.petit, styles.repere, { color: p.texteMuet, textAlign: 'right' }]}>{formatKm(km, km >= 100 ? 0 : 1)}</Text>
-        </View>
-      ) : null}
+      {/* La ligne du bas : l'unité des altitudes (« m ») sous leur colonne, puis les repères de distance : départ, milieu et arrivée (le « km » n'est dit qu'au départ) */}
+      <View style={[styles.axe, { paddingLeft: GAUCHE + MARGE, paddingRight: MARGE }]}>
+        <Text style={[typo.petit, styles.unite, { color: p.texteMuet }]}>m</Text>
+        {km != null && km > 0 ? (
+          <>
+            <Text style={[typo.petit, styles.repere, { color: p.texteMuet, textAlign: 'left' }]}>0 km</Text>
+            <Text style={[typo.petit, styles.repere, { color: p.texteMuet, textAlign: 'center' }]}>{formatKm(km / 2, km >= 100 ? 0 : 1)}</Text>
+            <Text style={[typo.petit, styles.repere, { color: p.texteMuet, textAlign: 'right' }]}>{formatKm(km, km >= 100 ? 0 : 1)}</Text>
+          </>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -160,5 +163,6 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
 const styles = StyleSheet.create({
   axe: { flexDirection: 'row', marginTop: 4 },
   repere: { flex: 1, fontSize: 11, lineHeight: 14 },
+  unite: { position: 'absolute', left: 0, fontSize: 11, lineHeight: 14 },
   bulle: { position: 'absolute', top: 0, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 },
 });
