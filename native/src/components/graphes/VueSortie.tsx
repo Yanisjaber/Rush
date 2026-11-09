@@ -59,6 +59,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
   const [index, setIndex] = useState(0);
   const [surCourbe, setSurCourbe] = useState(false); // le doigt est sur la courbe : on suspend le balayage des pages, sinon il emporterait la page avec lui
   const defilement = useRef<ComponentRef<typeof ScrollView>>(null);
+  // L'axe va jusqu'à la distance de la sortie (celle de la tuile) : le bout du profil et « Distance » disent la même chose. La longueur mesurée sur la trace simplifiée ne sert que sans distance.
   const kmTrace = useMemo(() => (parcours ? longueurKm(parcours.trace) : 0), [parcours]);
   const pageActuelle = pages[Math.min(index, pages.length - 1)];
   // Le point du curseur n'a de sens que sur la page Profil
@@ -151,7 +152,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
               {pages.map((nom) => (
                 <View key={nom} style={{ width: dims.pager, height: HAUTEUR_PAGE }}>
                   {nom === 'profil' && parcours && parcours.altitudeMin != null && parcours.altitudeMax != null ? (
-                    <ProfilCurseur profil={parcours.profil} min={parcours.altitudeMin} max={parcours.altitudeMax} km={kmTrace > 0 ? kmTrace : km} couleur={couleur} hauteur={140} onChange={setFraction} onGlisse={setSurCourbe} />
+                    <ProfilCurseur profil={parcours.profil} min={parcours.altitudeMin} max={parcours.altitudeMax} km={km != null && km > 0 ? km : kmTrace} couleur={couleur} hauteur={140} onChange={setFraction} onGlisse={setSurCourbe} />
                   ) : (
                     <ScrollView nestedScrollEnabled showsVerticalScrollIndicator contentContainerStyle={{ paddingBottom: espace.e2 }}>
                       {nom === 'tours' ? pageTours : pageDonnees}
