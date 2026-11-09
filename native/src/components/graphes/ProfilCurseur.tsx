@@ -87,6 +87,8 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 110, on
                 <Stop offset="1" stopColor={couleur} stopOpacity={0} />
               </LinearGradient>
             </Defs>
+            <Line x1={0} y1={hauteur - 1} x2={largeur} y2={hauteur - 1} stroke={p.trait} strokeWidth={1} />
+            <Line x1={0} y1={hauteur / 2} x2={largeur} y2={hauteur / 2} stroke={p.trait} strokeWidth={1} strokeDasharray="3 4" />
             {zone ? <Path d={zone} fill={`url(#${idFondu})`} /> : null}
             {ligne ? <Path d={ligne} fill="none" stroke={couleur} strokeWidth={2.6} strokeLinecap="round" /> : null}
             {curseur ? (
@@ -99,9 +101,11 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 110, on
         ) : null}
       </View>
       {km != null && km > 0 ? (
-        <View style={styles.ligne}>
-          <Text style={[typo.petit, { color: p.texteMuet }]}>0 km</Text>
-          <Text style={[typo.petit, { color: p.texteMuet }]}>{formatKm(km, km >= 100 ? 0 : 1)} km</Text>
+        // Les repères de la maquette : départ, milieu et arrivée, petits et discrets (le « km » n'est dit qu'au départ)
+        <View style={styles.axe}>
+          <Text style={[typo.petit, styles.repere, { color: p.texteMuet, textAlign: 'left' }]}>0 km</Text>
+          <Text style={[typo.petit, styles.repere, { color: p.texteMuet, textAlign: 'center' }]}>{formatKm(km / 2, km >= 100 ? 0 : 1)}</Text>
+          <Text style={[typo.petit, styles.repere, { color: p.texteMuet, textAlign: 'right' }]}>{formatKm(km, km >= 100 ? 0 : 1)}</Text>
         </View>
       ) : null}
     </View>
@@ -111,5 +115,6 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 110, on
 const MARGE = 6;
 
 const styles = StyleSheet.create({
-  ligne: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  axe: { flexDirection: 'row', marginTop: 4 },
+  repere: { flex: 1, fontSize: 11, lineHeight: 14 },
 });
