@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { calendrierApercu, periodesDuPlan } from '@/data/coach/apercu-plan';
-import type { JourCalendrier } from '@/data/coach/apercu-plan';
+import { periodesDuPlan } from '@/data/coach/apercu-plan';
 import { descriptionPlan, dureeMinutes, jourCarte, MOT_ETAT_PLAN, nombreChangements, nomPeriode, nomSport, phraseAnnulation, resumePlan } from '@/data/coach/libelles';
+import { plageSemaine, semainesDuPlan } from '@/data/coach/semaines-plan';
+import type { JourSemaine, SemainePlan } from '@/data/coach/semaines-plan';
 import type { CartePlanning, LignePlan } from '@/data/coach/types';
 import { dateIsoLocale } from '@/data/outils/format';
 import { espace, rayon } from '@/theme/couleurs';
@@ -12,8 +13,8 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 import { TicketSeance } from './TicketSeance';
 
-// La carte d'un plan de modifications du calendrier, posée comme une grande bulle du coach : l'état, la phrase du coach, la semaine en pastilles,
-// puis les changements ligne par ligne. Chaque séance ajoutée a un bouton « Détail » qui déplie son ticket (profil d'intensité, durée).
+// La carte d'un plan de modifications du calendrier, posée comme une grande bulle du coach : l'état, la phrase du coach, puis UNE LIGNE PAR SEMAINE
+// (ses 7 jours en points, son volume) ; toucher une semaine déplie ses séances. Chaque séance ajoutée a un bouton « Détail » qui déplie son ticket (profil, blocs).
 // Elle ne modifie RIEN toute seule : « Valider le plan » demande au serveur de tout revérifier puis d'appliquer le plan en une fois ; « Annuler le plan » défait tout.
 // Chaque état se dit avec un mot ET une icône, jamais la couleur seule. Le texte vient du serveur et s'affiche tel quel (jamais interprété).
 interface Props {
@@ -30,8 +31,8 @@ interface Props {
 }
 
 type Pictogramme = 'attente' | 'ok' | 'alerte' | 'retour';
-/** Au-delà, les lignes se replient derrière « Voir les autres » (un plan d'un an en a des dizaines) */
-const LIGNES_VISIBLES = 5;
+/** Au-delà, les semaines se replient derrière « Voir les autres semaines » (un plan d'un an en a une soixantaine) */
+const SEMAINES_VISIBLES = 6;
 
 function Picto({ nom, couleur, taille = 18 }: { nom: Pictogramme; couleur: string; taille?: number }) {
   return (
@@ -66,12 +67,14 @@ const texteLigne = (l: LignePlan): string => {
 
 export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnuler, onRefaire, onVoirCalendrier }: Props) {
   const p = usePalette();
-  const [tout, setTout] = useState(false);
+  const [toutesSemaines, setToutesSemaines] = useState(false);
+  /** Les semaines dépliées (la première l'est d'office, tant qu'on n'a rien touché) */
+  const [semOuvertes, setSemOuvertes] = useState<Record<number, boolean>>({});
   /** Les séances retirées sont regroupées sur une seule ligne ; ce bouton les liste */
   const [voirRetirees, setVoirRetirees] = useState(false);
   /** Une fois validé, le plan se réduit à une ligne ; ce bouton le déplie pour le relire */
   const [deplie, setDeplie] = useState(false);
-  const [ouvertes, setOuvertes] = useState<Record<number, boolean>>({});
+  const [ouvertes, setOuvertes] = useState<Record<string, boolean>>({});
   const aujourdhui = useMemo(() => dateIsoLocale(new Date()), []);
   const etat = occupee && carte.etat === 'proposee' ? 'en_cours' : carte.etat;
   const compact = etat === 'ajoutee' && !deplie;
@@ -84,10 +87,59 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
   const encreTeinte = sportPlan ? p.encreSurCouleur : p.fond;
   // Ce qui compte d'abord : les séances ajoutées ou déplacées, les repos, les périodes. Les séances retirées (souvent des dizaines, toutes « remplacée par le plan mis à jour ») se regroupent en une ligne.
   const retirees = carte.lignes.filter((l) => l.op === 'supprimer');
-  const lignes = carte.lignes.filter((l) => l.op !== 'supprimer');
-  const visibles = tout ? lignes : lignes.slice(0, LIGNES_VISIBLES);
+  const semaines = useMemo(() => semainesDuPlan(carte.lignes), [carte.lignes]);
+  const semainesVisibles = toutesSemaines ? semaines : semaines.slice(0, SEMAINES_VISIBLES);
+  const periode = periodesDuPlan(carte.lignes)[0];
   const raisonCommune = retirees.length > 0 && retirees.every((l) => l.raison && l.raison === retirees[0].raison) ? retirees[0].raison : undefined;
   const raisonRetirees = retirees.length > 1 ? raisonCommune?.replace(/^remplacée\b/, 'remplacées') : raisonCommune;
+
+  /** Une ligne du plan : le jour, ce qui change, sa raison, et pour une séance ajoutée le bouton « Détail » qui déplie son ticket */
+  const rendreLigne = (l: LignePlan, cle: string) => {
+    const ouverte = !!ouvertes[cle];
+    const avecDetail = l.op === 'ajouter' && !!l.minutes;
+    const jour = jourLigne(l);
+    return (
+      <View key={cle} style={[styles.ligneDuPlan, { borderTopColor: p.trait }]}>
+        <View style={styles.ligneHaut}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <View style={styles.ligne}>
+              <Text style={[typo.micro, { color: p.texteMuet }]}>{jour ? jourCarte(jour) : ''}</Text>
+              <View style={[styles.etiquette, { borderColor: p.traitFort }]}>
+                <Text style={[typo.micro, { color: p.texteDoux, textTransform: 'none', letterSpacing: 0 }]}>{etiquette(l)}</Text>
+              </View>
+            </View>
+            <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{texteLigne(l)}</Text>
+            {l.raison && !ouverte ? <Text style={[typo.petit, { color: p.texteDoux }]}>{l.raison}</Text> : null}
+          </View>
+          {avecDetail ? (
+            <Pressable
+              onPress={() => setOuvertes((o) => ({ ...o, [cle]: !o[cle] }))}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: ouverte }}
+              accessibilityLabel={`${ouverte ? 'Masquer' : 'Voir'} le détail de la séance : ${texteLigne(l)}`}
+              style={({ pressed }) => [styles.detail, { borderColor: p.contourChamp, opacity: pressed ? 0.7 : 1 }]}
+            >
+              <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{ouverte ? 'Masquer' : 'Détail'}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+        {avecDetail && ouverte && l.minutes ? (
+          <View style={[styles.ticket, { backgroundColor: p.surface, borderColor: p.trait }]}>
+            <TicketSeance
+              couleur={couleurSport(p, l.sport ?? undefined)}
+              jour={l.vers ? jourCarte(l.vers) : ''}
+              titre={l.nom ?? texteLigne(l)}
+              minutes={l.minutes}
+              blocs={l.blocs}
+              sport={l.sport ?? undefined}
+              resume={l.structure}
+              raison={l.raison}
+            />
+          </View>
+        ) : null}
+      </View>
+    );
+  };
 
   return (
     <View style={[styles.bulle, { backgroundColor: p.surface2 }]}>
@@ -106,65 +158,54 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
 
       {montrerPlan ? (
         <>
-          <Semaine lignes={carte.lignes} aujourdhui={aujourdhui} />
-
           <View>
-            {visibles.map((l, i) => {
-              const ouverte = !!ouvertes[i];
-              const avecDetail = l.op === 'ajouter' && !!l.minutes;
-              const jour = jourLigne(l);
+            {semainesVisibles.map((sem, idx) => {
+              const ouverte = semOuvertes[sem.numero] ?? idx === 0;
+              const plage = plageSemaine(sem.debut, sem.fin);
               return (
-                <View key={i} style={[styles.ligneDuPlan, { borderTopColor: p.trait }]}>
-                  <View style={styles.ligneHaut}>
-                    <View style={{ flex: 1, gap: 2 }}>
-                      <View style={styles.ligne}>
-                        <Text style={[typo.micro, { color: p.texteMuet }]}>{jour ? jourCarte(jour) : ''}</Text>
-                        <View style={[styles.etiquette, { borderColor: p.traitFort }]}>
-                          <Text style={[typo.micro, { color: p.texteDoux, textTransform: 'none', letterSpacing: 0 }]}>{etiquette(l)}</Text>
-                        </View>
-                      </View>
-                      <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{texteLigne(l)}</Text>
-                      {l.raison && !ouverte ? <Text style={[typo.petit, { color: p.texteDoux }]}>{l.raison}</Text> : null}
+                <View key={sem.numero} style={[styles.semaine, { borderTopColor: p.trait }]}>
+                  <Pressable
+                    onPress={() => setSemOuvertes((o) => ({ ...o, [sem.numero]: !ouverte }))}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: ouverte }}
+                    accessibilityLabel={`Semaine ${sem.numero}, ${plage}, ${sem.seances} séance${sem.seances > 1 ? 's' : ''}${sem.minutes > 0 ? `, ${dureeMinutes(sem.minutes)}` : ''}. ${ouverte ? 'Replier' : 'Déplier'}`}
+                    style={styles.semaineTete}
+                  >
+                    <View style={{ width: 98 }}>
+                      <Text style={[typo.corpsFort, { color: p.texte }]}>S{sem.numero}</Text>
+                      <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none', letterSpacing: 0 }]}>{plage}</Text>
                     </View>
-                    {avecDetail ? (
-                      <Pressable
-                        onPress={() => setOuvertes((o) => ({ ...o, [i]: !o[i] }))}
-                        accessibilityRole="button"
-                        accessibilityState={{ expanded: ouverte }}
-                        accessibilityLabel={`${ouverte ? 'Masquer' : 'Voir'} le détail de la séance : ${texteLigne(l)}`}
-                        style={({ pressed }) => [styles.detail, { borderColor: p.contourChamp, opacity: pressed ? 0.7 : 1 }]}
-                      >
-                        <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{ouverte ? 'Masquer' : 'Détail'}</Text>
-                      </Pressable>
-                    ) : null}
-                  </View>
-                  {avecDetail && ouverte && l.minutes ? (
-                    <View style={[styles.ticket, { backgroundColor: p.surface, borderColor: p.trait }]}>
-                      <TicketSeance
-                        couleur={couleurSport(p, l.sport ?? undefined)}
-                        jour={l.vers ? jourCarte(l.vers) : ''}
-                        titre={l.nom ?? texteLigne(l)}
-                        minutes={l.minutes}
-                        blocs={l.blocs}
-                        sport={l.sport ?? undefined}
-                        resume={l.structure}
-                        raison={l.raison}
-                      />
+                    <View style={styles.jours} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                      {sem.jours.map((j) => (
+                        <PastilleJour key={j.iso} jour={j} />
+                      ))}
                     </View>
-                  ) : null}
+                    <Text style={[typo.petit, styles.volume, { color: p.texteDoux }]}>{sem.minutes > 0 ? dureeMinutes(sem.minutes) : ''}</Text>
+                    <Chevron ouvert={ouverte} couleur={p.texteMuet} />
+                  </Pressable>
+                  {ouverte ? <View>{sem.lignes.map((l, i) => rendreLigne(l, `${sem.numero}-${i}`))}</View> : null}
                 </View>
               );
             })}
-            {lignes.length > LIGNES_VISIBLES ? (
+            {semaines.length > SEMAINES_VISIBLES ? (
               <Pressable
-                onPress={() => setTout((t) => !t)}
+                onPress={() => setToutesSemaines((t) => !t)}
                 accessibilityRole="button"
-                accessibilityState={{ expanded: tout }}
-                accessibilityLabel={tout ? 'Replier la liste des changements' : `Voir les ${lignes.length - LIGNES_VISIBLES} autres changements`}
+                accessibilityState={{ expanded: toutesSemaines }}
+                accessibilityLabel={toutesSemaines ? 'Replier la liste des semaines' : `Voir les ${semaines.length - SEMAINES_VISIBLES} autres semaines`}
                 style={[styles.autres, { borderTopColor: p.trait }]}
               >
-                <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{tout ? 'Replier' : `Voir les ${lignes.length - LIGNES_VISIBLES} autres`}</Text>
+                <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{toutesSemaines ? 'Replier' : `Voir les ${semaines.length - SEMAINES_VISIBLES} autres semaines`}</Text>
               </Pressable>
+            ) : null}
+
+            {periode ? (
+              <View style={[styles.legende, { borderTopColor: p.trait }]}>
+                <View style={[styles.echantillon, { borderColor: p.danger }]} />
+                <Text style={[typo.petit, { color: p.texteDoux, flex: 1 }]}>
+                  {nomPeriode(periode.type)}, {jourCarte(periode.du)} → {jourCarte(periode.au)}
+                </Text>
+              </View>
             ) : null}
 
             {retirees.length > 0 ? (
@@ -286,68 +327,42 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
 }
 
 /**
- * La semaine en pastilles : la première semaine que le plan touche (sept jours, lundi → dimanche).
- * Séance nouvelle : pastille pleine à la couleur du sport ; retirée : pointillé ; jour de repos : « R » ; période (blessure, maladie) : contour d'alerte.
- * Chaque signe a sa légende écrite en dessous.
+ * Un jour de la semaine, en petit carré : plein à la couleur du sport quand une séance arrive ce jour-là, contour d'alerte pendant une période déclarée
+ * (blessure, maladie : la légende l'écrit sous la liste), « R » pour un jour de repos. Purement visuel : le texte de la ligne dit la même chose.
  */
-function Semaine({ lignes, aujourdhui }: { lignes: LignePlan[]; aujourdhui: string }) {
+function PastilleJour({ jour }: { jour: JourSemaine }) {
   const p = usePalette();
-  const { entetes, semaines } = useMemo(() => calendrierApercu(lignes, 'apres', aujourdhui), [lignes, aujourdhui]);
-  const touche = (j: JourCalendrier) => j.marques.length > 0 || !!j.periode || j.repos;
-  const semaine = semaines.find((s) => s.some(touche)) ?? semaines[0];
-  const periode = periodesDuPlan(lignes)[0];
-  const aDesRetirees = semaine.some((j) => j.marques.some((m) => m.etat === 'retiree'));
-  const aDuRepos = semaine.some((j) => j.repos);
-
+  const sport = jour.sports[0];
   return (
-    <View style={{ gap: espace.e2 }}>
-      <View style={styles.semaine} accessible accessibilityLabel="Semaine concernée par le plan">
-        {semaine.map((j, i) => {
-          const nouvelle = j.marques.find((m) => m.etat === 'nouvelle');
-          const retiree = j.marques.find((m) => m.etat === 'retiree');
-          const teinteJour = couleurSport(p, nouvelle?.sport);
-          const contour = j.periode ? p.danger : nouvelle ? teinteJour : retiree ? p.texteMuet : p.trait;
-          return (
-            <View key={j.iso} style={[styles.jour, { borderColor: contour, borderStyle: retiree && !nouvelle ? 'dashed' : 'solid', borderWidth: nouvelle || j.periode ? 1.5 : 1, opacity: j.passe ? 0.5 : 1 }]}>
-              <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none', letterSpacing: 0 }]}>{entetes[i]}</Text>
-              <Text style={[typo.corpsFort, { color: p.texte, fontVariant: ['tabular-nums'] }]}>{j.numero}</Text>
-              {nouvelle ? <View style={[styles.point, { backgroundColor: teinteJour }]} /> : null}
-              {!nouvelle && retiree ? <View style={[styles.point, { borderWidth: 1, borderStyle: 'dashed', borderColor: p.texteMuet }]} /> : null}
-              {!nouvelle && !retiree && j.repos ? <Text style={[typo.micro, { color: p.texteDoux, lineHeight: 10 }]}>R</Text> : null}
-            </View>
-          );
-        })}
-      </View>
-      <View style={styles.legende}>
-        {aDesRetirees ? <Legende motif={<View style={[styles.point, { borderWidth: 1, borderStyle: 'dashed', borderColor: p.texteMuet }]} />} libelle="retirée" /> : null}
-        {aDuRepos ? <Legende motif={<Text style={[typo.micro, { color: p.texteDoux }]}>R</Text>} libelle="repos" /> : null}
-        {periode && semaine.some((j) => j.periode) ? (
-          <Legende motif={<View style={[styles.echantillon, { borderColor: p.danger }]} />} libelle={`${nomPeriode(periode.type)}, ${jourCarte(periode.du)} → ${jourCarte(periode.au)}`} />
-        ) : null}
-      </View>
+    <View
+      style={[
+        styles.pastille,
+        { borderColor: jour.periode ? p.danger : sport ? couleurSport(p, sport) : p.traitFort, borderWidth: jour.periode ? 1.5 : 1, backgroundColor: sport ? couleurSport(p, sport) : 'transparent' },
+      ]}
+    >
+      {!sport && jour.repos ? <Text style={[typo.micro, { color: p.texteDoux, fontSize: 9, lineHeight: 11 }]}>R</Text> : null}
     </View>
   );
 }
 
-function Legende({ motif, libelle }: { motif: React.ReactNode; libelle: string }) {
-  const p = usePalette();
+function Chevron({ ouvert, couleur }: { ouvert: boolean; couleur: string }) {
   return (
-    <View style={styles.elementLegende}>
-      {motif}
-      <Text style={[typo.petit, { color: p.texteDoux }]}>{libelle}</Text>
-    </View>
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Path d={ouvert ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'} stroke={couleur} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
   );
 }
 
 const styles = StyleSheet.create({
   bulle: { borderRadius: rayon.bulle + 2, padding: espace.e3, gap: espace.e3 },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: espace.e2 },
-  semaine: { flexDirection: 'row', gap: 4 },
-  jour: { flex: 1, minHeight: 56, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingVertical: 4, gap: 2 },
-  point: { width: 7, height: 7, borderRadius: 4 },
+  semaine: { borderTopWidth: StyleSheet.hairlineWidth },
+  semaineTete: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, minHeight: 48, paddingVertical: 4 },
+  jours: { flexDirection: 'row', gap: 4, flex: 1, justifyContent: 'center' },
+  pastille: { width: 13, height: 13, borderRadius: 3, alignItems: 'center', justifyContent: 'center' },
+  volume: { minWidth: 52, textAlign: 'right', fontVariant: ['tabular-nums'] },
   echantillon: { width: 12, height: 10, borderRadius: 3, borderWidth: 1.5 },
-  legende: { flexDirection: 'row', flexWrap: 'wrap', columnGap: espace.e3, rowGap: 2 },
-  elementLegende: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legende: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: espace.e2 },
   ligneDuPlan: { borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: espace.e2, gap: espace.e2 },
   ligneHaut: { flexDirection: 'row', alignItems: 'center', gap: espace.e2 },
   etiquette2: { flexDirection: 'row' },
