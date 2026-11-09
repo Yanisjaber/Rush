@@ -153,9 +153,6 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
             />
           ))}
         </View>
-        <Text style={[typo.micro, { color: p.texteMuet, letterSpacing: 1.2 }]}>
-          {NOMS[pageActuelle].toUpperCase()} · PAGE {Math.min(index, pages.length - 1) + 1} SUR {pages.length}
-        </Text>
         </View>
 
         <View style={{ height: HAUTEUR_PAGE }} onLayout={(e: LayoutChangeEvent) => setDims((d) => ({ ...d, pager: e.nativeEvent.layout.width }))}>
