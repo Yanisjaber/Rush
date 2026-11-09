@@ -109,7 +109,11 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
       <View
         {...gestes.panHandlers}
         // Dès que le doigt se pose (avant même le glissement) : l'écran suspend le retour par balayage, qui sinon fermerait la page
-        onTouchStart={() => refs.current.onGlisse?.(true)}
+        onTouchStart={(e) => {
+          refs.current.onGlisse?.(true);
+          // Le curseur se place dès que le doigt se pose : un simple appui suffit, sans attendre que le système de gestes prenne la main
+          aller(versX(e.nativeEvent.locationX));
+        }}
         onTouchEnd={() => refs.current.onGlisse?.(false)}
         onTouchCancel={() => refs.current.onGlisse?.(false)}
         onLayout={(e: LayoutChangeEvent) => setLargeur(e.nativeEvent.layout.width)}
