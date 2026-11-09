@@ -161,7 +161,7 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
   }
 
   return (
-    <View style={[styles.bulle, { backgroundColor: p.surface2 }]}>
+    <View style={[styles.bulle, { backgroundColor: p.surface2 }, compact && !onAnnuler && !erreur && styles.bulleReduite]}>
       <View accessible accessibilityLabel={descriptionPlan(carte)} style={{ gap: 2 }}>
         <View style={styles.ligne}>
           <Picto nom={etat === 'ajoutee' ? 'ok' : etat === 'refusee' ? 'alerte' : 'attente'} couleur={couleurEtat} />
@@ -353,6 +353,8 @@ function Chevron({ ouvert, couleur }: { ouvert: boolean; couleur: string }) {
 const styles = StyleSheet.create({
   annule: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, borderWidth: 1, borderStyle: 'dashed', borderRadius: rayon.carte, paddingLeft: espace.e3, paddingRight: espace.e1 },
   annuleTexte: { flex: 1, paddingVertical: espace.e2 },
+  /** Plan validé sans rien dessous : le texte a déjà de l'air autour de ses lignes, on rogne le bas */
+  bulleReduite: { paddingTop: espace.e3 - 2, paddingBottom: espace.e2 },
   bulle: { borderRadius: rayon.bulle + 2, padding: espace.e3, gap: espace.e3 },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: espace.e2 },
   semaine: { borderWidth: 1, borderRadius: 12, paddingHorizontal: espace.e3, marginTop: espace.e1 },
