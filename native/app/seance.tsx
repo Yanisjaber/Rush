@@ -84,7 +84,8 @@ export default function Seance() {
 
   return (
     <View style={styles.page}>
-      <Stack.Screen options={{ headerShown: false }} />
+      {/* Retour par balayage depuis le bord gauche seulement (pas plein écran) : glisser le doigt sur la courbe du profil ne ferme pas l'écran */}
+      <Stack.Screen options={{ headerShown: false, fullScreenGestureEnabled: false }} />
       <VueSortie
         parcours={trace}
         chargementCarte={chargementTrace}

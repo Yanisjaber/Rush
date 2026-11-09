@@ -104,7 +104,8 @@ export default function Prevue() {
 
   return (
     <View style={styles.page}>
-      <Stack.Screen options={{ title: titreEntete, headerShown: !modeParcours }} />
+      {/* Avec la courbe d'altitude (vueFixe) : retour par balayage depuis le bord gauche seulement, pas plein écran, pour que glisser sur la courbe ne ferme pas l'écran */}
+      <Stack.Screen options={{ title: titreEntete, headerShown: !modeParcours, ...(vueFixe ? { fullScreenGestureEnabled: false } : {}) }} />
       {vueFixe && parcours && parcours.altitudeMin != null && parcours.altitudeMax != null && parcours.region ? (
         <VueParcours
           trace={parcours.trace}
