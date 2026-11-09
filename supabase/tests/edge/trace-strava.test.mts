@@ -2,7 +2,7 @@
 // Lancer : node --experimental-strip-types --test supabase/tests/edge/trace-strava.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { alleger, nettoyerTrace, POINTS_MAX } from '../../functions/_shared/trace-strava.ts';
+import { alleger, nettoyerCourbes, nettoyerTrace, POINTS_MAX } from '../../functions/_shared/trace-strava.ts';
 
 const flux = (n: number) => ({
   latlng: { data: Array.from({ length: n }, (_, i) => [43.5 + i * 0.0001, 1.4 + i * 0.0001]) },
@@ -60,4 +60,21 @@ test('nettoyerTrace : pas de trace sans deux positions valides, et rien ne plant
   assert.equal(nettoyerTrace({ latlng: { data: [[1, 2]] } }), null);
   assert.equal(nettoyerTrace({ latlng: { data: 'texte' } }), null);
   assert.equal(nettoyerTrace({ latlng: { data: [['a', 'b'], [NaN, 1]] } }), null);
+});
+
+test('nettoyerCourbes : flux alignés, allégés à 600 points, flux incohérents écartés', () => {
+  const n = 2000;
+  const brut: any = {
+    distance: { data: Array.from({ length: n }, (_, i) => i) },
+    heartrate: { data: Array.from({ length: n }, () => 150) },
+    cadence: { data: [1, 2, 3] }, // longueur différente : écarté
+    watts: { data: Array.from({ length: n }, (_, i) => (i === 5 ? 'x' : 100)) }, // pas que des nombres : écarté
+  };
+  const c = nettoyerCourbes(brut)!;
+  assert.equal(c.distance.data.length, POINTS_MAX);
+  assert.equal(c.heartrate.data.length, POINTS_MAX);
+  assert.equal(c.cadence, undefined);
+  assert.equal(c.watts, undefined);
+  assert.equal(nettoyerCourbes(null), null);
+  assert.equal(nettoyerCourbes({}), null);
 });

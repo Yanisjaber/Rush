@@ -54,3 +54,22 @@ export function nettoyerTrace(brut: unknown): TraceNettoyee | null {
   const garder = <T>(l: (T | null)[]): T[] => (l.length && l.every((v) => v !== null) ? choisis.map((k) => l[k] as T) : []);
   return { latlng: choisis.map((k) => latlng[k]), altitude: garder(altitude), distance: garder(distance) };
 }
+
+const CLES_COURBES = ['distance', 'velocity_smooth', 'heartrate', 'altitude', 'cadence', 'watts'] as const;
+
+/**
+ * Les courbes d'une réponse « streams » de Strava (distance, vitesse, cœur, altitude, cadence, puissance), même forme que la réponse : { type: { data: [...] } }.
+ * Un flux qui n'est pas fait que de nombres, ou dont la longueur diffère de celle de la distance, est écarté. 600 points au plus, mêmes indices pour tous. Null sans aucune courbe.
+ */
+export function nettoyerCourbes(brut: unknown): Record<string, { data: number[] }> | null {
+  const longueur = Math.max(0, ...CLES_COURBES.map((c) => donnees(brut, c).length));
+  if (longueur < 2) return null;
+  const choisis = alleger(Array.from({ length: longueur }, (_, i) => i), POINTS_MAX);
+  const sortie: Record<string, { data: number[] }> = {};
+  for (const cle of CLES_COURBES) {
+    const d = donnees(brut, cle);
+    if (d.length !== longueur || !d.every((v) => nombre(v) !== null)) continue;
+    sortie[cle] = { data: choisis.map((k) => d[k] as number) };
+  }
+  return Object.keys(sortie).length ? sortie : null;
+}

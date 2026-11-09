@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { donneesDemoAccueil } from '@/data/accueil/accueil';
-import { changerDonneeEcartee, chargerCourbes, chargerSeance, chargerTours, chargerTrace } from '@/data/acces/api';
+import { changerDonneeEcartee, chargerSeance, chargerTours, chargerTrace } from '@/data/acces/api';
 import { apercuDeTrace } from '@/data/calendrier/apercu-import';
 import type { ColonneEcart } from '@/data/calendrier/donnees-ecartees';
 import { activitesBilanDemo, toursDemo } from '@/data/demo/demo';
@@ -68,9 +68,8 @@ export function useSeance(id: string): RetourSeance {
       const traceDemandee = chargerTrace(userId, id, s.strava_id).then((t) => {
         if (annule) return;
         const apercu = t.data ? apercuDeTrace(t.data) : null;
-        setEtat((e) => ({ ...e, chargementTrace: false, trace: apercu, erreurTrace: t.erreur }));
+        setEtat((e) => ({ ...e, chargementTrace: false, trace: apercu, courbes: t.courbes, erreurTrace: t.erreur }));
       });
-      void chargerCourbes(userId, id).then((c) => !annule && setEtat((e) => ({ ...e, courbes: c })));
       // Pas de tours pour une séance saisie à la main : rien à demander à Strava
       if (!s.strava_id) {
         setEtat({ ...initial, seance: s, chargement: false, chargementTrace: true, erreurTours: "Cette séance ne vient pas de Strava : ses tours ne sont pas disponibles." });

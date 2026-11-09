@@ -7,8 +7,9 @@
 //
 // Appel (front, POST, JWT Supabase dans Authorization) :
 //   body JSON : { "activity_id": "<uuid de la ligne activities>" }
-//   réponse   : { ok: true, trace: { latlng: [[lat, lon], ...], altitude: [m, ...], distance: [m, ...] } | null }
-//   (600 points au plus ; trace null quand l'activité n'a pas de GPS)
+//   réponse   : { ok: true, trace: { latlng: [[lat, lon], ...], altitude: [m, ...], distance: [m, ...] } | null,
+//                 courbes: { distance|velocity_smooth|heartrate|altitude|cadence|watts: { data: [...] } } | null }
+//   (600 points au plus ; trace null quand l'activité n'a pas de GPS ; les courbes servent à la page 2 de la sortie)
 //
 // Sécurité :
 //   - l'activité doit appartenir à l'utilisateur du JWT (filtre user_id côté service role) ;
@@ -26,7 +27,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.3";
 import { corsHeadersFor } from "../_shared/cors.ts";
 import { joindreJetons, ecrireRenouvellementStrava } from "../_shared/jetons.ts";
-import { nettoyerTrace } from "../_shared/trace-strava.ts";
+import { nettoyerCourbes, nettoyerTrace } from "../_shared/trace-strava.ts";
 
 const STRAVA_CLIENT_ID = Deno.env.get("STRAVA_CLIENT_ID")!;
 const STRAVA_CLIENT_SECRET = Deno.env.get("STRAVA_CLIENT_SECRET")!;
@@ -83,14 +84,15 @@ Deno.serve(async (req) => {
 
     // 5) Positions, altitude et distance de l'activité
     const res = await fetch(
-      `${STRAVA_API}/activities/${encodeURIComponent(String(act.strava_id))}/streams?keys=latlng,altitude,distance&key_by_type=true`,
+      `${STRAVA_API}/activities/${encodeURIComponent(String(act.strava_id))}/streams?keys=latlng,altitude,distance,velocity_smooth,heartrate,cadence,watts&key_by_type=true`,
       { headers: { Authorization: `Bearer ${accessToken}` } },
     );
     if (res.status === 429) return json({ error: "rate_limited" }, 429);
-    if (res.status === 404) return json({ ok: true, trace: null }); // pas de GPS (salle, home-trainer…)
+    if (res.status === 404) return json({ ok: true, trace: null, courbes: null }); // pas de flux du tout
     if (!res.ok) return json({ error: "strava_error" }, 502);
 
-    return json({ ok: true, trace: nettoyerTrace(await res.json()) });
+    const flux = await res.json();
+    return json({ ok: true, trace: nettoyerTrace(flux), courbes: nettoyerCourbes(flux) });
   } catch (e: any) {
     console.error("strava-trace unhandled:", e?.message || "erreur");
     return json({ error: "internal_error" }, 500);

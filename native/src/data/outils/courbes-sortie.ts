@@ -45,7 +45,11 @@ export function moyennesParTranche(valeurs: unknown[], tranche: number[], n: num
 
 /** Les courbes d'un `streams_gz`. Null sans aucune courbe exploitable. */
 export function courbesDepuisStreams(base64: string | null | undefined, n = N): CourbesSortie | null {
-  const flux = decoderStreams(base64);
+  return courbesDepuisFlux(decoderStreams(base64), n);
+}
+
+/** Les courbes de flux déjà décodés (ceux de `streams_gz`, ou la réponse de la fonction strava-trace) : { type: { data } } ou [{ type, data }]. */
+export function courbesDepuisFlux(flux: unknown, n = N): CourbesSortie | null {
   if (!flux) return null;
   const liste = (type: string): unknown[] => {
     const v = valeursDuFlux(flux, type);
