@@ -55,11 +55,17 @@ const CTL_MINI_QUALITE = 30;
 
 type Role = 'facile' | 'qualite' | 'longue';
 
-const JUSTIFICATION: Record<Role, string> = {
-  facile: 'Une séance facile pour construire ta base sans te fatiguer.',
-  qualite: 'Une séance de qualité pour travailler ton allure, entourée de séances faciles.',
-  longue: 'Ta sortie longue de la semaine, à un rythme tranquille.',
-};
+/**
+ * La raison d'une séance, écrite d'après sa place DANS la semaine (une phrase vague comme « construire ta base » ne dit rien à l'utilisateur) :
+ * une séance facile dit si elle suit ou précède une séance dure ; la qualité et la longue disent ce qu'elles travaillent.
+ */
+export function justificationSemaine(role: Role, minutes: number, apresUneDure: boolean, avantUneDure: boolean): string {
+  if (role === 'qualite') return "Ta séance de qualité de la semaine : on travaille l'allure, et le reste de la semaine reste facile autour pour bien l'encaisser.";
+  if (role === 'longue') return `Ta sortie longue de la semaine (${minutes} min) : elle développe l'endurance, à un rythme tranquille.`;
+  if (apresUneDure) return 'Séance facile le lendemain d\'une séance dure : elle détend les jambes sans les fatiguer.';
+  if (avantUneDure) return 'Séance facile la veille d\'une séance dure : tu arrives frais pour elle.';
+  return `Séance facile de ${minutes} min : elle ajoute du volume à ta base sans te fatiguer.`;
+}
 
 const borner = (x: number, min: number, max: number) => Math.min(max, Math.max(min, x));
 
@@ -199,6 +205,8 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
   let restantes: SeancePrevue[] = seances.map((s) => ({ ...s }));
   const noms = (sport: FamilleCoach) => (sport === 'velo' ? 'vélo' : sport === 'course' ? 'course' : 'natation');
   const utilises = new Set<string>();
+  /** Le rôle réellement placé chaque jour (une séance dure peut être redescendue en facile) */
+  const rolePlace = new Map<string, Role>();
 
   joursChoisis.forEach((jourChoisi, i) => {
     const sport = sports[i];
@@ -220,7 +228,8 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
         const p: Proposition = { date: jour, sport, type: e.type, minutes: e.minutes };
         const v = validerSeance(p, ctxAvec(base, restantes, base.indisponibilites));
         if (v.ok) {
-          operations.push({ op: 'ajouter', proposition: p, justification: JUSTIFICATION[e.role] });
+          operations.push({ op: 'ajouter', proposition: p, justification: '' });
+          rolePlace.set(jour, e.role);
           restantes = [...restantes, { id: `nouvelle-${operations.length}`, date: jour, sport, minutes: e.minutes, tss: v.tssEstime, creeeParIa: true }];
           utilises.add(jour);
           return null;
@@ -242,6 +251,15 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
 
     abandons.push(`${etiquetteDate(jourChoisi)} : je n'ai pas pu placer la séance de ${noms(sport)} (${refus.replace(/\.$/, '')}).`);
   });
+
+  // Les raisons s'écrivent une fois la semaine posée : elles dépendent des séances voisines
+  const dure = (jour: string) => rolePlace.get(jour) === 'qualite' || rolePlace.get(jour) === 'longue';
+  for (const o of operations) {
+    if (o.op !== 'ajouter') continue;
+    const jour = o.proposition.date;
+    const role = rolePlace.get(jour);
+    if (role) o.justification = justificationSemaine(role, o.proposition.minutes, dure(ajouterJours(jour, -1)), dure(ajouterJours(jour, 1)));
+  }
 
   return { operations, abandons };
 }

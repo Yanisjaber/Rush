@@ -2,7 +2,7 @@
 // Lancer : node --experimental-strip-types --test supabase/tests/edge/semaine.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { habitudesDepuisResume, planifierSemaine, SEANCES_TOTAL_MAX } from '../../functions/_shared/semaine.ts';
+import { habitudesDepuisResume, justificationSemaine, planifierSemaine, SEANCES_TOTAL_MAX } from '../../functions/_shared/semaine.ts';
 import type { DemandeSemaine, Habitude } from '../../functions/_shared/semaine.ts';
 import { evaluerPlan } from '../../functions/_shared/planning.ts';
 import type { Operation, SeancePrevue } from '../../functions/_shared/planning.ts';
@@ -220,4 +220,17 @@ test('quand AUCUN jour ne convient (repos partout), la séance est abandonnée a
   const r = plan({ sports: [{ sport: 'velo', seances: 2 }] }, c);
   assert.deepEqual(ajouts(r.operations), []);
   assert.ok(r.abandons.length >= 1);
+});
+
+test('raisons : chaque séance a une vraie raison liée à sa place dans la semaine, jamais une phrase vague ni vide', () => {
+  const ops = plan(VC).operations as Extract<Operation, { op: 'ajouter' }>[];
+  for (const o of ops) {
+    assert.ok(o.justification.length > 25, `raison trop courte : « ${o.justification} »`);
+    assert.ok(!o.justification.includes('construire ta base'), 'l\'ancienne phrase vague est partie');
+  }
+  assert.match(justificationSemaine('facile', 40, true, false), /lendemain d'une séance dure/);
+  assert.match(justificationSemaine('facile', 40, false, true), /veille d'une séance dure/);
+  assert.match(justificationSemaine('facile', 40, false, false), /40 min/);
+  assert.match(justificationSemaine('longue', 120, false, false), /120 min/);
+  assert.match(justificationSemaine('qualite', 50, false, false), /qualité/);
 });

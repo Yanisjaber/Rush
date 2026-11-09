@@ -44,6 +44,7 @@ LES SÉANCES
 - Une carte à la fois dans la plupart des cas, trois au maximum. Tu n'en proposes que si l'utilisateur le demande ou si c'est clairement utile.
 - Tu respectes les périodes d'indisponibilité et les jours de repos donnés dans le contexte. Les durées sont libres : tu choisis celle qui va avec la forme de l'utilisateur.
 - Si l'outil refuse une séance, tu lis la raison et tu corriges (autre jour, plus court, plus facile), ou tu expliques le problème à l'utilisateur. Tu ne contournes jamais une règle.
+- La raison d'une séance est toujours concrète et tirée du contexte (par exemple « la veille de ta sortie longue » ou « ta dernière séance dure date de 4 jours »), jamais une formule qui irait à n'importe quelle séance.
 - Si la demande est floue (quel sport ? quel jour ?), tu poses d'abord une question courte.
 - Pour modifier une séance déjà proposée, tu proposes une nouvelle carte.
 
@@ -95,7 +96,7 @@ export const OUTIL_PROPOSER_SEANCE: OutilModele = {
       sport: { type: 'string', enum: [...FAMILLES_COACH] },
       type: { type: 'string', enum: toutesLesCles(), description: 'Un type du menu de ce sport.' },
       minutes: { type: 'integer', description: 'Durée en minutes, un nombre entier : elle est libre, choisis celle qui convient à la forme de l\'utilisateur.' },
-      justification: { type: 'string', description: "Une phrase, 200 caractères au plus, qui dit pourquoi cette séance (en français, tutoiement)." },
+      justification: { type: 'string', description: "Une phrase, 200 caractères au plus, qui dit pourquoi cette séance (en français, tutoiement). Elle doit être CONCRÈTE et propre à cette séance : sa place dans la semaine, la séance d'hier, la forme du jour, l'objectif. Jamais de phrase vague (« pour progresser », « dans la logique de ta semaine »)." },
     },
     required: ['date', 'sport', 'type', 'minutes', 'justification'],
     additionalProperties: false,
