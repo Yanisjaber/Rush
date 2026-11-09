@@ -28,13 +28,13 @@ export function SaisieCoach({ envoi, basse, onEnvoyer }: Props) {
   }
 
   return (
-    <View style={[styles.barre, { borderTopColor: p.trait, backgroundColor: p.fond, paddingBottom: basse }]}>
+    <View style={[styles.barre, { backgroundColor: p.fond, paddingBottom: basse }]}>
       <TextInput
         value={texte}
         onChangeText={setTexte}
         multiline
         maxLength={LIMITE_MESSAGE}
-        placeholder="Écris à ton coach…"
+        placeholder="Message à Lía"
         placeholderTextColor={p.texteMuet}
         accessibilityLabel="Message pour le coach"
         style={[typo.corps, styles.champ, { color: p.texte, backgroundColor: p.surface, borderColor: p.contourChamp }]}
@@ -45,10 +45,10 @@ export function SaisieCoach({ envoi, basse, onEnvoyer }: Props) {
         accessibilityRole="button"
         accessibilityLabel="Envoyer"
         accessibilityState={{ disabled: !pret }}
-        style={({ pressed }) => [styles.envoi, { backgroundColor: p.texte, opacity: !pret ? 0.35 : pressed ? 0.8 : 1 }]}
+        style={({ pressed }) => [styles.envoi, { backgroundColor: p.sportCourse, opacity: !pret ? 0.35 : pressed ? 0.8 : 1 }]}
       >
         <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <Path d="M4 12l16-8-6 16-3-7z" stroke={p.fond} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          <Path d="M12 19V6M6 11l6-6 6 6" stroke={p.encreSurCouleur} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         </Svg>
       </Pressable>
     </View>
@@ -56,7 +56,7 @@ export function SaisieCoach({ envoi, basse, onEnvoyer }: Props) {
 }
 
 const styles = StyleSheet.create({
-  barre: { flexDirection: 'row', alignItems: 'flex-end', gap: espace.e2, paddingHorizontal: espace.e3, paddingTop: espace.e2, borderTopWidth: StyleSheet.hairlineWidth },
-  champ: { flex: 1, minHeight: 44, maxHeight: 132, borderWidth: 1, borderRadius: rayon.base, paddingHorizontal: espace.e3, paddingTop: 10, paddingBottom: 10, textAlignVertical: 'top' },
-  envoi: { width: 44, height: 44, borderRadius: rayon.base, alignItems: 'center', justifyContent: 'center' },
+  barre: { flexDirection: 'row', alignItems: 'flex-end', gap: espace.e2, paddingHorizontal: espace.e3, paddingTop: espace.e2 },
+  champ: { flex: 1, minHeight: 44, maxHeight: 132, borderWidth: 1, borderRadius: 22, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10, textAlignVertical: 'top' },
+  envoi: { width: 44, height: 44, borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center' },
 });
