@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { PanResponder, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop, Text as TexteSvg } from 'react-native-svg';
 import { aireSousCourbe, echelle, lisse } from '@/data/outils/courbes';
@@ -6,9 +6,9 @@ import { formatKm, formatNombre } from '@/data/outils/format';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Le profil d'altitude avec un curseur qu'on glisse au doigt : une bulle au-dessus du curseur donne la distance et l'altitude du point touché, et la carte est prévenue (`onChange`, fraction de 0 à 1).
+// Le profil d'altitude avec un curseur qu'on glisse au doigt : une bulle au-dessus du curseur donne la distance et l'altitude du point touché, et la carte est prévenue (`onChange`, fraction de 0 à 1, ou null quand le doigt est levé).
 // L'échelle est en mètres, avec des repères ronds (150, 155, 160…) pour qu'on voie si le parcours est plat ou non.
-// Au départ, le curseur est posé sur le point le plus haut. À VoiceOver : « augmenter » et « diminuer » le déplacent d'un pas.
+// Le curseur n'existe que tant que le doigt est posé sur la courbe : il disparaît dès qu'on le lève (avec sa bulle et le point de la carte). À VoiceOver : « augmenter » et « diminuer » le déplacent d'un pas.
 interface Props {
   profil: number[];
   min: number;
@@ -17,7 +17,7 @@ interface Props {
   km: number | null;
   couleur: string;
   hauteur?: number;
-  onChange?: (fraction: number) => void;
+  onChange?: (fraction: number | null) => void;
   /** Le doigt est posé sur la courbe (true) ou levé (false) : l'écran peut suspendre un défilement qui gênerait le geste. */
   onGlisse?: (actif: boolean) => void;
 }
@@ -36,21 +36,22 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
   const [largeur, setLargeur] = useState(0);
   const [largeurBulle, setLargeurBulle] = useState(120);
   const n = profil.length;
-  const indexHaut = useMemo(() => profil.indexOf(Math.max(...profil)), [profil]);
-  const [index, setIndex] = useState(indexHaut);
+  const [index, setIndex] = useState(0);
+  const [actif, setActif] = useState(false); // le curseur n'est montré que tant que le doigt est posé
   const refs = useRef({ largeur: 0, n, onChange, onGlisse });
   refs.current = { largeur, n, onChange, onGlisse };
-
-  // Le curseur démarre sur le point haut : on prévient la carte une fois
-  useEffect(() => {
-    onChange?.(n > 1 ? indexHaut / (n - 1) : 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [indexHaut, n]);
 
   const aller = (i: number) => {
     const borne = Math.min(refs.current.n - 1, Math.max(0, Math.round(i)));
     setIndex(borne);
+    setActif(true);
     refs.current.onChange?.(refs.current.n > 1 ? borne / (refs.current.n - 1) : 0);
+  };
+  // Doigt levé : le curseur, sa bulle et le point de la carte disparaissent, et l'écran retrouve le défilement des pages
+  const fin = () => {
+    setActif(false);
+    refs.current.onChange?.(null);
+    refs.current.onGlisse?.(false);
   };
   const versX = (x: number) => {
     const { largeur: l, n: total } = refs.current;
@@ -69,8 +70,8 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
           aller(versX(e.nativeEvent.locationX));
         },
         onPanResponderMove: (e) => aller(versX(e.nativeEvent.locationX)),
-        onPanResponderRelease: () => refs.current.onGlisse?.(false),
-        onPanResponderTerminate: () => refs.current.onGlisse?.(false),
+        onPanResponderRelease: () => fin(),
+        onPanResponderTerminate: () => fin(),
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -87,7 +88,7 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
   const points = largeur > GAUCHE ? echelle(profil, largeur - GAUCHE, hauteur, MARGE, bas, haut).map(([x, y]): [number, number] => [x + GAUCHE, y]) : [];
   const ligne = lisse(points);
   const zone = aireSousCourbe(ligne, points, yDe(bas)); // le remplissage s'arrête sur la ligne de base
-  const curseur = points[index];
+  const curseur = actif ? points[index] : undefined;
   const distance = km != null && km > 0 && n > 1 ? (index / (n - 1)) * km : null;
   const altitude = profil[index];
   const texteBulle = `${distance != null ? `km ${formatKm(distance, 1)} · ` : ''}${formatNombre(altitude ?? min)} m`;
@@ -114,8 +115,8 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 120, on
           // Le curseur se place dès que le doigt se pose : un simple appui suffit, sans attendre que le système de gestes prenne la main
           aller(versX(e.nativeEvent.locationX));
         }}
-        onTouchEnd={() => refs.current.onGlisse?.(false)}
-        onTouchCancel={() => refs.current.onGlisse?.(false)}
+        onTouchEnd={() => fin()}
+        onTouchCancel={() => fin()}
         onLayout={(e: LayoutChangeEvent) => setLargeur(e.nativeEvent.layout.width)}
         accessible
         accessibilityRole="adjustable"
