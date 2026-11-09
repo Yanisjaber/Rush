@@ -12,13 +12,14 @@ import { apercuDeGpx } from '@/data/calendrier/apercu-import';
 import { blocsDePrevue } from '@/data/calendrier/ajouts';
 import { nomDuType } from '@/data/sports/catalogue-sports';
 import { nomDuBloc } from '@/data/calendrier/blocs-formulaire';
-import { formatDateLongue } from '@/data/outils/format';
+import { formatDateCourte, formatDateLongue } from '@/data/outils/format';
 import { chiffresPrevue } from '@/data/calendrier/prevue-detail';
 import { COULEURS_ZONE, indiceZone, milieu, NOM_TYPE, texteCible, texteDuree, tousSegments, type Bloc as BlocSeance } from '@/data/calendrier/structure';
 import { useAjouts } from '@/hooks/useAjouts';
 import { usePrevue } from '@/hooks/usePrevue';
 import { useReferences } from '@/hooks/useReferences';
-import { espace, rayon } from '@/theme/couleurs';
+import Svg, { Path } from 'react-native-svg';
+import { espace, rayon, sombre } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -28,7 +29,7 @@ import { usePalette } from '@/theme/usePalette';
 export default function Prevue() {
   const p = usePalette();
   const router = useRouter();
-  const bas = useSafeAreaInsets().bottom;
+  const { top: haut, bottom: bas } = useSafeAreaInsets();
   const { id, competition: estCompetition } = useLocalSearchParams<{ id: string; competition?: string }>();
   const { prevue, chargement, erreur } = usePrevue(String(id ?? ''));
   const reference = useReferences();
@@ -100,9 +101,32 @@ export default function Prevue() {
 
   return (
     <View style={styles.page}>
-      <Stack.Screen options={{ title: titreEntete }} />
-      <ScrollView contentContainerStyle={styles.contenu} contentInsetAdjustmentBehavior="automatic">
-        <View style={modeParcours ? styles.enteteLegere : [styles.entete, { backgroundColor: p.surface, borderLeftColor: couleur }]}>
+      <Stack.Screen options={{ title: titreEntete, headerShown: !modeParcours }} />
+      <ScrollView contentContainerStyle={[styles.contenu, modeParcours && { paddingTop: haut + espace.e2 }]} contentInsetAdjustmentBehavior={modeParcours ? 'never' : 'automatic'}>
+        {modeParcours ? (
+          <View style={styles.enteteParcours}>
+            <Pressable
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+              accessibilityRole="button"
+              accessibilityLabel="Retour"
+              style={({ pressed }) => [styles.rondRetour, { borderColor: p.contourChamp, opacity: pressed ? 0.7 : 1 }]}
+            >
+              <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                <Path d="M15 5l-7 7 7 7" stroke={p.texte} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
+            </Pressable>
+            <View style={{ flex: 1 }}>
+              {/* Thème clair : la couleur du sport reste réservée aux aplats (contraste), l'étiquette passe en gris */}
+              <Text numberOfLines={1} style={[typo.micro, { color: p.fond === sombre.fond ? couleur : p.texteDoux, letterSpacing: 1.2 }]}>
+                {`${nomSport} · ${formatDateCourte(prevue.date)}${heure ? ` · ${heure}` : ''}`.toUpperCase()}
+              </Text>
+              <Text accessibilityRole="header" numberOfLines={2} style={[typo.titre2, { color: p.texte }]}>
+                {nom}
+              </Text>
+            </View>
+          </View>
+        ) : (
+        <View style={[styles.entete, { backgroundColor: p.surface, borderLeftColor: couleur }]}>
           <View style={styles.sport}>
             <IconeSport sport={prevue.sport} />
             <Text style={[typo.petit, { color: p.texteDoux }]}>
@@ -117,6 +141,7 @@ export default function Prevue() {
             {heure ? ` · ${heure}` : ''}
           </Text>
         </View>
+        )}
 
         {chiffres.length && !modeParcours ? (
           <Bloc titre={competition ? "L'épreuve" : 'Les chiffres'}>
@@ -228,7 +253,8 @@ const styles = StyleSheet.create({
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: espace.e5 },
   contenu: { padding: espace.e4, gap: espace.e3, paddingBottom: espace.e5 },
   entete: { borderRadius: rayon.bloc, borderLeftWidth: 6, padding: espace.e4, gap: 4 },
-  enteteLegere: { paddingHorizontal: espace.e1, gap: 4 },
+  enteteParcours: { flexDirection: 'row', alignItems: 'center', gap: espace.e3 },
+  rondRetour: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   tuiles: { flexDirection: 'row', gap: espace.e2 },
   tuile: { flex: 1, borderRadius: rayon.base, padding: espace.e3 },
   fichier: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espace.e3, minHeight: 44, borderRadius: rayon.base, paddingHorizontal: espace.e4, paddingVertical: espace.e3 },
