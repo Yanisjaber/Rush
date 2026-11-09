@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import Svg, { Path } from 'react-native-svg';
 import { calendrierApercu, periodesDuPlan } from '@/data/coach/apercu-plan';
 import type { JourCalendrier } from '@/data/coach/apercu-plan';
-import { descriptionPlan, dureeMinutes, jourCarte, MOT_ETAT_PLAN, nombreChangements, nomPeriode, phraseAnnulation, resumePlan } from '@/data/coach/libelles';
+import { descriptionPlan, dureeMinutes, jourCarte, MOT_ETAT_PLAN, nombreChangements, nomPeriode, nomSport, phraseAnnulation, resumePlan } from '@/data/coach/libelles';
 import type { CartePlanning, LignePlan } from '@/data/coach/types';
 import { dateIsoLocale } from '@/data/outils/format';
 import { espace, rayon } from '@/theme/couleurs';
@@ -58,11 +58,17 @@ function etiquette(l: LignePlan): string {
 }
 
 /** Une séance ajoutée : « 6 × 800 m · 52 min » quand le serveur a nommé la séance, sinon la phrase écrite par le serveur */
-const texteLigne = (l: LignePlan): string => (l.op === 'ajouter' && l.nom && l.minutes ? `${l.nom} · ${dureeMinutes(l.minutes)}` : l.texte);
+const texteLigne = (l: LignePlan): string => {
+  if (l.op !== 'ajouter' || !l.nom || !l.minutes) return l.texte;
+  // Le nom dit parfois déjà la durée (« Footing 30 min + 6 lignes droites ») : on ne la répète pas
+  return /\b\d+\s*min\b/.test(l.nom) ? l.nom : `${l.nom} · ${dureeMinutes(l.minutes)}`;
+};
 
 export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnuler, onRefaire, onVoirCalendrier }: Props) {
   const p = usePalette();
   const [tout, setTout] = useState(false);
+  /** Les séances retirées sont regroupées sur une seule ligne ; ce bouton les liste */
+  const [voirRetirees, setVoirRetirees] = useState(false);
   /** Une fois validé, le plan se réduit à une ligne ; ce bouton le déplie pour le relire */
   const [deplie, setDeplie] = useState(false);
   const [ouvertes, setOuvertes] = useState<Record<number, boolean>>({});
@@ -76,7 +82,12 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
   const sportPlan = sports.size === 1 ? [...sports][0] : undefined;
   const teinte = sportPlan ? couleurSport(p, sportPlan) : p.texte;
   const encreTeinte = sportPlan ? p.encreSurCouleur : p.fond;
-  const visibles = tout ? carte.lignes : carte.lignes.slice(0, LIGNES_VISIBLES);
+  // Ce qui compte d'abord : les séances ajoutées ou déplacées, les repos, les périodes. Les séances retirées (souvent des dizaines, toutes « remplacée par le plan mis à jour ») se regroupent en une ligne.
+  const retirees = carte.lignes.filter((l) => l.op === 'supprimer');
+  const lignes = carte.lignes.filter((l) => l.op !== 'supprimer');
+  const visibles = tout ? lignes : lignes.slice(0, LIGNES_VISIBLES);
+  const raisonCommune = retirees.length > 0 && retirees.every((l) => l.raison && l.raison === retirees[0].raison) ? retirees[0].raison : undefined;
+  const raisonRetirees = retirees.length > 1 ? raisonCommune?.replace(/^remplacée\b/, 'remplacées') : raisonCommune;
 
   return (
     <View style={[styles.bulle, { backgroundColor: p.surface2 }]}>
@@ -85,7 +96,9 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
           <Picto nom={etat === 'ajoutee' ? 'ok' : etat === 'refusee' ? 'alerte' : etat === 'annulee' ? 'retour' : 'attente'} couleur={couleurEtat} />
           <Text style={[typo.petit, { color: couleurEtat, fontFamily: police.texte600 }]}>{compact ? 'Plan validé' : MOT_ETAT_PLAN[etat]}</Text>
         </View>
-        <Text style={[compact ? typo.corpsFort : typo.titre3, { color: p.texte }]}>{carte.intention || 'Plan de modifications'}</Text>
+        <Text numberOfLines={2} style={[compact ? typo.corpsFort : typo.titre3, { color: p.texte }]}>
+          {carte.intention || 'Plan de modifications'}
+        </Text>
         <Text style={[typo.petit, { color: p.texteDoux }]}>
           {nombreChangements(carte.lignes)} · {resumePlan(carte.lignes)}
         </Text>
@@ -142,16 +155,50 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
                 </View>
               );
             })}
-            {carte.lignes.length > LIGNES_VISIBLES ? (
+            {lignes.length > LIGNES_VISIBLES ? (
               <Pressable
                 onPress={() => setTout((t) => !t)}
                 accessibilityRole="button"
                 accessibilityState={{ expanded: tout }}
-                accessibilityLabel={tout ? 'Replier la liste des changements' : `Voir les ${carte.lignes.length - LIGNES_VISIBLES} autres changements`}
+                accessibilityLabel={tout ? 'Replier la liste des changements' : `Voir les ${lignes.length - LIGNES_VISIBLES} autres changements`}
                 style={[styles.autres, { borderTopColor: p.trait }]}
               >
-                <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{tout ? 'Replier' : `Voir les ${carte.lignes.length - LIGNES_VISIBLES} autres`}</Text>
+                <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{tout ? 'Replier' : `Voir les ${lignes.length - LIGNES_VISIBLES} autres`}</Text>
               </Pressable>
+            ) : null}
+
+            {retirees.length > 0 ? (
+              <View style={[styles.ligneDuPlan, { borderTopColor: p.trait }]}>
+                <View style={styles.ligneHaut}>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <View style={styles.etiquette2}>
+                      <View style={[styles.etiquette, { borderColor: p.traitFort }]}>
+                        <Text style={[typo.micro, { color: p.texteDoux, textTransform: 'none', letterSpacing: 0 }]}>Retirées</Text>
+                      </View>
+                    </View>
+                    <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{retirees.length > 1 ? `${retirees.length} séances retirées` : '1 séance retirée'}</Text>
+                    {raisonRetirees ? <Text style={[typo.petit, { color: p.texteDoux }]}>{raisonRetirees}</Text> : null}
+                  </View>
+                  <Pressable
+                    onPress={() => setVoirRetirees((v) => !v)}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: voirRetirees }}
+                    accessibilityLabel={voirRetirees ? 'Masquer les séances retirées' : `Voir les ${retirees.length} séances retirées`}
+                    style={({ pressed }) => [styles.detail, { borderColor: p.contourChamp, opacity: pressed ? 0.7 : 1 }]}
+                  >
+                    <Text style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{voirRetirees ? 'Masquer' : 'Voir'}</Text>
+                  </Pressable>
+                </View>
+                {voirRetirees
+                  ? retirees.map((l, i) => (
+                      <Text key={i} style={[typo.petit, { color: p.texteDoux }]}>
+                        {l.de ? `${jourCarte(l.de)} · ` : ''}
+                        {l.sport ? nomSport(l.sport) : ''}
+                        {l.minutes ? ` ${dureeMinutes(l.minutes)}` : l.sport ? '' : l.texte}
+                      </Text>
+                    ))
+                  : null}
+              </View>
             ) : null}
           </View>
         </>
@@ -303,6 +350,7 @@ const styles = StyleSheet.create({
   elementLegende: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   ligneDuPlan: { borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: espace.e2, gap: espace.e2 },
   ligneHaut: { flexDirection: 'row', alignItems: 'center', gap: espace.e2 },
+  etiquette2: { flexDirection: 'row' },
   etiquette: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 1 },
   detail: { minHeight: 44, minWidth: 44, paddingHorizontal: espace.e3, borderWidth: 1, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   ticket: { borderWidth: StyleSheet.hairlineWidth, borderRadius: rayon.carte, overflow: 'hidden' },

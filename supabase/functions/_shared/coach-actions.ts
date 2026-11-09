@@ -488,7 +488,7 @@ export const ACTIONS: DefinitionAction[] = [
     schema: {
       type: 'object',
       properties: {
-        motif: { type: 'string', description: "Une phrase (200 caractères au plus) qui dit pourquoi, affichée sur la carte. Par exemple : « Blessure au genou, 10 jours de repos »." },
+        motif: { type: 'string', description: "UN TITRE COURT (60 caractères au plus, jamais une phrase longue) qui dit pourquoi, affiché en haut de la carte. Par exemple : « Blessure au genou, 10 jours de repos »." },
         indisponibilite: {
           type: 'object',
           description: "Maladie, blessure ou indisponibilité à déclarer sur le calendrier.",
@@ -527,7 +527,7 @@ export const ACTIONS: DefinitionAction[] = [
     schema: {
       type: 'object',
       properties: {
-        motif: { type: 'string', description: 'Une phrase (200 caractères au plus) affichée sur la carte. Par exemple : « Ma semaine : deux sorties vélo et deux footings ».' },
+        motif: { type: 'string', description: 'UN TITRE COURT (60 caractères au plus, jamais une phrase longue) affiché en haut de la carte. Par exemple : « Ma semaine : deux sorties vélo et deux footings ».' },
         sports: {
           type: 'array',
           minItems: 1,
@@ -567,7 +567,7 @@ export const ACTIONS: DefinitionAction[] = [
     schema: {
       type: 'object',
       properties: {
-        motif: { type: 'string', description: 'Une phrase (200 caractères au plus) affichée sur la carte. Par exemple : « Préparation marathon du 12 avril ».' },
+        motif: { type: 'string', description: 'UN TITRE COURT (60 caractères au plus, jamais une phrase longue) affiché en haut de la carte. Par exemple : « Préparation marathon du 12 avril ».' },
         sports: {
           type: 'array',
           minItems: 1,
@@ -610,7 +610,7 @@ export const ACTIONS: DefinitionAction[] = [
     schema: {
       type: 'object',
       properties: {
-        motif: { type: 'string', description: 'Une phrase (200 caractères au plus) affichée sur la carte. Par exemple : « Préparation 10 km du 13 décembre ».' },
+        motif: { type: 'string', description: 'UN TITRE COURT (60 caractères au plus, jamais une phrase longue) affiché en haut de la carte. Par exemple : « Préparation 10 km du 13 décembre ».' },
         date: { type: 'string', description: "Facultatif : le jour de la course, AAAA-MM-JJ. Par défaut, la prochaine course à pied du calendrier." },
         km: { type: 'number', description: 'Facultatif : la distance de la course en km (par défaut celle du calendrier, sinon 10).' },
         temps_cible_minutes: { type: 'number', description: 'Facultatif : le temps visé en minutes (par exemple 45). Par défaut celui du calendrier.' },
@@ -684,7 +684,7 @@ export const ACTIONS: DefinitionAction[] = [
     schema: {
       type: 'object',
       properties: {
-        motif: { type: 'string', description: 'Une phrase (200 caractères au plus) affichée sur la carte. Par exemple : « Jeudi : 5 × 600 m à la place des 400 m ».' },
+        motif: { type: 'string', description: 'UN TITRE COURT (60 caractères au plus, jamais une phrase longue) affiché en haut de la carte. Par exemple : « Jeudi : 5 × 600 m à la place des 400 m ».' },
         date: { type: 'string', description: 'Le jour de la séance à remplacer, AAAA-MM-JJ (une séance de course prévue ce jour-là).' },
         genre: { type: 'string', enum: ['intervalles', 'tempo_continu', 'footing', 'sortie_longue'], description: 'Le genre de séance voulu.' },
         reps: { type: 'integer', minimum: 1, maximum: 40, description: 'Intervalles : nombre de répétitions.' },
@@ -727,7 +727,7 @@ export const ACTIONS: DefinitionAction[] = [
     schema: {
       type: 'object',
       properties: {
-        motif: { type: 'string', description: 'Une phrase (200 caractères au plus) affichée sur la carte. Par exemple : « Jeudi : 4 × 8 min au seuil à la place du tempo ».' },
+        motif: { type: 'string', description: 'UN TITRE COURT (60 caractères au plus, jamais une phrase longue) affiché en haut de la carte. Par exemple : « Jeudi : 4 × 8 min au seuil à la place du tempo ».' },
         date: { type: 'string', description: 'Le jour de la séance à remplacer, AAAA-MM-JJ (une séance de ce sport prévue ce jour-là).' },
         sport: { type: 'string', enum: ['velo', 'natation'], description: 'Le sport de la séance.' },
         genre: { type: 'string', enum: ['intervalles', 'continu'], description: 'Intervalles (répétitions) ou effort continu.' },
@@ -780,7 +780,7 @@ export const ACTIONS: DefinitionAction[] = [
     schema: {
       type: 'object',
       properties: {
-        motif: { type: 'string', description: 'Une phrase (200 caractères au plus) qui dit pourquoi, affichée sur la carte.' },
+        motif: { type: 'string', description: 'UN TITRE COURT (60 caractères au plus, jamais une phrase longue) qui dit pourquoi, affiché en haut de la carte.' },
         operations: {
           type: 'array',
           minItems: 1,
