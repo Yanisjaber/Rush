@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import { repereHeure } from '@/data/coach/libelles';
 import { estPlanning } from '@/data/coach/types';
@@ -8,6 +8,7 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 import { CartePlanningCoach } from './CartePlanningCoach';
 import { CarteSeanceCoach } from './CarteSeanceCoach';
+import { PointsEcriture } from './PointsEcriture';
 
 // Un message du fil (façon Messages d'iOS, variante « sans queue, serré ») : des capsules rondes. Toi à droite en couleur de sport (course),
 // le coach à gauche sur une surface neutre. Les cartes de séance du coach se posent sous son message, en pleine largeur.
@@ -61,9 +62,7 @@ export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onR
           ]}
         >
           {attente ? (
-            <View accessible accessibilityLabel="Le coach écrit" style={styles.attente}>
-              <ActivityIndicator color={p.texteDoux} />
-            </View>
+            <PointsEcriture />
           ) : (
             <Text selectable accessibilityLabel={`${moi ? 'Toi' : 'Coach'} : ${message.texte}`} style={[typo.corps, { color: moi ? p.encreSurCouleur : p.texte }]}>
               {message.texte}
@@ -109,7 +108,6 @@ const styles = StyleSheet.create({
   droite: { alignItems: 'flex-end' },
   gauche: { alignItems: 'flex-start' },
   bloc: { borderRadius: rayon.bulle, paddingHorizontal: 14, paddingVertical: 9 },
-  attente: { minHeight: 24, minWidth: 40, justifyContent: 'center' },
   carte: { alignSelf: 'stretch' },
   echec: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: espace.e2, flexWrap: 'wrap' },
   reessayer: { minHeight: 44, paddingHorizontal: espace.e3, borderWidth: 1, borderRadius: rayon.base, alignItems: 'center', justifyContent: 'center' },
