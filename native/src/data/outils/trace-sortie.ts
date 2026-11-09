@@ -74,10 +74,21 @@ export function deBase64(texte: string): Uint8Array {
 }
 
 /** La liste de valeurs d'un type de flux : le format stocké est soit [{ type, data }], soit { type: { data } } ou { type: [...] }. */
-function valeursDuFlux(flux: unknown, type: string): unknown {
+export function valeursDuFlux(flux: unknown, type: string): unknown {
   if (Array.isArray(flux)) return (flux.find((f) => f && f.type === type) as { data?: unknown } | undefined)?.data;
   const s = (flux as Record<string, unknown> | null)?.[type];
   return Array.isArray(s) ? s : (s as { data?: unknown } | undefined)?.data;
+}
+
+/** Les flux d'un `streams_gz` décodés (JSON compressé en gzip puis en base64), ou null s'ils sont vides ou illisibles. */
+export function decoderStreams(base64: string | null | undefined): unknown {
+  if (!base64) return null;
+  try {
+    const octets = gunzipSync(deBase64(base64));
+    return octets.length ? JSON.parse(new TextDecoder().decode(octets)) : null;
+  } catch {
+    return null;
+  }
 }
 
 /** La trace d'un `streams_gz` (JSON compressé en gzip puis en base64). Null s'il n'y a pas de positions, ou si le contenu est illisible. */

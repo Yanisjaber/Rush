@@ -43,7 +43,7 @@ interface Props {
   /** Les trois chiffres clés de la première page. */
   chiffres: ReactNode;
   /** La seconde page, sans carte : toutes les infos de la sortie (on y va en balayant vers la gauche). */
-  pageDetails: ReactNode;
+  pageDetails: (onGlisse: (actif: boolean) => void) => ReactNode;
   onModifier?: () => void;
 }
 
@@ -137,7 +137,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
           <ScrollView contentContainerStyle={{ paddingTop: haut + HAUT_ENTETE + espace.e2, paddingHorizontal: espace.e4, paddingBottom: bas + espace.e5, gap: espace.e3 }} showsVerticalScrollIndicator={false}>
             {pastilles}
             {ligneDate}
-            {pageDetails}
+            {pageDetails(setSurCourbe)}
           </ScrollView>
         </View>
       </ScrollView>

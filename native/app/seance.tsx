@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { GraphesSynchro } from '@/components/graphes/GraphesSynchro';
 import { PageDetailsSortie } from '@/components/graphes/PageDetailsSortie';
 import { VueSortie } from '@/components/graphes/VueSortie';
 import { ListeTours } from '@/components/ui/ListeTours';
@@ -10,6 +11,7 @@ import { sortieSupprimable } from '@/data/calendrier/ajouts';
 import { chiffreEcarte, pucesEcart } from '@/data/calendrier/donnees-ecartees';
 import { chiffresSeance, lignesTours, troisChiffres } from '@/data/calendrier/seance-detail';
 import { formatDateCourte } from '@/data/outils/format';
+import { familleAffichage } from '@/data/sports/familles';
 import { nomDuType } from '@/data/sports/catalogue-sports';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useSeance } from '@/hooks/useSeance';
@@ -24,7 +26,7 @@ export default function Seance() {
   const p = usePalette();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { seance, tours, trace, chargement, chargementTours, chargementTrace, erreur, erreurTours, basculerDonnee } = useSeance(String(id ?? ''));
+  const { seance, tours, trace, courbes, chargement, chargementTours, chargementTrace, erreur, erreurTours, basculerDonnee } = useSeance(String(id ?? ''));
   const [erreurEcart, setErreurEcart] = useState('');
   const { supprimerSortie } = useAjouts();
   const [enCours, setEnCours] = useState(false);
@@ -108,12 +110,13 @@ export default function Seance() {
             </View>
           ) : null
         }
-        pageDetails={
+        pageDetails={(onGlisse) => (
           <PageDetailsSortie
             chiffres={chiffres}
             ecarte={(cle) => chiffreEcarte(seance, cle)}
             altitude={trace && trace.altitudeMin != null && trace.altitudeMax != null ? { min: trace.altitudeMin, max: trace.altitudeMax } : null}
             couleur={couleur}
+            graphes={courbes ? <GraphesSynchro courbes={courbes} km={seance.distance_km ?? null} rythme={familleAffichage(seance.sport) === 'velo' ? 'vitesse' : 'allure'} couleur={couleur} onGlisse={onGlisse} /> : null}
           >
             <Text style={[typo.micro, { color: p.texteDoux }]}>TOURS</Text>
             <ListeTours lignes={lignes} chargement={chargementTours} erreur={erreurTours} />
@@ -154,7 +157,7 @@ export default function Seance() {
               </View>
             ) : null}
           </PageDetailsSortie>
-        }
+        )}
       />
     </View>
   );

@@ -14,6 +14,8 @@ interface Props {
   ecarte: (cle: string) => boolean;
   altitude: { min: number; max: number } | null;
   couleur: string;
+  /** Les courbes de la sortie (si on en a), entre distance/durée et les rubriques. */
+  graphes?: ReactNode;
   children?: ReactNode;
 }
 
@@ -25,7 +27,7 @@ interface Tuile {
   ecarte?: boolean;
 }
 
-export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, children }: Props) {
+export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, graphes, children }: Props) {
   const p = usePalette();
   const parCle = (cle: string) => chiffres.find((c) => c.cle === cle);
   const tuile = (cle: string, libelle?: string): Tuile[] => {
@@ -63,6 +65,8 @@ export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, childre
           ))}
         </View>
       ) : null}
+
+      {graphes}
 
       {rubriques.map((r) =>
         r.tuiles.length ? (

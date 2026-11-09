@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { donneesDemoAccueil } from '@/data/accueil/accueil';
-import { changerDonneeEcartee, chargerSeance, chargerTours, chargerTrace } from '@/data/acces/api';
+import { changerDonneeEcartee, chargerCourbes, chargerSeance, chargerTours, chargerTrace } from '@/data/acces/api';
 import { apercuDeTrace } from '@/data/calendrier/apercu-import';
 import type { ColonneEcart } from '@/data/calendrier/donnees-ecartees';
 import { activitesBilanDemo, toursDemo } from '@/data/demo/demo';
 import { seanceDeLaDemo, useVersionAjouts } from '@/stores/ajouts';
 import { useAuth } from '@/stores/auth';
 import { ecartsChanges } from '@/stores/ecarts';
+import type { CourbesSortie } from '@/data/outils/courbes-sortie';
 import type { Seance, Tour } from '@/data/types';
 
 interface Etat {
@@ -21,11 +22,13 @@ interface Etat {
   trace: ApercuTrace | null;
   chargementTrace: boolean;
   erreurTrace: string;
+  /** Les courbes (vitesse, cœur, altitude, cadence) ; null sans flux stockés. */
+  courbes: CourbesSortie | null;
 }
 
 type ApercuTrace = NonNullable<ReturnType<typeof apercuDeTrace>>;
 
-const initial: Etat = { seance: null, tours: null, chargement: true, chargementTours: false, erreur: '', erreurTours: '', trace: null, chargementTrace: false, erreurTrace: '' };
+const initial: Etat = { seance: null, tours: null, chargement: true, chargementTours: false, erreur: '', erreurTours: '', trace: null, chargementTrace: false, erreurTrace: '', courbes: null };
 
 /** L'état de la séance, et de quoi écarter (ou remettre) une de ses données : renvoie un message d'erreur, vide si tout s'est bien passé. */
 export interface RetourSeance extends Etat {
@@ -67,6 +70,7 @@ export function useSeance(id: string): RetourSeance {
         const apercu = t.data ? apercuDeTrace(t.data) : null;
         setEtat((e) => ({ ...e, chargementTrace: false, trace: apercu, erreurTrace: t.erreur }));
       });
+      void chargerCourbes(userId, id).then((c) => !annule && setEtat((e) => ({ ...e, courbes: c })));
       // Pas de tours pour une séance saisie à la main : rien à demander à Strava
       if (!s.strava_id) {
         setEtat({ ...initial, seance: s, chargement: false, chargementTrace: true, erreurTours: "Cette séance ne vient pas de Strava : ses tours ne sont pas disponibles." });

@@ -1,4 +1,5 @@
 import { SUPABASE_URL } from '@/config';
+import { courbesDepuisStreams, type CourbesSortie } from '../../outils/courbes-sortie';
 import { traceDepuisReponse, traceDepuisStreams, type TraceBrute } from '../../outils/trace-sortie';
 import { sb } from '../supabase';
 import { UUID, type Resultat } from './commun';
@@ -31,4 +32,12 @@ export async function chargerTrace(userId: string, id: string, stravaId: string 
   } catch {
     return { data: null, erreur: 'La carte est indisponible pour le moment.' };
   }
+}
+
+/** Les courbes d'une sortie (vitesse, cœur, altitude, cadence, puissance) : lues dans les flux stockés ; null s'il n'y en a pas (jamais bloquant). */
+export async function chargerCourbes(userId: string, id: string): Promise<CourbesSortie | null> {
+  if (!UUID.test(String(id))) return null;
+  const r = await sb.from('activities').select('streams_gz').eq('user_id', userId).eq('id', id).maybeSingle();
+  if (r.error) return null;
+  return courbesDepuisStreams((r.data as { streams_gz?: string | null } | null)?.streams_gz);
 }
