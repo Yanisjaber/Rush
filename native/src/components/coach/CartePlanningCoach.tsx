@@ -275,6 +275,8 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
         </>
       ) : null}
 
+      {/* Plan validé sans bouton « Annuler » : plus rien à mettre ici, la carte se réduit à son titre */}
+      {etat !== 'ajoutee' || onAnnuler || erreur ? (
       <View style={styles.etat}>
         {etat === 'proposee' ? (
           <BoutonCompact
@@ -316,6 +318,7 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
           </View>
         ) : null}
       </View>
+      ) : null}
     </View>
   );
 }
