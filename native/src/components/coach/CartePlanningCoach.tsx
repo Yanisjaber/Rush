@@ -169,7 +169,7 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
               const ouverte = semOuvertes[sem.numero] ?? idx === 0;
               const plage = plageSemaine(sem.debut, sem.fin);
               return (
-                <View key={sem.numero} style={[styles.semaine, { borderTopColor: p.trait }]}>
+                <View key={sem.numero} style={[styles.semaine, { backgroundColor: p.surface, borderColor: ouverte ? p.traitFort : p.trait }]}>
                   <Pressable
                     onPress={() => {
                       onBascule?.();
@@ -378,8 +378,8 @@ function Chevron({ ouvert, couleur }: { ouvert: boolean; couleur: string }) {
 const styles = StyleSheet.create({
   bulle: { borderRadius: rayon.bulle + 2, padding: espace.e3, gap: espace.e3 },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: espace.e2 },
-  semaine: { borderTopWidth: StyleSheet.hairlineWidth },
-  semaineTete: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, minHeight: 48, paddingVertical: 4 },
+  semaine: { borderWidth: 1, borderRadius: 12, paddingHorizontal: espace.e3, marginTop: espace.e1 },
+  semaineTete: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, minHeight: 44, paddingVertical: 2 },
   jours: { flexDirection: 'row', gap: 3, flex: 1, justifyContent: 'center' },
   pastille: { width: 12, height: 12, borderRadius: 3, alignItems: 'center', justifyContent: 'center' },
   volume: { minWidth: 46, textAlign: 'right', fontVariant: ['tabular-nums'] },
