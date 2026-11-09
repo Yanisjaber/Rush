@@ -1,6 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pointAuFraction, regionPourZone } from '../../src/data/outils/trace.ts';
+import { longueurKm, pointAuFraction, regionPourZone } from '../../src/data/outils/trace.ts';
+
+test('longueurKm : somme des segments, en km', () => {
+  // 0,01° de longitude à l'équateur ≈ 1,113 km ; le L fait deux branches de 0,01°
+  const l = longueurKm([{ latitude: 0, longitude: 0 }, { latitude: 0, longitude: 0.01 }, { latitude: 0.01, longitude: 0.01 }]);
+  assert.ok(Math.abs(l - 2.2264) < 0.01, `longueur ${l}`);
+  assert.equal(longueurKm([]), 0);
+  assert.equal(longueurKm([{ latitude: 1, longitude: 1 }]), 0);
+});
 
 test('regionPourZone : une feuille en bas remonte la trace et dézoome', () => {
   const r = { latitude: 43.5, longitude: 1.4, latitudeDelta: 0.02, longitudeDelta: 0.01 };

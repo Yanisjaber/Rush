@@ -102,7 +102,7 @@ export function ProfilCurseur({ profil, min, max, km, couleur, hauteur = 110, on
       </View>
       {km != null && km > 0 ? (
         // Les repères de la maquette : départ, milieu et arrivée, petits et discrets (le « km » n'est dit qu'au départ)
-        <View style={styles.axe}>
+        <View style={[styles.axe, { paddingHorizontal: MARGE }]}>
           <Text style={[typo.petit, styles.repere, { color: p.texteMuet, textAlign: 'left' }]}>0 km</Text>
           <Text style={[typo.petit, styles.repere, { color: p.texteMuet, textAlign: 'center' }]}>{formatKm(km / 2, km >= 100 ? 0 : 1)}</Text>
           <Text style={[typo.petit, styles.repere, { color: p.texteMuet, textAlign: 'right' }]}>{formatKm(km, km >= 100 ? 0 : 1)}</Text>

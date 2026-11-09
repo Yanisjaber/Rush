@@ -30,6 +30,13 @@ function distance(a: PointTrace, b: PointTrace): number {
   return Math.hypot(dx, dy);
 }
 
+/** La longueur de la trace en km (0 si elle a moins de deux points). */
+export function longueurKm(trace: PointTrace[]): number {
+  let total = 0;
+  for (let i = 1; i < trace.length; i++) total += distance(trace[i - 1], trace[i]);
+  return total / 1000;
+}
+
 /** Le point de la trace situé à `fraction` (0 à 1) de la distance totale parcourue ; null si la trace est vide. */
 export function pointAuFraction(trace: PointTrace[], fraction: number): PointTrace | null {
   if (!trace.length) return null;

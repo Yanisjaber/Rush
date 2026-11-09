@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CarteTrace } from '@/components/graphes/CarteTrace';
 import { ProfilCurseur } from '@/components/graphes/ProfilCurseur';
 import type { PointCarte, RegionCarte } from '@/data/calendrier/apercu-import';
-import { pointAuFraction, regionPourZone } from '@/data/outils/trace';
+import { longueurKm, pointAuFraction, regionPourZone } from '@/data/outils/trace';
 import { avecAlpha, espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -39,6 +39,8 @@ export function VueParcours({ trace, region, profil, altitudeMin, altitudeMax, k
   const [fraction, setFraction] = useState<number | null>(null);
   const [titreCoupe, setTitreCoupe] = useState(false); // le titre dépasse-t-il la pastille ? (mesuré par un texte invisible, sans limite de lignes)
   const [titreOuvert, setTitreOuvert] = useState(false);
+  // L'axe suit la longueur réelle du parcours (celle de la trace), pas la distance saisie sur la séance : le profil et la trace couvrent le même tracé
+  const kmTrace = useMemo(() => longueurKm(trace), [trace]);
   const curseur = useMemo(() => (fraction == null ? null : pointAuFraction(trace, fraction)), [trace, fraction]);
   // La trace doit rester entière dans la zone libre (sous l'en-tête, au-dessus de la feuille) : on décale la carte en conséquence
   const regionAffichee = useMemo(() => regionPourZone(region, { hauteur: dims.page, haut: haut + HAUT_ENTETE, bas: dims.feuille }), [region, dims, haut]);
@@ -100,7 +102,7 @@ export function VueParcours({ trace, region, profil, altitudeMin, altitudeMax, k
         onLayout={(e: LayoutChangeEvent) => setDims((d) => ({ ...d, feuille: e.nativeEvent.layout.height }))}
         style={[styles.feuille, { backgroundColor: p.fond, borderColor: p.trait, paddingBottom: bas + espace.e4 }]}
       >
-        <ProfilCurseur profil={profil} min={altitudeMin} max={altitudeMax} km={km} couleur={couleur} hauteur={110} onChange={setFraction} />
+        <ProfilCurseur profil={profil} min={altitudeMin} max={altitudeMax} km={kmTrace > 0 ? kmTrace : km} couleur={couleur} hauteur={110} onChange={setFraction} />
         {chiffres}
       </View>
 
