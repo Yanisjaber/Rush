@@ -75,12 +75,11 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
   const [semOuvertes, setSemOuvertes] = useState<Record<number, boolean>>({});
   /** Les séances retirées sont regroupées sur une seule ligne ; ce bouton les liste */
   const [voirRetirees, setVoirRetirees] = useState(false);
-  /** Une fois validé, le plan se réduit à une ligne ; ce bouton le déplie pour le relire */
-  const [deplie, setDeplie] = useState(false);
   const [ouvertes, setOuvertes] = useState<Record<string, boolean>>({});
   const aujourdhui = useMemo(() => dateIsoLocale(new Date()), []);
   const etat = occupee && carte.etat === 'proposee' ? 'en_cours' : carte.etat;
-  const compact = etat === 'ajoutee' && !deplie;
+  /** Une fois validé, le plan se réduit à son titre (plus de détail à rouvrir) */
+  const compact = etat === 'ajoutee';
   const montrerPlan = (etat === 'proposee' || etat === 'en_cours' || etat === 'ajoutee') && !compact;
   const couleurEtat = { proposee: p.texte, en_cours: p.texte, ajoutee: p.ok, refusee: p.danger, annulee: p.texteMuet }[etat];
   // La couleur du bouton principal : celle du sport du plan s'il n'y en a qu'un (sinon neutre : la couleur désigne UN sport)
@@ -294,19 +293,9 @@ export function CartePlanningCoach({ carte, occupee, erreur, onValider, onAnnule
           </View>
         ) : null}
 
-        {etat === 'ajoutee' ? (
+        {etat === 'ajoutee' && onAnnuler ? (
           <View style={styles.boutons}>
-            {onAnnuler ? <BoutonCompact libelle="Annuler" accessibilityLabel="Annuler le plan : remettre ton calendrier comme avant" desactive={occupee} onPress={onAnnuler} /> : <View style={{ flex: 1 }} />}
-            <BoutonCompact
-              largeur={96}
-              libelle={deplie ? 'Masquer' : 'Détail'}
-              deplie={deplie}
-              accessibilityLabel={deplie ? 'Masquer le détail du plan' : 'Revoir le détail du plan'}
-              onPress={() => {
-                onBascule?.();
-                setDeplie((d) => !d);
-              }}
-            />
+            <BoutonCompact libelle="Annuler" accessibilityLabel="Annuler le plan : remettre ton calendrier comme avant" desactive={occupee} onPress={onAnnuler} />
           </View>
         ) : null}
 
