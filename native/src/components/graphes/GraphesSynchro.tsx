@@ -152,6 +152,22 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, dureeS, hauteur, 
     return courbes.km == null && dureeS ? (dureeS * (p1 - p0)) / (n - 1) : null;
   })();
 
+  // Le relief de la portion : la pente moyenne (dénivelé net / distance) et le D+ (somme des montées entre deux points). Estimations : l'altitude des courbes est lissée.
+  const relief2 = (() => {
+    const alt = reliefComplet;
+    if (!alt || kmPortion == null || kmPortion <= 0) return null;
+    const a = (x: number) => {
+      const k = Math.min(n - 2, Math.max(0, Math.floor(x)));
+      return alt[k] + (alt[k + 1] - alt[k]) * (x - k);
+    };
+    let dPlus = 0;
+    const debut = Math.ceil(p0);
+    const fin2 = Math.floor(p1);
+    for (let k = debut; k < fin2; k++) dPlus += Math.max(0, alt[k + 1] - alt[k]);
+    return { pente: ((a(p1) - a(p0)) / (kmPortion * 1000)) * 100, dPlus };
+  })();
+  const textePente = (v: number) => (Math.abs(v) < 0.05 ? '0 %' : `${v > 0 ? '+' : '−'}${formatKm(Math.abs(v), 1)} %`);
+
   // La silhouette du relief : la même pour toutes les courbes (échelle propre à l'altitude)
   const reliefChemin = (l: number, h: number) => {
     if (!relief || l <= 0) return null;
@@ -180,10 +196,19 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, dureeS, hauteur, 
       <View style={[styles.barre, { height: HAUT_BARRE }]}>
         {zoome || sel ? (
           <>
-            <Text style={[styles.valeur, { color: p.texte, flexShrink: 1 }]} numberOfLines={1}>
-              {[kmPortion != null ? `${formatKm(kmPortion, 2)} km` : null, lapsS != null ? formatLaps(lapsS) : null].filter(Boolean).join('  ·  ')}
-            </Text>
-            {zoome && !sel ? <Text style={[typo.petit, { color: p.texteMuet }]}>Double-tap : tout voir</Text> : null}
+            <View style={{ flexShrink: 1 }}>
+              <Text style={[styles.valeur, { color: p.texte }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                {[
+                  kmPortion != null ? `${formatKm(kmPortion, 2)} km` : null,
+                  lapsS != null ? formatLaps(lapsS) : null,
+                  relief2 ? `pente ${textePente(relief2.pente)}` : null,
+                  relief2 ? `D+ ${formatNombre(Math.round(relief2.dPlus))} m` : null,
+                ]
+                  .filter(Boolean)
+                  .join('  ·  ')}
+              </Text>
+              {zoome && !sel ? <Text style={[typo.petit, { color: p.texteMuet, fontSize: 12, lineHeight: 14 }]}>Double-tap : tout voir</Text> : null}
+            </View>
           </>
         ) : (
           <Text style={[typo.petit, { color: p.texteMuet }]} numberOfLines={1}>
