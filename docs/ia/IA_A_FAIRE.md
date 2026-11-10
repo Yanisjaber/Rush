@@ -35,7 +35,7 @@ Principe posé par Yanis : **chaque règle du plan vient d'études ou de la pers
 - [ ] Coefficients d'échelle des repères personnels (75, 85, 90, 130 %) : conventions, à valider ou à remplacer.
 - [ ] Exposant de conversion entre distances : reste 1,06. Piste : exposant personnel quand il a deux efforts de distances différentes (touche `rpc_coach_resume`).
 
-- [ ] **Limite repérée sur le vrai compte de Yanis (10 nov.)** : `rpc_coach_resume` ne retient comme meilleur effort que les sorties de **4,8 km ou plus**. Sa meilleure sortie récente (4,55 km à 5:14/km, FC 176) est donc ignorée : le moteur estimerait environ 58 min au 10 km au lieu d'environ 55:40. À corriger (abaisser le seuil, ou tenir compte des efforts plus courts).
+- [x] **Sorties courtes ignorées (corrigé)** : `rpc_coach_resume` renvoie `meilleur_effort_recent` (sorties d'au moins 3 km sur 90 jours), utilisé par `plan-course.ts` pour le niveau. Le seuil de 4,8 km ne reste que pour `meilleur_effort` (ancien record, dernier recours). Appliqué en base.
 - [ ] **Deux courses le même jour = un double volontaire** (5 km à 9 h 10 à fond, puis 10 km à 10 h, 50 min plus tard) : le moteur ne le comprend pas (il prendrait la plus proche ou les deux comme A). À gérer : détecter les compétitions du même jour, lire leurs heures de départ, demander laquelle est la priorité, et préparer le plan en conséquence (séances spécifiques, récupération entre les deux, stratégie de course). Aucune étude chiffrée trouvée sur l'enchaînement 5 km à fond puis 10 km : à chercher.
 - [ ] Le moteur ne détecte pas les **reprises répétées** (plusieurs « reprise » espacées dans l'historique) pour être plus prudent sur la montée de charge.
 
