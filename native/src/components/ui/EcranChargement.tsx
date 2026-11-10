@@ -8,8 +8,8 @@ import { usePalette } from '@/theme/usePalette';
 // Toute l'animation tourne sur le fil natif (une seule valeur 0 → 1 qui pilote les trois mots) : même quand l'app monte
 // l'Accueil et lance ses requêtes, elle ne prend pas de retard, ce que faisaient des minuteries JS.
 const MOTS = ['À vos marques', 'Prêt', 'Rush'] as const;
-const DUREE_SEQUENCE = 900; // ms, du premier mot à « Rush » affiché
-const FONDU_SORTIE = 220;
+const DUREE_SEQUENCE = 600; // ms, du premier mot à « Rush » affiché
+const FONDU_SORTIE = 150;
 // Tranche de la ligne de temps (0 → 1) où chaque mot est visible ; le dernier reste jusqu'à la fin
 const TRANCHES: [number, number][] = [
   [0, 0.38],
