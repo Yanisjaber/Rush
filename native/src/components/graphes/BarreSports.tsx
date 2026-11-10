@@ -145,8 +145,8 @@ const styles = StyleSheet.create({
   pastille: { position: 'absolute', width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
   point: { width: 10, height: 10, borderRadius: 5 },
   panneau: { position: 'absolute', left: 12, width: 260, maxHeight: '70%', borderWidth: 1, borderRadius: rayon.bloc, overflow: 'hidden' },
-  ligne: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, borderRadius: 6 },
+  ligne: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, borderRadius: 14 },
   case: { width: 22, height: 22, borderWidth: 1.5, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
   rond: { width: 22, height: 22, borderWidth: 1.5, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  appliquer: { minHeight: 48, margin: 8, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  appliquer: { minHeight: 48, margin: 8, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 });
