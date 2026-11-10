@@ -170,7 +170,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
             <View style={{ height: 20 + espace.e2 }} />
             <View style={{ paddingHorizontal: espace.e4, gap: espace.e3 }}>
               {repartitions}
-              {pageDetails(setSurCourbe)}
+              {/* Les chiffres, les records, les tours et les notes quitteront cette page pour la page 3 (maquettes en cours) : `pageDetails` n'est plus affiché ici. */}
             </View>
           </Animated.ScrollView>
           {/* Sous l'en-tête flottant : un fond plein, pour que le contenu qui défile ne passe pas sous le titre */}
