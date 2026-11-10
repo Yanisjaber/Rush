@@ -46,7 +46,7 @@ export function chiffresSeance(s: Seance): ChiffreSeance[] {
   if (positif(s.total_elevation_gain)) liste.push({ cle: 'denivele', libelle: 'Dénivelé', valeur: formatNombre(Math.round(s.total_elevation_gain)), unite: 'm' });
   if (positif(s.avg_heartrate)) liste.push({ cle: 'fc', libelle: 'Cardio moyen', valeur: String(Math.round(s.avg_heartrate)), unite: 'bpm', note: positif(s.max_heartrate) ? `max ${Math.round(s.max_heartrate)}` : undefined });
   if (positif(s.avg_watts) && !wattsEstimes(s)) liste.push({ cle: 'watts', libelle: 'Puissance moyenne', valeur: String(Math.round(s.avg_watts)), unite: 'W', note: positif(s.np) ? `normalisée ${Math.round(s.np)}` : undefined });
-  if (positif(s.avg_cadence)) liste.push({ cle: 'cadence', libelle: 'Cadence', valeur: String(Math.round(s.avg_cadence)), unite: famille === 'velo' ? 'tr/min' : 'pas/min' });
+  if (positif(s.avg_cadence)) liste.push({ cle: 'cadence', libelle: 'Cadence', valeur: String(Math.round(s.avg_cadence)), unite: famille === 'velo' ? 'tr/min' : 'ppm' });
   if (positif(s.kj) && !wattsEstimes(s)) liste.push({ cle: 'energie', libelle: 'Énergie', valeur: formatNombre(Math.round(s.kj)), unite: 'kJ' });
   else if (positif(s.calories)) liste.push({ cle: 'energie', libelle: 'Énergie', valeur: formatNombre(Math.round(s.calories)), unite: 'kcal' });
   if (positif(s.tss)) liste.push({ cle: 'charge', libelle: 'Charge', valeur: String(Math.round(s.tss)), unite: 'pts' });

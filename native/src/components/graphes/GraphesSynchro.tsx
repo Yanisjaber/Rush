@@ -75,7 +75,7 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, dureeS, hauteur, 
     else series.push({ cle: 'vitesse', titre: 'VITESSE', valeurs: courbes.vitesse.map((v) => v * 3.6), couleur, texte: (v) => `${formatKm(v, 1)} km/h` });
   }
   if (courbes.fc) series.push({ cle: 'fc', titre: 'CŒUR', valeurs: courbes.fc, couleur: p.danger, texte: (v) => `${Math.round(v)} bpm` });
-  if (courbes.cadence) series.push({ cle: 'cadence', titre: 'CADENCE', valeurs: courbes.cadence, couleur: p.texteDoux, texte: (v) => `${Math.round(v)} ${rythme === 'vitesse' ? 'tr/min' : 'pas/min'}` });
+  if (courbes.cadence) series.push({ cle: 'cadence', titre: 'CADENCE', valeurs: courbes.cadence, couleur: p.texteDoux, texte: (v) => `${Math.round(v)} ${rythme === 'vitesse' ? 'tr/min' : 'ppm'}` });
   if (courbes.watts) series.push({ cle: 'watts', titre: 'PUISSANCE', valeurs: courbes.watts, couleur: p.texteDoux, texte: (v) => `${Math.round(v)} W` });
   // Sans autre courbe, l'altitude s'affiche seule ; sinon elle sert de fond (silhouette) à toutes les autres
   const reliefComplet = courbes.altitude ?? null;
