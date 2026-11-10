@@ -5,11 +5,22 @@ import type { Seance } from '../../types';
 // Retouches de séances (table activity_edits) : chargées une fois, puis réappliquées à toutes les séances lues.
 // Si elles ne se chargent pas, on affiche les séances telles quelles plutôt que de bloquer la page.
 let cacheRetouches: { userId: string | null; table: Record<string, unknown> | null } = { userId: null, table: null };
+// Lecture en cours : deux appels simultanés (séances + dernières séances) attendent la même lecture au lieu d'en lancer chacun une.
+let lectureEnCours: { userId: string; promesse: Promise<Record<string, unknown> | null> } | null = null;
 export function invaliderRetouches(): void {
   cacheRetouches = { userId: null, table: null };
+  lectureEnCours = null;
 }
-async function tableRetouches(userId: string): Promise<Record<string, unknown> | null> {
-  if (cacheRetouches.userId === userId && cacheRetouches.table) return cacheRetouches.table;
+function tableRetouches(userId: string): Promise<Record<string, unknown> | null> {
+  if (cacheRetouches.userId === userId && cacheRetouches.table) return Promise.resolve(cacheRetouches.table);
+  if (lectureEnCours && lectureEnCours.userId === userId) return lectureEnCours.promesse;
+  const promesse = lireRetouches(userId).finally(() => {
+    if (lectureEnCours?.promesse === promesse) lectureEnCours = null;
+  });
+  lectureEnCours = { userId, promesse };
+  return promesse;
+}
+async function lireRetouches(userId: string): Promise<Record<string, unknown> | null> {
   const table: Record<string, unknown> = Object.create(null); // sans prototype : une clé comme « constructor » n'est jamais prise pour une retouche
   // Par pages de 1000 (l'API n'en renvoie pas plus) : sans limite à 5000 retouches
   for (let page = 0; ; page++) {
