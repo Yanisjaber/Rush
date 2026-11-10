@@ -533,7 +533,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
 
   // 2. rythme : séances par semaine et volume
   const frequence = profil && profil.recent.sorties > 0 ? profil.recent.sorties / 8 : 0;
-  const k = Math.min(6, Math.max(2, Math.round(d.seancesParSemaine ?? Math.min(5, Math.max(3, Math.round(frequence) + 1)))));
+  const k = Math.min(6, Math.max(2, Math.round(d.seancesParSemaine ?? Math.min(5, Math.max(3, Math.round(frequence) + (Math.round(frequence) < 4 ? 1 : 0))))));
   const quatreDernieres = profil ? profil.semaines.slice(-4) : [];
   const moyenne4 = quatreDernieres.length ? quatreDernieres.reduce((t, s) => t + s.minutes, 0) / quatreDernieres.length : 0;
   // Le volume de départ part de ce que la personne fait VRAIMENT : ses 7 derniers jours glissants (la dernière case des semaines du profil, qui se terminent aujourd'hui) ou sa moyenne
@@ -649,7 +649,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
       const s: SeanceCourse =
         role === 'qualite1' || role === 'qualite2' ? seancesQualite[i]! :
         role === 'longue' ? sortieLongue(longue, a, (phase === 'specifique' && longue >= 60) || (phase === 'developpement' && w % 2 === 1 && longue >= 55)) :
-        varianteFooting(facile, a, phase, w);
+        varianteFooting(facile, a, phase, w + roles.slice(0, i).filter((r) => r === 'facile').length);
       const essais = [choisis[i], ...libres.filter((j) => !choisis.includes(j) && !operations.some((o) => o.op === 'ajouter' && o.proposition.date === j))];
       let raisonRefus = '';
       for (const jour of essais) {
@@ -683,7 +683,7 @@ export function messageBilan(b: Bilan): string {
   const parts: string[] = [];
   if (b.niveau) parts.push(`Niveau estimé aujourd'hui sur ${b.km} km : ${formaterTemps(b.niveau.secondes)} (d'après ${b.niveau.source}).`);
   if (b.niveauFiabilite === 'ancienne') parts.push("Attention : je n'ai AUCUNE sortie récente, cette estimation est très fragile (on a pu perdre beaucoup de niveau).");
-  else if (b.niveauFiabilite === 'recente') parts.push("Cette estimation vient de tes sorties récentes : pas de sortie test nécessaire. Si l'utilisateur trouve les allures trop rapides ou trop lentes, il peut les ajuster.");
+  else if (b.niveauFiabilite === 'recente') parts.push("Cette estimation vient de tes sorties récentes : pas de sortie test nécessaire. Si tu trouves les allures trop rapides ou trop lentes, dis-le-moi et je les ajuste.");
   if (b.test) parts.push("La première sortie du plan est un TEST (3 km chrono) : dès que l'utilisateur donne son temps, rappelle preparer_course avec chrono_km et chrono_temps pour recalibrer toutes les allures. Dis-lui de la faire dès que possible.");
   if (b.realiste !== null) parts.push(`En ${b.semaines} semaine${b.semaines > 1 ? 's' : ''} d'entraînement, un temps jouable est d'environ ${formaterTemps(b.realiste)}.`);
   if (b.verdict === 'ambitieux' && b.cible !== null && b.realiste !== null) {
