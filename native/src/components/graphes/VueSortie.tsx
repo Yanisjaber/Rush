@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CarteTrace } from '@/components/graphes/CarteTrace';
 import { EnteteFlottante, HAUT_ENTETE } from '@/components/graphes/EnteteFlottante';
@@ -66,6 +66,8 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
   const [yPastilles, setYPastilles] = useState(0); // la place des pastilles dans la feuille : la page 2 les remet au même endroit de l'écran
   const [surCourbe, setSurCourbe] = useState(false); // le doigt est sur la courbe : on suspend le balayage des pages, sinon il emporterait la page avec lui
   const defilement = useRef<ComponentRef<typeof ScrollView>>(null);
+  const defilementV = useRef<ComponentRef<typeof ScrollView>>(null); // le défilement vertical de la page 2
+  const hautPage = useRef(new Animated.Value(0)).current; // de combien la page 2 a défilé : les pastilles remontent avec le contenu
   // L'axe va jusqu'à la distance de la sortie (celle de la tuile) : le bout du profil et « Distance » disent la même chose. La longueur mesurée sur la trace simplifiée ne sert que sans distance.
   const kmTrace = useMemo(() => (parcours ? longueurKm(parcours.trace) : 0), [parcours]);
   // Le point du curseur n'a de sens que sur la page 1
@@ -82,8 +84,14 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
     setIndex(i);
     setSurCourbe(false); // par sécurité : un doigt levé ailleurs ne doit pas laisser le défilement des pages bloqué
     defilement.current?.scrollTo({ x: i * largeur, animated: true });
+    if (i === 0) defilementV.current?.scrollTo({ y: 0, animated: false });
   };
-  const apresDefilement = (e: NativeSyntheticEvent<NativeScrollEvent>) => setIndex(Math.round(e.nativeEvent.contentOffset.x / largeur));
+  const apresDefilement = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const i = Math.round(e.nativeEvent.contentOffset.x / largeur);
+    setIndex(i);
+    // Retour sur la page 1 : la page 2 se remet en haut, pour que les pastilles retrouvent leur place
+    if (i === 0) defilementV.current?.scrollTo({ y: 0, animated: false });
+  };
   const pastilles = (
     <View accessible={false} style={styles.pastilles}>
       {['Carte et profil', 'Toutes les infos'].map((nom, i) => (
@@ -145,19 +153,45 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
         </View>
 
         <View style={{ width: largeur, height: hauteur, backgroundColor: p.fond }}>
-          {/* Le haut de la page : la date sous l'en-tête, puis les pastilles à leur place de la page 1, puis le contenu qui défile */}
-          <View style={{ position: 'absolute', left: espace.e4, right: espace.e4, top: haut + HAUT_ENTETE + espace.e2 }}>{ligneDate}</View>
-          {graphesHaut ? (
-            <View style={{ position: 'absolute', left: espace.e4, right: espace.e4, top: topGraphes, height: Math.max(0, hautGraphes) }}>{graphesHaut(Math.max(0, hautGraphes), setSurCourbe)}</View>
-          ) : null}
-          <ScrollView style={{ marginTop: yEcran + 20 + espace.e2 }} contentContainerStyle={{ paddingHorizontal: espace.e4, paddingBottom: bas + espace.e5, gap: espace.e3 }} showsVerticalScrollIndicator={false}>
-            {repartitions}
-            {pageDetails(setSurCourbe)}
-          </ScrollView>
+          {/* Un seul défilement vertical pour toute la page : la date et les courbes (zone du haut, jusqu'à la hauteur des pastilles), la place des pastilles, puis les répartitions et le reste */}
+          <Animated.ScrollView
+            ref={defilementV}
+            onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: hautPage } } }], { useNativeDriver: true })}
+            scrollEventThrottle={16}
+            contentContainerStyle={{ paddingBottom: bas + espace.e5 }}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={{ height: yEcran }}>
+              <View style={{ position: 'absolute', left: espace.e4, right: espace.e4, top: haut + HAUT_ENTETE + espace.e2 }}>{ligneDate}</View>
+              {graphesHaut ? (
+                <View style={{ position: 'absolute', left: espace.e4, right: espace.e4, top: topGraphes, height: Math.max(0, hautGraphes) }}>{graphesHaut(Math.max(0, hautGraphes), setSurCourbe)}</View>
+              ) : null}
+            </View>
+            <View style={{ height: 20 + espace.e2 }} />
+            <View style={{ paddingHorizontal: espace.e4, gap: espace.e3 }}>
+              {repartitions}
+              {pageDetails(setSurCourbe)}
+            </View>
+          </Animated.ScrollView>
+          {/* Sous l'en-tête flottant : un fond plein, pour que le contenu qui défile ne passe pas sous le titre */}
+          <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: haut + HAUT_ENTETE, backgroundColor: p.fond }} />
         </View>
       </ScrollView>
 
-      <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: yEcran }}>{pastilles}</View>
+      {/* Une seule rangée, par-dessus les pages : fixe quand on balaie, et elle remonte avec le contenu quand la page 2 défile (elle s'efface au passage sous l'en-tête) */}
+      <Animated.View
+        pointerEvents="box-none"
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: yEcran,
+          opacity: hautPage.interpolate({ inputRange: [0, 40], outputRange: [1, 0], extrapolate: 'clamp' }),
+          transform: [{ translateY: Animated.multiply(hautPage, -1) }],
+        }}
+      >
+        {pastilles}
+      </Animated.View>
 
       <EnteteFlottante titre={titre} onModifier={onModifier} />
     </View>
