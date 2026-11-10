@@ -58,7 +58,6 @@ export function RepartitionSortie({ mesures, couleur }: Props) {
         ) : null}
         {manque ? null : <View style={styles.titre}>
           <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2 }]}>{`TEMPS PAR ZONE · ${mesure.titre.toUpperCase()}`}</Text>
-          <Text style={[typo.petit, { color: p.texteMuet }]}>{mesure.estimee ? `${mesure.reference} (estimé)` : mesure.reference}</Text>
         </View>}
         {manque ? null : largeur > 0 ? (
           <Svg width={largeur} height={HAUT + BAS} accessible accessibilityLabel={`Temps par zone, ${mesure.titre}. Zone dominante ${mesure.zones[dominante].court}, ${Math.round((100 * max) / total)} pour cent.`}>
@@ -85,7 +84,6 @@ export function RepartitionSortie({ mesures, couleur }: Props) {
         ) : (
           <View style={{ height: HAUT + BAS }} />
         )}
-        {manque ? null : <Text style={[typo.petit, { color: p.texteDoux }]}>{`Zone dominante : ${mesure.zones[dominante].nom} · ${Math.round((100 * max) / total)} %`}</Text>}
       </View>
     </View>
   );
