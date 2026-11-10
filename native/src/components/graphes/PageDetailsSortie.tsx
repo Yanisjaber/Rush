@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { ChiffreSeance } from '@/data/calendrier/seance-detail';
-import { espace, rayon } from '@/theme/couleurs';
+import { espace, rayon, sombre } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -63,6 +63,8 @@ export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, records
     { titre: 'ÉNERGIE', lignes: [...ligne('watts', 'Puiss. moyenne'), ...chiffreNote('watts', 'Puiss. normalisée', 'W'), ...ligne('pmax', 'Puiss. max'), ...ligne('energie', 'Travail'), ...ligne('kjftp', 'Dont > FTP'), ...ligne('calories'), ...ligne('cho')] },
   ].filter((r) => r.lignes.length > 0);
   const rpe = parCle('rpe');
+  // Les titres de rubrique dans la couleur du sport en thème sombre ; en thème clair elle manque de contraste en petit texte (voir IDENTITE.md), on garde le texte
+  const couleurTitre = p.fond === sombre.fond ? couleur : p.texte;
   // Deux colonnes de rubriques, à peu près de la même hauteur : on remplit la première jusqu'à la moitié des lignes
   const totalLignes = rubriques.reduce((n, r) => n + r.lignes.length, 0);
   const colonnes: (typeof rubriques)[] = [[], []];
@@ -101,7 +103,7 @@ export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, records
             <View key={c} style={[styles.colonne, c > 0 && { borderLeftColor: p.trait, borderLeftWidth: StyleSheet.hairlineWidth }]}>
               {col.map((r, k) => (
                 <View key={r.titre} style={k > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }}>
-                  <Text numberOfLines={1} style={[typo.micro, styles.titre, { color: p.texteDoux }]}>{r.titre}</Text>
+                  <Text numberOfLines={1} style={[typo.micro, styles.titre, { color: couleurTitre }]}>{r.titre}</Text>
                   {r.lignes.map((l) => (
                     <View key={l.cle} accessible accessibilityLabel={[l.libelle, l.valeur, l.unite, l.ecarte ? 'écartée de tes calculs' : ''].filter(Boolean).join(' ')} style={styles.ligne}>
                       <Text numberOfLines={1} style={[styles.libelle, { color: p.texteDoux }]}>{l.libelle}</Text>
@@ -144,7 +146,7 @@ const styles = StyleSheet.create({
   unite: { fontFamily: police.texte600, fontSize: 11 },
   tableau: { flexDirection: 'row', borderRadius: rayon.base, overflow: 'hidden' },
   colonne: { flex: 1, minWidth: 0 },
-  titre: { letterSpacing: 1, paddingHorizontal: 10, paddingTop: 10, paddingBottom: 0 },
+  titre: { fontFamily: police.titre700, letterSpacing: 1, paddingHorizontal: 10, paddingTop: 10, paddingBottom: 0 },
   ligne: { minHeight: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6, paddingHorizontal: 10, paddingVertical: 3 },
   libelle: { fontFamily: police.texte400, fontSize: 13, flexShrink: 1 },
   valeurLigne: { fontFamily: police.titre700, fontSize: 15, fontVariant: ['tabular-nums'], flexShrink: 0 },
