@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
-import Svg, { Rect, Text as TexteSvg } from 'react-native-svg';
+import Svg, { G, Rect, Text as TexteSvg } from 'react-native-svg';
 import { SelecteurSegments } from '@/components/ui/SelecteurSegments';
 import { formatDureePrecise } from '@/data/outils/format';
 import type { MesureZones } from '@/data/outils/repartition-zones';
@@ -63,7 +63,7 @@ export function RepartitionSortie({ mesures, couleur }: Props) {
               const h = max > 0 ? Math.max(3, ((HAUT - HAUT_LABEL) * z.secondes) / max) : 3;
               const centre = x + colonne / 2;
               return (
-                <View key={z.court}>
+                <G key={z.court}>
                   <Rect x={x} y={HAUT - h} width={colonne} height={h} rx={5} fill={z.secondes > 0 ? teinte(i) : p.trait} />
                   <TexteSvg x={centre} y={HAUT - h - 5} textAnchor="middle" fontSize={11} fontFamily={police.texte600} fill={p.texte}>
                     {texteTemps(z.secondes)}
@@ -74,7 +74,7 @@ export function RepartitionSortie({ mesures, couleur }: Props) {
                   <TexteSvg x={centre} y={HAUT + 29} textAnchor="middle" fontSize={9} fontFamily={police.texte400} fill={p.texteMuet}>
                     {z.borne}
                   </TexteSvg>
-                </View>
+                </G>
               );
             })}
           </Svg>

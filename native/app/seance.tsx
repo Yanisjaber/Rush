@@ -161,7 +161,7 @@ export default function Seance() {
         tours={
           <View style={{ gap: espace.e2 }}>
             <Text style={[typo.micro, { color: p.texteDoux }]}>TOURS</Text>
-            {tours ? <GrapheTours tours={tours} sport={seance.sport} couleur={couleur} /> : null}
+            {tours ? <GrapheTours tours={tours} sport={seance.sport} couleur={couleur} altitude={courbes?.altitude ?? null} /> : null}
             <ListeTours lignes={lignes} chargement={chargementTours} erreur={erreurTours} />
           </View>
         }
