@@ -66,5 +66,5 @@ test('echelleAllure : les allures lentes qui se tassent en bas perdent leur éti
   assert.ok(e.reperes.length < complet.length + 1);
   // Deux repères voisins sont toujours séparés d'au moins 6 % de la hauteur
   for (let i = 1; i < e.reperes.length; i++) assert.ok(e.reperes[i] - e.reperes[i - 1] >= (e.max - e.min) * 0.06 - 1e-9);
-  assert.ok(Math.abs(e.max - 3600 / 180) < 1e-9);
+  assert.ok(Math.abs(e.max - 3600 / 120) < 1e-9); // 2'00" : l'arrondi sous 2'45"
 });
