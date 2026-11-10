@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Boite, Emplacement, GrilleWidgets } from '@/components/widgets/GrilleWidgets';
 import { CourbeLissee } from '@/components/graphes/CourbeLissee';
 import { JaugePilier } from '@/components/graphes/JaugePilier';
-import { BoutonReglages } from '@/components/ui/BoutonReglages';
+import { BarreSports } from '@/components/graphes/BarreSports';
+import { BoutonCheckin } from '@/components/ui/BoutonCheckin';
 import { Tuile } from '@/components/ui/Tuile';
 import { CLES_RESSENTI, jusquAuDernierIndice, serieEtatDeForme } from '@/data/sante/forme-sante';
 import { dateIsoLocale } from '@/data/outils/format';
@@ -29,10 +30,9 @@ const BARRE_ONGLETS = 72;
 // Un appui sur n'importe quel élément ouvre son détail.
 export default function Sante() {
   const p = usePalette();
-  const haut = useSafeAreaInsets().top;
   const bas = useSafeAreaInsets().bottom;
   const router = useRouter();
-  const { nuits, chargement, erreur, actualisation, demo, recharger } = useDonneesSommeil();
+  const { nuits, chargement, erreur, actualisation, demo, recharger, rechargerSilencieux } = useDonneesSommeil();
   const { metriques, chargement: chargementMetriques, erreur: erreurMetriques, recharger: rechargerMetriques } = useMetriques();
   const { mesures, chargement: chargementMesures, erreur: erreurMesures, recharger: rechargerMesures } = useMesuresSante();
   const serie = useMemo(() => serieEtatDeForme(nuits, metriques, mesures), [nuits, metriques, mesures]);
@@ -50,9 +50,9 @@ export default function Sante() {
   const dejaVu = useRef(false);
   useFocusEffect(
     useCallback(() => {
-      if (dejaVu.current) void Promise.all([recharger(), rechargerMetriques(), rechargerMesures()]);
+      if (dejaVu.current) void Promise.all([rechargerSilencieux(), rechargerMetriques(), rechargerMesures()]);
       dejaVu.current = true;
-    }, [recharger, rechargerMetriques, rechargerMesures]),
+    }, [rechargerSilencieux, rechargerMetriques, rechargerMesures]),
   );
   const motifs = useMemo(() => motifsDuJour(piliers), [piliers]);
   const principaux = useMemo(() => piliers.filter((x) => !x.surveille), [piliers]);
@@ -66,20 +66,13 @@ export default function Sante() {
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
       <FondDegrade />
+      <BarreSports titre="Santé" gauche={<BoutonCheckin reponses={reponses} onPress={() => aller('/sante/checkin')} />} />
       <ScrollView
-        contentContainerStyle={[styles.contenu, { paddingTop: haut + espace.e4, paddingBottom: bas + BARRE_ONGLETS }]}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={[styles.contenu, { paddingTop: espace.e4, paddingBottom: bas + BARRE_ONGLETS }]}
         refreshControl={<RefreshControl refreshing={actualisation} onRefresh={() => void Promise.all([recharger(), rechargerMetriques(), rechargerMesures()])} tintColor={p.texteDoux} />}
       >
-        <View style={styles.entete}>
-          <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>
-            Santé
-          </Text>
-          <View style={styles.droite}>
-            <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'capitalize' }]}>{demo ? 'Mode démo' : date}</Text>
-            {/* Santé n'a pas la barre des sports : la roue dentée des Paramètres est ici, en haut à droite */}
-            <BoutonReglages />
-          </View>
-        </View>
+        <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'capitalize' }]}>{demo ? 'Mode démo' : date}</Text>
 
         {message ? (
           <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
@@ -204,8 +197,6 @@ export default function Sante() {
 const styles = StyleSheet.create({
   page: { flex: 1 },
   contenu: { paddingHorizontal: espace.e4, gap: espace.e3 },
-  entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  droite: { flexDirection: 'row', alignItems: 'center', gap: espace.e1, marginRight: -espace.e3 },
   attente: { alignItems: 'center', paddingVertical: espace.e7 },
   avis: { borderRadius: 6, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
   motifs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

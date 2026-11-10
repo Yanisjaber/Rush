@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BoutonReglages } from '@/components/ui/BoutonReglages';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +14,8 @@ import { usePalette } from '@/theme/usePalette';
 // Le menu s'ouvre sous la barre : une case par sport, on en coche un ou plusieurs (course et vélo, par exemple), puis « Appliquer ».
 // Rien de coché = « Tous ». Le choix est un filtre global : il reste quand on change d'écran.
 // La barre est posée tout en haut de l'écran : elle réserve elle-même la place de l'heure et de l'encoche.
-export function BarreSports({ titre }: { titre: string }) {
+// `gauche` : un bouton à poser à la place du menu des sports (Santé y met son check-in, le filtre par sport n'y a pas de sens).
+export function BarreSports({ titre, gauche }: { titre: string; gauche?: ReactNode }) {
   const p = usePalette();
   const haut = useSafeAreaInsets().top;
   const { familles, selection, filtre } = useMenu();
@@ -45,7 +46,7 @@ export function BarreSports({ titre }: { titre: string }) {
           </Text>
         </View>
         <View style={styles.gauche}>
-          {sansSport ? null : (
+          {gauche !== undefined ? gauche : sansSport ? null : (
             <Pressable
               onPress={ouvrirMenu}
               accessibilityRole="button"

@@ -13,6 +13,7 @@ export function useDonneesSommeil(): {
   demo: boolean;
   userId: string | null;
   recharger: () => Promise<void>;
+  rechargerSilencieux: () => Promise<void>;
 } {
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
@@ -41,5 +42,5 @@ export function useDonneesSommeil(): {
 
   // Les nuits d'un autre compte ne s'affichent jamais
   const lot = demo ? { nuits: demoNuits ?? [], erreur: '' } : reel && reel.userId === userId ? reel : null;
-  return { nuits: lot?.nuits ?? [], chargement: !lot, erreur: lot?.erreur ?? '', actualisation, demo, userId, recharger };
+  return { nuits: lot?.nuits ?? [], chargement: !lot, erreur: lot?.erreur ?? '', actualisation, demo, userId, recharger, rechargerSilencieux: charger };
 }
