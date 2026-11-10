@@ -1,8 +1,6 @@
-import { useEffect } from 'react';
 import { NativeTabs } from 'expo-router/native-tabs';
 import { police } from '@/theme/typo';
-import { useAuth } from '@/stores/auth';
-import { chargerAccesCoach, useAccesCoach } from '@/stores/coach';
+import { useAccesCoach } from '@/stores/coach';
 import { useMenu } from '@/stores/menu';
 import { couleurSport } from '@/theme/sports';
 import { usePalette } from '@/theme/usePalette';
@@ -14,13 +12,7 @@ import { usePalette } from '@/theme/usePalette';
 export default function OngletsLayout() {
   const p = usePalette();
   const { filtre } = useMenu();
-  const { session, demo } = useAuth();
   const accesCoach = useAccesCoach();
-  // L'accès se relit à chaque changement de compte ; en démo (pas de vrai compte), jamais de Coach
-  const compte = demo ? null : session?.user.id ?? null;
-  useEffect(() => {
-    void chargerAccesCoach(compte);
-  }, [compte]);
   const teinte = filtre === 'tout' ? p.texte : couleurSport(p, filtre);
   return (
     <NativeTabs tintColor={teinte} labelStyle={{ fontFamily: police.texte600 }}>

@@ -15,6 +15,7 @@ import { InstrumentSans_600SemiBold } from '@expo-google-fonts/instrument-sans/6
 import { EcranChargement } from '@/components/ui/EcranChargement';
 import { ZoneClavier } from '@/components/champs/ZoneClavier';
 import { initAuth, useAuth } from '@/stores/auth';
+import { chargerAccesCoach, useAccesCoachLu } from '@/stores/coach';
 import { chargerTheme } from '@/stores/theme';
 import { clair, sombre } from '@/theme/couleurs';
 
@@ -52,6 +53,19 @@ export default function RootLayout() {
     if (erreurPolices) console.warn('[polices] chargement impossible :', erreurPolices.message);
   }, [erreurPolices]);
 
+  // L'accès au Coach se lit dès que le compte est connu, et les onglets attendent la réponse (voir useAccesCoachLu).
+  // L'accès se relit à chaque changement de compte ; en démo (pas de vrai compte), jamais de Coach.
+  const compte = demo ? null : session?.user.id ?? null;
+  const accesLu = useAccesCoachLu();
+  useEffect(() => {
+    if (pret) void chargerAccesCoach(compte);
+  }, [pret, compte]);
+  // Une fois l'app affichée, elle ne redisparaît jamais (une déconnexion ne doit pas la démonter pour relire l'accès)
+  const [appPrete, setAppPrete] = useState(false);
+  useEffect(() => {
+    if (pret && accesLu) setAppPrete(true);
+  }, [pret, accesLu]);
+
   // Polices et thème prêts : on peut retirer l'écran de lancement natif, l'écran de chargement prend le relais par-dessus
   const decorPret = (policesPretes || !!erreurPolices) && themePret;
   useEffect(() => {
@@ -70,7 +84,7 @@ export default function RootLayout() {
       <StatusBar style={palette === clair ? 'dark' : 'light'} />
       {/* Toucher à côté d'un champ texte, n'importe où dans l'app, ferme le clavier et retire le curseur */}
       <ZoneClavier style={{ flex: 1 }}>
-      {pret ? (
+      {appPrete ? (
       <Stack
         screenOptions={{
           headerShown: false,
@@ -136,7 +150,7 @@ export default function RootLayout() {
       </Stack>
       ) : null}
       </ZoneClavier>
-      {chargementFini ? null : <EcranChargement pret={pret} onFin={finChargement} />}
+      {chargementFini ? null : <EcranChargement pret={appPrete} onFin={finChargement} />}
     </GestureHandlerRootView>
   );
 }
