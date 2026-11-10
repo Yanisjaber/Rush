@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Linking, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { Bouton } from '@/components/ui/Bouton';
 import { EcranSection } from '@/components/ecrans/EcranSection';
@@ -10,9 +10,7 @@ import { espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-const ADRESSE_SITE = 'https://yanisjaber.github.io/Rush/';
-
-// Mon compte : changer le mot de passe et exporter les données se font sur le site (même compte) ; la suppression se fait ici, comme sur le site.
+// Supprimer mon compte : la suppression se fait ici, comme sur le site. Mot de passe et export passent par le site, depuis la liste Mon compte.
 export default function MonCompte() {
   const p = usePalette();
   const [ouvert, setOuvert] = useState(false);
@@ -38,14 +36,6 @@ export default function MonCompte() {
   return (
     <EcranSection>
       <View style={{ gap: espace.e4 }}>
-        <Bloc titre="Mot de passe et données">
-          <Text style={[typo.petit, { color: p.texteDoux, marginBottom: espace.e3 }]}>Changer ton mot de passe et exporter tes données (fichier JSON) se fait sur le site, avec le même compte.</Text>
-          <View style={{ gap: espace.e2 }}>
-            <Bouton variante="discret" onPress={() => void Linking.openURL(`${ADRESSE_SITE}#/mot-de-passe`).catch(() => {})}>Changer mon mot de passe</Bouton>
-            <Bouton variante="discret" onPress={() => void Linking.openURL(`${ADRESSE_SITE}#/parametres/general`).catch(() => {})}>Exporter mes données</Bouton>
-          </View>
-        </Bloc>
-
         <Bloc titre="Supprimer mon compte">
           {enCours ? (
             <View accessibilityLiveRegion="polite" style={{ gap: espace.e2 }}>

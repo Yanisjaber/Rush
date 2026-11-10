@@ -1,122 +1,138 @@
 import { FondDegrade } from '@/components/ui/FondDegrade';
 import { useRouter, type Href } from 'expo-router';
+import type { ReactNode } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 import { Bouton } from '@/components/ui/Bouton';
 import { BoutonRetour } from '@/components/ui/BoutonRetour';
 import { CadreWidget } from '@/components/widgets/CadreWidget';
-import { Boite, Emplacement, GrilleWidgets } from '@/components/widgets/GrilleWidgets';
 import { Pastille } from '@/components/ui/Pastille';
-import { Tuile } from '@/components/ui/Tuile';
-import type { Connexion, Tuile as ResumeTuile } from '@/data/reglages/parametres';
+import type { Connexion } from '@/data/reglages/parametres';
 import { useResumeParametres } from '@/hooks/useResumeParametres';
 import { deconnexion, quitterDemo, useAuth } from '@/stores/auth';
 import { definirTheme } from '@/stores/theme';
 import { definirPrevuesAujourdhui, PREVUES_AUJOURDHUI, useReglagesDemo } from '@/stores/reglages-demo';
 import { espace, rayon } from '@/theme/couleurs';
-import { couleurSport } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-const ADRESSE_CONFIDENTIALITE = 'https://yanisjaber.github.io/Rush/#/confidentialite';
+const ADRESSE_SITE = 'https://yanisjaber.github.io/Rush/';
 
-// Paramètres : une carte « compte » en dossard, puis une tuile par section avec sa valeur clé et ses points de complétion.
-// Même langage que Santé : le chiffre et la forme parlent, peu de phrases. Un appui sur une tuile ouvre la section.
+const ouvrirSite = (chemin: string) => void Linking.openURL(`${ADRESSE_SITE}${chemin}`).catch(() => {});
+
+// Mon compte : un en-tête (initiale, titre, e-mail), puis des menus en lignes groupés (profil, connexions, préférences, sécurité, session).
+// Les réglages détaillés s'ouvrent dans leur propre écran ; mot de passe, export et confidentialité passent par le site (même compte).
 export default function Parametres() {
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { session, demo } = useAuth();
   const { resume: resumeBrut, chargement, erreurProfil, erreurConnexions } = useResumeParametres();
-  // Une lecture en erreur n'affiche ni « — » ni « non connecté » : on le dit, sans toucher aux autres tuiles
-  const resume = {
-    ...resumeBrut,
-    connexions: erreurConnexions
-      ? { etat: 'absente' as const, note: 'Illisible pour le moment' }
-      : chargement && !demo
-        ? { etat: 'absente' as const, note: 'Chargement…' }
-        : resumeBrut.connexions,
-  };
+  // Une lecture en erreur n'affiche ni « — » ni « non connecté » : on le dit, sans toucher aux autres lignes
+  const connexions = erreurConnexions
+    ? { etat: 'absente' as const, note: 'Illisible pour le moment' }
+    : chargement && !demo
+      ? { etat: 'absente' as const, note: 'Chargement…' }
+      : resumeBrut.connexions;
+  const resume = { ...resumeBrut, connexions };
   const aller = (vers: Href) => router.push(vers);
-
-  const tuile = (vers: Href, titre: string, t: ResumeTuile) => (
-    <Emplacement taille="s">
-      <Pressable
-        onPress={() => aller(vers)}
-        accessibilityRole="button"
-        accessibilityLabel={`${titre} : ${t.valeur} ${t.unite ?? ''} ${t.note}. ${t.remplis} sur ${t.total} renseigné${t.remplis > 1 ? 's' : ''}`.replace(/\s+/g, ' ').trim()}
-        accessibilityHint="Ouvre la section"
-      >
-        <Boite taille="s">
-          <Tuile gros titre={titre} valeur={t.valeur} unite={t.unite} note={t.note || undefined}>
-            <PointsRemplis remplis={t.remplis} total={t.total} />
-          </Tuile>
-        </Boite>
-      </Pressable>
-    </Emplacement>
-  );
+  const email = demo ? null : session?.user.email ?? null;
+  const initiale = (resume.prenom || email || (demo ? 'D' : 'R')).trim().charAt(0).toUpperCase();
+  const note = (t: { note: string; valeur: string; unite?: string }) => [t.valeur !== '—' ? [t.valeur, t.unite].filter(Boolean).join(' ') : '', t.note].filter(Boolean).join(' · ') || 'À renseigner';
 
   return (
     <View style={{ flex: 1 }}>
       <FondDegrade />
       <ScrollView style={{ backgroundColor: 'transparent' }} contentContainerStyle={[styles.contenu, { paddingTop: insets.top + espace.e4, paddingBottom: insets.bottom + 72 }]}>
-      <BoutonRetour />
-      <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte, marginTop: -espace.e2 }]}>
-        Paramètres
-      </Text>
+        <BoutonRetour />
 
-      <Boite taille="m" heros={{ couleur: couleurSport(p) }}>
-        <CadreWidget titre="Compte" serre>
-          <CarteCompte prenom={resume.prenom} email={demo ? null : session?.user.email ?? null} demo={demo} />
-        </CadreWidget>
-      </Boite>
-
-      {erreurProfil || erreurConnexions ? (
-        <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
-          <Text style={[typo.petit, { color: p.texte }]}>{[erreurProfil, erreurConnexions].filter(Boolean).join(' ')}</Text>
+        <View accessible accessibilityRole="header" accessibilityLabel={demo ? "Mon compte, mode démo, des données d'exemple" : `Mon compte, ${resume.prenom || 'sans prénom'}, ${email ?? ''}`} style={styles.entete}>
+          <View style={[styles.avatar, { backgroundColor: p.texte }]}>
+            <Text style={[styles.initiale, { color: p.fond }]}>{initiale}</Text>
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[typo.titre1, { color: p.texte }]}>Mon compte</Text>
+            <Text numberOfLines={1} style={[typo.corps, { color: p.texteDoux }]}>{demo ? "Mode démo · données d'exemple" : email ?? ''}</Text>
+          </View>
         </View>
-      ) : null}
 
-      {demo ? <ReglagesDemo /> : null}
+        {erreurProfil || erreurConnexions ? (
+          <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
+            <Text style={[typo.petit, { color: p.texte }]}>{[erreurProfil, erreurConnexions].filter(Boolean).join(' ')}</Text>
+          </View>
+        ) : null}
 
-      <GrilleWidgets>
-        {tuile('/parametres/profil', 'Profil', resume.profil)}
-        {tuile('/parametres/physiologie', 'Physiologie', resume.physiologie)}
-        {tuile('/parametres/zones', 'Zones', resume.zones)}
-        {tuile('/parametres/sports', 'Mes sports', resume.sports)}
-        <Emplacement taille="m">
-          <Pressable onPress={() => aller('/parametres/connexions')} accessibilityRole="button" accessibilityLabel={`Connexions : ${resume.connexions.note}`} accessibilityHint="Ouvre la section">
-            <Boite taille="m">
-              <Tuile gros titre="Connexions" valeur="Strava" note={resume.connexions.note.replace(/^Strava( · |$)/, '') || undefined}>
-                <PastilleEtat etat={resume.connexions.etat} />
-              </Tuile>
-            </Boite>
-          </Pressable>
-        </Emplacement>
-      </GrilleWidgets>
+        {demo ? <ReglagesDemo /> : null}
 
-      <Apparence />
+        <Groupe titre="Mon profil">
+          <Ligne titre="Profil" detail={note(resume.profil)} onPress={() => aller('/parametres/profil')} />
+          <Ligne titre="Physiologie" detail={note(resume.physiologie)} onPress={() => aller('/parametres/physiologie')} />
+          <Ligne titre="Zones" detail={note(resume.zones)} onPress={() => aller('/parametres/zones')} />
+          <Ligne titre="Mes sports" detail={note(resume.sports)} onPress={() => aller('/parametres/sports')} />
+        </Groupe>
 
-      {demo ? null : (
-        <Bouton variante="discret" onPress={() => aller('/parametres/compte')}>
-          Mon compte
-        </Bouton>
-      )}
+        <Groupe titre="Connexions">
+          <Ligne titre="Strava et synchro" detail={resume.connexions.note || 'Non connecté'} droite={<PastilleEtat etat={resume.connexions.etat} />} onPress={() => aller('/parametres/connexions')} />
+        </Groupe>
 
-      <View style={styles.actions}>
-        <View style={{ flex: 1 }}>
-          <Bouton variante="discret" onPress={() => void Linking.openURL(ADRESSE_CONFIDENTIALITE).catch(() => {})}>
-            Confidentialité
-          </Bouton>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Bouton variante="discret" onPress={demo ? quitterDemo : () => void deconnexion()}>
-            {demo ? 'Quitter la démo' : 'Se déconnecter'}
-          </Bouton>
-        </View>
-      </View>
-    </ScrollView>
+        <Groupe titre="Préférences">
+          <Apparence />
+        </Groupe>
+
+        <Groupe titre="Sécurité et données">
+          {demo ? null : <Ligne titre="Changer mon mot de passe" detail="Ouvre le site" externe onPress={() => ouvrirSite('#/mot-de-passe')} />}
+          {demo ? null : <Ligne titre="Exporter mes données" detail="Fichier JSON, via le site" externe onPress={() => ouvrirSite('#/parametres/general')} />}
+          <Ligne titre="Confidentialité" detail="Ouvre le site" externe onPress={() => ouvrirSite('#/confidentialite')} />
+        </Groupe>
+
+        <Groupe titre="Session">
+          <Ligne titre={demo ? 'Quitter la démo' : 'Se déconnecter'} onPress={demo ? quitterDemo : () => void deconnexion()} />
+          {demo ? null : <Ligne titre="Supprimer mon compte" danger onPress={() => aller('/parametres/compte')} />}
+        </Groupe>
+      </ScrollView>
     </View>
+  );
+}
+
+// Un groupe de lignes : une étiquette en micro-capitales, puis un bloc de lignes séparées par un trait fin.
+function Groupe({ titre, children }: { titre: string; children: ReactNode }) {
+  const p = usePalette();
+  const lignes = (Array.isArray(children) ? children : [children]).filter(Boolean);
+  return (
+    <View style={{ gap: espace.e2 }}>
+      <Text accessibilityRole="header" style={[typo.micro, { color: p.texteMuet }]}>{titre.toUpperCase()}</Text>
+      <View style={[styles.groupe, { backgroundColor: p.surface, borderColor: p.trait }]}>
+        {lignes.map((l, i) => (
+          <View key={i} style={i > 0 ? { borderTopWidth: 1, borderTopColor: p.trait } : undefined}>{l}</View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// Une ligne de menu : titre, détail en dessous, puis un chevron (› ouvre un écran, ↗ ouvre le site). Cible de 52 pt au moins.
+function Ligne({ titre, detail, onPress, danger, externe, droite }: { titre: string; detail?: string; onPress: () => void; danger?: boolean; externe?: boolean; droite?: ReactNode }) {
+  const p = usePalette();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={detail ? `${titre}. ${detail}` : titre}
+      accessibilityHint={externe ? 'Ouvre le site' : undefined}
+      style={({ pressed }) => [styles.ligne, { backgroundColor: pressed ? p.surface2 : 'transparent' }]}
+    >
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={[typo.corpsFort, { color: danger ? p.danger : p.texte }]}>{titre}</Text>
+        {detail ? <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>{detail}</Text> : null}
+      </View>
+      {droite}
+      {danger ? null : (
+        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <Path d={externe ? 'M7 17L17 7M9 7h8v8' : 'M9 5l7 7-7 7'} stroke={p.texteMuet} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+      )}
+    </Pressable>
   );
 }
 
@@ -124,14 +140,14 @@ export default function Parametres() {
 function Apparence() {
   const p = usePalette();
   const clair = useColorScheme() === 'light';
-  // Sans boîte de grille : la carte garde sa hauteur naturelle (deux boutons, pas 160 pt)
   return (
-    <CadreWidget titre="Apparence">
+    <View style={styles.ligne}>
+      <Text style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>Apparence</Text>
       <View style={styles.choix} accessibilityRole="radiogroup">
         <Pastille role="radio" nom="Sombre" couleur={p.texte} actif={!clair} onPress={() => definirTheme('sombre')} aide="Thème sombre" />
         <Pastille role="radio" nom="Clair" couleur={p.texte} actif={clair} onPress={() => definirTheme('clair')} aide="Thème clair" />
       </View>
-    </CadreWidget>
+    </View>
   );
 }
 
@@ -155,33 +171,6 @@ function ReglagesDemo() {
   );
 }
 
-// Le contenu de la carte compte : le prénom en grand, l'e-mail dessous. Dans un composant à part : il lit la palette du cadre (inversée en dossard).
-function CarteCompte({ prenom, email, demo }: { prenom: string; email: string | null; demo: boolean }) {
-  const p = usePalette();
-  return (
-    <View accessible accessibilityLabel={demo ? "Compte : mode démo, des données d'exemple" : `Compte : ${prenom || 'sans prénom'}, ${email ?? ''}`} style={styles.compte}>
-      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={[styles.prenom, { color: p.texte }]}>
-        {demo ? 'Mode démo' : prenom || 'Toi'}
-      </Text>
-      <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>
-        {demo ? "Données d'exemple" : email ?? ''}
-      </Text>
-    </View>
-  );
-}
-
-// Les points de complétion d'une tuile : rempli = renseigné. Donne envie de compléter, sans phrase.
-function PointsRemplis({ remplis, total }: { remplis: number; total: number }) {
-  const p = usePalette();
-  return (
-    <View accessible={false} importantForAccessibility="no-hide-descendants" style={styles.points}>
-      {Array.from({ length: total }, (_, i) => (
-        <View key={i} style={[styles.point, { backgroundColor: i < remplis ? p.texte : p.traitFort }]} />
-      ))}
-    </View>
-  );
-}
-
 // La pastille d'état d'une connexion : verte connectée, rouge en erreur, grise absente
 function PastilleEtat({ etat }: { etat: Connexion['etat'] }) {
   const p = usePalette();
@@ -191,12 +180,12 @@ function PastilleEtat({ etat }: { etat: Connexion['etat'] }) {
 
 const styles = StyleSheet.create({
   contenu: { paddingHorizontal: espace.e4, gap: espace.e4 },
-  compte: { flex: 1, justifyContent: 'center', gap: 4 },
-  prenom: { fontFamily: police.titre800, fontSize: 40, lineHeight: 44, letterSpacing: -0.5 },
-  points: { flexDirection: 'row', gap: 5 },
-  point: { width: 9, height: 9, borderRadius: 5 },
-  pastille: { width: 28, height: 28, borderRadius: 14, alignSelf: 'flex-end' },
-  actions: { flexDirection: 'row', gap: espace.e3 },
+  entete: { flexDirection: 'row', alignItems: 'center', gap: espace.e4 },
+  avatar: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
+  initiale: { fontFamily: police.titre800, fontSize: 34, lineHeight: 40 },
+  groupe: { borderWidth: 1, borderRadius: rayon.base, overflow: 'hidden' },
+  ligne: { minHeight: 56, paddingHorizontal: 14, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  pastille: { width: 14, height: 14, borderRadius: 7 },
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
   choix: { flexDirection: 'row', gap: espace.e2, flexWrap: 'wrap' },
 });
