@@ -270,15 +270,16 @@ function varianteFooting(minutes: number, a: Allures, phase: Phase, semaine: num
 
 // ---------- Le départ d'un vrai débutant ----------
 /**
- * Un vrai débutant = AUCUNE donnée de course exploitable (ni 3 sorties sur 8 semaines, ni ancien record, ni sortie dans les 90 jours, ni chrono) ET aucune ancienneté de pratique
+ * Un vrai débutant = AUCUNE donnée de course exploitable (ni 3 sorties sur 8 semaines, ni ancien record, ni sortie dans les 90 jours) ET aucune ancienneté de pratique
  * (0 an ou inconnue). Un coureur qui a de l'ancienneté mais pas de données ici n'en est pas un : il reprend (voir `departReprise`).
  * Fiches `course-reprise-debutants` et `reprise-apres-arret` (docs/ia/connaissances) : 3 séances par semaine de 20 à 30 min, ALTERNER course et marche (1 min / 2 min, puis 2/1, 3/1…),
  * un jour de repos entre deux séances, progression lente, aucune intensité, objectif FINIR un 5 km avant de chercher un chrono. Ce sont des repères de terrain (programmes de type « Couch to 5K »), pas des essais contrôlés.
  * CONVENTIONS À NOUS (pas dans les fiches) : on change d'étape toutes les 2 semaines (1/2 → 2/1 → 3/1), on repasse en footing continu après 6 semaines de course/marche, la marche s'affiche à 1,7 × l'allure facile.
  */
+/** Allure indicative (5 km en 40 min) pour dessiner la seule sortie test quand on ne sait encore rien : seule la durée affichée du test en dépend, le chrono réel vient de la personne */
+const TEST_SEUL_5K_SECONDES = 2400;
 export const DEBUTANT = { seancesParSemaine: 3, footingMini: 20, seanceMini: 25, longueMini: 30, semainesCourseMarche: 6 } as const;
-export function estDebutant(profil: ProfilCourse | null, anneesPratique: number | null, chrono?: unknown): boolean {
-  if (chrono) return false;
+export function estDebutant(profil: ProfilCourse | null, anneesPratique: number | null): boolean {
   const donnees = !!profil && (profil.recent.sorties >= 3 || profil.meilleurEffort !== null || profil.effortRecent !== null || profil.sorties90 > 0);
   return !donnees && (anneesPratique ?? 0) === 0;
 }
@@ -670,10 +671,22 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   if (jours > 60 * 7) return vide('Cette course est à plus de 60 semaines : fais un premier plan plus tard, quand elle sera plus proche.');
 
   // 1. niveau, objectif, allures
-  const debutant = estDebutant(profil, coureur?.anneesPratique ?? null, d.chrono);
+  const debutant = estDebutant(profil, coureur?.anneesPratique ?? null);
   const { niveau, realiste, cible, objectifPlan, verdict } = calibrer(km, d.tempsCibleMinutes, nSemaines, profil, aujourdhui, d.chrono);
+  // Rien du tout (aucune sortie, aucun temps visé, aucun chrono) : on ne demande PAS un temps « au pif », on fait faire un test. Une seule séance, la sortie test ; la personne donne son chrono et le plan complet se construit dessus.
   if (objectifPlan === null && debutant) {
-    return vide("Tu débutes et je n'ai aucune sortie à lire : dis-moi simplement le temps que tu espères sur cette course, même approximatif (c'est seulement pour régler des allures faciles, je ne te demande pas de chrono précis). Le but d'un premier plan, c'est de finir.");
+    const a0 = alluresDepuisCourse(TEST_SEUL_5K_SECONDES, 5);
+    const t = seanceTest(a0);
+    const interditsTest = new Set(d.joursLibres ?? []);
+    for (let j = debut; j < d.date; j = ajouterJours(j, 1)) {
+      if (interditsTest.has(j) || regles.joursInterdits.has(nomDuJour(j)) || base.joursDeRepos.includes(j) || base.competitions.some((c) => c.date === j) || base.indisponibilites.some((i) => entre(j, i.du, i.au))) continue;
+      if ((regles.minutesMax[nomDuJour(j)] ?? Infinity) < t.minutes) continue;
+      const p: Proposition = { date: j, sport: 'course', type: t.type, minutes: t.minutes };
+      if (!validerSeance(p, ctxAvec(base, seances, base.indisponibilites)).ok) continue;
+      const message = "Tu n'as encore aucune sortie de course dans l'application : on commence par un TEST. C'est une seule séance, 3 km chrono (échauffement, 3 km aussi vite que tu peux en gardant une allure régulière, retour au calme). Dès que la personne donne son temps, rappelle preparer_course avec chrono_km et chrono_temps : le plan complet se construit dessus, pas besoin de lui demander un temps visé. Dis-lui de faire ce test dès que possible.";
+      return { operations: [{ op: 'ajouter', proposition: p, justification: t.but, detail: t.detail, phase: 'Test' }], abandons: [], semaines: [`Test (${j}) : sortie test, ${t.minutes} min`], bilan: null, message };
+    }
+    return vide("Je n'ai trouvé aucun jour libre avant la course pour placer la sortie test.");
   }
   if (objectifPlan === null) {
     return vide("Je n'ai ni tes sorties de course ni un temps visé pour calibrer les allures : donne-moi le temps que tu vises, ou fais d'abord quelques sorties.");
@@ -681,7 +694,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   const calculees = plafonnerFacile(alluresDepuisCourse(objectifPlan, km), profil);
   // Sortie test SEULEMENT sans donnée récente (ni chrono, ni sorties des 90 derniers jours) : avec des sorties récentes, le niveau est déjà connu.
   // Pas de test non plus si l'utilisateur n'en veut pas ou si le plan est trop court pour s'en servir.
-  const avecTest = !d.chrono && !d.sansTest && !regles.blessureActive && !debutant && nSemaines >= 2 && niveau?.fiabilite !== 'recente';
+  const avecTest = !d.chrono && !d.sansTest && !regles.blessureActive && nSemaines >= 2 && niveau?.fiabilite !== 'recente';
   const imposees = ALLURES_CLES.filter((c) => d.allures?.[c] !== undefined);
   const a: Allures = { ...calculees, ...Object.fromEntries(imposees.map((c) => [c, d.allures![c]!])) };
 
@@ -702,7 +715,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   const departReprise = !debutant && !rp.personnels && regles.picHebdo !== null && (profil?.sorties90 ?? 0) === 0;
   const volumeDepart = Math.min(volumeMax, departReprise ? Math.max(k * DEBUTANT.footingMini, Math.round(REPRISE_PART_DU_PIC * regles.picHebdo!)) : Math.max(k * rp.seanceMini, Math.round(Math.max(moyenne4, derniers7) * 1.1)));
   if (debutant) regles.utilise = regles.utilise.filter((u) => !/moins d'un an de pratique/.test(u));
-  if (debutant) regles.utilise.push(`tu débutes : ${DEBUTANT.seancesParSemaine} séances par semaine, course/marche les ${DEBUTANT.semainesCourseMarche} premières semaines, un jour de repos entre deux séances, aucune intensité, pas de test`);
+  if (debutant) regles.utilise.push(`tu débutes : ${DEBUTANT.seancesParSemaine} séances par semaine, course/marche les ${DEBUTANT.semainesCourseMarche} premières semaines, un jour de repos entre deux séances, aucune intensité (hors sortie test)`);
   if (departReprise) regles.utilise.push(`reprise après un long arrêt : départ à ${Math.round(REPRISE_PART_DU_PIC * 100)} % de ta plus grosse semaine`);
   const longueMax = Math.min(110, Math.max(60, Math.round((objectifPlan / 60) * 1.6)));
   let longuePrecedente = Math.max(rp.longueMini, Math.min(longueMax, profil?.recent.plusLongueMinutes || rp.longueMini));
@@ -755,7 +768,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     if (derniere) { if (kSemaine >= 3) roles.push('facile'); } else if (kSemaine >= 2) roles.push('longue');
     while (roles.length > kSemaine) roles.splice(roles.indexOf('facile'), 1);
     // Blessure encore là, ou débutant en phase course/marche : aucune séance d'intensité, que du facile et la sortie longue
-    if (regles.blessureActive || (debutant && w < DEBUTANT.semainesCourseMarche)) roles.forEach((r, i) => { if (r === 'qualite1' || r === 'qualite2') roles[i] = 'facile'; });
+    if (regles.blessureActive || (debutant && w < DEBUTANT.semainesCourseMarche && !(w === 0 && avecTest))) roles.forEach((r, i) => { if (r === 'qualite1' || r === 'qualite2') roles[i] = 'facile'; });
     // La sortie longue va sur un jour de week-end libre quand il y en a un (samedi une semaine, dimanche la suivante) ; les autres séances se répartissent autour,
     // sans coller la qualité à la sortie longue quand c'est possible
     const wk = (j: string) => nomDuJour(j) === 'samedi' || nomDuJour(j) === 'dimanche';
@@ -788,6 +801,12 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     // jamais deux séances dures collées (la qualité et la sortie longue), même avec la fenêtre précédente ; la sortie longue au week-end ; le moins de décalage possible
     const placement = meilleurPlacement(libres, roles, choisis, joursDurs, wk, joursParRole, debutant);
     if (placement) choisis = placement;
+    // Débutant : la sortie test est la toute première séance du plan (le jour le plus tôt de la première semaine)
+    if (debutant && w === 0 && avecTest) {
+      const iq = roles.indexOf('qualite1');
+      const iTot = choisis.indexOf([...choisis].sort()[0]);
+      if (iq >= 0 && iTot !== iq) [choisis[iq], choisis[iTot]] = [choisis[iTot], choisis[iq]];
+    }
 
     // les durées
     // Le contenu alterne : en développement avec 3 séances, une semaine de VMA puis une semaine de tempo ; la semaine de récupération a une qualité légère (fartlek)
@@ -875,7 +894,7 @@ export function messageBilan(b: Bilan): string {
   parts.push(b.debutant
     ? `Volume de départ : ${b.volumeDepart} min la première semaine (${b.seancesParSemaine} séances de 20 à 30 min, un départ de débutant) ; les semaines du plan sont des fenêtres de 7 jours glissants à partir du premier jour du plan.`
     : `Volume de départ : ${b.volumeDepart} min la première semaine, calé sur tes 7 derniers jours glissants (${b.derniers7} min) et ta moyenne des 4 dernières fenêtres de 7 jours ; les semaines du plan sont des fenêtres de 7 jours glissants à partir du premier jour du plan.`);
-  if (b.debutant) parts.push(`Tu débutes : le but de ce plan est de FINIR la course, pas de viser un chrono${b.km > 5 ? ` (la recherche conseille de finir d'abord un 5 km avant de chercher un temps ; ${b.km} km est une grosse marche, dis-le franchement et propose de viser plus court si le plan est court)` : ''}. Les premières semaines alternent course et marche, sans aucune intensité.`);
+  if (b.debutant) parts.push(`Tu débutes : le but de ce plan est de FINIR la course, pas de viser un chrono${b.km > 5 ? ` (la recherche conseille de finir d'abord un 5 km avant de chercher un temps ; ${b.km} km est une grosse marche, dis-le franchement et propose de viser plus court si le plan est court)` : ''}. Les premières semaines alternent course et marche, sans aucune intensité${b.test ? ', sauf la sortie test du début' : ''}.`);
   if (b.profilUtilise.length) parts.push(`Ton profil a changé le plan : ${b.profilUtilise.join(' ; ')}.`);
   parts.push(`Plan à ${b.seancesParSemaine} séances par semaine (à garder identique si tu refais le plan, sauf demande de l'utilisateur).`);
   if (b.allures) {

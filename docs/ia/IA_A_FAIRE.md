@@ -23,11 +23,11 @@ Principe posé par Yanis : **chaque règle du plan vient d'études ou de la pers
 - Abandonné (décision de Yanis, 12 nov.) : pas de niveau de confiance dans la carte.
 
 ## 3. Cas sans historique (vrai débutant, nouveau compte) : fait le 12 nov.
-- [x] Fiches `course-reprise-debutants` et `reprise-apres-arret` lues. `estDebutant` : aucune donnée de course ET 0 an d'ancienneté (ou inconnue). Départ : 3 séances de 20-30 min, course/marche (1/2, 2/1, 3/1) pendant 6 semaines, un jour de repos entre deux séances, aucune intensité, pas de sortie test, montée de 5 %, but = finir. Déployé.
+- [x] Fiches `course-reprise-debutants` et `reprise-apres-arret` lues. `estDebutant` : aucune donnée de course ET 0 an d'ancienneté (ou inconnue). Départ : **sortie test 3 km chrono en toute première séance** (décision de Yanis : s'il n'y a rien, on fait faire un test, on ne demande pas un temps « au pif »), puis 3 séances de 20-30 min, course/marche (1/2, 2/1, 3/1) pendant 6 semaines, un jour de repos entre deux séances, aucune autre intensité, montée de 5 %, but = finir. Sans aucun temps visé : une seule séance (le test), le plan complet se construit sur le chrono. Déployé.
 - [x] Reprise après un long arrêt (ancienneté, plus grosse semaine connue, aucune sortie depuis 90 jours) : départ à 35 % de la plus grosse semaine (fiche : 30 à 40 % pour un arrêt de 2 à 3 mois).
 - [x] Les valeurs 30 / 45 / 38 / 360 ne servent plus qu'au cas « ancienneté inconnue mais données partielles » (jamais un vrai débutant ni une reprise avec pic connu).
 - [ ] Conventions à nous, à valider : étapes toutes les 2 semaines, retour au footing continu après 6 semaines, marche affichée à 1,7 × l'allure facile.
-- [ ] Un débutant sans temps visé doit en donner un approximatif (réglage des allures faciles) : à améliorer (allures par ressenti ?).
+- [x] Plus de temps demandé à un débutant : le test sert à régler les allures.
 
 ## 4. Règles du moteur encore sans source ou débattues
 - [ ] Montée de volume de 10 % par semaine : contestée (Buist 2008, Nielsen 2013). Remplacer par un plafond expliqué partant du volume réel, et dire dans la carte qu'il n'y a pas de consensus.
