@@ -11,6 +11,7 @@ import { sortieSupprimable } from '@/data/calendrier/ajouts';
 import { chiffreEcarte, pucesEcart } from '@/data/calendrier/donnees-ecartees';
 import { chiffresSeance, lignesTours, troisChiffres } from '@/data/calendrier/seance-detail';
 import { deriveCardiaque } from '@/data/outils/derive-cardiaque';
+import { travailAuDessusFtp } from '@/data/outils/efforts-sortie';
 import { formatDateCourte, formatKm } from '@/data/outils/format';
 import { familleAffichage } from '@/data/sports/familles';
 import { nomDuType } from '@/data/sports/catalogue-sports';
@@ -71,16 +72,19 @@ export default function Seance() {
   const aPuissance = chiffresBase.some((c) => c.cle === 'watts'); // une puissance mesurée (pas estimée) : sinon ni IF, ni efficacité
   const nP = Number(seance.np) > 0 ? Number(seance.np) : null;
   const fcMoy = Number(seance.avg_heartrate) > 0 ? Number(seance.avg_heartrate) : null;
+  // L'IF et le travail au-dessus de la FTP se calculent avec ta FTP d'AUJOURD'HUI (celle du profil, sinon celle de la sortie) : les valeurs gardées dans la base datent de l'époque de la sortie
+  const ftpActuelle = Number(profil?.ftp) > 0 ? Number(profil?.ftp) : Number(seance.ftp_at_time) > 0 ? Number(seance.ftp_at_time) : null;
+  const travailFtp = ftpActuelle ? travailAuDessusFtp(courbes?.brut?.watts, courbes?.brut?.temps, ftpActuelle) : null;
   const pmax = mesure('pmax') ?? (Number(seance.max_watts) > 0 ? Number(seance.max_watts) : null);
   // Les chiffres en plus : lus dans `metrics` (calculés par le serveur sur les flux complets) ou déduits des colonnes de la séance
   const supplements: { cle: string; libelle: string; valeur: string; unite?: string }[] = [
     ...(derive ? [{ cle: 'derive', libelle: 'Dérive', valeur: `${derive.pct > 0 ? '+' : derive.pct < 0 ? '−' : ''}${formatKm(Math.abs(derive.pct), 1)}`, unite: '%' }] : []),
-    ...(aPuissance && mesure('if_pct') ? [{ cle: 'if', libelle: 'Intensité', valeur: String(Math.round(mesure('if_pct')!)), unite: '%' }] : []),
+    ...(aPuissance && nP && ftpActuelle ? [{ cle: 'if', libelle: 'Intensité', valeur: String(Math.round((nP / ftpActuelle) * 100)), unite: '%' }] : []),
     ...(Number(seance.max_heartrate) > 0 && hrMaxProfil ? [{ cle: 'fcpct', libelle: 'FC max', valeur: String(Math.round((Number(seance.max_heartrate) / hrMaxProfil) * 100)), unite: '%' }] : []),
     ...(aPuissance && nP && fcMoy ? [{ cle: 'ef', libelle: 'Efficacité', valeur: formatKm(nP / fcMoy, 2) }] : []),
     ...(mesure('trimp') ? [{ cle: 'trimp', libelle: 'TRIMP', valeur: String(Math.round(mesure('trimp')!)) }] : []),
     ...(aPuissance && pmax ? [{ cle: 'pmax', libelle: 'Puissance max', valeur: String(Math.round(pmax)), unite: 'W' }] : []),
-    ...(aPuissance && mesure('work_over_ftp_kj') ? [{ cle: 'kjftp', libelle: 'Travail > FTP', valeur: formatKm(mesure('work_over_ftp_kj')!, 1), unite: 'kJ' }] : []),
+    ...(aPuissance && travailFtp != null ? [{ cle: 'kjftp', libelle: 'Travail > FTP', valeur: formatKm(travailFtp, 1), unite: 'kJ' }] : []),
   ];
   const chiffres = [...chiffresBase, ...supplements];
 

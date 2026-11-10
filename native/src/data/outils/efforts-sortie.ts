@@ -69,3 +69,20 @@ export function effortsDeSortie(brut: FluxBruts | null | undefined, famille: 'co
   if (famille === 'course') return courbeEffortsSortie(brut.vitesse?.map((v) => v * 3.6), brut.temps, DUREES_COURSE, iso);
   return courbeEffortsSortie(brut.watts, brut.temps, DUREES_VELO, iso);
 }
+
+/**
+ * Le travail fait au-dessus de la FTP (kJ) : pour chaque point où la puissance dépasse la FTP, l'excédent (puissance − FTP) multiplié par le temps jusqu'au point suivant.
+ * Calculé avec la FTP donnée (celle d'aujourd'hui), pas celle de l'époque de la sortie. Les pauses ne comptent pas. Null sans puissance ni temps.
+ */
+export function travailAuDessusFtp(watts: number[] | undefined, temps: number[] | undefined, ftp: number): number | null {
+  if (!watts || !temps || watts.length !== temps.length || watts.length < 3 || !(ftp > 0)) return null;
+  const ecarts = temps.slice(1).map((t, i) => t - temps[i]).filter((e) => e > 0);
+  if (!ecarts.length) return null;
+  const mediane = [...ecarts].sort((a, b) => a - b)[Math.floor(ecarts.length / 2)];
+  let joules = 0;
+  for (let i = 0; i < watts.length; i++) {
+    const dt = i < watts.length - 1 ? Math.min(Math.max(0, temps[i + 1] - temps[i]), mediane * 3) : mediane;
+    if (Number.isFinite(watts[i]) && watts[i] > ftp) joules += (watts[i] - ftp) * dt;
+  }
+  return Math.round(joules / 100) / 10;
+}

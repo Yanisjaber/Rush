@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { courbeEffortsSortie, effortsDeSortie, meilleureMoyenne } from '../../src/data/outils/efforts-sortie.ts';
+import { courbeEffortsSortie, effortsDeSortie, meilleureMoyenne, travailAuDessusFtp } from '../../src/data/outils/efforts-sortie.ts';
 
 test('meilleureMoyenne : trouve la meilleure fenêtre', () => {
   // 100 points, 1 par seconde : 100 W partout sauf 20 s à 300 W (points 40 à 59)
@@ -36,4 +36,13 @@ test('courbeEffortsSortie et effortsDeSortie : un point par durée possible, vit
   assert.ok(velo.some((p) => p.duree === 5) && velo.every((p) => p.top[0].valeur === 200));
   assert.deepEqual(courbeEffortsSortie(undefined, temps, [60], 'x'), []);
   assert.deepEqual(effortsDeSortie(null, 'velo', 'x'), []);
+});
+
+test('travailAuDessusFtp : seul l\'excédent au-dessus de la FTP compte', () => {
+  const temps = Array.from({ length: 100 }, (_, i) => i);
+  // 10 s à 300 W avec une FTP de 250 W : 50 W × 10 s = 500 J = 0,5 kJ
+  const w = temps.map((i) => (i >= 20 && i < 30 ? 300 : 200));
+  assert.equal(travailAuDessusFtp(w, temps, 250), 0.5);
+  assert.equal(travailAuDessusFtp(w, temps, 400), 0);
+  assert.equal(travailAuDessusFtp(undefined, temps, 250), null);
 });

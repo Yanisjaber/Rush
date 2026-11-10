@@ -50,7 +50,7 @@ export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, records
   // Quatre rubriques seulement (le temps écoulé va avec l'effort ; le rythme et le relief vont ensemble) : moins de titres, donc moins de hauteur
   const rubriques: { titre: string; lignes: Ligne[] }[] = [
     { titre: 'EFFORT', lignes: [...(tempsTotal ? [{ cle: 'ecoule', libelle: 'Temps écoulé', valeur: tempsTotal }] : []), ...ligne('charge'), ...ligne('if', 'Intensité (IF)'), ...ligne('rpe', 'Effort ressenti')] },
-    { titre: 'CŒUR', lignes: [...ligne('fc', 'FC moyenne'), ...chiffreNote('fc', 'FC max', 'bpm'), ...ligne('fcpct', 'FC max (% de ta max)'), ...ligne('derive', 'Dérive cardiaque'), ...ligne('ef', 'Efficacité (P/FC)'), ...ligne('trimp', 'TRIMP')] },
+    { titre: 'CŒUR', lignes: [...ligne('fc', 'FC moyenne'), ...chiffreNote('fc', 'FC max', 'bpm'), ...ligne('fcpct', 'FC max (%)'), ...ligne('derive', 'Dérive'), ...ligne('ef', 'Efficacité P/FC'), ...ligne('trimp', 'TRIMP')] },
     {
       titre: 'RYTHME ET RELIEF',
       lignes: [
@@ -60,9 +60,17 @@ export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, records
         ...(altitude ? [{ cle: 'haut', libelle: 'Plus haut', valeur: String(Math.round(altitude.max)), unite: 'm' }, { cle: 'bas', libelle: 'Plus bas', valeur: String(Math.round(altitude.min)), unite: 'm' }] : []),
       ],
     },
-    { titre: 'ÉNERGIE', lignes: [...ligne('watts', 'Puissance moyenne'), ...chiffreNote('watts', 'Puissance normalisée', 'W'), ...ligne('pmax'), ...ligne('energie'), ...ligne('kjftp', 'dont au-dessus de la FTP')] },
+    { titre: 'ÉNERGIE', lignes: [...ligne('watts', 'Puiss. moyenne'), ...chiffreNote('watts', 'Puiss. normalisée', 'W'), ...ligne('pmax', 'Puiss. max'), ...ligne('energie'), ...ligne('kjftp', 'Travail > FTP')] },
   ].filter((r) => r.lignes.length > 0);
   const rpe = parCle('rpe');
+  // Deux colonnes de rubriques, à peu près de la même hauteur : on remplit la première jusqu'à la moitié des lignes
+  const totalLignes = rubriques.reduce((n, r) => n + r.lignes.length, 0);
+  const colonnes: (typeof rubriques)[] = [[], []];
+  let vues = 0;
+  for (const r of rubriques) {
+    colonnes[vues + r.lignes.length / 2 <= totalLignes / 2 + 1 ? 0 : 1].push(r);
+    vues += r.lignes.length;
+  }
 
   return (
     <>
@@ -89,20 +97,24 @@ export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, records
 
       {rubriques.length ? (
         <View style={[styles.tableau, { backgroundColor: p.surface }]}>
-          {rubriques.map((r, k) => (
-            <View key={r.titre} style={k > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }}>
-              <Text style={[typo.micro, styles.titre, { color: p.texteDoux }]}>{r.titre}</Text>
-              {r.lignes.map((l) => (
-                <View key={l.cle} accessible accessibilityLabel={[l.libelle, l.valeur, l.unite, l.ecarte ? 'écartée de tes calculs' : ''].filter(Boolean).join(' ')} style={styles.ligne}>
-                  <Text style={[typo.petit, { color: p.texteDoux, flexShrink: 1 }]}>{l.libelle}</Text>
-                  <Text style={[styles.valeurLigne, { color: l.ecarte ? p.texteMuet : p.texte }, l.ecarte && styles.barre]}>
-                    {l.valeur}
-                    {l.unite ? <Text style={[typo.petit, { color: p.texteDoux }]}> {l.unite}</Text> : null}
-                  </Text>
+          {colonnes.map((col, c) => (
+            <View key={c} style={[styles.colonne, c > 0 && { borderLeftColor: p.trait, borderLeftWidth: StyleSheet.hairlineWidth }]}>
+              {col.map((r, k) => (
+                <View key={r.titre} style={k > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }}>
+                  <Text numberOfLines={1} style={[typo.micro, styles.titre, { color: p.texteDoux }]}>{r.titre}</Text>
+                  {r.lignes.map((l) => (
+                    <View key={l.cle} accessible accessibilityLabel={[l.libelle, l.valeur, l.unite, l.ecarte ? 'écartée de tes calculs' : ''].filter(Boolean).join(' ')} style={styles.ligne}>
+                      <Text numberOfLines={1} style={[styles.libelle, { color: p.texteDoux }]}>{l.libelle}</Text>
+                      <Text numberOfLines={1} style={[styles.valeurLigne, { color: l.ecarte ? p.texteMuet : p.texte }, l.ecarte && styles.barre]}>
+                        {l.valeur}
+                        {l.unite ? <Text style={[styles.uniteLigne, { color: p.texteDoux }]}> {l.unite}</Text> : null}
+                      </Text>
+                    </View>
+                  ))}
+                  {/* Jauge de l'effort ressenti : dix segments, remplis jusqu'à la note */}
+                  {r.titre === 'EFFORT' && rpe ? <JaugeRpe note={Number(rpe.valeur)} couleur={couleur} /> : null}
                 </View>
               ))}
-              {/* Jauge de l'effort ressenti : dix segments, remplis jusqu'à la note */}
-              {r.titre === 'EFFORT' && rpe ? <JaugeRpe note={Number(rpe.valeur)} couleur={couleur} /> : null}
             </View>
           ))}
         </View>
@@ -130,11 +142,14 @@ const styles = StyleSheet.create({
   etiquette: { fontSize: 10, lineHeight: 14, letterSpacing: 0.6 },
   valeur: { fontFamily: police.titre800, fontSize: 20, lineHeight: 24, marginTop: 2, fontVariant: ['tabular-nums'] },
   unite: { fontFamily: police.texte600, fontSize: 11 },
-  tableau: { borderRadius: rayon.base, overflow: 'hidden' },
-  titre: { letterSpacing: 1.2, paddingHorizontal: espace.e3, paddingTop: 10, paddingBottom: 0 },
-  ligne: { minHeight: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espace.e3, paddingHorizontal: espace.e3, paddingVertical: 3 },
-  valeurLigne: { fontFamily: police.titre700, fontSize: 16, fontVariant: ['tabular-nums'] },
+  tableau: { flexDirection: 'row', borderRadius: rayon.base, overflow: 'hidden' },
+  colonne: { flex: 1, minWidth: 0 },
+  titre: { letterSpacing: 1, paddingHorizontal: 10, paddingTop: 10, paddingBottom: 0 },
+  ligne: { minHeight: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6, paddingHorizontal: 10, paddingVertical: 3 },
+  libelle: { fontFamily: police.texte400, fontSize: 13, flexShrink: 1 },
+  valeurLigne: { fontFamily: police.titre700, fontSize: 15, fontVariant: ['tabular-nums'], flexShrink: 0 },
+  uniteLigne: { fontFamily: police.texte400, fontSize: 11 },
   barre: { textDecorationLine: 'line-through' },
-  jauge: { flexDirection: 'row', gap: 4, paddingHorizontal: espace.e3, paddingBottom: 8, paddingTop: 2 },
+  jauge: { flexDirection: 'row', gap: 3, paddingHorizontal: 10, paddingBottom: 8, paddingTop: 2 },
   segment: { flex: 1, height: 8, borderRadius: 4 },
 });
