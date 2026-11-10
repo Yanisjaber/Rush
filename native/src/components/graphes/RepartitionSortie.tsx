@@ -12,7 +12,7 @@ import { usePalette } from '@/theme/usePalette';
 // Seules les mesures qu'on sait calculer (flux présents ET référence dans le profil) ont un onglet. Les zones sont recalculées depuis le profil, jamais stockées.
 interface Props {
   mesures: MesureZones[];
-  /** La couleur du sport : les premières zones en sont des teintes, les deux plus dures passent au rouge. */
+  /** La couleur du sport : chaque zone en est une teinte, de plus en plus soutenue. */
   couleur: string;
 }
 
@@ -34,10 +34,9 @@ export function RepartitionSortie({ mesures, couleur }: Props) {
   const total = mesure.zones.reduce((a, z) => a + z.secondes, 0);
   const max = Math.max(0, ...mesure.zones.map((z) => z.secondes));
   const dominante = mesure.zones.findIndex((z) => z.secondes === max);
-  // Les teintes : le sport en dégradé de transparence, puis le rouge pour les deux zones les plus dures
+  // Les teintes : celles des bandes derrière les courbes (la couleur du sport, de plus en plus soutenue de la zone 1 à la dernière), pour que la légende soit la même partout
   const teinte = (i: number) => {
-    if (i >= n - 2) return i === n - 1 ? p.danger : p.danger + 'b0';
-    const alpha = Math.round(70 + (i / Math.max(1, n - 3)) * 150).toString(16).padStart(2, '0');
+    const alpha = Math.round((0.25 + (i * 0.75) / Math.max(1, n - 1)) * 255).toString(16).padStart(2, '0');
     return couleur + alpha;
   };
   const pas = largeur > 0 ? (largeur - 2 * espace.e3) / n : 0;
