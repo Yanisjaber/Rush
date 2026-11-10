@@ -45,6 +45,8 @@ interface Props {
   chiffres: ReactNode;
   /** La seconde page, sans carte : toutes les infos de la sortie (on y va en balayant vers la gauche). */
   pageDetails: (onGlisse: (actif: boolean) => void) => ReactNode;
+  /** La page 4 : la comparaison avec tes sorties proches et le mot du coach. Absente quand il n'y a rien à dire (la sortie n'a que trois pages). */
+  pageCoach?: ReactNode;
   /** Les courbes de la page 2, fixes dans la zone du haut (entre la date et les pastilles) : reçoit la hauteur libre. Absent sans courbes. */
   /** Les répartitions par zones, en tête du contenu qui défile sous les pastilles. */
   repartitions?: ReactNode;
@@ -56,10 +58,11 @@ interface Props {
 
 const HAUTEUR_PROFIL = 166; // la hauteur du profil (courbe et repères de distance)
 const HAUT_PASTILLES = 36; // la place gardée en bas des pages pour que les pastilles volantes ne cachent rien
-const NOMS_PAGES = ['Carte et profil', 'Courbes', 'Toutes les infos'];
+const NOMS_PAGES_BASE = ['Carte et profil', 'Courbes', 'Toutes les infos'];
 
-export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, hero, chiffres, pageDetails, graphesHaut, repartitions, tours, onModifier }: Props) {
+export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, hero, chiffres, pageDetails, pageCoach, graphesHaut, repartitions, tours, onModifier }: Props) {
   const p = usePalette();
+  const NOMS_PAGES = pageCoach ? [...NOMS_PAGES_BASE, 'Comparaison et coach'] : NOMS_PAGES_BASE;
   const { top: haut, bottom: bas } = useSafeAreaInsets();
   const { width: largeur, height: hauteur } = useWindowDimensions();
   const avecCarte = !!parcours?.region && parcours.trace.length > 1;
@@ -199,6 +202,17 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
           </ScrollView>
           {bandeEntete}
         </View>
+
+        {/* Page 4 : la comparaison avec tes sorties proches et le mot du coach */}
+        {pageCoach ? (
+          <View style={{ width: largeur, height: hauteur, backgroundColor: p.fond }}>
+            <ScrollView contentContainerStyle={pageDefilante} showsVerticalScrollIndicator={false}>
+              {ligneDate}
+              {pageCoach}
+            </ScrollView>
+            {bandeEntete}
+          </View>
+        ) : null}
       </ScrollView>
 
       {pastilles}
