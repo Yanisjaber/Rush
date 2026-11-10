@@ -117,7 +117,7 @@ export default function Seance() {
             </View>
           ) : null
         }
-        graphesHaut={courbes ? (hauteur, onGlisse) => <GraphesSynchro courbes={courbes} km={seance.distance_km ?? null} rythme={familleAffichage(seance.sport) === 'velo' ? 'vitesse' : 'allure'} couleur={couleur} hauteur={hauteur} seuilsCoeur={seuilsCoeur} onGlisse={onGlisse} /> : undefined}
+        graphesHaut={courbes ? (hauteur, onGlisse) => <GraphesSynchro courbes={courbes} km={seance.distance_km ?? null} rythme={familleAffichage(seance.sport) === 'velo' ? 'vitesse' : 'allure'} couleur={couleur} dureeS={seance.moving_time ?? null} hauteur={hauteur} seuilsCoeur={seuilsCoeur} onGlisse={onGlisse} /> : undefined}
         pageDetails={(onGlisse) => (
           <PageDetailsSortie
             chiffres={chiffres}

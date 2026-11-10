@@ -20,12 +20,22 @@ interface Props {
   /** Course : l'allure ; vélo : la vitesse. */
   rythme: 'allure' | 'vitesse';
   couleur: string;
+  /** La durée de la sortie (s), pour le laps de temps d'une portion quand les courbes sont découpées par durée (sans distance dans les flux). */
+  dureeS?: number | null;
   /** La hauteur disponible pour tout le bloc (barre du haut, courbes, axe) : les courbes s'y adaptent. */
   hauteur: number;
   /** Début des zones cardio Z3, Z4 et Z5 (bpm), pour colorer le fond de la courbe de cœur. Absent sans FC max ni seuil. */
   seuilsCoeur?: [number, number, number] | null;
   /** Le doigt est posé sur les courbes : l'écran suspend le balayage des pages. */
   onGlisse?: (actif: boolean) => void;
+}
+
+/** 222 s → « 3 min 42 » ; 45 s → « 45 s » ; 3720 s → « 1h02 ». */
+function formatLaps(secondes: number): string {
+  const s = Math.max(0, Math.round(secondes));
+  if (s < 60) return `${s} s`;
+  if (s < 3600) return `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')}`;
+  return `${Math.floor(s / 3600)}h${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}`;
 }
 
 const MARGE = 6;
@@ -45,7 +55,7 @@ interface Serie {
   inverse?: boolean;
 }
 
-export function GraphesSynchro({ courbes, km, rythme, couleur, hauteur, seuilsCoeur, onGlisse }: Props) {
+export function GraphesSynchro({ courbes, km, rythme, couleur, dureeS, hauteur, seuilsCoeur, onGlisse }: Props) {
   const p = usePalette();
   const [largeur, setLargeur] = useState(0);
   const [fraction, setFraction] = useState<number | null>(null); // le curseur à un doigt, dans la vue
@@ -137,6 +147,15 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, hauteur, seuilsCo
     return tranche.reduce((a, b) => a + b, 0) / Math.max(1, tranche.length);
   };
   const kmPortion = distance != null ? (distance * (p1 - p0)) / (n - 1) : null;
+  // Le laps de temps de la portion : avec la distance dans les flux, c'est distance × moyenne de (1 / vitesse) ; sinon la part de la durée totale
+  const lapsS = (() => {
+    const v = courbes.vitesse;
+    if (courbes.km != null && v && kmPortion != null) {
+      const tranche = v.slice(Math.max(0, Math.floor(p0)), Math.min(n - 1, Math.ceil(p1)) + 1);
+      return tranche.length ? kmPortion * 1000 * (tranche.reduce((a, e) => a + 1 / e, 0) / tranche.length) : null;
+    }
+    return courbes.km == null && dureeS ? (dureeS * (p1 - p0)) / (n - 1) : null;
+  })();
 
   // La silhouette du relief : la même pour toutes les courbes (échelle propre à l'altitude)
   const reliefChemin = (l: number, h: number) => {
@@ -166,9 +185,8 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, hauteur, seuilsCo
       <View style={[styles.barre, { height: HAUT_BARRE }]}>
         {zoome || sel ? (
           <>
-            <Text style={[typo.corpsFort, { color: p.texte, fontVariant: ['tabular-nums'] }]} numberOfLines={1}>
-              {kmPortion != null ? `${formatKm(kmPortion, 2)} km` : ''}
-              {sVit ? `${kmPortion != null ? '  ·  ' : ''}${sVit.texte(moyPortion(sVit.valeurs))}` : ''}
+            <Text style={[styles.valeur, { color: p.texte, flexShrink: 1 }]} numberOfLines={1}>
+              {[kmPortion != null ? `${formatKm(kmPortion, 2)} km` : null, lapsS != null ? formatLaps(lapsS) : null, sVit ? sVit.texte(moyPortion(sVit.valeurs)) : null].filter(Boolean).join('  ·  ')}
             </Text>
             {zoome && !sel ? <Text style={[typo.petit, { color: p.texteMuet }]}>Double-tap : tout voir</Text> : null}
           </>
