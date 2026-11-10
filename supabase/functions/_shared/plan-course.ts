@@ -638,7 +638,9 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
       if (phase === 'affutage') longue = Math.max(FOOTING_MINI, Math.round(longue * 0.75));
       if (recuperation) longue = Math.max(LONGUE_MINI - 5, Math.round(longue * 0.85));
     }
-    const facile = nFaciles ? Math.max(derniere ? 20 : FOOTING_MINI, Math.round((restant - longue) / nFaciles)) : 0;
+    // Un footing reste un footing : jamais plus long que 65 % de la sortie longue (sinon il devient une 2e sortie longue la veille ou le lendemain de la vraie)
+    const plafondFacile = nLongue ? Math.max(FOOTING_MINI, Math.round(longue * 0.65)) : Infinity;
+    const facile = nFaciles ? Math.min(plafondFacile, Math.max(derniere ? 20 : FOOTING_MINI, Math.round((restant - longue) / nFaciles))) : 0;
     if (nLongue && !recuperation && phase !== 'affutage') longuePrecedente = longue;
 
     // poser chaque séance (essai du jour choisi, puis des autres jours libres de la semaine)
