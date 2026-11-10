@@ -15,6 +15,7 @@ import { InstrumentSans_600SemiBold } from '@expo-google-fonts/instrument-sans/6
 import { EcranChargement } from '@/components/ui/EcranChargement';
 import { ZoneClavier } from '@/components/champs/ZoneClavier';
 import { initAuth, useAuth } from '@/stores/auth';
+import { marquerAccueilCharge, useAccueilCharge } from '@/stores/chargement';
 import { chargerAccesCoach, useAccesCoachLu } from '@/stores/coach';
 import { chargerTheme } from '@/stores/theme';
 import { clair, sombre } from '@/theme/couleurs';
@@ -72,12 +73,35 @@ export default function RootLayout() {
     if (decorPret) void SplashScreen.hideAsync().catch(() => {});
   }, [decorPret]);
 
-  // L'écran de chargement (« À vos marques… ») reste tant que la session n'est pas lue : sinon l'écran de connexion clignoterait avant l'Accueil
+  const connecte = !!session || demo;
+
+  // L'écran de chargement (« À vos marques… ») dure 1 s au minimum et reste jusqu'à ce que l'Accueil ait ses données :
+  // derrière lui, tout est déjà rempli (pas de spinner). Il repasse aussi après chaque connexion.
+  const accueilCharge = useAccueilCharge();
   const [chargementFini, setChargementFini] = useState(false);
+  const [passage, setPassage] = useState(0); // change à chaque nouvel affichage, pour relancer l'animation
+  const [delaiDepasse, setDelaiDepasse] = useState(false);
+  const [dejaConnecte, setDejaConnecte] = useState(connecte);
+  if (dejaConnecte !== connecte) {
+    // Connexion (ou démo) : on remet l'écran de chargement le temps que l'Accueil se remplisse. Déconnexion : rien à montrer.
+    setDejaConnecte(connecte);
+    if (connecte && appPrete) {
+      setChargementFini(false);
+      setDelaiDepasse(false);
+      setPassage((n) => n + 1);
+    }
+  }
+  useEffect(() => {
+    if (!connecte) marquerAccueilCharge(false);
+  }, [connecte]);
+  // Garde-fou : si les données tardent plus de 5 s, on affiche l'app quand même
+  useEffect(() => {
+    const t = setTimeout(() => setDelaiDepasse(true), 5000);
+    return () => clearTimeout(t);
+  }, [passage]);
   const finChargement = useCallback(() => setChargementFini(true), []);
 
   if (!decorPret) return null;
-  const connecte = !!session || demo;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -150,7 +174,7 @@ export default function RootLayout() {
       </Stack>
       ) : null}
       </ZoneClavier>
-      {chargementFini ? null : <EcranChargement pret={appPrete} onFin={finChargement} />}
+      {chargementFini ? null : <EcranChargement key={passage} pret={appPrete && (!connecte || accueilCharge || delaiDepasse)} onFin={finChargement} />}
     </GestureHandlerRootView>
   );
 }

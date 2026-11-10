@@ -6,6 +6,7 @@ import { useSportsEtat } from '@/stores/sports';
 import { useAuth } from '@/stores/auth';
 import { useVersionEcarts } from '@/stores/ecarts';
 import { useReglagesDemo } from '@/stores/reglages-demo';
+import { marquerAccueilCharge } from '@/stores/chargement';
 
 // Les données de l'Accueil : la démo (générée, sans compte) ou celles du compte connecté (lecture seule, via Supabase).
 // Au premier chargement `chargement` est vrai ; ensuite, `recharger` (tirer pour actualiser) garde les données affichées.
@@ -51,6 +52,11 @@ export function useDonneesAccueil(): {
     if (demo) definirSources(['course', 'velo', 'muscu', 'hyrox'], sports.demo);
     else definirSources(famillesDe({ ...donnees, sportsChoisis: null }), donnees.sportsChoisis);
   }, [donnees, demo, sports.demo]);
+
+  // Dit à l'écran de chargement que l'Accueil est rempli : il peut s'effacer
+  useEffect(() => {
+    if (donnees) marquerAccueilCharge(true);
+  }, [donnees]);
 
   const recharger = useCallback(async () => {
     setActualisation(true);
