@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Rect, Text as TexteSvg } from 'react-native-svg';
+import { SelecteurSegments } from '@/components/ui/SelecteurSegments';
 import type { MesureZones } from '@/data/outils/repartition-zones';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Le temps passé dans chaque zone pendant la sortie : un histogramme (une colonne par zone, les bornes dessous) et trois onglets Cœur / Puissance / Allure.
+// Le temps passé dans chaque zone pendant la sortie : un histogramme (une colonne par zone, les bornes dessous) et trois onglets Cœur / Puissance / Allure (le contrôle segmenté natif sur iPhone).
 // Seules les mesures qu'on sait calculer (flux présents ET référence dans le profil) ont un onglet. Les zones sont recalculées depuis le profil, jamais stockées.
 interface Props {
   mesures: MesureZones[];
@@ -46,24 +47,7 @@ export function RepartitionSortie({ mesures, couleur }: Props) {
 
   return (
     <View style={{ gap: espace.e2 }}>
-      {mesures.length > 1 ? (
-        <View accessibilityRole="tablist" style={[styles.onglets, { backgroundColor: p.surface }]}>
-          {mesures.map((m) => {
-            const actif = m.cle === mesure.cle;
-            return (
-              <Pressable
-                key={m.cle}
-                onPress={() => setChoix(m.cle)}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: actif }}
-                style={[styles.onglet, actif && { backgroundColor: p.texte }]}
-              >
-                <Text style={[typo.petit, { fontFamily: police.texte600, color: actif ? p.fond : p.texteDoux }]}>{m.titre}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      ) : null}
+      {mesures.length > 1 ? <SelecteurSegments options={mesures.map((m) => ({ cle: m.cle, libelle: m.titre }))} choix={mesure.cle} onChoix={(c) => setChoix(c as MesureZones['cle'])} /> : null}
       <View onLayout={(e: LayoutChangeEvent) => setLargeur(e.nativeEvent.layout.width)} style={[styles.carte, { backgroundColor: p.surface }]}>
         <View style={styles.titre}>
           <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2 }]}>{`TEMPS PAR ZONE · ${mesure.titre.toUpperCase()}`}</Text>
@@ -101,8 +85,6 @@ export function RepartitionSortie({ mesures, couleur }: Props) {
 }
 
 const styles = StyleSheet.create({
-  onglets: { flexDirection: 'row', borderRadius: rayon.base, padding: 3, gap: 2 },
-  onglet: { flex: 1, minHeight: 36, alignItems: 'center', justifyContent: 'center', borderRadius: rayon.base - 3 },
   carte: { borderRadius: rayon.base, paddingVertical: espace.e3, paddingHorizontal: 0, gap: espace.e2 },
   titre: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingHorizontal: espace.e3, gap: espace.e2 },
 });
