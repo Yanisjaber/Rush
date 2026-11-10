@@ -50,9 +50,9 @@ test('niveau : fixé par les sorties des 90 derniers jours, JAMAIS par le record
   assert.equal(niveauActuel(null, 10, AUJ), null);
   assert.equal(niveauActuel({ ...YANIS, effortRecent: null, meilleurEffort: null }, 10, AUJ), null);
 });
-test('objectif réaliste : 0,6 % par semaine, 8 % au plus', () => {
-  assert.equal(objectifRealiste(3000, 5), 2910);
-  assert.equal(objectifRealiste(3000, 40), 2760);
+test('objectif réaliste : 0,4 % par semaine, 6 % au plus (études : 3 à 6 % en 10-15 semaines)', () => {
+  assert.equal(objectifRealiste(3000, 5), 2940);
+  assert.equal(objectifRealiste(3000, 40), 2820);
   assert.equal(objectifRealiste(3000, 0), 3000);
 });
 test('allures : cohérentes entre elles (vma < 5 km < course < seuil < tempo < facile < longue)', () => {

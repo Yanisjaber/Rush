@@ -4,7 +4,7 @@
 // L'IA ne devine rien : le CODE lit le profil du coureur (rpc_coach_resume → profil_course : meilleur effort, allure facile, volume des 8 dernières
 // semaines, jours habituels) et construit, comme un entraîneur qui ouvre le dossier :
 //   1. son NIVEAU ACTUEL (meilleur effort converti sur la distance, vieilli selon son ancienneté, croisé avec son allure facile) ;
-//   2. un objectif RÉALISTE pour le temps qu'il reste (gain de 0,6 % par semaine, 8 % au plus) : un objectif trop ambitieux est dit franchement,
+//   2. un objectif RÉALISTE pour le temps qu'il reste (gain de 0,4 % par semaine, 6 % au plus, d'après les études) : un objectif trop ambitieux est dit franchement,
 //      le plan est calé sur ce qui est jouable ;
 //   3. ses ALLURES chiffrées (allure course, 5 km, VMA, seuil, tempo, facile, sortie longue) tirées de l'objectif ;
 //   4. des PHASES (base, développement, spécifique, affûtage) selon le nombre de semaines ;
@@ -70,8 +70,14 @@ export function profilCourseDepuisResume(resume: any): ProfilCourse | null {
 }
 
 // ---------- Niveau, objectif réaliste, allures ----------
+/**
+ * Exposant de la loi de puissance entre distances : 1,06 (Riegel, ajusté sur les records du monde). SOURCES QUI SE CONTREDISENT, donc on ne change pas sans preuve sur 5-10 km :
+ * Blythe et Király (2016, arXiv 1505.01147) trouvent des exposants individuels de médiane 1,12 (5e-95e percentile 1,10-1,15), mais sur TOUTES les distances de 100 m au marathon ;
+ * les tables de Daniels semblent donner ~1,06 entre 5 et 10 km (calculé de mémoire, à vérifier dans le livre). Avec 1,12, un 3 km en 15:00 donnerait un 10 km en 58:45 (trop lent).
+ * Voir docs/ia/FONDEMENTS_PLAN_COURSE.md.
+ */
 const RIEGEL = 1.06;
-/** Un temps converti d'une distance à une autre (formule de Riegel) */
+/** Un temps converti d'une distance à une autre (loi de puissance, exposant ci-dessus) */
 export const equivalent = (secondes: number, kmDe: number, kmA: number): number => secondes * Math.pow(kmA / kmDe, RIEGEL);
 /** Rapport entre l'allure facile et l'allure 10 km chez un coureur loisir (≈ 1,27) */
 const FACILE_SUR_10K = 1.27;
@@ -118,8 +124,12 @@ export function niveauActuel(p: ProfilCourse | null, km: number, aujourdhui: str
   return null;
 }
 
-/** Le temps jouable pour la course : le niveau actuel, amélioré de 0,6 % par semaine d'entraînement (8 % au plus) */
-export const objectifRealiste = (niveauSecondes: number, semaines: number): number => Math.round(niveauSecondes * (1 - Math.min(0.08, 0.006 * Math.max(0, semaines))));
+/**
+ * Le temps jouable pour la course : le niveau actuel, amélioré de 0,4 % par semaine d'entraînement, 6 % au plus.
+ * Source : sur 10 à 15 semaines, des coureurs loisir améliorent leur 10 km d'environ 3 à 6 % (Muñoz 2014 : 3,6-5,0 % en 10 semaines ; Nuuttila 2022 : 2,9-6,2 % en 12-15 semaines).
+ * 0,4 %/semaine ≈ milieu de cette fourchette ; 6 % = le haut, atteint seulement avec un plan bien adapté. Voir docs/ia/FONDEMENTS_PLAN_COURSE.md.
+ */
+export const objectifRealiste = (niveauSecondes: number, semaines: number): number => Math.round(niveauSecondes * (1 - Math.min(0.06, 0.004 * Math.max(0, semaines))));
 
 export interface Allures {
   /** Toutes en secondes par km */
@@ -148,7 +158,8 @@ export const butDeLaSemaine = (phase: Phase, recuperation: boolean): string => (
 
 /** La phase de chaque semaine pour un plan de n semaines (la dernière est la semaine de la course) */
 export function phases(n: number): Phase[] {
-  const affutage = n >= 8 ? 2 : n >= 3 ? 1 : n;
+  // Affûtage de 2 semaines : c'est la durée optimale de la méta-analyse de Bosquet et coll. (2007, 27 études) ; en dessous de 6 semaines de plan, 1 semaine
+  const affutage = n >= 6 ? 2 : n >= 3 ? 1 : n;
   const specifique = n >= 10 ? 3 : n >= 6 ? 2 : n >= 4 ? 1 : 0;
   const reste = Math.max(0, n - affutage - specifique);
   const base = Math.floor(reste / 3);
