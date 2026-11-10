@@ -286,13 +286,38 @@ export function calculerZones(modele: ModeleZones, reference: unknown): ZoneCalc
 
 // --- Estimations et valeurs dérivées ---------------------------------------------------------------------------------
 
-/** FTP estimée depuis la courbe de puissance : 95 % du meilleur 20 min, sinon le meilleur 60 min. null sans données. */
-export function estimerFtp(courbe: { duration_s: unknown; watts_alltime: unknown }[] | null | undefined): number | null {
-  const parDuree = new Map<number, number>((courbe || []).map((l) => [Number(l.duration_s), Number(l.watts_alltime)]));
-  const vingt = parDuree.get(1200);
-  if ((vingt ?? 0) > 0) return Math.round((vingt as number) * 0.95);
-  const soixante = parDuree.get(3600);
-  return (soixante ?? 0) > 0 ? Math.round(soixante as number) : null;
+/**
+ * FTP estimée depuis la courbe de puissance : 95 % du meilleur 20 min sur les 90 derniers jours (la forme actuelle),
+ * sinon le même calcul sur le record de tous les temps, sinon le meilleur 60 min. null sans données.
+ */
+export function estimerFtp(
+  courbe: { duration_s: unknown; watts_90d?: unknown; watts_alltime?: unknown }[] | null | undefined,
+): number | null {
+  const ligne = (d: number) => (courbe || []).find((l) => Number(l.duration_s) === d);
+  const vingt = ligne(1200);
+  const recent = Number(vingt?.watts_90d);
+  if (recent > 0) return Math.round(recent * 0.95);
+  const ancien = Number(vingt?.watts_alltime);
+  if (ancien > 0) return Math.round(ancien * 0.95);
+  const soixante = ligne(3600);
+  const w60 = Number(soixante?.watts_90d) > 0 ? Number(soixante?.watts_90d) : Number(soixante?.watts_alltime);
+  return w60 > 0 ? Math.round(w60) : null;
+}
+
+/** Au-delà, une FC est un parasite de capteur (le 233 vu en base), pas une vraie mesure. */
+export const FC_PLAUSIBLE_MAX = 220;
+
+/**
+ * FC max estimée depuis les sorties : le 99e percentile des FC max, en ignorant les valeurs aberrantes
+ * (hors 100–220 bpm). Le percentile évite qu'un pic isolé tire tout vers le haut. null sans assez de données (< 10 sorties).
+ */
+export function estimerFcMax(seances: { max_heartrate?: unknown }[] | null | undefined): number | null {
+  const valeurs = (seances || [])
+    .map((s) => Number(s.max_heartrate))
+    .filter((v) => v >= 100 && v <= FC_PLAUSIBLE_MAX)
+    .sort((x, y) => x - y);
+  if (valeurs.length < 10) return null;
+  return Math.round(valeurs[Math.min(valeurs.length - 1, Math.floor(valeurs.length * 0.99))]);
 }
 
 /** LTHR estimée : 92 % de la FC max. */

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { calculerZones, sectionParId, validerSection, valeursDepuis, versPayload, estimerFtp, referenceCardio } from '../../src/data/reglages/profil.ts';
+import { calculerZones, sectionParId, validerSection, valeursDepuis, versPayload, estimerFtp, estimerFcMax, referenceCardio } from '../../src/data/reglages/profil.ts';
 
 const physio = sectionParId('physiologie')!;
 const identite = sectionParId('identite')!;
@@ -40,4 +40,16 @@ test('zones : calculées, jamais sans référence', () => {
   assert.deepEqual(referenceCardio({ hr_max: 200 }), { bpm: 184, estimee: true });
   assert.deepEqual(referenceCardio({ lthr: 170, hr_max: 200 }), { bpm: 170, estimee: false });
   assert.equal(estimerFtp([{ duration_s: 1200, watts_alltime: 300 }]), 285);
+  // la forme récente (90 j) passe avant le record de tous les temps
+  assert.equal(estimerFtp([{ duration_s: 1200, watts_90d: 246, watts_alltime: 300 }]), 234);
+  assert.equal(estimerFtp([{ duration_s: 3600, watts_90d: 0, watts_alltime: 250 }]), 250);
+  assert.equal(estimerFtp([]), null);
+});
+
+test('FC max estimée : les valeurs aberrantes sont ignorées', () => {
+  const normales = Array.from({ length: 50 }, (_, i) => ({ max_heartrate: 180 + (i % 20) }));
+  const avecParasite = [...normales, { max_heartrate: 233 }, { max_heartrate: 20 }];
+  assert.equal(estimerFcMax(avecParasite), estimerFcMax(normales));
+  assert.ok((estimerFcMax(avecParasite) as number) <= 200);
+  assert.equal(estimerFcMax([{ max_heartrate: 190 }]), null);
 });
