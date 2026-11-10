@@ -15,6 +15,7 @@ import { travailAuDessusFtp } from '@/data/outils/efforts-sortie';
 import { formatDateCourte, formatKm } from '@/data/outils/format';
 import { familleAffichage } from '@/data/sports/familles';
 import { nomDuType } from '@/data/sports/catalogue-sports';
+import { GrapheTours } from '@/components/graphes/GrapheTours';
 import { RecordsSortie } from '@/components/graphes/RecordsSortie';
 import { RepartitionSortie } from '@/components/graphes/RepartitionSortie';
 import { calculerZones, referenceCardio } from '@/data/reglages/profil';
@@ -160,6 +161,7 @@ export default function Seance() {
         tours={
           <View style={{ gap: espace.e2 }}>
             <Text style={[typo.micro, { color: p.texteDoux }]}>TOURS</Text>
+            {tours ? <GrapheTours tours={tours} sport={seance.sport} couleur={couleur} /> : null}
             <ListeTours lignes={lignes} chargement={chargementTours} erreur={erreurTours} />
           </View>
         }
