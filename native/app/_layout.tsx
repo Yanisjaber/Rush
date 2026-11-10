@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 // On importe chaque graisse par son chemin : ça n'embarque que les 6 fichiers utiles.
 import { BricolageGrotesque_600SemiBold } from '@expo-google-fonts/bricolage-grotesque/600SemiBold';
 import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque/700Bold';
@@ -15,6 +16,9 @@ import { ZoneClavier } from '@/components/champs/ZoneClavier';
 import { initAuth, useAuth } from '@/stores/auth';
 import { chargerTheme } from '@/stores/theme';
 import { clair, sombre } from '@/theme/couleurs';
+
+// On garde l'écran de lancement natif affiché jusqu'à ce que tout soit prêt : pas de trou vide entre lui et l'app.
+void SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   // Le thème est celui choisi dans Paramètres (gardé sur le téléphone) ; sans choix, il suit le téléphone.
@@ -48,7 +52,14 @@ export default function RootLayout() {
   }, [erreurPolices]);
 
   // On attend les polices, le thème et la lecture de la session : sinon l'écran de connexion clignoterait avant l'Accueil
-  if ((!policesPretes && !erreurPolices) || !pret || !themePret) return null;
+  const toutPret = (policesPretes || !!erreurPolices) && pret && themePret;
+
+  // Tout est prêt : on retire l'écran de lancement (le premier écran est déjà dessous)
+  useEffect(() => {
+    if (toutPret) void SplashScreen.hideAsync().catch(() => {});
+  }, [toutPret]);
+
+  if (!toutPret) return null;
   const connecte = !!session || demo;
 
   return (
