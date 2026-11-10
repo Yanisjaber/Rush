@@ -50,7 +50,8 @@ export function creerClientAnthropic(opts: { apiKey: string; modele: string }): 
           model: opts.modele,
           max_tokens: appel.maxTokens,
           system: [{ type: 'text', text: appel.system, cache_control: { type: 'ephemeral' } }],
-          tools: appel.outils.map((o) => ({ ...o, input_schema: o.input_schema as Anthropic.Tool.InputSchema })),
+          // Sans outil (l'analyse de sortie), pas de champ `tools` du tout
+          ...(appel.outils.length ? { tools: appel.outils.map((o) => ({ ...o, input_schema: o.input_schema as Anthropic.Tool.InputSchema })) } : {}),
           messages: appel.messages as Anthropic.MessageParam[],
           output_config: { effort: 'low' },
         });
