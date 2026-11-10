@@ -50,7 +50,7 @@ export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, records
   // Quatre rubriques seulement (le temps écoulé va avec l'effort ; le rythme et le relief vont ensemble) : moins de titres, donc moins de hauteur
   const rubriques: { titre: string; lignes: Ligne[] }[] = [
     { titre: 'EFFORT', lignes: [...(tempsTotal ? [{ cle: 'ecoule', libelle: 'Temps écoulé', valeur: tempsTotal }] : []), ...ligne('charge'), ...ligne('if', 'Intensité (IF)'), ...ligne('rpe', 'Effort ressenti')] },
-    { titre: 'CŒUR', lignes: [...ligne('fc', 'FC moyenne'), ...chiffreNote('fc', 'FC max', 'bpm'), ...ligne('fcpct', 'FC max (%)'), ...ligne('derive', 'Dérive'), ...ligne('ef', 'Efficacité P/FC'), ...ligne('trimp', 'TRIMP')] },
+    { titre: 'CŒUR', lignes: [...ligne('fc', 'FC moyenne'), ...chiffreNote('fc', 'FC max', 'bpm'), ...ligne('derive', 'Dérive'), ...ligne('ef', 'Efficacité P/FC'), ...ligne('trimp', 'TRIMP')] },
     {
       titre: 'RYTHME ET RELIEF',
       lignes: [

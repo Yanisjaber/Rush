@@ -64,7 +64,6 @@ export const DONNEES_DU_CHIFFRE: Readonly<Record<string, readonly DonneeEcartabl
   cadence: ['cadence'],
   // Les chiffres calculés sur les flux : écartés avec la donnée dont ils viennent
   derive: ['cardio'],
-  fcpct: ['cardio'],
   trimp: ['cardio'],
   if: ['puissance'],
   ef: ['puissance', 'cardio'],
