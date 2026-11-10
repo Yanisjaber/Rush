@@ -2,7 +2,7 @@
 // Lancer : node --experimental-strip-types --test supabase/tests/edge/plan-course.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { reperesPersonnels, alluresDepuisCourse, equivalent, footingProgressif, formaterAllure, formaterTemps, niveauActuel, objectifRealiste, phases, planifierCourse, profilCourseDepuisResume, reglesDuProfil, estDebutant, courseMarche } from '../../functions/_shared/plan-course.ts';
+import { reperesPersonnels, alluresDepuisCourse, equivalent, footingProgressif, formaterAllure, formaterTemps, niveauActuel, objectifRealiste, phases, planifierCourse, profilCourseDepuisResume, reglesDuProfil, estDebutant, courseMarche, seanceTest, typeTestPour } from '../../functions/_shared/plan-course.ts';
 import type { ProfilCourse } from '../../functions/_shared/plan-course.ts';
 import { evaluerPlan } from '../../functions/_shared/planning.ts';
 import type { Operation } from '../../functions/_shared/planning.ts';
@@ -144,12 +144,16 @@ test('une cible réaliste est confirmée, et sans cible le plan est calé sur le
   const sans = planifierCourse({ date: COURSE, km: 10.15 }, [], ctx(), YANIS);
   assert.equal(sans.bilan?.verdict, 'sans_cible');
 });
-test('sans aucune donnée ni temps visé : la seule sortie test (pas de plan inventé) ; avec un temps visé : plan calé dessus, prévenu', () => {
+test('sans aucune donnée ni temps visé : plan complet sur des allures PROVISOIRES avec le test en première séance ; avec un temps visé : plan calé dessus, prévenu', () => {
   const rien = planifierCourse({ date: COURSE, km: 10 }, [], ctx(), null);
-  assert.equal(ajouts(rien.operations).length, 1);
-  assert.equal(ajouts(rien.operations)[0].detail?.nom, 'Sortie test : 3 km chrono');
+  assert.ok(ajouts(rien.operations).length > 8);
+  assert.equal(rien.bilan?.provisoire, true);
+  assert.equal(rien.bilan?.test, true);
+  assert.match(rien.message, /PROVISOIRES/);
+  assert.doesNotMatch(rien.message, /même approximatif|temps que tu espères/);
   const avec = planifierCourse({ date: COURSE, km: 10, tempsCibleMinutes: 50 }, [], ctx(), null);
   assert.equal(avec.bilan?.verdict, 'sans_donnees');
+  assert.equal(avec.bilan?.provisoire, false);
   assert.ok(ajouts(avec.operations).length > 8);
 });
 test('jours de repos, indisponibilité, jours libres : respectés ; le jour de la course : jamais', () => {
@@ -209,7 +213,7 @@ test('AVEC des sorties récentes : pas de test, la première semaine est une vra
   assert.doesNotMatch(r.message, /TEST/);
   assert.match(r.message, /pas de sortie test nécessaire/);
 });
-test('sans AUCUNE donnée récente : la première sortie est un TEST (3 km chrono), avec ses blocs, et le bilan demande le temps', () => {
+test('sans AUCUNE donnée récente : la première sortie est un TEST adapté à l\'objectif (10 km = 30 minutes à fond), avec ses blocs, et le bilan demande le résultat', () => {
   const r = planifierCourse(DEMANDE, [], ctx(), { ...YANIS, effortRecent: null, sorties90: 0, recent: { ...YANIS.recent, sorties: 0, allureMedianeSParKm: null } });
   assert.equal(r.bilan?.test, true);
   const a = ajouts(r.operations);
@@ -217,12 +221,27 @@ test('sans AUCUNE donnée récente : la première sortie est un TEST (3 km chron
   assert.equal(test.length, 1);
   assert.ok(test[0].proposition.date <= '2026-11-22', test[0].proposition.date);
   assert.deepEqual(test[0].detail!.structure.map((b) => b.type), ['warmup', 'steady', 'cooldown']);
-  assert.match(test[0].detail!.structure[1].name, /3 km chrono/);
-  assert.match(test[0].justification, /donne-moi ton temps/);
-  assert.match(r.message, /TEST \(3 km chrono\)/);
+  assert.match(test[0].detail!.structure[1].name, /30 minutes/);
+  assert.equal(r.bilan?.typeTest, 'trente_min');
+  assert.match(test[0].justification, /note la distance/);
+  assert.match(r.message, /TEST \(30 minutes à fond régulier/);
   assert.match(r.message, /chrono_km et chrono_temps/);
   assert.match(r.message, /AUCUNE sortie récente/);
   assert.equal(evaluerPlan(r.operations, [], ctx()).ok, true);
+});
+test('le test dépend de l\'objectif : 3 km chrono jusqu\'à 6 km, 30 minutes au-delà', () => {
+  const nu = { ...YANIS, effortRecent: null, sorties90: 0, recent: { ...YANIS.recent, sorties: 0, allureMedianeSParKm: null } };
+  for (const [km, attendu, type] of [[5, /3 km chrono/, 'trois_km'], [6, /3 km chrono/, 'trois_km'], [10, /30 minutes/, 'trente_min'], [21.1, /30 minutes/, 'trente_min']] as const) {
+    const r = planifierCourse({ date: COURSE, km, tempsCibleMinutes: Math.round(km * 6) }, [], ctx(), nu);
+    const test = ajouts(r.operations).filter((o) => /Sortie test/.test(o.detail!.nom));
+    assert.equal(test.length, 1, String(km));
+    assert.match(test[0].detail!.structure[1].name, attendu, String(km));
+    assert.equal(r.bilan?.typeTest, type);
+  }
+  assert.equal(typeTestPour(6), 'trois_km');
+  assert.equal(typeTestPour(6.1), 'trente_min');
+  // le test de 30 minutes dure bien 12 + 30 + 10 minutes
+  assert.equal(seanceTest(alluresDepuisCourse(3000, 10), 'trente_min').minutes, 52);
 });
 test('chrono réel : plus de test, niveau mesuré, tout le plan recalibré dessus (allures plus rapides qu\'avec l\'estimation)', () => {
   const avant = planifierCourse(DEMANDE, [], ctx(), YANIS);
@@ -505,14 +524,17 @@ test('course/marche : la somme des blocs fait exactement la durée, 1/2 puis 2/1
     }
   }
 });
-test('rien du tout (aucune sortie, aucun temps visé) : une seule séance, la sortie test, et on ne demande pas de temps', () => {
+test('rien du tout (aucune sortie, aucun temps visé) : on ne demande pas de temps, plan complet provisoire dont la première séance est le test de l\'objectif', () => {
   for (const c of [null, coureur({ annees_pratique: 0 })]) {
     const r = planifierCourse({ date: COURSE, km: 5 }, [], ctx(), c === null ? null : SANS_DONNEES, c);
     const a = ajouts(r.operations);
-    assert.equal(a.length, 1);
-    assert.equal(a[0].detail?.nom, 'Sortie test : 3 km chrono');
-    assert.ok(a[0].proposition.date >= ajouterJours(AUJ, 1) && a[0].proposition.date < COURSE);
-    assert.match(r.message, /TEST[\s\S]*chrono_km et chrono_temps/);
+    assert.ok(a.length >= 8);
+    const tests = a.filter((o) => /^Sortie test/.test(o.detail?.nom ?? ''));
+    assert.equal(tests.length, 1);
+    assert.match(tests[0].detail!.nom, /3 km chrono/, '5 km = test court');
+    assert.equal(tests[0].proposition.date, a.map((o) => o.proposition.date).sort()[0], 'le test est la première séance');
+    assert.equal(r.bilan!.provisoire, true);
+    assert.match(r.message, /PROVISOIRES/);
     assert.doesNotMatch(r.message, /même approximatif|temps que tu espères/);
   }
 });
@@ -523,9 +545,9 @@ test('débutant qui progresse : après 6 semaines de course/marche, footing cont
   const tard = a.filter((o) => o.proposition.date >= ajouterJours(AUJ, 1 + 7 * 6));
   assert.ok(tard.length > 0);
   assert.ok(tard.some((o) => !/^Course\/marche/.test(o.detail?.nom ?? '')));
-  const tot = a.filter((o) => o.proposition.date < ajouterJours(AUJ, 1 + 7 * 6) && o.detail?.nom !== 'Sortie test : 3 km chrono');
+  const tot = a.filter((o) => o.proposition.date < ajouterJours(AUJ, 1 + 7 * 6) && !/^Sortie test/.test(o.detail?.nom ?? ''));
   assert.ok(tot.every((o) => /^Course\/marche/.test(o.detail?.nom ?? '')));
-  assert.ok(a.every((o) => (o.proposition.type !== 'tempo' && o.proposition.type !== 'seuil') || o.proposition.date >= ajouterJours(AUJ, 1 + 7 * 6) || o.detail?.nom === 'Sortie test : 3 km chrono'));
+  assert.ok(a.every((o) => (o.proposition.type !== 'tempo' && o.proposition.type !== 'seuil') || o.proposition.date >= ajouterJours(AUJ, 1 + 7 * 6) || /^Sortie test/.test(o.detail?.nom ?? '')));
 });
 test('reprise après un long arrêt (ancienneté, plus grosse semaine connue, aucune sortie depuis 90 jours) : départ à 35 % de cette semaine', () => {
   const r = planifierCourse({ date: COURSE, km: 10, tempsCibleMinutes: 55 }, [], ctx(), SANS_DONNEES, coureur({ annees_pratique: 6, pic_hebdo_minutes: 300 }));

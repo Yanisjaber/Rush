@@ -276,8 +276,8 @@ function varianteFooting(minutes: number, a: Allures, phase: Phase, semaine: num
  * un jour de repos entre deux séances, progression lente, aucune intensité, objectif FINIR un 5 km avant de chercher un chrono. Ce sont des repères de terrain (programmes de type « Couch to 5K »), pas des essais contrôlés.
  * CONVENTIONS À NOUS (pas dans les fiches) : on change d'étape toutes les 2 semaines (1/2 → 2/1 → 3/1), on repasse en footing continu après 6 semaines de course/marche, la marche s'affiche à 1,7 × l'allure facile.
  */
-/** Allure indicative (5 km en 40 min) pour dessiner la seule sortie test quand on ne sait encore rien : seule la durée affichée du test en dépend, le chrono réel vient de la personne */
-const TEST_SEUL_5K_SECONDES = 2400;
+/** Allures PROVISOIRES (5 km en 40 min, converti sur la distance) quand on ne sait encore rien : un chiffre à nous, remplacé dès le résultat du test */
+const PROVISOIRE_5K_SECONDES = 2400;
 export const DEBUTANT = { seancesParSemaine: 3, footingMini: 20, seanceMini: 25, longueMini: 30, semainesCourseMarche: 6 } as const;
 export function estDebutant(profil: ProfilCourse | null, anneesPratique: number | null): boolean {
   const donnees = !!profil && (profil.recent.sorties >= 3 || profil.meilleurEffort !== null || profil.effortRecent !== null || profil.sorties90 > 0);
@@ -408,7 +408,28 @@ export function plafonnerFacile(a: Allures, profil: ProfilCourse | null): Allure
 }
 
 /** La sortie test : un 3 km chrono, la première séance quand le niveau n'est pas sûr. Son résultat sert à recalibrer tout le plan. */
-export function seanceTest(a: Allures): SeanceCourse {
+/**
+ * Le test dépend de l'objectif (fiche course-tests-terrain) : un effort court (3 km chrono, ≈ vitesse aérobie max.) pour un objectif de 6 km ou moins ;
+ * 30 minutes à fond régulier (≈ seuil lactique) pour un objectif plus long, où le seuil compte plus que la vitesse de pointe (la fiche note que Riegel est optimiste d'un effort court vers 10 km et plus).
+ * LE SEUIL DE 6 KM EST UNE CONVENTION À NOUS, pas un résultat d'étude.
+ */
+export type TypeTest = 'trois_km' | 'trente_min';
+export const SEUIL_KM_TEST_LONG = 6;
+export const typeTestPour = (km: number): TypeTest => (km > SEUIL_KM_TEST_LONG ? 'trente_min' : 'trois_km');
+
+export function seanceTest(a: Allures, type: TypeTest = 'trois_km'): SeanceCourse {
+  if (type === 'trente_min') {
+    return assembler(
+      'Sortie test : 30 minutes à fond régulier', 'seuil',
+      [
+        bloc('warmup', `Échauffement à ${ms(a.facile)}/km`, ECHAUF, a.facile, a),
+        bloc('steady', '30 minutes aussi vite que tu peux tenir, allure régulière', 30, a.seuil, a),
+        bloc('cooldown', `Retour au calme à ${ms(a.facile)}/km`, RETOUR, a.facile, a),
+      ],
+      `${ECHAUF} min d'échauffement · 30 min à fond mais régulier (note la distance faite) · ${RETOUR} min de retour au calme`,
+      "Ta première sortie : elle mesure où tu en es vraiment. Cours 30 minutes aussi vite que tu peux tenir, en gardant une allure régulière (pars prudent), et note la distance parcourue : donne-la-moi, je recalibre tout le plan dessus.",
+    );
+  }
   const minutes = tempsAllure(3000, a.cinqK);
   return assembler(
     'Sortie test : 3 km chrono', 'seuil',
@@ -543,6 +564,9 @@ export interface Bilan {
   profilUtilise: string[];
   /** Vrai départ de débutant (aucune donnée, aucune ancienneté) */
   debutant: boolean;
+  /** Allures provisoires (aucune donnée ni temps visé) : tout est recalibré après le test */
+  provisoire: boolean;
+  typeTest: TypeTest;
 }
 
 export interface ResultatCourse {
@@ -672,29 +696,17 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
 
   // 1. niveau, objectif, allures
   const debutant = estDebutant(profil, coureur?.anneesPratique ?? null);
-  const { niveau, realiste, cible, objectifPlan, verdict } = calibrer(km, d.tempsCibleMinutes, nSemaines, profil, aujourdhui, d.chrono);
-  // Rien du tout (aucune sortie, aucun temps visé, aucun chrono) : on ne demande PAS un temps « au pif », on fait faire un test. Une seule séance, la sortie test ; la personne donne son chrono et le plan complet se construit dessus.
-  if (objectifPlan === null && debutant) {
-    const a0 = alluresDepuisCourse(TEST_SEUL_5K_SECONDES, 5);
-    const t = seanceTest(a0);
-    const interditsTest = new Set(d.joursLibres ?? []);
-    for (let j = debut; j < d.date; j = ajouterJours(j, 1)) {
-      if (interditsTest.has(j) || regles.joursInterdits.has(nomDuJour(j)) || base.joursDeRepos.includes(j) || base.competitions.some((c) => c.date === j) || base.indisponibilites.some((i) => entre(j, i.du, i.au))) continue;
-      if ((regles.minutesMax[nomDuJour(j)] ?? Infinity) < t.minutes) continue;
-      const p: Proposition = { date: j, sport: 'course', type: t.type, minutes: t.minutes };
-      if (!validerSeance(p, ctxAvec(base, seances, base.indisponibilites)).ok) continue;
-      const message = "Tu n'as encore aucune sortie de course dans l'application : on commence par un TEST. C'est une seule séance, 3 km chrono (échauffement, 3 km aussi vite que tu peux en gardant une allure régulière, retour au calme). Dès que la personne donne son temps, rappelle preparer_course avec chrono_km et chrono_temps : le plan complet se construit dessus, pas besoin de lui demander un temps visé. Dis-lui de faire ce test dès que possible.";
-      return { operations: [{ op: 'ajouter', proposition: p, justification: t.but, detail: t.detail, phase: 'Test' }], abandons: [], semaines: [`Test (${j}) : sortie test, ${t.minutes} min`], bilan: null, message };
-    }
-    return vide("Je n'ai trouvé aucun jour libre avant la course pour placer la sortie test.");
-  }
-  if (objectifPlan === null) {
-    return vide("Je n'ai ni tes sorties de course ni un temps visé pour calibrer les allures : donne-moi le temps que tu vises, ou fais d'abord quelques sorties.");
-  }
+  const calib = calibrer(km, d.tempsCibleMinutes, nSemaines, profil, aujourdhui, d.chrono);
+  const { niveau, realiste, cible, verdict } = calib;
+  // Rien du tout (aucune sortie, aucun temps visé, aucun chrono) : le plan est quand même construit en entier, sur des allures PROVISOIRES, avec un test adapté à l'objectif en première séance ;
+  // dès que la personne donne son résultat, preparer_course recalibre tout le plan (décision de Yanis, 12 nov. 2026). On ne demande jamais un temps « au pif ».
+  const provisoire = calib.objectifPlan === null;
+  const objectifPlan = provisoire ? Math.round(equivalent(PROVISOIRE_5K_SECONDES, 5, km)) : calib.objectifPlan!;
   const calculees = plafonnerFacile(alluresDepuisCourse(objectifPlan, km), profil);
   // Sortie test SEULEMENT sans donnée récente (ni chrono, ni sorties des 90 derniers jours) : avec des sorties récentes, le niveau est déjà connu.
   // Pas de test non plus si l'utilisateur n'en veut pas ou si le plan est trop court pour s'en servir.
   const avecTest = !d.chrono && !d.sansTest && !regles.blessureActive && nSemaines >= 2 && niveau?.fiabilite !== 'recente';
+  const typeTest = typeTestPour(km);
   const imposees = ALLURES_CLES.filter((c) => d.allures?.[c] !== undefined);
   const a: Allures = { ...calculees, ...Object.fromEntries(imposees.map((c) => [c, d.allures![c]!])) };
 
@@ -812,7 +824,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     // Le contenu alterne : en développement avec 3 séances, une semaine de VMA puis une semaine de tempo ; la semaine de récupération a une qualité légère (fartlek)
     const qualiteAlternee = phase === 'developpement' && kSemaine < 4 && rang % 2 === 1;
     const qualiteDeLaSemaine = (): SeanceCourse => (recuperation || debutant ? qualite('base', 0, a, false) : qualite(phase, rang, a, qualiteAlternee));
-    const seancesQualite = roles.map((r) => (r === 'qualite1' ? (w === 0 && avecTest ? seanceTest(a) : qualiteDeLaSemaine()) : r === 'qualite2' ? qualite(phase, rang, a, true) : null));
+    const seancesQualite = roles.map((r) => (r === 'qualite1' ? (w === 0 && avecTest ? seanceTest(a, typeTest) : qualiteDeLaSemaine()) : r === 'qualite2' ? qualite(phase, rang, a, true) : null));
     const minutesQualite = seancesQualite.reduce((t, s) => t + (s?.minutes ?? 0), 0);
     const nLongue = roles.filter((r) => r === 'longue').length;
     const nFaciles = roles.filter((r) => r === 'facile').length;
@@ -870,7 +882,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     lignesSemaines.push(`Semaine ${w + 1} (${du}) : ${NOM_PHASE[phase]}${recuperation ? ', récupération' : ''}, ${posees} séance${posees > 1 ? 's' : ''}, ${totalSemaine} min`);
   }
 
-  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null, volumeDepart, derniers7, profilUtilise: regles.utilise, debutant };
+  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null, volumeDepart, derniers7, profilUtilise: regles.utilise, debutant, provisoire, typeTest };
   return { operations, abandons, semaines: lignesSemaines, bilan, message: messageBilan(bilan) };
 }
 
@@ -880,7 +892,10 @@ export function messageBilan(b: Bilan): string {
   if (b.niveau) parts.push(`Niveau estimé aujourd'hui sur ${b.km} km : ${formaterTemps(b.niveau.secondes)} (d'après ${b.niveau.source}).`);
   if (b.niveauFiabilite === 'ancienne') parts.push("Attention : je n'ai AUCUNE sortie récente, cette estimation est très fragile (on a pu perdre beaucoup de niveau).");
   else if (b.niveauFiabilite === 'recente') parts.push("Cette estimation vient de tes sorties récentes : pas de sortie test nécessaire. Si tu trouves les allures trop rapides ou trop lentes, dis-le-moi et je les ajuste.");
-  if (b.test) parts.push("La première sortie du plan est un TEST (3 km chrono) : dès que l'utilisateur donne son temps, rappelle preparer_course avec chrono_km et chrono_temps pour recalibrer toutes les allures. Dis-lui de la faire dès que possible.");
+  if (b.test) parts.push(b.typeTest === 'trente_min'
+    ? "La première sortie du plan est un TEST (30 minutes à fond régulier, choisi parce que l'objectif est long) : dès que l'utilisateur donne la distance faite en 30 minutes, rappelle preparer_course avec chrono_km et chrono_temps (la distance faite, et « 30:00 ») pour recalibrer toutes les allures. Dis-lui de la faire dès que possible."
+    : "La première sortie du plan est un TEST (3 km chrono, choisi parce que l'objectif est court) : dès que l'utilisateur donne son temps, rappelle preparer_course avec chrono_km et chrono_temps pour recalibrer toutes les allures. Dis-lui de la faire dès que possible.");
+  if (b.provisoire) parts.push("Les allures de ce plan sont PROVISOIRES : je ne sais encore rien de son niveau et il n'a donné aucun temps visé. Dis-le clairement ; elles seront remplacées dès le résultat du test, et tout le plan sera alors recalculé. Ne lui demande jamais un temps « au pif ».");
   if (b.realiste !== null) parts.push(`En ${b.semaines} semaine${b.semaines > 1 ? 's' : ''} d'entraînement, un temps jouable est d'environ ${formaterTemps(b.realiste)}.`);
   if (b.verdict === 'ambitieux' && b.cible !== null && b.realiste !== null) {
     parts.push(`L'objectif de ${formaterTemps(b.cible)} est très ambitieux : il faudrait gagner ${formaterTemps(b.realiste - b.cible)} en ${b.semaines} semaines. Le plan est calé sur ${formaterTemps(b.objectifPlan ?? b.realiste)} (${formaterAllure((b.objectifPlan ?? b.realiste) / b.km)}/km). Si les séances passent facilement, on remontera les allures.`);
@@ -888,7 +903,7 @@ export function messageBilan(b: Bilan): string {
     parts.push(`L'objectif de ${formaterTemps(b.cible)} est réaliste : le plan est calé dessus (${formaterAllure(b.cible / b.km)}/km).`);
   } else if (b.verdict === 'sans_cible') {
     parts.push(`Pas de temps visé : le plan est calé sur ${formaterTemps(b.objectifPlan ?? 0)}.`);
-  } else if (b.verdict === 'sans_donnees') {
+  } else if (b.verdict === 'sans_donnees' && !b.provisoire) {
     parts.push("Je n'ai pas assez de sorties de course pour estimer ton niveau : le plan est calé sur le temps que tu vises, à vérifier après les premières séances.");
   }
   parts.push(b.debutant
