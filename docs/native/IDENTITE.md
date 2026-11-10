@@ -93,14 +93,13 @@ Les polices sont embarquées dans l'app (aucun appel à Google). Le texte suit l
 
 ## 9. Icône de l'app
 
-Fichiers : `assets/icone/icone-rush.svg` (source), `icone-rush-1024.png` (export pour les stores, RVB sans canal alpha), `icone-courbe-sports-monochrome.svg` (variante une couleur).
+Fichiers (dans `native/assets/icone/`) : `icone-rush.svg` (source, le R est un tracé), `icone-rush-1024.png` (export pour les stores, RVB sans canal alpha), `icone-monochrome.svg` et `icone-monochrome-1024.png` (variante une couleur).
 
 - Fond `#0c0d10`, plein cadre, sans transparence (exigence de l'App Store). Carré 1024×1024, les coins sont arrondis par le système.
-- Au centre, une **courbe de charge en dents de scie** : cinq segments, un par sport, dans l'ordre course `#ff7a33`, vélo `#4f8cff`, natation `#22d3ee`, muscu `#ff5a4f`, hybride `#ffd60a`. Elle met l'idée centrale de l'app en image : la couleur désigne le sport.
-- Chaque segment est un polygone ; les jonctions suivent la bissectrice de l'angle (coupure nette, pas de biais).
-- Derrière, quatorze fines traînées horizontales `#272b35` de longueurs variées (impression de mouvement). Elles restent derrière la courbe et ne portent aucune information.
-- Variante monochrome (icône teintée d'iOS, icône thématique d'Android) : la courbe seule, en blanc sur noir, sans traînées.
-- Écran de démarrage : fond `fond`, la courbe seule, rien d'autre.
+- Au centre, un **grand R** en Bricolage Grotesque 800, couleur `#f1efe9`.
+- Dessous, **cinq barres arrondies**, une par sport, dans l'ordre course `#ff7a33`, vélo `#4f8cff`, natation `#22d3ee`, muscu `#ff5a4f`, hybride `#ffd60a`. Elles mettent l'idée centrale de l'app en image : la couleur désigne le sport.
+- Variante monochrome (icône teintée d'iOS, icône thématique d'Android) : R et barres en blanc sur noir.
+- Écran de démarrage : fond `fond`, rien d'autre.
 - Le dossard reste la signature **dans l'app** (§3), pas dans l'icône.
 
 ## 10. Interdits (rappel du CLAUDE.md)
