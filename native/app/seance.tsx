@@ -10,7 +10,8 @@ import { StatCle } from '@/components/ui/StatCle';
 import { sortieSupprimable } from '@/data/calendrier/ajouts';
 import { chiffreEcarte, pucesEcart } from '@/data/calendrier/donnees-ecartees';
 import { chiffresSeance, lignesTours, troisChiffres } from '@/data/calendrier/seance-detail';
-import { formatDateCourte } from '@/data/outils/format';
+import { deriveCardiaque } from '@/data/outils/derive-cardiaque';
+import { formatDateCourte, formatKm } from '@/data/outils/format';
 import { familleAffichage } from '@/data/sports/familles';
 import { nomDuType } from '@/data/sports/catalogue-sports';
 import { RecordsSortie } from '@/components/graphes/RecordsSortie';
@@ -61,7 +62,12 @@ export default function Seance() {
   const couleur = couleurSport(p, seance.sport);
   const familleSortie = familleAffichage(seance.sport);
   const nomSport = nomDuType(seance.sport);
-  const chiffres = chiffresSeance(seance);
+  // La dérive cardiaque se calcule sur les flux (elle n'est pas dans la base) : un chiffre de plus dans la rubrique Cœur, quand on a le cœur et assez de durée
+  const derive = deriveCardiaque(courbes?.brut, familleAffichage(seance.sport) === 'velo' ? 'velo' : 'autre');
+  const chiffres = [
+    ...chiffresSeance(seance),
+    ...(derive ? [{ cle: 'derive', libelle: 'Dérive', valeur: `${derive.pct > 0 ? '+' : derive.pct < 0 ? '−' : ''}${formatKm(Math.abs(derive.pct), 1)}`, unite: '%', note: derive.base === 'puissance' ? 'cœur vs puissance' : 'cœur vs allure' }] : []),
+  ];
   const cles = troisChiffres(chiffres);
   const lignes = tours ? lignesTours(tours, seance.sport) : [];
   const puces = pucesEcart(seance);

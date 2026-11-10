@@ -45,7 +45,7 @@ export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, records
   const fcMax = /\d+/.exec(fc?.note ?? '')?.[0];
   const rubriques: { titre: string; tuiles: Tuile[] }[] = [
     { titre: 'EFFORT', tuiles: [...tuile('charge'), ...tuile('rpe', 'Effort ressenti')] },
-    { titre: 'CŒUR', tuiles: [...tuile('fc', 'FC moyenne'), ...(fcMax ? [{ cle: 'fcmax', libelle: 'FC max', valeur: fcMax, unite: 'bpm' }] : [])] },
+    { titre: 'CŒUR', tuiles: [...tuile('fc', 'FC moyenne'), ...(fcMax ? [{ cle: 'fcmax', libelle: 'FC max', valeur: fcMax, unite: 'bpm' }] : []), ...tuile('derive', 'Dérive cardiaque')] },
     { titre: 'RYTHME', tuiles: [...tuileSi('allure'), ...tuileSi('vitesse'), ...tuile('cadence')] },
     {
       titre: 'RELIEF',
