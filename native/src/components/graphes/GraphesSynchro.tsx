@@ -207,7 +207,6 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, dureeS, hauteur, 
                   .filter(Boolean)
                   .join('  ·  ')}
               </Text>
-              {zoome && !sel ? <Text style={[typo.petit, { color: p.texteMuet, fontSize: 12, lineHeight: 14 }]}>Double-tap : tout voir</Text> : null}
             </View>
           </>
         ) : (
