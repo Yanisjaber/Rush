@@ -39,6 +39,8 @@ Verdicts : **soutenu** (preuve solide) · **débattu** (les sources se contredis
 | Aucune donnée de course et 0 an d'ancienneté (débutant) | sortie test 3 km chrono en première séance (choix de Yanis ; sans aucun temps visé c'est la seule séance), puis 3 séances de 20-30 min, course/marche 1/2 → 2/1 → 3/1, un jour de repos entre deux séances, aucune autre intensité, but : finir | Fiches `course-reprise-debutants` et `reprise-apres-arret` (repères de terrain « Couch to 5K », pas des essais contrôlés). **Nos conventions** : étape toutes les 2 semaines, 6 semaines de course/marche, marche affichée à 1,7 × l'allure facile. |
 | Ancienneté sans sortie depuis 90 jours, plus grosse semaine connue (reprise) | Volume de départ = 35 % de la plus grosse semaine | Fiche `reprise-apres-arret` : 30 à 40 % pour un arrêt de 2 à 3 mois (guides de terrain, pas d'essai contrôlé) |
 
+| Deux courses à pied le même jour | Le plan vise la course prioritaire (distance demandée, sinon priorité A/B/C, sinon on demande). Aucun chiffre sur l'enchaînement | **Aucune étude trouvée** (5 km puis 10 km). Voisin et contradictoire : [cyclisme, deux efforts de 4 km séparés de 17 à 45 min](https://frontiersin.org/articles/10.3389/fphys.2016.00269/full) ; [5 km répétés après 24 ou 72 h de repos](https://thesportjournal.org/article/comparison-of-5km-running-performance-after-24-and-72-hours-of-passive-recovery/) (jours différents, donc hors sujet). |
+
 Ne sont pas encore branchés : `planifier_semaine`, `planifier_periode` (autres moteurs) et le cas sans historique.
 
 ## Ce qui est le mieux soutenu

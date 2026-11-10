@@ -1353,3 +1353,35 @@ test('retenir_profil : valeurs hors liste, texte libre ou clé en trop refusés,
     assert.deepEqual(w.stockage.profilsEcrits, [], JSON.stringify(mauvais));
   }
 });
+
+// ---------- Deux courses le même jour ----------
+const DOUBLE = (s: FauxStockage, p5 = 'A', p10 = 'A') => {
+  avecCourse(s);
+  s.resume.competitions = [
+    { date: '2026-12-13', sport: 'course', priorite: p5, km: 5, heure: '09:10', temps_cible_min: 20 },
+    { date: '2026-12-13', sport: 'course', priorite: p10, km: 10, heure: '10:00', temps_cible_min: 42 },
+  ];
+};
+test('double course, priorités égales : le coach doit demander laquelle compte, aucune carte', async () => {
+  const w = await planPropose([outil('c', { motif: 'Préparation' }, 'preparer_course')], (s) => DOUBLE(s));
+  assert.equal(w.evts.some((e) => e.type === 'carte'), false);
+  const retour = String((w.modele.appels[1].messages.at(-1) as Libre).content[0].content);
+  assert.match(retour, /2 courses le même jour \(5 km à 09:10 \(priorité A\) puis 10 km à 10:00 \(priorité A\)\)/);
+  assert.match(retour, /laquelle est la priorité/);
+});
+test('double course : la priorité A contre B décide seule ; la distance demandée décide aussi ; le coach reçoit la note honnête (aucun chiffre inventé)', async () => {
+  for (const [config, demande, kmAttendu] of [[(s: FauxStockage) => DOUBLE(s, 'B', 'A'), {}, 10], [(s: FauxStockage) => DOUBLE(s, 'A', 'A'), { km: 5 }, 5], [(s: FauxStockage) => DOUBLE(s, 'A', 'B'), {}, 5]] as const) {
+    const w = await planPropose([outil('c', { motif: 'Préparation', ...demande }, 'preparer_course')], config);
+    const carte = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
+    assert.equal(carte.genre, 'planning');
+    const retour = String((w.modele.appels[1].messages.at(-1) as Libre).content[0].content);
+    assert.match(retour, /DOUBLE COURSE le même jour : 5 km à 09:10.* puis 10 km à 10:00.*\(50 min entre les deux départs\)/);
+    assert.match(retour, new RegExp(`course prioritaire, ${kmAttendu} km`));
+    assert.match(retour, /aucune étude trouvée/);
+    assert.match(retour, /AUCUN chiffre de récupération/);
+  }
+});
+test('une seule course ce jour-là : aucune note de double', async () => {
+  const w = await planPropose([outil('c', { motif: 'Plan' }, 'preparer_course')], avecCourse);
+  assert.doesNotMatch(String((w.modele.appels[1].messages.at(-1) as Libre).content[0].content), /DOUBLE COURSE/);
+});

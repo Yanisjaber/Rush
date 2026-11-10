@@ -286,6 +286,50 @@ export function estDebutant(profil: ProfilCourse | null, anneesPratique: number 
 /** Reprise après un long arrêt (aucune sortie depuis 90 jours) d'un coureur qui a de l'ancienneté : on repart de 30 à 40 % de sa plus grosse semaine (fiche reprise-apres-arret, arrêt de 2 à 3 mois, guides de terrain) */
 export const REPRISE_PART_DU_PIC = 0.35;
 
+// ---------- Deux courses le même jour ----------
+export interface CourseCalendrier { date: string; km?: number | null; heure?: string | null; priorite?: string | null; temps_cible_min?: number | null }
+export type Double =
+  | { type: 'aucune' }
+  | { type: 'a_choisir'; message: string }
+  | { type: 'choisie'; principale: CourseCalendrier; autres: CourseCalendrier[]; note: string };
+
+const RANG_PRIORITE: Record<string, number> = { A: 0, B: 1, C: 2 };
+const minutesDe = (h?: string | null): number | null => { const m = /^(\d{2}):(\d{2})$/.exec(h ?? ''); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+const libelleCourse = (c: CourseCalendrier): string => `${c.km ? `${String(Math.round(c.km * 100) / 100).replace('.', ',')} km` : 'une course'}${c.heure ? ` à ${c.heure}` : ''}${c.priorite ? ` (priorité ${c.priorite})` : ''}`;
+
+/**
+ * Plusieurs courses à pied le MÊME jour (par exemple un 5 km à 9 h 10 puis un 10 km à 10 h) : le moteur ne peut préparer qu'UNE course. On choisit la prioritaire, dans cet ordre :
+ *   1. la distance demandée par l'utilisateur (`kmDemande`, à 0,6 km près) ;
+ *   2. sinon la seule dont la priorité (A, B, C) est strictement la plus haute ;
+ *   3. sinon on ne choisit pas : le coach doit demander laquelle compte le plus (message `a_choisir`).
+ * AUCUNE ÉTUDE trouvée (recherche du 12 nov. 2026) sur un 5 km puis un 10 km le même jour ; les travaux voisins se contredisent (cyclisme : le 2e de deux efforts de 4 km à 40 min d'écart plus lent dans un essai,
+ * pas de baisse nette entre 17 et 45 min dans d'autres). Donc aucun chiffre sur la récupération entre les deux : la note le dit au coach, qui reste général et honnête.
+ */
+export function analyserDouble(courses: CourseCalendrier[], date: string, kmDemande?: number | null): Double {
+  const memeJour = courses.filter((c) => c.date === date).sort((x, y) => (minutesDe(x.heure) ?? 0) - (minutesDe(y.heure) ?? 0));
+  if (memeJour.length < 2) return { type: 'aucune' };
+  const liste = memeJour.map(libelleCourse).join(' puis ');
+  let principale: CourseCalendrier | undefined;
+  if (kmDemande && kmDemande > 0) principale = memeJour.find((c) => c.km != null && Math.abs(c.km - kmDemande) <= 0.6);
+  if (!principale) {
+    const rang = (c: CourseCalendrier) => RANG_PRIORITE[c.priorite ?? ''] ?? 3;
+    const meilleur = Math.min(...memeJour.map(rang));
+    const premieres = memeJour.filter((c) => rang(c) === meilleur);
+    if (premieres.length === 1 && meilleur < 3) principale = premieres[0];
+  }
+  if (!principale) {
+    return { type: 'a_choisir', message: `Il y a ${memeJour.length} courses le même jour (${liste}). Demande à l'utilisateur laquelle est la priorité (ou si elles comptent autant), puis rappelle preparer_course avec km = la distance de la course prioritaire. Ne crée aucune carte pour l'instant. Aucune étude sérieuse n'existe sur l'enchaînement de deux courses le même jour : ne promets rien de chiffré.` };
+  }
+  const autres = memeJour.filter((c) => c !== principale);
+  const h1 = minutesDe(memeJour[0].heure);
+  const h2 = minutesDe(memeJour[1].heure);
+  const ecart = h1 !== null && h2 !== null ? h2 - h1 : null;
+  const note = `DOUBLE COURSE le même jour : ${liste}${ecart !== null ? ` (${ecart} min entre les deux départs)` : ''}. Le plan est préparé pour la course prioritaire, ${libelleCourse(principale)}. ` +
+    "Dis-le clairement à l'utilisateur. IMPORTANT : aucune étude trouvée sur l'enchaînement de deux courses le même jour (le 5 km puis le 10 km), et les travaux voisins se contredisent ; tu n'inventes donc AUCUN chiffre de récupération, d'allure ou de durée entre les deux. " +
+    "Tu peux parler en termes généraux (soigner l'échauffement, se ravitailler et récupérer entre les deux, ne pas griller la course prioritaire dans l'autre) en disant que c'est du bon sens de terrain et pas une règle prouvée, et lui demander comment il compte gérer l'autre course (à fond ou en préparation).";
+  return { type: 'choisie', principale, autres, note };
+}
+
 /** Étape de la progression course/marche selon la semaine du plan : [minutes de course, minutes de marche] */
 export const etapeCourseMarche = (semaine: number): [number, number] => (semaine < 2 ? [1, 2] : semaine < 4 ? [2, 1] : [3, 1]);
 

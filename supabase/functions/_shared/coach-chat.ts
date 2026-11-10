@@ -20,7 +20,7 @@
 import { extraitsConnaissance, fondementsPlanCourse } from './connaissances.ts';
 import { detecterSuivi, texteSuivi } from './suivi-plan.ts';
 import { planifierPeriode } from './periode.ts';
-import { alluresCoureur, footing, planifierCourse, profilCourseDepuisResume, seanceIntervalles, seanceTempoContinu, sortieLongue } from './plan-course.ts';
+import { alluresCoureur, analyserDouble, footing, planifierCourse, profilCourseDepuisResume, seanceIntervalles, seanceTempoContinu, sortieLongue } from './plan-course.ts';
 import type { DemandeCourse, SeanceCourse } from './plan-course.ts';
 import type { DemandePeriode } from './periode.ts';
 import { structureSeance, structureSurMesure } from './structure-seance.ts';
@@ -261,11 +261,15 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
       const demande = lu.params.demande as Partial<DemandeCourse>;
       // La course visée : celle que dit l'utilisateur, sinon la prochaine course à pied du calendrier (distance et temps visé compris)
       const courses = (Array.isArray(resume?.competitions) ? resume.competitions : []).filter((c: { sport?: string; date?: string }) => c?.sport === 'course' && typeof c.date === 'string' && c.date > ctx.aujourdhui);
-      const calendrier = demande.date ? courses.find((c: { date: string }) => c.date === demande.date) : courses[0];
+      let calendrier = demande.date ? courses.find((c: { date: string }) => c.date === demande.date) : courses[0];
       const date = demande.date ?? calendrier?.date;
       if (!date) {
         return { contenu: "Je ne trouve aucune course à pied à venir dans le calendrier et l'utilisateur n'a pas donné de date. Demande-lui la date de sa course (et, s'il le veut, la distance et le temps visé), sans créer de carte.", erreur: false };
       }
+      // Deux courses le même jour : on choisit la prioritaire (distance demandée, sinon priorité A/B/C), ou le coach demande laquelle compte le plus
+      const double = analyserDouble(courses.map((c: Libre) => ({ date: c.date, km: c.km ?? null, heure: c.heure ?? null, priorite: c.priorite ?? null, temps_cible_min: c.temps_cible_min ?? null })), date, demande.km);
+      if (double.type === 'a_choisir') return { contenu: double.message, erreur: false };
+      if (double.type === 'choisie') calendrier = double.principale;
       // Un plan déjà ajouté par le coach (séances de course créées par l'IA entre le début et la course) est REMPLACÉ : on retire les anciennes séances et on pose les nouvelles
       const debutPlan = demande.debut && demande.debut > ctx.aujourdhui ? demande.debut : ctx.aujourdhui;
       const anciennes = seances.filter((x) => x.creeeParIa && x.sport === 'course' && x.date >= debutPlan && x.date < date);
@@ -287,7 +291,7 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
       operations = [...anciennes.map((x): Operation => ({ op: 'supprimer', seanceId: x.id, raison: 'remplacée par le plan mis à jour' })), ...res.operations];
       notes = res.abandons;
       resumePeriode = res.semaines;
-      bilanTexte = res.message;
+      bilanTexte = double.type === 'choisie' ? `${double.note}\n${res.message}` : res.message;
       fondements = fondementsPlanCourse(res.bilan?.km ?? 10, res.bilan?.test ?? false);
       if (anciennes.length) notes = [`${anciennes.length} séance${anciennes.length > 1 ? 's' : ''} de l'ancien plan ${anciennes.length > 1 ? 'sont remplacées' : 'est remplacée'} par le nouveau`, ...notes];
     } else if (def.nom === 'ajuster_seance_course') {

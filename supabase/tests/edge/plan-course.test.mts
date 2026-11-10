@@ -2,7 +2,7 @@
 // Lancer : node --experimental-strip-types --test supabase/tests/edge/plan-course.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { reperesPersonnels, alluresDepuisCourse, equivalent, footingProgressif, formaterAllure, formaterTemps, niveauActuel, objectifRealiste, phases, planifierCourse, profilCourseDepuisResume, reglesDuProfil, estDebutant, courseMarche, seanceTest, typeTestPour } from '../../functions/_shared/plan-course.ts';
+import { reperesPersonnels, alluresDepuisCourse, equivalent, footingProgressif, formaterAllure, formaterTemps, niveauActuel, objectifRealiste, phases, planifierCourse, profilCourseDepuisResume, reglesDuProfil, estDebutant, courseMarche, seanceTest, typeTestPour, analyserDouble } from '../../functions/_shared/plan-course.ts';
 import type { ProfilCourse } from '../../functions/_shared/plan-course.ts';
 import { evaluerPlan } from '../../functions/_shared/planning.ts';
 import type { Operation } from '../../functions/_shared/planning.ts';
@@ -554,4 +554,23 @@ test('reprise après un long arrêt (ancienneté, plus grosse semaine connue, au
   assert.equal(r.bilan!.debutant, false);
   assert.equal(r.bilan!.volumeDepart, 105);
   assert.match(r.message, /reprise après un long arrêt : départ à 35 %/);
+});
+
+// ---------- Deux courses le même jour ----------
+test('double course : une seule course = rien à faire ; deux le même jour = choix par distance, puis par priorité, sinon on demande', () => {
+  const c5 = { date: COURSE, km: 5, heure: '09:10', priorite: 'A' };
+  const c10 = { date: COURSE, km: 10, heure: '10:00', priorite: 'A' };
+  assert.equal(analyserDouble([c10], COURSE).type, 'aucune');
+  assert.equal(analyserDouble([c5, { ...c10, date: '2026-12-20' }], COURSE).type, 'aucune');
+  assert.equal(analyserDouble([c5, c10], COURSE).type, 'a_choisir');
+  const parKm = analyserDouble([c5, c10], COURSE, 10.1);
+  assert.equal(parKm.type === 'choisie' && parKm.principale.km, 10);
+  const parPriorite = analyserDouble([{ ...c5, priorite: 'B' }, c10], COURSE);
+  assert.equal(parPriorite.type === 'choisie' && parPriorite.principale.km, 10);
+  assert.equal(analyserDouble([{ ...c5, priorite: null }, { ...c10, priorite: null }], COURSE).type, 'a_choisir');
+  // ordre des départs : le message liste les courses dans l'ordre de l'heure, même si le calendrier les donne à l'envers
+  const note = analyserDouble([c10, c5], COURSE, 5);
+  assert.ok(note.type === 'choisie' && /5 km à 09:10.* puis 10 km à 10:00/.test(note.note) && /50 min entre les deux départs/.test(note.note));
+  // la note ne contient AUCUN chiffre de récupération inventé en dehors des faits du calendrier
+  assert.ok(note.type === 'choisie' && !/récupér\w+ de \d|\d+ ?min de récup/.test(note.note));
 });
