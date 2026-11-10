@@ -44,12 +44,14 @@ interface Props {
   chiffres: ReactNode;
   /** La seconde page, sans carte : toutes les infos de la sortie (on y va en balayant vers la gauche). */
   pageDetails: (onGlisse: (actif: boolean) => void) => ReactNode;
+  /** Les courbes de la page 2, fixes dans la zone du haut (entre la date et les pastilles) : reçoit la hauteur libre. Absent sans courbes. */
+  graphesHaut?: (hauteur: number, onGlisse: (actif: boolean) => void) => ReactNode;
   onModifier?: () => void;
 }
 
 const HAUTEUR_PROFIL = 166; // la hauteur du profil (courbe et repères de distance)
 
-export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, hero, chiffres, pageDetails, onModifier }: Props) {
+export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, hero, chiffres, pageDetails, graphesHaut, onModifier }: Props) {
   const p = usePalette();
   const { top: haut, bottom: bas } = useSafeAreaInsets();
   const { width: largeur, height: hauteur } = useWindowDimensions();
@@ -69,6 +71,9 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
   // La trace doit rester entière dans la zone libre (sous l'en-tête, au-dessus de la feuille) : la carte la cadre avec ces marges
   // Les pastilles ne bougent pas d'une page à l'autre : même hauteur d'écran que dans la feuille de la page 1
   const yEcran = hauteur - feuille + yPastilles;
+  // La zone des courbes : sous la ligne de date, au-dessus des pastilles
+  const topGraphes = haut + HAUT_ENTETE + espace.e2 + 24;
+  const hautGraphes = yEcran - topGraphes - espace.e2;
   const marges = useMemo(() => ({ haut: haut + HAUT_ENTETE, bas: feuille }), [haut, feuille]);
 
   const aller = (i: number) => {
@@ -140,6 +145,9 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
         <View style={{ width: largeur, height: hauteur, backgroundColor: p.fond }}>
           {/* Le haut de la page : la date sous l'en-tête, puis les pastilles à leur place de la page 1, puis le contenu qui défile */}
           <View style={{ position: 'absolute', left: espace.e4, right: espace.e4, top: haut + HAUT_ENTETE + espace.e2 }}>{ligneDate}</View>
+          {graphesHaut ? (
+            <View style={{ position: 'absolute', left: espace.e4, right: espace.e4, top: topGraphes, height: Math.max(0, hautGraphes) }}>{graphesHaut(Math.max(0, hautGraphes), setSurCourbe)}</View>
+          ) : null}
           <ScrollView style={{ marginTop: yEcran + 20 + espace.e2 }} contentContainerStyle={{ paddingHorizontal: espace.e4, paddingBottom: bas + espace.e5, gap: espace.e3 }} showsVerticalScrollIndicator={false}>
             {pageDetails(setSurCourbe)}
           </ScrollView>

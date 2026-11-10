@@ -13,7 +13,9 @@ import { chiffresSeance, lignesTours, troisChiffres } from '@/data/calendrier/se
 import { formatDateCourte } from '@/data/outils/format';
 import { familleAffichage } from '@/data/sports/familles';
 import { nomDuType } from '@/data/sports/catalogue-sports';
+import { calculerZones, referenceCardio } from '@/data/reglages/profil';
 import { useAjouts } from '@/hooks/useAjouts';
+import { useProfilSection } from '@/hooks/useProfilSection';
 import { useSeance } from '@/hooks/useSeance';
 import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
@@ -27,6 +29,7 @@ export default function Seance() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { seance, tours, trace, courbes, chargement, chargementTours, chargementTrace, erreur, erreurTours, basculerDonnee } = useSeance(String(id ?? ''));
+  const { ligne: profil } = useProfilSection('physiologie');
   const [erreurEcart, setErreurEcart] = useState('');
   const { supprimerSortie } = useAjouts();
   const [enCours, setEnCours] = useState(false);
@@ -58,6 +61,10 @@ export default function Seance() {
   const cles = troisChiffres(chiffres);
   const lignes = tours ? lignesTours(tours, seance.sport) : [];
   const puces = pucesEcart(seance);
+  // Début des zones cardio Z3, Z4 et Z5a, recalculées depuis le profil (jamais stockées) : sans FC max ni seuil, pas de fond coloré
+  const refCardio = referenceCardio(profil);
+  const zonesCardio = refCardio ? calculerZones('cardio', refCardio.bpm) : null;
+  const seuilsCoeur: [number, number, number] | null = zonesCardio ? [zonesCardio[2].de, zonesCardio[3].de, zonesCardio[4].de] : null;
   const notes = (seance.user_notes ?? '').trim();
   const supprimable = sortieSupprimable(seance);
   const jour = String(seance.start_date_local).slice(0, 10);
@@ -110,13 +117,13 @@ export default function Seance() {
             </View>
           ) : null
         }
+        graphesHaut={courbes ? (hauteur, onGlisse) => <GraphesSynchro courbes={courbes} km={seance.distance_km ?? null} rythme={familleAffichage(seance.sport) === 'velo' ? 'vitesse' : 'allure'} couleur={couleur} hauteur={hauteur} seuilsCoeur={seuilsCoeur} onGlisse={onGlisse} /> : undefined}
         pageDetails={(onGlisse) => (
           <PageDetailsSortie
             chiffres={chiffres}
             ecarte={(cle) => chiffreEcarte(seance, cle)}
             altitude={trace && trace.altitudeMin != null && trace.altitudeMax != null ? { min: trace.altitudeMin, max: trace.altitudeMax } : null}
             couleur={couleur}
-            graphes={courbes ? <GraphesSynchro courbes={courbes} km={seance.distance_km ?? null} rythme={familleAffichage(seance.sport) === 'velo' ? 'vitesse' : 'allure'} couleur={couleur} onGlisse={onGlisse} /> : null}
           >
             <Text style={[typo.micro, { color: p.texteDoux }]}>TOURS</Text>
             <ListeTours lignes={lignes} chargement={chargementTours} erreur={erreurTours} />
