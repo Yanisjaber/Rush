@@ -141,11 +141,6 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, dureeS, hauteur, 
 
   // Les chiffres de la barre du haut : la portion qu'on entoure, sinon la vue affichée
   const [p0, p1] = sel ? [ia + sel[0] * (ib - ia), ia + sel[1] * (ib - ia)] : [ia, ib];
-  const sVit = series.find((s) => s.cle === 'allure' || s.cle === 'vitesse');
-  const moyPortion = (v: number[]) => {
-    const tranche = v.slice(Math.max(0, Math.floor(p0)), Math.min(n - 1, Math.ceil(p1)) + 1);
-    return tranche.reduce((a, b) => a + b, 0) / Math.max(1, tranche.length);
-  };
   const kmPortion = distance != null ? (distance * (p1 - p0)) / (n - 1) : null;
   // Le laps de temps de la portion : avec la distance dans les flux, c'est distance × moyenne de (1 / vitesse) ; sinon la part de la durée totale
   const lapsS = (() => {
@@ -186,7 +181,7 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, dureeS, hauteur, 
         {zoome || sel ? (
           <>
             <Text style={[styles.valeur, { color: p.texte, flexShrink: 1 }]} numberOfLines={1}>
-              {[kmPortion != null ? `${formatKm(kmPortion, 2)} km` : null, lapsS != null ? formatLaps(lapsS) : null, sVit ? sVit.texte(moyPortion(sVit.valeurs)) : null].filter(Boolean).join('  ·  ')}
+              {[kmPortion != null ? `${formatKm(kmPortion, 2)} km` : null, lapsS != null ? formatLaps(lapsS) : null].filter(Boolean).join('  ·  ')}
             </Text>
             {zoome && !sel ? <Text style={[typo.petit, { color: p.texteMuet }]}>Double-tap : tout voir</Text> : null}
           </>
