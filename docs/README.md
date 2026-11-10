@@ -19,6 +19,11 @@ Tous les `.md` du projet sont ici, rangés par thème. Exceptions : `CLAUDE.md` 
 - `DEPLOY_EDGE_FUNCTION.md` : connexion Strava (`oauth-start` et `strava-oauth-callback`).
 - `SETUP_STRAVA_WEBHOOK.md` : recevoir les activités Strava en temps réel.
 
+## `ia/` — le coach IA
+- `IA_A_FAIRE.md` : tout ce qui reste à faire sur le coach (profil du coureur, règles sans source, sources à vérifier, essais).
+- `FONDEMENTS_PLAN_COURSE.md` : chaque paramètre du moteur de plan de course face à la recherche.
+- `CADRAGE_IA.md`, `PLAN_COACH_COMPLET.md`, `REPLANIFICATION.md` : cadrage et plans du coach.
+
 ## `native/` — app mobile
 - `IDENTITE.md` : charte visuelle de l'app native.
 - `CALENDRIER_A_FAIRE.md` : ce qui reste à faire sur le calendrier natif.

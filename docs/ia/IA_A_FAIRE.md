@@ -1,0 +1,59 @@
+# IA Coach : ce qui reste à faire (10 nov. 2026)
+
+Principe posé par Yanis : **chaque règle du plan vient d'études ou de la personne, pas de chiffres fixes inventés**, et **plus le coach a de données (historique, temps disponible, blessures…), plus le plan est juste**. Voir `FONDEMENTS_PLAN_COURSE.md` (chaque paramètre face à la recherche) et `PLAN_COACH_COMPLET.md`.
+
+## Fait le 10 nov. (mergé en local, pas poussé)
+- Footings variés dans une même semaine, plus longs ; fréquence gardée si l'historique est déjà à 4 séances ; bilan écrit en « tu ».
+- Gain d'objectif réaliste : 0,4 %/semaine, 6 % au plus (études : 3 à 6 % sur 10-15 semaines).
+- Affûtage de 2 semaines dès 6 semaines de plan (Bosquet 2007).
+- Durées à l'échelle de la personne avec historique (`reperesPersonnels`) : footing mini, longue mini, footing maxi, volume max tirés de ses sorties.
+- Table `coach_profil` (disponibilités, ancienneté, pic hebdo, blessures, préférences ; listes fermées, RLS) + module serveur `profil-coureur.ts`. Appliquée en vraie base.
+
+## 1. Profil du coureur : le brancher (prochaine étape)
+- [ ] **Décision** : qui écrit le profil ? Recommandé : une **carte à valider** dans le chat (« j'ajoute : mardi libre 60 min, genou… OK ? »), comme tout ce que fait le coach. L'écriture directe irait contre la règle « toujours une carte ».
+- [ ] Outil du coach : lire le profil et dire ce qui manque (`cequiManque`) ; le coach pose 1 ou 2 questions à la fois, dans l'ordre : disponibilités, blessures, ancienneté, pic hebdo, préférences.
+- [ ] Mémoriser les réponses (ne pas redemander à chaque plan).
+- [ ] Brancher dans `plan-course.ts` : jours libres et durée max par jour, prudence selon les blessures passées, jours durs préférés, ancienneté et pic hebdo pour le point de départ.
+- [ ] Blessures = données de santé : le coach ne les lit que si l'accord de santé correspondant est donné (Edge Function).
+- [ ] `rpc_coach_resume` : y ajouter le profil (migration à tester en local d'abord).
+- [ ] Écran de profil dans l'app (voir plus bas, 8 maquettes d'abord).
+
+## 2. Niveau de confiance affiché dans la carte
+- [ ] Dire dans la carte sur quoi le plan repose (« 14 sorties récentes + tes disponibilités » ou « plan prudent, je connais peu ton historique »).
+
+## 3. Cas sans historique (vrai débutant, nouveau compte)
+- [ ] Poser les questions du profil d'abord ; si la personne ne sait pas répondre, départ très prudent.
+- [ ] Lire d'abord les fiches `course-reprise-debutants` et `reprise-apres-arret` pour voir ce que la recherche dit d'un départ de débutant, avant de fixer des valeurs.
+- [ ] Remplacer les valeurs par défaut (30, 45, 38, 360 min : `*_DEFAUT` dans `plan-course.ts`), qui n'ont pas de source.
+
+## 4. Règles du moteur encore sans source ou débattues
+- [ ] Montée de volume de 10 % par semaine : contestée (Buist 2008, Nielsen 2013). Remplacer par un plafond expliqué partant du volume réel, et dire dans la carte qu'il n'y a pas de consensus.
+- [ ] Sortie longue : plafond à 42 % du volume (Daniels cité à 25-30 %, de seconde main).
+- [ ] Semaine de récupération toutes les 4 semaines, ×0,8 : pratique d'entraîneurs, pas d'essai trouvé.
+- [ ] Séances dures espacées, répartition d'intensité (80/20) : débattu, ne pas l'imposer comme un fait.
+- [ ] Vieillissement d'un vieux record (1,5 %/mois, 30 % max) : coefficient sans source.
+- [ ] Coefficients d'échelle des repères personnels (75, 85, 90, 130 %) : conventions, à valider ou à remplacer.
+- [ ] Exposant de conversion entre distances : reste 1,06. Piste : exposant personnel quand il a deux efforts de distances différentes (touche `rpc_coach_resume`).
+
+## 5. Vérifier les sources
+- [ ] Lire les textes complets (je n'ai lu que des résumés) : Bosquet 2007, Nuuttila 2022, Buist 2008, Nielsen 2013, Rosenblat 2019 (lien exact à retrouver).
+- [ ] *Daniels' Running Formula* (tables d'allures, exposant 5-10 km, plafond de sortie longue) : nécessite le livre ou un extrait fiable.
+
+## 6. Essais
+- [ ] Essai réel complet de `preparer_course` : lire un plan entier (phases, affûtage). Script prêt dans le scratchpad (compte jetable en SQL, supprimé à la fin).
+- [ ] Essai sur le vrai compte de Yanis (Ronde de Ramonville 13 déc.), avec son accord ; effacer la conversation de test ensuite.
+- [ ] Supprimer les anciennes séances de test du calendrier de Yanis (avec son OK).
+- [ ] Revérifier l'écran « Séance prévue » dans le simulateur (le bug `target` est corrigé depuis le 7 nov., jamais revu à l'écran).
+
+## 7. Autres sports
+- [ ] Même travail (inventaire des paramètres + recherche) pour **vélo** et **natation**, puis muscu et Hyrox. Gros chantier.
+
+## 8. Reste de l'ancien plan
+- [ ] Message proactif à l'ouverture de l'onglet Coach (changement d'app, à discuter) ; détection des écarts d'allure (trop facile ou trop dur).
+- [ ] Imprévus (moins de temps, fatigue, compétition qui bouge).
+- [ ] Écran d'accord de partage + réglages : **8 maquettes d'abord**.
+- [ ] 8 maquettes de la carte d'un plan long et de l'édition à la main de la structure.
+- [ ] Modifier la durée d'une séance existante (aujourd'hui : supprimer + ajouter) ; créer une compétition ou un objectif.
+- [ ] Comparaison Haiku / Sonnet sur 1 000-2 000 cas générés ; Sonnet pour le chat si Haiku se montre limité.
+- [ ] Limite de dépense côté Anthropic ; **révoquer la clé collée dans le chat** et en recréer une.
+- [ ] Suppression de `coach-ai` (ancien système, encore déployé) et de `garde-fou.ts` (non appelé) : à valider par Yanis.
