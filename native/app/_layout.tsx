@@ -75,7 +75,7 @@ export default function RootLayout() {
 
   const connecte = !!session || demo;
 
-  // L'écran de chargement (« À vos marques… ») dure 1 s au minimum et reste jusqu'à ce que l'Accueil ait ses données :
+  // L'écran de chargement (« À vos marques… ») dure 2,5 s au minimum et reste jusqu'à ce que l'Accueil ait ses données :
   // derrière lui, tout est déjà rempli (pas de spinner). Il repasse aussi après chaque connexion.
   const accueilCharge = useAccueilCharge();
   const [chargementFini, setChargementFini] = useState(false);
