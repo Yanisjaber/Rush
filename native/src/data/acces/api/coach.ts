@@ -13,14 +13,18 @@ import type { Resultat } from './commun';
 
 const ADRESSE = `${SUPABASE_URL}/functions/v1/coach-chat`;
 
-/** Ce compte a-t-il droit au Coach (liste blanche) ? En cas de doute (erreur de lecture), non : l'onglet reste caché. */
-export async function lireAccesCoach(userId: string): Promise<boolean> {
-  const { data, error } = await sb.from('coach_acces').select('user_id').eq('user_id', userId).maybeSingle();
-  if (error) {
-    console.error('[app/api] accès coach', error.code || '');
-    return false;
+/** Ce compte a-t-il droit au Coach (liste blanche) ? `null` = la lecture a échoué : on ne sait pas (ce n'est pas un « non »). */
+export async function lireAccesCoach(userId: string): Promise<boolean | null> {
+  try {
+    const { data, error } = await sb.from('coach_acces').select('user_id').eq('user_id', userId).maybeSingle();
+    if (error) {
+      console.error('[app/api] accès coach', error.code || '');
+      return null;
+    }
+    return !!data;
+  } catch {
+    return null;
   }
-  return !!data;
 }
 
 /** Les derniers messages de la conversation (les plus récents d'abord, l'écran les remet dans l'ordre) */
