@@ -35,6 +35,9 @@ Verdicts : **soutenu** (preuve solide) · **débattu** (les sources se contredis
 | Évite le fractionné | Une seule séance dure par semaine | La personne |
 | Moment de la journée | Aucun effet (le plan donne des jours, pas des heures) | — |
 
+| Aucune donnée de course et 0 an d'ancienneté (débutant) | 3 séances de 20-30 min, course/marche 1/2 → 2/1 → 3/1, un jour de repos entre deux séances, aucune intensité, pas de test, but : finir | Fiches `course-reprise-debutants` et `reprise-apres-arret` (repères de terrain « Couch to 5K », pas des essais contrôlés). **Nos conventions** : étape toutes les 2 semaines, 6 semaines de course/marche, marche affichée à 1,7 × l'allure facile. |
+| Ancienneté sans sortie depuis 90 jours, plus grosse semaine connue (reprise) | Volume de départ = 35 % de la plus grosse semaine | Fiche `reprise-apres-arret` : 30 à 40 % pour un arrêt de 2 à 3 mois (guides de terrain, pas d'essai contrôlé) |
+
 Ne sont pas encore branchés : `planifier_semaine`, `planifier_periode` (autres moteurs) et le cas sans historique.
 
 ## Ce qui est le mieux soutenu

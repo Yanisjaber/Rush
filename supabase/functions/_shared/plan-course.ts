@@ -268,15 +268,56 @@ function varianteFooting(minutes: number, a: Allures, phase: Phase, semaine: num
   return footingProgressif(minutes, a);
 }
 
+// ---------- Le départ d'un vrai débutant ----------
+/**
+ * Un vrai débutant = AUCUNE donnée de course exploitable (ni 3 sorties sur 8 semaines, ni ancien record, ni sortie dans les 90 jours, ni chrono) ET aucune ancienneté de pratique
+ * (0 an ou inconnue). Un coureur qui a de l'ancienneté mais pas de données ici n'en est pas un : il reprend (voir `departReprise`).
+ * Fiches `course-reprise-debutants` et `reprise-apres-arret` (docs/ia/connaissances) : 3 séances par semaine de 20 à 30 min, ALTERNER course et marche (1 min / 2 min, puis 2/1, 3/1…),
+ * un jour de repos entre deux séances, progression lente, aucune intensité, objectif FINIR un 5 km avant de chercher un chrono. Ce sont des repères de terrain (programmes de type « Couch to 5K »), pas des essais contrôlés.
+ * CONVENTIONS À NOUS (pas dans les fiches) : on change d'étape toutes les 2 semaines (1/2 → 2/1 → 3/1), on repasse en footing continu après 6 semaines de course/marche, la marche s'affiche à 1,7 × l'allure facile.
+ */
+export const DEBUTANT = { seancesParSemaine: 3, footingMini: 20, seanceMini: 25, longueMini: 30, semainesCourseMarche: 6 } as const;
+export function estDebutant(profil: ProfilCourse | null, anneesPratique: number | null, chrono?: unknown): boolean {
+  if (chrono) return false;
+  const donnees = !!profil && (profil.recent.sorties >= 3 || profil.meilleurEffort !== null || profil.effortRecent !== null || profil.sorties90 > 0);
+  return !donnees && (anneesPratique ?? 0) === 0;
+}
+/** Reprise après un long arrêt (aucune sortie depuis 90 jours) d'un coureur qui a de l'ancienneté : on repart de 30 à 40 % de sa plus grosse semaine (fiche reprise-apres-arret, arrêt de 2 à 3 mois, guides de terrain) */
+export const REPRISE_PART_DU_PIC = 0.35;
+
+/** Étape de la progression course/marche selon la semaine du plan : [minutes de course, minutes de marche] */
+export const etapeCourseMarche = (semaine: number): [number, number] => (semaine < 2 ? [1, 2] : semaine < 4 ? [2, 1] : [3, 1]);
+
+/** Séance course/marche : 5 min de marche rapide, N × (course + marche), 5 min de marche. La somme des blocs fait exactement `minutes`. */
+export function courseMarche(minutes: number, a: Allures, semaine: number, type: 'footing_facile' | 'sortie_longue'): SeanceCourse {
+  const [c, m] = etapeCourseMarche(semaine);
+  const reps = Math.max(1, Math.floor((minutes - 10) / (c + m)));
+  const marche = a.facile * 1.7;
+  // La marche finale absorbe le reste : la somme des blocs fait exactement `minutes`
+  const finale = Math.max(5, minutes - 5 - reps * (c + m));
+  const blocs: BlocStructure[] = [
+    bloc('warmup', 'Marche rapide', 5, marche, a),
+    { type: 'interval', name: `${reps} × (${c} min de course, ${m} min de marche)`, reps, metric: 'pace', unit: 'pct',
+      work: { min: c, int: Math.round((100 * a.seuil) / a.facile), intHi: null }, rec: { min: m, int: Math.round((100 * a.seuil) / marche), intHi: null } },
+    bloc('cooldown', 'Marche pour finir', finale, marche, a),
+  ];
+  return assembler(
+    `Course/marche ${c}/${m}`, type, blocs,
+    `5 min de marche rapide · ${reps} × (${c} min de course à ${ms(a.facile)}/km, ${m} min de marche) · ${Math.round(finale)} min de marche`,
+    `Tu alternes course et marche pour habituer le corps sans le brusquer : ${c} min de course, ${m} min de marche. Le but est de finir la séance en pouvant parler.`,
+  );
+}
+
 /**
  * Pose les rôles (facile, qualité, longue) sur les jours libres d'une fenêtre. Toutes les façons de placer les séances sont essayées (au plus 7 jours, 6 séances :
  * quelques milliers de cas) ; on garde la moins coûteuse. Coûts : 1000 par paire de séances dures collées (y compris à une séance dure déjà posée dans la fenêtre précédente),
  * 300 si la sortie longue n'est pas un jour de week-end alors qu'un week-end est libre, 30 si un rôle retombe sur le même jour de la semaine que dans la fenêtre précédente, 4 par jour de décalage par rapport au premier choix.
  */
-export function meilleurPlacement(libres: string[], roles: Role[], initial: string[], joursDurs: Set<string>, weekend: (j: string) => boolean, precedent: Map<Role, Set<string>> = new Map()): string[] | null {
+export function meilleurPlacement(libres: string[], roles: Role[], initial: string[], joursDurs: Set<string>, weekend: (j: string) => boolean, precedent: Map<Role, Set<string>> = new Map(), reposEntreToutes = false): string[] | null {
   const n = roles.length;
   if (n === 0 || n > libres.length || libres.length > 9) return null;
-  const durs = roles.map((r) => r !== 'facile');
+  // reposEntreToutes (débutant) : un jour de repos entre deux séances, quelles qu'elles soient
+  const durs = roles.map((r) => reposEntreToutes || r !== 'facile');
   const weekendLibre = libres.some(weekend);
   let meilleur: string[] | null = null;
   let coutMin = Infinity;
@@ -499,6 +540,8 @@ export interface Bilan {
   imposees: (keyof Allures)[];
   /** Ce que le profil du coureur a changé dans le plan (vide si le profil est inconnu ou n'a rien changé) */
   profilUtilise: string[];
+  /** Vrai départ de débutant (aucune donnée, aucune ancienneté) */
+  debutant: boolean;
 }
 
 export interface ResultatCourse {
@@ -627,30 +670,40 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   if (jours > 60 * 7) return vide('Cette course est à plus de 60 semaines : fais un premier plan plus tard, quand elle sera plus proche.');
 
   // 1. niveau, objectif, allures
+  const debutant = estDebutant(profil, coureur?.anneesPratique ?? null, d.chrono);
   const { niveau, realiste, cible, objectifPlan, verdict } = calibrer(km, d.tempsCibleMinutes, nSemaines, profil, aujourdhui, d.chrono);
+  if (objectifPlan === null && debutant) {
+    return vide("Tu débutes et je n'ai aucune sortie à lire : dis-moi simplement le temps que tu espères sur cette course, même approximatif (c'est seulement pour régler des allures faciles, je ne te demande pas de chrono précis). Le but d'un premier plan, c'est de finir.");
+  }
   if (objectifPlan === null) {
     return vide("Je n'ai ni tes sorties de course ni un temps visé pour calibrer les allures : donne-moi le temps que tu vises, ou fais d'abord quelques sorties.");
   }
   const calculees = plafonnerFacile(alluresDepuisCourse(objectifPlan, km), profil);
   // Sortie test SEULEMENT sans donnée récente (ni chrono, ni sorties des 90 derniers jours) : avec des sorties récentes, le niveau est déjà connu.
   // Pas de test non plus si l'utilisateur n'en veut pas ou si le plan est trop court pour s'en servir.
-  const avecTest = !d.chrono && !d.sansTest && !regles.blessureActive && nSemaines >= 2 && niveau?.fiabilite !== 'recente';
+  const avecTest = !d.chrono && !d.sansTest && !regles.blessureActive && !debutant && nSemaines >= 2 && niveau?.fiabilite !== 'recente';
   const imposees = ALLURES_CLES.filter((c) => d.allures?.[c] !== undefined);
   const a: Allures = { ...calculees, ...Object.fromEntries(imposees.map((c) => [c, d.allures![c]!])) };
 
   // 2. rythme : séances par semaine et volume
   const frequence = profil && profil.recent.sorties > 0 ? profil.recent.sorties / 8 : 0;
-  const k = Math.min(6, Math.max(2, Math.round(d.seancesParSemaine ?? Math.min(5, Math.max(3, Math.round(frequence) + (Math.round(frequence) < 4 ? 1 : 0))))));
+  const k = Math.min(6, Math.max(2, Math.round(d.seancesParSemaine ?? (debutant ? DEBUTANT.seancesParSemaine : Math.min(5, Math.max(3, Math.round(frequence) + (Math.round(frequence) < 4 ? 1 : 0)))))));
   const quatreDernieres = profil ? profil.semaines.slice(-4) : [];
   const moyenne4 = quatreDernieres.length ? quatreDernieres.reduce((t, s) => t + s.minutes, 0) / quatreDernieres.length : 0;
   // Le volume de départ part de ce que la personne fait VRAIMENT : ses 7 derniers jours glissants (la dernière case des semaines du profil, qui se terminent aujourd'hui) ou sa moyenne
   // sur 4 fenêtres de 7 jours, si elle est plus haute ; un peu plus (+10 %), jamais moins de 38 min par séance. Ainsi, un plan refait en cours de route repart de la charge réelle.
   const derniers7 = profil && profil.semaines.length ? profil.semaines[profil.semaines.length - 1].minutes : 0;
-  const rp = reperesPersonnels(profil);
+  const rp: Reperes = debutant ? { footingMini: DEBUTANT.footingMini, longueMini: DEBUTANT.longueMini, seanceMini: DEBUTANT.seanceMini, volumeMax: Infinity, footingMax: Infinity, personnels: false } : reperesPersonnels(profil);
+  if (debutant) { regles.prudent = true; regles.maxQualites = 1; regles.croissance = 1.05; }
   // Sa plus grosse semaine déjà faite (profil) plafonne le volume : jamais plus que le plus haut entre elle et sa plus grosse semaine récente
   const semaineMaxRecente = Math.max(0, ...(profil?.semaines ?? []).map((x) => x.minutes));
   const volumeMax = regles.picHebdo !== null ? Math.max(Math.min(rp.volumeMax, Math.max(regles.picHebdo, semaineMaxRecente)), k * rp.footingMini) : rp.volumeMax;
-  const volumeDepart = Math.min(volumeMax, Math.max(k * rp.seanceMini, Math.round(Math.max(moyenne4, derniers7) * 1.1)));
+  // Reprise après un long arrêt (coureur avec de l'ancienneté, aucune sortie depuis 90 jours, plus grosse semaine connue) : 35 % de cette semaine, pas les valeurs par défaut
+  const departReprise = !debutant && !rp.personnels && regles.picHebdo !== null && (profil?.sorties90 ?? 0) === 0;
+  const volumeDepart = Math.min(volumeMax, departReprise ? Math.max(k * DEBUTANT.footingMini, Math.round(REPRISE_PART_DU_PIC * regles.picHebdo!)) : Math.max(k * rp.seanceMini, Math.round(Math.max(moyenne4, derniers7) * 1.1)));
+  if (debutant) regles.utilise = regles.utilise.filter((u) => !/moins d'un an de pratique/.test(u));
+  if (debutant) regles.utilise.push(`tu débutes : ${DEBUTANT.seancesParSemaine} séances par semaine, course/marche les ${DEBUTANT.semainesCourseMarche} premières semaines, un jour de repos entre deux séances, aucune intensité, pas de test`);
+  if (departReprise) regles.utilise.push(`reprise après un long arrêt : départ à ${Math.round(REPRISE_PART_DU_PIC * 100)} % de ta plus grosse semaine`);
   const longueMax = Math.min(110, Math.max(60, Math.round((objectifPlan / 60) * 1.6)));
   let longuePrecedente = Math.max(rp.longueMini, Math.min(longueMax, profil?.recent.plusLongueMinutes || rp.longueMini));
 
@@ -701,8 +754,8 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     // la semaine de la course n'a pas de sortie longue : un dernier footing léger à la place
     if (derniere) { if (kSemaine >= 3) roles.push('facile'); } else if (kSemaine >= 2) roles.push('longue');
     while (roles.length > kSemaine) roles.splice(roles.indexOf('facile'), 1);
-    // Blessure encore là : aucune séance d'intensité, que du facile et la sortie longue
-    if (regles.blessureActive) roles.forEach((r, i) => { if (r === 'qualite1' || r === 'qualite2') roles[i] = 'facile'; });
+    // Blessure encore là, ou débutant en phase course/marche : aucune séance d'intensité, que du facile et la sortie longue
+    if (regles.blessureActive || (debutant && w < DEBUTANT.semainesCourseMarche)) roles.forEach((r, i) => { if (r === 'qualite1' || r === 'qualite2') roles[i] = 'facile'; });
     // La sortie longue va sur un jour de week-end libre quand il y en a un (samedi une semaine, dimanche la suivante) ; les autres séances se répartissent autour,
     // sans coller la qualité à la sortie longue quand c'est possible
     const wk = (j: string) => nomDuJour(j) === 'samedi' || nomDuJour(j) === 'dimanche';
@@ -733,13 +786,13 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     }
     // Le meilleur placement des jours : on essaie toutes les façons de poser les séances sur les jours libres et on garde la moins coûteuse :
     // jamais deux séances dures collées (la qualité et la sortie longue), même avec la fenêtre précédente ; la sortie longue au week-end ; le moins de décalage possible
-    const placement = meilleurPlacement(libres, roles, choisis, joursDurs, wk, joursParRole);
+    const placement = meilleurPlacement(libres, roles, choisis, joursDurs, wk, joursParRole, debutant);
     if (placement) choisis = placement;
 
     // les durées
     // Le contenu alterne : en développement avec 3 séances, une semaine de VMA puis une semaine de tempo ; la semaine de récupération a une qualité légère (fartlek)
     const qualiteAlternee = phase === 'developpement' && kSemaine < 4 && rang % 2 === 1;
-    const qualiteDeLaSemaine = (): SeanceCourse => (recuperation ? qualite('base', 0, a, false) : qualite(phase, rang, a, qualiteAlternee));
+    const qualiteDeLaSemaine = (): SeanceCourse => (recuperation || debutant ? qualite('base', 0, a, false) : qualite(phase, rang, a, qualiteAlternee));
     const seancesQualite = roles.map((r) => (r === 'qualite1' ? (w === 0 && avecTest ? seanceTest(a) : qualiteDeLaSemaine()) : r === 'qualite2' ? qualite(phase, rang, a, true) : null));
     const minutesQualite = seancesQualite.reduce((t, s) => t + (s?.minutes ?? 0), 0);
     const nLongue = roles.filter((r) => r === 'longue').length;
@@ -771,6 +824,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     roles.forEach((role, i) => {
       const s: SeanceCourse =
         role === 'qualite1' || role === 'qualite2' ? seancesQualite[i]! :
+        debutant && w < DEBUTANT.semainesCourseMarche && (role === 'facile' || role === 'longue') ? courseMarche(role === 'longue' ? longue : facile, a, w, role === 'longue' ? 'sortie_longue' : 'footing_facile') :
         role === 'longue' ? sortieLongue(longue, a, longue > rp.longueMini && ((phase === 'specifique') || (phase === 'developpement' && w % 2 === 1))) :
         varianteFooting(facile, a, phase, w + roles.slice(0, i).filter((r) => r === 'facile').length, rp.footingMini);
       const essais = [choisis[i], ...libres.filter((j) => !choisis.includes(j) && !operations.some((o) => o.op === 'ajouter' && o.proposition.date === j))].filter((j) => maxDuJour(j) >= s.minutes);
@@ -785,7 +839,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
           totalSemaine += s.minutes;
           posees++;
           noms.add(jour);
-          if (p.type !== 'footing_facile' && p.type !== 'footing_recuperation') joursDurs.add(jour);
+          if (debutant || (p.type !== 'footing_facile' && p.type !== 'footing_recuperation')) joursDurs.add(jour);
           joursCetteFenetre.set(role, (joursCetteFenetre.get(role) ?? new Set<string>()).add(nomDuJour(jour)));
           return;
         }
@@ -797,7 +851,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     lignesSemaines.push(`Semaine ${w + 1} (${du}) : ${NOM_PHASE[phase]}${recuperation ? ', récupération' : ''}, ${posees} séance${posees > 1 ? 's' : ''}, ${totalSemaine} min`);
   }
 
-  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null, volumeDepart, derniers7, profilUtilise: regles.utilise };
+  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null, volumeDepart, derniers7, profilUtilise: regles.utilise, debutant };
   return { operations, abandons, semaines: lignesSemaines, bilan, message: messageBilan(bilan) };
 }
 
@@ -818,7 +872,10 @@ export function messageBilan(b: Bilan): string {
   } else if (b.verdict === 'sans_donnees') {
     parts.push("Je n'ai pas assez de sorties de course pour estimer ton niveau : le plan est calé sur le temps que tu vises, à vérifier après les premières séances.");
   }
-  parts.push(`Volume de départ : ${b.volumeDepart} min la première semaine, calé sur tes 7 derniers jours glissants (${b.derniers7} min) et ta moyenne des 4 dernières fenêtres de 7 jours ; les semaines du plan sont des fenêtres de 7 jours glissants à partir du premier jour du plan.`);
+  parts.push(b.debutant
+    ? `Volume de départ : ${b.volumeDepart} min la première semaine (${b.seancesParSemaine} séances de 20 à 30 min, un départ de débutant) ; les semaines du plan sont des fenêtres de 7 jours glissants à partir du premier jour du plan.`
+    : `Volume de départ : ${b.volumeDepart} min la première semaine, calé sur tes 7 derniers jours glissants (${b.derniers7} min) et ta moyenne des 4 dernières fenêtres de 7 jours ; les semaines du plan sont des fenêtres de 7 jours glissants à partir du premier jour du plan.`);
+  if (b.debutant) parts.push(`Tu débutes : le but de ce plan est de FINIR la course, pas de viser un chrono${b.km > 5 ? ` (la recherche conseille de finir d'abord un 5 km avant de chercher un temps ; ${b.km} km est une grosse marche, dis-le franchement et propose de viser plus court si le plan est court)` : ''}. Les premières semaines alternent course et marche, sans aucune intensité.`);
   if (b.profilUtilise.length) parts.push(`Ton profil a changé le plan : ${b.profilUtilise.join(' ; ')}.`);
   parts.push(`Plan à ${b.seancesParSemaine} séances par semaine (à garder identique si tu refais le plan, sauf demande de l'utilisateur).`);
   if (b.allures) {

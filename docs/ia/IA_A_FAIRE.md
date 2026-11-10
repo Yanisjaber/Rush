@@ -22,10 +22,12 @@ Principe posé par Yanis : **chaque règle du plan vient d'études ou de la pers
 ## 2. Niveau de confiance affiché dans la carte
 - Abandonné (décision de Yanis, 12 nov.) : pas de niveau de confiance dans la carte.
 
-## 3. Cas sans historique (vrai débutant, nouveau compte)
-- [ ] Poser les questions du profil d'abord ; si la personne ne sait pas répondre, départ très prudent.
-- [ ] Lire d'abord les fiches `course-reprise-debutants` et `reprise-apres-arret` pour voir ce que la recherche dit d'un départ de débutant, avant de fixer des valeurs.
-- [ ] Remplacer les valeurs par défaut (30, 45, 38, 360 min : `*_DEFAUT` dans `plan-course.ts`), qui n'ont pas de source.
+## 3. Cas sans historique (vrai débutant, nouveau compte) : fait le 12 nov.
+- [x] Fiches `course-reprise-debutants` et `reprise-apres-arret` lues. `estDebutant` : aucune donnée de course ET 0 an d'ancienneté (ou inconnue). Départ : 3 séances de 20-30 min, course/marche (1/2, 2/1, 3/1) pendant 6 semaines, un jour de repos entre deux séances, aucune intensité, pas de sortie test, montée de 5 %, but = finir. Déployé.
+- [x] Reprise après un long arrêt (ancienneté, plus grosse semaine connue, aucune sortie depuis 90 jours) : départ à 35 % de la plus grosse semaine (fiche : 30 à 40 % pour un arrêt de 2 à 3 mois).
+- [x] Les valeurs 30 / 45 / 38 / 360 ne servent plus qu'au cas « ancienneté inconnue mais données partielles » (jamais un vrai débutant ni une reprise avec pic connu).
+- [ ] Conventions à nous, à valider : étapes toutes les 2 semaines, retour au footing continu après 6 semaines, marche affichée à 1,7 × l'allure facile.
+- [ ] Un débutant sans temps visé doit en donner un approximatif (réglage des allures faciles) : à améliorer (allures par ressenti ?).
 
 ## 4. Règles du moteur encore sans source ou débattues
 - [ ] Montée de volume de 10 % par semaine : contestée (Buist 2008, Nielsen 2013). Remplacer par un plafond expliqué partant du volume réel, et dire dans la carte qu'il n'y a pas de consensus.

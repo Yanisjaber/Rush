@@ -2,7 +2,7 @@
 // Lancer : node --experimental-strip-types --test supabase/tests/edge/plan-course.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { reperesPersonnels, alluresDepuisCourse, equivalent, footingProgressif, formaterAllure, formaterTemps, niveauActuel, objectifRealiste, phases, planifierCourse, profilCourseDepuisResume, reglesDuProfil } from '../../functions/_shared/plan-course.ts';
+import { reperesPersonnels, alluresDepuisCourse, equivalent, footingProgressif, formaterAllure, formaterTemps, niveauActuel, objectifRealiste, phases, planifierCourse, profilCourseDepuisResume, reglesDuProfil, estDebutant, courseMarche } from '../../functions/_shared/plan-course.ts';
 import type { ProfilCourse } from '../../functions/_shared/plan-course.ts';
 import { evaluerPlan } from '../../functions/_shared/planning.ts';
 import type { Operation } from '../../functions/_shared/planning.ts';
@@ -432,9 +432,10 @@ test('profil : la plus grosse semaine déjà faite plafonne le volume d\'une sem
 });
 test('profil : blessure encore là = aucune séance d\'intensité et pas de sortie test', () => {
   const nu = { ...YANIS, effortRecent: null, meilleurEffort: null, sorties90: 0, recent: { sorties: 0, km: 0, minutes: 0, plusLongueMinutes: 0, allureMedianeSParKm: null } };
-  const test = planifierCourse({ ...DEMANDE }, [], ctx(), nu, null);
+  const experimente = { annees_pratique: 5 };
+  const test = planifierCourse({ ...DEMANDE }, [], ctx(), nu, coureur(experimente));
   assert.equal(test.bilan!.test, true, 'sans blessure ni donnée : sortie test');
-  const r = planifierCourse({ ...DEMANDE }, [], ctx(), nu, coureur({ blessures: [{ zone: 'genou', quand: 'moins_3_mois', actif: true }], blessures_renseignees: true }));
+  const r = planifierCourse({ ...DEMANDE }, [], ctx(), nu, coureur({ ...experimente, blessures: [{ zone: 'genou', quand: 'moins_3_mois', actif: true }], blessures_renseignees: true }));
   assert.equal(r.bilan!.test, false);
   assert.ok(ajouts(r.operations).every((o) => !estDur(o.proposition.type) || /longue/.test(o.proposition.type)), ajouts(r.operations).map((o) => o.proposition.type).join(','));
   assert.match(r.message, /blessure encore là/);
@@ -454,4 +455,68 @@ test('profil : blessure récente, débutant ou « j\'évite le fractionné » = 
   assert.equal(reglesDuProfil(coureur({ annees_pratique: 0 })).croissance, 1.05);
   assert.equal(reglesDuProfil(coureur({ preferences: { fractionne: 'evite' } })).croissance, 1.1);
   assert.equal(reglesDuProfil(coureur({ blessures: [{ zone: 'dos', quand: 'plus_1_an', actif: false }] })).prudent, false, 'une vieille blessure (plus d\'un an) ne change rien');
+});
+
+// ---------- Le départ d'un vrai débutant ----------
+const SANS_DONNEES: ProfilCourse = { meilleurEffort: null, effortRecent: null, sorties90: 0, recent: { sorties: 0, km: 0, minutes: 0, plusLongueMinutes: 0, allureMedianeSParKm: null }, semaines: [], jours: {} };
+test('débutant : qui l\'est (aucune donnée ET aucune ancienneté), qui ne l\'est pas', () => {
+  assert.equal(estDebutant(null, null), true);
+  assert.equal(estDebutant(SANS_DONNEES, 0), true);
+  assert.equal(estDebutant(SANS_DONNEES, 3), false, 'de l\'ancienneté sans données = une reprise');
+  assert.equal(estDebutant(YANIS, 0), false, 'des sorties récentes');
+  assert.equal(estDebutant({ ...SANS_DONNEES, sorties90: 1 }, null), false);
+  assert.equal(estDebutant(SANS_DONNEES, 0, { km: 3, secondes: 1000 }), false, 'un chrono réel');
+});
+test('débutant : course/marche 3 séances par semaine, sans test ni intensité, un jour de repos entre deux séances, montée douce', () => {
+  const r = planifierCourse({ date: COURSE, km: 5, tempsCibleMinutes: 40 }, [], ctx(), SANS_DONNEES, coureur({ annees_pratique: 0 }));
+  const a = ajouts(r.operations);
+  assert.equal(r.bilan!.debutant, true);
+  assert.equal(r.bilan!.test, false);
+  assert.equal(r.bilan!.seancesParSemaine, 3);
+  // aucune séance dure pendant les 6 premières semaines (ici tout le plan fait 5 semaines)
+  assert.ok(a.every((o) => /footing|longue/.test(o.proposition.type)), a.map((o) => o.proposition.type).join(','));
+  assert.ok(a.every((o) => /^Course\/marche/.test(o.detail?.nom ?? '')), a.map((o) => o.detail?.nom).join(' | '));
+  // un jour de repos entre deux séances
+  const dates = a.map((o) => o.proposition.date).sort();
+  for (let i = 1; i < dates.length; i++) assert.ok(ecartJours(dates[i - 1], dates[i]) >= 2, `${dates[i - 1]} ${dates[i]}`);
+  // 20 à 30 minutes au départ (la fiche), jamais d'énorme séance
+  const premiere = a.filter((o) => o.proposition.date < ajouterJours(AUJ, 8));
+  assert.ok(premiere.every((o) => o.proposition.minutes >= 20 && o.proposition.minutes <= 45), premiere.map((o) => o.proposition.minutes).join(','));
+  assert.match(r.message, /Tu débutes : le but de ce plan est de FINIR/);
+  assert.doesNotMatch(r.message, /3 km chrono|La première sortie du plan est un TEST/);
+  assert.doesNotMatch(r.message, /une seule séance dure/);
+});
+test('course/marche : la somme des blocs fait exactement la durée, 1/2 puis 2/1 puis 3/1', () => {
+  const al = alluresDepuisCourse(3000, 10);
+  for (const [semaine, c, m] of [[0, 1, 2], [1, 1, 2], [2, 2, 1], [3, 2, 1], [4, 3, 1], [5, 3, 1]] as const) {
+    for (const minutes of [20, 23, 25, 30, 41]) {
+      const s = courseMarche(minutes, al, semaine, 'footing_facile');
+      const total = s.detail.structure!.reduce((t, b) => t + b.reps * b.work.min + (b.type === 'interval' && b.rec ? b.reps * b.rec.min : 0), 0);
+      assert.ok(Math.abs(total - s.minutes) < 0.06, `${minutes} min semaine ${semaine} : ${total} vs ${s.minutes}`);
+      assert.equal(s.minutes, minutes);
+      assert.match(s.detail.nom, new RegExp(`Course/marche ${c}/${m}`));
+    }
+  }
+});
+test('débutant sans temps visé : on demande un temps approximatif, sans exiger de chrono', () => {
+  const r = planifierCourse({ date: COURSE, km: 5 }, [], ctx(), null, coureur({ annees_pratique: 0 }));
+  assert.equal(r.operations.length, 0);
+  assert.match(r.message, /Tu débutes.*même approximatif/);
+});
+test('débutant qui progresse : après 6 semaines de course/marche, footing continu et une qualité légère possible', () => {
+  const longue = '2027-01-31';
+  const r = planifierCourse({ date: longue, km: 10, tempsCibleMinutes: 70 }, [], ctx({ competitions: [{ date: longue }] as never }), SANS_DONNEES, coureur({ annees_pratique: 0 }));
+  const a = ajouts(r.operations);
+  const tard = a.filter((o) => o.proposition.date >= ajouterJours(AUJ, 1 + 7 * 6));
+  assert.ok(tard.length > 0);
+  assert.ok(tard.some((o) => !/^Course\/marche/.test(o.detail?.nom ?? '')));
+  const tot = a.filter((o) => o.proposition.date < ajouterJours(AUJ, 1 + 7 * 6));
+  assert.ok(tot.every((o) => /^Course\/marche/.test(o.detail?.nom ?? '')));
+  assert.ok(a.every((o) => o.proposition.type !== 'tempo' && o.proposition.type !== 'seuil' || o.proposition.date >= ajouterJours(AUJ, 1 + 7 * 6)));
+});
+test('reprise après un long arrêt (ancienneté, plus grosse semaine connue, aucune sortie depuis 90 jours) : départ à 35 % de cette semaine', () => {
+  const r = planifierCourse({ date: COURSE, km: 10, tempsCibleMinutes: 55 }, [], ctx(), SANS_DONNEES, coureur({ annees_pratique: 6, pic_hebdo_minutes: 300 }));
+  assert.equal(r.bilan!.debutant, false);
+  assert.equal(r.bilan!.volumeDepart, 105);
+  assert.match(r.message, /reprise après un long arrêt : départ à 35 %/);
 });
