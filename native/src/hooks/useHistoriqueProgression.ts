@@ -44,7 +44,8 @@ export function useSeriesForceProgression(actif: boolean): { series: SerieForce[
   const { session, demo } = useAuth();
   const userId = session?.user.id ?? null;
   const [lu, setLu] = useState<{ userId: string; series: SerieForce[] } | null>(null);
-  const serieDemo = useMemo(() => seriesForceHistoriqueDemo(new Date()), []);
+  // Calculée seulement en démo : ce générateur est lourd (~7 s sur le téléphone) et bloquait le démarrage d'un vrai compte
+  const serieDemo = useMemo(() => (demo ? seriesForceHistoriqueDemo(new Date()) : []), [demo]);
 
   useEffect(() => {
     if (demo || !userId || !actif) return;
