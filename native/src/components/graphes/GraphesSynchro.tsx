@@ -1,5 +1,5 @@
 import { useRef, useState, type ComponentRef } from 'react';
-import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Line, Path, Rect } from 'react-native-svg';
 import type { CourbesSortie } from '@/data/outils/courbes-sortie';
 import { aireSousCourbe, echelle, lisse } from '@/data/outils/courbes';
@@ -20,7 +20,7 @@ interface Props {
   /** Course : l'allure ; vélo : la vitesse. */
   rythme: 'allure' | 'vitesse';
   couleur: string;
-  /** La hauteur disponible pour tout le bloc (pastille Zoom, courbes, axe) : les courbes s'y adaptent. */
+  /** La hauteur disponible pour tout le bloc (barre du haut, courbes, axe) : les courbes s'y adaptent. */
   hauteur: number;
   /** Début des zones cardio Z3, Z4 et Z5 (bpm), pour colorer le fond de la courbe de cœur. Absent sans FC max ni seuil. */
   seuilsCoeur?: [number, number, number] | null;
@@ -54,6 +54,7 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, hauteur, seuilsCo
   const bloc = useRef<ComponentRef<typeof View>>(null);
   const gauche = useRef(0); // le bord gauche du bloc à l'écran : pageX est stable d'un bout à l'autre du geste, locationX saute d'un élément à l'autre
   const geste = useRef<'curseur' | 'plage' | null>(null);
+  const tap = useRef({ debut: 0, x: 0, bouge: false, dernier: 0 }); // pour reconnaître un double-tap : deux touchers brefs, sans glisser, rapprochés dans le temps
   const refs = useRef({ largeur: 0, onGlisse, sel, vue });
   refs.current = { largeur, onGlisse, sel, vue };
   const distance = courbes.km ?? km;
@@ -92,6 +93,8 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, hauteur, seuilsCo
       const b = versFraction(Math.max(xs[0], xs[1]));
       setSel(b - a < ECART_MIN ? [Math.max(0, Math.min(a, 1 - ECART_MIN)), Math.max(0, Math.min(a, 1 - ECART_MIN)) + ECART_MIN] : [a, b]);
     } else if (geste.current !== 'plage') {
+      if (geste.current === null) tap.current = { ...tap.current, debut: Date.now(), x: xs[0], bouge: false };
+      else if (Math.abs(xs[0] - tap.current.x) > 8) tap.current.bouge = true;
       // Un doigt (et pas un doigt resté après les deux) : le curseur
       geste.current = 'curseur';
       setFraction(versFraction(xs[0]));
@@ -100,6 +103,15 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, hauteur, seuilsCo
   const fin = () => {
     // Tous les doigts sont levés : si on entourait une portion, la vue se recalcule dessus (les zooms se composent)
     const s = refs.current.sel;
+    const t = tap.current;
+    const bref = geste.current === 'curseur' && !t.bouge && Date.now() - t.debut < 250;
+    if (bref) {
+      // Un toucher bref : le deuxième, dans les 350 ms, ramène la sortie entière
+      if (Date.now() - t.dernier < 350) {
+        setVue([0, 1]);
+        t.dernier = 0;
+      } else t.dernier = Date.now();
+    }
     if (geste.current === 'plage' && s) {
       const [v0, v1] = refs.current.vue;
       setVue([v0 + s[0] * (v1 - v0), v0 + s[1] * (v1 - v0)]);
@@ -158,11 +170,7 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, hauteur, seuilsCo
               {kmPortion != null ? `${formatKm(kmPortion, 2)} km` : ''}
               {sVit ? `${kmPortion != null ? '  ·  ' : ''}${sVit.texte(moyPortion(sVit.valeurs))}` : ''}
             </Text>
-            {zoome && !sel ? (
-              <Pressable onPress={() => setVue([0, 1])} accessibilityRole="button" accessibilityLabel="Revenir à la sortie entière" hitSlop={8} style={[styles.puce, { borderColor: p.traitFort }]}>
-                <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2 }]}>TOUT VOIR</Text>
-              </Pressable>
-            ) : null}
+            {zoome && !sel ? <Text style={[typo.petit, { color: p.texteMuet }]}>Double-tap : tout voir</Text> : null}
           </>
         ) : (
           <Text style={[typo.petit, { color: p.texteMuet }]} numberOfLines={1}>
@@ -252,7 +260,6 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, hauteur, seuilsCo
 
 const styles = StyleSheet.create({
   barre: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espace.e3 },
-  puce: { minHeight: 30, paddingHorizontal: 12, borderRadius: 15, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   bloc: { borderRadius: rayon.base, overflow: 'hidden' },
   entete: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: espace.e3, gap: espace.e2 },
   valeur: { fontFamily: police.texte600, fontSize: 14, fontVariant: ['tabular-nums'] },
