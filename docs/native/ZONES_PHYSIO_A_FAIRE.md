@@ -16,24 +16,18 @@ But : que les graphes de la sortie (page 2 : allure, cœur, altitude, cadence, p
 - **FTP** : vide dans le profil. Meilleur 20 min sur 90 jours = 246 W, soit environ 234 W. Strava donne 246 W sur les dernières sorties. Record de tous les temps = 300 W (285 W de FTP), trop ancien pour représenter la forme actuelle.
 - `estimerFtp` (`profil.ts`) prend `watts_alltime` : il donne 285 W. Utilisé seulement dans les tests pour l'instant.
 
-## À faire
+## Fait (11 nov. 2026)
 
-### 1. Seuils (en attente du feu vert de Yanis sur les chiffres)
-- [ ] Écrire dans son profil : FC max 205, FTP 235 (à confirmer).
-- [ ] Décider pour la LTHR : garder 174 ou passer à 189.
-- [ ] Corriger `estimerFtp` : 95 % du meilleur 20 min sur 90 jours (`watts_90d`), record de tous les temps en secours, plus un test dans `tests/reglages/profil.test.ts`.
-- [ ] Filtrer les valeurs de FC aberrantes (au-delà de la FC max plausible) quand on déduit une FC max des sorties.
-- [ ] Vérifier à l'écran que la sortie vélo prend bien la FTP de Strava quand le profil n'en a pas.
+- Profil de Yanis en base : FC max 200, FTP 200 W, LTHR 189, vitesse seuil 11,5 km/h.
+- `estimerFtp` corrigée (95 % du meilleur 20 min sur 90 jours, test ajouté) et `estimerFcMax` créée (ignore les FC hors 100–220 bpm).
+- Bandes de zones derrière les courbes de puissance (6), cœur (5) et allure (5, course seulement), couleur du sport, ligne blanche.
+- Temps par zone (page 2) accordé aux bandes : mêmes zones et mêmes teintes.
 
-### 2. Bandes de zones sur les courbes
-- [ ] Bandes pour la puissance et l'allure (les zones sont déjà calculées).
-- [ ] Cœur : toutes les zones (Z1 à Z5), une couleur et un nom par zone, au lieu de trois teintes de rouge.
-- [ ] Légende lisible des zones.
+## Reste (optionnel)
 
-### 3. Temps par zone et repères marquants
-- [ ] Résumé du temps passé par zone sur la page 2 de la sortie.
-- [ ] Repères sur les courbes : FC max atteinte, pic de puissance, dérive cardiaque, efforts marquants.
-- [ ] Réglages : zones personnalisées, estimation proposée depuis les sorties (FC max, FTP).
+- Vérifier à l'écran que la sortie vélo prend la FTP de Strava quand le profil n'en a pas.
+- Repères sur les courbes (pic de puissance, FC max, dérive cardiaque, efforts marquants) : **abandonnés** par Yanis le 11 nov. (maquettes 7 et 8 de l'Artifact si on y revient).
+- Réglages : zones personnalisées, estimation proposée depuis les sorties (`estimerFcMax`, `estimerFtp` ne sont pas encore branchées à un écran).
 
 ## Règles pour la suite
 
