@@ -33,8 +33,9 @@ export function RepartitionSortie({ mesures, couleur }: Props) {
   if (!mesures.length) return null;
   const mesure = mesures.find((m) => m.cle === choix) ?? mesures[0];
   const n = mesure.zones.length;
+  const manque = mesure.manque;
   const total = mesure.zones.reduce((a, z) => a + z.secondes, 0);
-  const max = Math.max(...mesure.zones.map((z) => z.secondes));
+  const max = Math.max(0, ...mesure.zones.map((z) => z.secondes));
   const dominante = mesure.zones.findIndex((z) => z.secondes === max);
   // Les teintes : le sport en dégradé de transparence, puis le rouge pour les deux zones les plus dures
   const teinte = (i: number) => {
@@ -49,11 +50,17 @@ export function RepartitionSortie({ mesures, couleur }: Props) {
     <View style={{ gap: espace.e2 }}>
       {mesures.length > 1 ? <SelecteurSegments options={mesures.map((m) => ({ cle: m.cle, libelle: m.titre }))} choix={mesure.cle} onChoix={(c) => setChoix(c as MesureZones['cle'])} /> : null}
       <View onLayout={(e: LayoutChangeEvent) => setLargeur(e.nativeEvent.layout.width)} style={[styles.carte, { backgroundColor: p.surface }]}>
-        <View style={styles.titre}>
+        {manque ? (
+          <>
+            <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2, paddingHorizontal: espace.e3 }]}>{`TEMPS PAR ZONE · ${mesure.titre.toUpperCase()}`}</Text>
+            <Text style={[typo.corps, { color: p.texteDoux, paddingHorizontal: espace.e3 }]}>{manque}</Text>
+          </>
+        ) : null}
+        {manque ? null : <View style={styles.titre}>
           <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2 }]}>{`TEMPS PAR ZONE · ${mesure.titre.toUpperCase()}`}</Text>
           <Text style={[typo.petit, { color: p.texteMuet }]}>{mesure.estimee ? `${mesure.reference} (estimé)` : mesure.reference}</Text>
-        </View>
-        {largeur > 0 ? (
+        </View>}
+        {manque ? null : largeur > 0 ? (
           <Svg width={largeur} height={HAUT + BAS} accessible accessibilityLabel={`Temps par zone, ${mesure.titre}. Zone dominante ${mesure.zones[dominante].court}, ${Math.round((100 * max) / total)} pour cent.`}>
             {mesure.zones.map((z, i) => {
               const x = espace.e3 + i * pas + (pas - colonne) / 2;
@@ -78,7 +85,7 @@ export function RepartitionSortie({ mesures, couleur }: Props) {
         ) : (
           <View style={{ height: HAUT + BAS }} />
         )}
-        <Text style={[typo.petit, { color: p.texteDoux }]}>{`Zone dominante : ${mesure.zones[dominante].nom} · ${Math.round((100 * max) / total)} %`}</Text>
+        {manque ? null : <Text style={[typo.petit, { color: p.texteDoux }]}>{`Zone dominante : ${mesure.zones[dominante].nom} · ${Math.round((100 * max) / total)} %`}</Text>}
       </View>
     </View>
   );

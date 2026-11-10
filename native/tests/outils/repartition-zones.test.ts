@@ -22,16 +22,19 @@ test('tempsParZone : sans temps, la durée totale est répartie en parts égales
   assert.equal(tempsParZone([NaN, NaN], [0, 10], [0, 100]), null);
 });
 
-test('repartitionsSortie : seules les mesures avec flux et référence apparaissent', () => {
+test('repartitionsSortie : une mesure par flux présent, avec un message quand la référence manque', () => {
   const temps = Array.from({ length: 60 }, (_, i) => i * 10);
   const brut = { temps, fc: Array.from({ length: 60 }, () => 175), watts: Array.from({ length: 60 }, () => 200), vitesse: Array.from({ length: 60 }, () => 3) };
   const r = repartitionsSortie(brut, { lthr: { bpm: 172, estimee: true }, ftp: null, seuilKmh: 12.5 }, true, 600);
-  assert.deepEqual(r.map((m) => m.cle), ['fc', 'allure']); // pas de FTP : pas de puissance
+  assert.deepEqual(r.map((m) => m.cle), ['fc', 'watts', 'allure']);
+  assert.match(r[1].manque ?? '', /FTP/); // pas de FTP : l'onglet est là, avec un message
+  assert.equal(r[1].zones.length, 0);
   assert.equal(r[0].estimee, true);
   assert.equal(r[0].zones.length, 7);
   assert.equal(Math.round(r[0].zones.reduce((a, z) => a + z.secondes, 0)), 600);
   assert.equal(r[0].zones[4].court, 'Z5a'); // 175 bpm / 172 = 102 % : zone Z5a
   assert.ok(r[0].zones[4].secondes > 500);
   assert.equal(repartitionsSortie(brut, { lthr: { bpm: 172, estimee: false }, seuilKmh: 12.5 }, false, 600).some((m) => m.cle === 'allure'), false); // allure : course seulement
+  assert.match(repartitionsSortie(brut, {}, true, 600).find((m) => m.cle === 'allure')?.manque ?? '', /vitesse seuil/); // sans seuil : message
   assert.deepEqual(repartitionsSortie(null, { ftp: 250 }, true, 600), []);
 });

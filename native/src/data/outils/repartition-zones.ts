@@ -51,6 +51,8 @@ export interface MesureZones {
   /** La référence est estimée (FC au seuil déduite de la FC max). */
   estimee: boolean;
   zones: ZoneSortie[];
+  /** La référence manque dans le profil : pas de zones, ce message dit quoi renseigner. */
+  manque?: string;
 }
 
 export interface RefsZones {
@@ -61,15 +63,22 @@ export interface RefsZones {
   seuilKmh?: number | null;
 }
 
+const MANQUE = {
+  fc: 'Renseigne ta FC au seuil ou ta FC max dans Paramètres › Profil pour voir le temps passé dans chaque zone de cœur.',
+  watts: 'Renseigne ta FTP dans Paramètres › Profil pour voir le temps passé dans chaque zone de puissance.',
+  allure: 'Renseigne ta vitesse seuil dans Paramètres › Profil pour voir le temps passé dans chaque zone d’allure.',
+} as const;
+
 const sansUnite = (kmh: number) => texteAllure(kmh).replace('/km', '');
 
-/** Les répartitions qu'on sait faire pour cette sortie : chaque mesure a ses flux ET sa référence dans le profil. Liste vide sinon. */
+/** Les répartitions de cette sortie : une par mesure dont on a les flux. Sans la référence dans le profil, la mesure est là quand même, avec un message (`manque`) au lieu des zones. */
 export function repartitionsSortie(brut: FluxBruts | null | undefined, refs: RefsZones, course: boolean, dureeS: number | null | undefined): MesureZones[] {
   if (!brut) return [];
   const sortie: MesureZones[] = [];
   const ajouter = (cle: MesureZones['cle'], titre: string, reference: string, estimee: boolean, valeurs: number[] | undefined, modele: 'cardio' | 'puissance' | 'allure', ref: number, borne: (de: number) => string) => {
     const zones = calculerZones(modele, ref);
-    if (!valeurs || !zones) return;
+    if (!valeurs || valeurs.every((v) => !Number.isFinite(v))) return;
+    if (!zones) return void sortie.push({ cle, titre, reference: '', estimee: false, zones: [], manque: MANQUE[cle] });
     const s = tempsParZone(valeurs, brut.temps, zones.map((z) => z.de), dureeS);
     if (!s) return;
     sortie.push({
@@ -85,8 +94,10 @@ export function repartitionsSortie(brut: FluxBruts | null | undefined, refs: Ref
       })),
     });
   };
-  if (refs.lthr) ajouter('fc', 'Cœur', `seuil ${refs.lthr.bpm} bpm`, refs.lthr.estimee, brut.fc, 'cardio', refs.lthr.bpm, (d) => String(Math.round(d)));
-  if (refs.ftp && refs.ftp > 0) ajouter('watts', 'Puissance', `FTP ${Math.round(refs.ftp)} W`, false, brut.watts, 'puissance', refs.ftp, (d) => String(Math.round(d)));
-  if (course && refs.seuilKmh && refs.seuilKmh > 0) ajouter('allure', 'Allure', `seuil ${sansUnite(refs.seuilKmh)}/km`, false, brut.vitesse?.map((v) => v * 3.6), 'allure', refs.seuilKmh, sansUnite);
+  const ftp = refs.ftp && refs.ftp > 0 ? refs.ftp : 0;
+  const seuil = refs.seuilKmh && refs.seuilKmh > 0 ? refs.seuilKmh : 0;
+  ajouter('fc', 'Cœur', refs.lthr ? `seuil ${refs.lthr.bpm} bpm` : '', !!refs.lthr?.estimee, brut.fc, 'cardio', refs.lthr?.bpm ?? 0, (d) => String(Math.round(d)));
+  ajouter('watts', 'Puissance', ftp ? `FTP ${Math.round(ftp)} W` : '', false, brut.watts, 'puissance', ftp, (d) => String(Math.round(d)));
+  if (course) ajouter('allure', 'Allure', seuil ? `seuil ${sansUnite(seuil)}/km` : '', false, brut.vitesse?.map((v) => v * 3.6), 'allure', seuil, sansUnite);
   return sortie;
 }
