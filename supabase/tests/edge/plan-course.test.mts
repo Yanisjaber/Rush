@@ -2,7 +2,7 @@
 // Lancer : node --experimental-strip-types --test supabase/tests/edge/plan-course.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { alluresDepuisCourse, equivalent, footingProgressif, formaterAllure, formaterTemps, niveauActuel, objectifRealiste, phases, planifierCourse, profilCourseDepuisResume } from '../../functions/_shared/plan-course.ts';
+import { reperesPersonnels, alluresDepuisCourse, equivalent, footingProgressif, formaterAllure, formaterTemps, niveauActuel, objectifRealiste, phases, planifierCourse, profilCourseDepuisResume } from '../../functions/_shared/plan-course.ts';
 import type { ProfilCourse } from '../../functions/_shared/plan-course.ts';
 import { evaluerPlan } from '../../functions/_shared/planning.ts';
 import type { Operation } from '../../functions/_shared/planning.ts';
@@ -320,7 +320,8 @@ test('les contenus alternent : footings (lignes droites, simple, progressif), VM
   assert.ok(noms.some((n) => /^Tempo/.test(n)), 'tempo');
   assert.ok(noms.some((n) => /× \d+ m à \d:\d\d\/km$/.test(n)), 'VMA');
   assert.ok(noms.some((n) => /fin à allure tempo/.test(n)), 'sortie longue progressive');
-  assert.ok(new Set(noms).size >= noms.length * 0.6, `${new Set(noms).size} noms différents sur ${noms.length}`);
+  // un coureur à petit volume a des footings courts qui se ressemblent : on exige seulement qu'ils ne soient pas tous identiques
+  assert.ok(new Set(noms).size >= noms.length * 0.5, `${new Set(noms).size} noms différents sur ${noms.length}`);
 });
 test('footing progressif : les 8 dernières minutes plus vite, somme exacte', () => {
   const a = { vma: 270, cinqK: 290, course: 300, seuil: 310, tempo: 320, facile: 380, longue: 390 };
@@ -354,4 +355,35 @@ test('plan de Yanis : chaque séance porte le but de sa semaine (Base, Développ
   const lignes = ev.lignes.filter((l) => l.op === 'ajouter');
   assert.equal(lignes.length, a.length);
   assert.ok(lignes.every((l) => l.phase), 'la carte reçoit la phase de chaque ligne');
+});
+
+// ---------- Durées à l'échelle de la personne (pas de durée fixe pour un débutant comme pour un pro) ----------
+const profilAvecVolume = (sorties: number, minutes: number, plusLongue: number, minutesParSemaine: number): ProfilCourse => ({
+  ...YANIS,
+  recent: { ...YANIS.recent, sorties, minutes, plusLongueMinutes: plusLongue },
+  semaines: Array.from({ length: 8 }, () => ({ km: 0, minutes: minutesParSemaine, sorties: Math.round(sorties / 8) })),
+});
+test('repères personnels : débutant, régulier et très gros volume ont des durées très différentes', () => {
+  const debutant = reperesPersonnels(profilAvecVolume(16, 16 * 22, 30, 44)); // 2 sorties de 22 min par semaine
+  const regulier = reperesPersonnels(profilAvecVolume(32, 32 * 45, 80, 180));
+  const pro = reperesPersonnels(profilAvecVolume(64, 64 * 70, 150, 500));
+  assert.ok(debutant.personnels && regulier.personnels && pro.personnels);
+  assert.ok(debutant.footingMini < regulier.footingMini && regulier.footingMini < pro.footingMini, `${debutant.footingMini} < ${regulier.footingMini} < ${pro.footingMini}`);
+  assert.ok(debutant.longueMini < regulier.longueMini && regulier.longueMini < pro.longueMini);
+  assert.ok(debutant.volumeMax < regulier.volumeMax && regulier.volumeMax < pro.volumeMax);
+  assert.ok(debutant.footingMini <= 20, String(debutant.footingMini)); // plus de footing mini de 30 min pour quelqu'un qui court 22 min
+  assert.ok(pro.volumeMax > 360, String(pro.volumeMax)); // le plafond fixe de 360 min ne limite plus un coureur qui en fait déjà 500
+});
+test('repères personnels : sans historique suffisant, valeurs par défaut', () => {
+  assert.equal(reperesPersonnels(null).personnels, false);
+  assert.equal(reperesPersonnels(profilAvecVolume(2, 60, 40, 30)).personnels, false);
+});
+test('un plan suit l\'échelle de la personne : les séances du débutant sont plus courtes que celles du pro', () => {
+  const course = ajouterJours(AUJ, 56);
+  const plan = (p: ProfilCourse) => ajouts(planifierCourse({ date: course, km: 10, tempsCibleMinutes: 55, seancesParSemaine: 4, sansTest: true }, [], ctx({ competitions: [{ date: course }] }), p).operations);
+  const moy = (ops: ReturnType<typeof ajouts>) => ops.reduce((t, o) => t + o.proposition.minutes, 0) / ops.length;
+  const d = plan(profilAvecVolume(16, 16 * 22, 30, 44));
+  const p = plan(profilAvecVolume(64, 64 * 70, 150, 500));
+  assert.ok(d.length > 0 && p.length > 0);
+  assert.ok(moy(d) < moy(p) * 0.6, `${moy(d)} contre ${moy(p)}`);
 });

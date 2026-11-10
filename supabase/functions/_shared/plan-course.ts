@@ -218,7 +218,8 @@ function assembler(nom: string, type: string, blocs: BlocStructure[], resume: st
 
 /** Footing facile : un seul bloc à l'allure facile, avec des lignes droites en phase de base */
 export function footing(minutes: number, a: Allures, lignesDroites: boolean): SeanceCourse {
-  if (lignesDroites && minutes >= 30) {
+  // Les lignes droites se font après un vrai échauffement : il faut au moins 15 min de footing avant (pas de durée fixe pour le footing entier)
+  if (lignesDroites && minutes - 6 * (20 / 60 + 1) >= 15) {
     const reste = minutes - 6 * (20 / 60 + 1);
     return assembler(
       `Footing ${minutes} min + 6 lignes droites`, 'footing_facile',
@@ -243,7 +244,8 @@ export function footingProgressif(minutes: number, a: Allures): SeanceCourse {
 }
 
 export function sortieLongue(minutes: number, a: Allures, progressive: boolean): SeanceCourse {
-  if (progressive && minutes >= 50) {
+  // Une fin plus rapide (20 % de la durée) demande au moins 6 min : la décision « progressive ou non » est prise par l'appelant selon la longue de la personne
+  if (progressive && minutes >= 30) {
     const fin = Math.round(minutes * 0.2);
     return assembler(
       `Sortie longue ${minutes} min, fin à allure tempo`, 'sortie_longue',
@@ -256,8 +258,8 @@ export function sortieLongue(minutes: number, a: Allures, progressive: boolean):
 }
 
 /** Le footing change d'une semaine à l'autre (avec lignes droites, simple, progressif) pour ne pas répéter la même séance ; seulement simple en phase spécifique et à l'affûtage */
-function varianteFooting(minutes: number, a: Allures, phase: Phase, semaine: number): SeanceCourse {
-  if (phase === 'specifique' || phase === 'affutage' || minutes < FOOTING_MINI) return footing(minutes, a, false);
+function varianteFooting(minutes: number, a: Allures, phase: Phase, semaine: number, footingMini: number): SeanceCourse {
+  if (phase === 'specifique' || phase === 'affutage' || minutes < footingMini) return footing(minutes, a, false);
   const v = semaine % 3;
   if (v === 0) return footing(minutes, a, true);
   if (v === 1) return footing(minutes, a, false);
@@ -504,10 +506,54 @@ export interface ResultatCourse {
   message: string;
 }
 
-const MAX_HEBDO = 360;
-/** Durée mini d'un footing et d'une sortie longue (minutes) : en dessous, ce n'est plus une séance d'endurance */
-const FOOTING_MINI = 30;
-const LONGUE_MINI = 45;
+/**
+ * Valeurs par défaut quand on n'a AUCUN historique (à remplacer plus tard par un départ prudent de débutant, voir docs/ia/FONDEMENTS_PLAN_COURSE.md).
+ * Avec un historique, `reperesPersonnels` les remplace par des valeurs tirées des sorties de la personne : pas de durée fixe pour un débutant comme pour un pro.
+ */
+const MAX_HEBDO_DEFAUT = 360;
+const FOOTING_MINI_DEFAUT = 30;
+const LONGUE_MINI_DEFAUT = 45;
+const SEANCE_MINI_DEFAUT = 38;
+
+export interface Reperes {
+  /** Durée mini d'un footing (minutes) : en dessous, ce n'est plus une séance d'endurance POUR LUI */
+  footingMini: number;
+  /** Durée mini d'une sortie longue */
+  longueMini: number;
+  /** Durée plancher d'une séance pour calculer le volume de départ */
+  seanceMini: number;
+  /** Plafond du volume d'une semaine */
+  volumeMax: number;
+  /** Plafond d'un footing : jamais une 2e sortie longue */
+  footingMax: number;
+  /** true : tiré de ses sorties ; false : valeurs par défaut (aucun historique) */
+  personnels: boolean;
+}
+const arrondi5 = (x: number): number => Math.max(10, Math.round(x / 5) * 5);
+
+/**
+ * Les repères de durée de LA personne, d'après ses 8 dernières semaines (au moins 3 sorties) :
+ *   - durée moyenne d'une sortie H = minutes / sorties ;
+ *   - footing mini = 75 % de H ; séance mini = 90 % de H ; sortie longue mini = 85 % de sa plus longue sortie récente (et au moins footing mini + 10) ;
+ *   - footing maxi = 130 % de H ; volume hebdo maxi = 130 % de sa semaine la plus chargée.
+ * ATTENTION : ces coefficients (75, 90, 85, 130 %) sont des CONVENTIONS d'échelle (la durée suit la personne), pas des résultats d'études. À valider.
+ */
+export function reperesPersonnels(profil: ProfilCourse | null): Reperes {
+  const defaut: Reperes = { footingMini: FOOTING_MINI_DEFAUT, longueMini: LONGUE_MINI_DEFAUT, seanceMini: SEANCE_MINI_DEFAUT, volumeMax: MAX_HEBDO_DEFAUT, footingMax: Infinity, personnels: false };
+  const r = profil?.recent;
+  if (!profil || !r || r.sorties < 3 || !(r.minutes > 0)) return defaut;
+  const h = r.minutes / r.sorties;
+  const footingMini = arrondi5(0.75 * h);
+  const semaineMax = Math.max(0, ...profil.semaines.map((x) => x.minutes));
+  return {
+    footingMini,
+    longueMini: Math.max(footingMini + 10, arrondi5(0.85 * (r.plusLongueMinutes || h))),
+    seanceMini: arrondi5(0.9 * h),
+    volumeMax: Math.max(Math.round(1.3 * semaineMax), footingMini * 3),
+    footingMax: Math.max(footingMini, Math.round(1.3 * h)),
+    personnels: true,
+  };
+}
 
 /** Le jour de la semaine d'une date (1 = lundi … 7 = dimanche) */
 const jourSemaine = (date: string): number => { const j = new Date(`${date}T00:00:00Z`).getUTCDay(); return j === 0 ? 7 : j; };
@@ -550,9 +596,10 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   // Le volume de départ part de ce que la personne fait VRAIMENT : ses 7 derniers jours glissants (la dernière case des semaines du profil, qui se terminent aujourd'hui) ou sa moyenne
   // sur 4 fenêtres de 7 jours, si elle est plus haute ; un peu plus (+10 %), jamais moins de 38 min par séance. Ainsi, un plan refait en cours de route repart de la charge réelle.
   const derniers7 = profil && profil.semaines.length ? profil.semaines[profil.semaines.length - 1].minutes : 0;
-  const volumeDepart = Math.min(MAX_HEBDO, Math.max(k * 38, Math.round(Math.max(moyenne4, derniers7) * 1.1)));
+  const rp = reperesPersonnels(profil);
+  const volumeDepart = Math.min(rp.volumeMax, Math.max(k * rp.seanceMini, Math.round(Math.max(moyenne4, derniers7) * 1.1)));
   const longueMax = Math.min(110, Math.max(60, Math.round((objectifPlan / 60) * 1.6)));
-  let longuePrecedente = Math.max(LONGUE_MINI, Math.min(longueMax, profil?.recent.plusLongueMinutes || LONGUE_MINI));
+  let longuePrecedente = Math.max(rp.longueMini, Math.min(longueMax, profil?.recent.plusLongueMinutes || rp.longueMini));
 
   const liste = phases(nSemaines);
   const compteurs: Record<Phase, number> = { base: 0, developpement: 0, specifique: 0, affutage: 0 };
@@ -574,7 +621,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     const derniere = w === nSemaines - 1;
     const recuperation = phase !== 'affutage' && w % 4 === 3 && nSemaines - w > 2;
     const facteur = phase === 'affutage' ? (w === nSemaines - 1 ? 0.55 : 0.75) : recuperation ? 0.8 : Math.pow(1.1, w - Math.floor(w / 4));
-    const volume = Math.min(MAX_HEBDO, Math.round(volumeDepart * facteur));
+    const volume = Math.min(rp.volumeMax, Math.round(volumeDepart * facteur));
 
     // les jours possibles de la semaine
     const pris = new Set(toutes.map((s) => s.date));
@@ -645,13 +692,13 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     const restant = Math.max(0, volume - minutesQualite);
     let longue = 0;
     if (nLongue) {
-      longue = Math.round(Math.min(longueMax, Math.max(LONGUE_MINI, Math.min(longuePrecedente + (w === 0 ? 0 : 6), volume * 0.42))));
-      if (phase === 'affutage') longue = Math.max(FOOTING_MINI, Math.round(longue * 0.75));
-      if (recuperation) longue = Math.max(LONGUE_MINI - 5, Math.round(longue * 0.85));
+      longue = Math.round(Math.min(longueMax, Math.max(rp.longueMini, Math.min(longuePrecedente + (w === 0 ? 0 : 6), volume * 0.42))));
+      if (phase === 'affutage') longue = Math.max(rp.footingMini, Math.round(longue * 0.75));
+      if (recuperation) longue = Math.max(rp.longueMini - 5, Math.round(longue * 0.85));
     }
-    // Un footing reste un footing : jamais plus long que 65 % de la sortie longue (sinon il devient une 2e sortie longue la veille ou le lendemain de la vraie)
-    const plafondFacile = nLongue ? Math.max(FOOTING_MINI, Math.round(longue * 0.65)) : Infinity;
-    const facile = nFaciles ? Math.min(plafondFacile, Math.max(derniere ? 20 : FOOTING_MINI, Math.round((restant - longue) / nFaciles))) : 0;
+    // Un footing reste un footing : jamais plus long que ses footings habituels (130 %), sinon il devient une 2e sortie longue à côté de la vraie. Sans historique : jamais plus de 65 % de la longue.
+    const plafondFacile = nLongue ? Math.min(rp.footingMax, rp.personnels ? Infinity : Math.max(rp.footingMini, Math.round(longue * 0.65))) : Infinity;
+    const facile = nFaciles ? Math.min(plafondFacile, Math.max(derniere ? Math.max(15, Math.round(rp.footingMini * 0.65)) : rp.footingMini, Math.round((restant - longue) / nFaciles))) : 0;
     if (nLongue && !recuperation && phase !== 'affutage') longuePrecedente = longue;
 
     // poser chaque séance (essai du jour choisi, puis des autres jours libres de la semaine)
@@ -661,8 +708,8 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     roles.forEach((role, i) => {
       const s: SeanceCourse =
         role === 'qualite1' || role === 'qualite2' ? seancesQualite[i]! :
-        role === 'longue' ? sortieLongue(longue, a, (phase === 'specifique' && longue >= 60) || (phase === 'developpement' && w % 2 === 1 && longue >= 55)) :
-        varianteFooting(facile, a, phase, w + roles.slice(0, i).filter((r) => r === 'facile').length);
+        role === 'longue' ? sortieLongue(longue, a, longue > rp.longueMini && ((phase === 'specifique') || (phase === 'developpement' && w % 2 === 1))) :
+        varianteFooting(facile, a, phase, w + roles.slice(0, i).filter((r) => r === 'facile').length, rp.footingMini);
       const essais = [choisis[i], ...libres.filter((j) => !choisis.includes(j) && !operations.some((o) => o.op === 'ajouter' && o.proposition.date === j))];
       let raisonRefus = '';
       for (const jour of essais) {
