@@ -82,6 +82,9 @@ export default function Seance() {
     ...(aPuissance && nP && fcMoy ? [{ cle: 'ef', libelle: 'Efficacité', valeur: formatKm(nP / fcMoy, 2) }] : []),
     ...(mesure('trimp') ? [{ cle: 'trimp', libelle: 'TRIMP', valeur: String(Math.round(mesure('trimp')!)) }] : []),
     ...(aPuissance && pmax ? [{ cle: 'pmax', libelle: 'Puissance max', valeur: String(Math.round(pmax)), unite: 'W' }] : []),
+    // Les calories (en plus du travail en kJ) et les glucides estimés (CHO, calculés par le serveur depuis l'énergie fournie)
+    ...(chiffresBase.some((c) => c.cle === 'energie' && c.unite === 'kJ') && Number(seance.calories) > 0 ? [{ cle: 'calories', libelle: 'Calories', valeur: String(Math.round(Number(seance.calories))), unite: 'kcal' }] : []),
+    ...(aPuissance && mesure('cho_g') ? [{ cle: 'cho', libelle: 'CHO estimé', valeur: String(Math.round(mesure('cho_g')!)), unite: 'g' }] : []),
     ...(aPuissance && travailFtp != null ? [{ cle: 'kjftp', libelle: 'Travail > FTP', valeur: formatKm(travailFtp, 1), unite: 'kJ' }] : []),
   ];
   const chiffres = [...chiffresBase, ...supplements];

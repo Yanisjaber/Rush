@@ -69,6 +69,7 @@ export const DONNEES_DU_CHIFFRE: Readonly<Record<string, readonly DonneeEcartabl
   ef: ['puissance', 'cardio'],
   pmax: ['puissance'],
   kjftp: ['puissance'],
+  cho: ['puissance'],
   // « charge » n'est pas dans la table : elle est écartée dès que `chargeRetenue` la retire (durée, charge, ou sa source)
 };
 

@@ -60,7 +60,7 @@ export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, records
         ...(altitude ? [{ cle: 'haut', libelle: 'Plus haut', valeur: String(Math.round(altitude.max)), unite: 'm' }, { cle: 'bas', libelle: 'Plus bas', valeur: String(Math.round(altitude.min)), unite: 'm' }] : []),
       ],
     },
-    { titre: 'ÉNERGIE', lignes: [...ligne('watts', 'Puiss. moyenne'), ...chiffreNote('watts', 'Puiss. normalisée', 'W'), ...ligne('pmax', 'Puiss. max'), ...ligne('energie'), ...ligne('kjftp', 'Travail > FTP')] },
+    { titre: 'ÉNERGIE', lignes: [...ligne('watts', 'Puiss. moyenne'), ...chiffreNote('watts', 'Puiss. normalisée', 'W'), ...ligne('pmax', 'Puiss. max'), ...ligne('energie', 'Travail'), ...ligne('kjftp', 'Dont > FTP'), ...ligne('calories'), ...ligne('cho')] },
   ].filter((r) => r.lignes.length > 0);
   const rpe = parCle('rpe');
   // Deux colonnes de rubriques, à peu près de la même hauteur : on remplit la première jusqu'à la moitié des lignes
