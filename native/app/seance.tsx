@@ -13,6 +13,7 @@ import { chiffresSeance, lignesTours, troisChiffres } from '@/data/calendrier/se
 import { formatDateCourte } from '@/data/outils/format';
 import { familleAffichage } from '@/data/sports/familles';
 import { nomDuType } from '@/data/sports/catalogue-sports';
+import { RecordsSortie } from '@/components/graphes/RecordsSortie';
 import { RepartitionSortie } from '@/components/graphes/RepartitionSortie';
 import { calculerZones, referenceCardio } from '@/data/reglages/profil';
 import { repartitionsSortie } from '@/data/outils/repartition-zones';
@@ -58,6 +59,7 @@ export default function Seance() {
   }
 
   const couleur = couleurSport(p, seance.sport);
+  const familleSortie = familleAffichage(seance.sport);
   const nomSport = nomDuType(seance.sport);
   const chiffres = chiffresSeance(seance);
   const cles = troisChiffres(chiffres);
@@ -135,6 +137,7 @@ export default function Seance() {
             ecarte={(cle) => chiffreEcarte(seance, cle)}
             altitude={trace && trace.altitudeMin != null && trace.altitudeMax != null ? { min: trace.altitudeMin, max: trace.altitudeMax } : null}
             couleur={couleur}
+            records={familleSortie === 'course' || familleSortie === 'velo' ? <RecordsSortie brut={courbes?.brut} famille={familleSortie} iso={String(seance.start_date_local).slice(0, 10)} couleur={couleur} /> : undefined}
           >
             <Text style={[typo.micro, { color: p.texteDoux }]}>TOURS</Text>
             <ListeTours lignes={lignes} chargement={chargementTours} erreur={erreurTours} />
