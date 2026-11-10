@@ -127,7 +127,8 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
           <View onLayout={(e: LayoutChangeEvent) => setFeuille(e.nativeEvent.layout.height)} style={[styles.feuille, { backgroundColor: p.fond, borderColor: p.trait, paddingBottom: bas + espace.e3 }]}>
             {ligneDate}
             {chiffres}
-            <View onLayout={(e: LayoutChangeEvent) => setYPastilles(e.nativeEvent.layout.y)}>{pastilles}</View>
+            {/* La place des pastilles : la rangée elle-même est posée par-dessus le défilement, pour ne pas glisser avec les pages */}
+            <View onLayout={(e: LayoutChangeEvent) => setYPastilles(e.nativeEvent.layout.y)} style={{ height: 20 }} />
             {avecProfil && parcours && parcours.altitudeMin != null && parcours.altitudeMax != null ? (
               <View style={{ height: HAUTEUR_PROFIL }}>
                 <ProfilCurseur profil={parcours.profil} min={parcours.altitudeMin} max={parcours.altitudeMax} km={km != null && km > 0 ? km : kmTrace} couleur={couleur} hauteur={140} onChange={setFraction} onGlisse={setSurCourbe} />
@@ -139,12 +140,13 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
         <View style={{ width: largeur, height: hauteur, backgroundColor: p.fond }}>
           {/* Le haut de la page : la date sous l'en-tête, puis les pastilles à leur place de la page 1, puis le contenu qui défile */}
           <View style={{ position: 'absolute', left: espace.e4, right: espace.e4, top: haut + HAUT_ENTETE + espace.e2 }}>{ligneDate}</View>
-          <View style={{ position: 'absolute', left: 0, right: 0, top: yEcran }}>{pastilles}</View>
           <ScrollView style={{ marginTop: yEcran + 20 + espace.e2 }} contentContainerStyle={{ paddingHorizontal: espace.e4, paddingBottom: bas + espace.e5, gap: espace.e3 }} showsVerticalScrollIndicator={false}>
             {pageDetails(setSurCourbe)}
           </ScrollView>
         </View>
       </ScrollView>
+
+      <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: yEcran }}>{pastilles}</View>
 
       <EnteteFlottante titre={titre} onModifier={onModifier} />
     </View>
