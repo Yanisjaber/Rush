@@ -27,4 +27,3 @@ Coût d'une analyse : environ 0,002 $ (Haiku, quelques centaines de jetons de so
 - Relier la sortie à la séance prévue (pour juger « prévu contre fait » avec le vrai objectif, pas seulement le nom).
 - Cadence (le serveur sait la lire, l'app ne l'envoie pas encore : elle n'est pas dans les flux bruts).
 - Muscu, natation, Hyrox : autres critères, autres faits.
-- Supprimer les fichiers de l'ancienne idée « comparaison » (`comparaison-sortie.ts`, `mot-coach-sortie.ts`, `useContexteSortie.ts`, leur test) : en attente de l'OK de Yanis.
