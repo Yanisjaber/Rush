@@ -47,7 +47,6 @@ interface Props {
   onModifier?: () => void;
 }
 
-const HAUT_PASTILLES = 28; // la place prise par la rangée de pastilles en bas de l'écran
 const HAUTEUR_PROFIL = 166; // la hauteur du profil (courbe et repères de distance)
 
 export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, hero, chiffres, pageDetails, onModifier }: Props) {
@@ -60,6 +59,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
   const [feuille, setFeuille] = useState(0);
   const [fraction, setFraction] = useState<number | null>(null);
   const [index, setIndex] = useState(0);
+  const [yPastilles, setYPastilles] = useState(0); // la place des pastilles dans la feuille : la page 2 les remet au même endroit de l'écran
   const [surCourbe, setSurCourbe] = useState(false); // le doigt est sur la courbe : on suspend le balayage des pages, sinon il emporterait la page avec lui
   const defilement = useRef<ComponentRef<typeof ScrollView>>(null);
   // L'axe va jusqu'à la distance de la sortie (celle de la tuile) : le bout du profil et « Distance » disent la même chose. La longueur mesurée sur la trace simplifiée ne sert que sans distance.
@@ -67,6 +67,8 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
   // Le point du curseur n'a de sens que sur la page 1
   const curseur = useMemo(() => (index === 0 && fraction != null && parcours ? pointAuFraction(parcours.trace, fraction) : null), [parcours, fraction, index]);
   // La trace doit rester entière dans la zone libre (sous l'en-tête, au-dessus de la feuille) : la carte la cadre avec ces marges
+  // Les pastilles ne bougent pas d'une page à l'autre : même hauteur d'écran que dans la feuille de la page 1
+  const yEcran = hauteur - feuille + yPastilles;
   const marges = useMemo(() => ({ haut: haut + HAUT_ENTETE, bas: feuille }), [haut, feuille]);
 
   const aller = (i: number) => {
@@ -76,8 +78,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
   };
   const apresDefilement = (e: NativeSyntheticEvent<NativeScrollEvent>) => setIndex(Math.round(e.nativeEvent.contentOffset.x / largeur));
   const pastilles = (
-    <View accessible={false} pointerEvents="box-none" style={[styles.pastilles, { bottom: bas + 4 }]}>
-     <View style={[styles.pilule, { backgroundColor: p.fond + 'cc' }]}>
+    <View accessible={false} style={styles.pastilles}>
       {['Carte et profil', 'Toutes les infos'].map((nom, i) => (
         <Pressable
           key={nom}
@@ -89,7 +90,6 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
           style={[styles.pastille, i === index ? { width: 22, backgroundColor: p.texte } : { backgroundColor: p.traitFort }]}
         />
       ))}
-     </View>
     </View>
   );
 
@@ -124,9 +124,10 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
             </View>
           )}
 
-          <View onLayout={(e: LayoutChangeEvent) => setFeuille(e.nativeEvent.layout.height)} style={[styles.feuille, { backgroundColor: p.fond, borderColor: p.trait, paddingBottom: bas + espace.e3 + HAUT_PASTILLES }]}>
+          <View onLayout={(e: LayoutChangeEvent) => setFeuille(e.nativeEvent.layout.height)} style={[styles.feuille, { backgroundColor: p.fond, borderColor: p.trait, paddingBottom: bas + espace.e3 }]}>
             {ligneDate}
             {chiffres}
+            <View onLayout={(e: LayoutChangeEvent) => setYPastilles(e.nativeEvent.layout.y)}>{pastilles}</View>
             {avecProfil && parcours && parcours.altitudeMin != null && parcours.altitudeMax != null ? (
               <View style={{ height: HAUTEUR_PROFIL }}>
                 <ProfilCurseur profil={parcours.profil} min={parcours.altitudeMin} max={parcours.altitudeMax} km={km != null && km > 0 ? km : kmTrace} couleur={couleur} hauteur={140} onChange={setFraction} onGlisse={setSurCourbe} />
@@ -136,14 +137,14 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
         </View>
 
         <View style={{ width: largeur, height: hauteur, backgroundColor: p.fond }}>
-          <ScrollView contentContainerStyle={{ paddingTop: haut + HAUT_ENTETE + espace.e2, paddingHorizontal: espace.e4, paddingBottom: bas + espace.e5 + HAUT_PASTILLES, gap: espace.e3 }} showsVerticalScrollIndicator={false}>
-            {ligneDate}
+          {/* Le haut de la page : la date sous l'en-tête, puis les pastilles à leur place de la page 1, puis le contenu qui défile */}
+          <View style={{ position: 'absolute', left: espace.e4, right: espace.e4, top: haut + HAUT_ENTETE + espace.e2 }}>{ligneDate}</View>
+          <View style={{ position: 'absolute', left: 0, right: 0, top: yEcran }}>{pastilles}</View>
+          <ScrollView style={{ marginTop: yEcran + 20 + espace.e2 }} contentContainerStyle={{ paddingHorizontal: espace.e4, paddingBottom: bas + espace.e5, gap: espace.e3 }} showsVerticalScrollIndicator={false}>
             {pageDetails(setSurCourbe)}
           </ScrollView>
         </View>
       </ScrollView>
-
-      {pastilles}
 
       <EnteteFlottante titre={titre} onModifier={onModifier} />
     </View>
@@ -157,7 +158,6 @@ const styles = StyleSheet.create({
   gaucheDate: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
   attente: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
   feuille: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: rayon.bloc, borderTopRightRadius: rayon.bloc, borderTopWidth: 1, paddingTop: espace.e4, paddingHorizontal: espace.e4, gap: espace.e2 },
-  pastilles: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
-  pilule: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 20, paddingHorizontal: 10, borderRadius: 10 },
+  pastilles: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, height: 20 },
   pastille: { width: 8, height: 8, borderRadius: 4 },
 });
