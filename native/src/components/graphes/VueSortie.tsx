@@ -47,6 +47,7 @@ interface Props {
   onModifier?: () => void;
 }
 
+const HAUT_PASTILLES = 28; // la place prise par la rangée de pastilles sous l'en-tête
 const HAUTEUR_PROFIL = 166; // la hauteur du profil (courbe et repères de distance)
 
 export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, hero, chiffres, pageDetails, onModifier }: Props) {
@@ -66,7 +67,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
   // Le point du curseur n'a de sens que sur la page 1
   const curseur = useMemo(() => (index === 0 && fraction != null && parcours ? pointAuFraction(parcours.trace, fraction) : null), [parcours, fraction, index]);
   // La trace doit rester entière dans la zone libre (sous l'en-tête, au-dessus de la feuille) : la carte la cadre avec ces marges
-  const marges = useMemo(() => ({ haut: haut + HAUT_ENTETE, bas: feuille }), [haut, feuille]);
+  const marges = useMemo(() => ({ haut: haut + HAUT_ENTETE + HAUT_PASTILLES, bas: feuille }), [haut, feuille]);
 
   const aller = (i: number) => {
     setIndex(i);
@@ -75,7 +76,8 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
   };
   const apresDefilement = (e: NativeSyntheticEvent<NativeScrollEvent>) => setIndex(Math.round(e.nativeEvent.contentOffset.x / largeur));
   const pastilles = (
-    <View accessible={false} style={styles.pastilles}>
+    <View accessible={false} pointerEvents="box-none" style={[styles.pastilles, { top: haut + HAUT_ENTETE + espace.e2 }]}>
+     <View style={[styles.pilule, { backgroundColor: p.fond + 'cc' }]}>
       {['Carte et profil', 'Toutes les infos'].map((nom, i) => (
         <Pressable
           key={nom}
@@ -87,6 +89,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
           style={[styles.pastille, i === index ? { width: 22, backgroundColor: p.texte } : { backgroundColor: p.traitFort }]}
         />
       ))}
+     </View>
     </View>
   );
 
@@ -109,7 +112,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
           {avecCarte && parcours && parcours.region ? (
             <CarteTrace plein trace={parcours.trace} region={parcours.region} couleur={couleur} curseur={curseur} marges={marges} />
           ) : (
-            <View style={[styles.sansCarte, { paddingTop: haut + HAUT_ENTETE + espace.e4 }]}>
+            <View style={[styles.sansCarte, { paddingTop: haut + HAUT_ENTETE + HAUT_PASTILLES + espace.e4 }]}>
               {chargementCarte ? (
                 <View accessible accessibilityLabel="Chargement de la carte" style={styles.attente}>
                   <ActivityIndicator color={p.texteDoux} />
@@ -124,7 +127,6 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
           <View onLayout={(e: LayoutChangeEvent) => setFeuille(e.nativeEvent.layout.height)} style={[styles.feuille, { backgroundColor: p.fond, borderColor: p.trait, paddingBottom: bas + espace.e3 }]}>
             {ligneDate}
             {chiffres}
-            {pastilles}
             {avecProfil && parcours && parcours.altitudeMin != null && parcours.altitudeMax != null ? (
               <View style={{ height: HAUTEUR_PROFIL }}>
                 <ProfilCurseur profil={parcours.profil} min={parcours.altitudeMin} max={parcours.altitudeMax} km={km != null && km > 0 ? km : kmTrace} couleur={couleur} hauteur={140} onChange={setFraction} onGlisse={setSurCourbe} />
@@ -134,13 +136,14 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
         </View>
 
         <View style={{ width: largeur, height: hauteur, backgroundColor: p.fond }}>
-          <ScrollView contentContainerStyle={{ paddingTop: haut + HAUT_ENTETE + espace.e2, paddingHorizontal: espace.e4, paddingBottom: bas + espace.e5, gap: espace.e3 }} showsVerticalScrollIndicator={false}>
-            {pastilles}
+          <ScrollView contentContainerStyle={{ paddingTop: haut + HAUT_ENTETE + espace.e2 + HAUT_PASTILLES, paddingHorizontal: espace.e4, paddingBottom: bas + espace.e5, gap: espace.e3 }} showsVerticalScrollIndicator={false}>
             {ligneDate}
             {pageDetails(setSurCourbe)}
           </ScrollView>
         </View>
       </ScrollView>
+
+      {pastilles}
 
       <EnteteFlottante titre={titre} onModifier={onModifier} />
     </View>
@@ -154,6 +157,7 @@ const styles = StyleSheet.create({
   gaucheDate: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
   attente: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
   feuille: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: rayon.bloc, borderTopRightRadius: rayon.bloc, borderTopWidth: 1, paddingTop: espace.e4, paddingHorizontal: espace.e4, gap: espace.e2 },
-  pastilles: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, height: 20 },
+  pastilles: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+  pilule: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 20, paddingHorizontal: 10, borderRadius: 10 },
   pastille: { width: 8, height: 8, borderRadius: 4 },
 });
