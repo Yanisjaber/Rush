@@ -48,6 +48,8 @@ interface Props {
   /** Les courbes de la page 2, fixes dans la zone du haut (entre la date et les pastilles) : reçoit la hauteur libre. Absent sans courbes. */
   /** Les répartitions par zones, en tête du contenu qui défile sous les pastilles. */
   repartitions?: ReactNode;
+  /** Les tours, sous les répartitions de la page 2. */
+  tours?: ReactNode;
   graphesHaut?: (hauteur: number, onGlisse: (actif: boolean) => void) => ReactNode;
   onModifier?: () => void;
 }
@@ -56,7 +58,7 @@ const HAUTEUR_PROFIL = 166; // la hauteur du profil (courbe et repères de dista
 const HAUT_PASTILLES = 36; // la place gardée en bas des pages pour que les pastilles volantes ne cachent rien
 const NOMS_PAGES = ['Carte et profil', 'Courbes', 'Toutes les infos'];
 
-export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, hero, chiffres, pageDetails, graphesHaut, repartitions, onModifier }: Props) {
+export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, hero, chiffres, pageDetails, graphesHaut, repartitions, tours, onModifier }: Props) {
   const p = usePalette();
   const { top: haut, bottom: bas } = useSafeAreaInsets();
   const { width: largeur, height: hauteur } = useWindowDimensions();
@@ -183,6 +185,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
             {ligneDate}
             {graphesHaut ? <View style={{ height: hautCourbes, marginTop: -espace.e2 }}>{graphesHaut(hautCourbes, setSurCourbe)}</View> : null}
             {repartitions}
+            {tours}
           </ScrollView>
           {/* Sous l'en-tête flottant : un fond plein, pour que le contenu qui défile ne passe pas sous le titre */}
           {bandeEntete}

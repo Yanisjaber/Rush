@@ -157,6 +157,12 @@ export default function Seance() {
             </View>
           ) : null
         }
+        tours={
+          <View style={{ gap: espace.e2 }}>
+            <Text style={[typo.micro, { color: p.texteDoux }]}>TOURS</Text>
+            <ListeTours lignes={lignes} chargement={chargementTours} erreur={erreurTours} />
+          </View>
+        }
         repartitions={mesuresZones.length ? <RepartitionSortie mesures={mesuresZones} couleur={couleur} /> : undefined}
         graphesHaut={courbes ? (hauteur, onGlisse) => <GraphesSynchro courbes={courbes} km={seance.distance_km ?? null} rythme={familleAffichage(seance.sport) === 'velo' ? 'vitesse' : 'allure'} couleur={couleur} dureeS={seance.moving_time ?? null} hauteur={hauteur} seuilsCoeur={seuilsCoeur} onGlisse={onGlisse} /> : undefined}
         pageDetails={(onGlisse) => (
@@ -167,8 +173,6 @@ export default function Seance() {
             couleur={couleur}
             records={familleSortie === 'course' || familleSortie === 'velo' ? <RecordsSortie brut={courbes?.brut} famille={familleSortie} iso={String(seance.start_date_local).slice(0, 10)} couleur={couleur} /> : undefined}
           >
-            <Text style={[typo.micro, { color: p.texteDoux }]}>TOURS</Text>
-            <ListeTours lignes={lignes} chargement={chargementTours} erreur={erreurTours} />
             {notes ? (
               <View style={[styles.notes, { backgroundColor: p.surface }]}>
                 <Text style={[typo.micro, { color: p.texteDoux }]}>NOTES</Text>
