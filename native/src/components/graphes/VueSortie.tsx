@@ -83,7 +83,9 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
   // La trace doit rester entière dans la zone libre (sous l'en-tête, au-dessus de la feuille) : la carte la cadre avec ces marges
   const marges = useMemo(() => ({ haut: haut + HAUT_ENTETE, bas: feuille }), [haut, feuille]);
   // Les courbes de la page 2 : une hauteur confortable, la page défile si l'écran est petit
-  const hautCourbes = Math.min(380, Math.max(300, Math.round(hauteur * 0.42)));
+  // Sans répartitions dessous, les courbes prennent toute la place libre de l'écran ; avec, elles restent à une hauteur confortable et la page défile
+  const placeLibre = hauteur - (haut + HAUT_ENTETE + espace.e2) - 24 - espace.e3 - (bas + espace.e5 + HAUT_PASTILLES) + espace.e2;
+  const hautCourbes = repartitions ? Math.min(380, Math.max(300, Math.round(hauteur * 0.42))) : Math.min(560, Math.max(300, Math.round(placeLibre)));
 
   const aller = (i: number) => {
     setSurCourbe(false); // par sécurité : un doigt levé ailleurs ne doit pas laisser le défilement des pages bloqué
