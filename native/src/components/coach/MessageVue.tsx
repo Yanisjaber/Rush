@@ -1,13 +1,12 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import { repereHeure } from '@/data/coach/libelles';
-import { estPlanning, estProfil } from '@/data/coach/types';
+import { estPlanning } from '@/data/coach/types';
 import type { Carte, MessageCoach } from '@/data/coach/types';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 import { CartePlanningCoach } from './CartePlanningCoach';
-import { CarteProfilCoach } from './CarteProfilCoach';
 import { CarteSeanceCoach } from './CarteSeanceCoach';
 import { PointsEcriture } from './PointsEcriture';
 
@@ -76,8 +75,6 @@ export function MessageVue({ message, occupees, erreursCarte, peutReessayer, onR
         <View key={c.id} style={styles.carte}>
           {estPlanning(c) ? (
             <CartePlanningCoach carte={c} occupee={!!occupees[c.id]} erreur={erreursCarte[c.id]} onValider={() => onAjouter(c)} onAnnuler={peutAnnuler ? () => onAnnuler(c) : undefined} onRefaire={onRefaire} onBascule={onBascule} />
-          ) : estProfil(c) ? (
-            <CarteProfilCoach carte={c} occupee={!!occupees[c.id]} erreur={erreursCarte[c.id]} onRetenir={() => onAjouter(c)} />
           ) : (
             <CarteSeanceCoach carte={c} occupee={!!occupees[c.id]} erreur={erreursCarte[c.id]} onAjouter={() => onAjouter(c)} onAnnuler={peutAnnuler ? () => onAnnuler(c) : undefined} onBascule={onBascule} />
           )}

@@ -2,7 +2,7 @@
 // Logique pure : les morceaux de texte arrivent coupés n'importe où, on garde ce qui n'est pas fini pour le morceau suivant.
 import { MAX_BLOCS, METRIQUES, TYPES_BLOC } from '../calendrier/structure.ts';
 import type { Bloc, Segment, TypeBloc } from '../calendrier/structure.ts';
-import type { BlocStructure, Carte, CarteProfil, CarteSeance, CartePlanning, EtatCarte, EvenementCoach, LignePlan, TypeOperation, TypePeriode } from './types.ts';
+import type { BlocStructure, Carte, CarteSeance, CartePlanning, EtatCarte, EvenementCoach, LignePlan, TypeOperation, TypePeriode } from './types.ts';
 
 const ETATS: readonly string[] = ['proposee', 'en_cours', 'ajoutee', 'refusee', 'annulee'];
 
@@ -112,20 +112,10 @@ function lireSeance(x: Record<string, unknown>): CarteSeance | null {
   };
 }
 
-function lireProfil(x: Record<string, unknown>): CarteProfil | null {
-  if (typeof x.id !== 'string' || !ETATS.includes(String(x.etat)) || !Array.isArray(x.lignes)) return null;
-  const lignes = x.lignes.slice(0, 20).filter((l): l is string => typeof l === 'string' && l.length > 0).map((l) => l.slice(0, 120));
-  // Un profil sans aucune ligne n'a rien à montrer : on ne l'affiche pas
-  if (!lignes.length) return null;
-  return { id: x.id, genre: 'profil', etat: x.etat as EtatCarte, intention: texte(x.intention, 80), lignes, ...(typeof x.motif === 'string' ? { motif: x.motif } : {}) };
-}
-
 /** Une carte reçue du serveur, vérifiée : tout ce qui n'a pas la bonne forme est écarté (on n'affiche jamais une carte douteuse). */
 export function lireCarte(x: unknown): Carte | null {
   if (!estObjet(x)) return null;
-  if (x.genre === 'planning') return lirePlanning(x);
-  if (x.genre === 'profil') return lireProfil(x);
-  return lireSeance(x);
+  return x.genre === 'planning' ? lirePlanning(x) : lireSeance(x);
 }
 
 /** Les cartes d'un message enregistré (colonne jsonb) : une liste, ou rien */

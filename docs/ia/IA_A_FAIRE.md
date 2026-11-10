@@ -10,8 +10,8 @@ Principe posé par Yanis : **chaque règle du plan vient d'études ou de la pers
 - Table `coach_profil` (disponibilités, ancienneté, pic hebdo, blessures, préférences ; listes fermées, RLS) + module serveur `profil-coureur.ts`. Appliquée en vraie base.
 
 ## 1. Profil du coureur : le brancher (prochaine étape)
-- [x] **Décision** : le profil s'écrit via une **carte à valider** dans le chat (12 nov.). Carte `genre: 'profil'`, bouton « Retenir », pas d'annulation (pour changer, on le dit au coach).
-- [x] Outils `lire_profil` (connu + ce qui manque) et `proposer_profil` (carte) ; consigne dans le prompt : 1 ou 2 questions à la fois, dans l'ordre. Déployé (coach-chat), 10 tests serveur + 1 test app.
+- [x] **Décision (12 nov., Yanis)** : le profil s'écrit **automatiquement, sans carte** : le coach retient ce qu'on lui dit (`retenir_profil`, niveau `ecriture`, seule exception à « toujours une carte ») et dit en une phrase ce qu'il a noté pour qu'on le corrige.
+- [x] Outils `lire_profil` (connu + ce qui manque) et `retenir_profil` (écrit tout de suite) ; consigne dans le prompt : 1 ou 2 questions à la fois, dans l'ordre. Déployé (coach-chat), tests serveur.
 - [x] Mémorisation : au tap, `ecrireProfil` fusionne (jour par jour, préférence par préférence) et écrit dans `coach_profil` avec les droits de l'utilisateur.
 - [ ] **Prochaine étape** : brancher dans `plan-course.ts` : jours libres et durée max par jour, prudence selon les blessures passées, jours durs préférés, ancienneté et pic hebdo pour le point de départ.
 - [x] Blessures = données de santé : lues et retenues seulement avec l'accord de la catégorie « evenement » (testé côté base et côté serveur).

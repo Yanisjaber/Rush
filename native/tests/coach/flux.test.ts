@@ -206,11 +206,3 @@ test('une carte séance et une ligne de plan gardent leurs blocs ; sans blocs va
   assert.equal((lireCarteBlocs({ ...plan, lignes: [{ ...plan.lignes[0], phase: 'Développement' }] }) as { lignes: { phase?: string }[] }).lignes[0].phase, 'Développement');
   assert.deepEqual(l.blocs, [BLOC_OK]);
 });
-
-test('carte profil : lues telles quelles (texte du serveur), sans ligne ou sans id elle est écartée', () => {
-  const c = lireCarte({ id: 'p1', genre: 'profil', etat: 'proposee', intention: 'Ton temps disponible', lignes: ['Mardi : libre, 1 h au plus', 42, ''], colonnes: { secret: 'non' } });
-  assert.deepEqual(c, { id: 'p1', genre: 'profil', etat: 'proposee', intention: 'Ton temps disponible', lignes: ['Mardi : libre, 1 h au plus'] });
-  assert.equal(lireCarte({ id: 'p2', genre: 'profil', etat: 'proposee', intention: 'x', lignes: [] }), null);
-  assert.equal(lireCarte({ genre: 'profil', etat: 'proposee', lignes: ['a'] }), null);
-  assert.equal(lireCarte({ id: 'p3', genre: 'profil', etat: 'bidon', lignes: ['a'] }), null);
-});

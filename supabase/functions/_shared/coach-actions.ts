@@ -6,6 +6,7 @@
 //                        (aucun nouvel accès à la base, la santé reste filtrée par catégorie autorisée). Ne change rien.
 //   - « direct »       : ne change aucune donnée (ouvrir un écran…). Le serveur vérifie les paramètres puis les envoie à l'app,
 //                        qui les exécute elle-même (liste blanche côté app).
+//   - « ecriture »     : écrit tout de suite, sans carte, UNIQUEMENT le profil du coureur (retenir_profil, décision de Yanis, 12 nov. 2026).
 //   - « carte »        : modifie les données de l'utilisateur. Le modèle ne fait que PROPOSER : une carte apparaît, rien n'est
 //                        écrit tant que l'utilisateur n'a pas tapé sur Valider (décision de Yanis, 7 nov. : toujours une carte).
 //   - « confirmation » : gros ou irréversible. Carte avec confirmation explicite, une seule par message.
@@ -28,7 +29,7 @@ import type { OutilModele } from './modele.ts';
 import { JOURS_SEMAINE, ZONES_BLESSURE, QUAND_BLESSURE, MOMENTS, FRACTIONNE, profilPourModele, validerModification } from './profil-coureur.ts';
 import { OUTIL_PROPOSER_SEANCE, NOM_OUTIL_SEANCE } from './coach-prompt.ts';
 
-export type NiveauAction = 'lecture' | 'direct' | 'carte' | 'confirmation';
+export type NiveauAction = 'lecture' | 'direct' | 'ecriture' | 'carte' | 'confirmation';
 
 export type LectureAction = { ok: true; params: Record<string, unknown> } | { ok: false; erreur: string };
 
@@ -423,7 +424,7 @@ export const ACTIONS: DefinitionAction[] = [
     description:
       "Lit le profil du coureur déjà enregistré (jours libres et durée max, ancienneté, plus grosse semaine, blessures, préférences) ET ce qui manque encore. " +
       "Appelle-le avant de préparer un plan (préparer une course, planifier une période) et quand l'utilisateur parle de son temps libre, de ses blessures ou de son expérience. " +
-      "Si des éléments manquent, pose UNE ou DEUX questions à la fois, dans l'ordre de ce_qui_manque, puis propose de les retenir avec proposer_profil. Ne redemande jamais ce qui est déjà connu. " +
+      "Si des éléments manquent, pose UNE ou DEUX questions à la fois, dans l'ordre de ce_qui_manque, puis retiens les réponses avec retenir_profil. Ne redemande jamais ce qui est déjà connu. " +
       "Les blessures ne sont lues que si blessures_autorisees est vrai.",
     schema: { type: 'object', properties: {}, additionalProperties: false },
     lire: (input) => (objet(input, []) ? { ok: true, params: {} } : refus('Cet outil ne prend aucun paramètre.')),
@@ -834,18 +835,18 @@ export const ACTIONS: DefinitionAction[] = [
   },
 
   {
-    nom: 'proposer_profil',
-    niveau: 'carte',
+    nom: 'retenir_profil',
+    niveau: 'ecriture',
     disponible: true,
     description:
-      "Propose de RETENIR ce que l'utilisateur vient de te dire sur lui, pour que les prochains plans soient plus justes : jours libres et durée max, depuis combien d'années il court, sa plus grosse semaine, ses blessures passées, ses préférences. " +
-      "N'ajoute que ce qu'il a DIT dans la conversation, jamais une supposition. Une carte apparaît : rien n'est enregistré tant qu'il n'a pas validé. " +
+      "RETIENT tout de suite ce que l'utilisateur vient de te dire sur lui, pour que les prochains plans soient plus justes : jours libres et durée max, depuis combien d'années il court, sa plus grosse semaine, ses blessures passées, ses préférences. " +
+      "N'ajoute que ce qu'il a DIT dans la conversation, jamais une supposition. C'est enregistré immédiatement, sans carte : tu lui dis ensuite en une phrase ce que tu as noté (« c'est noté : mardi libre 1 h »), pour qu'il puisse te corriger. " +
       "Ne mets que les champs qui changent (les autres sont conservés). Pour disponibilites, ne donne que les jours dont il a parlé. Pour blessures, donne la liste COMPLÈTE après changement (liste vide = aucune blessure), en partant de celles déjà connues (lire_profil). " +
-      "N'utilise blessures que si lire_profil dit blessures_autorisees = vrai. Une seule carte profil par message.",
+      "N'utilise blessures que si lire_profil dit blessures_autorisees = vrai. Redonner un jour ou une préférence remplace l'ancienne valeur.",
     schema: {
       type: 'object',
       properties: {
-        motif: { type: 'string', description: 'UN TITRE COURT (60 caractères au plus) affiché en haut de la carte, par exemple « Ton temps disponible ».' },
+        motif: { type: 'string', description: 'Quelques mots qui disent ce qui est retenu, par exemple « Ton temps disponible ».' },
         disponibilites: {
           type: 'object',
           description: 'Par jour de la semaine : libre (vrai/faux) et/ou minutes_max (durée maximale d\'une séance ce jour-là, 0 à 600).',

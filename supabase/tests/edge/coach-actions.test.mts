@@ -10,7 +10,7 @@ test('registre : noms uniques, niveau valide, schéma fermé (additionalProperti
   const noms = ACTIONS.map((a) => a.nom);
   assert.equal(new Set(noms).size, noms.length);
   for (const a of ACTIONS) {
-    assert.ok(['lecture', 'direct', 'carte', 'confirmation'].includes(a.niveau), a.nom);
+    assert.ok(['lecture', 'direct', 'ecriture', 'carte', 'confirmation'].includes(a.niveau), a.nom);
     assert.equal((a.schema as { additionalProperties?: unknown }).additionalProperties, false, `${a.nom} : schéma fermé`);
     assert.ok(a.description.length > 10, a.nom);
     if (a.nom !== 'proposer_seance') assert.equal(typeof a.lire, 'function', `${a.nom} : paramètres vérifiés`);
@@ -35,6 +35,7 @@ test('sécurité : aucune action « carte » ou « confirmation » n\'est exécu
   assert.equal(trouverAction('supprimer_compte')?.niveau, 'confirmation');
   assert.equal(trouverAction('deconnecter_integration')?.niveau, 'confirmation');
   assert.equal(trouverAction('modifier_planning')?.niveau, 'carte');
+  assert.deepEqual(ACTIONS.filter((x) => x.niveau === 'ecriture').map((x) => x.nom), ['retenir_profil'], 'seul le profil s\'écrit sans carte');
   assert.equal(trouverAction('proposer_replanification')?.niveau, 'carte');
 });
 
