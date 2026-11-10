@@ -95,7 +95,7 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
         // Un cache qui ne s'écrit pas n'empêche pas de rendre la lettre
         if (error) console.error('coach-analyse-sortie: écriture du cache échouée', error?.code || '');
       },
-      journal: (i) => console.log(`coach-analyse-sortie: tokens ${i.tokensEntree}/${i.tokensSortie}, essais ${i.essais}`),
+      journal: (i) => console.log(`coach-analyse-sortie: tokens ${i.tokensEntree}/${i.tokensSortie}, essais ${i.essais}${i.raison ? `, refusée : ${i.raison}` : ''}`),
     };
 
     const r = await analyserSortie(user.id, corps, deps);

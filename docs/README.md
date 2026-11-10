@@ -21,6 +21,7 @@ Tous les `.md` du projet sont ici, rangés par thème. Exceptions : `CLAUDE.md` 
 
 ## `ia/` — le coach IA
 - `IA_A_FAIRE.md` : tout ce qui reste à faire sur le coach (profil du coureur, règles sans source, sources à vérifier, essais).
+- [ia/ANALYSE_SORTIE.md](ia/ANALYSE_SORTIE.md) : la page 4 de la sortie, le retour du coach écrit par l'IA
 - `FONDEMENTS_PLAN_COURSE.md` : chaque paramètre du moteur de plan de course face à la recherche.
 - `CADRAGE_IA.md`, `PLAN_COACH_COMPLET.md`, `REPLANIFICATION.md` : cadrage et plans du coach.
 

@@ -17,7 +17,7 @@ export interface DepsAnalyse {
   lireCache(userId: string, id: string): Promise<{ empreinte: string; contenu: { paragraphes?: unknown } } | null>;
   ecrireCache(userId: string, id: string, empreinte: string, contenu: LettreValide, modele: string): Promise<void>;
   /** Pour les journaux : des nombres seulement, jamais de texte. */
-  journal?(info: { tokensEntree: number; tokensSortie: number; essais: number }): void;
+  journal?(info: { tokensEntree: number; tokensSortie: number; essais: number; raison?: string }): void;
 }
 
 export type ReponseAnalyse =
@@ -26,7 +26,8 @@ export type ReponseAnalyse =
 
 const erreur = (statut: number, error: string, message: string): ReponseAnalyse => ({ statut, corps: { ok: false, error, message } });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const MAX_TOKENS = 700;
+/** La réflexion interne du modèle compte dans cette limite : trop bas, il ne reste pas de place pour le texte (vu à l'essai : « texte vide »). */
+const MAX_TOKENS = 2500;
 
 export async function analyserSortie(userId: string, corps: unknown, deps: DepsAnalyse): Promise<ReponseAnalyse> {
   const c = corps && typeof corps === 'object' && !Array.isArray(corps) ? (corps as Record<string, unknown>) : null;
@@ -55,17 +56,21 @@ export async function analyserSortie(userId: string, corps: unknown, deps: DepsA
   const messages: MessageModele[] = [{ role: 'user', content: messageAnalyse(faits) }];
   let usage: Usage = { entree: 0, sortie: 0, cacheLecture: 0, cacheEcriture: 0 };
   let essais = 0;
+  let raison = '';
   for (; essais < 2; ) {
     essais++;
     let texte = '';
+    let arret = '';
     try {
       const r = await deps.modele.repondre({ system: PROMPT_ANALYSE, messages, outils: [], maxTokens: MAX_TOKENS }, () => {});
       usage = { entree: usage.entree + r.usage.entree, sortie: usage.sortie + r.usage.sortie, cacheLecture: usage.cacheLecture + r.usage.cacheLecture, cacheEcriture: usage.cacheEcriture + r.usage.cacheEcriture };
-      if (r.arret === 'refus') return erreur(502, 'analyse_indisponible', "Le coach n'a pas pu analyser cette sortie. Réessaie dans un instant.");
+      if (r.arret === 'refus') return erreur(502, 'analyse_indisponible', `Le coach n'a pas pu analyser cette sortie. Réessaie dans un instant.`);
       texte = r.texte;
+      arret = r.arret;
     } catch (e) {
+      raison = e instanceof Error ? e.message.slice(0, 80) : 'erreur';
       if (e instanceof ErreurModele && e.transitoire && essais < 2) continue;
-      return erreur(502, 'analyse_indisponible', "Le coach n'a pas pu analyser cette sortie. Réessaie dans un instant.");
+      return erreur(502, 'analyse_indisponible', `Le coach n'a pas pu analyser cette sortie. Réessaie dans un instant.`);
     }
     const v = validerLettre(texte, faits);
     if (v.ok) {
@@ -73,8 +78,9 @@ export async function analyserSortie(userId: string, corps: unknown, deps: DepsA
       await deps.ecrireCache(userId, id, empreinte, v.valeur, deps.nomModele);
       return { statut: 200, corps: { ok: true, paragraphes: v.valeur.paragraphes, depuis_cache: false } };
     }
+    raison = `${v.raison}${texte ? '' : ` (arrêt : ${arret})`}`.slice(0, 120);
     messages.push({ role: 'assistant', content: texte || '(vide)' }, { role: 'user', content: `Ta réponse est refusée : ${v.raison}. Réécris le retour complet en respectant toutes les règles.` });
   }
-  deps.journal?.({ tokensEntree: usage.entree + usage.cacheLecture + usage.cacheEcriture, tokensSortie: usage.sortie, essais });
-  return erreur(502, 'analyse_indisponible', "Le coach n'a pas pu analyser cette sortie. Réessaie dans un instant.");
+  deps.journal?.({ tokensEntree: usage.entree + usage.cacheLecture + usage.cacheEcriture, tokensSortie: usage.sortie, essais, raison });
+  return erreur(502, 'analyse_indisponible', `Le coach n'a pas pu analyser cette sortie. Réessaie dans un instant.`);
 }
