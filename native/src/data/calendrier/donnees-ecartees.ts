@@ -62,6 +62,14 @@ export const DONNEES_DU_CHIFFRE: Readonly<Record<string, readonly DonneeEcartabl
   watts: ['puissance'],
   energie: ['puissance'],
   cadence: ['cadence'],
+  // Les chiffres calculés sur les flux : écartés avec la donnée dont ils viennent
+  derive: ['cardio'],
+  fcpct: ['cardio'],
+  trimp: ['cardio'],
+  if: ['puissance'],
+  ef: ['puissance', 'cardio'],
+  pmax: ['puissance'],
+  kjftp: ['puissance'],
   // « charge » n'est pas dans la table : elle est écartée dès que `chargeRetenue` la retire (durée, charge, ou sa source)
 };
 

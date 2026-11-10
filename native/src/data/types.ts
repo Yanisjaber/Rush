@@ -15,6 +15,8 @@ export interface Seance {
   avg_watts: number | null;
   np: number | null;
   tss: number | null;
+  /** Les mesures calculées par le serveur sur les flux complets (if_pct, trimp, pmax, work_over_ftp_kj, eftp, cp, w_prime…). Absent sans flux. */
+  metrics?: Record<string, number | string | null> | null;
   category: string;
   /** Puissance mesurée par un capteur (faux : estimée par Strava). Absent des données de démo. */
   device_watts?: boolean | null;

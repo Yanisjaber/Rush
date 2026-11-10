@@ -64,10 +64,26 @@ export default function Seance() {
   const nomSport = nomDuType(seance.sport);
   // La dérive cardiaque se calcule sur les flux (elle n'est pas dans la base) : un chiffre de plus dans la rubrique Cœur, quand on a le cœur et assez de durée
   const derive = deriveCardiaque(courbes?.brut, familleAffichage(seance.sport) === 'velo' ? 'velo' : 'autre');
-  const chiffres = [
-    ...chiffresSeance(seance),
-    ...(derive ? [{ cle: 'derive', libelle: 'Dérive', valeur: `${derive.pct > 0 ? '+' : derive.pct < 0 ? '−' : ''}${formatKm(Math.abs(derive.pct), 1)}`, unite: '%', note: derive.base === 'puissance' ? 'cœur vs puissance' : 'cœur vs allure' }] : []),
+  const chiffresBase = chiffresSeance(seance);
+  const m = seance.metrics ?? {};
+  const mesure = (cle: string): number | null => (typeof m[cle] === 'number' && Number.isFinite(m[cle] as number) && (m[cle] as number) > 0 ? (m[cle] as number) : null);
+  const hrMaxProfil = Number(profil?.hr_max) > 0 ? Number(profil?.hr_max) : null;
+  const aPuissance = chiffresBase.some((c) => c.cle === 'watts'); // une puissance mesurée (pas estimée) : sinon ni IF, ni efficacité
+  const nP = Number(seance.np) > 0 ? Number(seance.np) : null;
+  const fcMoy = Number(seance.avg_heartrate) > 0 ? Number(seance.avg_heartrate) : null;
+  const pmax = mesure('pmax') ?? (Number(seance.max_watts) > 0 ? Number(seance.max_watts) : null);
+  // Les chiffres en plus : lus dans `metrics` (calculés par le serveur sur les flux complets) ou déduits des colonnes de la séance
+  const supplements: { cle: string; libelle: string; valeur: string; unite?: string }[] = [
+    ...(derive ? [{ cle: 'derive', libelle: 'Dérive', valeur: `${derive.pct > 0 ? '+' : derive.pct < 0 ? '−' : ''}${formatKm(Math.abs(derive.pct), 1)}`, unite: '%' }] : []),
+    ...(aPuissance && mesure('if_pct') ? [{ cle: 'if', libelle: 'Intensité', valeur: String(Math.round(mesure('if_pct')!)), unite: '%' }] : []),
+    ...(Number(seance.max_heartrate) > 0 && hrMaxProfil ? [{ cle: 'fcpct', libelle: 'FC max', valeur: String(Math.round((Number(seance.max_heartrate) / hrMaxProfil) * 100)), unite: '%' }] : []),
+    ...(aPuissance && nP && fcMoy ? [{ cle: 'ef', libelle: 'Efficacité', valeur: formatKm(nP / fcMoy, 2) }] : []),
+    ...(mesure('trimp') ? [{ cle: 'trimp', libelle: 'TRIMP', valeur: String(Math.round(mesure('trimp')!)) }] : []),
+    ...(aPuissance && pmax ? [{ cle: 'pmax', libelle: 'Puissance max', valeur: String(Math.round(pmax)), unite: 'W' }] : []),
+    ...(aPuissance && mesure('work_over_ftp_kj') ? [{ cle: 'kjftp', libelle: 'Travail > FTP', valeur: formatKm(mesure('work_over_ftp_kj')!, 1), unite: 'kJ' }] : []),
   ];
+  const chiffres = [...chiffresBase, ...supplements];
+
   const cles = troisChiffres(chiffres);
   const lignes = tours ? lignesTours(tours, seance.sport) : [];
   const puces = pucesEcart(seance);
