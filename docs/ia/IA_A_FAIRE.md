@@ -35,6 +35,10 @@ Principe posé par Yanis : **chaque règle du plan vient d'études ou de la pers
 - [ ] Coefficients d'échelle des repères personnels (75, 85, 90, 130 %) : conventions, à valider ou à remplacer.
 - [ ] Exposant de conversion entre distances : reste 1,06. Piste : exposant personnel quand il a deux efforts de distances différentes (touche `rpc_coach_resume`).
 
+- [ ] **Limite repérée sur le vrai compte de Yanis (10 nov.)** : `rpc_coach_resume` ne retient comme meilleur effort que les sorties de **4,8 km ou plus**. Sa meilleure sortie récente (4,55 km à 5:14/km, FC 176) est donc ignorée : le moteur estimerait environ 58 min au 10 km au lieu d'environ 55:40. À corriger (abaisser le seuil, ou tenir compte des efforts plus courts).
+- [ ] Le moteur ne voit pas qu'il y a **deux compétitions le même jour** (10 km et 5 km de Ramonville, toutes deux priorité A) : à signaler et à faire choisir.
+- [ ] Le moteur ne détecte pas les **reprises répétées** (plusieurs « reprise » espacées dans l'historique) pour être plus prudent sur la montée de charge.
+
 ## 5. Vérifier les sources
 - [ ] Lire les textes complets (je n'ai lu que des résumés) : Bosquet 2007, Nuuttila 2022, Buist 2008, Nielsen 2013, Rosenblat 2019 (lien exact à retrouver).
 - [ ] *Daniels' Running Formula* (tables d'allures, exposant 5-10 km, plafond de sortie longue) : nécessite le livre ou un extrait fiable.
