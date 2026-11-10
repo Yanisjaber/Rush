@@ -6,7 +6,7 @@ import { Easing, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HEURE_LARGEUR, MessageVue } from '@/components/coach/MessageVue';
 import { SaisieCoach } from '@/components/coach/SaisieCoach';
-import { BoutonReglages } from '@/components/ui/BoutonReglages';
+import { BarreSports } from '@/components/graphes/BarreSports';
 import { FondDegrade } from '@/components/ui/FondDegrade';
 import { ROUTE_ECRAN, type ActionApp } from '@/data/coach/actions';
 import { afficherRepere, repereHeure } from '@/data/coach/libelles';
@@ -98,23 +98,19 @@ export default function Coach() {
     <View style={styles.page}>
       <FondDegrade />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.page}>
-        <View style={[styles.entete, { paddingTop: insets.top + espace.e2 }]}>
-          {/* Mode développement : un appui long sur le titre pose une carte de plan d'exemple (sans serveur) pour voir l'écran */}
-          <Pressable onLongPress={c.insererExemple} disabled={!c.insererExemple} accessible={false}>
-            <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>
-              Coach
-            </Text>
-          </Pressable>
-          <View style={styles.droite}>
-            {c.messages.length > 0 && !c.envoi ? (
-              <Pressable onPress={confirmerEffacement} accessibilityRole="button" accessibilityLabel="Effacer la conversation" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.effacer}>
-                <Text style={[typo.petit, { color: p.texteDoux }]}>Effacer</Text>
-              </Pressable>
-            ) : null}
-            {/* Comme Santé : pas de barre des sports, la roue des Paramètres est ici, en haut à droite */}
-            <BoutonReglages />
-          </View>
-        </View>
+        {/* Même barre que les autres écrans. À gauche : « Effacer » quand il y a une conversation. Mode développement : un appui long dans ce coin pose une carte de plan d'exemple (sans serveur) pour voir l'écran */}
+        <BarreSports
+          titre="Coach"
+          gauche={
+            <Pressable onLongPress={c.insererExemple} disabled={!c.insererExemple} accessible={false} style={styles.coin}>
+              {c.messages.length > 0 && !c.envoi ? (
+                <Pressable onPress={confirmerEffacement} accessibilityRole="button" accessibilityLabel="Effacer la conversation" hitSlop={{ top: 4, bottom: 4, left: 8, right: 8 }} style={styles.effacer}>
+                  <Text style={[typo.petit, { color: p.texteDoux }]}>Effacer</Text>
+                </Pressable>
+              ) : null}
+            </Pressable>
+          }
+        />
 
         {!acces ? (
           <Etat titre="Le coach n'est pas encore ouvert" texte="Ton compte n'y a pas encore accès. Il arrive bientôt." />
@@ -220,8 +216,7 @@ function Etat({ titre, texte }: { titre: string; texte: string }) {
 
 const styles = StyleSheet.create({
   page: { flex: 1 },
-  entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: espace.e4, paddingBottom: espace.e2 },
-  droite: { flexDirection: 'row', alignItems: 'center', gap: espace.e1, marginRight: -espace.e3 },
+  coin: { minWidth: 42, minHeight: 42, justifyContent: 'center' },
   effacer: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center' },
   repere: { textAlign: 'center', textTransform: 'none', letterSpacing: 0, marginTop: espace.e2, marginBottom: espace.e2 },
   liste: { flexGrow: 1, justifyContent: 'flex-end', paddingHorizontal: espace.e4, paddingVertical: espace.e3 },
