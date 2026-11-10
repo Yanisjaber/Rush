@@ -68,7 +68,7 @@ export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, records
   const colonnes: (typeof rubriques)[] = [[], []];
   let vues = 0;
   for (const r of rubriques) {
-    colonnes[vues + r.lignes.length / 2 <= totalLignes / 2 + 1 ? 0 : 1].push(r);
+    colonnes[vues + r.lignes.length <= totalLignes / 2 + 0.5 ? 0 : 1].push(r);
     vues += r.lignes.length;
   }
 
