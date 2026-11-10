@@ -1,0 +1,92 @@
+import { calculerZones, texteAllure } from '../reglages/profil.ts';
+import type { FluxBruts } from './courbes-sortie.ts';
+
+// Le temps passé dans chaque zone (cœur, puissance, allure) pendant UNE sortie, calculé sur les flux point par point.
+// Les zones sont recalculées depuis le profil (jamais stockées). Fonctions pures : aucun écran, aucun réseau.
+
+/**
+ * Secondes passées dans chaque zone. `bornes` = le début de chaque zone, du plus bas au plus haut ; une valeur sous la première borne va dans la première zone.
+ * Chaque point compte pour le temps qui le sépare du suivant (au plus 3 fois l'écart habituel : une pause ne compte pas) ; sans temps, la durée totale est répartie en parts égales.
+ * Null sans point valide ou sans aucune durée.
+ */
+export function tempsParZone(valeurs: number[], temps: number[] | null | undefined, bornes: number[], dureeTotaleS?: number | null): number[] | null {
+  const n = valeurs.length;
+  if (n < 2 || !bornes.length) return null;
+  const duree: number[] = new Array(n).fill(0);
+  if (temps && temps.length === n && temps.every((t) => Number.isFinite(t))) {
+    const ecarts = temps.slice(1).map((t, i) => t - temps[i]).filter((e) => e > 0);
+    if (ecarts.length) {
+      const mediane = [...ecarts].sort((a, b) => a - b)[Math.floor(ecarts.length / 2)];
+      for (let i = 0; i < n - 1; i++) duree[i] = Math.min(Math.max(0, temps[i + 1] - temps[i]), mediane * 3);
+      duree[n - 1] = duree[n - 2];
+    }
+  } else if (dureeTotaleS && dureeTotaleS > 0) {
+    duree.fill(dureeTotaleS / n);
+  }
+  const secondes: number[] = new Array(bornes.length).fill(0);
+  valeurs.forEach((v, i) => {
+    if (!Number.isFinite(v) || duree[i] <= 0) return;
+    let z = 0;
+    for (let k = 0; k < bornes.length; k++) if (v >= bornes[k]) z = k;
+    secondes[z] += duree[i];
+  });
+  return secondes.reduce((a, b) => a + b, 0) > 0 ? secondes : null;
+}
+
+export interface ZoneSortie {
+  /** « Z1 », « Z5a »… */
+  court: string;
+  /** Le nom complet (« Z4 Sous le seuil »). */
+  nom: string;
+  /** La borne basse lisible sous la colonne (« 138 », « 5:20 » ; la première zone : « <138 »). */
+  borne: string;
+  secondes: number;
+}
+
+export interface MesureZones {
+  cle: 'fc' | 'watts' | 'allure';
+  titre: string;
+  /** La référence des zones (« seuil 172 bpm »). */
+  reference: string;
+  /** La référence est estimée (FC au seuil déduite de la FC max). */
+  estimee: boolean;
+  zones: ZoneSortie[];
+}
+
+export interface RefsZones {
+  /** FC au seuil (bpm), saisie ou estimée. */
+  lthr?: { bpm: number; estimee: boolean } | null;
+  ftp?: number | null;
+  /** Vitesse seuil (km/h), pour les zones d'allure en course. */
+  seuilKmh?: number | null;
+}
+
+const sansUnite = (kmh: number) => texteAllure(kmh).replace('/km', '');
+
+/** Les répartitions qu'on sait faire pour cette sortie : chaque mesure a ses flux ET sa référence dans le profil. Liste vide sinon. */
+export function repartitionsSortie(brut: FluxBruts | null | undefined, refs: RefsZones, course: boolean, dureeS: number | null | undefined): MesureZones[] {
+  if (!brut) return [];
+  const sortie: MesureZones[] = [];
+  const ajouter = (cle: MesureZones['cle'], titre: string, reference: string, estimee: boolean, valeurs: number[] | undefined, modele: 'cardio' | 'puissance' | 'allure', ref: number, borne: (de: number) => string) => {
+    const zones = calculerZones(modele, ref);
+    if (!valeurs || !zones) return;
+    const s = tempsParZone(valeurs, brut.temps, zones.map((z) => z.de), dureeS);
+    if (!s) return;
+    sortie.push({
+      cle,
+      titre,
+      reference,
+      estimee,
+      zones: zones.map((z, i) => ({
+        court: z.nom.split(' ')[0],
+        nom: z.nom,
+        borne: i === 0 ? (modele === 'allure' ? `>${borne(zones[1].de)}` : `<${borne(zones[1].de)}`) : borne(z.de),
+        secondes: s[i],
+      })),
+    });
+  };
+  if (refs.lthr) ajouter('fc', 'Cœur', `seuil ${refs.lthr.bpm} bpm`, refs.lthr.estimee, brut.fc, 'cardio', refs.lthr.bpm, (d) => String(Math.round(d)));
+  if (refs.ftp && refs.ftp > 0) ajouter('watts', 'Puissance', `FTP ${Math.round(refs.ftp)} W`, false, brut.watts, 'puissance', refs.ftp, (d) => String(Math.round(d)));
+  if (course && refs.seuilKmh && refs.seuilKmh > 0) ajouter('allure', 'Allure', `seuil ${sansUnite(refs.seuilKmh)}/km`, false, brut.vitesse?.map((v) => v * 3.6), 'allure', refs.seuilKmh, sansUnite);
+  return sortie;
+}

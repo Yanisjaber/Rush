@@ -13,7 +13,9 @@ import { chiffresSeance, lignesTours, troisChiffres } from '@/data/calendrier/se
 import { formatDateCourte } from '@/data/outils/format';
 import { familleAffichage } from '@/data/sports/familles';
 import { nomDuType } from '@/data/sports/catalogue-sports';
+import { RepartitionSortie } from '@/components/graphes/RepartitionSortie';
 import { calculerZones, referenceCardio } from '@/data/reglages/profil';
+import { repartitionsSortie } from '@/data/outils/repartition-zones';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useProfilSection } from '@/hooks/useProfilSection';
 import { useSeance } from '@/hooks/useSeance';
@@ -64,6 +66,14 @@ export default function Seance() {
   // Début des zones cardio Z3, Z4 et Z5a, recalculées depuis le profil (jamais stockées) : sans FC max ni seuil, pas de fond coloré
   const refCardio = referenceCardio(profil);
   const zonesCardio = refCardio ? calculerZones('cardio', refCardio.bpm) : null;
+  // Le temps passé par zone (cœur, puissance, allure) : seulement avec les flux et la référence du profil (FTP de la sortie à défaut de celle du profil)
+  const extrasProfil = (profil?.extras ?? {}) as Record<string, unknown>;
+  const mesuresZones = repartitionsSortie(
+    courbes?.brut,
+    { lthr: refCardio, ftp: Number(profil?.ftp) > 0 ? Number(profil?.ftp) : seance.ftp_at_time, seuilKmh: Number(extrasProfil.threshold_speed) || null },
+    familleAffichage(seance.sport) === 'course',
+    seance.moving_time,
+  );
   const seuilsCoeur: [number, number, number] | null = zonesCardio ? [zonesCardio[2].de, zonesCardio[3].de, zonesCardio[4].de] : null;
   const notes = (seance.user_notes ?? '').trim();
   const supprimable = sortieSupprimable(seance);
@@ -117,6 +127,7 @@ export default function Seance() {
             </View>
           ) : null
         }
+        repartitions={mesuresZones.length ? <RepartitionSortie mesures={mesuresZones} couleur={couleur} /> : undefined}
         graphesHaut={courbes ? (hauteur, onGlisse) => <GraphesSynchro courbes={courbes} km={seance.distance_km ?? null} rythme={familleAffichage(seance.sport) === 'velo' ? 'vitesse' : 'allure'} couleur={couleur} dureeS={seance.moving_time ?? null} hauteur={hauteur} seuilsCoeur={seuilsCoeur} onGlisse={onGlisse} /> : undefined}
         pageDetails={(onGlisse) => (
           <PageDetailsSortie

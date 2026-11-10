@@ -2,7 +2,19 @@ import { decoderStreams, valeursDuFlux } from './trace-sortie.ts';
 
 // Les courbes d'une sortie (vitesse, cœur, altitude, cadence, puissance) en fonction de la distance, prêtes à dessiner : une valeur par tranche de distance, toutes alignées.
 // Viennent des flux stockés (activities.streams_gz). Fonctions pures : aucun écran, aucun réseau.
+/** Les flux point par point (sans regroupement par distance), pour le temps passé par zone. NaN = valeur manquante. */
+export interface FluxBruts {
+  /** Secondes écoulées à chaque point. */
+  temps?: number[];
+  fc?: number[];
+  watts?: number[];
+  /** Vitesse en m/s. */
+  vitesse?: number[];
+}
+
 export interface CourbesSortie {
+  /** Les flux point par point, quand ils existent. */
+  brut?: FluxBruts;
   /** Nombre de points de chaque courbe. */
   n: number;
   /** Distance totale (km) lue dans les flux, ou null sans flux de distance (l'axe est alors celui de la distance de la sortie). */
@@ -70,6 +82,18 @@ export function courbesDepuisFlux(flux: unknown, n = N): CourbesSortie | null {
   const altitude = moyennesParTranche(liste('altitude'), tranche, n, () => true);
   const cadence = moyennesParTranche(liste('cadence'), tranche, n, (v) => v > 0);
   const watts = moyennesParTranche(liste('watts'), tranche, n, (v) => v >= 0);
+  // Les flux bruts, gardés tels quels (alignés sur la même longueur) pour calculer le temps par zone
+  const brut: FluxBruts = {};
+  const garder = (type: string): number[] | undefined => {
+    const l = liste(type);
+    return l.length === longueur ? l.map((v) => (ok(v) ? v : NaN)) : undefined;
+  };
+  const [t, f, w, vv] = [garder('time'), garder('heartrate'), garder('watts'), garder('velocity_smooth')];
+  if (t) brut.temps = t;
+  if (f) brut.fc = f;
+  if (w) brut.watts = w;
+  if (vv) brut.vitesse = vv;
+  if (Object.keys(brut).length) courbes.brut = brut;
   if (vitesse) courbes.vitesse = vitesse;
   if (fc) courbes.fc = fc;
   if (altitude) courbes.altitude = altitude;

@@ -67,12 +67,14 @@ test('nettoyerCourbes : flux alignés, allégés à 600 points, flux incohérent
   const brut: any = {
     distance: { data: Array.from({ length: n }, (_, i) => i) },
     heartrate: { data: Array.from({ length: n }, () => 150) },
+    time: { data: Array.from({ length: n }, (_, i) => i) }, // le temps écoulé suit les mêmes indices (pour le temps passé par zone)
     cadence: { data: [1, 2, 3] }, // longueur différente : écarté
     watts: { data: Array.from({ length: n }, (_, i) => (i === 5 ? 'x' : 100)) }, // pas que des nombres : écarté
   };
   const c = nettoyerCourbes(brut)!;
   assert.equal(c.distance.data.length, POINTS_MAX);
   assert.equal(c.heartrate.data.length, POINTS_MAX);
+  assert.equal(c.time.data.length, POINTS_MAX);
   assert.equal(c.cadence, undefined);
   assert.equal(c.watts, undefined);
   assert.equal(nettoyerCourbes(null), null);

@@ -1,0 +1,108 @@
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import Svg, { Rect, Text as TexteSvg } from 'react-native-svg';
+import type { MesureZones } from '@/data/outils/repartition-zones';
+import { espace, rayon } from '@/theme/couleurs';
+import { police, typo } from '@/theme/typo';
+import { usePalette } from '@/theme/usePalette';
+
+// Le temps passé dans chaque zone pendant la sortie : un histogramme (une colonne par zone, les bornes dessous) et trois onglets Cœur / Puissance / Allure.
+// Seules les mesures qu'on sait calculer (flux présents ET référence dans le profil) ont un onglet. Les zones sont recalculées depuis le profil, jamais stockées.
+interface Props {
+  mesures: MesureZones[];
+  /** La couleur du sport : les premières zones en sont des teintes, les deux plus dures passent au rouge. */
+  couleur: string;
+}
+
+const HAUT = 150;
+const BAS = 40; // la place des noms de zone et de leurs bornes sous les colonnes
+const HAUT_LABEL = 16; // la place du temps au-dessus de la colonne la plus haute
+
+/** 45 → « 45 s » ; 840 → « 14 min ». */
+function texteTemps(s: number): string {
+  if (s < 1) return '0';
+  if (s < 60) return `${Math.round(s)} s`;
+  return `${Math.round(s / 60)} min`;
+}
+
+export function RepartitionSortie({ mesures, couleur }: Props) {
+  const p = usePalette();
+  const [choix, setChoix] = useState(mesures[0]?.cle);
+  const [largeur, setLargeur] = useState(0);
+  if (!mesures.length) return null;
+  const mesure = mesures.find((m) => m.cle === choix) ?? mesures[0];
+  const n = mesure.zones.length;
+  const total = mesure.zones.reduce((a, z) => a + z.secondes, 0);
+  const max = Math.max(...mesure.zones.map((z) => z.secondes));
+  const dominante = mesure.zones.findIndex((z) => z.secondes === max);
+  // Les teintes : le sport en dégradé de transparence, puis le rouge pour les deux zones les plus dures
+  const teinte = (i: number) => {
+    if (i >= n - 2) return i === n - 1 ? p.danger : p.danger + 'b0';
+    const alpha = Math.round(70 + (i / Math.max(1, n - 3)) * 150).toString(16).padStart(2, '0');
+    return couleur + alpha;
+  };
+  const pas = largeur > 0 ? (largeur - 2 * espace.e3) / n : 0;
+  const colonne = Math.min(40, pas * 0.74);
+
+  return (
+    <View style={{ gap: espace.e2 }}>
+      {mesures.length > 1 ? (
+        <View accessibilityRole="tablist" style={[styles.onglets, { backgroundColor: p.surface }]}>
+          {mesures.map((m) => {
+            const actif = m.cle === mesure.cle;
+            return (
+              <Pressable
+                key={m.cle}
+                onPress={() => setChoix(m.cle)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: actif }}
+                style={[styles.onglet, actif && { backgroundColor: p.texte }]}
+              >
+                <Text style={[typo.petit, { fontFamily: police.texte600, color: actif ? p.fond : p.texteDoux }]}>{m.titre}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
+      <View onLayout={(e: LayoutChangeEvent) => setLargeur(e.nativeEvent.layout.width)} style={[styles.carte, { backgroundColor: p.surface }]}>
+        <View style={styles.titre}>
+          <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2 }]}>{`TEMPS PAR ZONE · ${mesure.titre.toUpperCase()}`}</Text>
+          <Text style={[typo.petit, { color: p.texteMuet }]}>{mesure.estimee ? `${mesure.reference} (estimé)` : mesure.reference}</Text>
+        </View>
+        {largeur > 0 ? (
+          <Svg width={largeur} height={HAUT + BAS} accessible accessibilityLabel={`Temps par zone, ${mesure.titre}. Zone dominante ${mesure.zones[dominante].court}, ${Math.round((100 * max) / total)} pour cent.`}>
+            {mesure.zones.map((z, i) => {
+              const x = espace.e3 + i * pas + (pas - colonne) / 2;
+              const h = max > 0 ? Math.max(3, ((HAUT - HAUT_LABEL) * z.secondes) / max) : 3;
+              const centre = x + colonne / 2;
+              return (
+                <View key={z.court}>
+                  <Rect x={x} y={HAUT - h} width={colonne} height={h} rx={5} fill={z.secondes > 0 ? teinte(i) : p.trait} />
+                  <TexteSvg x={centre} y={HAUT - h - 5} textAnchor="middle" fontSize={11} fontFamily={police.texte600} fill={p.texte}>
+                    {texteTemps(z.secondes)}
+                  </TexteSvg>
+                  <TexteSvg x={centre} y={HAUT + 15} textAnchor="middle" fontSize={12} fontFamily={police.texte600} fill={i === dominante ? p.texte : p.texteDoux}>
+                    {z.court}
+                  </TexteSvg>
+                  <TexteSvg x={centre} y={HAUT + 29} textAnchor="middle" fontSize={10} fontFamily={police.texte400} fill={p.texteMuet}>
+                    {z.borne}
+                  </TexteSvg>
+                </View>
+              );
+            })}
+          </Svg>
+        ) : (
+          <View style={{ height: HAUT + BAS }} />
+        )}
+        <Text style={[typo.petit, { color: p.texteDoux }]}>{`Zone dominante : ${mesure.zones[dominante].nom} · ${Math.round((100 * max) / total)} %`}</Text>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  onglets: { flexDirection: 'row', borderRadius: rayon.base, padding: 3, gap: 2 },
+  onglet: { flex: 1, minHeight: 36, alignItems: 'center', justifyContent: 'center', borderRadius: rayon.base - 3 },
+  carte: { borderRadius: rayon.base, paddingVertical: espace.e3, paddingHorizontal: 0, gap: espace.e2 },
+  titre: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingHorizontal: espace.e3, gap: espace.e2 },
+});

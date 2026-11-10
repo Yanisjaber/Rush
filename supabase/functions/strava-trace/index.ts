@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
 
     // 5) Positions, altitude et distance de l'activité
     const res = await fetch(
-      `${STRAVA_API}/activities/${encodeURIComponent(String(act.strava_id))}/streams?keys=latlng,altitude,distance,velocity_smooth,heartrate,cadence,watts&key_by_type=true`,
+      `${STRAVA_API}/activities/${encodeURIComponent(String(act.strava_id))}/streams?keys=latlng,altitude,distance,velocity_smooth,heartrate,cadence,watts,time&key_by_type=true`,
       { headers: { Authorization: `Bearer ${accessToken}` } },
     );
     if (res.status === 429) return json({ error: "rate_limited" }, 429);

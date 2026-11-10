@@ -45,13 +45,15 @@ interface Props {
   /** La seconde page, sans carte : toutes les infos de la sortie (on y va en balayant vers la gauche). */
   pageDetails: (onGlisse: (actif: boolean) => void) => ReactNode;
   /** Les courbes de la page 2, fixes dans la zone du haut (entre la date et les pastilles) : reçoit la hauteur libre. Absent sans courbes. */
+  /** Les répartitions par zones, en tête du contenu qui défile sous les pastilles. */
+  repartitions?: ReactNode;
   graphesHaut?: (hauteur: number, onGlisse: (actif: boolean) => void) => ReactNode;
   onModifier?: () => void;
 }
 
 const HAUTEUR_PROFIL = 166; // la hauteur du profil (courbe et repères de distance)
 
-export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, hero, chiffres, pageDetails, graphesHaut, onModifier }: Props) {
+export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, hero, chiffres, pageDetails, graphesHaut, repartitions, onModifier }: Props) {
   const p = usePalette();
   const { top: haut, bottom: bas } = useSafeAreaInsets();
   const { width: largeur, height: hauteur } = useWindowDimensions();
@@ -149,6 +151,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
             <View style={{ position: 'absolute', left: espace.e4, right: espace.e4, top: topGraphes, height: Math.max(0, hautGraphes) }}>{graphesHaut(Math.max(0, hautGraphes), setSurCourbe)}</View>
           ) : null}
           <ScrollView style={{ marginTop: yEcran + 20 + espace.e2 }} contentContainerStyle={{ paddingHorizontal: espace.e4, paddingBottom: bas + espace.e5, gap: espace.e3 }} showsVerticalScrollIndicator={false}>
+            {repartitions}
             {pageDetails(setSurCourbe)}
           </ScrollView>
         </View>
