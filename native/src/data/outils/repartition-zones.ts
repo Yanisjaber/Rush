@@ -38,7 +38,7 @@ export interface ZoneSortie {
   court: string;
   /** Le nom complet (« Z4 Sous le seuil »). */
   nom: string;
-  /** La borne basse lisible sous la colonne (« 138 », « 5:20 » ; la première zone : « <138 »). */
+  /** La plage de la zone sous la colonne (« 141–156 », « 6:12–5:40 » ; la première : « <141 », la dernière : « 186+ »). */
   borne: string;
   secondes: number;
 }
@@ -48,6 +48,8 @@ export interface MesureZones {
   titre: string;
   /** La référence des zones (« seuil 172 bpm »). */
   reference: string;
+  /** L'unité des bornes (« bpm », « W », « min/km »). */
+  unite: string;
   /** La référence est estimée (FC au seuil déduite de la FC max). */
   estimee: boolean;
   zones: ZoneSortie[];
@@ -69,35 +71,46 @@ const MANQUE = {
   allure: 'Renseigne ta vitesse seuil dans Paramètres › Profil pour voir le temps passé dans chaque zone d’allure.',
 } as const;
 
+/** La plage lisible d'une zone. En allure, les zones vont du plus lent au plus rapide : la première est « >6:12 », la dernière « <5:10 ». */
+function plage(modele: 'cardio' | 'puissance' | 'allure', i: number, n: number, de: (k: number) => number, borne: (v: number) => string): string {
+  const allure = modele === 'allure';
+  if (i === 0) return `${allure ? '>' : '<'}${borne(de(1))}`;
+  if (i === n - 1) return allure ? `<${borne(de(i))}` : `${borne(de(i))}+`;
+  // Les bornes entières ne se chevauchent pas : une zone finit un point avant le début de la suivante
+  const haut = allure ? borne(de(i + 1)) : String(Math.round(de(i + 1)) - 1);
+  return `${borne(de(i))}–${haut}`;
+}
+
 const sansUnite = (kmh: number) => texteAllure(kmh).replace('/km', '');
 
 /** Les répartitions de cette sortie : une par mesure dont on a les flux. Sans la référence dans le profil, la mesure est là quand même, avec un message (`manque`) au lieu des zones. */
 export function repartitionsSortie(brut: FluxBruts | null | undefined, refs: RefsZones, course: boolean, dureeS: number | null | undefined): MesureZones[] {
   if (!brut) return [];
   const sortie: MesureZones[] = [];
-  const ajouter = (cle: MesureZones['cle'], titre: string, reference: string, estimee: boolean, valeurs: number[] | undefined, modele: 'cardio' | 'puissance' | 'allure', ref: number, borne: (de: number) => string) => {
+  const ajouter = (cle: MesureZones['cle'], titre: string, reference: string, estimee: boolean, valeurs: number[] | undefined, modele: 'cardio' | 'puissance' | 'allure', ref: number, borne: (de: number) => string, unite: string) => {
     const zones = calculerZones(modele, ref);
     if (!valeurs || valeurs.every((v) => !Number.isFinite(v))) return;
-    if (!zones) return void sortie.push({ cle, titre, reference: '', estimee: false, zones: [], manque: MANQUE[cle] });
+    if (!zones) return void sortie.push({ cle, titre, reference: '', unite, estimee: false, zones: [], manque: MANQUE[cle] });
     const s = tempsParZone(valeurs, brut.temps, zones.map((z) => z.de), dureeS);
     if (!s) return;
     sortie.push({
       cle,
       titre,
       reference,
+      unite,
       estimee,
       zones: zones.map((z, i) => ({
         court: z.nom.split(' ')[0],
         nom: z.nom,
-        borne: i === 0 ? (modele === 'allure' ? `>${borne(zones[1].de)}` : `<${borne(zones[1].de)}`) : borne(z.de),
+        borne: plage(modele, i, zones.length, (k) => zones[k].de, borne),
         secondes: s[i],
       })),
     });
   };
   const ftp = refs.ftp && refs.ftp > 0 ? refs.ftp : 0;
   const seuil = refs.seuilKmh && refs.seuilKmh > 0 ? refs.seuilKmh : 0;
-  ajouter('fc', 'Cœur', refs.lthr ? `seuil ${refs.lthr.bpm} bpm` : '', !!refs.lthr?.estimee, brut.fc, 'cardio', refs.lthr?.bpm ?? 0, (d) => String(Math.round(d)));
-  ajouter('watts', 'Puissance', ftp ? `FTP ${Math.round(ftp)} W` : '', false, brut.watts, 'puissance', ftp, (d) => String(Math.round(d)));
-  if (course) ajouter('allure', 'Allure', seuil ? `seuil ${sansUnite(seuil)}/km` : '', false, brut.vitesse?.map((v) => v * 3.6), 'allure', seuil, sansUnite);
+  ajouter('fc', 'Cœur', refs.lthr ? `seuil ${refs.lthr.bpm} bpm` : '', !!refs.lthr?.estimee, brut.fc, 'cardio', refs.lthr?.bpm ?? 0, (d) => String(Math.round(d)), 'bpm');
+  ajouter('watts', 'Puissance', ftp ? `FTP ${Math.round(ftp)} W` : '', false, brut.watts, 'puissance', ftp, (d) => String(Math.round(d)), 'W');
+  if (course) ajouter('allure', 'Allure', seuil ? `seuil ${sansUnite(seuil)}/km` : '', false, brut.vitesse?.map((v) => v * 3.6), 'allure', seuil, sansUnite, 'min/km');
   return sortie;
 }

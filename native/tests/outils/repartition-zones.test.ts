@@ -34,6 +34,11 @@ test('repartitionsSortie : une mesure par flux présent, avec un message quand l
   assert.equal(Math.round(r[0].zones.reduce((a, z) => a + z.secondes, 0)), 600);
   assert.equal(r[0].zones[4].court, 'Z5a'); // 175 bpm / 172 = 102 % : zone Z5a
   assert.ok(r[0].zones[4].secondes > 500);
+  // La plage sous chaque colonne : « <138 », puis « 138–153 »… sans chevauchement, et « 207+ » pour la dernière
+  assert.equal(r[0].zones[0].borne, '<138');
+  assert.equal(r[0].zones[1].borne, '138–153');
+  assert.match(r[0].zones[6].borne, /^\d+\+$/);
+  assert.equal(r[0].unite, 'bpm');
   assert.equal(repartitionsSortie(brut, { lthr: { bpm: 172, estimee: false }, seuilKmh: 12.5 }, false, 600).some((m) => m.cle === 'allure'), false); // allure : course seulement
   assert.match(repartitionsSortie(brut, {}, true, 600).find((m) => m.cle === 'allure')?.manque ?? '', /vitesse seuil/); // sans seuil : message
   assert.deepEqual(repartitionsSortie(null, { ftp: 250 }, true, 600), []);

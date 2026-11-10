@@ -57,7 +57,7 @@ export function RepartitionSortie({ mesures, couleur }: Props) {
           </>
         ) : null}
         {manque ? null : <View style={styles.titre}>
-          <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2 }]}>{`TEMPS PAR ZONE · ${mesure.titre.toUpperCase()}`}</Text>
+          <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2 }]}>{`TEMPS PAR ZONE · ${mesure.titre.toUpperCase()} (${mesure.unite})`}</Text>
         </View>}
         {manque ? null : largeur > 0 ? (
           <Svg width={largeur} height={HAUT + BAS} accessible accessibilityLabel={`Temps par zone, ${mesure.titre}. Zone dominante ${mesure.zones[dominante].court}, ${Math.round((100 * max) / total)} pour cent.`}>
@@ -74,7 +74,7 @@ export function RepartitionSortie({ mesures, couleur }: Props) {
                   <TexteSvg x={centre} y={HAUT + 15} textAnchor="middle" fontSize={12} fontFamily={police.texte600} fill={i === dominante ? p.texte : p.texteDoux}>
                     {z.court}
                   </TexteSvg>
-                  <TexteSvg x={centre} y={HAUT + 29} textAnchor="middle" fontSize={10} fontFamily={police.texte400} fill={p.texteMuet}>
+                  <TexteSvg x={centre} y={HAUT + 29} textAnchor="middle" fontSize={9} fontFamily={police.texte400} fill={p.texteMuet}>
                     {z.borne}
                   </TexteSvg>
                 </View>
