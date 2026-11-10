@@ -117,3 +117,24 @@ test('motDuCoach : vélo, la proposition est une sortie facile de 45 à 90 min',
   assert.equal(m.proposition!.type, 'Ride');
   assert.equal(m.proposition!.dureeMin, 90);
 });
+
+test('la proposition du coach passe la validation d\'une séance prévue (course et vélo)', async () => {
+  const { validerSeance } = await import('../../src/data/calendrier/ajouts.ts');
+  for (const famille of ['course', 'velo'] as const) {
+    const m = motDuCoach({ ...base, famille, comparaison: null, derivePct: 14, dureeS: 3600 });
+    const pr = m.proposition!;
+    const v = validerSeance({ nom: pr.nom, type: pr.type, duree: String(pr.dureeMin), heure: '18:00', distance: '', dplus: '', rpe: pr.rpe, tss: '', notes: pr.notes }, pr.date, pr.nom);
+    assert.equal(v.ok, true, famille);
+    if (v.ok) {
+      assert.equal(v.ligne.date, '2026-11-11');
+      assert.equal(v.ligne.sport, pr.type);
+      assert.equal(v.ligne.duration, pr.dureeMin);
+      assert.equal(v.ligne.category, 'entrainement');
+    }
+  }
+});
+
+test('comparerSortie : les mètres par battement s\'écrivent avec deux décimales', () => {
+  const c = comparerSortie(moi, autres)!;
+  assert.match(c.lignes.find((l) => l.cle === 'efficacite')!.texte, /^\d,\d{2}$/);
+});

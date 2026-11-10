@@ -185,7 +185,7 @@ export function comparerSortie(seance: Seance, historique: readonly Seance[]): C
   if (moi.efficacite && effs.length >= NB_SORTIES_MIN) {
     const med = mediane(effs);
     const v = verdictDe(moi.efficacite, med, 'haut');
-    lignes.push({ cle: 'efficacite', libelle: 'Mètres par battement', texte: virgule(moi.efficacite), verdict: v, mot: v === 'mieux' ? 'mieux' : v === 'moins' ? 'moins bien' : 'pareil', ...bande(moi.efficacite, effs) });
+    lignes.push({ cle: 'efficacite', libelle: 'Mètres par battement', texte: virgule(moi.efficacite, 2), verdict: v, mot: v === 'mieux' ? 'mieux' : v === 'moins' ? 'moins bien' : 'pareil', ...bande(moi.efficacite, effs) });
   }
 
   // La puissance moyenne (vélo avec capteur)
