@@ -131,3 +131,75 @@ export function validerModification(entree: any): { ok: true; colonnes: Record<s
   if (!Object.keys(colonnes).length && !erreurs.length) erreurs.push('Rien à modifier.');
   return erreurs.length ? { ok: false, erreurs } : { ok: true, colonnes };
 }
+
+// ---------- Ce que voit le modèle, et la carte à valider ----------
+
+const MAJ = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+const heureMinutes = (min: number) => (min >= 60 ? `${Math.floor(min / 60)} h${min % 60 ? ` ${String(min % 60).padStart(2, '0')}` : ''}` : `${min} min`);
+const QUAND_TEXTE: Record<(typeof QUAND_BLESSURE)[number], string> = { moins_3_mois: 'il y a moins de 3 mois', moins_1_an: "il y a moins d'un an", plus_1_an: "il y a plus d'un an" };
+const MOMENT_TEXTE: Record<(typeof MOMENTS)[number], string> = { matin: 'le matin', midi: 'le midi', soir: 'le soir', variable: 'à des heures variables' };
+const FRACTIONNE_TEXTE: Record<(typeof FRACTIONNE)[number], string> = { aime: 'tu aimes le fractionné', neutre: 'le fractionné te va', evite: 'tu évites le fractionné' };
+
+/**
+ * Les lignes lisibles d'une modification déjà validée (validerModification) : c'est ce que montre la carte à l'utilisateur.
+ * Que du texte écrit ici, à partir de listes fermées et de nombres : rien de libre ne passe.
+ */
+export function lignesModification(colonnes: Record<string, unknown>): string[] {
+  const l: string[] = [];
+  if (typeof colonnes.annees_pratique === 'number') l.push(colonnes.annees_pratique === 0 ? 'Tu débutes (moins d\'un an de pratique)' : `Tu cours depuis ${colonnes.annees_pratique} an${colonnes.annees_pratique > 1 ? 's' : ''}`);
+  if (typeof colonnes.pic_hebdo_minutes === 'number') l.push(`Ta plus grosse semaine : ${heureMinutes(colonnes.pic_hebdo_minutes)} de course`);
+  const d = objet(colonnes.disponibilites);
+  if (d) for (const jour of JOURS_SEMAINE) {
+    const j = objet(d[jour]);
+    if (!j) continue;
+    const morceaux: string[] = [];
+    if (j.libre === false) morceaux.push('pas disponible');
+    else if (j.libre === true) morceaux.push('libre');
+    if (typeof j.minutes_max === 'number') morceaux.push(`${heureMinutes(j.minutes_max)} au plus`);
+    if (morceaux.length) l.push(`${MAJ(jour)} : ${morceaux.join(', ')}`);
+  }
+  if (Array.isArray(colonnes.blessures)) {
+    if (colonnes.blessures.length === 0) l.push('Aucune blessure');
+    // deno-lint-ignore no-explicit-any
+    for (const b of colonnes.blessures as any[]) l.push(`Blessure : ${b.zone}, ${QUAND_TEXTE[b.quand as (typeof QUAND_BLESSURE)[number]]}${b.actif ? ' (encore là)' : ''}`);
+  }
+  const p = objet(colonnes.preferences);
+  if (p) {
+    if (dans(MOMENTS, p.moment)) l.push(`Tu préfères t'entraîner ${MOMENT_TEXTE[p.moment]}`);
+    if (dans(FRACTIONNE, p.fractionne)) l.push(MAJ(FRACTIONNE_TEXTE[p.fractionne]));
+  }
+  return l;
+}
+
+/**
+ * Le profil actuel + la modification validée → ce qu'on écrit en base.
+ * Disponibilités : jour par jour (un jour redonné remplace l'ancien, les autres restent). Préférences : clé par clé. Le reste remplace.
+ * Répondre à la question des blessures (même « aucune ») la marque comme posée.
+ */
+// deno-lint-ignore no-explicit-any
+export function fusionnerProfil(ligne: any, colonnes: Record<string, unknown>): Record<string, unknown> {
+  const actuel = objet(ligne) ?? {};
+  const sortie: Record<string, unknown> = { ...colonnes };
+  if (colonnes.disponibilites) sortie.disponibilites = { ...(objet(actuel.disponibilites) ?? {}), ...(colonnes.disponibilites as Record<string, unknown>) };
+  if (colonnes.preferences) sortie.preferences = { ...(objet(actuel.preferences) ?? {}), ...(colonnes.preferences as Record<string, unknown>) };
+  if (colonnes.blessures) sortie.blessures_renseignees = true;
+  return sortie;
+}
+
+/** Le profil tel que le résumé le donne (bloc `profil`), mis en forme pour le modèle : ce qu'on sait, et ce qu'on peut encore demander. */
+// deno-lint-ignore no-explicit-any
+export function profilPourModele(bloc: any): { connu: Record<string, unknown>; ce_qui_manque: Manque[]; blessures_autorisees: boolean } {
+  const accord = objet(bloc)?.blessures_accord === true;
+  const p = profilCoureurDepuisLigne(bloc);
+  const manque = cequiManque(p).filter((m) => accord || m !== 'blessures');
+  const connu: Record<string, unknown> = {};
+  if (p.anneesPratique !== null) connu.annees_pratique = p.anneesPratique;
+  if (p.picHebdoMinutes !== null) connu.pic_hebdo_minutes = p.picHebdoMinutes;
+  if (Object.keys(p.disponibilites).length) {
+    connu.disponibilites = Object.fromEntries(Object.entries(p.disponibilites).map(([j, d]) => [j, { ...(d.libre !== undefined ? { libre: d.libre } : {}), ...(d.minutesMax !== undefined ? { minutes_max: d.minutesMax } : {}) }]));
+  }
+  if (accord && (p.blessuresRenseignees || p.blessures.length)) connu.blessures = p.blessures;
+  if (p.moment) connu.moment = p.moment;
+  if (p.fractionne) connu.fractionne = p.fractionne;
+  return { connu, ce_qui_manque: manque, blessures_autorisees: accord };
+}

@@ -78,9 +78,25 @@ export interface CartePlanning {
   annulation?: { annulees: number; ignorees: number };
 }
 
-export type Carte = CarteSeance | CartePlanning;
+/**
+ * Ce que le coach a appris sur le coureur (jours libres, blessures, ancienneté…) et propose de retenir pour mieux ajuster ses plans.
+ * `lignes` est écrit par le serveur à partir de listes fermées : le texte s'affiche tel quel. Rien n'est enregistré avant « Retenir ».
+ */
+export interface CarteProfil {
+  id: string;
+  genre: 'profil';
+  etat: EtatCarte;
+  /** Le titre court de la carte (« Ton temps disponible ») */
+  intention: string;
+  lignes: string[];
+  /** Raison du refus (état « refusee ») */
+  motif?: string;
+}
+
+export type Carte = CarteSeance | CartePlanning | CarteProfil;
 
 export const estPlanning = (c: Carte): c is CartePlanning => (c as CartePlanning).genre === 'planning';
+export const estProfil = (c: Carte): c is CarteProfil => (c as CarteProfil).genre === 'profil';
 
 /** Un message tel que l'écran l'affiche */
 export interface MessageCoach {

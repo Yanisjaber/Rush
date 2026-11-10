@@ -54,10 +54,30 @@ export interface CartePlanning {
   inverse?: unknown[];
 }
 
-export type Carte = CarteSeance | CartePlanning;
+/**
+ * Une carte « profil » : ce que le coach a appris sur le coureur (disponibilités, blessures, ancienneté…) et propose de retenir.
+ * Rien n'est écrit dans coach_profil tant que l'utilisateur n'a pas validé. `colonnes` est déjà passé par validerModification
+ * (listes fermées et nombres, jamais de texte libre) ; `lignes` est le texte lisible écrit par le code, pas par le modèle.
+ */
+export interface CarteProfil {
+  id: string;
+  genre: 'profil';
+  etat: EtatCarte;
+  intention: string;
+  colonnes: Record<string, unknown>;
+  lignes: string[];
+  /** Raison du refus (état « refusee ») */
+  motif?: string;
+}
+
+export type Carte = CarteSeance | CartePlanning | CarteProfil;
 
 export function estPlanning(c: Carte): c is CartePlanning {
   return (c as CartePlanning).genre === 'planning';
+}
+
+export function estProfil(c: Carte): c is CarteProfil {
+  return (c as CarteProfil).genre === 'profil';
 }
 
 export interface MessageStocke {
@@ -108,7 +128,7 @@ export function resumeLeger(resume: Libre): Libre {
     jours_de_repos: liste(r.jours_de_repos),
     objectifs: r.objectifs,
     qualite: r.qualite,
-    detail_via_outils: ['jours', 'seances_recentes', 'volume', 'sante', 'cycles'],
+    detail_via_outils: ['jours', 'seances_recentes', 'volume', 'sante', 'cycles', 'profil'],
   };
 }
 
@@ -158,6 +178,10 @@ export function texteCarte(c: Carte): string {
     const etat = { proposee: 'pas encore appliqué', en_cours: "en cours d'application", ajoutee: "appliqué par l'utilisateur", refusee: 'refusé par les règles', annulee: "annulé par l'utilisateur" }[c.etat] ?? c.etat;
     const bilan = c.bilan ? `. Bilan du code : ${c.bilan.slice(0, 1200)}` : '';
     return `[Plan de modifications (${c.lignes.map((l) => l.texte).join(' ; ').slice(0, 400)}) : ${etat}${bilan}]`;
+  }
+  if (estProfil(c)) {
+    const etat = { proposee: 'pas encore validé', en_cours: "en cours d'enregistrement", ajoutee: "enregistré par l'utilisateur", refusee: 'refusé', annulee: 'annulé' }[c.etat] ?? c.etat;
+    return `[Profil à retenir (${c.lignes.join(' ; ').slice(0, 400)}) : ${etat}]`;
   }
   const p = c.proposition;
   const etat = { proposee: 'pas encore ajoutée', en_cours: "en cours d'ajout", ajoutee: "ajoutée par l'utilisateur", refusee: 'refusée par les règles', annulee: "annulée par l'utilisateur" }[c.etat] ?? c.etat;

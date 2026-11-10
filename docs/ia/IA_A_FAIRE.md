@@ -10,12 +10,12 @@ Principe posé par Yanis : **chaque règle du plan vient d'études ou de la pers
 - Table `coach_profil` (disponibilités, ancienneté, pic hebdo, blessures, préférences ; listes fermées, RLS) + module serveur `profil-coureur.ts`. Appliquée en vraie base.
 
 ## 1. Profil du coureur : le brancher (prochaine étape)
-- [ ] **Décision** : qui écrit le profil ? Recommandé : une **carte à valider** dans le chat (« j'ajoute : mardi libre 60 min, genou… OK ? »), comme tout ce que fait le coach. L'écriture directe irait contre la règle « toujours une carte ».
-- [ ] Outil du coach : lire le profil et dire ce qui manque (`cequiManque`) ; le coach pose 1 ou 2 questions à la fois, dans l'ordre : disponibilités, blessures, ancienneté, pic hebdo, préférences.
-- [ ] Mémoriser les réponses (ne pas redemander à chaque plan).
-- [ ] Brancher dans `plan-course.ts` : jours libres et durée max par jour, prudence selon les blessures passées, jours durs préférés, ancienneté et pic hebdo pour le point de départ.
-- [ ] Blessures = données de santé : le coach ne les lit que si l'accord de santé correspondant est donné (Edge Function).
-- [ ] `rpc_coach_resume` : y ajouter le profil (migration à tester en local d'abord).
+- [x] **Décision** : le profil s'écrit via une **carte à valider** dans le chat (12 nov.). Carte `genre: 'profil'`, bouton « Retenir », pas d'annulation (pour changer, on le dit au coach).
+- [x] Outils `lire_profil` (connu + ce qui manque) et `proposer_profil` (carte) ; consigne dans le prompt : 1 ou 2 questions à la fois, dans l'ordre. Déployé (coach-chat), 10 tests serveur + 1 test app.
+- [x] Mémorisation : au tap, `ecrireProfil` fusionne (jour par jour, préférence par préférence) et écrit dans `coach_profil` avec les droits de l'utilisateur.
+- [ ] **Prochaine étape** : brancher dans `plan-course.ts` : jours libres et durée max par jour, prudence selon les blessures passées, jours durs préférés, ancienneté et pic hebdo pour le point de départ.
+- [x] Blessures = données de santé : lues et retenues seulement avec l'accord de la catégorie « evenement » (testé côté base et côté serveur).
+- [x] `rpc_coach_resume` : bloc `profil` ajouté (migration `2026-11-12_rpc_coach_resume_profil.sql`, testée en local, appliquée en base).
 - [ ] Écran de profil dans l'app (voir plus bas, 8 maquettes d'abord).
 
 ## 2. Niveau de confiance affiché dans la carte

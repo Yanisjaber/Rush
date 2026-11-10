@@ -124,6 +124,14 @@ bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-10_rpc
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-10_rpc_coach_resume_profil_course.sql   # relançable
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-11_rpc_coach_resume_suivi_plan.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-11_rpc_coach_resume_suivi_plan.sql   # relançable
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-10_coach_profil.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-12_rpc_coach_resume_profil.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-12_rpc_coach_resume_profil.sql   # relançable
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 <<'SQL'
+insert into public.coach_profil (user_id, annees_pratique, pic_hebdo_minutes, disponibilites, blessures, blessures_renseignees, preferences)
+values ('00000000-0000-4000-8000-00000000000a', 6, 320, '{"mardi":{"libre":true,"minutes_max":60}}', '[{"zone":"genou","quand":"moins_1_an","actif":false}]', true, '{"moment":"matin"}');
+grant select on public.coach_profil to authenticated;
+SQL
 bash $H psql -d rush -v ON_ERROR_STOP=1 <<'SQL'
 \pset tuples_only on
 set role authenticated;
@@ -185,11 +193,19 @@ union all select 24, 'suivi du plan : aucun nom de séance ne sort (que des date
 union all select 21, 'profil de coureur : que des nombres et des dates (aucun texte externe)',
                   (select position('Footing' in (j->'profil_course')::text) = 0 and position('onerror' in (j->'profil_course')::text) = 0 from r)
 ) t order by n;
+with r as (select public.rpc_coach_resume('2026-11-06') as j),
+     re as (select public.rpc_coach_resume('2026-11-06', array['evenement']) as j)
+select 'profil : disponibilités, ancienneté et préférences sortent ; SANS accord « evenement », les blessures restent cachées' as controle,
+       (select (j->'profil'->>'annees_pratique')::int = 6 and (j->'profil'->>'pic_hebdo_minutes')::int = 320
+          and j->'profil'->'disponibilites'->'mardi'->>'minutes_max' = '60' and j->'profil'->'preferences'->>'moment' = 'matin'
+          and j->'profil'->'blessures' = '[]'::jsonb and not (j->'profil'->>'blessures_accord')::boolean from r) as ok
+union all select 'profil : AVEC l''accord « evenement », les blessures sortent (zones de la liste fermée)',
+       (select j->'profil'->'blessures'->0->>'zone' = 'genou' and (j->'profil'->>'blessures_accord')::boolean from re);
 set request.jwt.claim.sub = '00000000-0000-4000-8000-00000000000b';
 with r as (select public.rpc_coach_resume('2026-11-06', array['ressenti','corps','evenement','cycle']) as j)
 select 'compte B (vide) : aucune donnée de A, charge à 0, tout vide, « peu de données »' as controle,
        (j->'charge'->>'tss_7_jours')::numeric = 0 and j->'volume_par_sport' = '{}'::jsonb and j->'prevues' = '[]'::jsonb and j->'sante' = '[]'::jsonb
-       and j->'objectifs' = '[]'::jsonb and j->'competitions' = '[]'::jsonb and (j->'qualite'->>'peu_de_donnees')::boolean as ok from r;
+       and j->'objectifs' = '[]'::jsonb and j->'competitions' = '[]'::jsonb and (j->'qualite'->>'peu_de_donnees')::boolean and j->'profil' = '{}'::jsonb as ok from r;
 set request.jwt.claim.sub = '00000000-0000-4000-8000-00000000000c';
 with r as (select public.rpc_coach_resume('2026-11-06') as j)
 select 'compte C : trois jours d''historique = « peu de données »' as controle,

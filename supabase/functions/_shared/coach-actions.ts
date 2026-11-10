@@ -25,6 +25,7 @@ import { ALLURES_CLES, lireAllure, lireTemps, NOM_ALLURE } from './plan-course.t
 import type { Allures, DemandeCourse } from './plan-course.ts';
 import type { DemandePeriode } from './periode.ts';
 import type { OutilModele } from './modele.ts';
+import { JOURS_SEMAINE, ZONES_BLESSURE, QUAND_BLESSURE, MOMENTS, FRACTIONNE, profilPourModele, validerModification } from './profil-coureur.ts';
 import { OUTIL_PROPOSER_SEANCE, NOM_OUTIL_SEANCE } from './coach-prompt.ts';
 
 export type NiveauAction = 'lecture' | 'direct' | 'carte' | 'confirmation';
@@ -413,6 +414,20 @@ export const ACTIONS: DefinitionAction[] = [
     schema: { type: 'object', properties: {}, additionalProperties: false },
     lire: (input) => (objet(input, []) ? { ok: true, params: {} } : refus('Cet outil ne prend aucun paramètre.')),
     repondre: (_p, resume) => ({ cycles: liste((resume as Objet)?.cycles) }),
+  },
+
+  {
+    nom: 'lire_profil',
+    niveau: 'lecture',
+    disponible: true,
+    description:
+      "Lit le profil du coureur déjà enregistré (jours libres et durée max, ancienneté, plus grosse semaine, blessures, préférences) ET ce qui manque encore. " +
+      "Appelle-le avant de préparer un plan (préparer une course, planifier une période) et quand l'utilisateur parle de son temps libre, de ses blessures ou de son expérience. " +
+      "Si des éléments manquent, pose UNE ou DEUX questions à la fois, dans l'ordre de ce_qui_manque, puis propose de les retenir avec proposer_profil. Ne redemande jamais ce qui est déjà connu. " +
+      "Les blessures ne sont lues que si blessures_autorisees est vrai.",
+    schema: { type: 'object', properties: {}, additionalProperties: false },
+    lire: (input) => (objet(input, []) ? { ok: true, params: {} } : refus('Cet outil ne prend aucun paramètre.')),
+    repondre: (_p, resume) => profilPourModele((resume as Objet)?.profil),
   },
 
   // ----- Niveau 1 : direct (ne change rien) -----
@@ -815,6 +830,56 @@ export const ACTIONS: DefinitionAction[] = [
       if (!o || !motif) return refus('motif : une phrase de 3 à 200 caractères.');
       const l = lireOperations(o.operations);
       return l.ok ? { ok: true, params: { intention: motif, operations: l.operations } } : refus(l.erreur);
+    },
+  },
+
+  {
+    nom: 'proposer_profil',
+    niveau: 'carte',
+    disponible: true,
+    description:
+      "Propose de RETENIR ce que l'utilisateur vient de te dire sur lui, pour que les prochains plans soient plus justes : jours libres et durée max, depuis combien d'années il court, sa plus grosse semaine, ses blessures passées, ses préférences. " +
+      "N'ajoute que ce qu'il a DIT dans la conversation, jamais une supposition. Une carte apparaît : rien n'est enregistré tant qu'il n'a pas validé. " +
+      "Ne mets que les champs qui changent (les autres sont conservés). Pour disponibilites, ne donne que les jours dont il a parlé. Pour blessures, donne la liste COMPLÈTE après changement (liste vide = aucune blessure), en partant de celles déjà connues (lire_profil). " +
+      "N'utilise blessures que si lire_profil dit blessures_autorisees = vrai. Une seule carte profil par message.",
+    schema: {
+      type: 'object',
+      properties: {
+        motif: { type: 'string', description: 'UN TITRE COURT (60 caractères au plus) affiché en haut de la carte, par exemple « Ton temps disponible ».' },
+        disponibilites: {
+          type: 'object',
+          description: 'Par jour de la semaine : libre (vrai/faux) et/ou minutes_max (durée maximale d\'une séance ce jour-là, 0 à 600).',
+          properties: Object.fromEntries(JOURS_SEMAINE.map((j) => [j, { type: 'object', properties: { libre: { type: 'boolean' }, minutes_max: { type: 'integer', minimum: 0, maximum: 600 } }, additionalProperties: false }])),
+          additionalProperties: false,
+        },
+        annees_pratique: { type: 'integer', minimum: 0, maximum: 80, description: 'Années de course à pied (0 = moins d\'un an).' },
+        pic_hebdo_minutes: { type: 'integer', minimum: 0, maximum: 2000, description: 'Sa plus grosse semaine de course déjà faite, en minutes.' },
+        blessures: {
+          type: 'array',
+          maxItems: 10,
+          items: {
+            type: 'object',
+            properties: { zone: { type: 'string', enum: [...ZONES_BLESSURE] }, quand: { type: 'string', enum: [...QUAND_BLESSURE] }, actif: { type: 'boolean', description: 'Vrai si la gêne est encore là.' } },
+            required: ['zone', 'quand'],
+            additionalProperties: false,
+          },
+        },
+        preferences: {
+          type: 'object',
+          properties: { moment: { type: 'string', enum: [...MOMENTS] }, fractionne: { type: 'string', enum: [...FRACTIONNE] } },
+          additionalProperties: false,
+        },
+      },
+      required: ['motif'],
+      additionalProperties: false,
+    },
+    lire: (input) => {
+      const o = objet(input, ['motif', 'disponibilites', 'annees_pratique', 'pic_hebdo_minutes', 'blessures', 'preferences']);
+      const motif = motifPlan(o?.motif);
+      if (!o || !motif) return refus('motif : un titre court de 3 à 200 caractères.');
+      const { motif: _m, ...modif } = o;
+      const v = validerModification(modif);
+      return v.ok ? { ok: true, params: { intention: motif.slice(0, 80), colonnes: v.colonnes } } : refus(v.erreurs.join(' '));
     },
   },
 

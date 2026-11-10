@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { cequiManque, profilCoureurDepuisLigne, validerModification } from '../../functions/_shared/profil-coureur.ts';
+import { cequiManque, fusionnerProfil, lignesModification, profilCoureurDepuisLigne, profilPourModele, validerModification } from '../../functions/_shared/profil-coureur.ts';
 
 test('ligne absente ou bizarre : profil vide, jamais de plantage', () => {
   for (const x of [null, undefined, 42, 'x', [], {}]) {
@@ -44,4 +44,26 @@ test('modification : valide acceptée, texte libre et valeurs hors bornes refus�
   ]) assert.equal(validerModification(mauvais).ok, false, JSON.stringify(mauvais));
   // vider une valeur : null accepté
   assert.equal(validerModification({ annees_pratique: null }).ok, true);
+});
+
+test('lignes de la carte : texte écrit par le code, jamais par le modèle', () => {
+  assert.deepEqual(lignesModification({ annees_pratique: 0, pic_hebdo_minutes: 125, preferences: { moment: 'matin', fractionne: 'evite' }, blessures: [] }),
+    ["Tu débutes (moins d'un an de pratique)", 'Ta plus grosse semaine : 2 h 05 de course', 'Aucune blessure', "Tu préfères t'entraîner le matin", 'Tu évites le fractionné']);
+  assert.deepEqual(lignesModification({ blessures: [{ zone: 'tibia', quand: 'moins_3_mois', actif: true }] }), ['Blessure : tibia, il y a moins de 3 mois (encore là)']);
+});
+test('fusion : un jour redonné remplace l\'ancien, les autres restent ; répondre aux blessures (même aucune) les marque comme posées', () => {
+  const actuel = { disponibilites: { lundi: { libre: false }, mardi: { libre: true, minutes_max: 45 } }, preferences: { moment: 'soir' } };
+  const f = fusionnerProfil(actuel, { disponibilites: { mardi: { libre: true, minutes_max: 60 } }, preferences: { fractionne: 'aime' }, blessures: [] });
+  assert.deepEqual(f.disponibilites, { lundi: { libre: false }, mardi: { libre: true, minutes_max: 60 } });
+  assert.deepEqual(f.preferences, { moment: 'soir', fractionne: 'aime' });
+  assert.equal(f.blessures_renseignees, true);
+  assert.deepEqual(fusionnerProfil(null, { annees_pratique: 4 }), { annees_pratique: 4 });
+});
+test('profil pour le modèle : sans accord santé, ni blessures ni question sur les blessures', () => {
+  const bloc = { annees_pratique: 5, blessures_accord: false, blessures: [{ zone: 'genou', quand: 'plus_1_an', actif: false }], blessures_renseignees: true };
+  const p = profilPourModele(bloc);
+  assert.equal('blessures' in p.connu, false);
+  assert.equal(p.ce_qui_manque.includes('blessures'), false);
+  assert.equal(profilPourModele({ ...bloc, blessures_accord: true }).connu.blessures !== undefined, true);
+  assert.deepEqual(profilPourModele({}).ce_qui_manque, ['disponibilites', 'anciennete', 'pic_hebdo', 'preferences']);
 });

@@ -15,6 +15,7 @@ import type { Carte, EtatCarte, MessageStocke } from '../_shared/coach-contexte.
 import { FONCTIONS_HISTORIQUE } from '../_shared/coach-actions.ts';
 import { ErreurCoach } from '../_shared/coach-chat.ts';
 import type { LigneSeancePrevue, SignauxSante, StockageCoach } from '../_shared/coach-chat.ts';
+import { fusionnerProfil } from '../_shared/profil-coureur.ts';
 import { ajouterJours } from '../_shared/dates-iso.ts';
 import type { Usage } from '../_shared/modele.ts';
 
@@ -156,6 +157,15 @@ export function creerStockage(sbUser: any, sbAdmin: any): StockageCoach {
     async memoriserInverse(userId, carteId, inverse) {
       const { error } = await sbAdmin.rpc('coach_carte_inverse', { p_user: userId, p_carte: carteId, p_inverse: inverse });
       if (error) echec("mémorisation de l'annulation", error);
+    },
+
+    async ecrireProfil(userId, colonnes) {
+      // Avec les droits de l'utilisateur (RLS : sa seule ligne). On relit la ligne actuelle pour fusionner (jours, préférences), puis on écrit.
+      const { data: actuel, error: e1 } = await sbUser.from('coach_profil').select('disponibilites, preferences').eq('user_id', userId).maybeSingle();
+      if (e1) echec('lecture du profil', e1);
+      const fusion = fusionnerProfil(actuel, colonnes);
+      const { error } = await sbUser.from('coach_profil').upsert({ ...fusion, user_id: userId, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+      if (error) echec("écriture du profil", error);
     },
 
     async supprimerSeanceIA(_userId, seanceId) {
