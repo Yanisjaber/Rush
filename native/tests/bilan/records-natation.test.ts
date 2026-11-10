@@ -56,3 +56,15 @@ test('echelleAllure et allureAxe : des allures rondes au 100 m (pas de 5 puis 10
   assert.equal(allureAxe(12), `5'00"`);
   assert.equal(echelleAllure([[{ top: [{ valeur: 4 }] }]], 360, 5, 10), null);
 });
+
+test('echelleAllure : les allures lentes qui se tassent en bas perdent leur étiquette, les bornes restent', () => {
+  // Course : de 2'45" (record de 1 min) à 12'00" (sur 3 h) : l'axe linéaire en vitesse écrase le bas
+  const courbe = [{ top: [{ valeur: 3600 / 165 }] }, { top: [{ valeur: 3600 / 720 }] }];
+  const e = echelleAllure([courbe])!;
+  const complet = [];
+  for (let a = 180; a <= 720; a += 60) complet.push(3600 / a);
+  assert.ok(e.reperes.length < complet.length + 1);
+  // Deux repères voisins sont toujours séparés d'au moins 6 % de la hauteur
+  for (let i = 1; i < e.reperes.length; i++) assert.ok(e.reperes[i] - e.reperes[i - 1] >= (e.max - e.min) * 0.06 - 1e-9);
+  assert.ok(Math.abs(e.max - 3600 / 180) < 1e-9);
+});

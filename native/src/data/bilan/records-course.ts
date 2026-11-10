@@ -112,5 +112,14 @@ export function echelleAllure(
   for (let a = Math.max(pas, haut); a <= bas; a += pas) allures.push(a);
   if (allures.length < 2) return null;
   const reperes = allures.map((a) => facteur / a).sort((x, y) => x - y);
-  return { min: reperes[0], max: reperes[reperes.length - 1], reperes };
+  const min = reperes[0];
+  const max = reperes[reperes.length - 1];
+  // L'axe est linéaire en vitesse : les allures lentes (7'00", 8'00"… vues sur 3 h) se tassent en bas et leurs étiquettes se chevauchent.
+  // On garde les bornes, mais on n'écrit un repère que s'il est assez loin du précédent (6 % de la hauteur), en partant du plus rapide.
+  const ecartMini = (max - min) * 0.06;
+  const lisibles: number[] = [];
+  for (const v of reperes.slice().reverse()) {
+    if (!lisibles.length || lisibles[lisibles.length - 1] - v >= ecartMini) lisibles.push(v);
+  }
+  return { min, max, reperes: lisibles.reverse() };
 }
