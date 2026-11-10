@@ -39,7 +39,6 @@ export default function Parametres() {
   const aller = (vers: Href) => router.push(vers);
   const email = demo ? null : session?.user.email ?? null;
   const initiale = (resume.prenom || email || (demo ? 'D' : 'R')).trim().charAt(0).toUpperCase();
-  const note = (t: { note: string; valeur: string; unite?: string }) => [t.valeur !== '—' ? [t.valeur, t.unite].filter(Boolean).join(' ') : '', t.note].filter(Boolean).join(' · ') || 'À renseigner';
 
   return (
     <View style={{ flex: 1 }}>
@@ -66,14 +65,14 @@ export default function Parametres() {
         {demo ? <ReglagesDemo /> : null}
 
         <Groupe titre="Mon profil">
-          <Ligne titre="Profil" detail={note(resume.profil)} onPress={() => aller('/parametres/profil')} />
-          <Ligne titre="Physiologie" detail={note(resume.physiologie)} onPress={() => aller('/parametres/physiologie')} />
-          <Ligne titre="Zones" detail={note(resume.zones)} onPress={() => aller('/parametres/zones')} />
-          <Ligne titre="Mes sports" detail={note(resume.sports)} onPress={() => aller('/parametres/sports')} />
+          <Ligne icone="profil" titre="Profil" onPress={() => aller('/parametres/profil')} />
+          <Ligne icone="physio" titre="Physiologie" onPress={() => aller('/parametres/physiologie')} />
+          <Ligne icone="zones" titre="Zones" onPress={() => aller('/parametres/zones')} />
+          <Ligne icone="sports" titre="Mes sports" onPress={() => aller('/parametres/sports')} />
         </Groupe>
 
         <Groupe titre="Connexions">
-          <Ligne titre="Strava et synchro" detail={resume.connexions.note || 'Non connecté'} droite={<PastilleEtat etat={resume.connexions.etat} />} onPress={() => aller('/parametres/connexions')} />
+          <Ligne icone="strava" titre="Strava et synchro" libelle={`Strava et synchro. ${resume.connexions.note || 'Non connecté'}`} droite={<PastilleEtat etat={resume.connexions.etat} />} onPress={() => aller('/parametres/connexions')} />
         </Groupe>
 
         <Groupe titre="Préférences">
@@ -81,16 +80,44 @@ export default function Parametres() {
         </Groupe>
 
         <Groupe titre="Sécurité et données">
-          {demo ? null : <Ligne titre="Changer mon mot de passe" detail="Ouvre le site" externe onPress={() => ouvrirSite('#/mot-de-passe')} />}
-          {demo ? null : <Ligne titre="Exporter mes données" detail="Fichier JSON, via le site" externe onPress={() => ouvrirSite('#/parametres/general')} />}
-          <Ligne titre="Confidentialité" detail="Ouvre le site" externe onPress={() => ouvrirSite('#/confidentialite')} />
+          {demo ? null : <Ligne icone="mdp" titre="Changer mon mot de passe" externe onPress={() => ouvrirSite('#/mot-de-passe')} />}
+          {demo ? null : <Ligne icone="exporter" titre="Exporter mes données" externe onPress={() => ouvrirSite('#/parametres/general')} />}
+          <Ligne icone="confidentialite" titre="Confidentialité" externe onPress={() => ouvrirSite('#/confidentialite')} />
         </Groupe>
 
         <Groupe titre="Session">
-          <Ligne titre={demo ? 'Quitter la démo' : 'Se déconnecter'} onPress={demo ? quitterDemo : () => void deconnexion()} />
-          {demo ? null : <Ligne titre="Supprimer mon compte" danger onPress={() => aller('/parametres/compte')} />}
+          <Ligne icone="sortir" titre={demo ? 'Quitter la démo' : 'Se déconnecter'} onPress={demo ? quitterDemo : () => void deconnexion()} />
+          {demo ? null : <Ligne icone="supprimer" titre="Supprimer mon compte" danger onPress={() => aller('/parametres/compte')} />}
         </Groupe>
       </ScrollView>
+    </View>
+  );
+}
+
+// Les icônes des lignes (tracés SVG 24×24, trait fin), une par ligne.
+const ICONES = {
+  profil: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 20c1-4 4-6 8-6s7 2 8 6',
+  physio: 'M3 12h4l2-6 4 12 2-6h6',
+  zones: 'M4 18h4v-5H4zM10 18h4V8h-4zM16 18h4V4h-4z',
+  sports: 'M7 20a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM17 20a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM7 17l4-8h4l2 8M11 9l-1-3h3',
+  strava: 'M5 12a7 7 0 0 1 12-5l2-2v5h-5l2-2a5 5 0 1 0 1 7',
+  theme: 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4',
+  mdp: 'M7 11h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2zM8 11V8a4 4 0 0 1 8 0v3',
+  exporter: 'M12 4v11m0 0-4-4m4 4 4-4M5 20h14',
+  confidentialite: 'M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z',
+  sortir: 'M10 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h4M15 8l4 4-4 4M19 12H9',
+  supprimer: 'M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12',
+} as const;
+type Icone = keyof typeof ICONES;
+
+// Une icône dans un carré de 32 pt (rayon 6), fond neutre : jamais de couleur de sport ici.
+function PastilleIcone({ nom, couleur }: { nom: Icone; couleur?: string }) {
+  const p = usePalette();
+  return (
+    <View accessible={false} importantForAccessibility="no-hide-descendants" style={[styles.icone, { backgroundColor: p.surface2 }]}>
+      <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+        <Path d={ICONES[nom]} stroke={couleur ?? p.texte} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
     </View>
   );
 }
@@ -111,21 +138,19 @@ function Groupe({ titre, children }: { titre: string; children: ReactNode }) {
   );
 }
 
-// Une ligne de menu : titre, détail en dessous, puis un chevron (› ouvre un écran, ↗ ouvre le site). Cible de 52 pt au moins.
-function Ligne({ titre, detail, onPress, danger, externe, droite }: { titre: string; detail?: string; onPress: () => void; danger?: boolean; externe?: boolean; droite?: ReactNode }) {
+// Une ligne de menu : icône, titre seul, puis un chevron (› ouvre un écran, ↗ ouvre le site). Cible de 56 pt au moins.
+function Ligne({ icone, titre, onPress, danger, externe, droite, libelle }: { icone: Icone; titre: string; onPress: () => void; danger?: boolean; externe?: boolean; droite?: ReactNode; libelle?: string }) {
   const p = usePalette();
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={detail ? `${titre}. ${detail}` : titre}
+      accessibilityLabel={libelle ?? titre}
       accessibilityHint={externe ? 'Ouvre le site' : undefined}
       style={({ pressed }) => [styles.ligne, { backgroundColor: pressed ? p.surface2 : 'transparent' }]}
     >
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={[typo.corpsFort, { color: danger ? p.danger : p.texte }]}>{titre}</Text>
-        {detail ? <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux }]}>{detail}</Text> : null}
-      </View>
+      <PastilleIcone nom={icone} couleur={danger ? p.danger : undefined} />
+      <Text numberOfLines={1} style={[typo.corpsFort, { color: danger ? p.danger : p.texte, flex: 1 }]}>{titre}</Text>
       {droite}
       {danger ? null : (
         <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -142,6 +167,7 @@ function Apparence() {
   const clair = useColorScheme() === 'light';
   return (
     <View style={styles.ligne}>
+      <PastilleIcone nom="theme" />
       <Text style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>Apparence</Text>
       <View style={styles.choix} accessibilityRole="radiogroup">
         <Pastille role="radio" nom="Sombre" couleur={p.texte} actif={!clair} onPress={() => definirTheme('sombre')} aide="Thème sombre" />
@@ -185,6 +211,7 @@ const styles = StyleSheet.create({
   initiale: { fontFamily: police.titre800, fontSize: 34, lineHeight: 40 },
   groupe: { borderWidth: 1, borderRadius: rayon.base, overflow: 'hidden' },
   ligne: { minHeight: 56, paddingHorizontal: 14, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  icone: { width: 32, height: 32, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   pastille: { width: 14, height: 14, borderRadius: 7 },
   avis: { borderRadius: rayon.base, borderLeftWidth: 4, paddingHorizontal: 14, paddingVertical: 12 },
   choix: { flexDirection: 'row', gap: espace.e2, flexWrap: 'wrap' },
