@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Rect, Text as TexteSvg } from 'react-native-svg';
 import { SelecteurSegments } from '@/components/ui/SelecteurSegments';
+import { formatDureePrecise } from '@/data/outils/format';
 import type { MesureZones } from '@/data/outils/repartition-zones';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
@@ -19,12 +20,8 @@ const HAUT = 150;
 const BAS = 40; // la place des noms de zone et de leurs bornes sous les colonnes
 const HAUT_LABEL = 16; // la place du temps au-dessus de la colonne la plus haute
 
-/** 45 → « 45 s » ; 840 → « 14 min ». */
-function texteTemps(s: number): string {
-  if (s < 1) return '0';
-  if (s < 60) return `${Math.round(s)} s`;
-  return `${Math.round(s / 60)} min`;
-}
+/** 45 → « 45" » ; 860 → « 14'20" » ; 5400 → « 1h30 ». */
+const texteTemps = (s: number): string => (s < 1 ? '0' : formatDureePrecise(s));
 
 export function RepartitionSortie({ mesures, couleur }: Props) {
   const p = usePalette();

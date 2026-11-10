@@ -1,7 +1,7 @@
 // L'écran de détail d'une séance : les chiffres à montrer selon le sport, et les lignes de tours. Fonctions pures, sans réseau
 // (testées dans tests/seance-detail.test.ts).
 import { familleAffichage } from '../sports/familles.ts';
-import { formatAllure, formatAllureDepuisKmh, formatDuree, formatKm, formatNombre } from '../outils/format.ts';
+import { formatAllure, formatAllureDepuisKmh, formatDuree, formatDureePrecise, formatKm, formatNombre } from '../outils/format.ts';
 import type { Seance, Tour } from '../types.ts';
 import { wattsEstimes } from './donnees-ecartees.ts';
 
@@ -31,8 +31,8 @@ export function chiffresSeance(s: Seance): ChiffreSeance[] {
   const famille = familleAffichage(s.sport);
   const liste: ChiffreSeance[] = [];
   if (positif(s.moving_time)) {
-    const ecoule = positif(s.elapsed_time) && s.elapsed_time - s.moving_time >= 120 ? `${formatDuree(s.elapsed_time)} au total` : undefined;
-    liste.push({ cle: 'duree', libelle: 'Durée', valeur: formatDuree(s.moving_time), note: ecoule });
+    const ecoule = positif(s.elapsed_time) && s.elapsed_time - s.moving_time >= 120 ? `${formatDureePrecise(s.elapsed_time)} au total` : undefined;
+    liste.push({ cle: 'duree', libelle: 'Durée', valeur: formatDureePrecise(s.moving_time), note: ecoule });
   }
   if (positif(s.distance_km)) {
     // En natation, la distance est en mètres

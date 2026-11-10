@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Line, Path, Rect } from 'react-native-svg';
 import type { CourbesSortie } from '@/data/outils/courbes-sortie';
 import { aireSousCourbe, echelle, lisse } from '@/data/outils/courbes';
-import { formatAllure, formatKm, formatNombre } from '@/data/outils/format';
+import { formatAllure, formatDureePrecise, formatKm, formatNombre } from '@/data/outils/format';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -28,14 +28,6 @@ interface Props {
   seuilsCoeur?: [number, number, number] | null;
   /** Le doigt est posé sur les courbes : l'écran suspend le balayage des pages. */
   onGlisse?: (actif: boolean) => void;
-}
-
-/** 222 s → « 3 min 42 » ; 45 s → « 45 s » ; 3720 s → « 1h02 ». */
-function formatLaps(secondes: number): string {
-  const s = Math.max(0, Math.round(secondes));
-  if (s < 60) return `${s} s`;
-  if (s < 3600) return `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')}`;
-  return `${Math.floor(s / 3600)}h${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}`;
 }
 
 const MARGE = 6;
@@ -200,7 +192,7 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, dureeS, hauteur, 
               <Text style={[styles.valeur, { color: p.texte }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
                 {[
                   kmPortion != null ? `${formatKm(kmPortion, 2)} km` : null,
-                  lapsS != null ? formatLaps(lapsS) : null,
+                  lapsS != null ? formatDureePrecise(lapsS) : null,
                   relief2 ? `pente ${textePente(relief2.pente)}` : null,
                   relief2 ? `D+ ${formatNombre(Math.round(relief2.dPlus))} m` : null,
                 ]

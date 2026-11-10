@@ -1,5 +1,5 @@
 // L'aperçu d'une activité qu'on vient d'importer : la trace pour la carte, le profil d'altitude et les chiffres principaux. Fonctions pures, sans écran ni réseau.
-import { formatAllure, formatDuree, formatKm, formatNombre } from '../outils/format.ts';
+import { formatAllure, formatDuree, formatDureePrecise, formatKm, formatNombre } from '../outils/format.ts';
 import { distanceKm, lireGpx } from '../outils/gpx.ts';
 import type { ActiviteImportee } from './import-activite.ts';
 
@@ -99,7 +99,7 @@ export function apercuImport(a: ActiviteImportee, type: string): ApercuImport {
   const ajout = (libelle: string, valeur: string | null) => valeur && stats.push({ libelle, valeur });
   const km = a.distanceKm;
   if (km != null && km > 0) ajout('Distance', type === 'Swim' ? `${formatNombre(km * 1000)} m` : `${formatKm(km, km >= 100 ? 0 : 1)} km`);
-  ajout('Durée', a.dureeS != null ? formatDuree(a.dureeS) : null);
+  ajout('Durée', a.dureeS != null ? formatDureePrecise(a.dureeS) : null);
   ajout('Dénivelé +', a.denivele != null ? `${formatNombre(a.denivele)} m` : null);
   if (km != null && km > 0 && a.dureeS != null && a.dureeS > 0 && type !== 'Swim') {
     if (type === 'Run') ajout('Allure', formatAllure(a.dureeS / km));

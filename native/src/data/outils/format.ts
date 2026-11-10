@@ -9,6 +9,14 @@ export function formatDuree(secondes: number | null | undefined): string {
   return `${h}h${String(m).padStart(2, '0')}`;
 }
 
+/** La durée d'UNE sortie, à la seconde sous l'heure : 1924 s → « 32'04" » ; 45 s → « 45" » ; 9240 s → « 2h34 ». Les totaux (semaine, volume) gardent `formatDuree`. */
+export function formatDureePrecise(secondes: number | null | undefined): string {
+  const s = Math.max(0, Math.round(secondes || 0));
+  if (s >= 3600) return `${Math.floor(s / 3600)}h${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}`;
+  if (s < 60) return `${s}"`;
+  return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}"`;
+}
+
 /** 28.47 → « 28,5 » (une décimale, virgule française). */
 export function formatKm(km: number | null | undefined, decimales = 1): string {
   if (km == null || Number.isNaN(Number(km))) return '—';

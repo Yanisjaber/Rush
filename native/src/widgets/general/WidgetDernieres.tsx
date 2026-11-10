@@ -7,7 +7,7 @@ import { Tuile } from '@/components/ui/Tuile';
 import { LigneSeance, Points } from '@/components/calendrier/LigneSeance';
 import { familleAffichage } from '@/data/sports/familles';
 import { recordsParSeance } from '@/data/sports/force';
-import { formatDateCourte, formatDistanceSport, formatDuree } from '@/data/outils/format';
+import { formatDateCourte, formatDistanceSport, formatDuree, formatDureePrecise } from '@/data/outils/format';
 import { chargeSeance } from '@/data/bilan/synthese';
 import type { Seance, WidgetProps } from '@/data/types';
 import { couleurSport } from '@/theme/sports';
@@ -17,7 +17,7 @@ import { usePalette } from '@/theme/usePalette';
 // Les séances les plus récentes, quelle que soit leur date : la liste ne se vide pas pendant une pause.
 // Sur téléphone : 3 lignes. Une pastille « Record » signale les records de force battus pendant la séance.
 function detail(s: Seance): string {
-  const morceaux = [formatDateCourte(s.start_date_local), formatDuree(s.moving_time)];
+  const morceaux = [formatDateCourte(s.start_date_local), formatDureePrecise(s.moving_time)];
   const distance = formatDistanceSport(s.distance_km, familleAffichage(s.sport)); // en natation, en mètres
   if (distance) morceaux.push(distance);
   return morceaux.join(' · ');
@@ -36,7 +36,7 @@ export function WidgetDernieres({ contexte, taille = 'm' }: WidgetProps) {
     return (
       <Tuile
         titre="Dernière séance"
-        valeur={derniere ? formatDuree(derniere.moving_time) : '—'}
+        valeur={derniere ? formatDureePrecise(derniere.moving_time) : '—'}
         note={derniere ? `${derniere.name || courtDuType(derniere.sport)} · ${formatDateCourte(derniere.start_date_local)}` : 'Aucune séance'}
         large
       >
