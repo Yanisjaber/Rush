@@ -13,7 +13,8 @@ Principe posé par Yanis : **chaque règle du plan vient d'études ou de la pers
 - [x] **Décision (12 nov., Yanis)** : le profil s'écrit **automatiquement, sans carte** : le coach retient ce qu'on lui dit (`retenir_profil`, niveau `ecriture`, seule exception à « toujours une carte ») et dit en une phrase ce qu'il a noté pour qu'on le corrige.
 - [x] Outils `lire_profil` (connu + ce qui manque) et `retenir_profil` (écrit tout de suite) ; consigne dans le prompt : 1 ou 2 questions à la fois, dans l'ordre. Déployé (coach-chat), tests serveur.
 - [x] Mémorisation : au tap, `ecrireProfil` fusionne (jour par jour, préférence par préférence) et écrit dans `coach_profil` avec les droits de l'utilisateur.
-- [ ] **Prochaine étape** : brancher dans `plan-course.ts` : jours libres et durée max par jour, prudence selon les blessures passées, jours durs préférés, ancienneté et pic hebdo pour le point de départ.
+- [x] Branché dans `plan-course.ts` (`reglesDuProfil`) : jours pas disponibles, durée max par jour, plafond de volume (plus grosse semaine), prudence selon blessures / débutant / « évite le fractionné ». Le bilan dit ce que le profil a changé. Déployé. Détail et sources : `FONDEMENTS_PLAN_COURSE.md`.
+- [ ] Brancher aussi le profil dans `planifier_semaine` et `planifier_periode` (autres moteurs : `semaine.ts`, `periode.ts`).
 - [x] Blessures = données de santé : lues et retenues seulement avec l'accord de la catégorie « evenement » (testé côté base et côté serveur).
 - [x] `rpc_coach_resume` : bloc `profil` ajouté (migration `2026-11-12_rpc_coach_resume_profil.sql`, testée en local, appliquée en base).
 - [ ] Écran de profil dans l'app (voir plus bas, 8 maquettes d'abord).

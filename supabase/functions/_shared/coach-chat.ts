@@ -31,7 +31,7 @@ import { coutMicroUsd } from './coach-couts.ts';
 import { avecMessageUtilisateur, blocContexte, contexteDepuisResume, historiquePourModele, texteAncienPourResume } from './coach-contexte.ts';
 import { estPlanning } from './coach-contexte.ts';
 import type { Carte, CartePlanning, CarteSeance, EtatCarte, MessageStocke } from './coach-contexte.ts';
-import { fusionnerProfil, lignesModification } from './profil-coureur.ts';
+import { fusionnerProfil, lignesModification, profilCoureurDepuisLigne } from './profil-coureur.ts';
 import { MAX_TOKENS_REPONSE, MODELE_PAR_DEFAUT, NOM_OUTIL_SEANCE, PROMPT_SYSTEME } from './coach-prompt.ts';
 import type { DecisionGardeFou, DonneesGardeFou } from './garde-fou.ts';
 import { blocsLigneStructure, evaluerPlan, proposerReplanification, seancesDepuisResume } from './planning.ts';
@@ -280,7 +280,7 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
         debut: demande.debut,
         seancesParSemaine: demande.seancesParSemaine,
         joursLibres: demande.joursLibres,
-      }, seances.filter((x) => !ids.has(x.id)), ctx, profilCourseDepuisResume(resume));
+      }, seances.filter((x) => !ids.has(x.id)), ctx, profilCourseDepuisResume(resume), profilCoureurDepuisLigne(resume?.profil));
       if (!res.operations.length) {
         return { contenu: `Je n'ai pas pu construire ce plan : ${res.abandons.join(' ') || 'aucune séance possible.'} Explique-le simplement à l'utilisateur, sans créer de carte, et propose une autre façon de faire.`, erreur: false };
       }

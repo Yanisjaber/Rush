@@ -2,13 +2,14 @@
 // Lancer : node --experimental-strip-types --test supabase/tests/edge/plan-course.test.mts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { reperesPersonnels, alluresDepuisCourse, equivalent, footingProgressif, formaterAllure, formaterTemps, niveauActuel, objectifRealiste, phases, planifierCourse, profilCourseDepuisResume } from '../../functions/_shared/plan-course.ts';
+import { reperesPersonnels, alluresDepuisCourse, equivalent, footingProgressif, formaterAllure, formaterTemps, niveauActuel, objectifRealiste, phases, planifierCourse, profilCourseDepuisResume, reglesDuProfil } from '../../functions/_shared/plan-course.ts';
 import type { ProfilCourse } from '../../functions/_shared/plan-course.ts';
 import { evaluerPlan } from '../../functions/_shared/planning.ts';
 import type { Operation } from '../../functions/_shared/planning.ts';
 import type { ContexteValidation } from '../../functions/_shared/validateur.ts';
 import type { DecisionGardeFou } from '../../functions/_shared/garde-fou.ts';
 import { ajouterJours, ecartJours } from '../../functions/_shared/dates-iso.ts';
+import { profilCoureurDepuisLigne } from '../../functions/_shared/profil-coureur.ts';
 
 const AUJ = '2026-11-09';
 const COURSE = '2026-12-13';
@@ -386,4 +387,71 @@ test('un plan suit l\'échelle de la personne : les séances du débutant sont p
   const p = plan(profilAvecVolume(64, 64 * 70, 150, 500));
   assert.ok(d.length > 0 && p.length > 0);
   assert.ok(moy(d) < moy(p) * 0.6, `${moy(d)} contre ${moy(p)}`);
+});
+
+// ---------- Le profil du coureur (coach_profil) ----------
+const coureur = (ligne: Record<string, unknown>) => profilCoureurDepuisLigne(ligne);
+const DURS = ['vma', 'tempo', 'seuil', 'intervalles', 'fartlek', 'cote', 'test', 'allure', 'specifique'];
+const estDur = (type: string) => !/footing|longue|recuperation/.test(type);
+
+test('profil : sans profil (ou profil vide), le plan est exactement le même qu\'avant', () => {
+  const a = planifierCourse(DEMANDE, [], ctx(), YANIS);
+  assert.deepEqual(planifierCourse(DEMANDE, [], ctx(), YANIS, coureur({})).operations, a.operations);
+  assert.deepEqual(planifierCourse(DEMANDE, [], ctx(), YANIS, null).operations, a.operations);
+  assert.equal(a.bilan!.profilUtilise.length, 0);
+  assert.doesNotMatch(a.message, /Ton profil a changé/);
+});
+test('profil : un jour « pas disponible » n\'a jamais de séance', () => {
+  const r = planifierCourse(DEMANDE, [], ctx(), YANIS, coureur({ disponibilites: { lundi: { libre: false }, mercredi: { libre: false } } }));
+  const jours = ajouts(r.operations).map((o) => nomDuJour(o.proposition.date));
+  assert.ok(jours.length > 8);
+  assert.ok(!jours.includes('lundi') && !jours.includes('mercredi'), jours.join(','));
+  assert.match(r.message, /Ton profil a changé le plan : aucune séance lundi, mercredi/);
+});
+test('profil : la durée max d\'un jour est respectée (aucune séance plus longue ce jour-là)', () => {
+  const r = planifierCourse(DEMANDE, [], ctx(), YANIS, coureur({ disponibilites: { mardi: { libre: true, minutes_max: 40 }, samedi: { libre: true, minutes_max: 50 } } }));
+  for (const o of ajouts(r.operations)) {
+    const j = nomDuJour(o.proposition.date);
+    if (j === 'mardi') assert.ok(o.proposition.minutes <= 40, `${o.proposition.date} ${o.proposition.minutes}`);
+    if (j === 'samedi') assert.ok(o.proposition.minutes <= 50, `${o.proposition.date} ${o.proposition.minutes}`);
+  }
+  assert.match(r.message, /durée limitée mardi 40 min, samedi 50 min/);
+});
+test('profil : si aucun jour n\'est assez long, la séance est abandonnée avec la vraie raison (pas de séance trop longue)', () => {
+  const tout = Object.fromEntries(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].map((j) => [j, { libre: true, minutes_max: 20 }]));
+  const r = planifierCourse(DEMANDE, [], ctx(), YANIS, coureur({ disponibilites: tout }));
+  assert.ok(ajouts(r.operations).every((o) => o.proposition.minutes <= 20));
+  assert.ok(r.abandons.some((a) => /assez long/.test(a)));
+});
+test('profil : la plus grosse semaine déjà faite plafonne le volume d\'une semaine', () => {
+  const sans = planifierCourse(DEMANDE, [], ctx(), YANIS);
+  const avec = planifierCourse(DEMANDE, [], ctx(), YANIS, coureur({ pic_hebdo_minutes: 150 }));
+  const maxSemaine = (r: ReturnType<typeof planifierCourse>) => Math.max(...r.semaines.map((l) => Number(/, (\d+) min$/.exec(l)?.[1] ?? 0)));
+  assert.ok(maxSemaine(avec) <= Math.max(150, ...YANIS.semaines.map((x) => x.minutes)), String(maxSemaine(avec)));
+  assert.ok(maxSemaine(avec) <= maxSemaine(sans));
+});
+test('profil : blessure encore là = aucune séance d\'intensité et pas de sortie test', () => {
+  const nu = { ...YANIS, effortRecent: null, meilleurEffort: null, sorties90: 0, recent: { sorties: 0, km: 0, minutes: 0, plusLongueMinutes: 0, allureMedianeSParKm: null } };
+  const test = planifierCourse({ ...DEMANDE }, [], ctx(), nu, null);
+  assert.equal(test.bilan!.test, true, 'sans blessure ni donnée : sortie test');
+  const r = planifierCourse({ ...DEMANDE }, [], ctx(), nu, coureur({ blessures: [{ zone: 'genou', quand: 'moins_3_mois', actif: true }], blessures_renseignees: true }));
+  assert.equal(r.bilan!.test, false);
+  assert.ok(ajouts(r.operations).every((o) => !estDur(o.proposition.type) || /longue/.test(o.proposition.type)), ajouts(r.operations).map((o) => o.proposition.type).join(','));
+  assert.match(r.message, /blessure encore là/);
+});
+test('profil : blessure récente, débutant ou « j\'évite le fractionné » = une seule séance dure par semaine ; montée plus douce pour les deux premiers', () => {
+  const dureParSemaine = (r: ReturnType<typeof planifierCourse>) => {
+    const parSemaine = new Map<number, number>();
+    for (const o of ajouts(r.operations)) if (estDur(o.proposition.type)) { const w = Math.floor(ecartJours(ajouterJours(AUJ, 1), o.proposition.date) / 7); parSemaine.set(w, (parSemaine.get(w) ?? 0) + 1); }
+    return Math.max(0, ...parSemaine.values());
+  };
+  const base = planifierCourse({ ...DEMANDE, seancesParSemaine: 5 }, [], ctx(), YANIS);
+  assert.equal(dureParSemaine(base), 2, 'sans profil : 2 séances dures possibles');
+  for (const ligne of [{ blessures: [{ zone: 'tibia', quand: 'moins_1_an', actif: false }] }, { annees_pratique: 0 }, { preferences: { fractionne: 'evite' } }]) {
+    const r = planifierCourse({ ...DEMANDE, seancesParSemaine: 5 }, [], ctx(), YANIS, coureur(ligne));
+    assert.equal(dureParSemaine(r), 1, JSON.stringify(ligne));
+  }
+  assert.equal(reglesDuProfil(coureur({ annees_pratique: 0 })).croissance, 1.05);
+  assert.equal(reglesDuProfil(coureur({ preferences: { fractionne: 'evite' } })).croissance, 1.1);
+  assert.equal(reglesDuProfil(coureur({ blessures: [{ zone: 'dos', quand: 'plus_1_an', actif: false }] })).prudent, false, 'une vieille blessure (plus d\'un an) ne change rien');
 });

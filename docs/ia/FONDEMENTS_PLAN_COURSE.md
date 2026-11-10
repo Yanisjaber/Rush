@@ -23,6 +23,20 @@ Verdicts : **soutenu** (preuve solide) · **débattu** (les sources se contredis
 | Volume mini 38 min par séance, footing mini 30, longue mini 45, volume hebdo max 360 | Rien. | **Sans source, remplacé le 10 nov. (cas avec historique)** par des repères tirés des sorties de la personne (`reperesPersonnels`) : footing mini = 75 % de sa sortie moyenne, longue mini = 85 % de sa plus longue récente, volume max = 130 % de sa semaine la plus chargée. **Ces coefficients sont des conventions d'échelle, pas des résultats d'études.** Sans historique : anciennes valeurs par défaut, en attendant un départ prudent de débutant (à faire, après lecture des fiches reprise/débutant). |
 | Pas de test avec des sorties récentes ; test de 3 km sans données | Nuuttila 2022 : ajuster la charge d'après des marqueurs de récupération donne un meilleur gain que suivre un plan fixe. | **Soutenu pour le principe d'adapter le plan** (ce que fait déjà `suivi-plan.ts`) ; le choix de la sortie test 3 km est une pratique. |
 
+## Ce que le profil du coureur change (12 nov. 2026, `reglesDuProfil`)
+
+| Donnée du profil | Effet dans le plan | Source |
+|---|---|---|
+| Jour « pas disponible » | Aucune séance ce jour-là | La personne |
+| Durée max d'un jour | Aucune séance plus longue ce jour-là (sinon séance abandonnée, avec la raison) | La personne |
+| Plus grosse semaine déjà faite | Le volume d'une semaine ne dépasse pas le plus haut entre elle et sa plus grosse semaine récente | Décision « plafond partant du volume réel » (voir plus haut) ; pas une étude |
+| Blessure encore là | Aucune séance d'intensité, pas de sortie test | Fiche `course-blessures-progression` : ne jamais courir à travers une douleur |
+| Blessure des 12 derniers mois, ou moins d'un an de pratique | Une seule séance dure par semaine, montée de 5 % au lieu de 10 % | Même fiche : avoir déjà été blessé est le facteur le mieux lié à une nouvelle blessure (≈ ×7,6 chez des débutants, seconde main) ; elle conseille de réduire la montée (fourchette 5-10 %) et de garder plus de jours faciles. Le choix précis « 1 séance dure, 5 % » est **notre convention**, pas un résultat d'étude. |
+| Évite le fractionné | Une seule séance dure par semaine | La personne |
+| Moment de la journée | Aucun effet (le plan donne des jours, pas des heures) | — |
+
+Ne sont pas encore branchés : `planifier_semaine`, `planifier_periode` (autres moteurs) et le cas sans historique.
+
 ## Ce qui est le mieux soutenu
 
 1. **L'affûtage** : 2 semaines, volume nettement réduit, intensité et fréquence gardées (Bosquet 2007).

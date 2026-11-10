@@ -14,6 +14,8 @@
 // Ces règles sont les HABITUDES d'un bon plan, pas des refus : l'utilisateur peut tout modifier ensuite.
 // ============================================================
 import { ajouterJours, ecartJours, entre, nomDuJour } from './dates-iso.ts';
+import { JOURS_SEMAINE } from './profil-coureur.ts';
+import type { ProfilCoureur } from './profil-coureur.ts';
 import { tssEstime, typeSeance } from './menu-seances.ts';
 import { ctxAvec, etiquetteDate } from './planning.ts';
 import type { DetailSeance, Operation, SeancePrevue } from './planning.ts';
@@ -495,6 +497,8 @@ export interface Bilan {
   derniers7: number;
   /** Les allures que l'utilisateur a imposées */
   imposees: (keyof Allures)[];
+  /** Ce que le profil du coureur a changé dans le plan (vide si le profil est inconnu ou n'a rien changé) */
+  profilUtilise: string[];
 }
 
 export interface ResultatCourse {
@@ -555,11 +559,57 @@ export function reperesPersonnels(profil: ProfilCourse | null): Reperes {
   };
 }
 
+/**
+ * Ce que le profil que la personne a donné au coach change dans le plan (table coach_profil, voir profil-coureur.ts). Rien n'est inventé : chaque règle vient soit de la personne, soit de la fiche
+ * course-blessures-progression (docs/ia/connaissances) : « avoir déjà été blessé » est un des facteurs les mieux liés à une nouvelle blessure (≈ ×7,6 chez des débutants), un programme improvisé
+ * blesse plus qu'un programme structuré ; la fiche conseille alors de réduire la montée (fourchette 5-10 % par semaine → le bas), de garder plus de jours faciles, et de ne jamais courir à travers une douleur.
+ *   - jour pas disponible → aucune séance ce jour-là ; durée max d'un jour → aucune séance plus longue ce jour-là ;
+ *   - plus grosse semaine déjà faite → le volume d'une semaine ne dépasse pas le plus haut entre elle et sa plus grosse semaine récente ;
+ *   - blessure encore là → AUCUNE séance d'intensité, pas de sortie test ; blessure des 12 derniers mois ou moins d'un an de pratique → prudence : une seule séance dure par semaine, montée de 5 % ;
+ *   - elle évite le fractionné → une seule séance dure par semaine.
+ * Le moment de la journée (matin, soir) n'a pas d'effet : le plan donne des jours, pas des heures.
+ */
+export interface ReglesProfil {
+  joursInterdits: Set<string>;
+  minutesMax: Record<string, number>;
+  picHebdo: number | null;
+  prudent: boolean;
+  blessureActive: boolean;
+  maxQualites: number;
+  croissance: number;
+  /** Ce que le plan a vraiment pris en compte, en phrases pour le bilan */
+  utilise: string[];
+}
+export function reglesDuProfil(c: ProfilCoureur | null): ReglesProfil {
+  const r: ReglesProfil = { joursInterdits: new Set(), minutesMax: {}, picHebdo: null, prudent: false, blessureActive: false, maxQualites: 2, croissance: 1.1, utilise: [] };
+  if (!c) return r;
+  for (const j of JOURS_SEMAINE) {
+    const d = c.disponibilites[j];
+    if (d?.libre === false) r.joursInterdits.add(j);
+    else if (d?.minutesMax !== undefined) r.minutesMax[j] = d.minutesMax;
+  }
+  if (r.joursInterdits.size) r.utilise.push(`aucune séance ${[...r.joursInterdits].join(', ')}`);
+  const limites = Object.entries(r.minutesMax);
+  if (limites.length) r.utilise.push(`durée limitée ${limites.map(([j, m]) => `${j} ${m} min`).join(', ')}`);
+  if (c.picHebdoMinutes !== null && c.picHebdoMinutes > 0) { r.picHebdo = c.picHebdoMinutes; r.utilise.push(`volume jamais au-dessus de ta plus grosse semaine (${c.picHebdoMinutes} min) ou de ta plus grosse semaine récente`); }
+  r.blessureActive = c.blessures.some((b) => b.actif);
+  const recente = c.blessures.some((b) => b.actif || b.quand !== 'plus_1_an');
+  const debutant = c.anneesPratique === 0;
+  r.prudent = recente || debutant;
+  if (r.blessureActive) r.utilise.push('blessure encore là : aucune séance d\'intensité, pas de sortie test');
+  else if (recente) r.utilise.push('blessure dans les 12 derniers mois : une seule séance dure par semaine, montée plus douce (5 %)');
+  else if (debutant) r.utilise.push('moins d\'un an de pratique : une seule séance dure par semaine, montée plus douce (5 %)');
+  if (c.fractionne === 'evite') { r.maxQualites = 1; r.utilise.push('tu évites le fractionné : une seule séance dure par semaine'); }
+  if (r.prudent) { r.maxQualites = 1; r.croissance = 1.05; }
+  return r;
+}
+
 /** Le jour de la semaine d'une date (1 = lundi … 7 = dimanche) */
 const jourSemaine = (date: string): number => { const j = new Date(`${date}T00:00:00Z`).getUTCDay(); return j === 0 ? 7 : j; };
 
-export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base: ContexteValidation, profil: ProfilCourse | null): ResultatCourse {
+export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base: ContexteValidation, profil: ProfilCourse | null, coureur: ProfilCoureur | null = null): ResultatCourse {
   const aujourdhui = base.aujourdhui;
+  const regles = reglesDuProfil(coureur);
   const vide = (msg: string): ResultatCourse => ({ operations: [], abandons: [msg], semaines: [], bilan: null, message: msg });
   const km = d.km && d.km > 0 ? d.km : 10;
   const debut = d.debut && d.debut > aujourdhui ? d.debut : d.debut === aujourdhui ? aujourdhui : ajouterJours(aujourdhui, 1);
@@ -584,7 +634,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   const calculees = plafonnerFacile(alluresDepuisCourse(objectifPlan, km), profil);
   // Sortie test SEULEMENT sans donnée récente (ni chrono, ni sorties des 90 derniers jours) : avec des sorties récentes, le niveau est déjà connu.
   // Pas de test non plus si l'utilisateur n'en veut pas ou si le plan est trop court pour s'en servir.
-  const avecTest = !d.chrono && !d.sansTest && nSemaines >= 2 && niveau?.fiabilite !== 'recente';
+  const avecTest = !d.chrono && !d.sansTest && !regles.blessureActive && nSemaines >= 2 && niveau?.fiabilite !== 'recente';
   const imposees = ALLURES_CLES.filter((c) => d.allures?.[c] !== undefined);
   const a: Allures = { ...calculees, ...Object.fromEntries(imposees.map((c) => [c, d.allures![c]!])) };
 
@@ -597,7 +647,10 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   // sur 4 fenêtres de 7 jours, si elle est plus haute ; un peu plus (+10 %), jamais moins de 38 min par séance. Ainsi, un plan refait en cours de route repart de la charge réelle.
   const derniers7 = profil && profil.semaines.length ? profil.semaines[profil.semaines.length - 1].minutes : 0;
   const rp = reperesPersonnels(profil);
-  const volumeDepart = Math.min(rp.volumeMax, Math.max(k * rp.seanceMini, Math.round(Math.max(moyenne4, derniers7) * 1.1)));
+  // Sa plus grosse semaine déjà faite (profil) plafonne le volume : jamais plus que le plus haut entre elle et sa plus grosse semaine récente
+  const semaineMaxRecente = Math.max(0, ...(profil?.semaines ?? []).map((x) => x.minutes));
+  const volumeMax = regles.picHebdo !== null ? Math.max(Math.min(rp.volumeMax, Math.max(regles.picHebdo, semaineMaxRecente)), k * rp.footingMini) : rp.volumeMax;
+  const volumeDepart = Math.min(volumeMax, Math.max(k * rp.seanceMini, Math.round(Math.max(moyenne4, derniers7) * 1.1)));
   const longueMax = Math.min(110, Math.max(60, Math.round((objectifPlan / 60) * 1.6)));
   let longuePrecedente = Math.max(rp.longueMini, Math.min(longueMax, profil?.recent.plusLongueMinutes || rp.longueMini));
 
@@ -620,14 +673,14 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     const rang = compteurs[phase]++;
     const derniere = w === nSemaines - 1;
     const recuperation = phase !== 'affutage' && w % 4 === 3 && nSemaines - w > 2;
-    const facteur = phase === 'affutage' ? (w === nSemaines - 1 ? 0.55 : 0.75) : recuperation ? 0.8 : Math.pow(1.1, w - Math.floor(w / 4));
-    const volume = Math.min(rp.volumeMax, Math.round(volumeDepart * facteur));
+    const facteur = phase === 'affutage' ? (w === nSemaines - 1 ? 0.55 : 0.75) : recuperation ? 0.8 : Math.pow(regles.croissance, w - Math.floor(w / 4));
+    const volume = Math.min(volumeMax, Math.round(volumeDepart * facteur));
 
     // les jours possibles de la semaine
     const pris = new Set(toutes.map((s) => s.date));
     const libres: string[] = [];
     for (let j = du; j <= finSemaine; j = ajouterJours(j, 1)) {
-      if (j < debut || interdits.has(j) || pris.has(j) || base.joursDeRepos.includes(j) || base.competitions.some((c) => c.date === j)) continue;
+      if (j < debut || interdits.has(j) || regles.joursInterdits.has(nomDuJour(j)) || pris.has(j) || base.joursDeRepos.includes(j) || base.competitions.some((c) => c.date === j)) continue;
       if (base.indisponibilites.some((i) => entre(j, i.du, i.au))) continue;
       libres.push(j);
     }
@@ -640,7 +693,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     // les rôles : une qualité, une sortie longue, le reste facile ; une seconde qualité à partir de 4 séances, hors base et affûtage
     // L'ordre des rôles suit les jours : un footing d'abord pour que la qualité ne tombe pas le lendemain de la sortie longue de la semaine d'avant
     const roles: Role[] = [];
-    const deuxQualites = kSemaine >= 4 && (phase === 'developpement' || phase === 'specifique');
+    const deuxQualites = regles.maxQualites >= 2 && kSemaine >= 4 && (phase === 'developpement' || phase === 'specifique');
     if (deuxQualites) roles.push('qualite1', 'facile', 'qualite2');
     else if (kSemaine >= 3) roles.push('facile', 'qualite1');
     else roles.push('qualite1');
@@ -648,6 +701,8 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     // la semaine de la course n'a pas de sortie longue : un dernier footing léger à la place
     if (derniere) { if (kSemaine >= 3) roles.push('facile'); } else if (kSemaine >= 2) roles.push('longue');
     while (roles.length > kSemaine) roles.splice(roles.indexOf('facile'), 1);
+    // Blessure encore là : aucune séance d'intensité, que du facile et la sortie longue
+    if (regles.blessureActive) roles.forEach((r, i) => { if (r === 'qualite1' || r === 'qualite2') roles[i] = 'facile'; });
     // La sortie longue va sur un jour de week-end libre quand il y en a un (samedi une semaine, dimanche la suivante) ; les autres séances se répartissent autour,
     // sans coller la qualité à la sortie longue quand c'est possible
     const wk = (j: string) => nomDuJour(j) === 'samedi' || nomDuJour(j) === 'dimanche';
@@ -698,8 +753,16 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     }
     // Un footing reste un footing : jamais plus long que ses footings habituels (130 %), sinon il devient une 2e sortie longue à côté de la vraie. Sans historique : jamais plus de 65 % de la longue.
     const plafondFacile = nLongue ? Math.min(rp.footingMax, rp.personnels ? Infinity : Math.max(rp.footingMini, Math.round(longue * 0.65))) : Infinity;
-    const facile = nFaciles ? Math.min(plafondFacile, Math.max(derniere ? Math.max(15, Math.round(rp.footingMini * 0.65)) : rp.footingMini, Math.round((restant - longue) / nFaciles))) : 0;
+    let facile = nFaciles ? Math.min(plafondFacile, Math.max(derniere ? Math.max(15, Math.round(rp.footingMini * 0.65)) : rp.footingMini, Math.round((restant - longue) / nFaciles))) : 0;
     if (nLongue && !recuperation && phase !== 'affutage') longuePrecedente = longue;
+
+    // Durée max par jour (profil) : la sortie longue et les footings ne dépassent pas le jour le plus long de la semaine ; chaque séance est ensuite posée sur un jour assez long
+    const maxDuJour = (j: string): number => regles.minutesMax[nomDuJour(j)] ?? Infinity;
+    const plafondJour = libres.length ? Math.max(...libres.map(maxDuJour)) : Infinity;
+    if (plafondJour < Infinity) {
+      longue = Math.min(longue, plafondJour);
+      facile = Math.min(facile, plafondJour);
+    }
 
     // poser chaque séance (essai du jour choisi, puis des autres jours libres de la semaine)
     const joursCetteFenetre = new Map<Role, Set<string>>();
@@ -710,8 +773,8 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
         role === 'qualite1' || role === 'qualite2' ? seancesQualite[i]! :
         role === 'longue' ? sortieLongue(longue, a, longue > rp.longueMini && ((phase === 'specifique') || (phase === 'developpement' && w % 2 === 1))) :
         varianteFooting(facile, a, phase, w + roles.slice(0, i).filter((r) => r === 'facile').length, rp.footingMini);
-      const essais = [choisis[i], ...libres.filter((j) => !choisis.includes(j) && !operations.some((o) => o.op === 'ajouter' && o.proposition.date === j))];
-      let raisonRefus = '';
+      const essais = [choisis[i], ...libres.filter((j) => !choisis.includes(j) && !operations.some((o) => o.op === 'ajouter' && o.proposition.date === j))].filter((j) => maxDuJour(j) >= s.minutes);
+      let raisonRefus = essais.length ? '' : `aucun jour libre assez long, ${s.minutes} min dépassent la durée que tu m'as donnée`;
       for (const jour of essais) {
         const p: Proposition = { date: jour, sport: 'course', type: s.type, minutes: s.minutes };
         const v = validerSeance(p, ctxAvec(base, toutes, base.indisponibilites));
@@ -734,7 +797,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     lignesSemaines.push(`Semaine ${w + 1} (${du}) : ${NOM_PHASE[phase]}${recuperation ? ', récupération' : ''}, ${posees} séance${posees > 1 ? 's' : ''}, ${totalSemaine} min`);
   }
 
-  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null, volumeDepart, derniers7 };
+  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null, volumeDepart, derniers7, profilUtilise: regles.utilise };
   return { operations, abandons, semaines: lignesSemaines, bilan, message: messageBilan(bilan) };
 }
 
@@ -756,6 +819,7 @@ export function messageBilan(b: Bilan): string {
     parts.push("Je n'ai pas assez de sorties de course pour estimer ton niveau : le plan est calé sur le temps que tu vises, à vérifier après les premières séances.");
   }
   parts.push(`Volume de départ : ${b.volumeDepart} min la première semaine, calé sur tes 7 derniers jours glissants (${b.derniers7} min) et ta moyenne des 4 dernières fenêtres de 7 jours ; les semaines du plan sont des fenêtres de 7 jours glissants à partir du premier jour du plan.`);
+  if (b.profilUtilise.length) parts.push(`Ton profil a changé le plan : ${b.profilUtilise.join(' ; ')}.`);
   parts.push(`Plan à ${b.seancesParSemaine} séances par semaine (à garder identique si tu refais le plan, sauf demande de l'utilisateur).`);
   if (b.allures) {
     parts.push(`Allures (par km) : ${ALLURES_CLES.map((c) => `${NOM_ALLURE[c]} ${formaterAllure(b.allures![c])}`).join(', ')}.`);
