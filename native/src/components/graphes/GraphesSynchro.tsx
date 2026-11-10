@@ -10,7 +10,7 @@ import { usePalette } from '@/theme/usePalette';
 
 // Les courbes de la sortie l'une sous l'autre (allure ou vitesse, cœur, cadence, puissance), sur le même axe de distance : un seul curseur,
 // qu'on glisse au doigt, donne la valeur de chaque mesure au même endroit.
-// Le relief (altitude) est dessiné en silhouette derrière chaque courbe, et le cœur est posé sur ses zones colorées.
+// Le relief (altitude) est dessiné en silhouette derrière chaque courbe, et la puissance, l'allure et le cœur sont posés sur leurs zones colorées.
 // Un doigt : le curseur commun. Deux doigts : on entoure une portion ; quand on les lève, les courbes se recalculent sur cette portion (moyenne à gauche, max à droite,
 // et distance / vitesse de la portion dans la barre du haut). « Tout voir » revient à la sortie entière.
 interface Props {
@@ -24,8 +24,11 @@ interface Props {
   dureeS?: number | null;
   /** La hauteur disponible pour tout le bloc (barre du haut, courbes, axe) : les courbes s'y adaptent. */
   hauteur: number;
-  /** Début des zones cardio Z3, Z4 et Z5 (bpm), pour colorer le fond de la courbe de cœur. Absent sans FC max ni seuil. */
-  seuilsCoeur?: [number, number, number] | null;
+  /**
+   * Début des zones Z2, Z3… (dans l'unité de la courbe : bpm, W, s/km), en ordre croissant des valeurs, pour colorer le fond de la courbe par zone.
+   * Une courbe sans entrée n'a pas de bandes (pas de FC max, de FTP ou de seuil).
+   */
+  bandes?: Partial<Record<'fc' | 'watts' | 'allure', number[]>>;
   /** Le doigt est posé sur les courbes : l'écran suspend le balayage des pages. */
   onGlisse?: (actif: boolean) => void;
 }
@@ -47,7 +50,7 @@ interface Serie {
   inverse?: boolean;
 }
 
-export function GraphesSynchro({ courbes, km, rythme, couleur, dureeS, hauteur, seuilsCoeur, onGlisse }: Props) {
+export function GraphesSynchro({ courbes, km, rythme, couleur, dureeS, hauteur, bandes, onGlisse }: Props) {
   const p = usePalette();
   const [largeur, setLargeur] = useState(0);
   const [fraction, setFraction] = useState<number | null>(null); // le curseur à un doigt, dans la vue
@@ -166,21 +169,25 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, dureeS, hauteur, 
     const pts = echelle(relief, l, h, MARGE);
     return aireSousCourbe(lisse(pts), pts, h);
   };
-  // Les bandes de zones du cœur : trois fonds de plus en plus soutenus (Z3, Z4, Z5)
-  const bandesCoeur = (s: Serie, v: number[], l: number, h: number) => {
-    if (s.cle !== 'fc' || !seuilsCoeur) return null;
-    const bas = Math.min(...v);
-    const haut = Math.max(...v);
-    const y = (val: number) => MARGE + (1 - (Math.min(haut, Math.max(bas, val)) - bas) / (haut - bas || 1)) * (h - 2 * MARGE);
-    const [z3, z4, z5] = seuilsCoeur;
-    const bande = (de: number, a: number, teinte: string) => (y(de) - y(a) > 0.5 ? <Rect key={teinte} x={0} y={y(a)} width={l} height={y(de) - y(a)} fill={teinte} /> : null);
-    return (
-      <>
-        {bande(z3, z4, p.danger + '1a')}
-        {bande(z4, z5, p.danger + '33')}
-        {bande(z5, 999, p.danger + '55')}
-      </>
-    );
+  // Les bandes de zones derrière la courbe : la couleur du sport, de plus en plus soutenue de la zone 1 (en bas) à la dernière.
+  // Les valeurs de l'axe suivent la courbe : pour l'allure (sens inversé), les zones rapides sont en haut.
+  const bandesZones = (s: Serie, v: number[], l: number, h: number) => {
+    const debuts = bandes?.[s.cle as 'fc' | 'watts' | 'allure'];
+    if (!debuts?.length) return null;
+    const signe = s.inverse ? -1 : 1;
+    const bas = Math.min(...v.map((e) => signe * e));
+    const haut = Math.max(...v.map((e) => signe * e));
+    const y = (val: number) => MARGE + (1 - (Math.min(haut, Math.max(bas, signe * val)) - bas) / (haut - bas || 1)) * (h - 2 * MARGE);
+    const bornes = [...debuts].sort((a, b) => signe * (a - b));
+    const nb = bornes.length + 1;
+    const rects = [];
+    for (let k = 0; k < nb; k++) {
+      // La zone k va de bornes[k-1] à bornes[k] ; la première touche le bas du cadre, la dernière le haut
+      const yHaut = k === nb - 1 ? 0 : y(bornes[k]);
+      const yBas = k === 0 ? h : y(bornes[k - 1]);
+      if (yBas - yHaut > 0.5) rects.push(<Rect key={k} x={0} y={yHaut} width={l} height={yBas - yHaut} fill={couleur} opacity={0.1 + (k * 0.55) / Math.max(1, nb - 1)} />);
+    }
+    return <>{rects}</>;
   };
 
   return (
@@ -248,8 +255,8 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, dureeS, hauteur, 
               {largeur > 0 && haut > bas ? (
                 <Svg width={largeur} height={hSerie} pointerEvents="none">
                   {fond ? <Path d={fond} fill={p.trait} opacity={0.9} /> : null}
-                  {bandesCoeur(s, v, largeur, hSerie)}
-                  <Path d={lisse(points)} fill="none" stroke={s.couleur} strokeWidth={2} strokeLinecap="round" />
+                  {bandesZones(s, v, largeur, hSerie)}
+                  <Path d={lisse(points)} fill="none" stroke={bandes?.[s.cle as 'fc' | 'watts' | 'allure']?.length ? p.texte : s.couleur} strokeWidth={2} strokeLinecap="round" />
                 </Svg>
               ) : (
                 <View style={{ height: hSerie }} />

@@ -105,7 +105,17 @@ export default function Seance() {
     familleAffichage(seance.sport) === 'course',
     seance.moving_time,
   );
-  const seuilsCoeur: [number, number, number] | null = zonesCardio ? [zonesCardio[2].de, zonesCardio[3].de, zonesCardio[4].de] : null;
+  // Les bandes de zones derrière les courbes : début de Z2, Z3… (Z5a, Z5b et Z5c du cœur ne font qu'un Z5). Rien sans référence dans le profil.
+  const ftpZones = Number(profil?.ftp) > 0 ? Number(profil?.ftp) : Number(seance.ftp_at_time) > 0 ? Number(seance.ftp_at_time) : null;
+  const zonesPuissance = ftpZones ? calculerZones('puissance', ftpZones) : null;
+  const seuilKmh = Number(extrasProfil.threshold_speed) || null;
+  const zonesAllure = seuilKmh ? calculerZones('allure', seuilKmh) : null;
+  const bandesZones = {
+    ...(zonesCardio ? { fc: zonesCardio.slice(1, 5).map((z) => z.de) } : {}),
+    ...(zonesPuissance ? { watts: zonesPuissance.slice(1, 6).map((z) => z.de) } : {}),
+    // Allure : seulement en course ; les zones sont en km/h, la courbe en secondes par km
+    ...(zonesAllure && familleAffichage(seance.sport) === 'course' ? { allure: zonesAllure.slice(1).map((z) => 3600 / z.de) } : {}),
+  };
   const notes = (seance.user_notes ?? '').trim();
   const supprimable = sortieSupprimable(seance);
   const jour = String(seance.start_date_local).slice(0, 10);
@@ -166,7 +176,7 @@ export default function Seance() {
           </View>
         }
         repartitions={mesuresZones.length ? <RepartitionSortie mesures={mesuresZones} couleur={couleur} /> : undefined}
-        graphesHaut={courbes ? (hauteur, onGlisse) => <GraphesSynchro courbes={courbes} km={seance.distance_km ?? null} rythme={familleAffichage(seance.sport) === 'velo' ? 'vitesse' : 'allure'} couleur={couleur} dureeS={seance.moving_time ?? null} hauteur={hauteur} seuilsCoeur={seuilsCoeur} onGlisse={onGlisse} /> : undefined}
+        graphesHaut={courbes ? (hauteur, onGlisse) => <GraphesSynchro courbes={courbes} km={seance.distance_km ?? null} rythme={familleAffichage(seance.sport) === 'velo' ? 'vitesse' : 'allure'} couleur={couleur} dureeS={seance.moving_time ?? null} hauteur={hauteur} bandes={bandesZones} onGlisse={onGlisse} /> : undefined}
         pageDetails={(onGlisse) => (
           <PageDetailsSortie
             chiffres={chiffres}
