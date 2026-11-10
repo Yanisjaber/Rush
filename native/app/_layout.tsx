@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
@@ -12,6 +12,7 @@ import { BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-gr
 import { InstrumentSans_400Regular } from '@expo-google-fonts/instrument-sans/400Regular';
 import { InstrumentSans_500Medium } from '@expo-google-fonts/instrument-sans/500Medium';
 import { InstrumentSans_600SemiBold } from '@expo-google-fonts/instrument-sans/600SemiBold';
+import { EcranChargement } from '@/components/ui/EcranChargement';
 import { ZoneClavier } from '@/components/champs/ZoneClavier';
 import { initAuth, useAuth } from '@/stores/auth';
 import { chargerTheme } from '@/stores/theme';
@@ -51,15 +52,17 @@ export default function RootLayout() {
     if (erreurPolices) console.warn('[polices] chargement impossible :', erreurPolices.message);
   }, [erreurPolices]);
 
-  // On attend les polices, le thème et la lecture de la session : sinon l'écran de connexion clignoterait avant l'Accueil
-  const toutPret = (policesPretes || !!erreurPolices) && pret && themePret;
-
-  // Tout est prêt : on retire l'écran de lancement (le premier écran est déjà dessous)
+  // Polices et thème prêts : on peut retirer l'écran de lancement natif, l'écran de chargement prend le relais par-dessus
+  const decorPret = (policesPretes || !!erreurPolices) && themePret;
   useEffect(() => {
-    if (toutPret) void SplashScreen.hideAsync().catch(() => {});
-  }, [toutPret]);
+    if (decorPret) void SplashScreen.hideAsync().catch(() => {});
+  }, [decorPret]);
 
-  if (!toutPret) return null;
+  // L'écran de chargement (« À vos marques… ») reste tant que la session n'est pas lue : sinon l'écran de connexion clignoterait avant l'Accueil
+  const [chargementFini, setChargementFini] = useState(false);
+  const finChargement = useCallback(() => setChargementFini(true), []);
+
+  if (!decorPret) return null;
   const connecte = !!session || demo;
 
   return (
@@ -67,6 +70,7 @@ export default function RootLayout() {
       <StatusBar style={palette === clair ? 'dark' : 'light'} />
       {/* Toucher à côté d'un champ texte, n'importe où dans l'app, ferme le clavier et retire le curseur */}
       <ZoneClavier style={{ flex: 1 }}>
+      {pret ? (
       <Stack
         screenOptions={{
           headerShown: false,
@@ -130,7 +134,9 @@ export default function RootLayout() {
           <Stack.Screen name="connexion" />
         </Stack.Protected>
       </Stack>
+      ) : null}
       </ZoneClavier>
+      {chargementFini ? null : <EcranChargement pret={pret} onFin={finChargement} />}
     </GestureHandlerRootView>
   );
 }
