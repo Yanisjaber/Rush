@@ -1,6 +1,7 @@
 import { FondDegrade } from '@/components/ui/FondDegrade';
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BandeauConnexion } from '@/components/ecrans/BandeauConnexion';
 import { BandeauEdition } from '@/components/ecrans/BandeauEdition';
@@ -10,6 +11,7 @@ import { Bouton } from '@/components/ui/Bouton';
 import { EtatVide } from '@/components/ecrans/EtatVide';
 import { FeuilleWidget } from '@/components/feuilles/FeuilleWidget';
 import { Boite, Emplacement, GrilleWidgets } from '@/components/widgets/GrilleWidgets';
+import { destinationWidget } from '@/data/accueil/destinations';
 import { solitaires } from '@/data/accueil/grille';
 import { ListeTriable } from '@/components/ui/ListeTriable';
 import { Onboarding } from '@/components/ecrans/Onboarding';
@@ -33,6 +35,7 @@ import { COMPOSANTS, WidgetBientot } from '@/widgets/registre-composants';
 export default function Accueil() {
   const p = usePalette();
   const bas = useSafeAreaInsets().bottom;
+  const router = useRouter();
   const { filtre, familles } = useMenu();
   const { donnees, chargement, actualisation, demo, recharger } = useDonneesAccueil();
 
@@ -112,11 +115,20 @@ export default function Accueil() {
   const rendre = (w: WidgetPlace) => {
     if (!contexte) return null;
     const Composant = COMPOSANTS[w.id];
-    return (
+    const boite = (
       <Boite key={w.id} taille={w.taille} heros={widgets[0]?.id === w.id ? herosDePage : null}>
         {/* XS, S et M : la tuile (chiffre clé) ; L : le grand format du widget */}
         {Composant ? <Composant contexte={contexte} taille={w.taille} tuile={w.taille !== 'l'} /> : <WidgetBientot id={w.id} />}
       </Boite>
+    );
+    // Le toucher ouvre l'écran lié au widget (séance, objectif, onglet) ; sans destination, la carte reste fixe
+    const dest = destinationWidget(w.id, contexte);
+    if (!dest) return boite;
+    const ouvrir = () => (dest.type === 'ecran' ? router.push({ pathname: dest.pathname, params: dest.params }) : router.navigate(dest.chemin));
+    return (
+      <Pressable onPress={ouvrir} accessibilityRole="button" style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.985 : 1 }] })}>
+        {boite}
+      </Pressable>
     );
   };
 
