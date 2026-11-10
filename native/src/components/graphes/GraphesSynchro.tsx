@@ -40,7 +40,7 @@ function formatLaps(secondes: number): string {
 
 const MARGE = 6;
 const ENTETE = 20; // une ligne par courbe : moyenne à gauche, nom au milieu, max à droite
-const HAUT_BARRE = 36; // la barre du haut : conseil de geste, ou les données de la portion zoomée
+const HAUT_BARRE = 26; // la barre du haut : conseil de geste, ou les données de la portion zoomée
 const HAUT_AXE = 16;
 const ECART_MIN = 0.05; // une portion fait au moins 5 % de la vue
 

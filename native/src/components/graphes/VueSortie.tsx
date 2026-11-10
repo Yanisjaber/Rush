@@ -179,7 +179,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
         <View style={{ width: largeur, height: hauteur, backgroundColor: p.fond }}>
           <ScrollView contentContainerStyle={pageDefilante} showsVerticalScrollIndicator={false}>
             {ligneDate}
-            {graphesHaut ? <View style={{ height: hautCourbes }}>{graphesHaut(hautCourbes, setSurCourbe)}</View> : null}
+            {graphesHaut ? <View style={{ height: hautCourbes, marginTop: -espace.e2 }}>{graphesHaut(hautCourbes, setSurCourbe)}</View> : null}
             {repartitions}
           </ScrollView>
           {/* Sous l'en-tête flottant : un fond plein, pour que le contenu qui défile ne passe pas sous le titre */}
