@@ -20,7 +20,7 @@ Principe posé par Yanis : **chaque règle du plan vient d'études ou de la pers
 - [ ] Écran de profil dans l'app (voir plus bas, 8 maquettes d'abord).
 
 ## 2. Niveau de confiance affiché dans la carte
-- [ ] Dire dans la carte sur quoi le plan repose (« 14 sorties récentes + tes disponibilités » ou « plan prudent, je connais peu ton historique »).
+- Abandonné (décision de Yanis, 12 nov.) : pas de niveau de confiance dans la carte.
 
 ## 3. Cas sans historique (vrai débutant, nouveau compte)
 - [ ] Poser les questions du profil d'abord ; si la personne ne sait pas répondre, départ très prudent.
