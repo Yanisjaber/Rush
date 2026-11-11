@@ -6,16 +6,17 @@ import { PageAnalyseSortie } from '@/components/graphes/PageAnalyseSortie';
 import { PageDetailsSortie } from '@/components/graphes/PageDetailsSortie';
 import { VueSortie } from '@/components/graphes/VueSortie';
 import { ListeTours } from '@/components/ui/ListeTours';
-import { StatCle } from '@/components/ui/StatCle';
+import { TuileChiffre } from '@/components/ui/TuileChiffre';
 import { sortieSupprimable } from '@/data/calendrier/ajouts';
 import { analyserSortie } from '@/data/calendrier/analyse/constats';
 import { flux1Hz } from '@/data/calendrier/analyse/flux';
 import { typeDeSeance } from '@/data/calendrier/analyse/type-seance';
 import { chiffreEcarte } from '@/data/calendrier/donnees-ecartees';
-import { chiffresSeance, lignesTours, troisChiffres } from '@/data/calendrier/seance-detail';
+import { chiffresSeance, lignesTours, quatreChiffres } from '@/data/calendrier/seance-detail';
 import { deriveCardiaque } from '@/data/outils/derive-cardiaque';
+import { statsSki } from '@/data/outils/descentes-ski';
 import { travailAuDessusFtp } from '@/data/outils/efforts-sortie';
-import { formatDateCourte, formatKm } from '@/data/outils/format';
+import { formatDateCourte, formatKm, formatNombre } from '@/data/outils/format';
 import { familleAffichage } from '@/data/sports/familles';
 import { nomDuType } from '@/data/sports/catalogue-sports';
 import { GrapheTours } from '@/components/graphes/GrapheTours';
@@ -35,6 +36,15 @@ import { usePalette } from '@/theme/usePalette';
 
 // Le détail d'une sortie réalisée (maquette « Pages qu'on balaie ») : la carte en plein fond (ou, sans GPS, un dossard), les trois chiffres clés, puis le profil d'altitude ; balayer vers la gauche ouvre la page 2 (toutes les infos, sans carte : rubriques, tours, notes et données). On y arrive depuis le calendrier. Une activité saisie à la main peut être modifiée (crayon) et supprimée
 // (en bas de la page 2) ; celles de Strava appartiennent à Strava.
+/** Le libellé d'une tuile de la page 1 : quatre tiennent côte à côte, donc court. */
+function etiquetteCourte(cle: string, libelle: string): string {
+  if (cle === 'denivele') return 'D+';
+  if (cle === 'fc') return 'Cardio';
+  if (cle === 'watts') return 'Puissance';
+  if (cle === 'vmax') return 'V. max';
+  return libelle;
+}
+
 export default function Seance() {
   const p = usePalette();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -83,7 +93,12 @@ export default function Seance() {
   const travailFtp = ftpActuelle ? travailAuDessusFtp(courbes?.brut?.watts, courbes?.brut?.temps, ftpActuelle) : null;
   const pmax = mesure('pmax') ?? (Number(seance.max_watts) > 0 ? Number(seance.max_watts) : null);
   // Les chiffres en plus : lus dans `metrics` (calculés par le serveur sur les flux complets) ou déduits des colonnes de la séance
+  // Le ski (alpin, snowboard, rando) : dénivelé descendu, descentes et vitesse max, calculés depuis les flux d'altitude et de vitesse
+  const ski = seance.sport === 'AlpineSki' || seance.sport === 'Snowboard' || seance.sport === 'BackcountrySki' ? statsSki(courbes?.brut) : null;
   const supplements: { cle: string; libelle: string; valeur: string; unite?: string }[] = [
+    ...(ski && ski.descenteM > 0 ? [{ cle: 'descendu', libelle: 'D−', valeur: formatNombre(ski.descenteM), unite: 'm' }] : []),
+    ...(ski && ski.descentes > 0 ? [{ cle: 'descentes', libelle: 'Descentes', valeur: String(ski.descentes) }] : []),
+    ...(ski && ski.vmaxKmh ? [{ cle: 'vmax', libelle: 'Vitesse max', valeur: String(ski.vmaxKmh), unite: 'km/h' }] : []),
     ...(derive ? [{ cle: 'derive', libelle: 'Dérive', valeur: `${derive.pct > 0 ? '+' : derive.pct < 0 ? '−' : ''}${formatKm(Math.abs(derive.pct), 1)}`, unite: '%' }] : []),
     ...(aPuissance && nP && ftpActuelle ? [{ cle: 'if', libelle: 'Intensité', valeur: String(Math.round((nP / ftpActuelle) * 100)), unite: '%' }] : []),
     ...(aPuissance && nP && fcMoy ? [{ cle: 'ef', libelle: 'Efficacité', valeur: formatKm(nP / fcMoy, 2) }] : []),
@@ -97,7 +112,9 @@ export default function Seance() {
   ];
   const chiffres = [...chiffresBase, ...supplements];
 
-  const cles = troisChiffres(chiffres);
+  const quatre = quatreChiffres(chiffres, seance.sport);
+  // Les chiffres de la page 1 ne sont pas répétés sur la page 2
+  const dejaVus = quatre.map((c) => c.cle);
   const lignes = tours ? lignesTours(tours, seance.sport) : [];
   // Début des zones cardio Z3, Z4 et Z5a, recalculées depuis le profil (jamais stockées) : sans FC max ni seuil, pas de fond coloré
   const refCardio = referenceCardio(profil);
@@ -186,12 +203,10 @@ export default function Seance() {
         date={date}
         onModifier={() => router.push({ pathname: '/ajout-sortie', params: { id: seance.id } })}
         chiffres={
-          cles.length ? (
+          quatre.length ? (
             <View style={styles.tuiles}>
-              {cles.map((c) => (
-                <View key={c.cle} style={[styles.tuile, { backgroundColor: p.surface }]}>
-                  <StatCle etiquette={c.libelle} valeur={c.valeur} unite={c.unite} petit ecarte={chiffreEcarte(seance, c.cle)} />
-                </View>
+              {quatre.map((c) => (
+                <TuileChiffre key={c.cle} etiquette={etiquetteCourte(c.cle, c.libelle)} valeur={c.valeur} unite={c.unite} ecarte={chiffreEcarte(seance, c.cle)} />
               ))}
             </View>
           ) : null
@@ -210,6 +225,7 @@ export default function Seance() {
         pageDetails={(onGlisse) => (
           <PageDetailsSortie
             chiffres={chiffres}
+            dejaVus={dejaVus}
             ecarte={(cle) => chiffreEcarte(seance, cle)}
             altitude={trace && trace.altitudeMin != null && trace.altitudeMax != null ? { min: trace.altitudeMin, max: trace.altitudeMax } : null}
             couleur={couleur}
@@ -252,7 +268,6 @@ const styles = StyleSheet.create({
   page: { flex: 1 },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: espace.e5 },
   tuiles: { flexDirection: 'row', gap: espace.e2 },
-  tuile: { flex: 1, borderRadius: rayon.base, padding: espace.e3 },
   notes: { borderRadius: rayon.base, padding: espace.e3, gap: 4 },
   supprimer: { minHeight: 44, borderRadius: rayon.base, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });

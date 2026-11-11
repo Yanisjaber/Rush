@@ -10,6 +10,8 @@ export interface FluxBruts {
   watts?: number[];
   /** Vitesse en m/s. */
   vitesse?: number[];
+  /** Altitude en mètres (pour le ski : dénivelé descendu, descentes). */
+  altitude?: number[];
 }
 
 export interface CourbesSortie {
@@ -88,11 +90,12 @@ export function courbesDepuisFlux(flux: unknown, n = N): CourbesSortie | null {
     const l = liste(type);
     return l.length === longueur ? l.map((v) => (ok(v) ? v : NaN)) : undefined;
   };
-  const [t, f, w, vv] = [garder('time'), garder('heartrate'), garder('watts'), garder('velocity_smooth')];
+  const [t, f, w, vv, aa] = [garder('time'), garder('heartrate'), garder('watts'), garder('velocity_smooth'), garder('altitude')];
   if (t) brut.temps = t;
   if (f) brut.fc = f;
   if (w) brut.watts = w;
   if (vv) brut.vitesse = vv;
+  if (aa) brut.altitude = aa;
   if (Object.keys(brut).length) courbes.brut = brut;
   if (vitesse) courbes.vitesse = vitesse;
   if (fc) courbes.fc = fc;

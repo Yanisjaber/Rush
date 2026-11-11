@@ -1,6 +1,7 @@
 // L'écran de détail d'une séance : les chiffres à montrer selon le sport, et les lignes de tours. Fonctions pures, sans réseau
 // (testées dans tests/seance-detail.test.ts).
-import { familleAffichage } from '../sports/familles.ts';
+import { choisirChiffres, ordreSortie } from './quatre-chiffres.ts';
+import { familleAffichage, SKI_DE_FOND } from '../sports/familles.ts';
 import { formatAllure, formatAllureDepuisKmh, formatDuree, formatDureePrecise, formatKm, formatNombre } from '../outils/format.ts';
 import type { Seance, Tour } from '../types.ts';
 import { wattsEstimes } from './donnees-ecartees.ts';
@@ -50,7 +51,7 @@ export function chiffresSeance(s: Seance): ChiffreSeance[] {
   const spk = secondesParKm(s);
   if (spk && (famille === 'course' || famille === 'hyrox')) liste.push({ cle: 'allure', libelle: 'Allure', valeur: formatAllure(spk).replace('/km', ''), unite: '/km' });
   else if (spk && famille === 'natation') liste.push({ cle: 'allure', libelle: 'Allure', valeur: formatAllureDepuisKmh(s.distance_km! / (s.moving_time / 3600), true), unite: '/100 m' });
-  else if (spk && famille === 'velo') liste.push({ cle: 'vitesse', libelle: 'Vitesse', valeur: formatKm(positif(s.avg_speed_kmh) ? s.avg_speed_kmh : s.distance_km! / (s.moving_time / 3600)), unite: 'km/h' });
+  else if (spk && (famille === 'velo' || SKI_DE_FOND.includes(s.sport))) liste.push({ cle: 'vitesse', libelle: 'Vitesse', valeur: formatKm(positif(s.avg_speed_kmh) ? s.avg_speed_kmh : s.distance_km! / (s.moving_time / 3600)), unite: 'km/h' });
   if (positif(s.total_elevation_gain)) liste.push({ cle: 'denivele', libelle: 'Dénivelé', valeur: formatNombre(Math.round(s.total_elevation_gain)), unite: 'm' });
   if (positif(s.avg_heartrate)) liste.push({ cle: 'fc', libelle: 'Cardio moyen', valeur: String(Math.round(s.avg_heartrate)), unite: 'bpm', note: positif(s.max_heartrate) ? `max ${Math.round(s.max_heartrate)}` : undefined });
   if (positif(s.avg_watts) && !wattsEstimes(s)) liste.push({ cle: 'watts', libelle: 'Puissance moyenne', valeur: String(Math.round(s.avg_watts)), unite: 'W', note: positif(s.np) ? `normalisée ${Math.round(s.np)}` : undefined });
@@ -67,16 +68,12 @@ export function chiffresSeance(s: Seance): ChiffreSeance[] {
 }
 
 /**
- * Les trois chiffres clés sous le profil d'une sortie : distance, durée, puis allure (course, natation) ou vitesse (vélo). Un chiffre absent est remplacé par le suivant
- * de la liste (dénivelé, cardio…), pour toujours en montrer trois quand la sortie en a trois.
+ * Les quatre chiffres clés de la première page d'une sortie, selon le sport (voir quatre-chiffres.ts : course, vélo, natation, muscu, Hyrox, ski, autre).
+ * Un chiffre absent est remplacé par le suivant de la liste de repli (cardio, charge…) ; on en montre quatre quand la sortie les a.
  */
-export function troisChiffres(chiffres: ChiffreSeance[]): ChiffreSeance[] {
-  const voulus = ['distance', 'duree', 'allure', 'vitesse']
-    .map((cle) => chiffres.find((c) => c.cle === cle))
-    .filter((c): c is ChiffreSeance => !!c)
-    .slice(0, 3);
-  const reste = chiffres.filter((c) => !voulus.includes(c));
-  return [...voulus, ...reste].slice(0, 3);
+export function quatreChiffres(chiffres: ChiffreSeance[], sport: string): ChiffreSeance[] {
+  const { ordre, repli } = ordreSortie(sport, familleAffichage(sport));
+  return choisirChiffres(chiffres, ordre, repli);
 }
 
 export interface LigneTour {

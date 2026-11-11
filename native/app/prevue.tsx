@@ -11,6 +11,8 @@ import { nomDuType } from '@/data/sports/catalogue-sports';
 import { nomDuBloc } from '@/data/calendrier/blocs-formulaire';
 import { dateIsoLocale, formatDateCourte } from '@/data/outils/format';
 import { chiffresPrevue } from '@/data/calendrier/prevue-detail';
+import { choisirChiffres, ordrePrevue } from '@/data/calendrier/quatre-chiffres';
+import { TuileChiffre } from '@/components/ui/TuileChiffre';
 import { COULEURS_ZONE, indiceZone, milieu, NOM_TYPE, texteCible, texteDuree, tousSegments, type Bloc as BlocSeance } from '@/data/calendrier/structure';
 import { useAjouts } from '@/hooks/useAjouts';
 import { usePrevue } from '@/hooks/usePrevue';
@@ -95,7 +97,9 @@ export default function Prevue() {
 
   // Page 1 : la carte et le profil d'altitude du GPX ; sans GPX, le dessin du sport en fond et, sous les chiffres, le profil des blocs (s'il y en a)
   const avecProfilGpx = !!parcours && parcours.profil.length > 1 && parcours.altitudeMin != null && parcours.altitudeMax != null;
-  const trois = chiffres.slice(0, 3);
+  const { ordre, repli } = ordrePrevue(competition);
+  const quatre = choisirChiffres(chiffres, ordre, repli);
+  const dejaVus = quatre.map((c) => c.cle);
   const actions = (
     <View style={{ gap: espace.e2 }}>
       {erreurSuppression ? (
@@ -144,12 +148,10 @@ export default function Prevue() {
         pageCoach={pageNotes}
         chiffres={
           <>
-            {trois.length ? (
+            {quatre.length ? (
               <View style={styles.tuiles}>
-                {trois.map((c) => (
-                  <View key={c.cle} style={[styles.tuile, { backgroundColor: p.surface }]}>
-                    <StatCle etiquette={c.libelle.replace(/^Allure (cible|prévue)$/, 'Allure')} valeur={c.valeur} unite={c.unite} petit />
-                  </View>
+                {quatre.map((c) => (
+                  <TuileChiffre key={c.cle} etiquette={c.libelle.replace(/^Allure (cible|prévue)$/, 'Allure').replace('Dénivelé +', 'D+').replace('Temps cible', 'Objectif').replace('Charge estimée', 'Charge').replace('Effort estimé', 'Effort')} valeur={c.valeur} unite={c.unite} />
                 ))}
               </View>
             ) : null}
@@ -158,9 +160,9 @@ export default function Prevue() {
         }
         pageDetails={() => (
           <>
-            {chiffres.length ? (
+            {chiffres.some((c) => !dejaVus.includes(c.cle)) ? (
               <View style={[styles.grille, { backgroundColor: p.surface }]}>
-                {chiffres.map((c) => (
+                {chiffres.filter((c) => !dejaVus.includes(c.cle)).map((c) => (
                   <View key={c.cle} style={styles.case}>
                     <StatCle etiquette={c.libelle} valeur={c.valeur} unite={c.unite} petit />
                   </View>
@@ -196,7 +198,7 @@ export default function Prevue() {
                 })}
               </View>
             ) : null}
-            {!chiffres.length && !blocs.length ? <Text style={[typo.corps, { color: p.texteMuet }]}>Rien d'autre de renseigné sur cette séance.</Text> : null}
+            {!chiffres.some((c) => !dejaVus.includes(c.cle)) && !blocs.length ? <Text style={[typo.corps, { color: p.texteMuet }]}>Rien d'autre de renseigné sur cette séance.</Text> : null}
             {pageNotes ? null : actions}
           </>
         )}
@@ -209,7 +211,6 @@ const styles = StyleSheet.create({
   page: { flex: 1 },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: espace.e5 },
   tuiles: { flexDirection: 'row', gap: espace.e2 },
-  tuile: { flex: 1, borderRadius: rayon.base, padding: espace.e3 },
   grille: { flexDirection: 'row', flexWrap: 'wrap', rowGap: espace.e4, borderRadius: rayon.base, padding: espace.e3 },
   case: { width: '50%', paddingRight: espace.e3 },
   blocs: { borderRadius: rayon.base, padding: espace.e3, gap: espace.e2 },

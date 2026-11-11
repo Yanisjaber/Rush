@@ -5,11 +5,13 @@ import { espace, rayon, sombre } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// La page 3 d'une sortie : un ruban de quatre données principales (distance, durée, allure ou vitesse, dénivelé), puis UN tableau avec toutes les autres données rangées par rubriques
-// (Temps, Effort, Cœur, Rythme, Relief, Énergie : une ligne nom / valeur chacune), puis les records de la sortie (`records`), puis le reste (tours, notes, « compte dans mes calculs ») en `children`.
+// La page 2 d'une sortie : UN tableau avec toutes les données qui ne sont pas déjà sur la page 1, rangées par rubriques
+// (Sortie, Effort, Cœur, Rythme et relief, Énergie : une ligne nom / valeur chacune), puis les records de la sortie (`records`), puis le reste (tours, notes, « compte dans mes calculs ») en `children`.
 // Une rubrique sans aucune ligne n'est pas affichée. Pas de chiffre inventé : tout vient de la sortie.
 interface Props {
   chiffres: ChiffreSeance[];
+  /** Les clés des chiffres déjà montrés sur la page 1 : on ne les répète pas. */
+  dejaVus: string[];
   /** La donnée est écartée des calculs (chiffre barré). */
   ecarte: (cle: string) => boolean;
   altitude: { min: number; max: number } | null;
@@ -27,18 +29,15 @@ interface Ligne {
   ecarte?: boolean;
 }
 
-export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, records, children }: Props) {
+export function PageDetailsSortie({ chiffres, dejaVus, ecarte, altitude, couleur, records, children }: Props) {
   const p = usePalette();
   const parCle = (cle: string) => chiffres.find((c) => c.cle === cle);
   const ligne = (cle: string, libelle?: string): Ligne[] => {
     const c = parCle(cle);
     return c ? [{ cle, libelle: libelle ?? c.libelle, valeur: c.valeur, unite: c.unite, ecarte: ecarte(cle) }] : [];
   };
-  // Les quatre données principales : distance, durée, allure (ou vitesse), dénivelé. Le tableau ne les répète pas.
-  const cleRythme = parCle('allure') ? 'allure' : 'vitesse';
-  const clesPrincipales = ['distance', 'duree', cleRythme, 'denivele'];
-  const principaux = clesPrincipales.map(parCle).filter((c): c is ChiffreSeance => !!c);
-  const ligneSi = (cle: string, libelle?: string): Ligne[] => (clesPrincipales.includes(cle) ? [] : ligne(cle, libelle));
+  // Les chiffres de la page 1 ne reviennent pas ici
+  const ligneSi = (cle: string, libelle?: string): Ligne[] => (dejaVus.includes(cle) ? [] : ligne(cle, libelle));
   // Une note « max 188 » (cœur) ou « normalisée 241 » (puissance) devient une ligne à part
   const chiffreNote = (cle: string, libelle: string, unite: string): Ligne[] => {
     const v = /(\d+)/.exec(parCle(cle)?.note ?? '')?.[1];
@@ -49,19 +48,20 @@ export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, records
 
   // Quatre rubriques seulement (le temps écoulé va avec l'effort ; le rythme et le relief vont ensemble) : moins de titres, donc moins de hauteur
   const rubriques: { titre: string; lignes: Ligne[] }[] = [
-    { titre: 'EFFORT', lignes: [...(tempsTotal ? [{ cle: 'ecoule', libelle: 'Temps écoulé', valeur: tempsTotal }] : []), ...ligne('charge'), ...ligne('if', 'Intensité (IF)'), ...ligne('rpe', 'Effort ressenti'), ...ligne('type')] },
-    { titre: 'CŒUR', lignes: [...ligne('fc', 'FC moyenne'), ...chiffreNote('fc', 'FC max', 'bpm'), ...ligne('derive', 'Dérive'), ...ligne('ef', 'Efficacité P/FC'), ...ligne('trimp', 'TRIMP')] },
+    { titre: 'SORTIE', lignes: [...ligneSi('duree'), ...(tempsTotal ? [{ cle: 'ecoule', libelle: 'Temps écoulé', valeur: tempsTotal }] : []), ...ligneSi('distance'), ...ligneSi('denivele', 'Dénivelé +'), ...ligneSi('descendu', 'Dénivelé descendu'), ...ligneSi('descentes'), ...ligneSi('vmax', 'Vitesse max')] },
+    { titre: 'EFFORT', lignes: [...ligneSi('charge'), ...ligne('if', 'Intensité (IF)'), ...ligneSi('rpe', 'Effort ressenti'), ...ligne('type')] },
+    { titre: 'CŒUR', lignes: [...ligneSi('fc', 'FC moyenne'), ...chiffreNote('fc', 'FC max', 'bpm'), ...ligne('derive', 'Dérive'), ...ligne('ef', 'Efficacité P/FC'), ...ligne('trimp', 'TRIMP')] },
     {
       titre: 'RYTHME ET RELIEF',
       lignes: [
         ...ligneSi('allure'),
         ...ligneSi('vitesse'),
-        ...ligne('cadence'),
+        ...ligneSi('cadence'),
         ...(altitude ? [{ cle: 'haut', libelle: 'Plus haut', valeur: String(Math.round(altitude.max)), unite: 'm' }, { cle: 'bas', libelle: 'Plus bas', valeur: String(Math.round(altitude.min)), unite: 'm' }] : []),
-        ...ligne('temperature'),
+        ...ligneSi('temperature'),
       ],
     },
-    { titre: 'ÉNERGIE', lignes: [...ligne('watts', 'Puiss. moyenne'), ...chiffreNote('watts', 'Puiss. normalisée', 'W'), ...ligne('pmax', 'Puiss. max'), ...ligne('energie', 'Travail'), ...ligne('kjftp', 'Dont > FTP'), ...ligne('calories'), ...ligne('cho')] },
+    { titre: 'ÉNERGIE', lignes: [...ligneSi('watts', 'Puiss. moyenne'), ...chiffreNote('watts', 'Puiss. normalisée', 'W'), ...ligne('pmax', 'Puiss. max'), ...ligneSi('energie', 'Travail'), ...ligne('kjftp', 'Dont > FTP'), ...ligneSi('calories'), ...ligne('cho')] },
   ].filter((r) => r.lignes.length > 0);
   const rpe = parCle('rpe');
   // Les titres de rubrique dans la couleur du sport en thème sombre ; en thème clair elle manque de contraste en petit texte (voir IDENTITE.md), on garde le texte
@@ -77,27 +77,6 @@ export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, records
 
   return (
     <>
-      {principaux.length ? (
-        <View style={[styles.ruban, { backgroundColor: p.surface }]}>
-          {principaux.map((c, i) => (
-            <View
-              key={c.cle}
-              accessible
-              accessibilityLabel={`${c.libelle} ${c.valeur} ${c.unite ?? ''}`}
-              style={[styles.cellule, i > 0 && { borderLeftColor: p.trait, borderLeftWidth: StyleSheet.hairlineWidth }]}
-            >
-              <Text numberOfLines={1} style={[typo.micro, styles.etiquette, { color: p.texteDoux }]}>
-                {c.cle === 'denivele' ? 'D+' : c.libelle}
-              </Text>
-              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.valeur, { color: ecarte(c.cle) ? p.texteMuet : p.texte }, ecarte(c.cle) && styles.barre]}>
-                {c.valeur}
-                {c.unite ? <Text style={[styles.unite, { color: p.texteDoux }]}> {c.unite}</Text> : null}
-              </Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
-
       {rubriques.length ? (
         <View style={[styles.tableau, { backgroundColor: p.surface }]}>
           {colonnes.map((col, c) => (
@@ -140,11 +119,6 @@ function JaugeRpe({ note, couleur }: { note: number; couleur: string }) {
 }
 
 const styles = StyleSheet.create({
-  ruban: { flexDirection: 'row', borderRadius: rayon.base, paddingVertical: 10 },
-  cellule: { width: '25%', paddingHorizontal: 10, justifyContent: 'center', overflow: 'hidden' },
-  etiquette: { fontSize: 10, lineHeight: 14, letterSpacing: 0.6 },
-  valeur: { fontFamily: police.titre800, fontSize: 20, lineHeight: 24, marginTop: 2, fontVariant: ['tabular-nums'] },
-  unite: { fontFamily: police.texte600, fontSize: 11 },
   tableau: { flexDirection: 'row', borderRadius: rayon.base, overflow: 'hidden' },
   colonne: { flex: 1, minWidth: 0 },
   titre: { fontFamily: police.titre700, letterSpacing: 1, paddingHorizontal: 10, paddingTop: 10, paddingBottom: 0 },
