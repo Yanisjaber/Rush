@@ -1,7 +1,7 @@
 // Les largeurs des zones sur la barre (fonction pure, testée) : voir components/reglages/BarreZones.tsx.
 
 /** La part de la barre pour chaque zone figée (première et dernière). */
-export const LARGEUR_FIGEE = 0.15;
+export const LARGEUR_FIGEE = 0.09;
 
 /** La part de largeur (0 à 1) de chaque zone. Exportée pour les tests. */
 export function largeursZones(bornes: number[], axeMax: number, figees: boolean): number[] {
