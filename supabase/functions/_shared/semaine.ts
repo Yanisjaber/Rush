@@ -14,7 +14,9 @@ import { ctxAvec, etiquetteDate } from './planning.ts';
 import type { Operation, SeancePrevue } from './planning.ts';
 import { HORIZON_TECHNIQUE_JOURS, validerSeance } from './validateur.ts';
 import type { ContexteValidation, Proposition } from './validateur.ts';
-import { reglesDuProfil } from './profil-coureur.ts';
+import { MONTEE_HEBDO, reglesDuProfil } from './profil-coureur.ts';
+import { analyserSport, vieSportDepuisResume } from './analyse-sport.ts';
+import type { AnalyseSport } from './analyse-sport.ts';
 import type { ProfilCoureur } from './profil-coureur.ts';
 
 export interface DemandeSemaine {
@@ -25,6 +27,8 @@ export interface DemandeSemaine {
   sports: { sport: FamilleCoach; seances: number }[];
   /** Jours sans séance (« pas le mardi », un voyage) */
   joursLibres?: string[];
+  /** Rang de la semaine dans un plan de période (0 = la première) : la reprise après un arrêt monte de semaine en semaine, et le type de qualité alterne */
+  rang?: number;
   /** « facile » : que des séances faciles ; « normale » (défaut) : de la qualité et une sortie longue si l'historique le permet */
   intensite?: 'facile' | 'normale';
 }
@@ -35,6 +39,10 @@ export interface Habitude {
   moyenneMinutes: number | null;
   /** Sa plus longue séance sur 28 jours, null s'il n'en a pas fait */
   plusLongueMinutes: number | null;
+  /** Toute sa vie dans ce sport (vélo, natation) : l'analyse de rpc_coach_vie_sport, absente des anciens résumés et pour la course */
+  analyse?: AnalyseSport | null;
+  /** Le coefficient de volume de la semaine d'un plan de période (récupération ×0,75, affûtage…), appliqué à la reprise qui ne passe pas par les durées habituelles */
+  echelleReprise?: number;
 }
 
 export const SEANCES_PAR_SPORT_MAX = 6;
@@ -46,6 +54,10 @@ const REPOS_PAR_SEMAINE = 1;
 const DUREE_MINI = 15;
 /** La sortie longue n'est proposée que si la plus longue séance récente du sport atteint ce seuil (minutes) */
 const LONGUE_MINI: Record<FamilleCoach, number> = { velo: 120, course: 60, natation: 0 };
+
+/** Départ d'une reprise : 35 % de la plus grosse semaine passée (fiche reprise-apres-arret, arrêt de 2 à 3 mois : 30 à 40 %) ; intensité seulement au-delà de 75 % (même fiche) */
+const REPRISE_PART_DU_PIC = 0.35;
+const SEUIL_RETOUR_INTENSITE = 0.75;
 
 const FACILE: Record<FamilleCoach, string> = { velo: 'endurance', course: 'footing_facile', natation: 'endurance' };
 const QUALITE: Record<FamilleCoach, string> = { velo: 'tempo', course: 'tempo', natation: 'seuil' };
@@ -67,6 +79,21 @@ export function justificationSemaine(role: Role, minutes: number, apresUneDure: 
   return `Séance facile de ${minutes} min : elle ajoute du volume à ta base sans te fatiguer.`;
 }
 
+/**
+ * Le type de la séance de qualité : il dépend de ce qui limite le sportif (analyse-sport.ts), pas d'un calendrier type.
+ *   - vélo, puissance soutenue à construire (rapport 5 min / 20 min élevé) : du seuil ; puissance de pointe à travailler : de la VO2max deux semaines sur trois, du seuil sinon ;
+ *     on ne sait pas ou équilibré : le tempo et le seuil en alternance (jamais de VO2max sans savoir) ;
+ *   - natation : du seuil (aucune conclusion possible sur ce qui limite : voir analyse-sport.ts).
+ */
+export function typeQualite(sport: FamilleCoach, analyse: AnalyseSport | null, rang: number): string {
+  if (sport === 'velo') {
+    if (analyse?.limite === 'endurance') return 'seuil';
+    if (analyse?.limite === 'vitesse') return rang % 3 === 2 ? 'seuil' : 'vo2max';
+    return rang % 2 === 0 ? 'tempo' : 'seuil';
+  }
+  return QUALITE[sport];
+}
+
 const borner = (x: number, min: number, max: number) => Math.min(max, Math.max(min, x));
 
 /** Les habitudes de l'utilisateur par sport, lues dans le résumé (volume_par_sport) */
@@ -77,7 +104,14 @@ export function habitudesDepuisResume(resume: any): Record<FamilleCoach, Habitud
     const seances = typeof v?.seances_28_jours === 'number' ? v.seances_28_jours : 0;
     const minutes = typeof v?.minutes_28_jours === 'number' ? v.minutes_28_jours : 0;
     const longue = typeof v?.plus_longue_minutes_28_jours === 'number' && v.plus_longue_minutes_28_jours > 0 ? v.plus_longue_minutes_28_jours : null;
-    return { moyenneMinutes: seances > 0 && minutes > 0 ? Math.round(minutes / seances) : null, plusLongueMinutes: longue };
+    const h: Habitude = { moyenneMinutes: seances > 0 && minutes > 0 ? Math.round(minutes / seances) : null, plusLongueMinutes: longue };
+    if (sport === 'course') return h;
+    // Toute sa vie dans le sport : sans séance sur 28 jours mais avec des séances sur 90 jours, ce sont ces séances qui font référence (plus de durée « par défaut »)
+    const analyse = analyserSport(vieSportDepuisResume(resume, sport), sport);
+    h.analyse = analyse;
+    if (h.moyenneMinutes === null && analyse.moyenne90Minutes !== null) h.moyenneMinutes = analyse.moyenne90Minutes;
+    if (h.plusLongueMinutes === null && analyse.plusLongue90Minutes !== null) h.plusLongueMinutes = analyse.plusLongue90Minutes;
+    return h;
   };
   return { velo: lire('velo'), course: lire('course'), natation: lire('natation') };
 }
@@ -177,9 +211,25 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
   // « facile » demandé, ou le garde-fou santé ne veut que du facile : jamais de qualité ni de sortie longue
   const facileSeulement = (d.intensite ?? 'normale') === 'facile' || base.gardeFou.intensiteMax === 'facile' || regles.blessureActive;
   if (regles.blessureActive) profilUtilise.push('blessure encore là : que du facile, ni qualité ni sortie longue');
+  // Reprise après un arrêt (aucune séance dans le sport depuis 90 jours, mais une vie dedans) : départ à 35 % de sa plus grosse semaine passée (fiche reprise-apres-arret, arrêt de 2 à 3 mois),
+  // qui monte de semaine en semaine (+7 %), et AUCUNE séance dure ni sortie longue tant que le volume est sous 75 % de ce pic (« vitesse seulement quand on est revenu à 75-80 % du volume d'avant »).
+  const rang = Math.max(0, Math.round(d.rang ?? 0));
+  const facteurReprise = (sport: FamilleCoach): number | null => {
+    const a = habitudes[sport].analyse;
+    if (!a || a.etat !== 'reprise' || !a.picSemaineMinutes) return null;
+    return Math.min(1, REPRISE_PART_DU_PIC * Math.pow(MONTEE_HEBDO, rang)) * (habitudes[sport].echelleReprise ?? 1);
+  };
+  for (const sp of new Set(sports)) {
+    const f = facteurReprise(sp);
+    if (f !== null) profilUtilise.push(`reprise du ${sp === 'velo' ? 'vélo' : 'natation'} : ${Math.round(f * 100)} % de ta plus grosse semaine passée (${habitudes[sp].analyse!.picSemaineMinutes} min)${f < SEUIL_RETOUR_INTENSITE ? ', que du facile tant que tu n\'es pas revenu à 75 %' : ''}`);
+  }
   if (!facileSeulement) {
     for (const [sport, positions] of parSport) {
-      const h = habitudes[sport];
+      const fr = facteurReprise(sport);
+      if (fr !== null && fr < SEUIL_RETOUR_INTENSITE) continue;
+      // Reprise revenue à 75 % : ses durées habituelles sont celles de son passé, à l'échelle de ce volume
+      const a = habitudes[sport].analyse;
+      const h: Habitude = fr !== null && a ? { moyenneMinutes: Math.round((fr * a.picSemaineMinutes!) / Math.max(1, sports.filter((x) => x === sport).length)), plusLongueMinutes: a.plusLongueVieMinutes ? Math.round(fr * a.plusLongueVieMinutes) : null } : habitudes[sport];
       const typeLongue = LONGUE[sport] ? MENU[sport].find((t) => t.cle === LONGUE[sport]) : undefined;
       const longuePossible = !!typeLongue && h.plusLongueMinutes !== null && h.plusLongueMinutes >= LONGUE_MINI[sport] && positions.length >= 2;
       if (longuePossible) roles[positions[positions.length - 1]] = 'longue';
@@ -206,6 +256,15 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
   // Les durées sont LIBRES : d'après ce que l'utilisateur fait déjà (sa moyenne, sa plus longue séance), en minutes entières, sans arrondi ni borne de type
   const dureeBrute = (sport: FamilleCoach, role: Role): number => {
     const h = habitudes[sport];
+    // Reprise : le volume de la semaine = f × sa plus grosse semaine passée, réparti sur les séances de ce sport (pas de durée « par défaut » pour quelqu'un qui a un passé)
+    const f = facteurReprise(sport);
+    if (f !== null) {
+      const moyenne = Math.max(DUREE_MINI, Math.round((f * h.analyse!.picSemaineMinutes!) / Math.max(1, sports.filter((x) => x === sport).length)));
+      const longueVie = h.analyse!.plusLongueVieMinutes;
+      // Revenu à 75 % : la sortie longue suit sa plus longue séance passée à l'échelle du volume, la qualité un peu plus courte que la moyenne
+      if (f >= SEUIL_RETOUR_INTENSITE) return role === 'longue' && longueVie ? Math.max(moyenne, Math.round(f * longueVie)) : role === 'qualite' ? Math.max(DUREE_MINI, Math.round(moyenne * 0.85)) : moyenne;
+      return moyenne;
+    }
     const moyenne = h.moyenneMinutes ?? DUREE_PAR_DEFAUT[sport];
     const voulu = role === 'longue' ? (h.plusLongueMinutes ?? moyenne) * 1.05 : role === 'qualite' ? moyenne * 0.85 : moyenne;
     return Math.max(DUREE_MINI, Math.round(voulu));
@@ -235,7 +294,7 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
   joursChoisis.forEach((jourChoisi, i) => {
     const sport = sports[i];
     const role = roles[i];
-    const typeCle = role === 'longue' ? (LONGUE[sport] as string) : role === 'qualite' ? QUALITE[sport] : FACILE[sport];
+    const typeCle = role === 'longue' ? (LONGUE[sport] as string) : role === 'qualite' ? typeQualite(sport, habitudes[sport].analyse ?? null, rang) : FACILE[sport];
 
     /** Essaie de placer cette séance CE jour-là, telle quelle, puis en version facile. Renvoie la raison du premier refus, ou null si elle est placée. */
     const tenter = (jour: string): string | null => {

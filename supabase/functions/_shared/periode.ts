@@ -60,6 +60,8 @@ export function coefficientSemaine(index: number, semainesAvantCourse: number | 
 }
 
 const echelle = (h: Habitude, f: number): Habitude => ({
+  analyse: h.analyse,
+  echelleReprise: f,
   moyenneMinutes: h.moyenneMinutes === null ? null : Math.max(15, Math.round(h.moyenneMinutes * f)),
   plusLongueMinutes: h.plusLongueMinutes === null ? null : Math.max(15, Math.round(h.plusLongueMinutes * f)),
 });
@@ -104,7 +106,7 @@ export function planifierPeriode(d: DemandePeriode, seances: SeancePrevue[], bas
     const h = { velo: echelle(habitudes.velo, facteur), course: echelle(habitudes.course, facteur), natation: echelle(habitudes.natation, facteur) };
     // Affûtage : une séance de moins par sport dans la dernière semaine (au moins une)
     const sports = d.sports.map((s) => ({ sport: s.sport, seances: avantCourse === 0 ? Math.max(1, s.seances - 1) : s.seances }));
-    const r = planifierSemaine({ sports, debut: du, jours: 7, joursLibres: libres, intensite: avantCourse !== null && avantCourse <= 1 ? 'facile' : d.intensite }, toutes.filter((x) => x.date >= du && x.date <= fin7), base, h, coureur);
+    const r = planifierSemaine({ sports, debut: du, jours: 7, rang: w, joursLibres: libres, intensite: avantCourse !== null && avantCourse <= 1 ? 'facile' : d.intensite }, toutes.filter((x) => x.date >= du && x.date <= fin7), base, h, coureur);
     for (const u of r.profilUtilise) profilUtilise.add(u);
     for (const o of r.operations) {
       if (o.op === 'ajouter') o.phase = butSemaine(nom);

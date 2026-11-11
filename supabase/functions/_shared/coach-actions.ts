@@ -51,10 +51,10 @@ export interface DefinitionAction {
 /** Liste blanche des fonctions SQL que le coach peut appeler pour lire les données de l'athlète (12 nov. 2026). Toutes en lecture seule, avec le jeton de l'utilisateur. */
 export type FonctionHistorique =
   | 'rpc_coach_semaines' | 'rpc_coach_seances' | 'rpc_coach_prevues' | 'rpc_coach_force' | 'rpc_coach_hyrox'
-  | 'rpc_coach_objectifs' | 'rpc_coach_fiche' | 'rpc_coach_sante' | 'rpc_courbe_course' | 'rpc_courbe_puissance' | 'rpc_coach_vie_course';
+  | 'rpc_coach_objectifs' | 'rpc_coach_fiche' | 'rpc_coach_sante' | 'rpc_courbe_course' | 'rpc_courbe_puissance' | 'rpc_coach_vie_course' | 'rpc_coach_vie_sport';
 export const FONCTIONS_HISTORIQUE: readonly FonctionHistorique[] = [
   'rpc_coach_semaines', 'rpc_coach_seances', 'rpc_coach_prevues', 'rpc_coach_force', 'rpc_coach_hyrox',
-  'rpc_coach_objectifs', 'rpc_coach_fiche', 'rpc_coach_sante', 'rpc_courbe_course', 'rpc_courbe_puissance', 'rpc_coach_vie_course',
+  'rpc_coach_objectifs', 'rpc_coach_fiche', 'rpc_coach_sante', 'rpc_courbe_course', 'rpc_courbe_puissance', 'rpc_coach_vie_course', 'rpc_coach_vie_sport',
 ];
 
 /** Distances (mètres) des records de course que lit rpc_courbe_course (signal « pace ») */
@@ -524,6 +524,22 @@ export const ACTIONS: DefinitionAction[] = [
     schema: { type: 'object', properties: {}, additionalProperties: false },
     lire: (input) => (objet(input, []) ? { ok: true, params: {} } : refus('Cet outil ne prend aucun paramètre.')),
     requete: { fonction: 'rpc_coach_vie_course', args: (_p, jour, sante) => ({ p_date: jour, p_sante: sante }) },
+  },
+  {
+    nom: 'lire_vie_sport',
+    niveau: 'lecture',
+    disponible: true,
+    description:
+      "Lit TOUTE la vie de l'athlète dans le vélo OU la natation, depuis sa première séance, même sans séance depuis un an : années, plus grosse semaine, plus longue séance, arrêts, séances des 90 derniers jours, " +
+      "et les records (vélo : meilleures puissances 5 s / 5 min / 20 min / 1 h par année et sur 24 mois ; natation : meilleures allures de séance au 100 m, repos compris). " +
+      "À lire AVANT de planifier une semaine ou une période dans ce sport : quelqu'un qui reprend après un arrêt n'est pas un débutant, et on s'appuie sur ce qu'il a déjà fait.",
+    schema: { type: 'object', properties: { sport: { type: 'string', enum: ['velo', 'natation'], description: 'Le sport à lire.' } }, required: ['sport'], additionalProperties: false },
+    lire: (input) => {
+      const o = objet(input, ['sport']);
+      if (!o || (o.sport !== 'velo' && o.sport !== 'natation')) return refus('sport : velo ou natation.');
+      return { ok: true, params: { sport: o.sport } };
+    },
+    requete: { fonction: 'rpc_coach_vie_sport', args: (p, jour) => ({ p_sport: p.sport, p_date: jour }) },
   },
   {
     nom: 'lire_sante_periode',

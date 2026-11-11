@@ -33,12 +33,13 @@ const ajouts = (ops: Operation[]) => ops.map((o) => (o as Extract<Operation, { o
 const VC: DemandeSemaine = { sports: [{ sport: 'velo', seances: 2 }, { sport: 'course', seances: 2 }] };
 
 test('habitudes : durée moyenne et plus longue séance lues dans le résumé, null sans historique', () => {
+  const dur = (h: { moyenneMinutes: number | null; plusLongueMinutes: number | null }) => ({ moyenneMinutes: h.moyenneMinutes, plusLongueMinutes: h.plusLongueMinutes });
   const h = habitudesDepuisResume({ volume_par_sport: { velo: { seances_28_jours: 4, minutes_28_jours: 360, plus_longue_minutes_28_jours: 150 }, course: { seances_28_jours: 0, minutes_28_jours: 0 } } });
-  assert.deepEqual(h.velo, { moyenneMinutes: 90, plusLongueMinutes: 150 });
-  assert.deepEqual(h.course, { moyenneMinutes: null, plusLongueMinutes: null });
-  assert.deepEqual(h.natation, { moyenneMinutes: null, plusLongueMinutes: null });
-  assert.deepEqual(habitudesDepuisResume(null).velo, { moyenneMinutes: null, plusLongueMinutes: null });
-  assert.deepEqual(habitudesDepuisResume({ volume_par_sport: 'x' }).course, { moyenneMinutes: null, plusLongueMinutes: null });
+  assert.deepEqual(dur(h.velo), { moyenneMinutes: 90, plusLongueMinutes: 150 });
+  assert.deepEqual(dur(h.course), { moyenneMinutes: null, plusLongueMinutes: null });
+  assert.deepEqual(dur(h.natation), { moyenneMinutes: null, plusLongueMinutes: null });
+  assert.deepEqual(dur(habitudesDepuisResume(null).velo), { moyenneMinutes: null, plusLongueMinutes: null });
+  assert.deepEqual(dur(habitudesDepuisResume({ volume_par_sport: 'x' }).course), { moyenneMinutes: null, plusLongueMinutes: null });
 });
 
 test('une semaine vélo + course : ne fait QU\'ajouter, le plan passe la vérification complète, aucune erreur', () => {

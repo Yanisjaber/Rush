@@ -129,7 +129,7 @@ test('lectures de l\'historique : chaque requête SQL est dans la liste fermée,
   }
   assert.deepEqual([...FONCTIONS_HISTORIQUE].sort(), [
     'rpc_coach_semaines', 'rpc_coach_seances', 'rpc_coach_prevues', 'rpc_coach_force', 'rpc_coach_hyrox',
-    'rpc_coach_objectifs', 'rpc_coach_fiche', 'rpc_coach_sante', 'rpc_courbe_course', 'rpc_courbe_puissance', 'rpc_coach_vie_course',
+    'rpc_coach_objectifs', 'rpc_coach_fiche', 'rpc_coach_sante', 'rpc_courbe_course', 'rpc_courbe_puissance', 'rpc_coach_vie_course', 'rpc_coach_vie_sport',
   ].sort());
 });
 
@@ -268,6 +268,12 @@ test('lecture des données de l\'athlète : la santé ne part vers SQL qu\'avec 
   const fiche = trouverAction('lire_fiche_athlete')!.requete!.args({}, '2026-11-12', sante);
   assert.deepEqual(fiche, { p_sante: ['ressenti'] });
   assert.deepEqual(trouverAction('lire_vie_course')!.requete!.args({}, '2026-11-12', sante), { p_date: '2026-11-12', p_sante: ['ressenti'] });
+  assert.deepEqual(trouverAction('lire_vie_sport')!.requete!.args({ sport: 'velo' }, '2026-11-12', sante), { p_sport: 'velo', p_date: '2026-11-12' });
+  const lireSport = (x: unknown) => trouverAction('lire_vie_sport')!.lire!(x);
+  assert.equal(lireSport({ sport: 'velo' }).ok, true);
+  assert.equal(lireSport({ sport: 'course' }).ok, false);
+  assert.equal(lireSport({ sport: 'velo', user_id: ID }).ok, false);
+  assert.equal(lireSport({}).ok, false);
   const hist = trouverAction('lire_sante_periode')!.requete!.args({ du: '2026-11-01', au: '2026-11-30' }, '2026-11-12', sante);
   assert.deepEqual(hist, { p_du: '2026-11-01', p_au: '2026-11-30', p_sante: ['ressenti'], p_limite: 200 });
   for (const a of ACTIONS.filter((x) => x.requete)) {

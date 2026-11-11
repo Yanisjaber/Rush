@@ -61,6 +61,13 @@ export function creerStockage(sbUser: any, sbAdmin: any): StockageCoach {
         const { data: vie } = await sbUser.rpc('rpc_coach_vie_course', { p_date: jour, p_sante: categories });
         if (vie && data && typeof data === 'object') (data as Record<string, unknown>).vie_course = vie;
       } catch { /* sans l'historique long */ }
+      // Pareil pour le vélo et la natation : toute leur vie, pas les 28 derniers jours
+      for (const sport of ['velo', 'natation'] as const) {
+        try {
+          const { data: vie } = await sbUser.rpc('rpc_coach_vie_sport', { p_sport: sport, p_date: jour });
+          if (vie && typeof vie === 'object' && (vie as Record<string, unknown>).sport === sport && data && typeof data === 'object') (data as Record<string, unknown>)[`vie_${sport}`] = vie;
+        } catch { /* sans l'historique long */ }
+      }
       return data;
     },
 
