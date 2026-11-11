@@ -601,3 +601,11 @@ test('règles : la sortie longue ne grandit jamais de plus de 10 % d\'une semain
   // d'une longue à la suivante : au plus +10 % (à 1 minute d'arrondi près), hors semaines allégées/affûtage où elle baisse
   for (let i = 1; i < longues.length; i++) assert.ok(longues[i].proposition.minutes <= Math.ceil(longues[i - 1].proposition.minutes * 1.1) + 1, longues.map((l) => l.proposition.minutes).join(','));
 });
+
+test('la phase de base alterne fartlek et seuil par morceaux (plus seulement du fartlek)', () => {
+  const course = ajouterJours(AUJ, 84);
+  const r = planifierCourse({ date: course, km: 10, tempsCibleMinutes: 50, seancesParSemaine: 3, sansTest: true }, [], ctx({ competitions: [{ date: course }] }), YANIS);
+  const noms = ajouts(r.operations).map((o) => o.detail!.nom);
+  assert.ok(noms.some((n) => /^Fartlek/.test(n)), noms.join(' | '));
+  assert.ok(noms.some((n) => /^Seuil \d × \d+ min/.test(n)), noms.join(' | '));
+});

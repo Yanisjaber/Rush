@@ -385,7 +385,13 @@ function qualite(phase: Phase, rang: number, a: Allures, second: boolean): Seanc
   const pick = <T,>(liste: T[]): T => liste[Math.min(rang, liste.length - 1)];
 
   if (phase === 'base') {
-    const n = pick([6, 8, 10]);
+    // Une semaine sur deux, du seuil par morceaux (fiche course-5k-10k-plans, Haugen 2022 : intervalles de seuil de 3 à 15 min, 1 min de récupération) à la place du fartlek ;
+    // les durées 6 / 8 / 10 min sont un choix à nous dans cette fourchette, qui monte avec la phase
+    if (rang % 2 === 1) {
+      const [reps, mins] = [[3, 6], [3, 8], [3, 10]][Math.min((rang - 1) / 2, 2)];
+      return avec(`Seuil ${reps} × ${mins} min`, 'seuil', intervalles(`${reps} × ${mins} min à ${ms(a.seuil)}/km, récup 1:00 trot`, reps, mins, a.seuil, 60, a), `${reps} × ${mins} min à ${ms(a.seuil)}/km (récup 1:00)`, "Du seuil par morceaux : un effort soutenu mais contrôlé, qui repousse le moment où tu t'essouffles et prépare le travail plus rapide des semaines suivantes.");
+    }
+    const n = [6, 8, 10][Math.min(rang / 2, 2)];
     return avec(`Fartlek ${n} × 1 min`, 'fractionne', intervalles(`${n} × 1 min à ${ms(a.cinqK)}/km, récup 1:00 trot`, n, 1, a.cinqK, 60, a), `${n} × 1 min à ${ms(a.cinqK)}/km (récup 1:00)`, "Du rythme sans pression : tu réveilles les jambes à ton allure 5 km, avec autant de récupération que d'effort.");
   }
   if (phase === 'developpement') {
