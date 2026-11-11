@@ -33,5 +33,4 @@ Chaque règle produit un constat avec une priorité ; on garde les 5 plus hauts.
 ## Reste à faire
 - Cadence (pas dans les flux bruts de l'app), relief (allure ajustée à la pente).
 - Muscu, natation, Hyrox : autres critères.
-- Vérifier la détection des efforts sur des vraies lignes droites (pas encore vues sur le compte de Yanis).
 - Un retour de Yanis sur la qualité des lignes après quelques sorties.
