@@ -8,7 +8,7 @@ import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Les courbes de la sortie l'une sous l'autre (allure ou vitesse, cœur, cadence, puissance), sur le même axe de distance : un seul curseur,
+// Les courbes de la sortie l'une sous l'autre (allure ou vitesse, cœur, puissance, cadence), sur le même axe de distance : un seul curseur,
 // qu'on glisse au doigt, donne la valeur de chaque mesure au même endroit.
 // Le relief (altitude) est dessiné en silhouette derrière chaque courbe, et la puissance, l'allure et le cœur sont posés sur leurs zones colorées.
 // Un doigt : le curseur commun. Deux doigts : on entoure une portion ; quand on les lève, les courbes se recalculent sur cette portion (moyenne à gauche, max à droite,
@@ -70,8 +70,8 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, dureeS, hauteur, 
     else series.push({ cle: 'vitesse', titre: 'VITESSE', valeurs: courbes.vitesse.map((v) => v * 3.6), couleur, texte: (v) => `${formatKm(v, 1)} km/h` });
   }
   if (courbes.fc) series.push({ cle: 'fc', titre: 'CŒUR', valeurs: courbes.fc, couleur: p.danger, texte: (v) => `${Math.round(v)} bpm` });
-  if (courbes.cadence) series.push({ cle: 'cadence', titre: 'CADENCE', valeurs: courbes.cadence, couleur: p.texteDoux, texte: (v) => `${Math.round(v)} ${rythme === 'vitesse' ? 'tr/min' : 'ppm'}` });
   if (courbes.watts) series.push({ cle: 'watts', titre: 'PUISSANCE', valeurs: courbes.watts, couleur: p.texteDoux, texte: (v) => `${Math.round(v)} W` });
+  if (courbes.cadence) series.push({ cle: 'cadence', titre: 'CADENCE', valeurs: courbes.cadence, couleur: p.texteDoux, texte: (v) => `${Math.round(v)} ${rythme === 'vitesse' ? 'tr/min' : 'ppm'}` });
   // Sans autre courbe, l'altitude s'affiche seule ; sinon elle sert de fond (silhouette) à toutes les autres
   const reliefComplet = courbes.altitude ?? null;
   if (!series.length && reliefComplet) series.push({ cle: 'altitude', titre: 'ALTITUDE', valeurs: reliefComplet, couleur: p.texteDoux, texte: (v) => `${formatNombre(Math.round(v))} m` });
