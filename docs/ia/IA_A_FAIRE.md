@@ -27,6 +27,17 @@ Principe posé par Yanis : **chaque règle du plan vient d'études ou de la pers
 - [ ] Autres outils de lecture si besoin : sommeil, détail d'une séance (tours, flux), notes de jour (texte libre : à filtrer).
 - [ ] Les tests réels restants de la section 6 (cas débutant, vélo, natation) sur le simulateur « Coach test ».
 
+## Banc d'essai et analyse du coureur (11 nov. 2026, mergé en local, pas poussé)
+**Principe (Yanis)** : le plan découle de la personne, jamais d'un calendrier type ; l'IA lit TOUTE la vie du compte (pas 8 semaines), même après un an sans courir.
+- [x] `rpc_coach_vie_course` (appliquée en base) + outil `lire_vie_course` : années, plus grosse semaine/longue, arrêts, meilleur effort de vie et par année, meilleurs temps réels sur 5/10/21 km (24 mois), charge max, VO2max du profil (valeur actuelle seulement : aucun historique en base), poids (accord « corps »), sommeil (accord « appareil »). Test : `bash supabase/tests/sql/coach_vie_course.sh`.
+- [x] `_shared/analyse-coureur.ts` : portrait (état, régularité, tendance, passé, ce qu'on ne sait pas + la question à poser). **Vitesse ou endurance** lu sur deux records de distances différentes (exposant personnel ; ±0,03 autour de 1,06, 120 jours d'écart max : conventions à nous). Il décide du contenu de la séance de qualité (base et développement).
+- [x] Un coureur avec un passé en base n'est jamais un débutant (reprise) ; la reprise part de 35 % de sa plus grosse semaine de VIE ; **pas de test à fond ni de séance dure tant que le volume est sous 75 % de ce pic** (fiche reprise-apres-arret).
+- [x] **Banc d'essai** : `node --experimental-strip-types supabase/tests/edge/simulation-coureurs.mts 1000` (variable `MOTIF="regex"` pour afficher un plan fautif). 1 000 coureurs fictifs (débutant, loisir, régulier, gros volume, reprise, irrégulier, en baisse), contrôles : séances dures collées, veille de course, sauts de volume, sortie longue, départ vs habitudes, reprise. A trouvé et fait corriger : sortie longue de récupération qui sautait (57 → 100 min), plafond de longue sous le niveau réel de la personne (98 min → 60), deux séances dures collées juste avant la course, test à fond pour une reprise.
+- [ ] **Restent (simulation)** : taper d'un débutant qui a demandé 5 séances plus lourd que le plan avant ; départ trop haut quand le nombre de séances demandé est élevé pour une charge faible (le bilan le dit, le plan ne se limite pas) ; reprise qui atteint 75 % du pic seulement via le volume visé (pas l'effectué).
+- [ ] La séance de qualité d'après l'analyse n'agit que sur base et développement ; spécifique et affûtage suivent encore la distance visée (voulu).
+- [ ] Autres sports (vélo, natation) : même analyse de vie complète.
+- [ ] Suivi du VO2max dans le temps : il n'existe pas en base, il faudrait commencer à le stocker.
+
 ## 1. Profil du coureur : le brancher (prochaine étape)
 - [x] **Décision (12 nov., Yanis)** : le profil s'écrit **automatiquement, sans carte** : le coach retient ce qu'on lui dit (`retenir_profil`, niveau `ecriture`, seule exception à « toujours une carte ») et dit en une phrase ce qu'il a noté pour qu'on le corrige.
 - [x] Outils `lire_profil` (connu + ce qui manque) et `retenir_profil` (écrit tout de suite) ; consigne dans le prompt : 1 ou 2 questions à la fois, dans l'ordre. Déployé (coach-chat), tests serveur.
