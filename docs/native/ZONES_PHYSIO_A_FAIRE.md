@@ -16,6 +16,18 @@ But : que les graphes de la sortie (page 2 : allure, cœur, altitude, cadence, p
 - **FTP** : vide dans le profil. Meilleur 20 min sur 90 jours = 246 W, soit environ 234 W. Strava donne 246 W sur les dernières sorties. Record de tous les temps = 300 W (285 W de FTP), trop ancien pour représenter la forme actuelle.
 - `estimerFtp` (`profil.ts`) prend `watts_alltime` : il donne 285 W. Utilisé seulement dans les tests pour l'instant.
 
+## À FINIR (12 nov. 2026) : écran Zones et coach
+
+Ce qui est codé et commité en local, mais **pas encore vu à l'écran ni validé** par Yanis :
+- [ ] **Écran Paramètres › Zones** (`app/parametres/zones.tsx`, `components/reglages/`) : 3 onglets, barre avec noms et valeurs sous chaque limite (Z1 et dernière zone figées à 9 %), réglage par − / + (qui répètent) ou au clavier, sans limite, bouton « Enregistrer mes zones ». À tester dans le simulateur : glisser / maintenir les flèches, saisie « 450 » ou « 5:30 », cardio sur 5 zones, lecture après enregistrement dans une sortie.
+- [ ] **« Faire calculer mes zones par le coach »** : fonction `coach-zones` déployée mais **jamais appelée pour de vrai** (il faut le jeton de Yanis). Vérifier : accès coach et accord de partage OK sur son compte, carte de proposition, « Appliquer » qui enregistre, cas « aucune limite ne change », messages d'erreur.
+- [ ] **Plafond de 10 points** (`ECART_MAX_POINTS` dans `_shared/coach-zones.ts`) et **écart minimal de 2 points** entre limites : choisis par Claude, à faire valider par Yanis.
+- [ ] Le **Bilan** (progrès course et vélo : `sports/course.ts`, `sports/velo.ts`) garde ses zones fixes et ne lit pas encore les zones perso. Les courbes, le temps par zone et l'analyse de séance les lisent déjà.
+- [ ] Les zones perso sont stockées en % de la référence (`extras.zones_perso` du profil) : vérifier le comportement quand la FTP ou la LTHR change.
+- [ ] Plus de lien vers la physiologie sur l'écran Zones quand la référence existe (seulement « Renseigner … » quand elle manque) : voir si Yanis veut un accès ailleurs.
+- [ ] Brancher `estimerFtp` et `estimerFcMax` (écrites, testées) à un écran ou au coach (le coach ne les utilise pas : il lit la courbe de puissance et la FC max observée).
+- [ ] Pousser : rien n'est poussé (attendre le mot « yallah »).
+
 ## Fait (11 nov. 2026)
 
 - Profil de Yanis en base : FC max 200, FTP 200 W, LTHR 189, vitesse seuil 11,5 km/h.
