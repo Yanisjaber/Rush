@@ -117,11 +117,11 @@ export interface EtapeSki {
   vmaxKmh: number | null;
 }
 
-const MARGE_M = 5; // une descente commence quand on quitte le sommet (à 5 m près) et finit quand on arrive au creux (à 5 m près) : l'attente en haut ou en bas n'en fait pas partie
+const MARGE_M = 5; // une descente commence quand on quitte le sommet (à 5 m près) et finit quand on arrive au creux (à 5 m près) : l'attente en haut ou en bas n'en fait pas partie, les pauses au milieu si
 
 /**
  * La journée de ski en étapes : les descentes, et entre elles les remontées (télésiège, peaux, marche, file d'attente comprise). Une baisse trop courte ou trop lente
- * n'est pas une descente. Le temps d'une descente va du départ au sommet à l'arrivée au creux : l'attente au pied des remontées, à vitesse nulle, n'est pas comptée.
+ * n'est pas une descente. Le temps d'une descente va du départ au sommet à l'arrivée au creux, pauses du milieu comprises : l'attente au pied des remontées n'est pas comptée.
  * Null sans altitude ni temps.
  */
 export function journeeSki(brut: FluxBruts | null | undefined): EtapeSki[] | null {
@@ -146,31 +146,13 @@ export function journeeSki(brut: FluxBruts | null | undefined): EtapeSki[] | nul
     for (let i = b.i; i >= deb; i--) if (alt[i] <= b.v + MARGE_M) fin = i;
     if (fin <= deb) continue;
     const tranche = vit ? vit.slice(deb, fin + 1).filter(fini) : [];
-    const moyenne = tranche.length ? tranche.reduce((x, y) => x + y, 0) / tranche.length : null;
+    // Une descente tient si on y roule à plus de 7 km/h quand on avance (les arrêts au milieu ne comptent pas dans cette vérification)
+    const roulant = tranche.filter((v) => v >= VITESSE_ARRET_MS);
+    const moyenne = roulant.length ? roulant.reduce((x, y) => x + y, 0) / roulant.length : tranche.length ? 0 : null;
     if (moyenne != null && moyenne < VITESSE_MIN_MS) continue;
-    // Le temps de glisse : les arrêts au milieu de la piste (attendre un ami, une photo) ne comptent pas, ni dans la durée ni dans la vitesse moyenne.
-    // La distance parcourue est comptée sur les mêmes intervalles que le temps (un trou du GPS compte si on avançait encore à ce rythme-là).
-    let duree = temps[fin] - temps[deb];
-    let parcouru = dist ? dist[fin] - dist[deb] : 0;
-    if (vit) {
-      let mouvement = 0;
-      let metres = 0;
-      for (let i = deb; i < fin; i++) {
-        const dt = temps[i + 1] - temps[i];
-        if (dt <= 0) continue;
-        const dm = dist ? dist[i + 1] - dist[i] : 0;
-        const roule = dt <= 10 ? fini(vit[i]) && vit[i] >= VITESSE_ARRET_MS : dist ? dm / dt >= VITESSE_ARRET_MS : false;
-        if (roule) {
-          mouvement += dt;
-          metres += dm;
-        }
-      }
-      if (mouvement > 0) {
-        duree = mouvement;
-        parcouru = metres;
-      }
-    }
-    const vmoy = dist && duree > 0 ? (parcouru / duree) * 3.6 : null;
+    // La durée va du point A (on quitte le sommet) au point B (on arrive au creux) : les pauses au milieu comptent, l'attente en haut et en bas non
+    const duree = temps[fin] - temps[deb];
+    const vmoy = dist && duree > 0 ? ((dist[fin] - dist[deb]) / duree) * 3.6 : null;
     const sain = tranche.filter((v) => v * 3.6 <= VITESSE_MAX_KMH);
     descentes.push({ deb, fin, duree, vmax: sain.length ? Math.max(...sain) * 3.6 : null, vmoy });
   }

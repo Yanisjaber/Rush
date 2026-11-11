@@ -100,3 +100,21 @@ test('journeeSki : vitesse moyenne de la descente depuis la distance, jamais au-
   const d = e.find((x) => x.type === 'descente')!;
   assert.ok(d.vmoyKmh != null && d.vmaxKmh != null && d.vmoyKmh <= d.vmaxKmh);
 });
+
+test('journeeSki : une pause au milieu de la descente compte dans sa durée', () => {
+  // montée de 200 s, puis descente en deux temps : 20 s, 3 minutes d'arrêt à mi-pente, 20 s
+  const alt: number[] = [];
+  const vit: number[] = [];
+  let v = 1800;
+  for (let i = 0; i < 200; i++) { v += 2; alt.push(v); vit.push(1.5); }
+  for (let i = 0; i < 20; i++) { v -= 10; alt.push(v); vit.push(12); }
+  for (let i = 0; i < 180; i++) { alt.push(v); vit.push(0); }
+  for (let i = 0; i < 20; i++) { v -= 10; alt.push(v); vit.push(12); }
+  for (let i = 0; i < 100; i++) { alt.push(v); vit.push(0); } // attente en bas
+  for (let i = 0; i < 100; i++) { v += 2; alt.push(v); vit.push(1.5); }
+  const e = journeeSki({ temps: alt.map((_, i) => i), altitude: alt, vitesse: vit })!;
+  const d = e.filter((x) => x.type === 'descente');
+  assert.equal(d.length, 1);
+  assert.ok(d[0].dureeS >= 200 && d[0].dureeS <= 235, `descente ${d[0].dureeS} s`); // 20 + 180 + 20, sans les 100 s d'attente en bas
+  assert.ok(d[0].deniveleM >= 380);
+});
