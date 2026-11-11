@@ -52,8 +52,6 @@ const QUALITE: Record<FamilleCoach, string> = { velo: 'tempo', course: 'tempo', 
 const LONGUE: Record<FamilleCoach, string | null> = { velo: 'sortie_longue', course: 'sortie_longue', natation: null };
 /** Durée d'une séance facile quand on n'a aucun historique dans ce sport */
 const DUREE_PAR_DEFAUT: Record<FamilleCoach, number> = { velo: 60, course: 40, natation: 30 };
-/** On ne propose de la qualité qu'à partir d'une forme de fond de ce niveau (CTL) */
-const CTL_MINI_QUALITE = 30;
 
 type Role = 'facile' | 'qualite' | 'longue';
 
@@ -188,7 +186,8 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
       // Profil : prudence (blessure des 12 derniers mois) = pas de qualité en plus de la sortie longue ; elle évite le fractionné = pas de séance au seuil en natation
       const prudence = regles.prudent && longuePossible;
       const natationSansFractionne = regles.evite && sport === 'natation';
-      const qualitePossible = base.ctl !== null && base.ctl >= CTL_MINI_QUALITE && positions.length >= 3 && !prudence && !natationSansFractionne;
+      // Qualité : seulement si la personne fait déjà ce sport (un historique), avec au moins 3 séances de ce sport dans la période (fiche course-distribution-intensite : 3 séances = 1 séance de qualité) ; l'ancien seuil « CTL ≥ 30 » n'avait pas de source
+      const qualitePossible = h.moyenneMinutes !== null && positions.length >= 3 && !prudence && !natationSansFractionne;
       if (qualitePossible) roles[positions[Math.floor(positions.length / 2)]] = 'qualite';
     }
   }

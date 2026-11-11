@@ -39,11 +39,12 @@ test('niveau : fixé par les sorties des 90 derniers jours, JAMAIS par le record
   assert.match(n.source, /sorties récentes/);
   // 6 km en 35:00 converti sur 10,15 km : environ 1 h 01, très loin des 48:50 de l'ancien calcul fondé sur un chrono de 2024
   assert.ok(n.secondes > 3550 && n.secondes < 3800, String(n.secondes));
-  // sans sortie récente : le vieux record est très vieilli (+30 % après 2 ans), estimation « ancienne »
+  // sans sortie récente : le vieux record est ralenti de 25 % (VO2max −20 % après 2 mois d'arrêt, revue sur le désentraînement), estimation « ancienne »
   const ancien = niveauActuel({ ...YANIS, effortRecent: null, recent: { ...YANIS.recent, sorties: 0 } }, 10.15, AUJ)!;
   assert.equal(ancien.fiabilite, 'ancienne');
-  assert.ok(ancien.secondes > 3500, String(ancien.secondes));
-  assert.match(ancien.source, /faute de sorties récentes/);
+  assert.ok(ancien.secondes > 3400 && ancien.secondes < 3550, String(ancien.secondes));
+  assert.equal(ancien.secondes, Math.round(equivalent(YANIS.meilleurEffort!.equiv10Secondes, 10, 10.15) * 1.25));
+  assert.match(ancien.source, /vieilli de 25 % faute de sorties récentes/);
   // un chrono réel écrase tout : 3 km en 15:00 → environ 54:36 sur 10,15 km
   const c = niveauActuel(YANIS, 10.15, AUJ, { km: 3, secondes: 900 })!;
   assert.equal(c.fiabilite, 'chrono');
@@ -473,7 +474,7 @@ test('profil : blessure récente, débutant ou « j\'évite le fractionné » = 
     assert.equal(dureParSemaine(r), 1, JSON.stringify(ligne));
   }
   assert.equal(reglesDuProfil(coureur({ annees_pratique: 0 })).croissance, 1.05);
-  assert.equal(reglesDuProfil(coureur({ preferences: { fractionne: 'evite' } })).croissance, 1.1);
+  assert.equal(reglesDuProfil(coureur({ preferences: { fractionne: 'evite' } })).croissance, 1.07);
   assert.equal(reglesDuProfil(coureur({ blessures: [{ zone: 'dos', quand: 'plus_1_an', actif: false }] })).prudent, false, 'une vieille blessure (plus d\'un an) ne change rien');
 });
 
@@ -554,4 +555,24 @@ test('reprise après un long arrêt (ancienneté, plus grosse semaine connue, au
   assert.equal(r.bilan!.debutant, false);
   assert.equal(r.bilan!.volumeDepart, 105);
   assert.match(r.message, /reprise après un long arrêt : départ à 35 %/);
+});
+
+// ---------- Les règles du moteur : sources et honnêteté ----------
+test('règles : montée de 7 % par défaut (5 % si prudent), jamais présentée comme une loi dans le bilan', () => {
+  assert.equal(reglesDuProfil(null).croissance, 1.07);
+  const r = planifierCourse(DEMANDE, [], ctx(), YANIS);
+  assert.equal(r.bilan!.monteePourcent, 7);
+  assert.match(r.message, /montée du volume d'environ 7 % par semaine \(dans la fourchette de 5 à 9 %[^)]*la règle des 10 % n'est pas prouvée/);
+  assert.match(r.message, /habitude de coach, pas d'étude/);
+  assert.match(r.message, /aucune répartition de l'intensité, 80\/20 ou autre, n'est prouvée meilleure/);
+  assert.equal(planifierCourse(DEMANDE, [], ctx(), YANIS, coureur({ blessures: [{ zone: 'tibia', quand: 'moins_1_an', actif: false }] })).bilan!.monteePourcent, 5);
+});
+test('règles : la sortie longue ne grandit jamais de plus de 10 % d\'une semaine à l\'autre, et part de la plus longue des 30 derniers jours', () => {
+  const profil: ProfilCourse = { ...YANIS, recent: { ...YANIS.recent, plusLongueMinutes: 80, plusLongue30Minutes: 41 } };
+  const r = planifierCourse(DEMANDE, [], ctx(), profil);
+  const longues = ajouts(r.operations).filter((o) => o.proposition.type === 'sortie_longue').sort((a, b) => (a.proposition.date < b.proposition.date ? -1 : 1));
+  assert.ok(longues.length >= 3);
+  assert.ok(longues[0].proposition.minutes <= 41 + 1, `première longue ${longues[0].proposition.minutes} (la plus longue des 30 jours : 41)`);
+  // d'une longue à la suivante : au plus +10 % (à 1 minute d'arrondi près), hors semaines allégées/affûtage où elle baisse
+  for (let i = 1; i < longues.length; i++) assert.ok(longues[i].proposition.minutes <= Math.ceil(longues[i - 1].proposition.minutes * 1.1) + 1, longues.map((l) => l.proposition.minutes).join(','));
 });

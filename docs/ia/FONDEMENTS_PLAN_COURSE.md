@@ -23,6 +23,16 @@ Verdicts : **soutenu** (preuve solide) · **débattu** (les sources se contredis
 | Volume mini 38 min par séance, footing mini 30, longue mini 45, volume hebdo max 360 | Rien. | **Sans source, remplacé le 10 nov. (cas avec historique)** par des repères tirés des sorties de la personne (`reperesPersonnels`) : footing mini = 75 % de sa sortie moyenne, longue mini = 85 % de sa plus longue récente, volume max = 130 % de sa semaine la plus chargée. **Ces coefficients sont des conventions d'échelle, pas des résultats d'études.** Sans historique : anciennes valeurs par défaut, en attendant un départ prudent de débutant (à faire, après lecture des fiches reprise/débutant). |
 | Pas de test avec des sorties récentes ; test de 3 km sans données | Nuuttila 2022 : ajuster la charge d'après des marqueurs de récupération donne un meilleur gain que suivre un plan fixe. | **Soutenu pour le principe d'adapter le plan** (ce que fait déjà `suivi-plan.ts`) ; le choix de la sortie test 3 km est une pratique. |
 
+## Mises à jour du 12 nov. 2026 (règles du moteur)
+
+| Règle | Avant | Maintenant | Source |
+|---|---|---|---|
+| Montée du volume | +10 % par semaine | **+7 %** (5 % si prudent) | 92 plans de marathon : +5 à 9 % ; fiche : 5 à 10 %. Milieu / bas de la fourchette = notre choix. Pas de consensus sur la règle des 10 % (Buist 2008, Nielsen 2013). |
+| Sortie longue | +6 min par semaine, au plus 42 % du volume | **+10 % au plus** d'une semaine à l'autre, depuis la plus longue des 30 derniers jours ; au plus 1,6 × la durée de la course | Fiche course-blessures-progression (sauts d'une seule sortie) ; fiche course-5k-10k-plans (plans de coachs). Le 42 % n'avait aucune source. |
+| Footing | au plus 65 % de la longue (sans historique) | jamais plus long que la sortie longue | Structure, plus de pourcentage inventé |
+| Vieux record | +1,5 %/mois, 30 % au plus | **× 1,25** (> 90 jours), toujours suivi d'un test | Revue sur le désentraînement : VO2max −20 % à 2 mois ; hypothèse à nous (vitesse ∝ VO2max) |
+| Qualité en multisport | CTL ≥ 30 | historique dans le sport + 3 séances | Fiche course-distribution-intensite (3 séances = 1 qualité) |
+
 ## Ce que le profil du coureur change (12 nov. 2026, `reglesDuProfil`)
 
 | Donnée du profil | Effet dans le plan | Source |

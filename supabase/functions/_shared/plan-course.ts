@@ -14,7 +14,7 @@
 // Ces règles sont les HABITUDES d'un bon plan, pas des refus : l'utilisateur peut tout modifier ensuite.
 // ============================================================
 import { ajouterJours, ecartJours, entre, nomDuJour } from './dates-iso.ts';
-import { reglesDuProfil } from './profil-coureur.ts';
+import { MONTEE_HEBDO, MONTEE_PRUDENTE, reglesDuProfil } from './profil-coureur.ts';
 import { joursRecuperation, libelleBloc } from './calendrier-courses.ts';
 import type { Bloc } from './calendrier-courses.ts';
 import type { ProfilCoureur } from './profil-coureur.ts';
@@ -36,7 +36,7 @@ export interface ProfilCourse {
   /** Le meilleur effort des 90 derniers jours (sorties d'au moins 3 km) : il fixe le niveau d'aujourd'hui */
   effortRecent: { date: string; km: number; secondes: number; equiv10Secondes: number } | null;
   sorties90: number;
-  recent: { sorties: number; km: number; minutes: number; plusLongueMinutes: number; allureMedianeSParKm: number | null };
+  recent: { sorties: number; km: number; minutes: number; plusLongueMinutes: number; allureMedianeSParKm: number | null; /** La plus longue sortie des 30 derniers jours (absent des anciens résumés) */ plusLongue30Minutes?: number | null };
   /** Les 8 dernières semaines, de la plus ancienne à la plus récente */
   semaines: { km: number; minutes: number; sorties: number }[];
   /** Sorties par jour de la semaine (1 = lundi) sur 90 jours */
@@ -70,7 +70,7 @@ export function profilCourseDepuisResume(resume: any): ProfilCourse | null {
     meilleurEffort,
     effortRecent,
     sorties90: nb(p.sorties_90_jours) ?? 0,
-    recent: { sorties: nb(r.sorties) ?? 0, km: nb(r.km) ?? 0, minutes: nb(r.minutes) ?? 0, plusLongueMinutes: nb(r.plus_longue_minutes) ?? 0, allureMedianeSParKm: nb(r.allure_mediane_s_par_km) },
+    recent: { sorties: nb(r.sorties) ?? 0, km: nb(r.km) ?? 0, minutes: nb(r.minutes) ?? 0, plusLongueMinutes: nb(r.plus_longue_minutes) ?? 0, allureMedianeSParKm: nb(r.allure_mediane_s_par_km), plusLongue30Minutes: nb(r.plus_longue_30j_minutes) },
     semaines,
     jours,
   };
@@ -102,9 +102,12 @@ export interface Niveau {
 
 /** Un effort récent converti tel quel : sans correction optimiste (un test réel de Yanis a montré qu'enlever 7 % était trop beau) */
 const EFFORT_RECENT_FACTEUR = 1;
-/** Un vieux record vieillit de 1,5 % par mois d'ancienneté, 30 % au plus (on a perdu beaucoup de niveau) */
-const VIEILLISSEMENT_MENSUEL = 0.015;
-const VIEILLISSEMENT_MAX = 0.3;
+/**
+ * Un vieux record (plus de 90 jours) ne vaut plus rien tel quel (fiche course-reprise-debutants : « un vieux record ne sert pas de référence »). On le ralentit de la perte mesurée au désentraînement :
+ * VO2max ≈ −20 % après 2 mois (revue de 41 études, chiffre pour des gens qui arrêtent presque tout), et on suppose que la vitesse suit la VO2max (HYPOTHÈSE à nous : l'économie de course baisse moins vite, donc c'est plutôt pessimiste).
+ * Temps × 1 / (1 − 0,20) = × 1,25, quelle que soit l'ancienneté au-delà de 90 jours (aucune donnée sérieuse au-delà de 2 mois). Estimation « ancienne » : toujours suivie d'une sortie test. Remplace l'ancien « 1,5 % par mois, 30 % au plus », sans source.
+ */
+const PERTE_VITESSE_VIEUX_RECORD = 0.2;
 
 /**
  * Son niveau d'aujourd'hui sur `km`, du plus fiable au moins fiable :
@@ -124,8 +127,7 @@ export function niveauActuel(p: ProfilCourse | null, km: number, aujourdhui: str
   }
   const ref = p.meilleurEffort;
   if (ref) {
-    const mois = Math.max(0, ecartJours(ref.date, aujourdhui) / 30.4);
-    const vieillissement = 1 + Math.min(VIEILLISSEMENT_MAX, VIEILLISSEMENT_MENSUEL * mois);
+    const vieillissement = 1 / (1 - PERTE_VITESSE_VIEUX_RECORD);
     return { secondes: Math.round(equivalent(ref.equiv10Secondes, 10, km) * vieillissement), source: `un ancien effort (${ref.km} km le ${ref.date}), vieilli de ${Math.round((vieillissement - 1) * 100)} % faute de sorties récentes`, fiabilite: 'ancienne' };
   }
   return null;
@@ -575,6 +577,8 @@ export interface Bilan {
   debutant: boolean;
   /** Ce que le calendrier de courses a changé dans le plan (une phrase par étape) */
   contraintesCalendrier: string[];
+  /** Montée du volume par semaine, en % (7 par défaut, 5 si prudent) */
+  monteePourcent: number;
   /** Allures provisoires (aucune donnée ni temps visé) : tout est recalibré après le test */
   provisoire: boolean;
   typeTest: TypeTest;
@@ -695,7 +699,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   // sur 4 fenêtres de 7 jours, si elle est plus haute ; un peu plus (+10 %), jamais moins de 38 min par séance. Ainsi, un plan refait en cours de route repart de la charge réelle.
   const derniers7 = profil && profil.semaines.length ? profil.semaines[profil.semaines.length - 1].minutes : 0;
   const rp: Reperes = debutant ? { footingMini: DEBUTANT.footingMini, longueMini: DEBUTANT.longueMini, seanceMini: DEBUTANT.seanceMini, volumeMax: Infinity, footingMax: Infinity, personnels: false } : reperesPersonnels(profil);
-  if (debutant) { regles.prudent = true; regles.maxQualites = 1; regles.croissance = 1.05; }
+  if (debutant) { regles.prudent = true; regles.maxQualites = 1; regles.croissance = MONTEE_PRUDENTE; }
   // Sa plus grosse semaine déjà faite (profil) plafonne le volume : jamais plus que le plus haut entre elle et sa plus grosse semaine récente
   const semaineMaxRecente = Math.max(0, ...(profil?.semaines ?? []).map((x) => x.minutes));
   const volumeMax = regles.picHebdo !== null ? Math.max(Math.min(rp.volumeMax, Math.max(regles.picHebdo, semaineMaxRecente)), k * rp.footingMini) : rp.volumeMax;
@@ -706,7 +710,11 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   if (debutant) regles.utilise.push(`tu débutes : ${DEBUTANT.seancesParSemaine} séances par semaine, course/marche les ${DEBUTANT.semainesCourseMarche} premières semaines, un jour de repos entre deux séances, aucune intensité (hors sortie test)`);
   if (departReprise) regles.utilise.push(`reprise après un long arrêt : départ à ${Math.round(REPRISE_PART_DU_PIC * 100)} % de ta plus grosse semaine`);
   const longueMax = Math.min(110, Math.max(60, Math.round((objectifPlan / 60) * 1.6)));
-  let longuePrecedente = Math.max(rp.longueMini, Math.min(longueMax, profil?.recent.plusLongueMinutes || rp.longueMini));
+  // Départ de la sortie longue : la plus longue des 30 derniers jours (fiche course-blessures-progression : ne jamais allonger la plus longue sortie de plus de 10 % d'un coup par rapport à celle des 30 derniers jours)
+  const longue30 = profil?.recent.plusLongue30Minutes || null;
+  // Le plancher de la sortie longue ne dépasse jamais la plus longue des 30 derniers jours (sinon la première sauterait de plus de 10 %)
+  const longueMiniEff = longue30 ? Math.min(rp.longueMini, longue30) : rp.longueMini;
+  let longuePrecedente = Math.max(longueMiniEff, Math.min(longueMax, longue30 || profil?.recent.plusLongueMinutes || rp.longueMini));
 
   const liste = phases(nSemaines);
   const compteurs: Record<Phase, number> = { base: 0, developpement: 0, specifique: 0, affutage: 0 };
@@ -807,12 +815,14 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     const restant = Math.max(0, volume - minutesQualite);
     let longue = 0;
     if (nLongue) {
-      longue = Math.round(Math.min(longueMax, Math.max(rp.longueMini, Math.min(longuePrecedente + (w === 0 ? 0 : 6), volume * 0.42))));
+      // +10 % au plus par semaine (sourcé, voir plus haut). Plus de plafond en % du volume (42 %, sans source) : la sortie longue est bornée par cette progression et par 1,6 × la durée de la course.
+      longue = Math.round(Math.min(longueMax, Math.max(longueMiniEff, w === 0 ? longuePrecedente : longuePrecedente * 1.1)));
       if (phase === 'affutage') longue = Math.max(rp.footingMini, Math.round(longue * 0.75));
       if (recuperation) longue = Math.max(rp.longueMini - 5, Math.round(longue * 0.85));
     }
     // Un footing reste un footing : jamais plus long que ses footings habituels (130 %), sinon il devient une 2e sortie longue à côté de la vraie. Sans historique : jamais plus de 65 % de la longue.
-    const plafondFacile = nLongue ? Math.min(rp.footingMax, rp.personnels ? Infinity : Math.max(rp.footingMini, Math.round(longue * 0.65))) : Infinity;
+    // Un footing n'est jamais plus long que la sortie longue (par définition) ; avec un historique, il suit aussi la durée habituelle de ses sorties (footingMax)
+    const plafondFacile = nLongue ? Math.min(rp.footingMax, rp.personnels ? Infinity : Math.max(rp.footingMini, longue)) : Infinity;
     let facile = nFaciles ? Math.min(plafondFacile, Math.max(derniere ? Math.max(15, Math.round(rp.footingMini * 0.65)) : rp.footingMini, Math.round((restant - longue) / nFaciles))) : 0;
     if (nLongue && !recuperation && phase !== 'affutage') longuePrecedente = longue;
 
@@ -858,7 +868,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     lignesSemaines.push(`Semaine ${w + 1} (${du}) : ${NOM_PHASE[phase]}${recuperation ? ', récupération' : ''}, ${posees} séance${posees > 1 ? 's' : ''}, ${totalSemaine} min`);
   }
 
-  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null, volumeDepart, derniers7, profilUtilise: regles.utilise, debutant, provisoire, typeTest, contraintesCalendrier };
+  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null, volumeDepart, derniers7, profilUtilise: regles.utilise, debutant, provisoire, typeTest, contraintesCalendrier, monteePourcent: Math.round((regles.croissance - 1) * 100) };
   return { operations, abandons, semaines: lignesSemaines, bilan, message: messageBilan(bilan) };
 }
 
@@ -893,5 +903,6 @@ export function messageBilan(b: Bilan): string {
     parts.push(`Allures (par km) : ${ALLURES_CLES.map((c) => `${NOM_ALLURE[c]} ${formaterAllure(b.allures![c])}`).join(', ')}.`);
     if (b.imposees.length) parts.push(`Allures imposées par l'utilisateur : ${b.imposees.map((c) => NOM_ALLURE[c]).join(', ')}.`);
   }
+  parts.push(`Les règles du plan, dites honnêtement : montée du volume d'environ ${b.monteePourcent} % par semaine (dans la fourchette de 5 à 9 % des plans réels analysés ; la règle des 10 % n'est pas prouvée, il n'y a pas de consensus) ; une semaine allégée toutes les 4 semaines (habitude de coach, pas d'étude) ; la sortie longue ne grandit jamais de plus de 10 % d'une semaine à l'autre ; beaucoup de séances faciles et 1 à 2 séances de qualité (aucune répartition de l'intensité, 80/20 ou autre, n'est prouvée meilleure pour un amateur). Ne les présente pas comme des lois.`);
   return parts.join(' ');
 }

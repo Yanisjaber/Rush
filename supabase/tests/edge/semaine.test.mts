@@ -98,15 +98,17 @@ test('sorties longues : seulement si l\'historique les permet, et placées le we
   assert.ok(ajouts(sans.operations).every((x) => x.type !== 'sortie_longue'));
 });
 
-test('qualité : une séance de tempo seulement avec 3 séances d\'un sport ET une forme de fond suffisante (CTL ≥ 30)', () => {
+test('qualité : une séance de tempo seulement avec 3 séances d\'un sport ET un historique dans ce sport (l\'ancien seuil « CTL ≥ 30 » n\'avait pas de source)', () => {
   const trois = plan({ sports: [{ sport: 'course', seances: 3 }] });
   assert.equal(ajouts(trois.operations).filter((x) => x.type === 'tempo').length, 1);
   const deux = plan({ sports: [{ sport: 'course', seances: 2 }] });
   assert.equal(ajouts(deux.operations).filter((x) => x.type === 'tempo').length, 0);
-  const faible = plan({ sports: [{ sport: 'course', seances: 3 }] }, ctx({ ctl: 20 }));
-  assert.equal(ajouts(faible.operations).filter((x) => x.type === 'tempo').length, 0);
-  const inconnu = plan({ sports: [{ sport: 'course', seances: 3 }] }, ctx({ ctl: null }));
-  assert.equal(ajouts(inconnu.operations).filter((x) => x.type === 'tempo').length, 0);
+  // une forme de fond faible ou inconnue ne bloque plus : seul l'historique compte
+  assert.equal(ajouts(plan({ sports: [{ sport: 'course', seances: 3 }] }, ctx({ ctl: 20 })).operations).filter((x) => x.type === 'tempo').length, 1);
+  assert.equal(ajouts(plan({ sports: [{ sport: 'course', seances: 3 }] }, ctx({ ctl: null })).operations).filter((x) => x.type === 'tempo').length, 1);
+  // aucun historique dans ce sport : pas de qualité
+  const sansHistorique = plan({ sports: [{ sport: 'course', seances: 3 }] }, ctx(), [], { ...HAB, course: { moyenneMinutes: null, plusLongueMinutes: null } });
+  assert.equal(ajouts(sansHistorique.operations).filter((x) => x.type === 'tempo').length, 0);
 });
 
 test('intensité « facile » : que des séances faciles, jamais de longue ni de qualité', () => {

@@ -215,6 +215,14 @@ export function profilPourModele(bloc: any): { connu: Record<string, unknown>; c
  *   - elle évite le fractionné → une seule séance dure par semaine.
  * Le moment de la journée (matin, soir) n'a pas d'effet : le plan donne des jours, pas des heures.
  */
+/**
+ * Montée du volume d'une semaine à l'autre. La règle des « 10 % » est une CONVENTION contestée (Buist 2008 : aucune différence de blessures entre +10,5 % et +23,7 % ; Nielsen 2013 : le risque vient plutôt des sauts d'une seule sortie),
+ * il n'y a pas de consensus. On reste dans la fourchette des plans réels analysés (92 plans de marathon de 12 semaines : montée de 5 à 9 % par semaine ; la fiche course-blessures-progression dit « environ 5 à 10 % ») :
+ * le MILIEU de la fourchette (7 %) par défaut, le BAS (5 %) quand la personne est prudente (blessure récente, débutant). Ce sont des choix dans une fourchette, pas des résultats d'études.
+ */
+export const MONTEE_HEBDO = 1.07;
+export const MONTEE_PRUDENTE = 1.05;
+
 export interface ReglesProfil {
   joursInterdits: Set<string>;
   /** Elle évite le fractionné */
@@ -229,7 +237,7 @@ export interface ReglesProfil {
   utilise: string[];
 }
 export function reglesDuProfil(c: ProfilCoureur | null): ReglesProfil {
-  const r: ReglesProfil = { joursInterdits: new Set(), evite: false, minutesMax: {}, picHebdo: null, prudent: false, blessureActive: false, maxQualites: 2, croissance: 1.1, utilise: [] };
+  const r: ReglesProfil = { joursInterdits: new Set(), evite: false, minutesMax: {}, picHebdo: null, prudent: false, blessureActive: false, maxQualites: 2, croissance: MONTEE_HEBDO, utilise: [] };
   if (!c) return r;
   for (const j of JOURS_SEMAINE) {
     const d = c.disponibilites[j];
@@ -245,10 +253,10 @@ export function reglesDuProfil(c: ProfilCoureur | null): ReglesProfil {
   const debutant = c.anneesPratique === 0;
   r.prudent = recente || debutant;
   if (r.blessureActive) r.utilise.push('blessure encore là : aucune séance d\'intensité, pas de sortie test');
-  else if (recente) r.utilise.push('blessure dans les 12 derniers mois : une seule séance dure par semaine, montée plus douce (5 %)');
-  else if (debutant) r.utilise.push('moins d\'un an de pratique : une seule séance dure par semaine, montée plus douce (5 %)');
+  else if (recente) r.utilise.push('blessure dans les 12 derniers mois : une seule séance dure par semaine, montée plus douce (5 % au lieu de 7 %)');
+  else if (debutant) r.utilise.push('moins d\'un an de pratique : une seule séance dure par semaine, montée plus douce (5 % au lieu de 7 %)');
   if (c.fractionne === 'evite') { r.evite = true; r.maxQualites = 1; r.utilise.push('tu évites le fractionné : une seule séance dure par semaine'); }
-  if (r.prudent) { r.maxQualites = 1; r.croissance = 1.05; }
+  if (r.prudent) { r.maxQualites = 1; r.croissance = MONTEE_PRUDENTE; }
   return r;
 }
 

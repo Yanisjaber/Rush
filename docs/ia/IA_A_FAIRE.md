@@ -29,18 +29,16 @@ Principe posé par Yanis : **chaque règle du plan vient d'études ou de la pers
 - [ ] Conventions à nous, à valider : étapes toutes les 2 semaines, retour au footing continu après 6 semaines, marche affichée à 1,7 × l'allure facile.
 - [x] Plus de temps demandé à un débutant : le test sert à régler les allures.
 
-## 4. Règles du moteur encore sans source ou débattues
-- [ ] Montée de volume de 10 % par semaine : contestée (Buist 2008, Nielsen 2013). Remplacer par un plafond expliqué partant du volume réel, et dire dans la carte qu'il n'y a pas de consensus.
-- [ ] Sortie longue : plafond à 42 % du volume (Daniels cité à 25-30 %, de seconde main).
-- [ ] Semaine de récupération toutes les 4 semaines, ×0,8 : pratique d'entraîneurs, pas d'essai trouvé.
-- [ ] Séances dures espacées, répartition d'intensité (80/20) : débattu, ne pas l'imposer comme un fait.
-- [ ] Vieillissement d'un vieux record (1,5 %/mois, 30 % max) : coefficient sans source.
-- [ ] Coefficients d'échelle des repères personnels (75, 85, 90, 130 %) : conventions, à valider ou à remplacer.
-- [ ] Exposant de conversion entre distances : reste 1,06. Piste : exposant personnel quand il a deux efforts de distances différentes (touche `rpc_coach_resume`).
+## 4. Règles du moteur encore sans source ou débattues (traitées le 12 nov.)
+- [x] **Montée de 10 % par semaine** : remplacée par **7 %** (milieu de la fourchette 5-9 % des 92 plans de marathon analysés ; fiche : « environ 5 à 10 % »), **5 %** si prudent (blessure récente, débutant). Le bilan dit que la règle des 10 % n'est pas prouvée et qu'il n'y a pas de consensus. Ce sont des choix dans une fourchette, pas des résultats d'études.
+- [x] **Sortie longue** : plafond de 42 % du volume supprimé. Remplacé par deux limites sourcées : jamais plus de **+10 %** d'une semaine à l'autre, en partant de la **plus longue des 30 derniers jours** (fiche course-blessures-progression ; champ `plus_longue_30j_minutes` ajouté au résumé, appliqué en base) ; et au plus 1,6 × la durée de la course (fiche course-5k-10k-plans, structure de plans de coachs). Un footing n'est jamais plus long que la sortie longue (structure, plus de 65 %).
+- [x] **Semaine de récupération toutes les 4 semaines, ×0,8** : gardée, présentée dans le bilan comme « habitude de coach, pas d'étude » (fiche periodisation).
+- [x] **Séances dures** : jamais deux collées (≥ 48 h) et une seule qualité à 3 séances, jusqu'à deux à 4-5 séances : c'est la règle de la fiche course-distribution-intensite. Le bilan dit qu'aucune répartition (80/20, pyramidale, seuil) n'est prouvée meilleure. Le seuil « CTL ≥ 30 » de `semaine.ts` (sans source) est remplacé par « la personne a un historique dans ce sport ».
+- [x] **Vieux record** : le « 1,5 %/mois, 30 % max » (sans source) est remplacé par **× 1,25** (VO2max −20 % après 2 mois d'arrêt, revue sur le désentraînement ; hypothèse à nous : la vitesse suit la VO2max, plutôt pessimiste), pour tout record de plus de 90 jours. Estimation « ancienne », toujours suivie d'une sortie test.
+- [ ] **Coefficients d'échelle des repères personnels (75, 85, 90, 130 %)** : restent des conventions (durées qui suivent la personne), non sourcées. À valider ou remplacer.
+- [ ] **Longueur maxi de la sortie longue** (`min(110, max(60, 1,6 × durée de la course))`) : le 1,6 vient de la fiche, mais les bornes 60 et 110 min n'ont pas de source.
+- [ ] **Exposant de conversion entre distances** : reste 1,06. Piste : exposant personnel quand il a deux efforts de distances différentes (touche `rpc_coach_resume`).
 
-- [x] **Sorties courtes ignorées (corrigé)** : `rpc_coach_resume` renvoie `meilleur_effort_recent` (sorties d'au moins 3 km sur 90 jours), utilisé par `plan-course.ts` pour le niveau. Le seuil de 4,8 km ne reste que pour `meilleur_effort` (ancien record, dernier recours). Appliqué en base.
-- [x] **Calendrier de courses général (12 nov., refait après la remarque de Yanis : pas de cas particulier « double »)** : `calendrier-courses.ts`. N courses le même jour ou à un jour d'écart = un **bloc**. Cible = bloc de la date demandée, sinon premier bloc avec une A, sinon premier ; référence des allures dans le bloc (distance demandée, priorité, temps visé, plus longue) sans jamais bloquer. Les blocs AVANT la cible sont des étapes : jour bloqué, veille sans séance dure ni sortie longue, puis jours faciles (3 jusqu'à 10 km, 10 dès un marathon, interpolé, distances additionnées : milieu des fourchettes de la fiche). Les blocs APRÈS ne sont pas planifiés, le coach le dit. Heure de départ des compétitions dans `rpc_coach_resume`. Aucune étude sur l'enchaînement de courses : aucun chiffre inventé.
-- [ ] Calendrier, encore à faire : course passée récemment (récupération au début du plan : le résumé ne remonte pas avant aujourd'hui) ; enjeu par course dicté par la personne (override de la priorité) ; plan POUR LA SUITE après la cible (saison enchaînée) ; autres sports que la course ; affûtage adapté aux étapes B/C.
 - [ ] Le moteur ne détecte pas les **reprises répétées** (plusieurs « reprise » espacées dans l'historique) pour être plus prudent sur la montée de charge.
 
 ## 5. Vérifier les sources

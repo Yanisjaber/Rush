@@ -130,6 +130,8 @@ bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-12_rpc
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -c "update public.activity_planned set start_date_local = '2027-01-10 09:10+00' where name = 'Marathon IGNORE'"
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-12_rpc_coach_resume_heure_course.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-12_rpc_coach_resume_heure_course.sql   # relançable
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-12_rpc_coach_resume_longue_30j.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-12_rpc_coach_resume_longue_30j.sql   # relançable
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 <<'SQL'
 insert into public.coach_profil (user_id, annees_pratique, pic_hebdo_minutes, disponibilites, blessures, blessures_renseignees, preferences)
 values ('00000000-0000-4000-8000-00000000000a', 6, 320, '{"mardi":{"libre":true,"minutes_max":60}}', '[{"zone":"genou","quand":"moins_1_an","actif":false}]', true, '{"moment":"matin"}');
@@ -195,6 +197,8 @@ union all select 24, 'suivi du plan : aucun nom de séance ne sort (que des date
                   (select position('SECRET' in (j->'plan_suivi')::text) = 0 and position('Course' in (j->'plan_suivi')::text) = 0 from r)
 union all select 26, 'compétitions : l''heure de départ sort en HH:MM (09:10), null quand elle n''est pas connue',
                   (select j->'competitions'->0->>'heure' = '09:10' and j->'competitions'->1->'heure' = 'null'::jsonb from r)
+union all select 27, 'profil de coureur : la plus longue sortie des 30 derniers jours (40 min) est donnée, jamais plus grande que celle des 8 semaines',
+                  (select (j->'profil_course'->'recent'->>'plus_longue_30j_minutes')::int = 40 and (j->'profil_course'->'recent'->>'plus_longue_30j_minutes')::int <= (j->'profil_course'->'recent'->>'plus_longue_minutes')::int from r)
 union all select 21, 'profil de coureur : que des nombres et des dates (aucun texte externe)',
                   (select position('Footing' in (j->'profil_course')::text) = 0 and position('onerror' in (j->'profil_course')::text) = 0 from r)
 ) t order by n;
