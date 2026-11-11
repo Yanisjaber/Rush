@@ -321,6 +321,33 @@ export function calculerZones(modele: ModeleZones, reference: unknown, perso?: n
   });
 }
 
+/** L'axe de la barre de zones (jusqu'où elle va, en % de la référence) : la dernière zone n'a pas de fin, on lui donne une longueur lisible. */
+export const AXE_MAX_POURCENT: Record<ModeleZones, number> = { puissance: 160, cardio: 120, allure: 115 };
+
+/** Le plus petit pas d'une borne dans son unité : 1 bpm, 1 W, 0,1 km/h. */
+export const pasZone = (modele: ModeleZones): number => (modele === 'allure' ? 0.1 : 1);
+
+/**
+ * Déplace le début de la zone `i` (≥ 1, la zone 1 commence toujours à 0) vers `valeur` (dans l'unité : bpm, W, km/h).
+ * La valeur est arrondie au pas, et reste entre les bornes voisines (au moins un pas d'écart). Renvoie les nouvelles bornes en % (toutes les zones, la 1re à 0),
+ * ou null sans référence ou avec une zone qui n'existe pas.
+ */
+export function deplacerBorne(modele: ModeleZones, reference: number, bornes: number[], i: number, valeur: number): number[] | null {
+  if (!(reference > 0) || i < 1 || i >= bornes.length || !Number.isFinite(valeur)) return null;
+  const pas = pasZone(modele);
+  const pctPas = (100 * pas) / reference;
+  const bas = bornes[i - 1] + pctPas;
+  const haut = i + 1 < bornes.length ? bornes[i + 1] - pctPas : AXE_MAX_POURCENT[modele];
+  const arrondi = Math.round(valeur / pas) * pas;
+  const pct = Math.min(haut, Math.max(bas, (arrondi / reference) * 100));
+  // La borne retombe sur un multiple du pas quand c'est possible ; 2 décimales suffisent à retrouver la valeur
+  const nette = Math.round(Math.round((pct * reference) / 100 / pas) * pas * 1e6) / 1e6;
+  const r = [...bornes];
+  r[i] = Math.round(((nette / reference) * 100) * 100) / 100;
+  r[i] = Math.min(haut, Math.max(bas, r[i]));
+  return r;
+}
+
 /** Les zones d'un profil : sa référence (FTP, LTHR ou estimée, vitesse seuil) et ses bornes perso éventuelles. `ftpDefaut` : la FTP de la sortie quand le profil n'en a pas. */
 export function zonesDuProfil(
   modele: ModeleZones,

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { calculerZones, sectionParId, validerSection, valeursDepuis, versPayload, estimerFtp, estimerFcMax, referenceCardio, persoValide, zonesDuProfil, zonesPersoDuProfil, bornesPourcent } from '../../src/data/reglages/profil.ts';
+import { calculerZones, sectionParId, validerSection, valeursDepuis, versPayload, estimerFtp, estimerFcMax, referenceCardio, persoValide, deplacerBorne, zonesDuProfil, zonesPersoDuProfil, bornesPourcent } from '../../src/data/reglages/profil.ts';
 
 const physio = sectionParId('physiologie')!;
 const identite = sectionParId('identite')!;
@@ -83,4 +83,22 @@ test('zonesDuProfil : référence + perso du profil, FTP de la sortie à défaut
   assert.equal(zonesDuProfil('puissance', profil), null); // pas de FTP du tout
   assert.equal(zonesDuProfil('allure', profil)![0].nom.startsWith('Z1'), true);
   assert.deepEqual(Object.keys(zonesPersoDuProfil(profil)), ['cardio']);
+});
+
+test('deplacerBorne : arrondie au pas, bornée par les voisines', () => {
+  const b = bornesPourcent('cardio', null); // [0, 81, 90, 94, 100]
+  const n = deplacerBorne('cardio', 200, b, 2, 170.4)!; // 170 bpm = 85 %
+  assert.equal(n[2], 85);
+  assert.equal(calculerZones('cardio', 200, n.slice(1))![2].de, 170);
+  // Ne passe jamais la borne suivante (94 % = 188 bpm) ni la précédente (81 % = 162 bpm)
+  assert.ok(deplacerBorne('cardio', 200, b, 2, 500)![2] < 94);
+  assert.ok(deplacerBorne('cardio', 200, b, 2, 10)![2] > 81);
+  // Zone 1 (index 0) ou inexistante : rien ; sans référence : rien
+  assert.equal(deplacerBorne('cardio', 200, b, 0, 150), null);
+  assert.equal(deplacerBorne('cardio', 0, b, 2, 150), null);
+  // Allure : pas de 0,1 km/h
+  const a = deplacerBorne('allure', 11.5, bornesPourcent('allure', null), 1, 9.04)!;
+  assert.equal(Math.round(((a[1] * 11.5) / 100) * 10) / 10, 9);
+  // Le résultat est une perso valide
+  assert.ok(persoValide('cardio', n.slice(1)));
 });
