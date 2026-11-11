@@ -35,7 +35,7 @@ export function JournalSki({ etapes, couleur, departMin }: Props) {
       <Text style={[typo.micro, { color: p.texteDoux }]}>LA JOURNÉE</Text>
       {etapes.map((e, i) => {
         const nom = e.type === 'descente' ? `Descente ${++descentes}` : 'Remontée';
-        const detail = `${e.deniveleM} m · ${duree(e.dureeS)}${e.vmaxKmh ? ` · ${e.vmaxKmh} km/h` : ''}`;
+        const detail = `${e.deniveleM} m · ${duree(e.dureeS)}${e.vmoyKmh ? ` · moy. ${e.vmoyKmh}` : ''}${e.vmaxKmh ? ` · max ${e.vmaxKmh} km/h` : ''}`;
         return (
           <View key={i} accessible accessibilityLabel={`${heure(departMin, e.debutS)}, ${nom}, ${detail}`} style={styles.ligne}>
             <Text style={[styles.heure, { color: p.texteMuet }]}>{heure(departMin, e.debutS)}</Text>

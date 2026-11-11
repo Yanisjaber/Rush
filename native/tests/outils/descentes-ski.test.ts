@@ -74,3 +74,29 @@ test('journeeSki : une petite baisse se fond dans la montée, sans altitude rien
   assert.equal(journeeSki(undefined), null);
   assert.equal(journeeSki({ temps: [0, 1], altitude: [1, 2] }), null);
 });
+
+test('journeeSki : l\'attente au pied des remontées (vitesse nulle) n\'est pas comptée dans la descente', () => {
+  const j = journee([400, 400], [390, 390]);
+  // 10 minutes d'attente immobile au creux de la première descente
+  const coupe = 240; // fin de la première descente (200 montée + 40 descente)
+  const attente = Array.from({ length: 600 }, () => j.altitude[coupe - 1]);
+  const alt = [...j.altitude.slice(0, coupe), ...attente, ...j.altitude.slice(coupe)];
+  const vit = [...j.vitesse.slice(0, coupe), ...attente.map(() => 0), ...j.vitesse.slice(coupe)];
+  const e = journeeSki({ temps: alt.map((_, i) => i), altitude: alt, vitesse: vit });
+  assert.ok(e);
+  const d = e.filter((x) => x.type === 'descente');
+  assert.equal(d.length, 2);
+  assert.ok(d[0].dureeS <= 60, `descente ${d[0].dureeS} s`);
+  // l'attente se retrouve dans la remontée suivante, qui garde donc son dénivelé
+  const m = e.filter((x) => x.type === 'montee');
+  assert.ok(m[1].dureeS >= 600);
+});
+
+test('journeeSki : vitesse moyenne de la descente depuis la distance, jamais au-dessus de la vitesse max', () => {
+  const j = journee([400], [390]);
+  let cumul = 0;
+  const distance = j.vitesse.map((v) => (cumul += v));
+  const e = journeeSki({ ...j, distance })!;
+  const d = e.find((x) => x.type === 'descente')!;
+  assert.ok(d.vmoyKmh != null && d.vmaxKmh != null && d.vmoyKmh <= d.vmaxKmh);
+});

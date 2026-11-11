@@ -17,6 +17,7 @@ export interface StatsSki {
 const SEUIL_BRUIT_M = 8;
 const DESCENTE_MIN_M = 40;
 const VITESSE_MIN_MS = 2; // 7 km/h
+const VITESSE_ARRET_MS = 0.8; // en dessous, on est à l'arrêt
 const VITESSE_MAX_KMH = 150; // au-delà, un point de GPS faux
 
 const fini = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -90,6 +91,10 @@ export function statsSki(brut: FluxBruts | null | undefined): StatsSki | null {
     descentes++;
   }
 
+  // Le nombre de descentes est celui de la chronologie (même définition : l'attente au pied des remontées n'y change rien)
+  const journee = journeeSki(brut);
+  if (journee) descentes = journee.filter((e) => e.type === 'descente').length;
+
   const vmax = vit ? Math.max(0, ...vit.filter((v) => fini(v) && v * 3.6 <= VITESSE_MAX_KMH)) * 3.6 : 0;
   const altitudes = alt.filter(fini);
   return {
@@ -107,13 +112,17 @@ export interface EtapeSki {
   dureeS: number;
   /** Dénivelé monté (montée) ou descendu (descente), en mètres. */
   deniveleM: number;
-  /** Vitesse max de la descente (km/h) ; null pour une montée ou sans vitesse. */
+  /** Descente seulement : la vitesse moyenne (km/h) et la vitesse max (km/h) ; null sans les flux nécessaires. */
+  vmoyKmh: number | null;
   vmaxKmh: number | null;
 }
 
+const MARGE_M = 5; // une descente commence quand on quitte le sommet (à 5 m près) et finit quand on arrive au creux (à 5 m près) : l'attente en haut ou en bas n'en fait pas partie
+
 /**
- * La journée de ski en étapes : remontées (télésiège, peaux, marche) et descentes, dans l'ordre. Une baisse trop courte ou trop lente n'est pas une descente :
- * elle se fond dans la montée qui l'entoure. Null sans altitude ni temps.
+ * La journée de ski en étapes : les descentes, et entre elles les remontées (télésiège, peaux, marche, file d'attente comprise). Une baisse trop courte ou trop lente
+ * n'est pas une descente. Le temps d'une descente va du départ au sommet à l'arrivée au creux : l'attente au pied des remontées, à vitesse nulle, n'est pas comptée.
+ * Null sans altitude ni temps.
  */
 export function journeeSki(brut: FluxBruts | null | undefined): EtapeSki[] | null {
   const altBrute = brut?.altitude;
@@ -121,24 +130,71 @@ export function journeeSki(brut: FluxBruts | null | undefined): EtapeSki[] | nul
   if (!brut || !altBrute || !temps || altBrute.length < 30 || temps.length !== altBrute.length) return null;
   const alt = lisser(altBrute, 7);
   const vit = brut.vitesse && brut.vitesse.length === alt.length ? brut.vitesse : null;
+  const dist = brut.distance && brut.distance.length === alt.length ? brut.distance : null;
   const points = sommets(alt);
   if (points.length < 2) return null;
+  const n = alt.length;
 
-  const etapes: EtapeSki[] = [];
+  // Les descentes : début réel (dernier point encore au sommet) et fin réelle (premier point arrivé au creux)
+  const descentes: { deb: number; fin: number; duree: number; vmax: number | null; vmoy: number | null }[] = [];
   for (let k = 1; k < points.length; k++) {
     const [a, b] = [points[k - 1], points[k]];
-    const delta = b.v - a.v;
-    const tranche = vit ? vit.slice(a.i, b.i + 1).filter(fini) : [];
+    if (a.v - b.v < DESCENTE_MIN_M) continue;
+    let deb = a.i;
+    for (let i = a.i; i <= b.i; i++) if (alt[i] >= a.v - MARGE_M) deb = i;
+    let fin = b.i;
+    for (let i = b.i; i >= deb; i--) if (alt[i] <= b.v + MARGE_M) fin = i;
+    if (fin <= deb) continue;
+    const tranche = vit ? vit.slice(deb, fin + 1).filter(fini) : [];
     const moyenne = tranche.length ? tranche.reduce((x, y) => x + y, 0) / tranche.length : null;
-    const descente = -delta >= DESCENTE_MIN_M && (moyenne == null || moyenne >= VITESSE_MIN_MS);
-    const duree = Math.max(0, temps[b.i] - temps[a.i]);
-    const vmax = descente && tranche.length ? Math.max(...tranche.filter((v) => v * 3.6 <= VITESSE_MAX_KMH)) * 3.6 : 0;
-    const dernier = etapes[etapes.length - 1];
-    if (descente) etapes.push({ type: 'descente', debutS: temps[a.i], dureeS: duree, deniveleM: Math.round(-delta), vmaxKmh: vmax > 0 ? Math.round(vmax) : null });
-    else if (dernier?.type === 'montee') {
-      dernier.dureeS += duree;
-      if (delta > 0) dernier.deniveleM += Math.round(delta);
-    } else etapes.push({ type: 'montee', debutS: temps[a.i], dureeS: duree, deniveleM: Math.max(0, Math.round(delta)), vmaxKmh: null });
+    if (moyenne != null && moyenne < VITESSE_MIN_MS) continue;
+    // Le temps de glisse : les arrêts au milieu de la piste (attendre un ami, une photo) ne comptent pas, ni dans la durée ni dans la vitesse moyenne.
+    // La distance parcourue est comptée sur les mêmes intervalles que le temps (un trou du GPS compte si on avançait encore à ce rythme-là).
+    let duree = temps[fin] - temps[deb];
+    let parcouru = dist ? dist[fin] - dist[deb] : 0;
+    if (vit) {
+      let mouvement = 0;
+      let metres = 0;
+      for (let i = deb; i < fin; i++) {
+        const dt = temps[i + 1] - temps[i];
+        if (dt <= 0) continue;
+        const dm = dist ? dist[i + 1] - dist[i] : 0;
+        const roule = dt <= 10 ? fini(vit[i]) && vit[i] >= VITESSE_ARRET_MS : dist ? dm / dt >= VITESSE_ARRET_MS : false;
+        if (roule) {
+          mouvement += dt;
+          metres += dm;
+        }
+      }
+      if (mouvement > 0) {
+        duree = mouvement;
+        parcouru = metres;
+      }
+    }
+    const vmoy = dist && duree > 0 ? (parcouru / duree) * 3.6 : null;
+    const sain = tranche.filter((v) => v * 3.6 <= VITESSE_MAX_KMH);
+    descentes.push({ deb, fin, duree, vmax: sain.length ? Math.max(...sain) * 3.6 : null, vmoy });
   }
-  return etapes.filter((e) => e.type === 'descente' || (e.dureeS >= 30 && e.deniveleM >= 10));
+  if (!descentes.length) return null;
+
+  const etapes: EtapeSki[] = [];
+  const montee = (de: number, a: number) => {
+    const gain = Math.round(alt[a] - alt[de]);
+    const duree = temps[a] - temps[de];
+    if (duree >= 30 && gain >= 10) etapes.push({ type: 'montee', debutS: temps[de], dureeS: duree, deniveleM: gain, vmoyKmh: null, vmaxKmh: null });
+  };
+  let curseur = 0;
+  for (const d of descentes) {
+    montee(curseur, d.deb);
+    etapes.push({
+      type: 'descente',
+      debutS: temps[d.deb],
+      dureeS: d.duree,
+      deniveleM: Math.round(alt[d.deb] - alt[d.fin]),
+      vmoyKmh: d.vmoy != null ? Math.round(d.vmoy) : null,
+      vmaxKmh: d.vmax != null && d.vmax > 0 ? Math.round(d.vmax) : null,
+    });
+    curseur = d.fin;
+  }
+  montee(curseur, n - 1);
+  return etapes;
 }
