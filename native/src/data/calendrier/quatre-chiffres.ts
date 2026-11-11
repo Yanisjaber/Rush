@@ -21,7 +21,7 @@ export function choisirChiffres<T extends { cle: string }>(chiffres: T[], ordre:
 
 /** L'ordre des quatre chiffres d'une sortie réalisée selon le sport (type brut : Run, Ride, AlpineSki…). */
 export function ordreSortie(sport: string, famille: string): { ordre: Ordre; repli: string[] } {
-  if (sport === 'AlpineSki' || sport === 'Snowboard') return { ordre: ['descendu', 'distance', 'descentes', 'duree', 'denivele'], repli: ['fc', 'charge'] };
+  if (sport === 'AlpineSki' || sport === 'Snowboard') return { ordre: ['duree', 'distance', 'descendu', 'descentes', 'denivele'], repli: ['fc', 'charge'] };
   if (sport === 'BackcountrySki') return { ordre: ['denivele', 'descendu', 'duree', 'distance'], repli: ['fc', 'charge'] };
   if (sport === 'NordicSki' || sport === 'RollerSki') return { ordre: ['distance', 'duree', 'vitesse', 'denivele'], repli: ['fc', 'charge'] };
   if (famille === 'course') return { ordre: ['distance', 'duree', 'allure', 'denivele'], repli: ['fc', 'charge'] };
