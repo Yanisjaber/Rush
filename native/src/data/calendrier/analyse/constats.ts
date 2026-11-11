@@ -1,3 +1,5 @@
+import { calculerProgression, niveauCoeur, RECUP_DEGRADEE, recuperationCardiaque, SEUIL_PROGRES } from './physio.ts';
+import type { SortieHistorique } from './physio.ts';
 import { allureFenetre, arrets, debutDerive, percentile, tempsParZoneCoeur } from './flux.ts';
 import type { Flux1Hz } from './flux.ts';
 import { alignementFiable, comparerGlobal, intentionDuPlan, jugerParDetection, mesurerSegments, partIntervalles, resumerBlocs, segmentsPlan } from './plan.ts';
@@ -29,6 +31,9 @@ export interface EntreeAnalyse {
   tss: number | null;
   prevue: PrevueAnalyse | null;
   refs: RefsPlan;
+  /** La sortie elle-même et les sorties passées, pour dire si tu progresses. Sans eux, pas de comparaison. */
+  courante?: { id: string; sport: string; date: string; coeurMoyen: number | null } | null;
+  historique?: SortieHistorique[];
 }
 
 export interface LigneAnalyse {
@@ -381,17 +386,21 @@ function redigerCompteRendu(e: EntreeAnalyse, constats: Constat[], zones: number
     const dep = par('depart_rapide');
     if (dep && !vite) dire(dep.code, dep.texte.replace(/^Trop rapide/, 'Départ trop rapide'));
     if (coeur && coeur.code !== 'derive_ok') dire(coeur.code, phraseCoeur(coeur));
+    const prog = constats.find((c) => c.code === 'progres' || c.code === 'recul');
+    if (prog) dire(prog.code, prog.texte);
   } else if ((intention === 'facile' || intention === 'modere') && objectif) {
     titre = intention === 'facile' ? `${mot[0].toUpperCase()}${mot.slice(1)} bien tenu` : 'Allure modérée tenue';
     dire(objectif.code, intention === 'facile' ? `Tu es resté tranquille : ${pct(p12)} % du temps en zones 1 et 2.` : `Tu as tenu l'allure : ${pct(p3)} % du temps en zone 3.`);
     if (coeur) dire(coeur.code, phraseCoeur(coeur));
+    const prog = constats.find((c) => c.code.startsWith('progres') || c.code === 'recul' || c.code === 'stable');
+    if (prog) dire(prog.code, prog.texte);
     const dep = par('depart_rapide');
     if (dep) dire(dep.code, dep.texte.replace(/^Trop rapide/, 'Départ un peu rapide'));
   } else {
     // Séance à intervalles, ou rien de précis à juger : on prend les constats les plus lourds, en phrases
     const rates = constats.filter((c) => c.code === 'bloc_rate' || c.code === 'bloc_absent');
     titre = rates.length ? 'Les cibles du plan ne sont pas tenues' : constats.some((c) => c.code === 'bloc_tenu') ? 'Plan tenu' : 'À retenir de la séance';
-    for (const c of [...constats].filter((x) => x.priorite >= 30 && x.label !== 'Données').sort((a, b) => b.priorite - a.priorite).slice(0, 3)) {
+    for (const c of [...constats].filter((x) => (x.priorite >= 30 || x.code === 'niveau_coeur') && x.label !== 'Données').sort((a, b) => b.priorite - a.priorite).slice(0, 3)) {
       dire(c.code, c.code.startsWith('derive_') ? phraseCoeur(c) : c.texte);
     }
   }
@@ -401,6 +410,58 @@ function redigerCompteRendu(e: EntreeAnalyse, constats: Constat[], zones: number
   if (ecart && !utilises.has(ecart.code)) dire(ecart.code, ecart.texte);
   for (const c of constats.filter((x) => x.priorite >= 80 && !utilises.has(x.code)).sort((a, b) => b.priorite - a.priorite)) dire(c.code, c.texte);
   return phrases.length ? { titre, phrases: phrases.slice(0, 4) } : null;
+}
+
+
+function niveau(e: EntreeAnalyse): Constat | null {
+  if (!e.flux) return null;
+  const n = niveauCoeur(e.flux);
+  if (!n) return null;
+  const part = e.hrMaxProfil ? ` (${pct(n.moyen / e.hrMaxProfil)} % de ta FC max)` : '';
+  return { code: 'niveau_coeur', priorite: 28, label: 'Cœur', texte: `Cœur moyen ${Math.round(n.moyen)} bpm${part}, pic à ${Math.round(n.pic)}.`, faits: { moyen: n.moyen } };
+}
+
+/** La récupération du cœur entre les efforts d'un fractionné : si elle se dégrade, la fatigue s'installe. */
+function recuperation(e: EntreeAnalyse): Constat | null {
+  const f = e.flux;
+  const struct = e.prevue?.structure;
+  if (!f || !e.prevue || !Array.isArray(struct)) return null;
+  const travail = segmentsPlan(struct, e.refs, e.prevue.sport).filter((s) => s.role === 'travail');
+  if (!travail.length || travail.every((s) => s.dureeS > 300)) return null; // les efforts longs d'un tempo n'ont pas de récup à lire
+  const dureeS = travail[0].dureeS;
+  const r = recuperationCardiaque(f, dureeS, null);
+  if (!r) return null;
+  const premiere = r.baisses[0];
+  const derniere = r.baisses[r.baisses.length - 1];
+  if (!(premiere > 0)) return null;
+  const degradee = derniere <= premiere * (1 - RECUP_DEGRADEE);
+  return {
+    code: degradee ? 'recup_degradee' : 'recup_ok',
+    priorite: degradee ? 62 : 24,
+    label: 'Cœur',
+    texte: degradee
+      ? `Ton cœur récupère de moins en moins : il baisse de ${Math.round(premiere)} bpm en 1 min après le 1er effort, de ${Math.round(derniere)} après le dernier. La fatigue s'installe.`
+      : `Ton cœur récupère bien entre les efforts : ${Math.round(premiere)} bpm de baisse en 1 min après le 1er, ${Math.round(derniere)} après le dernier.`,
+  };
+}
+
+/** Progresses-tu ? À cœur égal, vas-tu plus vite que sur tes dernières sorties du même type ? */
+function progression(e: EntreeAnalyse): Constat | null {
+  if (!e.courante || !e.historique || !e.flux || e.famille !== 'course') return null;
+  const nom = NOM_COURT[e.type];
+  const p = calculerProgression(
+    { id: e.courante.id, sport: e.courante.sport, type: e.type, date: e.courante.date, dureeS: e.dureeS ?? 0, distanceKm: e.distanceKm, coeurMoyen: e.courante.coeurMoyen, deniveleM: e.deniveleM },
+    e.historique,
+  );
+  if (!p) return null;
+  if (!p.comparable) {
+    return { code: 'progression_incomparable', priorite: 22, label: 'Progrès', texte: `Pas de comparaison possible avec tes derniers ${nom}s : ton cœur moyen était à ${Math.round(e.courante.coeurMoyen ?? 0)} bpm, contre ${Math.round(p.coeurMoyenRefs)} d'habitude.` };
+  }
+  const s = Math.abs(Math.round(p.secKm));
+  const sur = `tes ${p.nb} derniers ${nom}s`;
+  if (p.ecartPct >= SEUIL_PROGRES) return { code: 'progres', priorite: 58, label: 'Progrès', texte: `Tu progresses : à cœur égal, tu vas ${s} s/km plus vite que sur ${sur}.` };
+  if (p.ecartPct <= -SEUIL_PROGRES) return { code: 'recul', priorite: 58, label: 'Progrès', texte: `Pas de progrès cette fois : à cœur égal, tu vas ${s} s/km moins vite que sur ${sur}. Sommeil, fatigue ou chaleur, ça arrive.` };
+  return { code: 'stable', priorite: 36, label: 'Progrès', texte: `Niveau stable : à cœur égal, tu cours comme sur ${sur}.` };
 }
 
 /** Analyse la sortie : les constats les plus importants (5 au plus), en lignes courtes, et la consigne à retenir. */
@@ -423,6 +484,9 @@ export function analyserSortie(e: EntreeAnalyse): Analyse {
   pousser(zonesEstimees(e));
   pousser(wattsEstimes(e));
   pousser(coeurAbsent(e));
+  pousser(niveau(e));
+  pousser(recuperation(e));
+  pousser(progression(e));
 
   const gardes = [...constats].sort((a, b) => b.priorite - a.priorite).slice(0, 5);
   const lignes = gardes.map((c) => ({ label: c.label, texte: c.texte }));

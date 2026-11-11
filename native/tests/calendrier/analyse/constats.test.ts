@@ -205,3 +205,10 @@ test('compte rendu : un footing tenu est félicité en peu de mots', () => {
   assert.match(c.phrases[0], /Tu es resté tranquille : 100 %/);
   assert.match(c.phrases.join(' '), /Cœur stable/);
 });
+
+test('compte rendu : un footing tenu dit aussi si tu progresses (à cœur égal, sur les mêmes footings)', () => {
+  const histo = [5, 12, 19].map((j) => ({ id: `h${j}`, sport: 'Run', type: 'footing', date: `2026-10-${String(j).padStart(2, '0')}T08:00:00`, dureeS: 2400, distanceKm: 6, coeurMoyen: 140, deniveleM: 38 }));
+  const entree = { ...base(footing({ fc: () => 140, v: () => 1000 / 400 })), derivePct: 2, tss: 40, dureeS: 2142, distanceKm: 5.35, courante: { id: 'now', sport: 'Run', date: '2026-11-10T20:00:00', coeurMoyen: 140 }, historique: histo };
+  const c = analyserSortie(entree).compteRendu!;
+  assert.match(c.phrases.join(' '), /Tu progresses : à cœur égal, tu vas \d+ s\/km plus vite que sur tes 3 derniers footings\./);
+});

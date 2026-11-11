@@ -25,6 +25,7 @@ import { RepartitionSortie } from '@/components/graphes/RepartitionSortie';
 import { calculerZones, referenceCardio } from '@/data/reglages/profil';
 import { repartitionsSortie } from '@/data/outils/repartition-zones';
 import { useAjouts } from '@/hooks/useAjouts';
+import { useHistoriqueSorties } from '@/hooks/useHistoriqueSorties';
 import { usePrevueLiee } from '@/hooks/usePrevueLiee';
 import { useProfilSection } from '@/hooks/useProfilSection';
 import { useSeance } from '@/hooks/useSeance';
@@ -44,6 +45,7 @@ export default function Seance() {
   const [erreurEcart, setErreurEcart] = useState('');
   const { supprimerSortie } = useAjouts();
   const liee = usePrevueLiee(seance);
+  const historique = useHistoriqueSorties(seance);
   const [enCours, setEnCours] = useState(false);
   const [erreurSuppression, setErreurSuppression] = useState('');
   const [supprimee, setSupprimee] = useState(false); // suppression réussie : écran vide le temps du retour (sinon « Séance introuvable » clignote)
@@ -142,6 +144,8 @@ export default function Seance() {
           wattsMesures: seance.device_watts ?? null,
           tss: seance.tss ?? null,
           prevue: liee.prevue,
+          courante: { id: seance.id, sport: seance.sport, date: String(seance.start_date_local), coeurMoyen: seance.avg_heartrate ?? null },
+          historique,
           refs: { ftp: Number(profil?.ftp) > 0 ? Number(profil?.ftp) : null, hrMax: Number(profil?.hr_max) > 0 ? Number(profil?.hr_max) : null, allureBase: seuilKmhAnalyse ? 3600 / seuilKmhAnalyse : null },
         })
       : null;
