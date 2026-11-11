@@ -92,6 +92,6 @@ export function PasZone({ texte, nom, unite, onPas, onSaisie, moins, plus }: Pro
 
 const styles = StyleSheet.create({
   pas: { flexDirection: 'row', alignItems: 'center', gap: espace.e1 },
-  fleche: { width: 44, height: 44, borderRadius: rayon.base, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  champ: { width: 64, height: 44, borderRadius: rayon.base, borderWidth: 1, textAlign: 'center', fontFamily: police.texte600, fontSize: 16, fontVariant: ['tabular-nums'] },
+  fleche: { width: 44, height: 44, borderRadius: rayon.rond, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  champ: { width: 64, height: 44, borderRadius: rayon.rond, borderWidth: 1, textAlign: 'center', fontFamily: police.texte600, fontSize: 16, fontVariant: ['tabular-nums'] },
 });
