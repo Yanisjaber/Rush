@@ -10,6 +10,9 @@ import type { Niveau, ProfilCourse } from './plan-course.ts';
 
 export type EtatCoureur = 'debutant' | 'reprise' | 'regulier' | 'en_hausse' | 'en_baisse' | 'irregulier';
 
+/** Ce qui limite le coureur d'après ses records sur deux distances : « endurance » = son temps se dégrade vite quand la distance augmente, « vitesse » = il tient bien la distance mais manque de vitesse pure */
+export type Limite = 'endurance' | 'vitesse' | 'equilibre';
+
 export interface Inconnue {
   /** Ce qu'on ne sait pas, en une phrase */
   sujet: string;
@@ -31,6 +34,10 @@ export interface AnalyseCoureur {
   /** 4 dernières fenêtres contre les 4 d'avant, en % (null s'il manque des semaines ou de la base) */
   tendancePourcent: number | null;
   niveau: Niveau | null;
+  /** Vitesse ou endurance : lu sur deux records de distances différentes, null si les données ne permettent pas de le dire */
+  limite: Limite | null;
+  /** L'exposant personnel entre les deux distances (ln(t2/t1) / ln(d2/d1)), null si non calculable */
+  exposant: number | null;
   /** Vrai si un effort rapide (course, test) de moins de 6 semaines fixe le niveau : sinon il vient de sorties plutôt modérées */
   effortRapideRecent: boolean;
   /** Ce que toute sa vie de coureur montre (vide s'il n'y a aucune sortie en base) */
@@ -44,6 +51,30 @@ export interface AnalyseCoureur {
 const EFFORT_RECENT_JOURS = 42;
 /** Au-delà de ±15 % entre les deux moitiés des 8 semaines, on parle de hausse ou de baisse (convention à nous) */
 const SEUIL_TENDANCE = 15;
+
+/** Exposant de référence entre distances (Riegel 1,06, déjà utilisé par le moteur) */
+const EXPOSANT_REFERENCE = 1.06;
+/** Écart autour de 1,06 à partir duquel on parle de limite d'endurance ou de vitesse (convention de lecture à nous : aucune étude ne le donne) */
+const ECART_EXPOSANT = 0.03;
+/** Les deux records doivent dater de moins de 120 jours l'un de l'autre, sinon la forme a changé entre les deux (convention à nous) */
+const ECART_MAX_JOURS = 120;
+/** Les deux distances doivent au moins faire un rapport de 1,6 (5 → 10 km, 10 → 21 km) pour que l'exposant ait un sens */
+const RAPPORT_MIN = 1.6;
+
+export function limiteDuCoureur(vie: NonNullable<ProfilCourse['vie']> | null | undefined): { limite: Limite; exposant: number } | null {
+  const e = vie?.meilleursParDistance ?? [];
+  let meilleur: { limite: Limite; exposant: number; rapport: number } | null = null;
+  for (let i = 0; i < e.length; i++) for (let j = i + 1; j < e.length; j++) {
+    const [c, l] = e[i].km < e[j].km ? [e[i], e[j]] : [e[j], e[i]];
+    const rapport = l.km / c.km;
+    if (rapport < RAPPORT_MIN || Math.abs(ecartJours(c.date, l.date)) > ECART_MAX_JOURS) continue;
+    const exposant = Math.log(l.secondes / c.secondes) / Math.log(rapport);
+    if (!Number.isFinite(exposant) || exposant < 0.9 || exposant > 1.3) continue; // un chiffre absurde (GPS, pause) : on ne s'en sert pas
+    const limite: Limite = exposant >= EXPOSANT_REFERENCE + ECART_EXPOSANT ? 'endurance' : exposant <= EXPOSANT_REFERENCE - ECART_EXPOSANT ? 'vitesse' : 'equilibre';
+    if (!meilleur || rapport > meilleur.rapport) meilleur = { limite, exposant: Math.round(exposant * 1000) / 1000, rapport };
+  }
+  return meilleur ? { limite: meilleur.limite, exposant: meilleur.exposant } : null;
+}
 
 const mediane = (v: number[]): number | null => {
   if (!v.length) return null;
@@ -71,6 +102,7 @@ export function analyserCoureur(profil: ProfilCourse | null, niveau: Niveau | nu
   const effortRapideRecent = !!effort && ecartJours(effort.date, aujourdhui) <= EFFORT_RECENT_JOURS;
 
   const vie = profil?.vie ?? null;
+  const lecture = limiteDuCoureur(vie);
   const avaitCouru = (vie?.sorties ?? 0) > 0;
   const aDesDonnees = !!profil && (profil.recent.sorties >= 3 || profil.meilleurEffort !== null || profil.sorties90 > 0);
   let etat: EtatCoureur;
@@ -105,7 +137,16 @@ export function analyserCoureur(profil: ProfilCourse | null, niveau: Niveau | nu
     if (vie.sommeilParAnnee && vie.sommeilParAnnee.length) { const q = vie.sommeilParAnnee[vie.sommeilParAnnee.length - 1]; if (q.dureeMoyenneH !== null) passe.push(`Ton sommeil en ${q.annee} : ${String(q.dureeMoyenneH).replace('.', ',')} h par nuit en moyenne (${q.nuits} nuits).`); }
   }
 
+  if (lecture) passe.push(lecture.limite === 'endurance'
+    ? `Tes records sur deux distances montrent que ton temps se dégrade vite quand la distance augmente (exposant ${String(lecture.exposant).replace('.', ',')}) : c'est ton endurance qu'il faut construire.`
+    : lecture.limite === 'vitesse'
+      ? `Tes records sur deux distances montrent que tu tiens bien la distance (exposant ${String(lecture.exposant).replace('.', ',')}) : c'est ta vitesse qu'il faut travailler.`
+      : `Tes records sur deux distances sont équilibrés (exposant ${String(lecture.exposant).replace('.', ',')}) : vitesse et endurance se tiennent.`);
+
   const inconnues: Inconnue[] = [];
+  if (!lecture && etat !== 'debutant') {
+    inconnues.push({ sujet: "je ne peux pas dire si c'est ta vitesse ou ton endurance qui te limite : il me manque deux records récents sur des distances différentes (par exemple un 5 km et un 10 km)", question: "As-tu un temps récent sur une autre distance que celle de ta course (5 km, 10 km, semi) ?" });
+  }
   if (etat === 'reprise' && vie && (vie.joursDepuisDerniere ?? 0) >= 90) {
     inconnues.push({ sujet: `je ne sais pas pourquoi tu t'es arrêté il y a ${vie.joursDepuisDerniere} jours (blessure, vie, envie)`, question: "Pourquoi as-tu arrêté de courir, et ton corps est-il prêt (douleur, gêne) ?" });
   }
@@ -134,5 +175,5 @@ export function analyserCoureur(profil: ProfilCourse | null, niveau: Niveau | nu
   if (volumeTypique !== null && etat !== 'debutant') phrases.push(`Une semaine typique : environ ${Math.round(volumeTypique)} min, ${sortiesParSemaine.toFixed(1).replace('.', ',')} sortie${sortiesParSemaine >= 1.5 ? 's' : ''} par semaine ; ta plus grosse récente : ${Math.round(pic)} min.`);
   if (effortRapideRecent && effort) phrases.push(`Ton niveau repose sur un effort rapide récent (${effort.km} km le ${effort.date}).`);
 
-  return { etat, semainesActives: actives.length, semainesObservees: semaines.length, sortiesParSemaine, volumeTypiqueMinutes: volumeTypique === null ? null : Math.round(volumeTypique), picMinutes: pic, tendancePourcent: tendance, niveau, effortRapideRecent, passe, inconnues, phrases: [...phrases, ...passe] };
+  return { etat, semainesActives: actives.length, semainesObservees: semaines.length, sortiesParSemaine, volumeTypiqueMinutes: volumeTypique === null ? null : Math.round(volumeTypique), picMinutes: pic, tendancePourcent: tendance, niveau, effortRapideRecent, limite: lecture?.limite ?? null, exposant: lecture?.exposant ?? null, passe, inconnues, phrases: [...phrases, ...passe] };
 }

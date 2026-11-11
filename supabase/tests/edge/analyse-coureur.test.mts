@@ -18,13 +18,14 @@ test('régulier avec un effort rapide récent : rien à demander', () => {
   const a = analyserCoureur(profil([180, 190, 185, 200, 195, 190, 200, 190], [4, 4, 4, 4, 4, 4, 4, 4], { effortRecent: effort('2026-10-20') }), null, AUJ);
   assert.equal(a.etat, 'regulier');
   assert.equal(a.effortRapideRecent, true);
-  assert.equal(a.inconnues.length, 0);
+  assert.ok(!a.inconnues.some((i) => /effort rapide/.test(i.sujet)));
+  assert.ok(a.inconnues.some((i) => /vitesse ou ton endurance/.test(i.sujet)), 'sans deux distances, il ne peut pas dire ce qui limite');
 });
 test('régulier mais sans effort rapide récent : le code dit ce qu\'il ne sait pas et pose la question', () => {
   const a = analyserCoureur(profil([180, 190, 185, 200, 195, 190, 200, 190], [4, 4, 4, 4, 4, 4, 4, 4], { effortRecent: effort('2026-08-01') }), null, AUJ);
   assert.equal(a.effortRapideRecent, false);
-  assert.equal(a.inconnues.length, 1);
-  assert.match(a.inconnues[0].question, /test chronométré/);
+  const q = a.inconnues.find((i) => /effort rapide/.test(i.sujet))!;
+  assert.match(q.question, /test chronométré/);
 });
 test('irrégulier, hausse, baisse, reprise', () => {
   assert.equal(analyserCoureur(profil([0, 120, 0, 0, 100, 0, 0, 90], [0, 2, 0, 0, 2, 0, 0, 2], { effortRecent: effort('2026-11-01') }), null, AUJ).etat, 'irregulier');
@@ -78,4 +79,19 @@ test('toute la vie : le plan de reprise part de 35 % de la plus grosse semaine d
   const r = planifierCourse({ date: course, km: 10, tempsCibleMinutes: 60, seancesParSemaine: 3, sansTest: true }, [], base, p);
   assert.equal(r.bilan.volumeDepart, 112, String(r.bilan.volumeDepart));
   assert.doesNotMatch(r.bilan.debutant ? 'debutant' : '', /debutant/);
+});
+
+import { limiteDuCoureur } from '../../functions/_shared/analyse-coureur.ts';
+const vieAvec = (efforts: { distanceKm: number; date: string; km: number; secondes: number }[]) => ({ meilleursParDistance: efforts }) as never;
+test('vitesse ou endurance : lu sur deux records proches dans le temps (exposant personnel)', () => {
+  // 5 km en 20:00 et 10 km en 41:30 → exposant ln(2490/1200)/ln(2) ≈ 1,05 (équilibre) ; 10 km en 43:30 → ≈ 1,12 (endurance à construire) ; 10 km en 40:00 → ≈ 1,0 (vitesse à travailler)
+  const e5 = { distanceKm: 5, date: '2026-09-01', km: 5, secondes: 1200 };
+  assert.equal(limiteDuCoureur(vieAvec([e5, { distanceKm: 10, date: '2026-09-20', km: 10, secondes: 2490 }]))!.limite, 'equilibre');
+  assert.equal(limiteDuCoureur(vieAvec([e5, { distanceKm: 10, date: '2026-09-20', km: 10, secondes: 2610 }]))!.limite, 'endurance');
+  assert.equal(limiteDuCoureur(vieAvec([e5, { distanceKm: 10, date: '2026-09-20', km: 10, secondes: 2400 }]))!.limite, 'vitesse');
+  // deux records à plus de 120 jours d'écart, une seule distance, ou un chiffre absurde : pas de conclusion
+  assert.equal(limiteDuCoureur(vieAvec([e5, { distanceKm: 10, date: '2026-02-01', km: 10, secondes: 2610 }])), null);
+  assert.equal(limiteDuCoureur(vieAvec([e5])), null);
+  assert.equal(limiteDuCoureur(vieAvec([e5, { distanceKm: 10, date: '2026-09-10', km: 10, secondes: 1800 }])), null);
+  assert.equal(limiteDuCoureur(null), null);
 });

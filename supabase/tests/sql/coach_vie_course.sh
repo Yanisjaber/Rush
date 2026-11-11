@@ -68,6 +68,7 @@ select n, controle, ok from (
   union all select 8, 'charge maximale 55 le 2025-05-10 ; VO2max du profil 52,5', (select (j->'ctl_max'->>'ctl')::numeric = 55 and (j->>'vo2max_course_profil')::numeric = 52.5 from v)
   union all select 9, 'sans accord : ni poids ni sommeil', (select j->'poids_par_annee' = 'null'::jsonb and j->'sommeil_par_annee' = 'null'::jsonb from v)
   union all select 10, 'avec accords : poids par année (80 puis 74) et sommeil 2025 (2 nuits, 7,5 h)', (select (j2->'poids_par_annee'->1->>'moyenne_kg')::numeric = 74 and (j2->'sommeil_par_annee'->0->>'nuits')::int = 2 and (j2->'sommeil_par_annee'->0->>'duree_moyenne_h')::numeric = 7.5 from v)
+  union all select 12, 'meilleurs temps par distance sur 24 mois : seulement le 10 km de 2025 (47:00)', (select jsonb_array_length(j->'meilleurs_par_distance') = 1 and (j->'meilleurs_par_distance'->0->>'distance_km')::numeric = 10 and (j->'meilleurs_par_distance'->0->>'secondes')::int = 2820 from v)
   union all select 11, 'AUCUN texte externe : ni nom piégé ni balise', (select position('IGNORE' in (j::text || j2::text)) = 0 and position('onerror' in (j::text || j2::text)) = 0 from v)
 ) t order by n;
 set request.jwt.claim.sub = '00000000-0000-4000-8000-00000000000b';

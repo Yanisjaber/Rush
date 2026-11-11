@@ -22,7 +22,7 @@ import type { ProfilCoureur } from './profil-coureur.ts';
 export { reglesDuProfil } from './profil-coureur.ts';
 export type { ReglesProfil } from './profil-coureur.ts';
 import { analyserCoureur } from './analyse-coureur.ts';
-import type { AnalyseCoureur } from './analyse-coureur.ts';
+import type { AnalyseCoureur, Limite } from './analyse-coureur.ts';
 import { tssEstime, typeSeance } from './menu-seances.ts';
 import { ctxAvec, etiquetteDate } from './planning.ts';
 import type { DetailSeance, Operation, SeancePrevue } from './planning.ts';
@@ -62,6 +62,8 @@ export interface VieCourse {
   plusLongueSortie: { date: string; km: number; minutes: number } | null;
   arrets: { du: string; au: string; jours: number }[];
   meilleurEffortVie: { date: string; km: number; secondes: number; equiv10Secondes: number } | null;
+  /** Meilleur temps réel sur 5, 10 et 21,1 km (24 derniers mois) */
+  meilleursParDistance: { distanceKm: number; date: string; km: number; secondes: number }[];
   meilleurParAnnee: { annee: number; date: string; km: number; secondes: number; equiv10Secondes: number }[];
   ctlMax: { date: string; ctl: number } | null;
   vo2maxCourse: number | null;
@@ -93,6 +95,7 @@ export function vieCourseDepuisResume(resume: any): VieCourse | null {
     plusLongueSortie: pl && typeof pl.date === 'string' ? { date: pl.date, km: nb(pl.km) ?? 0, minutes: nb(pl.minutes) ?? 0 } : null,
     arrets: liste(v.arrets).filter((a) => typeof a?.du === 'string' && typeof a?.au === 'string').map((a) => ({ du: a.du, au: a.au, jours: nb(a.jours) ?? 0 })),
     meilleurEffortVie: ef(v.meilleur_effort_vie),
+    meilleursParDistance: liste(v.meilleurs_par_distance).filter((e) => typeof e?.date === 'string' && (nb(e.km) ?? 0) > 0 && (nb(e.secondes) ?? 0) > 0).map((e) => ({ distanceKm: nb(e.distance_km) ?? 0, date: e.date, km: nb(e.km)!, secondes: nb(e.secondes)! })),
     meilleurParAnnee: liste(v.meilleur_effort_par_annee).map((e) => ({ annee: nb(e?.annee) ?? 0, e: ef(e) })).filter((x) => x.annee > 0 && x.e).map((x) => ({ annee: x.annee, ...x.e! })),
     ctlMax: v.ctl_max && typeof v.ctl_max.date === 'string' && nb(v.ctl_max.ctl) !== null ? { date: v.ctl_max.date, ctl: nb(v.ctl_max.ctl)! } : null,
     vo2maxCourse: nb(v.vo2max_course_profil),
@@ -438,7 +441,7 @@ const ECHAUF = 12;
 const RETOUR = 10;
 
 /** Séance de qualité : le contenu dépend de la phase et de la position dans la phase (la difficulté monte) */
-function qualite(phase: Phase, rang: number, a: Allures, second: boolean): SeanceCourse {
+function qualite(phase: Phase, rang: number, a: Allures, second: boolean, limite: Limite | null = null): SeanceCourse {
   const avec = (nom: string, type: string, principal: BlocStructure, resume: string, but: string) =>
     assembler(nom, type, [bloc('warmup', `Échauffement à ${ms(a.facile)}/km`, ECHAUF, a.facile, a), principal, bloc('cooldown', `Retour au calme à ${ms(a.facile)}/km`, RETOUR, a.facile, a)], `${ECHAUF} min d'échauffement · ${resume} · ${RETOUR} min de retour au calme`, but);
   const pick = <T,>(liste: T[]): T => liste[Math.min(rang, liste.length - 1)];
@@ -446,11 +449,13 @@ function qualite(phase: Phase, rang: number, a: Allures, second: boolean): Seanc
   if (phase === 'base') {
     // Une semaine sur deux, du seuil par morceaux (fiche course-5k-10k-plans, Haugen 2022 : intervalles de seuil de 3 à 15 min, 1 min de récupération) à la place du fartlek ;
     // les durées 6 / 8 / 10 min sont un choix à nous dans cette fourchette, qui monte avec la phase
-    if (rang % 2 === 1) {
-      const [reps, mins] = [[3, 6], [3, 8], [3, 10]][Math.min((rang - 1) / 2, 2)];
+    // La limite du coureur (lue sur ses records, voir analyse-coureur.ts) décide : endurance à construire → du seuil chaque semaine ; vitesse à travailler → du fartlek chaque semaine ; sinon une semaine sur deux
+    const seuil = limite === 'endurance' ? true : limite === 'vitesse' ? false : rang % 2 === 1;
+    if (seuil) {
+      const [reps, mins] = [[3, 6], [3, 8], [3, 10]][Math.min(limite === 'endurance' ? rang : (rang - 1) / 2, 2)];
       return avec(`Seuil ${reps} × ${mins} min`, 'seuil', intervalles(`${reps} × ${mins} min à ${ms(a.seuil)}/km, récup 1:00 trot`, reps, mins, a.seuil, 60, a), `${reps} × ${mins} min à ${ms(a.seuil)}/km (récup 1:00)`, "Du seuil par morceaux : un effort soutenu mais contrôlé, qui repousse le moment où tu t'essouffles et prépare le travail plus rapide des semaines suivantes.");
     }
-    const n = [6, 8, 10][Math.min(rang / 2, 2)];
+    const n = [6, 8, 10][Math.min(limite === 'vitesse' ? rang : rang / 2, 2)];
     return avec(`Fartlek ${n} × 1 min`, 'fractionne', intervalles(`${n} × 1 min à ${ms(a.cinqK)}/km, récup 1:00 trot`, n, 1, a.cinqK, 60, a), `${n} × 1 min à ${ms(a.cinqK)}/km (récup 1:00)`, "Du rythme sans pression : tu réveilles les jambes à ton allure 5 km, avec autant de récupération que d'effort.");
   }
   if (phase === 'developpement') {
@@ -815,6 +820,11 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   const longueMiniEff = longue30 ? Math.min(rp.longueMini, longue30) : rp.longueMini;
   let longuePrecedente = Math.max(longueMiniEff, Math.min(longueMax, longue30 || profil?.recent.plusLongueMinutes || rp.longueMini));
 
+  // Le portrait du coureur décide du contenu des séances de qualité (et pas un calendrier type)
+  const analyse = analyserCoureur(profil, niveau, aujourdhui);
+  const limite: Limite | null = debutant ? null : analyse.limite;
+  if (limite === 'endurance') regles.utilise.push(`tes records montrent que ton temps se dégrade vite avec la distance (exposant ${String(analyse.exposant).replace('.', ',')}) : plus de seuil et de tempo, moins de vitesse pure`);
+  else if (limite === 'vitesse') regles.utilise.push(`tes records montrent que tu tiens bien la distance (exposant ${String(analyse.exposant).replace('.', ',')}) : plus de fartlek et de vitesse (VMA), moins de seuil`);
   const liste = phases(nSemaines);
   const compteurs: Record<Phase, number> = { base: 0, developpement: 0, specifique: 0, affutage: 0 };
   const operations: Operation[] = [];
@@ -908,9 +918,10 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
 
     // les durées
     // Le contenu alterne : en développement avec 3 séances, une semaine de VMA puis une semaine de tempo ; la semaine de récupération a une qualité légère (fartlek)
-    const qualiteAlternee = phase === 'developpement' && kSemaine < 4 && rang % 2 === 1;
-    const qualiteDeLaSemaine = (): SeanceCourse => (recuperation || debutant ? qualite('base', 0, a, false) : qualite(phase, rang, a, qualiteAlternee));
-    const seancesQualite = roles.map((r) => (r === 'qualite1' ? (w === 0 && avecTest ? seanceTest(a, typeTest) : qualiteDeLaSemaine()) : r === 'qualite2' ? qualite(phase, rang, a, true) : null));
+    // Endurance à construire : du tempo deux semaines sur trois ; vitesse à travailler : de la VMA deux semaines sur trois ; sinon une semaine sur deux
+    const qualiteAlternee = phase === 'developpement' && kSemaine < 4 && (limite === 'endurance' ? rang % 3 !== 2 : limite === 'vitesse' ? rang % 3 === 2 : rang % 2 === 1);
+    const qualiteDeLaSemaine = (): SeanceCourse => (recuperation || debutant ? qualite('base', 0, a, false) : qualite(phase, rang, a, qualiteAlternee, limite));
+    const seancesQualite = roles.map((r) => (r === 'qualite1' ? (w === 0 && avecTest ? seanceTest(a, typeTest) : qualiteDeLaSemaine()) : r === 'qualite2' ? qualite(phase, rang, a, true, limite) : null));
     const minutesQualite = seancesQualite.reduce((t, s) => t + (s?.minutes ?? 0), 0);
     const nLongue = roles.filter((r) => r === 'longue').length;
     const nFaciles = roles.filter((r) => r === 'facile').length;
@@ -983,7 +994,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     lignesSemaines.push(`Semaine ${w + 1} (${du}) : ${NOM_PHASE[phase]}${recuperation ? ', récupération' : ''}, ${posees} séance${posees > 1 ? 's' : ''}, ${totalSemaine} min`);
   }
 
-  const bilan: Bilan = { analyse: analyserCoureur(profil, niveau, aujourdhui), km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null, volumeDepart, derniers7, profilUtilise: regles.utilise, debutant, provisoire, typeTest, contraintesCalendrier, monteePourcent: Math.round((regles.croissance - 1) * 100) };
+  const bilan: Bilan = { analyse, km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null, volumeDepart, derniers7, profilUtilise: regles.utilise, debutant, provisoire, typeTest, contraintesCalendrier, monteePourcent: Math.round((regles.croissance - 1) * 100) };
   return { operations, abandons, semaines: lignesSemaines, bilan, message: messageBilan(bilan) };
 }
 

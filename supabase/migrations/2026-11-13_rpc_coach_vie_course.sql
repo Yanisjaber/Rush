@@ -49,6 +49,13 @@ begin
   effort as (
     select d, km, t, t * power(10 / km, 1.06) as equiv10 from c where km >= 4.8
   ),
+  -- Meilleur temps réel sur 5 km (4,8 à 6), 10 km (9,5 à 11) et semi (20 à 22,5), sur les 24 derniers mois : de quoi lire si c'est la vitesse ou l'endurance qui limite
+  par_dist as (
+    select distinct on (cat) cat, d, km, t from (
+      select case when km >= 4.8 and km < 6 then 5 when km >= 9.5 and km < 11 then 10 when km >= 20 and km < 22.5 then 21 end as cat, d, km, t
+      from c where d > p_date - 730
+    ) x where cat is not null order by cat, t * (case when cat = 5 then 5 / km when cat = 10 then 10 / km else 21.0975 / km end)
+  ),
   meilleur_an as (
     select distinct on (extract(year from d)) extract(year from d)::int as annee, d, km, t, equiv10
     from effort order by extract(year from d), equiv10
@@ -65,6 +72,7 @@ begin
     'plus_longue_sortie', (select jsonb_build_object('date', d, 'km', round(km, 1), 'minutes', round(t / 60.0)) from c order by t desc limit 1),
     'arrets', (select coalesce(jsonb_agg(jsonb_build_object('du', du, 'au', au, 'jours', jours) order by du), '[]'::jsonb) from (select * from trous order by du desc limit 12) z),
     'meilleur_effort_vie', (select jsonb_build_object('date', d, 'km', round(km, 2), 'secondes', round(t), 'equiv_10km_secondes', round(equiv10)) from effort order by equiv10 limit 1),
+    'meilleurs_par_distance', (select coalesce(jsonb_agg(jsonb_build_object('distance_km', case when cat = 21 then 21.1 else cat end, 'date', d, 'km', round(km, 2), 'secondes', round(t)) order by cat), '[]'::jsonb) from par_dist),
     'meilleur_effort_par_annee', (select coalesce(jsonb_agg(jsonb_build_object('annee', annee, 'date', d, 'km', round(km, 2), 'secondes', round(t), 'equiv_10km_secondes', round(equiv10)) order by annee), '[]'::jsonb) from meilleur_an)
   ) into v_res;
 

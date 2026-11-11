@@ -620,3 +620,24 @@ test('reprise après un long arrêt : pas de test à fond ni de séance dure tan
   assert.ok(!o.slice(0, 3).some((x) => /fractionne|tempo|seuil/.test(x.proposition.type)), 'aucune séance dure dans les premières semaines : ' + o.slice(0, 3).map((x) => x.detail!.nom).join(' | '));
   assert.ok(r.bilan!.profilUtilise.some((u) => /reprise : aucune séance dure/.test(u)));
 });
+
+test('adaptation : à profil identique, un coureur à qui manque l\'endurance et un coureur à qui manque la vitesse n\'ont pas les mêmes séances de qualité', () => {
+  const vie = (secondes10: number) => ({ premiereSortie: '2020-01-01', derniereSortie: '2026-11-05', joursDepuisDerniere: 4, sorties: 400, kmTotal: 3000, heuresTotal: 280, annees: [], plusGrosseSemaine: { du: '2026-09-01', sorties: 4, km: 40, minutes: 240 }, plusLongueSortie: null, arrets: [], meilleurEffortVie: null, meilleurParAnnee: [], ctlMax: null, vo2maxCourse: null, poidsParAnnee: null, sommeilParAnnee: null,
+    meilleursParDistance: [{ distanceKm: 5, date: '2026-09-01', km: 5, secondes: 1200 }, { distanceKm: 10, date: '2026-09-20', km: 10, secondes: secondes10 }] });
+  const course = ajouterJours(AUJ, 77);
+  const plan = (s10: number) => {
+    const p: ProfilCourse = { ...profilAvecVolume(32, 32 * 45, 80, 180), vie: vie(s10) };
+    const r = planifierCourse({ date: course, km: 10, tempsCibleMinutes: 45, seancesParSemaine: 3, sansTest: true }, [], ctx({ competitions: [{ date: course }] }), p);
+    return { noms: ajouts(r.operations).filter((o) => dur(o)).map((o) => o.detail!.nom), bilan: r.bilan! };
+  };
+  const endurance = plan(2610); // 10 km en 43:30 contre 5 km en 20:00 : le temps se dégrade vite
+  const vitesse = plan(2400);   // 10 km en 40:00 : il tient bien la distance
+  assert.equal(endurance.bilan.analyse.limite, 'endurance');
+  assert.equal(vitesse.bilan.analyse.limite, 'vitesse');
+  const seuilsE = endurance.noms.filter((n) => /^Seuil|^Tempo/.test(n)).length;
+  const seuilsV = vitesse.noms.filter((n) => /^Seuil|^Tempo/.test(n)).length;
+  assert.ok(seuilsE > seuilsV, `seuil/tempo : endurance ${seuilsE} contre vitesse ${seuilsV}`);
+  assert.notDeepEqual(endurance.noms, vitesse.noms);
+  assert.ok(endurance.bilan.profilUtilise.some((u) => /plus de seuil et de tempo/.test(u)));
+  assert.ok(vitesse.bilan.profilUtilise.some((u) => /plus de fartlek et de vitesse/.test(u)));
+});
