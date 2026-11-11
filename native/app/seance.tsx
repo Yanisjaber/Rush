@@ -2,14 +2,16 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GraphesSynchro } from '@/components/graphes/GraphesSynchro';
-import { PageCoachSortie } from '@/components/graphes/PageCoachSortie';
+import { PageAnalyseSortie } from '@/components/graphes/PageAnalyseSortie';
 import { PageDetailsSortie } from '@/components/graphes/PageDetailsSortie';
 import { VueSortie } from '@/components/graphes/VueSortie';
 import { ListeTours } from '@/components/ui/ListeTours';
 import { PucesEcart } from '@/components/ui/PucesEcart';
 import { StatCle } from '@/components/ui/StatCle';
 import { sortieSupprimable } from '@/data/calendrier/ajouts';
-import { signauxAnalyse } from '@/data/calendrier/signaux-analyse';
+import { analyserSortie } from '@/data/calendrier/analyse/constats';
+import { flux1Hz } from '@/data/calendrier/analyse/flux';
+import { typeDeSeance } from '@/data/calendrier/signaux-analyse';
 import { chiffreEcarte, pucesEcart } from '@/data/calendrier/donnees-ecartees';
 import { chiffresSeance, lignesTours, troisChiffres } from '@/data/calendrier/seance-detail';
 import { deriveCardiaque } from '@/data/outils/derive-cardiaque';
@@ -23,8 +25,7 @@ import { RepartitionSortie } from '@/components/graphes/RepartitionSortie';
 import { calculerZones, referenceCardio } from '@/data/reglages/profil';
 import { repartitionsSortie } from '@/data/outils/repartition-zones';
 import { useAjouts } from '@/hooks/useAjouts';
-import { useAnalyseSortie } from '@/hooks/useAnalyseSortie';
-import { useAccesCoach } from '@/stores/coach';
+import { usePrevueLiee } from '@/hooks/usePrevueLiee';
 import { useProfilSection } from '@/hooks/useProfilSection';
 import { useSeance } from '@/hooks/useSeance';
 import { espace, rayon } from '@/theme/couleurs';
@@ -42,8 +43,7 @@ export default function Seance() {
   const { ligne: profil } = useProfilSection('physiologie');
   const [erreurEcart, setErreurEcart] = useState('');
   const { supprimerSortie } = useAjouts();
-  const accesCoach = useAccesCoach();
-  const analyse = useAnalyseSortie(id ? String(id) : null);
+  const liee = usePrevueLiee(seance);
   const [enCours, setEnCours] = useState(false);
   const [erreurSuppression, setErreurSuppression] = useState('');
   const [supprimee, setSupprimee] = useState(false); // suppression réussie : écran vide le temps du retour (sinon « Séance introuvable » clignote)
@@ -123,13 +123,29 @@ export default function Seance() {
     ...(zonesAllure && familleAffichage(seance.sport) === 'course' ? { allure: zonesAllure.slice(1).map((z) => 3600 / z.de) } : {}),
   };
   const notes = (seance.user_notes ?? '').trim();
-  // La page 4 (course et vélo seulement, compte avec accès au coach) : le retour du coach, écrit à partir des chiffres tirés des flux
+  // La page 4 (course et vélo) : l'analyse de la sortie, calculée par le code à partir des flux, du profil et de la séance prévue du même jour
   const familleCoach = familleSortie === 'course' || familleSortie === 'velo' ? familleSortie : null;
-  const signaux = familleCoach
-    ? signauxAnalyse({ nom: seance.name, dureeS: seance.moving_time ?? null, famille: familleCoach, brut: courbes?.brut, derivePct: derive ? derive.pct : null, mesureCoeur: mesuresZones.find((m) => m.cle === 'fc' && m.zones.length > 0), zonesEstimees: !!refCardio?.estimee })
-    : null;
-  // Il faut de quoi analyser : au moins les kilomètres, la dérive ou le temps par zone
-  const avecPageCoach = !!signaux && accesCoach && (!!signaux.allures_km || signaux.derive_pct !== undefined || !!signaux.zones_pct);
+  const seuilKmhAnalyse = Number(extrasProfil.threshold_speed) > 0 ? Number(extrasProfil.threshold_speed) : null;
+  const analyse =
+    familleCoach && liee.chargee
+      ? analyserSortie({
+          famille: familleCoach,
+          type: typeDeSeance(seance.name, seance.moving_time ?? null),
+          flux: flux1Hz(courbes?.brut),
+          dureeS: seance.moving_time ?? null,
+          distanceKm: seance.distance_km ?? null,
+          deniveleM: seance.total_elevation_gain ?? null,
+          derivePct: derive ? derive.pct : null,
+          zonesCardio: zonesCardio ? zonesCardio.map((z) => z.de) : null,
+          zonesEstimees: !!refCardio?.estimee,
+          hrMaxProfil: Number(profil?.hr_max) > 0 ? Number(profil?.hr_max) : null,
+          wattsMesures: seance.device_watts ?? null,
+          tss: seance.tss ?? null,
+          prevue: liee.prevue,
+          refs: { ftp: Number(profil?.ftp) > 0 ? Number(profil?.ftp) : null, hrMax: Number(profil?.hr_max) > 0 ? Number(profil?.hr_max) : null, allureBase: seuilKmhAnalyse ? 3600 / seuilKmhAnalyse : null },
+        })
+      : null;
+  const avecPageCoach = !!analyse && analyse.lignes.length > 0;
   const supprimable = sortieSupprimable(seance);
   const jour = String(seance.start_date_local).slice(0, 10);
   const heureLue = /T(\d{2}:\d{2})/.exec(String(seance.start_date_local ?? ''))?.[1];
@@ -190,7 +206,7 @@ export default function Seance() {
         }
         repartitions={mesuresZones.length ? <RepartitionSortie mesures={mesuresZones} couleur={couleur} /> : undefined}
         graphesHaut={courbes ? (hauteur, onGlisse) => <GraphesSynchro courbes={courbes} km={seance.distance_km ?? null} rythme={familleAffichage(seance.sport) === 'velo' ? 'vitesse' : 'allure'} couleur={couleur} dureeS={seance.moving_time ?? null} hauteur={hauteur} bandes={bandesZones} onGlisse={onGlisse} /> : undefined}
-        pageCoach={avecPageCoach ? <PageCoachSortie couleur={couleur} etat={analyse.etat} onDemander={() => signaux && analyse.demander(signaux)} /> : undefined}
+        pageCoach={avecPageCoach && analyse ? <PageAnalyseSortie couleur={couleur} analyse={analyse} nomPlan={liee.prevue ? liee.prevue.name || 'séance du calendrier' : null} /> : undefined}
         pageDetails={(onGlisse) => (
           <PageDetailsSortie
             chiffres={chiffres}
