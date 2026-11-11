@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { EcranSection } from '@/components/ecrans/EcranSection';
 import { Bloc } from '@/components/feuilles/Bloc';
@@ -8,14 +8,11 @@ import { PasZone } from '@/components/reglages/PasZone';
 import { Bouton } from '@/components/ui/Bouton';
 import { Pastille } from '@/components/ui/Pastille';
 import { SelecteurSegments } from '@/components/ui/SelecteurSegments';
-import { chargerSeances, chargerTrace, enregistrerProfil } from '@/data/acces/api';
-import { formatDureePrecise } from '@/data/outils/format';
-import { repartitionsSortie } from '@/data/outils/repartition-zones';
+import { enregistrerProfil } from '@/data/acces/api';
 import {
   bornesPourcent, calculerZones, deplacerBorne, lireValeurZone, MODELES_ZONES, pasZone, persoValide, referenceCardio, texteAllure, zonesPersoDuProfil,
   type ModeleZones, type ZonesPerso,
 } from '@/data/reglages/profil';
-import { familleAffichage } from '@/data/sports/familles';
 import { useProfilSection } from '@/hooks/useProfilSection';
 import { useAuth } from '@/stores/auth';
 import { espace, rayon } from '@/theme/couleurs';
@@ -71,14 +68,6 @@ export default function Zones() {
   const texteValeur = useCallback((v: number) => (onglet === 'allure' ? texteAllure(v).replace('/km', '') : String(Math.round(v))), [onglet]);
   const valeurBorne = (i: number) => (ref * bornes[i]) / 100;
 
-  const revenirAuCalcul = () => {
-    setMessage('');
-    setPerso((a) => {
-      const suite = { ...a };
-      delete suite[onglet];
-      return suite;
-    });
-  };
   const deplacer = (i: number, valeur: number) => {
     const n = deplacerBorne(onglet, ref, bornes, i, valeur);
     if (n) {
@@ -112,9 +101,6 @@ export default function Zones() {
     setEnregistre(JSON.stringify(zonesPerso));
     setMessage('Enregistré. Les courbes et le temps par zone utilisent tes zones.');
   };
-
-  // L'aperçu : le temps par zone de ta dernière sortie avec les zones en cours de réglage (chargé à l'ouverture de l'onglet)
-  const apercu = useApercu(onglet, ref > 0, userId && !demo ? userId : null, ligne, perso);
 
   if (chargement) return <EcranSection><Text style={[typo.corps, { color: p.texteDoux }]}>Chargement…</Text></EcranSection>;
   return (
@@ -162,18 +148,6 @@ export default function Zones() {
                 ))}
               </View>
 
-              <View style={{ gap: espace.e2 }}>
-                <Text style={[typo.petit, { color: p.texteMuet }]}>
-                  {personnalisees
-                    ? 'Zones réglées par toi : elles suivent ta référence si tu la changes.'
-                    : `Zones calculées depuis ta référence${onglet === 'cardio' && cardio?.estimee ? ' (FC au seuil estimée depuis ta FC max)' : ''}. Règle le début de chaque zone avec − et +, ou tape la valeur.`}
-                  {onglet === 'allure' ? ' Pour l’allure, + va vers plus rapide.' : ''}
-                </Text>
-                {personnalisees ? (
-                  <Bouton variante="discret" onPress={revenirAuCalcul}>Revenir aux zones calculées</Bouton>
-                ) : null}
-                {apercu ? <Apercu apercu={apercu} couleur={couleur} /> : null}
-              </View>
             </View>
           ) : (
             <View style={styles.vide}>
@@ -205,77 +179,10 @@ function plageZone(modele: ModeleZones, z: { de: number; a: number }, i: number,
   return `${z.de} – ${z.a} ${unite}`;
 }
 
-interface ApercuDonnees {
-  titre: string;
-  zones: { court: string; secondes: number }[];
-}
-
-type FluxApercu = { brut: NonNullable<Parameters<typeof repartitionsSortie>[0]>; course: boolean; dureeS: number | null; titre: string };
-
-/** Le temps par zone de la dernière sortie qui a les courbes voulues, calculé avec les zones en cours de réglage. Rien en démo ou sans sortie utilisable. */
-function useApercu(onglet: ModeleZones, actif: boolean, userId: string | null, ligne: ReturnType<typeof useProfilSection>['ligne'], perso: ZonesPerso): ApercuDonnees | null {
-  const [flux, setFlux] = useState<Partial<Record<ModeleZones, FluxApercu>>>({});
-  const demande = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    if (!actif || !userId || demande.current.has(onglet)) return;
-    demande.current.add(onglet);
-    void (async () => {
-      const r = await chargerSeances(userId, 60, 60);
-      const choisie = (r.data ?? []).find((s) => {
-        if (!s.strava_id) return false;
-        const f = familleAffichage(s.sport);
-        if (onglet === 'allure') return f === 'course';
-        if (onglet === 'puissance') return f === 'velo' && !!s.device_watts;
-        return (f === 'course' || f === 'velo') && Number(s.avg_heartrate) > 0;
-      });
-      if (!choisie) return;
-      const t = await chargerTrace(userId, choisie.id, choisie.strava_id);
-      const brut = t.courbes?.brut;
-      if (!brut) return;
-      const date = String(choisie.start_date_local).slice(0, 10).split('-').reverse().slice(0, 2).join('/');
-      setFlux((a) => ({ ...a, [onglet]: { brut, course: familleAffichage(choisie.sport) === 'course', dureeS: choisie.moving_time ?? null, titre: `${choisie.name || 'Dernière sortie'} · ${date}` } }));
-    })();
-  }, [actif, onglet, userId]);
-  return useMemo(() => {
-    const f = flux[onglet];
-    if (!f || !ligne) return null;
-    const extras = (ligne.extras ?? {}) as Record<string, unknown>;
-    const cle = onglet === 'cardio' ? 'fc' : onglet === 'puissance' ? 'watts' : 'allure';
-    const m = repartitionsSortie(f.brut, { perso, lthr: referenceCardio(ligne), ftp: Number(ligne.ftp) || null, seuilKmh: Number(extras.threshold_speed) || null }, f.course, f.dureeS).find(
-      (x) => x.cle === cle && x.zones.length > 0,
-    );
-    return m ? { titre: f.titre, zones: m.zones.map((z) => ({ court: z.court, secondes: z.secondes })) } : null;
-  }, [flux, onglet, ligne, perso]);
-}
-
-function Apercu({ apercu, couleur }: { apercu: ApercuDonnees; couleur: string }) {
-  const p = usePalette();
-  const total = apercu.zones.reduce((a, z) => a + z.secondes, 0);
-  if (total <= 0) return null;
-  const n = apercu.zones.length;
-  return (
-    <View
-      accessible
-      accessibilityLabel={`Aperçu sur ${apercu.titre} : ${apercu.zones.filter((z) => z.secondes > 0).map((z) => `${z.court} ${formatDureePrecise(z.secondes)}`).join(', ')}`}
-      style={[styles.apercu, { backgroundColor: p.surface2 }]}
-    >
-      <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2 }]}>{`APERÇU · ${apercu.titre.toUpperCase()}`}</Text>
-      <View style={styles.pile}>
-        {apercu.zones.map((z, i) => (z.secondes > 0 ? <View key={z.court} style={{ flex: z.secondes, backgroundColor: teinteZone(couleur, i, n) }} /> : null))}
-      </View>
-      <Text numberOfLines={2} style={[typo.petit, { color: p.texteDoux }]}>
-        {apercu.zones.filter((z) => z.secondes >= 60).map((z) => `${formatDureePrecise(z.secondes)} en ${z.court}`).join(' · ')}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 40, borderTopWidth: StyleSheet.hairlineWidth },
   puce: { width: 12, height: 12, borderRadius: 6 },
   pas: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   vide: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   tiret: { fontSize: 32, lineHeight: 36 },
-  apercu: { borderRadius: rayon.l, padding: espace.e3, gap: espace.e2 },
-  pile: { flexDirection: 'row', height: 18, borderRadius: rayon.rond, overflow: 'hidden', gap: 2 },
 });
