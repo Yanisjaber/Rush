@@ -21,7 +21,7 @@ import { espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Paramètres › Zones : trois onglets (puissance, cœur, allure). Les zones sont CALCULÉES depuis ta référence (FTP, FC au seuil, vitesse seuil) ou « Les miennes » :
+// Paramètres › Zones : trois onglets (puissance, cœur, allure). Les zones partent du calcul depuis ta référence (FTP, FC au seuil, vitesse seuil) et sont toujours réglables :
 // tu glisses les séparateurs sur la barre (ou − / + sur chaque zone), et les courbes, le temps par zone et l'analyse suivent partout dans l'app.
 // Les zones perso sont rangées dans `extras.zones_perso` du profil, en % de la référence ; si la référence change, elles suivent.
 const ONGLETS: { cle: ModeleZones; libelle: string }[] = [
@@ -60,7 +60,7 @@ export default function Zones() {
   const couleurs: Record<ModeleZones, string> = { puissance: p.sportVelo, cardio: p.sportVelo, allure: p.sportCourse };
   const modele = MODELES_ZONES[onglet];
   const ref = refs[onglet];
-  const miennes = persoValide(onglet, perso[onglet]) !== null;
+  const personnalisees = persoValide(onglet, perso[onglet]) !== null;
   const bornes = bornesPourcent(onglet, perso[onglet]);
   const zones = calculerZones(onglet, ref, perso[onglet]);
   const couleur = couleurs[onglet];
@@ -70,12 +70,11 @@ export default function Zones() {
   const texteValeur = useCallback((v: number) => (onglet === 'allure' ? texteAllure(v).replace('/km', '') : String(Math.round(v))), [onglet]);
   const valeurBorne = (i: number) => (ref * bornes[i]) / 100;
 
-  const choisirMode = (cle: string) => {
+  const revenirAuCalcul = () => {
     setMessage('');
     setPerso((a) => {
       const suite = { ...a };
-      if (cle === 'miennes') suite[onglet] = bornesPourcent(onglet, null).slice(1);
-      else delete suite[onglet];
+      delete suite[onglet];
       return suite;
     });
   };
@@ -106,8 +105,8 @@ export default function Zones() {
     setMessage('Enregistré. Les courbes et le temps par zone utilisent tes zones.');
   };
 
-  // L'aperçu : le temps par zone de ta dernière sortie avec les zones en cours de réglage (chargé quand on passe en « Les miennes »)
-  const apercu = useApercu(onglet, miennes && ref > 0, userId && !demo ? userId : null, ligne, perso);
+  // L'aperçu : le temps par zone de ta dernière sortie avec les zones en cours de réglage (chargé à l'ouverture de l'onglet)
+  const apercu = useApercu(onglet, ref > 0, userId && !demo ? userId : null, ligne, perso);
 
   if (chargement) return <EcranSection><Text style={[typo.corps, { color: p.texteDoux }]}>Chargement…</Text></EcranSection>;
   return (
@@ -144,17 +143,11 @@ export default function Zones() {
                 </Pressable>
               </View>
 
-              <SelecteurSegments
-                options={[{ cle: 'calculees', libelle: 'Calculées' }, { cle: 'miennes', libelle: 'Les miennes' }]}
-                choix={miennes ? 'miennes' : 'calculees'}
-                onChoix={choisirMode}
-              />
-
               <BarreZones
                 bornes={bornes}
                 axeMax={AXE_MAX_POURCENT[onglet]}
                 couleur={couleur}
-                onDeplace={miennes ? (i, pc) => deplacer(i, (pc * ref) / 100) : undefined}
+                onDeplace={(i, pc) => deplacer(i, (pc * ref) / 100)}
                 texteBorne={(i) => `${texteValeur(valeurBorne(i))} ${unite}`}
               />
 
@@ -163,7 +156,7 @@ export default function Zones() {
                   <View key={z.nom} style={[styles.ligne, { borderTopColor: p.trait }]}>
                     <View style={[styles.puce, { backgroundColor: teinteZone(couleur, i, zones.length) }]} />
                     <Text numberOfLines={1} style={[typo.corps, { color: p.texte, flex: 1 }]}>{z.nom}</Text>
-                    {miennes && i > 0 ? (
+                    {i > 0 ? (
                       <View style={styles.pas}>
                         <Bouton variante="discret" onPress={() => pousser(i, -1)} accessibilityLabel={`${z.nom} : début ${onglet === 'allure' ? 'plus lent' : 'plus bas'}`}>−</Bouton>
                         <Text style={[typo.corpsFort, { color: p.texte, minWidth: 54, textAlign: 'center' }]}>{texteValeur(z.de)}</Text>
@@ -176,16 +169,16 @@ export default function Zones() {
                 ))}
               </View>
 
-              {miennes ? (
-                <View style={{ gap: espace.e2 }}>
-                  <Text style={[typo.petit, { color: p.texteMuet }]}>
-                    {onglet === 'allure' ? 'Pour l’allure, + va vers plus rapide. ' : ''}Tes zones suivent ta référence si tu la changes.
-                  </Text>
-                  {apercu ? <Apercu apercu={apercu} couleur={couleur} /> : null}
-                </View>
-              ) : (
-                <Text style={[typo.petit, { color: p.texteMuet }]}>Calculées depuis ta référence. Passe en « Les miennes » pour régler chaque zone.</Text>
-              )}
+              <View style={{ gap: espace.e2 }}>
+                <Text style={[typo.petit, { color: p.texteMuet }]}>
+                  {personnalisees ? 'Zones réglées par toi : elles suivent ta référence si tu la changes.' : 'Zones calculées depuis ta référence. Glisse un séparateur ou touche + et − pour les régler.'}
+                  {onglet === 'allure' ? ' Pour l’allure, + va vers plus rapide.' : ''}
+                </Text>
+                {personnalisees ? (
+                  <Bouton variante="discret" onPress={revenirAuCalcul}>Revenir aux zones calculées</Bouton>
+                ) : null}
+                {apercu ? <Apercu apercu={apercu} couleur={couleur} /> : null}
+              </View>
             </View>
           ) : (
             <View style={styles.vide}>

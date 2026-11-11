@@ -321,8 +321,8 @@ export function calculerZones(modele: ModeleZones, reference: unknown, perso?: n
   });
 }
 
-/** L'axe de la barre de zones (jusqu'où elle va, en % de la référence) : la dernière zone n'a pas de fin, on lui donne une longueur lisible. */
-export const AXE_MAX_POURCENT: Record<ModeleZones, number> = { puissance: 160, cardio: 120, allure: 115 };
+/** L'axe de la barre de zones (jusqu'où elle va, en % de la référence, donc 500 W pour une FTP de 200 W) : aucune borne ne peut dépasser. La dernière zone n'a pas de fin. */
+export const AXE_MAX_POURCENT: Record<ModeleZones, number> = { puissance: 250, cardio: 125, allure: 140 };
 
 /** Le plus petit pas d'une borne dans son unité : 1 bpm, 1 W, 0,1 km/h. */
 export const pasZone = (modele: ModeleZones): number => (modele === 'allure' ? 0.1 : 1);
