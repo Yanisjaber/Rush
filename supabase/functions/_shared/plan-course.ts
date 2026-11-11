@@ -21,6 +21,8 @@ import type { ProfilCoureur } from './profil-coureur.ts';
 // Les règles du profil vivent dans profil-coureur.ts (partagées avec semaine.ts) ; ré-exportées ici pour ne rien casser
 export { reglesDuProfil } from './profil-coureur.ts';
 export type { ReglesProfil } from './profil-coureur.ts';
+import { analyserCoureur } from './analyse-coureur.ts';
+import type { AnalyseCoureur } from './analyse-coureur.ts';
 import { tssEstime, typeSeance } from './menu-seances.ts';
 import { ctxAvec, etiquetteDate } from './planning.ts';
 import type { DetailSeance, Operation, SeancePrevue } from './planning.ts';
@@ -573,6 +575,8 @@ export interface DemandeCourse {
 }
 
 export interface Bilan {
+  /** Le portrait du coureur (analyse-coureur.ts) : ce que le code voit, et ce qu'il ne sait pas */
+  analyse: AnalyseCoureur;
   km: number;
   jours: number;
   semaines: number;
@@ -889,7 +893,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     lignesSemaines.push(`Semaine ${w + 1} (${du}) : ${NOM_PHASE[phase]}${recuperation ? ', récupération' : ''}, ${posees} séance${posees > 1 ? 's' : ''}, ${totalSemaine} min`);
   }
 
-  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null, volumeDepart, derniers7, profilUtilise: regles.utilise, debutant, provisoire, typeTest, contraintesCalendrier, monteePourcent: Math.round((regles.croissance - 1) * 100) };
+  const bilan: Bilan = { analyse: analyserCoureur(profil, niveau, aujourdhui), km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null, volumeDepart, derniers7, profilUtilise: regles.utilise, debutant, provisoire, typeTest, contraintesCalendrier, monteePourcent: Math.round((regles.croissance - 1) * 100) };
   return { operations, abandons, semaines: lignesSemaines, bilan, message: messageBilan(bilan) };
 }
 
@@ -925,6 +929,8 @@ export function messageBilan(b: Bilan): string {
     parts.push(`Allures (par km) : ${ALLURES_CLES.map((c) => `${NOM_ALLURE[c]} ${formaterAllure(b.allures![c])}`).join(', ')}.`);
     if (b.imposees.length) parts.push(`Allures imposées par l'utilisateur : ${b.imposees.map((c) => NOM_ALLURE[c]).join(', ')}.`);
   }
+  parts.push(`Ce que je vois de toi : ${b.analyse.phrases.join(' ')}`);
+  if (b.analyse.inconnues.length) parts.push(`Ce que je ne sais pas (dis-le, ne devine pas, et pose la question en une phrase) : ${b.analyse.inconnues.map((i) => `${i.sujet} → « ${i.question} »`).join(' ; ')}.`);
   parts.push(`Les règles du plan, dites honnêtement : montée du volume d'environ ${b.monteePourcent} % par semaine (dans la fourchette de 5 à 9 % des plans réels analysés ; la règle des 10 % n'est pas prouvée, il n'y a pas de consensus) ; une semaine allégée toutes les 4 semaines (habitude de coach, pas d'étude) ; la sortie longue ne grandit jamais de plus de 10 % d'une semaine à l'autre ; beaucoup de séances faciles et 1 à 2 séances de qualité (aucune répartition de l'intensité, 80/20 ou autre, n'est prouvée meilleure pour un amateur). Ne les présente pas comme des lois.`);
   return parts.join(' ');
 }
