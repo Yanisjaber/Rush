@@ -33,6 +33,8 @@ import type { ContexteValidation, Proposition } from './validateur.ts';
 export interface ProfilCourse {
   /** Le meilleur effort des 24 derniers mois : ANCIEN, dernier recours seulement */
   meilleurEffort: { date: string; km: number; secondes: number; equiv10Secondes: number } | null;
+  /** Le meilleur effort des 12 derniers mois (absent des anciens résumés) : le repère d'un coureur qui a continué à courir */
+  meilleurEffort12Mois?: { date: string; km: number; secondes: number; equiv10Secondes: number } | null;
   /** Le meilleur effort des 90 derniers jours (sorties d'au moins 3 km) : il fixe le niveau d'aujourd'hui */
   effortRecent: { date: string; km: number; secondes: number; equiv10Secondes: number } | null;
   sorties90: number;
@@ -55,6 +57,11 @@ export function profilCourseDepuisResume(resume: any): ProfilCourse | null {
   const meilleurEffort = m && typeof m.date === 'string' && eq !== null && eq > 0
     ? { date: m.date, km: nb(m.km) ?? 0, secondes: nb(m.secondes) ?? 0, equiv10Secondes: eq }
     : null;
+  const m12 = p.meilleur_effort_12_mois;
+  const eq12 = nb(m12?.equiv_10km_secondes);
+  const meilleurEffort12Mois = m12 && typeof m12.date === 'string' && eq12 !== null && eq12 > 0
+    ? { date: m12.date, km: nb(m12.km) ?? 0, secondes: nb(m12.secondes) ?? 0, equiv10Secondes: eq12 }
+    : null;
   const mr = p.meilleur_effort_recent;
   const eqr = nb(mr?.equiv_10km_secondes);
   const effortRecent = mr && typeof mr.date === 'string' && eqr !== null && eqr > 0
@@ -68,6 +75,7 @@ export function profilCourseDepuisResume(resume: any): ProfilCourse | null {
   if (p.jours && typeof p.jours === 'object') for (const [k, v] of Object.entries(p.jours)) { const j = Number(k); const n = nb(v); if (j >= 1 && j <= 7 && n !== null && n > 0) jours[j] = n; }
   return {
     meilleurEffort,
+    meilleurEffort12Mois,
     effortRecent,
     sorties90: nb(p.sorties_90_jours) ?? 0,
     recent: { sorties: nb(r.sorties) ?? 0, km: nb(r.km) ?? 0, minutes: nb(r.minutes) ?? 0, plusLongueMinutes: nb(r.plus_longue_minutes) ?? 0, allureMedianeSParKm: nb(r.allure_mediane_s_par_km), plusLongue30Minutes: nb(r.plus_longue_30j_minutes) },
@@ -98,6 +106,8 @@ export interface Niveau {
   source: string;
   /** chrono : un temps donné par l'utilisateur (test) · recente : ses sorties des 90 derniers jours · ancienne : un vieux record, très vieilli (estimation fragile) */
   fiabilite: Fiabilite;
+  /** Vrai quand le niveau vient d'un record de moins de 12 mois gardé comme repère (un coureur qui a continué à courir) */
+  recordGarde?: boolean;
 }
 
 /** Un effort récent converti tel quel : sans correction optimiste (un test réel de Yanis a montré qu'enlever 7 % était trop beau) */
@@ -108,6 +118,14 @@ const EFFORT_RECENT_FACTEUR = 1;
  * Temps × 1 / (1 − 0,20) = × 1,25, quelle que soit l'ancienneté au-delà de 90 jours (aucune donnée sérieuse au-delà de 2 mois). Estimation « ancienne » : toujours suivie d'une sortie test. Remplace l'ancien « 1,5 % par mois, 30 % au plus », sans source.
  */
 const PERTE_VITESSE_VIEUX_RECORD = 0.2;
+/**
+ * Un vieux record d'un coureur qui A CONTINUÉ à courir (au moins 3 sorties sur 8 semaines) ne s'est pas effondré comme celui d'un coureur qui s'arrête : ses sorties récentes sont surtout des footings, qui ne montrent pas sa vraie vitesse.
+ * On le vieillit donc seulement de 5 % (temps × 1,05). CE CHIFFRE EST UNE HYPOTHÈSE À NOUS : aucune étude ne le donne (les 20 % ci-dessus viennent de gens qui s'arrêtent). Il ne sert qu'à départager : on prend le plus rapide
+ * des deux repères (sorties récentes, ou vieux record vieilli de 5 %), et l'estimation reste « ancienne » : la première séance du plan est une sortie test qui corrige tout.
+ */
+const VIEILLISSEMENT_RECORD_ENTRETENU = 1.05;
+/** Au-delà de 12 mois, un record n'est plus un repère (une saison de course) : on revient à la règle des sorties récentes. Autre hypothèse à nous. */
+const AGE_MAX_RECORD_ENTRETENU_JOURS = 365;
 
 /**
  * Son niveau d'aujourd'hui sur `km`, du plus fiable au moins fiable :
@@ -123,6 +141,16 @@ export function niveauActuel(p: ProfilCourse | null, km: number, aujourdhui: str
   if (!p) return null;
   if (p.effortRecent && p.recent.sorties >= 3) {
     const e = p.effortRecent;
+    // Un vieux record plus rapide que ses sorties récentes (il a continué à courir) : on le garde comme repère, un peu vieilli
+    const ancien = p.meilleurEffort12Mois;
+    if (ancien && ancien.date < e.date && ecartJours(ancien.date, aujourdhui) <= AGE_MAX_RECORD_ENTRETENU_JOURS && ancien.equiv10Secondes * VIEILLISSEMENT_RECORD_ENTRETENU < e.equiv10Secondes * EFFORT_RECENT_FACTEUR) {
+      return {
+        secondes: Math.round(equivalent(ancien.equiv10Secondes, 10, km) * VIEILLISSEMENT_RECORD_ENTRETENU),
+        source: `ton record (${ancien.km} km en ${formaterTemps(ancien.secondes)} le ${ancien.date}), que je garde comme repère un peu vieilli (+5 %, une estimation) parce que tu as continué à courir ; tes sorties récentes, surtout des footings, donnaient un niveau plus lent (ta meilleure : ${e.km} km en ${formaterTemps(e.secondes)} le ${e.date})`,
+        fiabilite: 'ancienne',
+        recordGarde: true,
+      };
+    }
     return { secondes: Math.round(equivalent(e.equiv10Secondes, 10, km) * EFFORT_RECENT_FACTEUR), source: `tes sorties récentes (ta meilleure : ${e.km} km en ${formaterTemps(e.secondes)} le ${e.date})`, fiabilite: 'recente' };
   }
   const ref = p.meilleurEffort;
@@ -542,7 +570,7 @@ export interface Bilan {
   km: number;
   jours: number;
   semaines: number;
-  niveau: { secondes: number; source: string } | null;
+  niveau: { secondes: number; source: string; recordGarde?: boolean } | null;
   realiste: number | null;
   cible: number | null;
   objectifPlan: number | null;
@@ -863,7 +891,8 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
 export function messageBilan(b: Bilan): string {
   const parts: string[] = [];
   if (b.niveau) parts.push(`Niveau estimé aujourd'hui sur ${b.km} km : ${formaterTemps(b.niveau.secondes)} (d'après ${b.niveau.source}).`);
-  if (b.niveauFiabilite === 'ancienne') parts.push("Attention : je n'ai AUCUNE sortie récente, cette estimation est très fragile (on a pu perdre beaucoup de niveau).");
+  if (b.niveauFiabilite === 'ancienne' && b.niveau?.recordGarde) parts.push("Attention : ce niveau vient de ton record, que j'ai gardé comme repère parce que tu as continué à courir, mais il date de plusieurs mois et tes sorties récentes sont plus lentes (surtout des footings). C'est une estimation : la première séance est un test pour la vérifier.");
+  else if (b.niveauFiabilite === 'ancienne') parts.push("Attention : je n'ai AUCUNE sortie récente, cette estimation est très fragile (on a pu perdre beaucoup de niveau).");
   else if (b.niveauFiabilite === 'recente') parts.push("Cette estimation vient de tes sorties récentes : pas de sortie test nécessaire. Si tu trouves les allures trop rapides ou trop lentes, dis-le-moi et je les ajuste.");
   if (b.test) parts.push(b.typeTest === 'trente_min'
     ? "La première sortie du plan est un TEST (30 minutes à fond régulier, choisi parce que l'objectif est long) : dès que l'utilisateur donne la distance faite en 30 minutes, rappelle preparer_course avec chrono_km et chrono_temps (la distance faite, et « 30:00 ») pour recalibrer toutes les allures. Dis-lui de la faire dès que possible."

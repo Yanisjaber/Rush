@@ -52,6 +52,31 @@ test('niveau : fixé par les sorties des 90 derniers jours, JAMAIS par le record
   assert.equal(niveauActuel(null, 10, AUJ), null);
   assert.equal(niveauActuel({ ...YANIS, effortRecent: null, meilleurEffort: null }, 10, AUJ), null);
 });
+test('niveau : un record de moins de 12 mois d\'un coureur qui continue à courir reste un repère (+5 %), les sorties récentes ne le sous-estiment plus', () => {
+  const REEL: ProfilCourse = { ...YANIS,
+    meilleurEffort12Mois: { date: '2025-12-14', km: 10, secondes: 2852, equiv10Secondes: 2852 },   // 47:32, il y a 11 mois (le meilleur effort sur 24 mois reste celui de 2024)
+    effortRecent: { date: '2026-11-04', km: 6, secondes: 1800, equiv10Secondes: 3286 } };    // sorties récentes : environ 54:46 sur 10 km
+  const n = niveauActuel(REEL, 10, AUJ)!;
+  assert.equal(n.secondes, Math.round(2852 * 1.05));  // 49:55
+  assert.equal(n.fiabilite, 'ancienne');              // reste une estimation : la sortie test corrige
+  assert.match(n.source, /continué à courir/);
+  assert.match(n.source, /\+5 %/);
+  // un record de plus de 12 mois n'est plus un repère : on revient aux sorties récentes
+  const vieux = niveauActuel({ ...REEL, meilleurEffort12Mois: { ...REEL.meilleurEffort12Mois!, date: '2025-11-01' } }, 10, AUJ)!;
+  assert.equal(vieux.fiabilite, 'recente');
+  assert.equal(vieux.secondes, 3286);
+  // si les sorties récentes sont plus rapides que le record vieilli, elles gagnent
+  const rapide = niveauActuel({ ...REEL, effortRecent: { ...REEL.effortRecent!, equiv10Secondes: 2900 } }, 10, AUJ)!;
+  assert.equal(rapide.fiabilite, 'recente');
+  assert.equal(rapide.secondes, 2900);
+  // le plan est calé sur ce niveau et dit d\'où il vient
+  const r = planifierCourse({ date: COURSE, km: 10, tempsCibleMinutes: 50 }, [], ctx(), REEL);
+  assert.equal(r.bilan?.niveau?.secondes, Math.round(2852 * 1.05));
+  assert.match(r.message, /ton record/);
+  // le message ne dit pas « aucune sortie récente » à quelqu'un qui court : il explique le choix du record
+  assert.doesNotMatch(r.message, /AUCUNE sortie récente/);
+  assert.match(r.message, /tu as continué à courir/);
+});
 test('objectif réaliste : 0,4 % par semaine, 6 % au plus (études : 3 à 6 % en 10-15 semaines)', () => {
   assert.equal(objectifRealiste(3000, 5), 2940);
   assert.equal(objectifRealiste(3000, 40), 2820);

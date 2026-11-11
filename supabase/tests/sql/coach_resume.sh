@@ -132,6 +132,8 @@ bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-12_rpc
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-12_rpc_coach_resume_heure_course.sql   # relançable
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-12_rpc_coach_resume_longue_30j.sql
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-12_rpc_coach_resume_longue_30j.sql   # relançable
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-12_rpc_coach_resume_meilleur_12_mois.sql
+bash $H psql -d rush -q -v ON_ERROR_STOP=1 -f supabase/migrations/2026-11-12_rpc_coach_resume_meilleur_12_mois.sql   # relançable
 bash $H psql -d rush -q -v ON_ERROR_STOP=1 <<'SQL'
 insert into public.coach_profil (user_id, annees_pratique, pic_hebdo_minutes, disponibilites, blessures, blessures_renseignees, preferences)
 values ('00000000-0000-4000-8000-00000000000a', 6, 320, '{"mardi":{"libre":true,"minutes_max":60}}', '[{"zone":"genou","quand":"moins_1_an","actif":false}]', true, '{"moment":"matin"}');
@@ -186,6 +188,8 @@ union all select 20, 'profil de coureur : meilleur effort (8 km en 40 min = 50:4
                   (select j->'profil_course'->'meilleur_effort'->>'date' = '2026-11-02' and (j->'profil_course'->'meilleur_effort'->>'equiv_10km_secondes')::int = 3040 and (j->'profil_course'->'recent'->>'sorties')::int = 1 and (j->'profil_course'->'recent'->>'allure_mediane_s_par_km')::int = 300 and j->'profil_course'->'jours' = '{"1":1}'::jsonb and jsonb_array_length(j->'profil_course'->'semaines') = 8 from r)
 union all select 22, 'profil de coureur : le meilleur effort des 90 jours (même sortie ici) et le nombre de sorties sur 90 jours',
                   (select (j->'profil_course'->'meilleur_effort_recent'->>'equiv_10km_secondes')::int = 3040 and (j->'profil_course'->>'sorties_90_jours')::int = 1 from r)
+union all select 24, 'profil de coureur : le meilleur effort des 12 derniers mois est donné (ici la même sortie du 2/11), un record plus vieux que 12 mois n''y est pas',
+                  (select j->'profil_course'->'meilleur_effort_12_mois'->>'date' = '2026-11-02' and (j->'profil_course'->'meilleur_effort_12_mois'->>'equiv_10km_secondes')::int = 3040 from r)
 union all select 23, 'suivi du plan : seulement les séances de course créées par l''IA des 14 derniers jours (3) ; la sortie test faite (8 km en 40 min), le footing du 4/11 non fait',
                   (select jsonb_array_length(j->'plan_suivi') = 3
                           and (select (e->>'faite')::boolean and (e->'activite'->>'km')::numeric = 8 and (e->'activite'->>'secondes')::int = 2400 from jsonb_array_elements(j->'plan_suivi') e where (e->>'est_test')::boolean)
