@@ -41,6 +41,10 @@ export interface Seance {
   avg_cadence?: number | null;
   kj?: number | null;
   calories?: number | null;
+  /** Température moyenne (°C) mesurée par l'appareil, absente sans capteur. */
+  avg_temp?: number | null;
+  /** Type de séance choisi dans Strava (1 et 11 = compétition, 2 = sortie longue, 3 et 12 = entraînement), absent sinon. */
+  workout_type?: number | null;
   /** Valeurs d'origine quand la séance a été retouchée (voir retouches.ts). */
   origine?: Record<string, unknown>;
   retouchee?: boolean;

@@ -31,7 +31,7 @@ But : que les graphes de la sortie (page 2 : allure, cœur, altitude, cadence, p
 
 ## Données Strava à récupérer en plus (décisions du 11 nov. 2026)
 
-- **À faire** : `workout_type` (course, sortie longue, entraînement) et la température (`temp` des streams, seulement si l'appareil la mesure). Migration, `strava-ingest`, webhook, puis affichage (8 maquettes d'abord).
+- **Fait (11 nov.)** : `avg_temp` (température moyenne, seulement si l'appareil la mesure) et `workout_type` (1 et 11 = compétition, 2 = sortie longue, 3 et 12 = entraînement) rangés dans `activities` (migration `2026-11-11_temperature_type_seance.sql`, `strava-ingest` et `strava-webhook` déployées, historique rattrapé), affichés dans les données de la sortie. La courbe de température (stream `temp`) : plus tard.
 - **Plus tard** : pente (`grade_smooth`) : profil d'altitude coloré, allure ou puissance selon la pente. Ressenti saisi dans Strava (`perceived_exertion`) : chantier à voir.
 - **Écartés** : records de course et splits (déjà calculés chez nous).
 

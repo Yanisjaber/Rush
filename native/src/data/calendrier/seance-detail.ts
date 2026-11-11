@@ -27,6 +27,14 @@ export function formatDureeTour(secondes: number): string {
  * Les chiffres d'une séance, dans l'ordre où on les cherche : durée, distance, allure (course, natation) ou vitesse (vélo), dénivelé,
  * cardio, puissance, cadence, énergie, charge, effort ressenti. Un chiffre absent n'est pas listé.
  */
+/** Le type de séance choisi dans Strava, quand il sort de l'ordinaire (course : 1, 2, 3 ; vélo : 11, 12). Null pour une séance normale ou sans type. */
+export function typeSeance(code: number | null | undefined): string | null {
+  if (code === 1 || code === 11) return 'Compétition';
+  if (code === 2) return 'Sortie longue';
+  if (code === 3 || code === 12) return 'Entraînement';
+  return null;
+}
+
 export function chiffresSeance(s: Seance): ChiffreSeance[] {
   const famille = familleAffichage(s.sport);
   const liste: ChiffreSeance[] = [];
@@ -49,6 +57,10 @@ export function chiffresSeance(s: Seance): ChiffreSeance[] {
   if (positif(s.avg_cadence)) liste.push({ cle: 'cadence', libelle: 'Cadence', valeur: String(Math.round(s.avg_cadence)), unite: famille === 'velo' ? 'tr/min' : 'ppm' });
   if (positif(s.kj) && !wattsEstimes(s)) liste.push({ cle: 'energie', libelle: 'Énergie', valeur: formatNombre(Math.round(s.kj)), unite: 'kJ' });
   else if (positif(s.calories)) liste.push({ cle: 'energie', libelle: 'Énergie', valeur: formatNombre(Math.round(s.calories)), unite: 'kcal' });
+  // La température n'existe qu'avec un capteur (0 °C et moins sont de vraies valeurs : pas `positif`)
+  if (typeof s.avg_temp === 'number' && Number.isFinite(s.avg_temp)) liste.push({ cle: 'temperature', libelle: 'Température', valeur: String(Math.round(s.avg_temp)), unite: '°C' });
+  const type = typeSeance(s.workout_type);
+  if (type) liste.push({ cle: 'type', libelle: 'Type', valeur: type });
   if (positif(s.tss)) liste.push({ cle: 'charge', libelle: 'Charge', valeur: String(Math.round(s.tss)), unite: 'pts' });
   if (positif(s.rpe)) liste.push({ cle: 'rpe', libelle: 'Effort ressenti', valeur: String(Math.round(s.rpe)), unite: '/10' });
   return liste;

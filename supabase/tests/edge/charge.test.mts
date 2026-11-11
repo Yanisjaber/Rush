@@ -79,3 +79,13 @@ test('watts estimés par Strava (pas de capteur) : stravaToRow ne range ni puiss
   assert.deepEqual([vraie.np, vraie.avg_watts, vraie.max_watts, vraie.kj, vraie.has_power], [200, 180, 800, 650, true]);
   assert.equal(vraie.intensity, 1);
 });
+
+test('stravaToRow : température moyenne et type de séance, null quand Strava n\'en donne pas', () => {
+  const r = stravaToRow({ id: 3, sport_type: 'Run', average_temp: 22.6, workout_type: 1 }, 'u', null, null);
+  assert.equal(r.avg_temp, 23);
+  assert.equal(r.workout_type, 1);
+  const v = stravaToRow({ id: 4, sport_type: 'Run' }, 'u', null, null);
+  assert.equal(v.avg_temp, null);
+  assert.equal(v.workout_type, null);
+  assert.equal(stravaToRow({ id: 5, average_temp: 0 }, 'u', null, null).avg_temp, 0); // 0 °C est une vraie valeur
+});

@@ -116,5 +116,8 @@ export function stravaToRow(a: any, userId: string, ftp: number | null, lthr: nu
     has_heartrate: !!a.has_heartrate,
     has_power: !!a.device_watts,
     device_watts: !!a.device_watts,
+    // Température moyenne (°C, appareil avec capteur) et type de séance choisi dans Strava (1 / 11 = compétition) ; null si absents
+    avg_temp: Number.isFinite(Number(a.average_temp)) && a.average_temp != null ? Math.round(a.average_temp) : null,
+    workout_type: Number.isInteger(a.workout_type) ? a.workout_type : null,
   };
 }

@@ -72,7 +72,7 @@ export async function chargerDernieresSeances(userId: string, limite = 200): Pro
 // L'écran de détail d'une séance : les colonnes utiles (jamais les gros champs : flux, GPX…).
 const COLONNES_DETAIL =
   'id,strava_id,source,name,sport,start_date_local,elapsed_time,moving_time,distance_km,total_elevation_gain,avg_speed_kmh,' +
-  'avg_heartrate,max_heartrate,avg_watts,max_watts,np,ftp_at_time,avg_cadence,kj,calories,tss,user_notes,rpe,category,device_watts,' +
+  'avg_heartrate,max_heartrate,avg_watts,max_watts,np,ftp_at_time,avg_cadence,kj,calories,avg_temp,workout_type,tss,user_notes,rpe,category,device_watts,' +
   'excl_power,excl_hr,excl_cadence,excl_distance,excl_elevation,excl_load,excl_duration,metrics';
 
 /** Une séance de l'utilisateur, avec ses retouches. Un identifiant qui n'est pas un UUID n'existe pas (pas de requête). */

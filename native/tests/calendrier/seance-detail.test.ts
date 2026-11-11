@@ -119,3 +119,15 @@ test('troisChiffres : un chiffre absent est remplacé par le suivant, et on ne d
   assert.deepEqual(troisChiffres([ch('duree')]).map((c) => c.cle), ['duree']);
   assert.deepEqual(troisChiffres([]), []);
 });
+
+test('température et type de séance Strava : affichés quand ils existent, 0 °C compris', () => {
+  const c = chiffresSeance(seance({ avg_temp: 23, workout_type: 1 }));
+  assert.deepEqual(c.find((x) => x.cle === 'temperature'), { cle: 'temperature', libelle: 'Température', valeur: '23', unite: '°C' });
+  assert.equal(c.find((x) => x.cle === 'type')?.valeur, 'Compétition');
+  assert.equal(chiffresSeance(seance({ avg_temp: 0 })).find((x) => x.cle === 'temperature')?.valeur, '0');
+  // Sans capteur ni type, ou avec un type ordinaire (course 0, vélo 10, code inconnu 30) : rien
+  for (const extra of [{}, { avg_temp: null, workout_type: null }, { workout_type: 0 }, { workout_type: 10 }, { workout_type: 30 }]) {
+    assert.equal(cles(seance(extra)).some((k) => k === 'temperature' || k === 'type'), false);
+  }
+  assert.equal(chiffresSeance(seance({ workout_type: 11 })).find((x) => x.cle === 'type')?.valeur, 'Compétition');
+});
