@@ -252,12 +252,13 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
     // Les fiches qui fondent le plan (distance, calibrage) : le coach explique le pourquoi avec les mêmes sources que le moteur
     let fondements = '';
     if (def.nom === 'planifier_semaine') {
-      const res = planifierSemaine(lu.params.demande as DemandeSemaine, seances, ctx, habitudesDepuisResume(resume));
+      const res = planifierSemaine(lu.params.demande as DemandeSemaine, seances, ctx, habitudesDepuisResume(resume), profilCoureurDepuisLigne(resume?.profil));
       if (!res.operations.length) {
         return { contenu: `Je n'ai pas pu construire cette semaine : ${res.abandons.join(' ') || 'aucune séance possible.'} Explique-le simplement à l'utilisateur, sans créer de carte, et propose une autre façon de faire.`, erreur: false };
       }
       operations = res.operations;
       notes = res.abandons;
+      if (res.profilUtilise.length) bilanTexte = `Ton profil a changé la semaine : ${res.profilUtilise.join(' ; ')}.`;
     } else if (def.nom === 'preparer_course') {
       const demande = lu.params.demande as Partial<DemandeCourse>;
       // La cible : le bloc de courses de la date demandée, sinon le premier bloc avec une course de priorité A, sinon le premier. Plusieurs courses le même jour ou à un jour d'écart = UN bloc (calendrier-courses.ts).
@@ -326,13 +327,14 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
         { op: 'ajouter', proposition: { date: spec.date, sport: spec.sport, type: nouvelle.type, minutes: nouvelle.minutes }, justification: String(lu.params.intention), detail: { nom: nouvelle.nom, structure: nouvelle.structure, resume: nouvelle.resume } },
       ];
     } else if (def.nom === 'planifier_periode') {
-      const res = planifierPeriode(lu.params.demande as DemandePeriode, seances, ctx, habitudesDepuisResume(resume));
+      const res = planifierPeriode(lu.params.demande as DemandePeriode, seances, ctx, habitudesDepuisResume(resume), profilCoureurDepuisLigne(resume?.profil));
       if (!res.operations.length) {
         return { contenu: `Je n'ai pas pu construire ce plan : ${res.abandons.join(' ') || 'aucune séance possible.'} Explique-le simplement à l'utilisateur, sans créer de carte, et propose une autre façon de faire.`, erreur: false };
       }
       operations = res.operations;
       notes = res.abandons;
       resumePeriode = res.semaines;
+      if (res.profilUtilise.length) bilanTexte = `Ton profil a changé le plan : ${res.profilUtilise.join(' ; ')}.`;
     } else if (def.nom === 'proposer_replanification') {
       operations = proposerReplanification(lu.params.contraintes as Contraintes, seances, ctx);
       if (!operations.length) return { contenu: "Rien à modifier : aucune séance prévue n'est touchée par cette contrainte. Dis-le simplement à l'utilisateur, sans créer de carte.", erreur: false };

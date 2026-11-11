@@ -203,3 +203,52 @@ export function profilPourModele(bloc: any): { connu: Record<string, unknown>; c
   if (p.fractionne) connu.fractionne = p.fractionne;
   return { connu, ce_qui_manque: manque, blessures_autorisees: accord };
 }
+
+// ---------- Ce que le profil change dans un plan ----------
+/**
+ * Ce que le profil que la personne a donné au coach change dans le plan (table coach_profil, voir profil-coureur.ts). Rien n'est inventé : chaque règle vient soit de la personne, soit de la fiche
+ * course-blessures-progression (docs/ia/connaissances) : « avoir déjà été blessé » est un des facteurs les mieux liés à une nouvelle blessure (≈ ×7,6 chez des débutants), un programme improvisé
+ * blesse plus qu'un programme structuré ; la fiche conseille alors de réduire la montée (fourchette 5-10 % par semaine → le bas), de garder plus de jours faciles, et de ne jamais courir à travers une douleur.
+ *   - jour pas disponible → aucune séance ce jour-là ; durée max d'un jour → aucune séance plus longue ce jour-là ;
+ *   - plus grosse semaine déjà faite → le volume d'une semaine ne dépasse pas le plus haut entre elle et sa plus grosse semaine récente ;
+ *   - blessure encore là → AUCUNE séance d'intensité, pas de sortie test ; blessure des 12 derniers mois ou moins d'un an de pratique → prudence : une seule séance dure par semaine, montée de 5 % ;
+ *   - elle évite le fractionné → une seule séance dure par semaine.
+ * Le moment de la journée (matin, soir) n'a pas d'effet : le plan donne des jours, pas des heures.
+ */
+export interface ReglesProfil {
+  joursInterdits: Set<string>;
+  /** Elle évite le fractionné */
+  evite: boolean;
+  minutesMax: Record<string, number>;
+  picHebdo: number | null;
+  prudent: boolean;
+  blessureActive: boolean;
+  maxQualites: number;
+  croissance: number;
+  /** Ce que le plan a vraiment pris en compte, en phrases pour le bilan */
+  utilise: string[];
+}
+export function reglesDuProfil(c: ProfilCoureur | null): ReglesProfil {
+  const r: ReglesProfil = { joursInterdits: new Set(), evite: false, minutesMax: {}, picHebdo: null, prudent: false, blessureActive: false, maxQualites: 2, croissance: 1.1, utilise: [] };
+  if (!c) return r;
+  for (const j of JOURS_SEMAINE) {
+    const d = c.disponibilites[j];
+    if (d?.libre === false) r.joursInterdits.add(j);
+    else if (d?.minutesMax !== undefined) r.minutesMax[j] = d.minutesMax;
+  }
+  if (r.joursInterdits.size) r.utilise.push(`aucune séance ${[...r.joursInterdits].join(', ')}`);
+  const limites = Object.entries(r.minutesMax);
+  if (limites.length) r.utilise.push(`durée limitée ${limites.map(([j, m]) => `${j} ${m} min`).join(', ')}`);
+  if (c.picHebdoMinutes !== null && c.picHebdoMinutes > 0) { r.picHebdo = c.picHebdoMinutes; r.utilise.push(`volume jamais au-dessus de ta plus grosse semaine (${c.picHebdoMinutes} min) ou de ta plus grosse semaine récente`); }
+  r.blessureActive = c.blessures.some((b) => b.actif);
+  const recente = c.blessures.some((b) => b.actif || b.quand !== 'plus_1_an');
+  const debutant = c.anneesPratique === 0;
+  r.prudent = recente || debutant;
+  if (r.blessureActive) r.utilise.push('blessure encore là : aucune séance d\'intensité, pas de sortie test');
+  else if (recente) r.utilise.push('blessure dans les 12 derniers mois : une seule séance dure par semaine, montée plus douce (5 %)');
+  else if (debutant) r.utilise.push('moins d\'un an de pratique : une seule séance dure par semaine, montée plus douce (5 %)');
+  if (c.fractionne === 'evite') { r.evite = true; r.maxQualites = 1; r.utilise.push('tu évites le fractionné : une seule séance dure par semaine'); }
+  if (r.prudent) { r.maxQualites = 1; r.croissance = 1.05; }
+  return r;
+}
+

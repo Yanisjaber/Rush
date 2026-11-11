@@ -41,7 +41,7 @@ Verdicts : **soutenu** (preuve solide) · **débattu** (les sources se contredis
 
 | Calendrier de courses (n courses, même jour ou jours qui se suivent) | Blocs ; plan jusqu'à la veille de la cible ; étapes = jour bloqué + veille légère + jours faciles ensuite (3 jusqu'à 10 km, 10 dès 42,2 km, interpolé, distances additionnées) | Fiche `course-periodisation-recuperation` : après un 10 km 2 à 5 jours faciles, après un marathon 7 à 14 jours (pratique de terrain), jamais de séance dure la veille d'une course. **Le milieu des fourchettes, l'interpolation et l'addition des distances sont nos conventions.** **Aucune étude** sur l'enchaînement de courses ([cyclisme, deux efforts de 4 km à 17-45 min d'écart](https://frontiersin.org/articles/10.3389/fphys.2016.00269/full), résultats contradictoires). |
 
-Ne sont pas encore branchés : `planifier_semaine`, `planifier_periode` (autres moteurs) et le cas sans historique.
+Le profil s'applique aussi à `planifier_semaine` et `planifier_periode` (vélo, course, natation), avec les mêmes sources et conventions que ci-dessus : jours pas disponibles, durée max par jour, blessure encore là = que du facile, blessure des 12 derniers mois = pas de qualité en plus de la sortie longue, plus grosse semaine de course = plafond du volume de course.
 
 ## Ce qui est le mieux soutenu
 

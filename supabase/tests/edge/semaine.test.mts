@@ -10,6 +10,7 @@ import type { ContexteValidation } from '../../functions/_shared/validateur.ts';
 import type { DecisionGardeFou } from '../../functions/_shared/garde-fou.ts';
 import { ajouterJours, ecartJours, entre, nomDuJour } from '../../functions/_shared/dates-iso.ts';
 import { tssEstime, typeSeance } from '../../functions/_shared/menu-seances.ts';
+import { profilCoureurDepuisLigne } from '../../functions/_shared/profil-coureur.ts';
 
 const AUJ = '2026-11-06'; // un vendredi
 const LIBRE: DecisionGardeFou = { niveau: 'normal', raisons: [], message: null, autoriserModele: true, autoriserCartes: true, intensiteMax: 'normale' };
@@ -233,4 +234,66 @@ test('raisons : chaque séance a une vraie raison liée à sa place dans la sema
   assert.match(justificationSemaine('facile', 40, false, false), /40 min/);
   assert.match(justificationSemaine('longue', 120, false, false), /120 min/);
   assert.match(justificationSemaine('qualite', 50, false, false), /qualité/);
+});
+
+// ---------- Le profil du coureur (coach_profil) ----------
+const profil = (ligne: Record<string, unknown>) => profilCoureurDepuisLigne(ligne);
+const SEM3: DemandeSemaine = { sports: [{ sport: 'velo', seances: 3 }, { sport: 'course', seances: 3 }] };
+test('profil : vide ou absent = exactement la même semaine qu\'avant', () => {
+  const a = planifierSemaine(SEM3, [], ctx(), HAB);
+  assert.deepEqual(planifierSemaine(SEM3, [], ctx(), HAB, null).operations, a.operations);
+  assert.deepEqual(planifierSemaine(SEM3, [], ctx(), HAB, profil({})).operations, a.operations);
+  assert.deepEqual(a.profilUtilise, []);
+});
+test('profil : un jour « pas disponible » n\'a jamais de séance, tous sports confondus', () => {
+  const r = planifierSemaine({ ...SEM3, jours: 14 }, [], ctx(), HAB, profil({ disponibilites: { mardi: { libre: false }, samedi: { libre: false } } }));
+  const jours = ajouts(r.operations).map((p) => nomDuJour(p.date));
+  assert.ok(jours.length >= 4);
+  assert.ok(!jours.includes('mardi') && !jours.includes('samedi'), jours.join(','));
+  assert.ok(r.profilUtilise.includes('aucune séance mardi, samedi'));
+});
+test('profil : la durée max d\'un jour est respectée pour toutes les séances de ce jour', () => {
+  const r = planifierSemaine({ ...SEM3, jours: 14 }, [], ctx(), HAB, profil({ disponibilites: Object.fromEntries(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].map((j) => [j, { libre: true, minutes_max: 45 }])) }));
+  const p = ajouts(r.operations);
+  assert.ok(p.length >= 4);
+  assert.ok(p.every((x) => x.minutes <= 45), p.map((x) => x.minutes).join(','));
+  assert.ok(r.profilUtilise.some((u) => /durée limitée/.test(u)));
+  // une durée max plus courte que le plancher d'une séance : le jour est refusé avec la raison, rien ne dépasse
+  const trop = planifierSemaine({ sports: [{ sport: 'course', seances: 1 }], jours: 1, debut: '2026-11-07' }, [], ctx(), HAB, profil({ disponibilites: { samedi: { libre: true, minutes_max: 10 } } }));
+  assert.equal(ajouts(trop.operations).length, 0);
+  assert.ok(trop.abandons.some((a) => /trop courte/.test(a)), trop.abandons.join('|'));
+});
+test('profil : blessure encore là = que du facile (ni qualité ni sortie longue)', () => {
+  const normal = planifierSemaine({ sports: [{ sport: 'velo', seances: 4 }] }, [], ctx(), HAB);
+  assert.ok(ajouts(normal.operations).some((p) => p.type !== 'endurance'), 'sans profil : de la qualité ou une longue');
+  const r = planifierSemaine({ sports: [{ sport: 'velo', seances: 4 }] }, [], ctx(), HAB, profil({ blessures: [{ zone: 'genou', quand: 'moins_3_mois', actif: true }] }));
+  assert.ok(ajouts(r.operations).every((p) => p.type === 'endurance'), ajouts(r.operations).map((p) => p.type).join(','));
+  assert.ok(r.profilUtilise.some((u) => /blessure encore là/.test(u)));
+});
+test('profil : blessure des 12 derniers mois = pas de qualité en plus de la sortie longue', () => {
+  const dures = (r: ReturnType<typeof planifierSemaine>) => ajouts(r.operations).filter((p) => p.type !== 'endurance').map((p) => p.type);
+  const sans = planifierSemaine({ sports: [{ sport: 'velo', seances: 4 }] }, [], ctx(), HAB);
+  assert.ok(dures(sans).includes('sortie_longue') && dures(sans).includes('tempo'), dures(sans).join(','));
+  const avec = planifierSemaine({ sports: [{ sport: 'velo', seances: 4 }] }, [], ctx(), HAB, profil({ blessures: [{ zone: 'tibia', quand: 'moins_1_an', actif: false }] }));
+  assert.deepEqual(dures(avec), ['sortie_longue']);
+  // une vieille blessure ne change rien
+  assert.deepEqual(dures(planifierSemaine({ sports: [{ sport: 'velo', seances: 4 }] }, [], ctx(), HAB, profil({ blessures: [{ zone: 'dos', quand: 'plus_1_an', actif: false }] }))), dures(sans));
+});
+test('profil : elle évite le fractionné = pas de séance au seuil en natation', () => {
+  const hab = { ...HAB, natation: { moyenneMinutes: 40, plusLongueMinutes: 50 } };
+  const sans = planifierSemaine({ sports: [{ sport: 'natation', seances: 3 }] }, [], ctx(), hab);
+  assert.ok(ajouts(sans.operations).some((p) => p.type === 'seuil'));
+  const avec = planifierSemaine({ sports: [{ sport: 'natation', seances: 3 }] }, [], ctx(), hab, profil({ preferences: { fractionne: 'evite' } }));
+  assert.ok(ajouts(avec.operations).every((p) => p.type !== 'seuil'));
+});
+test('profil : la plus grosse semaine de course plafonne le volume de course de la semaine, jamais sous ses habitudes', () => {
+  const total = (r: ReturnType<typeof planifierSemaine>) => ajouts(r.operations).filter((p) => p.sport === 'course').reduce((t, p) => t + p.minutes, 0);
+  const d: DemandeSemaine = { sports: [{ sport: 'course', seances: 4 }] };
+  const libre = planifierSemaine(d, [], ctx(), HAB);
+  const limite = planifierSemaine(d, [], ctx(), HAB, profil({ pic_hebdo_minutes: 200 }));
+  assert.ok(total(libre) > 220, String(total(libre)));
+  assert.ok(total(limite) <= 215, String(total(limite)));
+  assert.ok(limite.profilUtilise.some((u) => /plus grosse semaine \(200 min\)/.test(u)));
+  // un pic plus bas que ce qu'il fait déjà d'habitude (4 × 50 min) ne le fait pas reculer : même volume qu'avec un pic de 200
+  assert.equal(total(planifierSemaine(d, [], ctx(), HAB, profil({ pic_hebdo_minutes: 60 }))), total(limite));
 });

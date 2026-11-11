@@ -14,6 +14,8 @@ import { ctxAvec, etiquetteDate } from './planning.ts';
 import type { Operation, SeancePrevue } from './planning.ts';
 import { HORIZON_TECHNIQUE_JOURS, validerSeance } from './validateur.ts';
 import type { ContexteValidation, Proposition } from './validateur.ts';
+import { reglesDuProfil } from './profil-coureur.ts';
+import type { ProfilCoureur } from './profil-coureur.ts';
 
 export interface DemandeSemaine {
   /** Premier jour à planifier (défaut : demain) */
@@ -115,31 +117,36 @@ export interface ResultatSemaine {
   operations: Operation[];
   /** Ce qui n'a pas pu être placé, avec la raison, une phrase chacun */
   abandons: string[];
+  /** Ce que le profil du coureur a changé dans la semaine (vide si rien) : le coach le dit */
+  profilUtilise: string[];
 }
 
 /**
  * Construit une semaine d'ajouts. Fonction pure : aucune lecture de base. `seances` = les séances déjà prévues (elles occupent leur jour).
  * Ne supprime et ne déplace jamais rien : elle ne fait qu'ajouter.
  */
-export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], base: ContexteValidation, habitudes: Record<FamilleCoach, Habitude>): ResultatSemaine {
+export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], base: ContexteValidation, habitudes: Record<FamilleCoach, Habitude>, coureur: ProfilCoureur | null = null): ResultatSemaine {
   const abandons: string[] = [];
+  const regles = reglesDuProfil(coureur);
+  const profilUtilise: string[] = [];
   const aujourdhui = base.aujourdhui;
   const horizon = ajouterJours(aujourdhui, HORIZON_TECHNIQUE_JOURS);
   const debut = d.debut && d.debut > aujourdhui ? d.debut : d.debut === aujourdhui ? aujourdhui : ajouterJours(aujourdhui, 1);
   const jours = borner(Math.round(d.jours ?? 7), 1, JOURS_MAX);
   const fin = ajouterJours(debut, jours - 1) > horizon ? horizon : ajouterJours(debut, jours - 1);
-  if (debut > horizon) return { operations: [], abandons: ["Cette date est trop lointaine pour être vraie : vérifie l'année."] };
+  if (debut > horizon) return { operations: [], abandons: ["Cette date est trop lointaine pour être vraie : vérifie l'année."], profilUtilise };
 
   // Les jours où une séance est possible : ni libre demandé, ni indisponible, ni repos, ni compétition, ni déjà occupé
   const pris = new Set(seances.map((s) => s.date));
   const interdits = new Set(d.joursLibres ?? []);
   const libres: string[] = [];
   for (let j = debut; j <= fin; j = ajouterJours(j, 1)) {
-    if (interdits.has(j) || pris.has(j) || base.joursDeRepos.includes(j) || base.competitions.some((c) => c.date === j)) continue;
+    if (interdits.has(j) || regles.joursInterdits.has(nomDuJour(j)) || pris.has(j) || base.joursDeRepos.includes(j) || base.competitions.some((c) => c.date === j)) continue;
     if (base.indisponibilites.some((i) => entre(j, i.du, i.au))) continue;
     libres.push(j);
   }
-  if (!libres.length) return { operations: [], abandons: ["Aucun jour libre sur cette période : tout est déjà pris, en repos, indisponible ou réservé."] };
+  if (!libres.length) return { operations: [], abandons: ["Aucun jour libre sur cette période : tout est déjà pris, en repos, indisponible ou réservé."], profilUtilise };
+  if (regles.joursInterdits.size) profilUtilise.push(`aucune séance ${[...regles.joursInterdits].join(', ')}`);
 
   const demandes = d.sports.filter((s) => s.seances > 0);
   let total = Math.min(SEANCES_TOTAL_MAX, demandes.reduce((t, s) => t + Math.min(SEANCES_PAR_SPORT_MAX, s.seances), 0));
@@ -170,14 +177,18 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
   sports.forEach((s, i) => parSport.set(s, [...(parSport.get(s) ?? []), i]));
   const roles: Role[] = sports.map(() => 'facile');
   // « facile » demandé, ou le garde-fou santé ne veut que du facile : jamais de qualité ni de sortie longue
-  const facileSeulement = (d.intensite ?? 'normale') === 'facile' || base.gardeFou.intensiteMax === 'facile';
+  const facileSeulement = (d.intensite ?? 'normale') === 'facile' || base.gardeFou.intensiteMax === 'facile' || regles.blessureActive;
+  if (regles.blessureActive) profilUtilise.push('blessure encore là : que du facile, ni qualité ni sortie longue');
   if (!facileSeulement) {
     for (const [sport, positions] of parSport) {
       const h = habitudes[sport];
       const typeLongue = LONGUE[sport] ? MENU[sport].find((t) => t.cle === LONGUE[sport]) : undefined;
       const longuePossible = !!typeLongue && h.plusLongueMinutes !== null && h.plusLongueMinutes >= LONGUE_MINI[sport] && positions.length >= 2;
       if (longuePossible) roles[positions[positions.length - 1]] = 'longue';
-      const qualitePossible = base.ctl !== null && base.ctl >= CTL_MINI_QUALITE && positions.length >= 3;
+      // Profil : prudence (blessure des 12 derniers mois) = pas de qualité en plus de la sortie longue ; elle évite le fractionné = pas de séance au seuil en natation
+      const prudence = regles.prudent && longuePossible;
+      const natationSansFractionne = regles.evite && sport === 'natation';
+      const qualitePossible = base.ctl !== null && base.ctl >= CTL_MINI_QUALITE && positions.length >= 3 && !prudence && !natationSansFractionne;
       if (qualitePossible) roles[positions[Math.floor(positions.length / 2)]] = 'qualite';
     }
   }
@@ -194,12 +205,26 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
   }
 
   // Les durées sont LIBRES : d'après ce que l'utilisateur fait déjà (sa moyenne, sa plus longue séance), en minutes entières, sans arrondi ni borne de type
-  const duree = (sport: FamilleCoach, role: Role): number => {
+  const dureeBrute = (sport: FamilleCoach, role: Role): number => {
     const h = habitudes[sport];
     const moyenne = h.moyenneMinutes ?? DUREE_PAR_DEFAUT[sport];
     const voulu = role === 'longue' ? (h.plusLongueMinutes ?? moyenne) * 1.05 : role === 'qualite' ? moyenne * 0.85 : moyenne;
     return Math.max(DUREE_MINI, Math.round(voulu));
   };
+  // Profil : la plus grosse semaine de course déjà faite plafonne le volume de course de la semaine (jamais en dessous de ce qu'il fait déjà d'habitude)
+  let facteurPic = 1;
+  const posCourse = sports.map((s, i) => (s === 'course' ? i : -1)).filter((i) => i >= 0);
+  if (regles.picHebdo !== null && posCourse.length) {
+    const parSemaine = 7 / jours;
+    const total = posCourse.reduce((t, i) => t + dureeBrute('course', roles[i]), 0) * parSemaine;
+    const plancher = (habitudes.course.moyenneMinutes ?? 0) * posCourse.length * parSemaine;
+    const plafond = Math.max(regles.picHebdo, plancher);
+    if (total > plafond) { facteurPic = plafond / total; profilUtilise.push(`volume de course limité à ta plus grosse semaine (${regles.picHebdo} min)`); }
+  }
+  const duree = (sport: FamilleCoach, role: Role): number => (sport === 'course' && facteurPic < 1 ? Math.max(DUREE_MINI, Math.round(dureeBrute(sport, role) * facteurPic)) : dureeBrute(sport, role));
+  /** Durée max d'un jour (profil) : aucune séance plus longue ce jour-là */
+  const maxDuJour = (j: string): number => regles.minutesMax[nomDuJour(j)] ?? Infinity;
+  let dureeLimitee = false;
 
   const operations: Operation[] = [];
   let restantes: SeancePrevue[] = seances.map((s) => ({ ...s }));
@@ -219,9 +244,12 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
       const veilleCompetition = base.competitions.some((c) => c.date === ajouterJours(jour, 1));
       const roleInitial: Role = veilleCompetition && role !== 'facile' ? 'facile' : role;
       const typeInitial = roleInitial === 'facile' ? FACILE[sport] : typeCle;
-      const essais: { role: Role; type: string; minutes: number }[] = [{ role: roleInitial, type: typeInitial, minutes: duree(sport, roleInitial) }];
+      const cap = maxDuJour(jour);
+      if (cap < DUREE_MINI) return `la durée maximale que tu m'as donnée pour ce jour (${cap} min) est trop courte pour une séance`;
+      const minutesPour = (r: Role): number => { const m = duree(sport, r); if (m > cap) dureeLimitee = true; return Math.min(m, cap); };
+      const essais: { role: Role; type: string; minutes: number }[] = [{ role: roleInitial, type: typeInitial, minutes: minutesPour(roleInitial) }];
       // Dernier recours : la séance facile du sport
-      if (roleInitial !== 'facile') essais.push({ role: 'facile', type: FACILE[sport], minutes: duree(sport, 'facile') });
+      if (roleInitial !== 'facile') essais.push({ role: 'facile', type: FACILE[sport], minutes: minutesPour('facile') });
 
       let erreur = '';
       for (const e of essais) {
@@ -261,7 +289,8 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
     if (role) o.justification = justificationSemaine(role, o.proposition.minutes, dure(ajouterJours(jour, -1)), dure(ajouterJours(jour, 1)));
   }
 
-  return { operations, abandons };
+  if (dureeLimitee) profilUtilise.push(`durée limitée ${Object.entries(regles.minutesMax).map(([j, m]) => `${j} ${m} min`).join(', ')}`);
+  return { operations, abandons, profilUtilise };
 }
 
 /** Pour les tests et les messages : le jour de la semaine d'une date (« jeudi ») */

@@ -70,3 +70,20 @@ test('un plan sur plusieurs semaines : chaque séance porte le but de sa semaine
   assert.ok(phases.length >= 8 && phases.every(Boolean));
   for (const attendu of ['Reprise', 'Montée', 'Récupération']) assert.ok(phases.includes(attendu), `manque ${attendu} : ${[...new Set(phases)]}`);
 });
+
+// ---------- Le profil du coureur ----------
+import { profilCoureurDepuisLigne } from '../../functions/_shared/profil-coureur.ts';
+import { nomDuJour } from '../../functions/_shared/dates-iso.ts';
+test('profil : un plan de plusieurs semaines respecte les jours pas disponibles et dit ce que le profil a changé', () => {
+  const sans = planifierPeriode({ sports: [{ sport: 'velo', seances: 2 }, { sport: 'course', seances: 2 }], semaines: 8 }, [], ctx(), HAB);
+  const r = planifierPeriode({ sports: [{ sport: 'velo', seances: 2 }, { sport: 'course', seances: 2 }], semaines: 8 }, [], ctx(), HAB, profilCoureurDepuisLigne({ disponibilites: { mardi: { libre: false }, jeudi: { libre: false } } }));
+  const jours = r.operations.filter((o) => o.op === 'ajouter').map((o) => nomDuJour((o as { proposition: { date: string } }).proposition.date));
+  assert.ok(jours.length >= 24);
+  assert.ok(!jours.includes('mardi') && !jours.includes('jeudi'), jours.join(','));
+  assert.deepEqual(r.profilUtilise, ['aucune séance mardi, jeudi']);
+  assert.deepEqual(sans.profilUtilise, []);
+});
+test('profil : sans profil, le plan de période est le même qu\'avant', () => {
+  const d = { sports: [{ sport: 'course' as const, seances: 3 }], semaines: 6 };
+  assert.deepEqual(planifierPeriode(d, [], ctx(), HAB, profilCoureurDepuisLigne({})).operations, planifierPeriode(d, [], ctx(), HAB).operations);
+});

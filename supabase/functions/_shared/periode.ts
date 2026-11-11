@@ -16,6 +16,7 @@ import type { Habitude } from './semaine.ts';
 import { tssEstime, typeSeance } from './menu-seances.ts';
 import { HORIZON_TECHNIQUE_JOURS } from './validateur.ts';
 import type { ContexteValidation } from './validateur.ts';
+import type { ProfilCoureur } from './profil-coureur.ts';
 
 export const SEMAINES_MAX = 60;
 
@@ -37,6 +38,8 @@ export interface ResultatPeriode {
   abandons: string[];
   /** Une phrase par semaine (« Semaine 3 : montée, 4 séances ») pour que le modèle explique le plan */
   semaines: string[];
+  /** Ce que le profil du coureur a changé dans le plan (vide si rien) */
+  profilUtilise: string[];
 }
 
 /** Le but de la semaine tel que l'écran l'affiche en titre (« Montée », « Récupération », « Affûtage », « Reprise ») */
@@ -61,16 +64,16 @@ const echelle = (h: Habitude, f: number): Habitude => ({
   plusLongueMinutes: h.plusLongueMinutes === null ? null : Math.max(15, Math.round(h.plusLongueMinutes * f)),
 });
 
-export function planifierPeriode(d: DemandePeriode, seances: SeancePrevue[], base: ContexteValidation, habitudes: ReturnType<typeof habitudesDepuisResume>): ResultatPeriode {
+export function planifierPeriode(d: DemandePeriode, seances: SeancePrevue[], base: ContexteValidation, habitudes: ReturnType<typeof habitudesDepuisResume>, coureur: ProfilCoureur | null = null): ResultatPeriode {
   const aujourdhui = base.aujourdhui;
   const horizon = ajouterJours(aujourdhui, HORIZON_TECHNIQUE_JOURS);
   const debut = d.debut && d.debut > aujourdhui ? d.debut : d.debut === aujourdhui ? aujourdhui : ajouterJours(aujourdhui, 1);
-  if (debut > horizon) return { operations: [], abandons: ["Cette date est trop lointaine pour être vraie : vérifie l'année."], semaines: [] };
+  if (debut > horizon) return { operations: [], abandons: ["Cette date est trop lointaine pour être vraie : vérifie l'année."], semaines: [], profilUtilise: [] };
 
   let nbSemaines: number;
   let jourCourse: string | null = null;
   if (d.objectif) {
-    if (d.objectif <= debut) return { operations: [], abandons: ['La course est avant le début du plan : vérifie les dates.'], semaines: [] };
+    if (d.objectif <= debut) return { operations: [], abandons: ['La course est avant le début du plan : vérifie les dates.'], semaines: [], profilUtilise: [] };
     jourCourse = d.objectif;
     nbSemaines = Math.ceil(ecartJours(debut, d.objectif) / 7);
   } else {
@@ -82,9 +85,10 @@ export function planifierPeriode(d: DemandePeriode, seances: SeancePrevue[], bas
     nbSemaines = SEMAINES_MAX;
     jourCourse = null;
   }
-  if (nbSemaines < 1) return { operations: [], abandons: ['Il faut au moins une semaine.'], semaines: [] };
+  if (nbSemaines < 1) return { operations: [], abandons: ['Il faut au moins une semaine.'], semaines: [], profilUtilise: [] };
 
   const operations: Operation[] = [];
+  const profilUtilise = new Set<string>();
   const lignesSemaines: string[] = [];
   let toutes: SeancePrevue[] = seances.map((s) => ({ ...s }));
   const libres = [...(d.joursLibres ?? [])];
@@ -100,7 +104,8 @@ export function planifierPeriode(d: DemandePeriode, seances: SeancePrevue[], bas
     const h = { velo: echelle(habitudes.velo, facteur), course: echelle(habitudes.course, facteur), natation: echelle(habitudes.natation, facteur) };
     // Affûtage : une séance de moins par sport dans la dernière semaine (au moins une)
     const sports = d.sports.map((s) => ({ sport: s.sport, seances: avantCourse === 0 ? Math.max(1, s.seances - 1) : s.seances }));
-    const r = planifierSemaine({ sports, debut: du, jours: 7, joursLibres: libres, intensite: avantCourse !== null && avantCourse <= 1 ? 'facile' : d.intensite }, toutes.filter((x) => x.date >= du && x.date <= fin7), base, h);
+    const r = planifierSemaine({ sports, debut: du, jours: 7, joursLibres: libres, intensite: avantCourse !== null && avantCourse <= 1 ? 'facile' : d.intensite }, toutes.filter((x) => x.date >= du && x.date <= fin7), base, h, coureur);
+    for (const u of r.profilUtilise) profilUtilise.add(u);
     for (const o of r.operations) {
       if (o.op === 'ajouter') o.phase = butSemaine(nom);
       operations.push(o);
@@ -109,5 +114,5 @@ export function planifierPeriode(d: DemandePeriode, seances: SeancePrevue[], bas
     for (const a of r.abandons) if (abandons.length < 12) abandons.push(`Semaine ${w + 1} : ${a}`);
     lignesSemaines.push(`Semaine ${w + 1} (${du}) : ${nom}, ${r.operations.length} séance${r.operations.length > 1 ? 's' : ''}`);
   }
-  return { operations, abandons, semaines: lignesSemaines };
+  return { operations, abandons, semaines: lignesSemaines, profilUtilise: [...profilUtilise] };
 }
