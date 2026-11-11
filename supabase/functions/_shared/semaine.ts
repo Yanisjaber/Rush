@@ -58,6 +58,8 @@ const LONGUE_MINI: Record<FamilleCoach, number> = { velo: 120, course: 60, natat
 /** Départ d'une reprise : 35 % de la plus grosse semaine passée (fiche reprise-apres-arret, arrêt de 2 à 3 mois : 30 à 40 %) ; intensité seulement au-delà de 75 % (même fiche) */
 const REPRISE_PART_DU_PIC = 0.35;
 const SEUIL_RETOUR_INTENSITE = 0.75;
+/** Une séance de reprise plus courte que ça n'a pas de sens (convention à nous) */
+const REPRISE_SEANCE_MINI = 20;
 
 const FACILE: Record<FamilleCoach, string> = { velo: 'endurance', course: 'footing_facile', natation: 'endurance' };
 const QUALITE: Record<FamilleCoach, string> = { velo: 'tempo', course: 'tempo', natation: 'seuil' };
@@ -194,13 +196,28 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
     total = libres.length;
   }
 
+  // Reprise après un arrêt (voir plus bas pour la règle complète)
+  const rang = Math.max(0, Math.round(d.rang ?? 0));
+  const facteurReprise = (sport: FamilleCoach): number | null => {
+    const a = habitudes[sport].analyse;
+    if (!a || a.etat !== 'reprise' || !a.picSemaineMinutes) return null;
+    return Math.min(1, REPRISE_PART_DU_PIC * Math.pow(MONTEE_HEBDO, rang)) * (habitudes[sport].echelleReprise ?? 1);
+  };
   // Les sports à poser (en coupant ceux qui dépassent le total), les jours choisis, puis un sport par jour
   let reste = total;
   const retenus = demandes.map((s) => {
-    const n = Math.min(Math.min(SEANCES_PAR_SPORT_MAX, s.seances), reste);
+    let n = Math.min(Math.min(SEANCES_PAR_SPORT_MAX, s.seances), reste);
+    // Reprise : une séance de moins de 20 min n'a pas de sens ; à 35 % d'une petite plus grosse semaine, on fait moins de séances plutôt que des séances ridicules
+    const fr = facteurReprise(s.sport);
+    if (fr !== null) {
+      const nMax = Math.max(1, Math.floor((fr * habitudes[s.sport].analyse!.picSemaineMinutes!) / REPRISE_SEANCE_MINI));
+      if (n > nMax) { abandons.push(`Pour ta reprise du ${s.sport === 'velo' ? 'vélo' : s.sport}, je limite à ${nMax} séance${nMax > 1 ? 's' : ''} par semaine : à ${Math.round(fr * 100)} % de ta plus grosse semaine passée, des séances de moins de ${REPRISE_SEANCE_MINI} min n'ont pas de sens.`); n = nMax; }
+    }
     reste -= n;
     return { sport: s.sport, seances: n };
   });
+  // Le plafond de reprise peut avoir réduit le nombre de séances : les jours choisis suivent le nombre réellement retenu
+  total = retenus.reduce((t, r) => t + r.seances, 0);
   const joursChoisis = choisirJours(libres, total);
   const sports = sequenceSports(retenus);
 
@@ -213,12 +230,6 @@ export function planifierSemaine(d: DemandeSemaine, seances: SeancePrevue[], bas
   if (regles.blessureActive) profilUtilise.push('blessure encore là : que du facile, ni qualité ni sortie longue');
   // Reprise après un arrêt (aucune séance dans le sport depuis 90 jours, mais une vie dedans) : départ à 35 % de sa plus grosse semaine passée (fiche reprise-apres-arret, arrêt de 2 à 3 mois),
   // qui monte de semaine en semaine (+7 %), et AUCUNE séance dure ni sortie longue tant que le volume est sous 75 % de ce pic (« vitesse seulement quand on est revenu à 75-80 % du volume d'avant »).
-  const rang = Math.max(0, Math.round(d.rang ?? 0));
-  const facteurReprise = (sport: FamilleCoach): number | null => {
-    const a = habitudes[sport].analyse;
-    if (!a || a.etat !== 'reprise' || !a.picSemaineMinutes) return null;
-    return Math.min(1, REPRISE_PART_DU_PIC * Math.pow(MONTEE_HEBDO, rang)) * (habitudes[sport].echelleReprise ?? 1);
-  };
   for (const sp of new Set(sports)) {
     const f = facteurReprise(sp);
     if (f !== null) profilUtilise.push(`reprise du ${sp === 'velo' ? 'vélo' : 'natation'} : ${Math.round(f * 100)} % de ta plus grosse semaine passée (${habitudes[sp].analyse!.picSemaineMinutes} min)${f < SEUIL_RETOUR_INTENSITE ? ', que du facile tant que tu n\'es pas revenu à 75 %' : ''}`);

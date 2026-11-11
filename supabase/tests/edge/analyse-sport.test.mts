@@ -101,3 +101,16 @@ test('type de qualité : il suit la limite du sportif (vélo) et la natation res
   assert.deepEqual([0, 1, 2, 3].map((r) => typeQualite('velo', an(null), r)), ['tempo', 'seuil', 'tempo', 'seuil']);
   assert.equal(typeQualite('natation', null, 0), 'seuil');
 });
+
+test('reprise avec une petite plus grosse semaine : moins de séances plutôt que des séances ridicules, et le plan reste complet (pas d\'exception)', () => {
+  const v = { sport: 'natation', premiere_sortie: '2023-01-01', derniere_sortie: '2025-01-01', jours_depuis_derniere: 678, sorties: 30, heures_total: 20, annees: [], plus_grosse_semaine: { du: '2023-01-02', sorties: 3, minutes: 90 }, plus_longue_sortie: { date: '2023-01-05', minutes: 45, km: 1.5 }, arrets: [], recent_90_jours: { sorties: 0, minutes: 0, plus_longue_minutes: 0 }, records: {} };
+  const h = habitudesDepuisResume({ vie_natation: v });
+  const r = planifierSemaine({ sports: [{ sport: 'natation', seances: 5 }] }, [], ctx(), h);
+  const o = ajouts(r.operations);
+  // 35 % de 90 min = 31 min : une seule séance de 20 min au moins
+  assert.equal(o.length, 1);
+  assert.ok(o[0].proposition.minutes >= 20 && o[0].proposition.minutes <= 35, String(o[0].proposition.minutes));
+  assert.ok(r.abandons.some((a) => /je limite à 1 séance/.test(a)));
+  const p = planifierPeriode({ sports: [{ sport: 'natation', seances: 5 }], semaines: 12 }, [], ctx(), h);
+  assert.ok(ajouts(p.operations).length >= 12);
+});
