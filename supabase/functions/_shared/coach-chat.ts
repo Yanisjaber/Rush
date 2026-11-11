@@ -309,7 +309,7 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
       } else if (spec.genre === 'sortie_longue') {
         nouvelle = sortieLongue(spec.minutes as number, a, false);
       } else {
-        nouvelle = footing(spec.minutes as number, a, false);
+        nouvelle = footing(spec.minutes as number, a);
       }
       operations = [
         { op: 'supprimer', seanceId: ancienne.id, raison: 'remplacée par la séance adaptée' },

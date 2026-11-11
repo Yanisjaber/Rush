@@ -225,18 +225,8 @@ function assembler(nom: string, type: string, blocs: BlocStructure[], resume: st
   return { type, minutes, detail: { nom, structure: blocs, resume }, but };
 }
 
-/** Footing facile : un seul bloc à l'allure facile, avec des lignes droites en phase de base */
-export function footing(minutes: number, a: Allures, lignesDroites: boolean): SeanceCourse {
-  // Les lignes droites se font après un vrai échauffement : il faut au moins 15 min de footing avant (pas de durée fixe pour le footing entier)
-  if (lignesDroites && minutes - 6 * (20 / 60 + 1) >= 15) {
-    const reste = minutes - 6 * (20 / 60 + 1);
-    return assembler(
-      `Footing ${minutes} min + 6 lignes droites`, 'footing_facile',
-      [bloc('steady', `Footing à ${ms(a.facile)}/km`, reste, a.facile, a), intervalles(`6 lignes droites de 20 s à ${ms(a.vma)}/km`, 6, 20 / 60, a.vma, 60, a)],
-      `${Math.round(reste)} min de footing à ${ms(a.facile)}/km · 6 lignes droites de 20 s (récup 1 min)`,
-      'Allure facile pour construire ta base, et des lignes droites pour garder de la vivacité sans fatiguer.',
-    );
-  }
+/** Footing facile : un seul bloc à l'allure facile */
+export function footing(minutes: number, a: Allures): SeanceCourse {
   return assembler(`Footing ${minutes} min`, 'footing_facile', [bloc('steady', `Footing à ${ms(a.facile)}/km`, minutes, a.facile, a)], `${minutes} min à ${ms(a.facile)}/km`, "Allure facile : tu peux parler. C'est ici que se construit l'endurance.");
 }
 
@@ -266,13 +256,10 @@ export function sortieLongue(minutes: number, a: Allures, progressive: boolean):
   return assembler(`Sortie longue ${minutes} min`, 'sortie_longue', [bloc('steady', `Sortie longue à ${ms(a.longue)}/km`, minutes, a.longue, a)], `${minutes} min à ${ms(a.longue)}/km`, "Ta sortie longue de la semaine, tranquille : elle développe l'endurance et la solidité.");
 }
 
-/** Le footing change d'une semaine à l'autre (avec lignes droites, simple, progressif) pour ne pas répéter la même séance ; seulement simple en phase spécifique et à l'affûtage */
+/** Le footing change d'une semaine à l'autre (simple, progressif) pour ne pas répéter la même séance ; seulement simple en phase spécifique et à l'affûtage */
 function varianteFooting(minutes: number, a: Allures, phase: Phase, semaine: number, footingMini: number): SeanceCourse {
-  if (phase === 'specifique' || phase === 'affutage' || minutes < footingMini) return footing(minutes, a, false);
-  const v = semaine % 3;
-  if (v === 0) return footing(minutes, a, true);
-  if (v === 1) return footing(minutes, a, false);
-  return footingProgressif(minutes, a);
+  if (phase === 'specifique' || phase === 'affutage' || minutes < footingMini) return footing(minutes, a);
+  return semaine % 2 === 0 ? footing(minutes, a) : footingProgressif(minutes, a);
 }
 
 // ---------- Le départ d'un vrai débutant ----------

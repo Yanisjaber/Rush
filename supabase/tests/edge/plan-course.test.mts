@@ -332,11 +332,11 @@ test('le nombre de séances varie : une de moins en semaine de récupération à
   const sem = ajouts(r.operations).filter((o) => o.proposition.date >= ajouterJours(AUJ, 1 + iRecup * 7) && o.proposition.date < ajouterJours(AUJ, 8 + iRecup * 7));
   assert.ok(sem.some((o) => /Fartlek/.test(o.detail!.nom)), 'qualité légère en récupération');
 });
-test('les contenus alternent : footings (lignes droites, simple, progressif), VMA puis tempo en développement, sortie longue qui finit plus vite une semaine sur deux', () => {
+test('les contenus alternent : footings (simple, progressif), VMA puis tempo en développement, sortie longue qui finit plus vite une semaine sur deux', () => {
   const course = ajouterJours(AUJ, 70);
   const r = planifierCourse({ date: course, km: 10, tempsCibleMinutes: 58, seancesParSemaine: 3, sansTest: true }, [], ctx({ competitions: [{ date: course }] }), YANIS);
   const noms = ajouts(r.operations).map((o) => o.detail!.nom);
-  assert.ok(noms.some((n) => /lignes droites/.test(n)), 'lignes droites');
+  assert.ok(!noms.some((n) => /lignes droites/.test(n)), 'plus de lignes droites');
   assert.ok(noms.some((n) => /Footing progressif/.test(n)), 'progressif');
   assert.ok(noms.some((n) => /^Footing \d+ min$/.test(n)), 'simple');
   assert.ok(noms.some((n) => /^Tempo/.test(n)), 'tempo');
