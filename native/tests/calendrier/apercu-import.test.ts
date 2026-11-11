@@ -72,3 +72,13 @@ test('apercuImport : trace allégée et profil depuis les flux', () => {
   assert.equal(r.profil.length, 160);
   assert.ok((r.altitudeMax as number) <= 140.01 && (r.altitudeMin as number) >= 59.99);
 });
+
+test('profilAltitude : un trou dans les points (remontée mécanique) donne une pente droite, pas un plateau', () => {
+  const alt = [...Array.from({ length: 10 }, () => 1000), 1600];
+  const dist = [...Array.from({ length: 10 }, (_, i) => i), 30];
+  const p = profilAltitude(alt, dist, 4);
+  assert.equal(p[0], 1000);
+  assert.ok(Math.abs(p[1] - 1028.6) < 1, `p1 ${p[1]}`);
+  assert.ok(Math.abs(p[2] - 1314.3) < 1, `p2 ${p[2]}`);
+  assert.equal(p[3], 1600);
+});

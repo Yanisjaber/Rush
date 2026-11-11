@@ -35,8 +35,8 @@ test('courbes : flux vide, illisible ou trop court → null', () => {
   assert.equal(courbesDepuisStreams(base64({ heartrate: { data: [150, 151] } })), null);
 });
 
-test('moyennes : les tranches vides prennent la valeur voisine, trop de trous → null', () => {
-  assert.deepEqual(moyennesParTranche([10, 20, 30], [0, 1, 3], 4, () => true), [10, 20, 20, 30]);
+test('moyennes : une tranche vide est tracée en ligne droite entre ses voisines, les bords reprennent la voisine, trop de trous → null', () => {
+  assert.deepEqual(moyennesParTranche([10, 20, 30], [0, 1, 3], 4, () => true), [10, 20, 25, 30]);
   assert.equal(moyennesParTranche([10], [0], 10, () => true), null);
   assert.deepEqual(moyennesParTranche([0, 160, 170, 180], [0, 1, 2, 3], 4, (v) => v > 0), [160, 160, 170, 180]);
 });

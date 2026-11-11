@@ -44,15 +44,17 @@ export function moyennesParTranche(valeurs: unknown[], tranche: number[], n: num
   });
   const sortie: (number | null)[] = somme.map((s, k) => (compte[k] ? s / compte[k] : null));
   if (sortie.filter((v) => v !== null).length < n * 0.7) return null;
-  let dernier: number | null = null;
+  // Une tranche vide (la montre n'a presque rien enregistré, par exemple dans une remontée mécanique) est tracée en ligne droite entre ses voisines : recopier la voisine dessinerait un plateau
   for (let k = 0; k < n; k++) {
-    if (sortie[k] === null) sortie[k] = dernier;
-    else dernier = sortie[k];
-  }
-  dernier = null;
-  for (let k = n - 1; k >= 0; k--) {
-    if (sortie[k] === null) sortie[k] = dernier;
-    else dernier = sortie[k];
+    if (sortie[k] !== null) continue;
+    let avant = k - 1;
+    while (avant >= 0 && sortie[avant] === null) avant--;
+    let apres = k + 1;
+    while (apres < n && sortie[apres] === null) apres++;
+    if (avant >= 0 && apres < n) {
+      const [va, vb] = [sortie[avant] as number, sortie[apres] as number];
+      sortie[k] = va + ((vb - va) * (k - avant)) / (apres - avant);
+    } else sortie[k] = avant >= 0 ? sortie[avant] : sortie[apres];
   }
   return sortie as number[];
 }

@@ -79,7 +79,9 @@ export function profilAltitude(altitudes: (number | null)[], distances: (number 
   for (let k = 0; k < points; k++) {
     const cible = (total * k) / (points - 1);
     while (j < dist.length - 1 && dist[j] < cible) j++;
-    sortie.push(alt[j]);
+    // Entre deux points éloignés (une remontée mécanique n'enregistre presque rien), on trace une pente droite au lieu de répéter le même point : sinon le profil montre un plateau
+    const ecart = j > 0 ? dist[j] - dist[j - 1] : 0;
+    sortie.push(ecart > 0 && cible > dist[j - 1] && cible < dist[j] ? alt[j - 1] + ((alt[j] - alt[j - 1]) * (cible - dist[j - 1])) / ecart : alt[j]);
   }
   return sortie;
 }
