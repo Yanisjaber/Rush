@@ -36,8 +36,16 @@ export interface LigneAnalyse {
   texte: string;
 }
 
+/** Le compte rendu à la façon d'un coach : un titre qui dit l'essentiel, puis 3 ou 4 phrases courtes. */
+export interface CompteRendu {
+  titre: string;
+  phrases: string[];
+}
+
 export interface Analyse {
   lignes: LigneAnalyse[];
+  /** Le compte rendu écrit (null si on n'a rien à dire). */
+  compteRendu: CompteRendu | null;
   /** La seule chose à retenir pour la prochaine fois (null si aucune consigne chiffrée n'est justifiée). */
   aFaire: string | null;
   /** La séance prévue a servi à juger. */
@@ -50,6 +58,8 @@ interface Constat {
   label: string;
   texte: string;
   action?: string;
+  /** Les chiffres bruts, pour que le compte rendu les remette en phrases. */
+  faits?: Record<string, number | string | null>;
 }
 
 // --- Seuils (conventions de lecture) ------------------------------------------------------------------------------------
@@ -171,12 +181,12 @@ function blocsDuPlan(e: EntreeAnalyse): Constat[] {
     // Un bloc continu jugé sans chrono : une phrase, l'écart en clair
     if (b.type === 'steady' && b.nbReps === 1 && b.premiere != null) {
       if (b.dans === 1) {
-        sortie.push({ code: 'bloc_tenu', priorite: 40, label: 'Plan', texte: `${b.nom} : tenu, ${valeur(b.metric, b.premiere)} pour ${c} visés.` });
+        sortie.push({ code: 'bloc_tenu', priorite: 40, label: 'Plan', texte: `${b.nom} : tenu, ${valeur(b.metric, b.premiere)} pour ${c} visés.`, faits: { reel: valeur(b.metric, b.premiere), cible: c } });
       } else {
         const unite = b.metric === 'pace' ? ' s/km' : b.metric === 'hr' ? ' bpm' : ' W';
         const sens = b.horsCible === 'trop_vite' ? 'trop vite' : b.horsCible === 'trop_lent' ? 'trop lent' : b.horsCible === 'trop_haut' ? 'trop haut' : 'trop bas';
         const action = b.horsCible === 'trop_vite' ? `Vise ${c} : ralentis, même si ça paraît trop facile.` : b.horsCible === 'trop_lent' ? `Vise ${c} : tu as de la marge pour aller un peu plus vite.` : undefined;
-        sortie.push({ code: 'bloc_rate', priorite: 72, label: 'Plan', texte: `${b.nom} : ${valeur(b.metric, b.premiere)} au lieu de ${c} (${b.ecart}${unite} ${sens}).`, action });
+        sortie.push({ code: 'bloc_rate', priorite: 72, label: 'Plan', texte: `${b.nom} : ${valeur(b.metric, b.premiere)} au lieu de ${c} (${b.ecart}${unite} ${sens}).`, action, faits: { reel: valeur(b.metric, b.premiere), cible: c, sens: b.horsCible ?? null, continu: 1 } });
       }
       continue;
     }
@@ -262,9 +272,10 @@ function derive(e: EntreeAnalyse): Constat | null {
   const d = e.derivePct;
   const debut = e.flux ? debutDerive(e.flux, e.famille === 'velo' && e.flux.w.some((x) => x > 0) && e.wattsMesures ? 'puissance' : 'vitesse') : null;
   const ou = debut ? `, dès le km ${km(debut.km)}` : '';
-  if (d <= DERIVE_SOLIDE) return { code: 'derive_ok', priorite: 25, label: 'Cœur', texte: `Dérive de ${signe(d)}${nombre(Math.abs(d), 1)} % : endurance solide (moins de 5 %).` };
-  if (d <= DERIVE_FORTE) return { code: 'derive_moyenne', priorite: 55, label: 'Cœur', texte: `Dérive de +${nombre(d, 1)} % (au-delà de 5 %)${ou} : le cœur a monté à allure égale.` };
-  return { code: 'derive_forte', priorite: 75, label: 'Cœur', texte: `Dérive de +${nombre(d, 1)} % (au-delà de 10 %)${ou} : le cœur a nettement monté à allure égale.` };
+  const faits = { d, km: debut ? debut.km : null };
+  if (d <= DERIVE_SOLIDE) return { faits, code: 'derive_ok', priorite: 25, label: 'Cœur', texte: `Dérive de ${signe(d)}${nombre(Math.abs(d), 1)} % : endurance solide (moins de 5 %).` };
+  if (d <= DERIVE_FORTE) return { faits, code: 'derive_moyenne', priorite: 55, label: 'Cœur', texte: `Dérive de +${nombre(d, 1)} % (au-delà de 5 %)${ou} : le cœur a monté à allure égale.` };
+  return { faits, code: 'derive_forte', priorite: 75, label: 'Cœur', texte: `Dérive de +${nombre(d, 1)} % (au-delà de 10 %)${ou} : le cœur a nettement monté à allure égale.` };
 }
 
 function arretsC(e: EntreeAnalyse): Constat | null {
@@ -317,6 +328,81 @@ function irregularite(e: EntreeAnalyse): Constat | null {
   return { code: 'irregulier', priorite: 35, label: 'Allure', texte: `Allure irrégulière : ±${Math.round(ecartType)} s/km d'un bloc de 2 minutes à l'autre sur un terrain plat.` };
 }
 
+
+// --- Le compte rendu écrit --------------------------------------------------------------------------------------------------------
+
+const NOM_AVEC_ARTICLE: Record<TypeSortie, string> = { footing: 'un footing', longue: 'une sortie longue', fractionne: 'un fractionné', competition: 'une compétition', autre: 'une sortie facile' };
+const NOM_COURT: Record<TypeSortie, string> = { footing: 'footing', longue: 'sortie longue', fractionne: 'fractionné', competition: 'compétition', autre: 'sortie' };
+
+/** La phrase du cœur : ce que la dérive dit, dans les mots d'un coach. */
+function phraseCoeur(c: Constat): string | null {
+  const d = Number(c.faits?.d);
+  const kmDebut = c.faits?.km != null ? Number(c.faits.km) : null;
+  if (!Number.isFinite(d)) return null;
+  const ou = kmDebut ? ` dès le km ${km(kmDebut)}` : '';
+  if (c.code === 'derive_forte') return `Ton cœur l'a payé : il a dérivé de ${nombre(d, 0)} %${ou}, à allure égale.`;
+  if (c.code === 'derive_moyenne') return `Ton cœur a monté de ${nombre(d, 0)} %${ou} à allure égale.`;
+  return `Cœur stable : ${nombre(Math.max(d, 0), 0)} % de dérive, endurance solide.`;
+}
+
+/**
+ * Ce qu'un coach écrirait : le message principal de la séance (trop vite, bien tenue, cibles ratées…), puis ce qu'il a coûté, puis l'écart au plan.
+ * Le moteur choisit UN message, pas une liste ; les constats secondaires ne passent que s'ils sont graves. Quatre phrases au plus.
+ */
+function redigerCompteRendu(e: EntreeAnalyse, constats: Constat[], zones: number[] | null): CompteRendu | null {
+  if (!constats.length) return null;
+  const par = (code: string) => constats.find((c) => c.code === code);
+  const utilises = new Set<string>();
+  const phrases: string[] = [];
+  const dire = (code: string, texte: string | null) => {
+    if (texte) {
+      phrases.push(texte);
+      utilises.add(code);
+    }
+  };
+  const { intention } = intentionDeLaSortie(e);
+  const objectif = constats.find((c) => c.code.startsWith('objectif_'));
+  const continu = constats.find((c) => c.code.startsWith('bloc_') && c.faits?.continu);
+  const coeur = constats.find((c) => c.code.startsWith('derive_'));
+  const total = zones ? zones.reduce((a, b) => a + b, 0) : 0;
+  const p12 = zones && total ? (zones[0] + (zones[1] ?? 0)) / total : 0;
+  const p3 = zones && total ? (zones[2] ?? 0) / total : 0;
+  const p45 = zones && total ? zones.slice(3).reduce((a, b) => a + b, 0) / total : 0;
+  const mot = NOM_COURT[e.type];
+  let titre = '';
+
+  if (intention === 'facile' && objectif && objectif.code !== 'objectif_tenu') {
+    // Une séance faite plus fort que prévu : un seul message, la cause d'abord
+    const vite = continu?.code === 'bloc_rate' && continu.faits?.sens === 'trop_vite';
+    titre = vite ? `Trop vite pour ${NOM_AVEC_ARTICLE[e.type]}` : `Trop dur pour ${NOM_AVEC_ARTICLE[e.type]}`;
+    if (vite && continu) dire(continu.code, `Ton ${mot} devait rester facile, à ${continu.faits?.cible}. Tu l'as fait à ${continu.faits?.reel}, trop vite.`);
+    else dire(objectif.code, `Ton ${mot} devait rester facile, mais ${p45 >= FACILE_RATE_PART_ZONES_45 ? `${pct(p45)} % du temps s'est passé en zone 4 ou plus` : `${pct(p3)} % du temps s'est passé en zone 3`}.`);
+    utilises.add(objectif.code);
+    const dep = par('depart_rapide');
+    if (dep && !vite) dire(dep.code, dep.texte.replace(/^Trop rapide/, 'Départ trop rapide'));
+    if (coeur && coeur.code !== 'derive_ok') dire(coeur.code, phraseCoeur(coeur));
+  } else if ((intention === 'facile' || intention === 'modere') && objectif) {
+    titre = intention === 'facile' ? `${mot[0].toUpperCase()}${mot.slice(1)} bien tenu` : 'Allure modérée tenue';
+    dire(objectif.code, intention === 'facile' ? `Tu es resté tranquille : ${pct(p12)} % du temps en zones 1 et 2.` : `Tu as tenu l'allure : ${pct(p3)} % du temps en zone 3.`);
+    if (coeur) dire(coeur.code, phraseCoeur(coeur));
+    const dep = par('depart_rapide');
+    if (dep) dire(dep.code, dep.texte.replace(/^Trop rapide/, 'Départ un peu rapide'));
+  } else {
+    // Séance à intervalles, ou rien de précis à juger : on prend les constats les plus lourds, en phrases
+    const rates = constats.filter((c) => c.code === 'bloc_rate' || c.code === 'bloc_absent');
+    titre = rates.length ? 'Les cibles du plan ne sont pas tenues' : constats.some((c) => c.code === 'bloc_tenu') ? 'Plan tenu' : 'À retenir de la séance';
+    for (const c of [...constats].filter((x) => x.priorite >= 30 && x.label !== 'Données').sort((a, b) => b.priorite - a.priorite).slice(0, 3)) {
+      dire(c.code, c.code.startsWith('derive_') ? phraseCoeur(c) : c.texte);
+    }
+  }
+
+  // Ce que ça a coûté par rapport au prévu, puis les problèmes de données graves
+  const ecart = par('plan_ecart');
+  if (ecart && !utilises.has(ecart.code)) dire(ecart.code, ecart.texte);
+  for (const c of constats.filter((x) => x.priorite >= 80 && !utilises.has(x.code)).sort((a, b) => b.priorite - a.priorite)) dire(c.code, c.texte);
+  return phrases.length ? { titre, phrases: phrases.slice(0, 4) } : null;
+}
+
 /** Analyse la sortie : les constats les plus importants (5 au plus), en lignes courtes, et la consigne à retenir. */
 export function analyserSortie(e: EntreeAnalyse): Analyse {
   const zones = e.flux && e.zonesCardio ? tempsParZoneCoeur(e.flux, e.zonesCardio) : null;
@@ -341,6 +427,6 @@ export function analyserSortie(e: EntreeAnalyse): Analyse {
   const gardes = [...constats].sort((a, b) => b.priorite - a.priorite).slice(0, 5);
   const lignes = gardes.map((c) => ({ label: c.label, texte: c.texte }));
   const aFaire = gardes.find((c) => c.action && c.priorite >= 50)?.action ?? null;
-  return { lignes, aFaire, avecPlan: !!e.prevue };
+  return { lignes, compteRendu: redigerCompteRendu(e, constats, zones), aFaire, avecPlan: !!e.prevue };
 }
 

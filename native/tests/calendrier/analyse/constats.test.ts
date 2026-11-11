@@ -189,3 +189,19 @@ test('le verdict porte le type de séance, pas le long nom de la séance prévue
   const a = analyserSortie({ ...base(), prevue: PLAN_REEL });
   assert.match(a.lignes.find((l) => l.label === 'Objectif')!.texte, /^Footing (raté|tenu|un cran)/);
 });
+
+test('compte rendu : un footing fait trop vite se lit comme un coach (message unique, cause, conséquence)', () => {
+  const prevue: PrevueAnalyse = { ...PLAN, structure: [{ type: 'steady', name: 'Footing à 6:28/km', duration: 30, intensity: 82 }] as never };
+  const c = analyserSortie({ ...base(), prevue, refs: { ftp: null, hrMax: 205, allureBase: 300 } }).compteRendu!;
+  assert.match(c.titre, /^Trop (vite|dur) pour un footing$/);
+  assert.ok(c.phrases.length >= 2 && c.phrases.length <= 4);
+  assert.match(c.phrases.join(' '), /devait rester facile/);
+  assert.match(c.phrases.join(' '), /Ton cœur l'a payé : il a dérivé de 12 %/);
+});
+
+test('compte rendu : un footing tenu est félicité en peu de mots', () => {
+  const c = analyserSortie({ ...base(footing({ fc: () => 140, v: () => 1000 / 400 })), derivePct: 2, tss: 40 }).compteRendu!;
+  assert.equal(c.titre, 'Footing bien tenu');
+  assert.match(c.phrases[0], /Tu es resté tranquille : 100 %/);
+  assert.match(c.phrases.join(' '), /Cœur stable/);
+});

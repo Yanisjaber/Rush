@@ -1,10 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
 import type { Analyse } from '@/data/calendrier/analyse/constats';
 import { espace, rayon, sombre } from '@/theme/couleurs';
-import { police, typo } from '@/theme/typo';
+import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// La page 4 d'une sortie : l'analyse, en lignes courtes. Une ligne = un fait qu'on ne lit pas à l'œil sur les autres pages, ou un écart à ce qui était prévu. Pas de récit.
+// La page 4 d'une sortie : le compte rendu d'un coach (un titre, trois ou quatre phrases) puis la consigne à retenir.
 // Tout est calculé par le code (aucun modèle de langage) : voir data/calendrier/analyse/constats.ts.
 interface Props {
   couleur: string;
@@ -24,14 +24,14 @@ export function PageAnalyseSortie({ couleur, analyse, nomPlan }: Props) {
         <Text style={[typo.petit, { color: p.texteMuet }]}>{nomPlan ? `Jugée contre ta séance prévue : ${nomPlan}` : 'Aucune séance prévue reliée à cette sortie'}</Text>
       </View>
 
-      <View style={[styles.bloc, { backgroundColor: p.surface }]}>
-        {analyse.lignes.map((l, i) => (
-          <View key={`${l.label}-${i}`} accessible accessibilityLabel={`${l.label}. ${l.texte}`} style={[styles.ligne, i > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }]}>
-            <Text style={[typo.micro, styles.etiquette, { color: couleurEtiquette }]}>{l.label.toUpperCase()}</Text>
-            <Text style={[typo.corps, { color: p.texte }]}>{l.texte}</Text>
-          </View>
-        ))}
-      </View>
+      {analyse.compteRendu ? (
+        <View accessible accessibilityLabel={`${analyse.compteRendu.titre}. ${analyse.compteRendu.phrases.join(' ')}`} style={[styles.bloc, { backgroundColor: p.surface }]}>
+          <Text style={[typo.titre2, { color: p.texte }]}>{analyse.compteRendu.titre}</Text>
+          {analyse.compteRendu.phrases.map((ph, i) => (
+            <Text key={i} style={[typo.corps, { color: p.texte }]}>{ph}</Text>
+          ))}
+        </View>
+      ) : null}
 
       {analyse.aFaire ? (
         <View accessible accessibilityLabel={`À faire. ${analyse.aFaire}`} style={[styles.afaire, { borderColor: couleur }]}>
@@ -44,8 +44,6 @@ export function PageAnalyseSortie({ couleur, analyse, nomPlan }: Props) {
 }
 
 const styles = StyleSheet.create({
-  bloc: { borderRadius: rayon.base, paddingHorizontal: 14, paddingVertical: 4 },
-  ligne: { paddingVertical: 12, gap: 4 },
-  etiquette: { fontFamily: police.titre700, letterSpacing: 1 },
+  bloc: { borderRadius: rayon.base, paddingHorizontal: 14, paddingVertical: 14, gap: 10 },
   afaire: { borderWidth: 1.5, borderRadius: rayon.bloc, padding: 14, gap: espace.e1 },
 });
