@@ -1,10 +1,6 @@
-import { EcranSection } from '@/components/ecrans/EcranSection';
-import { FormulaireSection } from '@/components/feuilles/FormulaireSection';
+import { FormulairePhysio } from '@/components/feuilles/FormulairePhysio';
 
+// Physiologie : blocs par sport, repères en haut, Enregistrer fixé en bas (maquette 8 validée le 11 nov.).
 export default function Physiologie() {
-  return (
-    <EcranSection>
-      <FormulaireSection id="physiologie" />
-    </EcranSection>
-  );
+  return <FormulairePhysio />;
 }
