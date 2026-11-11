@@ -29,6 +29,12 @@ But : que les graphes de la sortie (page 2 : allure, cœur, altitude, cadence, p
 - Repères sur les courbes (pic de puissance, FC max, dérive cardiaque, efforts marquants) : **abandonnés** par Yanis le 11 nov. (maquettes 7 et 8 de l'Artifact si on y revient).
 - Réglages : zones personnalisées, estimation proposée depuis les sorties (`estimerFcMax`, `estimerFtp` ne sont pas encore branchées à un écran).
 
+## Données Strava à récupérer en plus (décisions du 11 nov. 2026)
+
+- **À faire** : `workout_type` (course, sortie longue, entraînement) et la température (`temp` des streams, seulement si l'appareil la mesure). Migration, `strava-ingest`, webhook, puis affichage (8 maquettes d'abord).
+- **Plus tard** : pente (`grade_smooth`) : profil d'altitude coloré, allure ou puissance selon la pente. Ressenti saisi dans Strava (`perceived_exertion`) : chantier à voir.
+- **Écartés** : records de course et splits (déjà calculés chez nous).
+
 ## Règles pour la suite
 
 - Tout changement d'aspect de la page de la sortie ou des réglages : **8 maquettes d'abord** (Artifact privé), puis code.
