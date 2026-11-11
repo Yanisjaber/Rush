@@ -33,6 +33,7 @@ But : que les graphes de la sortie (page 2 : allure, cœur, altitude, cadence, p
 
 - **Fait (11 nov.)** : `avg_temp` (température moyenne, seulement si l'appareil la mesure) et `workout_type` (1 et 11 = compétition, 2 = sortie longue, 3 et 12 = entraînement) rangés dans `activities` (migration `2026-11-11_temperature_type_seance.sql`, `strava-ingest` et `strava-webhook` déployées, historique rattrapé), affichés dans les données de la sortie. La courbe de température (stream `temp`) : plus tard.
 - **Plus tard** : pente (`grade_smooth`) : profil d'altitude coloré, allure ou puissance selon la pente. Ressenti saisi dans Strava (`perceived_exertion`) : chantier à voir.
+- **Plus tard (pas le moment, 11 nov.)** : marquer à la main une sortie comme compétition. Le tag existe déjà (`activities.category`, 101 sorties, la synchro ne l'écrase pas) ; il manque seulement le bouton. 8 maquettes faites : https://claude.ai/artifact/A4EguSn5tMuXSrsA96ieGb (conseil : sélecteur en page 2 ou menu « ··· », plus un écran « courses à classer » pour l'historique). Tes 3 courses à pied taguées sur Strava ne sont qu'une petite partie de tes courses réelles.
 - **Écartés** : records de course et splits (déjà calculés chez nous).
 
 ## Règles pour la suite
