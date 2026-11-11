@@ -8,7 +8,7 @@ import { PasZone } from '@/components/reglages/PasZone';
 import { Bouton } from '@/components/ui/Bouton';
 import { Pastille } from '@/components/ui/Pastille';
 import { SelecteurSegments } from '@/components/ui/SelecteurSegments';
-import { enregistrerProfil } from '@/data/acces/api';
+import { demanderZonesAuCoach, enregistrerProfil, type PropositionZones } from '@/data/acces/api';
 import {
   bornesPourcent, calculerZones, deplacerBorne, lireValeurZone, MODELES_ZONES, pasZone, persoValide, referenceCardio, texteAllure, zonesPersoDuProfil,
   type ModeleZones, type ZonesPerso,
@@ -39,6 +39,7 @@ export default function Zones() {
   const [enregistre, setEnregistre] = useState('{}');
   const [message, setMessage] = useState('');
   const [envoi, setEnvoi] = useState(false);
+  const [coach, setCoach] = useState<{ etat: 'repos' | 'calcul' | 'erreur' | 'proposition'; message?: string; resultat?: PropositionZones }>({ etat: 'repos' });
 
   // Les zones perso du profil, une fois chargé
   useEffect(() => {
@@ -83,13 +84,14 @@ export default function Zones() {
     deplacer(i, v);
     return true;
   };
-  const enregistrer = async () => {
+  const enregistrer = async (surcharge?: ZonesPerso) => {
     if (!ligne || envoi) return;
+    const source = surcharge ?? perso;
     setEnvoi(true);
     setMessage('');
     const zonesPerso: ZonesPerso = {};
     for (const o of ONGLETS) {
-      const v = persoValide(o.cle, perso[o.cle]);
+      const v = persoValide(o.cle, source[o.cle]);
       if (v) zonesPerso[o.cle] = v;
     }
     const suite = { ...extras } as Record<string, unknown>;
@@ -98,8 +100,22 @@ export default function Zones() {
     const r = demo ? { erreur: '' } : userId ? await enregistrerProfil(userId, {}, suite) : { erreur: 'Reconnecte-toi.' };
     setEnvoi(false);
     if (r.erreur) return setMessage(r.erreur);
+    setPerso(zonesPerso);
     setEnregistre(JSON.stringify(zonesPerso));
     setMessage('Enregistré. Les courbes et le temps par zone utilisent tes zones.');
+  };
+
+  const demanderAuCoach = async () => {
+    setCoach({ etat: 'calcul' });
+    setMessage('');
+    const r = await demanderZonesAuCoach();
+    setCoach(r.ok ? { etat: 'proposition', resultat: r.resultat } : { etat: 'erreur', message: r.message });
+  };
+  const appliquerCoach = async () => {
+    const prop = coach.resultat?.proposition;
+    if (!prop) return;
+    setCoach({ etat: 'repos' });
+    await enregistrer({ ...perso, ...prop });
   };
 
   if (chargement) return <EcranSection><Text style={[typo.corps, { color: p.texteDoux }]}>Chargement…</Text></EcranSection>;
@@ -148,6 +164,28 @@ export default function Zones() {
                 ))}
               </View>
 
+
+              {!demo ? (
+                <View style={{ gap: espace.e2 }}>
+                  {coach.etat !== 'proposition' ? (
+                    <Bouton variante="discret" onPress={() => void demanderAuCoach()} disabled={coach.etat === 'calcul'}>
+                      {coach.etat === 'calcul' ? 'Le coach calcule…' : 'Faire calculer mes zones par le coach'}
+                    </Bouton>
+                  ) : null}
+                  {coach.etat === 'erreur' ? <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>{coach.message}</Text> : null}
+                  {coach.etat === 'proposition' && coach.resultat ? (
+                    <PropositionCoach
+                      resultat={coach.resultat}
+                      perso={perso}
+                      refs={refs}
+                      couleurs={couleurs}
+                      envoi={envoi}
+                      onAppliquer={() => void appliquerCoach()}
+                      onIgnorer={() => setCoach({ etat: 'repos' })}
+                    />
+                  ) : null}
+                </View>
+              ) : null}
             </View>
           ) : (
             <View style={styles.vide}>
@@ -179,10 +217,60 @@ function plageZone(modele: ModeleZones, z: { de: number; a: number }, i: number,
   return `${z.de} – ${z.a} ${unite}`;
 }
 
+/** La proposition du coach : l'explication, puis ce qui change zone par zone (avant → après), à valider ou à ignorer. */
+function PropositionCoach({ resultat, perso, refs, couleurs, envoi, onAppliquer, onIgnorer }: {
+  resultat: PropositionZones;
+  perso: ZonesPerso;
+  refs: Record<ModeleZones, number>;
+  couleurs: Record<ModeleZones, string>;
+  envoi: boolean;
+  onAppliquer: () => void;
+  onIgnorer: () => void;
+}) {
+  const p = usePalette();
+  const lignes: { cle: string; modele: ModeleZones; titre: string; avant: string; apres: string }[] = [];
+  for (const m of ['puissance', 'cardio', 'allure'] as const) {
+    const prop = resultat.proposition[m];
+    if (!prop) continue;
+    const avant = calculerZones(m, refs[m], perso[m]);
+    const apres = calculerZones(m, refs[m], prop);
+    if (!avant || !apres) continue;
+    const t = (v: number) => (m === 'allure' ? texteAllure(v).replace('/km', '') : String(Math.round(v)));
+    avant.forEach((z, i) => {
+      if (i > 0 && z.de !== apres[i].de) lignes.push({ cle: `${m}${i}`, modele: m, titre: z.nom, avant: t(z.de), apres: t(apres[i].de) });
+    });
+  }
+  return (
+    <View style={[styles.proposition, { backgroundColor: p.surface2 }]}>
+      <Text style={[typo.micro, { color: p.texteDoux, letterSpacing: 1.2 }]}>PROPOSITION DU COACH</Text>
+      <Text style={[typo.corps, { color: p.texte }]}>{resultat.explication}</Text>
+      {lignes.length ? (
+        <View>
+          {lignes.map((l) => (
+            <View key={l.cle} style={styles.diff}>
+              <View style={[styles.puce, { backgroundColor: couleurs[l.modele] }]} />
+              <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux, flex: 1 }]}>{`${MODELES_ZONES[l.modele].titre} · ${l.titre}`}</Text>
+              <Text style={[typo.corpsFort, { color: p.texte }]}>{`${l.avant} → ${l.apres}`}</Text>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <Text style={[typo.petit, { color: p.texteDoux }]}>Aucune limite ne change : tes zones actuelles lui conviennent.</Text>
+      )}
+      <View style={{ gap: espace.e2 }}>
+        {lignes.length ? <Bouton onPress={onAppliquer} disabled={envoi}>{envoi ? 'Enregistrement…' : 'Appliquer ces zones'}</Bouton> : null}
+        <Bouton variante="discret" onPress={onIgnorer}>{lignes.length ? 'Ignorer' : 'OK'}</Bouton>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 40, borderTopWidth: StyleSheet.hairlineWidth },
   puce: { width: 12, height: 12, borderRadius: 6 },
   pas: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  proposition: { borderRadius: rayon.l, padding: espace.e3, gap: espace.e3 },
+  diff: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 36 },
   vide: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   tiret: { fontSize: 32, lineHeight: 36 },
 });
