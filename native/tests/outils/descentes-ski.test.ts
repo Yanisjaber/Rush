@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { statsSki } from '../../src/data/outils/descentes-ski.ts';
+import { journeeSki, statsSki } from '../../src/data/outils/descentes-ski.ts';
 
 // Une journée : 3 fois (remontée de 400 m à 1,5 m/s, descente de 390 m à 12 m/s), à 1 point par seconde
 function journee(montees: number[], descentes: number[]) {
@@ -54,4 +54,23 @@ test('statsSki : le bruit de quelques mètres ne crée pas de descentes', () => 
   const s = statsSki({ temps: alt.map((_, i) => i), altitude: alt, vitesse: alt.map(() => 5) });
   assert.equal(s?.descentes, 0);
   assert.equal(s?.descenteM, 0);
+});
+
+test('journeeSki : remontée, descente, remontée… dans l\'ordre, avec durées et dénivelés', () => {
+  const e = journeeSki(journee([400, 400, 400], [390, 390, 390]));
+  assert.ok(e);
+  assert.deepEqual(e.map((x) => x.type), ['montee', 'descente', 'montee', 'descente', 'montee', 'descente']);
+  assert.ok(e[0].dureeS >= 190 && e[0].dureeS <= 210, `montée ${e[0].dureeS} s`);
+  assert.ok(Math.abs(e[0].deniveleM - 400) <= 30);
+  assert.ok(e[1].deniveleM >= 360 && e[1].deniveleM <= 400);
+  assert.equal(e[1].vmaxKmh, 77);
+  assert.equal(e[0].vmaxKmh, null);
+  assert.ok(e[2].debutS > e[1].debutS);
+});
+
+test('journeeSki : une petite baisse se fond dans la montée, sans altitude rien', () => {
+  const e = journeeSki(journee([300, 300], [25, 25]));
+  assert.ok(!e || e.every((x) => x.type === 'montee'));
+  assert.equal(journeeSki(undefined), null);
+  assert.equal(journeeSki({ temps: [0, 1], altitude: [1, 2] }), null);
 });

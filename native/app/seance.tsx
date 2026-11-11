@@ -14,11 +14,12 @@ import { typeDeSeance } from '@/data/calendrier/analyse/type-seance';
 import { chiffreEcarte } from '@/data/calendrier/donnees-ecartees';
 import { chiffresSeance, lignesTours, quatreChiffres } from '@/data/calendrier/seance-detail';
 import { deriveCardiaque } from '@/data/outils/derive-cardiaque';
-import { statsSki } from '@/data/outils/descentes-ski';
+import { journeeSki, statsSki } from '@/data/outils/descentes-ski';
 import { travailAuDessusFtp } from '@/data/outils/efforts-sortie';
 import { formatDateCourte, formatKm, formatNombre } from '@/data/outils/format';
 import { familleAffichage } from '@/data/sports/familles';
 import { nomDuType } from '@/data/sports/catalogue-sports';
+import { JournalSki } from '@/components/graphes/JournalSki';
 import { GrapheTours } from '@/components/graphes/GrapheTours';
 import { RecordsSortie } from '@/components/graphes/RecordsSortie';
 import { RepartitionSortie } from '@/components/graphes/RepartitionSortie';
@@ -95,6 +96,7 @@ export default function Seance() {
   // Les chiffres en plus : lus dans `metrics` (calculés par le serveur sur les flux complets) ou déduits des colonnes de la séance
   // Le ski (alpin, snowboard, rando) : dénivelé descendu, descentes et vitesse max, calculés depuis les flux d'altitude et de vitesse
   const ski = seance.sport === 'AlpineSki' || seance.sport === 'Snowboard' || seance.sport === 'BackcountrySki' ? statsSki(courbes?.brut) : null;
+  const etapesSki = ski ? journeeSki(courbes?.brut) : null;
   const supplements: { cle: string; libelle: string; valeur: string; unite?: string }[] = [
     ...(ski && ski.descenteM > 0 ? [{ cle: 'descendu', libelle: 'D−', valeur: formatNombre(ski.descenteM), unite: 'm' }] : []),
     ...(ski && ski.descentes > 0 ? [{ cle: 'descentes', libelle: 'Descentes', valeur: String(ski.descentes) }] : []),
@@ -231,6 +233,7 @@ export default function Seance() {
             couleur={couleur}
             records={familleSortie === 'course' || familleSortie === 'velo' ? <RecordsSortie brut={courbes?.brut} famille={familleSortie} iso={String(seance.start_date_local).slice(0, 10)} couleur={couleur} /> : undefined}
           >
+            {etapesSki && etapesSki.some((e) => e.type === 'descente') ? <JournalSki etapes={etapesSki} couleur={couleur} departMin={heureLue && heureLue !== '00:00' ? Number(heureLue.slice(0, 2)) * 60 + Number(heureLue.slice(3, 5)) : null} /> : null}
             {notes ? (
               <View style={[styles.notes, { backgroundColor: p.surface }]}>
                 <Text style={[typo.micro, { color: p.texteDoux }]}>NOTES</Text>

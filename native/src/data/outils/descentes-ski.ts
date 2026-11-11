@@ -36,13 +36,8 @@ function lisser(a: number[], fenetre: number): number[] {
   });
 }
 
-export function statsSki(brut: FluxBruts | null | undefined): StatsSki | null {
-  const altBrute = brut?.altitude;
-  if (!brut || !altBrute || altBrute.length < 30) return null;
-  const alt = lisser(altBrute, 7);
-  const vit = brut.vitesse && brut.vitesse.length === alt.length ? brut.vitesse : null;
-
-  // Sommets et creux : on suit l'extrême courant, et on le valide quand l'altitude s'en éloigne de plus que le bruit
+/** Les sommets et les creux de l'altitude lissée : on suit l'extrême courant, et on le valide quand l'altitude s'en éloigne de plus que le bruit. */
+function sommets(alt: number[]): { i: number; v: number }[] {
   const points: { i: number; v: number }[] = [];
   let ext = { i: 0, v: alt.find(fini) ?? 0 };
   let sens = 0; // 0 = pas encore décidé, 1 = on monte (on cherche un sommet), -1 = on descend (on cherche un creux)
@@ -70,6 +65,17 @@ export function statsSki(brut: FluxBruts | null | undefined): StatsSki | null {
   });
   points.push(ext);
 
+  return points;
+}
+
+export function statsSki(brut: FluxBruts | null | undefined): StatsSki | null {
+  const altBrute = brut?.altitude;
+  if (!brut || !altBrute || altBrute.length < 30) return null;
+  const alt = lisser(altBrute, 7);
+  const vit = brut.vitesse && brut.vitesse.length === alt.length ? brut.vitesse : null;
+
+  const points = sommets(alt);
+
   let descenteM = 0;
   let descentes = 0;
   for (let k = 1; k < points.length; k++) {
@@ -92,4 +98,47 @@ export function statsSki(brut: FluxBruts | null | undefined): StatsSki | null {
     vmaxKmh: vmax > 0 ? Math.round(vmax) : null,
     altMax: altitudes.length ? Math.round(Math.max(...altitudes)) : null,
   };
+}
+
+export interface EtapeSki {
+  type: 'montee' | 'descente';
+  /** Secondes depuis le début de la sortie. */
+  debutS: number;
+  dureeS: number;
+  /** Dénivelé monté (montée) ou descendu (descente), en mètres. */
+  deniveleM: number;
+  /** Vitesse max de la descente (km/h) ; null pour une montée ou sans vitesse. */
+  vmaxKmh: number | null;
+}
+
+/**
+ * La journée de ski en étapes : remontées (télésiège, peaux, marche) et descentes, dans l'ordre. Une baisse trop courte ou trop lente n'est pas une descente :
+ * elle se fond dans la montée qui l'entoure. Null sans altitude ni temps.
+ */
+export function journeeSki(brut: FluxBruts | null | undefined): EtapeSki[] | null {
+  const altBrute = brut?.altitude;
+  const temps = brut?.temps;
+  if (!brut || !altBrute || !temps || altBrute.length < 30 || temps.length !== altBrute.length) return null;
+  const alt = lisser(altBrute, 7);
+  const vit = brut.vitesse && brut.vitesse.length === alt.length ? brut.vitesse : null;
+  const points = sommets(alt);
+  if (points.length < 2) return null;
+
+  const etapes: EtapeSki[] = [];
+  for (let k = 1; k < points.length; k++) {
+    const [a, b] = [points[k - 1], points[k]];
+    const delta = b.v - a.v;
+    const tranche = vit ? vit.slice(a.i, b.i + 1).filter(fini) : [];
+    const moyenne = tranche.length ? tranche.reduce((x, y) => x + y, 0) / tranche.length : null;
+    const descente = -delta >= DESCENTE_MIN_M && (moyenne == null || moyenne >= VITESSE_MIN_MS);
+    const duree = Math.max(0, temps[b.i] - temps[a.i]);
+    const vmax = descente && tranche.length ? Math.max(...tranche.filter((v) => v * 3.6 <= VITESSE_MAX_KMH)) * 3.6 : 0;
+    const dernier = etapes[etapes.length - 1];
+    if (descente) etapes.push({ type: 'descente', debutS: temps[a.i], dureeS: duree, deniveleM: Math.round(-delta), vmaxKmh: vmax > 0 ? Math.round(vmax) : null });
+    else if (dernier?.type === 'montee') {
+      dernier.dureeS += duree;
+      if (delta > 0) dernier.deniveleM += Math.round(delta);
+    } else etapes.push({ type: 'montee', debutS: temps[a.i], dureeS: duree, deniveleM: Math.max(0, Math.round(delta)), vmaxKmh: null });
+  }
+  return etapes.filter((e) => e.type === 'descente' || (e.dureeS >= 30 && e.deniveleM >= 10));
 }
