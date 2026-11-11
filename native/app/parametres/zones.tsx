@@ -135,6 +135,8 @@ export default function Zones() {
                 bornes={bornes}
                 axeMax={Math.max(bornes[bornes.length - 1] * 1.3, onglet === 'puissance' ? 160 : onglet === 'cardio' ? 120 : 115)}
                 couleur={couleur}
+                noms={zones.map((z) => z.nom.split(' ')[0])}
+                figees={onglet === 'cardio'}
                 texte={(i) => texteValeur(valeurBorne(i))}
               />
 
