@@ -30,9 +30,9 @@ test('natation, Hyrox et autre sport', () => {
   assert.deepEqual(pour('Yoga', 'autre', 'duree', 'fc', 'charge', 'energie'), ['duree', 'fc', 'charge', 'energie']);
 });
 
-test('ski alpin : avec les flux, descendu, vitesse max, descentes, durée ; sans flux, durée, distance, dénivelé', () => {
-  assert.deepEqual(pour('AlpineSki', 'autre', 'duree', 'distance', 'denivele', 'descendu', 'vmax', 'descentes'), ['descendu', 'vmax', 'descentes', 'duree']);
-  assert.deepEqual(pour('AlpineSki', 'autre', 'duree', 'distance', 'denivele', 'fc'), ['duree', 'distance', 'denivele', 'fc']);
+test('ski alpin : avec les flux, descendu, distance, descentes, durée ; sans flux, distance, durée, dénivelé, cardio', () => {
+  assert.deepEqual(pour('AlpineSki', 'autre', 'duree', 'distance', 'denivele', 'descendu', 'vmax', 'descentes'), ['descendu', 'distance', 'descentes', 'duree']);
+  assert.deepEqual(pour('AlpineSki', 'autre', 'duree', 'distance', 'denivele', 'fc'), ['distance', 'duree', 'denivele', 'fc']);
 });
 
 test('ski de rando et ski de fond', () => {
