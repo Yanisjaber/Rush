@@ -793,9 +793,11 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   if (debutant) regles.utilise = regles.utilise.filter((u) => !/moins d'un an de pratique/.test(u));
   if (debutant) regles.utilise.push(`tu débutes : ${DEBUTANT.seancesParSemaine} séances par semaine, course/marche les ${DEBUTANT.semainesCourseMarche} premières semaines, un jour de repos entre deux séances, aucune intensité (hors sortie test)`);
   if (departReprise) regles.utilise.push(`reprise après un long arrêt : départ à ${Math.round(REPRISE_PART_DU_PIC * 100)} % de ta plus grosse semaine`);
-  const longueMax = Math.min(110, Math.max(60, Math.round((objectifPlan / 60) * 1.6)));
+  let longueMax = Math.min(110, Math.max(60, Math.round((objectifPlan / 60) * 1.6)));
   // Départ de la sortie longue : la plus longue des 30 derniers jours (fiche course-blessures-progression : ne jamais allonger la plus longue sortie de plus de 10 % d'un coup par rapport à celle des 30 derniers jours)
   const longue30 = profil?.recent.plusLongue30Minutes || null;
+  // Le plafond « 1,6 × la durée de la course » ne descend jamais sous la plus longue sortie que la personne fait déjà (un coureur qui court 98 min d'un coup ne passe pas à 60) : on garde sa longue, avec la montée de +10 % au plus par semaine
+  if (longue30 && longue30 > longueMax) longueMax = Math.min(150, longue30);
   // Le plancher de la sortie longue ne dépasse jamais la plus longue des 30 derniers jours (sinon la première sauterait de plus de 10 %)
   const longueMiniEff = longue30 ? Math.min(rp.longueMini, longue30) : rp.longueMini;
   let longuePrecedente = Math.max(longueMiniEff, Math.min(longueMax, longue30 || profil?.recent.plusLongueMinutes || rp.longueMini));
@@ -881,6 +883,8 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     // jamais deux séances dures collées (la qualité et la sortie longue), même avec la fenêtre précédente ; la sortie longue au week-end ; le moins de décalage possible
     const placement = meilleurPlacement(libres, roles, choisis, joursDurs, wk, joursParRole, debutant, facilesSeulement);
     if (placement) choisis = placement;
+    // Dernière fenêtre (avant la course) : si le meilleur placement colle quand même la séance de qualité à une séance dure de la fenêtre d'avant, elle devient un footing léger (jamais deux séances dures collées juste avant la course)
+    if (derniere) roles.forEach((r, i) => { if ((r === 'qualite1' || r === 'qualite2') && (joursDurs.has(ajouterJours(choisis[i], -1)) || joursDurs.has(ajouterJours(choisis[i], 1)))) roles[i] = 'facile'; });
     // Débutant : la sortie test est la toute première séance du plan (le jour le plus tôt de la première semaine)
     if (debutant && w === 0 && avecTest) {
       const iq = roles.indexOf('qualite1');
@@ -902,7 +906,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
       // +10 % au plus par semaine (sourcé, voir plus haut). Plus de plafond en % du volume (42 %, sans source) : la sortie longue est bornée par cette progression et par 1,6 × la durée de la course.
       longue = Math.round(Math.min(longueMax, Math.max(longueMiniEff, w === 0 ? longuePrecedente : longuePrecedente * 1.1)));
       if (phase === 'affutage') longue = Math.max(rp.footingMini, Math.round(longue * 0.75));
-      if (recuperation) longue = Math.max(rp.longueMini - 5, Math.round(longue * 0.85));
+      if (recuperation) longue = Math.max(longueMiniEff - 5, Math.round(longue * 0.85));
     }
     // Un footing reste un footing : jamais plus long que ses footings habituels (130 %), sinon il devient une 2e sortie longue à côté de la vraie. Sans historique : jamais plus de 65 % de la longue.
     // Un footing n'est jamais plus long que la sortie longue (par définition) ; avec un historique, il suit aussi la durée habituelle de ses sorties (footingMax)
@@ -928,7 +932,9 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
         debutant && w < DEBUTANT.semainesCourseMarche && (role === 'facile' || role === 'longue') ? courseMarche(role === 'longue' ? longue : facile, a, w, role === 'longue' ? 'sortie_longue' : 'footing_facile') :
         role === 'longue' ? sortieLongue(longue, a, longue > rp.longueMini && ((phase === 'specifique') || (phase === 'developpement' && w % 2 === 1))) :
         varianteFooting(facile, a, phase, w + roles.slice(0, i).filter((r) => r === 'facile').length, rp.footingMini);
-      const essais = [choisis[i], ...libres.filter((j) => !choisis.includes(j) && !operations.some((o) => o.op === 'ajouter' && o.proposition.date === j))].filter((j) => maxDuJour(j) >= s.minutes && !(role !== 'facile' && facilesSeulement.has(j)));
+      // Une séance dure (qualité, sortie longue) n'est jamais déplacée sur un jour collé à une autre séance dure : 48 h entre deux
+      const colleeADure = (j: string) => joursDurs.has(ajouterJours(j, -1)) || joursDurs.has(ajouterJours(j, 1));
+      const essais = [choisis[i], ...libres.filter((j) => !choisis.includes(j) && !operations.some((o) => o.op === 'ajouter' && o.proposition.date === j))].filter((j) => maxDuJour(j) >= s.minutes && !(role !== 'facile' && (facilesSeulement.has(j) || colleeADure(j))));
       let raisonRefus = essais.length ? '' : `aucun jour libre assez long, ${s.minutes} min dépassent la durée que tu m'as donnée`;
       for (const jour of essais) {
         const p: Proposition = { date: jour, sport: 'course', type: s.type, minutes: s.minutes };
@@ -945,6 +951,17 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
           return;
         }
         if (!raisonRefus) raisonRefus = v.erreurs[0]?.message ?? '';
+      }
+      // Une séance de qualité qui ne trouve aucun jour sans collision devient un footing léger sur un jour libre (mieux que rien, jamais deux séances dures collées)
+      if ((role === 'qualite1' || role === 'qualite2') && !debutant && libres.some((j) => maxDuJour(j) >= s.minutes)) {
+        const leger = footing(Math.max(20, Math.round(rp.footingMini * 0.65)), a);
+        const jour = libres.find((j) => !operations.some((o) => o.op === 'ajouter' && o.proposition.date === j) && !colleeADure(j) && validerSeance({ date: j, sport: 'course', type: leger.type, minutes: leger.minutes }, ctxAvec(base, toutes, base.indisponibilites)).ok);
+        if (jour) {
+          operations.push({ op: 'ajouter', proposition: { date: jour, sport: 'course', type: leger.type, minutes: leger.minutes }, justification: leger.but, detail: leger.detail, phase: butDeLaSemaine(phase, recuperation) });
+          toutes = [...toutes, { id: `course-${operations.length}`, date: jour, sport: 'course', minutes: leger.minutes, tss: null, creeeParIa: true }];
+          totalSemaine += leger.minutes; posees++; noms.add(jour);
+          return;
+        }
       }
       if (abandons.length < 12) abandons.push(`Semaine ${w + 1}, ${etiquetteDate(choisis[i])} : je n'ai pas pu placer « ${s.detail.nom} » (${raisonRefus.replace(/\.$/, '')}).`);
     });
