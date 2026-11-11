@@ -6,13 +6,12 @@ import { PageAnalyseSortie } from '@/components/graphes/PageAnalyseSortie';
 import { PageDetailsSortie } from '@/components/graphes/PageDetailsSortie';
 import { VueSortie } from '@/components/graphes/VueSortie';
 import { ListeTours } from '@/components/ui/ListeTours';
-import { PucesEcart } from '@/components/ui/PucesEcart';
 import { StatCle } from '@/components/ui/StatCle';
 import { sortieSupprimable } from '@/data/calendrier/ajouts';
 import { analyserSortie } from '@/data/calendrier/analyse/constats';
 import { flux1Hz } from '@/data/calendrier/analyse/flux';
 import { typeDeSeance } from '@/data/calendrier/analyse/type-seance';
-import { chiffreEcarte, pucesEcart } from '@/data/calendrier/donnees-ecartees';
+import { chiffreEcarte } from '@/data/calendrier/donnees-ecartees';
 import { chiffresSeance, lignesTours, troisChiffres } from '@/data/calendrier/seance-detail';
 import { deriveCardiaque } from '@/data/outils/derive-cardiaque';
 import { travailAuDessusFtp } from '@/data/outils/efforts-sortie';
@@ -40,9 +39,8 @@ export default function Seance() {
   const p = usePalette();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { seance, tours, trace, courbes, chargement, chargementTours, chargementTrace, erreur, erreurTours, basculerDonnee } = useSeance(String(id ?? ''));
+  const { seance, tours, trace, courbes, chargement, chargementTours, chargementTrace, erreur, erreurTours } = useSeance(String(id ?? ''));
   const { ligne: profil } = useProfilSection('physiologie');
-  const [erreurEcart, setErreurEcart] = useState('');
   const { supprimerSortie } = useAjouts();
   const liee = usePrevueLiee(seance);
   const historique = useHistoriqueSorties(seance);
@@ -101,7 +99,6 @@ export default function Seance() {
 
   const cles = troisChiffres(chiffres);
   const lignes = tours ? lignesTours(tours, seance.sport) : [];
-  const puces = pucesEcart(seance);
   // Début des zones cardio Z3, Z4 et Z5a, recalculées depuis le profil (jamais stockées) : sans FC max ni seuil, pas de fond coloré
   const refCardio = referenceCardio(profil);
   const zonesCardio = zonesDuProfil('cardio', profil);
@@ -226,16 +223,6 @@ export default function Seance() {
             ) : (
               <Text style={[typo.corps, { color: p.texteMuet }]}>Pas de note sur cette sortie.</Text>
             )}
-            {puces.length ? (
-              <PucesEcart
-                puces={puces}
-                couleur={couleur}
-                erreur={erreurEcart}
-                onBasculer={(puce) => {
-                  void (async () => setErreurEcart(await basculerDonnee(puce.colonne, !puce.ecartee)))();
-                }}
-              />
-            ) : null}
             {supprimable ? (
               <View style={{ gap: espace.e2 }}>
                 {erreurSuppression ? (

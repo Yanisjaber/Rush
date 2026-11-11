@@ -6,15 +6,18 @@ import { ChampHeure } from '@/components/champs/ChampHeure';
 import { ChampTexte } from '@/components/champs/ChampTexte';
 import { ChoixEffort } from '@/components/champs/ChoixEffort';
 import { EcranAjout } from '@/components/ecrans/EcranAjout';
+import { PucesEcart } from '@/components/ui/PucesEcart';
 import { MenuDeroulantSport } from '@/components/menus/MenuDeroulantSport';
 import { ChampDate } from '@/components/champs/ChampDate';
+import { pucesEcart } from '@/data/calendrier/donnees-ecartees';
+import { couleurSport } from '@/theme/sports';
 import { chargeEstimeeSortie, distanceEnMetres, formulaireDepuisSortie, formulaireSortieVide, ligneDeModification, sortieSupprimable, SPORTS_AJOUT, validerSortie } from '@/data/calendrier/ajouts';
 import { champsValides } from '@/data/calendrier/import-activite';
 import { dateIsoLocale } from '@/data/outils/format';
 import { dureeDepuisHeure, heureDepuisDuree, texteDureeSaisie } from '@/data/outils/heure';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useDateAjout } from '@/hooks/useDateAjout';
-import { useSeance } from '@/hooks/useSeance';
+import { useSeance, type RetourSeance } from '@/hooks/useSeance';
 import { useGardeSortie } from '@/hooks/useGardeSortie';
 import { viderImport, lireImport } from '@/stores/import-en-attente';
 import { useMenu } from '@/stores/menu';
@@ -30,7 +33,7 @@ export default function EcranAjoutSortie() {
   const p = usePalette();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const modif = id ? String(id) : '';
-  const { seance, chargement, erreur } = useSeance(modif);
+  const { seance, chargement, erreur, basculerDonnee } = useSeance(modif);
   if (modif && chargement) {
     return (
       <View accessible accessibilityLabel="Chargement" style={styles.centre}>
@@ -47,10 +50,10 @@ export default function EcranAjoutSortie() {
       </View>
     );
   }
-  return <FormulaireSortie key={modif || 'nouvelle'} seance={modif ? seance : null} />;
+  return <FormulaireSortie key={modif || 'nouvelle'} seance={modif ? seance : null} basculerDonnee={basculerDonnee} />;
 }
 
-function FormulaireSortie({ seance }: { seance: Seance | null }) {
+function FormulaireSortie({ seance, basculerDonnee }: { seance: Seance | null; basculerDonnee: RetourSeance['basculerDonnee'] }) {
   const p = usePalette();
   const router = useRouter();
   const { creerSortie, modifierSortie, supprimerSortie } = useAjouts();
@@ -65,6 +68,7 @@ function FormulaireSortie({ seance }: { seance: Seance | null }) {
   const [importe] = useState(() => (!seance && params.import === '1' ? lireImport() : null));
   useEffect(() => () => viderImport(), []);
   const [erreur, setErreur] = useState('');
+  const [erreurEcart, setErreurEcart] = useState('');
   const [enCours, setEnCours] = useState(false);
   const autoriser = useGardeSortie({ date, f }); // quitter avec une saisie non enregistrée demande confirmation
 
@@ -142,6 +146,17 @@ function FormulaireSortie({ seance }: { seance: Seance | null }) {
       </View>
       <ChoixEffort valeur={f.rpe} onChange={(v) => change({ ...f, rpe: v })} etiquette="Effort ressenti (facultatif)" />
       <ChampTexte etiquette="Notes (facultatif)" value={f.notes} onChangeText={(t) => change({ ...f, notes: t })} maxLength={2000} multiline placeholder="Un mot sur l'activité…" />
+      {/* « Compte dans mes calculs » : écarter une donnée des calculs se fait ici, à la modification (la page de la sortie ne l'affiche plus). Chaque touche est enregistrée tout de suite. */}
+      {seance && pucesEcart(seance).length ? (
+        <PucesEcart
+          puces={pucesEcart(seance)}
+          couleur={couleurSport(p, seance.sport)}
+          erreur={erreurEcart}
+          onBasculer={(puce) => {
+            void (async () => setErreurEcart(await basculerDonnee(puce.colonne, !puce.ecartee)))();
+          }}
+        />
+      ) : null}
     </EcranAjout>
   );
 }
