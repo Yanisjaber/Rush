@@ -13,7 +13,7 @@ import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // L'écran d'une sortie réalisée (maquette 3 « Pages qu'on balaie ») : la carte en plein fond (ou, sans GPS, un dossard avec le chiffre principal),
-// le retour, le titre et le crayon flottants, et une feuille en bas avec les trois chiffres clés et le profil d'altitude. Balayer vers la gauche ouvre la page 2 (les courbes et les zones), puis la page 3 (toutes les données en chiffres).
+// le retour, le titre et le crayon flottants, et une feuille en bas avec les trois chiffres clés et le profil d'altitude. Balayer vers la gauche ouvre la page 2 (toutes les données en chiffres), puis la page 3 (les courbes et les zones).
 // Sur le profil, on glisse le doigt sur la courbe : un point suit sur la carte (et le balayage des pages est suspendu).
 // Les pastilles de pagination sont volantes : elles s'effacent au toucher d'une page et reviennent quand la page glisse ; elles se touchent aussi.
 interface ParcoursSortie {
@@ -47,10 +47,10 @@ interface Props {
   pageDetails: (onGlisse: (actif: boolean) => void) => ReactNode;
   /** La page 4 : la comparaison avec tes sorties proches et le mot du coach. Absente quand il n'y a rien à dire (la sortie n'a que trois pages). */
   pageCoach?: ReactNode;
-  /** Les courbes de la page 2, fixes dans la zone du haut (entre la date et les pastilles) : reçoit la hauteur libre. Absent sans courbes. */
+  /** Les courbes de la page 3, fixes dans la zone du haut (entre la date et les pastilles) : reçoit la hauteur libre. Absent sans courbes. */
   /** Les répartitions par zones, en tête du contenu qui défile sous les pastilles. */
   repartitions?: ReactNode;
-  /** Les tours, sous les répartitions de la page 2. */
+  /** Les tours, sous les répartitions de la page 3. */
   tours?: ReactNode;
   graphesHaut?: (hauteur: number, onGlisse: (actif: boolean) => void) => ReactNode;
   onModifier?: () => void;
@@ -58,7 +58,7 @@ interface Props {
 
 const HAUTEUR_PROFIL = 166; // la hauteur du profil (courbe et repères de distance)
 const HAUT_PASTILLES = 36; // la place gardée en bas des pages pour que les pastilles volantes ne cachent rien
-const NOMS_PAGES_BASE = ['Carte et profil', 'Courbes', 'Toutes les infos'];
+const NOMS_PAGES_BASE = ['Carte et profil', 'Toutes les infos', 'Courbes'];
 
 export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, hero, chiffres, pageDetails, pageCoach, graphesHaut, repartitions, tours, onModifier }: Props) {
   const p = usePalette();
@@ -87,7 +87,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
   const curseur = useMemo(() => (index === 0 && fraction != null && parcours ? pointAuFraction(parcours.trace, fraction) : null), [parcours, fraction, index]);
   // La trace doit rester entière dans la zone libre (sous l'en-tête, au-dessus de la feuille) : la carte la cadre avec ces marges
   const marges = useMemo(() => ({ haut: haut + HAUT_ENTETE, bas: feuille }), [haut, feuille]);
-  // Les courbes de la page 2 : une hauteur confortable, la page défile si l'écran est petit
+  // Les courbes de la page 3 : une hauteur confortable, la page défile si l'écran est petit
   // Sans répartitions dessous, les courbes prennent toute la place libre de l'écran ; avec, elles restent à une hauteur confortable et la page défile
   const placeLibre = hauteur - (haut + HAUT_ENTETE + espace.e2) - 24 - espace.e3 - (bas + espace.e5 + HAUT_PASTILLES) + espace.e2;
   const hautCourbes = repartitions ? Math.min(380, Math.max(300, Math.round(hauteur * 0.42))) : Math.min(560, Math.max(300, Math.round(placeLibre)));
@@ -182,7 +182,16 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
           </View>
         </View>
 
-        {/* Page 2 : les courbes et les répartitions par zones */}
+        {/* Page 2 : toutes les données en chiffres */}
+        <View style={{ width: largeur, height: hauteur, backgroundColor: p.fond }}>
+          <ScrollView contentContainerStyle={pageDefilante} showsVerticalScrollIndicator={false}>
+            {ligneDate}
+            {pageDetails(setSurCourbe)}
+          </ScrollView>
+          {bandeEntete}
+        </View>
+
+        {/* Page 3 : les courbes et les répartitions par zones */}
         <View style={{ width: largeur, height: hauteur, backgroundColor: p.fond }}>
           <ScrollView contentContainerStyle={pageDefilante} showsVerticalScrollIndicator={false}>
             {ligneDate}
@@ -191,15 +200,6 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
             {tours}
           </ScrollView>
           {/* Sous l'en-tête flottant : un fond plein, pour que le contenu qui défile ne passe pas sous le titre */}
-          {bandeEntete}
-        </View>
-
-        {/* Page 3 : toutes les données en chiffres */}
-        <View style={{ width: largeur, height: hauteur, backgroundColor: p.fond }}>
-          <ScrollView contentContainerStyle={pageDefilante} showsVerticalScrollIndicator={false}>
-            {ligneDate}
-            {pageDetails(setSurCourbe)}
-          </ScrollView>
           {bandeEntete}
         </View>
 
