@@ -53,15 +53,17 @@ interface Props {
   graphesHaut?: (hauteur: number, onGlisse: (actif: boolean) => void) => ReactNode;
   /** Faux quand il n'y a ni courbes, ni zones, ni tours : la page 3 n'existe pas (sinon elle serait vide). */
   avecPageCourbes?: boolean;
+  /** Le nom de la dernière page dans les pastilles (« Comparaison et coach » par défaut ; « Notes » pour une séance prévue). */
+  nomPageCoach?: string;
   onModifier?: () => void;
 }
 
 const HAUTEUR_PROFIL = 166; // la hauteur du profil (courbe et repères de distance)
 const HAUT_PASTILLES = 36; // la place gardée en bas des pages pour que les pastilles volantes ne cachent rien
 
-export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, chiffres, pageDetails, pageCoach, graphesHaut, repartitions, tours, avecPageCourbes = true, onModifier }: Props) {
+export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, chiffres, pageDetails, pageCoach, graphesHaut, repartitions, tours, avecPageCourbes = true, nomPageCoach = 'Comparaison et coach', onModifier }: Props) {
   const p = usePalette();
-  const NOMS_PAGES = ['Carte et profil', 'Toutes les infos', ...(avecPageCourbes ? ['Courbes'] : []), ...(pageCoach ? ['Comparaison et coach'] : [])];
+  const NOMS_PAGES = ['Carte et profil', 'Toutes les infos', ...(avecPageCourbes ? ['Courbes'] : []), ...(pageCoach ? [nomPageCoach] : [])];
   const { top: haut, bottom: bas } = useSafeAreaInsets();
   const { width: largeur, height: hauteur } = useWindowDimensions();
   const avecCarte = !!parcours?.region && parcours.trace.length > 1;

@@ -1,36 +1,31 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bloc } from '@/components/feuilles/Bloc';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Bouton } from '@/components/ui/Bouton';
-import { aUnParcours, ParcoursOnglets } from '@/components/graphes/ParcoursOnglets';
-import { VueParcours } from '@/components/graphes/VueParcours';
-import { IconeSport } from '@/components/ui/IconeSport';
+import { VueSortie } from '@/components/graphes/VueSortie';
 import { ProfilSeance } from '@/components/graphes/ProfilSeance';
 import { StatCle } from '@/components/ui/StatCle';
 import { apercuDeGpx } from '@/data/calendrier/apercu-import';
 import { blocsDePrevue } from '@/data/calendrier/ajouts';
 import { nomDuType } from '@/data/sports/catalogue-sports';
 import { nomDuBloc } from '@/data/calendrier/blocs-formulaire';
-import { formatDateCourte, formatDateLongue } from '@/data/outils/format';
+import { dateIsoLocale, formatDateCourte } from '@/data/outils/format';
 import { chiffresPrevue } from '@/data/calendrier/prevue-detail';
 import { COULEURS_ZONE, indiceZone, milieu, NOM_TYPE, texteCible, texteDuree, tousSegments, type Bloc as BlocSeance } from '@/data/calendrier/structure';
 import { useAjouts } from '@/hooks/useAjouts';
 import { usePrevue } from '@/hooks/usePrevue';
 import { useReferences } from '@/hooks/useReferences';
-import Svg, { Path } from 'react-native-svg';
-import { espace, rayon, sombre } from '@/theme/couleurs';
+import { espace, rayon } from '@/theme/couleurs';
 import { couleurSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Une séance prévue ou une compétition, en lecture : son nom, le jour et l'heure, ses chiffres, ses blocs avec leur profil, son parcours GPX (carte et altitude) et ses notes.
-// Deux boutons fixés en bas : Modifier (ouvre le formulaire déjà rempli) et Supprimer (avec une confirmation). On y arrive depuis le détail d'un jour du calendrier.
+// Une séance prévue ou une compétition, en lecture, avec le même modèle que la sortie réalisée (VueSortie) : page 1 = la carte et le profil du GPX, ou, sans GPX, le dessin du sport en fond
+// et le profil des blocs sous les chiffres ; page 2 = tous les chiffres et les blocs ; page « Notes » (seulement s'il y a des notes) = notes, Modifier et Supprimer.
+// Sans note, Modifier et Supprimer finissent la page 2. Le crayon du haut ouvre aussi le formulaire. On y arrive depuis le détail d'un jour du calendrier.
 export default function Prevue() {
   const p = usePalette();
   const router = useRouter();
-  const { top: haut, bottom: bas } = useSafeAreaInsets();
   const { id, competition: estCompetition } = useLocalSearchParams<{ id: string; competition?: string }>();
   const { prevue, chargement, erreur } = usePrevue(String(id ?? ''));
   const reference = useReferences();
@@ -70,10 +65,13 @@ export default function Prevue() {
   const nom = (prevue.name ?? '').trim() || nomSport;
   const heureLue = /T(\d{2}:\d{2})/.exec(String(prevue.start_date_local ?? ''))?.[1];
   const heure = heureLue && heureLue !== '00:00' ? heureLue : undefined; // minuit = saisie sans heure (comme dans le calendrier)
-  const nature = competition ? `Compétition${prevue.priority === 'A' || prevue.priority === 'B' ? ` · priorité ${prevue.priority}` : ''}` : 'Séance prévue';
   const chiffres = chiffresPrevue(prevue);
   const notes = (prevue.notes ?? '').trim();
   const dureeBloc = (b: BlocSeance) => tousSegments([b]).reduce((t, { seg }) => t + seg.min, 0);
+  // « J−25 » à côté de la date d'une compétition à venir ; « Aujourd'hui » le jour même
+  const jours = Math.round((Date.parse(`${prevue.date}T00:00:00Z`) - Date.parse(`${dateIsoLocale(new Date())}T00:00:00Z`)) / 86_400_000);
+  const decompte = competition && Number.isFinite(jours) && jours >= 0 ? (jours === 0 ? "AUJOURD'HUI" : `J−${jours}`) : '';
+  const date = `${formatDateCourte(prevue.date).replace(/\./g, '')}${heure ? ` · ${heure}` : ''}${decompte ? ` · ${decompte}` : ''}`.toUpperCase();
 
   const modifier = () => router.push({ pathname: competition ? '/ajout-competition' : '/ajout-seance', params: { id: prevue.id } });
   const confirmerSuppression = () =>
@@ -95,180 +93,114 @@ export default function Prevue() {
       },
     ]);
 
-  // Avec un parcours (carte ou profil), l'écran se construit autour de lui : en-tête léger, onglets, grande carte, trois chiffres, fichier. Sans parcours, la mise en page reste celle d'avant.
-  const modeParcours = aUnParcours(parcours);
-  // Carte et profil sans blocs à montrer : l'écran « parcours » plein fond (carte, feuille avec profil et curseur). Avec des blocs, on garde la vue à onglets.
-  const vueFixe = !!parcours && !!parcours.region && parcours.trace.length > 1 && parcours.profil.length > 1 && parcours.altitudeMin != null && parcours.altitudeMax != null && !blocs.length;
-  const enveloppe = (contenu: ReactNode) =>
-    modeParcours ? <View style={{ gap: espace.e3 }}>{contenu}</View> : <Bloc titre={`Blocs (${blocs.length})`}>{contenu}</Bloc>;
+  // Page 1 : la carte et le profil d'altitude du GPX ; sans GPX, le dessin du sport en fond et, sous les chiffres, le profil des blocs (s'il y en a)
+  const avecProfilGpx = !!parcours && parcours.profil.length > 1 && parcours.altitudeMin != null && parcours.altitudeMax != null;
+  const trois = chiffres.slice(0, 3);
+  const actions = (
+    <View style={{ gap: espace.e2 }}>
+      {erreurSuppression ? (
+        <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>
+          {erreurSuppression}
+        </Text>
+      ) : null}
+      <Bouton onPress={modifier}>Modifier</Bouton>
+      <Pressable
+        onPress={confirmerSuppression}
+        disabled={enCours}
+        accessibilityRole="button"
+        accessibilityLabel={competition ? 'Supprimer la compétition' : 'Supprimer la séance'}
+        style={({ pressed }) => [styles.supprimer, { opacity: pressed || enCours ? 0.6 : 1 }, { borderColor: p.danger }]}
+      >
+        <Text style={[typo.corpsFort, { color: p.danger }]}>{enCours ? 'Suppression…' : competition ? 'Supprimer cette compétition' : 'Supprimer cette séance'}</Text>
+      </Pressable>
+    </View>
+  );
+  // Les notes ont leur page ; sans note, les boutons Modifier et Supprimer finissent la page 2 (pas de page presque vide)
+  const pageNotes = notes ? (
+    <>
+      <View style={[styles.notes, { backgroundColor: p.surface }]}>
+        <Text style={[typo.micro, { color: p.texteDoux }]}>NOTES</Text>
+        <Text style={[typo.corps, { color: p.texte }]}>{notes}</Text>
+      </View>
+      {actions}
+    </>
+  ) : undefined;
 
   return (
     <View style={styles.page}>
-      {/* Avec la courbe d'altitude (vueFixe) : retour par balayage depuis le bord gauche seulement, pas plein écran, pour que glisser sur la courbe ne ferme pas l'écran */}
-      <Stack.Screen options={{ title: titreEntete, headerShown: !modeParcours, ...(vueFixe ? { fullScreenGestureEnabled: false } : {}) }} />
-      {vueFixe && parcours && parcours.altitudeMin != null && parcours.altitudeMax != null && parcours.region ? (
-        <VueParcours
-          trace={parcours.trace}
-          region={parcours.region}
-          profil={parcours.profil}
-          altitudeMin={parcours.altitudeMin}
-          altitudeMax={parcours.altitudeMax}
-          km={prevue.km ?? null}
-          couleur={couleur}
-          onModifier={modifier}
-          titre={nom}
-          chiffres={
-            chiffres.length ? (
+      {/* Retour par balayage depuis le bord gauche seulement : glisser sur la courbe du profil ne ferme pas l'écran */}
+      <Stack.Screen options={{ title: titreEntete, headerShown: false, fullScreenGestureEnabled: false }} />
+      <VueSortie
+        parcours={parcours ? { ...parcours } : null}
+        km={prevue.km ?? null}
+        couleur={couleur}
+        sport={prevue.sport}
+        titre={nom}
+        nomSport={`${nomSport} · ${competition ? 'compétition' : 'prévue'}`}
+        date={date}
+        onModifier={modifier}
+        avecPageCourbes={false}
+        nomPageCoach="Notes"
+        pageCoach={pageNotes}
+        chiffres={
+          <>
+            {trois.length ? (
               <View style={styles.tuiles}>
-                {chiffres.slice(0, 3).map((c) => (
+                {trois.map((c) => (
                   <View key={c.cle} style={[styles.tuile, { backgroundColor: p.surface }]}>
                     <StatCle etiquette={c.libelle.replace(/^Allure (cible|prévue)$/, 'Allure')} valeur={c.valeur} unite={c.unite} petit />
                   </View>
                 ))}
               </View>
-            ) : null
-          }
-        />
-      ) : (
-      <ScrollView contentContainerStyle={[styles.contenu, modeParcours && { paddingTop: haut + espace.e2 }]} contentInsetAdjustmentBehavior={modeParcours ? 'never' : 'automatic'}>
-        {modeParcours ? (
-          <View style={styles.enteteParcours}>
-            <Pressable
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-              accessibilityRole="button"
-              accessibilityLabel="Retour"
-              style={({ pressed }) => [styles.rondRetour, { borderColor: p.contourChamp, opacity: pressed ? 0.7 : 1 }]}
-            >
-              <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                <Path d="M15 5l-7 7 7 7" stroke={p.texte} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-              </Svg>
-            </Pressable>
-            <View style={{ flex: 1 }}>
-              {/* Thème clair : la couleur du sport reste réservée aux aplats (contraste), l'étiquette passe en gris */}
-              <View accessible accessibilityLabel={`${nomSport}, ${formatDateCourte(prevue.date)}${heure ? `, ${heure}` : ''}`} style={styles.etiquetteParcours}>
-                <IconeSport sport={prevue.sport} />
-                <Text numberOfLines={1} style={[typo.micro, { color: p.fond === sombre.fond ? couleur : p.texteDoux, letterSpacing: 1.2, flexShrink: 1 }]}>
-                  {`${formatDateCourte(prevue.date).replace(/\./g, '')}${heure ? ` · ${heure}` : ''}`.toUpperCase()}
-                </Text>
+            ) : null}
+            {!avecProfilGpx && blocs.length ? <ProfilSeance blocs={blocs} hauteur={56} /> : null}
+          </>
+        }
+        pageDetails={() => (
+          <>
+            {chiffres.length ? (
+              <View style={[styles.grille, { backgroundColor: p.surface }]}>
+                {chiffres.map((c) => (
+                  <View key={c.cle} style={styles.case}>
+                    <StatCle etiquette={c.libelle} valeur={c.valeur} unite={c.unite} petit />
+                  </View>
+                ))}
               </View>
-              <Text accessibilityRole="header" numberOfLines={2} style={[typo.titre2, { color: p.texte }]}>
-                {nom}
-              </Text>
-            </View>
-          </View>
-        ) : (
-        <View style={[styles.entete, { backgroundColor: p.surface, borderLeftColor: couleur }]}>
-          <View style={styles.sport}>
-            <IconeSport sport={prevue.sport} />
-            <Text style={[typo.petit, { color: p.texteDoux }]}>
-              {nomSport} · {nature.toLowerCase()}
-            </Text>
-          </View>
-          <Text accessibilityRole="header" style={[typo.titre1, { color: p.texte }]}>
-            {nom}
-          </Text>
-          <Text style={[typo.corps, { color: p.texteDoux }]}>
-            {formatDateLongue(prevue.date)}
-            {heure ? ` · ${heure}` : ''}
-          </Text>
-        </View>
+            ) : null}
+            {blocs.length ? (
+              <View style={[styles.blocs, { backgroundColor: p.surface }]}>
+                <Text style={[typo.micro, { color: p.texteDoux }]}>{`BLOCS (${blocs.length})`}</Text>
+                <ProfilSeance blocs={blocs} hauteur={56} />
+                {blocs.map((b, i) => {
+                  const z = indiceZone(milieu(b.work), b.metric);
+                  return (
+                    <View
+                      key={i}
+                      accessible
+                      accessibilityLabel={`${nomDuBloc(b, NOM_TYPE)}, ${texteDuree(dureeBloc(b))}`}
+                      style={[styles.ligneBloc, i > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }]}
+                    >
+                      <View style={[styles.barreZone, { backgroundColor: COULEURS_ZONE[Math.min(z, COULEURS_ZONE.length - 1)] }]} />
+                      <View style={{ flex: 1 }}>
+                        <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte }]}>
+                          {b.type === 'interval' ? `${nomDuBloc(b, NOM_TYPE)} · ${b.reps} fois` : nomDuBloc(b, NOM_TYPE)}
+                        </Text>
+                        <Text numberOfLines={2} style={[typo.petit, { color: p.texteDoux }]}>
+                          {texteDuree(b.work.min)} {texteCible(b.work, b.metric, reference, prevue.sport)}
+                          {b.type === 'interval' && b.rec ? ` · récup ${texteDuree(b.rec.min)}` : ''}
+                        </Text>
+                      </View>
+                      <Text style={[typo.corpsFort, { color: p.texte }]}>{texteDuree(dureeBloc(b))}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : null}
+            {!chiffres.length && !blocs.length ? <Text style={[typo.corps, { color: p.texteMuet }]}>Rien d'autre de renseigné sur cette séance.</Text> : null}
+            {pageNotes ? null : actions}
+          </>
         )}
-
-        {chiffres.length && !modeParcours ? (
-          <Bloc titre={competition ? "L'épreuve" : 'Les chiffres'}>
-            <View style={styles.grille}>
-              {chiffres.map((c) => (
-                <View key={c.cle} style={styles.case}>
-                  <StatCle etiquette={c.libelle} valeur={c.valeur} unite={c.unite} petit />
-                </View>
-              ))}
-            </View>
-          </Bloc>
-        ) : null}
-
-        {blocs.length || modeParcours
-          ? enveloppe(
-            <ParcoursOnglets
-              parcours={parcours}
-              couleur={couleur}
-              km={prevue.km}
-              plan={
-                blocs.length ? (
-                  <View style={{ gap: espace.e3 }}>
-                    <ProfilSeance blocs={blocs} hauteur={56} />
-                    <View>
-              {blocs.map((b, i) => {
-                const z = indiceZone(milieu(b.work), b.metric);
-                return (
-                  <View
-                    key={i}
-                    accessible
-                    accessibilityLabel={`${nomDuBloc(b, NOM_TYPE)}, ${texteDuree(dureeBloc(b))}`}
-                    style={[styles.ligneBloc, i > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }]}
-                  >
-                    <View style={[styles.barreZone, { backgroundColor: COULEURS_ZONE[Math.min(z, COULEURS_ZONE.length - 1)] }]} />
-                    <View style={{ flex: 1 }}>
-                      <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte }]}>
-                        {b.type === 'interval' ? `${nomDuBloc(b, NOM_TYPE)} · ${b.reps} fois` : nomDuBloc(b, NOM_TYPE)}
-                      </Text>
-                      <Text numberOfLines={2} style={[typo.petit, { color: p.texteDoux }]}>
-                        {texteDuree(b.work.min)} {texteCible(b.work, b.metric, reference, prevue.sport)}
-                        {b.type === 'interval' && b.rec ? ` · récup ${texteDuree(b.rec.min)}` : ''}
-                      </Text>
-                    </View>
-                    <Text style={[typo.corpsFort, { color: p.texte }]}>{texteDuree(dureeBloc(b))}</Text>
-                  </View>
-                );
-              })}
-                    </View>
-                  </View>
-                ) : null
-              }
-            />,
-          )
-          : null}
-
-        {modeParcours && chiffres.length ? (
-          <View style={styles.tuiles}>
-            {chiffres.slice(0, 3).map((c) => (
-              <View key={c.cle} style={[styles.tuile, { backgroundColor: p.surface }]}>
-                <StatCle etiquette={c.libelle.replace(/^Allure (cible|prévue)$/, 'Allure')} valeur={c.valeur} unite={c.unite} petit />
-              </View>
-            ))}
-          </View>
-        ) : null}
-
-        {notes ? (
-          <Bloc titre="Notes">
-            <Text style={[typo.corps, { color: p.texte }]}>{notes}</Text>
-          </Bloc>
-        ) : null}
-
-      </ScrollView>
-      )}
-
-      {/* L'erreur de suppression est dans la barre fixe du bas : on la voit toujours, même avec une longue séance */}
-      {vueFixe ? null : erreurSuppression ? (
-        <Text accessibilityRole="alert" style={[typo.petit, styles.erreurBas, { color: p.danger, backgroundColor: p.fond }]}>
-          {erreurSuppression}
-        </Text>
-      ) : null}
-      {vueFixe ? null : (
-        <View style={[styles.bas, { backgroundColor: p.fond, borderTopColor: p.trait, paddingBottom: bas + espace.e3 }]}>
-          <View style={{ flex: 1 }}>
-            <Bouton onPress={modifier}>Modifier</Bouton>
-          </View>
-          <Pressable
-            onPress={confirmerSuppression}
-            disabled={enCours}
-            accessibilityRole="button"
-            accessibilityLabel={competition ? 'Supprimer la compétition' : 'Supprimer la séance'}
-            style={({ pressed }) => [styles.supprimer, { borderColor: p.danger, opacity: pressed || enCours ? 0.6 : 1 }]}
-          >
-            <Text style={[typo.corpsFort, { color: p.danger }]}>{enCours ? 'Suppression…' : 'Supprimer'}</Text>
-          </Pressable>
-        </View>
-      )}
+      />
     </View>
   );
 }
@@ -276,19 +208,13 @@ export default function Prevue() {
 const styles = StyleSheet.create({
   page: { flex: 1 },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: espace.e5 },
-  contenu: { padding: espace.e4, gap: espace.e3, paddingBottom: espace.e5 },
-  entete: { borderRadius: rayon.bloc, borderLeftWidth: 6, padding: espace.e4, gap: 4 },
-  etiquetteParcours: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  enteteParcours: { flexDirection: 'row', alignItems: 'center', gap: espace.e3 },
-  rondRetour: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   tuiles: { flexDirection: 'row', gap: espace.e2 },
   tuile: { flex: 1, borderRadius: rayon.base, padding: espace.e3 },
-  sport: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  grille: { flexDirection: 'row', flexWrap: 'wrap', rowGap: espace.e4 },
+  grille: { flexDirection: 'row', flexWrap: 'wrap', rowGap: espace.e4, borderRadius: rayon.base, padding: espace.e3 },
   case: { width: '50%', paddingRight: espace.e3 },
+  blocs: { borderRadius: rayon.base, padding: espace.e3, gap: espace.e2 },
+  notes: { borderRadius: rayon.base, padding: espace.e3, gap: 4 },
   ligneBloc: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56, paddingVertical: 6 },
   barreZone: { width: 6, alignSelf: 'stretch', borderRadius: 3 },
-  erreurBas: { paddingHorizontal: espace.e4, paddingTop: espace.e2 },
-  bas: { flexDirection: 'row', gap: espace.e2, paddingHorizontal: espace.e4, paddingTop: espace.e3, borderTopWidth: 1 },
-  supprimer: { flex: 1, minHeight: 44, borderRadius: rayon.base, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  supprimer: { minHeight: 44, borderRadius: rayon.base, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });
