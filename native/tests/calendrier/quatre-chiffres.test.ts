@@ -36,7 +36,7 @@ test('ski alpin : avec les flux, durée, distance, D−, descentes ; sans flux, 
 });
 
 test('ski de rando et ski de fond', () => {
-  assert.deepEqual(pour('BackcountrySki', 'autre', 'duree', 'distance', 'denivele', 'descendu'), ['denivele', 'descendu', 'duree', 'distance']);
+  assert.deepEqual(pour('BackcountrySki', 'autre', 'duree', 'distance', 'denivele', 'descendu'), ['duree', 'distance', 'denivele', 'descendu']);
   assert.deepEqual(pour('NordicSki', 'autre', 'duree', 'distance', 'vitesse', 'denivele'), ['distance', 'duree', 'vitesse', 'denivele']);
 });
 
