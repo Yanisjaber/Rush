@@ -51,10 +51,10 @@ export interface DefinitionAction {
 /** Liste blanche des fonctions SQL que le coach peut appeler pour lire les données de l'athlète (12 nov. 2026). Toutes en lecture seule, avec le jeton de l'utilisateur. */
 export type FonctionHistorique =
   | 'rpc_coach_semaines' | 'rpc_coach_seances' | 'rpc_coach_prevues' | 'rpc_coach_force' | 'rpc_coach_hyrox'
-  | 'rpc_coach_objectifs' | 'rpc_coach_fiche' | 'rpc_coach_sante' | 'rpc_courbe_course' | 'rpc_courbe_puissance';
+  | 'rpc_coach_objectifs' | 'rpc_coach_fiche' | 'rpc_coach_sante' | 'rpc_courbe_course' | 'rpc_courbe_puissance' | 'rpc_coach_vie_course';
 export const FONCTIONS_HISTORIQUE: readonly FonctionHistorique[] = [
   'rpc_coach_semaines', 'rpc_coach_seances', 'rpc_coach_prevues', 'rpc_coach_force', 'rpc_coach_hyrox',
-  'rpc_coach_objectifs', 'rpc_coach_fiche', 'rpc_coach_sante', 'rpc_courbe_course', 'rpc_courbe_puissance',
+  'rpc_coach_objectifs', 'rpc_coach_fiche', 'rpc_coach_sante', 'rpc_courbe_course', 'rpc_courbe_puissance', 'rpc_coach_vie_course',
 ];
 
 /** Distances (mètres) des records de course que lit rpc_courbe_course (signal « pace ») */
@@ -512,6 +512,18 @@ export const ACTIONS: DefinitionAction[] = [
     schema: { type: 'object', properties: {}, additionalProperties: false },
     lire: (input) => (objet(input, []) ? { ok: true, params: {} } : refus('Cet outil ne prend aucun paramètre.')),
     requete: { fonction: 'rpc_coach_fiche', args: (_p, _j, sante) => ({ p_sante: sante }) },
+  },
+  {
+    nom: 'lire_vie_course',
+    niveau: 'lecture',
+    disponible: true,
+    description:
+      "Lit TOUTE la vie de coureur de l'athlète, depuis sa première sortie, même s'il n'a plus couru depuis un an : première et dernière sortie, jours depuis la dernière, années (sorties, km, heures, semaines actives), plus grosse semaine, plus longue sortie, " +
+      "arrêts de plus de 6 semaines, meilleur effort de sa vie et de chaque année (converti en 10 km), charge chronique maximale, VO2max du profil (valeur actuelle seulement, pas d'historique), et selon les accords de partage le poids par année (« corps ») et le sommeil par année (« appareil »). " +
+      "À lire AVANT de bâtir ou de juger un plan : un coureur qui a repris après un arrêt n'est pas un débutant. Un champ à null = non autorisé ou absent.",
+    schema: { type: 'object', properties: {}, additionalProperties: false },
+    lire: (input) => (objet(input, []) ? { ok: true, params: {} } : refus('Cet outil ne prend aucun paramètre.')),
+    requete: { fonction: 'rpc_coach_vie_course', args: (_p, jour, sante) => ({ p_date: jour, p_sante: sante }) },
   },
   {
     nom: 'lire_sante_periode',

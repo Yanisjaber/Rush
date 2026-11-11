@@ -33,6 +33,8 @@ export interface AnalyseCoureur {
   niveau: Niveau | null;
   /** Vrai si un effort rapide (course, test) de moins de 6 semaines fixe le niveau : sinon il vient de sorties plutôt modérées */
   effortRapideRecent: boolean;
+  /** Ce que toute sa vie de coureur montre (vide s'il n'y a aucune sortie en base) */
+  passe: string[];
   inconnues: Inconnue[];
   /** Le portrait en phrases courtes, à la deuxième personne, prêtes à être reprises par le coach */
   phrases: string[];
@@ -68,16 +70,45 @@ export function analyserCoureur(profil: ProfilCourse | null, niveau: Niveau | nu
   const effort = profil?.effortRecent ?? null;
   const effortRapideRecent = !!effort && ecartJours(effort.date, aujourdhui) <= EFFORT_RECENT_JOURS;
 
+  const vie = profil?.vie ?? null;
+  const avaitCouru = (vie?.sorties ?? 0) > 0;
   const aDesDonnees = !!profil && (profil.recent.sorties >= 3 || profil.meilleurEffort !== null || profil.sorties90 > 0);
   let etat: EtatCoureur;
-  if (!aDesDonnees) etat = 'debutant';
-  else if (profil!.sorties90 === 0 || actives.length <= 1) etat = 'reprise';
+  if (!aDesDonnees && !avaitCouru) etat = 'debutant';
+  else if ((profil?.sorties90 ?? 0) === 0 || actives.length <= 1) etat = 'reprise';
   else if (actives.length < semaines.length * 0.6) etat = 'irregulier';
   else if (tendance !== null && tendance >= SEUIL_TENDANCE) etat = 'en_hausse';
   else if (tendance !== null && tendance <= -SEUIL_TENDANCE) etat = 'en_baisse';
   else etat = 'regulier';
 
+  const passe: string[] = [];
+  if (vie && avaitCouru) {
+    const fr = (n: number) => String(n).replace('.', ',');
+    if (vie.premiereSortie) passe.push(`Tu cours depuis ${vie.premiereSortie.slice(0, 4)} : ${vie.sorties} sorties, ${Math.round(vie.kmTotal)} km et ${Math.round(vie.heuresTotal)} h au total.`);
+    const meilleureAnnee = [...vie.annees].sort((a, b) => b.km - a.km)[0];
+    if (meilleureAnnee && vie.annees.length > 1) passe.push(`Ta plus grosse année : ${meilleureAnnee.annee} (${Math.round(meilleureAnnee.km)} km, ${meilleureAnnee.sorties} sorties).`);
+    if (vie.plusGrosseSemaine) passe.push(`Ta plus grosse semaine : ${Math.round(vie.plusGrosseSemaine.minutes)} min (${fr(vie.plusGrosseSemaine.km)} km) la semaine du ${vie.plusGrosseSemaine.du}.`);
+    if (vie.plusLongueSortie) passe.push(`Ta plus longue sortie : ${fr(vie.plusLongueSortie.km)} km en ${Math.round(vie.plusLongueSortie.minutes)} min (${vie.plusLongueSortie.date}).`);
+    if (vie.meilleurEffortVie) passe.push(`Ton meilleur effort : ${fr(vie.meilleurEffortVie.km)} km en ${Math.floor(vie.meilleurEffortVie.secondes / 60)}:${String(Math.round(vie.meilleurEffortVie.secondes % 60)).padStart(2, '0')} le ${vie.meilleurEffortVie.date}.`);
+    const pa = vie.meilleurParAnnee;
+    if (pa.length >= 2) {
+      const premier = pa[0];
+      const dernier = pa[pa.length - 1];
+      const ecart = Math.round(((dernier.equiv10Secondes - premier.equiv10Secondes) / premier.equiv10Secondes) * 100);
+      passe.push(ecart < -1 ? `Tes meilleurs efforts s'améliorent d'année en année (${premier.annee} → ${dernier.annee} : ${Math.abs(ecart)} % plus vite).` : ecart > 1 ? `Ton meilleur effort de ${dernier.annee} est ${ecart} % plus lent que celui de ${premier.annee}.` : `Ton meilleur effort est stable depuis ${premier.annee}.`);
+    }
+    if (vie.arrets.length) passe.push(`Tu as fait ${vie.arrets.length} arrêt${vie.arrets.length > 1 ? 's' : ''} de plus de 6 semaines${vie.arrets.length > 1 ? ' (le plus récent' : ' ('} du ${vie.arrets[vie.arrets.length - 1].du} au ${vie.arrets[vie.arrets.length - 1].au}).`);
+    if (vie.joursDepuisDerniere !== null && vie.joursDepuisDerniere >= 42) passe.push(`Ta dernière sortie remonte à ${vie.joursDepuisDerniere} jours (${vie.derniereSortie}).`);
+    if (vie.ctlMax) passe.push(`Ta charge chronique la plus haute : ${Math.round(vie.ctlMax.ctl)} (${vie.ctlMax.date}).`);
+    if (vie.vo2maxCourse) passe.push(`VO2max course notée dans ton profil : ${vie.vo2maxCourse} (valeur actuelle, sans historique).`);
+    if (vie.poidsParAnnee && vie.poidsParAnnee.length) { const p = vie.poidsParAnnee; passe.push(`Ton poids moyen : ${fr(p[0].moyenneKg)} kg en ${p[0].annee}${p.length > 1 ? `, ${fr(p[p.length - 1].moyenneKg)} kg en ${p[p.length - 1].annee}` : ''}.`); }
+    if (vie.sommeilParAnnee && vie.sommeilParAnnee.length) { const q = vie.sommeilParAnnee[vie.sommeilParAnnee.length - 1]; if (q.dureeMoyenneH !== null) passe.push(`Ton sommeil en ${q.annee} : ${String(q.dureeMoyenneH).replace('.', ',')} h par nuit en moyenne (${q.nuits} nuits).`); }
+  }
+
   const inconnues: Inconnue[] = [];
+  if (etat === 'reprise' && vie && (vie.joursDepuisDerniere ?? 0) >= 90) {
+    inconnues.push({ sujet: `je ne sais pas pourquoi tu t'es arrêté il y a ${vie.joursDepuisDerniere} jours (blessure, vie, envie)`, question: "Pourquoi as-tu arrêté de courir, et ton corps est-il prêt (douleur, gêne) ?" });
+  }
   if (etat !== 'debutant' && etat !== 'reprise' && !effortRapideRecent) {
     inconnues.push({
       sujet: "aucun effort rapide récent : je ne sais pas si ton niveau vient de tes footings ou de ta vraie vitesse, ni si c'est la vitesse ou l'endurance qui te limite",
@@ -94,7 +125,7 @@ export function analyserCoureur(profil: ProfilCourse | null, niveau: Niveau | nu
   const phrases: string[] = [];
   switch (etat) {
     case 'debutant': phrases.push("Je n'ai aucune sortie de course exploitable : on part de zéro, en douceur."); break;
-    case 'reprise': phrases.push(`Tu reprends : seulement ${actives.length} semaine${actives.length > 1 ? 's' : ''} avec une sortie sur les ${semaines.length || 8} dernières.`); break;
+    case 'reprise': phrases.push(avaitCouru && (profil?.sorties90 ?? 0) === 0 ? `Tu reprends après un arrêt : aucune sortie depuis 90 jours.` : `Tu reprends : seulement ${actives.length} semaine${actives.length > 1 ? 's' : ''} avec une sortie sur les ${semaines.length || 8} dernières.`); break;
     case 'irregulier': phrases.push(`Tu as couru ${actives.length} semaines sur ${semaines.length}, avec des trous.`); break;
     case 'en_hausse': phrases.push(`Ton volume monte (${tendance} % sur le dernier mois par rapport au mois d'avant).`); break;
     case 'en_baisse': phrases.push(`Ton volume baisse (${tendance} % sur le dernier mois par rapport au mois d'avant).`); break;
@@ -103,5 +134,5 @@ export function analyserCoureur(profil: ProfilCourse | null, niveau: Niveau | nu
   if (volumeTypique !== null && etat !== 'debutant') phrases.push(`Une semaine typique : environ ${Math.round(volumeTypique)} min, ${sortiesParSemaine.toFixed(1).replace('.', ',')} sortie${sortiesParSemaine >= 1.5 ? 's' : ''} par semaine ; ta plus grosse récente : ${Math.round(pic)} min.`);
   if (effortRapideRecent && effort) phrases.push(`Ton niveau repose sur un effort rapide récent (${effort.km} km le ${effort.date}).`);
 
-  return { etat, semainesActives: actives.length, semainesObservees: semaines.length, sortiesParSemaine, volumeTypiqueMinutes: volumeTypique === null ? null : Math.round(volumeTypique), picMinutes: pic, tendancePourcent: tendance, niveau, effortRapideRecent, inconnues, phrases };
+  return { etat, semainesActives: actives.length, semainesObservees: semaines.length, sortiesParSemaine, volumeTypiqueMinutes: volumeTypique === null ? null : Math.round(volumeTypique), picMinutes: pic, tendancePourcent: tendance, niveau, effortRapideRecent, passe, inconnues, phrases: [...phrases, ...passe] };
 }

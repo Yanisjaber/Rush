@@ -55,6 +55,12 @@ export function creerStockage(sbUser: any, sbAdmin: any): StockageCoach {
       // rpc_coach_resume ne lit que auth.uid() (le JWT) : userId n'est pas un paramètre
       const { data, error } = await sbUser.rpc('rpc_coach_resume', { p_date: jour, p_sante: categories });
       if (error) echec('lecture du résumé', error);
+      // Toute la vie de coureur (années, arrêts, records) : le moteur de plan en a besoin pour ne pas prendre un coureur qui reprend pour un débutant.
+      // Un échec ici n'empêche pas le coach de répondre : on continue sans.
+      try {
+        const { data: vie } = await sbUser.rpc('rpc_coach_vie_course', { p_date: jour, p_sante: categories });
+        if (vie && data && typeof data === 'object') (data as Record<string, unknown>).vie_course = vie;
+      } catch { /* sans l'historique long */ }
       return data;
     },
 

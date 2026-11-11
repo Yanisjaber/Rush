@@ -45,6 +45,60 @@ export interface ProfilCourse {
   semaines: { km: number; minutes: number; sorties: number }[];
   /** Sorties par jour de la semaine (1 = lundi) sur 90 jours */
   jours: Record<number, number>;
+  /** Toute sa vie de coureur (rpc_coach_vie_course) ; absent des anciens résumés */
+  vie?: VieCourse | null;
+}
+
+/** Toute la vie de coureur du compte : ce que le code sait même après des années sans courir */
+export interface VieCourse {
+  premiereSortie: string | null;
+  derniereSortie: string | null;
+  joursDepuisDerniere: number | null;
+  sorties: number;
+  kmTotal: number;
+  heuresTotal: number;
+  annees: { annee: number; sorties: number; km: number; heures: number; semainesActives: number }[];
+  plusGrosseSemaine: { du: string; sorties: number; km: number; minutes: number } | null;
+  plusLongueSortie: { date: string; km: number; minutes: number } | null;
+  arrets: { du: string; au: string; jours: number }[];
+  meilleurEffortVie: { date: string; km: number; secondes: number; equiv10Secondes: number } | null;
+  meilleurParAnnee: { annee: number; date: string; km: number; secondes: number; equiv10Secondes: number }[];
+  ctlMax: { date: string; ctl: number } | null;
+  vo2maxCourse: number | null;
+  /** Poids par année (si la catégorie « corps » est autorisée), sinon null */
+  poidsParAnnee: { annee: number; moyenneKg: number }[] | null;
+  /** Sommeil par année (si la catégorie « appareil » est autorisée), sinon null */
+  sommeilParAnnee: { annee: number; nuits: number; dureeMoyenneH: number | null; scoreMoyen: number | null }[] | null;
+}
+
+/** La vie de coureur lue dans le résumé (clé `vie_course`) ; null si absente ou vide */
+// deno-lint-ignore no-explicit-any
+export function vieCourseDepuisResume(resume: any): VieCourse | null {
+  const v = resume?.vie_course;
+  if (!v || typeof v !== 'object') return null;
+  const ef = (e: any) => { const eq = nb(e?.equiv_10km_secondes); return e && typeof e.date === 'string' && eq !== null && eq > 0 ? { date: e.date, km: nb(e.km) ?? 0, secondes: nb(e.secondes) ?? 0, equiv10Secondes: eq } : null; }; // deno-lint-ignore-line no-explicit-any
+  const liste = (x: unknown): any[] => (Array.isArray(x) ? x : []); // deno-lint-ignore-line no-explicit-any
+  const sorties = nb(v.sorties) ?? 0;
+  const gs = v.plus_grosse_semaine;
+  const pl = v.plus_longue_sortie;
+  return {
+    premiereSortie: typeof v.premiere_sortie === 'string' ? v.premiere_sortie : null,
+    derniereSortie: typeof v.derniere_sortie === 'string' ? v.derniere_sortie : null,
+    joursDepuisDerniere: nb(v.jours_depuis_derniere),
+    sorties,
+    kmTotal: nb(v.km_total) ?? 0,
+    heuresTotal: nb(v.heures_total) ?? 0,
+    annees: liste(v.annees).map((a) => ({ annee: nb(a?.annee) ?? 0, sorties: nb(a?.sorties) ?? 0, km: nb(a?.km) ?? 0, heures: nb(a?.heures) ?? 0, semainesActives: nb(a?.semaines_actives) ?? 0 })).filter((a) => a.annee > 0),
+    plusGrosseSemaine: gs && typeof gs.du === 'string' ? { du: gs.du, sorties: nb(gs.sorties) ?? 0, km: nb(gs.km) ?? 0, minutes: nb(gs.minutes) ?? 0 } : null,
+    plusLongueSortie: pl && typeof pl.date === 'string' ? { date: pl.date, km: nb(pl.km) ?? 0, minutes: nb(pl.minutes) ?? 0 } : null,
+    arrets: liste(v.arrets).filter((a) => typeof a?.du === 'string' && typeof a?.au === 'string').map((a) => ({ du: a.du, au: a.au, jours: nb(a.jours) ?? 0 })),
+    meilleurEffortVie: ef(v.meilleur_effort_vie),
+    meilleurParAnnee: liste(v.meilleur_effort_par_annee).map((e) => ({ annee: nb(e?.annee) ?? 0, e: ef(e) })).filter((x) => x.annee > 0 && x.e).map((x) => ({ annee: x.annee, ...x.e! })),
+    ctlMax: v.ctl_max && typeof v.ctl_max.date === 'string' && nb(v.ctl_max.ctl) !== null ? { date: v.ctl_max.date, ctl: nb(v.ctl_max.ctl)! } : null,
+    vo2maxCourse: nb(v.vo2max_course_profil),
+    poidsParAnnee: Array.isArray(v.poids_par_annee) ? liste(v.poids_par_annee).map((p) => ({ annee: nb(p?.annee) ?? 0, moyenneKg: nb(p?.moyenne_kg) ?? 0 })).filter((p) => p.annee > 0) : null,
+    sommeilParAnnee: Array.isArray(v.sommeil_par_annee) ? liste(v.sommeil_par_annee).map((p) => ({ annee: nb(p?.annee) ?? 0, nuits: nb(p?.nuits) ?? 0, dureeMoyenneH: nb(p?.duree_moyenne_h), scoreMoyen: nb(p?.score_moyen) })).filter((p) => p.annee > 0) : null,
+  };
 }
 
 const nb = (x: unknown): number | null => (typeof x === 'number' && Number.isFinite(x) ? x : typeof x === 'string' && x.trim() !== '' && Number.isFinite(Number(x)) ? Number(x) : null);
@@ -83,6 +137,7 @@ export function profilCourseDepuisResume(resume: any): ProfilCourse | null {
     recent: { sorties: nb(r.sorties) ?? 0, km: nb(r.km) ?? 0, minutes: nb(r.minutes) ?? 0, plusLongueMinutes: nb(r.plus_longue_minutes) ?? 0, allureMedianeSParKm: nb(r.allure_mediane_s_par_km), plusLongue30Minutes: nb(r.plus_longue_30j_minutes) },
     semaines,
     jours,
+    vie: vieCourseDepuisResume(resume),
   };
 }
 
@@ -305,7 +360,9 @@ const PROVISOIRE_5K_SECONDES = 2400;
 export const DEBUTANT = { seancesParSemaine: 3, footingMini: 20, seanceMini: 25, longueMini: 30, semainesCourseMarche: 6 } as const;
 export function estDebutant(profil: ProfilCourse | null, anneesPratique: number | null): boolean {
   const donnees = !!profil && (profil.recent.sorties >= 3 || profil.meilleurEffort !== null || profil.effortRecent !== null || profil.sorties90 > 0);
-  return !donnees && (anneesPratique ?? 0) === 0;
+  // Une vie de coureur en base (même ancienne) : jamais un débutant, c'est une reprise
+  const avaitCouru = (profil?.vie?.sorties ?? 0) > 0;
+  return !donnees && !avaitCouru && (anneesPratique ?? 0) === 0;
 }
 /** Reprise après un long arrêt (aucune sortie depuis 90 jours) d'un coureur qui a de l'ancienneté : on repart de 30 à 40 % de sa plus grosse semaine (fiche reprise-apres-arret, arrêt de 2 à 3 mois, guides de terrain) */
 export const REPRISE_PART_DU_PIC = 0.35;
@@ -729,8 +786,10 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   const semaineMaxRecente = Math.max(0, ...(profil?.semaines ?? []).map((x) => x.minutes));
   const volumeMax = regles.picHebdo !== null ? Math.max(Math.min(rp.volumeMax, Math.max(regles.picHebdo, semaineMaxRecente)), k * rp.footingMini) : rp.volumeMax;
   // Reprise après un long arrêt (coureur avec de l'ancienneté, aucune sortie depuis 90 jours, plus grosse semaine connue) : 35 % de cette semaine, pas les valeurs par défaut
-  const departReprise = !debutant && !rp.personnels && regles.picHebdo !== null && (profil?.sorties90 ?? 0) === 0;
-  const volumeDepart = Math.min(volumeMax, departReprise ? Math.max(k * DEBUTANT.footingMini, Math.round(REPRISE_PART_DU_PIC * regles.picHebdo!)) : Math.max(k * rp.seanceMini, Math.round(Math.max(moyenne4, derniers7) * 1.1)));
+  // Le pic de référence : celui du profil, sinon la plus grosse semaine de TOUTE sa vie de coureur (lue en base, même ancienne)
+  const picReference = regles.picHebdo ?? (profil?.vie?.plusGrosseSemaine?.minutes || null);
+  const departReprise = !debutant && !rp.personnels && picReference !== null && (profil?.sorties90 ?? 0) === 0;
+  const volumeDepart = Math.min(volumeMax, departReprise ? Math.max(k * DEBUTANT.footingMini, Math.round(REPRISE_PART_DU_PIC * picReference!)) : Math.max(k * rp.seanceMini, Math.round(Math.max(moyenne4, derniers7) * 1.1)));
   if (debutant) regles.utilise = regles.utilise.filter((u) => !/moins d'un an de pratique/.test(u));
   if (debutant) regles.utilise.push(`tu débutes : ${DEBUTANT.seancesParSemaine} séances par semaine, course/marche les ${DEBUTANT.semainesCourseMarche} premières semaines, un jour de repos entre deux séances, aucune intensité (hors sortie test)`);
   if (departReprise) regles.utilise.push(`reprise après un long arrêt : départ à ${Math.round(REPRISE_PART_DU_PIC * 100)} % de ta plus grosse semaine`);
