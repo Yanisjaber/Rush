@@ -609,3 +609,14 @@ test('la phase de base alterne fartlek et seuil par morceaux (plus seulement du 
   assert.ok(noms.some((n) => /^Fartlek/.test(n)), noms.join(' | '));
   assert.ok(noms.some((n) => /^Seuil \d × \d+ min/.test(n)), noms.join(' | '));
 });
+
+test('reprise après un long arrêt : pas de test à fond ni de séance dure tant que le volume est sous 75 % du pic passé ; la sortie longue de récupération ne dépasse pas la normale', () => {
+  const vie = { premiereSortie: '2020-01-01', derniereSortie: '2025-06-01', joursDepuisDerniere: 526, sorties: 400, kmTotal: 3000, heuresTotal: 280, annees: [], plusGrosseSemaine: { du: '2023-05-01', sorties: 5, km: 60, minutes: 300 }, plusLongueSortie: null, arrets: [], meilleurEffortVie: null, meilleurParAnnee: [], ctlMax: null, vo2maxCourse: null, poidsParAnnee: null, sommeilParAnnee: null };
+  const profil: ProfilCourse = { meilleurEffort: null, effortRecent: null, sorties90: 0, recent: { sorties: 0, km: 0, minutes: 0, plusLongueMinutes: 0, allureMedianeSParKm: null }, semaines: Array.from({ length: 8 }, () => ({ km: 0, minutes: 0, sorties: 0 })), jours: {}, vie };
+  const course = ajouterJours(AUJ, 70);
+  const r = planifierCourse({ date: course, km: 10, tempsCibleMinutes: 60, seancesParSemaine: 3 }, [], ctx({ competitions: [{ date: course }] }), profil);
+  const o = ajouts(r.operations);
+  assert.equal(r.bilan!.test, false, 'pas de test à fond au départ');
+  assert.ok(!o.slice(0, 3).some((x) => /fractionne|tempo|seuil/.test(x.proposition.type)), 'aucune séance dure dans les premières semaines : ' + o.slice(0, 3).map((x) => x.detail!.nom).join(' | '));
+  assert.ok(r.bilan!.profilUtilise.some((u) => /reprise : aucune séance dure/.test(u)));
+});

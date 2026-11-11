@@ -757,7 +757,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   const calculees = plafonnerFacile(alluresDepuisCourse(objectifPlan, km), profil);
   // Sortie test SEULEMENT sans donnée récente (ni chrono, ni sorties des 90 derniers jours) : avec des sorties récentes, le niveau est déjà connu.
   // Pas de test non plus si l'utilisateur n'en veut pas ou si le plan est trop court pour s'en servir.
-  const avecTest = !d.chrono && !d.sansTest && !regles.blessureActive && nSemaines >= 2 && niveau?.fiabilite !== 'recente';
+  let avecTest = !d.chrono && !d.sansTest && !regles.blessureActive && nSemaines >= 2 && niveau?.fiabilite !== 'recente';
   const typeTest = typeTestPour(km);
   // Les étapes déjà au calendrier avant la cible : les jours qui suivent chaque bloc sont FACILES (ni séance dure ni sortie longue), selon la distance totale du bloc
   const facilesSeulement = new Set<string>();
@@ -780,8 +780,16 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   // Le volume de départ part de ce que la personne fait VRAIMENT : ses 7 derniers jours glissants (la dernière case des semaines du profil, qui se terminent aujourd'hui) ou sa moyenne
   // sur 4 fenêtres de 7 jours, si elle est plus haute ; un peu plus (+10 %), jamais moins de 38 min par séance. Ainsi, un plan refait en cours de route repart de la charge réelle.
   const derniers7 = profil && profil.semaines.length ? profil.semaines[profil.semaines.length - 1].minutes : 0;
-  const rp: Reperes = debutant ? { footingMini: DEBUTANT.footingMini, longueMini: DEBUTANT.longueMini, seanceMini: DEBUTANT.seanceMini, volumeMax: Infinity, footingMax: Infinity, personnels: false } : reperesPersonnels(profil);
+  let rp: Reperes = debutant ? { footingMini: DEBUTANT.footingMini, longueMini: DEBUTANT.longueMini, seanceMini: DEBUTANT.seanceMini, volumeMax: Infinity, footingMax: Infinity, personnels: false } : reperesPersonnels(profil);
   if (debutant) { regles.prudent = true; regles.maxQualites = 1; regles.croissance = MONTEE_PRUDENTE; }
+  // Trop de séances pour sa semaine habituelle : les séances ont une durée minimale (celle de ses sorties habituelles), donc le plan dépasserait de plus d'un tiers ce qu'il fait.
+  // On raccourcit les séances minimales (jamais sous 25 min) au lieu de retirer des séances qu'il a demandées, et on le dit. Rien ne change quand sa charge suffit déjà pour ce nombre de séances.
+  const habituel = Math.max(moyenne4, derniers7);
+  if (!debutant && rp.personnels && habituel > 0 && (profil?.sorties90 ?? 0) > 0 && k * rp.seanceMini > habituel * 1.35) {
+    const f = (habituel * 1.35) / (k * rp.seanceMini);
+    const nouveau = { ...rp, footingMini: Math.max(25, Math.round(rp.footingMini * f)), seanceMini: Math.max(25, Math.round(rp.seanceMini * f)) };
+    if (nouveau.footingMini < rp.footingMini) { rp = nouveau; regles.utilise.push(`${k} séances par semaine pour une charge habituelle de ${Math.round(habituel)} min : je raccourcis les séances (footings d'au moins ${rp.footingMini} min) pour ne pas dépasser ta charge de plus d'un tiers`); }
+  }
   // Sa plus grosse semaine déjà faite (profil) plafonne le volume : jamais plus que le plus haut entre elle et sa plus grosse semaine récente
   const semaineMaxRecente = Math.max(0, ...(profil?.semaines ?? []).map((x) => x.minutes));
   const volumeMax = regles.picHebdo !== null ? Math.max(Math.min(rp.volumeMax, Math.max(regles.picHebdo, semaineMaxRecente)), k * rp.footingMini) : rp.volumeMax;
@@ -792,6 +800,11 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   const volumeDepart = Math.min(volumeMax, departReprise ? Math.max(k * DEBUTANT.footingMini, Math.round(REPRISE_PART_DU_PIC * picReference!)) : Math.max(k * rp.seanceMini, Math.round(Math.max(moyenne4, derniers7) * 1.1)));
   if (debutant) regles.utilise = regles.utilise.filter((u) => !/moins d'un an de pratique/.test(u));
   if (debutant) regles.utilise.push(`tu débutes : ${DEBUTANT.seancesParSemaine} séances par semaine, course/marche les ${DEBUTANT.semainesCourseMarche} premières semaines, un jour de repos entre deux séances, aucune intensité (hors sortie test)`);
+  // Fiche reprise-apres-arret : « aucune intensité les premières semaines » et vitesse seulement une fois revenu à 75-80 % du volume d'avant (guides de terrain, pas d'essai contrôlé).
+  // Donc pas de sortie test à fond en semaine 1, et aucune séance dure tant que le volume de la semaine est sous 75 % de sa plus grosse semaine passée.
+  if (departReprise) avecTest = false;
+  const SEUIL_RETOUR_INTENSITE = 0.75;
+  if (departReprise) regles.utilise.push(`reprise : aucune séance dure tant que ton volume est sous ${Math.round(SEUIL_RETOUR_INTENSITE * 100)} % de ta plus grosse semaine passée (${Math.round(picReference!)} min), et pas de test à fond au départ`);
   if (departReprise) regles.utilise.push(`reprise après un long arrêt : départ à ${Math.round(REPRISE_PART_DU_PIC * 100)} % de ta plus grosse semaine`);
   let longueMax = Math.min(110, Math.max(60, Math.round((objectifPlan / 60) * 1.6)));
   // Départ de la sortie longue : la plus longue des 30 derniers jours (fiche course-blessures-progression : ne jamais allonger la plus longue sortie de plus de 10 % d'un coup par rapport à celle des 30 derniers jours)
@@ -850,7 +863,8 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     if (derniere) { if (kSemaine >= 3) roles.push('facile'); } else if (kSemaine >= 2) roles.push('longue');
     while (roles.length > kSemaine) roles.splice(roles.indexOf('facile'), 1);
     // Blessure encore là, ou débutant en phase course/marche : aucune séance d'intensité, que du facile et la sortie longue
-    if (regles.blessureActive || (debutant && w < DEBUTANT.semainesCourseMarche && !(w === 0 && avecTest))) roles.forEach((r, i) => { if (r === 'qualite1' || r === 'qualite2') roles[i] = 'facile'; });
+    const repriseSansIntensite = departReprise && volume < SEUIL_RETOUR_INTENSITE * picReference!;
+    if (regles.blessureActive || repriseSansIntensite || (debutant && w < DEBUTANT.semainesCourseMarche && !(w === 0 && avecTest))) roles.forEach((r, i) => { if (r === 'qualite1' || r === 'qualite2') roles[i] = 'facile'; });
     // La sortie longue va sur un jour de week-end libre quand il y en a un (samedi une semaine, dimanche la suivante) ; les autres séances se répartissent autour,
     // sans coller la qualité à la sortie longue quand c'est possible
     const wk = (j: string) => nomDuJour(j) === 'samedi' || nomDuJour(j) === 'dimanche';

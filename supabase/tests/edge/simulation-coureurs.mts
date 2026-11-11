@@ -27,11 +27,13 @@ function fabriquer(arch: Arch): Cas {
   const total = semaines.reduce((t, s) => t + s.sorties, 0);
   const mins = semaines.reduce((t, s) => t + s.minutes, 0);
   const actif = total > 0;
+  // la plus longue sortie reste cohérente avec ses semaines : entre 30 et 55 % de sa plus grosse semaine
+  const plusLongue = Math.min(150, Math.max(25, Math.round(Math.max(...semaines.map((x) => x.minutes), 0) * entre(0.3, 0.55))));
   const profil: ProfilCourse | null = arch === 'debutant' ? null : {
     meilleurEffort: arch === 'reprise' || actif ? { date: '2025-09-01', km: 10, secondes: Math.round(niveau10), equiv10Secondes: Math.round(niveau10) } : null,
     effortRecent: actif && alea() < 0.7 ? { date: '2026-10-20', km: 8, secondes: Math.round(equivalent(niveau10, 10, 8) * 1.02), equiv10Secondes: Math.round(niveau10 * 1.02) } : null,
     sorties90: actif ? total + Math.round(total * 0.4) : 0,
-    recent: { sorties: total, km: Math.round(mins / 6), minutes: mins, plusLongueMinutes: actif ? Math.round(entre(40, 130)) : 0, allureMedianeSParKm: Math.round((niveau10 / 10) * 1.27), plusLongue30Minutes: actif ? Math.round(entre(40, 120)) : null },
+    recent: { sorties: total, km: Math.round(mins / 6), minutes: mins, plusLongueMinutes: actif ? plusLongue : 0, allureMedianeSParKm: Math.round((niveau10 / 10) * 1.27), plusLongue30Minutes: actif ? Math.round(plusLongue * entre(0.8, 1)) : null },
     semaines, jours: { 1: 2, 3: 2, 6: 2 },
     vie: arch === 'reprise' ? { premiereSortie: '2020-01-01', derniereSortie: '2025-06-01', joursDepuisDerniere: 526, sorties: 400, kmTotal: 3000, heuresTotal: 280, annees: [], plusGrosseSemaine: { du: '2023-05-01', sorties: 5, km: 60, minutes: Math.round(entre(250, 420)) }, plusLongueSortie: null, arrets: [], meilleurEffortVie: null, meilleurParAnnee: [], ctlMax: null, vo2maxCourse: null, poidsParAnnee: null, sommeilParAnnee: null } : null,
   };
@@ -75,6 +77,11 @@ export function verifier(c: Cas): { ops: Extract<Operation, { op: 'ajouter' }>[]
     if (vol[0] > hab * 1.6 + 30) f.push(`départ ${vol[0]} min pour une semaine habituelle de ${hab}`);
   }
   if (c.arch === 'reprise' && c.profil?.vie?.plusGrosseSemaine && vol[0] > 0.6 * c.profil.vie.plusGrosseSemaine.minutes) f.push(`reprise trop forte: ${vol[0]} vs pic ${c.profil.vie.plusGrosseSemaine.minutes}`);
+  // 6b. reprise après un long arrêt : aucune séance dure tant que la semaine est sous 75 % de sa plus grosse semaine passée (fiche reprise-apres-arret)
+  if (c.arch === 'reprise' && c.profil?.vie?.plusGrosseSemaine) {
+    const pic = c.profil.vie.plusGrosseSemaine.minutes;
+    for (const o of ops) { const w = Math.floor(ecartJours(debut, o.proposition.date) / 7); if (DUR(o.proposition.type) && vol[w] < 0.75 * pic) f.push(`intensité en reprise sem ${w} (${vol[w]} < 75 % de ${pic})`); }
+  }
   // 7. séance trop courte ou structure absente
   for (const o of ops) { if (o.proposition.minutes < 15) f.push(`séance de ${o.proposition.minutes} min`); if (!o.detail?.structure?.length) f.push('séance sans structure'); }
   void durs;
