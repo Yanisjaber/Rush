@@ -162,6 +162,16 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, dureeS, hauteur, 
     return { pente: ((a(p1) - a(p0)) / (kmPortion * 1000)) * 100, dPlus };
   })();
   const textePente = (v: number) => (Math.abs(v) < 0.05 ? '0 %' : `${v > 0 ? '+' : '−'}${formatKm(Math.abs(v), 1)} %`);
+  // Sous le doigt : l'altitude du point et la pente locale (sur environ 100 m autour, pour ne pas suivre le bruit du capteur)
+  const pointRelief = (() => {
+    if (i == null || !reliefComplet || distance == null || !(distance > 0)) return null;
+    const mParPoint = (distance * 1000) / (n - 1);
+    const k = Math.max(2, Math.round(50 / Math.max(1, mParPoint)));
+    const a = Math.max(0, i - k);
+    const b = Math.min(n - 1, i + k);
+    if (b <= a || reliefComplet[i] == null) return null;
+    return { altitude: reliefComplet[i], pente: ((reliefComplet[b] - reliefComplet[a]) / ((b - a) * mParPoint)) * 100 };
+  })();
 
   // La silhouette du relief : la même pour toutes les courbes (échelle propre à l'altitude)
   const reliefChemin = (l: number, h: number) => {
@@ -210,7 +220,7 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, dureeS, hauteur, 
           </>
         ) : (
           <Text style={[typo.petit, { color: p.texteMuet }]} numberOfLines={1}>
-            {i != null && distance != null ? `km ${formatKm((distance * i) / (n - 1), 1)}` : ' '}
+            {i != null && distance != null ? [`km ${formatKm((distance * i) / (n - 1), 1)}`, ...(pointRelief ? [`altitude ${formatNombre(Math.round(pointRelief.altitude))} m`, `pente ${textePente(pointRelief.pente)}`] : [])].join('  ·  ') : ' '}
           </Text>
         )}
       </View>
