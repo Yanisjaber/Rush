@@ -210,7 +210,7 @@ export function GraphesSynchro({ courbes, km, rythme, couleur, dureeS, hauteur, 
           </>
         ) : (
           <Text style={[typo.petit, { color: p.texteMuet }]} numberOfLines={1}>
-            {i != null && distance != null ? `km ${formatKm((distance * i) / (n - 1), 1)}` : 'Un doigt pour lire, deux doigts pour zoomer'}
+            {i != null && distance != null ? `km ${formatKm((distance * i) / (n - 1), 1)}` : ' '}
           </Text>
         )}
       </View>
