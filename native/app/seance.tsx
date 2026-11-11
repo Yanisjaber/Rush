@@ -154,7 +154,6 @@ export default function Seance() {
   const jour = String(seance.start_date_local).slice(0, 10);
   const heureLue = /T(\d{2}:\d{2})/.exec(String(seance.start_date_local ?? ''))?.[1];
   const date = `${formatDateCourte(jour).replace(/\./g, '')}${heureLue && heureLue !== '00:00' ? ` · ${heureLue}` : ''}`.toUpperCase();
-  const principal = chiffres.find((c) => c.cle === 'distance') ?? chiffres.find((c) => c.cle === 'duree');
 
   const confirmerSuppression = () =>
     Alert.alert('Supprimer cette activité ?', 'Elle disparaîtra du calendrier et de tes totaux. Cette action est définitive.', [
@@ -188,7 +187,6 @@ export default function Seance() {
         titre={seance.name || nomSport}
         nomSport={nomSport}
         date={date}
-        hero={principal ? { etiquette: principal.libelle.toUpperCase(), valeur: principal.valeur, unite: principal.unite, detail: `${nomSport} · ${date}` } : null}
         onModifier={() => router.push({ pathname: '/ajout-sortie', params: { id: seance.id } })}
         chiffres={
           cles.length ? (
@@ -208,6 +206,7 @@ export default function Seance() {
             <ListeTours lignes={lignes} chargement={chargementTours} erreur={erreurTours} />
           </View>
         }
+        avecPageCourbes={!!courbes || mesuresZones.length > 0 || !!(tours && tours.length > 0)}
         repartitions={mesuresZones.length ? <RepartitionSortie mesures={mesuresZones} couleur={couleur} /> : undefined}
         graphesHaut={courbes ? (hauteur, onGlisse) => <GraphesSynchro courbes={courbes} km={seance.distance_km ?? null} rythme={familleAffichage(seance.sport) === 'velo' ? 'vitesse' : 'allure'} couleur={couleur} dureeS={seance.moving_time ?? null} hauteur={hauteur} bandes={bandesZones} onGlisse={onGlisse} /> : undefined}
         pageCoach={avecPageCoach && analyse ? <PageAnalyseSortie couleur={couleur} analyse={analyse} nomPlan={liee.prevue ? liee.prevue.name || 'séance du calendrier' : null} /> : undefined}

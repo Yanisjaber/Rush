@@ -3,8 +3,8 @@ import { ActivityIndicator, Animated, Pressable, ScrollView, StyleSheet, Text, u
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CarteTrace } from '@/components/graphes/CarteTrace';
 import { EnteteFlottante, HAUT_ENTETE } from '@/components/graphes/EnteteFlottante';
+import { FondSport } from '@/components/graphes/FondSport';
 import { ProfilCurseur } from '@/components/graphes/ProfilCurseur';
-import { Dossard } from '@/components/ui/Dossard';
 import { IconeSport } from '@/components/ui/IconeSport';
 import type { PointCarte, RegionCarte } from '@/data/calendrier/apercu-import';
 import { longueurKm, pointAuFraction } from '@/data/outils/trace';
@@ -39,8 +39,6 @@ interface Props {
   date?: string;
   /** Le nom du sport (« Course à pied »), écrit après l'icône dans la couleur du sport. */
   nomSport?: string;
-  /** Le chiffre principal du dossard sans GPS (la distance, ou la durée à défaut). */
-  hero: { etiquette: string; valeur: string; unite?: string; detail?: string } | null;
   /** Les trois chiffres clés de la première page. */
   chiffres: ReactNode;
   /** La seconde page, sans carte : toutes les infos de la sortie (on y va en balayant vers la gauche). */
@@ -53,16 +51,17 @@ interface Props {
   /** Les tours, sous les répartitions de la page 3. */
   tours?: ReactNode;
   graphesHaut?: (hauteur: number, onGlisse: (actif: boolean) => void) => ReactNode;
+  /** Faux quand il n'y a ni courbes, ni zones, ni tours : la page 3 n'existe pas (sinon elle serait vide). */
+  avecPageCourbes?: boolean;
   onModifier?: () => void;
 }
 
 const HAUTEUR_PROFIL = 166; // la hauteur du profil (courbe et repères de distance)
 const HAUT_PASTILLES = 36; // la place gardée en bas des pages pour que les pastilles volantes ne cachent rien
-const NOMS_PAGES_BASE = ['Carte et profil', 'Toutes les infos', 'Courbes'];
 
-export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, hero, chiffres, pageDetails, pageCoach, graphesHaut, repartitions, tours, onModifier }: Props) {
+export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, chiffres, pageDetails, pageCoach, graphesHaut, repartitions, tours, avecPageCourbes = true, onModifier }: Props) {
   const p = usePalette();
-  const NOMS_PAGES = pageCoach ? [...NOMS_PAGES_BASE, 'Comparaison et coach'] : NOMS_PAGES_BASE;
+  const NOMS_PAGES = ['Carte et profil', 'Toutes les infos', ...(avecPageCourbes ? ['Courbes'] : []), ...(pageCoach ? ['Comparaison et coach'] : [])];
   const { top: haut, bottom: bas } = useSafeAreaInsets();
   const { width: largeur, height: hauteur } = useWindowDimensions();
   const avecCarte = !!parcours?.region && parcours.trace.length > 1;
@@ -159,16 +158,16 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
           {avecCarte && parcours && parcours.region ? (
             <CarteTrace plein trace={parcours.trace} region={parcours.region} couleur={couleur} curseur={curseur} marges={marges} />
           ) : (
-            <View style={[styles.sansCarte, { paddingTop: haut + HAUT_ENTETE + espace.e4 }]}>
+            <>
+              {/* Sans carte : la silhouette du sport, dans la zone libre au-dessus de la feuille */}
+              <FondSport sport={sport} couleur={couleur} marges={marges} />
               {chargementCarte ? (
-                <View accessible accessibilityLabel="Chargement de la carte" style={styles.attente}>
+                <View accessible accessibilityLabel="Chargement de la carte" style={[styles.attente, styles.sansCarte, { paddingTop: haut + HAUT_ENTETE + espace.e2 }]}>
                   <ActivityIndicator color={p.texteDoux} />
                   <Text style={[typo.petit, { color: p.texteDoux }]}>Chargement de la carte…</Text>
                 </View>
-              ) : hero ? (
-                <Dossard etiquette={hero.etiquette} valeur={hero.valeur} uniteValeur={hero.unite} detail={hero.detail} sport={sport} taille="l" chiffreMax={72} />
               ) : null}
-            </View>
+            </>
           )}
 
           <View onLayout={(e: LayoutChangeEvent) => setFeuille(e.nativeEvent.layout.height)} style={[styles.feuille, { backgroundColor: p.fond, borderColor: p.trait, paddingBottom: bas + espace.e3 + HAUT_PASTILLES }]}>
@@ -191,6 +190,8 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
           {bandeEntete}
         </View>
 
+        {avecPageCourbes ? (
+          <>
         {/* Page 3 : les courbes et les répartitions par zones */}
         <View style={{ width: largeur, height: hauteur, backgroundColor: p.fond }}>
           <ScrollView contentContainerStyle={pageDefilante} showsVerticalScrollIndicator={false}>
@@ -202,6 +203,8 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
           {/* Sous l'en-tête flottant : un fond plein, pour que le contenu qui défile ne passe pas sous le titre */}
           {bandeEntete}
         </View>
+          </>
+        ) : null}
 
         {/* Page 4 : la comparaison avec tes sorties proches et le mot du coach */}
         {pageCoach ? (
@@ -224,7 +227,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
 
 const styles = StyleSheet.create({
   page: { flex: 1 },
-  sansCarte: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, paddingHorizontal: espace.e4 },
+  sansCarte: { position: 'absolute', left: 0, right: 0, top: 0, paddingHorizontal: espace.e4 },
   ligneDate: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
   gaucheDate: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
   attente: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
