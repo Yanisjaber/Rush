@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { calculerZones, sectionParId, validerSection, valeursDepuis, versPayload, estimerFtp, estimerFcMax, referenceCardio } from '../../src/data/reglages/profil.ts';
+import { calculerZones, sectionParId, validerSection, valeursDepuis, versPayload, estimerFtp, estimerFcMax, referenceCardio, persoValide, zonesDuProfil, zonesPersoDuProfil, bornesPourcent } from '../../src/data/reglages/profil.ts';
 
 const physio = sectionParId('physiologie')!;
 const identite = sectionParId('identite')!;
@@ -52,4 +52,35 @@ test('FC max estimée : les valeurs aberrantes sont ignorées', () => {
   assert.equal(estimerFcMax(avecParasite), estimerFcMax(normales));
   assert.ok((estimerFcMax(avecParasite) as number) <= 200);
   assert.equal(estimerFcMax([{ max_heartrate: 190 }]), null);
+});
+
+test('cardio : 5 zones, avec la LTHR 189 de Yanis', () => {
+  const z = calculerZones('cardio', 189)!;
+  assert.equal(z.length, 5);
+  assert.deepEqual(z.map((x) => x.nom.split(' ')[0]), ['Z1', 'Z2', 'Z3', 'Z4', 'Z5']);
+  assert.equal(z[1].de, 153);
+  assert.equal(z[4].de, 189);
+});
+
+test('zones perso : bornes en % de la référence, invalides ignorées', () => {
+  assert.deepEqual(persoValide('cardio', [80, 90, 95, 100]), [80, 90, 95, 100]);
+  assert.equal(persoValide('cardio', [80, 90, 95]), null); // pas le bon nombre
+  assert.equal(persoValide('cardio', [80, 79, 95, 100]), null); // pas croissantes
+  assert.equal(persoValide('cardio', [80, 90, 'x', 100]), null);
+  const z = calculerZones('cardio', 200, [75, 85, 95, 105])!;
+  assert.equal(z[1].de, 150);
+  assert.equal(z[1].a, 168); // finit 1 point avant la zone suivante (85 % − 1)
+  assert.equal(z[4].de, 210);
+  // Sans perso valide, les zones par défaut
+  assert.deepEqual(calculerZones('cardio', 200, [1, 2]), calculerZones('cardio', 200));
+  assert.deepEqual(bornesPourcent('cardio', null), [0, 81, 90, 94, 100]);
+});
+
+test('zonesDuProfil : référence + perso du profil, FTP de la sortie à défaut', () => {
+  const profil = { ftp: null, lthr: 189, hr_max: 200, extras: { threshold_speed: 11.5, zones_perso: { cardio: [80, 90, 95, 100], puissance: [1, 2] } } };
+  assert.equal(zonesDuProfil('cardio', profil)![1].de, 151); // 80 % de 189
+  assert.equal(zonesDuProfil('puissance', profil, 250)![1].de, 140); // perso de puissance invalide : défaut (56 % de 250)
+  assert.equal(zonesDuProfil('puissance', profil), null); // pas de FTP du tout
+  assert.equal(zonesDuProfil('allure', profil)![0].nom.startsWith('Z1'), true);
+  assert.deepEqual(Object.keys(zonesPersoDuProfil(profil)), ['cardio']);
 });

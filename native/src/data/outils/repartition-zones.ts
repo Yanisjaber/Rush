@@ -1,4 +1,4 @@
-import { calculerZones, texteAllure } from '../reglages/profil.ts';
+import { calculerZones, texteAllure, type ZonesPerso } from '../reglages/profil.ts';
 import type { FluxBruts } from './courbes-sortie.ts';
 
 // Le temps passé dans chaque zone (cœur, puissance, allure) pendant UNE sortie, calculé sur les flux point par point.
@@ -63,6 +63,8 @@ export interface RefsZones {
   ftp?: number | null;
   /** Vitesse seuil (km/h), pour les zones d'allure en course. */
   seuilKmh?: number | null;
+  /** Les zones personnalisées du profil (début de chaque zone en % de la référence), si l'utilisateur en a réglé. */
+  perso?: ZonesPerso;
 }
 
 const MANQUE = {
@@ -81,9 +83,6 @@ function plage(modele: 'cardio' | 'puissance' | 'allure', i: number, n: number, 
   return `${borne(de(i))}–${haut}`;
 }
 
-/** Le nombre de zones montrées par modèle : les mêmes que les bandes de GraphesSynchro. */
-const ZONES_AFFICHEES = { cardio: 5, puissance: 6, allure: 5 } as const;
-
 const sansUnite = (kmh: number) => texteAllure(kmh).replace('/km', '');
 
 /** Les répartitions de cette sortie : une par mesure dont on a les flux. Sans la référence dans le profil, la mesure est là quand même, avec un message (`manque`) au lieu des zones. */
@@ -91,25 +90,22 @@ export function repartitionsSortie(brut: FluxBruts | null | undefined, refs: Ref
   if (!brut) return [];
   const sortie: MesureZones[] = [];
   const ajouter = (cle: MesureZones['cle'], titre: string, reference: string, estimee: boolean, valeurs: number[] | undefined, modele: 'cardio' | 'puissance' | 'allure', ref: number, borne: (de: number) => string, unite: string) => {
-    const zones = calculerZones(modele, ref);
+    const zones = calculerZones(modele, ref, refs.perso?.[modele === 'cardio' ? 'cardio' : modele]);
     if (!valeurs || valeurs.every((v) => !Number.isFinite(v))) return;
     if (!zones) return void sortie.push({ cle, titre, reference: '', unite, estimee: false, zones: [], manque: MANQUE[cle] });
     const brutes = tempsParZone(valeurs, brut.temps, zones.map((z) => z.de), dureeS);
     if (!brutes) return;
-    // Les mêmes zones que les bandes des courbes : les dernières sont regroupées dans la dernière gardée (Z5a, Z5b et Z5c du cœur : un seul Z5 ; Z6 et Z7 de la puissance : un seul Z6)
-    const garde = ZONES_AFFICHEES[modele];
-    const s = brutes.slice(0, garde);
-    s[garde - 1] += brutes.slice(garde).reduce((a, b) => a + b, 0);
+    const s = brutes;
     sortie.push({
       cle,
       titre,
       reference,
       unite,
       estimee,
-      zones: zones.slice(0, garde).map((z, i) => ({
-        court: z.nom.split(' ')[0].replace(/^(Z\d)[abc]$/, '$1'),
+      zones: zones.map((z, i) => ({
+        court: z.nom.split(' ')[0],
         nom: z.nom,
-        borne: plage(modele, i, garde, (k) => zones[k].de, borne),
+        borne: plage(modele, i, zones.length, (k) => zones[k].de, borne),
         secondes: s[i],
       })),
     });

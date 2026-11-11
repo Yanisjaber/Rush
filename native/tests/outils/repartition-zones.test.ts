@@ -30,7 +30,7 @@ test('repartitionsSortie : une mesure par flux présent, avec un message quand l
   assert.match(r[1].manque ?? '', /FTP/); // pas de FTP : l'onglet est là, avec un message
   assert.equal(r[1].zones.length, 0);
   assert.equal(r[0].estimee, true);
-  assert.equal(r[0].zones.length, 5); // Z5a, Z5b et Z5c regroupées : un seul Z5, comme les bandes des courbes
+  assert.equal(r[0].zones.length, 5); // cardio : 5 zones
   assert.equal(Math.round(r[0].zones.reduce((a, z) => a + z.secondes, 0)), 600);
   assert.equal(r[0].zones[4].court, 'Z5'); // 175 bpm / 172 = 102 % : zone Z5
   assert.ok(r[0].zones[4].secondes > 500);
@@ -39,10 +39,10 @@ test('repartitionsSortie : une mesure par flux présent, avec un message quand l
   assert.equal(r[0].zones[1].borne, '139–154');
   assert.match(r[0].zones[4].borne, /^\d+\+$/);
   assert.equal(r[0].unite, 'bpm');
-  // Puissance : Z6 et Z7 regroupées (6 zones), le temps total reste le même
+  // Puissance : 7 zones, tout le temps à 400 W (2 × la FTP) tombe en Z7
   const pw = repartitionsSortie({ ...brut, watts: Array.from({ length: 60 }, () => 400) }, { ftp: 200 }, false, 600).find((m) => m.cle === 'watts')!;
-  assert.equal(pw.zones.length, 6);
-  assert.equal(Math.round(pw.zones[5].secondes), 600);
+  assert.equal(pw.zones.length, 7);
+  assert.equal(Math.round(pw.zones[6].secondes), 600);
   assert.equal(repartitionsSortie(brut, { lthr: { bpm: 172, estimee: false }, seuilKmh: 12.5 }, false, 600).some((m) => m.cle === 'allure'), false); // allure : course seulement
   assert.match(repartitionsSortie(brut, {}, true, 600).find((m) => m.cle === 'allure')?.manque ?? '', /vitesse seuil/); // sans seuil : message
   assert.deepEqual(repartitionsSortie(null, { ftp: 250 }, true, 600), []);

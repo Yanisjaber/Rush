@@ -240,8 +240,7 @@ export const MODELES_ZONES: Record<ModeleZones, { titre: string; reference: stri
     reference: 'LTHR',
     unite: 'bpm',
     zones: [
-      ['Z1 Récupération', 0, 80], ['Z2 Aérobie', 81, 89], ['Z3 Tempo', 90, 93], ['Z4 Sous le seuil', 94, 99],
-      ['Z5a Seuil', 100, 102], ['Z5b VO2max', 103, 106], ['Z5c Anaérobie', 107, 120],
+      ['Z1 Récupération', 0, 80], ['Z2 Aérobie', 81, 89], ['Z3 Tempo', 90, 93], ['Z4 Sous le seuil', 94, 99], ['Z5 Seuil et plus', 100, 120],
     ],
   },
   allure: {
@@ -272,16 +271,66 @@ export interface ZoneCalculee {
   alluresA: string;
 }
 
-export function calculerZones(modele: ModeleZones, reference: unknown): ZoneCalculee[] | null {
+/**
+ * Les zones personnalisées d'un modèle : le début de chaque zone à partir de la 2e, en % de la référence (FTP, LTHR ou vitesse seuil).
+ * Stockées dans `extras.zones_perso` du profil, sous la clé du modèle. Valides si elles sont en nombre (zones − 1), croissantes et plausibles ;
+ * sinon on les ignore et on retombe sur les zones par défaut.
+ */
+export type ZonesPerso = Partial<Record<ModeleZones, number[]>>;
+
+export function persoValide(modele: ModeleZones, perso: unknown): number[] | null {
+  const m = MODELES_ZONES[modele];
+  if (!m || !Array.isArray(perso) || perso.length !== m.zones.length - 1) return null;
+  const v = perso.map(Number);
+  if (v.some((x, i) => !Number.isFinite(x) || x < 1 || x > 300 || (i > 0 && x <= v[i - 1]))) return null;
+  return v;
+}
+
+/** Lit `extras.zones_perso` d'un profil : seulement les modèles dont les valeurs sont valides. */
+export function zonesPersoDuProfil(profil: { extras?: unknown } | null | undefined): ZonesPerso {
+  const brut = (profil?.extras as { zones_perso?: Record<string, unknown> } | null | undefined)?.zones_perso;
+  const r: ZonesPerso = {};
+  for (const modele of ['puissance', 'cardio', 'allure'] as const) {
+    const v = persoValide(modele, brut?.[modele]);
+    if (v) r[modele] = v;
+  }
+  return r;
+}
+
+/** Les bornes (en % de la référence) d'un modèle : « bas » de chaque zone. Les zones perso remplacent les bornes par défaut (la 1re zone commence toujours à 0). */
+export function bornesPourcent(modele: ModeleZones, perso?: number[] | null): number[] {
+  const m = MODELES_ZONES[modele];
+  const valide = persoValide(modele, perso);
+  return m.zones.map(([, bas], i) => (i === 0 ? 0 : valide ? valide[i - 1] : bas));
+}
+
+export function calculerZones(modele: ModeleZones, reference: unknown, perso?: number[] | null): ZoneCalculee[] | null {
   const m = MODELES_ZONES[modele];
   const ref = Number(reference);
   if (!m || !(ref > 0)) return null;
-  return m.zones.map(([nom, bas, haut], i) => {
+  const bornes = bornesPourcent(modele, perso);
+  const personnalisees = !!persoValide(modele, perso);
+  return m.zones.map(([nom, bas0, haut0], i) => {
+    // Zones par défaut : chacune finit 1 point avant le début de la suivante (55 puis 56). Perso : même règle sur les bornes choisies.
+    const bas = bornes[i];
+    const haut = i < m.zones.length - 1 ? (personnalisees ? bornes[i + 1] - 1 : haut0) : haut0 < bas ? bas : haut0;
     const de = (ref * bas) / 100;
     const a = (ref * haut) / 100;
     const arrondi = (v: number) => (modele === 'allure' ? Math.round(v * 10) / 10 : Math.round(v));
     return { nom, bas, haut, couleur: i, de: arrondi(de), a: arrondi(a), alluresDe: modele === 'allure' ? texteAllure(de) : '', alluresA: modele === 'allure' ? texteAllure(a) : '' };
   });
+}
+
+/** Les zones d'un profil : sa référence (FTP, LTHR ou estimée, vitesse seuil) et ses bornes perso éventuelles. `ftpDefaut` : la FTP de la sortie quand le profil n'en a pas. */
+export function zonesDuProfil(
+  modele: ModeleZones,
+  profil: { ftp?: unknown; lthr?: unknown; hr_max?: unknown; extras?: unknown } | null | undefined,
+  ftpDefaut?: number | null,
+): ZoneCalculee[] | null {
+  const perso = zonesPersoDuProfil(profil)[modele];
+  if (modele === 'puissance') return calculerZones('puissance', Number(profil?.ftp) > 0 ? profil?.ftp : ftpDefaut, perso);
+  if (modele === 'cardio') return calculerZones('cardio', referenceCardio(profil)?.bpm, perso);
+  return calculerZones('allure', (profil?.extras as { threshold_speed?: unknown } | null | undefined)?.threshold_speed, perso);
 }
 
 // --- Estimations et valeurs dérivées ---------------------------------------------------------------------------------

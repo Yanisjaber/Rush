@@ -22,7 +22,7 @@ import { nomDuType } from '@/data/sports/catalogue-sports';
 import { GrapheTours } from '@/components/graphes/GrapheTours';
 import { RecordsSortie } from '@/components/graphes/RecordsSortie';
 import { RepartitionSortie } from '@/components/graphes/RepartitionSortie';
-import { calculerZones, referenceCardio } from '@/data/reglages/profil';
+import { referenceCardio, zonesDuProfil, zonesPersoDuProfil } from '@/data/reglages/profil';
 import { repartitionsSortie } from '@/data/outils/repartition-zones';
 import { useAjouts } from '@/hooks/useAjouts';
 import { useHistoriqueSorties } from '@/hooks/useHistoriqueSorties';
@@ -104,23 +104,23 @@ export default function Seance() {
   const puces = pucesEcart(seance);
   // Début des zones cardio Z3, Z4 et Z5a, recalculées depuis le profil (jamais stockées) : sans FC max ni seuil, pas de fond coloré
   const refCardio = referenceCardio(profil);
-  const zonesCardio = refCardio ? calculerZones('cardio', refCardio.bpm) : null;
+  const zonesCardio = zonesDuProfil('cardio', profil);
   // Le temps passé par zone (cœur, puissance, allure) : seulement avec les flux et la référence du profil (FTP de la sortie à défaut de celle du profil)
   const extrasProfil = (profil?.extras ?? {}) as Record<string, unknown>;
   const mesuresZones = repartitionsSortie(
     courbes?.brut,
-    { lthr: refCardio, ftp: Number(profil?.ftp) > 0 ? Number(profil?.ftp) : seance.ftp_at_time, seuilKmh: Number(extrasProfil.threshold_speed) || null },
+    { perso: zonesPersoDuProfil(profil), lthr: refCardio, ftp: Number(profil?.ftp) > 0 ? Number(profil?.ftp) : seance.ftp_at_time, seuilKmh: Number(extrasProfil.threshold_speed) || null },
     familleAffichage(seance.sport) === 'course',
     seance.moving_time,
   );
   // Les bandes de zones derrière les courbes : début de Z2, Z3… (Z5a, Z5b et Z5c du cœur ne font qu'un Z5). Rien sans référence dans le profil.
   const ftpZones = Number(profil?.ftp) > 0 ? Number(profil?.ftp) : Number(seance.ftp_at_time) > 0 ? Number(seance.ftp_at_time) : null;
-  const zonesPuissance = ftpZones ? calculerZones('puissance', ftpZones) : null;
+  const zonesPuissance = zonesDuProfil('puissance', profil, ftpZones);
   const seuilKmh = Number(extrasProfil.threshold_speed) || null;
-  const zonesAllure = seuilKmh ? calculerZones('allure', seuilKmh) : null;
+  const zonesAllure = zonesDuProfil('allure', profil);
   const bandesZones = {
-    ...(zonesCardio ? { fc: zonesCardio.slice(1, 5).map((z) => z.de) } : {}),
-    ...(zonesPuissance ? { watts: zonesPuissance.slice(1, 6).map((z) => z.de) } : {}),
+    ...(zonesCardio ? { fc: zonesCardio.slice(1).map((z) => z.de) } : {}),
+    ...(zonesPuissance ? { watts: zonesPuissance.slice(1).map((z) => z.de) } : {}),
     // Allure : seulement en course ; les zones sont en km/h, la courbe en secondes par km
     ...(zonesAllure && familleAffichage(seance.sport) === 'course' ? { allure: zonesAllure.slice(1).map((z) => 3600 / z.de) } : {}),
   };
