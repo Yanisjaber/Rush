@@ -1,29 +1,37 @@
-# Analyse d'une sortie par le coach (page 4 de l'écran d'une sortie)
+# Analyse d'une sortie (page 4 de l'écran d'une sortie)
 
-Décision de Yanis (11 nov. 2026) : la page 4 est un **retour de coach écrit** sur cette sortie seule (maquette 1 « la lettre »), pas une comparaison avec d'autres sorties (les types de sortie diffèrent trop pour que ça veuille dire quelque chose).
+Décision de Yanis (11 nov. 2026) : la page 4 est du **texte court et pertinent**, pas un récit. Chaque ligne apporte un fait qu'on ne lit pas à l'œil sur les autres pages, ou un écart à ce qui était prévu.
 
-## Comment ça marche
-1. L'app tire des flux de la sortie des **nombres seulement** : allure et cœur de chaque km, dérive cardiaque, temps par zone (ramené à 5 zones), cadence, plus un type de séance fermé (footing, fractionné, sortie longue, compétition, autre) deviné d'après le nom. Le nom lui-même n'est jamais envoyé. Code : `native/src/data/calendrier/signaux-analyse.ts`.
-2. La fonction `coach-analyse-sortie` vérifie le JWT, la liste blanche (`coach_acces`) et l'accord de partage (`coach_reglages`), relit la sortie en base avec le jeton de l'utilisateur (durée, distance, dénivelé, cœur moyen) et refuse tout nombre hors bornes.
-3. `construireFaits` met tout en phrases courtes : ce sont les **seuls chiffres** que le modèle (Haiku) a le droit d'employer. Il n'a aucun outil, il ne calcule pas.
-4. `validerLettre` relit la lettre : chaque chiffre doit venir des faits, pas de lien, de gras, de titre ni d'émoji, dernier paragraphe « Je retiens : ». Refusée = une seconde chance avec la raison, puis pas de lettre (mieux vaut rien qu'une lettre fausse).
-5. La lettre est gardée dans `sortie_analyses` (cache, une ligne par sortie). Elle n'est refaite que si les chiffres changent (`empreinte`). Le compte peut la lire, seule la fonction écrit.
-6. L'appel au modèle ne part que sur le bouton « Demander l'analyse » (ou « Actualiser l'analyse »). Ouvrir la page ne coûte rien.
+**Tout est calculé par le code, dans l'app** (aucun modèle de langage, aucune fonction serveur, aucun coût, instantané). Une première version écrite par l'IA (Haiku) a été essayée puis retirée : elle racontait ce qu'on voit déjà.
 
-Coût d'une analyse : environ 0,002 $ (Haiku, quelques centaines de jetons de sortie).
+## Ce que ça produit
+3 à 5 lignes étiquetées, classées par importance, puis une consigne « À faire » quand elle est chiffrée. Exemple (footing du 10 nov. 2026) :
+- **Objectif** Footing raté : 41 % du temps en zone 4 ou plus, 23 % en zones 1 et 2.
+- **Cœur** Dérive de +12,0 % (au-delà de 10 %), dès le km 2,6.
+- **Plan** Footing à 6:28/km : 5'58"/km au lieu de 6'28"/km (30 s/km trop vite).
+- **Prévu** Durée 35'42" au lieu de 30'00" (+19 %), charge 50 au lieu de 25 (+100 %).
+- **À faire** Au prochain footing, reste sous 169 bpm.
+
+## Les règles (`native/src/data/calendrier/analyse/constats.ts`)
+Chaque règle produit un constat avec une priorité ; on garde les 5 plus hauts.
+- **Objectif** : le footing (ou la séance « facile » du plan) est tenu si 70 % du temps est en zones 1-2 ; « un cran trop haut » ; « raté » si le quart du temps est en zone 4 ou plus. Tempo : zone 3.
+- **Plan** : la sortie est reliée à la séance du calendrier (même jour, même sport, durée la plus proche), puis chaque bloc est mesuré contre sa cible chiffrée (allure, cœur, watts). Si le chrono suit le plan (à 12 % près), on juge par fenêtres de temps ; sinon on **retrouve les efforts dans le flux** (accélérations de la bonne durée) et on juge le reste comme un bloc continu. Une accélération à plus de 8 % de la cible n'est pas une répétition. L'allure écrite dans le nom d'un bloc (« à 6:28/km ») prime sur le calcul depuis le profil.
+- **Prévu** : durée, distance et charge contre le prévu (dit à partir de 10 % d'écart).
+- **Départ** trop rapide, **tendance** (on ralentit / on accélère), **dérive** et le kilomètre où elle commence, **arrêts**, **allure irrégulière**.
+- **Données** : FC max du profil dépassée, zones sur FC max estimée, puissance estimée en course, cœur absent.
+- Un footing avec quelques lignes droites reste un footing : un plan n'est « à intervalles » que si le tiers de son temps l'est.
 
 ## Fichiers
-- Serveur : `supabase/functions/_shared/analyse-sortie.ts` (faits, consigne, validation), `analyse-sortie-service.ts` (déroulé), `supabase/functions/coach-analyse-sortie/index.ts`, migration `2026-11-12_sortie_analyses.sql`.
-- App : `PageCoachSortie.tsx`, `useAnalyseSortie.ts`, `api/coach.ts` (`lireAnalyseSortie`, `demanderAnalyseSortie`).
-- Tests : `supabase/tests/edge/analyse-sortie*.test.mts`, `supabase/tests/sql/sortie_analyses.sh`, `native/tests/calendrier/{signaux-analyse,lettre-coach}.test.ts`.
+- Moteur : `native/src/data/calendrier/analyse/{flux,efforts,plan,constats,type-seance}.ts`, tests dans `native/tests/calendrier/analyse/`.
+- Écran : `native/src/components/graphes/PageAnalyseSortie.tsx`, branchement dans `native/app/seance.tsx`, séance prévue liée par `native/src/hooks/usePrevueLiee.ts`.
 
 ## À savoir
-- Le modèle réfléchit avant d'écrire et cette réflexion compte dans `max_tokens` : à 700 la réponse sortait vide, 2500 marche.
-- La qualité du texte dépend des **zones de cœur du profil** (FC max, seuil). Si elles sont estimées, la lettre le dit et reste prudente.
-- Course et vélo seulement pour l'instant. Pas d'allure par km à vélo.
+- Les seuils (70 %, 25 %, 4 %, 3 %, 10 %, 8 %…) sont des **conventions de lecture**, pas des normes. Seule la dérive de 5 % (endurance solide) est un repère connu. À sourcer comme les autres règles (voir `IA_A_FAIRE.md`).
+- La qualité dépend du profil : FC max, seuil de cœur, vitesse seuil (les allures des plans du coach sont des % de la vitesse seuil). Sans vitesse seuil, la ligne Plan dit ce qui manque au lieu d'inventer.
+- Les zones de cœur affichées partout viennent du même calcul (`calculerZones`).
 
 ## Reste à faire
-- Seuils de lecture dans la consigne (dérive 5 %, 85 %…) : à sourcer, comme les autres règles du coach (voir `IA_A_FAIRE.md`).
-- Relier la sortie à la séance prévue (pour juger « prévu contre fait » avec le vrai objectif, pas seulement le nom).
-- Cadence (le serveur sait la lire, l'app ne l'envoie pas encore : elle n'est pas dans les flux bruts).
-- Muscu, natation, Hyrox : autres critères, autres faits.
+- Cadence (pas dans les flux bruts de l'app), relief (allure ajustée à la pente).
+- Muscu, natation, Hyrox : autres critères.
+- Vérifier la détection des efforts sur des vraies lignes droites (pas encore vues sur le compte de Yanis).
+- Un retour de Yanis sur la qualité des lignes après quelques sorties.

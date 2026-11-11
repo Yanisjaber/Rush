@@ -11,7 +11,7 @@ import { StatCle } from '@/components/ui/StatCle';
 import { sortieSupprimable } from '@/data/calendrier/ajouts';
 import { analyserSortie } from '@/data/calendrier/analyse/constats';
 import { flux1Hz } from '@/data/calendrier/analyse/flux';
-import { typeDeSeance } from '@/data/calendrier/signaux-analyse';
+import { typeDeSeance } from '@/data/calendrier/analyse/type-seance';
 import { chiffreEcarte, pucesEcart } from '@/data/calendrier/donnees-ecartees';
 import { chiffresSeance, lignesTours, troisChiffres } from '@/data/calendrier/seance-detail';
 import { deriveCardiaque } from '@/data/outils/derive-cardiaque';
