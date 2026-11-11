@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   reference: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 32 },
   lien: { marginLeft: 'auto', minHeight: 32, justifyContent: 'center' },
   etiquette: { borderWidth: 1, borderRadius: rayon.rond, paddingHorizontal: 10, paddingVertical: 2 },
-  ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, borderTopWidth: StyleSheet.hairlineWidth },
+  ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 40, borderTopWidth: StyleSheet.hairlineWidth },
   puce: { width: 12, height: 12, borderRadius: 6 },
   pas: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   vide: { flexDirection: 'row', alignItems: 'center', gap: 14 },

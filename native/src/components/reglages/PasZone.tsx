@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { espace, rayon } from '@/theme/couleurs';
+import { rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -56,7 +56,8 @@ function Fleche({ signe, sens, label, onPas }: { signe: string; sens: 1 | -1; la
       onPress={() => {
         if (!repete.current) onPas(sens, 1);
       }}
-      style={({ pressed }) => [styles.fleche, { borderColor: p.traitFort, backgroundColor: pressed ? p.surface2 : 'transparent' }]}
+      hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+      style={({ pressed }) => [styles.fleche, { backgroundColor: pressed ? p.surface2 : 'transparent' }]}
     >
       <Text style={[typo.titre3, { color: p.texte }]}>{signe}</Text>
     </Pressable>
@@ -83,7 +84,7 @@ export function PasZone({ texte, nom, unite, onPas, onSaisie, moins, plus }: Pro
         keyboardType={unite === '/km' ? 'numbers-and-punctuation' : 'number-pad'}
         returnKeyType="done"
         accessibilityLabel={`${nom} : début, en ${unite}. Tape une valeur.`}
-        style={[styles.champ, { color: p.texte, borderColor: p.traitFort }]}
+        style={[styles.champ, { color: p.texte }]}
       />
       <Fleche signe="+" sens={1} label={`${nom} : début ${plus}`} onPas={onPas} />
     </View>
@@ -91,7 +92,7 @@ export function PasZone({ texte, nom, unite, onPas, onSaisie, moins, plus }: Pro
 }
 
 const styles = StyleSheet.create({
-  pas: { flexDirection: 'row', alignItems: 'center', gap: espace.e1 },
-  fleche: { width: 44, height: 44, borderRadius: rayon.rond, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  champ: { width: 64, height: 44, borderRadius: rayon.rond, borderWidth: 1, textAlign: 'center', fontFamily: police.texte600, fontSize: 16, fontVariant: ['tabular-nums'] },
+  pas: { flexDirection: 'row', alignItems: 'center' },
+  fleche: { width: 36, height: 40, borderRadius: rayon.rond, alignItems: 'center', justifyContent: 'center' },
+  champ: { width: 52, height: 40, textAlign: 'center', fontFamily: police.texte600, fontSize: 16, fontVariant: ['tabular-nums'] },
 });
