@@ -9,6 +9,24 @@ Principe posé par Yanis : **chaque règle du plan vient d'études ou de la pers
 - Durées à l'échelle de la personne avec historique (`reperesPersonnels`) : footing mini, longue mini, footing maxi, volume max tirés de ses sorties.
 - Table `coach_profil` (disponibilités, ancienneté, pic hebdo, blessures, préférences ; listes fermées, RLS) + module serveur `profil-coureur.ts`. Appliquée en vraie base.
 
+## CHANTIER EN COURS : le coach lit lui-même les données et ses plans gagnent en qualité (13 nov. 2026)
+
+**L'idée (Yanis, 13 nov.)** : le coach a accès à TOUTE la base de son athlète, en lecture, et répond tout seul à ses propres questions au lieu de les renvoyer à l'utilisateur ; plus il connaît la personne, plus le plan est juste. Règle de fond : chaque règle d'un plan vient d'une étude ou de la personne, jamais d'un chiffre inventé (quand c'est une hypothèse à nous, on le dit dans le bilan).
+
+**Déjà fait**
+- [x] Liste blanche de 10 outils de lecture (séances prévues, musculation, Hyrox, objectifs et phases, fiche athlète, santé sur une période, records de course et de vélo, en plus de ceux d'avant). Fonctions SQL en lecture seule avec le jeton de l'utilisateur (RLS), aucun identifiant en paramètre, aucun texte libre en sortie, santé et poids seulement avec les accords de partage. Migration `2026-11-12_rpc_coach_lecture_athlete.sql`, tests `supabase/tests/sql/coach_lecture_athlete.sh` et `coach-actions.test.mts`. Le prompt dit d'aller chercher la réponse avec un outil.
+- [x] Niveau de course : un record de **moins de 12 mois** reste un repère (+5 %, hypothèse à nous) pour un coureur qui a continué à courir ; avant, seules les sorties récentes (surtout des footings) fixaient le niveau et le plan visait trop bas (cas de Yanis : 47:32 au 10 km, plan calé sur 53:40, maintenant 49:54). Au-delà de 12 mois : retour aux sorties récentes. Migration `2026-11-12_rpc_coach_resume_meilleur_12_mois.sql`. La première séance reste un test qui vérifie le niveau.
+- [x] Simulateur dédié « Coach test » (`418F9E68-E129-413B-BD79-F2F1DE731EC1`, connecté au compte de Yanis) pour les essais avec Maestro.
+
+**À continuer (dans cet ordre)**
+- [ ] **Qualité des séances** : en semaine 2 d'un plan 10 km à 50 min, la séance de qualité est un « Fartlek 6 × 1 min », trop léger pour être spécifique ; il manque du seuil et de l'allure 10 km (par exemple 4 × 1 km, 3 × 8 min), choisis dans les fiches, sans chiffre inventé. À revoir aussi : le contenu détaillé de chaque séance (allure, échauffement, retour au calme).
+- [ ] **Volume et nombre de séances** : 3 séances et environ 2 h par semaine même avec tous les jours libres, c'est léger pour viser 50 min au 10 km. Le volume part des 30 derniers jours (+7 % par semaine) : voir si un coureur régulier (1 374 séances) peut avoir plus.
+- [ ] **Un 2e plan « divisé par 2 »** : Yanis a vu la charge chuter après avoir retiré ses limites de jours et de durée ; impossible à reproduire (le profil en base est bon, les volumes ne dépendent pas de ces limites). Retrouver la cause avec une capture de ses deux plans.
+- [ ] **Deux courses le même jour** (5 km à 9h10 et 10 km à 10h le 13 déc.) : le coach demande « à fond ou en préparation ? » pour le 5 km ; finir cet enchaînement et regarder la semaine de la course (veille facile, jours de course bloqués).
+- [ ] Les 18 (puis 13) « séances retirées » du plan de test : vérifier lesquelles avec Yanis avant qu'il valide quoi que ce soit.
+- [ ] Autres outils de lecture si besoin : sommeil, détail d'une séance (tours, flux), notes de jour (texte libre : à filtrer).
+- [ ] Les tests réels restants de la section 6 (cas débutant, vélo, natation) sur le simulateur « Coach test ».
+
 ## 1. Profil du coureur : le brancher (prochaine étape)
 - [x] **Décision (12 nov., Yanis)** : le profil s'écrit **automatiquement, sans carte** : le coach retient ce qu'on lui dit (`retenir_profil`, niveau `ecriture`, seule exception à « toujours une carte ») et dit en une phrase ce qu'il a noté pour qu'on le corrige.
 - [x] Outils `lire_profil` (connu + ce qui manque) et `retenir_profil` (écrit tout de suite) ; consigne dans le prompt : 1 ou 2 questions à la fois, dans l'ordre. Déployé (coach-chat), tests serveur.
@@ -62,7 +80,7 @@ Principe posé par Yanis : **chaque règle du plan vient d'études ou de la pers
 - [ ] Modifier la durée d'une séance existante (aujourd'hui : supprimer + ajouter) ; créer une compétition ou un objectif.
 - [ ] Comparaison Haiku / Sonnet sur 1 000-2 000 cas générés ; Sonnet pour le chat si Haiku se montre limité.
 - [ ] Limite de dépense côté Anthropic ; **révoquer la clé collée dans le chat** et en recréer une.
-- [ ] Suppression de `coach-ai` (ancien système, encore déployé) et de `garde-fou.ts` (non appelé) : à valider par Yanis.
+- [x] `coach-ai` (ancien système) supprimé de Supabase le 13 nov. (OK de Yanis). `garde-fou.ts` **reste** : le coach actuel l'utilise (`coach-chat.ts`, `coach-contexte.ts`, 7 fichiers de tests).
 
 ## Analyse de la sortie (page 4) : la développer à la perfection (décision de Yanis, 12 nov.)
 Objectif : un compte rendu qui ressemble vraiment à celui d'un coach. Premier jet fait (titre + 3-4 phrases, réactions du cœur, progression : voir `ANALYSE_SORTIE.md`), à pousser beaucoup plus loin.
