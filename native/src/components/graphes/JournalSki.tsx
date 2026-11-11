@@ -5,7 +5,7 @@ import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // La journée de ski en chronologie (maquette 8 « Journal de la journée ») : l'heure, une pastille (couleur du sport pour une descente, grise pour une remontée),
-// le nom, puis le dénivelé et la durée (et la vitesse max d'une descente). Sans heure de départ connue, on écrit le temps écoulé depuis le début.
+// le nom, puis le dénivelé et la durée (et la vitesse moyenne d'une descente, de A à B). Sans heure de départ connue, on écrit le temps écoulé depuis le début.
 interface Props {
   etapes: EtapeSki[];
   couleur: string;
@@ -35,7 +35,7 @@ export function JournalSki({ etapes, couleur, departMin }: Props) {
       <Text style={[typo.micro, { color: p.texteDoux }]}>LA JOURNÉE</Text>
       {etapes.map((e, i) => {
         const nom = e.type === 'descente' ? `Descente ${++descentes}` : 'Remontée';
-        const detail = `${e.deniveleM} m · ${duree(e.dureeS)}${e.vmoyKmh ? ` · moy. ${e.vmoyKmh}` : ''}${e.vmaxKmh ? ` · max ${e.vmaxKmh} km/h` : ''}`;
+        const detail = `${e.deniveleM} m · ${duree(e.dureeS)}${e.vmoyKmh ? ` · ${e.vmoyKmh} km/h` : ''}`;
         return (
           <View key={i} accessible accessibilityLabel={`${heure(departMin, e.debutS)}, ${nom}, ${detail}`} style={styles.ligne}>
             <Text style={[styles.heure, { color: p.texteMuet }]}>{heure(departMin, e.debutS)}</Text>
