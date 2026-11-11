@@ -204,6 +204,8 @@ interface EtatOutils {
   directes: { nom: string; params: Record<string, unknown> }[];
   uuid: () => string;
   lireHistorique: (fonction: FonctionHistorique, args: Record<string, unknown>) => Promise<unknown>;
+  /** Catégories de santé que l'utilisateur a autorisées (les outils de lecture ne sortent la santé que pour celles-là) */
+  sante: string[];
   ecrireProfil: (colonnes: Record<string, unknown>) => Promise<void>;
 }
 
@@ -221,7 +223,7 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
       // Historique long : la fonction vient du registre (liste fermée), jamais du modèle
       if (!FONCTIONS_HISTORIQUE.includes(def.requete.fonction)) return { contenu: "Cet outil n'existe pas.", erreur: true };
       try {
-        return { contenu: JSON.stringify(await e.lireHistorique(def.requete.fonction, def.requete.args(lu.params, e.jour))), erreur: false };
+        return { contenu: JSON.stringify(await e.lireHistorique(def.requete.fonction, def.requete.args(lu.params, e.jour, e.sante))), erreur: false };
       } catch {
         console.error('coach-chat: lecture de l\'historique échouée');
         return { contenu: "Je n'arrive pas à lire l'historique pour le moment. Réponds avec ce que tu as déjà.", erreur: true };
@@ -487,7 +489,7 @@ export async function traiterMessage(userId: string, texteBrut: unknown, deps: D
     // Pas d'outil, ou une réponse coupée (jamais d'outil lancé sur une entrée tronquée) : fini
     if (!reponse.outils.length || reponse.arret === 'longueur') break;
 
-    const etat: EtatOutils = { ctx, resume, jour, nbLectures, cartes, directes, uuid: deps.uuid, lireHistorique: (f, a) => s.lireHistorique(userId, f, a), ecrireProfil: (c) => s.ecrireProfil(userId, c) };
+    const etat: EtatOutils = { ctx, resume, jour, nbLectures, cartes, directes, uuid: deps.uuid, sante: reglagesBrut.categories, lireHistorique: (f, a) => s.lireHistorique(userId, f, a), ecrireProfil: (c) => s.ecrireProfil(userId, c) };
     const resultats: { type: string; tool_use_id: string; content: string; is_error?: boolean }[] = [];
     // Un par un, dans l'ordre : les cartes d'un même tour se comptent ensemble
     for (const o of reponse.outils) {

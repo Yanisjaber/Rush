@@ -45,11 +45,47 @@ export interface DefinitionAction {
   /** Niveau « lecture » seulement : ce qu'on répond au modèle, à partir du résumé déjà chargé */
   repondre?: (params: Record<string, unknown>, resume: unknown) => unknown;
   /** Niveau « lecture » seulement : lecture de l'historique long, par une fonction SQL (droits de l'utilisateur, RLS). Liste fermée de fonctions. */
-  requete?: { fonction: FonctionHistorique; args: (params: Record<string, unknown>, jour: string) => Record<string, unknown> };
+  requete?: { fonction: FonctionHistorique; args: (params: Record<string, unknown>, jour: string, sante: string[]) => Record<string, unknown> };
 }
 
-export type FonctionHistorique = 'rpc_coach_semaines' | 'rpc_coach_seances';
-export const FONCTIONS_HISTORIQUE: readonly FonctionHistorique[] = ['rpc_coach_semaines', 'rpc_coach_seances'];
+/** Liste blanche des fonctions SQL que le coach peut appeler pour lire les données de l'athlète (12 nov. 2026). Toutes en lecture seule, avec le jeton de l'utilisateur. */
+export type FonctionHistorique =
+  | 'rpc_coach_semaines' | 'rpc_coach_seances' | 'rpc_coach_prevues' | 'rpc_coach_force' | 'rpc_coach_hyrox'
+  | 'rpc_coach_objectifs' | 'rpc_coach_fiche' | 'rpc_coach_sante' | 'rpc_courbe_course' | 'rpc_courbe_puissance';
+export const FONCTIONS_HISTORIQUE: readonly FonctionHistorique[] = [
+  'rpc_coach_semaines', 'rpc_coach_seances', 'rpc_coach_prevues', 'rpc_coach_force', 'rpc_coach_hyrox',
+  'rpc_coach_objectifs', 'rpc_coach_fiche', 'rpc_coach_sante', 'rpc_courbe_course', 'rpc_courbe_puissance',
+];
+
+/** Distances (mètres) des records de course que lit rpc_courbe_course (signal « pace ») */
+const DISTANCES_RECORDS = [400, 1000, 1609, 3000, 5000, 10000, 15000, 20000, 21097, 30000, 42195] as const;
+
+/** Lecteur commun des outils « une période » : du, au (400 jours au plus), nb facultatif */
+function lirePeriode(input: unknown, maxNb: number): LectureAction {
+  const o = objet(input, ['du', 'au', 'nb']);
+  const du = dateIso(o?.du);
+  const au = dateIso(o?.au);
+  if (!o || !du || !au) return refus('du et au doivent être des dates AAAA-MM-JJ qui existent.');
+  if (au < du) return refus('La date de fin doit être le même jour que le début, ou après.');
+  if (joursEntre(du, au) > 400) return refus('400 jours au plus entre du et au : découpe en plusieurs lectures.');
+  const params: Record<string, unknown> = { du, au };
+  if (o.nb !== undefined) {
+    const nb = entier(o.nb, 1, maxNb);
+    if (!nb) return refus(`nb doit être un entier entre 1 et ${maxNb}.`);
+    params.nb = nb;
+  }
+  return { ok: true, params };
+}
+const SCHEMA_PERIODE = (maxNb: number) => ({
+  type: 'object',
+  properties: {
+    du: { type: 'string', description: 'Premier jour, AAAA-MM-JJ.' },
+    au: { type: 'string', description: 'Dernier jour, AAAA-MM-JJ (400 jours après le premier au plus).' },
+    nb: { type: 'integer', minimum: 1, maximum: maxNb, description: 'Nombre de lignes au plus (facultatif).' },
+  },
+  required: ['du', 'au'],
+  additionalProperties: false,
+});
 
 /** Nombre de jours entre deux dates AAAA-MM-JJ valides */
 function joursEntre(du: string, au: string): number {
@@ -415,6 +451,154 @@ export const ACTIONS: DefinitionAction[] = [
     schema: { type: 'object', properties: {}, additionalProperties: false },
     lire: (input) => (objet(input, []) ? { ok: true, params: {} } : refus('Cet outil ne prend aucun paramètre.')),
     repondre: (_p, resume) => ({ cycles: liste((resume as Objet)?.cycles) }),
+  },
+
+  {
+    nom: 'lire_seances_prevues',
+    niveau: 'lecture',
+    disponible: true,
+    description:
+      "Lit les séances PRÉVUES (pas encore faites) sur une période de 400 jours au plus : date, sport, minutes, km, dénivelé, charge, priorité, et si le coach les a créées. Sans le nom ni les notes. " +
+      "À utiliser pour savoir ce qui est déjà au calendrier avant de proposer quoi que ce soit, ou pour répondre à « qu'est-ce que j'ai de prévu ? ».",
+    schema: SCHEMA_PERIODE(100),
+    lire: (input) => lirePeriode(input, 100),
+    requete: { fonction: 'rpc_coach_prevues', args: (p) => ({ p_du: p.du, p_au: p.au, p_limite: p.nb ?? 50 }) },
+  },
+  {
+    nom: 'lire_force',
+    niveau: 'lecture',
+    disponible: true,
+    description:
+      "Lit la musculation de l'utilisateur sur une période de 400 jours au plus : par jour et par exercice (clé de l'exercice, groupe musculaire, séries, répétitions, charge max en kg, volume en kg). " +
+      "À utiliser pour « où j'en suis au squat ? », « combien de séries de dos cette semaine ? ».",
+    schema: SCHEMA_PERIODE(200),
+    lire: (input) => lirePeriode(input, 200),
+    requete: { fonction: 'rpc_coach_force', args: (p) => ({ p_du: p.du, p_au: p.au, p_limite: p.nb ?? 100 }) },
+  },
+  {
+    nom: 'lire_hyrox',
+    niveau: 'lecture',
+    disponible: true,
+    description: "Lit les tests Hyrox de l'utilisateur (date, temps total, temps des 16 segments en secondes), les plus récents d'abord, et son objectif de temps.",
+    schema: {
+      type: 'object',
+      properties: { nb: { type: 'integer', minimum: 1, maximum: 20, description: 'Nombre de tests au plus (10 par défaut).' } },
+      additionalProperties: false,
+    },
+    lire: (input) => {
+      const o = objet(input, ['nb']);
+      if (!o) return refus('Seul nb est accepté.');
+      if (o.nb === undefined) return { ok: true, params: {} };
+      const nb = entier(o.nb, 1, 20);
+      return nb ? { ok: true, params: { nb } } : refus('nb doit être un entier entre 1 et 20.');
+    },
+    requete: { fonction: 'rpc_coach_hyrox', args: (p) => ({ p_limite: p.nb ?? 10 }) },
+  },
+  {
+    nom: 'lire_objectifs',
+    niveau: 'lecture',
+    disponible: true,
+    description: "Lit les objectifs de l'année de l'utilisateur (sport, type, cible, valeur saisie) et ses phases d'entraînement (base, développement, affûtage…) de l'année écoulée et à venir.",
+    schema: { type: 'object', properties: {}, additionalProperties: false },
+    lire: (input) => (objet(input, []) ? { ok: true, params: {} } : refus('Cet outil ne prend aucun paramètre.')),
+    requete: { fonction: 'rpc_coach_objectifs', args: () => ({}) },
+  },
+  {
+    nom: 'lire_fiche_athlete',
+    niveau: 'lecture',
+    disponible: true,
+    description:
+      "Lit la fiche de l'athlète : FTP, FC max, FC au seuil, puissance max, taille, âge, sexe, et le poids seulement si l'utilisateur a autorisé le partage de la catégorie « corps ». Un champ absent = non renseigné.",
+    schema: { type: 'object', properties: {}, additionalProperties: false },
+    lire: (input) => (objet(input, []) ? { ok: true, params: {} } : refus('Cet outil ne prend aucun paramètre.')),
+    requete: { fonction: 'rpc_coach_fiche', args: (_p, _j, sante) => ({ p_sante: sante }) },
+  },
+  {
+    nom: 'lire_sante_periode',
+    niveau: 'lecture',
+    disponible: true,
+    description:
+      "Lit l'historique des mesures de santé sur une période de 400 jours au plus (une valeur par jour et par mesure), SEULEMENT pour les catégories que l'utilisateur a autorisées à partager. Liste vide = rien d'autorisé ou rien de saisi : ne le déduis pas, dis-le simplement. " +
+      "Pour les 7 derniers jours, lire_sante suffit.",
+    schema: SCHEMA_PERIODE(400),
+    lire: (input) => lirePeriode(input, 400),
+    requete: { fonction: 'rpc_coach_sante', args: (p, _j, sante) => ({ p_du: p.du, p_au: p.au, p_sante: sante, p_limite: p.nb ?? 200 }) },
+  },
+  {
+    nom: 'lire_records_course',
+    niveau: 'lecture',
+    disponible: true,
+    description:
+      "Lit les meilleurs temps de course à pied de l'utilisateur sur une distance (le plus petit temps gagne), avec la date de la séance : classement des meilleures sorties sur cette distance, toute période ou une période donnée. " +
+      "À utiliser pour « quel est mon record sur 10 km ? » ou pour juger un objectif de temps.",
+    schema: {
+      type: 'object',
+      properties: {
+        distance_m: { type: 'integer', enum: [...DISTANCES_RECORDS], description: 'Distance en mètres.' },
+        du: { type: 'string', description: 'Facultatif : début de période, AAAA-MM-JJ.' },
+        au: { type: 'string', description: 'Facultatif : fin de période, AAAA-MM-JJ.' },
+        nb: { type: 'integer', minimum: 1, maximum: 10, description: 'Nombre de meilleures sorties (3 par défaut).' },
+      },
+      required: ['distance_m'],
+      additionalProperties: false,
+    },
+    lire: (input) => {
+      const o = objet(input, ['distance_m', 'du', 'au', 'nb']);
+      const d = DISTANCES_RECORDS.find((x) => x === o?.distance_m);
+      if (!o || d === undefined) return refus(`distance_m : une de ${DISTANCES_RECORDS.join(', ')}.`);
+      const params: Record<string, unknown> = { distance_m: d };
+      for (const cle of ['du', 'au'] as const) {
+        if (o[cle] === undefined) continue;
+        const j = dateIso(o[cle]);
+        if (!j) return refus(`${cle} doit être une date AAAA-MM-JJ qui existe.`);
+        params[cle] = j;
+      }
+      if (o.nb !== undefined) {
+        const nb = entier(o.nb, 1, 10);
+        if (!nb) return refus('nb doit être un entier entre 1 et 10.');
+        params.nb = nb;
+      }
+      return { ok: true, params };
+    },
+    requete: { fonction: 'rpc_courbe_course', args: (p) => ({ p_signal: 'pace', p_debut: p.du ?? null, p_fin: p.au ?? null, p_cle: p.distance_m, p_n: p.nb ?? 3 }) },
+  },
+  {
+    nom: 'lire_records_velo',
+    niveau: 'lecture',
+    disponible: true,
+    description:
+      "Lit les meilleures puissances moyennes à vélo de l'utilisateur pour une durée (en secondes, de 1 s à 5 h) avec la date de la séance, toute période ou une période donnée. " +
+      "À utiliser pour « quelle est ma meilleure puissance sur 20 minutes ? ».",
+    schema: {
+      type: 'object',
+      properties: {
+        duree_s: { type: 'integer', minimum: 1, maximum: 18000, description: 'Durée en secondes.' },
+        du: { type: 'string', description: 'Facultatif : début de période, AAAA-MM-JJ.' },
+        au: { type: 'string', description: 'Facultatif : fin de période, AAAA-MM-JJ.' },
+        nb: { type: 'integer', minimum: 1, maximum: 10, description: 'Nombre de meilleures sorties (3 par défaut).' },
+      },
+      required: ['duree_s'],
+      additionalProperties: false,
+    },
+    lire: (input) => {
+      const o = objet(input, ['duree_s', 'du', 'au', 'nb']);
+      const duree = entier(o?.duree_s, 1, 18000);
+      if (!o || !duree) return refus('duree_s doit être un entier entre 1 et 18000 secondes.');
+      const params: Record<string, unknown> = { duree_s: duree };
+      for (const cle of ['du', 'au'] as const) {
+        if (o[cle] === undefined) continue;
+        const j = dateIso(o[cle]);
+        if (!j) return refus(`${cle} doit être une date AAAA-MM-JJ qui existe.`);
+        params[cle] = j;
+      }
+      if (o.nb !== undefined) {
+        const nb = entier(o.nb, 1, 10);
+        if (!nb) return refus('nb doit être un entier entre 1 et 10.');
+        params.nb = nb;
+      }
+      return { ok: true, params };
+    },
+    requete: { fonction: 'rpc_courbe_puissance', args: (p) => ({ p_debut: p.du ?? null, p_fin: p.au ?? null, p_duree: p.duree_s, p_n: p.nb ?? 3 }) },
   },
 
   {

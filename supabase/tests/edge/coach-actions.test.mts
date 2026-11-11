@@ -127,7 +127,10 @@ test('lectures de l\'historique : chaque requête SQL est dans la liste fermée,
     assert.ok(!(a.repondre && a.requete), `${a.nom} : une seule source`);
     if (a.requete) assert.ok(FONCTIONS_HISTORIQUE.includes(a.requete.fonction), a.nom);
   }
-  assert.deepEqual([...FONCTIONS_HISTORIQUE].sort(), ['rpc_coach_semaines', 'rpc_coach_seances'].sort());
+  assert.deepEqual([...FONCTIONS_HISTORIQUE].sort(), [
+    'rpc_coach_semaines', 'rpc_coach_seances', 'rpc_coach_prevues', 'rpc_coach_force', 'rpc_coach_hyrox',
+    'rpc_coach_objectifs', 'rpc_coach_fiche', 'rpc_coach_sante', 'rpc_courbe_course', 'rpc_courbe_puissance',
+  ].sort());
 });
 
 test('lire_seances_periode : 400 jours exactement acceptés, 401 refusés', () => {
@@ -236,4 +239,38 @@ test('ajuster_seance : lecture stricte (vélo et natation, intervalles ou contin
     { ...base, genre: 'continu', minutes: 30, clef: 1 },
   ];
   for (const m of mauvais) assert.equal(lire(m).ok, false, JSON.stringify(m)?.slice(0, 90));
+});
+
+test('lecture des données de l\'athlète : les nouveaux outils vérifient leurs paramètres (liste blanche, bornes)', () => {
+  const lire = (nom: string, x: unknown) => trouverAction(nom)!.lire!(x);
+  for (const nom of ['lire_seances_prevues', 'lire_force', 'lire_sante_periode']) {
+    assert.equal(lire(nom, { du: '2026-11-01', au: '2026-11-30' }).ok, true, nom);
+    assert.equal(lire(nom, { du: '2025-09-26', au: '2026-11-01' }).ok, false, `${nom} : 401 jours`);
+    assert.equal(lire(nom, { du: '2026-11-30', au: '2026-11-01' }).ok, false, `${nom} : à l'envers`);
+    assert.equal(lire(nom, { du: '2026-11-01', au: '2026-11-30', sql: 'drop table x' }).ok, false, `${nom} : clé en trop`);
+  }
+  assert.equal(lire('lire_records_course', { distance_m: 10000 }).ok, true);
+  assert.equal(lire('lire_records_course', { distance_m: 7777 }).ok, false);
+  assert.equal(lire('lire_records_course', { distance_m: 5000, nb: 11 }).ok, false);
+  assert.equal(lire('lire_records_velo', { duree_s: 1200 }).ok, true);
+  assert.equal(lire('lire_records_velo', { duree_s: 0 }).ok, false);
+  assert.equal(lire('lire_records_velo', { duree_s: 1200, du: 'hier' }).ok, false);
+  assert.equal(lire('lire_hyrox', {}).ok, true);
+  assert.equal(lire('lire_hyrox', { nb: 50 }).ok, false);
+  for (const nom of ['lire_objectifs', 'lire_fiche_athlete']) {
+    assert.equal(lire(nom, {}).ok, true, nom);
+    assert.equal(lire(nom, { user_id: ID }).ok, false, `${nom} : jamais d'identifiant d'utilisateur`);
+  }
+});
+
+test('lecture des données de l\'athlète : la santé ne part vers SQL qu\'avec les catégories autorisées, et aucun outil ne prend d\'identifiant d\'utilisateur', () => {
+  const sante = ['ressenti'];
+  const fiche = trouverAction('lire_fiche_athlete')!.requete!.args({}, '2026-11-12', sante);
+  assert.deepEqual(fiche, { p_sante: ['ressenti'] });
+  const hist = trouverAction('lire_sante_periode')!.requete!.args({ du: '2026-11-01', au: '2026-11-30' }, '2026-11-12', sante);
+  assert.deepEqual(hist, { p_du: '2026-11-01', p_au: '2026-11-30', p_sante: ['ressenti'], p_limite: 200 });
+  for (const a of ACTIONS.filter((x) => x.requete)) {
+    const props = Object.keys((a.schema as { properties: Record<string, unknown> }).properties);
+    assert.ok(!props.some((k) => /user|uid|compte/i.test(k)), `${a.nom} : pas d'identifiant d'utilisateur`);
+  }
 });
