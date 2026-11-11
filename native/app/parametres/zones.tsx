@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { EcranSection } from '@/components/ecrans/EcranSection';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { BarreZones, teinteZone } from '@/components/reglages/BarreZones';
@@ -131,30 +131,11 @@ export default function Zones() {
         <Bloc titre={modele.titre}>
           {zones ? (
             <View style={{ gap: espace.e3 }}>
-              <View style={styles.reference}>
-                <Text style={[typo.corpsFort, { color: p.texte }]}>
-                  {modele.reference} {onglet === 'allure' ? `${texteAllure(ref).replace('/km', '')} /km` : `${Math.round(ref)} ${modele.unite}`}
-                </Text>
-                {onglet === 'cardio' && cardio?.estimee ? (
-                  <View accessible accessibilityLabel="Estimée depuis ta FC max. Renseigne ta FC au seuil pour l'affiner." style={[styles.etiquette, { borderColor: p.alerte }]}>
-                    <Text style={[typo.micro, { color: p.alerte }]}>estimée</Text>
-                  </View>
-                ) : null}
-                <Pressable
-                  onPress={() => router.push('/parametres/physiologie')}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Modifier ${modele.reference}`}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  style={styles.lien}
-                >
-                  <Text style={[typo.petit, { color: p.texteDoux, textDecorationLine: 'underline' }]}>Modifier</Text>
-                </Pressable>
-              </View>
-
               <BarreZones
                 bornes={bornes}
                 axeMax={Math.max(bornes[bornes.length - 1] * 1.3, onglet === 'puissance' ? 160 : onglet === 'cardio' ? 120 : 115)}
                 couleur={couleur}
+                texte={(i) => texteValeur(valeurBorne(i))}
               />
 
               <View>
@@ -181,7 +162,9 @@ export default function Zones() {
 
               <View style={{ gap: espace.e2 }}>
                 <Text style={[typo.petit, { color: p.texteMuet }]}>
-                  {personnalisees ? 'Zones réglées par toi : elles suivent ta référence si tu la changes.' : 'Zones calculées depuis ta référence. Règle le début de chaque zone avec − et +, ou tape la valeur.'}
+                  {personnalisees
+                    ? 'Zones réglées par toi : elles suivent ta référence si tu la changes.'
+                    : `Zones calculées depuis ta référence${onglet === 'cardio' && cardio?.estimee ? ' (FC au seuil estimée depuis ta FC max)' : ''}. Règle le début de chaque zone avec − et +, ou tape la valeur.`}
                   {onglet === 'allure' ? ' Pour l’allure, + va vers plus rapide.' : ''}
                 </Text>
                 {personnalisees ? (
@@ -286,9 +269,6 @@ function Apercu({ apercu, couleur }: { apercu: ApercuDonnees; couleur: string })
 }
 
 const styles = StyleSheet.create({
-  reference: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 32 },
-  lien: { marginLeft: 'auto', minHeight: 32, justifyContent: 'center' },
-  etiquette: { borderWidth: 1, borderRadius: rayon.rond, paddingHorizontal: 10, paddingVertical: 2 },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 40, borderTopWidth: StyleSheet.hairlineWidth },
   puce: { width: 12, height: 12, borderRadius: 6 },
   pas: { flexDirection: 'row', alignItems: 'center', gap: 4 },
