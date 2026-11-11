@@ -63,3 +63,14 @@ Principe posé par Yanis : **chaque règle du plan vient d'études ou de la pers
 - [ ] Comparaison Haiku / Sonnet sur 1 000-2 000 cas générés ; Sonnet pour le chat si Haiku se montre limité.
 - [ ] Limite de dépense côté Anthropic ; **révoquer la clé collée dans le chat** et en recréer une.
 - [ ] Suppression de `coach-ai` (ancien système, encore déployé) et de `garde-fou.ts` (non appelé) : à valider par Yanis.
+
+## Analyse de la sortie (page 4) : la développer à la perfection (décision de Yanis, 12 nov.)
+Objectif : un compte rendu qui ressemble vraiment à celui d'un coach. Premier jet fait (titre + 3-4 phrases, réactions du cœur, progression : voir `ANALYSE_SORTIE.md`), à pousser beaucoup plus loin.
+- [ ] Voir le rendu à l'écran sur plusieurs vraies sorties (footing, sortie longue, fractionné, vélo) et corriger les phrases qui sonnent faux ; chaque cas a son message principal.
+- [ ] Réactions du corps plus riches : montée du cœur au départ, récupération après la sortie, lien avec le sommeil et la charge des jours d'avant (fatigue).
+- [ ] Progression plus fine : vélo (puissance par battement), fractionnés (même séance refaite), tendance sur plusieurs semaines, pas seulement les 5 dernières sorties.
+- [ ] Sourcer les seuils (2,5 % de progrès, 30 % de récupération dégradée, 10 bpm d'écart, 70 % / 25 % de zones…) : aujourd'hui ce sont des conventions de lecture.
+- [ ] Phrases plus « coach » (ton, enchaînement) ; l'écart au prévu est encore sec.
+- [ ] Autres sports : muscu, natation, Hyrox ; cadence et relief en course.
+- [ ] Vérifier la détection des efforts d'un fractionné sur de vraies sorties.
+

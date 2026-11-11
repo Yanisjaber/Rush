@@ -22,7 +22,7 @@ Chaque règle produit un constat avec une priorité ; on garde les 5 plus hauts.
 - Un footing avec quelques lignes droites reste un footing : un plan n'est « à intervalles » que si le tiers de son temps l'est.
 
 ## Fichiers
-- Moteur : `native/src/data/calendrier/analyse/{flux,efforts,plan,constats,type-seance}.ts`, tests dans `native/tests/calendrier/analyse/`.
+- Moteur : `native/src/data/calendrier/analyse/{flux,efforts,plan,constats,physio,type-seance}.ts`, tests dans `native/tests/calendrier/analyse/`.
 - Écran : `native/src/components/graphes/PageAnalyseSortie.tsx`, branchement dans `native/app/seance.tsx`, séance prévue liée par `native/src/hooks/usePrevueLiee.ts`.
 
 ## À savoir
@@ -30,7 +30,11 @@ Chaque règle produit un constat avec une priorité ; on garde les 5 plus hauts.
 - La qualité dépend du profil : FC max, seuil de cœur, vitesse seuil (les allures des plans du coach sont des % de la vitesse seuil). Sans vitesse seuil, la ligne Plan dit ce qui manque au lieu d'inventer.
 - Les zones de cœur affichées partout viennent du même calcul (`calculerZones`).
 
+## Compte rendu (12 nov.)
+La page affiche un titre et 3 ou 4 phrases (plus de liste de constats, plus de carte « À faire »). Le moteur choisit UN message principal (trop vite, trop dur, bien tenu, cibles du plan), puis le cœur (dérive, récupération entre les efforts d'un fractionné), la progression (à cœur égal contre les 5 dernières sorties du même type, `physio.ts`) et l'écart au prévu.
+
 ## Reste à faire
+Le chantier complet est suivi dans `IA_A_FAIRE.md` (section « Analyse de la sortie »).
 - Cadence (pas dans les flux bruts de l'app), relief (allure ajustée à la pente).
 - Muscu, natation, Hyrox : autres critères.
 - Un retour de Yanis sur la qualité des lignes après quelques sorties.
