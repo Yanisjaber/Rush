@@ -49,7 +49,7 @@ export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, records
 
   // Quatre rubriques seulement (le temps écoulé va avec l'effort ; le rythme et le relief vont ensemble) : moins de titres, donc moins de hauteur
   const rubriques: { titre: string; lignes: Ligne[] }[] = [
-    { titre: 'EFFORT', lignes: [...(tempsTotal ? [{ cle: 'ecoule', libelle: 'Temps écoulé', valeur: tempsTotal }] : []), ...ligne('charge'), ...ligne('if', 'Intensité (IF)'), ...ligne('rpe', 'Effort ressenti')] },
+    { titre: 'EFFORT', lignes: [...(tempsTotal ? [{ cle: 'ecoule', libelle: 'Temps écoulé', valeur: tempsTotal }] : []), ...ligne('charge'), ...ligne('if', 'Intensité (IF)'), ...ligne('rpe', 'Effort ressenti'), ...ligne('type')] },
     { titre: 'CŒUR', lignes: [...ligne('fc', 'FC moyenne'), ...chiffreNote('fc', 'FC max', 'bpm'), ...ligne('derive', 'Dérive'), ...ligne('ef', 'Efficacité P/FC'), ...ligne('trimp', 'TRIMP')] },
     {
       titre: 'RYTHME ET RELIEF',
@@ -58,6 +58,7 @@ export function PageDetailsSortie({ chiffres, ecarte, altitude, couleur, records
         ...ligneSi('vitesse'),
         ...ligne('cadence'),
         ...(altitude ? [{ cle: 'haut', libelle: 'Plus haut', valeur: String(Math.round(altitude.max)), unite: 'm' }, { cle: 'bas', libelle: 'Plus bas', valeur: String(Math.round(altitude.min)), unite: 'm' }] : []),
+        ...ligne('temperature'),
       ],
     },
     { titre: 'ÉNERGIE', lignes: [...ligne('watts', 'Puiss. moyenne'), ...chiffreNote('watts', 'Puiss. normalisée', 'W'), ...ligne('pmax', 'Puiss. max'), ...ligne('energie', 'Travail'), ...ligne('kjftp', 'Dont > FTP'), ...ligne('calories'), ...ligne('cho')] },
