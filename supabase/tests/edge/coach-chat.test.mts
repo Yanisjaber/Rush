@@ -1354,34 +1354,39 @@ test('retenir_profil : valeurs hors liste, texte libre ou clé en trop refusés,
   }
 });
 
-// ---------- Deux courses le même jour ----------
-const DOUBLE = (s: FauxStockage, p5 = 'A', p10 = 'A') => {
-  avecCourse(s);
-  s.resume.competitions = [
-    { date: '2026-12-13', sport: 'course', priorite: p5, km: 5, heure: '09:10', temps_cible_min: 20 },
-    { date: '2026-12-13', sport: 'course', priorite: p10, km: 10, heure: '10:00', temps_cible_min: 42 },
-  ];
-};
-test('double course, priorités égales : le coach doit demander laquelle compte, aucune carte', async () => {
-  const w = await planPropose([outil('c', { motif: 'Préparation' }, 'preparer_course')], (s) => DOUBLE(s));
-  assert.equal(w.evts.some((e) => e.type === 'carte'), false);
-  const retour = String((w.modele.appels[1].messages.at(-1) as Libre).content[0].content);
-  assert.match(retour, /2 courses le même jour \(5 km à 09:10 \(priorité A\) puis 10 km à 10:00 \(priorité A\)\)/);
-  assert.match(retour, /laquelle est la priorité/);
+// ---------- Un calendrier de courses (autant de courses qu'on veut) ----------
+const CAL = (courses: Libre[]) => (s: FauxStockage) => { avecCourse(s); s.resume.competitions = courses; };
+const retourOutil = (w: Libre) => String((w.modele.appels[1].messages.at(-1) as Libre).content[0].content);
+test('calendrier : une étape B avant la cible A et une course après : le plan tient compte de la première, signale la seconde, aucune question bloquante', async () => {
+  const w = await planPropose([outil('c', { motif: 'Préparation' }, 'preparer_course')], CAL([
+    { date: '2026-11-22', sport: 'course', priorite: 'B', km: 10, heure: '09:00', temps_cible_min: 50 },
+    { date: '2026-12-13', sport: 'course', priorite: 'A', km: 10, heure: '09:00', temps_cible_min: 45 },
+    { date: '2027-02-07', sport: 'course', priorite: 'A', km: 21.1, heure: '09:00', temps_cible_min: 100 },
+  ]));
+  const carte = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
+  assert.equal(carte.genre, 'planning');
+  const r = retourOutil(w);
+  assert.match(r, /Étapes DÉJÀ au calendrier avant la cible/);
+  assert.match(r, /22\/11.*3 jours faciles ensuite/);
+  assert.match(r, /Courses APRÈS la cible, pas planifiées maintenant : le 7\/2/);
+  assert.match(r, /Ton calendrier de courses a changé le plan/);
+  assert.ok(carte.lignes.every((l: Libre) => !l.vers || l.vers < '2026-12-13'));
 });
-test('double course : la priorité A contre B décide seule ; la distance demandée décide aussi ; le coach reçoit la note honnête (aucun chiffre inventé)', async () => {
-  for (const [config, demande, kmAttendu] of [[(s: FauxStockage) => DOUBLE(s, 'B', 'A'), {}, 10], [(s: FauxStockage) => DOUBLE(s, 'A', 'A'), { km: 5 }, 5], [(s: FauxStockage) => DOUBLE(s, 'A', 'B'), {}, 5]] as const) {
-    const w = await planPropose([outil('c', { motif: 'Préparation', ...demande }, 'preparer_course')], config);
+test('calendrier : quatre courses le même jour = un bloc visé ; trois jours de suite aussi ; le plan s\'arrête la veille du premier jour', async () => {
+  for (const [courses, debut] of [
+    [[{ date: '2026-12-13', sport: 'course', priorite: 'A', km: 5, heure: '08:00' }, { date: '2026-12-13', sport: 'course', priorite: 'A', km: 5, heure: '09:00' }, { date: '2026-12-13', sport: 'course', priorite: 'B', km: 10, heure: '11:00' }, { date: '2026-12-13', sport: 'course', priorite: 'C', km: 3, heure: '15:00' }], '2026-12-13'],
+    [[{ date: '2026-12-11', sport: 'course', priorite: 'B', km: 10 }, { date: '2026-12-12', sport: 'course', priorite: 'A', km: 10 }, { date: '2026-12-13', sport: 'course', priorite: 'B', km: 10 }], '2026-12-11'],
+  ] as const) {
+    const w = await planPropose([outil('c', { motif: 'Préparation' }, 'preparer_course')], CAL(courses as unknown as Libre[]));
     const carte = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
-    assert.equal(carte.genre, 'planning');
-    const retour = String((w.modele.appels[1].messages.at(-1) as Libre).content[0].content);
-    assert.match(retour, /DOUBLE COURSE le même jour : 5 km à 09:10.* puis 10 km à 10:00.*\(50 min entre les deux départs\)/);
-    assert.match(retour, new RegExp(`course prioritaire, ${kmAttendu} km`));
-    assert.match(retour, /aucune étude trouvée/);
-    assert.match(retour, /AUCUN chiffre de récupération/);
+    assert.ok(carte.lignes.length > 6);
+    assert.ok(carte.lignes.every((l: Libre) => !l.vers || l.vers < debut), debut);
+    const r = retourOutil(w);
+    assert.match(r, /BLOC DE COMPÉTITION visé/);
+    assert.match(r, /tu n'inventes AUCUN chiffre/);
   }
 });
-test('une seule course ce jour-là : aucune note de double', async () => {
+test('calendrier : une seule course = aucune note de calendrier', async () => {
   const w = await planPropose([outil('c', { motif: 'Plan' }, 'preparer_course')], avecCourse);
-  assert.doesNotMatch(String((w.modele.appels[1].messages.at(-1) as Libre).content[0].content), /DOUBLE COURSE/);
+  assert.doesNotMatch(retourOutil(w), /BLOC DE COMPÉTITION|Étapes DÉJÀ|Courses APRÈS/);
 });

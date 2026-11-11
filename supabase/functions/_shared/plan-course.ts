@@ -15,6 +15,8 @@
 // ============================================================
 import { ajouterJours, ecartJours, entre, nomDuJour } from './dates-iso.ts';
 import { JOURS_SEMAINE } from './profil-coureur.ts';
+import { joursRecuperation, libelleBloc } from './calendrier-courses.ts';
+import type { Bloc } from './calendrier-courses.ts';
 import type { ProfilCoureur } from './profil-coureur.ts';
 import { tssEstime, typeSeance } from './menu-seances.ts';
 import { ctxAvec, etiquetteDate } from './planning.ts';
@@ -286,50 +288,6 @@ export function estDebutant(profil: ProfilCourse | null, anneesPratique: number 
 /** Reprise après un long arrêt (aucune sortie depuis 90 jours) d'un coureur qui a de l'ancienneté : on repart de 30 à 40 % de sa plus grosse semaine (fiche reprise-apres-arret, arrêt de 2 à 3 mois, guides de terrain) */
 export const REPRISE_PART_DU_PIC = 0.35;
 
-// ---------- Deux courses le même jour ----------
-export interface CourseCalendrier { date: string; km?: number | null; heure?: string | null; priorite?: string | null; temps_cible_min?: number | null }
-export type Double =
-  | { type: 'aucune' }
-  | { type: 'a_choisir'; message: string }
-  | { type: 'choisie'; principale: CourseCalendrier; autres: CourseCalendrier[]; note: string };
-
-const RANG_PRIORITE: Record<string, number> = { A: 0, B: 1, C: 2 };
-const minutesDe = (h?: string | null): number | null => { const m = /^(\d{2}):(\d{2})$/.exec(h ?? ''); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
-const libelleCourse = (c: CourseCalendrier): string => `${c.km ? `${String(Math.round(c.km * 100) / 100).replace('.', ',')} km` : 'une course'}${c.heure ? ` à ${c.heure}` : ''}${c.priorite ? ` (priorité ${c.priorite})` : ''}`;
-
-/**
- * Plusieurs courses à pied le MÊME jour (par exemple un 5 km à 9 h 10 puis un 10 km à 10 h) : le moteur ne peut préparer qu'UNE course. On choisit la prioritaire, dans cet ordre :
- *   1. la distance demandée par l'utilisateur (`kmDemande`, à 0,6 km près) ;
- *   2. sinon la seule dont la priorité (A, B, C) est strictement la plus haute ;
- *   3. sinon on ne choisit pas : le coach doit demander laquelle compte le plus (message `a_choisir`).
- * AUCUNE ÉTUDE trouvée (recherche du 12 nov. 2026) sur un 5 km puis un 10 km le même jour ; les travaux voisins se contredisent (cyclisme : le 2e de deux efforts de 4 km à 40 min d'écart plus lent dans un essai,
- * pas de baisse nette entre 17 et 45 min dans d'autres). Donc aucun chiffre sur la récupération entre les deux : la note le dit au coach, qui reste général et honnête.
- */
-export function analyserDouble(courses: CourseCalendrier[], date: string, kmDemande?: number | null): Double {
-  const memeJour = courses.filter((c) => c.date === date).sort((x, y) => (minutesDe(x.heure) ?? 0) - (minutesDe(y.heure) ?? 0));
-  if (memeJour.length < 2) return { type: 'aucune' };
-  const liste = memeJour.map(libelleCourse).join(' puis ');
-  let principale: CourseCalendrier | undefined;
-  if (kmDemande && kmDemande > 0) principale = memeJour.find((c) => c.km != null && Math.abs(c.km - kmDemande) <= 0.6);
-  if (!principale) {
-    const rang = (c: CourseCalendrier) => RANG_PRIORITE[c.priorite ?? ''] ?? 3;
-    const meilleur = Math.min(...memeJour.map(rang));
-    const premieres = memeJour.filter((c) => rang(c) === meilleur);
-    if (premieres.length === 1 && meilleur < 3) principale = premieres[0];
-  }
-  if (!principale) {
-    return { type: 'a_choisir', message: `Il y a ${memeJour.length} courses le même jour (${liste}). Demande à l'utilisateur laquelle est la priorité (ou si elles comptent autant), puis rappelle preparer_course avec km = la distance de la course prioritaire. Ne crée aucune carte pour l'instant. Aucune étude sérieuse n'existe sur l'enchaînement de deux courses le même jour : ne promets rien de chiffré.` };
-  }
-  const autres = memeJour.filter((c) => c !== principale);
-  const h1 = minutesDe(memeJour[0].heure);
-  const h2 = minutesDe(memeJour[1].heure);
-  const ecart = h1 !== null && h2 !== null ? h2 - h1 : null;
-  const note = `DOUBLE COURSE le même jour : ${liste}${ecart !== null ? ` (${ecart} min entre les deux départs)` : ''}. Le plan est préparé pour la course prioritaire, ${libelleCourse(principale)}. ` +
-    "Dis-le clairement à l'utilisateur. IMPORTANT : aucune étude trouvée sur l'enchaînement de deux courses le même jour (le 5 km puis le 10 km), et les travaux voisins se contredisent ; tu n'inventes donc AUCUN chiffre de récupération, d'allure ou de durée entre les deux. " +
-    "Tu peux parler en termes généraux (soigner l'échauffement, se ravitailler et récupérer entre les deux, ne pas griller la course prioritaire dans l'autre) en disant que c'est du bon sens de terrain et pas une règle prouvée, et lui demander comment il compte gérer l'autre course (à fond ou en préparation).";
-  return { type: 'choisie', principale, autres, note };
-}
-
 /** Étape de la progression course/marche selon la semaine du plan : [minutes de course, minutes de marche] */
 export const etapeCourseMarche = (semaine: number): [number, number] => (semaine < 2 ? [1, 2] : semaine < 4 ? [2, 1] : [3, 1]);
 
@@ -358,7 +316,7 @@ export function courseMarche(minutes: number, a: Allures, semaine: number, type:
  * quelques milliers de cas) ; on garde la moins coûteuse. Coûts : 1000 par paire de séances dures collées (y compris à une séance dure déjà posée dans la fenêtre précédente),
  * 300 si la sortie longue n'est pas un jour de week-end alors qu'un week-end est libre, 30 si un rôle retombe sur le même jour de la semaine que dans la fenêtre précédente, 4 par jour de décalage par rapport au premier choix.
  */
-export function meilleurPlacement(libres: string[], roles: Role[], initial: string[], joursDurs: Set<string>, weekend: (j: string) => boolean, precedent: Map<Role, Set<string>> = new Map(), reposEntreToutes = false): string[] | null {
+export function meilleurPlacement(libres: string[], roles: Role[], initial: string[], joursDurs: Set<string>, weekend: (j: string) => boolean, precedent: Map<Role, Set<string>> = new Map(), reposEntreToutes = false, sansIntensite: Set<string> = new Set()): string[] | null {
   const n = roles.length;
   if (n === 0 || n > libres.length || libres.length > 9) return null;
   // reposEntreToutes (débutant) : un jour de repos entre deux séances, quelles qu'elles soient
@@ -375,6 +333,8 @@ export function meilleurPlacement(libres: string[], roles: Role[], initial: stri
         if (joursDurs.has(ajouterJours(pris[a], -1)) || joursDurs.has(ajouterJours(pris[a], 1))) cout += 1000;
         for (let b = a + 1; b < n; b++) if (durs[b] && Math.abs(ecartJours(pris[a], pris[b])) === 1) cout += 1000;
       }
+      // Jours de récupération après une course : pas d'intensité ni de sortie longue (1 000 000 : jamais, sauf s'il n'y a pas d'autre choix)
+      if (roles[a] !== 'facile' && sansIntensite.has(pris[a])) cout += 1_000_000;
       if (roles[a] === 'longue' && weekendLibre && !weekend(pris[a])) cout += 300;
       cout += 4 * Math.abs(ecartJours(pris[a], initial[a]));
       // Variété : on évite de remettre un rôle sur le même jour de la semaine que la fenêtre précédente (30 par séance qui se répète)
@@ -582,6 +542,8 @@ export interface DemandeCourse {
   sansTest?: boolean;
   /** Allures imposées par l'utilisateur (« 4:19 c'est trop vite, mets 4:30 ») : elles remplacent celles du calcul */
   allures?: Partial<Allures>;
+  /** Les blocs de compétition AVANT la cible, déjà au calendrier (voir calendrier-courses.ts) : chacun est suivi de jours faciles */
+  evenements?: Bloc[];
 }
 
 export interface Bilan {
@@ -608,6 +570,8 @@ export interface Bilan {
   profilUtilise: string[];
   /** Vrai départ de débutant (aucune donnée, aucune ancienneté) */
   debutant: boolean;
+  /** Ce que le calendrier de courses a changé dans le plan (une phrase par étape) */
+  contraintesCalendrier: string[];
   /** Allures provisoires (aucune donnée ni temps visé) : tout est recalibré après le test */
   provisoire: boolean;
   typeTest: TypeTest;
@@ -751,6 +715,16 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
   // Pas de test non plus si l'utilisateur n'en veut pas ou si le plan est trop court pour s'en servir.
   const avecTest = !d.chrono && !d.sansTest && !regles.blessureActive && nSemaines >= 2 && niveau?.fiabilite !== 'recente';
   const typeTest = typeTestPour(km);
+  // Les étapes déjà au calendrier avant la cible : les jours qui suivent chaque bloc sont FACILES (ni séance dure ni sortie longue), selon la distance totale du bloc
+  const facilesSeulement = new Set<string>();
+  const contraintesCalendrier: string[] = [];
+  for (const b of d.evenements ?? []) {
+    const n = joursRecuperation(b.kmTotal);
+    for (let i = 1; i <= n; i++) facilesSeulement.add(ajouterJours(b.fin, i));
+    // La veille du bloc : footing léger ou repos (fiche course-periodisation-recuperation), donc ni séance dure ni sortie longue
+    facilesSeulement.add(ajouterJours(b.debut, -1));
+    if (b.fin >= debut || ajouterJours(b.fin, n) >= debut) contraintesCalendrier.push(`${libelleBloc(b)} : ${n} jours faciles ensuite (jusqu'au ${ajouterJours(b.fin, n)}), rien de dur la veille`);
+  }
   const imposees = ALLURES_CLES.filter((c) => d.allures?.[c] !== undefined);
   const a: Allures = { ...calculees, ...Object.fromEntries(imposees.map((c) => [c, d.allures![c]!])) };
 
@@ -855,7 +829,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     }
     // Le meilleur placement des jours : on essaie toutes les façons de poser les séances sur les jours libres et on garde la moins coûteuse :
     // jamais deux séances dures collées (la qualité et la sortie longue), même avec la fenêtre précédente ; la sortie longue au week-end ; le moins de décalage possible
-    const placement = meilleurPlacement(libres, roles, choisis, joursDurs, wk, joursParRole, debutant);
+    const placement = meilleurPlacement(libres, roles, choisis, joursDurs, wk, joursParRole, debutant, facilesSeulement);
     if (placement) choisis = placement;
     // Débutant : la sortie test est la toute première séance du plan (le jour le plus tôt de la première semaine)
     if (debutant && w === 0 && avecTest) {
@@ -902,7 +876,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
         debutant && w < DEBUTANT.semainesCourseMarche && (role === 'facile' || role === 'longue') ? courseMarche(role === 'longue' ? longue : facile, a, w, role === 'longue' ? 'sortie_longue' : 'footing_facile') :
         role === 'longue' ? sortieLongue(longue, a, longue > rp.longueMini && ((phase === 'specifique') || (phase === 'developpement' && w % 2 === 1))) :
         varianteFooting(facile, a, phase, w + roles.slice(0, i).filter((r) => r === 'facile').length, rp.footingMini);
-      const essais = [choisis[i], ...libres.filter((j) => !choisis.includes(j) && !operations.some((o) => o.op === 'ajouter' && o.proposition.date === j))].filter((j) => maxDuJour(j) >= s.minutes);
+      const essais = [choisis[i], ...libres.filter((j) => !choisis.includes(j) && !operations.some((o) => o.op === 'ajouter' && o.proposition.date === j))].filter((j) => maxDuJour(j) >= s.minutes && !(role !== 'facile' && facilesSeulement.has(j)));
       let raisonRefus = essais.length ? '' : `aucun jour libre assez long, ${s.minutes} min dépassent la durée que tu m'as donnée`;
       for (const jour of essais) {
         const p: Proposition = { date: jour, sport: 'course', type: s.type, minutes: s.minutes };
@@ -926,7 +900,7 @@ export function planifierCourse(d: DemandeCourse, seances: SeancePrevue[], base:
     lignesSemaines.push(`Semaine ${w + 1} (${du}) : ${NOM_PHASE[phase]}${recuperation ? ', récupération' : ''}, ${posees} séance${posees > 1 ? 's' : ''}, ${totalSemaine} min`);
   }
 
-  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null, volumeDepart, derniers7, profilUtilise: regles.utilise, debutant, provisoire, typeTest };
+  const bilan: Bilan = { km, jours, semaines: nSemaines, niveau, realiste, cible, objectifPlan, verdict, allures: a, seancesParSemaine: k, imposees, test: avecTest, niveauFiabilite: niveau?.fiabilite ?? null, volumeDepart, derniers7, profilUtilise: regles.utilise, debutant, provisoire, typeTest, contraintesCalendrier };
   return { operations, abandons, semaines: lignesSemaines, bilan, message: messageBilan(bilan) };
 }
 
@@ -954,6 +928,7 @@ export function messageBilan(b: Bilan): string {
     ? `Volume de départ : ${b.volumeDepart} min la première semaine (${b.seancesParSemaine} séances de 20 à 30 min, un départ de débutant) ; les semaines du plan sont des fenêtres de 7 jours glissants à partir du premier jour du plan.`
     : `Volume de départ : ${b.volumeDepart} min la première semaine, calé sur tes 7 derniers jours glissants (${b.derniers7} min) et ta moyenne des 4 dernières fenêtres de 7 jours ; les semaines du plan sont des fenêtres de 7 jours glissants à partir du premier jour du plan.`);
   if (b.debutant) parts.push(`Tu débutes : le but de ce plan est de FINIR la course, pas de viser un chrono${b.km > 5 ? ` (la recherche conseille de finir d'abord un 5 km avant de chercher un temps ; ${b.km} km est une grosse marche, dis-le franchement et propose de viser plus court si le plan est court)` : ''}. Les premières semaines alternent course et marche, sans aucune intensité${b.test ? ', sauf la sortie test du début' : ''}.`);
+  if (b.contraintesCalendrier.length) parts.push(`Ton calendrier de courses a changé le plan : ${b.contraintesCalendrier.join(' ; ')}.`);
   if (b.profilUtilise.length) parts.push(`Ton profil a changé le plan : ${b.profilUtilise.join(' ; ')}.`);
   parts.push(`Plan à ${b.seancesParSemaine} séances par semaine (à garder identique si tu refais le plan, sauf demande de l'utilisateur).`);
   if (b.allures) {
