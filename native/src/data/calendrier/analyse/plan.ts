@@ -1,6 +1,7 @@
 import { familleAffichage } from '../../sports/familles.ts';
 import { dureeTotale, indiceZone, milieu, normaliser, segmentsDuBloc } from '../structure.ts';
 import type { Bloc, Metrique, TypeBloc } from '../structure.ts';
+import { detecterEfforts } from './efforts.ts';
 import { allureFenetre, moyenne } from './flux.ts';
 import type { Flux1Hz } from './flux.ts';
 
@@ -54,6 +55,14 @@ export interface SegmentPlan {
   haut: number | null;
 }
 
+/** L'allure écrite dans le nom d'un bloc (« Footing à 6:28/km ») : c'est la parole exacte du plan, on la préfère au calcul depuis le profil. */
+export function allureDansLeNom(nom: string): number | null {
+  const m = /(\d{1,2}):(\d{2})\s*\/\s*km/.exec(String(nom));
+  if (!m) return null;
+  const s = Number(m[1]) * 60 + Number(m[2]);
+  return s >= 120 && s <= 1200 ? s : null;
+}
+
 /** La structure d'une séance prévue, segment après segment, avec les cibles chiffrées. */
 export function segmentsPlan(structure: unknown, refs: RefsPlan, sport: string): SegmentPlan[] {
   const blocs: Bloc[] = normaliser(structure, familleAffichage(sport) === 'course' ? 'pace' : 'power');
@@ -71,6 +80,8 @@ export function segmentsPlan(structure: unknown, refs: RefsPlan, sport: string):
       } else if (b.metric === 'hr' && Number(refs.hrMax) > 0) {
         lo = (Number(refs.hrMax) * bas) / 100;
         hi = (Number(refs.hrMax) * haut) / 100;
+      } else if (b.metric === 'pace' && allureDansLeNom(b.name) != null) {
+        lo = hi = allureDansLeNom(b.name);
       } else if (b.metric === 'pace' && Number(refs.allureBase) > 0 && bas > 0) {
         // Plus l'intensité est haute, plus l'allure est rapide (moins de secondes par km)
         lo = (Number(refs.allureBase) * 100) / haut;
@@ -140,6 +151,10 @@ export interface ResumeBloc {
   haut: number | null;
   /** Statut dominant des répétitions hors cible. */
   horsCible: 'trop_vite' | 'trop_lent' | 'trop_haut' | 'trop_bas' | null;
+  /** Mode détection (le chrono ne suit pas le plan) : combien d'efforts ont été retrouvés dans le flux. Null en mode chrono. */
+  detectees: number | null;
+  /** Mode détection d'un bloc continu : l'écart à la cible la plus proche, dans l'unité de la métrique (s/km, bpm, W). */
+  ecart: number | null;
 }
 
 /** Regroupe les segments par bloc : combien de répétitions dans la cible, et comment la première et la dernière se comparent. Échauffement et retour au calme ne sont pas jugés. */
@@ -170,8 +185,94 @@ export function resumerBlocs(res: ResultatSegment[]): ResumeBloc[] {
       bas: liste[0].seg.bas,
       haut: liste[0].seg.haut,
       horsCible: dominant ?? null,
+      detectees: null,
+      ecart: null,
     };
   });
+}
+
+/** Tolérance d'un effort court : le GPS lisse mal 20 secondes, on est plus large qu'au chrono. */
+const TOLERANCE_EFFORT_COURT = 0.06;
+
+/**
+ * Juger sans le chrono : quand la sortie ne suit pas la structure à la seconde, on RETROUVE les efforts dans le flux.
+ *  - un bloc d'intervalles (lignes droites, répétitions) : on compte les accélérations de la bonne durée et on mesure leur allure ;
+ *  - un bloc continu : on mesure ce qui reste quand on retire les efforts (allure ou cœur moyens), contre la cible du bloc.
+ * Seule l'allure est jugée ainsi (la détection se fait sur la vitesse). Un bloc sans cible chiffrée n'est pas jugé.
+ */
+export function jugerParDetection(f: Flux1Hz, segs: SegmentPlan[]): ResumeBloc[] {
+  const parBloc = new Map<number, SegmentPlan[]>();
+  for (const s of segs) if (s.type === 'interval' || s.type === 'steady') parBloc.set(s.blocIdx, [...(parBloc.get(s.blocIdx) ?? []), s]);
+  const sortie: ResumeBloc[] = [];
+  const exclure = new Array(f.n).fill(false);
+  // D'abord les intervalles (leurs efforts sortent du calcul des blocs continus)
+  const resultats = new Map<number, ResumeBloc>();
+  let efforts: ReturnType<typeof detecterEfforts> = [];
+  for (const [idx, liste] of parBloc) {
+    const travail = liste.filter((x) => x.role === 'travail');
+    const premier = travail[0];
+    if (premier.type !== 'interval' || premier.metric !== 'pace' || premier.bas == null || premier.haut == null || efforts.length) continue;
+    const vitesseCible = 1000 / ((premier.bas + premier.haut) / 2);
+    efforts = detecterEfforts(f, premier.dureeS, vitesseCible).slice(0, travail.length + 2);
+    const gardes = efforts.slice(0, travail.length);
+    const tol = premier.dureeS <= 90 ? TOLERANCE_EFFORT_COURT : TOLERANCE[premier.metric];
+    const dans = gardes.filter((e) => e.allure >= premier.bas! * (1 - tol) && e.allure <= premier.haut! * (1 + tol)).length;
+    const hors = gardes.filter((e) => e.allure < premier.bas! * (1 - tol) || e.allure > premier.haut! * (1 + tol));
+    const trop = hors.length ? (hors.filter((e) => e.allure > premier.haut!).length >= hors.length / 2 ? 'trop_lent' : 'trop_vite') : null;
+    for (const e of efforts) for (let i = Math.max(0, e.debutS - 5); i < Math.min(f.n, e.debutS + e.dureeS + 5); i++) exclure[i] = true;
+    resultats.set(idx, {
+      blocIdx: idx, nom: premier.nomBloc, type: 'interval', metric: 'pace', nbReps: travail.length, evaluees: gardes.length, dans,
+      premiere: gardes[0]?.allure ?? null, derniere: gardes[gardes.length - 1]?.allure ?? null, bas: premier.bas, haut: premier.haut, horsCible: trop, detectees: gardes.length, ecart: null,
+    });
+  }
+  for (const [idx, liste] of parBloc) {
+    const premier = liste[0];
+    if (resultats.has(idx)) continue;
+    if (premier.type !== 'steady' || premier.bas == null || premier.haut == null) continue;
+    // Les secondes hors efforts : l'allure (ou le cœur) du fond de la sortie
+    let metres = 0;
+    let secondes = 0;
+    let fcS = 0;
+    let fcK = 0;
+    for (let i = 0; i < f.n; i++) {
+      if (exclure[i]) continue;
+      metres += f.v[i];
+      secondes++;
+      if (f.fc[i] > 0) {
+        fcS += f.fc[i];
+        fcK++;
+      }
+    }
+    const mesure = premier.metric === 'pace' ? (metres > 0 ? (secondes * 1000) / metres : null) : premier.metric === 'hr' ? (fcK ? fcS / fcK : null) : null;
+    if (mesure == null || secondes < 120) continue;
+    const tol = TOLERANCE[premier.metric];
+    const dedans = mesure >= premier.bas * (1 - tol) && mesure <= premier.haut * (1 + tol);
+    const dessus = mesure > premier.haut * (1 + tol);
+    const ref = dessus ? premier.haut : premier.bas;
+    resultats.set(idx, {
+      blocIdx: idx, nom: premier.nomBloc, type: 'steady', metric: premier.metric, nbReps: 1, evaluees: 1, dans: dedans ? 1 : 0, premiere: mesure, derniere: mesure, bas: premier.bas, haut: premier.haut,
+      horsCible: dedans ? null : premier.metric === 'pace' ? (dessus ? 'trop_lent' : 'trop_vite') : dessus ? 'trop_haut' : 'trop_bas', detectees: null, ecart: dedans ? 0 : Math.round(Math.abs(mesure - ref)),
+    });
+  }
+  for (const idx of [...parBloc.keys()].sort((a, b) => a - b)) {
+    const r = resultats.get(idx);
+    if (r) sortie.push(r);
+  }
+  return sortie;
+}
+
+/** La part du temps prévu passée en intervalles (travail et récupération) : un footing avec quelques lignes droites en a peu, un fractionné beaucoup. */
+export function partIntervalles(structure: unknown, sport: string): number {
+  const blocs = normaliser(structure, familleAffichage(sport) === 'course' ? 'pace' : 'power');
+  let total = 0;
+  let interv = 0;
+  for (const b of blocs) {
+    for (const { seg } of segmentsDuBloc(b)) {
+      total += seg.min;
+      if (b.type === 'interval') interv += seg.min;
+    }
+  }
+  return total > 0 ? interv / total : 0;
 }
 
 /** Le chrono suit-il le plan ? Sinon les fenêtres de temps ne tombent pas sur les blocs et on ne juge pas bloc par bloc. */

@@ -104,10 +104,10 @@ test('fractionné où la dernière répétition s\'effondre : dit où, de combie
   assert.equal(a.aFaire, "Raccourcis la dernière répétition ou allonge la récup d'une minute.");
 });
 
-test('plan avec un chrono qui ne suit pas la structure : on ne juge pas bloc par bloc', () => {
+test('plan avec un chrono qui ne suit pas la structure, et aucun effort retrouvé : on le dit', () => {
   const f = flux1Hz({ temps: Array.from({ length: 2400 }, (_, i) => i), vitesse: new Array(2400).fill(3), fc: new Array(2400).fill(150) })!;
   const a = analyserSortie({ ...base(f), type: 'fractionne', prevue: PLAN_FRAC, tss: null });
-  assert.match(a.lignes.find((l) => l.label === 'Plan')!.texte, /Le chrono ne suit pas le plan \(40'00" faits, 33'00" prévus\)/);
+  assert.match(a.lignes.find((l) => l.label === 'Plan')!.texte, /3 x 4 min seuil : aucune des 3 répétitions retrouvée dans la sortie\./);
 });
 
 test('plan sans vitesse seuil dans le profil : on le dit et on dit quoi renseigner', () => {
@@ -135,4 +135,46 @@ test('sortie en vélo : tendance en km/h, pas de départ ni d\'allure au km', ()
   const texte = a.lignes.map((l) => l.texte).join('\n');
   assert.match(texte, /Tu ralentis : 32,4 km\/h sur la 1re moitié, 27,0 sur la 2e/);
   assert.doesNotMatch(texte, /Trop rapide/);
+});
+
+// TON plan du 10 nov. : « Footing à 6:28/km » 22 min (82 %), puis 6 lignes droites de 20 s à 4:46/km (111 %) avec 1 min de récupération
+const PLAN_REEL: PrevueAnalyse = {
+  id: 'p', name: 'Course · Footing 30 min + 6 lignes droites', date: '2026-11-10', sport: 'Run', duration: 30, km: null, tss: 25, rpe: null, category: 'entrainement',
+  structure: [
+    { type: 'steady', name: 'Footing à 6:28/km', reps: 1, metric: 'pace', unit: 'pct', work: { min: 22.2, int: 82, intHi: null } },
+    { type: 'interval', name: '6 lignes droites de 20 s à 4:46/km', reps: 6, metric: 'pace', unit: 'pct', work: { min: 0.3, int: 111, intHi: null }, rec: { min: 1, int: 82, intHi: null } },
+  ],
+};
+
+// 36 min : fond à `fond` s/km, et `lignes` accélérations de 20 s à `vite` s/km aux minutes données
+function footingEtLignes(fond: number, lignes: { minute: number; vite: number }[]) {
+  const n = 2142;
+  const v = Array.from({ length: n }, () => 1000 / fond);
+  for (const l of lignes) for (let i = l.minute * 60; i < l.minute * 60 + 20; i++) v[i] = 1000 / l.vite;
+  return flux1Hz({ temps: v.map((_, i) => i), vitesse: v, fc: v.map(() => 150) })!;
+}
+const SIX = [24, 26, 28, 30, 32, 34].map((minute) => ({ minute, vite: 280 }));
+
+test('ton plan : footing + 6 lignes droites, le chrono ne suit pas : on retrouve les lignes et on juge le footing', () => {
+  const a = analyserSortie({ ...base(footingEtLignes(358, SIX)), prevue: PLAN_REEL, derivePct: 3, tss: 50 });
+  const texte = a.lignes.map((l) => `${l.label} | ${l.texte}`).join('\n');
+  assert.match(texte, /Plan \| 6 lignes droites de 20 s à 4:46\/km : 6 retrouvées sur 6, 6 dans la cible \(4'46"\/km\)/);
+  assert.match(texte, /Plan \| Footing à 6:28\/km : 5'58"\/km au lieu de 6'28"\/km \(30 s\/km trop vite\)\./);
+  assert.match(texte, /Prévu \| Durée 35'42" au lieu de 30'00" \(\+19 %\), charge 50 au lieu de 25 \(\+100 %\)/);
+  // Un footing + quelques lignes droites reste un footing : le reste de l'analyse s'applique
+  assert.ok(a.lignes.some((l) => l.label === 'Objectif') || a.lignes.some((l) => l.label === 'Cœur'));
+});
+
+test('ton plan : il manque deux lignes droites, on dit combien', () => {
+  const a = analyserSortie({ ...base(footingEtLignes(388, SIX.slice(0, 4))), prevue: PLAN_REEL, derivePct: 3 });
+  const l = a.lignes.find((x) => x.texte.startsWith('6 lignes droites'))!;
+  assert.match(l.texte, /4 retrouvées sur 6/);
+  assert.match(l.texte, /2 manquantes\./);
+});
+
+test('ton plan : footing tenu à 6:28, lignes tenues : tout est vert', () => {
+  const a = analyserSortie({ ...base(footingEtLignes(388, SIX)), prevue: PLAN_REEL, derivePct: 2 });
+  const texte = a.lignes.map((l) => l.texte).join('\n');
+  assert.match(texte, /Footing à 6:28\/km : tenu, 6'28"\/km pour 6'28"\/km visés/);
+  assert.doesNotMatch(texte, /trop vite/);
 });

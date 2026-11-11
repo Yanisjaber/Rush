@@ -1,6 +1,6 @@
 import { allureFenetre, arrets, debutDerive, percentile, tempsParZoneCoeur } from './flux.ts';
 import type { Flux1Hz } from './flux.ts';
-import { alignementFiable, comparerGlobal, intentionDuPlan, mesurerSegments, resumerBlocs, segmentsPlan } from './plan.ts';
+import { alignementFiable, comparerGlobal, intentionDuPlan, jugerParDetection, mesurerSegments, partIntervalles, resumerBlocs, segmentsPlan } from './plan.ts';
 import type { Intention, PrevueAnalyse, RefsPlan, ResumeBloc } from './plan.ts';
 
 // L'analyse d'une sortie : une suite de règles qui cherchent ce qui compte (l'objectif tenu ou non, le départ, les blocs du plan, la dérive et son début, les écarts au prévu, la fiabilité des données),
@@ -105,10 +105,12 @@ function intentionDeLaSortie(e: EntreeAnalyse): { intention: Intention | null; s
   return { intention: null, source: null };
 }
 
+/** Une sortie « à intervalles » : un fractionné, ou un plan dont le tiers au moins du temps est en intervalles. Quelques lignes droites dans un footing n'en font pas un fractionné. */
+const PART_INTERVALLES_MINI = 0.35;
 function aDesIntervalles(e: EntreeAnalyse): boolean {
   if (e.type === 'fractionne') return true;
   const s = e.prevue?.structure;
-  return Array.isArray(s) && s.some((b) => b && typeof b === 'object' && (b as { type?: string }).type === 'interval');
+  return Array.isArray(s) && e.prevue ? partIntervalles(s, e.prevue.sport) >= PART_INTERVALLES_MINI : false;
 }
 
 // --- Les règles -----------------------------------------------------------------------------------------------------------------
@@ -145,28 +147,49 @@ function blocsDuPlan(e: EntreeAnalyse): Constat[] {
   if (!f || !e.prevue || !Array.isArray(struct) || !struct.length) return [];
   const segs = segmentsPlan(struct, e.refs, e.prevue.sport);
   if (!segs.length) return [];
-  if (!alignementFiable(f, segs)) {
-    const prevu = segs.reduce((n, s) => Math.max(n, s.debutS + s.dureeS), 0);
-    return [{ code: 'plan_decale', priorite: 35, label: 'Plan', texte: `Le chrono ne suit pas le plan (${duree(f.n)} faits, ${duree(prevu)} prévus) : je ne juge pas bloc par bloc.` }];
-  }
-  const blocs: ResumeBloc[] = resumerBlocs(mesurerSegments(f, segs));
-  const sortie: Constat[] = [];
+  // Le chrono suit le plan : on juge bloc par bloc sur les fenêtres de temps. Sinon on retrouve les efforts dans le flux.
+  const chrono = alignementFiable(f, segs);
+  const blocs: ResumeBloc[] = chrono ? resumerBlocs(mesurerSegments(f, segs)) : jugerParDetection(f, segs);
   const sansCible = blocs.filter((b) => b.bas == null);
-  if (sansCible.length === blocs.length && blocs.length) {
-    const manque = blocs[0].metric === 'pace' ? 'ta vitesse seuil' : blocs[0].metric === 'hr' ? 'ta FC max' : 'ta FTP';
-    return [{ code: 'plan_sans_cible', priorite: 30, label: 'Plan', texte: `Les cibles du plan ne se chiffrent pas : il manque ${manque} dans ton profil.`, action: `Renseigne ${manque} dans Paramètres › Zones.` }];
+  if (!blocs.length || sansCible.length === blocs.length) {
+    const metrique = segs.find((s) => s.role === 'travail')?.metric ?? 'pace';
+    const manque = metrique === 'pace' ? 'ta vitesse seuil' : metrique === 'hr' ? 'ta FC max' : 'ta FTP';
+    const prevu = segs.reduce((n, s) => Math.max(n, s.debutS + s.dureeS), 0);
+    const sansRef = segs.some((s) => s.role === 'travail' && s.bas == null);
+    if (sansRef) return [{ code: 'plan_sans_cible', priorite: 30, label: 'Plan', texte: `Les cibles du plan ne se chiffrent pas : il manque ${manque} dans ton profil.`, action: `Renseigne ${manque} dans Paramètres › Zones.` }];
+    return [{ code: 'plan_decale', priorite: 35, label: 'Plan', texte: `Le chrono ne suit pas le plan (${duree(f.n)} faits, ${duree(prevu)} prévus) et je n'ai pas retrouvé ses efforts : je ne juge pas bloc par bloc.` }];
   }
+  const sortie: Constat[] = [];
   for (const b of blocs) {
-    if (b.bas == null || b.haut == null || !b.evaluees) continue;
-    const c = cible(b.metric, b.bas, b.haut);
-    if (b.dans === b.evaluees) {
-      sortie.push({ code: 'bloc_tenu', priorite: 40, label: 'Plan', texte: `${b.nom} : ${b.dans} répétition${b.dans > 1 ? 's' : ''} sur ${b.nbReps} dans la cible (${c}).` });
+    if (b.bas == null || b.haut == null || !b.evaluees) {
+      if (b.detectees === 0) sortie.push({ code: 'bloc_absent', priorite: 85, label: 'Plan', texte: `${b.nom} : aucune des ${b.nbReps} répétitions retrouvée dans la sortie.` });
       continue;
     }
-    const sens = b.horsCible === 'trop_vite' ? 'trop vite' : b.horsCible === 'trop_lent' ? 'trop lent' : b.horsCible === 'trop_haut' ? 'trop haut' : 'trop bas';
+    const c = cible(b.metric, b.bas, b.haut);
+    const plur = (n: number) => `${n} répétition${n > 1 ? 's' : ''}`;
+    // Un bloc continu jugé sans chrono : une phrase, l'écart en clair
+    if (b.type === 'steady' && b.nbReps === 1 && b.premiere != null) {
+      if (b.dans === 1) {
+        sortie.push({ code: 'bloc_tenu', priorite: 40, label: 'Plan', texte: `${b.nom} : tenu, ${valeur(b.metric, b.premiere)} pour ${c} visés.` });
+      } else {
+        const unite = b.metric === 'pace' ? ' s/km' : b.metric === 'hr' ? ' bpm' : ' W';
+        const sens = b.horsCible === 'trop_vite' ? 'trop vite' : b.horsCible === 'trop_lent' ? 'trop lent' : b.horsCible === 'trop_haut' ? 'trop haut' : 'trop bas';
+        const action = b.horsCible === 'trop_vite' ? `Vise ${c} : ralentis, même si ça paraît trop facile.` : b.horsCible === 'trop_lent' ? `Vise ${c} : tu as de la marge pour aller un peu plus vite.` : undefined;
+        sortie.push({ code: 'bloc_rate', priorite: 72, label: 'Plan', texte: `${b.nom} : ${valeur(b.metric, b.premiere)} au lieu de ${c} (${b.ecart}${unite} ${sens}).`, action });
+      }
+      continue;
+    }
     const evol = b.premiere != null && b.derniere != null && b.evaluees > 1 ? ` La 1re à ${valeur(b.metric, b.premiere)}, la dernière à ${valeur(b.metric, b.derniere)}.` : '';
-    const action = b.horsCible === 'trop_lent' || b.horsCible === 'trop_bas' ? 'Raccourcis la dernière répétition ou allonge la récup d\'une minute.' : `Vise ${c} dès la première répétition, pas plus fort.`;
-    sortie.push({ code: 'bloc_rate', priorite: 85, label: 'Plan', texte: `${b.nom} : ${b.dans} répétition${b.dans > 1 ? 's' : ''} sur ${b.nbReps} dans la cible (${c}), les autres ${sens}.${evol}`, action });
+    const sens = b.horsCible === 'trop_vite' ? 'trop vite' : b.horsCible === 'trop_lent' ? 'trop lent' : b.horsCible === 'trop_haut' ? 'trop haut' : b.horsCible === 'trop_bas' ? 'trop bas' : null;
+    const manquantes = b.detectees != null && b.detectees < b.nbReps ? ` ${b.nbReps - b.detectees} manquante${b.nbReps - b.detectees > 1 ? 's' : ''}.` : '';
+    const action = b.horsCible === 'trop_lent' || b.horsCible === 'trop_bas' ? "Raccourcis la dernière répétition ou allonge la récup d'une minute." : b.horsCible ? `Vise ${c} dès la première répétition, pas plus fort.` : undefined;
+    sortie.push({
+      code: 'bloc_rate',
+      priorite: 85,
+      label: 'Plan',
+      texte: `${b.nom} : ${b.detectees != null ? `${b.detectees} retrouvée${b.detectees > 1 ? 's' : ''} sur ${b.nbReps}, ${b.dans} dans la cible` : `${plur(b.dans)} sur ${b.nbReps} dans la cible`} (${c})${sens ? `, les autres ${sens}` : ''}.${evol}${manquantes}`,
+      action,
+    });
   }
   return sortie;
 }
