@@ -124,7 +124,8 @@ function verdictIntention(e: EntreeAnalyse, zones: number[] | null): Constat | n
   const p12 = (zones[0] + (zones[1] ?? 0)) / total;
   const p3 = (zones[2] ?? 0) / total;
   const p45 = zones.slice(3).reduce((a, b) => a + b, 0) / total;
-  const nom = source === 'plan' && e.prevue?.name ? e.prevue.name : NOM_TYPE[e.type];
+  // Le type, pas le nom de la séance prévue (« Course · Footing 30 min + 6 lignes droites » est trop long pour une ligne)
+  const nom = e.type === 'autre' ? (intention === 'facile' ? 'Séance facile' : 'Séance') : NOM_TYPE[e.type];
   const haut = e.zonesCardio[2] != null ? Math.round(e.zonesCardio[2]) - 1 : null; // le haut de la zone 2
   const reserve = e.zonesEstimees ? ' (zones estimées)' : '';
   if (intention === 'facile') {
@@ -162,7 +163,7 @@ function blocsDuPlan(e: EntreeAnalyse): Constat[] {
   const sortie: Constat[] = [];
   for (const b of blocs) {
     if (b.bas == null || b.haut == null || !b.evaluees) {
-      if (b.detectees === 0) sortie.push({ code: 'bloc_absent', priorite: 85, label: 'Plan', texte: `${b.nom} : aucune des ${b.nbReps} répétitions retrouvée dans la sortie.` });
+      if (b.detectees === 0) sortie.push({ code: 'bloc_absent', priorite: 85, label: 'Plan', texte: `${b.nom} : aucune retrouvée sur ${b.nbReps}, pas assez rapides ou pas faites.`, action: b.bas ? `Pour les prochaines : ${valeur(b.metric, b.bas)}, ${Math.round(b.nbReps)} fois, en relâchant bien entre chaque.` : undefined });
       continue;
     }
     const c = cible(b.metric, b.bas, b.haut);

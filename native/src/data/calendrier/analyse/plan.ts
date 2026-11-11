@@ -213,8 +213,9 @@ export function jugerParDetection(f: Flux1Hz, segs: SegmentPlan[]): ResumeBloc[]
     const premier = travail[0];
     if (premier.type !== 'interval' || premier.metric !== 'pace' || premier.bas == null || premier.haut == null || efforts.length) continue;
     const vitesseCible = 1000 / ((premier.bas + premier.haut) / 2);
-    efforts = detecterEfforts(f, premier.dureeS, vitesseCible).slice(0, travail.length + 2);
-    const gardes = efforts.slice(0, travail.length);
+    efforts = detecterEfforts(f, premier.dureeS, vitesseCible).slice(0, travail.length + 4);
+    // Une accélération bien plus lente que la cible (de plus de 8 %) n'est pas une répétition : c'est le bout de la sortie, une côte, un feu qui passe au vert
+    const gardes = efforts.filter((e) => e.allure <= premier.haut! * 1.08).slice(0, travail.length);
     const tol = premier.dureeS <= 90 ? TOLERANCE_EFFORT_COURT : TOLERANCE[premier.metric];
     const dans = gardes.filter((e) => e.allure >= premier.bas! * (1 - tol) && e.allure <= premier.haut! * (1 + tol)).length;
     const hors = gardes.filter((e) => e.allure < premier.bas! * (1 - tol) || e.allure > premier.haut! * (1 + tol));

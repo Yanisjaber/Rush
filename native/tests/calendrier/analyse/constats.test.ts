@@ -107,7 +107,7 @@ test('fractionné où la dernière répétition s\'effondre : dit où, de combie
 test('plan avec un chrono qui ne suit pas la structure, et aucun effort retrouvé : on le dit', () => {
   const f = flux1Hz({ temps: Array.from({ length: 2400 }, (_, i) => i), vitesse: new Array(2400).fill(3), fc: new Array(2400).fill(150) })!;
   const a = analyserSortie({ ...base(f), type: 'fractionne', prevue: PLAN_FRAC, tss: null });
-  assert.match(a.lignes.find((l) => l.label === 'Plan')!.texte, /3 x 4 min seuil : aucune des 3 répétitions retrouvée dans la sortie\./);
+  assert.match(a.lignes.find((l) => l.label === 'Plan')!.texte, /3 x 4 min seuil : aucune retrouvée sur 3/);
 });
 
 test('plan sans vitesse seuil dans le profil : on le dit et on dit quoi renseigner', () => {
@@ -177,4 +177,15 @@ test('ton plan : footing tenu à 6:28, lignes tenues : tout est vert', () => {
   const texte = a.lignes.map((l) => l.texte).join('\n');
   assert.match(texte, /Footing à 6:28\/km : tenu, 6'28"\/km pour 6'28"\/km visés/);
   assert.doesNotMatch(texte, /trop vite/);
+});
+
+test('ton plan : de simples accélérations molles (le bout de la sortie) ne sont pas des lignes droites', () => {
+  const a = analyserSortie({ ...base(footingEtLignes(358, [{ minute: 33, vite: 325 }, { minute: 35, vite: 330 }])), prevue: PLAN_REEL, derivePct: 3 });
+  const l = a.lignes.find((x) => x.texte.startsWith('6 lignes droites'))!;
+  assert.match(l.texte, /aucune retrouvée sur 6/);
+});
+
+test('le verdict porte le type de séance, pas le long nom de la séance prévue', () => {
+  const a = analyserSortie({ ...base(), prevue: PLAN_REEL });
+  assert.match(a.lignes.find((l) => l.label === 'Objectif')!.texte, /^Footing (raté|tenu|un cran)/);
 });
