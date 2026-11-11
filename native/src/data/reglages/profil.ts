@@ -309,15 +309,15 @@ export function calculerZones(modele: ModeleZones, reference: unknown, perso?: n
   const ref = Number(reference);
   if (!m || !(ref > 0)) return null;
   const bornes = bornesPourcent(modele, perso);
-  const personnalisees = !!persoValide(modele, perso);
-  return m.zones.map(([nom, bas0, haut0], i) => {
-    // Zones par défaut : chacune finit 1 point avant le début de la suivante (55 puis 56). Perso : même règle sur les bornes choisies.
-    const bas = bornes[i];
-    const haut = i < m.zones.length - 1 ? (personnalisees ? bornes[i + 1] - 1 : haut0) : haut0 < bas ? bas : haut0;
-    const de = (ref * bas) / 100;
-    const a = (ref * haut) / 100;
-    const arrondi = (v: number) => (modele === 'allure' ? Math.round(v * 10) / 10 : Math.round(v));
-    return { nom, bas, haut, couleur: i, de: arrondi(de), a: arrondi(a), alluresDe: modele === 'allure' ? texteAllure(de) : '', alluresA: modele === 'allure' ? texteAllure(a) : '' };
+  const allure = modele === 'allure';
+  const arrondi = (v: number) => (allure ? Math.round(v * 10) / 10 : Math.round(v));
+  const debuts = bornes.map((b) => (ref * b) / 100);
+  // Zones continues, sans trou : chaque zone finit juste avant le début de la suivante (1 bpm ou 1 W avant). En allure, la même limite des deux côtés (une zone finit à 5:55 et la suivante commence à 5:55).
+  return m.zones.map(([nom, , haut0], i) => {
+    const dernier = i === m.zones.length - 1;
+    const de = debuts[i];
+    const a = dernier ? Math.max((ref * haut0) / 100, de) : allure ? debuts[i + 1] : arrondi(debuts[i + 1]) - 1;
+    return { nom, bas: bornes[i], haut: dernier ? haut0 : bornes[i + 1], couleur: i, de: arrondi(de), a: arrondi(a), alluresDe: allure ? texteAllure(de) : '', alluresA: allure ? texteAllure(a) : '' };
   });
 }
 

@@ -36,7 +36,8 @@ test('zones : calculées, jamais sans référence', () => {
   const z = calculerZones('puissance', 200)!;
   assert.equal(z[3].nom, 'Z4 Seuil');
   assert.equal(z[3].de, 182);
-  assert.equal(z[3].a, 210);
+  assert.equal(z[3].a, 211); // finit juste avant le début de Z5 (212 W) : pas de trou entre deux zones
+  assert.equal(z[0].a, 111);
   assert.deepEqual(referenceCardio({ hr_max: 200 }), { bpm: 184, estimee: true });
   assert.deepEqual(referenceCardio({ lthr: 170, hr_max: 200 }), { bpm: 170, estimee: false });
   assert.equal(estimerFtp([{ duration_s: 1200, watts_alltime: 300 }]), 285);
@@ -69,7 +70,7 @@ test('zones perso : bornes en % de la référence, invalides ignorées', () => {
   assert.equal(persoValide('cardio', [80, 90, 'x', 100]), null);
   const z = calculerZones('cardio', 200, [75, 85, 95, 105])!;
   assert.equal(z[1].de, 150);
-  assert.equal(z[1].a, 168); // finit 1 point avant la zone suivante (85 % − 1)
+  assert.equal(z[1].a, 169); // finit 1 bpm avant la zone suivante (170)
   assert.equal(z[4].de, 210);
   // Sans perso valide, les zones par défaut
   assert.deepEqual(calculerZones('cardio', 200, [1, 2]), calculerZones('cardio', 200));
@@ -112,4 +113,13 @@ test('valeur tapée pour une zone : bpm, watts ou allure convertie en km/h', () 
   assert.equal(lireValeurZone('allure', '0:30'), null); // 30 s/km : absurde
   // Pas de plafond : un sprint à 450 W avec une FTP de 200 W est possible
   assert.ok(deplacerBorne('puissance', 200, bornesPourcent('puissance', null), 6, 450)![6] > 200);
+});
+
+test('zones continues : aucune zone ne laisse de trou avec la suivante', () => {
+  for (const [modele, ref] of [['puissance', 200], ['cardio', 189], ['puissance', 237]] as const) {
+    const z = calculerZones(modele, ref)!;
+    for (let i = 0; i < z.length - 1; i++) assert.equal(z[i].a + 1, z[i + 1].de, `${modele} ${ref} : Z${i + 1} → Z${i + 2}`);
+  }
+  const al = calculerZones('allure', 11.5)!; // allure : la même limite des deux côtés
+  for (let i = 0; i < al.length - 1; i++) assert.equal(al[i].alluresA, al[i + 1].alluresDe);
 });
