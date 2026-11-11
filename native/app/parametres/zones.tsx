@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { EcranSection } from '@/components/ecrans/EcranSection';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { BarreZones, teinteZone } from '@/components/reglages/BarreZones';
+import { PasZone } from '@/components/reglages/PasZone';
 import { Bouton } from '@/components/ui/Bouton';
 import { Pastille } from '@/components/ui/Pastille';
 import { SelecteurSegments } from '@/components/ui/SelecteurSegments';
@@ -11,7 +12,7 @@ import { chargerSeances, chargerTrace, enregistrerProfil } from '@/data/acces/ap
 import { formatDureePrecise } from '@/data/outils/format';
 import { repartitionsSortie } from '@/data/outils/repartition-zones';
 import {
-  AXE_MAX_POURCENT, bornesPourcent, calculerZones, deplacerBorne, MODELES_ZONES, pasZone, persoValide, referenceCardio, texteAllure, zonesPersoDuProfil,
+  bornesPourcent, calculerZones, deplacerBorne, lireValeurZone, MODELES_ZONES, pasZone, persoValide, referenceCardio, texteAllure, zonesPersoDuProfil,
   type ModeleZones, type ZonesPerso,
 } from '@/data/reglages/profil';
 import { familleAffichage } from '@/data/sports/familles';
@@ -22,7 +23,7 @@ import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Paramètres › Zones : trois onglets (puissance, cœur, allure). Les zones partent du calcul depuis ta référence (FTP, FC au seuil, vitesse seuil) et sont toujours réglables :
-// tu glisses les séparateurs sur la barre (ou − / + sur chaque zone), et les courbes, le temps par zone et l'analyse suivent partout dans l'app.
+// tu règles le début de chaque zone avec − / + (qui répètent en restant appuyé) ou au clavier, et les courbes, le temps par zone et l'analyse suivent partout dans l'app.
 // Les zones perso sont rangées dans `extras.zones_perso` du profil, en % de la référence ; si la référence change, elles suivent.
 const ONGLETS: { cle: ModeleZones; libelle: string }[] = [
   { cle: 'puissance', libelle: 'Puissance' },
@@ -85,7 +86,14 @@ export default function Zones() {
       setMessage('');
     }
   };
-  const pousser = (i: number, sens: 1 | -1) => deplacer(i, valeurBorne(i) + sens * pasZone(onglet));
+  // Un cran = 1 bpm ou 1 W, ou 0,1 km/h (soit environ 2 à 5 s/km selon l'allure) ; `n` crans quand la flèche répète
+  const pousser = (i: number, sens: 1 | -1, n = 1) => deplacer(i, valeurBorne(i) + sens * n * pasZone(onglet));
+  const saisir = (i: number, texte: string) => {
+    const v = lireValeurZone(onglet, texte);
+    if (v === null) return false;
+    deplacer(i, v);
+    return true;
+  };
   const enregistrer = async () => {
     if (!ligne || envoi) return;
     setEnvoi(true);
@@ -145,10 +153,8 @@ export default function Zones() {
 
               <BarreZones
                 bornes={bornes}
-                axeMax={AXE_MAX_POURCENT[onglet]}
+                axeMax={Math.max(bornes[bornes.length - 1] * 1.3, onglet === 'puissance' ? 160 : onglet === 'cardio' ? 120 : 115)}
                 couleur={couleur}
-                onDeplace={(i, pc) => deplacer(i, (pc * ref) / 100)}
-                texteBorne={(i) => `${texteValeur(valeurBorne(i))} ${unite}`}
               />
 
               <View>
@@ -157,11 +163,15 @@ export default function Zones() {
                     <View style={[styles.puce, { backgroundColor: teinteZone(couleur, i, zones.length) }]} />
                     <Text numberOfLines={1} style={[typo.corps, { color: p.texte, flex: 1 }]}>{z.nom}</Text>
                     {i > 0 ? (
-                      <View style={styles.pas}>
-                        <Bouton variante="discret" onPress={() => pousser(i, -1)} accessibilityLabel={`${z.nom} : début ${onglet === 'allure' ? 'plus lent' : 'plus bas'}`}>−</Bouton>
-                        <Text style={[typo.corpsFort, { color: p.texte, minWidth: 54, textAlign: 'center' }]}>{texteValeur(z.de)}</Text>
-                        <Bouton variante="discret" onPress={() => pousser(i, 1)} accessibilityLabel={`${z.nom} : début ${onglet === 'allure' ? 'plus rapide' : 'plus haut'}`}>+</Bouton>
-                      </View>
+                      <PasZone
+                        texte={texteValeur(z.de)}
+                        nom={z.nom}
+                        unite={unite}
+                        onPas={(sens, n) => pousser(i, sens, n)}
+                        onSaisie={(t) => saisir(i, t)}
+                        moins={onglet === 'allure' ? 'plus lent' : 'plus bas'}
+                        plus={onglet === 'allure' ? 'plus rapide' : 'plus haut'}
+                      />
                     ) : (
                       <Text style={[typo.corpsFort, { color: p.texte }]}>{plageZone(onglet, z, i, zones.length, unite)}</Text>
                     )}
@@ -171,7 +181,7 @@ export default function Zones() {
 
               <View style={{ gap: espace.e2 }}>
                 <Text style={[typo.petit, { color: p.texteMuet }]}>
-                  {personnalisees ? 'Zones réglées par toi : elles suivent ta référence si tu la changes.' : 'Zones calculées depuis ta référence. Glisse un séparateur ou touche + et − pour les régler.'}
+                  {personnalisees ? 'Zones réglées par toi : elles suivent ta référence si tu la changes.' : 'Zones calculées depuis ta référence. Règle le début de chaque zone avec − et +, ou tape la valeur.'}
                   {onglet === 'allure' ? ' Pour l’allure, + va vers plus rapide.' : ''}
                 </Text>
                 {personnalisees ? (

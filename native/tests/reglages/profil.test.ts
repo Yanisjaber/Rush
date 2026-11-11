@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { calculerZones, sectionParId, validerSection, valeursDepuis, versPayload, estimerFtp, estimerFcMax, referenceCardio, persoValide, deplacerBorne, zonesDuProfil, zonesPersoDuProfil, bornesPourcent } from '../../src/data/reglages/profil.ts';
+import { calculerZones, sectionParId, validerSection, valeursDepuis, versPayload, estimerFtp, estimerFcMax, referenceCardio, persoValide, deplacerBorne, lireValeurZone, zonesDuProfil, zonesPersoDuProfil, bornesPourcent } from '../../src/data/reglages/profil.ts';
 
 const physio = sectionParId('physiologie')!;
 const identite = sectionParId('identite')!;
@@ -101,4 +101,15 @@ test('deplacerBorne : arrondie au pas, bornée par les voisines', () => {
   assert.equal(Math.round(((a[1] * 11.5) / 100) * 10) / 10, 9);
   // Le résultat est une perso valide
   assert.ok(persoValide('cardio', n.slice(1)));
+});
+
+test('valeur tapée pour une zone : bpm, watts ou allure convertie en km/h', () => {
+  assert.equal(lireValeurZone('puissance', ' 450 '), 450);
+  assert.equal(lireValeurZone('cardio', 'abc'), null);
+  assert.equal(lireValeurZone('cardio', '0'), null);
+  assert.equal(Math.round((lireValeurZone('allure', '5:00') as number) * 100) / 100, 12);
+  assert.equal(Math.round((lireValeurZone('allure', "6'00") as number) * 100) / 100, 10);
+  assert.equal(lireValeurZone('allure', '0:30'), null); // 30 s/km : absurde
+  // Pas de plafond : un sprint à 450 W avec une FTP de 200 W est possible
+  assert.ok(deplacerBorne('puissance', 200, bornesPourcent('puissance', null), 6, 450)![6] > 200);
 });

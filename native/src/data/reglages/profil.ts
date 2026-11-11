@@ -321,8 +321,8 @@ export function calculerZones(modele: ModeleZones, reference: unknown, perso?: n
   });
 }
 
-/** L'axe de la barre de zones (jusqu'où elle va, en % de la référence, donc 500 W pour une FTP de 200 W) : aucune borne ne peut dépasser. La dernière zone n'a pas de fin. */
-export const AXE_MAX_POURCENT: Record<ModeleZones, number> = { puissance: 250, cardio: 125, allure: 140 };
+/** La limite haute d'une borne, en % de la référence (très large : seul le bon sens de l'ordre des zones compte, 2 000 W pour une FTP de 200 W). La dernière zone n'a pas de fin. */
+export const LIMITE_MAX_POURCENT: Record<ModeleZones, number> = { puissance: 1000, cardio: 150, allure: 300 };
 
 /** Le plus petit pas d'une borne dans son unité : 1 bpm, 1 W, 0,1 km/h. */
 export const pasZone = (modele: ModeleZones): number => (modele === 'allure' ? 0.1 : 1);
@@ -337,7 +337,7 @@ export function deplacerBorne(modele: ModeleZones, reference: number, bornes: nu
   const pas = pasZone(modele);
   const pctPas = (100 * pas) / reference;
   const bas = bornes[i - 1] + pctPas;
-  const haut = i + 1 < bornes.length ? bornes[i + 1] - pctPas : AXE_MAX_POURCENT[modele];
+  const haut = i + 1 < bornes.length ? bornes[i + 1] - pctPas : LIMITE_MAX_POURCENT[modele];
   const arrondi = Math.round(valeur / pas) * pas;
   const pct = Math.min(haut, Math.max(bas, (arrondi / reference) * 100));
   // La borne retombe sur un multiple du pas quand c'est possible ; 2 décimales suffisent à retrouver la valeur
@@ -346,6 +346,22 @@ export function deplacerBorne(modele: ModeleZones, reference: number, bornes: nu
   r[i] = Math.round(((nette / reference) * 100) * 100) / 100;
   r[i] = Math.min(haut, Math.max(bas, r[i]));
   return r;
+}
+
+/**
+ * Lit une valeur tapée au clavier pour le début d'une zone : des bpm ou des watts (« 168 »), ou, pour l'allure, une allure « 5:30 » (ou « 5.5 » = 5 min 30 s ; « 5 » = 5 min)
+ * convertie en km/h. Null si illisible ou absurde.
+ */
+export function lireValeurZone(modele: ModeleZones, texte: string): number | null {
+  const t = String(texte).trim().replace(',', '.').replace(/['’]/g, ':');
+  if (!t) return null;
+  if (modele !== 'allure') {
+    const v = Number(t);
+    return Number.isFinite(v) && v > 0 ? v : null;
+  }
+  const m = /^(\d{1,2}):(\d{1,2})$/.exec(t);
+  const secondes = m ? Number(m[1]) * 60 + Number(m[2]) : Number(t) > 0 ? Number(t) * 60 : NaN;
+  return Number.isFinite(secondes) && secondes >= 90 && secondes <= 1200 ? 3600 / secondes : null;
 }
 
 /** Les zones d'un profil : sa référence (FTP, LTHR ou estimée, vitesse seuil) et ses bornes perso éventuelles. `ftpDefaut` : la FTP de la sortie quand le profil n'en a pas. */
