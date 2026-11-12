@@ -34,7 +34,7 @@ Légende : `[x]` existe · `[ ]` à écrire.
 - [ ] velo-endurance-base — Entraînement de base : volume et adaptations
 - [ ] velo-volume-heures — Volume hebdomadaire et progrès : combien d'heures
 - [ ] velo-faible-cadence-endurance — Efforts à faible cadence en endurance
-- [ ] velo-entrainement-a-jeun — Sorties à jeun et basses en glucides (« train low »)
+- [x] velo-entrainement-a-jeun — Sorties à jeun et basses en glucides (« train low »)
 - [x] velo-durabilite — Durabilité : tenir sa puissance après des heures de fatigue
 - [ ] velo-endurance-vs-intensite-volume — Volume contre intensité chez les cyclistes entraînés
 - [ ] velo-sweet-spot — Le sweet spot : ce qu'on sait (RECHERCHE FAITE le 13 nov. : aucune étude revue par des pairs sous ce nom dans Europe PMC ; à traiter plus tard via les études « sous le seuil » ou à écarter)
@@ -101,9 +101,10 @@ Légende : `[x]` existe · `[ ]` à écrire.
 - [ ] velo-massage-froid — Massage, bains froids, compression : ce qu'on sait
 
 ### nutrition
-- [ ] velo-glucides-effort — Glucides pendant l'effort : 60, 90, 120 g/h
-- [ ] velo-glucides-fructose — Ratio glucose/fructose et tolérance digestive
-- [ ] velo-hydratation-sodium — Hydratation et sodium en vélo
+- [x] velo-glucides-effort — Glucides pendant l'effort : 60, 90, 120 g/h
+- [x] velo-glucides-fructose — Ratio glucose/fructose et tolérance digestive
+- [x] velo-hydratation — Boire à vélo : déshydratation et performance (fait le 13 nov.)
+- [ ] velo-sodium — Sodium et électrolytes à vélo
 - [ ] velo-nutrition-sortie-longue — Nutrition des sorties de plus de 4 h
 - [ ] velo-nutrition-avant-apres — Repas avant et après l'effort
 - [ ] velo-caféine-vélo — Caféine : dose et timing

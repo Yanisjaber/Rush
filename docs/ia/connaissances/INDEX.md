@@ -2,7 +2,7 @@
 
 GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à la main. Une fiche est dans `<sport>/<partie>/<id>.md`.
 
-**55 fiches.**
+**59 fiches.**
 
 ## Tous les sports (`commun/`) — 20 fiches
 
@@ -113,7 +113,7 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 
 - [Course à pied : chaussures à plaque carbone, cadence, foulée](course/materiel/course-chaussures-cadence.md) — `course-chaussures-cadence` · preuve : probable · 4 sources
 
-## Vélo (`velo/`) — 10 fiches
+## Vélo (`velo/`) — 14 fiches
 
 ### Endurance de base (volume facile, sorties longues) (`velo/endurance/`)
 
@@ -128,6 +128,13 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 ### Planification (périodisation, plans, reprise) (`velo/planification/`)
 
 - [Périodisation du cycliste : par blocs, traditionnelle, ou au jour le jour](velo/planification/velo-periodisation.md) — `velo-periodisation` · preuve : probable · 5 sources
+
+### Nutrition et hydratation (`velo/nutrition/`)
+
+- [S'entraîner à jeun ou avec peu de glucides (« train low », « sleep low »)](velo/nutrition/velo-entrainement-a-jeun.md) — `velo-entrainement-a-jeun` · preuve : debattu · 5 sources
+- [Glucides pendant l'effort à vélo : combien par heure](velo/nutrition/velo-glucides-effort.md) — `velo-glucides-effort` · preuve : probable · 5 sources
+- [Glucose et fructose ensemble : pourquoi mélanger les sucres à vélo](velo/nutrition/velo-glucides-fructose.md) — `velo-glucides-fructose` · preuve : probable · 6 sources
+- [Boire à vélo : la déshydratation nuit-elle vraiment à la performance ?](velo/nutrition/velo-hydratation.md) — `velo-hydratation` · preuve : debattu · 6 sources
 
 ### Tests et mesures (zones, seuils) (`velo/mesure/`)
 

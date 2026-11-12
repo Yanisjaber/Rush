@@ -50,7 +50,7 @@ const QUESTIONS: [string, string, number][] = [
   ["C'est quoi la zone 2 ?", 'zone-2', 1],
   ['Je dois augmenter mon kilométrage de 10% par semaine ?', 'progression-charge-blessures', 1],
   ["Je reprends après 3 semaines d'arrêt, comment faire ?", 'reprise-apres-arret', 1],
-  ['Combien de glucides par heure pendant la course ?', 'nutrition-glucides', 2],
+  ['Combien de glucides par heure pendant la course ?', 'nutrition-glucides', 3],
   ['Je dors mal depuis une semaine, ça joue sur mes perfs ?', 'sommeil', 1],
   ['Je peux prendre du café avant une compétition ?', 'proteines-cafeine', 1],
   ['Combien de protéines par jour ?', 'proteines-cafeine', 1],

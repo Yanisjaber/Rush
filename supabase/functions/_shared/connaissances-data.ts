@@ -2367,6 +2367,62 @@ export const FICHES: Fiche[] = [
     ]
   },
   {
+    "id": "velo-entrainement-a-jeun",
+    "dossier": "velo",
+    "theme": "nutrition",
+    "titre": "S'entraîner à jeun ou avec peu de glucides (« train low », « sleep low »)",
+    "sports": [
+      "velo",
+      "triathlon",
+      "course"
+    ],
+    "motsCles": [
+      "à jeun",
+      "train low",
+      "sleep low",
+      "faible disponibilité en glucides",
+      "glycogène",
+      "périodisation nutritionnelle",
+      "mitochondries",
+      "adaptations",
+      "matin à jeun",
+      "restriction de glucides",
+      "entraîner à jeun"
+    ],
+    "preuve": "debattu",
+    "maj": "2026-11-13",
+    "essentiel": "- « Train low » : faire **certaines** séances avec peu de glucides disponibles (à jeun, ou après une soirée sans glucides), pour pousser les muscles à mieux utiliser les graisses. « Compete high » : on arrive plein de glucides le jour de la course.\n- **Sur le plan cellulaire, ça produit des signaux d'adaptation plus forts.** Sur la **performance**, les essais sont **peu nombreux, petits et contradictoires** : certains montrent un gain, d'autres rien de plus qu'un entraînement avec glucides.\n- Ce n'est **pas une méthode pour tout le monde ni pour maigrir** : la restriction de glucides sans suivi expose à une fatigue, des baisses d'intensité et, à terme, à un déficit d'énergie ([[energie-reds]]).",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; essais de 7 à 21 sportifs.)*\n- **Revue** : Bartlett, Hawley, Morton (*Eur J Sport Sci*, 2015) : s'entraîner volontairement avec peu de glucides peut augmenter l'activité d'enzymes mitochondriales, l'oxydation des graisses et parfois la capacité d'effort ; la logique est de faire **quelques séances** « basses » et d'**autres** avec des glucides, pour ne pas diminuer la capacité à les brûler le jour de la course. La stratégie optimale n'est pas connue.\n- **« Sleep low » sur 3 semaines** : Marquet et coll. (*Med Sci Sports Exerc*, 2016), 21 triathlètes : même quantité de glucides par jour (6 g/kg) mais répartie autrement (intervalles le soir avec glucides, nuit sans manger, séance facile le matin à jeun) : amélioration du rendement du pédalage (+11 % contre +1,4 %), de la capacité à intensité très élevée et du 10 km en course à pied.\n- **« Sleep low » sur 1 semaine** : Marquet et coll. (*Nutrients*, 2016), 11 cyclistes : +3,2 % de performance sur 20 km chronométrés, sans changement des marqueurs métaboliques mesurés.\n- **Mais pas de gain sur 4 semaines avec moins de glucides** : Cox et coll. (*J Appl Physiol*, 2010), 16 cyclistes/triathlètes, 28 jours : un groupe « haut » (avec glucides à l'entraînement) et un « bas » ; la performance s'est améliorée d'environ 6 % **dans les deux cas**, avec des différences métaboliques (enzymes, oxydation) mais **pas de différence de progrès**.\n- **Mécanismes mixtes** : Lane et coll. (*J Appl Physiol*, 2015), 7 cyclistes : retarder le repas après l'effort modifie des signaux cellulaires, mais **n'augmente pas** les marqueurs de formation de mitochondries.",
+    "regles": "- **Ne jamais proposer** l'entraînement à jeun ou « low » pour perdre du poids, à un débutant, à une personne en reprise, à quelqu'un avec un historique de trouble alimentaire, de fatigue chronique ou de blessure de surmenage : orienter vers un professionnel.\n- Une sortie **facile et courte, le matin, à jeun**, est possible pour qui la tolère ; **jamais** les séances d'intensité, la sortie longue ni la veille d'une course.\n- Ne pas la présenter comme un moyen de progresser plus vite : les essais de performance ne le montrent pas de façon constante.\n- Toujours **manger et boire pendant** les sorties longues et les séances dures ([[velo-glucides-effort]]).\n- Si l'utilisateur ressent des vertiges, une fatigue anormale ou une baisse de forme : arrêter et reprendre une alimentation normale.",
+    "pieges": "- Confondre « à jeun » (une séance) et « régime pauvre en glucides » (tout le temps), qui sont des choses différentes.\n- Réduire ses glucides **et** son énergie totale : le risque de déficit énergétique augmente.\n- Conclure de signaux cellulaires à un gain de performance.",
+    "sources": [
+      {
+        "titre": "Bartlett et al., Carbohydrate availability and exercise training adaptation: too much of a good thing? (Eur J Sport Sci, 2015)",
+        "url": "https://doi.org/10.1080/17461391.2014.920926"
+      },
+      {
+        "titre": "Marquet et al., Enhanced Endurance Performance by Periodization of Carbohydrate Intake: \"Sleep Low\" Strategy (Med Sci Sports Exerc, 2016)",
+        "url": "https://doi.org/10.1249/mss.0000000000000823"
+      },
+      {
+        "titre": "Marquet et al., Periodization of Carbohydrate Intake: Short-Term Effect on Performance (Nutrients, 2016)",
+        "url": "https://doi.org/10.3390/nu8120755"
+      },
+      {
+        "titre": "Cox et al., Daily training with high carbohydrate availability increases exogenous carbohydrate oxidation during endurance cycling (J Appl Physiol, 2010)",
+        "url": "https://doi.org/10.1152/japplphysiol.00950.2009"
+      },
+      {
+        "titre": "Lane et al., Effects of sleeping with reduced carbohydrate availability on acute training responses (J Appl Physiol, 2015)",
+        "url": "https://doi.org/10.1152/japplphysiol.00857.2014"
+      }
+    ],
+    "voirAussi": [
+      "energie-reds",
+      "velo-glucides-effort"
+    ]
+  },
+  {
     "id": "velo-ftp-tests",
     "dossier": "velo",
     "theme": "mesure",
@@ -2431,6 +2487,124 @@ export const FICHES: Fiche[] = [
     ]
   },
   {
+    "id": "velo-glucides-effort",
+    "dossier": "velo",
+    "theme": "nutrition",
+    "titre": "Glucides pendant l'effort à vélo : combien par heure",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "glucides pendant l'effort",
+      "g/h",
+      "60 g",
+      "90 g",
+      "boisson",
+      "gel",
+      "ravitaillement",
+      "sortie longue",
+      "contre-la-montre",
+      "dose-réponse",
+      "intestin",
+      "cyclosportive",
+      "énergie",
+      "fringale"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Manger des glucides **pendant** un effort de plus de 2 heures améliore la performance, et **plus on en prend, mieux ça marche… jusqu'à un plafond**. Le gain n'est pas linéaire : il se tasse vers **60 à 90 g par heure** selon les études et le type de glucides.\n- Une seule sorte de sucre (le glucose) est absorbée jusqu'à environ **60 g/h**. Au-delà, il faut **mélanger plusieurs sucres** (glucose et fructose) pour que l'intestin suive ([[velo-glucides-fructose]]).\n- Ce plafond est une **limite de l'intestin**, pas de l'appétit : forcer au-delà peut déclencher des ennuis digestifs et même réduire la performance dans une étude.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; essais sur cyclistes entraînés, majoritairement masculins.)*\n- **Dose faible** : Smith et coll. (*J Appl Physiol*, 2010), 12 cyclistes, 2 h à ~77 % de la VO2pic puis 20 km chronométrés : 15, 30 et 60 g/h de glucose améliorent la puissance moyenne de 7,4 %, 8,3 % et 10,7 % par rapport au placebo ; 60 g/h bat 15 g/h de 3,1 %.\n- **Courbe de 0 à 120 g/h** : Smith et coll. (*Med Sci Sports Exerc*, 2013), 51 cyclistes et triathlètes, 12 boissons (10 à 120 g/h, mélange glucose-fructose-maltodextrine) : amélioration estimée de 1, 2, 3, 4 et 4,7 % à 9, 19, 31, 48 et 78 g/h ; **rendements décroissants au-delà de 78 g/h** (relation courbe, pas droite).\n- **Recommandations par durée** : Jeukendrup (*Sports Med*, 2014), revue : environ 1 h d'effort → un rinçage de bouche ou de petites quantités suffisent ; 2 à 3 h → environ **60 g/h** d'un seul glucide ; **ultra-endurance → environ 90 g/h**, obligatoirement avec **plusieurs glucides transportables** ; à ajuster à la baisse si l'intensité est faible ; ne dépend ni du poids ni du niveau d'entraînement.\n- **Pas de dose-réponse linéaire** : King et coll. (*Physiol Rep*, 2018), 10 cyclistes, 2 h à 77 % de la VO2max puis 30 min chronométrées : 90 g/h de glucose-fructose est la dose optimale pour le chrono et l'utilisation des carburants, mieux que 60 ou 75 g/h de glucose seul.\n- **Trop, c'est trop** : King et coll. (*Eur J Appl Physiol*, 2019), 11 cyclistes, 3 h à 60 % de la VO2max puis 30 min chronométrées : 90 g/h donne un meilleur chrono que 80 ou 100 g/h ; 100 g/h, au-delà de la saturation de l'intestin, fait utiliser plus de glycogène musculaire et dégrade le chrono suivant.",
+    "regles": "- **Sortie de moins de 1 h 30** : l'eau suffit pour la plupart des gens ; pas besoin de manger.\n- **Sortie ou épreuve de 2 à 3 h** : viser environ **30 à 60 g/h** de glucides, à répartir toutes les 15 à 20 minutes ; **plus de 3 h** : on peut monter vers **60 à 90 g/h** avec des produits à plusieurs sucres, **à tester d'abord à l'entraînement**.\n- Dire que ces chiffres sont des **repères d'études sur des cyclistes entraînés** : la tolérance digestive est **individuelle** et s'entraîne progressivement ; ne jamais essayer un nouveau produit ou une nouvelle quantité le jour d'une épreuve.\n- Ne jamais prescrire de régime : en cas de diabète, de trouble alimentaire ou de doute médical, orienter vers un professionnel de santé.\n- Pour les efforts **courts et intenses** (moins d'une heure), la dose n'est pas la bonne question.",
+    "pieges": "- Confondre grammes de glucides et grammes de produit (un gel contient environ 20 à 25 g de glucides, mais cela dépend de la marque).\n- Prendre 90 g/h sans avoir entraîné son intestin : inconfort digestif.\n- Oublier de boire : manger des glucides concentrés sans liquide ralentit l'absorption.",
+    "sources": [
+      {
+        "titre": "Smith et al., Fuel selection and cycling endurance performance with ingestion of 13C-glucose: evidence for a carbohydrate dose response (J Appl Physiol, 2010)",
+        "url": "https://doi.org/10.1152/japplphysiol.91394.2008"
+      },
+      {
+        "titre": "Smith et al., Curvilinear dose-response relationship of carbohydrate (0-120 g·h-1) and performance (Med Sci Sports Exerc, 2013)",
+        "url": "https://doi.org/10.1249/mss.0b013e31827205d1"
+      },
+      {
+        "titre": "Jeukendrup, A step towards personalized sports nutrition: carbohydrate intake during exercise (Sports Med, 2014)",
+        "url": "https://doi.org/10.1007/s40279-014-0148-z"
+      },
+      {
+        "titre": "King et al., Carbohydrate dose influences liver and muscle glycogen oxidation and performance during prolonged exercise (Physiol Rep, 2018)",
+        "url": "https://doi.org/10.14814/phy2.13555"
+      },
+      {
+        "titre": "King et al., Liver and muscle glycogen oxidation and performance with dose variation of glucose-fructose ingestion during prolonged (3 h) exercise (Eur J Appl Physiol, 2019)",
+        "url": "https://doi.org/10.1007/s00421-019-04106-9"
+      }
+    ],
+    "voirAussi": [
+      "velo-glucides-fructose"
+    ]
+  },
+  {
+    "id": "velo-glucides-fructose",
+    "dossier": "velo",
+    "theme": "nutrition",
+    "titre": "Glucose et fructose ensemble : pourquoi mélanger les sucres à vélo",
+    "sports": [
+      "velo",
+      "triathlon",
+      "course"
+    ],
+    "motsCles": [
+      "fructose",
+      "glucose",
+      "maltodextrine",
+      "glucides multiples transportables",
+      "ratio 2:1",
+      "1:0",
+      "8",
+      "boisson énergétique",
+      "gel",
+      "absorption",
+      "confort digestif",
+      "oxydation exogène",
+      "transporteurs intestinaux"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- L'intestin absorbe le **glucose** par un « transporteur » qui sature vers **60 g/h**. Le **fructose** passe par un autre : en mélangeant les deux, on absorbe et on brûle **plus de glucides par heure**.\n- Les essais sur cyclistes montrent des gains de **1 à 9 %** de puissance sur des efforts de 2,5 à 3 h avec un mélange glucose-fructose, par rapport à une quantité de calories équivalente de glucose seul.\n- Le **bon ratio** n'est pas fixé : les revues citent entre 0,5 et 1 de fructose pour 1 de glucose ; **2:1 (glucose:fructose)** a été étudié, et un ratio plus proche de 1:0,8 semble absorbé plus vite.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; petits effectifs.)*\n- **Principe** : Jeukendrup (*Curr Opin Clin Nutr Metab Care*, 2010), revue : la limite d'oxydation des glucides vient de l'absorption (saturation des transporteurs) ; en combinant plusieurs glucides transportables, on dépasse cette limite.\n- **Revue critique** : Rowlands et coll. (*Sports Med*, 2015), 14 études sur 2,5-3 h d'effort, surtout à vélo : une boisson fructose:glucose à 0,5-1:1 prise à 1,3-2,4 g/min améliore la puissance moyenne de 1 à 9 % ; les effets sont plus grands à ≥ 1,7 g/min (4-9 %) qu'à 1,4-1,6 g/min (1-3 %) ; les solutions à 0,7-1,0:1 sont absorbées le plus vite ; à 1,5-1,8 g/min, un ratio 0,8:1 donne le plus d'énergie exogène et de puissance. Les auteurs soulignent le manque de données chez les femmes et en ultra-endurance.\n- **100 km** : Triplett et coll. (*Int J Sport Nutr Exerc Metab*, 2010), 9 cyclistes de compétition : boisson glucose-fructose contre glucose seul à calories égales : 204,0 min contre 220,6 min sur 100 km (p = 0,023).\n- **Contre une dose modérée** : Baur et coll. (*Med Sci Sports Exerc*, 2014), 8 cyclistes : le mélange glucose-fructose (1,55 g/min, 2:1) fait gagner du temps contre le placebo et contre le glucose fort (+3,0 % « probable »), mais l'effet contre une dose modérée de glucose (1,03 g/min) est **incertain** (+1,2 %).\n- **Dose optimale du mélange** : King et coll. (2018, 2019) : 90 g/h de glucose-fructose (2:1) donne le meilleur chrono ; 80 et 100 g/h sont moins bons ([[velo-glucides-effort]]).",
+    "regles": "- Pour un effort de **plus de 2 h 30 à 3 h** où l'on veut dépasser 60 g/h : conseiller un produit qui contient **glucose (ou maltodextrine) et fructose**, et **le tester à l'entraînement**.\n- Pour un effort plus court ou une quantité plus basse (moins de 60 g/h), **le mélange n'est pas nécessaire** : ne pas le vendre comme indispensable.\n- Ne pas imposer un ratio unique : la littérature n'en désigne pas un seul. Rester sur « un mélange, bien toléré ».\n- En cas de ventre qui se plaint : réduire la quantité, fractionner les prises, essayer un autre format. Ne jamais pousser.",
+    "pieges": "- Prendre plus de fructose que de glucose : l'inconfort digestif augmente.\n- Croire qu'un produit « sans maltodextrine » est meilleur ou pire : les études ne l'établissent pas.\n- Conclure d'un essai de laboratoire à ce qui marche sur la route par chaleur.",
+    "sources": [
+      {
+        "titre": "Jeukendrup, Carbohydrate and exercise performance: the role of multiple transportable carbohydrates (Curr Opin Clin Nutr Metab Care, 2010)",
+        "url": "https://doi.org/10.1097/mco.0b013e328339de9f"
+      },
+      {
+        "titre": "Rowlands et al., Fructose-Glucose Composite Carbohydrates and Endurance Performance: Critical Review and Future Perspectives (Sports Med, 2015)",
+        "url": "https://doi.org/10.1007/s40279-015-0381-0"
+      },
+      {
+        "titre": "Triplett et al., An isocaloric glucose-fructose beverage's effect on simulated 100-km cycling performance compared with a glucose-only beverage (Int J Sport Nutr Exerc Metab, 2010)",
+        "url": "https://doi.org/10.1123/ijsnem.20.2.122"
+      },
+      {
+        "titre": "Baur et al., Glucose-fructose enhances performance versus isocaloric, but not moderate, glucose (Med Sci Sports Exerc, 2014)",
+        "url": "https://doi.org/10.1249/mss.0000000000000284"
+      },
+      {
+        "titre": "King et al., Carbohydrate dose influences liver and muscle glycogen oxidation and performance during prolonged exercise (Physiol Rep, 2018)",
+        "url": "https://doi.org/10.14814/phy2.13555"
+      },
+      {
+        "titre": "King et al., Liver and muscle glycogen oxidation and performance with dose variation of glucose-fructose ingestion during prolonged (3 h) exercise (Eur J Appl Physiol, 2019)",
+        "url": "https://doi.org/10.1007/s00421-019-04106-9"
+      }
+    ],
+    "voirAussi": [
+      "velo-glucides-effort"
+    ]
+  },
+  {
     "id": "velo-hiit-vs-sit",
     "dossier": "velo",
     "theme": "intensite",
@@ -2483,6 +2657,64 @@ export const FICHES: Fiche[] = [
     ],
     "voirAussi": [
       "velo-vo2max-intervalles"
+    ]
+  },
+  {
+    "id": "velo-hydratation",
+    "dossier": "velo",
+    "theme": "nutrition",
+    "titre": "Boire à vélo : la déshydratation nuit-elle vraiment à la performance ?",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "déshydratation",
+      "boire à la soif",
+      "perte de poids",
+      "pertes de sueur",
+      "chaleur",
+      "contre-la-montre",
+      "ad libitum",
+      "température corporelle",
+      "performance",
+      "bidon",
+      "sueur"
+    ],
+    "preuve": "debattu",
+    "maj": "2026-11-13",
+    "essentiel": "- Les recommandations anciennes disent de ne pas perdre plus de 2 % de son poids en sueur. **Les études sur cyclistes ne sont pas d'accord** : certaines ne voient **aucun effet** jusqu'à 3-4 % de perte en conditions réalistes (vent, route), d'autres mesurent un ralentissement net, surtout **par forte chaleur**.\n- Un point rassemble les sources : **boire selon sa soif** est une stratégie raisonnable pour la plupart des efforts, et **l'intensité et la durée** pèsent plus sur la performance que la déshydratation.\n- En cas de **chaleur forte** ou d'**effort très long**, mieux vaut ne pas jouer avec : la température du corps monte et le risque de coup de chaleur est réel.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; essais de 7 à 10 cyclistes pour la plupart.)*\n- **Méta-analyse** : Goulet (*Br J Sports Med*, 2011), 5 études de contre-la-montre à vélo (39 sujets, température moyenne 26 °C) : une perte de poids de 2,2 % par déshydratation produit un effet **non significatif** (+0,06 %) par rapport à rester hydraté ; l'intensité et la durée de l'effort comptent bien plus ; boire **à la soif** est associé à de meilleures performances que boire moins (+5,2 %) ou plus (+2,4 %).\n- **Avec vent réaliste** : Wall et coll. (*Br J Sports Med*, 2015), 10 cyclistes entraînés, 25 km chronométrés à 33 °C avec vent de 32 km/h, sujets non informés de leur état : **aucune différence** de performance entre 0, −2 % ou −3 % de masse corporelle.\n- **Études qui voient un effet** : Logan-Sprenger et coll. (*Physiol Rep*, 2015), 9 hommes, 90 min à 65 % de la VO2pic puis chrono : **13 % plus lents** lorsqu'ils partaient déjà à −2,3 % et finissaient à −3,1 %, avec une température centrale plus haute. Adams et coll. (*Med Sci Sports Exerc*, 2018), 7 cyclistes, 2 h à 35 °C, soif égalisée, état caché : plus lents sur 5 km en côte quand déshydratés (22,3 contre 23,2 km/h). Bardis et coll. (*J Athl Train*, 2013), 10 cyclistes en extérieur à 29 °C : 5,8 % plus lents quand ils partaient déshydratés de 1 %.\n- **Boire à la soif contre boire « comme on veut »** : Armstrong et coll. (*J Athl Train*, 2014) comparent deux manières de boire à vélo sur route ; je n'ai pas lu les chiffres de ce résumé.",
+    "regles": "- Conseiller d'**emporter à boire et de boire régulièrement**, sans obsession : **la soif est un guide acceptable** pour la plupart des sorties en conditions tempérées.\n- Par **forte chaleur** ou sur des **efforts longs et intenses**, boire **un peu plus régulièrement** et ne pas attendre d'avoir très soif ; **ne jamais** dire à quelqu'un qu'il peut s'en passer.\n- Ne **pas** donner de chiffre précis de litres par heure comme une vérité : les pertes de sueur varient beaucoup d'une personne à l'autre ; proposer de peser sa perte sur quelques sorties pour se connaître.\n- **Symptômes d'alerte** (nausées, vertiges, confusion, arrêt de la transpiration, frissons par forte chaleur) : s'arrêter, se mettre à l'ombre, boire, appeler les secours si besoin. **Ne pas trop boire non plus** (précaution générale, qui ne vient pas des études ci-dessus : sur de très longs efforts, boire des quantités excessives d'eau seule peut diluer le sodium du sang) ; pour la chaleur, voir [[chaleur-altitude]]. Le sodium ajouté fera l'objet d'une fiche à part.",
+    "pieges": "- Appliquer le « 2 % » comme règle absolue : il est contesté en conditions réalistes.\n- Conclure d'un essai en laboratoire sans vent aux conditions réelles de route.\n- Boire de très grandes quantités d'eau seule sur un effort long.",
+    "sources": [
+      {
+        "titre": "Goulet, Effect of exercise-induced dehydration on time-trial exercise performance: a meta-analysis (Br J Sports Med, 2011)",
+        "url": "https://doi.org/10.1136/bjsm.2010.077966"
+      },
+      {
+        "titre": "Wall et al., Current hydration guidelines are erroneous: dehydration does not impair exercise performance in the heat (Br J Sports Med, 2015)",
+        "url": "https://doi.org/10.1136/bjsports-2013-092417"
+      },
+      {
+        "titre": "Logan-Sprenger et al., The effect of dehydration on muscle metabolism and time trial performance during prolonged cycling in males (Physiol Rep, 2015)",
+        "url": "https://doi.org/10.14814/phy2.12483"
+      },
+      {
+        "titre": "Adams et al., Dehydration Impairs Cycling Performance, Independently of Thirst: A Blinded Study (Med Sci Sports Exerc, 2018)",
+        "url": "https://doi.org/10.1249/mss.0000000000001597"
+      },
+      {
+        "titre": "Bardis et al., Mild dehydration and cycling performance during 5-kilometer hill climbing (J Athl Train, 2013)",
+        "url": "https://doi.org/10.4085/1062-6050-48.5.01"
+      },
+      {
+        "titre": "Armstrong et al., Drinking to thirst versus drinking ad libitum during road cycling (J Athl Train, 2014)",
+        "url": "https://doi.org/10.4085/1062-6050-49.3.85"
+      }
+    ],
+    "voirAussi": [
+      "chaleur-altitude"
     ]
   },
   {
