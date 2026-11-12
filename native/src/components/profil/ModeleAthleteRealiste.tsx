@@ -112,13 +112,73 @@ function couleurHex(valeur: string): number {
   return Number.isFinite(nombre) ? nombre : 0xa2a7b3;
 }
 
+/**
+ * Mouvement « vivant » : le modèle n'a pas de squelette, on déforme donc ses points directement sur la carte
+ * graphique (vertex shader), selon leur hauteur sur le corps (repère du modèle : pieds à Y = 0, face vers +Z).
+ * - respiration (4,2 s) : la cage thoracique gonfle vers l'avant, les épaules et les bras montent un peu ;
+ * - bras : léger balancier d'avant en arrière autour de l'épaule, décalé entre gauche et droite ;
+ * - tête : regarde un peu autour d'elle (deux rythmes mélangés) et hoche avec le souffle ;
+ * - poids du corps : transfert lent d'une jambe sur l'autre (8 s), le haut du corps compense à moitié.
+ * Les amplitudes restent de l'ordre du centimètre : de loin ça « respire », de près rien ne se déchire.
+ */
+const GLSL_VIVANT = `
+uniform float uTemps;
+vec3 rushVivant(vec3 p) {
+  float t = uTemps;
+  float cote = p.x >= 0.0 ? 1.0 : -1.0;
+  vec3 q = p;
+
+  float souffle = 0.5 - 0.5 * cos(t * 1.496);
+  float cage = smoothstep(1.02, 1.20, p.y) * (1.0 - smoothstep(1.40, 1.50, p.y)) * (1.0 - smoothstep(0.16, 0.23, abs(p.x)));
+  q.z += cage * souffle * 0.014 * smoothstep(-0.06, 0.08, p.z);
+  q.x += cage * souffle * 0.004 * cote;
+  float bras = smoothstep(0.21, 0.30, abs(p.x)) * smoothstep(0.70, 0.80, p.y);
+  float haut = max(smoothstep(1.30, 1.46, p.y), bras);
+  q.y += haut * souffle * 0.008;
+
+  float balancier = 0.035 * sin(t * 1.2566 + cote * 0.9);
+  q.z += bras * (1.40 - p.y) * balancier;
+  q.x += bras * cote * souffle * 0.004;
+
+  float tete = smoothstep(1.47, 1.57, p.y) * (1.0 - smoothstep(0.13, 0.20, abs(p.x)));
+  float lacet = (0.09 * sin(t * 0.5712) + 0.03 * sin(t * 0.9973 + 1.3)) * tete;
+  float hoche = 0.025 * sin(t * 1.496 - 0.6) * tete;
+  vec3 d = q - vec3(0.0, 1.50, 0.0);
+  float ca = cos(lacet);
+  float sa = sin(lacet);
+  d = vec3(ca * d.x + sa * d.z, d.y, -sa * d.x + ca * d.z);
+  float cb = cos(hoche);
+  float sb = sin(hoche);
+  d = vec3(d.x, cb * d.y - sb * d.z, sb * d.y + cb * d.z);
+  q = vec3(0.0, 1.50, 0.0) + d;
+
+  float poids = sin(t * 0.7854);
+  float profil = smoothstep(0.04, 0.95, p.y) * (1.0 - 0.55 * smoothstep(1.0, 1.65, p.y));
+  q.x += poids * 0.018 * profil;
+  q.y -= poids * poids * 0.003 * smoothstep(0.3, 0.9, p.y);
+  return q;
+}
+`;
+
+/** Branche le mouvement vivant sur un matériau (le temps est partagé par tous les matériaux du modèle). */
+function rendreVivant(materiau: THREE.MeshStandardMaterial, temps: { value: number }): void {
+  materiau.onBeforeCompile = (shader) => {
+    shader.uniforms.uTemps = temps;
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', `#include <common>\n${GLSL_VIVANT}`)
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed = rushVivant(transformed);');
+  };
+  materiau.customProgramCacheKey = () => 'rush-vivant';
+}
+
 const borne = (n: number, min: number, max: number): number => Math.min(max, Math.max(min, n));
 const ZOOM_MIN = 0.72;
 const ZOOM_MAX = 1.85;
 
 /**
  * Avatar réaliste : le vrai modèle scanné (≈42 000 triangles).
- * - Il se balance doucement de face ; glisser le fait tourner librement, il revient de face 2,5 s après.
+ * - Il reste de face (ou de dos), sans tourner tout seul, mais il respire et bouge un peu (voir `GLSL_VIVANT`) ;
+ *   glisser le fait tourner librement, il revient de face 2,5 s après.
  * - Toucher le torse, les bras ou les jambes les sélectionne (zones tirées des os du squelette d'origine).
  */
 export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart', onPartSelect, largeur = 174, hauteur = 284, maillot = false, lunettes = false, focusY = null, decalageBas = 0, vue = 'face', ancres, onProjection }: Props) {
@@ -290,13 +350,11 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
     let vivant = true;
     let frame = 0;
     let modele: THREE.Group | null = null;
-    let animations: THREE.AnimationClip[] = [];
-    let mixer: THREE.AnimationMixer | null = null;
+    const tempsVivant = { value: 0 }; // horloge du mouvement vivant, lue par le shader
     const ressources: { dispose: () => void }[] = [];
     nettoyerRef.current = () => {
       vivant = false;
       cancelAnimationFrame(frame);
-      mixer?.stopAllAction();
       if (modele) {
         modele.traverse((objet) => {
           const mesh = objet as THREE.Mesh;
@@ -313,7 +371,6 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
       ressources.forEach((r) => r.dispose());
       renderer.dispose();
       modele = null;
-      mixer = null;
       groupeRef.current = null; cameraRef.current = null; cibleRef.current = null;
     };
 
@@ -340,7 +397,6 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
       const gltf = await etape('parse du GLB', () => lireGlb(tampon, textures));
       if (!gltf?.scene) throw new Error('Le GLB ne contient aucune scène.');
       modele = gltf.scene as THREE.Group;
-      animations = Array.isArray(gltf.animations) ? gltf.animations : [];
     } catch (erreur) {
       const message = erreur instanceof Error ? erreur.message : String(erreur);
       console.warn('[ModeleAthleteRealiste] chargement impossible :', message);
@@ -369,15 +425,14 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
         standard.normalMap = normale;
         standard.roughness = 0.72;
         standard.metalness = 0;
+        rendreVivant(standard, tempsVivant);
         standard.needsUpdate = true;
         const part = zoneDepuisMateriau(standard.name);
         if (part) surfaces.push({ part, materiau: standard, emissive: standard.emissive.clone(), intensite: standard.emissiveIntensity });
       }
     });
     groupe.add(modele);
-    mixer = animations.length ? new THREE.AnimationMixer(modele) : null;
-    const idle = animations.find((animation) => animation.name === 'IdleSway') ?? animations[0];
-    if (mixer && idle) mixer.clipAction(idle).play();
+    // L'animation « IdleSway » du GLB (le mannequin pivote de ± 4°) n'est plus jouée : il ne tourne plus tout seul.
 
     if (lunettes) {
       const montees = creerLunettes(modele);
@@ -412,16 +467,14 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
         const temps = (maintenant - depart) / 1000;
         const dt = Math.min(0.1, (maintenant - precedent) / 1000);
         precedent = maintenant;
-        mixer?.update(dt);
+        tempsVivant.value = temps;
 
-        // Sans doigt depuis 2,5 s : l'avatar revient de face (ou de dos) et se balance doucement (± 24°).
+        // Sans doigt depuis 2,5 s : l'avatar revient de face (ou de dos), puis ne tourne plus.
         if (!rotationLibreRef.current && maintenant - derniereMainRef.current > 2500) {
           const base = vueRef.current === 'dos' ? Math.PI : 0;
           const a = Math.atan2(Math.sin(groupe.rotation.y - base), Math.cos(groupe.rotation.y - base));
-          const cibleAngle = Math.sin(temps * 0.6) * 0.42;
-          groupe.rotation.y = base + a + (cibleAngle - a) * Math.min(1, dt * 1.8);
+          groupe.rotation.y = base + a * (1 - Math.min(1, dt * 1.8));
         }
-        groupe.scale.y = 1 + Math.sin(temps * 1.7) * 0.004;
 
         // Cadrage : vue d'ensemble, ou recentré et agrandi sur la zone choisie, au-dessus de la feuille du bas.
         const k = Math.min(1, dt * 4);
