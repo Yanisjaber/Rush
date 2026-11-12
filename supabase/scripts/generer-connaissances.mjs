@@ -65,11 +65,11 @@ function lireFiche(nom, texte, dossier, theme) {
 /** Tous les fichiers .md des fiches : docs/ia/connaissances/<sport>/<partie>/<id>.md */
 function listerFiches() {
   const sortie = [];
-  for (const sport of readdirSync(DOSSIER_FICHES).sort()) {
+  for (const sport of readdirSync(DOSSIER_FICHES).filter((n) => !n.startsWith('.')).sort()) {
     const dSport = join(DOSSIER_FICHES, sport);
     if (!statSync(dSport).isDirectory()) continue;
     if (!(sport in SPORTS_DOSSIERS)) throw new Error(`Dossier de sport inconnu : ${sport} (ajoute-le à SPORTS_DOSSIERS)`);
-    for (const partie of readdirSync(dSport).sort()) {
+    for (const partie of readdirSync(dSport).filter((n) => !n.startsWith('.')).sort()) {
       const dPartie = join(dSport, partie);
       if (!statSync(dPartie).isDirectory()) throw new Error(`${sport}/${partie} : une fiche va dans docs/ia/connaissances/<sport>/<partie>/`);
       if (!(partie in PARTIES)) throw new Error(`Partie inconnue : ${sport}/${partie} (ajoute-la à PARTIES)`);

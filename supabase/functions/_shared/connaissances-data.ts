@@ -2248,6 +2248,202 @@ export const FICHES: Fiche[] = [
     "voirAussi": []
   },
   {
+    "id": "velo-courbe-puissance",
+    "dossier": "velo",
+    "theme": "mesure",
+    "titre": "Courbe de puissance et profil du cycliste (records par durée)",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "courbe de puissance",
+      "record de puissance",
+      "profil de puissance",
+      "5 secondes",
+      "1 minute",
+      "5 minutes",
+      "20 minutes",
+      "sprinteur",
+      "grimpeur",
+      "rouleur",
+      "RPP",
+      "puissance maximale moyenne",
+      "MMP",
+      "signature"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- La **courbe de puissance** est la meilleure puissance moyenne que le cycliste a produite pour chaque durée (5 s, 1 min, 5 min, 20 min, 1 h…). Elle a la forme d'une hyperbole qui descend vite puis s'aplatit.\n- Elle est une **« signature »** du cycliste : un sprinteur a des records élevés sur les durées très courtes, un grimpeur sur les durées de 5 à 20 minutes.\n- Elle se construit **sur la saison à partir de séances et de courses**, pas à partir d'un seul test : la puissance « de pointe » sur 5 secondes ou 5 minutes dépend de la fraîcheur et de la motivation ce jour-là.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu.)*\n- **Profil et spécialités** : Pinot et Grappe (*Int J Sports Med*, 2011), 17 cyclistes (9 professionnels, 8 élites) suivis 10 mois avec un capteur de puissance : la courbe de records est hyperbolique et reflète le type de coureur (sprinteurs : record élevé en zone 5 ; grimpeurs : record élevé en zones 2-3 ; grimpeurs et rouleurs : zone 1 plus haute que les sprinteurs). Les auteurs la décrivent comme une « signature » de la capacité physique.\n- **Test labo contre course** : Quod et coll. (*Int J Sports Med*, 2010), 10 cyclistes masculins : un test de profil de puissance en laboratoire donne les mêmes résultats que la meilleure puissance moyenne relevée en course sur des durées de 60 à 600 s, et les mêmes estimations de CP et de W′.\n- **Revue méthodologique** : Leo, Spragg, Podlogar, Lawley, Mujika (*Eur J Appl Physiol*, 2022) : pour un profil fiable, il faut des tests de terrain structurés (nombre d'essais, récupération, pente, analyse des données) ; **éviter les prédictions à partir d'un seul effort** comme la FTP ; la CP et W′ se tirent du modèle à deux paramètres.\n- **La courbe baisse quand on est fatigué** : Clark et coll. (*J Appl Physiol*, 2019), 16 participants : après 2 h d'effort soutenu, la puissance de fin de test de 3 min est 9 % plus basse ; ce n'est pas le cas après 40 ou 80 min (voir [[velo-puissance-critique]]).\n- **Exigences d'une course à étapes** : Sanders et Heijboer (*Eur J Sport Sci*, 2019), 9 professionnels pendant un Giro : l'intensité, mesurée par la fréquence cardiaque et la puissance, est la plus haute en contre-la-montre, la plupart du temps passé en zone de haute intensité.",
+    "regles": "- Lire la courbe **sur 24 mois** (c'est ce que fait l'application) : les records anciens ne disent plus où en est la personne ; les très récents peuvent être incomplets.\n- Comparer les rapports entre durées (par exemple 5 min / 20 min) pour deviner ce qui limite, **seulement s'il y a au moins quelques courbes** ; sinon demander plutôt que supposer.\n- Ne **jamais** conclure d'une seule sortie : « tu as un faible record sur 5 min » peut être une sortie sans effort maximal.\n- Une courbe plus basse sur les durées longues après une longue sortie est attendue, pas un recul de forme.",
+    "pieges": "- Prendre un record isolé (sprint de 5 s en descente, par exemple) pour une capacité durable.\n- Comparer deux capteurs ou deux saisons sans tenir compte de la calibration des capteurs et du poids.\n- Oublier que les durées de 5 à 20 minutes demandent un effort réellement maximal pour apparaître sur la courbe.",
+    "sources": [
+      {
+        "titre": "Pinot & Grappe, The record power profile to assess performance in elite cyclists (Int J Sports Med, 2011)",
+        "url": "https://doi.org/10.1055/s-0031-1279773"
+      },
+      {
+        "titre": "Quod et al., The power profile predicts road cycling MMP (Int J Sports Med, 2010)",
+        "url": "https://doi.org/10.1055/s-0030-1247528"
+      },
+      {
+        "titre": "Leo et al., Power profiling and the power-duration relationship in cycling: a narrative review (Eur J Appl Physiol, 2022)",
+        "url": "https://doi.org/10.1007/s00421-021-04833-y"
+      },
+      {
+        "titre": "Clark et al., Dynamics of the power-duration relationship during prolonged endurance exercise and influence of carbohydrate ingestion (J Appl Physiol, 2019)",
+        "url": "https://doi.org/10.1152/japplphysiol.00207.2019"
+      },
+      {
+        "titre": "Sanders & Heijboer, Physical demands and power profile of different stage types within a cycling grand tour (Eur J Sport Sci, 2019)",
+        "url": "https://doi.org/10.1080/17461391.2018.1554706"
+      },
+      {
+        "titre": "Poole et al., Critical Power: An Important Fatigue Threshold in Exercise Physiology (Med Sci Sports Exerc, 2016)",
+        "url": "https://doi.org/10.1249/mss.0000000000000939"
+      }
+    ],
+    "voirAussi": [
+      "velo-puissance-critique"
+    ]
+  },
+  {
+    "id": "velo-ftp-tests",
+    "dossier": "velo",
+    "theme": "mesure",
+    "titre": "Tests de FTP à vélo (20 minutes et ses limites)",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "FTP",
+      "test 20 minutes",
+      "95 %",
+      "seuil fonctionnel",
+      "puissance seuil",
+      "MLSS",
+      "état stable maximal du lactate",
+      "test de terrain",
+      "protocole de test",
+      "répétabilité",
+      "60 minutes",
+      "point de compensation respiratoire"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- La FTP (« functional threshold power ») est définie comme la puissance qu'on peut tenir environ 1 heure. Le test le plus répandu : **20 minutes à fond régulier, FTP = 95 % de la puissance moyenne**.\n- Le test est **très répétable** (deux tests à une semaine d'écart donnent presque le même résultat). En revanche, la FTP obtenue **n'est pas exactement un seuil physiologique** : selon les études, elle tombe près de l'état stable maximal du lactate (MLSS) ou au-dessus, et **peu de cyclistes tiennent vraiment 1 heure à 95 % de leur 20 minutes**.\n- Conclusion pratique : c'est un **bon repère de travail pour fixer des zones**, pas une vérité à la watt près.",
+    "recherche": "*(Tout ce qui suit vient des résumés des articles, lus via Europe PMC ; aucun texte intégral lu. Les échantillons sont de petite taille, surtout des hommes entraînés.)*\n- **Répétabilité** : Klitzke Borszcz et coll. (*Int J Sports Med*, 2020), 25 cyclistes entraînés : le test de 20 min est fiable (coefficient de variation 2,9 %, ICC 0,97) ; l'échauffement de 45 min du protocole l'est moins (CV 5,5 %). Lillo-Beviá et coll. (*J Strength Cond Res*, 2022), 11 cyclistes : erreur standard de mesure ±3 W, plus petit changement détectable ±9 W.\n- **Proche du MLSS (étude favorable)** : Klitzke Borszcz et coll. (*IJSPP*, 2019), 15 cyclistes : la FTP présente un biais de +1,4 % (limites d'accord ±9,2 %) et une corrélation r = 0,91 avec le MLSS ; l'écart est plus grand chez les « entraînés » (±11,8 %) que chez les « très entraînés » (±7,4 %).\n- **Au-dessus du MLSS (études critiques)** : Inglis et coll. (*IJSPP*, 2020), 18 personnes : la puissance au MLSS vaut **88,5 %** de la puissance moyenne du test de 20 min et **93,1 %** de la FTP à 95 % ; après 7 mois d'entraînement, le MLSS monte de 12 W mais pas la FTP. Les auteurs déconseillent de s'en servir comme du MLSS. Lillo-Beviá : le MLSS diffère du test de 20 min de 26 ± 7 W, et du facteur 95 % de 12 ± 7 W ; un facteur individuel (environ 91 %) réduit l'écart.\n- **Autre seuil, le point de compensation respiratoire (RCP)** : Barranco-Gil et coll. (*IJSPP*, 2020), 15 cyclistes : la FTP est très corrélée au RCP (r = 0,86 à 0,93) mais correspond à une puissance **significativement plus basse**, avec ou sans l'échauffement standard.\n- **Tient-on vraiment 1 heure ?** Gough et coll. (préprint 2025, **non relu par des pairs**), 22 cyclistes : le test est reproductible (r = 0,94), mais le temps tenu à 95 % de la FTP20 est de **42 ± 17 min** en moyenne, et seulement 6 sur 22 sont à moins de 10 min de l'heure.\n- **Contre la puissance critique** : Karsten et coll. (*Front Physiol*, 2020), 17 cyclistes : la puissance critique dépasse la FTP de 7 ± 13 W (limites d'accord −19 à +33 W) malgré r = 0,97 ; les deux ne doivent pas être échangés (voir [[velo-puissance-critique]]).",
+    "regles": "- Dire que la FTP issue d'un test de 20 min est **une estimation utile**, avec une marge de quelques pourcents, pas une mesure de laboratoire.\n- Si l'utilisateur n'a jamais fait de test, proposer le test de 20 min (échauffement progressif, départ prudent, effort régulier) et recalculer les zones avec 95 % de la puissance moyenne ; son résultat est la seule valeur que l'app doit utiliser pour recalibrer ([[velo-zones-ftp]]).\n- Une variation de quelques watts entre deux tests (≈ ±9 W dans l'étude de Lillo-Beviá) peut n'être que du bruit : ne pas conclure à un progrès ou une baisse sur un petit écart.\n- Si les séances « au seuil » paraissent trop dures ou trop faciles à l'usage, **ajuster à la sensation** plutôt que de se battre pour la valeur exacte de la FTP.\n- Ne jamais promettre que la FTP se tient 1 heure : la présenter comme un repère d'intensité.",
+    "pieges": "- Confondre FTP, MLSS, puissance critique et seuil ventilatoire : ce sont des notions voisines qui donnent des watts différents.\n- Faire le test fatigué, mal échauffé ou parti trop fort : le résultat est faux et la FTP sera trop basse ou trop haute.\n- Appliquer la formule à un effort mal réparti (départ à fond puis effondrement).\n- Comparer des FTP de capteurs différents sans tenir compte de leur précision.",
+    "sources": [
+      {
+        "titre": "Klitzke Borszcz et al., Is the Functional Threshold Power Interchangeable With the Maximal Lactate Steady State in Trained Cyclists? (IJSPP, 2019)",
+        "url": "https://doi.org/10.1123/ijspp.2018-0572"
+      },
+      {
+        "titre": "Klitzke Borszcz et al., Reliability of the Functional Threshold Power in Competitive Cyclists (Int J Sports Med, 2020)",
+        "url": "https://doi.org/10.1055/a-1018-1965"
+      },
+      {
+        "titre": "Inglis et al., Maximal Lactate Steady State Versus the 20-Minute Functional Threshold Power Test in Well-Trained Individuals: \"Watts\" the Big Deal? (IJSPP, 2020)",
+        "url": "https://doi.org/10.1123/ijspp.2019-0214"
+      },
+      {
+        "titre": "Lillo-Beviá et al., Is the Functional Threshold Power a Valid Metric to Estimate the Maximal Lactate Steady State in Cyclists? (J Strength Cond Res, 2022)",
+        "url": "https://doi.org/10.1519/jsc.0000000000003403"
+      },
+      {
+        "titre": "Barranco-Gil et al., Functional Threshold Power: Relationship With Respiratory Compensation Point and Effects of Various Warm-Up Protocols (IJSPP, 2020)",
+        "url": "https://doi.org/10.1123/ijspp.2019-0402"
+      },
+      {
+        "titre": "Karsten et al., Relationship Between the Critical Power Test and a 20-min Functional Threshold Power Test in Cycling (Front Physiol, 2020)",
+        "url": "https://doi.org/10.3389/fphys.2020.613151"
+      },
+      {
+        "titre": "Gough et al., The Reliability and Construct Validity of the Functional Threshold Power Test in Recreational Cyclists (préprint, 2025, non relu par des pairs)",
+        "url": "https://doi.org/10.20944/preprints202502.0505.v1"
+      }
+    ],
+    "voirAussi": [
+      "velo-puissance-critique",
+      "velo-zones-ftp"
+    ]
+  },
+  {
+    "id": "velo-puissance-critique",
+    "dossier": "velo",
+    "theme": "mesure",
+    "titre": "Puissance critique et W′ (modèle puissance-durée)",
+    "sports": [
+      "velo",
+      "triathlon",
+      "course"
+    ],
+    "motsCles": [
+      "puissance critique",
+      "CP",
+      "W'",
+      "W prime",
+      "modèle puissance-durée",
+      "seuil",
+      "3 minutes all-out",
+      "test 3 min",
+      "domaine sévère",
+      "intervalles",
+      "MLSS",
+      "courbe de puissance",
+      "fatigue"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- La **puissance critique (CP)** est l'asymptote de la relation puissance-durée : en dessous, les paramètres du corps (lactate, consommation d'oxygène, phosphocréatine) se stabilisent ; au-dessus, ils dérivent jusqu'à l'épuisement. **W′** est la quantité de travail qu'on peut faire au-dessus de la CP.\n- Le modèle est **largement utilisé et bien étayé** en physiologie ; il n'est pas sans critiques. Il sert à comprendre la tenue d'efforts de 2 à 30 minutes, pas à décrire une sortie de plusieurs heures.\n- La CP **ne se confond avec aucun autre seuil** (MLSS, seuils ventilatoires, FTP) : elle est proche mais différente.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu.)*\n- **Cadre théorique** : Poole, Burnley, Vanhatalo, Rossiter, Jones (*Med Sci Sports Exerc*, 2016) : la relation puissance-durée est hyperbolique, très conservée entre espèces et types d'effort ; la CP intègre les profils respiratoire, métabolique et contractile, et sépare l'effort tolérable de celui qui mène à l'épuisement. Jones et Vanhatalo (*Sports Med*, 2017) : W′ est utilisé au-dessus de la CP et se reconstitue en dessous, ce qui permet de modéliser les intervalles, avec des limites (la reconstitution n'est pas simplement linéaire).\n- **Comparaison avec les autres seuils** : méta-analyse de Galán-Rioja et coll. (*Sports Med*, 2020), 9 études, 104 sujets : corrélation globale r = 0,73 ; r = 0,77 avec le MLSS, r = 0,80 avec le RCP, r = 0,76 avec VT1, non significative avec VT2 ; mais la CP **diffère significativement de chacun** (VT1 la sous-estime d'environ 30 %, le MLSS d'environ 11 %, le RCP la surestime d'environ 6 %, VT2 d'environ 21 %).\n- **Test de 3 minutes « all-out »** : Vanhatalo, Doust, Burnley (*MSSE*, 2007), 10 sujets actifs : la puissance de fin de test (287 ± 55 W) n'est pas différente de la CP mesurée par des essais constants (287 ± 56 W, r = 0,99) ; en 2008, le même test détecte un changement de CP après 4 semaines d'intervalles. Wright et coll. (*Int J Sports Med*, 2017), 12 sujets : ils étudient la fiabilité et la validité du test selon le protocole (cadence constante ou résistance fixe) ; je n'ai pas lu leurs chiffres.\n- **Contre la FTP** : Karsten et coll. (2020, 17 cyclistes) trouvent une CP supérieure de 7 ± 13 W à la FTP : ne pas les échanger ([[velo-ftp-tests]]).\n- **La CP baisse après un effort long** : Clark et coll. (*J Appl Physiol*, 2019), 16 participants : la puissance de fin de test de 3 min ne change pas après 40 ou 80 min d'effort soutenu, mais est **9 % plus basse après 2 h** (236 ± 47 W contre 260 ± 37 W) ; boire des glucides (60 g/h) préserve la CP mais pas W′.\n- **Critique** : Dotan (*Eur J Appl Physiol*, 2022) conteste plusieurs usages et interprétations du concept ; le débat est ouvert : d'autres chercheurs lui répondent (Wong et coll., 2023, lettre de réponse).",
+    "regles": "- Employer CP et W′ pour **expliquer** pourquoi un effort tient ou non (« au-dessus de ta CP, tu puises dans un réservoir limité »), pas pour promettre un chiffre exact.\n- Ne pas présenter la CP comme équivalente à la FTP ou à un seuil de laboratoire : les écarts sont de l'ordre de quelques pourcents à 10 %.\n- Ne pas déduire la CP d'un seul effort : elle demande plusieurs efforts maximaux de 3 à 20 minutes ou un test dédié ; sans cela, rester sur la FTP et la courbe de puissance de l'utilisateur ([[velo-courbe-puissance]]).\n- Pour la course à pied et la natation, le concept existe aussi (vitesse critique, [[natation-css]]) avec les mêmes limites.",
+    "pieges": "- Utiliser la CP pour des sorties de plusieurs heures : le modèle ne décrit pas la fatigue de longue durée.\n- Oublier que les tests de CP exigent des efforts maximaux réellement maximaux.\n- Citer W′ comme un « réservoir » mesuré : c'est un paramètre de modèle.",
+    "sources": [
+      {
+        "titre": "Poole et al., Critical Power: An Important Fatigue Threshold in Exercise Physiology (Med Sci Sports Exerc, 2016)",
+        "url": "https://doi.org/10.1249/mss.0000000000000939"
+      },
+      {
+        "titre": "Jones & Vanhatalo, The 'Critical Power' Concept: Applications to Sports Performance with a Focus on Intermittent High-Intensity Exercise (Sports Med, 2017)",
+        "url": "https://doi.org/10.1007/s40279-017-0688-0"
+      },
+      {
+        "titre": "Galán-Rioja et al., Relative Proximity of Critical Power and Metabolic/Ventilatory Thresholds: Systematic Review and Meta-Analysis (Sports Med, 2020)",
+        "url": "https://doi.org/10.1007/s40279-020-01314-8"
+      },
+      {
+        "titre": "Vanhatalo et al., Determination of critical power using a 3-min all-out cycling test (Med Sci Sports Exerc, 2007)",
+        "url": "https://doi.org/10.1249/mss.0b013e31802dd3e6"
+      },
+      {
+        "titre": "Vanhatalo et al., A 3-min all-out cycling test is sensitive to a change in critical power (Med Sci Sports Exerc, 2008)",
+        "url": "https://doi.org/10.1249/mss.0b013e318177871a"
+      },
+      {
+        "titre": "Wright et al., The Reliability and Validity of the 3-min All-out Cycling Critical Power Test (Int J Sports Med, 2017)",
+        "url": "https://doi.org/10.1055/s-0043-102944"
+      },
+      {
+        "titre": "Clark et al., Dynamics of the power-duration relationship during prolonged endurance exercise and influence of carbohydrate ingestion (J Appl Physiol, 2019)",
+        "url": "https://doi.org/10.1152/japplphysiol.00207.2019"
+      },
+      {
+        "titre": "Dotan, A critical review of critical power (Eur J Appl Physiol, 2022)",
+        "url": "https://doi.org/10.1007/s00421-022-04922-6"
+      }
+    ],
+    "voirAussi": [
+      "velo-ftp-tests",
+      "velo-courbe-puissance",
+      "natation-css"
+    ]
+  },
+  {
     "id": "velo-zones-ftp",
     "dossier": "velo",
     "theme": "mesure",

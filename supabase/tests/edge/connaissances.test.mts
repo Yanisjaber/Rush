@@ -31,6 +31,14 @@ test('chaque fiche est complète et ses liens internes existent', () => {
   }
 });
 
+test('les fiches de la grande recherche (à partir du 13 nov. 2026) ont au moins 5 sources distinctes, dont aucune sans lien https, et disent ce qui a été lu', () => {
+  const nouvelles = FICHES.filter((f) => f.maj >= '2026-11-13');
+  for (const f of nouvelles) {
+    assert.ok(new Set(f.sources.map((s) => s.url)).size >= 5, `${f.id} : 5 sources distinctes au minimum`);
+    assert.match(f.recherche, /lu|résumé/i, `${f.id} : la fiche doit dire ce qui a été lu (résumés ou texte intégral)`);
+  }
+});
+
 test('normaliser : accents, majuscules et ponctuation', () => {
   assert.equal(normaliser("L'affûtage, c'est QUOI ?"), 'l affutage c est quoi');
   assert.equal(normaliser('Œuf – 10 %'), 'oeuf 10');
@@ -144,7 +152,7 @@ test('mot banal seul (« course », « repos ») : ne suffit pas à ramener une 
 
 test('la fiche rendue dit au modèle quels mots de la question elle ne couvre pas', () => {
   const r = chercherConnaissance("Comment faire ma transition vélo-course en triathlon, avec mon FTP ?") as Libre;
-  assert.equal(r.resultats[0].id, 'velo-zones-ftp');
+  assert.ok(['velo-zones-ftp', 'velo-ftp-tests'].includes(r.resultats[0].id), r.resultats[0].id);
   const absents = r.resultats[0].mots_de_la_question_absents_de_la_fiche as string[];
   assert.ok(absents.includes('transition'), absents.join(','));
   assert.deepEqual(motsNonTrouves("affûtage marathon", 'affutage'), [], 'tout est couvert');

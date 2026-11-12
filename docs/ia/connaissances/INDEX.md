@@ -2,7 +2,7 @@
 
 GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à la main. Une fiche est dans `<sport>/<partie>/<id>.md`.
 
-**46 fiches.**
+**49 fiches.**
 
 ## Tous les sports (`commun/`) — 20 fiches
 
@@ -113,10 +113,13 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 
 - [Course à pied : chaussures à plaque carbone, cadence, foulée](course/materiel/course-chaussures-cadence.md) — `course-chaussures-cadence` · preuve : probable · 4 sources
 
-## Vélo (`velo/`) — 1 fiche
+## Vélo (`velo/`) — 4 fiches
 
 ### Tests et mesures (zones, seuils) (`velo/mesure/`)
 
+- [Courbe de puissance et profil du cycliste (records par durée)](velo/mesure/velo-courbe-puissance.md) — `velo-courbe-puissance` · preuve : probable · 6 sources
+- [Tests de FTP à vélo (20 minutes et ses limites)](velo/mesure/velo-ftp-tests.md) — `velo-ftp-tests` · preuve : probable · 7 sources
+- [Puissance critique et W′ (modèle puissance-durée)](velo/mesure/velo-puissance-critique.md) — `velo-puissance-critique` · preuve : probable · 8 sources
 - [Vélo : FTP, zones de puissance et « sweet spot »](velo/mesure/velo-zones-ftp.md) — `velo-zones-ftp` · preuve : pratique · 3 sources
 
 ## Natation (`natation/`) — 1 fiche
