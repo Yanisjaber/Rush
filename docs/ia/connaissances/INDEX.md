@@ -2,7 +2,7 @@
 
 GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à la main. Une fiche est dans `<sport>/<partie>/<id>.md`.
 
-**49 fiches.**
+**53 fiches.**
 
 ## Tous les sports (`commun/`) — 20 fiches
 
@@ -113,7 +113,17 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 
 - [Course à pied : chaussures à plaque carbone, cadence, foulée](course/materiel/course-chaussures-cadence.md) — `course-chaussures-cadence` · preuve : probable · 4 sources
 
-## Vélo (`velo/`) — 4 fiches
+## Vélo (`velo/`) — 8 fiches
+
+### Intensité (seuil, VO2max, vitesse, répartition) (`velo/intensite/`)
+
+- [Sprints répétés (SIT) et intervalles (HIIT) à vélo : effets et limites](velo/intensite/velo-hiit-vs-sit.md) — `velo-hiit-vs-sit` · preuve : probable · 5 sources
+- [Polarisé, pyramidal ou seuil : répartir les intensités chez les cyclistes](velo/intensite/velo-polarise-pyramidal.md) — `velo-polarise-pyramidal` · preuve : debattu · 7 sources
+- [Intervalles de haute intensité à vélo : 4×4, 4×8, 30/15, ordre et formats](velo/intensite/velo-vo2max-intervalles.md) — `velo-vo2max-intervalles` · preuve : probable · 6 sources
+
+### Planification (périodisation, plans, reprise) (`velo/planification/`)
+
+- [Périodisation du cycliste : par blocs, traditionnelle, ou au jour le jour](velo/planification/velo-periodisation.md) — `velo-periodisation` · preuve : probable · 5 sources
 
 ### Tests et mesures (zones, seuils) (`velo/mesure/`)
 

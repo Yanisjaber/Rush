@@ -68,7 +68,7 @@ const QUESTIONS: [string, string, number][] = [
   ['Je pars trop vite en marathon, quelle stratégie d\'allure ?', 'allure-course-marathon', 1],
   ['Je veux perdre du poids en m\'entraînant beaucoup', 'energie-reds', 1],
   ['Ma HRV est basse ce matin', 'hrv-suivi-recuperation', 1],
-  ['Polarisé ou pyramidal, que choisir ?', 'intensite-distribution', 2],
+  ['Polarisé ou pyramidal, que choisir ?', 'intensite-distribution', 3],
   ['Que penser des 4x4 minutes pour la VO2max ?', 'intervalles-haute-intensite', 2],
   ['Faut-il une semaine allégée toutes les 4 semaines ?', 'periodisation', 2],
   ['Combien de séries par semaine pour prendre du muscle ?', 'musculation-bases', 1],

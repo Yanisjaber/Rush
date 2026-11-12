@@ -43,9 +43,9 @@ Légende : `[x]` existe · `[ ]` à écrire.
 
 ### intensite
 - [ ] velo-seuil-intervalles — Intervalles au seuil : durées, récupérations, progression
-- [ ] velo-vo2max-intervalles — Intervalles VO2max à vélo : 30/30, 3 min, 4×4, 5×5
-- [ ] velo-hiit-vs-sit — HIIT contre sprints (SIT) : effets et coût
-- [ ] velo-polarise-pyramidal — Polarisé ou pyramidal chez les cyclistes
+- [x] velo-vo2max-intervalles — Intervalles VO2max à vélo : 30/30, 3 min, 4×4, 5×5
+- [x] velo-hiit-vs-sit — HIIT contre sprints (SIT) : effets et coût
+- [x] velo-polarise-pyramidal — Polarisé ou pyramidal chez les cyclistes
 - [ ] velo-sprints-neuromusculaire — Sprints et travail neuromusculaire
 - [ ] velo-efforts-anaerobies — Efforts anaérobies (30 s à 2 min) : à qui et quand
 - [ ] velo-over-under — Les « over-under » et les efforts autour du seuil
@@ -71,7 +71,7 @@ Légende : `[x]` existe · `[ ]` à écrire.
 - [ ] velo-home-trainer — Entraînement sur home trainer : différences avec la route
 
 ### planification
-- [ ] velo-periodisation — Périodisation du cycliste : classique, par blocs, inversée
+- [x] velo-periodisation — Périodisation du cycliste : classique, par blocs, inversée
 - [ ] velo-plan-cyclosportive — Préparer une cyclosportive (80-200 km)
 - [ ] velo-plan-gran-fondo-montagne — Préparer un col ou une épreuve de montagne
 - [ ] velo-plan-contre-la-montre — Préparer un contre-la-montre

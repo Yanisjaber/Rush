@@ -2373,6 +2373,177 @@ export const FICHES: Fiche[] = [
     ]
   },
   {
+    "id": "velo-hiit-vs-sit",
+    "dossier": "velo",
+    "theme": "intensite",
+    "titre": "Sprints répétés (SIT) et intervalles (HIIT) à vélo : effets et limites",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "SIT",
+      "sprints",
+      "sprint interval training",
+      "30 secondes",
+      "all-out",
+      "HIIT",
+      "puissance critique",
+      "VO2max",
+      "cyclistes entraînés",
+      "restriction du flux sanguin",
+      "VTT",
+      "intervalles courts"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Le **sprint interval training (SIT)** : des sprints maximaux de 30 s entrecoupés de récupérations longues. Il améliore la VO2max et la puissance critique chez des cyclistes déjà entraînés, **à condition de l'ajouter à un travail d'endurance** et non de le substituer à tout.\n- Il est **très exigeant** : à réserver à des cyclistes entraînés, en petite quantité.\n- Comparé aux intervalles classiques, **les deux fonctionnent** : le SIT demande peu de temps, le HIIT classique est plus facile à tenir et à répéter.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; échantillons de 21 à 28 personnes.)*\n- **8 semaines, VTT** : Hebisz et coll. (*Eur J Appl Physiol*, 2016), 26 cyclistes de VTT bien entraînés : ajouter sprints de 30 s et intervalles de 4 min à l'endurance a été comparé à un entraînement à intensité modérée sans effort maximal ; la puissance fournie à l'épreuve d'effort a augmenté dans les deux groupes, et les auteurs concluent à un effet positif du protocole avec sprints et intervalles sur la VO2max (je n'ai pas lu les chiffres exacts).\n- **6 mois** : Hebisz et coll. (*Appl Physiol Nutr Metab*, 2019), 26 cyclistes : remplacer des séances de HIIT et d'endurance continue par du SIT deux fois par semaine a augmenté la VO2max et un marqueur de croissance vasculaire (VEGF-A) ; hausse de la VO2max relevée à 2 mois dans le groupe SIT seulement (le résumé ne mentionne pas de hausse à 6 mois).\n- **4 semaines, avec ou sans restriction du flux sanguin** : Mitchell et coll. (*J Appl Physiol*, 2019), 21 cyclistes entraînés : le SIT seul augmente la puissance critique (287 → 297 W) ; ajouter une restriction du flux sanguin après la séance n'ajoute rien à la CP mais fait monter la VO2max de 5,9 %. Aucun changement de capillarisation ni de protéines mitochondriales mesurés.\n- **Intervalles courts contre longs** : Rønnestad et coll. (2020, 18 cyclistes d'élite) : 3 séries de 13 × 30 s / 15 s ont mieux amélioré la puissance sur 20 min que 4 × 5 min ([[velo-vo2max-intervalles]]).\n- **Contexte général** : Milanović et coll. (*Sports Med*, 2015), méta-analyse de 28 études sur des adultes non entraînés : le HIIT (dont le sprint) améliore la VO2max de façon comparable à l'endurance continue, avec plus d'effet chez les moins entraînés.",
+    "regles": "- Ne proposer le SIT qu'à un cycliste **déjà entraîné** (historique de séances dures) et **sans blessure**, en **une séance par semaine** maximum, jamais en reprise après arrêt.\n- Le présenter comme **un outil parmi d'autres** : un cycliste qui n'aime pas les sprints a les mêmes résultats avec des intervalles de 4 min.\n- Prévoir un échauffement long avant et une récupération réelle après ; ne jamais coller un SIT à une autre séance dure.\n- Ne pas promettre de gains de VO2max chiffrés : les résultats de ces essais sont courts et petits.",
+    "pieges": "- Confondre SIT (sprints maximaux de ~30 s) et simples « sprints d'entraînement ».\n- Remplacer tout le volume facile par du SIT : les études l'ajoutent à l'endurance.\n- Tirer d'une étude de 4 semaines des conclusions sur la saison.\n- Les restrictions du flux sanguin sont expérimentales : ne pas les recommander.",
+    "sources": [
+      {
+        "titre": "Hebisz et al., Concomitant application of sprint and high-intensity interval training on maximal oxygen uptake and work output in well-trained cyclists (Eur J Appl Physiol, 2016)",
+        "url": "https://doi.org/10.1007/s00421-016-3405-z"
+      },
+      {
+        "titre": "Hebisz et al., Changes in exercise capacity and serum BDNF following long-term sprint interval training in well-trained cyclists (Appl Physiol Nutr Metab, 2019)",
+        "url": "https://doi.org/10.1139/apnm-2018-0427"
+      },
+      {
+        "titre": "Mitchell et al., The combined effect of sprint interval training and postexercise blood flow restriction on critical power, capillary growth, and mitochondrial proteins in trained cyclists (J Appl Physiol, 2019)",
+        "url": "https://doi.org/10.1152/japplphysiol.01082.2017"
+      },
+      {
+        "titre": "Rønnestad et al., Superior performance improvements in elite cyclists following short-interval vs effort-matched long-interval training (Scand J Med Sci Sports, 2020)",
+        "url": "https://doi.org/10.1111/sms.13627"
+      },
+      {
+        "titre": "Milanović et al., Effectiveness of High-Intensity Interval Training (HIT) and Continuous Endurance Training for VO2max Improvements: A Systematic Review and Meta-Analysis of Controlled Trials (Sports Med, 2015)",
+        "url": "https://doi.org/10.1007/s40279-015-0365-0"
+      }
+    ],
+    "voirAussi": [
+      "velo-vo2max-intervalles"
+    ]
+  },
+  {
+    "id": "velo-periodisation",
+    "dossier": "velo",
+    "theme": "planification",
+    "titre": "Périodisation du cycliste : par blocs, traditionnelle, ou au jour le jour",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "périodisation",
+      "blocs",
+      "block periodization",
+      "traditionnelle",
+      "concentration de charge",
+      "cyclistes entraînés",
+      "mésocycle",
+      "séances d'intervalles",
+      "saison",
+      "progression",
+      "organisation",
+      "charge"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- **Périodisation par blocs** : concentrer des séances dures sur une courte période (par exemple une semaine à 5 séances d'intervalles), puis revenir à du facile avec une séance dure par semaine. **Traditionnelle** : quelques séances dures chaque semaine pendant plusieurs semaines, en progression.\n- Les petits essais chez des cyclistes entraînés sont **plutôt favorables aux blocs**. Mais les revues concluent que **la preuve est faible** et qu'**aucune organisation n'est démontrée supérieure** sur 8 à 12 semaines.\n- Ce qui compte vraiment : la **charge totale**, la **récupération**, et une **progression** que l'athlète supporte.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; essais de 15 à 63 cyclistes.)*\n- **Blocs contre traditionnel, 4 semaines** : Rønnestad et coll. (*Scand J Med Sci Sports*, 2014), 19 cyclistes : le groupe « bloc » (une semaine de 5 séances d'intervalles puis 3 semaines à une séance) a gagné 4,6 % de VO2max, 2,1 % de puissance maximale et 10 % de puissance à 2 mmol/L de lactate ; le groupe traditionnel (2 séances par semaine) n'a rien gagné, à volume égal.\n- **Blocs contre traditionnel, 12 semaines** : Rønnestad et coll. (*Scand J Med Sci Sports*, 2014), 15 cyclistes : VO2max +8,8 % pour les blocs contre +3,7 % ; tendance à un plus grand gain de puissance à 2 mmol/L (+22 % contre +10 %).\n- **Méta-analyse** : Mølmen et coll. (*Open Access J Sports Med*, 2019), 20 études : petits effets favorables aux blocs sur la VO2max (écart standardisé 0,40) et la puissance maximale (0,28) ; **qualité méthodologique faible** (PEDro moyen 3,7/10), à lire avec prudence.\n- **Progression des séances** : Sylta et coll. (*Med Sci Sports Exerc*, 2016), 63 cyclistes, 12 semaines à charge égale : ordre croissant, décroissant ou mixte des formats d'intervalles → mêmes gains (5 à 10 %).\n- **Revue chez les cyclistes sur route** : Galán-Rioja et coll. (*IJSPP*, 2023), 7 études : les deux organisations fonctionnent ; **aucune preuve** ne désigne un modèle supérieur sur 8 à 12 semaines ; peu d'études à l'échelle d'une saison.",
+    "regles": "- Ne pas imposer une organisation comme « la meilleure » : proposer ce qui convient à la vie de la personne (disponibilité, récupération).\n- Un **bloc** (semaine très chargée) ne convient qu'à des **cyclistes entraînés** et encadrés, avec une semaine suivante nettement allégée ; ne jamais le proposer à un débutant.\n- La structure habituelle de l'application (montée sur 3 semaines puis semaine allégée) reste une **convention** : l'essentiel est que la charge totale monte progressivement et que la récupération soit placée avant la fatigue ([[periodisation]]).\n- En cas de doute, **la régularité d'un plan supporté** l'emporte sur la forme exacte du plan.",
+    "pieges": "- Prendre un essai de 4 semaines sur 19 cyclistes pour une loi.\n- Concentrer des séances dures sans repos suffisant derrière : le risque de surcharge est réel.\n- Oublier que ces cyclistes avaient déjà des années d'entraînement.",
+    "sources": [
+      {
+        "titre": "Rønnestad et al., Block periodization of high-intensity aerobic intervals provides superior training effects in trained cyclists (Scand J Med Sci Sports, 2014)",
+        "url": "https://doi.org/10.1111/j.1600-0838.2012.01485.x"
+      },
+      {
+        "titre": "Rønnestad et al., Effects of 12 weeks of block periodization on performance and performance indices in well-trained cyclists (Scand J Med Sci Sports, 2014)",
+        "url": "https://doi.org/10.1111/sms.12016"
+      },
+      {
+        "titre": "Mølmen et al., Block periodization of endurance training - a systematic review and meta-analysis (Open Access J Sports Med, 2019)",
+        "url": "https://doi.org/10.2147/oajsm.s180408"
+      },
+      {
+        "titre": "Sylta et al., The Effect of Different High-Intensity Periodization Models on Endurance Adaptations (Med Sci Sports Exerc, 2016)",
+        "url": "https://doi.org/10.1249/mss.0000000000001007"
+      },
+      {
+        "titre": "Galán-Rioja et al., Training Periodization, Intensity Distribution, and Volume in Trained Cyclists: A Systematic Review (IJSPP, 2023)",
+        "url": "https://doi.org/10.1123/ijspp.2022-0302"
+      }
+    ],
+    "voirAussi": [
+      "periodisation"
+    ]
+  },
+  {
+    "id": "velo-polarise-pyramidal",
+    "dossier": "velo",
+    "theme": "intensite",
+    "titre": "Polarisé, pyramidal ou seuil : répartir les intensités chez les cyclistes",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "polarisé",
+      "pyramidal",
+      "seuil",
+      "répartition des intensités",
+      "80/20",
+      "zones",
+      "volume facile",
+      "entraînement polarisé",
+      "cyclistes entraînés",
+      "VO2max",
+      "contre-la-montre",
+      "intensité"
+    ],
+    "preuve": "debattu",
+    "maj": "2026-11-13",
+    "essentiel": "- Le **polarisé** (environ 80 % du temps très facile, 20 % très dur, presque rien entre les deux) a donné de **meilleurs résultats que le « seuil »** (beaucoup de temps à intensité moyenne) dans plusieurs essais, surtout sur des cyclistes **déjà bien entraînés**.\n- Mais face au **pyramidal** (beaucoup de facile, un peu de moyen, peu de dur), la différence **disparaît** dans la grosse analyse la plus récente. Pour un cycliste de loisir, le pyramidal marche aussi bien, voire mieux.\n- Retenir : **beaucoup de facile + peu de dur et bien dosé**, c'est ce que recommandent toutes les analyses ; polarisé ou pyramidal est un détail qui dépend du niveau.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; échantillons petits, pour la plupart des hommes.)*\n- **Essai croisé chez des cyclistes** : Neal et coll. (*J Appl Physiol*, 2013), 12 cyclistes, 6 semaines chacun : polarisé (80/0/20 % du temps en zones basse/moyenne/haute) contre seuil (57/43/0 %). Progression plus grande en polarisé pour la puissance maximale (+8 % contre +3 %), le seuil lactique (+9 % contre +2 %) et la capacité à haute intensité (+85 % contre +37 %). Même 40 km contre la montre amélioré dans les deux cas.\n- **Quatre modèles sur athlètes d'endurance** : Stöggl et Sperlich (*Front Physiol*, 2014), 48 coureurs, cyclistes, triathlètes et skieurs, 9 semaines : le polarisé donne la plus grande hausse de VO2pic (+11,7 %) et les meilleurs gains sur la plupart des variables.\n- **Méta-analyse polarisé contre seuil** : Rosenblat et coll. (*J Strength Cond Res*, 2019) : 4 essais contrôlés (3 pour la méta-analyse), effet moyen favorable au polarisé sur le contre-la-montre (taille d'effet −0,66), mais études de qualité faible (PEDro 4-5/10).\n- **Méta-analyse polarisé contre tous les autres** : Silva Oliveira et coll. (*Sports Med*, 2024), 17 études, 437 sujets : le polarisé est meilleur pour la VO2pic (écart standardisé 0,24), seulement sur les **interventions courtes** et chez les athlètes **très entraînés** (0,46) ; **pas de différence** sur le contre-la-montre, le temps jusqu'à épuisement ou la puissance au seuil.\n- **Analyse la plus récente** : Rosenblat et coll. (*Sports Med*, 2025), méta-analyse en réseau à partir des données individuelles, 13 études, 348 athlètes : **aucune différence** entre polarisé et pyramidal sur la VO2max et le contre-la-montre ; les athlètes **compétitifs** progressent plus en polarisé, les **récréatifs** plus en pyramidal.\n- **Chez les cyclistes sur route** : Galán-Rioja et coll. (*IJSPP*, 2023), revue de 7 études : des modèles pyramidaux et polarisés sont utilisés avec succès ; **aucune preuve** n'en désigne un meilleur sur 8 à 12 semaines.\n- **Revue générale** : Seiler (*IJSPP*, 2010) : chez les athlètes d'endurance de haut niveau, environ 80 % des séances sont à basse intensité et 20 % à haute intensité.",
+    "regles": "- Pour un cycliste **de loisir ou débutant** : privilégier un **volume facile** et **une ou deux séances dures bien dosées** par semaine (pyramidal), plutôt qu'un polarisé strict.\n- Pour un cycliste **très entraîné** (8 h par semaine ou plus, historique de séances dures) : le polarisé est une option bien étayée à proposer sans l'imposer.\n- Ne jamais présenter l'un comme « la bonne méthode » : les écarts sont petits, les essais courts et petits, et ils se brouillent selon la façon de mesurer l'intensité.\n- Éviter l'écueil du **« tout au tempo »** : trop de temps à intensité moyenne est ce que les essais classent le moins bien (modèle « seuil »).\n- Les séances « dures » et la répartition des heures se vérifient avec la charge réelle de l'application, pas avec des pourcentages théoriques.",
+    "pieges": "- Mesurer l'intensité en **temps passé par zone** ou en **séances** change la répartition obtenue : le même athlète peut paraître polarisé ou pyramidal.\n- Appliquer à un débutant les conclusions obtenues sur des cyclistes de 60-70 mL/kg/min de VO2max.\n- Conclure d'essais de 6 à 12 semaines à ce qui est mieux sur une saison.",
+    "sources": [
+      {
+        "titre": "Neal et al., Six weeks of a polarized training-intensity distribution leads to greater physiological and performance adaptations than a threshold model in trained cyclists (J Appl Physiol, 2013)",
+        "url": "https://doi.org/10.1152/japplphysiol.00652.2012"
+      },
+      {
+        "titre": "Stöggl & Sperlich, Polarized training has greater impact on key endurance variables than threshold, high intensity, or high volume training (Front Physiol, 2014)",
+        "url": "https://doi.org/10.3389/fphys.2014.00033"
+      },
+      {
+        "titre": "Rosenblat et al., Polarized vs. Threshold Training Intensity Distribution on Endurance Sport Performance: A Systematic Review and Meta-Analysis of Randomized Controlled Trials (J Strength Cond Res, 2019)",
+        "url": "https://doi.org/10.1519/jsc.0000000000002618"
+      },
+      {
+        "titre": "Silva Oliveira et al., Comparison of Polarized Versus Other Types of Endurance Training Intensity Distribution on Athletes' Endurance Performance: A Systematic Review with Meta-analysis (Sports Med, 2024)",
+        "url": "https://doi.org/10.1007/s40279-024-02034-z"
+      },
+      {
+        "titre": "Rosenblat et al., Which Training Intensity Distribution Intervention will Produce the Greatest Improvements in Maximal Oxygen Uptake and Time-Trial Performance in Endurance Athletes? (Sports Med, 2025)",
+        "url": "https://doi.org/10.1007/s40279-024-02149-3"
+      },
+      {
+        "titre": "Galán-Rioja et al., Training Periodization, Intensity Distribution, and Volume in Trained Cyclists: A Systematic Review (IJSPP, 2023)",
+        "url": "https://doi.org/10.1123/ijspp.2022-0302"
+      },
+      {
+        "titre": "Seiler, What is best practice for training intensity and duration distribution in endurance athletes? (IJSPP, 2010)",
+        "url": "https://doi.org/10.1123/ijspp.5.3.276"
+      }
+    ],
+    "voirAussi": []
+  },
+  {
     "id": "velo-puissance-critique",
     "dossier": "velo",
     "theme": "mesure",
@@ -2441,6 +2612,66 @@ export const FICHES: Fiche[] = [
       "velo-ftp-tests",
       "velo-courbe-puissance",
       "natation-css"
+    ]
+  },
+  {
+    "id": "velo-vo2max-intervalles",
+    "dossier": "velo",
+    "theme": "intensite",
+    "titre": "Intervalles de haute intensité à vélo : 4×4, 4×8, 30/15, ordre et formats",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "intervalles",
+      "VO2max",
+      "4x4",
+      "4x8",
+      "4x16",
+      "30/15",
+      "intervalles courts",
+      "intervalles longs",
+      "HIIT",
+      "haute intensité",
+      "puissance aérobie maximale",
+      "cyclistes",
+      "format"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Les intervalles de haute intensité font monter la VO2max et la puissance chez les cyclistes, **à condition d'être faits pour de vrai** (intensité maximale tolérable) et **dosés** (peu de séances par semaine).\n- **Quel format est le meilleur ?** Les essais donnent des résultats différents, ce qui prouve que **le format compte moins que l'effort total bien dosé**. Dans un essai, 4 × 8 min a donné les plus gros gains globaux chez des cyclistes de loisir ; dans un autre, des **intervalles courts** (30 s / 15 s) ont battu des intervalles longs de 5 min chez des cyclistes **d'élite**.\n- **L'ordre ne compte pas** : faire 4×16 puis 4×8 puis 4×4, ou l'inverse, ou mélangé, donne les mêmes gains si la charge totale est la même.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; les échantillons sont de 9 à 63 cyclistes.)*\n- **Durée du travail et intensité** : Seiler et coll. (*Scand J Med Sci Sports*, 2013), 35 cyclistes de loisir, 7 semaines, 2 séances par semaine : 4×8 min a donné le plus gros gain global (**+11,4 %** en moyenne sur la VO2pic, la puissance à la VO2pic et la puissance à 4 mmol/L), contre 4,2 % (faible intensité seule), 5,6 % (4×16) et 5,5 % (4×4). Les auteurs concluent que l'intensité et la durée cumulée interagissent : 32 min de travail à ~90 % de la FC max rapportent plus que 16 min à ~95 %, malgré un effort perçu plus bas.\n- **Ordre des formats** : Sylta et coll. (*Med Sci Sports Exerc*, 2016), 63 cyclistes, 12 semaines, 24 séances : groupe croissant (4×16 puis 4×8 puis 4×4), décroissant ou mixte : tous progressent de 5 à 10 % (puissance sur 40 min, puissance pic, VO2pic) ; **aucune différence entre les trois organisations**, à charge totale égale.\n- **Courts contre longs chez des élites** : Rønnestad et coll. (*Scand J Med Sci Sports*, 2020), 18 cyclistes d'élite (VO2max 73 mL/kg/min), 3 semaines, 3 séances par semaine : intervalles courts (3 séries de 13 × 30 s / 15 s) contre longs (4 × 5 min) à effort perçu égal. Les courts progressent plus sur la puissance moyenne de 20 min (+4,7 % contre −1,4 %) et sur la puissance à 4 mmol/L de lactate ; pas de différence sur la VO2max.\n- **Varier la puissance dans l'intervalle** : Bossi et coll. (*IJSPP*, 2020), 14 cyclistes : des intervalles avec variation de puissance font passer plus de temps à plus de 90 % de la VO2max (410 s contre 286 s) à durée et puissance moyenne égales, sans effort perçu plus élevé.\n- **Pourquoi les intervalles marchent** : méta-analyse de Milanović et coll. (*Sports Med*, 2015), 28 études, 723 adultes en bonne santé (non cyclistes) : l'entraînement par intervalles améliore la VO2max d'environ 5,5 mL/kg/min par rapport à pas d'entraînement, un peu plus pour les moins entraînés et les interventions plus longues.\n- **Organiser dans le temps** : Rønnestad et coll. (*Scand J Med Sci Sports*, 2014), 19 cyclistes, 4 semaines : une semaine de 5 séances d'intervalles puis 3 semaines à une séance par semaine (bloc) a augmenté la VO2max de 4,6 % ; l'organisation habituelle (2 séances par semaine) n'a rien changé, à volume égal.",
+    "regles": "- Proposer **une séance d'intervalles par semaine** au cycliste de loisir, **deux** à un cycliste entraîné avec de l'historique, **pas plus** sans suivi.\n- Le **format** (4×4, 4×8, 30/15, 5×5) se choisit selon l'envie et la facilité d'exécution : l'essentiel est la **qualité de l'effort** (intensité maximale tenable) et la **récupération** entre les séances. Varier les formats est sans risque.\n- Pour un cycliste très entraîné : les intervalles courts répétés (30/15) sont une option étayée par un essai chez des élites.\n- Ne **pas promettre** un gain de VO2max chiffré : ils varient de 4 à 11 % selon les études et les niveaux de départ.\n- Respecter la règle « pas de séance dure collée à une autre » ; en reprise après arrêt, **pas d'intervalles tant que le volume n'est pas revenu** (voir [[reprise-apres-arret]]).",
+    "pieges": "- Des intervalles « à peu près durs » : c'est justement l'effort maximal tenable qui distingue les formats gagnants dans l'étude de Seiler.\n- Empiler 5 séances d'intervalles en une semaine hors cadre d'un bloc encadré.\n- Conclure d'un essai de 3 semaines chez des élites à ce qui marche chez un débutant.",
+    "sources": [
+      {
+        "titre": "Seiler et al., Adaptations to aerobic interval training: interactive effects of exercise intensity and total work duration (Scand J Med Sci Sports, 2013)",
+        "url": "https://doi.org/10.1111/j.1600-0838.2011.01351.x"
+      },
+      {
+        "titre": "Sylta et al., The Effect of Different High-Intensity Periodization Models on Endurance Adaptations (Med Sci Sports Exerc, 2016)",
+        "url": "https://doi.org/10.1249/mss.0000000000001007"
+      },
+      {
+        "titre": "Rønnestad et al., Superior performance improvements in elite cyclists following short-interval vs effort-matched long-interval training (Scand J Med Sci Sports, 2020)",
+        "url": "https://doi.org/10.1111/sms.13627"
+      },
+      {
+        "titre": "Bossi et al., Optimizing Interval Training Through Power-Output Variation Within the Work Intervals (IJSPP, 2020)",
+        "url": "https://doi.org/10.1123/ijspp.2019-0260"
+      },
+      {
+        "titre": "Milanović et al., Effectiveness of High-Intensity Interval Training (HIT) and Continuous Endurance Training for VO2max Improvements: A Systematic Review and Meta-Analysis of Controlled Trials (Sports Med, 2015)",
+        "url": "https://doi.org/10.1007/s40279-015-0365-0"
+      },
+      {
+        "titre": "Rønnestad et al., Block periodization of high-intensity aerobic intervals provides superior training effects in trained cyclists (Scand J Med Sci Sports, 2014)",
+        "url": "https://doi.org/10.1111/j.1600-0838.2012.01485.x"
+      }
+    ],
+    "voirAussi": [
+      "reprise-apres-arret"
     ]
   },
   {
