@@ -2946,6 +2946,67 @@ export const FICHES: Fiche[] = [
     ]
   },
   {
+    "id": "velo-pacing-cm",
+    "dossier": "velo",
+    "theme": "competition",
+    "titre": "Gérer son effort à vélo (contre-la-montre, cyclosportive) : départ, régularité, chaleur",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "gestion de l'effort",
+      "pacing",
+      "contre-la-montre",
+      "départ trop rapide",
+      "régularité",
+      "allure régulière",
+      "feedback",
+      "expérience",
+      "chaleur",
+      "ventilateur",
+      "home trainer",
+      "effort chronométré",
+      "stratégie de course"
+    ],
+    "preuve": "debattu",
+    "maj": "2026-11-13",
+    "essentiel": "- La **gestion de l'effort** (« pacing ») est la façon de répartir sa puissance sur toute l'épreuve. Les études décrivent plusieurs profils (régulier, négatif, positif, variable, parabolique) ; **aucun n'est démontré meilleur pour toutes les épreuves**.\n- Sur les épreuves de moyenne et de longue durée, les athlètes bien entraînés **ralentissent souvent progressivement après un pic de vitesse** (stratégie dite « positive »), d'après la revue de 2008. Avec l'expérience, ils **choisissent leur effort mieux** : le premier essai sur une distance inconnue est plus lent.\n- Le choix du rythme est **régulé par le cerveau** à partir des sensations, de la distance restante et de l'expérience : **un ordinateur de bord qui affiche la puissance aide à ne pas partir trop fort**.\n- **La chaleur fait baisser la puissance** d'environ 15 % en moyenne dans les études ; **le vent et l'air qui circule** réduisent l'effet, y compris sur home trainer (ventilateur).",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; essais de 8 à 29 cyclistes, presque tous des hommes entraînés.)*\n- **Revue générale** : Abbiss et Laursen (*Sports Med*, 2008) décrivent les stratégies (négative, positive, régulière, variable, parabolique) ; ils indiquent que la connaissance manque pour les épreuves de distance moyenne et d'ultra-endurance (plus de 4 h), où les sportifs bien entraînés ralentissent plutôt progressivement après un pic ; l'effort choisi serait régulé par le cerveau selon les sensations et le travail restant.\n- **Départ rapide, fatigue périphérique** : Hettinga et coll. (*Med Sci Sports Exerc*, 2006), 8 cyclistes, trois contre-la-montre de 4 km avec la première moitié imposée (croissante, régulière, décroissante) : la baisse de puissance en fin d'effort est compatible avec une fatigue **périphérique** (des muscles) plutôt qu'avec une limitation centrale ; les ressources anaérobies jouent un rôle clé dans la régulation de l'allure.\n- **Feedback et expérience** : Micklewright et coll. (*Br J Sports Med*, 2010), 29 cyclistes, 20 km : le rythme est influencé par l'interaction entre information donnée (même fausse) et **expérience antérieure**. Mauger et coll. (*Med Sci Sports Exerc*, 2009), 18 cyclistes, quatre contre-la-montre de 4 km : un groupe sans information sur la distance a progressé d'un essai à l'autre ; les auteurs concluent que le retour d'information sur la distance n'est pas indispensable et que l'expérience d'une distance inconnue permet de construire une distance « interne » pour régler son rythme.\n- **Répétabilité** : Thomas et coll. (*Eur J Appl Physiol*, 2012), 17 cyclistes bien entraînés, trois contre-la-montre de 20 km : la stratégie de répartition est **similaire d'un essai à l'autre**, avec plus de variabilité au tout début et à la fin (erreur typique de 6,6 % et 6,8 % sur le premier et le dernier kilomètre).\n- **Chaleur et air** : Junge et coll. (*Temperature*, 2016), revue de 14 études : la puissance moyenne baisse de **15 %** en contre-la-montre par ≥ 30 °C ; la température seule prédit mal l'effet ; le vent généré par la vitesse ou un ventilateur joue fortement ; en intérieur, la puissance se maintient jusqu'à environ 27 °C quand l'air circule, mais **chute** quand l'air est quasiment immobile.",
+    "regles": "- Pour un effort chronométré ou une épreuve **de plus de 20 minutes** : conseiller de **partir légèrement sous sa cible** et de relever le rythme si les sensations le permettent, plutôt que de partir trop fort ; **c'est un conseil de prudence, pas une loi démontrée**.\n- Donner une **cible de puissance** calculée à partir de la FTP de l'utilisateur ([[velo-ftp-tests]]) comme repère, avec une marge, et rappeler qu'elle baisse en fin de longue épreuve ([[velo-durabilite]]).\n- **Première fois sur une distance ou un parcours inconnu** : annoncer qu'on sera plus lent et moins précis dans le rythme ; l'expérience améliore la gestion de l'effort.\n- **Chaleur** : prévoir d'abaisser la cible de puissance ; **sur home trainer, utiliser un ventilateur** et ne pas s'entraîner à fond dans une pièce fermée.\n- Ne jamais promettre un rythme « optimal » : les études montrent une **variabilité** d'un essai à l'autre.",
+    "pieges": "- Partir trop vite parce qu'on est frais et motivé au départ.\n- Garder la même cible de puissance par 30 °C que par 15 °C.\n- Se fier aux sensations seules sans repère de puissance sur un parcours inconnu.\n- Conclure d'essais en laboratoire à une course réelle avec vent, pente et dépassements.",
+    "sources": [
+      {
+        "titre": "Abbiss & Laursen, Describing and understanding pacing strategies during athletic competition (Sports Med, 2008)",
+        "url": "https://doi.org/10.2165/00007256-200838030-00004"
+      },
+      {
+        "titre": "Hettinga et al., Pacing strategy and the occurrence of fatigue in 4000-m cycling time trials (Med Sci Sports Exerc, 2006)",
+        "url": "https://doi.org/10.1249/01.mss.0000228956.75344.91"
+      },
+      {
+        "titre": "Micklewright et al., Previous experience influences pacing during 20 km time trial cycling (Br J Sports Med, 2010)",
+        "url": "https://doi.org/10.1136/bjsm.2009.057315"
+      },
+      {
+        "titre": "Mauger et al., Influence of feedback and prior experience on pacing during a 4-km cycle time trial (Med Sci Sports Exerc, 2009)",
+        "url": "https://doi.org/10.1249/mss.0b013e3181854957"
+      },
+      {
+        "titre": "Thomas et al., Reproducibility of pacing strategy during simulated 20-km cycling time trials in well-trained cyclists (Eur J Appl Physiol, 2012)",
+        "url": "https://doi.org/10.1007/s00421-011-1974-4"
+      },
+      {
+        "titre": "Junge et al., Prolonged self-paced exercise in the heat - environmental factors affecting performance (Temperature, 2016)",
+        "url": "https://doi.org/10.1080/23328940.2016.1216257"
+      }
+    ],
+    "voirAussi": [
+      "velo-ftp-tests",
+      "velo-durabilite"
+    ]
+  },
+  {
     "id": "velo-periodisation",
     "dossier": "velo",
     "theme": "planification",
@@ -3184,6 +3245,63 @@ export const FICHES: Fiche[] = [
       "velo-ftp-tests",
       "velo-courbe-puissance",
       "natation-css"
+    ]
+  },
+  {
+    "id": "velo-reprise-apres-arret",
+    "dossier": "velo",
+    "theme": "planification",
+    "titre": "Désentraînement du cycliste : ce qu'on perd, à quelle vitesse, et comment limiter",
+    "sports": [
+      "velo",
+      "triathlon",
+      "course"
+    ],
+    "motsCles": [
+      "désentraînement",
+      "arrêt",
+      "pause",
+      "VO2max",
+      "perte de forme",
+      "seuil lactique",
+      "volume réduit",
+      "maintien",
+      "confinement",
+      "reprise",
+      "repos prolongé",
+      "entraînement réduit",
+      "mitochondries"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Quand on **s'arrête ou qu'on s'entraîne beaucoup moins**, la forme **baisse vite au début** : la VO2max et le volume sanguin diminuent en **moins de 4 semaines** chez l'athlète entraîné, plus lentement ensuite.\n- Mais **tout ne disparaît pas** : après 84 jours sans entraînement, des adaptations musculaires durables (enzymes des mitochondries, seuil lactique) restent **au-dessus du niveau d'un sédentaire**.\n- On limite très bien la perte avec un **entraînement réduit** : **moins de volume**, mais en **gardant l'intensité** et en ne réduisant la fréquence que modérément.\n- Ces études portent sur le **désentraînement** (ce qu'on perd). **Le rythme de la reprise** (combien reprendre au début) ne vient pas d'elles : c'est une **convention de l'application** (voir [[reprise-apres-arret]]).",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; certaines études sont anciennes mais restent des références.)*\n- **Moins de 4 semaines** : Mujika et Padilla (*Sports Med*, 2000, partie I) : chez les athlètes très entraînés, déclin rapide de la VO2max et du volume sanguin, fréquence cardiaque qui monte à l'effort mais sans compenser la baisse du volume d'éjection, donc débit cardiaque max plus bas ; au niveau du muscle, densité capillaire et enzymes oxydatives en baisse ; la force, elle, baisse peu.\n- **Plus de 4 semaines** : Mujika et Padilla (*Sports Med*, 2000, partie II) : la VO2max chute nettement mais reste au-dessus de celle de sédentaires ; les gains récents sont totalement perdus ; **les effets négatifs peuvent être évités ou limités par un entraînement réduit tant que l'intensité est maintenue et la fréquence peu diminuée** ; le volume peut être fortement réduit.\n- **Un cycle de 84 jours** : Coyle et coll. (*J Appl Physiol*, 1985), 7 sujets entraînés suivis à 12, 21, 56 et 84 jours d'arrêt : la fréquence cardiaque, la ventilation et le lactate à effort constant augmentent pendant 56 jours puis se stabilisent ; l'activité des enzymes des mitochondries baisse de 40 % ; à 84 jours, elle reste 50 % au-dessus de celle de sédentaires et le **seuil lactique** reste plus haut (75 % contre 62 % de la VO2max).\n- **Cardio-respiratoire** : Mujika et Padilla (*Med Sci Sports Exerc*, 2001) : chez les athlètes très entraînés, le désentraînement fait chuter rapidement la VO2max, qui reste au-dessus des valeurs de sédentaires.\n- **Un cas réel** : Muriel et coll. (*IJSPP*, 2021), 18 cyclistes professionnels pendant 7 semaines de confinement : volume total en baisse de 33,9 %, tout en home trainer ; 12 h par semaine dont 6 h en zones faibles et 2 h au-dessus du seuil **n'ont pas suffi** à maintenir la performance des puissances sur 5 et 20 minutes.",
+    "regles": "- **Pause de moins de 4 semaines** : rassurer ; la reprise se fait par des séances **faciles puis une montée progressive** ; ne pas essayer de « rattraper ».\n- **Pause plus longue** : prévoir une **vraie reprise progressive** ([[reprise-apres-arret]]) avec **aucune séance dure avant que le volume soit revenu** ; ne pas comparer la puissance au niveau d'avant.\n- Pour **maintenir sa forme** (voyage, blessure légère, période chargée) : **garder 1 à 2 séances avec un peu d'intensité** par semaine et réduire le volume plutôt que de tout arrêter ; les études sur athlètes très entraînés **ne garantissent pas** les mêmes résultats pour un débutant.\n- Ne jamais dire « tu as tout perdu » : une partie des acquis reste longtemps.",
+    "pieges": "- Appliquer les chiffres de ces études (sportifs d'élite, très entraînés) à un débutant.\n- Reprendre au volume d'avant le premier jour.\n- Confondre pause voulue et surentraînement.",
+    "sources": [
+      {
+        "titre": "Mujika & Padilla, Detraining: loss of training-induced physiological and performance adaptations. Part I: short term insufficient training stimulus (Sports Med, 2000)",
+        "url": "https://doi.org/10.2165/00007256-200030020-00002"
+      },
+      {
+        "titre": "Mujika & Padilla, Detraining: loss of training-induced physiological and performance adaptations. Part II: Long term insufficient training stimulus (Sports Med, 2000)",
+        "url": "https://doi.org/10.2165/00007256-200030030-00001"
+      },
+      {
+        "titre": "Coyle et al., Effects of detraining on responses to submaximal exercise (J Appl Physiol, 1985)",
+        "url": "https://doi.org/10.1152/jappl.1985.59.3.853"
+      },
+      {
+        "titre": "Mujika & Padilla, Cardiorespiratory and metabolic characteristics of detraining in humans (Med Sci Sports Exerc, 2001)",
+        "url": "https://doi.org/10.1097/00005768-200103000-00013"
+      },
+      {
+        "titre": "Muriel et al., Training Load and Performance Impairments in Professional Cyclists During COVID-19 Lockdown (IJSPP, 2021)",
+        "url": "https://doi.org/10.1123/ijspp.2020-0501"
+      }
+    ],
+    "voirAussi": [
+      "reprise-apres-arret"
     ]
   },
   {

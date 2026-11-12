@@ -68,7 +68,7 @@ Légende : `[x]` existe · `[ ]` à écrire.
 - [ ] velo-descente-virages — Technique de descente et de virage (sécurité)
 - [ ] velo-danseuse-assis — Danseuse ou assis en montée
 - [ ] velo-groupe-aspiration — Aspiration et placement dans le peloton
-- [ ] velo-home-trainer — Entraînement sur home trainer : différences avec la route
+- [ ] velo-home-trainer — Entraînement sur home trainer : différences avec la route (2 sources seulement trouvées le 13 nov. : Mieras 2014, Jeffries 2019 ; à compléter)
 
 ### planification
 - [x] velo-periodisation — Périodisation du cycliste : classique, par blocs, inversée
@@ -84,7 +84,7 @@ Légende : `[x]` existe · `[ ]` à écrire.
 - [ ] velo-semaine-type — Organisation d'une semaine d'entraînement à vélo
 - [ ] velo-temps-limite-8h — Entraîner un cycliste qui n'a que 6 à 8 h par semaine
 - [ ] velo-semaine-recuperation — Semaines de récupération : durée et charge
-- [ ] velo-reprise-apres-arret — Reprendre le vélo après un arrêt
+- [x] velo-reprise-apres-arret — Reprendre le vélo après un arrêt
 
 ### charge-suivi
 - [ ] velo-tss-ctl — TSS, CTL, ATL, TSB : valeurs et limites à vélo
@@ -126,7 +126,7 @@ Légende : `[x]` existe · `[ ]` à écrire.
 
 ### competition
 - [ ] velo-affutage — Affûtage du cycliste
-- [ ] velo-pacing-cm — Gestion de l'effort en contre-la-montre
+- [x] velo-pacing-cm — Gestion de l'effort en contre-la-montre
 - [ ] velo-pacing-longue-distance — Gestion de l'effort en cyclosportive
 - [ ] velo-nutrition-course — Plan nutritionnel du jour J
 - [ ] velo-echauffement — Échauffement avant une course ou un test

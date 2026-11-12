@@ -2,7 +2,7 @@
 
 GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à la main. Une fiche est dans `<sport>/<partie>/<id>.md`.
 
-**64 fiches.**
+**66 fiches.**
 
 ## Tous les sports (`commun/`) — 20 fiches
 
@@ -113,7 +113,7 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 
 - [Course à pied : chaussures à plaque carbone, cadence, foulée](course/materiel/course-chaussures-cadence.md) — `course-chaussures-cadence` · preuve : probable · 4 sources
 
-## Vélo (`velo/`) — 19 fiches
+## Vélo (`velo/`) — 21 fiches
 
 ### Endurance de base (volume facile, sorties longues) (`velo/endurance/`)
 
@@ -128,6 +128,7 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 ### Planification (périodisation, plans, reprise) (`velo/planification/`)
 
 - [Périodisation du cycliste : par blocs, traditionnelle, ou au jour le jour](velo/planification/velo-periodisation.md) — `velo-periodisation` · preuve : probable · 5 sources
+- [Désentraînement du cycliste : ce qu'on perd, à quelle vitesse, et comment limiter](velo/planification/velo-reprise-apres-arret.md) — `velo-reprise-apres-arret` · preuve : probable · 5 sources
 
 ### Nutrition et hydratation (`velo/nutrition/`)
 
@@ -151,6 +152,10 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 - [Puissance critique et W′ (modèle puissance-durée)](velo/mesure/velo-puissance-critique.md) — `velo-puissance-critique` · preuve : probable · 8 sources
 - [Seuils lactiques et ventilatoires à vélo : ce qu'ils mesurent vraiment](velo/mesure/velo-seuils-lactate.md) — `velo-seuils-lactate` · preuve : probable · 7 sources
 - [Vélo : FTP, zones de puissance et « sweet spot »](velo/mesure/velo-zones-ftp.md) — `velo-zones-ftp` · preuve : pratique · 3 sources
+
+### Compétition (affûtage, allure, jour J) (`velo/competition/`)
+
+- [Gérer son effort à vélo (contre-la-montre, cyclosportive) : départ, régularité, chaleur](velo/competition/velo-pacing-cm.md) — `velo-pacing-cm` · preuve : debattu · 6 sources
 
 ## Natation (`natation/`) — 1 fiche
 
