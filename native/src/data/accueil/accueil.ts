@@ -30,9 +30,9 @@ export interface DonneesAccueil {
  * plus Hyrox s'il a un test ou un objectif Hyrox, puis ses sports choisis en premier.
  */
 export function famillesDe(d: Pick<DonneesAccueil, 'seances' | 'force' | 'hyrox' | 'objectifs' | 'sportsChoisis'>): string[] {
-  const f = new Set(d.seances.map((s) => familleSport(s.sport)));
+  // Hyrox n'est plus un sport principal : ses séances comptent dans « Autre »
+  const f = new Set(d.seances.map((s) => familleSport(s.sport)).map((c) => (c === 'hyrox' ? 'autre' : c)));
   if (d.force.programmes.length || d.force.series.length) f.add('muscu');
-  if (d.hyrox.tests.length || d.hyrox.objectif || d.objectifs.some((o) => familleAffichage(o.sport) === 'hyrox')) f.add('hyrox');
   return fusionnerFamilles([...f], d.sportsChoisis);
 }
 

@@ -33,7 +33,7 @@ const vide = (): DonneesAccueil => ({
 test('famillesDe : les sports se déduisent des séances, de la force et du Hyrox', () => {
   assert.deepEqual(famillesDe(vide()), []);
   const demo = donneesDemoAccueil(date);
-  assert.deepEqual(new Set(famillesDe(demo)), new Set(['course', 'velo', 'natation', 'muscu', 'hyrox', 'autre'])); // le triathlon et le duathlon (une course par an) ne sont pas dans les 84 derniers jours
+  assert.deepEqual(new Set(famillesDe(demo)), new Set(['course', 'velo', 'natation', 'muscu', 'autre'])); // Hyrox compte dans « Autre »; // le triathlon et le duathlon (une course par an) ne sont pas dans les 84 derniers jours
 });
 
 test('famillesDe : le trail est de la course, le VTT du vélo, le tennis va dans « Autres »', () => {
@@ -41,17 +41,17 @@ test('famillesDe : le trail est de la course, le VTT du vélo, le tennis va dans
   assert.deepEqual(famillesDe(d), ['course', 'velo', 'autre']);
 });
 
-test('famillesDe : un programme ou un objectif Hyrox révèle ses sports', () => {
+test('famillesDe : un programme révèle la muscu ; un objectif Hyrox ne crée plus d’onglet', () => {
   const d = vide();
   d.force.programmes = [{ id: 'p', name: 'PUSH', created_at: '', notes: null, exercises: [] }];
   d.objectifs = [{ id: 'o', name: 'Hyrox Open', date: '2026-12-01', sport: 'Hyrox', km: null, d_plus: null, priority: 'A', duration: 70, category: 'competition' }];
-  assert.deepEqual(new Set(famillesDe(d)), new Set(['muscu', 'hyrox']));
+  assert.deepEqual(new Set(famillesDe(d)), new Set(['muscu']));
 });
 
 test('famillesDe : les sports choisis passent en premier, dans l\'ordre de l\'utilisateur', () => {
-  const d = { ...donneesDemoAccueil(date), sportsChoisis: ['hyrox', 'natation', 'course'] };
+  const d = { ...donneesDemoAccueil(date), sportsChoisis: ['autre', 'natation', 'course'] };
   const f = famillesDe(d);
-  assert.deepEqual(f.slice(0, 3), ['hyrox', 'natation', 'course']);
+  assert.deepEqual(f.slice(0, 3), ['autre', 'natation', 'course']);
   assert.ok(f.includes('velo') && f.includes('muscu'));
 });
 
@@ -72,7 +72,7 @@ test('fusionnerFamilles : triathlon à part, « autre » est un sport comme les 
 
 test('sportsCoches : les sports révélés par les données apparaissent cochés', () => {
   assert.deepEqual(sportsCoches(['course'], ['course', 'muscu']), ['course', 'muscu']);
-  assert.deepEqual(sportsCoches(null, ['hyrox']), ['hyrox']);
+  assert.deepEqual(sportsCoches(null, ['hyrox']), []); // Hyrox n'est plus un sport principal
 });
 
 test('onboardingNecessaire : seulement pour un vrai compte neuf', () => {

@@ -1,8 +1,8 @@
 // Les sports choisis par l'utilisateur (onboarding et Préférences) : fonctions pures, sans réseau.
 // Stockage : colonne `sports` de user_preferences (tableau JSON de clés de lib/sports.js). `null` = jamais demandé.
 
-/** Les cinq sports qui ont leurs widgets et leurs onglets sur l'accueil. */
-export const SPORTS_PRINCIPAUX: string[] = ['course', 'velo', 'natation', 'muscu', 'hyrox'];
+/** Les quatre sports qui ont leurs widgets et leurs onglets sur l'accueil. */
+export const SPORTS_PRINCIPAUX: string[] = ['course', 'velo', 'natation', 'muscu'];
 
 /** Les autres sports de performance : ils ont leur pastille de couleur et leurs séances, sans widgets dédiés. */
 export const SPORTS_AUTRES: string[] = ['autre'];
@@ -15,12 +15,12 @@ export const GROUPES_SPORTS: { titre: string; sports: string[] }[] = [
   { titre: 'Course', sports: ['course'] },
   { titre: 'Vélo', sports: ['velo'] },
   { titre: 'Eau', sports: ['natation'] },
-  { titre: 'Force & hybride', sports: ['muscu', 'hyrox'] },
+  { titre: 'Force', sports: ['muscu'] },
   { titre: 'Autres', sports: ['autre'] },
 ];
 
 /** Les sports qui avaient leur propre case avant l'onglet « Autres ». */
-const ANCIENS_SPORTS = ['ski', 'rando', 'combat', 'escalade', 'aviron', 'pagaie', 'athletisme'];
+const ANCIENS_SPORTS = ['ski', 'rando', 'combat', 'escalade', 'aviron', 'pagaie', 'athletisme', 'hyrox'];
 
 /**
  * Nettoie une liste venue du stockage : on ne garde que des clés connues, une seule fois chacune, DANS L'ORDRE DE L'UTILISATEUR
