@@ -55,14 +55,14 @@ Légende : `[x]` existe · `[ ]` à écrire.
 - [ ] velo-micro-intervalles — Micro-intervalles et intervalles courts répétés
 
 ### force
-- [ ] velo-force-musculation — Musculation pour les cyclistes : gain en puissance ?
+- [x] velo-force-musculation — Musculation pour les cyclistes : gain en puissance ?
 - [ ] velo-force-cadence-basse — Force sur le vélo (basse cadence) : efficacité réelle
 - [ ] velo-gainage-posture — Gainage, posture et tenue sur le vélo
 - [ ] velo-sprint-force-max — Force maximale et puissance de sprint
 - [ ] velo-force-saison — Placer la force dans la saison du cycliste
 
 ### technique
-- [ ] velo-cadence — Cadence : choix et effets sur le rendement
+- [x] velo-cadence — Cadence : choix et effets sur le rendement
 - [ ] velo-pedalage — Technique de pédalage : efficacité et blessures
 - [ ] velo-position-aero — Position aérodynamique : gain, coût en puissance
 - [ ] velo-descente-virages — Technique de descente et de virage (sécurité)
@@ -140,7 +140,7 @@ Légende : `[x]` existe · `[ ]` à écrire.
 - [ ] velo-vent-pluie — Vent, pluie et adaptation de l'effort
 
 ### profils
-- [ ] velo-femmes — Cyclistes femmes : spécificités
+- [x] velo-femmes — Cyclistes femmes : spécificités
 - [ ] velo-veterans — Cyclistes vétérans (40+, 50+, 60+)
 - [ ] velo-jeunes — Jeunes cyclistes : charge et développement
 - [ ] velo-debutants — Débutants : erreurs fréquentes

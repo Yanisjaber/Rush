@@ -54,7 +54,7 @@ const QUESTIONS: [string, string, number][] = [
   ['Je dors mal depuis une semaine, ça joue sur mes perfs ?', 'sommeil', 1],
   ['Je peux prendre du café avant une compétition ?', 'proteines-cafeine', 1],
   ['Combien de protéines par jour ?', 'proteines-cafeine', 1],
-  ['Je veux faire de la musculation en plus de la course', 'force-pour-endurants', 3],
+  ['Je veux faire de la musculation en plus de la course', 'course-force-economie', 1],
   ['Quelles sont mes zones de puissance avec mon FTP ?', 'velo-zones-ftp', 1],
   ['Comment faire le test de CSS en natation ?', 'natation-css', 1],
   ['Comment me préparer pour un Hyrox avec le traîneau ?', 'hyrox', 1],

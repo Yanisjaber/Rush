@@ -2,7 +2,7 @@
 
 GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à la main. Une fiche est dans `<sport>/<partie>/<id>.md`.
 
-**66 fiches.**
+**69 fiches.**
 
 ## Tous les sports (`commun/`) — 20 fiches
 
@@ -113,7 +113,7 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 
 - [Course à pied : chaussures à plaque carbone, cadence, foulée](course/materiel/course-chaussures-cadence.md) — `course-chaussures-cadence` · preuve : probable · 4 sources
 
-## Vélo (`velo/`) — 21 fiches
+## Vélo (`velo/`) — 24 fiches
 
 ### Endurance de base (volume facile, sorties longues) (`velo/endurance/`)
 
@@ -124,6 +124,14 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 - [Sprints répétés (SIT) et intervalles (HIIT) à vélo : effets et limites](velo/intensite/velo-hiit-vs-sit.md) — `velo-hiit-vs-sit` · preuve : probable · 5 sources
 - [Polarisé, pyramidal ou seuil : répartir les intensités chez les cyclistes](velo/intensite/velo-polarise-pyramidal.md) — `velo-polarise-pyramidal` · preuve : debattu · 7 sources
 - [Intervalles de haute intensité à vélo : 4×4, 4×8, 30/15, ordre et formats](velo/intensite/velo-vo2max-intervalles.md) — `velo-vo2max-intervalles` · preuve : probable · 6 sources
+
+### Force et musculation (`velo/force/`)
+
+- [Musculation pour cyclistes : ce qu'elle apporte, comment la placer dans la saison](velo/force/velo-force-musculation.md) — `velo-force-musculation` · preuve : probable · 6 sources
+
+### Technique et gestes (`velo/technique/`)
+
+- [Cadence à vélo : laquelle choisir, faut-il s'entraîner à basse ou haute cadence](velo/technique/velo-cadence.md) — `velo-cadence` · preuve : probable · 5 sources
 
 ### Planification (périodisation, plans, reprise) (`velo/planification/`)
 
@@ -156,6 +164,10 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 ### Compétition (affûtage, allure, jour J) (`velo/competition/`)
 
 - [Gérer son effort à vélo (contre-la-montre, cyclosportive) : départ, régularité, chaleur](velo/competition/velo-pacing-cm.md) — `velo-pacing-cm` · preuve : debattu · 6 sources
+
+### Profils (débutants, femmes, vétérans, jeunes) (`velo/profils/`)
+
+- [Cyclistes femmes : ce que les études disent de l'entraînement et de la fatigue](velo/profils/velo-femmes.md) — `velo-femmes` · preuve : probable · 6 sources
 
 ## Natation (`natation/`) — 1 fiche
 

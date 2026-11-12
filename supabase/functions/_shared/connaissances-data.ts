@@ -2248,6 +2248,62 @@ export const FICHES: Fiche[] = [
     "voirAussi": []
   },
   {
+    "id": "velo-cadence",
+    "dossier": "velo",
+    "theme": "technique",
+    "titre": "Cadence à vélo : laquelle choisir, faut-il s'entraîner à basse ou haute cadence",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "cadence",
+      "tours par minute",
+      "rpm",
+      "cadence libre",
+      "cadence préférée",
+      "rendement",
+      "efficacité",
+      "basse cadence",
+      "haute cadence",
+      "force sur le vélo",
+      "pédalage",
+      "braquet",
+      "contre-la-montre"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Les cyclistes d'élite performent le mieux à **leur cadence la plus efficace**, autour de **80 à 100 tours par minute** : à 60 ou à 120 tr/min, ils sont plus lents.\n- La **cadence choisie spontanément** (environ 90 en moyenne dans l'étude de référence) donne un résultat **aussi bon** que 80 ou 100 : **il n'y a pas à forcer** une cadence « idéale ».\n- S'entraîner à **haute cadence** peut **déplacer** sa cadence préférée vers le haut. S'entraîner à **basse cadence** (efforts à 40 à 60 tr/min) est **discuté** : un essai montre un gain sur des contre-la-montre courts, un autre aucun effet chez des vétérans.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; essais de 10 à 22 cyclistes, hommes entraînés.)*\n- **Cadence et performance** : Foss et Hallén (*Eur J Appl Physiol*, 2005), 14 cyclistes d'élite masculins, contre-la-montre de 30 min à 60, 80, 100, 120 tr/min et cadence libre : par rapport à 80 tr/min, les temps à 60, 100 et 120 tr/min sont plus lents de 3,5 %, 1,7 % et 10,2 % ; la cadence libre (environ 90) ne diffère pas de 80 ni de 100 ; le **rendement** est meilleur à 80 tr/min.\n- **Cadence et rendement** : Leirdal et Ettema (*Eur J Appl Physiol*, 2011), 10 cyclistes bien entraînés : l'efficacité de la technique de pédalage et le rendement **diminuent quand la cadence augmente** ; la dépense d'énergie est fortement liée à la cadence ; le déplacement de la selle n'y change rien.\n- **Haute cadence entraînée** : Whitty et coll. (*Appl Physiol Nutr Metab*, 2016), 16 cyclistes, 18 séances sur 6 semaines à ±20 % de la cadence libre : le groupe haute cadence a augmenté sa cadence libre de 92 à 101 tr/min et son rendement ; **les deux groupes ont progressé**, le groupe basse cadence légèrement mieux sur un contre-la-montre de 15 min ; les auteurs concluent que les déterminants de la cadence optimale sont multiples et mal connus.\n- **Intervalles à basse cadence** : Nimmerichter et coll. (*Eur J Appl Physiol*, 2012), 18 cyclistes, 4 semaines, 2 séances par semaine de 6 × 5 min au seuil respiratoire : les intervalles à 60 tr/min en côte ont augmenté la puissance sur 20 min en côte (+4,4 %) et à plat (+1,5 %) ; ceux à 100 tr/min à plat n'ont pas amélioré la puissance en côte ; les auteurs y voient l'intérêt de forces plus élevées.\n- **Basse cadence chez des vétérans** : Kristoffersen et coll. (*Front Physiol*, 2014), 22 cyclistes vétérans (47 ans), 12 semaines d'intervalles à 40 tr/min à intensité modérée : **aucun effet** sur la capacité aérobie, la puissance, le rendement ou la force ; le groupe à cadence libre a progressé en VO2max et en puissance.",
+    "regles": "- Laisser le cycliste rouler à **sa cadence naturelle** (souvent 85 à 95 tr/min) sur le plat, et ne pas lui imposer 100 ou plus.\n- En **côte**, accepter une cadence plus basse, mais **éviter les très gros braquets à basse cadence avec un genou sensible** ([[velo-douleurs-genou]]).\n- Les intervalles à basse cadence sont une **option facultative** pour un cycliste entraîné sans douleur ; ne pas les présenter comme indispensables.\n- Pour les **débutants**, mieux vaut d'abord **tourner les jambes** (cadence facile) que travailler la force à basse cadence.",
+    "pieges": "- Croire qu'une haute cadence est « meilleure pour tout le monde ».\n- Faire des efforts à 40 tr/min avec un genou fragile.\n- Confondre cadence choisie et cadence efficace : elles peuvent différer.",
+    "sources": [
+      {
+        "titre": "Foss & Hallén, Cadence and performance in elite cyclists (Eur J Appl Physiol, 2005)",
+        "url": "https://doi.org/10.1007/s00421-004-1226-y"
+      },
+      {
+        "titre": "Leirdal & Ettema, The relationship between cadence, pedalling technique and gross efficiency in cycling (Eur J Appl Physiol, 2011)",
+        "url": "https://doi.org/10.1007/s00421-011-1914-3"
+      },
+      {
+        "titre": "Whitty et al., The effect of low- vs high-cadence interval training on the freely chosen cadence and performance in endurance-trained cyclists (Appl Physiol Nutr Metab, 2016)",
+        "url": "https://doi.org/10.1139/apnm-2015-0562"
+      },
+      {
+        "titre": "Nimmerichter et al., Effects of low and high cadence interval training on power output in flat and uphill cycling time-trials (Eur J Appl Physiol, 2012)",
+        "url": "https://doi.org/10.1007/s00421-011-1957-5"
+      },
+      {
+        "titre": "Kristoffersen et al., Low cadence interval training at moderate intensity does not improve cycling performance in highly trained veteran cyclists (Front Physiol, 2014)",
+        "url": "https://doi.org/10.3389/fphys.2014.00034"
+      }
+    ],
+    "voirAussi": [
+      "velo-douleurs-genou"
+    ]
+  },
+  {
     "id": "velo-chutes-securite",
     "dossier": "velo",
     "theme": "sante",
@@ -2648,6 +2704,131 @@ export const FICHES: Fiche[] = [
     "voirAussi": [
       "energie-reds",
       "velo-glucides-effort"
+    ]
+  },
+  {
+    "id": "velo-femmes",
+    "dossier": "velo",
+    "theme": "profils",
+    "titre": "Cyclistes femmes : ce que les études disent de l'entraînement et de la fatigue",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "cyclistes femmes",
+      "sexe",
+      "différences hommes femmes",
+      "fatigue",
+      "résistance à la fatigue",
+      "caféine",
+      "entraînement des femmes",
+      "musculation chez les femmes",
+      "énergie",
+      "professionnelles",
+      "puissance critique",
+      "volume d'entraînement"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Les **principes d'entraînement sont les mêmes** pour les cyclistes femmes et hommes : les adaptations à l'endurance, à la musculation et à la caféine sont **similaires** dans les études.\n- Quelques **différences réelles** : les femmes semblent mieux **résister à la fatigue des muscles** et récupèrent mieux la fonction du quadriceps après un effort intense ; les cyclistes professionnelles s'entraînent **moins longtemps** mais **plus intensément** que les hommes.\n- Les études sont **moins nombreuses chez les femmes** que chez les hommes : c'est une limite de la connaissance, pas une raison de croire que « ça marche moins ».",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; échantillons petits.)*\n- **Relation puissance-durée** : Ansdell et coll. (*J Physiol*, 2020), 18 participants entraînés (8 femmes) : exprimée **relativement** à la puissance maximale d'une épreuve en rampe, la puissance critique et W′ ne diffèrent pas entre sexes, ni le temps tenu à la puissance critique ; les femmes ont une moindre désoxygénation musculaire et de moindres baisses de fonction du quadriceps après l'effort ([[velo-puissance-critique]]).\n- **Entraînement des professionnelles** : van Erp, Sanders, de Koning (*IJSPP*, 2020), 20 hommes et 10 femmes professionnels sur 4 ans : les hommes ont plus de distance, de durée et d'énergie dépensée ; la charge totale est comparable ; les femmes passent **moins de temps en zones 1-2** et **compensent un volume plus bas par plus d'intensité**.\n- **Musculation** : Vikmoen et coll. (*Scand J Med Sci Sports*, 2016), 19 cyclistes : la musculation lourde améliore la puissance sur 40 min, la fraction de VO2max utilisée et l'économie ([[velo-force-musculation]]).\n- **Masse maigre des jambes** : Mujika, Rønnestad, Martin (*IJSPP*, 2016) : chez des cyclistes de compétition, une masse maigre des jambes plus importante est associée à environ 4 à 9 % de puissance maximale moyenne en plus par kilo de masse maigre sur 1 s à 10 min.\n- **Caféine** : Skinner et coll. (*Med Sci Sports Exerc*, 2019), 11 femmes et 16 hommes : 3 mg/kg de caféine améliorent le temps sur un effort fixe chez les femmes (3 863 → 3 757 s) comme chez les hommes, avec un effet de même ampleur.\n- **Énergie et os** : Viner et coll. (*Int J Sport Nutr Exerc Metab*, 2015), 6 hommes et 4 femmes cyclistes à densité osseuse basse : le déficit d'énergie touche les deux sexes ([[velo-densite-osseuse]], [[energie-reds]]).",
+    "regles": "- **Ne pas adapter le plan à un cliché** : mêmes méthodes d'entraînement, mêmes zones calculées sur **ses** données.\n- Tenir compte des **informations que la cycliste donne** (cycle, contraception, grossesse) selon ses réglages ([[cycle-menstruel]]) ; ne pas supposer.\n- Être vigilant sur l'**apport énergétique** et les signes de déficit (fatigue inhabituelle, cycle perturbé, fractures de fatigue) : orienter vers un professionnel de santé.\n- Dire franchement que certaines recommandations viennent d'études faites **surtout sur des hommes**.",
+    "pieges": "- Appliquer à une femme des normes tirées d'hommes sans vérifier ses propres données.\n- Ignorer les signes de déficit d'énergie.\n- Comparer ses watts absolus à ceux d'hommes plutôt que ses watts par kilo et sa progression.",
+    "sources": [
+      {
+        "titre": "Ansdell et al., Sex differences in fatigability following exercise normalised to the power-duration relationship (J Physiol, 2020)",
+        "url": "https://doi.org/10.1113/jp280031"
+      },
+      {
+        "titre": "van Erp et al., Training Characteristics of Male and Female Professional Road Cyclists: A 4-Year Retrospective Analysis (IJSPP, 2020)",
+        "url": "https://doi.org/10.1123/ijspp.2019-0320"
+      },
+      {
+        "titre": "Vikmoen et al., Strength training improves cycling performance, fractional utilization of VO2max and cycling economy in female cyclists (Scand J Med Sci Sports, 2016)",
+        "url": "https://doi.org/10.1111/sms.12468"
+      },
+      {
+        "titre": "Mujika et al., Effects of Increased Muscle Strength and Muscle Mass on Endurance-Cycling Performance (IJSPP, 2016)",
+        "url": "https://doi.org/10.1123/ijspp.2015-0405"
+      },
+      {
+        "titre": "Skinner et al., Women Experience the Same Ergogenic Response to Caffeine as Men (Med Sci Sports Exerc, 2019)",
+        "url": "https://doi.org/10.1249/mss.0000000000001885"
+      },
+      {
+        "titre": "Viner et al., Energy Availability and Dietary Patterns of Adult Male and Female Competitive Cyclists With Lower Than Expected Bone Mineral Density (Int J Sport Nutr Exerc Metab, 2015)",
+        "url": "https://doi.org/10.1123/ijsnem.2015-0073"
+      }
+    ],
+    "voirAussi": [
+      "velo-puissance-critique",
+      "velo-force-musculation",
+      "velo-densite-osseuse",
+      "energie-reds",
+      "cycle-menstruel"
+    ]
+  },
+  {
+    "id": "velo-force-musculation",
+    "dossier": "velo",
+    "theme": "force",
+    "titre": "Musculation pour cyclistes : ce qu'elle apporte, comment la placer dans la saison",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "musculation",
+      "force",
+      "squat",
+      "presse",
+      "jambes",
+      "cyclistes entraînés",
+      "surface musculaire",
+      "puissance",
+      "économie",
+      "entretien de la force",
+      "musculation en saison",
+      "interférence",
+      "charges lourdes"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Ajouter de la **musculation lourde des jambes** à l'entraînement habituel de cyclistes entraînés **améliore** la force, la puissance de sprint, la puissance au seuil et la performance sur 40 minutes, **sans prise de poids** notable.\n- Elle aide aussi à **mieux tenir la fin d'un effort long** : après 185 minutes de vélo, la puissance sur 5 minutes progresse chez ceux qui font de la musculation.\n- Pour **garder** les gains pendant la saison, **une séance par semaine** de maintien suffit dans l'étude de référence.\n- Le gain est **moins grand quand on fait beaucoup de vélo en même temps** : l'adaptation de force est atténuée chez les sportifs d'endurance.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; essais de 12 à 20 cyclistes bien entraînés, surtout des hommes, sauf Vikmoen.)*\n- **12 semaines, 2 séances par semaine** : Rønnestad et coll. (*Eur J Appl Physiol*, 2010), 20 cyclistes : quatre exercices des jambes, 3 séries de 4 à 10 répétitions maximum, deux fois par semaine pendant 12 semaines : plus de surface musculaire de la cuisse, de force maximale et de puissance au Wingate ; la puissance à 2 mmol/L de lactate et la puissance moyenne sur 40 min progressent (le groupe sans musculation tendait seulement à progresser sur 40 min) ; VO2max équivalente ; **pas de prise de poids**.\n- **Fin d'un effort long** : Rønnestad et coll. (*Scand J Med Sci Sports*, 2011), mêmes cyclistes : après 185 min de vélo à 44 % de la puissance maximale aérobie, la puissance moyenne sur un effort de 5 min passe de 371 à 400 W avec musculation, sans changement sans ; fréquence cardiaque, lactate et effort perçu plus bas pendant la dernière heure.\n- **Entretien en saison** : Rønnestad et coll. (*Eur J Appl Physiol*, 2010), 12 cyclistes : 12 semaines de préparation avec musculation puis **une séance par semaine** pendant 13 semaines de compétition : la surface musculaire et la force sont conservées, et la performance continue de progresser davantage que sans musculation.\n- **Chez les femmes** : Vikmoen et coll. (*Scand J Med Sci Sports*, 2016), 19 cyclistes, 11 semaines : la musculation lourde améliore la puissance sur 40 min, la fraction de VO2max utilisée et l'économie, par plus de muscle quadriceps et un passage de fibres IIAX-IIX vers IIA.\n- **Revue** : Mujika, Rønnestad, Martin (*IJSPP*, 2016) : la musculation chez les cyclistes d'endurance est tolérée, favorise les adaptations utiles et peut améliorer la performance ; l'entretien de la force en saison est essentiel.\n- **Interférence** : Rønnestad et coll. (*Eur J Appl Physiol*, 2012), 18 sujets : chez des cyclistes qui font beaucoup d'endurance, les gains de force et de masse musculaire sont **plus faibles** que chez des personnes qui ne font que de la musculation ([[entrainement-concurrent]]).",
+    "regles": "- Proposer la musculation **en période de préparation** (hors des semaines les plus dures du vélo) : **2 séances par semaine** de jambes lourdes (squat, presse, fentes, soulevé de terre roumain), puis **1 séance d'entretien** pendant les épreuves. C'est le protocole des études ; **un débutant doit apprendre les gestes avec un professionnel** avant de charger lourd.\n- Ne pas la planifier la **veille d'une séance dure** à vélo ni juste avant une épreuve.\n- Ne pas promettre de grosses prises de force : l'adaptation est plus lente quand on fait beaucoup d'endurance.\n- Adapter à l'âge, aux douleurs et aux blessures : **jamais** de charges lourdes sans technique ni en cas de douleur articulaire ([[musculation-bases]], [[force-pour-endurants]]).\n- Pour un cycliste très volumineux (> 12 h par semaine) : une séance courte et bien placée plutôt que deux.",
+    "pieges": "- Faire de la musculation « légère » à répétitions élevées en pensant renforcer : les essais utilisent des charges lourdes (4 à 10 répétitions maximum).\n- Arrêter la musculation en début de saison et perdre le bénéfice.\n- Faire des séances à bout de forces, puis rouler dur le lendemain.",
+    "sources": [
+      {
+        "titre": "Rønnestad et al., Effect of heavy strength training on thigh muscle cross-sectional area, performance determinants, and performance in well-trained cyclists (Eur J Appl Physiol, 2010)",
+        "url": "https://doi.org/10.1007/s00421-009-1307-z"
+      },
+      {
+        "titre": "Rønnestad et al., Strength training improves 5-min all-out performance following 185 min of cycling (Scand J Med Sci Sports, 2011)",
+        "url": "https://doi.org/10.1111/j.1600-0838.2009.01035.x"
+      },
+      {
+        "titre": "Rønnestad et al., In-season strength maintenance training increases well-trained cyclists' performance (Eur J Appl Physiol, 2010)",
+        "url": "https://doi.org/10.1007/s00421-010-1622-4"
+      },
+      {
+        "titre": "Vikmoen et al., Strength training improves cycling performance, fractional utilization of VO2max and cycling economy in female cyclists (Scand J Med Sci Sports, 2016)",
+        "url": "https://doi.org/10.1111/sms.12468"
+      },
+      {
+        "titre": "Mujika et al., Effects of Increased Muscle Strength and Muscle Mass on Endurance-Cycling Performance (IJSPP, 2016)",
+        "url": "https://doi.org/10.1123/ijspp.2015-0405"
+      },
+      {
+        "titre": "Rønnestad et al., High volume of endurance training impairs adaptations to 12 weeks of strength training in well-trained endurance athletes (Eur J Appl Physiol, 2012)",
+        "url": "https://doi.org/10.1007/s00421-011-2112-z"
+      }
+    ],
+    "voirAussi": [
+      "entrainement-concurrent",
+      "musculation-bases",
+      "force-pour-endurants"
     ]
   },
   {
