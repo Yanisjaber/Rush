@@ -145,7 +145,7 @@ test('les fiches « débattu » rappellent leur niveau de preuve au modèle', ()
 });
 
 test('mot banal seul (« course », « repos ») : ne suffit pas à ramener une fiche', () => {
-  for (const q of ["J'ai mal au genou quand je cours", 'Comment faire mon échauffement avant de courir ?', 'Comment faire une course ?']) {
+  for (const q of ["J'ai mal à la cheville quand je cours", 'Comment faire mon échauffement avant de courir ?', 'Comment faire une course ?']) {
     assert.deepEqual(classer(q), [], q);
   }
 });

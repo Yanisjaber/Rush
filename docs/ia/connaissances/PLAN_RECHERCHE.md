@@ -114,11 +114,12 @@ Légende : `[x]` existe · `[ ]` à écrire.
 - [ ] velo-nutrition-grand-tour — Alimentation en course à étapes
 
 ### sante
-- [ ] velo-douleurs-genou — Douleurs de genou du cycliste : causes et prévention (orientation)
-- [ ] velo-douleurs-dos-nuque — Dos, nuque, mains : posture et réglages
-- [ ] velo-position-ajustement — Réglages du vélo (selle, cintre, cale) et blessures
-- [ ] velo-chutes-securite — Chutes et sécurité sur la route
-- [ ] velo-densite-osseuse — Cyclisme et densité osseuse
+- [x] velo-douleurs-genou — Douleurs de genou du cycliste : causes et prévention (orientation)
+- [x] velo-douleurs-dos — Douleurs de dos du cycliste (fait le 13 nov.)
+- [ ] velo-nuque-mains — Nuque, mains, poignets : posture et réglages (aucune source lue pour l'instant)
+- [x] velo-position-ajustement — Réglages du vélo (selle, cintre, cale) et blessures
+- [x] velo-chutes-securite — Chutes et sécurité sur la route
+- [x] velo-densite-osseuse — Cyclisme et densité osseuse
 - [ ] velo-saddle-perinee — Selle, périnée et santé urinaire/génitale
 - [ ] velo-overtraining — Surentraînement du cycliste
 - [ ] velo-cardio-risque — Effort intense, risque cardiaque et avis médical

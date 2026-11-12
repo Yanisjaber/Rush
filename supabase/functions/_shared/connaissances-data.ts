@@ -2248,6 +2248,59 @@ export const FICHES: Fiche[] = [
     "voirAussi": []
   },
   {
+    "id": "velo-chutes-securite",
+    "dossier": "velo",
+    "theme": "sante",
+    "titre": "Chutes et sécurité à vélo : blessures fréquentes, casque, facteurs de risque",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "chute",
+      "accident",
+      "casque",
+      "sécurité",
+      "fracture",
+      "clavicule",
+      "blessure traumatique",
+      "route",
+      "circulation",
+      "traumatisme crânien",
+      "risque",
+      "cyclisme sur route"
+    ],
+    "preuve": "etabli",
+    "maj": "2026-11-13",
+    "essentiel": "- Les blessures du cyclisme sur route sont surtout **traumatiques** : **écorchures et plaies (40 à 60 %)**, **fractures (6 à 15 %, la clavicule en tête)**, traumatismes de la tête (5 à 15 %). Les **membres supérieurs** sont plus touchés que les membres inférieurs ; les **amateurs** semblent plus exposés que les professionnels.\n- Le **casque réduit nettement** le risque de blessure à la tête en cas de chute ou d'accident (environ 50 % pour toute blessure à la tête, environ 70 % pour une blessure grave), d'après une méta-analyse de 40 études.\n- Les accidents **graves** sont plus fréquents : à partir de 50 ans, sans casque, la nuit sur route non éclairée, sur route limitée à 70 km/h et plus, en virage, en rase campagne.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu.)*\n- **Revue des blessures** : Rooney et coll. (*BMJ Open Sport Exerc Med*, 2020), revue systématique de 12 études : répartition ci-dessus ; la clavicule est la fracture la plus fréquente ; pas de méta-analyse faute de méthodes comparables.\n- **Tour de France** : Haeberle et coll. (*Orthop J Sports Med*, 2018), 1 584 engagements sur 8 ans : 259 abandons (16 %), dont 138 pour traumatisme aigu, dont 49 % de fractures.\n- **Casque** : Olivier et Creighton (*Int J Epidemiol*, 2017), méta-analyse de 40 études, plus de 64 000 cyclistes blessés : le casque est associé à une baisse des blessures à la tête (OR 0,49), des blessures graves à la tête (OR 0,31), du visage (OR 0,67) et mortelles (OR 0,35) ; pas d'effet net sur le cou.\n- **Facteurs de gravité** : Boufous et coll. (*Accid Anal Prev*, 2012), 6 432 accidents de cyclistes à Victoria (Australie), 33,9 % graves : risque accru à partir de 50 ans, sans casque, de nuit sans éclairage, sur routes ≥ 70 km/h, en virage, en rase campagne, en collision frontale ou en sortie de route.\n- **Selon le type de pratique** : Amoros et coll. (*BMC Public Health*, 2011), 13 684 blessés à vélo dans le Rhône (France) : 17 % des adultes et adolescents blessés hors agglomération l'ont été dans une collision avec un véhicule motorisé ; 10,9 % de blessures graves hors agglomération contre 7,2 % en ville ; les collisions avec un véhicule donnent plus de blessures internes.",
+    "regles": "- **Recommander le casque** à tous, sans moraliser : c'est la mesure la mieux documentée.\n- Rappeler **éclairage, visibilité** et prudence **de nuit, en virage, en descente et sur routes rapides**.\n- Après une chute **avec choc à la tête**, perte de connaissance, maux de tête, vomissements, confusion ou douleur intense (clavicule, poignet, hanche) : **arrêter la séance et consulter** ; ne pas reprendre des séances intenses sans avis médical.\n- Après une chute sans gravité : **laisser passer 24 à 48 h** avant d'évaluer les douleurs ; replanifier avec un plan allégé si besoin.\n- Éviter de planifier des **séances dures en descente technique ou sur route mouillée** ; privilégier la route connue ou le home trainer quand les conditions sont mauvaises.",
+    "pieges": "- Minimiser une chute « sans mal » : certaines fractures se découvrent le lendemain.\n- Rouler de nuit sans éclairage sérieux.\n- Penser que les cyclistes expérimentés ne chutent pas : l'étude du Tour de France montre le contraire.",
+    "sources": [
+      {
+        "titre": "Rooney et al., 'As easy as riding a bike': a systematic review of injuries and illness in road cycling (BMJ Open Sport Exerc Med, 2020)",
+        "url": "https://doi.org/10.1136/bmjsem-2020-000840"
+      },
+      {
+        "titre": "Haeberle et al., Prevalence and Epidemiology of Injuries Among Elite Cyclists in the Tour de France (Orthop J Sports Med, 2018)",
+        "url": "https://doi.org/10.1177/2325967118793392"
+      },
+      {
+        "titre": "Olivier & Creighton, Bicycle injuries and helmet use: a systematic review and meta-analysis (Int J Epidemiol, 2017)",
+        "url": "https://doi.org/10.1093/ije/dyw153"
+      },
+      {
+        "titre": "Boufous et al., Risk factors for severe injury in cyclists involved in traffic crashes in Victoria, Australia (Accid Anal Prev, 2012)",
+        "url": "https://doi.org/10.1016/j.aap.2012.03.011"
+      },
+      {
+        "titre": "Amoros et al., The injury epidemiology of cyclists based on a road trauma registry (BMC Public Health, 2011)",
+        "url": "https://doi.org/10.1186/1471-2458-11-653"
+      }
+    ],
+    "voirAussi": []
+  },
+  {
     "id": "velo-courbe-puissance",
     "dossier": "velo",
     "theme": "mesure",
@@ -2306,6 +2359,181 @@ export const FICHES: Fiche[] = [
     ],
     "voirAussi": [
       "velo-puissance-critique"
+    ]
+  },
+  {
+    "id": "velo-densite-osseuse",
+    "dossier": "velo",
+    "theme": "sante",
+    "titre": "Cyclisme et densité osseuse : un sport sans impact, des os à surveiller",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "densité osseuse",
+      "os",
+      "ostéopénie",
+      "ostéoporose",
+      "sport sans impact",
+      "cycliste vétéran",
+      "musculation",
+      "impact",
+      "DXA",
+      "fracture",
+      "déficit d'énergie",
+      "colonne lombaire"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Le vélo est excellent pour le cœur mais **ne donne presque aucun stimulus aux os** : c'est un sport **sans impact**. Chez les cyclistes de route entraînés de façon régulière, plusieurs études trouvent une **densité osseuse plus basse** que chez les coureurs ou des personnes de référence, surtout à la **colonne lombaire** et au **col du fémur**.\n- Chez des cyclistes **vétérans**, la densité osseuse baisse plus vite que chez des non-sportifs sur 7 ans ; ceux qui font de la **musculation ou des exercices à impact** perdent moins d'os.\n- Un **déficit d'énergie** chronique (manger trop peu pour son entraînement) aggrave le risque : voir [[energie-reds]].",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; études transversales ou petits suivis, majoritairement des hommes.)*\n- **Revue** : Olmedillas et coll. (*BMC Medicine*, 2012), revue de 31 études : les cyclistes adultes de route qui s'entraînent régulièrement ont une **faible densité osseuse** à des endroits clés (par exemple la colonne lombaire) ; le VTT ou la combinaison avec d'autres sports atténuent l'effet ; le cyclisme sur route ne semble pas procurer de bénéfice osseux notable.\n- **Cyclistes contre coureurs** : Rector et coll. (*Metabolism*, 2008), 27 cyclistes et 16 coureurs : densité osseuse plus basse de tout le corps et de la colonne chez les cyclistes ; 63 % des cyclistes avaient une ostéopénie de la colonne ou de la hanche contre 19 % des coureurs ; 7 fois plus de risque d'ostéopénie de la colonne.\n- **Professionnels** : Campion et coll. (*Int J Sports Med*, 2010), 30 cyclistes professionnels contre 30 hommes de référence : densité plus basse sur presque tous les sites, **−18 % au col du fémur**.\n- **Évolution chez les vétérans** : Nichols et Rauh (*J Strength Cond Res*, 2011), 19 cyclistes vétérans et 18 non-sportifs sur 7 ans : déclin plus grand de la densité chez les cyclistes ; ceux qui pratiquaient de la musculation ou des exercices à impact perdaient moins d'os ; 84 % puis 89 % des cyclistes étaient en ostéopénie ou ostéoporose.\n- **Cyclistes d'élite et musculation** : Klomsten Andersen et coll. (*BMJ Open Sport Exerc Med*, 2018), 19 cyclistes et 21 coureurs d'élite norvégiens : 10 cyclistes sur 19 avaient une densité basse malgré de la musculation lourde des jambes ; le type de sport était le seul facteur associé.\n- **Énergie** : Viner et coll. (*Int J Sport Nutr Exerc Metab*, 2015), 10 cyclistes avec densité plus basse que prévu : 90 % avaient un déficit d'énergie pendant au moins une période de la saison, 70 % sur toute la saison ; l'apport en glucides était bas.",
+    "regles": "- Pour un cycliste **de longue date, surtout vétéran, ou avec fractures antérieures** : **recommander d'ajouter de la musculation et des exercices à impact** (marche rapide, course, sauts adaptés) et de **parler à un médecin** d'une mesure de la densité osseuse si facteurs de risque.\n- Rappeler que le **calcium, la vitamine D et un apport énergétique suffisant** comptent ; **ne jamais donner de conseils de régime ni de supplémentation** : orienter vers un professionnel ([[energie-reds]]).\n- Pour un **cycliste femme** ou un cycliste avec cycle perturbé, apport insuffisant ou fractures de fatigue : conseiller un avis médical sans attendre.\n- Ne pas dire « le vélo abîme les os » : dire qu'il **ne les renforce pas** et qu'il faut le compléter.",
+    "pieges": "- Considérer le vélo comme un sport « complet ».\n- Ne faire que du vélo pendant des années sans autre stimulus.\n- Tirer de petites études sur des hommes des conclusions sur les femmes ou les jeunes.",
+    "sources": [
+      {
+        "titre": "Olmedillas et al., Cycling and bone health: a systematic review (BMC Med, 2012)",
+        "url": "https://doi.org/10.1186/1741-7015-10-168"
+      },
+      {
+        "titre": "Rector et al., Participation in road cycling vs running is associated with lower bone mineral density in men (Metabolism, 2008)",
+        "url": "https://doi.org/10.1016/j.metabol.2007.09.005"
+      },
+      {
+        "titre": "Campion et al., Bone status in professional cyclists (Int J Sports Med, 2010)",
+        "url": "https://doi.org/10.1055/s-0029-1243616"
+      },
+      {
+        "titre": "Nichols & Rauh, Longitudinal changes in bone mineral density in male master cyclists and nonathletes (J Strength Cond Res, 2011)",
+        "url": "https://doi.org/10.1519/jsc.0b013e3181c6a116"
+      },
+      {
+        "titre": "Klomsten Andersen et al., Bone health in elite Norwegian endurance cyclists and runners: a cross-sectional study (BMJ Open Sport Exerc Med, 2018)",
+        "url": "https://doi.org/10.1136/bmjsem-2018-000449"
+      },
+      {
+        "titre": "Viner et al., Energy Availability and Dietary Patterns of Adult Male and Female Competitive Cyclists With Lower Than Expected Bone Mineral Density (Int J Sport Nutr Exerc Metab, 2015)",
+        "url": "https://doi.org/10.1123/ijsnem.2015-0073"
+      }
+    ],
+    "voirAussi": [
+      "energie-reds"
+    ]
+  },
+  {
+    "id": "velo-douleurs-dos",
+    "dossier": "velo",
+    "theme": "sante",
+    "titre": "Douleurs de dos du cycliste : fréquence, facteurs et prévention (orientation)",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "douleur de dos",
+      "lombalgie",
+      "bas du dos",
+      "posture",
+      "flexion lombaire",
+      "gainage",
+      "cintre",
+      "position",
+      "cycliste",
+      "endurance du dos",
+      "douleur lombaire",
+      "orientation"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Les **douleurs du bas du dos** sont courantes chez les cyclistes : dans une enquête de 1 274 cyclistes amateurs italiens, **55 %** en ont déjà eu dans leur vie, **26,5 %** sur les 12 derniers mois.\n- Les études observent, chez les cyclistes douloureux, **plus de flexion lombaire**, **une moindre endurance des muscles du dos** et des **muscles profonds du tronc plus fins**. Elles ne prouvent pas que ce soit la cause (ce sont des comparaisons après coup).\n- Ce qui semble protéger (association, pas preuve) : **être suivi par un entraîneur ou suivre un plan** et **avoir fait un travail spécifique du pédalage**.\n- Le coach **n'établit pas de diagnostic** : il oriente vers un professionnel si la douleur persiste, irradie ou s'accompagne d'autres symptômes.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; échantillons petits ; observations plus qu'essais.)*\n- **Revue** : Streisfeld et coll. (*Sports Health*, 2017), revue systématique de 8 études : une **position basse du cintre** s'accompagne de plus de flexion lombo-sacrée ; chez les cyclistes douloureux, déséquilibres d'activation des muscles du tronc, **moindre endurance des extenseurs du dos** et plus de flexion lombaire ; les auteurs concluent à un lien possible entre posture fléchie prolongée et douleur de surmenage.\n- **Sur le terrain** : Van Hoof et coll. (*Man Ther*, 2012), 8 cyclistes douloureux et 9 sans, 2 h de vélo en extérieur : ceux avec douleur chronique ont le bas du dos **plus fléchi** et leur douleur **augmente** nettement au cours des 2 h.\n- **Muscles du tronc** : Rostami et coll. (*J Back Musculoskelet Rehabil*, 2015), 14 cyclistes de VTT de compétition douloureux et 24 témoins : le muscle transverse de l'abdomen et les multifides sont plus fins chez les douloureux, et l'**endurance du dos** est plus faible ; pas de différence de souplesse ni de force maximale.\n- **Activation** : Sampieri et coll. (*Eur J Appl Physiol*, 2025), 10 cyclistes avec lombalgie récente et 11 sans : à 100 % de la FTP, les muscles du bas du dos s'activent plus et de façon moins homogène chez les douloureux.\n- **Kilométrage** : Schultz et Gordon (*Int J Exerc Sci*, 2010), 66 cyclistes de loisir : ceux qui roulent **160 km ou plus par semaine** ont 3,6 fois plus de risque de déclarer une lombalgie (intervalle de confiance large : 1,3 à 10,2).\n- **Enquête** : Battista et coll. (*Sports Med Open*, 2021), 1 274 cyclistes amateurs : prévalence de 55,1 % dans la vie, 26,5 % sur 12 mois, 10,8 % sur 4 semaines ; une lombalgie **avant** de faire du vélo multiplie par 4,2 le risque ; être suivi par un coach ou un plan (OR 0,53) et avoir fait un travail spécifique du pédalage (OR 0,69) sont associés à moins de lombalgies.",
+    "regles": "- À l'annonce d'un mal de dos à vélo : demander **où, depuis quand, et si la douleur irradie dans la jambe, s'accompagne d'engourdissement, de faiblesse, de fièvre ou d'une perte de poids**. Ces signes, ou une douleur **qui dure** ou qui **réveille la nuit**, demandent **un avis médical** sans attendre.\n- Proposer **d'alléger** (moins de séances longues, pauses debout) et de **faire vérifier la position** ([[velo-position-ajustement]]).\n- Du **gainage et de l'endurance des muscles du dos** sont des pistes raisonnables pour la prévention, sans les présenter comme un traitement ([[force-pour-endurants]]).\n- Le profil « douleur de dos persistante » relève du suivi du profil du coureur : rester sur du facile et ne pas augmenter le volume.",
+    "pieges": "- Confondre fatigue musculaire normale et douleur qui s'installe.\n- Régler le cintre plus bas « pour l'aéro » avec un dos déjà sensible.\n- Interpréter les associations d'enquêtes comme des causes.",
+    "sources": [
+      {
+        "titre": "Streisfeld et al., Relationship Between Body Positioning, Muscle Activity, and Spinal Kinematics in Cyclists With and Without Low Back Pain: A Systematic Review (Sports Health, 2017)",
+        "url": "https://doi.org/10.1177/1941738116676260"
+      },
+      {
+        "titre": "Van Hoof et al., Comparing lower lumbar kinematics in cyclists with low back pain (flexion pattern) versus asymptomatic controls (Man Ther, 2012)",
+        "url": "https://doi.org/10.1016/j.math.2012.02.012"
+      },
+      {
+        "titre": "Rostami et al., Ultrasound assessment of trunk muscles and back flexibility, strength and endurance in off-road cyclists with and without low back pain (J Back Musculoskelet Rehabil, 2015)",
+        "url": "https://doi.org/10.3233/bmr-140559"
+      },
+      {
+        "titre": "Sampieri et al., Alterations in magnitude and spatial distribution of erector spinae muscle activity in cyclists with a recent history of low back pain (Eur J Appl Physiol, 2025)",
+        "url": "https://doi.org/10.1007/s00421-024-05628-7"
+      },
+      {
+        "titre": "Schultz & Gordon, Recreational cyclists: The relationship between low back pain and training characteristics (Int J Exerc Sci, 2010)",
+        "url": "https://doi.org/10.70252/hcfg8805"
+      },
+      {
+        "titre": "Battista et al., Prevalence, Characteristics, Association Factors of and Management Strategies for Low Back Pain Among Italian Amateur Cyclists (Sports Med Open, 2021)",
+        "url": "https://doi.org/10.1186/s40798-021-00370-2"
+      }
+    ],
+    "voirAussi": [
+      "velo-position-ajustement",
+      "force-pour-endurants"
+    ]
+  },
+  {
+    "id": "velo-douleurs-genou",
+    "dossier": "velo",
+    "theme": "sante",
+    "titre": "Douleurs de genou du cycliste : ce qu'on sait des causes (orientation)",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "douleur de genou",
+      "syndrome fémoro-patellaire",
+      "genou antérieur",
+      "hauteur de selle",
+      "cales",
+      "surcharge",
+      "cycliste",
+      "genou",
+      "rotule",
+      "pédalage",
+      "blessure de surmenage",
+      "orientation"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Le **genou** est la principale zone de blessure de surmenage du cycliste, et le **syndrome fémoro-patellaire** (douleur à l'avant du genou, autour de la rotule) en est le diagnostic le plus fréquent dans la revue des blessures du cyclisme sur route.\n- Les causes **ne sont pas claires** : les études comparent des cyclistes avec et sans douleur après coup, ce qui ne permet pas de dire ce qui provoque la douleur. Les pistes : **position du genou**, **réglage de la selle**, **activation des muscles de la cuisse**, **charge d'entraînement**.\n- Le coach **n'établit aucun diagnostic**. Il aide à repérer un signal d'alerte, propose d'alléger et **oriente vers un professionnel de santé** quand la douleur persiste.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; échantillons petits, études d'observation.)*\n- **Fréquence** : Rooney, Sarriegui, Heron (*BMJ Open Sport Exerc Med*, 2020), revue systématique de 12 études sur le cyclisme sur route : le syndrome fémoro-patellaire est le diagnostic de surmenage le plus fréquent ; les blessures de traumatisme (peau, clavicule) dominent globalement, mais pour le surmenage c'est le genou.\n- **Facteurs associés** : Bini et Flores Bini (*Open Access J Sports Med*, 2018), revue systématique de 11 études : les cyclistes avec douleur de genou présentent plus d'**adduction du genou** (genou qui part vers l'intérieur), plus de dorsiflexion de cheville et une **activation différente** du vaste interne et du vaste externe de la cuisse ; pas de différence d'angle de flexion ni de forces fémoro-tibiales ; les résultats sont **limités** (études rétrospectives, types de douleur mélangés).\n- **Activation musculaire** : Dieter et coll. (*Med Sci Sports Exerc*, 2014), 7 cyclistes avec syndrome fémoro-patellaire et 10 sans : le moment où les muscles de la cuisse s'activent et se relâchent est différent chez les cyclistes douloureux (différences significatives sur la fin d'activation du vaste interne/externe et sur le début d'activation des ischio-jambiers).\n- **Hauteur de selle** : Bini, Hume, Croft (*Sports Med*, 2011), revue de 62 références : les méthodes pour régler la selle sont variées et non établies ; une selle plus basse semble augmenter la force de compression à l'arrière de la rotule ; des changements de moins de 4 % de la hauteur ne semblent pas modifier le risque de blessure ni la performance.\n- **Confort et genou** : Priego Quesada et coll. (*J Sports Sci*, 2017), 20 cyclistes, 45 min à 50 % de la puissance maximale : une flexion du genou plus grande (selle trop basse) augmente la fatigue et la douleur ressentie à l'avant de la cuisse et du genou.",
+    "regles": "- Si l'utilisateur signale une douleur de genou à vélo : **demander depuis quand, où exactement et si elle persiste au repos ou dans la vie quotidienne**. Une douleur qui **persiste, gonfle, bloque le genou ou réveille la nuit** appelle **un avis médical** (médecin du sport, kinésithérapeute) avant de reprendre.\n- Proposer **d'alléger** (séances plus courtes et faciles, moins de côtes à faible cadence) et de **faire vérifier ses réglages** par un professionnel ([[velo-position-ajustement]]), sans promettre que cela réglera la douleur.\n- Ne **jamais** annoncer un diagnostic ni prescrire un exercice de soin ; pas de conseil de traitement.\n- Un historique de blessure au genou relève du **profil du coureur** (blessure active ou récente) : le plan reste facile ([[reprise-apres-arret]]).",
+    "pieges": "- Régler la selle « à vue » en changeant plusieurs paramètres à la fois : on ne sait plus ce qui aide.\n- Pousser un gros braquet à basse cadence en côte avec un genou sensible.\n- Poursuivre malgré la douleur en espérant qu'elle passe.",
+    "sources": [
+      {
+        "titre": "Rooney et al., 'As easy as riding a bike': a systematic review of injuries and illness in road cycling (BMJ Open Sport Exerc Med, 2020)",
+        "url": "https://doi.org/10.1136/bmjsem-2020-000840"
+      },
+      {
+        "titre": "Bini & Flores Bini, Potential factors associated with knee pain in cyclists: a systematic review (Open Access J Sports Med, 2018)",
+        "url": "https://doi.org/10.2147/oajsm.s136653"
+      },
+      {
+        "titre": "Dieter et al., Muscle activation patterns and patellofemoral pain in cyclists (Med Sci Sports Exerc, 2014)",
+        "url": "https://doi.org/10.1249/mss.0000000000000153"
+      },
+      {
+        "titre": "Bini et al., Effects of bicycle saddle height on knee injury risk and cycling performance (Sports Med, 2011)",
+        "url": "https://doi.org/10.2165/11588740-000000000-00000"
+      },
+      {
+        "titre": "Priego Quesada et al., Effect of bike-fit in the perception of comfort, fatigue and pain (J Sports Sci, 2017)",
+        "url": "https://doi.org/10.1080/02640414.2016.1215496"
+      }
+    ],
+    "voirAussi": [
+      "velo-position-ajustement",
+      "reprise-apres-arret"
     ]
   },
   {
@@ -2829,6 +3057,60 @@ export const FICHES: Fiche[] = [
       {
         "titre": "Seiler, What is best practice for training intensity and duration distribution in endurance athletes? (IJSPP, 2010)",
         "url": "https://doi.org/10.1123/ijspp.5.3.276"
+      }
+    ],
+    "voirAussi": []
+  },
+  {
+    "id": "velo-position-ajustement",
+    "dossier": "velo",
+    "theme": "sante",
+    "titre": "Réglages du vélo (hauteur de selle, position) : ce que disent les études",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "hauteur de selle",
+      "réglage",
+      "position sur le vélo",
+      "angle du genou",
+      "longueur d'entrejambe",
+      "confort",
+      "bike fit",
+      "étude posturale",
+      "cintre",
+      "selle",
+      "entrejambe",
+      "posture",
+      "pédalage"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Il n'existe **pas de méthode unique prouvée** pour régler une selle. Les formules (pourcentage de l'entrejambe, angle du genou) donnent des **hauteurs différentes** et **ne s'accordent pas** toujours.\n- Repère le plus cité : un **angle de genou de 25 à 35°** à la position basse de la pédale (jambe presque tendue) pour limiter le risque de blessure ; **environ 106 à 110 % de l'entrejambe** pour la performance.\n- De petits changements (**moins de 5 %**) de hauteur modifient les angles du genou et de la hanche mais **pas le travail mécanique** : il n'y a pas de position « parfaite » à la watt près.\n- Le **confort perçu** est un bon guide : une selle trop basse (genou trop fléchi) fatigue et fait mal à l'avant du genou.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu.)*\n- **Revue** : Bini, Hume, Croft (*Sports Med*, 2011) : méthodes variées et non établies ; une variation de 5 % de la hauteur modifie la cinématique du genou d'environ 35 % et les moments de force d'environ 16 % ; effets sur le risque de blessure peu documentés ; limites des études : petits échantillons, cyclistes peu expérimentés.\n- **Deux méthodes, deux hauteurs** : Peveler (*J Strength Cond Res*, 2008) : la littérature recommande 25-35° de flexion du genou pour prévenir les blessures et 109 % de l'entrejambe pour la performance, et ces deux méthodes ne donnent pas la même hauteur. Ferrer-Roca et coll. (*J Strength Cond Res*, 2012), cyclistes bien entraînés : 56,5 % étaient hors de la plage recommandée de 106-109 % de l'entrejambe, et 26 % avaient un angle de genou inapproprié en analyse dynamique ; les auteurs proposent une équation (108,6-110,4 % de l'entrejambe).\n- **Effets mécaniques** : Bini, Hume, Kilding (*Eur J Sport Sci*, 2014), 12 cyclistes et 12 triathlètes : des variations de 5 % (cyclistes) et 7 % (triathlètes) de la hauteur préférée modifient les angles du genou et de la hanche mais pas le travail mécanique des articulations.\n- **Confort** : Priego Quesada et coll. (*J Sports Sci*, 2017), 20 cyclistes : la position la plus inconfortable combine 40° de flexion du genou et 35° du tronc ; le **tronc plus redressé** est le plus confortable pour des cyclistes de loisir ; une plus grande flexion du genou est associée à plus de fatigue et de douleur à l'avant de la cuisse et du genou.",
+    "regles": "- Pour un cycliste qui a mal au genou ou au dos : conseiller de **faire contrôler ses réglages par un professionnel formé** (magasin de vélo sérieux, kinésithérapeute, médecin du sport), plutôt que de tout changer soi-même.\n- Si l'utilisateur règle seul : **un seul paramètre à la fois**, par petits pas (quelques millimètres), et **tester sur une ou deux sorties** avant de rechanger.\n- Pour un cycliste de loisir : **le confort passe avant l'aérodynamisme** ; une position plus redressée est acceptable.\n- Rappeler que les repères (pourcentage d'entrejambe, angle de genou) sont des **points de départ**, pas des vérités.",
+    "pieges": "- Appliquer une formule unique (« 109 % de l'entrejambe ») sans vérifier l'angle du genou.\n- Changer en même temps selle, cintre et cales.\n- Copier la position d'un professionnel avec une souplesse et un entraînement différents.",
+    "sources": [
+      {
+        "titre": "Bini et al., Effects of bicycle saddle height on knee injury risk and cycling performance (Sports Med, 2011)",
+        "url": "https://doi.org/10.2165/11588740-000000000-00000"
+      },
+      {
+        "titre": "Peveler, Effects of saddle height on economy in cycling (J Strength Cond Res, 2008)",
+        "url": "https://doi.org/10.1519/jsc.0b013e318173dac6"
+      },
+      {
+        "titre": "Ferrer-Roca et al., Influence of saddle height on lower limb kinematics in well-trained cyclists: static vs. dynamic evaluation in bike fitting (J Strength Cond Res, 2012)",
+        "url": "https://doi.org/10.1519/jsc.0b013e318245c09d"
+      },
+      {
+        "titre": "Bini et al., Saddle height effects on pedal forces, joint mechanical work and kinematics of cyclists and triathletes (Eur J Sport Sci, 2014)",
+        "url": "https://doi.org/10.1080/17461391.2012.725105"
+      },
+      {
+        "titre": "Priego Quesada et al., Effect of bike-fit in the perception of comfort, fatigue and pain (J Sports Sci, 2017)",
+        "url": "https://doi.org/10.1080/02640414.2016.1215496"
       }
     ],
     "voirAussi": []

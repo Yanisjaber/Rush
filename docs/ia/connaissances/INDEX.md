@@ -2,7 +2,7 @@
 
 GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à la main. Une fiche est dans `<sport>/<partie>/<id>.md`.
 
-**59 fiches.**
+**64 fiches.**
 
 ## Tous les sports (`commun/`) — 20 fiches
 
@@ -113,7 +113,7 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 
 - [Course à pied : chaussures à plaque carbone, cadence, foulée](course/materiel/course-chaussures-cadence.md) — `course-chaussures-cadence` · preuve : probable · 4 sources
 
-## Vélo (`velo/`) — 14 fiches
+## Vélo (`velo/`) — 19 fiches
 
 ### Endurance de base (volume facile, sorties longues) (`velo/endurance/`)
 
@@ -135,6 +135,14 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 - [Glucides pendant l'effort à vélo : combien par heure](velo/nutrition/velo-glucides-effort.md) — `velo-glucides-effort` · preuve : probable · 5 sources
 - [Glucose et fructose ensemble : pourquoi mélanger les sucres à vélo](velo/nutrition/velo-glucides-fructose.md) — `velo-glucides-fructose` · preuve : probable · 6 sources
 - [Boire à vélo : la déshydratation nuit-elle vraiment à la performance ?](velo/nutrition/velo-hydratation.md) — `velo-hydratation` · preuve : debattu · 6 sources
+
+### Santé et blessures (`velo/sante/`)
+
+- [Chutes et sécurité à vélo : blessures fréquentes, casque, facteurs de risque](velo/sante/velo-chutes-securite.md) — `velo-chutes-securite` · preuve : etabli · 5 sources
+- [Cyclisme et densité osseuse : un sport sans impact, des os à surveiller](velo/sante/velo-densite-osseuse.md) — `velo-densite-osseuse` · preuve : probable · 6 sources
+- [Douleurs de dos du cycliste : fréquence, facteurs et prévention (orientation)](velo/sante/velo-douleurs-dos.md) — `velo-douleurs-dos` · preuve : probable · 6 sources
+- [Douleurs de genou du cycliste : ce qu'on sait des causes (orientation)](velo/sante/velo-douleurs-genou.md) — `velo-douleurs-genou` · preuve : probable · 5 sources
+- [Réglages du vélo (hauteur de selle, position) : ce que disent les études](velo/sante/velo-position-ajustement.md) — `velo-position-ajustement` · preuve : probable · 5 sources
 
 ### Tests et mesures (zones, seuils) (`velo/mesure/`)
 
