@@ -13,6 +13,10 @@ export type Preuve = 'etabli' | 'probable' | 'debattu' | 'pratique';
 
 export interface Fiche {
   id: string;
+  /** Dossier de sport où la fiche est rangée (commun = tous les sports) */
+  dossier: string;
+  /** Partie de l'entraînement (endurance, intensite, force, planification…) */
+  theme: string;
   titre: string;
   sports: string[];
   motsCles: string[];

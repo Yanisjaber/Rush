@@ -24,15 +24,14 @@ Un fichier `.md` avec un en-tête : `id`, `titre`, `sports`, `mots_cles` (pour l
 - Pas de diagnostic, pas de traitement, pas de régime. Santé, blessure, alimentation à risque : orienter vers un professionnel.
 - Une affirmation sans source solide est marquée comme **pratique** ou **non vérifiée**, jamais présentée comme un fait.
 
-## Fiches (46)
+## Où est quoi
 
-**Intensité et méthodes** : [intensite-distribution](intensite-distribution.md) · [zone-2](zone-2.md) · [intervalles-haute-intensite](intervalles-haute-intensite.md) · [methode-norvegienne](methode-norvegienne.md)
-**Organisation** : [periodisation](periodisation.md) · [affutage](affutage.md) · [allure-course-marathon](allure-course-marathon.md) · [progression-charge-blessures](progression-charge-blessures.md) · [reprise-apres-arret](reprise-apres-arret.md)
-**Charge et suivi** : [charge-forme-fraicheur](charge-forme-fraicheur.md) · [hrv-suivi-recuperation](hrv-suivi-recuperation.md) · [sommeil](sommeil.md) · [surentrainement-fatigue](surentrainement-fatigue.md)
-**Nutrition et santé** : [energie-reds](energie-reds.md) · [nutrition-glucides](nutrition-glucides.md) · [proteines-cafeine](proteines-cafeine.md) · [chaleur-altitude](chaleur-altitude.md)
-**Force** : [force-pour-endurants](force-pour-endurants.md) · [entrainement-concurrent](entrainement-concurrent.md) · [musculation-bases](musculation-bases.md)
-**Course à pied (21 fiches, recherche du 9 nov. 2026)** : [course-principes-generaux](course-principes-generaux.md) · [course-vdot-allures](course-vdot-allures.md) · [course-tests-terrain](course-tests-terrain.md) · [course-5k-10k-plans](course-5k-10k-plans.md) · [course-semi-marathon](course-semi-marathon.md) · [course-marathon-methodes](course-marathon-methodes.md) · [course-ecoles-coaching](course-ecoles-coaching.md) · [course-distribution-intensite](course-distribution-intensite.md) · [course-vo2max-intervalles](course-vo2max-intervalles.md) · [course-seuil-tempo](course-seuil-tempo.md) · [course-seuil-norvegien](course-seuil-norvegien.md) · [course-vitesse-courte-distance](course-vitesse-courte-distance.md) · [course-trail-ultra](course-trail-ultra.md) · [course-force-economie](course-force-economie.md) · [course-chaussures-cadence](course-chaussures-cadence.md) · [course-blessures-progression](course-blessures-progression.md) · [course-reprise-debutants](course-reprise-debutants.md) · [course-pacing-course](course-pacing-course.md) · [course-nutrition-hydratation](course-nutrition-hydratation.md) · [course-periodisation-recuperation](course-periodisation-recuperation.md) · [course-monotonie-variation](course-monotonie-variation.md)
-**Sports et profils** : [velo-zones-ftp](velo-zones-ftp.md) · [natation-css](natation-css.md) · [hyrox](hyrox.md) · [cycle-menstruel](cycle-menstruel.md) · [veterans](veterans.md)
+**Un dossier = un sport, dedans un dossier = une partie de l'entraînement** : `docs/ia/connaissances/<sport>/<partie>/<id>.md`. La liste complète, générée, est dans [INDEX.md](INDEX.md) (sport → partie → fiche, avec niveau de preuve et nombre de sources).
+
+- **Sports** : `commun` (vaut pour tous les sports) · `course` · `velo` · `natation` · `triathlon` · `muscu` · `hyrox`.
+- **Parties** : `endurance` · `intensite` · `force` · `technique` · `planification` · `charge-suivi` · `recuperation` · `nutrition` · `sante` · `mesure` · `competition` · `environnement` · `profils` · `materiel` · `mental`.
+- **Ajouter une fiche** : créer le `.md` dans le bon dossier (le nom du fichier = l'`id` de l'en-tête), puis `node supabase/scripts/generer-connaissances.mjs` (régénère le module embarqué dans l'Edge Function ET l'index). Un dossier de sport ou de partie inconnu fait échouer la génération : on l'ajoute d'abord aux listes du script.
+- Une recherche sur un sujet « commun » (sommeil, zone 2, périodisation) sert aussi les sports : le champ `sports` de la fiche dit à qui elle s'adresse.
 
 ## Lacunes à combler (non couvert par cette recherche)
 

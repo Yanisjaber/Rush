@@ -1,10 +1,12 @@
-// GÉNÉRÉ par supabase/scripts/generer-connaissances.mjs à partir de docs/ia/connaissances/*.md : NE PAS MODIFIER À LA MAIN.
+// GÉNÉRÉ par supabase/scripts/generer-connaissances.mjs à partir de docs/ia/connaissances/<sport>/<partie>/*.md : NE PAS MODIFIER À LA MAIN.
 // Pour changer une fiche : modifier le .md puis relancer le script.
 import type { Fiche } from './connaissances.ts';
 
 export const FICHES: Fiche[] = [
   {
     "id": "affutage",
+    "dossier": "commun",
+    "theme": "competition",
     "titre": "Affûtage avant une course",
     "sports": [
       "course",
@@ -46,6 +48,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "allure-course-marathon",
+    "dossier": "course",
+    "theme": "competition",
     "titre": "Gérer son allure en course (marathon et au-delà)",
     "sports": [
       "course",
@@ -93,6 +97,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "chaleur-altitude",
+    "dossier": "commun",
+    "theme": "environnement",
     "titre": "Chaleur et altitude",
     "sports": [
       "course",
@@ -149,6 +155,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "charge-forme-fraicheur",
+    "dossier": "commun",
+    "theme": "charge-suivi",
     "titre": "Charge, forme de fond (CTL), fatigue (ATL), fraîcheur (TSB)",
     "sports": [
       "course",
@@ -199,6 +207,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-5k-10k-plans",
+    "dossier": "course",
+    "theme": "planification",
     "titre": "Course à pied : préparer un 5 km ou un 10 km",
     "sports": [
       "course"
@@ -249,6 +259,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-blessures-progression",
+    "dossier": "course",
+    "theme": "sante",
     "titre": "Course à pied : blessures, règle des 10 %, progression de la charge, prévention",
     "sports": [
       "course"
@@ -317,6 +329,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-chaussures-cadence",
+    "dossier": "course",
+    "theme": "materiel",
     "titre": "Course à pied : chaussures à plaque carbone, cadence, foulée",
     "sports": [
       "course"
@@ -363,6 +377,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-distribution-intensite",
+    "dossier": "course",
+    "theme": "intensite",
     "titre": "Course à pied : répartition de l'intensité (polarisé, pyramidal, seuil) chez les coureurs",
     "sports": [
       "course"
@@ -417,6 +433,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-ecoles-coaching",
+    "dossier": "course",
+    "theme": "planification",
     "titre": "Course à pied : les grandes écoles (Lydiard, Canova, Norvégiens, Daniels, Hansons) et ce qu'elles ont en commun",
     "sports": [
       "course"
@@ -473,6 +491,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-force-economie",
+    "dossier": "course",
+    "theme": "force",
     "titre": "Course à pied : musculation, pliométrie et économie de course",
     "sports": [
       "course"
@@ -525,6 +545,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-marathon-methodes",
+    "dossier": "course",
+    "theme": "planification",
     "titre": "Course à pied : préparer un marathon (volumes, sortie longue, méthodes)",
     "sports": [
       "course"
@@ -582,6 +604,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-monotonie-variation",
+    "dossier": "course",
+    "theme": "charge-suivi",
     "titre": "Course à pied : monotonie, variété du plan et fenêtres de 7 jours glissants",
     "sports": [
       "course"
@@ -646,6 +670,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-nutrition-hydratation",
+    "dossier": "course",
+    "theme": "nutrition",
     "titre": "Course à pied : glucides pendant l'effort, hydratation, sodium (semi, marathon, ultra)",
     "sports": [
       "course"
@@ -701,6 +727,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-pacing-course",
+    "dossier": "course",
+    "theme": "competition",
     "titre": "Course à pied : stratégie d'allure en course (5 km, 10 km, semi, marathon, cross)",
     "sports": [
       "course"
@@ -749,6 +777,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-periodisation-recuperation",
+    "dossier": "course",
+    "theme": "planification",
     "titre": "Course à pied : périodisation d'une saison, montée du volume, semaines de récupération, calendrier de courses",
     "sports": [
       "course"
@@ -803,6 +833,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-principes-generaux",
+    "dossier": "course",
+    "theme": "planification",
     "titre": "Course à pied : les principes qui tiennent d'un plan à l'autre",
     "sports": [
       "course"
@@ -855,6 +887,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-reprise-debutants",
+    "dossier": "course",
+    "theme": "profils",
     "titre": "Course à pied : débutants, reprise après arrêt, désentraînement et réentraînement",
     "sports": [
       "course"
@@ -914,6 +948,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-semi-marathon",
+    "dossier": "course",
+    "theme": "planification",
     "titre": "Course à pied : préparer un semi-marathon",
     "sports": [
       "course"
@@ -953,6 +989,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-seuil-norvegien",
+    "dossier": "course",
+    "theme": "intensite",
     "titre": "Course à pied : le modèle norvégien (intervalles de seuil guidés par la lactatémie) pour les coureurs",
     "sports": [
       "course"
@@ -993,6 +1031,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-seuil-tempo",
+    "dossier": "course",
+    "theme": "intensite",
     "titre": "Course à pied : le seuil et le tempo (continu ou par intervalles)",
     "sports": [
       "course"
@@ -1041,6 +1081,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-tests-terrain",
+    "dossier": "course",
+    "theme": "mesure",
     "titre": "Course à pied : tests de terrain (3 km, 30 minutes, vitesse critique) et calibrage d'un plan",
     "sports": [
       "course"
@@ -1101,6 +1143,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-trail-ultra",
+    "dossier": "course",
+    "theme": "planification",
     "titre": "Trail et ultra : dénivelé, descentes, sorties enchaînées, volume, blessures",
     "sports": [
       "course"
@@ -1164,6 +1208,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-vdot-allures",
+    "dossier": "course",
+    "theme": "mesure",
     "titre": "Course à pied : niveau, VDOT, équivalences de chrono et allures d'entraînement",
     "sports": [
       "course"
@@ -1210,6 +1256,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-vitesse-courte-distance",
+    "dossier": "course",
+    "theme": "intensite",
     "titre": "Course à pied : courte distance (800 m, 1500 m, 3000 m, 5000 m) : vitesse, lactate, côtes, lignes droites",
     "sports": [
       "course"
@@ -1260,6 +1308,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "course-vo2max-intervalles",
+    "dossier": "course",
+    "theme": "intensite",
     "titre": "Course à pied : séances de VO2max (VMA) : longueur des répétitions, récupération, dosage",
     "sports": [
       "course"
@@ -1308,6 +1358,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "cycle-menstruel",
+    "dossier": "commun",
+    "theme": "profils",
     "titre": "Cycle menstruel et entraînement",
     "sports": [
       "course",
@@ -1360,6 +1412,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "energie-reds",
+    "dossier": "commun",
+    "theme": "nutrition",
     "titre": "Manque d'énergie chronique (REDs)",
     "sports": [
       "course",
@@ -1410,6 +1464,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "entrainement-concurrent",
+    "dossier": "commun",
+    "theme": "force",
     "titre": "Force et endurance dans la même semaine (entraînement concurrent)",
     "sports": [
       "course",
@@ -1460,6 +1516,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "force-pour-endurants",
+    "dossier": "commun",
+    "theme": "force",
     "titre": "Musculation pour les sportifs d'endurance",
     "sports": [
       "course",
@@ -1514,6 +1572,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "hrv-suivi-recuperation",
+    "dossier": "commun",
+    "theme": "recuperation",
     "titre": "VFC (HRV), fréquence cardiaque de repos et suivi de la récupération",
     "sports": [
       "course",
@@ -1557,6 +1617,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "hyrox",
+    "dossier": "hyrox",
+    "theme": "planification",
     "titre": "Hyrox : ce qui fait la performance",
     "sports": [
       "hyrox"
@@ -1600,6 +1662,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "intensite-distribution",
+    "dossier": "commun",
+    "theme": "intensite",
     "titre": "Répartition des intensités (polarisé, pyramidal, seuil)",
     "sports": [
       "course",
@@ -1647,6 +1711,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "intervalles-haute-intensite",
+    "dossier": "commun",
+    "theme": "intensite",
     "titre": "Intervalles de haute intensité (VO2max)",
     "sports": [
       "course",
@@ -1689,6 +1755,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "methode-norvegienne",
+    "dossier": "commun",
+    "theme": "intensite",
     "titre": "Méthode norvégienne (double seuil)",
     "sports": [
       "course",
@@ -1732,6 +1800,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "musculation-bases",
+    "dossier": "muscu",
+    "theme": "force",
     "titre": "Musculation : volume, proximité de l'échec, semaine allégée",
     "sports": [
       "muscu",
@@ -1780,6 +1850,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "natation-css",
+    "dossier": "natation",
+    "theme": "mesure",
     "titre": "Natation : vitesse critique (CSS) et intensités",
     "sports": [
       "natation",
@@ -1825,6 +1897,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "nutrition-glucides",
+    "dossier": "commun",
+    "theme": "nutrition",
     "titre": "Glucides pendant l'effort et entraînement « à jeun » (train low)",
     "sports": [
       "course",
@@ -1877,6 +1951,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "periodisation",
+    "dossier": "commun",
+    "theme": "planification",
     "titre": "Périodisation, blocs et semaines allégées",
     "sports": [
       "course",
@@ -1921,6 +1997,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "progression-charge-blessures",
+    "dossier": "commun",
+    "theme": "sante",
     "titre": "Augmenter la charge sans se blesser (règle des 10 %, ACWR)",
     "sports": [
       "course",
@@ -1969,6 +2047,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "proteines-cafeine",
+    "dossier": "commun",
+    "theme": "nutrition",
     "titre": "Protéines et caféine",
     "sports": [
       "course",
@@ -2017,6 +2097,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "reprise-apres-arret",
+    "dossier": "commun",
+    "theme": "planification",
     "titre": "Reprendre après un arrêt, une maladie ou une blessure",
     "sports": [
       "course",
@@ -2067,6 +2149,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "sommeil",
+    "dossier": "commun",
+    "theme": "recuperation",
     "titre": "Sommeil et récupération",
     "sports": [
       "course",
@@ -2120,6 +2204,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "surentrainement-fatigue",
+    "dossier": "commun",
+    "theme": "recuperation",
     "titre": "Surcharge, surentraînement et fatigue qui dure",
     "sports": [
       "course",
@@ -2163,6 +2249,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "velo-zones-ftp",
+    "dossier": "velo",
+    "theme": "mesure",
     "titre": "Vélo : FTP, zones de puissance et « sweet spot »",
     "sports": [
       "velo",
@@ -2203,6 +2291,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "veterans",
+    "dossier": "commun",
+    "theme": "profils",
     "titre": "Sportifs vétérans (la quarantaine et au-delà)",
     "sports": [
       "course",
@@ -2252,6 +2342,8 @@ export const FICHES: Fiche[] = [
   },
   {
     "id": "zone-2",
+    "dossier": "commun",
+    "theme": "endurance",
     "titre": "La zone 2 (ce qu'on sait et ce qu'on ne sait pas)",
     "sports": [
       "course",
