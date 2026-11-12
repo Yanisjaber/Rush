@@ -16,9 +16,9 @@ Légende : `[x]` existe · `[ ]` à écrire.
 
 ### mesure
 - [x] velo-zones-ftp — Zones et FTP
-- [ ] velo-ftp-tests — Tests de FTP : 20 min, rampe, 8 min, 60 min, et leurs écarts
-- [ ] velo-puissance-critique — Puissance critique et W' (modèle, test, usage)
-- [ ] velo-courbe-puissance — Courbe de puissance : lecture, pics 5 s / 1 min / 5 min / 20 min
+- [x] velo-ftp-tests — Tests de FTP : 20 min, rampe, 8 min, 60 min, et leurs écarts
+- [x] velo-puissance-critique — Puissance critique et W' (modèle, test, usage)
+- [x] velo-courbe-puissance — Courbe de puissance : lecture, pics 5 s / 1 min / 5 min / 20 min
 - [ ] velo-profil-coureur — Profil du cycliste (sprinteur, puncheur, rouleur, grimpeur) et ce qu'il dit de l'entraînement
 - [ ] velo-cardio-puissance — Fréquence cardiaque contre puissance : découplage, dérive cardiaque
 - [ ] velo-indice-efficacite — Efficacité (puissance normalisée / FC) comme indicateur de forme
