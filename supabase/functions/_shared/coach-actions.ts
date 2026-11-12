@@ -25,6 +25,7 @@ import { SEMAINES_MAX } from './periode.ts';
 import { ALLURES_CLES, lireAllure, lireTemps, NOM_ALLURE } from './plan-course.ts';
 import type { Allures, DemandeCourse } from './plan-course.ts';
 import type { DemandePeriode } from './periode.ts';
+import type { DemandeEndurance } from './plan-endurance.ts';
 import type { OutilModele } from './modele.ts';
 import { JOURS_SEMAINE, ZONES_BLESSURE, QUAND_BLESSURE, MOMENTS, FRACTIONNE, profilPourModele, validerModification } from './profil-coureur.ts';
 import { OUTIL_PROPOSER_SEANCE, NOM_OUTIL_SEANCE } from './coach-prompt.ts';
@@ -896,6 +897,79 @@ export const ACTIONS: DefinitionAction[] = [
           allures[cle] = v;
         }
         demande.allures = allures;
+      }
+      return { ok: true, params: { intention: motif, demande } };
+    },
+  },
+  {
+    nom: 'preparer_course_endurance',
+    niveau: 'carte',
+    disponible: true,
+    description:
+      "Construit un VRAI plan d'entraînement vers une course de VÉLO ou de NATATION : « prépare-moi ma cyclosportive du 14 juin », « mon 1 500 m en eau libre le 20 septembre ». " +
+      "C'est l'outil à utiliser dès qu'il y a une épreuve de vélo ou de natation à préparer (pour la course à pied, c'est preparer_course). Appelle d'abord lire_vie_sport. " +
+      "Tu ne donnes que ce que dit l'utilisateur : le sport, la date, la distance et le temps visé s'il les donne, les séances par semaine. " +
+      "Le CODE choisit les phases (base, développement, spécifique, affûtage), la montée de charge, les jours, et écrit chaque séance avec son contenu CHIFFRÉ (« 3 × 10 min à 262–285 W, récup 4 min » en vélo, « 8 × 100 m, repos 15 s » en natation), calibré sur la personne : " +
+      "la FTP est lue dans sa courbe de puissance, l'allure critique de nage vient d'un test 400 m / 200 m. Si rien n'est mesuré, la première séance du plan est un TEST (20 minutes en vélo, 400 m puis 200 m en natation) : explique-le simplement, et dès que la personne donne son résultat, rappelle l'outil avec ftp_watts (95 % de sa puissance moyenne sur 20 min) ou test_natation : tout le plan est recalibré et remplace l'ancien. " +
+      "Crée UNE carte que l'utilisateur valide ; rien n'est ajouté avant. Après l'outil, reprends fidèlement ce que dit le code (niveau, phases, test), sans rien inventer.",
+    schema: {
+      type: 'object',
+      properties: {
+        motif: { type: 'string', description: 'UN TITRE COURT (60 caractères au plus) affiché en haut de la carte. Par exemple : « Préparation cyclosportive du 14 juin ».' },
+        sport: { type: 'string', enum: ['velo', 'natation'] },
+        date: { type: 'string', description: 'Le jour de la course, AAAA-MM-JJ (le plan s\'arrête la veille). Lis-la dans prochains_jours ou le calendrier.' },
+        seances_par_semaine: { type: 'integer', minimum: 2, maximum: 6, description: 'Séances de ce sport par semaine (par défaut 3).' },
+        distance_km: { type: 'number', description: 'Facultatif : la distance de l\'épreuve en km (natation : 1,5 pour 1 500 m).' },
+        temps_cible_minutes: { type: 'number', description: 'Facultatif : le temps visé, en minutes.' },
+        debut: { type: 'string', description: 'Facultatif : premier jour du plan, AAAA-MM-JJ. Par défaut demain.' },
+        jours_libres: { type: 'array', items: { type: 'string' }, maxItems: DATES_MAX_JOURS_BLOQUES, description: 'Facultatif : dates sans aucune séance.' },
+        ftp_watts: { type: 'integer', minimum: 80, maximum: 600, description: 'Facultatif (vélo) : la FTP de la personne en watts, donnée ou issue de son test de 20 minutes (95 % de la puissance moyenne).' },
+        test_natation: {
+          type: 'object',
+          description: 'Facultatif (natation) : les temps de son test 400 m puis 200 m, « mm:ss ».',
+          properties: { temps_400: { type: 'string' }, temps_200: { type: 'string' } },
+          required: ['temps_400', 'temps_200'],
+          additionalProperties: false,
+        },
+        sans_test: { type: 'boolean', description: 'Facultatif : vrai si la personne ne veut pas de test en première séance.' },
+      },
+      required: ['motif', 'sport', 'date'],
+      additionalProperties: false,
+    },
+    lire: (input) => {
+      const o = objet(input, ['motif', 'sport', 'date', 'seances_par_semaine', 'distance_km', 'temps_cible_minutes', 'debut', 'jours_libres', 'ftp_watts', 'test_natation', 'sans_test']);
+      const motif = motifPlan(o?.motif);
+      if (!o || !motif) return refus('motif : une phrase de 3 à 200 caractères.');
+      const sport = parmi(o.sport, ['velo', 'natation'] as const);
+      if (!sport) return refus('sport : « velo » ou « natation » (pour la course à pied, utilise preparer_course).');
+      const date = dateIso(o.date);
+      if (!date) return refus('date : le jour de la course, AAAA-MM-JJ, qui existe.');
+      const demande: DemandeEndurance = { sport, date, seancesParSemaine: 3 };
+      if (o.seances_par_semaine !== undefined) { const n = entier(o.seances_par_semaine, 2, 6); if (!n) return refus('seances_par_semaine : un entier de 2 à 6.'); demande.seancesParSemaine = n; }
+      if (o.distance_km !== undefined) { if (typeof o.distance_km !== 'number' || !(o.distance_km >= 0.1 && o.distance_km <= 1000)) return refus('distance_km : un nombre entre 0,1 et 1000.'); demande.distanceKm = o.distance_km; }
+      if (o.temps_cible_minutes !== undefined) { if (typeof o.temps_cible_minutes !== 'number' || !(o.temps_cible_minutes >= 5 && o.temps_cible_minutes <= 2880)) return refus('temps_cible_minutes : un nombre de minutes entre 5 et 2880.'); demande.tempsCibleMinutes = o.temps_cible_minutes; }
+      if (o.debut !== undefined) { const d = dateIso(o.debut); if (!d) return refus('debut : une date AAAA-MM-JJ qui existe.'); demande.debut = d; }
+      if (o.ftp_watts !== undefined) {
+        if (sport !== 'velo') return refus('ftp_watts ne vaut que pour le vélo.');
+        const f = entier(o.ftp_watts, 80, 600);
+        if (!f) return refus('ftp_watts : un entier de watts entre 80 et 600.');
+        demande.ftp = f;
+      }
+      if (o.test_natation !== undefined) {
+        if (sport !== 'natation') return refus('test_natation ne vaut que pour la natation.');
+        const t = objet(o.test_natation, ['temps_400', 'temps_200']);
+        const t400 = lireTemps(t?.temps_400);
+        const t200 = lireTemps(t?.temps_200);
+        if (!t || t400 === null || t200 === null || !(t400 > 2 * t200)) return refus('test_natation : temps_400 et temps_200 au format mm:ss, le 400 m étant plus de deux fois plus long que le 200 m (par exemple « 6:40 » et « 3:08 »).');
+        demande.test = { t400, t200 };
+      }
+      if (o.sans_test !== undefined) { if (typeof o.sans_test !== 'boolean') return refus('sans_test : vrai ou faux.'); demande.sansTest = o.sans_test; }
+      if (o.jours_libres !== undefined) {
+        const l = o.jours_libres;
+        if (!Array.isArray(l) || l.length > DATES_MAX_JOURS_BLOQUES) return refus(`jours_libres : au plus ${DATES_MAX_JOURS_BLOQUES} dates AAAA-MM-JJ.`);
+        const dates = l.map(dateIso);
+        if (dates.some((x) => !x)) return refus('jours_libres : toutes les dates doivent être au format AAAA-MM-JJ et exister.');
+        demande.joursLibres = [...new Set(dates as string[])];
       }
       return { ok: true, params: { intention: motif, demande } };
     },

@@ -1057,6 +1057,28 @@ test('planifier_periode : valider la carte écrit toute la période en une fois,
   assert.ok(liste.length >= 30 && liste.every((o) => o.op === 'ajouter' && Array.isArray(o.structure) && o.structure.length >= 1));
 });
 
+// ---------- Préparer une course de vélo ou de natation ----------
+test('preparer_course_endurance : une carte avec phases et blocs chiffrés, et le message du code (test de FTP) donné au modèle', async () => {
+  const w = await planPropose([outil('e', { motif: 'Préparation cyclosportive', sport: 'velo', date: '2027-02-10', seances_par_semaine: 4, distance_km: 100 }, 'preparer_course_endurance')], () => {});
+  const carte = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
+  assert.equal(carte.genre, 'planning');
+  assert.ok(carte.operations.length >= 40 && carte.operations.every((o: Libre) => o.op === 'ajouter' && o.detail?.nom && o.phase));
+  assert.ok(carte.lignes.some((l: Libre) => /\d × \d+ min à \d+–\d+ % de ta FTP/.test(l.texte)));
+  const r = (w.modele.appels[1].messages.at(-1)?.content as Libre[])[0];
+  assert.equal(r.is_error, undefined);
+  assert.match(r.content, /ta première séance est un test de 20 minutes/);
+  assert.deepEqual(w.stockage.planAppliques, []);
+});
+test('preparer_course_endurance : la FTP donnée recalibre le plan en watts et REMPLACE les séances du coach déjà posées', async () => {
+  const w = await planPropose([outil('e', { motif: 'Préparation cyclosportive', sport: 'velo', date: '2027-02-10', ftp_watts: 250 }, 'preparer_course_endurance')], (s) => {
+    s.resume.volume_par_sport.velo = { seances_28_jours: 12, minutes_28_jours: 1080, plus_longue_minutes_28_jours: 180 };
+    s.resume.prevues = [{ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', date: '2026-11-20', sport: 'velo', minutes: 60, tss: 50, creee_par_ia: true }];
+  });
+  const carte = (w.evts.find((e) => e.type === 'carte') as Libre).carte;
+  assert.ok(carte.operations.some((o: Libre) => o.op === 'supprimer'), 'l\'ancienne séance du coach est remplacée');
+  assert.ok(carte.lignes.some((l: Libre) => / W, récup/.test(l.texte)));
+});
+
 // ---------- Préparer une course à pied ----------
 const PROFIL_YANIS = {
   meilleur_effort: { date: '2024-12-15', km: 5, secondes: 1308, equiv_10km_secondes: 2730 },

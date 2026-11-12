@@ -200,6 +200,24 @@ test('preparer_course : tout est facultatif sauf le motif ; valeurs vérifiées'
   for (const m of mauvais) assert.equal(lire(m).ok, false, JSON.stringify(m)?.slice(0, 80));
 });
 
+test('preparer_course_endurance : lecture stricte (sport, date, FTP, test de nage)', () => {
+  const lire = (x: unknown) => trouverAction('preparer_course_endurance')!.lire!(x);
+  const ok = lire({ motif: 'Ma cyclo', sport: 'velo', date: '2027-06-14', seances_par_semaine: 4, distance_km: 100, ftp_watts: 250 });
+  assert.equal(ok.ok, true);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  assert.deepEqual((ok as any).params.demande, { sport: 'velo', date: '2027-06-14', seancesParSemaine: 4, distanceKm: 100, ftp: 250 });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  assert.deepEqual((lire({ motif: 'Mon 1500', sport: 'natation', date: '2027-06-14', test_natation: { temps_400: '6:40', temps_200: '3:08' } }) as any).params.demande.test, { t400: 400, t200: 188 });
+  const mauvais: unknown[] = [
+    { motif: 'Ma cyclo', sport: 'course', date: '2027-06-14' }, { motif: 'Ma cyclo', sport: 'velo' }, { motif: 'Ma cyclo', sport: 'velo', date: '2027-02-31' },
+    { motif: 'Ma cyclo', sport: 'natation', date: '2027-06-14', ftp_watts: 250 }, { motif: 'Ma cyclo', sport: 'velo', date: '2027-06-14', ftp_watts: 20 },
+    { motif: 'Ma cyclo', sport: 'velo', date: '2027-06-14', test_natation: { temps_400: '6:40', temps_200: '3:08' } },
+    { motif: 'Mon 1500', sport: 'natation', date: '2027-06-14', test_natation: { temps_400: '3:00', temps_200: '2:00' } },
+    { motif: 'Ma cyclo', sport: 'velo', date: '2027-06-14', seances_par_semaine: 9 }, { motif: 'Ma cyclo', sport: 'velo', date: '2027-06-14', clef: 1 },
+  ];
+  for (const m of mauvais) assert.equal(lire(m).ok, false, JSON.stringify(m)?.slice(0, 90));
+});
+
 test('preparer_course avec allures et ajuster_seance_course : lecture stricte', () => {
   const lire = (nom: string, x: unknown) => trouverAction(nom)!.lire!(x);
   assert.deepEqual((lire('preparer_course', { motif: 'Plan ajusté', allures: { vma: '4:30', tempo: "4'50" } }) as { params: { demande: unknown } }).params.demande, { allures: { vma: 270, tempo: 290 } });

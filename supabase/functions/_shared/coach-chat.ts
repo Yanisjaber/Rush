@@ -20,6 +20,10 @@
 import { extraitsConnaissance, fondementsPlanCourse } from './connaissances.ts';
 import { detecterSuivi, texteSuivi } from './suivi-plan.ts';
 import { planifierPeriode } from './periode.ts';
+import { ajouterJours } from './dates-iso.ts';
+import { planifierEndurance } from './plan-endurance.ts';
+import type { DemandeEndurance } from './plan-endurance.ts';
+import { vieSportDepuisResume } from './analyse-sport.ts';
 import { alluresCoureur, footing, planifierCourse, profilCourseDepuisResume, seanceIntervalles, seanceTempoContinu, sortieLongue } from './plan-course.ts';
 import type { DemandeCourse, SeanceCourse } from './plan-course.ts';
 import type { DemandePeriode } from './periode.ts';
@@ -241,7 +245,7 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
   }
 
   // Replanification : UNE carte de planning par message, jamais mélangée à d'autres cartes
-  if (def.nom === 'proposer_replanification' || def.nom === 'modifier_planning' || def.nom === 'planifier_semaine' || def.nom === 'planifier_periode' || def.nom === 'preparer_course' || def.nom === 'ajuster_seance_course' || def.nom === 'ajuster_seance') {
+  if (def.nom === 'proposer_replanification' || def.nom === 'modifier_planning' || def.nom === 'planifier_semaine' || def.nom === 'planifier_periode' || def.nom === 'preparer_course' || def.nom === 'preparer_course_endurance' || def.nom === 'ajuster_seance_course' || def.nom === 'ajuster_seance') {
     if (cartes.length > 0) return { contenu: "Une seule carte de planning à la fois, et pas avec une autre carte : attends que l'utilisateur la valide ou la refuse.", erreur: true };
     const lu = def.lire ? def.lire(appel.input) : { ok: false as const, erreur: 'Outil non lisible.' };
     if (!lu.ok) return { contenu: `Paramètres invalides : ${lu.erreur}`, erreur: true };
@@ -294,6 +298,22 @@ async function traiterOutil(appel: AppelOutil, e: EtatOutils): Promise<{ contenu
       resumePeriode = res.semaines;
       bilanTexte = analyse.note ? `${analyse.note}\n${res.message}` : res.message;
       fondements = fondementsPlanCourse(res.bilan?.km ?? 10, res.bilan?.test ?? false);
+      if (anciennes.length) notes = [`${anciennes.length} séance${anciennes.length > 1 ? 's' : ''} de l'ancien plan ${anciennes.length > 1 ? 'sont remplacées' : 'est remplacée'} par le nouveau`, ...notes];
+    } else if (def.nom === 'preparer_course_endurance') {
+      const demande = lu.params.demande as DemandeEndurance;
+      // Un plan déjà ajouté par le coach dans ce sport (entre le début et la course) est REMPLACÉ : c'est ainsi qu'on recalibre après un test
+      const debutPlan = demande.debut && demande.debut > ctx.aujourdhui ? demande.debut : ajouterJours(ctx.aujourdhui, 1);
+      const anciennes = seances.filter((x) => x.creeeParIa && x.sport === demande.sport && x.date >= debutPlan && x.date < demande.date);
+      const ids = new Set(anciennes.map((x) => x.id));
+      const vie = vieSportDepuisResume(resume, demande.sport);
+      const res = planifierEndurance(demande, seances.filter((x) => !ids.has(x.id)), ctx, habitudesDepuisResume(resume), profilCoureurDepuisLigne(resume?.profil), vie);
+      if (!res.operations.length) {
+        return { contenu: `Je n'ai pas pu construire ce plan : ${res.abandons.join(' ') || 'aucune séance possible.'} Explique-le simplement à l'utilisateur, sans créer de carte, et propose une autre façon de faire.`, erreur: false };
+      }
+      operations = [...anciennes.map((x): Operation => ({ op: 'supprimer', seanceId: x.id, raison: 'remplacée par le plan mis à jour' })), ...res.operations];
+      notes = res.abandons;
+      resumePeriode = res.semaines;
+      bilanTexte = res.message;
       if (anciennes.length) notes = [`${anciennes.length} séance${anciennes.length > 1 ? 's' : ''} de l'ancien plan ${anciennes.length > 1 ? 'sont remplacées' : 'est remplacée'} par le nouveau`, ...notes];
     } else if (def.nom === 'ajuster_seance_course') {
       const spec = lu.params.seance as { date: string; genre: string; reps?: number; metres?: number; minutes?: number; allure?: number; recupSecondes?: number };
