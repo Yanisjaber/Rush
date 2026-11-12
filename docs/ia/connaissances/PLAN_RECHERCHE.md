@@ -23,7 +23,7 @@ Légende : `[x]` existe · `[ ]` à écrire.
 - [ ] velo-cardio-puissance — Fréquence cardiaque contre puissance : découplage, dérive cardiaque
 - [ ] velo-indice-efficacite — Efficacité (puissance normalisée / FC) comme indicateur de forme
 - [ ] velo-puissance-normalisee-if — Puissance normalisée, facteur d'intensité, TSS : définitions et limites
-- [ ] velo-seuils-lactate — Seuils lactiques et ventilatoires à vélo (LT1, LT2, MLSS)
+- [x] velo-seuils-lactate — Seuils lactiques et ventilatoires à vélo (LT1, LT2, MLSS)
 - [ ] velo-vo2max-mesure — VO2max : mesure en labo et estimations des montres
 - [ ] velo-w-par-kg — Rapport poids-puissance : repères et limites
 - [ ] velo-capteurs-precision — Précision des capteurs de puissance (pédales, manivelles, moyeu, home trainer)
@@ -35,9 +35,9 @@ Légende : `[x]` existe · `[ ]` à écrire.
 - [ ] velo-volume-heures — Volume hebdomadaire et progrès : combien d'heures
 - [ ] velo-faible-cadence-endurance — Efforts à faible cadence en endurance
 - [ ] velo-entrainement-a-jeun — Sorties à jeun et basses en glucides (« train low »)
-- [ ] velo-durabilite — Durabilité : tenir sa puissance après des heures de fatigue
+- [x] velo-durabilite — Durabilité : tenir sa puissance après des heures de fatigue
 - [ ] velo-endurance-vs-intensite-volume — Volume contre intensité chez les cyclistes entraînés
-- [ ] velo-sweet-spot — Le sweet spot : ce qu'on sait
+- [ ] velo-sweet-spot — Le sweet spot : ce qu'on sait (RECHERCHE FAITE le 13 nov. : aucune étude revue par des pairs sous ce nom dans Europe PMC ; à traiter plus tard via les études « sous le seuil » ou à écarter)
 - [ ] velo-tempo-z3 — Le tempo (zone 3) : place dans un plan
 - [ ] velo-sorties-groupe — Rouler en groupe : intérêt et dépense réelle
 

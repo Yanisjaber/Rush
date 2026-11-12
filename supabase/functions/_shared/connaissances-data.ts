@@ -2309,6 +2309,64 @@ export const FICHES: Fiche[] = [
     ]
   },
   {
+    "id": "velo-durabilite",
+    "dossier": "velo",
+    "theme": "endurance",
+    "titre": "Durabilité : tenir sa puissance après des heures d'effort",
+    "sports": [
+      "velo",
+      "triathlon",
+      "course"
+    ],
+    "motsCles": [
+      "durabilité",
+      "fatigue",
+      "effort prolongé",
+      "puissance après fatigue",
+      "résistance à la fatigue",
+      "VT1",
+      "seuil",
+      "sortie longue",
+      "glucides",
+      "oxydation des graisses",
+      "cyclosportive",
+      "profil physiologique",
+      "frais"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- La **durabilité** est la capacité à **conserver ses qualités physiologiques après un effort long** : après 2 à 4 heures de vélo, le seuil et la puissance maximale **baissent**, et pas pareil selon les personnes.\n- Un cycliste peut avoir une bonne FTP « à frais » et **s'effondrer** après 3 heures : la FTP mesurée en forme **surestime** ce qu'il peut faire à la fin d'une longue épreuve.\n- C'est une notion **récente** : on sait la mesurer et elle compte pour la performance, mais **la science ne dit pas encore avec certitude comment l'entraîner**.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; échantillons de 12 à 16 cyclistes.)*\n- **Cadre** : Maunder, Seiler, Mildenhall, Kilding, Plews (*Sports Med*, 2021) : les valeurs mesurées au repos (VO2max, seuils, économie) **changent pendant un effort prolongé** ; les modèles de profil physiologique n'en tiennent pas compte ; ils proposent de quantifier la durabilité (début et ampleur de la dégradation).\n- **Le seuil baisse, non linéairement** : Gallo et coll. (*Eur J Appl Physiol*, 2024), 12 cyclistes entraînés : la puissance au premier seuil ventilatoire (VT1) baisse selon une courbe du second degré chez 11 sur 12 ; le temps avant une baisse de 5 % (139 ± 78 min) est corrélé au temps tenu jusqu'à l'échec (234 ± 66 min) ; les deux sont liés à l'oxydation des graisses mesurée au repos.\n- **Effet sur l'effort intense** : Hamilton et coll. (*Eur J Appl Physiol*, 2024), 13 cyclistes et triathlètes (12 h par semaine) : après 150 min de vélo modéré, la puissance au VT1 baisse de 6 % (211 → 198 W) et la puissance sur 5 min de 9 % (333 → 302 W) ; ceux dont le VT1 résiste le mieux perdent le moins sur 5 min.\n- **Après 2 h de vélo soutenu** : Clark et coll. (*J Appl Physiol*, 2019), 16 participants : la puissance de fin d'un test de 3 min est 9 % plus basse après 2 h, pas après 40 ou 80 min ; **60 g de glucides par heure** préservent la puissance critique mais pas W′ ([[velo-puissance-critique]]).\n- **Comment mesurer** : Hunter et coll. (*Exp Physiol*, 2025) : le résultat dépend de l'intensité et de la durée de l'effort préalable, de la nutrition et de l'environnement ; il faut les contrôler pour comparer deux athlètes ou deux dates.",
+    "regles": "- Expliquer pourquoi **les longues sorties** comptent pour préparer une épreuve longue : elles exposent l'organisme à la fatigue de l'effort prolongé. Ne pas affirmer qu'elles « améliorent la durabilité » : les sources lues décrivent le phénomène, pas son entraînement.\n- Pour une épreuve de plus de 3-4 heures, **prévoir les glucides** et **ne pas viser sa puissance « à frais »** : prévoir une allure plus basse en fin d'épreuve.\n- Pour un test de FTP, **le faire frais** ; ne pas déduire de la FTP ce qu'on tiendra à l'heure 5 ([[velo-ftp-tests]]).\n- Ne jamais présenter un chiffre de durabilité comme une mesure fiable : c'est un domaine de recherche en cours.",
+    "pieges": "- Confondre durabilité et « endurance » au sens large.\n- Prendre la baisse de 6 à 9 % observée chez 12 à 16 cyclistes bien entraînés pour une règle générale.\n- Oublier que la durabilité change avec la nutrition et la chaleur.",
+    "sources": [
+      {
+        "titre": "Maunder et al., The Importance of 'Durability' in the Physiological Profiling of Endurance Athletes (Sports Med, 2021)",
+        "url": "https://doi.org/10.1007/s40279-021-01459-0"
+      },
+      {
+        "titre": "Gallo et al., Power output at the moderate-to-heavy intensity transition decreases in a non-linear fashion during prolonged exercise (Eur J Appl Physiol, 2024)",
+        "url": "https://doi.org/10.1007/s00421-024-05440-3"
+      },
+      {
+        "titre": "Hamilton et al., Durability of the moderate-to-heavy-intensity transition is related to the effects of prolonged exercise on severe-intensity performance (Eur J Appl Physiol, 2024)",
+        "url": "https://doi.org/10.1007/s00421-024-05459-6"
+      },
+      {
+        "titre": "Hunter et al., Durability as an index of endurance exercise performance: Methodological considerations (Exp Physiol, 2025)",
+        "url": "https://doi.org/10.1113/ep092120"
+      },
+      {
+        "titre": "Clark et al., Dynamics of the power-duration relationship during prolonged endurance exercise and influence of carbohydrate ingestion (J Appl Physiol, 2019)",
+        "url": "https://doi.org/10.1152/japplphysiol.00207.2019"
+      }
+    ],
+    "voirAussi": [
+      "velo-puissance-critique",
+      "velo-ftp-tests"
+    ]
+  },
+  {
     "id": "velo-ftp-tests",
     "dossier": "velo",
     "theme": "mesure",
@@ -2612,6 +2670,72 @@ export const FICHES: Fiche[] = [
       "velo-ftp-tests",
       "velo-courbe-puissance",
       "natation-css"
+    ]
+  },
+  {
+    "id": "velo-seuils-lactate",
+    "dossier": "velo",
+    "theme": "mesure",
+    "titre": "Seuils lactiques et ventilatoires à vélo : ce qu'ils mesurent vraiment",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "seuil lactique",
+      "LT1",
+      "LT2",
+      "seuil ventilatoire",
+      "VT1",
+      "VT2",
+      "MLSS",
+      "point de compensation respiratoire",
+      "Dmax",
+      "4 mmol",
+      "test d'effort",
+      "lactate",
+      "état stable maximal du lactate",
+      "laboratoire"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Il existe **plusieurs dizaines de façons de définir un « seuil »** à partir du lactate ou de la respiration. Elles ne donnent **pas la même puissance** : le seuil dépend de la méthode, du protocole de test et de l'analyse.\n- Les seuils lactiques **prédisent bien la performance** (corrélations fortes avec des contre-la-montre) et sont **répétables**, mais ils ne sont **pas interchangeables** avec la puissance critique, le MLSS ou la FTP.\n- Pour un cycliste, la bonne question n'est pas « quel est mon seuil exact ? » mais « quelle intensité puis-je répéter en séance ? ».",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu.)*\n- **Revue des concepts** : Faude, Kindermann, Meyer (*Sports Med*, 2009) : 25 concepts de seuil lactique recensés, en 3 catégories (valeurs fixes, première hausse du lactate, rupture de pente/MLSS) ; sur 32 études, la grande majorité montre de fortes corrélations avec la performance d'endurance, surtout en course à pied ; certains seuils peuvent estimer le MLSS.\n- **Répétabilité** : Heuberger et coll. (*PLoS One*, 2018), 48 cyclistes, 5 tests à 2 semaines d'écart : tous les concepts de seuil testés (8) sont répétables (alpha de Cronbach 0,89-0,96, variation intra-sujet 3,4-8,1 %) et prédisent un contre-la-montre de 45 min (r = 0,65-0,94) et une course en côte (r = 0,53-0,76) ; la méthode **Dmax modifiée** est la meilleure, le **seuil fixe à 4 mmol/L** presque aussi bon.\n- **Le protocole change le résultat** : Jamnick et coll. (*PLoS One*, 2018), 17 cyclistes, 5 tests avec paliers de 1 à 10 minutes : beaucoup de méthodes traditionnelles de seuil ne sont **pas valides** par rapport au MLSS (264 ± 39 W) ; la méthode Dmax modifiée (paliers de 4 min) en est la plus proche (écart 1,1 W) ; VO2max et seuil **ne peuvent pas être mesurés en un seul test**.\n- **Seuil ou puissance critique ?** Jones et coll. (*Physiol Rep*, 2019) soutiennent que le MLSS, tel qu'on le mesure, **sous-estime** le vrai état stable maximal, que la puissance critique (CP) est la vraie frontière entre deux domaines d'intensité ; ils demandent de cesser de les considérer comme synonymes. Mattioni Maturana et coll. (*Appl Physiol Nutr Metab*, 2016), 13 sujets : le MLSS (233 ± 41 W) est plus bas que la CP (253 ± 44 W) et que la CP du test de 3 min (250 ± 51 W) ; les limites d'accord sont larges. La méta-analyse de Galán-Rioja (2020) trouve la même chose ([[velo-puissance-critique]]).\n- **Un protocole respiratoire** : Iannetta et coll. (*Med Sci Sports Exerc*, 2020), 10 volontaires : un protocole « palier-rampe-palier » estime la puissance au point de compensation respiratoire ; 30 min à cette puissance donnent un état stable, 5 % au-dessus non pour la majorité.\n- **Aussi la FTP** : le test de 20 min tombe près du MLSS ou au-dessus selon les études ([[velo-ftp-tests]]).",
+    "regles": "- Dire que « le seuil » n'est pas un nombre unique : selon la méthode, **l'écart peut atteindre une dizaine de pourcents**.\n- Pour fixer des zones, **partir de la FTP ou de la puissance critique de l'application**, ou d'un test de seuil de l'utilisateur, et ajuster à la sensation ; ne pas demander un test de lactate à une personne qui n'en a pas.\n- Si l'utilisateur donne un seuil de laboratoire, noter la **méthode utilisée** (Dmax, 4 mmol/L, ventilatoire) avant de recalculer ses zones.\n- Ne jamais confondre seuil lactique (LT1/LT2) et seuil de lactate fixe à 4 mmol/L.",
+    "pieges": "- Comparer deux tests de laboratoire faits avec des paliers de durées différentes.\n- Utiliser les seuils d'une montre ou d'un capteur sans savoir comment ils sont calculés.\n- Croire qu'un seuil « mesuré » est plus exact qu'une FTP bien testée : les deux ont des marges.",
+    "sources": [
+      {
+        "titre": "Faude et al., Lactate threshold concepts: how valid are they? (Sports Med, 2009)",
+        "url": "https://doi.org/10.2165/00007256-200939060-00003"
+      },
+      {
+        "titre": "Heuberger et al., Repeatability and predictive value of lactate threshold concepts in endurance sports (PLoS One, 2018)",
+        "url": "https://doi.org/10.1371/journal.pone.0206846"
+      },
+      {
+        "titre": "Jamnick et al., Manipulating graded exercise test variables affects the validity of the lactate threshold and VO2peak (PLoS One, 2018)",
+        "url": "https://doi.org/10.1371/journal.pone.0199794"
+      },
+      {
+        "titre": "Jones et al., The maximal metabolic steady state: redefining the 'gold standard' (Physiol Rep, 2019)",
+        "url": "https://doi.org/10.14814/phy2.14098"
+      },
+      {
+        "titre": "Mattioni Maturana et al., Can measures of critical power precisely estimate the maximal metabolic steady-state? (Appl Physiol Nutr Metab, 2016)",
+        "url": "https://doi.org/10.1139/apnm-2016-0248"
+      },
+      {
+        "titre": "Iannetta et al., A \"Step-Ramp-Step\" Protocol to Identify the Maximal Metabolic Steady State (Med Sci Sports Exerc, 2020)",
+        "url": "https://doi.org/10.1249/mss.0000000000002343"
+      },
+      {
+        "titre": "Galán-Rioja et al., Relative Proximity of Critical Power and Metabolic/Ventilatory Thresholds: Systematic Review and Meta-Analysis (Sports Med, 2020)",
+        "url": "https://doi.org/10.1007/s40279-020-01314-8"
+      }
+    ],
+    "voirAussi": [
+      "velo-puissance-critique",
+      "velo-ftp-tests"
     ]
   },
   {

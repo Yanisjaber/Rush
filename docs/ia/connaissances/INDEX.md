@@ -2,7 +2,7 @@
 
 GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à la main. Une fiche est dans `<sport>/<partie>/<id>.md`.
 
-**53 fiches.**
+**55 fiches.**
 
 ## Tous les sports (`commun/`) — 20 fiches
 
@@ -113,7 +113,11 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 
 - [Course à pied : chaussures à plaque carbone, cadence, foulée](course/materiel/course-chaussures-cadence.md) — `course-chaussures-cadence` · preuve : probable · 4 sources
 
-## Vélo (`velo/`) — 8 fiches
+## Vélo (`velo/`) — 10 fiches
+
+### Endurance de base (volume facile, sorties longues) (`velo/endurance/`)
+
+- [Durabilité : tenir sa puissance après des heures d'effort](velo/endurance/velo-durabilite.md) — `velo-durabilite` · preuve : probable · 5 sources
 
 ### Intensité (seuil, VO2max, vitesse, répartition) (`velo/intensite/`)
 
@@ -130,6 +134,7 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 - [Courbe de puissance et profil du cycliste (records par durée)](velo/mesure/velo-courbe-puissance.md) — `velo-courbe-puissance` · preuve : probable · 6 sources
 - [Tests de FTP à vélo (20 minutes et ses limites)](velo/mesure/velo-ftp-tests.md) — `velo-ftp-tests` · preuve : probable · 7 sources
 - [Puissance critique et W′ (modèle puissance-durée)](velo/mesure/velo-puissance-critique.md) — `velo-puissance-critique` · preuve : probable · 8 sources
+- [Seuils lactiques et ventilatoires à vélo : ce qu'ils mesurent vraiment](velo/mesure/velo-seuils-lactate.md) — `velo-seuils-lactate` · preuve : probable · 7 sources
 - [Vélo : FTP, zones de puissance et « sweet spot »](velo/mesure/velo-zones-ftp.md) — `velo-zones-ftp` · preuve : pratique · 3 sources
 
 ## Natation (`natation/`) — 1 fiche
