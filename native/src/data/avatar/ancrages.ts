@@ -1,7 +1,7 @@
 // Où tombent, à l'écran, les points d'intérêt de l'avatar (pour accrocher les légendes de la carte).
 // Fonctions pures, sans React Native : testables avec node. Le calcul reprend la caméra du composant 3D.
 
-export type ZoneAvatarCle = 'heart' | 'lungs' | 'chest' | 'arms' | 'legs';
+export type ZoneAvatarCle = 'heart' | 'lungs' | 'chest' | 'arms' | 'legs' | 'head';
 
 /** Caméra de `ModeleAthleteRealiste` : à garder identique des deux côtés. */
 export const CAMERA = {
@@ -20,6 +20,7 @@ export const POINTS_MODELE: Record<ZoneAvatarCle, { x: number; y: number }> = {
   chest: { x: 0.12, y: 1.06 },
   arms: { x: -0.4, y: 1.02 },
   legs: { x: -0.11, y: 0.55 },
+  head: { x: 0, y: 1.68 },
 };
 
 /** Pixels par mètre au niveau de l'avatar, pour une vue de cette hauteur. */

@@ -4,6 +4,7 @@ import { loadTextureAsync, loaderClassForExtension, Renderer } from 'expo-three'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, PanResponder,StyleSheet, Text, View, type GestureResponderEvent, type LayoutChangeEvent } from 'react-native';
 import * as THREE from 'three';
+import { creerLunettes } from './lunettes';
 import { CAMERA, POINTS_MODELE, type ZoneAvatarCle } from '@/data/avatar/ancrages';
 import { rayon, type Palette } from '@/theme/couleurs';
 
@@ -18,6 +19,13 @@ try {
 /** Mêmes zones que `ModeleAthlete3D` : les deux composants sont interchangeables. */
 export type ZoneAvatar = ZoneAvatarCle;
 
+/** Où est un point du corps à l'écran : part de la largeur et de la hauteur de la vue (0 à 1), et s'il est de face. */
+export interface PointEcran {
+  x: number;
+  y: number;
+  visible: boolean;
+}
+
 interface Props {
   palette: Palette;
   /** Couleur de la surbrillance et des organes sélectionnés : la couleur du sport. */
@@ -27,14 +35,26 @@ interface Props {
   /** Taille de la vue (par défaut 174 × 284, comme l'ancien avatar). */
   largeur?: number | `${number}%`;
   hauteur?: number;
-  /** Le t-shirt de l'avatar prend le dessin du maillot de vélo (même forme, seule la texture change). */
+  /** Tenue de vélo : le t-shirt prend le dessin du maillot et les pieds nus des chaussettes (même forme, seule la texture change). */
   maillot?: boolean;
+  /** Lunettes de vélo (masque fumé) posées sur le visage. */
+  lunettes?: boolean;
+  /** Hauteur (m depuis le sol) du point à recentrer et agrandir quand une zone est choisie ; null : vue d'ensemble. */
+  focusY?: number | null;
+  /** Part de la vue cachée en bas par une feuille (0 à 0,6) : le mannequin se recentre au-dessus. */
+  decalageBas?: number;
+  /** Face ou dos : le mannequin tourne vers cet angle (puis se balance autour). */
+  vue?: 'face' | 'dos';
+  /** Points du corps dont on veut la position à l'écran (X, Y en mètres sur l'avatar de face). */
+  ancres?: Record<string, { x: number; y: number }>;
+  /** Appelé ~25 fois par seconde avec la position à l'écran des `ancres`. */
+  onProjection?: (points: Record<string, PointEcran>) => void;
 }
 
 const FICHIER_MODELE = require('../../../assets/avatar/athlete.glb');
 const TEXTURE_COULEUR = require('../../../assets/avatar/athlete_color.jpg');
 const TEXTURE_NORMALE = require('../../../assets/avatar/athlete_normal.jpg');
-const TEXTURE_COULEUR_MAILLOT = require('../../../assets/avatar/athlete_color_maillot.jpg');
+const TEXTURE_COULEUR_MAILLOT = require('../../../assets/avatar/athlete_color_tenue.jpg');
 
 interface SurfaceMaterial {
   part: ZoneAvatar;
@@ -101,7 +121,7 @@ const ZOOM_MAX = 1.85;
  * - Il se balance doucement de face ; glisser le fait tourner librement, il revient de face 2,5 s après.
  * - Toucher le torse, les bras ou les jambes les sélectionne (zones tirées des os du squelette d'origine).
  */
-export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart', onPartSelect, largeur = 174, hauteur = 284, maillot = false }: Props) {
+export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart', onPartSelect, largeur = 174, hauteur = 284, maillot = false, lunettes = false, focusY = null, decalageBas = 0, vue = 'face', ancres, onProjection }: Props) {
   const selectedPartRef = useRef<ZoneAvatar>(selectedPart);
   const onPartSelectRef = useRef(onPartSelect);
   const layoutRef = useRef({ width: 174, height: 284 });
@@ -113,6 +133,11 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
   const rotationLibreRef = useRef(false);
   const zoomRef = useRef(1);
   const zoomDepartRef = useRef(1);
+  const focusYRef = useRef<number | null>(focusY);
+  const decalageRef = useRef(decalageBas);
+  const vueRef = useRef(vue);
+  const ancresRef = useRef(ancres);
+  const onProjectionRef = useRef(onProjection);
   const derniereMainRef = useRef(0);
   const [etat, setEtat] = useState<'chargement' | 'pret' | 'erreur'>('chargement');
   const [messageErreur, setMessageErreur] = useState('');
@@ -121,6 +146,15 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
 
   useEffect(() => { selectedPartRef.current = selectedPart; }, [selectedPart]);
   useEffect(() => { onPartSelectRef.current = onPartSelect; }, [onPartSelect]);
+  useEffect(() => { focusYRef.current = focusY; }, [focusY]);
+  useEffect(() => { decalageRef.current = decalageBas; }, [decalageBas]);
+  useEffect(() => {
+    vueRef.current = vue;
+    rotationLibreRef.current = false; // changer de vue : il tourne tout de suite vers face ou dos
+    derniereMainRef.current = 0;
+  }, [vue]);
+  useEffect(() => { ancresRef.current = ancres; }, [ancres]);
+  useEffect(() => { onProjectionRef.current = onProjection; }, [onProjection]);
   useEffect(() => () => { nettoyerRef.current?.(); nettoyerRef.current = null; }, []);
 
   const toucher = useCallback((x: number, y: number) => {
@@ -135,7 +169,12 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
     let part: ZoneAvatar | undefined;
     if (!part) {
       const touche = raycaster.intersectObject(cible.corps, true)[0];
-      if (touche) part = zoneDepuisIntersection(touche);
+      if (touche) {
+        const local = cible.corps.worldToLocal(touche.point.clone());
+        part = zoneDepuisIntersection(touche);
+        if (local.y > 1.52) part = 'head';
+        else if (part === 'chest' && Math.abs(local.x - POINTS_MODELE.heart.x) < 0.09 && Math.abs(local.y - POINTS_MODELE.heart.y) < 0.09) part = 'heart';
+      }
     }
     if (!part) return;
     selectedPartRef.current = part;
@@ -143,13 +182,7 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
   }, []);
 
   const appliquerZoom = useCallback((valeur: number) => {
-    const camera = cameraRef.current;
-    const zoom = borne(valeur, ZOOM_MIN, ZOOM_MAX);
-    zoomRef.current = zoom;
-    if (camera) {
-      camera.position.z = CAMERA.distance / zoom;
-      camera.updateProjectionMatrix();
-    }
+    zoomRef.current = borne(valeur, ZOOM_MIN, ZOOM_MAX); // la caméra suit dans la boucle de rendu (avec le recentrage)
   }, []);
 
   const pincementDepartRef = useRef<number | null>(null);
@@ -346,7 +379,27 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
     const idle = animations.find((animation) => animation.name === 'IdleSway') ?? animations[0];
     if (mixer && idle) mixer.clipAction(idle).play();
 
+    if (lunettes) {
+      const montees = creerLunettes(modele);
+      if (montees) ressources.push(...montees.ressources);
+      else console.warn('[ModeleAthleteRealiste] lunettes : tête introuvable, elles ne sont pas affichées.');
+    }
     cibleRef.current = { corps: modele, surfaces };
+
+    // Points du corps à suivre à l'écran : on cherche la peau (ou le tissu) devant chaque point, en repère du modèle.
+    modele.updateWorldMatrix(true, true);
+    const pointsSuivis: { nom: string; local: THREE.Vector3 }[] = [];
+    for (const [nom, point] of Object.entries(ancresRef.current ?? {})) {
+      const rayon = new THREE.Raycaster(modele.localToWorld(new THREE.Vector3(point.x, point.y, 2)), new THREE.Vector3(0, 0, -1));
+      const touche = rayon.intersectObject(modele, true)[0];
+      const z = touche ? modele.worldToLocal(touche.point.clone()).z : 0.1;
+      pointsSuivis.push({ nom, local: new THREE.Vector3(point.x, point.y, z + 0.01) });
+    }
+    const corpsSuivi: THREE.Object3D = modele;
+    let dernierEnvoi = 0;
+    let centreY = 0; // hauteur (monde) visée par la caméra, avec les lissages
+    let facteurFocus = 1;
+    let decalage = decalageRef.current;
     if (vivant) setEtat('pret');
 
     const couleurAccent = new THREE.Color(couleurHex(accent));
@@ -361,13 +414,30 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
         precedent = maintenant;
         mixer?.update(dt);
 
-        // Sans doigt depuis 2,5 s : l'avatar revient de face et se balance doucement (± 24°).
+        // Sans doigt depuis 2,5 s : l'avatar revient de face (ou de dos) et se balance doucement (± 24°).
         if (!rotationLibreRef.current && maintenant - derniereMainRef.current > 2500) {
-          const a = Math.atan2(Math.sin(groupe.rotation.y), Math.cos(groupe.rotation.y));
+          const base = vueRef.current === 'dos' ? Math.PI : 0;
+          const a = Math.atan2(Math.sin(groupe.rotation.y - base), Math.cos(groupe.rotation.y - base));
           const cibleAngle = Math.sin(temps * 0.6) * 0.42;
-          groupe.rotation.y = a + (cibleAngle - a) * Math.min(1, dt * 1.8);
+          groupe.rotation.y = base + a + (cibleAngle - a) * Math.min(1, dt * 1.8);
         }
         groupe.scale.y = 1 + Math.sin(temps * 1.7) * 0.004;
+
+        // Cadrage : vue d'ensemble, ou recentré et agrandi sur la zone choisie, au-dessus de la feuille du bas.
+        const k = Math.min(1, dt * 4);
+        const focus = focusYRef.current;
+        centreY += ((focus === null ? 0 : focus - CAMERA.hauteurModele / 2) - centreY) * k;
+        facteurFocus += ((focus === null ? 1 : 1.9) - facteurFocus) * k;
+        decalage += (decalageRef.current - decalage) * k;
+        // Le mannequin entier doit tenir au-dessus de la feuille : on réduit la vue d'ensemble quand elle monte.
+        const auto = Math.min(1, (2.12 * (1 - decalage)) / 2.5);
+        const zoom = zoomRef.current * facteurFocus * auto;
+        const distance = CAMERA.distance / zoom;
+        const demiHauteur = distance * Math.tan((CAMERA.fov * Math.PI) / 360);
+        const camY = centreY - decalage * demiHauteur; // la feuille cache le bas : on descend la caméra pour monter le mannequin
+        camera.position.set(0, camY, distance);
+        camera.lookAt(0, camY, 0);
+        camera.updateMatrixWorld();
 
         const choisie = selectedPartRef.current;
         for (const surface of surfaces) {
@@ -378,6 +448,20 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
 
         renderer.render(scene, camera);
         gl.endFrameEXP();
+
+        // Position à l'écran des points suivis (une quarantaine de millisecondes entre deux envois suffit).
+        const suivre = onProjectionRef.current;
+        if (suivre && pointsSuivis.length && maintenant - dernierEnvoi > 40) {
+          dernierEnvoi = maintenant;
+          scene.updateMatrixWorld(true);
+          const deFace = Math.cos(groupe.rotation.y) > 0.25;
+          const sortie: Record<string, PointEcran> = {};
+          for (const { nom, local } of pointsSuivis) {
+            const v = corpsSuivi.localToWorld(local.clone()).project(camera);
+            sortie[nom] = { x: (v.x + 1) / 2, y: (1 - v.y) / 2, visible: deFace };
+          }
+          suivre(sortie);
+        }
       } catch (erreur) {
         console.warn('[ModeleAthleteRealiste] le rendu a échoué :', erreur instanceof Error ? erreur.message : String(erreur));
         return;
@@ -385,7 +469,7 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
       frame = requestAnimationFrame(dessiner);
     };
     dessiner();
-  }, [accent, palette.fond, maillot]);
+  }, [accent, palette.fond, maillot, lunettes]);
 
   const conteneur = [styles.conteneur, { width: largeur, height: hauteur }];
   if (!GLViewComponent) {

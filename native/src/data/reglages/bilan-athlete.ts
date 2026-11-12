@@ -1,6 +1,6 @@
-import { familleAffichage } from '@/data/sports/familles';
-import { chargeSeance, type Forme } from '@/data/bilan/synthese';
-import type { Metrique, Profil, Seance, SerieForce } from '@/data/types';
+import { familleAffichage } from '../sports/familles.ts';
+import { chargeSeance, type Forme } from '../bilan/synthese.ts';
+import type { Metrique, Profil, Seance, SerieForce } from '../types.ts';
 
 export interface StatAthlete {
   cle: 'force' | 'endurance' | 'vitesse' | 'cardio' | 'regularite';
