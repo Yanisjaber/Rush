@@ -10,7 +10,7 @@ test('basculerSport : ajoute, retire, mais jamais le dernier', async () => {
 
 test('Autres : une seule case pour ski, rando, combat, aviron… ; un ancien choix enregistré devient « Autres »', async () => {
   const { SPORTS_A_CHOISIR, GROUPES_SPORTS, fusionnerFamilles, nettoyerSports } = await import('../../src/data/sports/sports-choisis.ts');
-  for (const s of ['ski', 'rando', 'combat', 'escalade', 'aviron', 'pagaie', 'athletisme']) assert.ok(!SPORTS_A_CHOISIR.includes(s), `${s} ne se coche plus`);
+  for (const s of ['ski', 'rando', 'combat', 'escalade', 'aviron', 'pagaie', 'athletisme', 'hyrox']) assert.ok(!SPORTS_A_CHOISIR.includes(s), `${s} ne se coche plus`);
   assert.ok(SPORTS_A_CHOISIR.includes('autre'));
   // Chaque sport proposé apparaît dans un seul groupe
   const proposes = GROUPES_SPORTS.flatMap((g) => g.sports);

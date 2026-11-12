@@ -17,7 +17,7 @@ export default function ParametresLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="profil" options={{ title: 'Profil' }} />
+      <Stack.Screen name="profil" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="physiologie" options={{ title: 'Physiologie' }} />
       <Stack.Screen name="zones" options={{ title: 'Zones' }} />
       <Stack.Screen name="sports" options={{ title: 'Mes sports' }} />

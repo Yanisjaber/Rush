@@ -85,8 +85,6 @@ export const SECTIONS: Section[] = [
           n('rhr', 'FC au repos', 30, 100, 1, 'bpm'),
           colonne(n('lthr', 'FC au seuil (LTHR)', 100, 220, 1, 'bpm')),
           n('hrv_baseline', 'HRV de référence', 10, 200, 1, 'ms'),
-          choix('hrmax_method', 'Méthode de la FC max', [['observed', 'Observée en activité'], ['test', 'Test maximal'], ['age', 'Formule âge (220 − âge)'], ['tanaka', 'Formule Tanaka (208 − 0,7 × âge)']]),
-          n('cardiac_drift', 'Dérive cardiaque tolérée', 0, 20, 0.5, '%'),
         ],
       },
       {
@@ -96,9 +94,6 @@ export const SECTIONS: Section[] = [
           n('vo2max_bike', 'VO2max estimée', 20, 95, 0.1, 'ml/kg/min'),
           n('cp', 'Puissance critique (CP)', 50, 600, 1, 'W'),
           n('wprime', 'W’ (réserve anaérobie)', 0, 50, 0.1, 'kJ'),
-          n('pmax', 'Puissance max en sprint', 200, 2500, 1, 'W'),
-          { cle: 'last_ftp_test', label: 'Date du dernier test FTP', type: 'date' },
-          choix('ftp_test_type', 'Type de test', [['20min', '20 min × 0,95'], ['8min', '8 min × 0,90'], ['ramp', 'Ramp test'], ['2x8', '2 × 8 min'], ['cp', 'Critical Power (3/12 min)'], ['record', 'Auto-déduit du record 60 min'], ['estimate', 'Estimation à vue']]),
         ],
       },
       {
@@ -107,10 +102,6 @@ export const SECTIONS: Section[] = [
           n('vma', 'VMA', 6, 25, 0.1, 'km/h'),
           n('threshold_speed', 'Vitesse seuil', 6, 22, 0.1, 'km/h'),
           n('vo2max_run', 'VO2max course', 20, 95, 0.1, 'ml/kg/min'),
-          temps('pace_5k', 'Allure 5 km (min/km)', '4:30'),
-          temps('pace_10k', 'Allure 10 km (min/km)', '4:45'),
-          temps('pace_half', 'Allure semi (min/km)', '5:00'),
-          temps('pace_marathon', 'Allure marathon (min/km)', '5:20'),
         ],
       },
       {
@@ -118,11 +109,6 @@ export const SECTIONS: Section[] = [
         champs: [
           temps('css', 'CSS (min:s / 100 m)', '1:30'),
           n('swolf', 'SWOLF moyen', 20, 80, 1),
-          choix('swim_level', 'Niveau technique', [['beginner', 'Débutant'], ['intermediate', 'Intermédiaire'], ['advanced', 'Avancé'], ['expert', 'Expert']]),
-          temps('swim_100', 'Record 100 m', '1:25'),
-          temps('swim_400', 'Record 400 m', '6:30'),
-          temps('swim_1500', 'Record 1500 m', '25:00'),
-          temps('swim_3800', 'Record 3800 m', '1:08:00'),
         ],
       },
     ],
