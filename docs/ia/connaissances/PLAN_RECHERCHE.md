@@ -6,7 +6,7 @@ Règles pour chaque fiche à écrire :
 - **5 sources minimum, toutes vérifiées** (étude, méta-analyse, revue, consensus officiel, livre de référence) : un titre, un lien qui s'ouvre, ce qu'elle dit réellement. Aucune étude inventée ni citée de mémoire. Si on n'en trouve pas 5, la fiche le dit (`preuve: pratique` ou `debattu`) et le test l'accepte seulement avec une mention explicite.
 - Chaque fiche dit ce qui a été lu **en entier** et ce qui n'a été lu qu'en **résumé**.
 - Format et niveaux de preuve : voir [README.md](README.md). Les fiches déjà écrites sont cochées `[x]`.
-- Ordre des vagues : **1 vélo** → 2 natation → 3 triathlon → 4 commun (trous) → 5 course à pied (trous) → 6 muscu → 7 hyrox.
+- Ordre des vagues : **1 vélo** → 2 natation → 3 triathlon → 4 commun (trous) → 5 course à pied (trous) → 6 muscu. (Hyrox : pas de nouveaux sujets, décision de Yanis ; la fiche `hyrox` existante reste.)
 
 Légende : `[x]` existe · `[ ]` à écrire.
 
@@ -689,77 +689,4 @@ Existantes : planification (principes, 5-10 km, semi, marathon, écoles de coach
 
 ---
 
-## HYROX (`hyrox/`)
-
-### planification
-- [x] hyrox
-- [ ] hyrox-periodisation — Périodisation Hyrox
-- [ ] hyrox-plan-debutant — Premier Hyrox
-- [ ] hyrox-plan-pro-double — Hyrox pro et en double
-- [ ] hyrox-semaine-type — Organisation d'une semaine d'Hyrox
-- [ ] hyrox-temps-limite — S'entraîner avec peu de temps
-
-### endurance
-- [ ] hyrox-endurance-course — Course à pied dans l'Hyrox : volume
-- [ ] hyrox-endurance-fatigue — Courir sur jambes fatiguées par les stations
-
-### intensite
-- [ ] hyrox-intensite — Intensités et séances spécifiques
-- [ ] hyrox-simulations — Simulations de course
-- [ ] hyrox-intervalles-stations — Intervalles combinant course et stations
-
-### force
-- [ ] hyrox-force-stations — Force pour sled, wall balls, fentes
-- [ ] hyrox-sled-push-pull — Sled push et pull : technique et préparation
-- [ ] hyrox-wall-balls — Wall balls
-- [ ] hyrox-fentes — Fentes marchées
-- [ ] hyrox-rameur-skierg — Rameur et SkiErg
-- [ ] hyrox-farmers-carry — Farmers carry et préhension
-
-### technique
-- [ ] hyrox-transitions — Transitions et gestion des stations
-- [ ] hyrox-techniques-stations — Technique de chaque station
-- [ ] hyrox-respiration — Respiration et récupération sur la course
-
-### charge-suivi
-- [ ] hyrox-charge-mesure — Quantifier la charge d'un Hyrox
-- [ ] hyrox-tests — Tests de niveau par station
-
-### recuperation
-- [ ] hyrox-recup — Récupération entre séances
-- [ ] hyrox-sommeil — Sommeil
-
-### nutrition
-- [ ] hyrox-nutrition-course — Nutrition le jour de l'Hyrox
-- [ ] hyrox-nutrition-entrainement — Nutrition à l'entraînement
-- [ ] hyrox-hydratation — Hydratation
-
-### sante
-- [ ] hyrox-blessures — Blessures fréquentes (orientation)
-- [ ] hyrox-surcharge — Risque de surcharge en cumulant course et force
-- [ ] hyrox-epaule-dos — Épaules, dos, genoux
-
-### competition
-- [ ] hyrox-pacing — Gestion de l'effort
-- [ ] hyrox-affutage — Affûtage
-- [ ] hyrox-jour-j — Jour J
-- [ ] hyrox-echauffement — Échauffement
-
-### environnement
-- [ ] hyrox-chaleur-salle — Chaleur de la salle
-
-### profils
-- [ ] hyrox-femmes — Athlètes femmes
-- [ ] hyrox-veterans — Vétérans
-- [ ] hyrox-categories — Catégories (open, pro, double, relais)
-
-### materiel
-- [ ] hyrox-chaussures — Chaussures pour l'Hyrox
-- [ ] hyrox-materiel — Matériel et gants
-
-### mental
-- [ ] hyrox-mental — Mental et gestion de la douleur
-
----
-
-*Ce catalogue compte environ 650 sujets (existants compris). À chaque vague : on prend les sujets d'un sport, on cherche 5 sources vérifiées par fiche, on écrit, on régénère l'index, on lance les tests, on coche ici.*
+*Ce catalogue compte environ 480 sujets à écrire. À chaque vague : on prend les sujets d'un sport, on cherche 5 sources vérifiées par fiche, on écrit, on régénère l'index, on lance les tests, on coche ici.*
