@@ -54,7 +54,6 @@ export default function Confidentialite() {
   return (
     <EcranSection>
       <View style={{ gap: espace.e3 }}>
-        <Text style={[typo.micro, { color: p.texteMuet }]}>DERNIÈRE MISE À JOUR : {DATE_MAJ.toUpperCase()}</Text>
         <View style={[styles.liste, { backgroundColor: p.surface, borderColor: p.trait }]}>
           {SECTIONS.map((s, i) => (
             <Section key={s.id} section={s} premiere={i === 0} />
@@ -73,6 +72,7 @@ export default function Confidentialite() {
           </Pressable>
         </View>
         <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'none', letterSpacing: 0 }]}>Les conseils du Coach IA ne remplacent pas un avis médical.</Text>
+        <Text style={[typo.micro, { color: p.texteMuet }]}>DERNIÈRE MISE À JOUR : {DATE_MAJ.toUpperCase()}</Text>
       </View>
     </EcranSection>
   );
