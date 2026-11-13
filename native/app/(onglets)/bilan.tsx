@@ -54,6 +54,8 @@ import { useHistoriqueProgression, useSeriesForceProgression } from '@/hooks/use
 import { useReferences } from '@/hooks/useReferences';
 import { useMenu } from '@/stores/menu';
 import { fenetre as fenetreNiveau, notesTrimestrielles } from '@/data/bilan/niveau-trimestriel';
+import { CourbeFormeLongue } from '@/components/graphes/CourbeFormeLongue';
+import { useConditionLongue } from '@/hooks/useConditionLongue';
 import { useRecordsNiveau } from '@/hooks/useRecordsNiveau';
 import { demanderJour } from '@/stores/jour-demande';
 import { choisirMesure, useMesuresBilan } from '@/stores/mesures-bilan';
@@ -324,11 +326,17 @@ export default function Bilan() {
 
   // Le niveau trimestre par trimestre : heures, charge et records de chaque trimestre, sport par sport (data/bilan/niveau-trimestriel.ts)
   const [selNiveau, setSelNiveau] = useState<number | null>(null);
+  // La courbe de forme (la condition, ta charge lissée sur ~6 semaines) vaut pour tous les sports ensemble : on ne la montre que sur « Tous »
+  const conditionLongue = useConditionLongue(niveauOuvert && filtre === 'tout');
+  const [selForme, setSelForme] = useState<number | null>(null);
   const recordsNiveau = useRecordsNiveau(niveauOuvert, toutes); // les records de puissance, d'allure et de plus longue sortie, tous sports (le filtre ne choisit que les courbes affichées)
   const courbesNiveau = useMemo(() => (niveauOuvert && recordsNiveau.records ? notesTrimestrielles(filtrees, maintenant, recordsNiveau.records) : []), [niveauOuvert, filtrees, maintenant, recordsNiveau.records]);
   const vueNiveau = useMemo(() => fenetreNiveau(courbesNiveau, null, maintenant), [courbesNiveau, maintenant]);
   const couleursNiveau = useMemo(() => Object.fromEntries(vueNiveau.courbes.map((c) => [c.famille, couleurSport(p, c.famille)])), [vueNiveau, p]);
-  useEffect(() => setSelNiveau(null), [filtre, onglet]);
+  useEffect(() => {
+    setSelNiveau(null);
+    setSelForme(null);
+  }, [filtre, onglet]);
 
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
@@ -729,11 +737,18 @@ export default function Bilan() {
                   <ActivityIndicator color={p.texteDoux} />
                 </View>
               ) : vueNiveau.courbes.length ? (
-                <Bloc titre="Niveau trimestre par trimestre">
-                  <View style={{ gap: espace.e3 }}>
-                    <CourbesNiveau trimestres={vueNiveau.trimestres} courbes={vueNiveau.courbes} couleurs={couleursNiveau} selection={selNiveau} onSelection={setSelNiveau} />
-                  </View>
-                </Bloc>
+                <>
+                  <Bloc titre="Niveau trimestre par trimestre">
+                    <View style={{ gap: espace.e3 }}>
+                      <CourbesNiveau trimestres={vueNiveau.trimestres} courbes={vueNiveau.courbes} couleurs={couleursNiveau} selection={selNiveau} onSelection={setSelNiveau} />
+                    </View>
+                  </Bloc>
+                  {filtre === 'tout' && conditionLongue.semaines.length > 1 ? (
+                    <Bloc titre="Forme">
+                      <CourbeFormeLongue semaines={conditionLongue.semaines} selection={selForme} onSelection={setSelForme} />
+                    </Bloc>
+                  ) : null}
+                </>
               ) : (
                 <Bloc titre="Niveau">
                   <Text style={[typo.corps, { color: p.texteDoux }]}>
