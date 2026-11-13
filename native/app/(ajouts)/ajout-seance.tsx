@@ -120,6 +120,7 @@ function FormulaireSeance({ prevue }: { prevue: PrevueComplete | null }) {
         onValider={() => void enregistrer()}
         supprimer={prevue ? { libelle: 'Supprimer la séance', titre: 'Supprimer cette séance ?', message: 'Elle disparaîtra du calendrier. Cette action est définitive.', onConfirmer: () => supprimerPrevue(prevue.id) } : undefined}
       >
+        <ChampTexte etiquette="Nom (facultatif)" value={f.nom} onChangeText={(t) => change({ ...f, nom: t })} maxLength={120} placeholder={nomSport(f.type)} returnKeyType="done" />
         <ChampDate date={date} onChange={(iso) => { setDate(iso); setErreur(''); }} />
         <View style={styles.ligne}>
           <View style={{ flex: 1.4, gap: 6 }}>
@@ -130,7 +131,6 @@ function FormulaireSeance({ prevue }: { prevue: PrevueComplete | null }) {
             <ChampHeure valeur={f.heure} onChange={(h) => change({ ...f, heure: h })} />
           </View>
         </View>
-        <ChampTexte etiquette="Nom (facultatif)" value={f.nom} onChangeText={(t) => change({ ...f, nom: t })} maxLength={120} placeholder={nomSport(f.type)} returnKeyType="done" />
 
         {calcul ? (
           <View style={{ gap: espace.e3 }}>
