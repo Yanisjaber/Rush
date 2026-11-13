@@ -20,6 +20,8 @@ interface Props {
   annee: number;
   maintenant: Date;
   onOuvrir: (id: string) => void;
+  /** Ouvre le Calendrier à ce jour (le début d'une période : jour, lundi de la semaine, 1er du mois, début d'une série). */
+  onJour: (iso: string) => void;
 }
 
 /** Une ligne de la fiche : le nom du record, une précision, la valeur. Touchable quand une séance précise est derrière. */
@@ -35,6 +37,8 @@ interface Ligne {
   sport?: string;
   /** La séance à ouvrir. */
   id?: string | null;
+  /** Pas de séance précise (une période, une série) : le jour où ouvrir le Calendrier. */
+  jour?: string;
 }
 
 const ecrire = (valeur: number, unite: string): string => {
@@ -45,7 +49,7 @@ const ecrire = (valeur: number, unite: string): string => {
 /** Le record (la première entrée du classement) d'un RecordTop, ou null s'il n'y en a pas. */
 const record = (r: RecordTop | undefined): EntreeRecord | null => r?.top[0] ?? null;
 
-export function OngletRecordsTous({ portee, toutes, annee, maintenant, onOuvrir }: Props) {
+export function OngletRecordsTous({ portee, toutes, annee, maintenant, onOuvrir, onJour }: Props) {
   const p = usePalette();
   const acts = useMemo(() => (portee === 'annee' ? activitesAnnee(toutes, annee, maintenant) : toutes), [portee, toutes, annee, maintenant]);
 
@@ -84,14 +88,14 @@ export function OngletRecordsTous({ portee, toutes, annee, maintenant, onOuvrir 
       // L'année est toujours écrite (« Mercredi 4 mars 2026 »), le nom du mois la porte déjà
       const an = e.iso.slice(0, 4);
       const quand = l.titre.includes(an) ? l.titre : `${l.titre} ${an}`;
-      periodeLignes.push({ cle: r.cle, titre: noms[r.cle] ?? r.libelle, sous: [quand, e.detail].filter(Boolean).join(' · '), valeur: ecrire(e.valeur, 'h') });
+      periodeLignes.push({ cle: r.cle, titre: noms[r.cle] ?? r.libelle, sous: [quand, e.detail].filter(Boolean).join(' · '), valeur: ecrire(e.valeur, 'h'), jour: e.iso });
     }
 
     const serieLignes: Ligne[] = [];
     const j = record(reg.find((x) => x.cle === 'serie'));
-    if (j) serieLignes.push({ cle: 'serie', titre: "Jours actifs d'affilée", sous: `Du ${jourMoisCourt(j.iso)} au ${jourMoisCourt(j.fin ?? j.iso)} ${(j.fin ?? j.iso).slice(0, 4)}`, valeur: ecrire(j.valeur, 'jours') });
+    if (j) serieLignes.push({ cle: 'serie', titre: "Jours actifs d'affilée", sous: `Du ${jourMoisCourt(j.iso)} au ${jourMoisCourt(j.fin ?? j.iso)} ${(j.fin ?? j.iso).slice(0, 4)}`, valeur: ecrire(j.valeur, 'jours'), jour: j.iso });
     const w = record(semaines);
-    if (w) serieLignes.push({ cle: 'serie_semaines', titre: 'Semaines à 3 séances ou +', sous: `Du ${jourMoisCourt(w.iso)} au ${jourMoisCourt(w.fin ?? w.iso)} ${(w.fin ?? w.iso).slice(0, 4)}`, valeur: ecrire(w.valeur, 'semaines') });
+    if (w) serieLignes.push({ cle: 'serie_semaines', titre: 'Semaines à 3 séances ou +', sous: `Du ${jourMoisCourt(w.iso)} au ${jourMoisCourt(w.fin ?? w.iso)} ${(w.fin ?? w.iso).slice(0, 4)}`, valeur: ecrire(w.valeur, 'semaines'), jour: w.iso });
 
     return { seance: seanceLignes, periode: periodeLignes, serie: serieLignes };
   }, [acts]);
@@ -132,8 +136,13 @@ export function OngletRecordsTous({ portee, toutes, annee, maintenant, onOuvrir 
             </>
           );
           const style = [styles.ligne, i > 0 ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: p.trait } : undefined];
+          const jour = l.jour;
           return l.id ? (
             <Pressable key={l.cle} onPress={() => onOuvrir(l.id as string)} accessibilityRole="button" accessibilityLabel={`${etiquette}. Ouvrir la séance`} style={style}>
+              {contenu}
+            </Pressable>
+          ) : jour ? (
+            <Pressable key={l.cle} onPress={() => onJour(jour)} accessibilityRole="button" accessibilityLabel={`${etiquette}. Voir cette période dans le calendrier`} style={style}>
               {contenu}
             </Pressable>
           ) : (

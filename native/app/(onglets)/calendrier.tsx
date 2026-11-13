@@ -58,8 +58,11 @@ export default function Calendrier() {
   const [basTitre, setBasTitre] = useState(0);
   // Le coach peut demander un jour (« montre-moi jeudi ») : on saute à son mois et on le sélectionne, une seule fois
   const jourDemande = useJourDemande();
+  // Le jour demandé est gardé jusqu'à ce que le mois soit chargé : sinon le choix automatique d'un jour (ci-dessous) l'écraserait
+  const jourAGarder = useRef<string | null>(null);
   useEffect(() => {
     if (!jourDemande) return;
+    jourAGarder.current = jourDemande;
     setCible({ annee: Number(jourDemande.slice(0, 4)), mois: Number(jourDemande.slice(5, 7)) - 1 });
     setChoisi(jourDemande);
     consommerJour();
@@ -115,6 +118,12 @@ export default function Calendrier() {
 
   // En changeant de mois, on choisit aujourd'hui (mois courant), sinon le premier jour qui a quelque chose, sinon le 1er
   useEffect(() => {
+    const garde = jourAGarder.current;
+    if (garde && garde.slice(0, 7) === `${cible.annee}-${String(cible.mois + 1).padStart(2, '0')}`) {
+      setChoisi(garde);
+      if (!chargement) jourAGarder.current = null; // le mois est chargé : le jour demandé a été posé, on n'y revient plus
+      return;
+    }
     if (estMoisCourant) setChoisi(aujourdhui);
     else setChoisi(dansMois.find((j) => !jourVide(j))?.iso ?? dansMois[0]?.iso ?? choisi);
     // le choix suit le mois affiché et l'arrivée des données, pas chaque rendu

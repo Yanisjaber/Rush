@@ -52,6 +52,7 @@ import { useRecordsVelo } from '@/hooks/useRecordsVelo';
 import { useHistoriqueProgression, useSeriesForceProgression } from '@/hooks/useHistoriqueProgression';
 import { useReferences } from '@/hooks/useReferences';
 import { useMenu } from '@/stores/menu';
+import { demanderJour } from '@/stores/jour-demande';
 import { choisirMesure, useMesuresBilan } from '@/stores/mesures-bilan';
 import { usePiliersAnnuels } from '@/hooks/usePiliersAnnuels';
 import { usePiliersCourse } from '@/hooks/usePiliersCourse';
@@ -691,6 +692,10 @@ export default function Bilan() {
                   annee={anneeRecords}
                   maintenant={maintenant}
                   onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
+                  onJour={(iso) => {
+                    demanderJour(iso);
+                    router.navigate('/calendrier');
+                  }}
                 />
               ) : (
                 <OngletRecordsSport
