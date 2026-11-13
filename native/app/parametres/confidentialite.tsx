@@ -7,7 +7,7 @@ import { espace, rayon } from '@/theme/couleurs';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Confidentialité : le texte de la politique, une section par sujet, dépliable (le Coach IA est ouvert au départ).
+// Confidentialité : le texte de la politique, une section par sujet, dépliable (tout est replié au départ).
 // Le texte vit dans src/data/confidentialite.ts (copie de docs/POLITIQUE_CONFIDENTIALITE.md).
 function Chevron({ ouvert, couleur }: { ouvert: boolean; couleur: string }) {
   return (

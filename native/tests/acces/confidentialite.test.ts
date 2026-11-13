@@ -11,8 +11,8 @@ test('chaque section a un identifiant unique, un titre et du contenu', () => {
   }
 });
 
-test('une seule section est dépliée au départ : le Coach IA', () => {
-  assert.deepEqual(SECTIONS.filter((s) => s.ouverte).map((s) => s.id), ['coach']);
+test("toutes les sections sont repliées à l'ouverture de l'écran", () => {
+  assert.deepEqual(SECTIONS.filter((s) => s.ouverte), []);
 });
 
 test("aucun reste de brouillon n'est publié", () => {

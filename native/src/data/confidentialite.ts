@@ -11,7 +11,7 @@ export type SectionConfidentialite = {
   paragraphes?: string[];
   /** Une puce par entrée */
   puces?: string[];
-  /** Section dépliée à l'ouverture de l'écran */
+  /** Section dépliée à l'ouverture de l'écran (aucune pour l'instant : tout est replié) */
   ouverte?: boolean;
 };
 
@@ -43,7 +43,6 @@ export const SECTIONS: SectionConfidentialite[] = [
   {
     id: 'coach',
     titre: 'Le Coach IA',
-    ouverte: true,
     puces: [
       'Pour te répondre, le Coach envoie un résumé de tes données d’entraînement (séances, charge, objectifs) à Anthropic, l’entreprise qui fournit le modèle d’IA. Les catégories de santé (cycle, corps, nutrition, événements…) ne partent que si tu les as autorisées.',
       'Ce résumé est fait de chiffres agrégés, sans ton nom, ni ton e-mail, ni ton identifiant. Ton message, lui, est transmis tel que tu l’écris : évite d’y mettre ce que tu ne veux pas partager.',
