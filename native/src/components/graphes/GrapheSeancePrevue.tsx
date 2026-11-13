@@ -2,8 +2,8 @@ import { Fragment, useState } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Line, Rect, Text as TexteSvg } from 'react-native-svg';
 import { detailIntervalles, grapheDeBlocs, lignesIntervalles, texteValeur, type LigneDetail } from '@/data/calendrier/graphe-prevue';
-import { COULEURS_ZONE, texteDuree, ZONES, type Bloc, type Reference } from '@/data/calendrier/structure';
-import { avecAlpha, espace, rayon } from '@/theme/couleurs';
+import { COULEURS_ZONE, texteDuree, type Bloc, type Reference } from '@/data/calendrier/structure';
+import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -81,44 +81,48 @@ export function GrapheSeancePrevue({ blocs, couleur, reference, sport }: { blocs
       </View>
 
       <View accessible={false} importantForAccessibility="no-hide-descendants" style={styles.detail}>
+        {/* Les colonnes alignées : durée, zone, cible (et le libellé à droite). Pas de cadre : des traits fins, comme les listes de l'app. */}
+        <View style={styles.enteteColonnes}>
+          <Text style={[typo.micro, styles.colDuree, { color: p.texteMuet }]}>DURÉE</Text>
+          <Text style={[typo.micro, styles.colZone, { color: p.texteMuet }]}>ZONE</Text>
+          <Text style={[typo.micro, { color: p.texteMuet }]}>CIBLE</Text>
+        </View>
         {etapes.slice(0, ETAPES_MAX).map((e, i) =>
           e.genre === 'ligne' ? (
-            <Ligne key={i} ligne={e.ligne} metrique={g.metrique} />
+            <Ligne key={i} ligne={e.ligne} />
           ) : (
-            <View key={i} style={[styles.groupe, { borderColor: couleur }]}>
-              <View style={[styles.badge, { backgroundColor: couleur }]}>
-                <Text style={[typo.petit, { color: p.fond, fontFamily: police.texte600 }]}>{e.repetitions}×</Text>
+            <View key={i}>
+              {/* Le crochet des répétitions : un trait vertical à la couleur du sport dans la marge, du « 3 × » à la dernière ligne du groupe */}
+              <View style={[styles.crochet, { backgroundColor: couleur }]} />
+              <View style={[styles.ligneDetail, styles.ligneRepetitions, { borderTopColor: p.trait }]}>
+                <Text style={[styles.repetitions, { color: couleur }]}>{e.repetitions} ×</Text>
               </View>
               {e.lignes.map((l, k) => (
-                <Ligne key={k} ligne={l} metrique={g.metrique} />
+                <Ligne key={k} ligne={l} />
               ))}
             </View>
           ),
         )}
-        {etapes.length > ETAPES_MAX ? <Text style={[typo.petit, { color: p.texteMuet }]}>+ {etapes.length - ETAPES_MAX} blocs sur la page suivante</Text> : null}
+        {etapes.length > ETAPES_MAX ? <Text style={[typo.petit, { color: p.texteMuet, paddingTop: espace.e1 }]}>+ {etapes.length - ETAPES_MAX} blocs sur la page suivante</Text> : null}
       </View>
     </View>
   );
 }
 
-/** Une ligne du détail : la durée, la zone (pastille colorée avec sa cible) et un libellé. */
-function Ligne({ ligne, metrique }: { ligne: LigneDetail; metrique: 'power' | 'hr' | 'pace' }) {
+/** Une ligne du détail : la durée en gros, la zone en petite étiquette colorée, la cible, et le libellé en capitales à droite. */
+function Ligne({ ligne }: { ligne: LigneDetail }) {
   const p = usePalette();
-  const z = Math.min(ligne.zone, COULEURS_ZONE.length - 1);
-  const couleurZone = COULEURS_ZONE[z];
-  const nomZone = `Zone ${ligne.zone + 1}`;
-  const existe = ZONES[metrique].noms.length > ligne.zone;
+  const couleurZone = COULEURS_ZONE[Math.min(ligne.zone, COULEURS_ZONE.length - 1)];
   return (
-    <View style={styles.ligneDetail}>
-      <View style={[styles.pastilleDuree, { backgroundColor: p.surface2 }]}>
-        <Text style={[typo.petit, { color: p.texte }]}>{ligne.duree}</Text>
+    <View style={[styles.ligneDetail, { borderTopColor: p.trait }]}>
+      <Text style={[styles.duree, styles.colDuree, { color: p.texte }]}>{ligne.duree}</Text>
+      <View style={styles.colZone}>
+        <View style={[styles.etiquetteZone, { backgroundColor: couleurZone }]}>
+          <Text style={styles.texteZone}>Z{ligne.zone + 1}</Text>
+        </View>
       </View>
-      <View style={[styles.pastilleZone, { backgroundColor: avecAlpha(couleurZone, 0.2) }]}>
-        <View style={[styles.rondZone, { backgroundColor: couleurZone }]} />
-        <Text numberOfLines={1} style={[typo.petit, { color: p.texte, fontFamily: police.texte600 }]}>{existe ? nomZone : `Z${ligne.zone + 1}`}</Text>
-        <Text numberOfLines={1} style={[typo.petit, { color: p.texteMuet, flexShrink: 1 }]}>{ligne.cible}</Text>
-      </View>
-      {ligne.libelle ? <Text numberOfLines={1} style={[typo.petit, { color: p.texteDoux, flexShrink: 1 }]}>{ligne.libelle}</Text> : null}
+      <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flexShrink: 1, fontVariant: ['tabular-nums'] }]}>{ligne.cible}</Text>
+      {ligne.libelle ? <Text numberOfLines={1} style={[typo.micro, styles.libelle, { color: p.texteMuet }]}>{ligne.libelle}</Text> : null}
     </View>
   );
 }
@@ -126,11 +130,16 @@ function Ligne({ ligne, metrique }: { ligne: LigneDetail; metrique: 'power' | 'h
 const styles = StyleSheet.create({
   carte: { borderRadius: rayon.bloc, borderWidth: 1, padding: espace.e3, paddingTop: espace.e3 + 4, gap: espace.e2, overflow: 'hidden' },
   bandeau: { position: 'absolute', top: 0, left: 0, right: 0, height: 4 },
-  detail: { gap: espace.e2 },
-  ligneDetail: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, minHeight: 30 },
-  pastilleDuree: { minHeight: 30, paddingHorizontal: 10, borderRadius: rayon.rond, justifyContent: 'center' },
-  pastilleZone: { minHeight: 30, paddingHorizontal: 10, borderRadius: rayon.rond, flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
-  rondZone: { width: 12, height: 12, borderRadius: 6 },
-  groupe: { borderWidth: 1.5, borderRadius: 16, padding: espace.e2, paddingTop: espace.e3, gap: espace.e1, marginTop: espace.e1 },
-  badge: { position: 'absolute', top: -11, left: 12, minHeight: 22, paddingHorizontal: 10, borderRadius: rayon.rond, justifyContent: 'center' },
+  detail: { gap: 0 },
+  enteteColonnes: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, paddingBottom: 4 },
+  ligneDetail: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, minHeight: 36, borderTopWidth: StyleSheet.hairlineWidth },
+  ligneRepetitions: { minHeight: 28 },
+  crochet: { position: 'absolute', left: -espace.e2, top: 8, bottom: 8, width: 3, borderRadius: 2 },
+  colDuree: { width: 54 },
+  colZone: { width: 38, alignItems: 'flex-start' },
+  duree: { fontFamily: police.titre700, fontSize: 16, fontVariant: ['tabular-nums'] },
+  etiquetteZone: { minWidth: 30, height: 20, paddingHorizontal: 4, borderRadius: rayon.s, alignItems: 'center', justifyContent: 'center' },
+  texteZone: { fontFamily: police.texte600, fontSize: 11, letterSpacing: 0.4, color: '#0c0d10' },
+  repetitions: { fontFamily: police.titre800, fontSize: 17 },
+  libelle: { marginLeft: 'auto', textAlign: 'right', maxWidth: '38%' },
 });
