@@ -186,32 +186,42 @@ function FormulaireSeance({ prevue }: { prevue: PrevueComplete | null }) {
           </View>
         ) : null}
 
-        <View style={styles.ligne}>
-          {!calcul ? (
+        {/* Avec des blocs, la durée et la charge viennent des blocs : distance et dénivelé tiennent côte à côte sur une ligne */}
+        {calcul ? (
+          <View style={styles.ligne}>
             <View style={{ flex: 1 }}>
-              {/* Comme « Activité déjà faite » : la durée se choisit sur les roues d'Apple (heures et minutes) */}
-              <ChampHeure
-                etiquette="Durée"
-                valeur={heureDepuisDuree(dureeSaisie.heures, dureeSaisie.minutes)}
-                affichage={texteDureeSaisie(dureeSaisie.heures, dureeSaisie.minutes)}
-                onChange={(h) => change({ ...f, duree: minutesDepuisHeure(h) })}
-              />
+              <ChampTexte etiquette={distanceEnMetres(f.type) ? 'Distance (m)' : 'Distance (km)'} value={f.distance} onChangeText={(t) => change({ ...f, distance: t })} keyboardType="decimal-pad" maxLength={8} accessibilityLabel={distanceEnMetres(f.type) ? 'Distance en mètres' : 'Distance en kilomètres'} />
             </View>
-          ) : null}
-          <View style={{ flex: 1 }}>
-            <ChampTexte etiquette={distanceEnMetres(f.type) ? 'Distance (m)' : 'Distance (km)'} value={f.distance} onChangeText={(t) => change({ ...f, distance: t })} keyboardType="decimal-pad" maxLength={8} accessibilityLabel={distanceEnMetres(f.type) ? 'Distance en mètres' : 'Distance en kilomètres'} />
-          </View>
-        </View>
-        <View style={styles.ligne}>
-          <View style={{ flex: 1 }}>
-            <ChampTexte etiquette="Dénivelé + (m)" value={f.dplus} onChangeText={(t) => change({ ...f, dplus: t })} keyboardType="number-pad" maxLength={5} accessibilityLabel="Dénivelé positif en mètres" />
-          </View>
-          {!calcul ? (
             <View style={{ flex: 1 }}>
-              <ChampTexte etiquette="Charge (pts)" value={f.tss} onChangeText={(t) => change({ ...f, tss: t })} keyboardType="number-pad" maxLength={4} placeholder={charge != null ? `≈ ${charge}` : ''} accessibilityLabel="Charge en points (laisse vide pour l'estimation)" />
+              <ChampTexte etiquette="Dénivelé + (m)" value={f.dplus} onChangeText={(t) => change({ ...f, dplus: t })} keyboardType="number-pad" maxLength={5} accessibilityLabel="Dénivelé positif en mètres" />
             </View>
-          ) : null}
-        </View>
+          </View>
+        ) : (
+          <>
+            <View style={styles.ligne}>
+              <View style={{ flex: 1 }}>
+                {/* Comme « Activité déjà faite » : la durée se choisit sur les roues d'Apple (heures et minutes) */}
+                <ChampHeure
+                  etiquette="Durée"
+                  valeur={heureDepuisDuree(dureeSaisie.heures, dureeSaisie.minutes)}
+                  affichage={texteDureeSaisie(dureeSaisie.heures, dureeSaisie.minutes)}
+                  onChange={(h) => change({ ...f, duree: minutesDepuisHeure(h) })}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ChampTexte etiquette={distanceEnMetres(f.type) ? 'Distance (m)' : 'Distance (km)'} value={f.distance} onChangeText={(t) => change({ ...f, distance: t })} keyboardType="decimal-pad" maxLength={8} accessibilityLabel={distanceEnMetres(f.type) ? 'Distance en mètres' : 'Distance en kilomètres'} />
+              </View>
+            </View>
+            <View style={styles.ligne}>
+              <View style={{ flex: 1 }}>
+                <ChampTexte etiquette="Dénivelé + (m)" value={f.dplus} onChangeText={(t) => change({ ...f, dplus: t })} keyboardType="number-pad" maxLength={5} accessibilityLabel="Dénivelé positif en mètres" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ChampTexte etiquette="Charge (pts)" value={f.tss} onChangeText={(t) => change({ ...f, tss: t })} keyboardType="number-pad" maxLength={4} placeholder={charge != null ? `≈ ${charge}` : ''} accessibilityLabel="Charge en points (laisse vide pour l'estimation)" />
+              </View>
+            </View>
+          </>
+        )}
         <ChoixEffort valeur={f.rpe} onChange={(v) => change({ ...f, rpe: v })} etiquette="Effort estimé (facultatif)" />
         <View style={{ gap: 6 }}>
           <ChampParcoursGpx etiquette="Parcours GPX (facultatif)" parcours={parcours} onChange={choisirParcours} onErreur={setErreur} onReprendre={utiliserParcours} />
