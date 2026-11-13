@@ -99,11 +99,14 @@ export function OngletRecordsTous({ portee, toutes, annee, maintenant, onOuvrir 
           const etiquette = `${l.titre}, ${l.valeur}. ${l.sous}`;
           const contenu = (
             <>
-              {l.famille ? <View style={[styles.pastille, { backgroundColor: couleurSport(p, l.famille) }]} /> : null}
               <View style={styles.centre}>
-                <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte }]}>
-                  {l.titre}
-                </Text>
+                {/* La pastille de couleur du sport vient juste après le titre */}
+                <View style={styles.titre}>
+                  <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flexShrink: 1 }]}>
+                    {l.titre}
+                  </Text>
+                  {l.famille ? <View style={[styles.pastille, { backgroundColor: couleurSport(p, l.famille) }]} /> : null}
+                </View>
                 <Text numberOfLines={2} style={[typo.petit, { color: p.texteMuet }]}>
                   {l.sous}
                 </Text>
@@ -141,5 +144,6 @@ const styles = StyleSheet.create({
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56, paddingVertical: 8 },
   pastille: { width: 10, height: 10, borderRadius: 5 },
   centre: { flex: 1 },
+  titre: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   valeur: { fontFamily: police.titre700, fontSize: 17, fontVariant: ['tabular-nums'] },
 });
