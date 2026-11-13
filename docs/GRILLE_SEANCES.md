@@ -11,12 +11,12 @@ Légende : **Complet** = écran pensé pour ce sport. **Générique** = l'écran
 
 ## La grille (corrigée avec Yanis, 14 nov.)
 
-Seule la **séance réalisée en course et en vélo** est terminée. Tout le reste est à faire ou à refaire, y compris la prévue et la compétition en course, vélo et natation (elles existent, mais ne sont pas jugées finies).
+Sont terminées : la **séance réalisée** en course et vélo, et la **séance prévue** en course, vélo et natation (14 nov.). Tout le reste est à faire ou à refaire, y compris la compétition en course, vélo et natation (elle existe, mais n'est pas jugée finie).
 
 | | Course | Vélo | Natation | Muscu | Hyrox | Triathlon / Duathlon |
 |---|---|---|---|---|---|---|
 | **Réalisée** | **Terminé** | **Terminé** | À faire : version générique (3 pages, tours = longueurs) | À faire : aucun exercice ni série affichés | À faire : les 16 segments non affichés | À faire : une sortie comme une autre, sans ses étapes ni transitions |
-| **Prévue** | À refaire : existe (blocs, profil, GPX) | À refaire : idem | À refaire : idem | À faire : seulement des chiffres | À faire : seulement des chiffres | À faire : pas de structure par discipline |
+| **Prévue** | **Terminé** (14 nov.) | **Terminé** | **Terminé** | À faire : seulement des chiffres | À faire : seulement des chiffres | À faire : pas de structure par discipline |
 | **Compétition** | À refaire : version générique | À refaire : idem | À refaire : idem | Sans objet | À faire : sans lien avec l'objectif Hyrox | À faire : le format XS à XL se saisit, rien d'autre |
 
 Autres cas déjà couverts : ski (journal des descentes), activités sans GPS (dossard du sport).
@@ -27,7 +27,7 @@ Chacun commence par **8 maquettes** (ta règle), puis le code. Durées en jours,
 
 | # | Écran | Pourquoi | Importance | Durée |
 |---|---|---|---|---|
-| 1 | Prévue · Course, vélo, natation | Les sports principaux, l'écran existe mais est à refaire | 8/10 | 2,5 |
+| 1 | ~~Prévue · Course, vélo, natation~~ | Fait et validé le 14 nov. | 8/10 | 2,5 |
 | 2 | Compétition · Course, vélo, natation | Idem | 8/10 | 2,5 |
 | 3 | Réalisée · Triathlon et duathlon : les étapes | Une séance de triathlon, c'est trois sports | 8/10 | 2,5 |
 | 4 | Compétition · Triathlon : étapes, transitions, objectifs | Lié au précédent (déjà dans A_FAIRE, Calendrier) | 8/10 | 2,5 |
