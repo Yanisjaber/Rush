@@ -165,7 +165,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
             <>
               {/* Sans carte : le héros s'il y en a un (profil des blocs), sinon la silhouette du sport, dans la zone libre au-dessus de la feuille */}
               {heros ? (
-                <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: marges.haut, bottom: marges.bas, paddingHorizontal: espace.e4, paddingVertical: espace.e3 }}>
+                <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: marges.haut, bottom: marges.bas, paddingHorizontal: espace.e4, paddingVertical: espace.e3 }}>
                   {heros}
                 </View>
               ) : (

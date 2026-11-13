@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Line, Rect, Text as TexteSvg } from 'react-native-svg';
 import { detailIntervalles, grapheDeBlocs, graduations, lignesIntervalles, texteValeur, type LigneDetail } from '@/data/calendrier/graphe-prevue';
 import { COULEURS_ZONE, texteDuree, type Bloc, type Reference } from '@/data/calendrier/structure';
@@ -11,23 +11,16 @@ import { usePalette } from '@/theme/usePalette';
 // avec les axes (cible à gauche, graduée régulièrement avec des valeurs rondes ; temps en bas). Dessous, le détail en lignes compactes : une pastille de durée, une pastille de zone avec sa cible,
 // le libellé ; les répétitions sont encadrées avec leur « 3× ».
 // Héros de la page 1 d'une séance prévue sans parcours, posé directement sur le fond (sans carte).
-const HAUTEUR_MIN = 132;
-const HAUTEUR_MAX = 300;
+const HAUTEUR = 190; // la zone du graphique ne bouge pas, quel que soit le nombre de blocs
 const G = 34; // la place des valeurs à gauche
 const D = 6;
 const H = 8; // un peu d'air au-dessus du premier repère
 const B = 18; // la place du temps en bas
-const ETAPES_MAX = 5; // au-delà, le détail s'arrête : le reste est sur la page 2
 
 export function GrapheSeancePrevue({ blocs, couleur, reference, sport }: { blocs: Bloc[]; couleur: string; reference: Reference; sport: string }) {
   const p = usePalette();
   const g = grapheDeBlocs(blocs, reference, sport);
   const [largeur, setLargeur] = useState(0);
-  // Le graphique prend la place que le détail ne prend pas : plus de vide en haut ni en bas
-  const [zone, setZone] = useState(0);
-  const [hDetail, setHDetail] = useState(0);
-  const plafond = g && g.segments.length <= 2 ? 170 : HAUTEUR_MAX; // peu de segments : un grand aplat n'apporte rien
-  const HAUTEUR = Math.round(Math.min(plafond, Math.max(HAUTEUR_MIN, zone - hDetail - espace.e3)));
   if (!g) return null;
   const lignes = lignesIntervalles(blocs, reference, sport);
   const etapes = detailIntervalles(blocs, reference, sport);
@@ -44,7 +37,7 @@ export function GrapheSeancePrevue({ blocs, couleur, reference, sport }: { blocs
   const etiquette = `Profil de la séance, ${texteDuree(g.total)}. ${lignes.map((l) => `${l.repetitions > 1 ? `${l.repetitions} fois ` : ''}${l.nom}, ${l.effort}, ${l.cible}${l.recup ? `, récupération ${l.recup}` : ''}`).join(' ; ')}.`;
 
   return (
-    <View accessible accessibilityLabel={etiquette} style={styles.corps} onLayout={(e: LayoutChangeEvent) => setZone(e.nativeEvent.layout.height)}>
+    <View accessible accessibilityLabel={etiquette} style={styles.corps}>
       <View onLayout={(e: LayoutChangeEvent) => setLargeur(e.nativeEvent.layout.width)}>
         {largeur > 0 ? (
           <Svg width="100%" height={HAUTEUR} viewBox={`0 0 ${largeur} ${HAUTEUR}`}>
@@ -67,7 +60,7 @@ export function GrapheSeancePrevue({ blocs, couleur, reference, sport }: { blocs
               );
             })}
             {temps.map((t) => (
-              <TexteSvg key={t} x={x(t)} y={HAUTEUR - 4} fontSize={10} fontFamily={police.texte400} fill={p.texteMuet} textAnchor={t === 0 ? 'start' : 'middle'}>
+              <TexteSvg key={t} x={x(t)} y={HAUTEUR - 4} fontSize={10} fontFamily={police.texte400} fill={p.texteMuet} textAnchor={t === 0 ? 'start' : t + pasTemps > g.total + 0.01 ? 'end' : 'middle'}>
                 {t === 0 ? '0' : `${t}′`}
               </TexteSvg>
             ))}
@@ -77,14 +70,15 @@ export function GrapheSeancePrevue({ blocs, couleur, reference, sport }: { blocs
         )}
       </View>
 
-      <View accessible={false} importantForAccessibility="no-hide-descendants" style={styles.detail} onLayout={(e: LayoutChangeEvent) => setHDetail(e.nativeEvent.layout.height)}>
+      {/* La zone du détail : tout le reste de la place ; si les blocs débordent en bas, elle défile */}
+      <ScrollView style={styles.zoneDetail} contentContainerStyle={styles.detail} showsVerticalScrollIndicator>
         {/* Les colonnes alignées : durée, zone, cible (et le libellé à droite). Pas de cadre : des traits fins, comme les listes de l'app. */}
         <View style={styles.enteteColonnes}>
           <Text style={[typo.micro, styles.colDuree, { color: p.texteMuet }]}>DURÉE</Text>
           <Text style={[typo.micro, styles.colZone, { color: p.texteMuet }]}>ZONE</Text>
           <Text style={[typo.micro, { color: p.texteMuet }]}>CIBLE</Text>
         </View>
-        {etapes.slice(0, ETAPES_MAX).map((e, i) =>
+        {etapes.map((e, i) =>
           e.genre === 'ligne' ? (
             <Ligne key={i} ligne={e.ligne} />
           ) : (
@@ -100,8 +94,7 @@ export function GrapheSeancePrevue({ blocs, couleur, reference, sport }: { blocs
             </View>
           ),
         )}
-        {etapes.length > ETAPES_MAX ? <Text style={[typo.petit, { color: p.texteMuet, paddingTop: espace.e1 }]}>+ {etapes.length - ETAPES_MAX} blocs sur la page suivante</Text> : null}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -127,7 +120,8 @@ function Ligne({ ligne }: { ligne: LigneDetail }) {
 const styles = StyleSheet.create({
   // Pas de carte : le graphique et le détail sont posés directement sur le fond de la page
   corps: { flex: 1, gap: espace.e2 },
-  detail: { gap: 0 },
+  zoneDetail: { flex: 1, marginHorizontal: -espace.e2 },
+  detail: { gap: 0, paddingHorizontal: espace.e2, paddingBottom: espace.e2 },
   enteteColonnes: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, paddingBottom: 4 },
   ligneDetail: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, minHeight: 36, borderTopWidth: StyleSheet.hairlineWidth },
   ligneRepetitions: { minHeight: 28 },
