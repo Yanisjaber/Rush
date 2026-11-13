@@ -322,12 +322,11 @@ export default function Bilan() {
   const anneeInutile = onglet === 'progres' && !(niveauNatation || progres.some(({ prog }) => (prog.famille === 'velo' && niveauGlobalVelo) || (prog.famille === 'course' && niveauCourse) || (prog.famille === 'muscu' && niveauMuscu)));
 
   // Le niveau trimestre par trimestre : heures, charge et records de chaque trimestre, sport par sport (data/bilan/niveau-trimestriel.ts)
-  const [periodeNiveau, setPeriodeNiveau] = useState<'3ans' | 'tout'>('3ans');
   const [selNiveau, setSelNiveau] = useState<number | null>(null);
   const courbesNiveau = useMemo(() => (niveauOuvert ? notesTrimestrielles(filtrees, maintenant) : []), [niveauOuvert, filtrees, maintenant]);
-  const vueNiveau = useMemo(() => fenetreNiveau(courbesNiveau, periodeNiveau === '3ans' ? 12 : null, maintenant), [courbesNiveau, periodeNiveau, maintenant]);
+  const vueNiveau = useMemo(() => fenetreNiveau(courbesNiveau, null, maintenant), [courbesNiveau, maintenant]);
   const couleursNiveau = useMemo(() => Object.fromEntries(vueNiveau.courbes.map((c) => [c.famille, couleurSport(p, c.famille)])), [vueNiveau, p]);
-  useEffect(() => setSelNiveau(null), [filtre, periodeNiveau, onglet]);
+  useEffect(() => setSelNiveau(null), [filtre, onglet]);
 
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
@@ -726,15 +725,6 @@ export default function Bilan() {
               vueNiveau.courbes.length ? (
                 <Bloc titre="Niveau trimestre par trimestre">
                   <View style={{ gap: espace.e3 }}>
-                    <OngletsSegment<'3ans' | 'tout'>
-                      etiquette="Période affichée"
-                      onglets={[
-                        { cle: '3ans', nom: '3 ans' },
-                        { cle: 'tout', nom: 'Tout' },
-                      ]}
-                      actuel={periodeNiveau}
-                      onChoisir={setPeriodeNiveau}
-                    />
                     <CourbesNiveau trimestres={vueNiveau.trimestres} courbes={vueNiveau.courbes} couleurs={couleursNiveau} selection={selNiveau} onSelection={setSelNiveau} />
                   </View>
                 </Bloc>

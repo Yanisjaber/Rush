@@ -1,7 +1,6 @@
-import { Fragment } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Line, Path, Text as TexteSvg } from 'react-native-svg';
-import { ZoneTactile } from '@/components/graphes/ZoneTactile';
+import { Fragment, useRef, useState } from 'react';
+import { ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
+import Svg, { Circle, Line, Path, Rect, Text as TexteSvg } from 'react-native-svg';
 import { moisDuTrimestre, nomTrimestre, type CourbeSport } from '@/data/bilan/niveau-trimestriel';
 import { texteHM } from '@/data/outils/format';
 import { espace } from '@/theme/couleurs';
@@ -11,9 +10,10 @@ import { usePalette } from '@/theme/usePalette';
 
 // Le niveau trimestre par trimestre : une courbe de 0 à 100 par sport, dans la couleur du sport. La note d'un trimestre combine ses heures, sa charge et les records posés pendant ces trois mois
 // (voir data/bilan/niveau-trimestriel.ts) ; 100 = ton meilleur trimestre de ce sport.
-// Toucher le graphique choisit un trimestre : sous le dessin, la note de chaque sport pour ce trimestre (sinon, le meilleur trimestre de chaque sport).
+// On voit les 5 dernières années ; un glissement du doigt vers la droite remonte dans le temps. Un trait vertical marque chaque début d'année, l'axe 0 / 50 / 100 reste fixe.
+// Toucher un trimestre le choisit : sous le dessin, la note de chaque sport pour ce trimestre (sinon, le meilleur trimestre de chaque sport).
 interface Props {
-  /** Les trimestres affichés, dans l'ordre (« 2026-T1 »). */
+  /** Tous les trimestres, dans l'ordre (« 2026-T1 »). */
   trimestres: string[];
   courbes: CourbeSport[];
   /** La couleur de chaque sport (par famille). */
@@ -23,12 +23,13 @@ interface Props {
   onSelection: (index: number | null) => void;
 }
 
-const LARGEUR = 320;
 const HAUTEUR = 200;
-const G = 30; // la place des notes à gauche
-const D = 10;
+const G = 30; // la place des notes à gauche (axe fixe)
+const MARGE = 12; // un peu d'air de chaque côté de la courbe
 const H = 12;
 const B = 24; // la place des années en bas
+const TRIMESTRES_VISIBLES = 20; // 5 ans
+const LARGEUR_DEFAUT = 320;
 
 const nomSport = (famille: string): string => (Object.hasOwn(SPORTS, famille) ? SPORTS[famille as keyof typeof SPORTS].court : famille);
 const heures = (h: number): string => texteHM(Math.round(h * 60));
@@ -36,61 +37,88 @@ const heures = (h: number): string => texteHM(Math.round(h * 60));
 const faits = (pt: { heures: number; charge: number; records: number }): string =>
   [heures(pt.heures), pt.charge > 0 ? `${Math.round(pt.charge).toLocaleString('fr-FR')} pts` : '', pt.records > 0 ? `${pt.records} ${pt.records > 1 ? 'records' : 'record'}` : ''].filter(Boolean).join(' · ');
 
+const y = (note: number): number => H + ((100 - note) / 100) * (HAUTEUR - H - B);
+
 export function CourbesNiveau({ trimestres, courbes, couleurs, selection, onSelection }: Props) {
   const p = usePalette();
+  const defilement = useRef<ScrollViewInstance>(null);
+  const [largeur, setLargeur] = useState(LARGEUR_DEFAUT);
   const n = trimestres.length;
-  const pas = n > 1 ? (LARGEUR - G - D) / (n - 1) : 0;
-  const x = (i: number): number => (n > 1 ? G + i * pas : (G + LARGEUR - D) / 2);
-  const y = (note: number): number => H + ((100 - note) / 100) * (HAUTEUR - H - B);
+  // La zone qui défile : 20 trimestres tiennent dans l'écran, les autres sont derrière (à gauche, plus anciens)
+  const visible = Math.max(80, largeur - G);
+  const pas = (visible - 2 * MARGE) / (TRIMESTRES_VISIBLES - 1);
+  const x = (i: number): number => MARGE + i * pas;
+  const contenu = Math.max(visible, 2 * MARGE + Math.max(0, n - 1) * pas);
   const rang = new Map(trimestres.map((t, i) => [t, i]));
-  // Les années écrites sous la courbe : à chaque T1, et au premier trimestre affiché (sauf quand le T1 suivant est à moins de 34 pt : les deux années s'écriraient l'une sur l'autre)
-  const premiersT1 = trimestres.map((t, i) => ({ t, i })).filter(({ t }) => t.endsWith('-T1'));
-  const premierT1 = premiersT1[0]?.i ?? Infinity;
-  const annees = trimestres.map((t, i) => ({ t, i })).filter(({ t, i }) => (i === 0 && (t.endsWith('-T1') || premierT1 * pas >= 34)) || (i > 0 && t.endsWith('-T1')));
-  const indexDe = (xTactile: number, largeur: number): number | null => {
-    if (n === 0 || largeur <= 0) return null;
-    const xSvg = (xTactile / largeur) * LARGEUR;
-    return Math.max(0, Math.min(n - 1, Math.round((xSvg - G) / (pas || 1))));
-  };
+  // Un trait vertical et l'année à chaque début d'année (T1) ; le premier trimestre affiché n'écrit son année que s'il y a la place avant le premier trait
+  const debutsAnnee = trimestres.map((t, i) => ({ t, i })).filter(({ t }) => t.endsWith('-T1'));
+  const premierT1 = debutsAnnee[0]?.i ?? Infinity;
+  const premiereAnnee = n > 0 && !trimestres[0].endsWith('-T1') && premierT1 * pas >= 40 ? [{ t: trimestres[0], i: 0 }] : [];
   const etiquette = `Niveau trimestre par trimestre, de ${nomTrimestre(trimestres[0] ?? '')} à ${nomTrimestre(trimestres[n - 1] ?? '')}. ${courbes.map((c) => `${nomSport(c.famille)} : meilleur trimestre ${nomTrimestre(c.meilleur.trimestre)}, ${faits(c.meilleur)}`).join(' ; ')}.`;
   const choisiT = selection != null ? trimestres[selection] : null;
 
   return (
     <View style={{ gap: espace.e3 }}>
-      <ZoneTactile indexDe={indexDe} selection={selection} onSelection={onSelection}>
-        <Svg accessible accessibilityRole="image" accessibilityLabel={etiquette} width="100%" viewBox={`0 0 ${LARGEUR} ${HAUTEUR}`} style={{ aspectRatio: LARGEUR / HAUTEUR }}>
+      <View onLayout={(e) => setLargeur(e.nativeEvent.layout.width)} style={styles.zone}>
+        {/* L'axe des notes, fixe : il ne bouge pas quand on fait glisser le graphique */}
+        <Svg width={G} height={HAUTEUR} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {[0, 50, 100].map((v) => (
-            <Fragment key={v}>
-              <Line x1={G} x2={LARGEUR - D} y1={y(v)} y2={y(v)} stroke={v === 100 ? p.texteDoux : p.trait} strokeWidth={v === 100 ? 1.2 : 1} strokeDasharray={v === 100 ? '4 4' : undefined} />
-              <TexteSvg x={G - 6} y={y(v) + 4} fontSize={11} fontFamily={v === 100 ? police.texte600 : police.texte400} fill={v === 100 ? p.texte : p.texteMuet} textAnchor="end">
-                {v}
-              </TexteSvg>
-            </Fragment>
-          ))}
-          {annees.map(({ t, i }) => (
-            <TexteSvg key={t} x={x(i)} y={HAUTEUR - 6} fontSize={11} fontFamily={police.texte500} fill={p.texteDoux} textAnchor={i === 0 ? 'start' : 'middle'}>
-              {t.slice(0, 4)}
+            <TexteSvg key={v} x={G - 6} y={y(v) + 4} fontSize={11} fontFamily={v === 100 ? police.texte600 : police.texte400} fill={v === 100 ? p.texte : p.texteMuet} textAnchor="end">
+              {v}
             </TexteSvg>
           ))}
-          {selection != null ? <Line x1={x(selection)} x2={x(selection)} y1={H} y2={HAUTEUR - B} stroke={p.texteMuet} strokeWidth={1} strokeDasharray="3 3" /> : null}
-          {courbes.map((c) => {
-            const couleur = couleurs[c.famille] ?? p.sportNeutre;
-            const pts = c.points.filter((pt) => rang.has(pt.trimestre));
-            const d = pts.map((pt, k) => `${k ? 'L' : 'M'}${x(rang.get(pt.trimestre) as number).toFixed(1)} ${y(pt.note).toFixed(1)}`).join(' ');
-            const meilleur = rang.has(c.meilleur.trimestre) ? c.meilleur : null;
-            const choisi = choisiT ? pts.find((pt) => pt.trimestre === choisiT) : null;
-            return (
-              <Fragment key={c.famille}>
-                {pts.length > 1 ? <Path d={d} fill="none" stroke={couleur} strokeWidth={2.4} strokeLinejoin="round" strokeLinecap="round" /> : null}
-                {pts.length === 1 ? <Circle cx={x(rang.get(pts[0].trimestre) as number)} cy={y(pts[0].note)} r={3} fill={couleur} /> : null}
-                {/* Ton meilleur trimestre de ce sport : un rond creux sur la ligne des 100 */}
-                {meilleur ? <Circle cx={x(rang.get(meilleur.trimestre) as number)} cy={y(100)} r={5.5} fill={p.fond} stroke={couleur} strokeWidth={2.4} /> : null}
-                {choisi ? <Circle cx={x(rang.get(choisi.trimestre) as number)} cy={y(choisi.note)} r={4.5} fill={couleur} stroke={p.fond} strokeWidth={1.5} /> : null}
-              </Fragment>
-            );
-          })}
         </Svg>
-      </ZoneTactile>
+        {/* Le graphique : on le fait glisser vers la droite pour remonter dans le temps ; il démarre sur les trimestres les plus récents */}
+        <ScrollView
+          ref={defilement}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ flex: 1 }}
+          onContentSizeChange={() => defilement.current?.scrollToEnd({ animated: false })}
+          accessibilityHint="Fais glisser vers la droite pour voir les années précédentes"
+        >
+          <Svg accessible accessibilityRole="image" accessibilityLabel={etiquette} width={contenu} height={HAUTEUR}>
+            {[0, 50, 100].map((v) => (
+              <Line key={v} x1={0} x2={contenu} y1={y(v)} y2={y(v)} stroke={v === 100 ? p.texteDoux : p.trait} strokeWidth={v === 100 ? 1.2 : 1} strokeDasharray={v === 100 ? '4 4' : undefined} />
+            ))}
+            {/* Un trait vertical à chaque début d'année, avec l'année écrite en bas */}
+            {debutsAnnee.map(({ t, i }) => (
+              <Fragment key={t}>
+                <Line x1={x(i)} x2={x(i)} y1={H} y2={HAUTEUR - B} stroke={p.trait} strokeWidth={1} />
+                <TexteSvg x={x(i) + 4} y={HAUTEUR - 6} fontSize={11} fontFamily={police.texte500} fill={p.texteDoux} textAnchor="start">
+                  {t.slice(0, 4)}
+                </TexteSvg>
+              </Fragment>
+            ))}
+            {premiereAnnee.map(({ t, i }) => (
+              <TexteSvg key={t} x={x(i)} y={HAUTEUR - 6} fontSize={11} fontFamily={police.texte500} fill={p.texteDoux} textAnchor="start">
+                {t.slice(0, 4)}
+              </TexteSvg>
+            ))}
+            {selection != null ? <Line x1={x(selection)} x2={x(selection)} y1={H} y2={HAUTEUR - B} stroke={p.texteMuet} strokeWidth={1} strokeDasharray="3 3" /> : null}
+            {courbes.map((c) => {
+              const couleur = couleurs[c.famille] ?? p.sportNeutre;
+              const pts = c.points.filter((pt) => rang.has(pt.trimestre));
+              const d = pts.map((pt, k) => `${k ? 'L' : 'M'}${x(rang.get(pt.trimestre) as number).toFixed(1)} ${y(pt.note).toFixed(1)}`).join(' ');
+              const meilleur = rang.has(c.meilleur.trimestre) ? c.meilleur : null;
+              const choisi = choisiT ? pts.find((pt) => pt.trimestre === choisiT) : null;
+              return (
+                <Fragment key={c.famille}>
+                  {pts.length > 1 ? <Path d={d} fill="none" stroke={couleur} strokeWidth={2.4} strokeLinejoin="round" strokeLinecap="round" /> : null}
+                  {pts.length === 1 ? <Circle cx={x(rang.get(pts[0].trimestre) as number)} cy={y(pts[0].note)} r={3} fill={couleur} /> : null}
+                  {/* Ton meilleur trimestre de ce sport : un rond creux sur la ligne des 100 */}
+                  {meilleur ? <Circle cx={x(rang.get(meilleur.trimestre) as number)} cy={y(100)} r={5.5} fill={p.fond} stroke={couleur} strokeWidth={2.4} /> : null}
+                  {choisi ? <Circle cx={x(rang.get(choisi.trimestre) as number)} cy={y(choisi.note)} r={4.5} fill={couleur} stroke={p.fond} strokeWidth={1.5} /> : null}
+                </Fragment>
+              );
+            })}
+            {/* Les zones à toucher : une colonne par trimestre. Un appui choisit le trimestre, un second appui le désélectionne ; le glissement du doigt fait défiler. */}
+            {trimestres.map((t, i) => (
+              <Rect key={`zone-${t}`} x={x(i) - pas / 2} y={0} width={pas} height={HAUTEUR} fill="transparent" onPress={() => onSelection(selection === i ? null : i)} />
+            ))}
+          </Svg>
+        </ScrollView>
+      </View>
 
       {/* La lecture : sans trimestre touché, le meilleur trimestre de chaque sport ; sinon la note de chaque sport pour le trimestre touché */}
       <View style={{ gap: espace.e1 }}>
@@ -116,6 +144,7 @@ export function CourbesNiveau({ trimestres, courbes, couleurs, selection, onSele
 }
 
 const styles = StyleSheet.create({
+  zone: { flexDirection: 'row' },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52 },
   pastille: { width: 10, height: 10, borderRadius: 5 },
   note: { fontFamily: police.titre800, fontSize: 28, lineHeight: 32, fontVariant: ['tabular-nums'], minWidth: 48, textAlign: 'right' },
