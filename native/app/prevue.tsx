@@ -23,8 +23,8 @@ import { couleurSport } from '@/theme/sports';
 import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Une séance prévue ou une compétition, en lecture, avec le même modèle que la sortie réalisée (VueSortie) : page 1 = la carte et le profil du GPX, ou, sans GPX, le dessin du sport en fond
-// et le profil des blocs sous les chiffres ; page 2 = le temps par zone, tous les chiffres, les notes; page 3 = la carte du GPX s'il y a aussi des blocs ;
+// Une séance prévue ou une compétition, en lecture, avec le même modèle que la sortie réalisée (VueSortie) : page 1 = le graphique des blocs, ou le dessin du sport en fond sans bloc
+// ; page 2 = le temps par zone, tous les chiffres et les notes ; page 3 = la carte du GPX et son profil (s'il y en a un) ;
 // Le crayon du haut ouvre le formulaire (modifier, supprimer). On y arrive depuis le détail d'un jour du calendrier.
 // Les neuf tuiles de la page 2, toujours là dans cet ordre (un « - » quand la séance n'a pas la donnée) ; les autres chiffres (puissance, cardio, énergie…) suivent, seulement s'ils existent
 const TUILES_FIXES = ['duree', 'distance', 'allure', 'charge', 'effort', 'if', 'kcal', 'glucides', 'hydratation'];
@@ -79,13 +79,11 @@ export default function Prevue() {
   const modifier = () => router.push({ pathname: competition ? '/ajout-competition' : '/ajout-seance', params: { id: prevue.id } });
 
   // Page 1 : la carte et le profil d'altitude du GPX ; sans GPX, le dessin du sport en fond et, sous les chiffres, le profil des blocs (s'il y en a)
-  const avecProfilGpx = !!parcours && parcours.profil.length > 1 && parcours.altitudeMin != null && parcours.altitudeMax != null;
   const { ordre, repli } = ordrePrevue(competition);
   const quatre = choisirChiffres(chiffres, ordre, repli);
   // Sans parcours, mais avec des blocs : le graphique de la séance (axes, cible de chaque bloc) et le tableau de ses intervalles sont le héros de la page 1, à la place de la silhouette du sport
-  // Avec des blocs, le graphique est toujours le héros de la page 1 ; le parcours GPX a alors sa page (la 3)
+  // Le parcours GPX a toujours sa page (la 3, carte et profil d'altitude) ; la page 1 montre le graphique des blocs, ou la silhouette du sport sans bloc
   const profilEnGrand = blocs.length > 0;
-  const carteEnPage = !!parcours && profilEnGrand;
   const minutes = minutesParZone(blocs, reference, prevue.sport);
   // La page 2 : les neuf tuiles fixes (vide = « - »), puis les autres chiffres calculés
   const tuilesPage2 = competition ? chiffres : [
@@ -99,8 +97,8 @@ export default function Prevue() {
       {/* Retour par balayage depuis le bord gauche seulement : glisser sur la courbe du profil ne ferme pas l'écran */}
       <Stack.Screen options={{ title: titreEntete, headerShown: false, fullScreenGestureEnabled: false }} />
       <VueSortie
-        parcours={parcours && !carteEnPage ? { ...parcours } : null}
-        carteEnPage={carteEnPage && parcours ? { ...parcours } : null}
+        parcours={null}
+        carteEnPage={parcours ? { ...parcours } : null}
         km={prevue.km ?? null}
         couleur={couleur}
         sport={prevue.sport}
@@ -119,7 +117,6 @@ export default function Prevue() {
                 ))}
               </View>
             ) : null}
-            {!avecProfilGpx && !profilEnGrand && blocs.length ? <ProfilSeance blocs={blocs} hauteur={56} /> : null}
           </>
         }
         pageDetails={() => (
