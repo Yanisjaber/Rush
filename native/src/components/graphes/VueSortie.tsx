@@ -205,9 +205,9 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
 
         {carteEnPage && carteEnPage.region ? (
           <View style={{ width: largeur, height: hauteur, backgroundColor: p.fond }}>
-            <CarteTrace plein trace={carteEnPage.trace} region={carteEnPage.region} couleur={couleur} curseur={fractionCarte != null ? pointAuFraction(carteEnPage.trace, fractionCarte) : null} marges={{ haut: haut + HAUT_ENTETE, bas: HAUTEUR_PROFIL + bas + HAUT_PASTILLES + espace.e4 }} />
+            <CarteTrace plein trace={carteEnPage.trace} region={carteEnPage.region} couleur={couleur} curseur={fractionCarte != null ? pointAuFraction(carteEnPage.trace, fractionCarte) : null} marges={{ haut: haut + HAUT_ENTETE, bas: HAUTEUR_PROFIL + espace.e4 + bas + HAUT_PASTILLES + espace.e4 }} />
             {carteEnPage.altitudeMin != null && carteEnPage.altitudeMax != null && carteEnPage.profil.length > 1 ? (
-              <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: espace.e4, paddingBottom: bas + HAUT_PASTILLES, height: HAUTEUR_PROFIL + bas + HAUT_PASTILLES, backgroundColor: p.fond }}>
+              <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: espace.e4, paddingHorizontal: espace.e4, paddingBottom: bas + HAUT_PASTILLES, height: HAUTEUR_PROFIL + espace.e4 + bas + HAUT_PASTILLES, backgroundColor: p.fond, borderTopLeftRadius: rayon.bloc, borderTopRightRadius: rayon.bloc, borderTopWidth: 1, borderColor: p.trait }}>
                 <ProfilCurseur profil={carteEnPage.profil} min={carteEnPage.altitudeMin} max={carteEnPage.altitudeMax} km={km != null && km > 0 ? km : longueurKm(carteEnPage.trace)} couleur={couleur} hauteur={140} onChange={setFractionCarte} onGlisse={setSurCourbe} />
               </View>
             ) : null}
