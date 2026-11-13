@@ -1,20 +1,20 @@
 import { Fragment, useState } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Line, Rect, Text as TexteSvg } from 'react-native-svg';
-import { detailIntervalles, grapheDeBlocs, lignesIntervalles, texteValeur, type LigneDetail } from '@/data/calendrier/graphe-prevue';
+import { detailIntervalles, grapheDeBlocs, graduations, lignesIntervalles, texteValeur, type LigneDetail } from '@/data/calendrier/graphe-prevue';
 import { COULEURS_ZONE, texteDuree, type Bloc, type Reference } from '@/data/calendrier/structure';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Le graphique d'une séance prévue et le tableau de ses intervalles (maquette 3 du 14 nov.) : une barre par segment, colorée par zone, à la hauteur de sa cible (l'allure la plus rapide en haut),
-// avec les axes (cible à gauche, temps en bas) ; la valeur est écrite au-dessus de chaque effort. Dessous, le détail en lignes compactes : une pastille de durée, une pastille de zone avec sa cible,
+// avec les axes (cible à gauche, graduée régulièrement avec des valeurs rondes ; temps en bas). Dessous, le détail en lignes compactes : une pastille de durée, une pastille de zone avec sa cible,
 // le libellé ; les répétitions sont encadrées avec leur « 3× ».
 // Héros de la page 1 d'une séance prévue sans parcours, posé directement sur le fond (sans carte).
 const HAUTEUR = 132;
 const G = 34; // la place des valeurs à gauche
 const D = 6;
-const H = 16; // la place de la valeur d'un effort au-dessus de sa barre
+const H = 8; // un peu d'air au-dessus du premier repère
 const B = 18; // la place du temps en bas
 const ETAPES_MAX = 5; // au-delà, le détail s'arrête : le reste est sur la page 2
 
@@ -25,16 +25,13 @@ export function GrapheSeancePrevue({ blocs, couleur, reference, sport }: { blocs
   if (!g) return null;
   const lignes = lignesIntervalles(blocs, reference, sport);
   const etapes = detailIntervalles(blocs, reference, sport);
-  const etendue = Math.max(1, g.max - g.min);
-  // Un peu d'air au-dessus et en dessous des cibles extrêmes
-  const bas = g.min - etendue * 0.15;
-  const haut = g.max + etendue * 0.15;
+  // L'axe est gradué régulièrement, avec des valeurs rondes (toutes les 30 s, tous les 25 W…), pour lire les cibles avec précision
+  const grad = graduations(g);
   const L = Math.max(1, largeur - G - D);
   const x = (min: number): number => G + (min / g.total) * L;
-  // Allure : la valeur basse (rapide) en haut ; watts et cardio : la valeur haute en haut
-  const y = (v: number): number => H + ((g.allure ? v - bas : haut - v) / (haut - bas)) * (HAUTEUR - H - B);
+  // Le haut du graphique est `sommet` (l'allure la plus rapide, ou la puissance la plus forte), le bas est `fond`
+  const y = (v: number): number => H + ((v - grad.sommet) / (grad.fond - grad.sommet)) * (HAUTEUR - H - B);
   const base = HAUTEUR - B;
-  const reperes = g.allure ? [g.min, g.max] : [g.min, g.max];
   const pasTemps = g.total > 90 ? 30 : g.total > 40 ? 15 : 10;
   const temps: number[] = [];
   for (let t = 0; t <= g.total + 0.01; t += pasTemps) temps.push(t);
@@ -45,9 +42,9 @@ export function GrapheSeancePrevue({ blocs, couleur, reference, sport }: { blocs
       <View onLayout={(e: LayoutChangeEvent) => setLargeur(e.nativeEvent.layout.width)}>
         {largeur > 0 ? (
           <Svg width="100%" height={HAUTEUR} viewBox={`0 0 ${largeur} ${HAUTEUR}`}>
-            {reperes.map((v) => (
+            {grad.reperes.map((v) => (
               <Fragment key={v}>
-                <Line x1={G} x2={largeur - D} y1={y(v)} y2={y(v)} stroke={p.trait} strokeWidth={1} />
+                <Line x1={G} x2={largeur - D} y1={y(v)} y2={y(v)} stroke={p.trait} strokeWidth={StyleSheet.hairlineWidth * 1.5} />
                 <TexteSvg x={G - 5} y={y(v) + 3} fontSize={10} fontFamily={police.texte400} fill={p.texteMuet} textAnchor="end">
                   {texteValeur(v, g.metrique)}
                 </TexteSvg>
@@ -60,11 +57,6 @@ export function GrapheSeancePrevue({ blocs, couleur, reference, sport }: { blocs
               return (
                 <Fragment key={i}>
                   <Rect x={x0} y={yy} width={w} height={Math.max(2, base - yy)} rx={2} fill={COULEURS_ZONE[Math.min(s.zone, COULEURS_ZONE.length - 1)]} />
-                  {s.effort && w > 22 ? (
-                    <TexteSvg x={x0 + w / 2} y={yy - 4} fontSize={10} fontFamily={police.texte600} fill={p.texte} textAnchor="middle">
-                      {texteValeur(s.valeur, g.metrique)}
-                    </TexteSvg>
-                  ) : null}
                 </Fragment>
               );
             })}

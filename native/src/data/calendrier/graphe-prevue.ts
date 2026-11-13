@@ -40,6 +40,50 @@ export function grapheDeBlocs(blocs: Bloc[], ref: Reference = {}, sport = 'Run')
   return { metrique, segments, total: t, min: Math.min(...valeurs), max: Math.max(...valeurs), allure: metrique === 'pace' };
 }
 
+export interface Graduations {
+  /** Les repères de l'axe, du plus haut au plus bas de l'écran (valeurs de cible, rondes : 4:30, 5:00, 5:30… ou 200, 250, 300 W). */
+  reperes: number[];
+  /** La valeur tout en haut du graphique, et tout en bas (une allure rapide est en haut, une puissance forte aussi). */
+  sommet: number;
+  fond: number;
+}
+
+/** Les pas « ronds » possibles de l'axe, par type de cible : secondes pour l'allure, watts, battements. */
+const PAS: Record<Metrique, number[]> = { pace: [5, 10, 15, 30, 60, 120], power: [5, 10, 20, 25, 50, 100], hr: [2, 5, 10, 20] };
+
+/**
+ * L'axe du graphique, gradué régulièrement avec des valeurs rondes (toutes les 30 s, tous les 25 W…) : le plus petit pas qui garde 6 repères au plus.
+ * L'axe couvre un peu plus que les cibles extrêmes ; pour une allure, le haut est le rapide (valeur basse). Les watts et les battements ne descendent pas sous 0.
+ */
+export function graduations(g: Pick<GrapheSeance, 'metrique' | 'min' | 'max' | 'allure'>): Graduations {
+  const etendue = Math.max(1, g.max - g.min);
+  const pas = PAS[g.metrique];
+  let choisi = pas[pas.length - 1];
+  let bornes = { bas: 0, haut: 0 };
+  const calcul = (p: number) => {
+    // En valeurs : `bas` est la plus petite valeur couverte, `haut` la plus grande
+    const bas = Math.max(0, Math.floor((g.min - etendue * 0.12) / p) * p);
+    const haut = Math.ceil((g.max + etendue * 0.12) / p) * p;
+    return { bas, haut, n: Math.round((haut - bas) / p) + 1 };
+  };
+  for (const p of pas) {
+    const c = calcul(p);
+    if (c.n <= 6) {
+      choisi = p;
+      bornes = { bas: c.bas, haut: c.haut };
+      break;
+    }
+  }
+  if (bornes.haut === 0) {
+    const c = calcul(choisi);
+    bornes = { bas: c.bas, haut: c.haut };
+  }
+  const valeurs: number[] = [];
+  for (let v = bornes.bas; v <= bornes.haut + 1e-9; v += choisi) valeurs.push(v);
+  // Allure : la valeur basse (rapide) est en haut ; sinon la valeur haute est en haut
+  return g.allure ? { reperes: valeurs, sommet: bornes.bas, fond: bornes.haut } : { reperes: [...valeurs].reverse(), sommet: bornes.haut, fond: bornes.bas };
+}
+
 /** Une allure en secondes → « 4:35 ». */
 export const texteAllure = (sec: number): string => `${Math.floor(Math.round(sec) / 60)}:${String(Math.round(sec) % 60).padStart(2, '0')}`;
 

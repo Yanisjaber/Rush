@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { detailIntervalles, grapheDeBlocs, lignesIntervalles, texteAllure, texteValeur } from '../../src/data/calendrier/graphe-prevue.ts';
+import { detailIntervalles, grapheDeBlocs, graduations, lignesIntervalles, texteAllure, texteValeur } from '../../src/data/calendrier/graphe-prevue.ts';
 import { distanceSegment, valeurSegment, type Bloc } from '../../src/data/calendrier/structure.ts';
 
 const seg = (min: number, int: number, intHi: number | null = null) => ({ min, int, intHi });
@@ -98,4 +98,27 @@ test('detailIntervalles : à vélo, des watts, et pas de distance dans le libell
     assert.match(d.lignes[0].cible, /^\d+–\d+ W$/);
     assert.equal(d.lignes[0].libelle, '');
   }
+});
+
+test('graduations : une allure de 5:01 à 6:22 est graduée toutes les 30 s, avec des repères ronds', () => {
+  const gr = graduations({ metrique: 'pace', min: 301, max: 382, allure: true });
+  assert.ok(gr.reperes.length >= 3 && gr.reperes.length <= 6);
+  assert.ok(gr.reperes.every((v) => v % 30 === 0), `repères : ${gr.reperes.join(', ')}`);
+  // l'allure rapide est en haut : le premier repère est le plus petit nombre de secondes
+  assert.ok(gr.reperes[0] < gr.reperes[gr.reperes.length - 1]);
+  assert.ok(gr.sommet <= 301 && gr.fond >= 382); // l'axe couvre les cibles extrêmes
+});
+
+test('graduations : des watts de 120 à 265 sont gradués par pas de 50, le plus fort en haut, sans passer sous 0', () => {
+  const gr = graduations({ metrique: 'power', min: 120, max: 265, allure: false });
+  assert.ok(gr.reperes.length >= 3 && gr.reperes.length <= 6);
+  assert.ok(gr.reperes[0] > gr.reperes[gr.reperes.length - 1]);
+  assert.ok(gr.reperes.every((v) => v % 25 === 0 && v >= 0));
+  assert.ok(gr.sommet >= 265 && gr.fond <= 120);
+});
+
+test('graduations : une seule valeur ne casse pas l\'axe', () => {
+  const gr = graduations({ metrique: 'power', min: 200, max: 200, allure: false });
+  assert.ok(gr.reperes.length >= 2);
+  assert.ok(gr.sommet > gr.fond);
 });
