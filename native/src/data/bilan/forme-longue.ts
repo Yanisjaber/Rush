@@ -17,6 +17,32 @@ const lundiDe = (iso: string): string => {
   return dateIso(d);
 };
 
+/**
+ * La condition (CTL) de chaque jour calculée sur des séances (par exemple celles d'un seul sport), avec la même formule que la base (data/migrations daily_metrics) :
+ * une moyenne glissante exponentielle de la charge (TSS) de chaque jour, CTL = CTL de la veille + (charge du jour - CTL de la veille) × 2 / 43, en partant de 0 le jour de la première séance
+ * et en continuant jour après jour jusqu'à `jusqua` (les jours sans séance comptent pour une charge de 0).
+ */
+export function conditionDesSeances(seances: readonly { iso: string; tss: number }[], jusqua: Date): { iso_date: string; ctl: number }[] {
+  const parJour = new Map<string, number>();
+  for (const s of seances) {
+    if (!s.iso || s.iso < '2000-01-01') continue; // les dates aberrantes (1970) sont ignorées, comme en base
+    parJour.set(s.iso.slice(0, 10), (parJour.get(s.iso.slice(0, 10)) ?? 0) + (s.tss > 0 ? s.tss : 0));
+  }
+  if (!parJour.size) return [];
+  const premier = [...parJour.keys()].sort()[0];
+  const fin = dateIso(jusqua);
+  const jours: { iso_date: string; ctl: number }[] = [];
+  let ctl = 0;
+  const d = dateDe(premier);
+  for (let iso = premier; iso <= fin; ) {
+    ctl = ctl + ((parJour.get(iso) ?? 0) - ctl) * (2 / 43);
+    jours.push({ iso_date: iso, ctl });
+    d.setDate(d.getDate() + 1);
+    iso = dateIso(d);
+  }
+  return jours;
+}
+
 /** Une condition par semaine (la dernière de la semaine), de la première à la dernière semaine, sans trou : une semaine sans donnée reprend la valeur de la précédente. */
 export function conditionParSemaine(metriques: readonly Pick<Metrique, 'iso_date' | 'ctl'>[]): PointCondition[] {
   const valides = metriques.filter((m) => Number.isFinite(Number(m.ctl)) && Number(m.ctl) >= 0).sort((a, b) => (a.iso_date < b.iso_date ? -1 : a.iso_date > b.iso_date ? 1 : 0));

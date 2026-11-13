@@ -15,6 +15,8 @@ interface Props {
   /** L'index (dans `semaines`) de la semaine touchée, ou null. */
   selection: number | null;
   onSelection: (index: number | null) => void;
+  /** La couleur de la courbe : celle du sport quand le filtre en choisit un, sinon la couleur du texte. */
+  couleur?: string;
 }
 
 const HAUTEUR = 170;
@@ -25,8 +27,9 @@ const B = 24;
 const SEMAINES_VISIBLES = 52 * 5;
 const LARGEUR_DEFAUT = 320;
 
-export function CourbeFormeLongue({ semaines, selection, onSelection }: Props) {
+export function CourbeFormeLongue({ semaines, selection, onSelection, couleur }: Props) {
   const p = usePalette();
+  const trait = couleur ?? p.texte;
   const defilement = useRef<ScrollViewInstance>(null);
   const [largeur, setLargeur] = useState(LARGEUR_DEFAUT);
   const n = semaines.length;
@@ -95,14 +98,14 @@ export function CourbeFormeLongue({ semaines, selection, onSelection }: Props) {
                   </TexteSvg>
                 </Fragment>
               ))}
-              {n > 1 ? <Path d={surface} fill={p.texte} opacity={0.08} /> : null}
-              {n > 1 ? <Path d={d} fill="none" stroke={p.texte} strokeWidth={2.4} strokeLinejoin="round" strokeLinecap="round" /> : null}
+              {n > 1 ? <Path d={surface} fill={trait} opacity={0.1} /> : null}
+              {n > 1 ? <Path d={d} fill="none" stroke={trait} strokeWidth={2.4} strokeLinejoin="round" strokeLinecap="round" /> : null}
               {/* Ton pic : un rond creux sur la courbe */}
-              {pic && indexPic >= 0 ? <Circle cx={x(indexPic)} cy={y(pic.ctl)} r={5.5} fill={p.fond} stroke={p.texte} strokeWidth={2.4} /> : null}
+              {pic && indexPic >= 0 ? <Circle cx={x(indexPic)} cy={y(pic.ctl)} r={5.5} fill={p.fond} stroke={trait} strokeWidth={2.4} /> : null}
               {choisie ? (
                 <>
                   <Line x1={x(selection as number)} x2={x(selection as number)} y1={H} y2={HAUTEUR - B} stroke={p.texteMuet} strokeWidth={1} strokeDasharray="3 3" />
-                  <Circle cx={x(selection as number)} cy={y(choisie.ctl)} r={4.5} fill={p.texte} stroke={p.fond} strokeWidth={1.5} />
+                  <Circle cx={x(selection as number)} cy={y(choisie.ctl)} r={4.5} fill={trait} stroke={p.fond} strokeWidth={1.5} />
                 </>
               ) : null}
             </Svg>

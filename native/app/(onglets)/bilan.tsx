@@ -55,7 +55,7 @@ import { useReferences } from '@/hooks/useReferences';
 import { useMenu } from '@/stores/menu';
 import { fenetre as fenetreNiveau, notesTrimestrielles } from '@/data/bilan/niveau-trimestriel';
 import { CourbeFormeLongue } from '@/components/graphes/CourbeFormeLongue';
-import { useConditionLongue } from '@/hooks/useConditionLongue';
+import { conditionDesSeances, conditionParSemaine } from '@/data/bilan/forme-longue';
 import { useRecordsNiveau } from '@/hooks/useRecordsNiveau';
 import { demanderJour } from '@/stores/jour-demande';
 import { choisirMesure, useMesuresBilan } from '@/stores/mesures-bilan';
@@ -326,8 +326,9 @@ export default function Bilan() {
 
   // Le niveau trimestre par trimestre : heures, charge et records de chaque trimestre, sport par sport (data/bilan/niveau-trimestriel.ts)
   const [selNiveau, setSelNiveau] = useState<number | null>(null);
-  // La courbe de forme (la condition, ta charge lissée sur ~6 semaines) vaut pour tous les sports ensemble : on ne la montre que sur « Tous »
-  const conditionLongue = useConditionLongue(niveauOuvert && filtre === 'tout');
+  // La courbe de forme (la condition, ta charge lissée sur ~6 semaines) : calculée à la volée sur les séances du filtre, avec la même formule que la base (data/bilan/forme-longue.ts).
+  // Sur « Tous », le résultat colle à la base : 16,1 aujourd'hui des deux côtés, 0,3 point d'écart moyen sur 3 300 jours (le seul écart vient des données écartées, que la base retire).
+  const semainesForme = useMemo(() => (niveauOuvert ? conditionParSemaine(conditionDesSeances(filtrees, maintenant)) : []), [niveauOuvert, filtrees, maintenant]);
   const [selForme, setSelForme] = useState<number | null>(null);
   const recordsNiveau = useRecordsNiveau(niveauOuvert, toutes); // les records de puissance, d'allure et de plus longue sortie, tous sports (le filtre ne choisit que les courbes affichées)
   const courbesNiveau = useMemo(() => (niveauOuvert && recordsNiveau.records ? notesTrimestrielles(filtrees, maintenant, recordsNiveau.records) : []), [niveauOuvert, filtrees, maintenant, recordsNiveau.records]);
@@ -743,9 +744,9 @@ export default function Bilan() {
                       <CourbesNiveau trimestres={vueNiveau.trimestres} courbes={vueNiveau.courbes} couleurs={couleursNiveau} selection={selNiveau} onSelection={setSelNiveau} />
                     </View>
                   </Bloc>
-                  {filtre === 'tout' && conditionLongue.semaines.length > 1 ? (
+                  {semainesForme.length > 1 ? (
                     <Bloc titre="Forme">
-                      <CourbeFormeLongue semaines={conditionLongue.semaines} selection={selForme} onSelection={setSelForme} />
+                      <CourbeFormeLongue semaines={semainesForme} selection={selForme} onSelection={setSelForme} couleur={filtre === 'tout' ? undefined : couleurSport(p, filtre)} />
                     </Bloc>
                   ) : null}
                 </>
