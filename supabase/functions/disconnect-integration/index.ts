@@ -10,7 +10,7 @@
 // wipe=false (déconnexion seule) → supprime UNIQUEMENT la connexion
 //   (connexions_app). Les données importées restent.
 // wipe=true (déconnexion + suppression) :
-//   provider=strava → supprime power_profile, daily_metrics, les activités
+//   provider=strava → supprime power_profile, les activités
 //     venues de Strava (pas les séances manuelles), la connexion (connexions_app),
 //     et remet à zéro ftp/weight (issus de Strava) dans user_profiles.
 //
@@ -30,7 +30,8 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // Tables de données effaçables (dans l'ordre des clés étrangères).
-const STEP_TABLES = ["power_profile", "daily_metrics", "activities"];
+// (daily_metrics n'est plus une table : c'est une vue calculée à partir des activités, il n'y a donc rien à effacer pour elle)
+const STEP_TABLES = ["power_profile", "activities"];
 
 // CORS restreint (voir _shared/cors.ts) : les en-têtes sont calculés PAR requête (pas de variable partagée
 // entre deux requêtes simultanées).
@@ -81,8 +82,7 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
 
     // Tables de DONNÉES à vider selon le mode (la connexion est supprimée à part,
     // car elle vit dans la table mutualisée connexions_app filtrée par app).
-    // Ordre FK : daily_metrics.main_activity_id et power_profile.activity_id_*
-    // référencent activities → on les vide avant activities.
+    // Ordre FK : power_profile.activity_id_* référence activities → on le vide avant activities.
     const tables: string[] = wipe ? STEP_TABLES : [];
 
     for (const table of tables) {
@@ -116,7 +116,7 @@ async function gerer(req: Request, corsHeaders: Record<string, string>): Promise
 // Efface les lignes d'une table pour cet utilisateur. Pour `activities`, on ne
 // supprime QUE les séances venues de Strava (strava_id renseigné) : les séances
 // saisies à la main ou importées d'un fichier restent, avec leur force/Hyrox.
-// daily_metrics est ensuite recalculé par le déclencheur sur `activities`.
+// Les métriques de charge (vue daily_metrics) se recalculent seules à partir des activités restantes.
 function effacerTable(sb: any, table: string, uid: string) {
   let q = sb.from(table).delete().eq("user_id", uid);
   if (table === "activities") q = q.not("strava_id", "is", null);

@@ -20,8 +20,8 @@ Mise à jour : **13 novembre 2026**. Rythme supposé : 5 jours de travail par se
 - **Version de sortie** (tâches ≥ 7/10) : **59,2 jours** restants (9,1 j déjà faits).
 - **Sortie estimée : 4 février 2027** si tout se passe bien.
 - **Fourchette prudente : 1 avril 2027** (durées ×1.5 + 14 jours pour Apple, les accès API, le domaine…).
-- Le reste (tâches < 7/10) : 58,4 jours, à faire après la sortie ou si on a de la marge. « Après la sortie » : 16 jours.
-- Tâches : 65 restantes, 9 faites.
+- Le reste (tâches < 7/10) : 56,7 jours, à faire après la sortie ou si on a de la marge. « Après la sortie » : 16 jours.
+- Tâches : 65 restantes, 10 faites.
 
 Où part le temps de la version de sortie :
 
@@ -42,7 +42,7 @@ Historique (une ligne par recalcul) :
 
 | Date | Sortie : jours restants | Tout : jours restants | Sortie estimée | Fourchette prudente |
 |---|---|---|---|---|
-| 2026-11-13 | 59,2 j | 117,6 j | 4 février 2027 | 1 avril 2027 |
+| 2026-11-13 | 59,2 j | 115,9 j | 4 février 2027 | 1 avril 2027 |
 <!-- ESTIMATION:FIN -->
 
 ## 1. Publication et légal
@@ -112,7 +112,8 @@ Historique (une ligne par recalcul) :
 - [x] **8/10 · 1 j** Terminer la page Bilan en vue « Tous » : Résumé, Rythme, Records et Niveau (ex-Progrès) sont faits (14 nov.)
 - [x] **8/10 · 2 j** Supprimer ou modifier l'onglet Progrès avec des valeurs factuelles plutôt que des formules inventées (14 nov. : courbe de niveau trimestre par trimestre, une courbe par sport ; note du trimestre = moyenne de 3 pourcentages : heures, charge, records posés pendant ces 3 mois, le meilleur trimestre = 100). Records = puissance du vélo (5 s à 2 h), allure de la course et de la natation (1 min à 2 h), plus longue sortie ; top 5 de chaque record, la 1re séance pèse 1 et la 5e 0,2. Le 45 min est remplacé par 40 min (non gardé en base). Reste à ajouter les records de muscu par exercice
 - [ ] **5/10 · 1,5 j** Niveau : ajouter les records de musculation par exercice (1RM de chaque exercice du carnet, top 5 avec dates) dans la note du trimestre
-- [ ] **4/10 · 2 j** Condition (CTL) à la volée : supprimer `daily_metrics` en calculant la condition à partir des séances, y compris pour le Coach IA (`rpc_coach_resume`), le widget Condition de l'Accueil et `rpc_piliers_annuels`. Optionnel : la table ne pèse plus rien depuis le 14 nov.
+- [x] **4/10 · 2 j** Condition (CTL) à la volée : `daily_metrics` est devenue une vue calculée à partir des séances (14 nov.), les fonctions du Coach, l'Accueil et la Santé la lisent sans changement
+- [ ] **3/10 · 0,3 j** À partir du 18 nov. : supprimer la table `daily_metrics_ancienne` et les fonctions `recalc_daily_metrics` et `trg_recalc_daily_metrics` (filet de sécurité de la bascule). Vérifier avant que l'Accueil et la Santé affichent bien leur forme
 - [ ] **4/10 · 1 j** Retirer le code de l'ancien Progrès dans `bilan.tsx` et ses composants (ProgresSport, NiveauGlobalSport, FormeSaison…), désactivé le 14 nov. mais encore là
 - [ ] **7/10 · 0,5 j** Voir et valider l'écran Paramètres › Zones dans le simulateur
 - [ ] **6/10 · 0,5 j** Essayer pour de vrai « Faire calculer mes zones par le coach »
