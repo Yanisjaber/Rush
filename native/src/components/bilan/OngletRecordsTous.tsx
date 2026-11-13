@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Bloc } from '@/components/feuilles/Bloc';
 import { activitesAnnee, type ActiviteBilan } from '@/data/bilan/bilan';
 import { recordSemainesAffilee, recordsPeriodes, recordsRegularite, recordsSeance, type EntreeRecord, type RecordTop } from '@/data/bilan/records';
-import { dateCourte, enAnnee, jourMois, libelleEntree, texteValeurRecord } from '@/data/bilan/records-texte';
+import { dateCourte, enAnnee, jourMoisCourt, libelleEntree, texteValeurRecord } from '@/data/bilan/records-texte';
 import { IconeSport } from '@/components/ui/IconeSport';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -89,9 +89,9 @@ export function OngletRecordsTous({ portee, toutes, annee, maintenant, onOuvrir 
 
     const serieLignes: Ligne[] = [];
     const j = record(reg.find((x) => x.cle === 'serie'));
-    if (j) serieLignes.push({ cle: 'serie', titre: "Jours actifs d'affilée", sous: `Du ${jourMois(j.iso)} au ${jourMois(j.fin ?? j.iso)} ${(j.fin ?? j.iso).slice(0, 4)}`, valeur: ecrire(j.valeur, 'jours') });
+    if (j) serieLignes.push({ cle: 'serie', titre: "Jours actifs d'affilée", sous: `Du ${jourMoisCourt(j.iso)} au ${jourMoisCourt(j.fin ?? j.iso)} ${(j.fin ?? j.iso).slice(0, 4)}`, valeur: ecrire(j.valeur, 'jours') });
     const w = record(semaines);
-    if (w) serieLignes.push({ cle: 'serie_semaines', titre: "Semaines d'affilée", sous: `Du ${jourMois(w.iso)} au ${jourMois(w.fin ?? w.iso)} · ${w.detail ?? ''}`, valeur: ecrire(w.valeur, 'semaines') });
+    if (w) serieLignes.push({ cle: 'serie_semaines', titre: 'Semaines à 3 séances ou +', sous: `Du ${jourMoisCourt(w.iso)} au ${jourMoisCourt(w.fin ?? w.iso)} ${(w.fin ?? w.iso).slice(0, 4)}`, valeur: ecrire(w.valeur, 'semaines') });
 
     return { seance: seanceLignes, periode: periodeLignes, serie: serieLignes };
   }, [acts]);

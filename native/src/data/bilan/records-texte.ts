@@ -8,6 +8,8 @@ const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 
 export const jourMois = (iso: string): string => `${Number(iso.slice(8, 10))} ${MOIS[Number(iso.slice(5, 7)) - 1]}`;
 
 const MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+/** « 11 janv. » (sans l'année) à partir d'une date ISO : pour les endroits étroits. */
+export const jourMoisCourt = (iso: string): string => `${Number(iso.slice(8, 10))} ${MOIS_COURTS[Number(iso.slice(5, 7)) - 1]}`;
 /** « 25 févr. 2023 » à partir d'une date ISO : pour les endroits étroits. */
 export const dateCourte = (iso: string): string => `${Number(iso.slice(8, 10))} ${MOIS_COURTS[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
 
