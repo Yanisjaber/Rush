@@ -1,123 +1,153 @@
 # Rush : ce qui reste à faire
 
 Liste unique, tenue par Yanis et Claude. Créée le 13 nov. 2026 à partir des docs et des notes de Claude.
+Cette liste évolue en fonction de l'avancement de l'app.
 
-**Comment s'en servir**
-- `- [ ]` = à faire, `- [x]` = fait. Coche, ajoute, supprime ou réordonne librement.
-- Une ligne qui commence par **(toi)** demande une action ou une réponse de Yanis.
-- Claude lit ce fichier au début de chaque session et le met à jour quand il finit ou découvre quelque chose.
-- Le détail de certains chantiers reste dans leur doc (lien en tête de section).
+## Comment lire cette liste
 
----
+Chaque tâche porte une étiquette : `**importance/10 · durée en jours**`.
 
-## Profil (évaluation + avatar 3D)
-Détail : `native/EVALUATION_PROFIL.md`, `native/AUDIT_PROFIL.md`
+- **Importance** : 10 = l'app ne peut pas sortir sans, 7-9 = nécessaire pour une bonne première version, 4-6 = utile, 1-3 = confort ou plus tard.
+- **Durée** : en « jours de travail » (une journée où on avance sur Rush, le rythme réel depuis le 13 oct. est d'environ 5 jours par semaine). Ce sont des ordres de grandeur, je les affine en cours de route.
+- **Version de sortie** = toutes les tâches notées **7/10 ou plus** (hors section « Après la sortie »).
+- Quand je termine une tâche : je coche `[x]`, puis je lance `node docs/estimer-a-faire.mjs`, qui recalcule l'estimation ci-dessous. Quand on ajoute une tâche, on lui met son étiquette.
 
-- [ ] **(toi)** Dire ce que tu veux encore changer sur l'écran
-- [ ] Trouver des sources pour les références des notes /100 (2 seulement sont vérifiées)
-- [ ] 8 maquettes pour un profil « beaucoup plus impressionnant »
-- [ ] **(toi)** Tester la 3D sur l'iPhone (le simulateur ne dessine pas la 3D)
-- [ ] Retirer les logos de sponsors de la texture de l'avatar avant de pousser (dépôt public)
-- [ ] Remettre un moyen de modifier l'identité et la photo (prénom, poids…) : 8 maquettes
-- [ ] Remettre les champs retirés (allures 5k/10k/semi/marathon, natation, test FTP, pmax…)
-- [ ] **(toi)** OK pour supprimer : `FeuilleAthlete`, `PointsZones`, `zonesProfil`, `CarteBilanAthlete`, `RadarAthlete`, `ModeleAthlete3D`, `scripts/convert_athlete_to_glb.py`
-- [ ] Plus tard : classement entre utilisateurs, durabilité, FC repos/HRV/VO2max par Apple Santé, chaussures de l'avatar
+<!-- ESTIMATION:DEBUT -->
+## Estimation de la sortie (calculée par `node docs/estimer-a-faire.mjs`)
 
-## Coach IA
-Détail : `ia/IA_A_FAIRE.md`
+Mise à jour : **13 novembre 2026**. Rythme supposé : 5 jours de travail par semaine.
 
-- [ ] Qualité des séances : le fartlek 6 × 1 min est trop léger, il manque le seuil et l'allure 10 km
-- [ ] Volume : 3 séances et ~2 h par semaine, c'est léger pour viser 50 min au 10 km
-- [ ] **(toi)** Capture de tes deux plans pour le 2e plan « divisé par 2 »
-- [ ] Deux courses le même jour (5 km + 10 km le 13 déc.) : finir ce cas
-- [ ] **(toi)** Vérifier les 13-18 « séances retirées » du plan de test
-- [ ] Tests réels : débutant, vélo, natation (simulateur « Coach test »)
-- [ ] **(toi)** Essai complet sur ton compte (Ronde de Ramonville), puis effacer la conversation de test
-- [ ] **(toi)** OK pour supprimer les anciennes séances de test de ton calendrier
-- [ ] Plan de préparation triathlon (enchaînement des 3 sports)
-- [ ] **(toi)** Valider les conventions de Claude (75/85/90/130 %, bornes 60-110 min, exposant 1,06, étapes du débutant)
-- [ ] Lire les études en entier (Bosquet, Nuuttila, Buist, Nielsen, Rosenblat, Daniels)
-- [ ] Même travail pour vélo, natation, puis muscu et Hyrox
-- [ ] Imprévus (moins de temps, fatigue, compétition qui bouge)
-- [ ] Message proactif à l'ouverture de l'onglet Coach ; détecter les allures trop faciles ou trop dures
-- [ ] 8 maquettes : écran d'accord de partage + réglages
-- [ ] 8 maquettes : carte d'un plan long, édition à la main de la structure
-- [ ] Modifier la durée d'une séance ; créer une compétition ou un objectif depuis le coach
-- [ ] Comparer Haiku et Sonnet sur 1 000-2 000 cas
-- [ ] **(toi)** Révoquer la clé Anthropic collée dans le chat, en recréer une, mettre une limite de dépense
-- [ ] Commencer à stocker le VO2max dans le temps
-- [ ] Plus tard : « la vraie création d'un coach avec un vrai plan » (à cadrer ensemble)
+- **Version de sortie** (tâches ≥ 7/10) : **67,7 jours** restants (1,6 j déjà faits).
+- **Sortie estimée : 16 février 2027** si tout se passe bien.
+- **Fourchette prudente : 18 avril 2027** (durées ×1.5 + 14 jours pour Apple, les accès API, le domaine…).
+- Le reste (tâches < 7/10) : 53,9 jours, à faire après la sortie ou si on a de la marge. « Après la sortie » : 16 jours.
+- Tâches : 68 restantes, 3 faites.
 
-## Analyse de sortie (page 4)
-Détail : `ia/ANALYSE_SORTIE.md`
+Où part le temps de la version de sortie :
 
-- [ ] La regarder sur plusieurs vraies sorties (footing, longue, fractionné, vélo) et corriger les phrases
-- [ ] Réactions du corps plus riches (départ, récupération, sommeil, fatigue des jours d'avant)
-- [ ] Progression plus fine (vélo, même fractionné refait, tendance sur plusieurs semaines)
-- [ ] Sourcer les seuils (2,5 %, 30 %, 10 bpm, 70/25 % de zones…)
-- [ ] Phrases plus « coach »
-- [ ] Autres sports (muscu, natation, Hyrox), cadence et relief en course
-- [ ] **(toi)** As-tu vraiment fait des lignes droites le 10 nov. ? (2 trouvées sur 6)
+| Thème | Jours restants (≥ 7/10) |
+|---|---|
+| 4. Accueil et widgets | 11 j |
+| 8. Profil, Paramètres et Santé | 11 j |
+| 2. Compte et sécurité | 8,5 j |
+| 6. Écran d'une sortie | 8,2 j |
+| 9. Sources d'activités | 8 j |
+| 3. Coach IA | 7,5 j |
+| 10. Qualité | 5 j |
+| 7. Bilan et zones | 4,5 j |
+| 1. Publication et légal | 2,5 j |
+| 5. Calendrier | 1,5 j |
 
-## Écran d'une sortie
-- [ ] **(toi)** Choisir la maquette de la page 2 (courbes et zones)
-- [ ] Page 3 : tous les chiffres + records de la sortie
-- [ ] Voir la trace Strava (`strava-trace`) à l'écran
-- [ ] Séance prévue : remettre le bouton Supprimer
-- [ ] **(toi)** Distance saisie (5,0) ou longueur du GPX (5,2) dans la tuile DISTANCE ?
+Historique (une ligne par recalcul) :
 
-## Zones
-Détail : `native/ZONES_PHYSIO_A_FAIRE.md`
+| Date | Sortie : jours restants | Tout : jours restants | Sortie estimée | Fourchette prudente |
+|---|---|---|---|---|
+| 2026-11-13 | 67,7 j | 121,6 j | 16 février 2027 | 18 avril 2027 |
+<!-- ESTIMATION:FIN -->
 
-- [ ] Voir et valider l'écran Paramètres › Zones dans le simulateur
-- [ ] Essayer pour de vrai « Faire calculer mes zones par le coach »
-- [ ] **(toi)** Valider le plafond de 10 points et l'écart minimal de 2 points
-- [ ] Le Bilan doit lire les zones perso
-- [ ] Vérifier les zones perso quand la FTP ou la LTHR change
-- [ ] Brancher `estimerFtp` et `estimerFcMax` à un écran
-- [ ] Plus tard : pente, ressenti Strava, courbe de température
-- [ ] Plus tard : bouton « marquer comme compétition » (8 maquettes déjà faites)
+## 1. Publication et légal
 
-## Calendrier
-Détail : `native/CALENDRIER_A_FAIRE.md`
+- [x] **10/10 · 0,5 j** Remplacer `bundleIdentifier` et `package` provisoires (`TODO.rush`) dans `native/app.json` par les vrais identifiants, avant toute publication
+- [ ] **9/10 · 1 j** Rédiger une vraie politique de confidentialité (le Coach IA lit les données de santé et d'entraînement) et y faire mener « Confidentialité ». Exigée par Apple et Google
+- [ ] **9/10 · 0,5 j** Faire un point avant de pousser : plusieurs chantiers sont mergés en local sans push (Bilan par sport, Hyrox, natation, coach, avatar…), à sauvegarder sur GitHub (mot `yallah` requis)
+- [ ] **8/10 · 0,5 j** E-mails de confirmation : avec un expéditeur Gmail ils finissent souvent en spams. Prendre un domaine à toi pour l'expéditeur (SMTP Brevo, SPF/DKIM)
+- [ ] **7/10 · 0,5 j** Suivi des plantages : savoir quand l'app plante chez un utilisateur
 
-- [ ] Vérifier le thème clair (calendrier, pop-up d'import, compétition, dossard)
-- [ ] Compétition : course par étapes et segments du triathlon
-- [ ] Ouvrir une activité importée (flux, carte, tours) et calculer son vrai TSS
-- [ ] **(toi)** Quelles sorties manquent à l'écran ?
-- [ ] **(toi)** Étiquetage des tours Hyrox : quoi mettre ?
-- [ ] Où mettre l'accès aux écrans de cycles
-- [ ] Blessure « en cours » sans date de fin
-- [ ] Petits points : durée plafonnée à 23 h 59, renommer `ajout-sortie` en « activité », sauter sur l'onglet de l'erreur
-- [ ] **(toi)** Reconstruire l'app sur le téléphone (`npx expo run:ios --device`)
-- [ ] Android : générer `android/`, clé Google Maps
+## 2. Compte et sécurité
 
-## Bilan
-- [ ] Natation et muscu : nouvelle méthode de progrès (comme vélo et course)
-- [ ] Widget Progression de l'accueil : retirer son propre sélecteur de période
-- [ ] **(toi)** Regarder muscu, triathlon, natation, Hyrox sur tes vraies données
-- [ ] Records serveur : natation (100/400/1500 m), muscu (1RM), stations Hyrox
-- [ ] Expliquer pourquoi une note est basse (8 maquettes)
+- [x] **10/10 · 0,1 j** **(toi)** Révoquer la clé Anthropic collée dans le chat, en recréer une, mettre une limite de dépense
+- [ ] **9/10 · 3 j** Passer toute l'app en ultra sécurisé : audit complet avant la sortie (RLS de chaque table, Edge Functions, stockage des jetons et de la session sur le téléphone, validation des entrées, dépendances, secrets, fuites dans les logs, accès du Coach IA aux données), puis corriger tout ce qu'on trouve. À cadrer : audit par moi seul ou aussi par un outil/une personne extérieure
+- [ ] **9/10 · 2 j** Créer son compte directement dans l'app : l'écran de connexion renvoie encore vers le site (« Pas encore de compte ? Crée-le sur le site… / Ouvrir le site »). Inscription, confirmation par e-mail et retour dans l'app, sans navigateur. Écran neuf : 8 maquettes
+- [ ] **9/10 · 2,5 j** Section « Sécurité et données » des Paramètres : « Changer mon mot de passe », « Exporter mes données » et « Confidentialité » renvoient vers le site (flèche ↗). Les faire dans l'app, avec la suppression de compte (exigée par Apple) ; 8 maquettes pour les écrans neufs
+- [ ] **7/10 · 1 j** Base presque pleine (404/500 Mo) : trouver de la place
+- [ ] **6/10 · 0,5 j** `npm audit` de `native/` : refaire le dry-run et décider
 
-## Démo
-- [ ] **(toi)** Lancer ou autoriser le script de la démo en vraie base, puis migration, `demo-session`, `recalc_ftp_tss`
-- [ ] Semer aussi : séances prévues, notes, cycles, santé, sommeil, tours
-- [ ] **(toi)** OK pour retirer l'ancien mode démo en mémoire (`native/src/data/demo/*`)
-- [ ] Rafraîchir régulièrement les données de démo
-- [ ] Base presque pleine (404/500 Mo) : trouver de la place
-- [ ] Streams de démo : piliers vélo inventés, allure de course qui ralentit d'année en année
+## 3. Coach IA
 
-## Base et sécurité
-Détail : `db/AUDIT_2026-10-27_SUIVI.md`
+- [x] **9/10 · 1 j** Même app pour tout le monde : selon les comptes, l'app s'affiche sans le Coach IA, ce qui donne l'impression de deux apps et c'est incompréhensible. Trouver pourquoi (accès, réglage ou drapeau par compte) et unifier
+- [ ] **9/10 · 3 j** Finir le modèle de réflexion du Coach IA à la perfection (la façon dont il raisonne avant de répondre)
+- [ ] **8/10 · 3 j** Faire toutes les fiches de connaissance du Coach IA (une fiche par sujet et par sport). Lister d'abord les fiches à écrire
+- [ ] **7/10 · 1,5 j** Tests réels : débutant, vélo, natation (simulateur « Coach test »)
+- [ ] **6/10 · 2 j** Onglet Coach : remplacer « Effacer » par un bouton « Préférences » qui permet à l'utilisateur de dicter un peu le comportement de l'IA (ton, niveau de détail…). Où on garde ces préférences et comment elles arrivent au coach, à cadrer ; 8 maquettes. Si « Effacer » reste utile, lui trouver une autre place
+- [ ] **6/10 · 2 j** Historique de conversation avec le coach (garder, rouvrir, nouvelle conversation, supprimer). À cadrer ; lié à « Effacer » ; 8 maquettes
+- [ ] **6/10 · 2 j** Imprévus (moins de temps, fatigue, compétition qui bouge)
+- [ ] **6/10 · 1,5 j** Message proactif à l'ouverture de l'onglet Coach ; détecter les allures trop faciles ou trop dures
+- [ ] **6/10 · 1 j** 8 maquettes : écran d'accord de partage + réglages
+- [ ] **6/10 · 1 j** La regarder sur plusieurs vraies sorties (footing, longue, fractionné, vélo) et corriger les phrases
+- [ ] **5/10 · 2 j** Plan de préparation triathlon (enchaînement des 3 sports)
+- [ ] **5/10 · 1,5 j** Modifier la durée d'une séance ; créer une compétition ou un objectif depuis le coach
+- [ ] **5/10 · 1 j** Comparer Haiku et Sonnet sur 1 000-2 000 cas
+- [ ] **5/10 · 2 j** Réactions du corps plus riches (départ, récupération, sommeil, fatigue des jours d'avant)
+- [ ] **5/10 · 2 j** Progression plus fine (vélo, même fractionné refait, tendance sur plusieurs semaines)
+- [ ] **5/10 · 1 j** Phrases plus « coach »
+- [ ] **4/10 · 1,5 j** 8 maquettes : carte d'un plan long, édition à la main de la structure
+- [ ] **4/10 · 0,5 j** Commencer à stocker le VO2max dans le temps
+- [ ] **4/10 · 2 j** Autres sports (muscu, natation, Hyrox), cadence et relief en course
+- [ ] **4/10 · 5 j** Plus tard : « la vraie création d'un coach avec un vrai plan » (à cadrer ensemble)
 
-- [ ] `npm audit` de `native/` : refaire le dry-run et décider
-- [ ] Export de données et suppression de compte dans l'app mobile
-- [ ] Vérifier que `disconnect-integration` est bien redéployée
-- [ ] Synchro Strava : tâche serveur planifiée (pg_cron) pour ne plus garder l'écran ouvert
+## 4. Accueil et widgets
 
-## Ménage
-- [ ] **(toi)** OK pour supprimer les ~40 worktrees de `.claude/worktrees/` (presque tous mergés ; `worktree-fiche-athlete` ne l'est pas)
-- [ ] **(toi)** OK pour supprimer `FeuilleAjout.tsx` et `useRecordsAnnuels.ts`
+- [ ] **8/10 · 3 j** Refaire l'affichage des écrans d'accueil (la mise en page globale, pas seulement les widgets) : 8 maquettes
+- [ ] **8/10 · 4 j** Refaire les widgets avec précision pour qu'ils soient beaux et pertinents (chacun dit quelque chose d'utile au sportif). Widget par widget, tailles XS/S/M/L, 8 maquettes par refonte d'aspect
+- [ ] **7/10 · 4 j** Donner de la profondeur aux widgets : chacun mène quelque part, soit un lien direct vers l'écran de ses données, soit une page de détail créée pour lui. Choisir l'option pour chaque widget ; 8 maquettes par page de détail neuve
 
-## Git
-- [ ] **(toi)** Pousser les 4 commits du Profil (après avoir retiré les logos de sponsors)
+## 5. Calendrier
+
+- [ ] **8/10 · 1,5 j** Repasser sur tout l'écran Calendrier pour repérer ce qui manque, les bugs et les corrections (parcours complet dans le simulateur, puis lister ici ce qu'on trouve)
+- [ ] **6/10 · 1 j** Vérifier le thème clair (calendrier, pop-up d'import, compétition, dossard)
+- [ ] **6/10 · 2 j** Ouvrir une activité importée (flux, carte, tours) et calculer son vrai TSS
+- [ ] **5/10 · 2 j** Compétition : course par étapes et segments du triathlon
+- [ ] **5/10 · 0,5 j** Garder les filtres (bouton filtre en rond) en préférence : ils restent réglés à chaque lancement de l'app
+- [ ] **4/10 · 0,5 j** Où mettre l'accès aux écrans de cycles
+- [ ] **4/10 · 0,5 j** Blessure « en cours » sans date de fin
+
+## 6. Écran d'une sortie
+
+- [ ] **9/10 · 8 j** Faire et finaliser tous les écrans de séance selon le type (prévue, compétition, réalisée) et selon le sport (course, vélo, natation, muscu, Hyrox, triathlon…). Lister d'abord la grille type × sport (ce qui existe, ce qui manque), puis 8 maquettes pour chaque écran neuf ou refait
+- [ ] **7/10 · 0,2 j** Séance prévue : remettre le bouton Supprimer
+- [ ] **4/10 · 2 j** Pouvoir bouger la trace de la sortie
+
+## 7. Bilan et zones
+
+- [ ] **8/10 · 2 j** Terminer la page Bilan en vue « Tous » (tous sports confondus) : elle n'est pas finie
+- [ ] **8/10 · 2 j** Supprimer ou modifier l'onglet Progrès avec des valeurs factuelles plutôt que des formules inventées
+- [ ] **7/10 · 0,5 j** Voir et valider l'écran Paramètres › Zones dans le simulateur
+- [ ] **6/10 · 0,5 j** Essayer pour de vrai « Faire calculer mes zones par le coach »
+- [ ] **6/10 · 1 j** Le Bilan doit lire les zones perso
+- [ ] **6/10 · 0,5 j** Vérifier les zones perso quand la FTP ou la LTHR change
+- [ ] **5/10 · 1 j** Brancher `estimerFtp` et `estimerFcMax` à un écran
+- [ ] **4/10 · 0,3 j** Widget Progression de l'accueil : retirer son propre sélecteur de période
+- [ ] **3/10 · 1,5 j** Plus tard : bouton « marquer comme compétition » (8 maquettes)
+- [ ] **2/10 · 2 j** Plus tard : pente, ressenti Strava, courbe de température
+
+## 8. Profil, Paramètres et Santé
+
+- [ ] **8/10 · 2 j** Remettre un moyen de modifier l'identité et la photo (prénom, poids…) : 8 maquettes
+- [ ] **7/10 · 4 j** Faire la page Santé (pas encore faite) : à cadrer ensemble (sommeil, FC repos, HRV, blessures ?), puis 8 maquettes
+- [ ] **7/10 · 2 j** Dans les Paramètres : finaliser la page Profil à la perfection
+- [ ] **7/10 · 3 j** Finaliser à la perfection chaque page des Paramètres, comme le Profil : Physio, Zones, Mes sports, Connexions, et toutes les autres (repasser l'écran en entier pour n'en oublier aucune)
+- [ ] **6/10 · 0,1 j** **(toi)** Dire ce que tu veux encore changer sur l'écran Profil
+- [ ] **6/10 · 3 j** Refonte du système de notes du profil
+
+## 9. Sources d'activités
+
+- [ ] **8/10 · 8 j** Brancher les API des montres et des apps de sport (Garmin, Polar, Coros, Suunto, Wahoo, Whoop, Apple Santé…) pour que Strava ne soit plus la seule source. À cadrer : lesquelles d'abord, ce que chaque API autorise (accès à débloquer, GPS, flux), et comment éviter les doublons quand une sortie arrive de deux sources. Garmin est « Bientôt disponible » depuis la décision du 13 oct. Les accès développeur peuvent prendre des semaines : à demander tôt
+- [ ] **6/10 · 1,5 j** Synchro Strava : tâche serveur planifiée (pg_cron) pour ne plus garder l'écran ouvert
+
+## 10. Qualité
+
+- [ ] **8/10 · 1,5 j** Premier lancement : écran pour quelqu'un qui n'a aucune donnée (la démo est retirée, cet état vide compte beaucoup) ; 8 maquettes
+- [ ] **7/10 · 1,5 j** Mode hors ligne : vérifier ce que l'app affiche sans réseau et le gérer proprement
+- [ ] **7/10 · 2 j** Accessibilité : contrastes, texte agrandi, lecteur d'écran (VoiceOver), cibles ≥ 44 px
+- [ ] **6/10 · 0,5 j** Voir la muscu sur de vraies données (jamais vue à l'écran)
+- [ ] **5/10 · 2 j** Notifications : rappel de séance, message du coach. À cadrer ; 8 maquettes pour les réglages
+
+## 11. Android
+
+- [ ] **5/10 · 2 j** Vérifier qu'il n'y a aucun problème d'affichage sur Android
+- [ ] **5/10 · 1 j** Android : générer `android/`, clé Google Maps
+
+## 12. Après la sortie
+
+- [ ] **9/10 · 6 j** **En dernier** : créer l'écran et les fonctions de paiement d'abonnement (offres, achat, gestion et résiliation, accès selon l'offre). À cadrer le moment venu (achats intégrés Apple/Google ou autre, prix, ce qui reste gratuit) ; 8 maquettes
+- [ ] **2/10 · 10 j** Plus tard : classement entre utilisateurs, durabilité, FC repos/HRV/VO2max par Apple Santé, chaussures de l'avatar
