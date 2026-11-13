@@ -26,6 +26,18 @@ import { usePalette } from '@/theme/usePalette';
 // Une séance prévue ou une compétition, en lecture, avec le même modèle que la sortie réalisée (VueSortie) : page 1 = la carte et le profil du GPX, ou, sans GPX, le dessin du sport en fond
 // et le profil des blocs sous les chiffres ; page 2 = le temps par zone, tous les chiffres, les notes; page 3 = la carte du GPX s'il y a aussi des blocs ;
 // Le crayon du haut ouvre le formulaire (modifier, supprimer). On y arrive depuis le détail d'un jour du calendrier.
+// Les tuiles de la page 2 : une rangée de 4, puis des rangées de 3
+function rangees<T>(liste: T[]): { taille: number; tuiles: T[] }[] {
+  const sortie: { taille: number; tuiles: T[] }[] = [];
+  let i = 0;
+  while (i < liste.length) {
+    const taille = i === 0 ? 4 : 3;
+    sortie.push({ taille, tuiles: liste.slice(i, i + taille) });
+    i += taille;
+  }
+  return sortie;
+}
+
 export default function Prevue() {
   const p = usePalette();
   const router = useRouter();
@@ -118,11 +130,11 @@ export default function Prevue() {
             <TempsParZone minutes={minutes} />
             {autres.length ? (
               <View style={{ gap: espace.e2 }}>
-                {Array.from({ length: Math.ceil(autres.length / 3) }, (_, r) => (
+                {rangees(autres).map((rangee, r) => (
                   <View key={r} style={styles.tuiles}>
-                    {[0, 1, 2].map((k) => {
-                      const c = autres[r * 3 + k];
-                      return c ? <TuileChiffre key={c.cle} etiquette={c.libelle.replace(/^Allure (cible|prévue)$/, 'Allure').replace('Dénivelé +', 'D+').replace('Temps cible', 'Objectif').replace('Charge estimée', 'Charge').replace('Effort estimé', 'Effort').replace(' estimé', '').replace(' estimée', '')} valeur={c.valeur} unite={c.unite} /> : <View key={k} style={{ flex: 1 }} />;
+                    {Array.from({ length: rangee.taille }, (_, k) => {
+                      const c = rangee.tuiles[k];
+                      return c ? <TuileChiffre key={c.cle} etiquette={c.libelle.replace(/^Allure (cible|prévue)$/, 'Allure').replace('Dénivelé +', 'D+').replace('Temps cible', 'Objectif').replace('Charge estimée', 'Charge').replace('Effort estimé', 'Effort')} valeur={c.valeur} unite={c.unite} /> : <View key={k} style={{ flex: 1 }} />;
                     })}
                   </View>
                 ))}
