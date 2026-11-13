@@ -8,6 +8,7 @@ import { BarresEmpilees } from '@/components/graphes/BarresEmpilees';
 import { BarresHebdo } from '@/components/graphes/BarresHebdo';
 import { BarresMois } from '@/components/graphes/BarresMois';
 import { CourbeSemaine } from '@/components/graphes/CourbeSemaine';
+import { CourbesNiveau } from '@/components/graphes/CourbesNiveau';
 import { OngletRecordsSport } from '@/components/bilan/OngletRecordsSport';
 import { OngletRecordsTous } from '@/components/bilan/OngletRecordsTous';
 import { OngletRecordsCourse } from '@/components/bilan/OngletRecordsCourse';
@@ -52,6 +53,7 @@ import { useRecordsVelo } from '@/hooks/useRecordsVelo';
 import { useHistoriqueProgression, useSeriesForceProgression } from '@/hooks/useHistoriqueProgression';
 import { useReferences } from '@/hooks/useReferences';
 import { useMenu } from '@/stores/menu';
+import { fenetre as fenetreNiveauMois, notesMensuelles } from '@/data/bilan/niveau-mensuel';
 import { demanderJour } from '@/stores/jour-demande';
 import { choisirMesure, useMesuresBilan } from '@/stores/mesures-bilan';
 import { usePiliersAnnuels } from '@/hooks/usePiliersAnnuels';
@@ -123,7 +125,10 @@ export default function Bilan() {
   const { brutes, objectifs, chargement, erreur, pret, actualisation, recharger } = useDonneesBilan();
   const annee = anneeChoisie;
   // Progrès : l'historique long et le carnet de force ne se chargent qu'à la première ouverture de l'onglet
-  const progresOuvert = onglet === 'progres';
+  // L'ancien Progrès (niveaux par année, formules maison) est remplacé par le niveau mois par mois, factuel (14 nov.) : ses calculs ne se lancent plus.
+  // Reste à retirer ce code (docs/A_FAIRE.md).
+  const progresOuvert = false;
+  const niveauOuvert = onglet === 'progres';
   const historique = useHistoriqueProgression(brutes, progresOuvert);
   // Le carnet de force sert au Progrès, et aux séries / répétitions / tonnage de la musculation sur tous les onglets
   const carnet = useSeriesForceProgression(progresOuvert || filtre === 'muscu');
@@ -315,6 +320,14 @@ export default function Bilan() {
   const formeNatation = useMemo(() => (niveauNatation ? formeNatationParSemaine(filtrees, annee, maintenant) : null), [niveauNatation, filtrees, annee, maintenant]);
   // L'année choisie en haut ne sert que s'il y a un niveau global à lire (vélo, course, musculation ou natation) ; sinon elle reste affichée mais grisée
   const anneeInutile = onglet === 'progres' && !(niveauNatation || progres.some(({ prog }) => (prog.famille === 'velo' && niveauGlobalVelo) || (prog.famille === 'course' && niveauCourse) || (prog.famille === 'muscu' && niveauMuscu)));
+
+  // Le niveau mois par mois : les heures de chaque mois sport par sport, la note = ses heures / celles de ton meilleur mois de ce sport (data/bilan/niveau-mensuel.ts)
+  const [fenetreNiveau, setFenetreNiveau] = useState<'3ans' | 'tout'>('3ans');
+  const [selNiveau, setSelNiveau] = useState<number | null>(null);
+  const courbesNiveau = useMemo(() => (niveauOuvert ? notesMensuelles(filtrees, maintenant) : []), [niveauOuvert, filtrees, maintenant]);
+  const vueNiveau = useMemo(() => fenetreNiveauMois(courbesNiveau, fenetreNiveau === '3ans' ? 36 : null, maintenant), [courbesNiveau, fenetreNiveau, maintenant]);
+  const couleursNiveau = useMemo(() => Object.fromEntries(vueNiveau.courbes.map((c) => [c.famille, couleurSport(p, c.famille)])), [vueNiveau, p]);
+  useEffect(() => setSelNiveau(null), [filtre, fenetreNiveau, onglet]);
 
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
@@ -710,41 +723,29 @@ export default function Bilan() {
             ) : null}
 
             {pret && onglet === 'progres' ? (
-              <>
-                {historique.chargement || carnet.chargement ? (
-                  <View accessible accessibilityLabel="Chargement des progrès" style={styles.attente}>
-                    <ActivityIndicator color={p.texteDoux} />
-                  </View>
-                ) : progres.length || niveauNatation ? (
-                  <>
-                    {niveauNatation ? (
-                      <NiveauGlobalSport famille="natation" global={niveauNatation} annee={annee} onChoisirAnnee={setAnneeChoisie}>
-                        {formeNatation ? <FormeSaisonGraphe forme={formeNatation} couleur={couleurSport(p, 'natation')} /> : null}
-                      </NiveauGlobalSport>
-                    ) : null}
-                    {progres.map(({ prog, courbe }) => (
-                    <ProgresSport
-                      key={prog.famille}
-                      progression={prog}
-                      courbe={courbe}
-                      jours={JOURS_PROGRES}
-                      niveau={prog.famille === 'velo' ? niveaux.velo : prog.famille === 'course' ? niveaux.course : null}
-                      records={prog.famille === 'velo' ? recordsAnnuels : undefined}
-                      niveauGlobal={prog.famille === 'velo' ? niveauGlobalVelo : null}
-                      niveauSport={prog.famille === 'course' ? niveauCourse : prog.famille === 'muscu' ? niveauMuscu : null}
-                      series={prog.famille === 'muscu' ? carnet.series : undefined}
-                      annee={annee}
-                      forme={prog.famille === 'velo' ? formeSaison : prog.famille === 'course' ? formeCourse : prog.famille === 'muscu' ? formeMuscu : null}
-                      onChoisirAnnee={setAnneeChoisie}
+              vueNiveau.courbes.length ? (
+                <Bloc titre="Niveau mois par mois">
+                  <Text style={[typo.petit, { color: p.texteDoux, marginBottom: espace.e3 }]}>
+                    100 = ton meilleur mois de chaque sport, en heures d'entraînement. Touche un mois pour lire sa note.
+                  </Text>
+                  <View style={{ gap: espace.e3 }}>
+                    <OngletsSegment<'3ans' | 'tout'>
+                      etiquette="Période affichée"
+                      onglets={[
+                        { cle: '3ans', nom: '3 ans' },
+                        { cle: 'tout', nom: 'Tout' },
+                      ]}
+                      actuel={fenetreNiveau}
+                      onChoisir={setFenetreNiveau}
                     />
-                    ))}
-                  </>
-                ) : (
-                  <Bloc titre="Progrès">
-                    <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore de progression mesurable pour ce sport : on sait la suivre en course, vélo, natation et musculation.</Text>
-                  </Bloc>
-                )}
-              </>
+                    <CourbesNiveau mois={vueNiveau.mois} courbes={vueNiveau.courbes} couleurs={couleursNiveau} selection={selNiveau} onSelection={setSelNiveau} />
+                  </View>
+                </Bloc>
+              ) : (
+                <Bloc titre="Niveau">
+                  <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore d'heures d'entraînement pour ce filtre.</Text>
+                </Bloc>
+              )
             ) : null}
           </>
         )}
