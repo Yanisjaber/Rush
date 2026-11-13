@@ -11,10 +11,10 @@ import { blocsDePrevue } from '@/data/calendrier/ajouts';
 import { nomDuType } from '@/data/sports/catalogue-sports';
 import { nomDuBloc } from '@/data/calendrier/blocs-formulaire';
 import { dateIsoLocale, formatDateCourte } from '@/data/outils/format';
-import { chiffresPrevue } from '@/data/calendrier/prevue-detail';
+import { chiffresPrevue, completerAvecStructure } from '@/data/calendrier/prevue-detail';
 import { choisirChiffres, ordrePrevue } from '@/data/calendrier/quatre-chiffres';
 import { TuileChiffre } from '@/components/ui/TuileChiffre';
-import { COULEURS_ZONE, indiceZone, milieu, NOM_TYPE, texteCible, texteDuree, tousSegments, type Bloc as BlocSeance } from '@/data/calendrier/structure';
+import { COULEURS_ZONE, indiceZone, milieu, NOM_TYPE, resume, texteCible, texteDuree, tousSegments, type Bloc as BlocSeance } from '@/data/calendrier/structure';
 import { useAjouts } from '@/hooks/useAjouts';
 import { usePrevue } from '@/hooks/usePrevue';
 import { useReferences } from '@/hooks/useReferences';
@@ -68,7 +68,8 @@ export default function Prevue() {
   const nom = (prevue.name ?? '').trim() || nomSport;
   const heureLue = /T(\d{2}:\d{2})/.exec(String(prevue.start_date_local ?? ''))?.[1];
   const heure = heureLue && heureLue !== '00:00' ? heureLue : undefined; // minuit = saisie sans heure (comme dans le calendrier)
-  const chiffres = chiffresPrevue(prevue);
+  // Une allure cible et une durée donnent une distance (et des watts, un cardio, une énergie) : ce que la séance n'a pas enregistré se calcule depuis ses blocs
+  const chiffres = chiffresPrevue(completerAvecStructure(prevue, blocs.length ? resume(blocs, reference, prevue.sport) : null));
   const notes = (prevue.notes ?? '').trim();
   const dureeBloc = (b: BlocSeance) => tousSegments([b]).reduce((t, { seg }) => t + seg.min, 0);
   // « J−25 » à côté de la date d'une compétition à venir ; « Aujourd'hui » le jour même

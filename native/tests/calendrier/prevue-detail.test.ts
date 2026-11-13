@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { formulaireCompetitionVide, formulaireSeanceVide, prevueDepuisLigne, validerCompetition, validerSeance } from '../../src/data/calendrier/ajouts.ts';
 import { apercuDeGpx } from '../../src/data/calendrier/apercu-import.ts';
-import { chiffresPrevue } from '../../src/data/calendrier/prevue-detail.ts';
+import { chiffresPrevue, completerAvecStructure } from '../../src/data/calendrier/prevue-detail.ts';
+import { resume, type Bloc } from '../../src/data/calendrier/structure.ts';
 
 const id = 'a1b2c3d4-0000-4000-8000-000000000001';
 const libelles = (liste: { libelle: string }[]) => liste.map((c) => c.libelle);
@@ -55,4 +56,47 @@ test('apercuDeGpx : la trace, la zone de carte et le profil d\'altitude d\'un pa
 test('apercuDeGpx : un fichier vide ou à un seul point ne donne pas de carte', () => {
   assert.equal(apercuDeGpx(''), null);
   assert.equal(apercuDeGpx('<gpx><trk><trkseg><trkpt lat="48.85" lon="2.35"></trkpt></trkseg></trk></gpx>'), null);
+});
+
+// --- Ce que les blocs permettent de calculer ---------------------------------------------------------------------------------
+const seg = (min: number, int: number) => ({ min, int, intHi: null });
+const blocsCourse: Bloc[] = [
+  { type: 'warmup', name: '', reps: 1, metric: 'pace', unit: 'pct', work: seg(10, 75) },
+  { type: 'interval', name: '', reps: 3, metric: 'pace', unit: 'pct', work: seg(5, 105), rec: seg(2, 70) },
+  { type: 'cooldown', name: '', reps: 1, metric: 'pace', unit: 'pct', work: seg(10, 70) },
+];
+const prevueCourse = (extra: Record<string, unknown> = {}) =>
+  ({ id, name: 'Rappel d\'allure', sport: 'Run', category: 'entrainement', date: '2026-12-10', duration: 43, tss: null, km: null, d_plus: null, rpe: null, est_watts: null, est_bpm: null, est_kj: null, structure: blocsCourse, ...extra }) as never;
+
+test('completerAvecStructure : une allure cible et une durée donnent une distance, et donc une allure prévue', () => {
+  const r = resume(blocsCourse, { allureBase: 300 }, 'Run'); // 5:00/km à 100 %
+  const p = completerAvecStructure(prevueCourse(), r);
+  assert.ok((p.km ?? 0) > 5 && (p.km ?? 0) < 12, `distance calculée : ${p.km}`);
+  const c = chiffresPrevue(p);
+  assert.ok(c.some((x) => x.cle === 'distance'));
+  assert.ok(c.some((x) => x.cle === 'allure'));
+});
+
+test('completerAvecStructure : ce que la séance a déjà d\'enregistré ne change jamais', () => {
+  const r = resume(blocsCourse, { allureBase: 300 }, 'Run');
+  const p = completerAvecStructure(prevueCourse({ km: 7.5, tss: 80 }), r);
+  assert.equal(p.km, 7.5);
+  assert.equal(p.tss, 80);
+});
+
+test('completerAvecStructure : sans blocs, ou pour une compétition, la séance est rendue telle quelle', () => {
+  const sans = prevueCourse({ structure: null });
+  assert.equal(completerAvecStructure(sans, null), sans);
+  const r = resume(blocsCourse, { allureBase: 300 }, 'Run');
+  const comp = prevueCourse({ category: 'competition' });
+  assert.equal(completerAvecStructure(comp, r), comp);
+});
+
+test('completerAvecStructure : des watts dans les blocs donnent une puissance et une énergie', () => {
+  const blocsVelo: Bloc[] = [{ type: 'steady', name: '', reps: 1, metric: 'power', unit: 'pct', work: seg(60, 80) }];
+  const r = resume(blocsVelo, { ftp: 250 }, 'Ride');
+  const p = completerAvecStructure(prevueCourse({ sport: 'Ride', structure: blocsVelo, duration: 60 }), r);
+  assert.equal(p.est_watts, 200);
+  assert.ok((p.est_kj ?? 0) > 0);
+  assert.equal(p.km, null); // pas d'allure : pas de distance inventée
 });

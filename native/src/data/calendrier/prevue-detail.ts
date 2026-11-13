@@ -1,7 +1,7 @@
 // L'écran de lecture d'une séance prévue ou d'une compétition : les chiffres à montrer, dans l'ordre. Fonctions pures, sans écran ni réseau.
 import { allureMoyenne, texteTempsCible } from './competition.ts';
 import { formatKm, formatNombre } from '../outils/format.ts';
-import { texteDuree } from './structure.ts';
+import { texteDuree, type ResumeStructure } from './structure.ts';
 import type { PrevueComplete } from '../types.ts';
 
 export interface ChiffrePrevue {
@@ -19,6 +19,22 @@ const positif = (v: unknown): number | null => {
 /** La distance écrite avec son unité : en mètres pour la natation, en kilomètres sinon (une décimale, aucune au-delà de 100 km). */
 function distance(km: number, sport: string): { valeur: string; unite: string } {
   return sport === 'Swim' ? { valeur: formatNombre(Math.round(km * 1000)), unite: 'm' } : { valeur: formatKm(km, km >= 100 ? 0 : 1), unite: 'km' };
+}
+
+/**
+ * Complète une séance prévue avec ce que ses blocs permettent de calculer : avec une allure cible et une durée, il y a une distance ; avec des watts, une puissance et une énergie ; avec un cardio, un cardio moyen.
+ * Seules les valeurs absentes sont remplies : ce que la séance a déjà d'enregistré ne change jamais. Sans blocs (résumé nul), la séance est rendue telle quelle.
+ */
+export function completerAvecStructure(p: PrevueComplete, r: ResumeStructure | null): PrevueComplete {
+  if (!r || p.category === 'competition') return p;
+  return {
+    ...p,
+    km: positif(p.km) ?? r.km ?? p.km,
+    est_watts: positif(p.est_watts) ?? r.watts ?? p.est_watts,
+    est_bpm: positif(p.est_bpm) ?? r.bpm ?? p.est_bpm,
+    est_kj: positif(p.est_kj) ?? r.kj ?? p.est_kj,
+    tss: positif(p.tss) ?? (r.tss > 0 ? r.tss : p.tss),
+  };
 }
 
 /**
