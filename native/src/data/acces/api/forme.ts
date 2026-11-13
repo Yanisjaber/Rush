@@ -33,24 +33,3 @@ export async function chargerPuissance(userId: string): Promise<Resultat<PointPu
     .order('duration_s', { ascending: true });
   return resultat(r, 'Impossible de charger ta courbe de puissance.');
 }
-
-const TAILLE_PAGE_CONDITION = 1000; // l'API renvoie au plus 1000 lignes par requête : on lit par pages
-const PAGES_MAX_CONDITION = 12; // garde-fou : environ 30 ans de jours
-
-/** La condition (CTL) de chaque jour, depuis le début : pour la courbe de forme du Progrès (par pages de 1 000 jours). */
-export async function chargerConditionComplete(userId: string): Promise<Resultat<Pick<Metrique, 'iso_date' | 'ctl'>[]>> {
-  const tout: Pick<Metrique, 'iso_date' | 'ctl'>[] = [];
-  for (let page = 0; page < PAGES_MAX_CONDITION; page++) {
-    const r = await sb
-      .from('daily_metrics')
-      .select('iso_date,ctl')
-      .eq('user_id', userId)
-      .order('iso_date', { ascending: true })
-      .range(page * TAILLE_PAGE_CONDITION, (page + 1) * TAILLE_PAGE_CONDITION - 1);
-    const res = resultat<Pick<Metrique, 'iso_date' | 'ctl'>[]>(r, 'Impossible de charger ta forme.');
-    if (!res.data) return { data: null, erreur: res.erreur };
-    tout.push(...res.data);
-    if (res.data.length < TAILLE_PAGE_CONDITION) return { data: tout, erreur: '' };
-  }
-  return { data: tout, erreur: '' };
-}
