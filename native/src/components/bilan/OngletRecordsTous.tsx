@@ -81,7 +81,10 @@ export function OngletRecordsTous({ portee, toutes, annee, maintenant, onOuvrir 
       const e = record(r);
       if (!e) continue;
       const l = libelleEntree(r, e);
-      periodeLignes.push({ cle: r.cle, titre: noms[r.cle] ?? r.libelle, sous: [l.titre, e.detail].filter(Boolean).join(' · '), valeur: ecrire(e.valeur, 'h') });
+      // L'année est toujours écrite (« Mercredi 4 mars 2026 »), le nom du mois la porte déjà
+      const an = e.iso.slice(0, 4);
+      const quand = l.titre.includes(an) ? l.titre : `${l.titre} ${an}`;
+      periodeLignes.push({ cle: r.cle, titre: noms[r.cle] ?? r.libelle, sous: [quand, e.detail].filter(Boolean).join(' · '), valeur: ecrire(e.valeur, 'h') });
     }
 
     const serieLignes: Ligne[] = [];
