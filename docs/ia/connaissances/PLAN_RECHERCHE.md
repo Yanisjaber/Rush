@@ -8,7 +8,7 @@ Règles pour chaque fiche à écrire :
 - Format et niveaux de preuve : voir [README.md](README.md). Les fiches déjà écrites sont cochées `[x]`.
 - Ordre des vagues : **1 vélo** → 2 natation → 3 triathlon → 4 commun (trous) → 5 course à pied (trous) → 6 muscu. (Hyrox : pas de nouveaux sujets, décision de Yanis ; la fiche `hyrox` existante reste.)
 
-Légende : `[x]` existe · `[ ]` à écrire.
+Légende : `[x]` existe · `[~]` couvert par une autre fiche (indiquée) · `[ ]` à écrire.
 
 ---
 
@@ -19,142 +19,142 @@ Légende : `[x]` existe · `[ ]` à écrire.
 - [x] velo-ftp-tests — Tests de FTP : 20 min, rampe, 8 min, 60 min, et leurs écarts
 - [x] velo-puissance-critique — Puissance critique et W' (modèle, test, usage)
 - [x] velo-courbe-puissance — Courbe de puissance : lecture, pics 5 s / 1 min / 5 min / 20 min
-- [ ] velo-profil-coureur — Profil du cycliste (sprinteur, puncheur, rouleur, grimpeur) et ce qu'il dit de l'entraînement
-- [ ] velo-cardio-puissance — Fréquence cardiaque contre puissance : découplage, dérive cardiaque
-- [ ] velo-indice-efficacite — Efficacité (puissance normalisée / FC) comme indicateur de forme
-- [ ] velo-puissance-normalisee-if — Puissance normalisée, facteur d'intensité, TSS : définitions et limites
+- [ ] velo-profil-coureur — Profil du cycliste (sprinteur, puncheur, rouleur, grimpeur) et ce qu'il dit de l'entraînement — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-cardio-puissance — Fréquence cardiaque contre puissance : découplage, dérive cardiaque — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-indice-efficacite — Efficacité (puissance normalisée / FC) comme indicateur de forme — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-puissance-normalisee-if — Puissance normalisée, facteur d'intensité, TSS : définitions et limites — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
 - [x] velo-seuils-lactate — Seuils lactiques et ventilatoires à vélo (LT1, LT2, MLSS)
-- [ ] velo-vo2max-mesure — VO2max : mesure en labo et estimations des montres
-- [ ] velo-w-par-kg — Rapport poids-puissance : repères et limites
-- [ ] velo-capteurs-precision — Précision des capteurs de puissance (pédales, manivelles, moyeu, home trainer)
-- [ ] velo-zones-modeles — Zones de Coggan, de Seiler, polarisées : comment les comparer
+- [ ] velo-vo2max-mesure — VO2max : mesure en labo et estimations des montres — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-w-par-kg — Rapport poids-puissance : repères et limites — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-capteurs-precision — Précision des capteurs de puissance (pédales, manivelles, moyeu, home trainer) — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [~] velo-zones-modeles — Zones de Coggan, de Seiler, polarisées : comment les comparer — COUVERT PAR : velo-polarise-pyramidal + velo-zones-ftp
 
 ### endurance
-- [ ] velo-sortie-longue — Sortie longue : durée, intensité, fréquence
-- [ ] velo-endurance-base — Entraînement de base : volume et adaptations
-- [ ] velo-volume-heures — Volume hebdomadaire et progrès : combien d'heures
-- [ ] velo-faible-cadence-endurance — Efforts à faible cadence en endurance
+- [ ] velo-sortie-longue — Sortie longue : durée, intensité, fréquence — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-endurance-base — Entraînement de base : volume et adaptations — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-volume-heures — Volume hebdomadaire et progrès : combien d'heures — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-faible-cadence-endurance — Efforts à faible cadence en endurance — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
 - [x] velo-entrainement-a-jeun — Sorties à jeun et basses en glucides (« train low »)
 - [x] velo-durabilite — Durabilité : tenir sa puissance après des heures de fatigue
-- [ ] velo-endurance-vs-intensite-volume — Volume contre intensité chez les cyclistes entraînés
-- [ ] velo-sweet-spot — Le sweet spot : ce qu'on sait (RECHERCHE FAITE le 13 nov. : aucune étude revue par des pairs sous ce nom dans Europe PMC ; à traiter plus tard via les études « sous le seuil » ou à écarter)
-- [ ] velo-tempo-z3 — Le tempo (zone 3) : place dans un plan
-- [ ] velo-sorties-groupe — Rouler en groupe : intérêt et dépense réelle
+- [~] velo-endurance-vs-intensite-volume — Volume contre intensité chez les cyclistes entraînés — COUVERT PAR : velo-polarise-pyramidal
+- [ ] velo-sweet-spot — Le sweet spot : ce qu'on sait (RECHERCHE FAITE le 13 nov. : aucune étude revue par des pairs sous ce nom dans Europe PMC ; à traiter plus tard via les études « sous le seuil » ou à écarter) — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [~] velo-tempo-z3 — Le tempo (zone 3) : place dans un plan — COUVERT PAR : velo-polarise-pyramidal (modèle « seuil »)
+- [ ] velo-sorties-groupe — Rouler en groupe : intérêt et dépense réelle — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
 
 ### intensite
-- [ ] velo-seuil-intervalles — Intervalles au seuil : durées, récupérations, progression
+- [~] velo-seuil-intervalles — Intervalles au seuil : durées, récupérations, progression — COUVERT PAR : velo-polarise-pyramidal + velo-vo2max-intervalles
 - [x] velo-vo2max-intervalles — Intervalles VO2max à vélo : 30/30, 3 min, 4×4, 5×5
 - [x] velo-hiit-vs-sit — HIIT contre sprints (SIT) : effets et coût
 - [x] velo-polarise-pyramidal — Polarisé ou pyramidal chez les cyclistes
-- [ ] velo-sprints-neuromusculaire — Sprints et travail neuromusculaire
-- [ ] velo-efforts-anaerobies — Efforts anaérobies (30 s à 2 min) : à qui et quand
-- [ ] velo-over-under — Les « over-under » et les efforts autour du seuil
-- [ ] velo-cotes-grimper — Entraînement en côte et en montée longue
-- [ ] velo-intensite-frequence — Combien de séances dures par semaine
-- [ ] velo-bloc-hiit — Blocs de HIIT concentrés (2-3 semaines) : effets
-- [ ] velo-micro-intervalles — Micro-intervalles et intervalles courts répétés
+- [ ] velo-sprints-neuromusculaire — Sprints et travail neuromusculaire — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-efforts-anaerobies — Efforts anaérobies (30 s à 2 min) : à qui et quand — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-over-under — Les « over-under » et les efforts autour du seuil — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [x] velo-cotes-grimper — Montée (fait : velo-montee-danseuse)
+- [~] velo-intensite-frequence — Combien de séances dures par semaine — COUVERT PAR : velo-polarise-pyramidal + velo-periodisation
+- [~] velo-bloc-hiit — Blocs de HIIT concentrés (2-3 semaines) : effets — COUVERT PAR : velo-periodisation
+- [~] velo-micro-intervalles — Micro-intervalles et intervalles courts répétés — COUVERT PAR : velo-vo2max-intervalles (intervalles 30/15)
 
 ### force
 - [x] velo-force-musculation — Musculation pour les cyclistes : gain en puissance ?
-- [ ] velo-force-cadence-basse — Force sur le vélo (basse cadence) : efficacité réelle
-- [ ] velo-gainage-posture — Gainage, posture et tenue sur le vélo
-- [ ] velo-sprint-force-max — Force maximale et puissance de sprint
-- [ ] velo-force-saison — Placer la force dans la saison du cycliste
+- [~] velo-force-cadence-basse — Force sur le vélo (basse cadence) : efficacité réelle — COUVERT PAR : velo-cadence
+- [~] velo-gainage-posture — Gainage, posture et tenue sur le vélo — COUVERT PAR : velo-douleurs-dos
+- [~] velo-sprint-force-max — Force maximale et puissance de sprint — COUVERT PAR : velo-force-musculation
+- [~] velo-force-saison — Placer la force dans la saison du cycliste — COUVERT PAR : velo-force-musculation
 
 ### technique
 - [x] velo-cadence — Cadence : choix et effets sur le rendement
-- [ ] velo-pedalage — Technique de pédalage : efficacité et blessures
-- [ ] velo-position-aero — Position aérodynamique : gain, coût en puissance
-- [ ] velo-descente-virages — Technique de descente et de virage (sécurité)
-- [ ] velo-danseuse-assis — Danseuse ou assis en montée
-- [ ] velo-groupe-aspiration — Aspiration et placement dans le peloton
-- [ ] velo-home-trainer — Entraînement sur home trainer : différences avec la route (2 sources seulement trouvées le 13 nov. : Mieras 2014, Jeffries 2019 ; à compléter)
+- [ ] velo-pedalage — Technique de pédalage : efficacité et blessures — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [x] velo-position-aero — Position aérodynamique : gain, coût en puissance
+- [ ] velo-descente-virages — Technique de descente et de virage (sécurité) — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [x] velo-danseuse-assis — Danseuse ou assis en montée (couvert dans velo-montee-danseuse)
+- [x] velo-groupe-aspiration — Aspiration (couvert dans velo-position-aero)
+- [ ] velo-home-trainer — Entraînement sur home trainer : différences avec la route (2 sources seulement trouvées le 13 nov. : Mieras 2014, Jeffries 2019 ; à compléter) — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
 
 ### planification
 - [x] velo-periodisation — Périodisation du cycliste : classique, par blocs, inversée
-- [ ] velo-plan-cyclosportive — Préparer une cyclosportive (80-200 km)
-- [ ] velo-plan-gran-fondo-montagne — Préparer un col ou une épreuve de montagne
-- [ ] velo-plan-contre-la-montre — Préparer un contre-la-montre
-- [ ] velo-plan-criterium-course — Préparer une course en peloton (critérium, route)
-- [ ] velo-plan-ultra — Ultra-distance et bikepacking
-- [ ] velo-plan-gravel — Gravel : spécificités d'entraînement
-- [ ] velo-plan-vtt-xc — VTT cross-country : effort et entraînement
-- [ ] velo-plan-debutant — Du canapé à la première sortie longue à vélo
-- [ ] velo-saison-hiver — Entraînement hivernal (intérieur, base)
-- [ ] velo-semaine-type — Organisation d'une semaine d'entraînement à vélo
-- [ ] velo-temps-limite-8h — Entraîner un cycliste qui n'a que 6 à 8 h par semaine
-- [ ] velo-semaine-recuperation — Semaines de récupération : durée et charge
+- [ ] velo-plan-cyclosportive — Préparer une cyclosportive (80-200 km) — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-plan-gran-fondo-montagne — Préparer un col ou une épreuve de montagne — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-plan-contre-la-montre — Préparer un contre-la-montre — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-plan-criterium-course — Préparer une course en peloton (critérium, route) — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-plan-ultra — Ultra-distance et bikepacking — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-plan-gravel — Gravel : spécificités d'entraînement — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-plan-vtt-xc — VTT cross-country : effort et entraînement — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-plan-debutant — Du canapé à la première sortie longue à vélo — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-saison-hiver — Entraînement hivernal (intérieur, base) — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-semaine-type — Organisation d'une semaine d'entraînement à vélo — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-temps-limite-8h — Entraîner un cycliste qui n'a que 6 à 8 h par semaine — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [~] velo-semaine-recuperation — Semaines de récupération : durée et charge — COUVERT PAR : periodisation
 - [x] velo-reprise-apres-arret — Reprendre le vélo après un arrêt
 
 ### charge-suivi
 - [x] velo-tss-ctl — TSS, CTL, ATL, TSB : valeurs et limites à vélo
-- [ ] velo-suivi-forme — Suivre sa forme (tests réguliers, indicateurs)
-- [ ] velo-monotonie-charge — Variation de charge et monotonie
-- [ ] velo-progression-charge — Rythme de progression de la charge sans se blesser ni s'épuiser
-- [ ] velo-fatigue-chronique — Fatigue chronique du cycliste : signes et réponses
+- [~] velo-suivi-forme — Suivre sa forme (tests réguliers, indicateurs) — COUVERT PAR : velo-tss-ctl + hrv-suivi-recuperation
+- [~] velo-monotonie-charge — Variation de charge et monotonie — COUVERT PAR : course-monotonie-variation
+- [~] velo-progression-charge — Rythme de progression de la charge sans se blesser ni s'épuiser — COUVERT PAR : progression-charge-blessures
+- [~] velo-fatigue-chronique — Fatigue chronique du cycliste : signes et réponses — COUVERT PAR : surentrainement-fatigue
 
 ### recuperation
-- [ ] velo-recuperation-entre-seances — Récupération entre séances dures à vélo
-- [ ] velo-recup-active — Récupération active : intérêt réel
-- [ ] velo-sommeil-cyclistes — Sommeil et performance chez les cyclistes
-- [ ] velo-recup-grands-tours — Récupération en course à étapes
+- [~] velo-recuperation-entre-seances — Récupération entre séances dures à vélo — COUVERT PAR : hrv-suivi-recuperation + velo-froid-recuperation
+- [~] velo-recup-active — Récupération active : intérêt réel — COUVERT PAR : velo-froid-recuperation (Vaile 2008/2011)
+- [~] velo-sommeil-cyclistes — Sommeil et performance chez les cyclistes — COUVERT PAR : sommeil
+- [ ] velo-recup-grands-tours — Récupération en course à étapes — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
 - [x] velo-froid-recuperation — Bain froid et récupération (fait le 13 nov.)
-- [ ] velo-massage-compression — Massage et compression (pas encore cherché)
+- [ ] velo-massage-compression — Massage et compression (pas encore cherché) — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
 
 ### nutrition
 - [x] velo-glucides-effort — Glucides pendant l'effort : 60, 90, 120 g/h
 - [x] velo-glucides-fructose — Ratio glucose/fructose et tolérance digestive
 - [x] velo-hydratation — Boire à vélo : déshydratation et performance (fait le 13 nov.)
-- [ ] velo-sodium — Sodium et électrolytes à vélo
-- [ ] velo-nutrition-sortie-longue — Nutrition des sorties de plus de 4 h
-- [ ] velo-nutrition-avant-apres — Repas avant et après l'effort
-- [ ] velo-caféine-vélo — Caféine : dose et timing
-- [ ] velo-bicarbonate-beta — Bêta-alanine, bicarbonate, nitrates : ce qui marche
-- [ ] velo-poids-composition — Perdre du poids sans perdre de puissance
-- [ ] velo-entrainement-intestin — Entraîner son intestin à absorber les glucides
-- [ ] velo-nutrition-grand-tour — Alimentation en course à étapes
+- [ ] velo-sodium — Sodium et électrolytes à vélo — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [~] velo-nutrition-sortie-longue — Nutrition des sorties de plus de 4 h — COUVERT PAR : velo-glucides-effort + velo-glucides-fructose
+- [x] velo-nutrition-avant-apres — Après l'effort (fait : velo-nutrition-apres-effort ; « avant » non traité)
+- [~] velo-caféine-vélo — Caféine : dose et timing — COUVERT PAR : proteines-cafeine
+- [ ] velo-bicarbonate-beta — Bêta-alanine, bicarbonate, nitrates : ce qui marche — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-poids-composition — Perdre du poids sans perdre de puissance — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [~] velo-entrainement-intestin — Entraîner son intestin à absorber les glucides — COUVERT PAR : velo-glucides-effort (tolérance digestive)
+- [~] velo-nutrition-grand-tour — Alimentation en course à étapes — COUVERT PAR : velo-glucides-effort
 
 ### sante
 - [x] velo-douleurs-genou — Douleurs de genou du cycliste : causes et prévention (orientation)
 - [x] velo-douleurs-dos — Douleurs de dos du cycliste (fait le 13 nov.)
-- [ ] velo-nuque-mains — Nuque, mains, poignets : posture et réglages (aucune source lue pour l'instant)
+- [~] velo-nuque-mains — Nuque, mains, poignets : posture et réglages (aucune source lue pour l'instant) — COUVERT PAR : velo-douleurs-dos (nuque et mains non traitées)
 - [x] velo-position-ajustement — Réglages du vélo (selle, cintre, cale) et blessures
 - [x] velo-chutes-securite — Chutes et sécurité sur la route
 - [x] velo-densite-osseuse — Cyclisme et densité osseuse
-- [ ] velo-saddle-perinee — Selle, périnée et santé urinaire/génitale
-- [ ] velo-overtraining — Surentraînement du cycliste
-- [ ] velo-cardio-risque — Effort intense, risque cardiaque et avis médical
+- [x] velo-selle-perinee — Selle, périnée et santé urinaire/génitale
+- [~] velo-overtraining — Surentraînement du cycliste — COUVERT PAR : surentrainement-fatigue
+- [~] velo-cardio-risque — Effort intense, risque cardiaque et avis médical — COUVERT PAR : à traiter dans commun/sante (cœur et effort)
 
 ### competition
-- [ ] velo-affutage — Affûtage du cycliste
+- [~] velo-affutage — Affûtage du cycliste — COUVERT PAR : affutage
 - [x] velo-pacing-cm — Gestion de l'effort en contre-la-montre
-- [ ] velo-pacing-longue-distance — Gestion de l'effort en cyclosportive
-- [ ] velo-nutrition-course — Plan nutritionnel du jour J
-- [ ] velo-echauffement — Échauffement avant une course ou un test
-- [ ] velo-jour-j — Jour J : veille, matin, départ
-- [ ] velo-tactique-peloton — Tactique de course en peloton (notions)
+- [~] velo-pacing-longue-distance — Gestion de l'effort en cyclosportive — COUVERT PAR : velo-pacing-cm + velo-durabilite
+- [~] velo-nutrition-course — Plan nutritionnel du jour J — COUVERT PAR : velo-glucides-effort
+- [ ] velo-echauffement — Échauffement avant une course ou un test — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-jour-j — Jour J : veille, matin, départ — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-tactique-peloton — Tactique de course en peloton (notions) — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
 
 ### environnement
 - [x] velo-chaleur — Rouler par forte chaleur
-- [ ] velo-froid — Rouler par le froid
+- [ ] velo-froid — Rouler par le froid — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
 - [x] velo-altitude — Altitude : acclimatation et performance
-- [ ] velo-vent-pluie — Vent, pluie et adaptation de l'effort
+- [ ] velo-vent-pluie — Vent, pluie et adaptation de l'effort — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
 
 ### profils
 - [x] velo-femmes — Cyclistes femmes : spécificités
-- [ ] velo-veterans — Cyclistes vétérans (40+, 50+, 60+)
-- [ ] velo-jeunes — Jeunes cyclistes : charge et développement
-- [ ] velo-debutants — Débutants : erreurs fréquentes
+- [x] velo-veterans — Cyclistes vétérans (40+, 50+, 60+)
+- [ ] velo-jeunes — Jeunes cyclistes : charge et développement — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-debutants — Débutants : erreurs fréquentes — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
 
 ### materiel
-- [ ] velo-roues-pneus-resistance — Pneus, roulement et aérodynamique : gains
-- [ ] velo-home-trainer-materiel — Home trainer et rouleaux : choix
-- [ ] velo-capteurs-choix — Choisir un capteur de puissance
-- [ ] velo-braquets-transmission — Braquets, transmission et cadence
+- [ ] velo-roues-pneus-resistance — Pneus, roulement et aérodynamique : gains — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-home-trainer-materiel — Home trainer et rouleaux : choix — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-capteurs-choix — Choisir un capteur de puissance — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [~] velo-braquets-transmission — Braquets, transmission et cadence — COUVERT PAR : velo-cadence
 
 ### mental
-- [ ] velo-motivation-solo — Motivation et rouler seul
-- [ ] velo-douleur-effort — Gérer la douleur de l'effort long
+- [ ] velo-motivation-solo — Motivation et rouler seul — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
+- [ ] velo-douleur-effort — Gérer la douleur de l'effort long — PAS FAIT (13 nov. : recherche sans source exploitable, ou pas encore cherchée)
 
 ---
 

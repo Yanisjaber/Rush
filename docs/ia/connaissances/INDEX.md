@@ -2,7 +2,7 @@
 
 GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à la main. Une fiche est dans `<sport>/<partie>/<id>.md`.
 
-**73 fiches.**
+**78 fiches.**
 
 ## Tous les sports (`commun/`) — 20 fiches
 
@@ -113,7 +113,7 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 
 - [Course à pied : chaussures à plaque carbone, cadence, foulée](course/materiel/course-chaussures-cadence.md) — `course-chaussures-cadence` · preuve : probable · 4 sources
 
-## Vélo (`velo/`) — 28 fiches
+## Vélo (`velo/`) — 33 fiches
 
 ### Endurance de base (volume facile, sorties longues) (`velo/endurance/`)
 
@@ -132,6 +132,8 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 ### Technique et gestes (`velo/technique/`)
 
 - [Cadence à vélo : laquelle choisir, faut-il s'entraîner à basse ou haute cadence](velo/technique/velo-cadence.md) — `velo-cadence` · preuve : probable · 5 sources
+- [Monter à vélo : intensité des cols, danseuse ou assis, cadence en côte](velo/technique/velo-montee-danseuse.md) — `velo-montee-danseuse` · preuve : probable · 5 sources
+- [Position aérodynamique et aspiration : gains et limites](velo/technique/velo-position-aero.md) — `velo-position-aero` · preuve : probable · 5 sources
 
 ### Planification (périodisation, plans, reprise) (`velo/planification/`)
 
@@ -152,6 +154,7 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 - [Glucides pendant l'effort à vélo : combien par heure](velo/nutrition/velo-glucides-effort.md) — `velo-glucides-effort` · preuve : probable · 5 sources
 - [Glucose et fructose ensemble : pourquoi mélanger les sucres à vélo](velo/nutrition/velo-glucides-fructose.md) — `velo-glucides-fructose` · preuve : probable · 6 sources
 - [Boire à vélo : la déshydratation nuit-elle vraiment à la performance ?](velo/nutrition/velo-hydratation.md) — `velo-hydratation` · preuve : debattu · 6 sources
+- [Manger et boire juste après un effort à vélo : glycogène, protéines, lait chocolaté](velo/nutrition/velo-nutrition-apres-effort.md) — `velo-nutrition-apres-effort` · preuve : probable · 5 sources
 
 ### Santé et blessures (`velo/sante/`)
 
@@ -160,6 +163,7 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 - [Douleurs de dos du cycliste : fréquence, facteurs et prévention (orientation)](velo/sante/velo-douleurs-dos.md) — `velo-douleurs-dos` · preuve : probable · 6 sources
 - [Douleurs de genou du cycliste : ce qu'on sait des causes (orientation)](velo/sante/velo-douleurs-genou.md) — `velo-douleurs-genou` · preuve : probable · 5 sources
 - [Réglages du vélo (hauteur de selle, position) : ce que disent les études](velo/sante/velo-position-ajustement.md) — `velo-position-ajustement` · preuve : probable · 5 sources
+- [Selle, périnée et engourdissement : ce que disent les études (orientation)](velo/sante/velo-selle-perinee.md) — `velo-selle-perinee` · preuve : probable · 6 sources
 
 ### Tests et mesures (zones, seuils) (`velo/mesure/`)
 
@@ -181,6 +185,7 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 ### Profils (débutants, femmes, vétérans, jeunes) (`velo/profils/`)
 
 - [Cyclistes femmes : ce que les études disent de l'entraînement et de la fatigue](velo/profils/velo-femmes.md) — `velo-femmes` · preuve : probable · 6 sources
+- [Cyclistes vétérans (55 ans et plus) : muscle, rendement, os, cadence](velo/profils/velo-veterans.md) — `velo-veterans` · preuve : probable · 5 sources
 
 ## Natation (`natation/`) — 1 fiche
 

@@ -3298,6 +3298,123 @@ export const FICHES: Fiche[] = [
     ]
   },
   {
+    "id": "velo-montee-danseuse",
+    "dossier": "velo",
+    "theme": "technique",
+    "titre": "Monter à vélo : intensité des cols, danseuse ou assis, cadence en côte",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "montée",
+      "col",
+      "grimpeur",
+      "danseuse",
+      "assis",
+      "cadence en côte",
+      "intensité en montée",
+      "pente",
+      "VTT",
+      "haute montagne",
+      "force",
+      "effort en côte",
+      "coureur léger"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- En course, les **cols sont des efforts très intenses** : sur de grands tours, les coureurs de classe mondiale montent les cols difficiles à environ **77 % de leur réserve cardiaque**, au niveau de leur seuil.\n- Les cyclistes **légers** font de bons grimpeurs : **rapportée au poids**, la puissance des grimpeurs et des spécialistes du contre-la-montre est **similaire** ; les coureurs plus lourds ont l'avantage sur le plat.\n- **Danseuse ou assis** : les muscles du haut du corps travaillent de la même façon dans les deux positions (même organisation) ; **aucune des études lues ne prouve qu'une position soit plus efficace**.\n- La **cadence** modifie nettement la façon dont on appuie sur les pédales, surtout en côte.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; échantillons de 7 à 27 cyclistes.)*\n- **Intensité des cols** : Padilla et coll. (*Eur J Appl Physiol*, 2008), 16 coureurs de classe mondiale, 374 cols des grands tours : réserve de fréquence cardiaque de **77 %** dans les cols hors catégorie et de première catégorie, contre 74 % en seconde catégorie ; les montées sont montées au niveau ou près du seuil lactique.\n- **Couple de pédalage en côte** : Bertucci et coll. (*J Biomech*, 2005), 7 cyclistes assis, à puissance aérobie maximale, à plat (80 et 100 tr/min) et en côte à 9,25 % (60 et 80 tr/min) : le **profil du couple à la manivelle varie sensiblement** selon la cadence et la pente.\n- **Danseuse et assis** : Turpin et coll. (*J Sports Sci*, 2017), 7 muscles du haut du corps, de 100 à 700 W : les mêmes trois groupes d'activité (stabilisation du tronc, accélérations du tronc, soutien du poids) apparaissent debout et assis ; l'un d'eux est décalé dans le cycle de pédalage.\n- **Morphologie** : Impellizzeri et coll. (*Eur J Appl Physiol*, 2008), 27 cyclistes professionnels et 12 VTTistes : spécialistes du contre-la-montre et du plat plus lourds avec plus de surface frontale ; **les paramètres rapportés au poids sont similaires** entre contre-la-montre, grimpeurs et VTT, et plus élevés que chez les spécialistes du plat.\n- **Basse cadence en côte** : Nimmerichter et coll. (*Eur J Appl Physiol*, 2012), 18 cyclistes : 4 semaines d'intervalles à 60 tr/min en côte ont amélioré la puissance sur 20 min en côte (+4,4 %) ([[velo-cadence]]).",
+    "regles": "- Préparer une épreuve de montagne en **travaillant des efforts longs au seuil** (voir [[velo-polarise-pyramidal]] et [[velo-vo2max-intervalles]]) et **le rapport puissance/poids**, pas seulement les watts.\n- Conseiller de **partir dans les cols à un effort tenable** : ce sont des efforts presque au seuil, longs, où la gestion de l'effort compte ([[velo-pacing-cm]]).\n- Laisser le cycliste **alterner danseuse et assis** selon son confort ; ne pas imposer l'une ou l'autre.\n- En côte raide avec un **genou sensible**, éviter les très gros braquets à basse cadence ([[velo-douleurs-genou]]).",
+    "pieges": "- Se comparer à un grimpeur professionnel en watts absolus plutôt qu'en watts par kilo.\n- Monter un col comme un sprint long.\n- Croire que la danseuse est « plus efficace » : rien ne l'établit dans ces sources.",
+    "sources": [
+      {
+        "titre": "Padilla et al., Exercise intensity and load during uphill cycling in professional 3-week races (Eur J Appl Physiol, 2008)",
+        "url": "https://doi.org/10.1007/s00421-007-0602-9"
+      },
+      {
+        "titre": "Bertucci et al., Effects on the crank torque profile when changing pedalling cadence in level ground and uphill road cycling (J Biomech, 2005)",
+        "url": "https://doi.org/10.1016/j.jbiomech.2004.05.037"
+      },
+      {
+        "titre": "Turpin et al., Upper limb and trunk muscle activity patterns during seated and standing cycling (J Sports Sci, 2017)",
+        "url": "https://doi.org/10.1080/02640414.2016.1179777"
+      },
+      {
+        "titre": "Impellizzeri et al., Level ground and uphill cycling ability in elite female mountain bikers and road cyclists (Eur J Appl Physiol, 2008)",
+        "url": "https://doi.org/10.1007/s00421-007-0590-9"
+      },
+      {
+        "titre": "Nimmerichter et al., Effects of low and high cadence interval training on power output in flat and uphill cycling time-trials (Eur J Appl Physiol, 2012)",
+        "url": "https://doi.org/10.1007/s00421-011-1957-5"
+      }
+    ],
+    "voirAussi": [
+      "velo-cadence",
+      "velo-polarise-pyramidal",
+      "velo-vo2max-intervalles",
+      "velo-pacing-cm",
+      "velo-douleurs-genou"
+    ]
+  },
+  {
+    "id": "velo-nutrition-apres-effort",
+    "dossier": "velo",
+    "theme": "nutrition",
+    "titre": "Manger et boire juste après un effort à vélo : glycogène, protéines, lait chocolaté",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "après l'effort",
+      "récupération nutritionnelle",
+      "glycogène",
+      "resynthèse",
+      "glucides et protéines",
+      "lait chocolaté",
+      "deux séances dans la journée",
+      "lendemain",
+      "caféine",
+      "repas de récupération",
+      "enchaînement"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Quand il y a **moins de 8 à 24 heures** avant le prochain effort important (deux séances dans la journée, étapes, lendemain d'une séance très dure), **manger tôt après l'effort** aide à retrouver ses réserves et à **mieux performer au second effort**.\n- Ajouter des **protéines aux glucides** a augmenté la reconstitution du glycogène dans une étude et amélioré la performance du lendemain dans une autre ; **le lait chocolaté** a donné de bons résultats entre deux efforts épuisants.\n- Si le prochain effort est dans **plusieurs jours**, **un repas normal suffit** : tous ces essais portent sur des enchaînements rapprochés.\n- La **caféine** associée aux glucides a augmenté la reconstitution du glycogène, mais à **8 mg/kg**, une dose très supérieure aux repères habituels : **ne pas le conseiller**.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; essais de 6 à 10 sujets, hommes entraînés ; il s'agit d'enchaînements rapprochés.)*\n- **Glucides + protéines** : Berardi et coll. (*Med Sci Sports Exerc*, 2006), 6 cyclistes : un supplément de glucides et de protéines pris tôt après un effort d'1 h a **augmenté la reconstitution du glycogène** par rapport à des glucides seuls ou à un repas plus tardif, **sans différence de performance** à l'effort suivant, 6 h plus tard.\n- **Lait chocolaté** : Karp et coll. (*Int J Sport Nutr Exerc Metab*, 2006), 9 cyclistes entraînés : après des intervalles, 4 h de récupération et un effort à 70 % de la VO2max jusqu'à épuisement : le temps à l'épuisement et le travail total sont **meilleurs avec du lait chocolaté** (ou une boisson de remplacement des liquides) qu'avec une boisson de glucides seule.\n- **Lendemain** : Rustad et coll. (*PLoS One*, 2016), 8 sujets entraînés, effort jusqu'à épuisement puis 2 h de supplément et un second effort 18 h plus tard : temps à l'épuisement **63,5 min avec glucides et protéines**, contre 49,8 min avec glucides seuls et 42,8 min avec un placebo sans énergie.\n- **Caféine** : Pedersen et coll. (*J Appl Physiol*, 2008), 7 sujets entraînés : glucides (4 g/kg) avec 8 mg/kg de caféine pendant 4 h : glycogène plus haut (313 contre 234 mmol/kg de muscle sec), reconstitution 66 % plus rapide.\n- **Glucides entre deux séances** : Cochran et coll. (*J Appl Physiol*, 2010), 10 hommes, deux séances d'intervalles à 3 h d'écart avec boisson glucidique ou placebo entre les deux : la réponse du muscle à la seconde séance dépend de ce qu'on a mangé entre les deux (réserves d'énergie et signaux d'adaptation) ([[velo-entrainement-a-jeun]]).",
+    "regles": "- Entre **deux séances importantes séparées de moins d'une journée** : proposer **de manger tôt** (par exemple un repas ou une collation de glucides avec des protéines, du lait chocolaté, du yaourt, des fruits) ; **ne pas imposer de produit particulier**.\n- Pour une séance par jour avec des jours de repos : **repas normal et varié**, sans complément particulier.\n- **Ne jamais** recommander de fortes doses de caféine pour récupérer.\n- Ne pas faire de diagnostic ni de régime : en cas de diabète, de trouble alimentaire ou de doute médical, orienter vers un professionnel ([[nutrition-glucides]], [[proteines-cafeine]]).",
+    "pieges": "- Prendre un shaker « de récupération » après chaque sortie facile.\n- Oublier de boire (voir [[velo-hydratation]]).\n- Généraliser à partir de 6 à 10 sujets.",
+    "sources": [
+      {
+        "titre": "Berardi et al., Postexercise muscle glycogen recovery enhanced with a carbohydrate-protein supplement (Med Sci Sports Exerc, 2006)",
+        "url": "https://doi.org/10.1249/01.mss.0000222826.49358.f3"
+      },
+      {
+        "titre": "Karp et al., Chocolate milk as a post-exercise recovery aid (Int J Sport Nutr Exerc Metab, 2006)",
+        "url": "https://doi.org/10.1123/ijsnem.16.1.78"
+      },
+      {
+        "titre": "Rustad et al., Intake of Protein Plus Carbohydrate during the First Two Hours after Exhaustive Cycling Improves Performance the following Day (PLoS One, 2016)",
+        "url": "https://doi.org/10.1371/journal.pone.0153229"
+      },
+      {
+        "titre": "Pedersen et al., High rates of muscle glycogen resynthesis after exhaustive exercise when carbohydrate is coingested with caffeine (J Appl Physiol, 2008)",
+        "url": "https://doi.org/10.1152/japplphysiol.01121.2007"
+      },
+      {
+        "titre": "Cochran et al., Carbohydrate feeding during recovery alters the skeletal muscle metabolic response to repeated sessions of high-intensity interval exercise in humans (J Appl Physiol, 2010)",
+        "url": "https://doi.org/10.1152/japplphysiol.00659.2009"
+      }
+    ],
+    "voirAussi": [
+      "velo-entrainement-a-jeun",
+      "nutrition-glucides",
+      "proteines-cafeine",
+      "velo-hydratation"
+    ]
+  },
+  {
     "id": "velo-pacing-cm",
     "dossier": "velo",
     "theme": "competition",
@@ -3473,6 +3590,65 @@ export const FICHES: Fiche[] = [
       }
     ],
     "voirAussi": []
+  },
+  {
+    "id": "velo-position-aero",
+    "dossier": "velo",
+    "theme": "technique",
+    "titre": "Position aérodynamique et aspiration : gains et limites",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "aérodynamisme",
+      "position aéro",
+      "traînée",
+      "surface frontale",
+      "angle du tronc",
+      "contre-la-montre",
+      "prolongateurs",
+      "aspiration",
+      "drafting",
+      "peloton",
+      "soufflerie",
+      "résistance de l'air",
+      "vitesse",
+      "casque aéro"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Au-dessus d'environ 14 m/s (50 km/h), la **résistance de l'air représente environ 90 % de la puissance** nécessaire sur le plat : la position compte beaucoup, bien plus que le poids.\n- On peut **réduire la traînée de 14 %** en modifiant la position et le matériel de cyclistes professionnels, mais **tout ce qui est aérodynamique n'est pas bon pour tout le monde** (un casque aéro n'a pas aidé tous les coureurs).\n- Se coucher davantage réduit la traînée, mais **fait perdre de la puissance** : l'angle idéal du tronc **dépend de la vitesse**. Au-dessous de 30 km/h, une position plus redressée est préférable.\n- **Rouler dans l'aspiration** d'un autre cycliste réduit énormément l'effort, et l'effet varie d'un cycliste à l'autre : il dépend aussi de **la façon dont on se place**.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; essais en soufflerie ou sur le terrain, très petits échantillons.)*\n- **Part de la traînée** : Debraux et coll. (*Sports Biomech*, 2011), revue : à plus de 14 m/s sur le plat, la traînée aérodynamique est la force résistante principale (environ 90 % de la puissance) ; elle dépend de la **surface frontale effective** ; plusieurs méthodes de terrain, peu coûteuses, donnent des résultats valides par rapport à la soufflerie.\n- **Professionnels en soufflerie** : García-López et coll. (*J Sports Sci*, 2008), 5 cyclistes professionnels : surface de traînée du vélo de contre-la-montre plus faible que celle d'un vélo de course, mais **31 % plus élevée** en position d'effort qu'en position statique ; des changements de position ont réduit la traînée de **14 %** ; le casque aéro n'était **pas favorable à tous**.\n- **Simulation et soufflerie** : Defraeye et coll. (*J Biomech*, 2010) : la simulation numérique donne des surfaces de traînée à environ 7 à 11 % de la mesure en soufflerie ; elle sert à comparer des positions.\n- **Position et puissance** : Fintelman et coll. (*J Biomech*, 2014), 19 cyclistes de contre-la-montre, angles du tronc de 0 à 24° : l'angle optimal **diminue quand la vitesse augmente** ; les pertes aérodynamiques dominent au-dessus de 46 km/h ; **un tronc totalement horizontal n'est pas optimal** ; **sous 30 km/h**, une position plus redressée est avantageuse.\n- **Aspiration** : Edwards et Byrnes (*Med Sci Sports Exerc*, 2007), 13 cyclistes : l'effet d'aspiration augmente avec la surface de traînée du cycliste de tête (réduction du coefficient de traînée de 35,6 à 50,5 % ; gain de puissance de 111 à 159 W) ; **l'effet varie aussi d'un cycliste suiveur à l'autre**, ce qui suggère une part de technique.",
+    "regles": "- Pour un **contre-la-montre ou un triathlon** plat et rapide : conseiller de **travailler une position aéro tenable** (confort, respiration) plutôt que la plus basse possible ; **faire tester** la position sur des sorties longues.\n- Pour un **cycliste de loisir** sur sorties vallonnées ou peu rapides : **le confort passe avant l'aéro** ([[velo-position-ajustement]]).\n- Ne jamais pousser une position basse si elle **provoque douleur** de dos, de nuque ou de genou ([[velo-douleurs-dos]]).\n- Rappeler que **rouler en groupe** (aspiration) économise beaucoup d'énergie, mais **exige de la vigilance et de la distance de sécurité** ([[velo-chutes-securite]]).",
+    "pieges": "- Copier la position d'un professionnel sans la souplesse et l'entraînement qui vont avec.\n- Acheter du matériel aéro en pensant gagner « à tous les coups ».\n- Se placer dans l'aspiration trop près : risque de chute.",
+    "sources": [
+      {
+        "titre": "Debraux et al., Aerodynamic drag in cycling: methods of assessment (Sports Biomech, 2011)",
+        "url": "https://doi.org/10.1080/14763141.2011.592209"
+      },
+      {
+        "titre": "García-López et al., Reference values and improvement of aerodynamic drag in professional cyclists (J Sports Sci, 2008)",
+        "url": "https://doi.org/10.1080/02640410701501697"
+      },
+      {
+        "titre": "Defraeye et al., Aerodynamic study of different cyclist positions: CFD analysis and full-scale wind-tunnel tests (J Biomech, 2010)",
+        "url": "https://doi.org/10.1016/j.jbiomech.2010.01.025"
+      },
+      {
+        "titre": "Fintelman et al., Optimal cycling time trial position models: aerodynamics versus power output and metabolic energy (J Biomech, 2014)",
+        "url": "https://doi.org/10.1016/j.jbiomech.2014.02.029"
+      },
+      {
+        "titre": "Edwards & Byrnes, Aerodynamic characteristics as determinants of the drafting effect in cycling (Med Sci Sports Exerc, 2007)",
+        "url": "https://doi.org/10.1249/01.mss.0000239400.85955.12"
+      }
+    ],
+    "voirAussi": [
+      "velo-position-ajustement",
+      "velo-douleurs-dos",
+      "velo-chutes-securite"
+    ]
   },
   {
     "id": "velo-position-ajustement",
@@ -3657,6 +3833,67 @@ export const FICHES: Fiche[] = [
     ]
   },
   {
+    "id": "velo-selle-perinee",
+    "dossier": "velo",
+    "theme": "sante",
+    "titre": "Selle, périnée et engourdissement : ce que disent les études (orientation)",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "selle",
+      "périnée",
+      "engourdissement",
+      "zone génitale",
+      "selle sans bec",
+      "pression",
+      "circulation",
+      "long trajet",
+      "urogénital",
+      "douleur de selle",
+      "confort",
+      "selle sans nez",
+      "distance hebdomadaire"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Un **engourdissement de la zone génitale** après de longues sorties est **très fréquent** chez les cyclistes (50 à 91 % selon les études) ; des troubles de l'érection sont rapportés chez 13 à 24 % des cyclistes dans une revue.\n- La cause principale étudiée est **la compression du périnée** par le nez de la selle : en position assise, l'**apport de sang au pénis baisse** ; **debout sur les pédales, il ne baisse pas**.\n- Une **selle sans bec** divise par plus de deux la pression sur le périnée ; chez des policiers à vélo, 6 mois avec une selle sans bec ont **réduit la pression de 66 %** et amélioré la sensibilité et la fonction érectile.\n- Les études portent **presque uniquement sur des hommes** : la littérature est plus mince pour les cyclistes femmes.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; petits échantillons, essais surtout chez des hommes en bonne santé.)*\n- **Revue** : Leibovitch et Mor (*Eur Urol*, 2005), 62 articles : les problèmes les plus courants sont les syndromes de compression nerveuse avec engourdissement génital (50 à 91 % des cyclistes), puis les troubles de l'érection (13 à 24 %) ; d'autres atteintes sont rares.\n- **Circulation** : Sommer et coll. (*Int J Sports Med*, 2001), 40 hommes sportifs : l'apport de sang au pénis diminue nettement chez plus de 70 % pendant le vélo en position assise ; **pas de changement debout** ; engourdissement chez 61 % ; 19 % de ceux qui roulent **plus de 400 km par semaine** se plaignent de troubles de l'érection ; les auteurs suggèrent de limiter les distances et de faire des pauses.\n- **Forme de la selle** : Schwarzer et coll. (*Eur Urol*, 2002), 20 hommes, quatre selles : la pression d'oxygène au pénis baisse avec toutes les selles, mais **très différemment** selon leur forme (les selles à bec étroit et très rembourrées sont les pires).\n- **Pression au périnée** : Lowe, Schrader, Breitenstein (*Med Sci Sports Exerc*, 2004), 33 policiers à vélo : une selle de course traditionnelle à bec étroit donne **plus de deux fois** la pression au périnée des selles sans bec.\n- **Selle sans bec sur 6 mois** : Schrader, Breitenstein, Lowe (*J Sex Med*, 2008), 90 policiers à vélo : **−66 %** de pression au périnée ; amélioration de la sensibilité du pénis et de l'indice de fonction érectile ; presque tous ont gardé la selle.\n- **Grande enquête** : Awad et coll. (*J Urol*, 2018), 3 932 hommes : les cyclistes n'ont **pas de fonction urinaire ou sexuelle moins bonne** que les nageurs et coureurs, mais **plus de risque de rétrécissement de l'urètre** ; **rouler plus souvent debout** et un **cintre plus haut** sont associés à moins d'engourdissements.",
+    "regles": "- Si l'utilisateur signale un **engourdissement qui persiste après la sortie, de la douleur ou un trouble de l'érection** : **conseiller un avis médical**, sans diagnostic ni traitement.\n- Conseils **de confort**, sans promesse : **se lever régulièrement sur les pédales**, faire des **pauses**, **faire vérifier la selle** (largeur, forme, inclinaison) et la position ([[velo-position-ajustement]]), envisager une **selle sans bec ou avec échancrure** ; **réduire les longues sorties** si les symptômes reviennent.\n- **Cyclistes femmes** : dire honnêtement que les études sont rares ; les conseils de confort sont les mêmes ([[velo-femmes]]).\n- Ne jamais minimiser un symptôme répété : c'est le corps qui signale une compression.",
+    "pieges": "- Serrer la selle trop haut ou trop inclinée pour « soulager ».\n- Rouler des heures sans jamais se lever.\n- Supposer qu'une selle très rembourrée est plus protectrice : une étude montre le contraire.",
+    "sources": [
+      {
+        "titre": "Leibovitch & Mor, The vicious cycling: bicycling related urogenital disorders (Eur Urol, 2005)",
+        "url": "https://doi.org/10.1016/j.eururo.2004.10.024"
+      },
+      {
+        "titre": "Sommer et al., Impotence and genital numbness in cyclists (Int J Sports Med, 2001)",
+        "url": "https://doi.org/10.1055/s-2001-16248"
+      },
+      {
+        "titre": "Schwarzer et al., Cycling and penile oxygen pressure: the type of saddle matters (Eur Urol, 2002)",
+        "url": "https://doi.org/10.1016/s0302-2838(01"
+      },
+      {
+        "titre": "Lowe et al., Effect of bicycle saddle designs on the pressure to the perineum of the bicyclist (Med Sci Sports Exerc, 2004)",
+        "url": "https://doi.org/10.1249/01.mss.0000128248.40501.73"
+      },
+      {
+        "titre": "Schrader et al., Cutting off the nose to save the penis (J Sex Med, 2008)",
+        "url": "https://doi.org/10.1111/j.1743-6109.2008.00867.x"
+      },
+      {
+        "titre": "Awad et al., Cycling, and Male Sexual and Urinary Function: Results from a Large, Multinational, Cross-Sectional Study (J Urol, 2018)",
+        "url": "https://doi.org/10.1016/j.juro.2017.10.017"
+      }
+    ],
+    "voirAussi": [
+      "velo-position-ajustement",
+      "velo-femmes"
+    ]
+  },
+  {
     "id": "velo-seuils-lactate",
     "dossier": "velo",
     "theme": "mesure",
@@ -3782,6 +4019,68 @@ export const FICHES: Fiche[] = [
     "voirAussi": [
       "charge-forme-fraicheur",
       "surentrainement-fatigue"
+    ]
+  },
+  {
+    "id": "velo-veterans",
+    "dossier": "velo",
+    "theme": "profils",
+    "titre": "Cyclistes vétérans (55 ans et plus) : muscle, rendement, os, cadence",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "vétérans",
+      "master",
+      "cyclistes âgés",
+      "60 ans",
+      "65 ans",
+      "vieillissement",
+      "muscle",
+      "rendement",
+      "cadence",
+      "densité osseuse",
+      "fibres musculaires",
+      "capillaires",
+      "séniors",
+      "âge"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Chez des cyclistes **très actifs de 55 à 79 ans**, le **muscle de la cuisse change peu avec l'âge** (peu de différence de fibres, de taille et de mitochondries) : l'inactivité explique en grande partie le « vieillissement » du muscle.\n- Le **rendement du pédalage est plus faible** chez les cyclistes âgés à toutes les cadences, et **les hautes cadences leur sont plus défavorables** : ils choisissent spontanément une cadence plus basse.\n- **Les os** : des cyclistes vétérans de piste ont des os du tibia et du radius **plus solides** que des sédentaires ; mais chez d'autres vétérans de la route, la **densité osseuse** baisse davantage que chez des non-sportifs ([[velo-densite-osseuse]]). Les résultats dépendent de la **discipline** (sprint ou distance) et de la mesure.\n- **Entraîner les vétérans comme les jeunes** n'est pas toujours efficace : une étude montre que des intervalles à **basse cadence** n'ont rien apporté à des vétérans.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; échantillons petits (8 à 90) ; études transversales surtout.)*\n- **Muscle** : Pollock et coll. (*Aging Cell*, 2018), 90 cyclistes très actifs (hommes et femmes, 55 à 79 ans) : à part une légère baisse de la densité des capillaires chez les hommes, **aucun paramètre musculaire mesuré n'est associé à l'âge** ; les auteurs concluent à peu d'effet de l'âge sur le muscle chez des sujets sélectionnés pour être actifs.\n- **Rendement et cadence** : Sacchetti et coll. (*Med Sci Sports Exerc*, 2010), 8 cyclistes jeunes (24 ans) et 8 âgés (66 ans) : le rendement est **plus faible** chez les âgés à toutes les cadences (40 à 120 tr/min) et aux deux puissances testées ; il leur est **plus défavorable de pédaler vite** ([[velo-cadence]]).\n- **Os des cyclistes de piste** : Wilks et coll. (*Med Sci Sports Exerc*, 2009), cyclistes vétérans de piste (sprint et distance) contre sédentaires de 30 à 82 ans : les sprinteurs ont les os les plus solides (plus de 10 % de plus au tibia, plus de 8 % au radius) ; la solidité du tibia est **bien conservée avec l'âge** dans tous les groupes.\n- **Densité osseuse sur 7 ans** : Nichols et Rauh (*J Strength Cond Res*, 2011), 19 cyclistes vétérans et 18 non-sportifs : plus de déclin chez les cyclistes ; ceux qui faisaient de la musculation ou de l'impact perdaient moins d'os ([[velo-densite-osseuse]]).\n- **Entraînement** : Kristoffersen et coll. (*Front Physiol*, 2014), 22 cyclistes vétérans de 47 ans : 12 semaines d'intervalles à 40 tr/min à intensité modérée n'ont **aucun effet** ; le groupe à cadence libre progresse en VO2max et en puissance.",
+    "regles": "- Ne **pas présumer** qu'un vétérans perd forcément en capacité : traiter la personne **selon ses données** (volume, puissance, sensations).\n- **Laisser la cadence libre**, sans imposer de hautes cadences.\n- Insister sur la **musculation** et les **exercices à impact** en complément du vélo pour les os ([[velo-force-musculation]], [[veterans]]).\n- Prévoir **plus de récupération** et **un bilan médical** avant de reprendre un entraînement intense après 40 ans en l'absence de pratique ou de symptômes cardiaques ([[reprise-apres-arret]]).\n- Ne jamais présenter un âge comme une limite fixe.",
+    "pieges": "- Tirer de cyclistes d'élite masters des règles pour des vétérans de loisir.\n- Oublier le risque de fracture en cas de chute ([[velo-chutes-securite]]).\n- Ne pas parler d'os ni de force à un cycliste de 60 ans.",
+    "sources": [
+      {
+        "titre": "Pollock et al., Properties of the vastus lateralis muscle in relation to age and physiological function in master cyclists aged 55-79 years (Aging Cell, 2018)",
+        "url": "https://doi.org/10.1111/acel.12735"
+      },
+      {
+        "titre": "Sacchetti et al., Different effect of cadence on cycling efficiency between young and older cyclists (Med Sci Sports Exerc, 2010)",
+        "url": "https://doi.org/10.1249/mss.0b013e3181e05526"
+      },
+      {
+        "titre": "Wilks et al., Forearm and tibial bone measures of distance- and sprint-trained master cyclists (Med Sci Sports Exerc, 2009)",
+        "url": "https://doi.org/10.1249/mss.0b013e31818a0ec8"
+      },
+      {
+        "titre": "Nichols & Rauh, Longitudinal changes in bone mineral density in male master cyclists and nonathletes (J Strength Cond Res, 2011)",
+        "url": "https://doi.org/10.1519/jsc.0b013e3181c6a116"
+      },
+      {
+        "titre": "Kristoffersen et al., Low cadence interval training at moderate intensity does not improve cycling performance in highly trained veteran cyclists (Front Physiol, 2014)",
+        "url": "https://doi.org/10.3389/fphys.2014.00034"
+      }
+    ],
+    "voirAussi": [
+      "velo-densite-osseuse",
+      "velo-cadence",
+      "velo-force-musculation",
+      "veterans",
+      "reprise-apres-arret",
+      "velo-chutes-securite"
     ]
   },
   {

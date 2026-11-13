@@ -62,7 +62,7 @@ const QUESTIONS: [string, string, number][] = [
   ['Je suis épuisé depuis trois semaines, est-ce du surentraînement ?', 'surentrainement-fatigue', 1],
   // « règles » désigne le cycle ou la règle des 10 % : les deux fiches doivent remonter
   ["Mes règles changent mon entraînement ?", 'cycle-menstruel', 2],
-  ["J'ai 52 ans, je peux encore progresser ?", 'veterans', 1],
+  ["J'ai 52 ans, je peux encore progresser ?", 'veterans', 2],
   ["C'est quoi le TSB et le CTL ?", 'charge-forme-fraicheur', 1],
   ['Comment courir quand il fait très chaud ?', 'chaleur-altitude', 3],
   ['Je pars trop vite en marathon, quelle stratégie d\'allure ?', 'allure-course-marathon', 1],
@@ -71,7 +71,7 @@ const QUESTIONS: [string, string, number][] = [
   ['Polarisé ou pyramidal, que choisir ?', 'intensite-distribution', 3],
   ['Que penser des 4x4 minutes pour la VO2max ?', 'intervalles-haute-intensite', 2],
   ['Faut-il une semaine allégée toutes les 4 semaines ?', 'periodisation', 2],
-  ['Combien de séries par semaine pour prendre du muscle ?', 'musculation-bases', 1],
+  ['Combien de séries par semaine pour prendre du muscle ?', 'musculation-bases', 3],
   ['Faire de la force et du cardio le même jour ?', 'entrainement-concurrent', 1],
   ["Un stage en altitude, ça vaut le coup ?", 'chaleur-altitude', 1],
   ['Est-ce que le sweet spot est vraiment efficace ?', 'velo-zones-ftp', 1],
