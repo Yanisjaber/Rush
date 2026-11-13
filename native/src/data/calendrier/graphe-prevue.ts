@@ -56,7 +56,9 @@ const PAS: Record<Metrique, number[]> = { pace: [5, 10, 15, 30, 60, 120], power:
  * L'axe couvre un peu plus que les cibles extrêmes ; pour une allure, le haut est le rapide (valeur basse). Les watts et les battements ne descendent pas sous 0.
  */
 export function graduations(g: Pick<GrapheSeance, 'metrique' | 'min' | 'max' | 'allure'>): Graduations {
-  const etendue = Math.max(1, g.max - g.min);
+  // Une seule cible (un bloc continu) : l'axe garde une étendue minimale, sinon il n'aurait que deux repères collés
+  const ETENDUE_MIN: Record<Metrique, number> = { pace: 60, power: 100, hr: 30 };
+  const etendue = Math.max(ETENDUE_MIN[g.metrique], g.max - g.min);
   const pas = PAS[g.metrique];
   let choisi = pas[pas.length - 1];
   let bornes = { bas: 0, haut: 0 };

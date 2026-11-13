@@ -21,12 +21,13 @@ const ETAPES_MAX = 5; // au-delà, le détail s'arrête : le reste est sur la pa
 
 export function GrapheSeancePrevue({ blocs, couleur, reference, sport }: { blocs: Bloc[]; couleur: string; reference: Reference; sport: string }) {
   const p = usePalette();
+  const g = grapheDeBlocs(blocs, reference, sport);
   const [largeur, setLargeur] = useState(0);
   // Le graphique prend la place que le détail ne prend pas : plus de vide en haut ni en bas
   const [zone, setZone] = useState(0);
   const [hDetail, setHDetail] = useState(0);
-  const HAUTEUR = Math.round(Math.min(HAUTEUR_MAX, Math.max(HAUTEUR_MIN, zone - hDetail - espace.e3)));
-  const g = grapheDeBlocs(blocs, reference, sport);
+  const plafond = g && g.segments.length <= 2 ? 170 : HAUTEUR_MAX; // peu de segments : un grand aplat n'apporte rien
+  const HAUTEUR = Math.round(Math.min(plafond, Math.max(HAUTEUR_MIN, zone - hDetail - espace.e3)));
   if (!g) return null;
   const lignes = lignesIntervalles(blocs, reference, sport);
   const etapes = detailIntervalles(blocs, reference, sport);
