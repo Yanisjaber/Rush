@@ -730,7 +730,11 @@ export default function Bilan() {
                 </Bloc>
               ) : (
                 <Bloc titre="Niveau">
-                  <Text style={[typo.corps, { color: p.texteDoux }]}>Pas encore d'heures d'entraînement pour ce filtre.</Text>
+                  <Text style={[typo.corps, { color: p.texteDoux }]}>
+                    {filtre === 'autre'
+                      ? "Pas de niveau pour « Autres » : ce groupe réunit des sports très différents (ski, randonnée…), on ne peut pas les comparer entre eux. Choisis un sport précis dans le filtre."
+                      : "Pas encore d'heures d'entraînement pour ce filtre."}
+                  </Text>
                 </Bloc>
               )
             ) : null}
