@@ -328,6 +328,7 @@ export default function Bilan() {
   const [selNiveau, setSelNiveau] = useState<number | null>(null);
   // La courbe de forme (la condition, ta charge lissée sur ~6 semaines) : calculée à la volée sur les séances du filtre, avec la même formule que la base (data/bilan/forme-longue.ts).
   // Sur « Tous », le résultat colle à la base : 16,1 aujourd'hui des deux côtés, 0,3 point d'écart moyen sur 3 300 jours (le seul écart vient des données écartées, que la base retire).
+  const [selForme, setSelForme] = useState<number | null>(null);
   const semainesForme = useMemo(() => (niveauOuvert ? conditionParSemaine(conditionDesSeances(filtrees, maintenant)) : []), [niveauOuvert, filtrees, maintenant]);
   const recordsNiveau = useRecordsNiveau(niveauOuvert, toutes); // les records de puissance, d'allure et de plus longue sortie, tous sports (le filtre ne choisit que les courbes affichées)
   const courbesNiveau = useMemo(() => (niveauOuvert && recordsNiveau.records ? notesTrimestrielles(filtrees, maintenant, recordsNiveau.records) : []), [niveauOuvert, filtrees, maintenant, recordsNiveau.records]);
@@ -335,6 +336,7 @@ export default function Bilan() {
   const couleursNiveau = useMemo(() => Object.fromEntries(vueNiveau.courbes.map((c) => [c.famille, couleurSport(p, c.famille)])), [vueNiveau, p]);
   useEffect(() => {
     setSelNiveau(null);
+    setSelForme(null);
   }, [filtre, onglet]);
 
   return (
@@ -744,7 +746,7 @@ export default function Bilan() {
                   </Bloc>
                   {semainesForme.length > 1 ? (
                     <Bloc titre="Forme">
-                      <CourbeFormeLongue key={filtre} semaines={semainesForme} couleur={filtre === 'tout' ? undefined : couleurSport(p, filtre)} />
+                      <CourbeFormeLongue semaines={semainesForme} selection={selForme} onSelection={setSelForme} couleur={filtre === 'tout' ? undefined : couleurSport(p, filtre)} />
                     </Bloc>
                   ) : null}
                 </>
