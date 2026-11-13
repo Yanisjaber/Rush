@@ -125,8 +125,19 @@ export function CourbesNiveau({ trimestres, courbes, couleurs, selection, onSele
         <Text style={[typo.micro, { color: p.texteMuet }]}>{choisiT ? `${nomTrimestre(choisiT)} · ${moisDuTrimestre(choisiT)}`.toUpperCase() : 'TON MEILLEUR TRIMESTRE, PAR SPORT'}</Text>
         {courbes.map((c) => {
           const couleur = couleurs[c.famille] ?? p.sportNeutre;
-          const pt = choisiT ? c.points.find((x2) => x2.trimestre === choisiT) : c.meilleur;
-          const sous = choisiT ? (pt ? `${faits(pt)}${pt.enCours ? ' · trimestre en cours' : ''}` : 'avant ton premier trimestre') : `${nomTrimestre(c.meilleur.trimestre)} · ${faits(c.meilleur)}`;
+          // Sans trimestre touché : une ligne simple par sport, avec seulement la date de son meilleur trimestre (la note y serait toujours 100)
+          if (!choisiT) {
+            return (
+              <View key={c.famille} accessible accessibilityLabel={`${nomSport(c.famille)}, meilleur trimestre ${nomTrimestre(c.meilleur.trimestre)}, ${faits(c.meilleur)}`} style={styles.ligneSimple}>
+                <View style={[styles.pastille, { backgroundColor: couleur }]} />
+                <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flex: 1 }]}>{nomSport(c.famille)}</Text>
+                <Text style={[typo.corpsFort, { color: p.texteDoux, fontVariant: ['tabular-nums'] }]}>{nomTrimestre(c.meilleur.trimestre)}</Text>
+              </View>
+            );
+          }
+          // Un trimestre touché : la note de chaque sport pour ce trimestre, avec ses trois faits
+          const pt = c.points.find((x2) => x2.trimestre === choisiT);
+          const sous = pt ? `${faits(pt)}${pt.enCours ? ' · trimestre en cours' : ''}` : 'avant ton premier trimestre';
           return (
             <View key={c.famille} accessible accessibilityLabel={`${nomSport(c.famille)}, ${pt ? `note ${pt.note}` : 'pas de note'}, ${sous}`} style={styles.ligne}>
               <View style={[styles.pastille, { backgroundColor: couleur }]} />
@@ -146,6 +157,7 @@ export function CourbesNiveau({ trimestres, courbes, couleurs, selection, onSele
 const styles = StyleSheet.create({
   zone: { flexDirection: 'row' },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52 },
+  ligneSimple: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
   pastille: { width: 10, height: 10, borderRadius: 5 },
   note: { fontFamily: police.titre800, fontSize: 28, lineHeight: 32, fontVariant: ['tabular-nums'], minWidth: 48, textAlign: 'right' },
 });
