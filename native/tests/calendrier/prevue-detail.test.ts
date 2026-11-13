@@ -101,16 +101,17 @@ test('completerAvecStructure : des watts dans les blocs donnent une puissance et
   assert.equal(p.km, null); // pas d'allure : pas de distance inventée
 });
 
-test('chiffresPrevue : glucides à partir d\'une heure, boisson à partir d\'une demi-heure, plus d\'eau quand l\'effort monte', () => {
+test('chiffresPrevue : glucides à partir d\'une heure (0 en dessous), boisson à partir d\'une demi-heure, plus d\'eau quand l\'effort monte', () => {
   const faire = (duree: string, rpe: number) => {
     const r = validerSeance({ ...formulaireSeanceVide(), type: 'Run', duree, distance: '5', rpe }, '2026-10-29', 'Course à pied');
     assert.ok(r.ok);
     return r.ok ? chiffresPrevue(prevueDepuisLigne(id, r.ligne)) : [];
   };
   const courte = faire('20', 5);
-  assert.ok(!courte.some((c) => c.cle === 'glucides' || c.cle === 'hydratation'));
+  assert.ok(!courte.some((c) => c.cle === 'hydratation'));
+  assert.equal(courte.find((c) => c.cle === 'glucides')?.valeur, '0');
   const moyenne = faire('45', 5);
-  assert.ok(!moyenne.some((c) => c.cle === 'glucides'));
+  assert.equal(moyenne.find((c) => c.cle === 'glucides')?.valeur, '0');
   assert.equal(moyenne.find((c) => c.cle === 'hydratation')?.valeur, '500–750');
   assert.equal(faire('90', 9).find((c) => c.cle === 'hydratation')?.valeur, '600–900');
   assert.equal(faire('90', 5).find((c) => c.cle === 'glucides')?.valeur, '30–60');

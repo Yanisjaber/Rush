@@ -43,7 +43,7 @@ export function completerAvecStructure(p: PrevueComplete, r: ResumeStructure | n
     est_kj: positif(p.est_kj) ?? r.kj ?? p.est_kj,
     // Sans effort ressenti saisi, l'effort attendu se déduit de l'intensité des blocs (facteur d'intensité 0,8 → 6/10, 1,0 → 8/10)
     rpe: positif(p.rpe) ?? (r.facteurIntensite > 0 ? Math.min(10, Math.max(1, Math.round(r.facteurIntensite * 10 - 2))) : p.rpe),
-    est_if: positif(p.est_if) ?? (r.facteurIntensite > 0 && r.watts != null ? r.facteurIntensite : p.est_if),
+    est_if: positif(p.est_if) ?? (r.facteurIntensite > 0 ? r.facteurIntensite : p.est_if),
     tss: positif(p.tss) ?? (r.tss > 0 ? r.tss : p.tss),
   };
 }
@@ -91,8 +91,6 @@ export function chiffresPrevue(p: PrevueComplete, estim: EstimationBlocs | null 
   const a = separerUnite(allure?.valeur);
   ajout('allure', allure ? allure.libelle.replace('moy.', 'prévue') : '', a.valeur, a.unite);
   ajout('watts', 'Puissance moy.', positif(p.est_watts) != null ? formatNombre(Math.round(Number(p.est_watts))) : null, 'W');
-  ajout('wattsMax', 'Puissance max', estim?.wattsMax != null ? formatNombre(estim.wattsMax) : null, 'W');
-  ajout('wattsNormalisee', 'Puissance norm.', estim?.wattsNormalisee != null ? formatNombre(estim.wattsNormalisee) : null, 'W');
   const facteur = positif(p.est_if);
   ajout('if', 'Intensité', facteur != null ? String(Math.round(facteur * 100) / 100).replace('.', ',') : null);
   ajout('bpm', 'Cardio moy.', positif(p.est_bpm) != null ? formatNombre(Math.round(Number(p.est_bpm))) : null, 'bpm');
@@ -104,7 +102,8 @@ export function chiffresPrevue(p: PrevueComplete, estim: EstimationBlocs | null 
   const kcal = kj != null ? Math.round(Number(kj)) : course && poids != null && km != null ? Math.round(poids * km) : null;
   ajout('kcal', 'Calories', kcal != null ? formatNombre(kcal) : null, 'kcal');
   // Conseils d'après la durée et l'effort (repères de nutrition sportive courants) : glucides au-delà d'une heure, boisson dès une demi-heure
-  if (duree != null && duree >= 60) ajout('glucides', 'Glucides', duree > 150 ? '60–90' : '30–60', 'g/h');
+  // Sous une heure, pas besoin de glucides : 0 plutôt qu'un vide
+  if (duree != null) ajout('glucides', 'Glucides', duree >= 60 ? (duree > 150 ? '60–90' : '30–60') : '0', 'g/h');
   if (duree != null && duree >= 30) ajout('hydratation', 'Hydratation', rpe == null || rpe <= 4 ? '400–600' : rpe >= 8 ? '600–900' : '500–750', 'ml/h');
   return liste;
 }

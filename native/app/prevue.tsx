@@ -30,6 +30,10 @@ import { usePalette } from '@/theme/usePalette';
 const TUILES_FIXES = ['duree', 'distance', 'allure', 'charge', 'effort', 'if', 'kcal', 'glucides', 'hydratation'];
 const LIBELLE_FIXE: Record<string, string> = { duree: 'Durée', distance: 'Distance', allure: 'Allure', charge: 'Charge', effort: 'Effort', if: 'Intensité', kcal: 'Calories', glucides: 'Glucides', hydratation: 'Hydratation' };
 
+// Le libellé d'une tuile : « Allure prévue » → « Allure », « Vitesse prévue » → « Vitesse »…
+const libelleTuile = (l: string): string =>
+  l.replace(/^Allure (cible|prévue)$/, 'Allure').replace(/^Vitesse (moy\.|prévue|cible)$/, 'Vitesse').replace('Dénivelé +', 'D+').replace('Temps cible', 'Objectif').replace('Charge estimée', 'Charge').replace('Effort estimé', 'Effort');
+
 export default function Prevue() {
   const p = usePalette();
   const router = useRouter();
@@ -113,7 +117,7 @@ export default function Prevue() {
             {quatre.length ? (
               <View style={styles.tuiles}>
                 {quatre.map((c) => (
-                  <TuileChiffre key={c.cle} etiquette={c.libelle.replace(/^Allure (cible|prévue)$/, 'Allure').replace('Dénivelé +', 'D+').replace('Temps cible', 'Objectif').replace('Charge estimée', 'Charge').replace('Effort estimé', 'Effort')} valeur={c.valeur} unite={c.unite} />
+                  <TuileChiffre key={c.cle} etiquette={libelleTuile(c.libelle)} valeur={c.valeur} unite={c.unite} />
                 ))}
               </View>
             ) : null}
@@ -128,7 +132,7 @@ export default function Prevue() {
                   <View key={r} style={styles.tuiles}>
                     {[0, 1, 2].map((k) => {
                       const c = tuilesPage2[r * 3 + k];
-                      return c ? <TuileChiffre key={c.cle} etiquette={c.libelle.replace(/^Allure (cible|prévue)$/, 'Allure').replace(/^Vitesse (moy\.|prévue|cible)$/, 'Vitesse').replace('Dénivelé +', 'D+').replace('Temps cible', 'Objectif').replace('Charge estimée', 'Charge').replace('Effort estimé', 'Effort')} valeur={c.valeur} unite={c.unite} /> : <View key={k} style={{ flex: 1 }} />;
+                      return c ? <TuileChiffre key={c.cle} etiquette={libelleTuile(c.libelle)} valeur={c.valeur} unite={c.unite} /> : <View key={k} style={{ flex: 1 }} />;
                     })}
                   </View>
                 ))}
