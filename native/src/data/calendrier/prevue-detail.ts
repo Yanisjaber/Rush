@@ -111,6 +111,9 @@ export function chiffresPrevue(p: PrevueComplete, estim: EstimationBlocs | null 
   const poids = positif(ref.poidsKg);
   const kcal = kj != null ? Math.round(Number(kj)) : course && poids != null && km != null ? Math.round(poids * km) : null;
   ajout('kcal', 'Calories', kcal != null ? formatNombre(kcal) : null, 'kcal');
+  // Conseils d'après la durée et l'effort (repères de nutrition sportive courants) : glucides au-delà d'une heure, boisson dès une demi-heure
+  if (duree != null && duree >= 60) ajout('glucides', 'Glucides', duree > 150 ? '60–90' : '30–60', 'g/h');
+  if (duree != null && duree >= 30) ajout('hydratation', 'Hydratation', rpe == null || rpe <= 4 ? '400–600' : rpe >= 8 ? '600–900' : '500–750', 'ml/h');
   ajout('efforts', 'Efforts', estim && estim.efforts > 1 ? String(estim.efforts) : null);
   ajout('minEffort', "Temps d'effort", estim && estim.minEffort > 0 && estim.minRecup > 0 ? texteDuree(estim.minEffort) : null);
   ajout('minRecup', 'Récupération', estim && estim.minRecup > 0 ? texteDuree(estim.minRecup) : null);

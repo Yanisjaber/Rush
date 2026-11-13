@@ -13,7 +13,7 @@ test('chiffresPrevue : une séance donne sa durée, sa charge, sa distance et so
   assert.ok(r.ok);
   if (!r.ok) return;
   const c = chiffresPrevue(prevueDepuisLigne(id, r.ligne));
-  assert.deepEqual(libelles(c), ['Durée', 'Distance', 'Dénivelé +', 'Charge', 'Effort estimé', 'Allure prévue', 'Vitesse moy.']);
+  assert.deepEqual(libelles(c), ['Durée', 'Distance', 'Dénivelé +', 'Charge', 'Effort estimé', 'Allure prévue', 'Vitesse moy.', 'Glucides', 'Hydratation']);
   assert.equal(c[0].valeur, '1h15');
   assert.deepEqual([c[1].valeur, c[1].unite], ['13,5', 'km']);
 });
@@ -99,4 +99,20 @@ test('completerAvecStructure : des watts dans les blocs donnent une puissance et
   assert.equal(p.est_watts, 200);
   assert.ok((p.est_kj ?? 0) > 0);
   assert.equal(p.km, null); // pas d'allure : pas de distance inventée
+});
+
+test('chiffresPrevue : glucides à partir d\'une heure, boisson à partir d\'une demi-heure, plus d\'eau quand l\'effort monte', () => {
+  const faire = (duree: string, rpe: number) => {
+    const r = validerSeance({ ...formulaireSeanceVide(), type: 'Run', duree, distance: '5', rpe }, '2026-10-29', 'Course à pied');
+    assert.ok(r.ok);
+    return r.ok ? chiffresPrevue(prevueDepuisLigne(id, r.ligne)) : [];
+  };
+  const courte = faire('20', 5);
+  assert.ok(!courte.some((c) => c.cle === 'glucides' || c.cle === 'hydratation'));
+  const moyenne = faire('45', 5);
+  assert.ok(!moyenne.some((c) => c.cle === 'glucides'));
+  assert.equal(moyenne.find((c) => c.cle === 'hydratation')?.valeur, '500–750');
+  assert.equal(faire('90', 9).find((c) => c.cle === 'hydratation')?.valeur, '600–900');
+  assert.equal(faire('90', 5).find((c) => c.cle === 'glucides')?.valeur, '30–60');
+  assert.equal(faire('180', 5).find((c) => c.cle === 'glucides')?.valeur, '60–90');
 });
