@@ -6,6 +6,7 @@ import { ActivityIndicator, PanResponder,StyleSheet, Text, View, type GestureRes
 import * as THREE from 'three';
 import { creerLunettes } from './lunettes';
 import { CAMERA, POINTS_MODELE, type ZoneAvatarCle } from '@/data/avatar/ancrages';
+import { poseVivante, type Axe, type OsAnime } from '@/data/avatar/pose-vivante';
 import { rayon, type Palette } from '@/theme/couleurs';
 
 // Même protection que l'avatar procédural : Expo Go ou un ancien binaire peut ne pas embarquer ExpoGL.
@@ -113,62 +114,57 @@ function couleurHex(valeur: string): number {
 }
 
 /**
- * Mouvement « vivant » : le modèle n'a pas de squelette, on déforme donc ses points directement sur la carte
- * graphique (vertex shader), selon leur hauteur sur le corps (repère du modèle : pieds à Y = 0, face vers +Z).
- * - respiration (4,2 s) : la cage thoracique gonfle vers l'avant, les épaules et les bras montent un peu ;
- * - bras : léger balancier d'avant en arrière autour de l'épaule, décalé entre gauche et droite ;
- * - tête : regarde un peu autour d'elle (deux rythmes mélangés) et hoche avec le souffle ;
- * - poids du corps : transfert lent d'une jambe sur l'autre (8 s), le haut du corps compense à moitié.
- * Les amplitudes restent de l'ordre du centimètre : de loin ça « respire », de près rien ne se déchire.
+ * Respiration de la cage thoracique : le seul mouvement qu'un os ne sait pas bien faire (gonfler sans
+ * tourner). On pousse vers l'avant le devant du torse, dans la pose de repos (bras le long du corps),
+ * avant que le squelette ne déforme le corps. `uSouffle` vient de `poseVivante` (0 à 1).
+ * Le reste du mouvement (bassin, dos, épaules, bras, tête) passe par les os : voir `data/avatar/pose-vivante.ts`.
  */
-const GLSL_VIVANT = `
-uniform float uTemps;
-vec3 rushVivant(vec3 p) {
-  float t = uTemps;
-  float cote = p.x >= 0.0 ? 1.0 : -1.0;
-  vec3 q = p;
-
-  float souffle = 0.5 - 0.5 * cos(t * 1.496);
-  float cage = smoothstep(1.02, 1.20, p.y) * (1.0 - smoothstep(1.40, 1.50, p.y)) * (1.0 - smoothstep(0.16, 0.23, abs(p.x)));
-  q.z += cage * souffle * 0.014 * smoothstep(-0.06, 0.08, p.z);
-  q.x += cage * souffle * 0.004 * cote;
-  float bras = smoothstep(0.21, 0.30, abs(p.x)) * smoothstep(0.70, 0.80, p.y);
-  float haut = max(smoothstep(1.30, 1.46, p.y), bras);
-  q.y += haut * souffle * 0.008;
-
-  float balancier = 0.035 * sin(t * 1.2566 + cote * 0.9);
-  q.z += bras * (1.40 - p.y) * balancier;
-  q.x += bras * cote * souffle * 0.004;
-
-  float tete = smoothstep(1.47, 1.57, p.y) * (1.0 - smoothstep(0.13, 0.20, abs(p.x)));
-  float lacet = (0.09 * sin(t * 0.5712) + 0.03 * sin(t * 0.9973 + 1.3)) * tete;
-  float hoche = 0.025 * sin(t * 1.496 - 0.6) * tete;
-  vec3 d = q - vec3(0.0, 1.50, 0.0);
-  float ca = cos(lacet);
-  float sa = sin(lacet);
-  d = vec3(ca * d.x + sa * d.z, d.y, -sa * d.x + ca * d.z);
-  float cb = cos(hoche);
-  float sb = sin(hoche);
-  d = vec3(d.x, cb * d.y - sb * d.z, sb * d.y + cb * d.z);
-  q = vec3(0.0, 1.50, 0.0) + d;
-
-  float poids = sin(t * 0.7854);
-  float profil = smoothstep(0.04, 0.95, p.y) * (1.0 - 0.55 * smoothstep(1.0, 1.65, p.y));
-  q.x += poids * 0.018 * profil;
-  q.y -= poids * poids * 0.003 * smoothstep(0.3, 0.9, p.y);
-  return q;
+const GLSL_SOUFFLE = `
+uniform float uSouffle;
+vec3 rushSouffle(vec3 p) {
+  float cage = smoothstep(1.04, 1.20, p.y) * (1.0 - smoothstep(1.38, 1.46, p.y))
+    * (1.0 - smoothstep(0.11, 0.16, abs(p.x))) * smoothstep(-0.02, 0.08, p.z);
+  return p + vec3(0.0, 0.0, cage * uSouffle * 0.012);
 }
 `;
 
-/** Branche le mouvement vivant sur un matériau (le temps est partagé par tous les matériaux du modèle). */
-function rendreVivant(materiau: THREE.MeshStandardMaterial, temps: { value: number }): void {
+/** Branche la respiration sur un matériau (la valeur du souffle est partagée par tous les matériaux du modèle). */
+function rendreVivant(materiau: THREE.MeshStandardMaterial, souffle: { value: number }): void {
   materiau.onBeforeCompile = (shader) => {
-    shader.uniforms.uTemps = temps;
+    shader.uniforms.uSouffle = souffle;
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', `#include <common>\n${GLSL_VIVANT}`)
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed = rushVivant(transformed);');
+      .replace('#include <common>', `#include <common>\n${GLSL_SOUFFLE}`)
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed = rushSouffle(transformed);');
   };
-  materiau.customProgramCacheKey = () => 'rush-vivant';
+  materiau.customProgramCacheKey = () => 'rush-souffle';
+}
+
+/** Un os animé : sa rotation de repos et les axes du modèle exprimés dans le repère de son parent. */
+interface OsVivant {
+  os: THREE.Bone;
+  repos: THREE.Quaternion;
+  axes: Record<Axe, THREE.Vector3>;
+}
+
+/** Prépare les os à animer (pose de repos du GLB = bras le long du corps). */
+function preparerOs(modele: THREE.Object3D): { os: Map<OsAnime, OsVivant>; bassin: THREE.Bone | null; bassinRepos: THREE.Vector3 } {
+  modele.updateWorldMatrix(true, true);
+  const inverseModele = modele.getWorldQuaternion(new THREE.Quaternion()).invert();
+  const os = new Map<OsAnime, OsVivant>();
+  let bassin: THREE.Bone | null = null;
+  modele.traverse((objet) => {
+    const bone = objet as THREE.Bone;
+    if (!bone.isBone) return;
+    if (bone.name === 'Hips') bassin = bone;
+    if (!(bone.name in poseVivante(0).rotations)) return;
+    // Rotation du parent dans le repère du modèle : pour tourner autour d'un axe du modèle, on exprime cet axe chez le parent.
+    const parent = bone.parent ? inverseModele.clone().multiply(bone.parent.getWorldQuaternion(new THREE.Quaternion())) : new THREE.Quaternion();
+    const versParent = parent.invert();
+    const axe = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyQuaternion(versParent).normalize();
+    os.set(bone.name as OsAnime, { os: bone, repos: bone.quaternion.clone(), axes: { x: axe(1, 0, 0), y: axe(0, 1, 0), z: axe(0, 0, 1) } });
+  });
+  const b = bassin as THREE.Bone | null;
+  return { os, bassin: b, bassinRepos: b ? b.position.clone() : new THREE.Vector3() };
 }
 
 const borne = (n: number, min: number, max: number): number => Math.min(max, Math.max(min, n));
@@ -177,7 +173,8 @@ const ZOOM_MAX = 1.85;
 
 /**
  * Avatar réaliste : le vrai modèle scanné (≈42 000 triangles).
- * - Il reste de face (ou de dos), sans tourner tout seul, mais il respire et bouge un peu (voir `GLSL_VIVANT`) ;
+ * - Il a un squelette (bras le long du corps au repos) : il reste de face (ou de dos), sans tourner tout seul,
+ *   mais respire, transfère son poids et regarde autour de lui (voir `poseVivante`) ;
  *   glisser le fait tourner librement, il revient de face 2,5 s après.
  * - Toucher le torse, les bras ou les jambes les sélectionne (zones tirées des os du squelette d'origine).
  */
@@ -350,7 +347,7 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
     let vivant = true;
     let frame = 0;
     let modele: THREE.Group | null = null;
-    const tempsVivant = { value: 0 }; // horloge du mouvement vivant, lue par le shader
+    const souffleShader = { value: 0 }; // respiration de la cage thoracique, lue par le shader
     const ressources: { dispose: () => void }[] = [];
     nettoyerRef.current = () => {
       vivant = false;
@@ -425,7 +422,7 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
         standard.normalMap = normale;
         standard.roughness = 0.72;
         standard.metalness = 0;
-        rendreVivant(standard, tempsVivant);
+        rendreVivant(standard, souffleShader);
         standard.needsUpdate = true;
         const part = zoneDepuisMateriau(standard.name);
         if (part) surfaces.push({ part, materiau: standard, emissive: standard.emissive.clone(), intensite: standard.emissiveIntensity });
@@ -434,8 +431,25 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
     groupe.add(modele);
     // L'animation « IdleSway » du GLB (le mannequin pivote de ± 4°) n'est plus jouée : il ne tourne plus tout seul.
 
+    const squelette = preparerOs(modele);
+    const vivants = [...squelette.os.values()];
+    // `updateMatrixWorld` (et pas `updateWorldMatrix`) : seul lui recale la matrice de liaison des corps à squelette
+    // sur le décalage du groupe ; sinon les rayons visent un corps 90 cm trop bas.
+    modele.updateMatrixWorld(true);
+    modele.traverse((objet) => {
+      const corps = objet as THREE.SkinnedMesh;
+      if (!corps.isSkinnedMesh) return;
+      corps.frustumCulled = false; // le corps bouge : pas de découpe par la boîte de repos
+      // three ne calcule les matrices des os qu'au premier dessin : sans ça, les rayons lancés juste après
+      // (pastilles, lunettes) touchent un corps « vide » et sa sphère englobante reste nulle (plus aucun tap).
+      corps.skeleton.update();
+    });
+
     if (lunettes) {
       const montees = creerLunettes(modele);
+      // Accrochées à l'os de la tête : elles suivent quand il tourne la tête.
+      const tete = squelette.os.get('Head')?.os;
+      if (montees && tete) tete.attach(montees.groupe);
       if (montees) ressources.push(...montees.ressources);
       else console.warn('[ModeleAthleteRealiste] lunettes : tête introuvable, elles ne sont pas affichées.');
     }
@@ -443,14 +457,23 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
 
     // Points du corps à suivre à l'écran : on cherche la peau (ou le tissu) devant chaque point, en repère du modèle.
     modele.updateWorldMatrix(true, true);
-    const pointsSuivis: { nom: string; local: THREE.Vector3 }[] = [];
+    // Chaque point est accroché à l'os le plus proche (pose de repos) : il suit la tête qui tourne, le dos qui respire…
+    const tousLesOs: THREE.Bone[] = [];
+    modele.traverse((objet) => { if ((objet as THREE.Bone).isBone) tousLesOs.push(objet as THREE.Bone); });
+    const pointsSuivis: { nom: string; os: THREE.Object3D; local: THREE.Vector3 }[] = [];
     for (const [nom, point] of Object.entries(ancresRef.current ?? {})) {
       const rayon = new THREE.Raycaster(modele.localToWorld(new THREE.Vector3(point.x, point.y, 2)), new THREE.Vector3(0, 0, -1));
       const touche = rayon.intersectObject(modele, true)[0];
       const z = touche ? modele.worldToLocal(touche.point.clone()).z : 0.1;
-      pointsSuivis.push({ nom, local: new THREE.Vector3(point.x, point.y, z + 0.01) });
+      const monde = modele.localToWorld(new THREE.Vector3(point.x, point.y, z + 0.01));
+      let proche: THREE.Object3D = modele;
+      let distance = Infinity;
+      for (const os of tousLesOs) {
+        const d = os.getWorldPosition(new THREE.Vector3()).distanceTo(monde);
+        if (d < distance) { distance = d; proche = os; }
+      }
+      pointsSuivis.push({ nom, os: proche, local: proche.worldToLocal(monde.clone()) });
     }
-    const corpsSuivi: THREE.Object3D = modele;
     let dernierEnvoi = 0;
     let centreY = 0; // hauteur (monde) visée par la caméra, avec les lissages
     let facteurFocus = 1;
@@ -467,7 +490,18 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
         const temps = (maintenant - depart) / 1000;
         const dt = Math.min(0.1, (maintenant - precedent) / 1000);
         precedent = maintenant;
-        tempsVivant.value = temps;
+        // Mouvement vivant : petites rotations des os autour des axes du modèle, à partir de la pose de repos.
+        const pose = poseVivante(temps);
+        souffleShader.value = pose.souffle;
+        for (const { os, repos, axes } of vivants) {
+          os.quaternion.copy(repos);
+          const angles = pose.rotations[os.name as OsAnime];
+          for (const axe of ['x', 'y', 'z'] as const) {
+            const angle = angles[axe];
+            if (angle) os.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(axes[axe], angle));
+          }
+        }
+        if (squelette.bassin) squelette.bassin.position.set(squelette.bassinRepos.x + pose.bassinX, squelette.bassinRepos.y, squelette.bassinRepos.z);
 
         // Sans doigt depuis 2,5 s : l'avatar revient de face (ou de dos), puis ne tourne plus.
         if (!rotationLibreRef.current && maintenant - derniereMainRef.current > 2500) {
@@ -509,8 +543,8 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
           scene.updateMatrixWorld(true);
           const deFace = Math.cos(groupe.rotation.y) > 0.25;
           const sortie: Record<string, PointEcran> = {};
-          for (const { nom, local } of pointsSuivis) {
-            const v = corpsSuivi.localToWorld(local.clone()).project(camera);
+          for (const { nom, os, local } of pointsSuivis) {
+            const v = os.localToWorld(local.clone()).project(camera);
             sortie[nom] = { x: (v.x + 1) / 2, y: (1 - v.y) / 2, visible: deFace };
           }
           suivre(sortie);

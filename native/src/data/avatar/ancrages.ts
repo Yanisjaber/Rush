@@ -18,7 +18,7 @@ export const POINTS_MODELE: Record<ZoneAvatarCle, { x: number; y: number }> = {
   heart: { x: 0.05, y: 1.29 },
   lungs: { x: -0.1, y: 1.34 },
   chest: { x: 0.12, y: 1.06 },
-  arms: { x: -0.4, y: 1.02 },
+  arms: { x: -0.27, y: 1.02 }, // bras le long du corps (pose de repos du squelette)
   legs: { x: -0.11, y: 0.55 },
   head: { x: 0, y: 1.68 },
 };
