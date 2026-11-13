@@ -118,7 +118,7 @@ export default function Prevue() {
         couleur={couleur}
         sport={prevue.sport}
         titre={nom}
-        nomSport={`${nomSport} · ${competition ? 'compétition' : 'prévue'}`}
+        nomSport={competition ? `${nomSport} · compétition` : nomSport}
         date={date}
         onModifier={modifier}
         heros={profilEnGrand ? <GrapheSeancePrevue blocs={blocs} couleur={couleur} reference={reference} sport={prevue.sport} /> : undefined}
