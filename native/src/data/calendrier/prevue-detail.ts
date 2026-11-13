@@ -99,7 +99,10 @@ export function chiffresPrevue(p: PrevueComplete, estim: EstimationBlocs | null 
   ajout('kj', 'Énergie', kj != null ? formatNombre(Math.round(Number(kj))) : null, 'kJ');
   // Calories : en vélo, 1 kJ de travail ≈ 1 kcal dépensée ; en course, environ 1 kcal par kg et par km (le poids vient du profil)
   const poids = positif(ref.poidsKg);
-  const kcal = kj != null ? Math.round(Number(kj)) : course && poids != null && km != null ? Math.round(poids * km) : null;
+  // Vélo sans watts ni structure : l'effort attendu donne l'intensité (effort 5 → 0,7), la FTP du profil donne la puissance moyenne (environ 85 % de la puissance normalisée), donc l'énergie
+  const velo = ['Ride', 'VirtualRide', 'GravelRide', 'MountainBikeRide', 'EBikeRide'].includes(p.sport);
+  const kcalVelo = velo && kj == null && rpe != null && duree != null ? Math.round(((rpe + 2) / 10) * 0.85 * (positif(ref.ftp) ?? 250) * duree * 0.06) : null;
+  const kcal = kj != null ? Math.round(Number(kj)) : course && poids != null && km != null ? Math.round(poids * km) : kcalVelo;
   ajout('kcal', 'Calories', kcal != null ? formatNombre(kcal) : null, 'kcal');
   // Conseils d'après la durée et l'effort (repères de nutrition sportive courants) : glucides au-delà d'une heure, boisson dès une demi-heure
   // Sous une heure, pas besoin de glucides : 0 plutôt qu'un vide

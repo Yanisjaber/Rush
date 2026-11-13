@@ -117,3 +117,15 @@ test('chiffresPrevue : glucides à partir d\'une heure (0 en dessous), boisson �
   assert.equal(faire('90', 5).find((c) => c.cle === 'glucides')?.valeur, '30–60');
   assert.equal(faire('180', 5).find((c) => c.cle === 'glucides')?.valeur, '60–90');
 });
+
+test('chiffresPrevue : un vélo sans watts ni blocs estime ses calories avec la durée, l\'effort et la FTP', () => {
+  const r = validerSeance({ ...formulaireSeanceVide(), type: 'Ride', duree: '120', distance: '36', rpe: 5 }, '2026-10-29', 'Vélo');
+  assert.ok(r.ok);
+  if (!r.ok) return;
+  const c = chiffresPrevue(prevueDepuisLigne(id, r.ligne), null, { ftp: 250 });
+  // effort 5 → intensité 0,7 ; 0,7 × 0,85 × 250 W = 149 W pendant 2 h → 1 071 kJ ≈ 1 071 kcal
+  assert.equal(Number(String(c.find((x) => x.cle === 'kcal')?.valeur).replace(/\s/g, '')), 1071);
+  const sansEffort = validerSeance({ ...formulaireSeanceVide(), type: 'Ride', duree: '120', distance: '36' }, '2026-10-29', 'Vélo');
+  assert.ok(sansEffort.ok);
+  if (sansEffort.ok) assert.ok(!chiffresPrevue(prevueDepuisLigne(id, sansEffort.ligne)).some((x) => x.cle === 'kcal'));
+});
