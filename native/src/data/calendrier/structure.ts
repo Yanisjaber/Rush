@@ -202,6 +202,27 @@ const allureTexte = (s: number): string => {
   return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
 };
 
+/**
+ * La valeur numérique de la cible d'un segment (le milieu de sa fourchette) : des watts, des battements par minute, ou une allure en secondes par km (par 100 m en natation).
+ * Plus l'intensité est haute, plus l'allure en secondes est basse.
+ */
+export function valeurSegment(seg: Segment, metric: Metrique, ref: Reference = {}, sport = 'Run'): number {
+  const { ftp, hrMax, allureBase } = valeursRef(ref, sport);
+  const f = Math.max(1, milieu(seg));
+  if (metric === 'power') return Math.round((ftp * f) / 100);
+  if (metric === 'hr') return Math.round((hrMax * f) / 100);
+  return Math.round((allureBase * 100) / f);
+}
+
+/** La distance d'un segment à allure cible : en kilomètres (en mètres pour la natation, déjà convertie par l'appelant), ou null sans allure. */
+export function distanceSegment(seg: Segment, metric: Metrique, ref: Reference = {}, sport = 'Run'): number | null {
+  if (metric !== 'pace') return null;
+  const sec = valeurSegment(seg, 'pace', ref, sport); // secondes par km (par 100 m en natation)
+  if (!(sec > 0)) return null;
+  const unites = (seg.min * 60) / sec; // kilomètres, ou « centaines de mètres » en natation
+  return estNage(sport) ? unites * 100 : unites; // mètres pour la nage, kilomètres sinon
+}
+
 /** Texte de la cible d'un segment : « 210–245 W · Z4 », « 4:12/km · Z4 »… */
 export function texteCible(seg: Segment, metric: Metrique, ref: Reference = {}, sport = 'Run'): string {
   const { ftp, hrMax, allureBase } = valeursRef(ref, sport);

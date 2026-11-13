@@ -4,7 +4,7 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'rea
 import { Bouton } from '@/components/ui/Bouton';
 import { VueSortie } from '@/components/graphes/VueSortie';
 import { ProfilSeance } from '@/components/graphes/ProfilSeance';
-import { ProfilSeanceGrand } from '@/components/graphes/ProfilSeanceGrand';
+import { GrapheSeancePrevue } from '@/components/graphes/GrapheSeancePrevue';
 import { StatCle } from '@/components/ui/StatCle';
 import { apercuDeGpx } from '@/data/calendrier/apercu-import';
 import { blocsDePrevue } from '@/data/calendrier/ajouts';
@@ -101,7 +101,7 @@ export default function Prevue() {
   const avecProfilGpx = !!parcours && parcours.profil.length > 1 && parcours.altitudeMin != null && parcours.altitudeMax != null;
   const { ordre, repli } = ordrePrevue(competition);
   const quatre = choisirChiffres(chiffres, ordre, repli);
-  // Sans parcours, mais avec des blocs : le profil de la séance est le héros de la page 1, en grand (à la place de la silhouette du sport)
+  // Sans parcours, mais avec des blocs : le graphique de la séance (axes, cible de chaque bloc) et le tableau de ses intervalles sont le héros de la page 1, à la place de la silhouette du sport
   const profilEnGrand = !parcours && blocs.length > 0;
   const dejaVus = quatre.map((c) => c.cle);
   const actions = (
@@ -147,7 +147,7 @@ export default function Prevue() {
         nomSport={`${nomSport} · ${competition ? 'compétition' : 'prévue'}`}
         date={date}
         onModifier={modifier}
-        heros={profilEnGrand ? <ProfilSeanceGrand blocs={blocs} couleur={couleur} /> : undefined}
+        heros={profilEnGrand ? <GrapheSeancePrevue blocs={blocs} couleur={couleur} reference={reference} sport={prevue.sport} /> : undefined}
         avecPageCourbes={false}
         nomPageCoach="Notes"
         pageCoach={pageNotes}
