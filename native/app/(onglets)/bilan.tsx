@@ -687,7 +687,7 @@ export default function Bilan() {
               ) : filtre === 'tout' || estMultiple(filtre) ? (
                 <OngletRecordsTous
                   portee={toutTemps ? 'tout' : 'annee'}
-                  toutes={toutes}
+                  toutes={filtrees}
                   annee={anneeRecords}
                   maintenant={maintenant}
                   onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
