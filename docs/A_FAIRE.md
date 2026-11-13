@@ -17,11 +17,11 @@ Chaque tâche porte une étiquette : `**importance/10 · durée en jours**`.
 
 Mise à jour : **13 novembre 2026**. Rythme supposé : 5 jours de travail par semaine.
 
-- **Version de sortie** (tâches ≥ 7/10) : **67,2 jours** restants (2,1 j déjà faits).
-- **Sortie estimée : 15 février 2027** si tout se passe bien.
-- **Fourchette prudente : 17 avril 2027** (durées ×1.5 + 14 jours pour Apple, les accès API, le domaine…).
+- **Version de sortie** (tâches ≥ 7/10) : **66,2 jours** restants (3,1 j déjà faits).
+- **Sortie estimée : 14 février 2027** si tout se passe bien.
+- **Fourchette prudente : 15 avril 2027** (durées ×1.5 + 14 jours pour Apple, les accès API, le domaine…).
 - Le reste (tâches < 7/10) : 53,9 jours, à faire après la sortie ou si on a de la marge. « Après la sortie » : 16 jours.
-- Tâches : 67 restantes, 4 faites.
+- Tâches : 66 restantes, 5 faites.
 
 Où part le temps de la version de sortie :
 
@@ -35,20 +35,20 @@ Où part le temps de la version de sortie :
 | 3. Coach IA | 7,5 j |
 | 10. Qualité | 5 j |
 | 7. Bilan et zones | 4,5 j |
-| 1. Publication et légal | 2 j |
 | 5. Calendrier | 1,5 j |
+| 1. Publication et légal | 1 j |
 
 Historique (une ligne par recalcul) :
 
 | Date | Sortie : jours restants | Tout : jours restants | Sortie estimée | Fourchette prudente |
 |---|---|---|---|---|
-| 2026-11-13 | 67,2 j | 121,1 j | 15 février 2027 | 17 avril 2027 |
+| 2026-11-13 | 66,2 j | 120,1 j | 14 février 2027 | 15 avril 2027 |
 <!-- ESTIMATION:FIN -->
 
 ## 1. Publication et légal
 
 - [x] **10/10 · 0,5 j** Remplacer `bundleIdentifier` et `package` provisoires (`TODO.rush`) dans `native/app.json` par les vrais identifiants, avant toute publication
-- [ ] **9/10 · 1 j** Rédiger une vraie politique de confidentialité (le Coach IA lit les données de santé et d'entraînement) et y faire mener « Confidentialité ». Exigée par Apple et Google
+- [x] **9/10 · 1 j** Rédiger une vraie politique de confidentialité (le Coach IA lit les données de santé et d'entraînement) et y faire mener « Confidentialité ». Exigée par Apple et Google
 - [x] **9/10 · 0,5 j** Faire un point avant de pousser : plusieurs chantiers sont mergés en local sans push (Bilan par sport, Hyrox, natation, coach, avatar…), à sauvegarder sur GitHub (mot `yallah` requis)
 - [ ] **8/10 · 0,5 j** E-mails de confirmation : avec un expéditeur Gmail ils finissent souvent en spams. Prendre un domaine à toi pour l'expéditeur (SMTP Brevo, SPF/DKIM)
 - [ ] **7/10 · 0,5 j** Suivi des plantages : savoir quand l'app plante chez un utilisateur
@@ -58,7 +58,7 @@ Historique (une ligne par recalcul) :
 - [x] **10/10 · 0,1 j** **(toi)** Révoquer la clé Anthropic collée dans le chat, en recréer une, mettre une limite de dépense
 - [ ] **9/10 · 3 j** Passer toute l'app en ultra sécurisé : audit complet avant la sortie (RLS de chaque table, Edge Functions, stockage des jetons et de la session sur le téléphone, validation des entrées, dépendances, secrets, fuites dans les logs, accès du Coach IA aux données), puis corriger tout ce qu'on trouve. À cadrer : audit par moi seul ou aussi par un outil/une personne extérieure
 - [ ] **9/10 · 2 j** Créer son compte directement dans l'app : l'écran de connexion renvoie encore vers le site (« Pas encore de compte ? Crée-le sur le site… / Ouvrir le site »). Inscription, confirmation par e-mail et retour dans l'app, sans navigateur. Écran neuf : 8 maquettes
-- [ ] **9/10 · 2,5 j** Section « Sécurité et données » des Paramètres : « Changer mon mot de passe », « Exporter mes données » et « Confidentialité » renvoient vers le site (flèche ↗). Les faire dans l'app, avec la suppression de compte (exigée par Apple) ; 8 maquettes pour les écrans neufs
+- [ ] **9/10 · 2,5 j** Section « Sécurité et données » des Paramètres : « Changer mon mot de passe », « Exporter mes données » renvoient vers le site (flèche ↗), « Confidentialité » est faite dans l'app (13 nov.). Faire le reste dans l'app, avec la suppression de compte (exigée par Apple) ; 8 maquettes pour les écrans neufs
 - [ ] **7/10 · 1 j** Base presque pleine (404/500 Mo) : trouver de la place
 - [ ] **6/10 · 0,5 j** `npm audit` de `native/` : refaire le dry-run et décider
 

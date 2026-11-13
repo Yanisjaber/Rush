@@ -24,6 +24,7 @@ export default function ParametresLayout() {
       <Stack.Screen name="connexions" options={{ title: 'Connexions' }} />
       <Stack.Screen name="synchro" options={{ title: 'Synchro Strava' }} />
       <Stack.Screen name="compte" options={{ title: 'Mon compte' }} />
+      <Stack.Screen name="confidentialite" options={{ title: 'Confidentialité' }} />
       <Stack.Screen name="widgets" options={{ title: 'Catalogue des widgets' }} />
     </Stack>
   );

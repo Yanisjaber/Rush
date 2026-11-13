@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Confidentialité · Rush</title>
+  <meta name="description" content="Politique de confidentialité de Rush : ce qui est enregistré, où, qui y accède, le Coach IA et tes droits.">
+  <style>
+    :root { --fond: #f5f4f0; --texte: #14161a; --doux: #4a4f5a; --trait: #dcd9d0; color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) { :root { --fond: #0c0d10; --texte: #f2f3f5; --doux: #b4b9c4; --trait: #262a33; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--fond); color: var(--texte); font: 17px/1.6 -apple-system, "Helvetica Neue", Arial, sans-serif; }
+    main { max-width: 720px; margin: 0 auto; padding: 32px 20px 72px; }
+    h1 { font-size: clamp(34px, 7vw, 48px); line-height: 1.05; margin: 0 0 6px; }
+    h2 { font-size: 22px; margin: 36px 0 8px; padding-top: 20px; border-top: 1px solid var(--trait); }
+    p, li { color: var(--doux); }
+    ul { padding-left: 20px; } li { margin: 8px 0; }
+    .maj { font-size: 14px; margin: 0 0 8px; }
+    a { color: var(--texte); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Confidentialité</h1>
+    <p class="maj">Rush · dernière mise à jour : 13 novembre 2026</p>
+    <section id="qui">
+      <h2>Qui est derrière l'app</h2>
+      
+      <p>Rush est un projet personnel, géré par Yanis. Pas de publicité, pas de revente de données, pas de suivi de ton comportement. Rush est réservé aux personnes de 15 ans ou plus.</p>
+    </section>
+    <section id="enregistre">
+      <h2>Ce qui est enregistré</h2>
+      <ul>
+        <li>Ton compte : adresse e-mail et mot de passe (transformé en empreinte illisible : personne ne peut le relire).</li>
+        <li>Tes séances : durée, distance, dénivelé, cardio, puissance, courbes, parcours GPS quand l’activité en a un.</li>
+        <li>Ton sommeil et ta forme, quand tu les saisis ou quand une nuit a été importée.</li>
+        <li>Ton suivi de santé, si tu le renseignes : ressenti, maladie, blessure, alcool, voyage, cycle, poids et mesures, nutrition. Rien n’est obligatoire.</li>
+        <li>Ton profil : prénom, poids, fréquence cardiaque max, seuils, zones, et ta photo de profil si tu en ajoutes une (stockée dans un espace privé, visible de toi seul).</li>
+        <li>Tes entraînements de force, tes tests Hyrox, tes objectifs, cycles, notes et jours de repos.</li>
+        <li>Tes réglages : disposition de l’accueil, préférences.</li>
+        <li>Ta conversation avec le Coach IA et ce qu’il retient pour t’aider.</li>
+      </ul>
+      <p>Une grande partie de ces données touche à la santé (cardio, sommeil, poids, blessures, maladie, cycle). Ce sont des données sensibles : elles servent à t’afficher tes chiffres et à faire fonctionner le Coach, ne sont jamais vendues, et tu peux les supprimer à tout moment.</p>
+    </section>
+    <section id="coach">
+      <h2>Le Coach IA</h2>
+      <ul>
+        <li>Pour te répondre, le Coach envoie un résumé de tes données d’entraînement (séances, charge, objectifs) à Anthropic, l’entreprise qui fournit le modèle d’IA. Les catégories de santé (cycle, corps, nutrition, événements…) ne partent que si tu les as autorisées.</li>
+        <li>Ce résumé est fait de chiffres agrégés, sans ton nom, ni ton e-mail, ni ton identifiant. Ton message, lui, est transmis tel que tu l’écris : évite d’y mettre ce que tu ne veux pas partager.</li>
+        <li>Au premier usage, un écran d’accord t’explique ce qui part et pourquoi. Tu peux couper une catégorie ou retirer ton accord quand tu veux.</li>
+        <li>Ta conversation et la mémoire du Coach sont stockées chez Supabase, liées à ton compte. « Effacer » supprime la conversation et la mémoire.</li>
+        <li>Chez Anthropic, par défaut, les échanges passés par l’API sont supprimés de leurs serveurs sous 30 jours et ne servent pas à entraîner leurs modèles.</li>
+        <li>Les conseils du Coach sont des suggestions d’entraînement, pas un avis médical. En cas de douleur, de malaise ou de doute, consulte un professionnel de santé.</li>
+        <li>Il y a un plafond de messages par jour et par compte.</li>
+      </ul>
+      
+    </section>
+    <section id="stockage">
+      <h2>Où et qui y accède</h2>
+      <ul>
+        <li>Les données sont stockées chez Supabase (hébergeur de la base de données), dans un centre de données en Allemagne (Francfort, Union européenne).</li>
+        <li>Les e-mails de connexion et de confirmation partent par Brevo, qui reçoit ton adresse e-mail pour les transmettre, rien d’autre.</li>
+        <li>Une règle de sécurité garantit que chaque compte ne voit que ses propres lignes.</li>
+        <li>Yanis administre l’app et a, comme tout administrateur, un accès technique à la base.</li>
+      </ul>
+      
+    </section>
+    <section id="services">
+      <h2>Les services connectés</h2>
+      <ul>
+        <li>Strava (si tu le connectes) : l’app lit tes activités pour les afficher. Tu peux déconnecter Strava à tout moment, ou retirer l’app depuis strava.com.</li>
+        <li>Garmin : aucune connexion pour l’instant. Seules les nuits déjà importées s’affichent.</li>
+        <li>Hevy (si tu importes un export) : le fichier est lu sur ton appareil, seules les séances de force sont enregistrées.</li>
+        <li>Open Dossard (si tu lies ta licence) : l’app interroge leur site avec ton numéro de licence.</li>
+        <li>Cartes : pour afficher le parcours d’une sortie, l’app utilise Apple Plans sur iPhone (et Google Maps sur Android). Le fournisseur voit ton adresse IP et la zone affichée.</li>
+      </ul>
+      
+    </section>
+    <section id="traceurs">
+      <h2>Traceurs</h2>
+      
+      <p>Aucun cookie publicitaire, aucun outil de mesure d’audience. Ton téléphone garde ta session de connexion et quelques préférences (thème, accueil) pour que l’app fonctionne.</p>
+    </section>
+    <section id="droits">
+      <h2>Tes droits</h2>
+      <ul>
+        <li>Récupérer tes données : « Exporter mes données » donne un fichier avec tes séances, ta santé, ta force, tes cycles, notes et réglages (pas les courbes brutes, les fichiers GPX ni les jetons de connexion).</li>
+        <li>Corriger : tout ce que tu as saisi se modifie dans l’app.</li>
+        <li>Tout supprimer : « Supprimer mon compte », immédiat et définitif.</li>
+      </ul>
+      <p>Pour toute autre demande, écris à Yanis (voir « Contact »).</p>
+    </section>
+    <section id="duree">
+      <h2>Combien de temps</h2>
+      
+      <p>Tant que ton compte existe. Quand tu le supprimes, tes données sont effacées de la base. Des sauvegardes de l’hébergeur peuvent en garder une trace quelque temps.</p>
+    </section>
+    <section id="contact">
+      <h2>Contact</h2>
+      <p>Une question, une demande d’accès, de correction ou de suppression ? Écris à Yanis : <a href="mailto:yanisjaber23@gmail.com">yanisjaber23@gmail.com</a>.</p>
+    </section>
+  </main>
+</body>
+</html>

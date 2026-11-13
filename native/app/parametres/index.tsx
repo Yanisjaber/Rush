@@ -21,7 +21,7 @@ const ADRESSE_SITE = 'https://yanisjaber.github.io/Rush/';
 const ouvrirSite = (chemin: string) => void Linking.openURL(`${ADRESSE_SITE}${chemin}`).catch(() => {});
 
 // Mon compte : un en-tête (initiale, titre, e-mail), puis des menus en lignes groupés (profil, connexions, préférences, sécurité, session).
-// Les réglages détaillés s'ouvrent dans leur propre écran ; mot de passe, export et confidentialité passent par le site (même compte).
+// Les réglages détaillés s'ouvrent dans leur propre écran ; mot de passe et export passent par le site (même compte) ; la confidentialité s'ouvre dans l'app.
 export default function Parametres() {
   const p = usePalette();
   const insets = useSafeAreaInsets();
@@ -79,7 +79,7 @@ export default function Parametres() {
         <Groupe titre="Sécurité et données">
           <Ligne icone="mdp" titre="Changer mon mot de passe" externe onPress={() => ouvrirSite('#/mot-de-passe')} />
           <Ligne icone="exporter" titre="Exporter mes données" externe onPress={() => ouvrirSite('#/parametres/general')} />
-          <Ligne icone="confidentialite" titre="Confidentialité" externe onPress={() => ouvrirSite('#/confidentialite')} />
+          <Ligne icone="confidentialite" titre="Confidentialité" onPress={() => aller('/parametres/confidentialite')} />
         </Groupe>
 
         <Groupe titre="Session">
