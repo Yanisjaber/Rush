@@ -13,7 +13,7 @@ test('chiffresPrevue : une séance donne sa durée, sa charge, sa distance et so
   assert.ok(r.ok);
   if (!r.ok) return;
   const c = chiffresPrevue(prevueDepuisLigne(id, r.ligne));
-  assert.deepEqual(libelles(c), ['Durée', 'Distance', 'Dénivelé +', 'Charge', 'Effort estimé', 'Allure prévue', 'Vitesse moy.', 'Glucides', 'Hydratation']);
+  assert.deepEqual(libelles(c), ['Durée', 'Distance', 'Dénivelé +', 'Charge', 'Effort estimé', 'Allure prévue', 'Glucides', 'Hydratation']);
   assert.equal(c[0].valeur, '1h15');
   assert.deepEqual([c[1].valeur, c[1].unite], ['13,5', 'km']);
 });

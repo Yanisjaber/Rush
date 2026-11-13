@@ -91,8 +91,7 @@ export function chiffresPrevue(p: PrevueComplete, estim: EstimationBlocs | null 
   const allure = allureMoyenne(p.sport, km, duree);
   const a = separerUnite(allure?.valeur);
   ajout('allure', allure ? allure.libelle.replace('moy.', 'prévue') : '', a.valeur, a.unite);
-  // Course : la vitesse en km/h à côté de l'allure, et la plus rapide (la vitesse max de la séance)
-  if (course && km != null && duree != null) ajout('vitesse', 'Vitesse moy.', formatKm(km / (duree / 60), 1), 'km/h');
+  // Course : l'allure la plus rapide (et la vitesse max de la séance) et la plus lente
   if (course && estim?.allureRapide && estim.allureLente && estim.allureRapide < estim.allureLente) {
     ajout('allureRapide', 'Allure rapide', texteSec(estim.allureRapide), '/km');
     ajout('vitesseMax', 'Vitesse max', kmh(estim.allureRapide), 'km/h');
