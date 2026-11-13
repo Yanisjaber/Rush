@@ -32,3 +32,13 @@ test('records de séance : la plus longue durée porte le sport de la séance', 
   assert.equal(duree?.top[0].valeur, 372);
   assert.equal(duree?.top[0].famille, 'velo');
 });
+
+test('records de séance : la sortie avec le plus gros dénivelé (une seule séance, pas le cumul du jour)', () => {
+  const g = recordsSeance([act('2026-11-03', { d_plus: 900, name: 'Col', type: 'Ride', famille: 'velo' }), act('2026-11-03', { d_plus: 800 }), act('2026-11-04', { d_plus: 100 })]);
+  const r = g.records.find((x) => x.cle === 'dplus_seance');
+  assert.equal(r?.top[0].valeur, 900);
+  assert.equal(r?.top[0].nom, 'Col');
+  assert.equal(r?.top[0].sport, 'Ride');
+  // le record « par jour » cumule, lui : 900 + 800
+  assert.equal(g.records.find((x) => x.cle === 'dplus')?.top[0].valeur, 1700);
+});

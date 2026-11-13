@@ -4,7 +4,7 @@ import { Bloc } from '@/components/feuilles/Bloc';
 import { activitesAnnee, type ActiviteBilan } from '@/data/bilan/bilan';
 import { recordSemainesAffilee, recordsPeriodes, recordsRegularite, recordsSeance, type EntreeRecord, type RecordTop } from '@/data/bilan/records';
 import { dateCourte, enAnnee, jourMois, libelleEntree, texteValeurRecord } from '@/data/bilan/records-texte';
-import { SPORTS, couleurSport } from '@/theme/sports';
+import { IconeSport } from '@/components/ui/IconeSport';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
@@ -28,13 +28,12 @@ interface Ligne {
   titre: string;
   sous: string;
   valeur: string;
-  /** Le sport de la séance, pour la pastille de couleur. */
-  famille?: string;
+  /** Le sport brut de la séance, pour son logo. */
+  sport?: string;
   /** La séance à ouvrir. */
   id?: string | null;
 }
 
-const nomSport = (famille: string): string => (Object.hasOwn(SPORTS, famille) ? SPORTS[famille as keyof typeof SPORTS].court : famille);
 const ecrire = (valeur: number, unite: string): string => {
   const t = texteValeurRecord(valeur, unite);
   return t.unite ? `${t.nombre} ${t.unite}` : t.nombre;
@@ -61,16 +60,15 @@ export function OngletRecordsTous({ portee, toutes, annee, maintenant, onOuvrir 
       seanceLignes.push({
         cle,
         titre,
-        sous: [e.nom ? e.nom : '', e.famille ? nomSport(e.famille) : '', dateCourte(e.iso)].filter(Boolean).join(' · '),
+        sous: [e.nom ? e.nom : '', dateCourte(e.iso)].filter(Boolean).join(' · '),
         valeur: ecrire(e.valeur, unite),
-        famille: e.famille,
+        sport: e.sport ?? e.famille,
         id: e.id,
       });
     };
     ajouterSeance('duree', 'La plus longue séance', 'min');
     ajouterSeance('tss', 'La plus chargée', 'TSS');
-    const d = record(s.find((x) => x.cle === 'dplus'));
-    if (d) seanceLignes.push({ cle: 'dplus', titre: 'Le plus de dénivelé en un jour', sous: dateCourte(d.iso), valeur: ecrire(d.valeur, 'm') });
+    ajouterSeance('dplus_seance', 'Le plus gros dénivelé', 'm');
 
     const periodeLignes: Ligne[] = [];
     const noms: Record<string, string> = { jour: 'Meilleur jour', semaine: 'Meilleure semaine', mois: 'Meilleur mois' };
@@ -100,12 +98,12 @@ export function OngletRecordsTous({ portee, toutes, annee, maintenant, onOuvrir 
           const contenu = (
             <>
               <View style={styles.centre}>
-                {/* La pastille de couleur du sport vient juste après le titre */}
+                {/* Le logo du sport vient juste après le titre */}
                 <View style={styles.titre}>
                   <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte, flexShrink: 1 }]}>
                     {l.titre}
                   </Text>
-                  {l.famille ? <View style={[styles.pastille, { backgroundColor: couleurSport(p, l.famille) }]} /> : null}
+                  {l.sport ? <IconeSport sport={l.sport} taille={16} /> : null}
                 </View>
                 <Text numberOfLines={2} style={[typo.petit, { color: p.texteMuet }]}>
                   {l.sous}
@@ -142,7 +140,6 @@ export function OngletRecordsTous({ portee, toutes, annee, maintenant, onOuvrir 
 
 const styles = StyleSheet.create({
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56, paddingVertical: 8 },
-  pastille: { width: 10, height: 10, borderRadius: 5 },
   centre: { flex: 1 },
   titre: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   valeur: { fontFamily: police.titre700, fontSize: 17, fontVariant: ['tabular-nums'] },

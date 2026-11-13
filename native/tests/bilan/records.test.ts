@@ -26,18 +26,20 @@ test('recordsPeriodes : une mesure à zéro (la distance en musculation) ne donn
   assert.deepEqual(g.records, []);
 });
 
-test('recordsSeance : les quatre records et leur podium, sans les mesures à zéro', () => {
+test('recordsSeance : les cinq records et leur podium, sans les mesures à zéro', () => {
   const acts = [act('2026-03-01', { distance_km: 122, duree_min: 385, tss: 90, d_plus: 3000, name: 'Ski' }), act('2026-03-01', { distance_km: 10, d_plus: 5400, name: 'Vélo' }), act('2026-04-02', { distance_km: 70, duree_min: 200, tss: 120, d_plus: 800 })];
   const g = recordsSeance(acts);
-  assert.deepEqual(g.records.map((r) => r.cle), ['distance', 'duree', 'tss', 'dplus']);
+  assert.deepEqual(g.records.map((r) => r.cle), ['distance', 'duree', 'tss', 'dplus', 'dplus_seance']);
   assert.equal(g.records[0].top[0].valeur, 122);
   assert.equal(g.records[0].top[0].nom, 'Ski');
   assert.equal(g.records[0].top.length, 3);
   assert.equal(g.records[3].top[0].valeur, 8400); // 3000 + 5400 le même jour
   assert.equal(g.records[3].top[0].id, null); // un jour cumule plusieurs séances : rien à ouvrir
+  assert.equal(g.records[4].top[0].valeur, 5400); // la sortie seule avec le plus de D+, pas le cumul du jour
+  assert.equal(g.records[4].top[0].nom, 'Vélo');
   // sans distance (musculation) : plus de record de distance
   const muscu = recordsSeance([act('2026-03-01', { distance_km: 0, d_plus: 0, tss: 40 })]);
-  assert.deepEqual(muscu.records.map((r) => r.cle), ['duree', 'tss']);
+  assert.deepEqual(muscu.records.map((r) => r.cle), ['duree', 'tss']); // sans D+ non plus
 });
 
 test('recordsRegularite : la plus longue série de jours et le plus de séances en une semaine', () => {

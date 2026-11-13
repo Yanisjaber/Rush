@@ -17,6 +17,8 @@ export interface EntreeRecord {
   detail?: string;
   /** Le sport de la séance (« velo », « course »…), pour colorer une ligne quand plusieurs sports se mélangent. */
   famille?: string;
+  /** Le sport brut de la séance (« Run », « AlpineSki »…), pour dessiner son logo ; à défaut, la famille. */
+  sport?: string;
 }
 
 export interface RecordTop {
@@ -91,7 +93,7 @@ export function recordsPeriodes(acts: ActiviteBilan[], mesure: MetriqueCumul, n 
 
 /** Les records d'une séance : la plus longue sortie, la plus longue durée, la plus grosse charge, et le plus de dénivelé en un jour (qui cumule les séances du jour). */
 export function recordsSeance(acts: ActiviteBilan[]): GroupeRecords {
-  const de = (cle: 'distance_km' | 'duree_min' | 'tss'): EntreeRecord[] => meilleures(acts.map((a) => ({ valeur: a[cle], nom: nomSeance(a), iso: a.iso, id: a.id, famille: a.famille })));
+  const de = (cle: 'distance_km' | 'duree_min' | 'tss' | 'd_plus'): EntreeRecord[] => meilleures(acts.map((a) => ({ valeur: a[cle], nom: nomSeance(a), iso: a.iso, id: a.id, famille: a.famille, sport: a.type ?? a.famille })));
   const dplus = new Map<string, number>();
   for (const a of acts) dplus.set(a.iso, (dplus.get(a.iso) ?? 0) + a.d_plus);
   const jours = meilleures([...dplus].map(([iso, valeur]) => ({ valeur, nom: 'Cumul des activités du jour', iso, id: null })));
@@ -100,6 +102,7 @@ export function recordsSeance(acts: ActiviteBilan[]): GroupeRecords {
     { cle: 'duree', libelle: 'Plus longue durée', unite: 'min', top: de('duree_min') },
     { cle: 'tss', libelle: 'Plus grosse charge', unite: 'TSS', top: de('tss') },
     { cle: 'dplus', libelle: 'Plus de D+ en 1 jour', unite: 'm', top: jours },
+    { cle: 'dplus_seance', libelle: 'Plus gros D+ en une sortie', unite: 'm', top: de('d_plus') },
   ];
   return { cle: 'seance', libelle: 'Séance', records: records.filter((r) => r.top.length) };
 }
