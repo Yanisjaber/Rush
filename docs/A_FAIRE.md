@@ -17,11 +17,11 @@ Chaque tâche porte une étiquette : `**importance/10 · durée en jours**`.
 
 Mise à jour : **13 novembre 2026**. Rythme supposé : 5 jours de travail par semaine.
 
-- **Version de sortie** (tâches ≥ 7/10) : **60,2 jours** restants (8,1 j déjà faits).
-- **Sortie estimée : 6 février 2027** si tout se passe bien.
-- **Fourchette prudente : 3 avril 2027** (durées ×1.5 + 14 jours pour Apple, les accès API, le domaine…).
-- Le reste (tâches < 7/10) : 56,4 jours, à faire après la sortie ou si on a de la marge. « Après la sortie » : 16 jours.
-- Tâches : 65 restantes, 8 faites.
+- **Version de sortie** (tâches ≥ 7/10) : **59,2 jours** restants (9,1 j déjà faits).
+- **Sortie estimée : 4 février 2027** si tout se passe bien.
+- **Fourchette prudente : 1 avril 2027** (durées ×1.5 + 14 jours pour Apple, les accès API, le domaine…).
+- Le reste (tâches < 7/10) : 58,4 jours, à faire après la sortie ou si on a de la marge. « Après la sortie » : 16 jours.
+- Tâches : 65 restantes, 9 faites.
 
 Où part le temps de la version de sortie :
 
@@ -32,7 +32,7 @@ Où part le temps de la version de sortie :
 | 6. Écran d'une sortie | 8,2 j |
 | 9. Sources d'activités | 8 j |
 | 3. Coach IA | 7,5 j |
-| 2. Compte et sécurité | 6,5 j |
+| 2. Compte et sécurité | 5,5 j |
 | 10. Qualité | 5 j |
 | 5. Calendrier | 1,5 j |
 | 1. Publication et légal | 1 j |
@@ -42,7 +42,7 @@ Historique (une ligne par recalcul) :
 
 | Date | Sortie : jours restants | Tout : jours restants | Sortie estimée | Fourchette prudente |
 |---|---|---|---|---|
-| 2026-11-13 | 60,2 j | 116,6 j | 6 février 2027 | 3 avril 2027 |
+| 2026-11-13 | 59,2 j | 117,6 j | 4 février 2027 | 1 avril 2027 |
 <!-- ESTIMATION:FIN -->
 
 ## 1. Publication et légal
@@ -59,7 +59,7 @@ Historique (une ligne par recalcul) :
 - [ ] **9/10 · 3 j** Passer toute l'app en ultra sécurisé : audit complet avant la sortie (RLS de chaque table, Edge Functions, stockage des jetons et de la session sur le téléphone, validation des entrées, dépendances, secrets, fuites dans les logs, accès du Coach IA aux données), puis corriger tout ce qu'on trouve. À cadrer : audit par moi seul ou aussi par un outil/une personne extérieure
 - [x] **9/10 · 2 j** Créer son compte directement dans l'app : l'écran de connexion renvoie encore vers le site (« Pas encore de compte ? Crée-le sur le site… / Ouvrir le site »). Inscription, confirmation par e-mail et retour dans l'app, sans navigateur. Écran neuf : 8 maquettes
 - [ ] **9/10 · 2,5 j** Section « Sécurité et données » des Paramètres : « Changer mon mot de passe », « Exporter mes données » renvoient vers le site (flèche ↗), « Confidentialité » est faite dans l'app (13 nov.). Faire le reste dans l'app, avec la suppression de compte (exigée par Apple) ; 8 maquettes pour les écrans neufs
-- [ ] **7/10 · 1 j** Base presque pleine (404/500 Mo) : trouver de la place
+- [x] **7/10 · 1 j** Base presque pleine (404/500 Mo) : trouver de la place (14 nov. : `daily_metrics` pesait 98 Mo pour 1 Mo de données, à cause de 2,1 millions de réécritures ; VACUUM FULL puis migration qui ne réécrit que les jours qui changent : base à 311 Mo). Reste surveillé : `activities` fait 293 Mo (streams)
 - [ ] **6/10 · 0,5 j** `npm audit` de `native/` : refaire le dry-run et décider
 
 ## 3. Coach IA
@@ -112,6 +112,7 @@ Historique (une ligne par recalcul) :
 - [x] **8/10 · 1 j** Terminer la page Bilan en vue « Tous » : Résumé, Rythme, Records et Niveau (ex-Progrès) sont faits (14 nov.)
 - [x] **8/10 · 2 j** Supprimer ou modifier l'onglet Progrès avec des valeurs factuelles plutôt que des formules inventées (14 nov. : courbe de niveau trimestre par trimestre, une courbe par sport ; note du trimestre = moyenne de 3 pourcentages : heures, charge, records posés pendant ces 3 mois, le meilleur trimestre = 100). Records = puissance du vélo (5 s à 2 h), allure de la course et de la natation (1 min à 2 h), plus longue sortie ; top 5 de chaque record, la 1re séance pèse 1 et la 5e 0,2. Le 45 min est remplacé par 40 min (non gardé en base). Reste à ajouter les records de muscu par exercice
 - [ ] **5/10 · 1,5 j** Niveau : ajouter les records de musculation par exercice (1RM de chaque exercice du carnet, top 5 avec dates) dans la note du trimestre
+- [ ] **4/10 · 2 j** Condition (CTL) à la volée : supprimer `daily_metrics` en calculant la condition à partir des séances, y compris pour le Coach IA (`rpc_coach_resume`), le widget Condition de l'Accueil et `rpc_piliers_annuels`. Optionnel : la table ne pèse plus rien depuis le 14 nov.
 - [ ] **4/10 · 1 j** Retirer le code de l'ancien Progrès dans `bilan.tsx` et ses composants (ProgresSport, NiveauGlobalSport, FormeSaison…), désactivé le 14 nov. mais encore là
 - [ ] **7/10 · 0,5 j** Voir et valider l'écran Paramètres › Zones dans le simulateur
 - [ ] **6/10 · 0,5 j** Essayer pour de vrai « Faire calculer mes zones par le coach »
