@@ -1,5 +1,5 @@
 # Poids corporel : perdre du poids (85 → cible 75) n'affiche plus 100 % ; la phrase dit l'écart. Supprimé à la fin (vrai compte).
-appId: TODO.rush
+appId: fr.yanisjaber.rush
 ---
 - launchApp
 - runFlow: _ouvrir-bilan.yaml

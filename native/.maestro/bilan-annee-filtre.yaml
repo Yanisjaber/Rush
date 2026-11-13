@@ -1,5 +1,5 @@
 # Bilan : filtre de sport (la répartition garde tous les sports), année passée, onglet Progrès
-appId: TODO.rush
+appId: fr.yanisjaber.rush
 ---
 - launchApp
 - runFlow: _ouvrir-bilan.yaml

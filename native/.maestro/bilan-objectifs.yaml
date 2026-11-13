@@ -1,5 +1,5 @@
 # Objectifs : créer (avec phrase de projection), relire, modifier, refuser un doublon, supprimer. Sur le vrai compte : tout ce qui est créé est supprimé à la fin.
-appId: TODO.rush
+appId: fr.yanisjaber.rush
 ---
 - launchApp
 - runFlow: _ouvrir-bilan.yaml

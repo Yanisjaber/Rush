@@ -47,7 +47,7 @@ Guide pour Claude Code (claude.ai/code) dans ce dépôt. Les `.md` détaillés s
 - Écrans dans `native/app/`, logique dans `native/src/` (`data/`, `hooks/`, `stores/`), tests dans `native/tests/` (`node --test`).
 - Même compte et même base que le site (RLS identique), session dans SecureStore.
 - **Calculs en double** (`app/src/lib/data/*.js` et `native/src/data/*.ts`) : comme `app/` est gelé, on corrige **côté `native/` seulement**, sans synchroniser le web.
-- `bundleIdentifier` / `package` dans `native/app.json` : encore provisoire (`TODO.rush`).
+- `bundleIdentifier` (iOS) et `package` (Android) dans `native/app.json` : `fr.yanisjaber.rush`.
 - Pas de connexion Strava depuis le téléphone : on passe par le site.
 
 ## `app/` (gelé, pour mémoire)

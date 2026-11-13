@@ -1,5 +1,5 @@
 # Bilan › Rythme (moyenne sans la semaine en cours, séries sur une ligne) puis Records
-appId: TODO.rush
+appId: fr.yanisjaber.rush
 ---
 - launchApp
 - runFlow: _ouvrir-bilan.yaml

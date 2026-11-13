@@ -16,7 +16,7 @@
       }
     },
     "android": {
-      "package": "TODO.rush",
+      "package": "fr.yanisjaber.rush",
       "allowBackup": false
     },
     "plugins": ["expo-router", "./plugins/withExpoGlAndroidR8", ["expo-splash-screen", { "backgroundColor": "#f5f4f0", "dark": { "backgroundColor": "#0c0d10" } }], ["expo-image-picker", { "photosPermission": "Rush utilise ta photo pour ton profil." }]],

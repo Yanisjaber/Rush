@@ -1,5 +1,5 @@
 # Bilan › Résumé : le dossard, les objectifs, le cumul et la répartition (qui dit « tous sports confondus »)
-appId: TODO.rush
+appId: fr.yanisjaber.rush
 ---
 - launchApp
 - runFlow: _ouvrir-bilan.yaml
