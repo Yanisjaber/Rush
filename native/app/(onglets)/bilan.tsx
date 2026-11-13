@@ -187,17 +187,19 @@ export default function Bilan() {
   // Les mesures des menus dépendent du sport (musculation : séries, tonnage ; course : allure, FC) ; le cumul sur 3 ans n'additionne que les mesures qui se somment
   const mesuresSport = useMemo(() => mesuresDuSport(filtre), [filtre]);
   const mesuresCumul = useMemo(() => mesuresSport.filter((m) => !m.moyenne), [mesuresSport]);
-  const metrique = mesureValide(mesures.cumul, mesuresCumul, 'distance_km');
+  // « Tous les sports » : le temps par défaut (additionner des km de natation, de vélo et de course n'aurait pas de sens)
+  const defautCumul: MetriqueCumul = filtre === 'tout' ? 'heures' : 'distance_km';
+  const metrique = mesureValide(mesures.cumul ?? defautCumul, mesuresCumul, defautCumul);
   const cumul = useMemo(() => (onglet === 'resume' ? cumulParAnnee(filtrees, [annee, annee - 1, annee - 2], metrique, maintenant) : { etiquettes: [], series: [] }), [onglet, filtrees, annee, metrique, maintenant]);
   const mesure = mesureDef(metrique);
   // Rythme : par mois (en km, ou en heures quand le sport n'a pas de distance, comme la musculation), charge par semaine, régularité
   const enKm = courant.distance > 0;
   // Musculation : le tonnage dès qu'il y en a (le carnet de force est lié aux séances), sinon les heures
-  const defautMesure: MetriqueCumul = filtre === 'muscu' ? (courant.tonnage > 0 ? 'tonnage' : 'heures') : enKm && !multisport ? 'distance_km' : 'heures';
+  const defautMesure: MetriqueCumul = filtre === 'muscu' ? (courant.tonnage > 0 ? 'tonnage' : 'heures') : enKm && !multisport && filtre !== 'tout' ? 'distance_km' : 'heures';
   const mesureMois: MetriqueCumul = mesureValide(mesures.mois ?? defautMesure, mesuresSport, defautMesure);
   const mesureSemaine: MetriqueCumul = mesureValide(mesures.semaine ?? defautMesure, mesuresSport, defautMesure);
   const mesureJour: MetriqueCumul = mesureValide(mesures.jour ?? defautMesure, mesuresSport, defautMesure);
-  const mesureRecords: MetriqueCumul = mesures.records ?? (enKm ? 'distance_km' : 'heures');
+  const mesureRecords: MetriqueCumul = mesures.records ?? (enKm && !multisport && filtre !== 'tout' ? 'distance_km' : 'heures');
   const mesureM = mesureDef(mesureMois);
   const decimalesMois = mesureM.decimales;
   // L'unité écrite sur les graphiques : « km », « m », « TSS », « h » ; pour les séances, le titre le dit déjà
