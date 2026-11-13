@@ -82,7 +82,6 @@ export function chiffresPrevue(p: PrevueComplete, estim: EstimationBlocs | null 
 
   const duree = positif(p.duration);
   const course = ['Run', 'TrailRun', 'Walk', 'Hike'].includes(p.sport);
-  const kmh = (secParKm: number) => formatKm(3600 / secParKm, 1);
   ajout('duree', 'Durée', duree != null ? texteDuree(duree) : null);
   ajout('distance', 'Distance', d?.valeur, d?.unite);
   ajout('dplus', 'Dénivelé +', dplus != null ? formatNombre(dplus) : null, 'm');
@@ -91,12 +90,6 @@ export function chiffresPrevue(p: PrevueComplete, estim: EstimationBlocs | null 
   const allure = allureMoyenne(p.sport, km, duree);
   const a = separerUnite(allure?.valeur);
   ajout('allure', allure ? allure.libelle.replace('moy.', 'prévue') : '', a.valeur, a.unite);
-  // Course : l'allure la plus rapide (et la vitesse max de la séance) et la plus lente
-  if (course && estim?.allureRapide && estim.allureLente && estim.allureRapide < estim.allureLente) {
-    ajout('allureRapide', 'Allure rapide', texteSec(estim.allureRapide), '/km');
-    ajout('vitesseMax', 'Vitesse max', kmh(estim.allureRapide), 'km/h');
-    ajout('allureLente', 'Allure lente', texteSec(estim.allureLente), '/km');
-  }
   ajout('watts', 'Puissance moy.', positif(p.est_watts) != null ? formatNombre(Math.round(Number(p.est_watts))) : null, 'W');
   ajout('wattsMax', 'Puissance max', estim?.wattsMax != null ? formatNombre(estim.wattsMax) : null, 'W');
   ajout('wattsNormalisee', 'Puissance norm.', estim?.wattsNormalisee != null ? formatNombre(estim.wattsNormalisee) : null, 'W');
@@ -113,11 +106,6 @@ export function chiffresPrevue(p: PrevueComplete, estim: EstimationBlocs | null 
   // Conseils d'après la durée et l'effort (repères de nutrition sportive courants) : glucides au-delà d'une heure, boisson dès une demi-heure
   if (duree != null && duree >= 60) ajout('glucides', 'Glucides', duree > 150 ? '60–90' : '30–60', 'g/h');
   if (duree != null && duree >= 30) ajout('hydratation', 'Hydratation', rpe == null || rpe <= 4 ? '400–600' : rpe >= 8 ? '600–900' : '500–750', 'ml/h');
-  ajout('efforts', 'Efforts', estim && estim.efforts > 1 ? String(estim.efforts) : null);
-  ajout('minEffort', "Temps d'effort", estim && estim.minEffort > 0 && estim.minRecup > 0 ? texteDuree(estim.minEffort) : null);
-  ajout('minRecup', 'Récupération', estim && estim.minRecup > 0 ? texteDuree(estim.minRecup) : null);
-  ajout('kmEffort', "Distance d'effort", estim?.kmEffort != null && estim.minRecup > 0 ? formatKm(estim.kmEffort, 1) : null, 'km');
   return liste;
 }
 
-const texteSec = (s: number): string => `${Math.floor(Math.round(s) / 60)}'${String(Math.round(s) % 60).padStart(2, '0')}"`;
