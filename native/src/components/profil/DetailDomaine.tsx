@@ -1,12 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { ChampMesure } from '@/components/champs/ChampMesure';
 import { LIBELLE_PROVENANCE, texteValeur, type NoteDomaine, type ValeurRepere } from '@/data/profil/evaluation';
-import { defMesure, type MesuresParJour } from '@/data/sante/sante-catalogue';
 import { espace, rayon, type Palette } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 
 // Le détail d'un domaine de la planche : chaque repère avec sa valeur, d'où elle vient, sa note sur 100 (une barre)
-// et la référence mondiale. Les tests qu'aucune montre ne mesure se saisissent ici (enregistrés comme une mesure de l'onglet Santé).
+// et la référence mondiale. Les tests se saisissent dans l'onglet Santé.
 
 interface Props {
   palette: Palette;
@@ -14,16 +12,12 @@ interface Props {
   numero: number;
   note: NoteDomaine;
   sexe: 'homme' | 'femme';
-  /** Les mesures de santé, pour pré-remplir la saisie du jour. */
-  mesures: MesuresParJour;
-  aujourdhui: string;
-  onSaisie: (metric: string, valeur: number | null) => void;
 }
 
 const virgule = (n: number) => String(n).replace('.', ',');
 const dateCourte = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(2, 4)}`;
 
-export function DetailDomaine({ palette: p, accent, numero, note, sexe, mesures, aujourdhui, onSaisie }: Props) {
+export function DetailDomaine({ palette: p, accent, numero, note, sexe }: Props) {
   return (
     <View style={[styles.bloc, { backgroundColor: p.surface, borderColor: p.trait }]}>
       <View style={styles.tete}>
@@ -37,15 +31,14 @@ export function DetailDomaine({ palette: p, accent, numero, note, sexe, mesures,
         {note.mesures}/{note.reperes.filter((r) => !r.def.aVenir).length} mesurés · 100 = record {sexe === 'femme' ? 'femmes' : 'hommes'}
       </Text>
       {note.reperes.map((v) => (
-        <LigneRepere key={v.def.cle} palette={p} accent={accent} v={v} sexe={sexe} mesures={mesures} aujourdhui={aujourdhui} onSaisie={onSaisie} />
+        <LigneRepere key={v.def.cle} palette={p} accent={accent} v={v} sexe={sexe} />
       ))}
     </View>
   );
 }
 
-function LigneRepere({ palette: p, accent, v, sexe, mesures, aujourdhui, onSaisie }: { palette: Palette; accent: string; v: ValeurRepere; sexe: 'homme' | 'femme'; mesures: MesuresParJour; aujourdhui: string; onSaisie: (metric: string, valeur: number | null) => void }) {
+function LigneRepere({ palette: p, accent, v, sexe }: { palette: Palette; accent: string; v: ValeurRepere; sexe: 'homme' | 'femme' }) {
   const ref = sexe === 'femme' ? v.def.ref.femme : v.def.ref.homme;
-  const champ = v.def.mesure ? defMesure(v.def.mesure) : null;
   const unite = v.def.unite ? ` ${v.def.unite}` : '';
   const libelle = v.def.aVenir
     ? `${v.def.nom} : bientôt`
@@ -75,7 +68,6 @@ function LigneRepere({ palette: p, accent, v, sexe, mesures, aujourdhui, onSaisi
           </Text>
         </>
       ) : null}
-      {champ && !v.def.aVenir ? <ChampMesure def={champ} valeur={mesures[aujourdhui]?.[champ.cle] as number | undefined} onChange={(val) => onSaisie(champ.cle, val)} aideVisible={false} /> : null}
     </View>
   );
 }

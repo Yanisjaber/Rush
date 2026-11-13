@@ -9,11 +9,9 @@ import { PhotoProfil } from '@/components/feuilles/PhotoProfil';
 import { DetailDomaine } from '@/components/profil/DetailDomaine';
 import { ModeleAthleteRealiste, type PointEcran } from '@/components/profil/ModeleAthleteRealiste';
 import { ANCRES_DOMAINES, ANCRES_REGLE, NOM_COURT, PlancheAnatomique } from '@/components/profil/PlancheAnatomique';
-import { dateIsoLocale } from '@/data/outils/format';
 import { ageDepuis } from '@/data/profil/ecran-profil';
 import type { DomaineCle } from '@/data/profil/reperes';
 import { useEvaluation } from '@/hooks/useEvaluation';
-import { useMesuresSante } from '@/hooks/useMesuresSante';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -30,8 +28,7 @@ export default function Profil() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { width: largeurEcran, height: hauteurEcran } = useWindowDimensions();
-  const { evaluation, profil, enregistrer, recharger } = useEvaluation();
-  const { mesures } = useMesuresSante();
+  const { evaluation, profil, recharger } = useEvaluation();
 
   // Le geste « glisser depuis le bord » est coupé ici (il gêne la rotation du mannequin), sur la pile du dessus aussi ; on le remet en quittant
   useFocusEffect(
@@ -60,8 +57,6 @@ export default function Profil() {
   }, []);
 
   const choisie = useMemo(() => evaluation.domaines.findIndex((d) => d.domaine.cle === active), [evaluation.domaines, active]);
-  const aujourdhui = dateIsoLocale(new Date());
-  const saisir = useCallback((metric: string, valeur: number | null) => void enregistrer(aujourdhui, metric, valeur), [enregistrer, aujourdhui]);
 
   return (
     <View style={[styles.ecran, { backgroundColor: p.fond, paddingTop: insets.top + 4, paddingBottom: insets.bottom + espace.e2 }]}>
@@ -138,7 +133,7 @@ export default function Profil() {
           <View style={[styles.popup, { maxHeight: hauteurEcran * 0.72 }]}>
             <ScrollView keyboardShouldPersistTaps="handled" bounces={false} contentContainerStyle={{ flexGrow: 0 }}>
               {choisie >= 0 ? (
-                <DetailDomaine palette={p} accent={accent} numero={choisie + 1} note={evaluation.domaines[choisie]} sexe={evaluation.sexe} mesures={mesures} aujourdhui={aujourdhui} onSaisie={saisir} />
+                <DetailDomaine palette={p} accent={accent} numero={choisie + 1} note={evaluation.domaines[choisie]} sexe={evaluation.sexe} />
               ) : null}
             </ScrollView>
             <Pressable accessibilityRole="button" accessibilityLabel="Fermer" onPress={() => setActive(null)} hitSlop={8} style={[styles.fermer, { backgroundColor: p.surface2 }]}>
