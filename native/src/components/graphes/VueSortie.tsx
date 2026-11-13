@@ -41,6 +41,8 @@ interface Props {
   nomSport?: string;
   /** Les trois chiffres clés de la première page. */
   chiffres: ReactNode;
+  /** Sans carte : à la place de la silhouette du sport, un contenu héros dans la zone libre du haut (le profil des blocs d'une séance prévue). */
+  heros?: ReactNode;
   /** La seconde page, sans carte : toutes les infos de la sortie (on y va en balayant vers la gauche). */
   pageDetails: (onGlisse: (actif: boolean) => void) => ReactNode;
   /** La page 4 : la comparaison avec tes sorties proches et le mot du coach. Absente quand il n'y a rien à dire (la sortie n'a que trois pages). */
@@ -61,7 +63,7 @@ interface Props {
 const HAUTEUR_PROFIL = 166; // la hauteur du profil (courbe et repères de distance)
 const HAUT_PASTILLES = 36; // la place gardée en bas des pages pour que les pastilles volantes ne cachent rien
 
-export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, chiffres, pageDetails, pageCoach, graphesHaut, repartitions, tours, avecPageCourbes = true, nomPageCoach = 'Comparaison et coach', onModifier }: Props) {
+export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, chiffres, heros, pageDetails, pageCoach, graphesHaut, repartitions, tours, avecPageCourbes = true, nomPageCoach = 'Comparaison et coach', onModifier }: Props) {
   const p = usePalette();
   const NOMS_PAGES = ['Carte et profil', 'Toutes les infos', ...(avecPageCourbes ? ['Courbes'] : []), ...(pageCoach ? [nomPageCoach] : [])];
   const { top: haut, bottom: bas } = useSafeAreaInsets();
@@ -161,8 +163,14 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
             <CarteTrace plein trace={parcours.trace} region={parcours.region} couleur={couleur} curseur={curseur} marges={marges} />
           ) : (
             <>
-              {/* Sans carte : la silhouette du sport, dans la zone libre au-dessus de la feuille */}
-              <FondSport sport={sport} couleur={couleur} marges={marges} />
+              {/* Sans carte : le héros s'il y en a un (profil des blocs), sinon la silhouette du sport, dans la zone libre au-dessus de la feuille */}
+              {heros ? (
+                <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: marges.haut, bottom: marges.bas, paddingHorizontal: espace.e4, paddingVertical: espace.e3, justifyContent: 'center' }}>
+                  {heros}
+                </View>
+              ) : (
+                <FondSport sport={sport} couleur={couleur} marges={marges} />
+              )}
               {chargementCarte ? (
                 <View accessible accessibilityLabel="Chargement de la carte" style={[styles.attente, styles.sansCarte, { paddingTop: haut + HAUT_ENTETE + espace.e2 }]}>
                   <ActivityIndicator color={p.texteDoux} />
