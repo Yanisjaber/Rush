@@ -7,14 +7,14 @@ import { Bouton } from '@/components/ui/Bouton';
 import { Dossard } from '@/components/ui/Dossard';
 import { FondDegrade } from '@/components/ui/FondDegrade';
 import { evaluerMotDePasse } from '@/data/acces/mot-de-passe';
-import { inscription, renvoyerCode, terminerBienvenue, verifierCode } from '@/stores/auth';
+import { inscription, LONGUEUR_CODE, renvoyerCode, terminerBienvenue, verifierCode } from '@/stores/auth';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Créer un compte, sans quitter l'app, en trois temps :
 //   1. le formulaire (e-mail, mot de passe guidé, case « 15 ans + confidentialité ») ;
-//   2. le code à 6 chiffres reçu par e-mail (il remplace le lien de confirmation, qui ouvrait le site) ;
+//   2. le code à 8 chiffres reçu par e-mail (il remplace le lien de confirmation, qui ouvrait le site) ;
 //   3. « Compte activé » : le numéro de dossard du nouveau compte, puis l'Accueil.
 // Aussi ouvert depuis la connexion quand un compte créé n'a jamais été activé (paramètres `email` et `etape=code`).
 const ADRESSE_CONFIDENTIALITE = 'https://yanisjaber.github.io/Rush/confidentialite.html';
@@ -105,9 +105,9 @@ export default function Inscription() {
   }
 
   const gerer = (t: string) => {
-    const chiffres = t.replace(/\D/g, '').slice(0, 6);
+    const chiffres = t.replace(/\D/g, '').slice(0, LONGUEUR_CODE);
     setCode(chiffres);
-    if (chiffres.length === 6) void valider(chiffres);
+    if (chiffres.length === LONGUEUR_CODE) void valider(chiffres);
   };
 
   return (
@@ -238,11 +238,11 @@ export default function Inscription() {
               <Text style={[typo.corps, { color: p.texteDoux }]}>Envoyé à {email.trim()}. Il est valable 1 heure.</Text>
             </View>
 
-            {/* Un seul champ caché reçoit la saisie (et le code proposé par le clavier) ; les 6 cases l'affichent */}
+            {/* Un seul champ caché reçoit la saisie (et le code proposé par le clavier) ; les cases l'affichent */}
             <View style={styles.codeZone}>
               <View style={styles.codeLigne} accessible={false} importantForAccessibility="no-hide-descendants">
-                {[0, 1, 2, 3, 4, 5].map((i) => (
-                  <View key={i} style={[styles.codeCase, { backgroundColor: p.surface, borderColor: i === Math.min(code.length, 5) ? p.texte : p.trait }]}>
+                {Array.from({ length: LONGUEUR_CODE }, (_, i) => i).map((i) => (
+                  <View key={i} style={[styles.codeCase, { backgroundColor: p.surface, borderColor: i === Math.min(code.length, LONGUEUR_CODE - 1) ? p.texte : p.trait }]}>
                     <Text style={[styles.codeChiffre, { color: p.texte }]}>{code[i] ?? ''}</Text>
                   </View>
                 ))}
@@ -255,9 +255,9 @@ export default function Inscription() {
                 keyboardType="number-pad"
                 textContentType="oneTimeCode"
                 autoComplete="sms-otp"
-                maxLength={6}
+                maxLength={LONGUEUR_CODE}
                 caretHidden
-                accessibilityLabel="Code à 6 chiffres reçu par e-mail"
+                accessibilityLabel={`Code à ${LONGUEUR_CODE} chiffres reçu par e-mail`}
                 style={styles.codeChamp}
               />
             </View>
@@ -270,7 +270,7 @@ export default function Inscription() {
                 <ActivityIndicator color={p.fond} />
               </View>
             ) : (
-              <Bouton variante="principal" disabled={code.length !== 6} onPress={() => void valider(code)}>
+              <Bouton variante="principal" disabled={code.length !== LONGUEUR_CODE} onPress={() => void valider(code)}>
                 Valider
               </Bouton>
             )}
@@ -323,9 +323,9 @@ const styles = StyleSheet.create({
   attente: { minHeight: 44, borderRadius: rayon.base, alignItems: 'center', justifyContent: 'center' },
   lien: { minHeight: 44, justifyContent: 'center', alignItems: 'center' },
   codeZone: { height: 64 },
-  codeLigne: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
-  codeCase: { width: 46, height: 60, borderRadius: rayon.l, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  codeChiffre: { fontFamily: police.titre800, fontSize: 30, fontVariant: ['tabular-nums'] },
+  codeLigne: { flexDirection: 'row', gap: 5, justifyContent: 'center' },
+  codeCase: { flex: 1, maxWidth: 44, height: 56, borderRadius: rayon.l, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  codeChiffre: { fontFamily: police.titre800, fontSize: 26, fontVariant: ['tabular-nums'] },
   codeChamp: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.02, fontSize: 40 },
   astuce: { borderWidth: 1, borderRadius: rayon.l, padding: espace.e3, gap: espace.e1 },
 });

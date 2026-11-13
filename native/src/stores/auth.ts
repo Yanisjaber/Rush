@@ -71,7 +71,7 @@ export async function connexion(email: string, motDePasse: string): Promise<{ ok
 type Resultat = { ok: true } | { ok: false; message: string };
 
 /**
- * Crée le compte. Supabase envoie alors un e-mail avec un code à 6 chiffres (modèle « Confirm signup », variable Token).
+ * Crée le compte. Supabase envoie alors un e-mail avec un code à 8 chiffres (modèle « Confirm signup », variable Token).
  * Le compte n'existe vraiment qu'une fois le code validé (`verifierCode`).
  * Les règles du mot de passe sont vérifiées par l'écran (`evaluerMotDePasse`) ; Supabase les recontrôle.
  */
@@ -93,11 +93,14 @@ export async function inscription(email: string, motDePasse: string): Promise<Re
   return { ok: true };
 }
 
-/** Valide le code à 6 chiffres reçu par e-mail. En cas de succès : le numéro de dossard du nouveau compte (null si illisible). */
+/** Longueur du code reçu par e-mail : réglage Supabase « Email OTP length » (8). */
+export const LONGUEUR_CODE = 8;
+
+/** Valide le code à 8 chiffres reçu par e-mail. En cas de succès : le numéro de dossard du nouveau compte (null si illisible). */
 export async function verifierCode(email: string, code: string): Promise<{ ok: true; numero: number | null } | { ok: false; message: string }> {
   const adresse = String(email || '').trim();
   const jeton = String(code || '').replace(/\D/g, '');
-  if (jeton.length !== 6) return { ok: false, message: 'Le code a 6 chiffres.' };
+  if (jeton.length !== LONGUEUR_CODE) return { ok: false, message: `Le code a ${LONGUEUR_CODE} chiffres.` };
   retenir = true; // la session va apparaître : on garde l'Accueil caché jusqu'à « Commencer »
   sessionRetenue = null;
   const { data, error } = await sb.auth.verifyOtp({ email: adresse, token: jeton, type: 'signup' });
@@ -105,7 +108,7 @@ export async function verifierCode(email: string, code: string): Promise<{ ok: t
     retenir = false;
     if (error?.status === 429) return { ok: false, message: 'Trop de tentatives. Réessaie dans quelques minutes.' };
     if (error && error.status !== 400 && error.status !== 403 && error.status !== 422) return { ok: false, message: 'Vérification impossible pour le moment. Vérifie ta connexion internet.' };
-    return { ok: false, message: 'Code incorrect ou expiré. Vérifie les 6 chiffres, ou demande un nouveau code.' };
+    return { ok: false, message: 'Code incorrect ou expiré. Vérifie les 8 chiffres, ou demande un nouveau code.' };
   }
   sessionRetenue = data.session;
   let numero: number | null = null;

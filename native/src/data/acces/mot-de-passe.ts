@@ -1,7 +1,8 @@
 // Les règles du mot de passe à la création d'un compte (affichées en direct pendant la saisie).
 // Elles sont vérifiées ici (côté app) ; Supabase applique aussi sa propre longueur minimale.
 
-export const LONGUEUR_MIN = 8;
+// Le serveur Supabase refuse en dessous de 10 caractères (Authentication > Sign In / Providers > Email > Minimum password length).
+export const LONGUEUR_MIN = 10;
 
 export interface RegleMotDePasse {
   id: 'longueur' | 'lettre-chiffre' | 'different-email';
@@ -44,7 +45,7 @@ export function evaluerMotDePasse(motDePasse: string, email = ''): EvaluationMot
   if (mdp.length > 0) {
     const ok = regles.filter((r) => r.ok).length; // 0 à 3
     force = Math.max(1, ok) as 1 | 2 | 3;
-    if (valide && mdp.length >= 12 && /[^\p{L}\d]/u.test(mdp)) force = 4; // long, avec un symbole
+    if (valide && mdp.length >= 14 && /[^\p{L}\d]/u.test(mdp)) force = 4; // long, avec un symbole
     if (!valide) force = Math.min(force, 2) as 1 | 2;
   }
   return { regles, valide, force };
