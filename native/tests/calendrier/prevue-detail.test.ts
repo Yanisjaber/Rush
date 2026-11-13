@@ -13,9 +13,9 @@ test('chiffresPrevue : une séance donne sa durée, sa charge, sa distance et so
   assert.ok(r.ok);
   if (!r.ok) return;
   const c = chiffresPrevue(prevueDepuisLigne(id, r.ligne));
-  assert.deepEqual(libelles(c), ['Durée', 'Charge', 'Distance', 'Dénivelé +', 'Effort estimé', 'Allure prévue']);
+  assert.deepEqual(libelles(c), ['Durée', 'Distance', 'Dénivelé +', 'Charge', 'Effort estimé', 'Allure prévue', 'Vitesse moy.']);
   assert.equal(c[0].valeur, '1h15');
-  assert.deepEqual([c[2].valeur, c[2].unite], ['13,5', 'km']);
+  assert.deepEqual([c[1].valeur, c[1].unite], ['13,5', 'km']);
 });
 
 test('chiffresPrevue : seuls les chiffres renseignés sont montrés, la natation est en mètres', () => {

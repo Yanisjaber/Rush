@@ -21,7 +21,7 @@ export function useReferences(): Reference {
       if (!r.data) return;
       // L'allure de référence (100 % des blocs en allure) est celle de la vitesse seuil du profil : 11,5 km/h donne 5'13" au km. Sans vitesse seuil, rien : l'écran ne doit pas inventer 4'00".
       const seuilKmh = Number((r.data.extras as Record<string, unknown> | null | undefined)?.threshold_speed);
-      const lues = { ftp: r.data.ftp ?? null, hrMax: r.data.hr_max ?? null, allureBase: seuilKmh > 0 ? 3600 / seuilKmh : null };
+      const lues = { ftp: r.data.ftp ?? null, hrMax: r.data.hr_max ?? null, allureBase: seuilKmh > 0 ? 3600 / seuilKmh : null, poidsKg: Number(r.data.weight) > 0 ? Number(r.data.weight) : null };
       memoire.set(userId, lues);
       if (!annule) setRef(lues);
     });

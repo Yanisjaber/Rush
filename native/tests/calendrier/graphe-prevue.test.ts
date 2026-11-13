@@ -130,3 +130,14 @@ test('minutesParZone : le temps de chaque zone, dont le total est la durée de l
   assert.ok(Math.abs(m.reduce((t, v) => t + v, 0) - grapheDeBlocs(course, ref, "Run")!.total) < 1e-9);
   assert.deepEqual(minutesParZone([], ref, 'Run'), []);
 });
+
+test('estimationDeBlocs : extrêmes, temps d\'effort et de récupération d\'une séance de course', async () => {
+  const { estimationDeBlocs } = await import('../../src/data/calendrier/structure.ts');
+  const e = estimationDeBlocs(course, ref, 'Run')!;
+  assert.ok(e.allureRapide! < e.allureLente!);
+  assert.equal(e.efforts, 3);
+  assert.ok(Math.abs(e.minEffort - 13.8) < 0.01);
+  assert.equal(e.minRecup, 6);
+  assert.ok(e.kmEffort! > 2);
+  assert.equal(estimationDeBlocs([], ref, 'Run'), null);
+});

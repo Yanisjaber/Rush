@@ -139,6 +139,8 @@ export interface Reference {
   ftp?: number | null;
   hrMax?: number | null;
   allureBase?: number | null;
+  /** Le poids (kg) du profil : pour estimer les calories d'une course. */
+  poidsKg?: number | null;
 }
 
 const estNage = (sport: string) => ['Swim', 'OpenWaterSwim'].includes(sport);
@@ -266,3 +268,71 @@ export function texteDuree(min: number): string {
 
 /** La durée totale d'une structure, en minutes. */
 export const dureeTotale = (blocs: Bloc[]): number => tousSegments(blocs).reduce((t, { seg }) => t + seg.min, 0);
+
+/** Tout ce qu'on peut estimer d'une séance à partir de ses blocs, au-delà du résumé : extrêmes (allure, vitesse, puissance, cardio), puissance normalisée, temps d'effort et de récupération. */
+export interface EstimationBlocs {
+  /** Allure la plus rapide et la plus lente (secondes par km, par 100 m en natation), null sans bloc en allure. */
+  allureRapide: number | null;
+  allureLente: number | null;
+  /** Puissance la plus haute demandée (W) et puissance normalisée estimée (W), null sans watts. */
+  wattsMax: number | null;
+  wattsNormalisee: number | null;
+  /** Cardio le plus haut demandé (bpm), null sans cardio. */
+  bpmMax: number | null;
+  /** Minutes en effort (travail des intervalles et blocs continus) et en récupération (entre les efforts). */
+  minEffort: number;
+  minRecup: number;
+  /** Nombre d'efforts (répétitions des intervalles) et distance courue dans ces efforts (km). */
+  efforts: number;
+  kmEffort: number | null;
+}
+
+export function estimationDeBlocs(blocs: Bloc[], ref: Reference = {}, sport = 'Run'): EstimationBlocs | null {
+  if (!blocs.length) return null;
+  const { ftp, hrMax } = valeursRef(ref, sport);
+  let rapide = Infinity;
+  let lente = 0;
+  let wMax = 0;
+  let bMax = 0;
+  let np4 = 0;
+  let minW = 0;
+  let minEffort = 0;
+  let minRecup = 0;
+  let efforts = 0;
+  let kmEffort = 0;
+  for (const b of blocs) {
+    if (b.type === 'interval') efforts += Math.max(1, b.reps || 1);
+    else if (b.type === 'steady') efforts += 1;
+    for (const { seg, role } of segmentsDuBloc(b)) {
+      const f = milieu(seg) / 100;
+      const effort = role === 'travail' && (b.type === 'interval' || b.type === 'steady');
+      if (effort) minEffort += seg.min;
+      else if (role === 'recup') minRecup += seg.min;
+      const haut = Math.max(seg.int, seg.intHi ?? seg.int) / 100;
+      if (b.metric === 'pace') {
+        const v = valeurSegment(seg, 'pace', ref, sport);
+        rapide = Math.min(rapide, v);
+        lente = Math.max(lente, v);
+        if (effort) kmEffort += distanceSegment(seg, 'pace', ref, sport) ?? 0;
+      } else if (b.metric === 'power') {
+        wMax = Math.max(wMax, Math.round(ftp * haut));
+        np4 += seg.min * Math.pow(f * ftp, 4);
+        minW += seg.min;
+      } else if (b.metric === 'hr') {
+        bMax = Math.max(bMax, Math.round(hrMax * haut));
+      }
+    }
+  }
+  const nage = estNage(sport);
+  return {
+    allureRapide: Number.isFinite(rapide) ? rapide : null,
+    allureLente: lente > 0 ? lente : null,
+    wattsMax: wMax > 0 ? wMax : null,
+    wattsNormalisee: minW > 0 ? Math.round(Math.pow(np4 / minW, 0.25)) : null,
+    bpmMax: bMax > 0 ? bMax : null,
+    minEffort: Math.round(minEffort * 10) / 10,
+    minRecup: Math.round(minRecup * 10) / 10,
+    efforts,
+    kmEffort: !nage && kmEffort > 0 ? Math.round(kmEffort * 100) / 100 : null,
+  };
+}
