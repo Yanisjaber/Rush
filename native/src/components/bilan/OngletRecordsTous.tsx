@@ -27,6 +27,9 @@ interface Ligne {
   cle: string;
   titre: string;
   sous: string;
+  /** Le nom de la séance : seul à être coupé par « … » quand il est long ; la date, elle, reste toujours visible. */
+  nom?: string;
+  date?: string;
   valeur: string;
   /** Le sport brut de la séance, pour son logo. */
   sport?: string;
@@ -61,6 +64,8 @@ export function OngletRecordsTous({ portee, toutes, annee, maintenant, onOuvrir 
         cle,
         titre,
         sous: [e.nom ? e.nom : '', dateCourte(e.iso)].filter(Boolean).join(' · '),
+        nom: e.nom || undefined,
+        date: dateCourte(e.iso),
         valeur: ecrire(e.valeur, unite),
         sport: e.sport ?? e.famille,
         id: e.id,
@@ -105,9 +110,20 @@ export function OngletRecordsTous({ portee, toutes, annee, maintenant, onOuvrir 
                   </Text>
                   {l.sport ? <IconeSport sport={l.sport} taille={16} /> : null}
                 </View>
-                <Text numberOfLines={2} style={[typo.petit, { color: p.texteMuet }]}>
-                  {l.sous}
-                </Text>
+                {l.nom && l.date ? (
+                  <View style={styles.sousLigne}>
+                    <Text numberOfLines={1} style={[typo.petit, { color: p.texteMuet, flexShrink: 1 }]}>
+                      {l.nom}
+                    </Text>
+                    <Text numberOfLines={1} style={[typo.petit, { color: p.texteMuet, flexShrink: 0 }]}>
+                      · {l.date}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text numberOfLines={1} style={[typo.petit, { color: p.texteMuet }]}>
+                    {l.sous}
+                  </Text>
+                )}
               </View>
               <Text style={[styles.valeur, { color: p.texte }]}>{l.valeur}</Text>
             </>
@@ -142,5 +158,6 @@ const styles = StyleSheet.create({
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56, paddingVertical: 8 },
   centre: { flex: 1 },
   titre: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sousLigne: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   valeur: { fontFamily: police.titre700, fontSize: 17, fontVariant: ['tabular-nums'] },
 });
