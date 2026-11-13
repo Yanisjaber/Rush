@@ -17,17 +17,17 @@ Chaque tâche porte une étiquette : `**importance/10 · durée en jours**`.
 
 Mise à jour : **13 novembre 2026**. Rythme supposé : 5 jours de travail par semaine.
 
-- **Version de sortie** (tâches ≥ 7/10) : **63,7 jours** restants (9,6 j déjà faits).
-- **Sortie estimée : 11 février 2027** si tout se passe bien.
-- **Fourchette prudente : 10 avril 2027** (durées ×1.5 + 14 jours pour Apple, les accès API, le domaine…).
-- Le reste (tâches < 7/10) : 59,4 jours, à faire après la sortie ou si on a de la marge. « Après la sortie » : 16 jours.
-- Tâches : 70 restantes, 12 faites.
+- **Version de sortie** (tâches ≥ 7/10) : **68,7 jours** restants (9,6 j déjà faits).
+- **Sortie estimée : 18 février 2027** si tout se passe bien.
+- **Fourchette prudente : 21 avril 2027** (durées ×1.5 + 14 jours pour Apple, les accès API, le domaine…).
+- Le reste (tâches < 7/10) : 63,4 jours, à faire après la sortie ou si on a de la marge. « Après la sortie » : 16 jours.
+- Tâches : 74 restantes, 12 faites.
 
 Où part le temps de la version de sortie :
 
 | Thème | Jours restants (≥ 7/10) |
 |---|---|
-| 6. Écran d'une sortie | 12,7 j |
+| 6. Écran d'une sortie | 17,7 j |
 | 4. Accueil et widgets | 11 j |
 | 8. Profil, Paramètres et Santé | 11 j |
 | 9. Sources d'activités | 8 j |
@@ -42,7 +42,7 @@ Historique (une ligne par recalcul) :
 
 | Date | Sortie : jours restants | Tout : jours restants | Sortie estimée | Fourchette prudente |
 |---|---|---|---|---|
-| 2026-11-13 | 63,7 j | 123,1 j | 11 février 2027 | 10 avril 2027 |
+| 2026-11-13 | 68,7 j | 132,1 j | 18 février 2027 | 21 avril 2027 |
 <!-- ESTIMATION:FIN -->
 
 ## 1. Publication et légal
@@ -104,13 +104,17 @@ Historique (une ligne par recalcul) :
 ## 6. Écran d'une sortie
 
 - [x] **9/10 · 0,5 j** Écrans de séance : grille type × sport relevée (`docs/GRILLE_SEANCES.md`, 14 nov.)
+- [ ] **8/10 · 2,5 j** Séance prévue · Course, vélo, natation : à refaire (les sports principaux) ; 8 maquettes
+- [ ] **8/10 · 2,5 j** Compétition · Course, vélo, natation : à refaire ; 8 maquettes
 - [ ] **8/10 · 2,5 j** Séance réalisée · Triathlon et duathlon : afficher les étapes (nage, vélo, course) et les transitions ; 8 maquettes
 - [ ] **8/10 · 2,5 j** Compétition · Triathlon : étapes, transitions, objectifs par étape (rejoint « Compétition : course par étapes et segments du triathlon » du Calendrier) ; 8 maquettes
 - [ ] **7/10 · 2,5 j** Séance réalisée · Muscu : exercices, séries, charges (le carnet de force existe, rien à l'écran) ; 8 maquettes
-- [ ] **7/10 · 2,5 j** Séance réalisée · Hyrox : les 16 segments (les données existent en base, l'app ne les lit pas) ; 8 maquettes
 - [ ] **7/10 · 2,5 j** Séance prévue · Muscu : le programme (exercices, séries) ; peut fusionner avec la muscu réalisée ; 8 maquettes
+- [ ] **7/10 · 2,5 j** Séance réalisée · Hyrox : les 16 segments (les données existent en base, l'app ne les lit pas) ; 8 maquettes
 - [ ] **6/10 · 1,5 j** Séance réalisée · Natation : longueurs, allure au 100 m, pas seulement une version générique ; 8 maquettes
+- [ ] **6/10 · 2 j** Séance prévue · Triathlon : structure par discipline ; 8 maquettes
 - [ ] **5/10 · 1,5 j** Séance prévue · Hyrox : structure par segment ; 8 maquettes
+- [ ] **5/10 · 2 j** Compétition · Hyrox : lien avec l'objectif et les 16 segments ; 8 maquettes
 - [ ] **7/10 · 0,2 j** Séance prévue : remettre le bouton Supprimer
 - [ ] **4/10 · 2 j** Pouvoir bouger la trace de la sortie
 

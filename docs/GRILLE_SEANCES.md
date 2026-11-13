@@ -9,13 +9,15 @@ Légende : **Complet** = écran pensé pour ce sport. **Générique** = l'écran
 - **Séance prévue et compétition** : un seul écran (`prevue.tsx`) : carte du GPX ou dessin du sport, 4 chiffres, blocs de la séance. Les blocs (échauffement, intervalles…) n'existent que pour le **vélo, la course et la natation**. La compétition a un compte à rebours J−n et ses 4 chiffres (cible, distance, allure, D+).
 - **Formulaires** : séance prévue, compétition, activité faite à la main, import de fichier. Le triathlon et le duathlon ont un format (XS à XL) dans le formulaire de compétition, rien d'autre de propre.
 
-## La grille
+## La grille (corrigée avec Yanis, 14 nov.)
+
+Seule la **séance réalisée en course et en vélo** est terminée. Tout le reste est à faire ou à refaire, y compris la prévue et la compétition en course, vélo et natation (elles existent, mais ne sont pas jugées finies).
 
 | | Course | Vélo | Natation | Muscu | Hyrox | Triathlon / Duathlon |
 |---|---|---|---|---|---|---|
-| **Réalisée** | Complet : 4 pages, analyse du coach, records | Complet : 4 pages, analyse du coach, records | Générique : 3 pages, pas d'analyse ni de records ; tours = longueurs | **Manque l'essentiel** : dossard, durée, cœur, charge. Aucun exercice, aucune série | **Manque l'essentiel** : durée, distance, allure, cœur. Les 16 segments (8 courses et 8 stations) ne sont pas affichés | **Manque l'essentiel** : une sortie comme une autre, sans ses étapes (nage, vélo, course) ni ses transitions |
-| **Prévue** | Complet : blocs, profil des blocs, GPX | Complet : blocs, profil des blocs, GPX | Complet : blocs, profil des blocs | **Manque** : seulement des chiffres, pas d'exercices ni de séries prévus | **Manque** : seulement des chiffres, pas de structure par segment | **Manque** : pas de structure par discipline |
-| **Compétition** | Générique : cible, distance, allure, D+, J−n, GPX | Générique : idem | Générique : idem | Sans objet | Générique : sans lien avec l'objectif Hyrox ni ses 16 segments | **Manque** : le format (XS à XL) se saisit mais l'écran ne montre ni étapes, ni transitions, ni objectifs par étape |
+| **Réalisée** | **Terminé** | **Terminé** | À faire : version générique (3 pages, tours = longueurs) | À faire : aucun exercice ni série affichés | À faire : les 16 segments non affichés | À faire : une sortie comme une autre, sans ses étapes ni transitions |
+| **Prévue** | À refaire : existe (blocs, profil, GPX) | À refaire : idem | À refaire : idem | À faire : seulement des chiffres | À faire : seulement des chiffres | À faire : pas de structure par discipline |
+| **Compétition** | À refaire : version générique | À refaire : idem | À refaire : idem | Sans objet | À faire : sans lien avec l'objectif Hyrox | À faire : le format XS à XL se saisit, rien d'autre |
 
 Autres cas déjà couverts : ski (journal des descentes), activités sans GPS (dossard du sport).
 
@@ -25,12 +27,16 @@ Chacun commence par **8 maquettes** (ta règle), puis le code. Durées en jours,
 
 | # | Écran | Pourquoi | Importance | Durée |
 |---|---|---|---|---|
-| 1 | Réalisée · Triathlon et duathlon : les étapes | Le plus gros trou : une séance de triathlon est 3 sports | 8/10 | 2,5 |
-| 2 | Compétition · Triathlon : étapes, transitions, objectifs par étape | Lié au précédent (déjà dans A_FAIRE, Calendrier) | 8/10 | 2,5 |
-| 3 | Réalisée · Muscu : exercices, séries, charges | Les données existent (carnet de force), rien à l'écran | 7/10 | 2,5 |
-| 4 | Réalisée · Hyrox : les 16 segments | Les données existent en base, l'app ne les lit pas | 7/10 | 2,5 |
-| 5 | Prévue · Muscu : le programme (exercices, séries) | Les programmes existent déjà en base | 7/10 | 2,5 |
-| 6 | Réalisée · Natation : longueurs, allure au 100 m | Écran adapté plutôt que refait | 6/10 | 1,5 |
-| 7 | Prévue · Hyrox : structure par segment | Après le 4 | 5/10 | 1,5 |
+| 1 | Prévue · Course, vélo, natation | Les sports principaux, l'écran existe mais est à refaire | 8/10 | 2,5 |
+| 2 | Compétition · Course, vélo, natation | Idem | 8/10 | 2,5 |
+| 3 | Réalisée · Triathlon et duathlon : les étapes | Une séance de triathlon, c'est trois sports | 8/10 | 2,5 |
+| 4 | Compétition · Triathlon : étapes, transitions, objectifs | Lié au précédent (déjà dans A_FAIRE, Calendrier) | 8/10 | 2,5 |
+| 5 | Réalisée · Muscu : exercices, séries, charges | Les données existent (carnet de force), rien à l'écran | 7/10 | 2,5 |
+| 6 | Prévue · Muscu : le programme | Les programmes existent déjà en base | 7/10 | 2,5 |
+| 7 | Réalisée · Hyrox : les 16 segments | Les données existent en base, l'app ne les lit pas | 7/10 | 2,5 |
+| 8 | Réalisée · Natation : longueurs, allure au 100 m | Écran adapté plutôt que refait | 6/10 | 1,5 |
+| 9 | Prévue · Triathlon : structure par discipline | Après le 3 | 6/10 | 2 |
+| 10 | Prévue · Hyrox : structure par segment | Après le 7 | 5/10 | 1,5 |
+| 11 | Compétition · Hyrox : lien avec l'objectif et les 16 segments | Après le 7 | 5/10 | 2 |
 
-Reste à décider avec toi : l'ordre, et si certains écrans fusionnent (par exemple 3 et 5 : un seul écran muscu, prévu ou réalisé).
+Pistes pour gagner du temps : fusionner 5 et 6 (un seul écran muscu, prévu ou réalisé), et 3, 4 et 9 (un seul écran triathlon avec ses trois états).
