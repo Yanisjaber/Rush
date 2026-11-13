@@ -122,3 +122,11 @@ test('graduations : une seule valeur ne casse pas l\'axe', () => {
   assert.ok(gr.reperes.length >= 2);
   assert.ok(gr.sommet > gr.fond);
 });
+
+test('minutesParZone : le temps de chaque zone, dont le total est la durée de la séance', async () => {
+  const { minutesParZone } = await import('../../src/data/calendrier/graphe-prevue.ts');
+  const m = minutesParZone(course, ref, 'Run');
+  assert.equal(m.length, 7);
+  assert.ok(Math.abs(m.reduce((t, v) => t + v, 0) - grapheDeBlocs(course, ref, "Run")!.total) < 1e-9);
+  assert.deepEqual(minutesParZone([], ref, 'Run'), []);
+});

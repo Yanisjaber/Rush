@@ -171,3 +171,12 @@ export function detailIntervalles(blocs: Bloc[], ref: Reference = {}, sport = 'R
     return { genre: 'ligne', ligne: travail };
   });
 }
+
+/** Le temps passé dans chaque zone (minutes, de Z1 à Z7), pour la page 2 d'une séance prévue. Vide sans blocs. */
+export function minutesParZone(blocs: Bloc[], reference: Reference, sport: string): number[] {
+  const g = grapheDeBlocs(blocs, reference, sport);
+  if (!g) return [];
+  const minutes = [0, 0, 0, 0, 0, 0, 0];
+  for (const s of g.segments) minutes[Math.min(s.zone, 6)] += s.fin - s.debut;
+  return minutes;
+}

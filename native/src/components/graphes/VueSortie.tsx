@@ -53,6 +53,8 @@ interface Props {
   /** Les tours, sous les répartitions de la page 3. */
   tours?: ReactNode;
   graphesHaut?: (hauteur: number, onGlisse: (actif: boolean) => void) => ReactNode;
+  /** Une séance prévue avec blocs et GPX : la carte et le profil du parcours ont leur propre page (après les infos), la page 1 garde le graphique des blocs. */
+  carteEnPage?: ParcoursSortie | null;
   /** Faux quand il n'y a ni courbes, ni zones, ni tours : la page 3 n'existe pas (sinon elle serait vide). */
   avecPageCourbes?: boolean;
   /** Le nom de la dernière page dans les pastilles (« Comparaison et coach » par défaut ; « Notes » pour une séance prévue). */
@@ -63,9 +65,9 @@ interface Props {
 const HAUTEUR_PROFIL = 166; // la hauteur du profil (courbe et repères de distance)
 const HAUT_PASTILLES = 36; // la place gardée en bas des pages pour que les pastilles volantes ne cachent rien
 
-export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, chiffres, heros, pageDetails, pageCoach, graphesHaut, repartitions, tours, avecPageCourbes = true, nomPageCoach = 'Comparaison et coach', onModifier }: Props) {
+export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre, date, nomSport, chiffres, heros, pageDetails, pageCoach, graphesHaut, repartitions, tours, avecPageCourbes = true, carteEnPage = null, nomPageCoach = 'Comparaison et coach', onModifier }: Props) {
   const p = usePalette();
-  const NOMS_PAGES = ['Carte et profil', 'Toutes les infos', ...(avecPageCourbes ? ['Courbes'] : []), ...(pageCoach ? [nomPageCoach] : [])];
+  const NOMS_PAGES = ['Carte et profil', 'Toutes les infos', ...(carteEnPage ? ['Carte du parcours'] : []), ...(avecPageCourbes ? ['Courbes'] : []), ...(pageCoach ? [nomPageCoach] : [])];
   const { top: haut, bottom: bas } = useSafeAreaInsets();
   const { width: largeur, height: hauteur } = useWindowDimensions();
   const avecCarte = !!parcours?.region && parcours.trace.length > 1;
@@ -74,6 +76,7 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
   const [feuille, setFeuille] = useState(0);
   const [fraction, setFraction] = useState<number | null>(null);
   const [index, setIndex] = useState(0);
+  const [fractionCarte, setFractionCarte] = useState<number | null>(null); // le curseur de la page carte (séance prévue)
   const [surCourbe, setSurCourbe] = useState(false); // le doigt est sur la courbe : on suspend le balayage des pages, sinon il emporterait la page avec lui
   const defilement = useRef<ComponentRef<typeof ScrollView>>(null);
   // Les pastilles volantes : visibles à l'arrivée, elles s'effacent dès qu'on touche une page et reviennent quand la page glisse (balayage ou toucher d'une pastille)
@@ -199,6 +202,17 @@ export function VueSortie({ parcours, chargementCarte, km, couleur, sport, titre
           </ScrollView>
           {bandeEntete}
         </View>
+
+        {carteEnPage && carteEnPage.region ? (
+          <View style={{ width: largeur, height: hauteur, backgroundColor: p.fond }}>
+            <CarteTrace plein trace={carteEnPage.trace} region={carteEnPage.region} couleur={couleur} curseur={fractionCarte != null ? pointAuFraction(carteEnPage.trace, fractionCarte) : null} marges={{ haut: haut + HAUT_ENTETE, bas: HAUTEUR_PROFIL + bas + HAUT_PASTILLES + espace.e4 }} />
+            {carteEnPage.altitudeMin != null && carteEnPage.altitudeMax != null && carteEnPage.profil.length > 1 ? (
+              <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: espace.e4, paddingBottom: bas + HAUT_PASTILLES, height: HAUTEUR_PROFIL + bas + HAUT_PASTILLES, backgroundColor: p.fond }}>
+                <ProfilCurseur profil={carteEnPage.profil} min={carteEnPage.altitudeMin} max={carteEnPage.altitudeMax} km={km != null && km > 0 ? km : longueurKm(carteEnPage.trace)} couleur={couleur} hauteur={140} onChange={setFractionCarte} onGlisse={setSurCourbe} />
+              </View>
+            ) : null}
+          </View>
+        ) : null}
 
         {avecPageCourbes ? (
           <>

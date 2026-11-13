@@ -5,6 +5,8 @@ import { Bouton } from '@/components/ui/Bouton';
 import { VueSortie } from '@/components/graphes/VueSortie';
 import { ProfilSeance } from '@/components/graphes/ProfilSeance';
 import { GrapheSeancePrevue } from '@/components/graphes/GrapheSeancePrevue';
+import { TempsParZone } from '@/components/graphes/TempsParZone';
+import { minutesParZone } from '@/data/calendrier/graphe-prevue';
 import { StatCle } from '@/components/ui/StatCle';
 import { apercuDeGpx } from '@/data/calendrier/apercu-import';
 import { blocsDePrevue } from '@/data/calendrier/ajouts';
@@ -24,7 +26,7 @@ import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Une séance prévue ou une compétition, en lecture, avec le même modèle que la sortie réalisée (VueSortie) : page 1 = la carte et le profil du GPX, ou, sans GPX, le dessin du sport en fond
-// et le profil des blocs sous les chiffres ; page 2 = tous les chiffres et les blocs ; page « Notes » (seulement s'il y a des notes) = notes, Modifier et Supprimer.
+// et le profil des blocs sous les chiffres ; page 2 = le temps par zone et les autres chiffres ; page 3 = la carte du GPX s'il y a aussi des blocs ; page « Notes » (seulement s'il y a des notes) = notes, Modifier et Supprimer.
 // Sans note, Modifier et Supprimer finissent la page 2. Le crayon du haut ouvre aussi le formulaire. On y arrive depuis le détail d'un jour du calendrier.
 export default function Prevue() {
   const p = usePalette();
@@ -102,8 +104,12 @@ export default function Prevue() {
   const { ordre, repli } = ordrePrevue(competition);
   const quatre = choisirChiffres(chiffres, ordre, repli);
   // Sans parcours, mais avec des blocs : le graphique de la séance (axes, cible de chaque bloc) et le tableau de ses intervalles sont le héros de la page 1, à la place de la silhouette du sport
-  const profilEnGrand = !parcours && blocs.length > 0;
+  // Avec des blocs, le graphique est toujours le héros de la page 1 ; le parcours GPX a alors sa page (la 3)
+  const profilEnGrand = blocs.length > 0;
+  const carteEnPage = !!parcours && profilEnGrand;
+  const minutes = minutesParZone(blocs, reference, prevue.sport);
   const dejaVus = quatre.map((c) => c.cle);
+  const autres = chiffres.filter((c) => !dejaVus.includes(c.cle));
   const actions = (
     <View style={{ gap: espace.e2 }}>
       {erreurSuppression ? (
@@ -139,7 +145,8 @@ export default function Prevue() {
       {/* Retour par balayage depuis le bord gauche seulement : glisser sur la courbe du profil ne ferme pas l'écran */}
       <Stack.Screen options={{ title: titreEntete, headerShown: false, fullScreenGestureEnabled: false }} />
       <VueSortie
-        parcours={parcours ? { ...parcours } : null}
+        parcours={parcours && !carteEnPage ? { ...parcours } : null}
+        carteEnPage={carteEnPage && parcours ? { ...parcours } : null}
         km={prevue.km ?? null}
         couleur={couleur}
         sport={prevue.sport}
@@ -165,45 +172,20 @@ export default function Prevue() {
         }
         pageDetails={() => (
           <>
-            {chiffres.some((c) => !dejaVus.includes(c.cle)) ? (
-              <View style={[styles.grille, { backgroundColor: p.surface }]}>
-                {chiffres.filter((c) => !dejaVus.includes(c.cle)).map((c) => (
-                  <View key={c.cle} style={styles.case}>
-                    <StatCle etiquette={c.libelle} valeur={c.valeur} unite={c.unite} petit />
+            <TempsParZone minutes={minutes} />
+            {autres.length ? (
+              <View style={{ gap: espace.e2 }}>
+                {Array.from({ length: Math.ceil(autres.length / 3) }, (_, r) => (
+                  <View key={r} style={styles.tuiles}>
+                    {[0, 1, 2].map((k) => {
+                      const c = autres[r * 3 + k];
+                      return c ? <TuileChiffre key={c.cle} etiquette={c.libelle.replace(/^Allure (cible|prévue)$/, 'Allure').replace('Dénivelé +', 'D+').replace('Temps cible', 'Objectif').replace('Charge estimée', 'Charge').replace('Effort estimé', 'Effort').replace(' estimé', '').replace(' estimée', '')} valeur={c.valeur} unite={c.unite} /> : <View key={k} style={{ flex: 1 }} />;
+                    })}
                   </View>
                 ))}
               </View>
             ) : null}
-            {blocs.length ? (
-              <View style={[styles.blocs, { backgroundColor: p.surface }]}>
-                <Text style={[typo.micro, { color: p.texteDoux }]}>{`BLOCS (${blocs.length})`}</Text>
-                <ProfilSeance blocs={blocs} hauteur={56} />
-                {blocs.map((b, i) => {
-                  const z = indiceZone(milieu(b.work), b.metric);
-                  return (
-                    <View
-                      key={i}
-                      accessible
-                      accessibilityLabel={`${nomDuBloc(b, NOM_TYPE)}, ${texteDuree(dureeBloc(b))}`}
-                      style={[styles.ligneBloc, i > 0 && { borderTopColor: p.trait, borderTopWidth: StyleSheet.hairlineWidth }]}
-                    >
-                      <View style={[styles.barreZone, { backgroundColor: COULEURS_ZONE[Math.min(z, COULEURS_ZONE.length - 1)] }]} />
-                      <View style={{ flex: 1 }}>
-                        <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte }]}>
-                          {b.type === 'interval' ? `${nomDuBloc(b, NOM_TYPE)} · ${b.reps} fois` : nomDuBloc(b, NOM_TYPE)}
-                        </Text>
-                        <Text numberOfLines={2} style={[typo.petit, { color: p.texteDoux }]}>
-                          {texteDuree(b.work.min)} {texteCible(b.work, b.metric, reference, prevue.sport)}
-                          {b.type === 'interval' && b.rec ? ` · récup ${texteDuree(b.rec.min)}` : ''}
-                        </Text>
-                      </View>
-                      <Text style={[typo.corpsFort, { color: p.texte }]}>{texteDuree(dureeBloc(b))}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-            ) : null}
-            {!chiffres.some((c) => !dejaVus.includes(c.cle)) && !blocs.length ? <Text style={[typo.corps, { color: p.texteMuet }]}>Rien d'autre de renseigné sur cette séance.</Text> : null}
+            {!autres.length && !minutes.length ? <Text style={[typo.corps, { color: p.texteMuet }]}>Rien d'autre de renseigné sur cette séance.</Text> : null}
             {pageNotes ? null : actions}
           </>
         )}
