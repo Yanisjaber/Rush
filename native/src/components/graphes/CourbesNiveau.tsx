@@ -43,10 +43,10 @@ export function CourbesNiveau({ trimestres, courbes, couleurs, selection, onSele
   const x = (i: number): number => (n > 1 ? G + i * pas : (G + LARGEUR - D) / 2);
   const y = (note: number): number => H + ((100 - note) / 100) * (HAUTEUR - H - B);
   const rang = new Map(trimestres.map((t, i) => [t, i]));
-  // Les années écrites sous la courbe : à chaque T1, et au premier trimestre affiché (sauf quand le T1 suivant est à moins de 2 trimestres : les deux années s'écriraient l'une sur l'autre)
+  // Les années écrites sous la courbe : à chaque T1, et au premier trimestre affiché (sauf quand le T1 suivant est à moins de 34 pt : les deux années s'écriraient l'une sur l'autre)
   const premiersT1 = trimestres.map((t, i) => ({ t, i })).filter(({ t }) => t.endsWith('-T1'));
   const premierT1 = premiersT1[0]?.i ?? Infinity;
-  const annees = trimestres.map((t, i) => ({ t, i })).filter(({ t, i }) => (i === 0 && (t.endsWith('-T1') || premierT1 >= 2)) || (i > 0 && t.endsWith('-T1')));
+  const annees = trimestres.map((t, i) => ({ t, i })).filter(({ t, i }) => (i === 0 && (t.endsWith('-T1') || premierT1 * pas >= 34)) || (i > 0 && t.endsWith('-T1')));
   const indexDe = (xTactile: number, largeur: number): number | null => {
     if (n === 0 || largeur <= 0) return null;
     const xSvg = (xTactile / largeur) * LARGEUR;
