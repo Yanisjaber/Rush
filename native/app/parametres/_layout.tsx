@@ -8,7 +8,8 @@ export default function ParametresLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: p.fond },
+        headerStyle: { backgroundColor: 'transparent' },
+        headerTransparent: true, // le dégradé du fond passe derrière l'en-tête (pas de bandeau noir)
         headerTintColor: p.texte,
         headerTitleStyle: { fontFamily: police.titre700 },
         headerBackButtonDisplayMode: 'minimal',
@@ -24,7 +25,7 @@ export default function ParametresLayout() {
       <Stack.Screen name="connexions" options={{ title: 'Connexions' }} />
       <Stack.Screen name="synchro" options={{ title: 'Synchro Strava' }} />
       <Stack.Screen name="compte" options={{ title: 'Mon compte' }} />
-      <Stack.Screen name="confidentialite" options={{ title: 'Confidentialité', headerTransparent: true, headerStyle: { backgroundColor: 'transparent' } }} />
+      <Stack.Screen name="confidentialite" options={{ title: 'Confidentialité' }} />
       <Stack.Screen name="widgets" options={{ title: 'Catalogue des widgets' }} />
     </Stack>
   );

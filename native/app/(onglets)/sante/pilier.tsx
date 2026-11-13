@@ -91,6 +91,7 @@ export default function Pilier() {
     <View style={{ flex: 1 }}>
       <FondDegrade />
       <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
       style={{ backgroundColor: 'transparent' }}
       contentContainerStyle={[styles.contenu, { paddingBottom: bas + BARRE_ONGLETS }]}
       refreshControl={<RefreshControl refreshing={actualisation} onRefresh={() => void Promise.all([recharger(), rechargerMetriques(), rechargerMesures()])} tintColor={p.texteDoux} />}

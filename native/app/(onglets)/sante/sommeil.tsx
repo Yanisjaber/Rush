@@ -41,6 +41,7 @@ export default function Sommeil() {
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
       <FondDegrade />
       <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={[styles.contenu, { paddingTop: espace.e3, paddingBottom: bas + BARRE_ONGLETS }]}
         refreshControl={<RefreshControl refreshing={actualisation} onRefresh={recharger} tintColor={p.texteDoux} />}
       >

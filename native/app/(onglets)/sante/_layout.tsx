@@ -8,7 +8,8 @@ export default function SanteLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: p.fond },
+        headerStyle: { backgroundColor: 'transparent' },
+        headerTransparent: true, // le dégradé du fond passe derrière l'en-tête (pas de bandeau noir)
         headerTintColor: p.texte,
         headerTitleStyle: { fontFamily: police.titre700 },
         headerBackButtonDisplayMode: 'minimal',
