@@ -26,13 +26,25 @@ import { usePalette } from '@/theme/usePalette';
 // Une séance prévue ou une compétition, en lecture, avec le même modèle que la sortie réalisée (VueSortie) : page 1 = le graphique des blocs, ou le dessin du sport en fond sans bloc
 // ; page 2 = le temps par zone, tous les chiffres et les notes ; page 3 = la carte du GPX et son profil (s'il y en a un) ;
 // Le crayon du haut ouvre le formulaire (modifier, supprimer). On y arrive depuis le détail d'un jour du calendrier.
-// Les douze tuiles de la page 2, toujours là dans cet ordre (un « - » quand la séance n'a pas la donnée) ; les autres chiffres (puissance, cardio, énergie…) suivent, seulement s'ils existent
-const TUILES_FIXES = ['duree', 'distance', 'allure', 'charge', 'effort', 'if', 'kcal', 'glucides', 'hydratation', 'dplus', 'bpm', 'watts'];
-const LIBELLE_FIXE: Record<string, string> = { duree: 'Durée', distance: 'Distance', allure: 'Allure', charge: 'Charge', effort: 'Effort', if: 'Intensité', kcal: 'Calories', glucides: 'Glucides', hydratation: 'Hydratation', dplus: 'D+', bpm: 'Cardio moy.', watts: 'Puissance moy.' };
+// Les dix tuiles de la page 2, toujours là dans cet ordre (un « - » quand la séance n'a pas la donnée) ; les autres chiffres (puissance, cardio, énergie…) suivent, seulement s'ils existent
+const TUILES_FIXES = ['duree', 'distance', 'allure', 'dplus', 'charge', 'effort', 'if', 'kcal', 'glucides', 'hydratation'];
+const LIBELLE_FIXE: Record<string, string> = { duree: 'Durée', distance: 'Distance', allure: 'Allure', charge: 'Charge', effort: 'Effort', if: 'Intensité', kcal: 'Calories', glucides: 'Glucides', hydratation: 'Hydratation', dplus: 'D+' };
 
 // Le libellé d'une tuile : « Allure prévue » → « Allure », « Vitesse prévue » → « Vitesse »…
 const libelleTuile = (l: string): string =>
   l.replace(/^Allure (cible|prévue)$/, 'Allure').replace(/^Vitesse (moy\.|prévue|cible)$/, 'Vitesse').replace('Dénivelé +', 'D+').replace('Temps cible', 'Objectif').replace('Charge estimée', 'Charge').replace('Effort estimé', 'Effort');
+
+// Les tuiles de la page 2 : pour une séance, une ligne de 4 puis des lignes de 3 (10 tuiles = 4, 3, 3, aucune seule) ; pour une compétition, des lignes de 3
+function rangeesDeTuiles<T>(liste: T[], premiereDe4: boolean): { taille: number; tuiles: T[] }[] {
+  const sortie: { taille: number; tuiles: T[] }[] = [];
+  let i = 0;
+  while (i < liste.length) {
+    const taille = i === 0 && premiereDe4 ? 4 : 3;
+    sortie.push({ taille, tuiles: liste.slice(i, i + taille) });
+    i += taille;
+  }
+  return sortie;
+}
 
 export default function Prevue() {
   const p = usePalette();
@@ -89,7 +101,7 @@ export default function Prevue() {
   // Le parcours GPX a toujours sa page (la 3, carte et profil d'altitude) ; la page 1 montre le graphique des blocs, ou la silhouette du sport sans bloc
   const profilEnGrand = blocs.length > 0;
   const minutes = minutesParZone(blocs, reference, prevue.sport);
-  // La page 2 : les douze tuiles fixes (4 lignes de 3, vide = « - »), puis les autres chiffres éventuels de la compétition
+  // La page 2 : les dix tuiles fixes (une ligne de 4, deux de 3, vide = « - »), puis les autres chiffres éventuels de la compétition
   const tuilesPage2 = competition ? chiffres : [
     ...TUILES_FIXES.map((cle) => chiffres.find((c) => c.cle === cle) ?? { cle, libelle: cle === 'allure' && !['Run', 'TrailRun', 'Walk', 'Hike', 'Swim'].includes(prevue.sport) ? 'Vitesse' : LIBELLE_FIXE[cle], valeur: '-', unite: undefined }),
   ];
@@ -127,17 +139,17 @@ export default function Prevue() {
             <TempsParZone minutes={minutes} />
             {autres.length ? (
               <View style={{ gap: espace.e2 }}>
-                {Array.from({ length: Math.ceil(tuilesPage2.length / 3) }, (_, r) => (
+                {rangeesDeTuiles(tuilesPage2, !competition).map((rangee, r) => (
                   <View key={r} style={styles.tuiles}>
-                    {[0, 1, 2].map((k) => {
-                      const c = tuilesPage2[r * 3 + k];
+                    {Array.from({ length: rangee.taille }, (_, k) => {
+                      const c = rangee.tuiles[k];
                       return c ? <TuileChiffre key={c.cle} etiquette={libelleTuile(c.libelle)} valeur={c.valeur} unite={c.unite} /> : <View key={k} style={{ flex: 1 }} />;
                     })}
                   </View>
                 ))}
               </View>
             ) : null}
-                        {notes ? (
+            {notes ? (
               <View style={[styles.notes, { backgroundColor: p.surface }]}>
                 <Text style={[typo.micro, { color: p.texteDoux }]}>NOTES</Text>
                 <Text style={[typo.corps, { color: p.texte }]}>{notes}</Text>
