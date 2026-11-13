@@ -17,11 +17,11 @@ Chaque tâche porte une étiquette : `**importance/10 · durée en jours**`.
 
 Mise à jour : **13 novembre 2026**. Rythme supposé : 5 jours de travail par semaine.
 
-- **Version de sortie** (tâches ≥ 7/10) : **67,7 jours** restants (1,6 j déjà faits).
-- **Sortie estimée : 16 février 2027** si tout se passe bien.
-- **Fourchette prudente : 18 avril 2027** (durées ×1.5 + 14 jours pour Apple, les accès API, le domaine…).
+- **Version de sortie** (tâches ≥ 7/10) : **67,2 jours** restants (2,1 j déjà faits).
+- **Sortie estimée : 15 février 2027** si tout se passe bien.
+- **Fourchette prudente : 17 avril 2027** (durées ×1.5 + 14 jours pour Apple, les accès API, le domaine…).
 - Le reste (tâches < 7/10) : 53,9 jours, à faire après la sortie ou si on a de la marge. « Après la sortie » : 16 jours.
-- Tâches : 68 restantes, 3 faites.
+- Tâches : 67 restantes, 4 faites.
 
 Où part le temps de la version de sortie :
 
@@ -35,21 +35,21 @@ Où part le temps de la version de sortie :
 | 3. Coach IA | 7,5 j |
 | 10. Qualité | 5 j |
 | 7. Bilan et zones | 4,5 j |
-| 1. Publication et légal | 2,5 j |
+| 1. Publication et légal | 2 j |
 | 5. Calendrier | 1,5 j |
 
 Historique (une ligne par recalcul) :
 
 | Date | Sortie : jours restants | Tout : jours restants | Sortie estimée | Fourchette prudente |
 |---|---|---|---|---|
-| 2026-11-13 | 67,7 j | 121,6 j | 16 février 2027 | 18 avril 2027 |
+| 2026-11-13 | 67,2 j | 121,1 j | 15 février 2027 | 17 avril 2027 |
 <!-- ESTIMATION:FIN -->
 
 ## 1. Publication et légal
 
 - [x] **10/10 · 0,5 j** Remplacer `bundleIdentifier` et `package` provisoires (`TODO.rush`) dans `native/app.json` par les vrais identifiants, avant toute publication
 - [ ] **9/10 · 1 j** Rédiger une vraie politique de confidentialité (le Coach IA lit les données de santé et d'entraînement) et y faire mener « Confidentialité ». Exigée par Apple et Google
-- [ ] **9/10 · 0,5 j** Faire un point avant de pousser : plusieurs chantiers sont mergés en local sans push (Bilan par sport, Hyrox, natation, coach, avatar…), à sauvegarder sur GitHub (mot `yallah` requis)
+- [x] **9/10 · 0,5 j** Faire un point avant de pousser : plusieurs chantiers sont mergés en local sans push (Bilan par sport, Hyrox, natation, coach, avatar…), à sauvegarder sur GitHub (mot `yallah` requis)
 - [ ] **8/10 · 0,5 j** E-mails de confirmation : avec un expéditeur Gmail ils finissent souvent en spams. Prendre un domaine à toi pour l'expéditeur (SMTP Brevo, SPF/DKIM)
 - [ ] **7/10 · 0,5 j** Suivi des plantages : savoir quand l'app plante chez un utilisateur
 
