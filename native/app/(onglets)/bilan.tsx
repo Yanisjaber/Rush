@@ -53,7 +53,7 @@ import { useRecordsVelo } from '@/hooks/useRecordsVelo';
 import { useHistoriqueProgression, useSeriesForceProgression } from '@/hooks/useHistoriqueProgression';
 import { useReferences } from '@/hooks/useReferences';
 import { useMenu } from '@/stores/menu';
-import { fenetre as fenetreNiveauMois, notesMensuelles } from '@/data/bilan/niveau-mensuel';
+import { fenetre as fenetreNiveau, notesTrimestrielles } from '@/data/bilan/niveau-trimestriel';
 import { demanderJour } from '@/stores/jour-demande';
 import { choisirMesure, useMesuresBilan } from '@/stores/mesures-bilan';
 import { usePiliersAnnuels } from '@/hooks/usePiliersAnnuels';
@@ -321,13 +321,13 @@ export default function Bilan() {
   // L'année choisie en haut ne sert que s'il y a un niveau global à lire (vélo, course, musculation ou natation) ; sinon elle reste affichée mais grisée
   const anneeInutile = onglet === 'progres' && !(niveauNatation || progres.some(({ prog }) => (prog.famille === 'velo' && niveauGlobalVelo) || (prog.famille === 'course' && niveauCourse) || (prog.famille === 'muscu' && niveauMuscu)));
 
-  // Le niveau mois par mois : les heures de chaque mois sport par sport, la note = ses heures / celles de ton meilleur mois de ce sport (data/bilan/niveau-mensuel.ts)
-  const [fenetreNiveau, setFenetreNiveau] = useState<'3ans' | 'tout'>('3ans');
+  // Le niveau trimestre par trimestre : heures, charge et records de chaque trimestre, sport par sport (data/bilan/niveau-trimestriel.ts)
+  const [periodeNiveau, setPeriodeNiveau] = useState<'3ans' | 'tout'>('3ans');
   const [selNiveau, setSelNiveau] = useState<number | null>(null);
-  const courbesNiveau = useMemo(() => (niveauOuvert ? notesMensuelles(filtrees, maintenant) : []), [niveauOuvert, filtrees, maintenant]);
-  const vueNiveau = useMemo(() => fenetreNiveauMois(courbesNiveau, fenetreNiveau === '3ans' ? 36 : null, maintenant), [courbesNiveau, fenetreNiveau, maintenant]);
+  const courbesNiveau = useMemo(() => (niveauOuvert ? notesTrimestrielles(filtrees, maintenant) : []), [niveauOuvert, filtrees, maintenant]);
+  const vueNiveau = useMemo(() => fenetreNiveau(courbesNiveau, periodeNiveau === '3ans' ? 12 : null, maintenant), [courbesNiveau, periodeNiveau, maintenant]);
   const couleursNiveau = useMemo(() => Object.fromEntries(vueNiveau.courbes.map((c) => [c.famille, couleurSport(p, c.famille)])), [vueNiveau, p]);
-  useEffect(() => setSelNiveau(null), [filtre, fenetreNiveau, onglet]);
+  useEffect(() => setSelNiveau(null), [filtre, periodeNiveau, onglet]);
 
   return (
     <View style={[styles.page, { backgroundColor: 'transparent' }]}>
@@ -724,9 +724,9 @@ export default function Bilan() {
 
             {pret && onglet === 'progres' ? (
               vueNiveau.courbes.length ? (
-                <Bloc titre="Niveau mois par mois">
+                <Bloc titre="Niveau trimestre par trimestre">
                   <Text style={[typo.petit, { color: p.texteDoux, marginBottom: espace.e3 }]}>
-                    Note du mois = la moyenne de trois pourcentages : tes heures, ta charge et les records posés ce mois-là. 100 = ton meilleur mois de chaque sport. Touche un mois pour lire le détail.
+                    Note du trimestre = la moyenne de trois pourcentages : tes heures, ta charge et les records posés pendant ces trois mois. 100 = ton meilleur trimestre de chaque sport. Touche un trimestre pour lire le détail.
                   </Text>
                   <View style={{ gap: espace.e3 }}>
                     <OngletsSegment<'3ans' | 'tout'>
@@ -735,10 +735,10 @@ export default function Bilan() {
                         { cle: '3ans', nom: '3 ans' },
                         { cle: 'tout', nom: 'Tout' },
                       ]}
-                      actuel={fenetreNiveau}
-                      onChoisir={setFenetreNiveau}
+                      actuel={periodeNiveau}
+                      onChoisir={setPeriodeNiveau}
                     />
-                    <CourbesNiveau mois={vueNiveau.mois} courbes={vueNiveau.courbes} couleurs={couleursNiveau} selection={selNiveau} onSelection={setSelNiveau} />
+                    <CourbesNiveau trimestres={vueNiveau.trimestres} courbes={vueNiveau.courbes} couleurs={couleursNiveau} selection={selNiveau} onSelection={setSelNiveau} />
                   </View>
                 </Bloc>
               ) : (
