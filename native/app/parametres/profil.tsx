@@ -1,34 +1,28 @@
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
-import { memo, useCallback, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { FeuilleAthlete, type OuvertureFeuille } from '@/components/profil/FeuilleAthlete';
-import { ModeleAthleteRealiste, type PointEcran, type ZoneAvatar } from '@/components/profil/ModeleAthleteRealiste';
-import { PointsZones } from '@/components/profil/PointsZones';
-import { FondDegrade } from '@/components/ui/FondDegrade';
-import { POINTS_MODELE } from '@/data/avatar/ancrages';
-import { zonesProfil, type OngletProfil, type ZoneProfil } from '@/data/profil/ecran-profil';
-import { bilanAthlete } from '@/data/reglages/bilan-athlete';
-import { useDonneesAccueil } from '@/hooks/useDonneesAccueil';
-import { police } from '@/theme/typo';
+import { Bouton } from '@/components/ui/Bouton';
+import { FormulaireSection } from '@/components/feuilles/FormulaireSection';
+import { PhotoProfil } from '@/components/feuilles/PhotoProfil';
+import { DetailDomaine } from '@/components/profil/DetailDomaine';
+import { ModeleAthleteRealiste, type PointEcran } from '@/components/profil/ModeleAthleteRealiste';
+import { ANCRES_DOMAINES, ANCRES_REGLE, NOM_COURT, PlancheAnatomique } from '@/components/profil/PlancheAnatomique';
+import { dateIsoLocale } from '@/data/outils/format';
+import { ageDepuis } from '@/data/profil/ecran-profil';
+import type { DomaineCle } from '@/data/profil/reperes';
+import { useEvaluation } from '@/hooks/useEvaluation';
+import { useMesuresSante } from '@/hooks/useMesuresSante';
+import { espace, rayon } from '@/theme/couleurs';
+import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Page Profil : le mannequin 3D au centre (on le tourne, on le zoome, on touche une zone), des points reliés à leur note,
-// et en bas une feuille à 4 onglets (Identité, Physio, Niveau, Forme) avec des cartes qu'on balaie.
+// Page Profil : la « planche anatomique ». En haut, l'identité et le niveau global ; au centre, le mannequin 3D avec une règle
+// de hauteur et 8 points numérotés (un par domaine) reliés à leur note ; en dessous, la légende des 8 domaines, puis le détail
+// du domaine choisi (chaque repère, d'où vient sa valeur, sa note, et la saisie des tests). Le calcul : data/profil/evaluation.ts.
 const Mannequin = memo(ModeleAthleteRealiste);
-const Feuille = memo(FeuilleAthlete);
-
-/** Où se posent les points sur le mannequin de face (mètres), et à quelle hauteur on recentre la caméra pour chaque zone. */
-const ANCRES: Record<ZoneProfil, { x: number; y: number }> = {
-  tete: POINTS_MODELE.head,
-  coeur: POINTS_MODELE.heart,
-  torse: { x: -0.08, y: 1.1 },
-  jambes: POINTS_MODELE.legs,
-};
-const FOCUS: Record<ZoneProfil, number> = { tete: 1.66, coeur: 1.3, torse: 1.18, jambes: 0.62 };
-const PART_SURBRILLANCE: Partial<Record<ZoneProfil, ZoneAvatar>> = { torse: 'chest', jambes: 'legs', coeur: 'heart' };
-const ZONE_DEPUIS_PART: Record<ZoneAvatar, ZoneProfil> = { heart: 'coeur', lungs: 'torse', chest: 'torse', arms: 'torse', legs: 'jambes', head: 'tete' };
+const ANCRES = { ...ANCRES_DOMAINES, ...ANCRES_REGLE };
 
 export default function Profil() {
   const p = usePalette();
@@ -36,10 +30,12 @@ export default function Profil() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { height: hauteurEcran } = useWindowDimensions();
-  const { donnees, recharger } = useDonneesAccueil();
+  const { evaluation, profil, chargement, erreur, enregistrer, recharger } = useEvaluation();
+  const { mesures } = useMesuresSante();
+  const defilement = useRef<ScrollViewInstance>(null);
+  const [yDetail, setYDetail] = useState(0);
 
-  // Le geste « glisser depuis le bord » est coupé ici (il gêne la rotation du mannequin) : sur la pile de Profil
-  // ET sur celle du dessus (le groupe Paramètres), sinon c'est elle qui ferme la page. On les remet en quittant.
+  // Le geste « glisser depuis le bord » est coupé ici (il gêne la rotation du mannequin), sur la pile du dessus aussi ; on le remet en quittant
   useFocusEffect(
     useCallback(() => {
       const parent = navigation.getParent();
@@ -48,94 +44,162 @@ export default function Profil() {
     }, [navigation]),
   );
 
-  const profil = donnees?.profil ?? null;
-  const bilan = useMemo(
-    () => bilanAthlete({ profil, seances: donnees?.seances, metriques: donnees?.metriques, seriesForce: donnees?.force.series }),
-    [profil, donnees?.seances, donnees?.metriques, donnees?.force.series],
-  );
-  const zones = useMemo(() => zonesProfil(bilan, profil), [bilan, profil]);
+  const extras = (profil?.extras ?? {}) as Record<string, unknown>;
+  const prenom = typeof extras.first_name === 'string' ? extras.first_name.trim() : '';
+  const tailleCm = Number(extras.height) || 0;
+  const poids = Number(profil?.weight) || 0;
+  const age = ageDepuis(extras.birth_date);
+  const sousTitre = [tailleCm > 0 ? `${(tailleCm / 100).toFixed(2).replace('.', ',')} m` : null, poids > 0 ? `${String(Math.round(poids * 10) / 10).replace('.', ',')} kg` : null, age !== null ? `${age} ans` : null].filter(Boolean).join(' · ');
 
-  const [zoneActive, setZoneActive] = useState<ZoneProfil | null>(null);
-  const [onglet, setOnglet] = useState<OngletProfil>('identite');
-  const [vue, setVue] = useState<'face' | 'dos'>('face');
+  const accent = p.sportVelo;
+  const [active, setActive] = useState<DomaineCle | null>(null);
   const [points, setPoints] = useState<Record<string, PointEcran>>({});
-  const [ouverture, setOuverture] = useState<OuvertureFeuille | null>(null);
-  const [hauteurFeuille, setHauteurFeuille] = useState(0);
-  const [zone3D, setZone3D] = useState({ w: 0, h: 0 });
+  const [largeur, setLargeur] = useState(0);
+  const [edition, setEdition] = useState(false);
+  const [actualisation, setActualisation] = useState(false);
+  const hauteur3D = Math.round(Math.min(580, Math.max(420, hauteurEcran * 0.62)));
+  const surMesure = useCallback((e: LayoutChangeEvent) => setLargeur(e.nativeEvent.layout.width), []);
 
-  const surMesure = useCallback((e: LayoutChangeEvent) => setZone3D({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height }), []);
-  const hauteur3D = zone3D.h || hauteurEcran;
-
-  const choisirZone = useCallback((cle: ZoneProfil) => {
-    const info = zones.find((z) => z.cle === cle);
-    if (!info) return;
-    setZoneActive(cle);
-    setOnglet(info.onglet);
-    setOuverture((o) => ({ onglet: info.onglet, carte: info.carte, n: (o?.n ?? 0) + 1 }));
-  }, [zones]);
-  const surPart = useCallback((part: ZoneAvatar) => choisirZone(ZONE_DEPUIS_PART[part]), [choisirZone]);
-  const changerOnglet = useCallback((o: OngletProfil) => { setOnglet(o); setZoneActive(null); }, []);
-  const modifierPhysio = useCallback(() => router.push('/parametres/physiologie'), [router]);
+  const choisir = useCallback(
+    (cle: DomaineCle) => {
+      setActive((a) => (a === cle ? null : cle));
+      // On descend jusqu'au détail (il s'affiche sous la légende)
+      requestAnimationFrame(() => defilement.current?.scrollTo({ y: Math.max(0, yDetail - 80), animated: true }));
+    },
+    [yDetail],
+  );
+  const choisie = useMemo(() => evaluation.domaines.findIndex((d) => d.domaine.cle === active), [evaluation.domaines, active]);
+  const aujourdhui = dateIsoLocale(new Date());
+  const saisir = useCallback((metric: string, valeur: number | null) => void enregistrer(aujourdhui, metric, valeur), [enregistrer, aujourdhui]);
+  const actualiser = useCallback(async () => {
+    setActualisation(true);
+    try {
+      await recharger();
+    } finally {
+      setActualisation(false);
+    }
+  }, [recharger]);
 
   return (
     <View style={[styles.ecran, { backgroundColor: p.fond }]}>
-      <FondDegrade />
-      <View style={StyleSheet.absoluteFill} onLayout={surMesure}>
-        <Mannequin
-          maillot
-          palette={p}
-          accent={p.sportVelo}
-          largeur="100%"
-          hauteur={hauteur3D}
-          selectedPart={zoneActive ? PART_SURBRILLANCE[zoneActive] : undefined}
-          onPartSelect={surPart}
-          focusY={zoneActive ? FOCUS[zoneActive] : null}
-          decalageBas={hauteur3D > 0 ? Math.min(0.6, hauteurFeuille / hauteur3D) : 0}
-          vue={vue}
-          ancres={ANCRES}
-          onProjection={setPoints}
-        />
-        <PointsZones palette={p} largeur={zone3D.w} hauteur={hauteur3D} zones={zones} points={points} active={zoneActive} onZone={choisirZone} />
-      </View>
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Retour"
-        onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-        hitSlop={8}
-        style={({ pressed }) => [styles.retour, { top: insets.top + 8, backgroundColor: p.surface2, opacity: pressed ? 0.7 : 1 }]}
+      <ScrollView
+        ref={defilement}
+        contentContainerStyle={{ paddingTop: insets.top + 8, paddingBottom: insets.bottom + espace.e6 }}
+        refreshControl={<RefreshControl refreshing={actualisation} onRefresh={() => void actualiser()} tintColor={p.texteDoux} />}
       >
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <Path d="M15 5l-7 7 7 7" stroke={p.texte} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
-        </Svg>
-      </Pressable>
-
-      <View style={[styles.vues, { top: insets.top + 8, backgroundColor: p.surface2 }]} accessibilityRole="tablist">
-        {(['face', 'dos'] as const).map((v) => (
-          <Pressable key={v} onPress={() => setVue(v)} accessibilityRole="tab" accessibilityState={{ selected: vue === v }} style={[styles.vue, vue === v && { backgroundColor: p.texte }]}>
-            <Text style={[styles.vueTexte, { color: vue === v ? p.fond : p.texteDoux }]}>{v === 'face' ? 'Face' : 'Dos'}</Text>
+        <View style={styles.barre}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Retour"
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+            hitSlop={8}
+            style={({ pressed }) => [styles.rond, { backgroundColor: p.surface2, opacity: pressed ? 0.7 : 1 }]}
+          >
+            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+              <Path d="M15 5l-7 7 7 7" stroke={p.texte} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
           </Pressable>
-        ))}
-      </View>
+          <Bouton variante="discret" petit onPress={() => setEdition(true)} accessibilityLabel="Modifier mon identité">
+            Modifier
+          </Bouton>
+        </View>
 
-      <Feuille
-        bilan={bilan}
-        profil={profil}
-        onglet={onglet}
-        onOnglet={changerOnglet}
-        ouverture={ouverture}
-        onHauteur={setHauteurFeuille}
-        onModifierPhysio={modifierPhysio}
-        onIdentiteEnregistree={() => void recharger()}
-      />
+        <View style={styles.entete}>
+          <Text style={[typo.micro, { color: p.texteDoux }]}>Fiche athlète</Text>
+          <Text style={[typo.titre2, { color: p.texte }]}>{prenom || 'Athlète'}</Text>
+          {sousTitre ? <Text style={[typo.corps, { color: p.texteDoux }]}>{sousTitre}</Text> : null}
+        </View>
+
+        <View accessible accessibilityLabel={evaluation.niveau === null ? 'Niveau global : pas encore de mesure' : `Niveau global ${evaluation.niveau} sur 100, ${evaluation.mesures} repères mesurés sur ${evaluation.total}`} style={[styles.niveau, { borderColor: p.trait }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[typo.micro, { color: p.texteDoux }]}>Niveau global</Text>
+            <Text style={[typo.petit, { color: p.texteDoux }]}>
+              {chargement ? 'Calcul en cours…' : `${evaluation.mesures} repères mesurés sur ${evaluation.total}`}
+              {!evaluation.sexeConnu ? ' · sexe non renseigné : comparé aux hommes' : ''}
+            </Text>
+          </View>
+          <Text style={[styles.niveauChiffre, { color: evaluation.niveau === null ? p.texteMuet : p.texte }]}>{evaluation.niveau ?? '—'}</Text>
+          <Text style={[typo.corpsFort, { color: p.texteDoux }]}>/100</Text>
+        </View>
+        {erreur ? (
+          <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
+            <Text style={[typo.petit, { color: p.texte }]}>{erreur}</Text>
+          </View>
+        ) : null}
+
+        <View style={{ height: hauteur3D }} onLayout={surMesure}>
+          <Mannequin maillot defilable palette={p} accent={accent} largeur="100%" hauteur={hauteur3D} selectedPart={undefined} ancres={ANCRES} onProjection={setPoints} />
+          <PlancheAnatomique palette={p} accent={accent} largeur={largeur} hauteur={hauteur3D} points={points} domaines={evaluation.domaines} active={active} onDomaine={choisir} tailleCm={tailleCm} />
+        </View>
+        <View style={[styles.sol, { backgroundColor: p.traitFort }]} />
+
+        <View style={styles.legende}>
+          {evaluation.domaines.map((d, i) => {
+            const choisi = d.domaine.cle === active;
+            return (
+              <Pressable
+                key={d.domaine.cle}
+                onPress={() => choisir(d.domaine.cle)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: choisi }}
+                accessibilityLabel={`${i + 1}. ${d.domaine.nom} : ${d.note === null ? 'pas encore de mesure' : `${d.note} sur 100`}`}
+                style={({ pressed }) => [styles.case, { backgroundColor: p.surface, borderColor: choisi ? accent : p.trait, opacity: pressed ? 0.8 : 1 }]}
+              >
+                <Text numberOfLines={1} style={[typo.micro, { color: p.texteDoux }]}>
+                  {i + 1} · {NOM_COURT[d.domaine.cle]}
+                </Text>
+                <View style={styles.caseBas}>
+                  <Text style={[styles.caseNote, { color: d.note === null ? p.texteMuet : p.texte }]}>{d.note ?? '—'}</Text>
+                  <Text style={[typo.petit, { color: p.texteMuet }]}>
+                    {d.mesures}/{d.reperes.filter((r) => !r.def.aVenir).length}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View onLayout={(e) => setYDetail(e.nativeEvent.layout.y)} style={styles.detail}>
+          {choisie >= 0 ? (
+            <DetailDomaine palette={p} accent={accent} numero={choisie + 1} note={evaluation.domaines[choisie]} sexe={evaluation.sexe} mesures={mesures} aujourdhui={aujourdhui} onSaisie={saisir} />
+          ) : (
+            <Text style={[typo.petit, { color: p.texteDoux }]}>Touche un point ou une case pour voir le détail d’un domaine et saisir tes tests.</Text>
+          )}
+          <Bouton variante="discret" onPress={() => router.push('/parametres/physiologie')}>
+            Mes repères physiologiques (FC, FTP, VMA…)
+          </Bouton>
+        </View>
+      </ScrollView>
+
+      <Modal visible={edition} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEdition(false)}>
+        <ScrollView keyboardShouldPersistTaps="handled" style={{ backgroundColor: p.fond }} contentContainerStyle={{ padding: espace.e4, paddingBottom: 320, gap: espace.e4 }}>
+          <View style={styles.titreEdition}>
+            <Text style={[typo.titre3, { color: p.texte }]}>Modifier mon identité</Text>
+            <Bouton variante="discret" petit onPress={() => { setEdition(false); void recharger(); }}>
+              Terminé
+            </Bouton>
+          </View>
+          <PhotoProfil />
+          <FormulaireSection id="identite" />
+        </ScrollView>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   ecran: { flex: 1 },
-  retour: { position: 'absolute', left: 16, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  vues: { position: 'absolute', right: 16, height: 44, borderRadius: 22, flexDirection: 'row', padding: 4, gap: 2 },
-  vue: { minWidth: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  vueTexte: { fontFamily: police.texte600, fontSize: 14 },
+  barre: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: espace.e4 },
+  rond: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  entete: { paddingHorizontal: espace.e4, marginTop: espace.e3 },
+  niveau: { flexDirection: 'row', alignItems: 'baseline', gap: espace.e2, marginHorizontal: espace.e4, marginTop: espace.e3, paddingVertical: espace.e3, borderTopWidth: 1, borderBottomWidth: 1 },
+  niveauChiffre: { fontFamily: police.titre800, fontSize: 44, lineHeight: 48, fontVariant: ['tabular-nums'] },
+  avis: { marginHorizontal: espace.e4, marginTop: espace.e3, padding: espace.e3, borderLeftWidth: 3, borderRadius: rayon.base },
+  sol: { height: 1, marginHorizontal: espace.e6 },
+  legende: { flexDirection: 'row', flexWrap: 'wrap', gap: espace.e2, paddingHorizontal: espace.e4, marginTop: espace.e4 },
+  case: { width: '48.5%', minHeight: 56, borderWidth: 1, borderRadius: rayon.l, paddingVertical: 10, paddingHorizontal: espace.e3 },
+  caseBas: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 2 },
+  caseNote: { fontFamily: police.titre700, fontSize: 20, lineHeight: 24, fontVariant: ['tabular-nums'] },
+  detail: { paddingHorizontal: espace.e4, marginTop: espace.e4, gap: espace.e4 },
+  titreEdition: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 });

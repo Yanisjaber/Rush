@@ -2,7 +2,7 @@
 // Les lignes vivent dans la table `health_metrics` (compte, date, mesure, valeur, source) : ajouter une mesure ici ne demande aucun changement de base.
 // Fonctions pures, sans réseau. Les bornes servent à refuser une faute de frappe (un poids de 700 kg) avant même d'écrire en base.
 
-export type FamilleMesure = 'ressenti' | 'evenement' | 'corps' | 'nutrition' | 'cycle' | 'appareil';
+export type FamilleMesure = 'ressenti' | 'evenement' | 'corps' | 'nutrition' | 'cycle' | 'appareil' | 'test';
 export type TypeMesure = 'echelle' | 'case' | 'nombre' | 'choix';
 export type SensMesure = 'haut_mieux' | 'bas_mieux' | 'neutre';
 
@@ -32,8 +32,10 @@ export const FAMILLES: Record<FamilleMesure, string> = {
   nutrition: 'Nutrition',
   cycle: 'Cycle',
   appareil: "Mesures d'appareils",
+  test: 'Tests physiques',
 };
 
+const test = (cle: string, nom: string, unite: string, min: number, max: number, pas: number, sens: SensMesure): DefMesure => ({ cle, nom, famille: 'test', type: 'nombre', unite, min, max, pas, sens });
 const echelle = (cle: string, nom: string, sens: SensMesure, libelles: string[], aide: string): DefMesure => ({ cle, nom, famille: 'ressenti', type: 'echelle', min: 1, max: 5, pas: 1, sens, libelles, aide });
 
 export const MESURES: Record<string, DefMesure> = Object.fromEntries(
@@ -56,6 +58,7 @@ export const MESURES: Record<string, DefMesure> = Object.fromEntries(
       { cle: 'poids_kg', nom: 'Poids', famille: 'corps', type: 'nombre', unite: 'kg', min: 20, max: 400, pas: 0.1, sens: 'neutre', aide: 'Le matin, à jeun, après être passé aux toilettes.' },
       { cle: 'masse_grasse_pct', nom: 'Masse grasse', famille: 'corps', type: 'nombre', unite: '%', min: 2, max: 70, pas: 0.1, sens: 'neutre' },
       { cle: 'masse_musculaire_kg', nom: 'Masse musculaire', famille: 'corps', type: 'nombre', unite: 'kg', min: 5, max: 150, pas: 0.1, sens: 'neutre' },
+      { cle: 'tour_taille_cm', nom: 'Tour de taille', famille: 'corps', type: 'nombre', unite: 'cm', min: 40, max: 200, pas: 0.5, sens: 'neutre', aide: 'Au niveau du nombril, ventre relâché.' },
       { cle: 'tension_sys', nom: 'Tension systolique', famille: 'corps', type: 'nombre', unite: 'mmHg', min: 60, max: 260, pas: 1, sens: 'neutre', aide: 'Le premier chiffre (le plus haut).' },
       { cle: 'tension_dia', nom: 'Tension diastolique', famille: 'corps', type: 'nombre', unite: 'mmHg', min: 30, max: 160, pas: 1, sens: 'neutre', aide: 'Le second chiffre (le plus bas).' },
 
@@ -71,6 +74,25 @@ export const MESURES: Record<string, DefMesure> = Object.fromEntries(
       { cle: 'resp_nuit', nom: 'Fréquence respiratoire de nuit', famille: 'appareil', type: 'nombre', unite: 'resp/min', min: 4, max: 40, pas: 0.1, sens: 'bas_mieux' },
       { cle: 'temp_cutanee_ecart', nom: 'Température cutanée (écart)', famille: 'appareil', type: 'nombre', unite: '°C', min: -5, max: 5, pas: 0.1, sens: 'neutre' },
       { cle: 'spo2_nuit', nom: 'SpO₂ de nuit', famille: 'appareil', type: 'nombre', unite: '%', min: 70, max: 100, pas: 0.1, sens: 'haut_mieux' },
+
+      // Tests physiques (page Profil › évaluation) : une valeur par test, datée ; la plus récente compte
+      test('test_vo2max', 'VO2max (labo ou montre)', 'ml/kg/min', 20, 100, 0.1, 'haut_mieux'),
+      test('test_recup_fc', 'Récupération cardiaque 1 min', 'bpm', 0, 100, 1, 'haut_mieux'),
+      test('test_sv1_pct', 'Seuil ventilatoire 1', '% VO2max', 30, 100, 1, 'haut_mieux'),
+      test('test_sv2_pct', 'Seuil ventilatoire 2', '% VO2max', 40, 100, 1, 'haut_mieux'),
+      test('test_sprint30_s', 'Sprint 30 m', 's', 3, 15, 0.01, 'bas_mieux'),
+      test('test_nat100_s', '100 m nage libre', 's', 40, 400, 0.1, 'bas_mieux'),
+      test('test_cmj_cm', 'Saut vertical (CMJ)', 'cm', 5, 120, 1, 'haut_mieux'),
+      test('test_saut_long_cm', 'Saut en longueur sans élan', 'cm', 30, 400, 1, 'haut_mieux'),
+      test('test_rm_squat_kg', 'Squat 1RM', 'kg', 5, 500, 0.5, 'haut_mieux'),
+      test('test_rm_dc_kg', 'Développé couché 1RM', 'kg', 5, 400, 0.5, 'haut_mieux'),
+      test('test_rm_sdt_kg', 'Soulevé de terre 1RM', 'kg', 5, 500, 0.5, 'haut_mieux'),
+      test('test_rm_dm_kg', 'Développé militaire 1RM', 'kg', 5, 250, 0.5, 'haut_mieux'),
+      test('test_tractions', 'Tractions max', 'rép.', 0, 150, 1, 'haut_mieux'),
+      test('test_pompes', 'Pompes max', 'rép.', 0, 300, 1, 'haut_mieux'),
+      test('test_prehension_kg', 'Force de préhension', 'kg', 5, 150, 0.5, 'haut_mieux'),
+      test('test_gainage_s', 'Gainage', 's', 0, 7200, 1, 'haut_mieux'),
+      test('test_squats_1min', 'Squats en 1 min', 'rép.', 0, 120, 1, 'haut_mieux'),
     ] as DefMesure[]
   ).map((m) => [m.cle, m]),
 );

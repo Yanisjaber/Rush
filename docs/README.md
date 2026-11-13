@@ -31,5 +31,6 @@ Tous les `.md` du projet sont ici, rangés par thème. Exceptions : `CLAUDE.md` 
 - `PROGRESSION_VELO.md` : comment l'onglet Progrès décide pour le vélo (calcul, tests sur de vraies sorties, limites).
 - `PROGRESSION_COURSE.md` : la même chose pour la course (dénivelé, tapis, ce que les vraies courses ont montré).
 - `PROGRESSION_NIVEAU.md` : le score de niveau année après année (100 = meilleur niveau), les records, et le bouton « Comment c'est calculé ».
+- `EVALUATION_PROFIL.md` : la page Profil en planche anatomique, les 8 domaines, la note sur 100 (meilleur mondial), d'où vient chaque valeur et les références.
 - `DONNEES_ECARTEES.md` : les puces « Compte dans mes calculs » d'une activité (puissance, cardio, cadence, distance, dénivelé, charge) et ce que chaque donnée écartée retire des calculs.
 - `SYNCHRO_STRAVA.md` : l'écran de synchro des courbes de puissance (calcul par lots, temps de calcul et pauses Strava séparés).

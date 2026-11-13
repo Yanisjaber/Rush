@@ -50,6 +50,8 @@ interface Props {
   ancres?: Record<string, { x: number; y: number }>;
   /** Appelé ~25 fois par seconde avec la position à l'écran des `ancres`. */
   onProjection?: (points: Record<string, PointEcran>) => void;
+  /** Dans une page qui défile : un glissé surtout vertical rend la main au défilement (seul un glissé horizontal fait tourner). */
+  defilable?: boolean;
 }
 
 const FICHIER_MODELE = require('../../../assets/avatar/athlete.glb');
@@ -178,7 +180,7 @@ const ZOOM_MAX = 1.85;
  *   glisser le fait tourner librement, il revient de face 2,5 s après.
  * - Toucher le torse, les bras ou les jambes les sélectionne (zones tirées des os du squelette d'origine).
  */
-export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart', onPartSelect, largeur = 174, hauteur = 284, maillot = false, lunettes = false, focusY = null, decalageBas = 0, vue = 'face', ancres, onProjection }: Props) {
+export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart', onPartSelect, largeur = 174, hauteur = 284, maillot = false, lunettes = false, focusY = null, decalageBas = 0, vue = 'face', ancres, onProjection, defilable = false }: Props) {
   const selectedPartRef = useRef<ZoneAvatar>(selectedPart);
   const onPartSelectRef = useRef(onPartSelect);
   const layoutRef = useRef({ width: 174, height: 284 });
@@ -258,8 +260,9 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
       // Le GLView natif peut intercepter le toucher : le responder est donc
       // installé sur le conteneur, comme pour l'ancien avatar qui fonctionnait.
       onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderTerminationRequest: () => false,
+      onMoveShouldSetPanResponder: (_, g) => !defilable || Math.abs(g.dx) > Math.abs(g.dy),
+      // Dans une page qui défile, on lâche le doigt au défilement tant que la rotation n'a pas vraiment commencé (glissé vertical, ou à peine bougé)
+      onPanResponderTerminationRequest: (_, g) => defilable && !(Math.abs(g.dx) > 10 && Math.abs(g.dx) > Math.abs(g.dy)) && !pincementDepartRef.current,
       onPanResponderGrant: () => {
         rotationDepartRef.current = groupeRef.current?.rotation.y ?? 0;
         zoomDepartRef.current = zoomRef.current;
@@ -303,7 +306,7 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
         derniereMainRef.current = Date.now();
       },
     }),
-    [appliquerZoom, toucher],
+    [appliquerZoom, toucher, defilable],
   );
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
@@ -462,6 +465,11 @@ export function ModeleAthleteRealiste({ palette, accent, selectedPart = 'heart',
     modele.traverse((objet) => { if ((objet as THREE.Bone).isBone) tousLesOs.push(objet as THREE.Bone); });
     const pointsSuivis: { nom: string; os: THREE.Object3D; local: THREE.Vector3 }[] = [];
     for (const [nom, point] of Object.entries(ancresRef.current ?? {})) {
+      // « fixe:… » : un point du repère du modèle (la règle de hauteur), sans peau ni os : il ne respire pas
+      if (nom.startsWith('fixe:')) {
+        pointsSuivis.push({ nom, os: modele, local: new THREE.Vector3(point.x, point.y, 0) });
+        continue;
+      }
       const rayon = new THREE.Raycaster(modele.localToWorld(new THREE.Vector3(point.x, point.y, 2)), new THREE.Vector3(0, 0, -1));
       const touche = rayon.intersectObject(modele, true)[0];
       const z = touche ? modele.worldToLocal(touche.point.clone()).z : 0.1;
