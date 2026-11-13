@@ -11,7 +11,8 @@ import { usePalette } from '@/theme/usePalette';
 // avec les axes (cible à gauche, graduée régulièrement avec des valeurs rondes ; temps en bas). Dessous, le détail en lignes compactes : une pastille de durée, une pastille de zone avec sa cible,
 // le libellé ; les répétitions sont encadrées avec leur « 3× ».
 // Héros de la page 1 d'une séance prévue sans parcours, posé directement sur le fond (sans carte).
-const HAUTEUR = 132;
+const HAUTEUR_MIN = 132;
+const HAUTEUR_MAX = 300;
 const G = 34; // la place des valeurs à gauche
 const D = 6;
 const H = 8; // un peu d'air au-dessus du premier repère
@@ -21,6 +22,10 @@ const ETAPES_MAX = 5; // au-delà, le détail s'arrête : le reste est sur la pa
 export function GrapheSeancePrevue({ blocs, couleur, reference, sport }: { blocs: Bloc[]; couleur: string; reference: Reference; sport: string }) {
   const p = usePalette();
   const [largeur, setLargeur] = useState(0);
+  // Le graphique prend la place que le détail ne prend pas : plus de vide en haut ni en bas
+  const [zone, setZone] = useState(0);
+  const [hDetail, setHDetail] = useState(0);
+  const HAUTEUR = Math.round(Math.min(HAUTEUR_MAX, Math.max(HAUTEUR_MIN, zone - hDetail - espace.e3)));
   const g = grapheDeBlocs(blocs, reference, sport);
   if (!g) return null;
   const lignes = lignesIntervalles(blocs, reference, sport);
@@ -38,7 +43,7 @@ export function GrapheSeancePrevue({ blocs, couleur, reference, sport }: { blocs
   const etiquette = `Profil de la séance, ${texteDuree(g.total)}. ${lignes.map((l) => `${l.repetitions > 1 ? `${l.repetitions} fois ` : ''}${l.nom}, ${l.effort}, ${l.cible}${l.recup ? `, récupération ${l.recup}` : ''}`).join(' ; ')}.`;
 
   return (
-    <View accessible accessibilityLabel={etiquette} style={styles.corps}>
+    <View accessible accessibilityLabel={etiquette} style={styles.corps} onLayout={(e: LayoutChangeEvent) => setZone(e.nativeEvent.layout.height)}>
       <View onLayout={(e: LayoutChangeEvent) => setLargeur(e.nativeEvent.layout.width)}>
         {largeur > 0 ? (
           <Svg width="100%" height={HAUTEUR} viewBox={`0 0 ${largeur} ${HAUTEUR}`}>
@@ -71,7 +76,7 @@ export function GrapheSeancePrevue({ blocs, couleur, reference, sport }: { blocs
         )}
       </View>
 
-      <View accessible={false} importantForAccessibility="no-hide-descendants" style={styles.detail}>
+      <View accessible={false} importantForAccessibility="no-hide-descendants" style={styles.detail} onLayout={(e: LayoutChangeEvent) => setHDetail(e.nativeEvent.layout.height)}>
         {/* Les colonnes alignées : durée, zone, cible (et le libellé à droite). Pas de cadre : des traits fins, comme les listes de l'app. */}
         <View style={styles.enteteColonnes}>
           <Text style={[typo.micro, styles.colDuree, { color: p.texteMuet }]}>DURÉE</Text>
@@ -120,7 +125,7 @@ function Ligne({ ligne }: { ligne: LigneDetail }) {
 
 const styles = StyleSheet.create({
   // Pas de carte : le graphique et le détail sont posés directement sur le fond de la page
-  corps: { gap: espace.e2 },
+  corps: { flex: 1, gap: espace.e2 },
   detail: { gap: 0 },
   enteteColonnes: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, paddingBottom: 4 },
   ligneDetail: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, minHeight: 36, borderTopWidth: StyleSheet.hairlineWidth },
