@@ -1,6 +1,6 @@
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { memo, useCallback, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { Bouton } from '@/components/ui/Bouton';
@@ -29,7 +29,7 @@ export default function Profil() {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { width: largeurEcran } = useWindowDimensions();
+  const { width: largeurEcran, height: hauteurEcran } = useWindowDimensions();
   const { evaluation, profil, enregistrer, recharger } = useEvaluation();
   const { mesures } = useMesuresSante();
 
@@ -131,17 +131,23 @@ export default function Profil() {
       </View>
 
       {/* Le détail d'un domaine : chaque repère, sa note, et la saisie des tests */}
-      <Modal visible={choisie >= 0} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setActive(null)}>
-        <ScrollView keyboardShouldPersistTaps="handled" style={{ backgroundColor: p.fond }} contentContainerStyle={{ padding: espace.e4, paddingBottom: 320, gap: espace.e3 }}>
-          <View style={styles.titreFeuille}>
-            <Bouton variante="discret" petit onPress={() => setActive(null)}>
-              Fermer
-            </Bouton>
+      <Modal visible={choisie >= 0} transparent animationType="fade" onRequestClose={() => setActive(null)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.popupFond}>
+          {/* Toucher à côté de la carte ferme le pop-up */}
+          <Pressable accessibilityRole="button" accessibilityLabel="Fermer" onPress={() => setActive(null)} style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)' }]} />
+          <View style={[styles.popup, { maxHeight: hauteurEcran * 0.72 }]}>
+            <ScrollView keyboardShouldPersistTaps="handled" bounces={false} contentContainerStyle={{ flexGrow: 0 }}>
+              {choisie >= 0 ? (
+                <DetailDomaine palette={p} accent={accent} numero={choisie + 1} note={evaluation.domaines[choisie]} sexe={evaluation.sexe} mesures={mesures} aujourdhui={aujourdhui} onSaisie={saisir} />
+              ) : null}
+            </ScrollView>
+            <Pressable accessibilityRole="button" accessibilityLabel="Fermer" onPress={() => setActive(null)} hitSlop={8} style={[styles.fermer, { backgroundColor: p.surface2 }]}>
+              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                <Path d="M6 6l12 12M18 6L6 18" stroke={p.texte} strokeWidth={2.4} strokeLinecap="round" />
+              </Svg>
+            </Pressable>
           </View>
-          {choisie >= 0 ? (
-            <DetailDomaine palette={p} accent={accent} numero={choisie + 1} note={evaluation.domaines[choisie]} sexe={evaluation.sexe} mesures={mesures} aujourdhui={aujourdhui} onSaisie={saisir} />
-          ) : null}
-        </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={edition} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEdition(false)}>
@@ -175,6 +181,8 @@ const styles = StyleSheet.create({
   miniNumero: { fontFamily: police.titre700, fontSize: 12, lineHeight: 14 },
   caseNote: { fontFamily: police.titre700, fontSize: 20, lineHeight: 24, fontVariant: ['tabular-nums'] },
   caseNom: { fontFamily: police.texte500, fontSize: 12, lineHeight: 16, marginTop: 2 },
-  titreFeuille: { flexDirection: 'row', justifyContent: 'flex-end' },
+  popupFond: { flex: 1, justifyContent: 'center', paddingHorizontal: espace.e4 },
+  popup: { width: '100%' },
+  fermer: { position: 'absolute', top: -52, right: 0, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   titreEdition: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 });
