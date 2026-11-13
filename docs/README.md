@@ -2,6 +2,9 @@
 
 Tous les `.md` du projet sont ici, rangés par thème. Exceptions : `CLAUDE.md` (racine, lu par Claude Code), `supabase/email-templates/README.md` (avec les modèles d'e-mails) et `archive-v1/LISEZMOI.md` (archive).
 
+## À faire
+- `A_FAIRE.md` : la liste unique de ce qui reste à faire (cases à cocher, tenue par Yanis et Claude).
+
 ## Formules
 - `FORMULES.md` : toutes les formules de calcul (TSS, CTL/ATL/TSB, FTP glissante, niveau global à vélo en 4 piliers : puissance, endurance, répétabilité, charge).
 

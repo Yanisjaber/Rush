@@ -2,6 +2,8 @@
 
 Guide pour Claude Code (claude.ai/code) dans ce dépôt. Les `.md` détaillés sont dans `docs/` (sommaire : `docs/README.md`).
 
+**Liste de ce qui reste à faire : `docs/A_FAIRE.md`.** Je la lis au début de chaque session (Yanis la tient à jour aussi), je coche ce que je finis et j'ajoute ce qui reste.
+
 ## Règles non négociables
 
 1. **Push** : jamais de `git push` tant que Yanis n'a pas écrit le mot **`yallah`** (ou `yalah`, `yala`, `YALLAH`) dans le chat. « Pousse », « go », « ok » ne suffisent pas. Je peux commiter, pas pousser.
