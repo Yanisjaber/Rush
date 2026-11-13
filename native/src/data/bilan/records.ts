@@ -91,7 +91,7 @@ export function recordsPeriodes(acts: ActiviteBilan[], mesure: MetriqueCumul, n 
 
 /** Les records d'une séance : la plus longue sortie, la plus longue durée, la plus grosse charge, et le plus de dénivelé en un jour (qui cumule les séances du jour). */
 export function recordsSeance(acts: ActiviteBilan[]): GroupeRecords {
-  const de = (cle: 'distance_km' | 'duree_min' | 'tss'): EntreeRecord[] => meilleures(acts.map((a) => ({ valeur: a[cle], nom: nomSeance(a), iso: a.iso, id: a.id })));
+  const de = (cle: 'distance_km' | 'duree_min' | 'tss'): EntreeRecord[] => meilleures(acts.map((a) => ({ valeur: a[cle], nom: nomSeance(a), iso: a.iso, id: a.id, famille: a.famille })));
   const dplus = new Map<string, number>();
   for (const a of acts) dplus.set(a.iso, (dplus.get(a.iso) ?? 0) + a.d_plus);
   const jours = meilleures([...dplus].map(([iso, valeur]) => ({ valeur, nom: 'Cumul des activités du jour', iso, id: null })));
@@ -128,6 +128,34 @@ export function recordsRegularite(acts: ActiviteBilan[]): GroupeRecords {
     { cle: 'seances_semaine', libelle: 'Séances en une semaine', unite: 'séances', periode: 'semaine', top: meilleures([...parSemaine].map(([iso, valeur]) => ({ valeur, nom: '', iso, id: null }))) },
   ];
   return { cle: 'regularite', libelle: 'Régularité', records: records.filter((r) => r.top.length) };
+}
+
+/**
+ * La plus longue suite de semaines d'affilée (lundi à dimanche) avec au moins `min` séances chacune (3 par défaut).
+ * L'entrée donne le lundi de la première semaine (`iso`) et le dimanche de la dernière (`fin`).
+ */
+export function recordSemainesAffilee(acts: ActiviteBilan[], min = 3): RecordTop {
+  const parSemaine = new Map<string, number>();
+  for (const a of acts) parSemaine.set(lundiIso(a.iso), (parSemaine.get(lundiIso(a.iso)) ?? 0) + 1);
+  const bonnes = [...parSemaine].filter(([, n]) => n >= min).map(([lundi]) => lundi).sort();
+  const series: EntreeRecord[] = [];
+  let debut = '';
+  let precedent = '';
+  const fermer = () => {
+    if (!debut) return;
+    const dimanche = dateDe(precedent);
+    dimanche.setDate(dimanche.getDate() + 6);
+    series.push({ valeur: joursEntre(debut, precedent) / 7 + 1, nom: '', iso: debut, id: null, fin: dateIso(dimanche), detail: `${min} séances ou plus par semaine` });
+  };
+  for (const lundi of bonnes) {
+    if (!debut || joursEntre(precedent, lundi) !== 7) {
+      fermer();
+      debut = lundi;
+    }
+    precedent = lundi;
+  }
+  fermer();
+  return { cle: 'serie_semaines', libelle: "Semaines d'affilée", unite: 'semaines', top: meilleures(series) };
 }
 
 // --- Records du vélo -----------------------------------------------------------------------------------------------------

@@ -690,8 +690,6 @@ export default function Bilan() {
                   toutes={toutes}
                   annee={anneeRecords}
                   maintenant={maintenant}
-                  mesure={mesureRecords}
-                  onMesure={(m) => choisirMesure('records', m)}
                   onOuvrir={(id) => router.push({ pathname: '/seance', params: { id } })}
                 />
               ) : (

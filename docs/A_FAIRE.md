@@ -17,9 +17,9 @@ Chaque tâche porte une étiquette : `**importance/10 · durée en jours**`.
 
 Mise à jour : **13 novembre 2026**. Rythme supposé : 5 jours de travail par semaine.
 
-- **Version de sortie** (tâches ≥ 7/10) : **64,2 jours** restants (5,1 j déjà faits).
-- **Sortie estimée : 11 février 2027** si tout se passe bien.
-- **Fourchette prudente : 11 avril 2027** (durées ×1.5 + 14 jours pour Apple, les accès API, le domaine…).
+- **Version de sortie** (tâches ≥ 7/10) : **63,2 jours** restants (5,1 j déjà faits).
+- **Sortie estimée : 10 février 2027** si tout se passe bien.
+- **Fourchette prudente : 9 avril 2027** (durées ×1.5 + 14 jours pour Apple, les accès API, le domaine…).
 - Le reste (tâches < 7/10) : 53,9 jours, à faire après la sortie ou si on a de la marge. « Après la sortie » : 16 jours.
 - Tâches : 65 restantes, 6 faites.
 
@@ -34,7 +34,7 @@ Où part le temps de la version de sortie :
 | 3. Coach IA | 7,5 j |
 | 2. Compte et sécurité | 6,5 j |
 | 10. Qualité | 5 j |
-| 7. Bilan et zones | 4,5 j |
+| 7. Bilan et zones | 3,5 j |
 | 5. Calendrier | 1,5 j |
 | 1. Publication et légal | 1 j |
 
@@ -42,7 +42,7 @@ Historique (une ligne par recalcul) :
 
 | Date | Sortie : jours restants | Tout : jours restants | Sortie estimée | Fourchette prudente |
 |---|---|---|---|---|
-| 2026-11-13 | 64,2 j | 118,1 j | 11 février 2027 | 11 avril 2027 |
+| 2026-11-13 | 63,2 j | 117,1 j | 10 février 2027 | 9 avril 2027 |
 <!-- ESTIMATION:FIN -->
 
 ## 1. Publication et légal
@@ -109,7 +109,7 @@ Historique (une ligne par recalcul) :
 
 ## 7. Bilan et zones
 
-- [ ] **8/10 · 2 j** Terminer la page Bilan en vue « Tous » (tous sports confondus) : elle n'est pas finie
+- [ ] **8/10 · 1 j** Terminer la page Bilan en vue « Tous » : Résumé, Rythme et Records sont faits (14 nov.), il reste à décider du Progrès (aujourd'hui une pile de blocs par sport, sans synthèse tous sports)
 - [ ] **8/10 · 2 j** Supprimer ou modifier l'onglet Progrès avec des valeurs factuelles plutôt que des formules inventées
 - [ ] **7/10 · 0,5 j** Voir et valider l'écran Paramètres › Zones dans le simulateur
 - [ ] **6/10 · 0,5 j** Essayer pour de vrai « Faire calculer mes zones par le coach »
