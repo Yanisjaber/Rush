@@ -1,6 +1,7 @@
 import { FondDegrade } from '@/components/ui/FondDegrade';
 import { useRef, useState, type ComponentRef } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/ui/Bouton';
 import { ChampTexte } from '@/components/champs/ChampTexte';
@@ -9,27 +10,30 @@ import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Adresse du site, où l'on crée un compte (la confirmation par e-mail passe par le web pour l'instant).
-const ADRESSE_SITE = 'https://yanisjaber.github.io/Rush/';
-
 // Écran de connexion : e-mail et mot de passe.
 // Le mot de passe n'est jamais journalisé ni gardé ailleurs que dans le champ : il part directement à Supabase.
 export default function Connexion() {
   const p = usePalette();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
   const [erreur, setErreur] = useState('');
+  const [nonActive, setNonActive] = useState(false); // compte créé mais jamais activé par le code
   const [envoi, setEnvoi] = useState(false);
   const champMdp = useRef<ComponentRef<typeof TextInput>>(null);
 
   async function valider() {
     if (envoi) return;
     setErreur('');
+    setNonActive(false);
     setEnvoi(true);
     const r = await connexion(email, motDePasse);
     setEnvoi(false);
-    if (!r.ok) setErreur(r.message);
+    if (!r.ok) {
+      setErreur(r.message);
+      setNonActive(!!r.nonActive);
+    }
     // En cas de succès, le changement de session fait basculer l'app vers l'Accueil tout seul
   }
 
@@ -84,6 +88,15 @@ export default function Connexion() {
             {erreur}
           </Text>
         ) : null}
+        {nonActive ? (
+          <Pressable
+            onPress={() => router.push({ pathname: '/inscription', params: { email: email.trim(), etape: 'code' } })}
+            accessibilityRole="link"
+            style={styles.lien}
+          >
+            <Text style={[typo.corpsFort, { color: p.texte, textDecorationLine: 'underline' }]}>Entrer mon code d'activation</Text>
+          </Pressable>
+        ) : null}
 
         <View style={{ marginTop: espace.e5 }}>
           {envoi ? (
@@ -99,10 +112,10 @@ export default function Connexion() {
 
         <View style={[styles.separateur, { borderTopColor: p.trait }]} />
 
-        <Text style={[typo.petit, { color: p.texteDoux }]}>Pas encore de compte ? Crée-le sur le site, puis reviens te connecter ici.</Text>
-        <Pressable onPress={() => void Linking.openURL(ADRESSE_SITE)} accessibilityRole="link" style={styles.lien}>
-          <Text style={[typo.corpsFort, { color: p.texte, textDecorationLine: 'underline' }]}>Ouvrir le site</Text>
-        </Pressable>
+        <Text style={[typo.petit, { color: p.texteDoux, marginBottom: espace.e3 }]}>Pas encore de compte ?</Text>
+        <Bouton variante="discret" onPress={() => router.push('/inscription')}>
+          Créer un compte
+        </Bouton>
 
       </ScrollView>
     </KeyboardAvoidingView>

@@ -162,6 +162,8 @@ export default function RootLayout() {
         </Stack.Protected>
         <Stack.Protected guard={!connecte}>
           <Stack.Screen name="connexion" />
+          {/* Créer un compte : formulaire, code reçu par e-mail, puis « Compte activé » */}
+          <Stack.Screen name="inscription" />
         </Stack.Protected>
       </Stack>
       ) : null}
