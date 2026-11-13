@@ -725,9 +725,6 @@ export default function Bilan() {
             {pret && onglet === 'progres' ? (
               vueNiveau.courbes.length ? (
                 <Bloc titre="Niveau trimestre par trimestre">
-                  <Text style={[typo.petit, { color: p.texteDoux, marginBottom: espace.e3 }]}>
-                    Note du trimestre = la moyenne de trois pourcentages : tes heures, ta charge et les records posés pendant ces trois mois. 100 = ton meilleur trimestre de chaque sport. Touche un trimestre pour lire le détail.
-                  </Text>
                   <View style={{ gap: espace.e3 }}>
                     <OngletsSegment<'3ans' | 'tout'>
                       etiquette="Période affichée"
