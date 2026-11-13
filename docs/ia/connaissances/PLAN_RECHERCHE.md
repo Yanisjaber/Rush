@@ -87,7 +87,7 @@ Légende : `[x]` existe · `[ ]` à écrire.
 - [x] velo-reprise-apres-arret — Reprendre le vélo après un arrêt
 
 ### charge-suivi
-- [ ] velo-tss-ctl — TSS, CTL, ATL, TSB : valeurs et limites à vélo
+- [x] velo-tss-ctl — TSS, CTL, ATL, TSB : valeurs et limites à vélo
 - [ ] velo-suivi-forme — Suivre sa forme (tests réguliers, indicateurs)
 - [ ] velo-monotonie-charge — Variation de charge et monotonie
 - [ ] velo-progression-charge — Rythme de progression de la charge sans se blesser ni s'épuiser
@@ -98,7 +98,8 @@ Légende : `[x]` existe · `[ ]` à écrire.
 - [ ] velo-recup-active — Récupération active : intérêt réel
 - [ ] velo-sommeil-cyclistes — Sommeil et performance chez les cyclistes
 - [ ] velo-recup-grands-tours — Récupération en course à étapes
-- [ ] velo-massage-froid — Massage, bains froids, compression : ce qu'on sait
+- [x] velo-froid-recuperation — Bain froid et récupération (fait le 13 nov.)
+- [ ] velo-massage-compression — Massage et compression (pas encore cherché)
 
 ### nutrition
 - [x] velo-glucides-effort — Glucides pendant l'effort : 60, 90, 120 g/h
@@ -134,9 +135,9 @@ Légende : `[x]` existe · `[ ]` à écrire.
 - [ ] velo-tactique-peloton — Tactique de course en peloton (notions)
 
 ### environnement
-- [ ] velo-chaleur — Rouler par forte chaleur
+- [x] velo-chaleur — Rouler par forte chaleur
 - [ ] velo-froid — Rouler par le froid
-- [ ] velo-altitude — Altitude : acclimatation et performance
+- [x] velo-altitude — Altitude : acclimatation et performance
 - [ ] velo-vent-pluie — Vent, pluie et adaptation de l'effort
 
 ### profils

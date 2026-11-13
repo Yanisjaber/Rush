@@ -2248,6 +2248,59 @@ export const FICHES: Fiche[] = [
     "voirAussi": []
   },
   {
+    "id": "velo-altitude",
+    "dossier": "velo",
+    "theme": "environnement",
+    "titre": "Altitude à vélo : perte de performance et ce qui marche (ou pas)",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "altitude",
+      "hypoxie",
+      "vivre haut s'entraîner bas",
+      "entraînement en hypoxie",
+      "pré-acclimatation",
+      "jus de betterave",
+      "nitrates",
+      "col",
+      "montagne",
+      "simulation d'altitude",
+      "hémoglobine",
+      "VO2max"
+    ],
+    "preuve": "debattu",
+    "maj": "2026-11-13",
+    "essentiel": "- En altitude modérée (autour de 2 000 m et plus), **la puissance tenue baisse** par rapport au niveau de la mer, même chez des cyclistes bien entraînés.\n- Les méthodes pour « s'y préparer » ou « progresser grâce à l'altitude » donnent des résultats **contrastés**. Dans les essais lus ici, **ni « vivre en haut, s'entraîner en bas » sur 4 semaines, ni quelques séances de pré-exposition, ni des intervalles en hypoxie** n'ont amélioré la performance de façon claire.\n- Un **jus de betterave** pris avant l'effort a amélioré le contre-la-montre en altitude simulée dans un petit essai.\n- Le sujet est **très discuté** ; l'altitude n'est pas un raccourci pour progresser.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; essais de 9 à 33 cyclistes.)*\n- **Vivre haut, s'entraîner bas** : Siebenmann et coll. (*J Appl Physiol*, 2012), 16 cyclistes d'endurance, 8 semaines dont 4 de 16 h par jour dans des chambres à 3 000 m simulés (contre placebo, double aveugle) : **aucune amélioration** de la performance, de la VO2max ni de l'économie, avec ou sans hypoxie.\n- **Pré-acclimatation** : Faulhaber et coll. (*J Sports Sci*, 2010), 11 cyclistes, 7 séances d'une heure en hypoxie (équivalent 4 500 m) : à 1 970 m, la puissance moyenne en contre-la-montre baisse de 0,26 W/kg (groupe hypoxie) et 0,13 W/kg (témoin) par rapport à 600 m, **sans différence entre groupes**.\n- **Intervalles en hypoxie** : Roels et coll. (*Med Sci Sports Exerc*, 2005), 33 cyclistes et triathlètes, 7 semaines : les améliorations de puissance sur 10 min (+3,7 à +5,2 %) sont **les mêmes** avec des intervalles en hypoxie ou en normoxie.\n- **Nitrates** : Muggeridge et coll. (*Med Sci Sports Exerc*, 2014), 9 cyclistes de loisir de compétition, altitude simulée de 2 500 m : une dose de jus de betterave concentré abaisse la consommation d'oxygène à effort modéré et améliore le contre-la-montre de 16 km.\n- **Hypothèse** : Baranauskas et coll. (*Exerc Sport Sci Rev*, 2021), revue : propose l'altitude comme stimulus préféré des athlètes d'élite préparant des épreuves au frais, mais **c'est une hypothèse**.",
+    "regles": "- Si l'utilisateur prépare une **épreuve en altitude** : **prévoir une puissance plus basse** et de **l'effort perçu** plutôt que de viser ses chiffres du niveau de la mer ; laisser des **jours d'acclimatation** si possible.\n- **Ne pas** recommander de tentes à hypoxie, de masques ou de stages comme moyen sûr de progresser : les preuves lues sont faibles.\n- **Symptômes** (maux de tête violents, nausées, essoufflement au repos, confusion) en altitude : **descendre et consulter**.\n- Le jus de betterave est une option **de niveau de preuve limité** ; ne pas le présenter comme efficace pour tous.",
+    "pieges": "- Appliquer ses watts du niveau de la mer à un col à 2 500 m.\n- Croire qu'un stage en altitude fait forcément progresser.\n- Conclure d'un essai de 9 cyclistes en altitude simulée à ce qui se passe en vrai.",
+    "sources": [
+      {
+        "titre": "Siebenmann et al., \"Live high-train low\" using normobaric hypoxia: a double-blinded, placebo-controlled study (J Appl Physiol, 2012)",
+        "url": "https://doi.org/10.1152/japplphysiol.00388.2011"
+      },
+      {
+        "titre": "Faulhaber et al., Intermittent hypoxia does not affect endurance performance at moderate altitude in well-trained athletes (J Sports Sci, 2010)",
+        "url": "https://doi.org/10.1080/02640410903581588"
+      },
+      {
+        "titre": "Roels et al., Effects of hypoxic interval training on cycling performance (Med Sci Sports Exerc, 2005)",
+        "url": "https://doi.org/10.1249/01.mss.0000150077.30672.88"
+      },
+      {
+        "titre": "Muggeridge et al., A single dose of beetroot juice enhances cycling performance in simulated altitude (Med Sci Sports Exerc, 2014)",
+        "url": "https://doi.org/10.1249/mss.0b013e3182a1dc51"
+      },
+      {
+        "titre": "Baranauskas et al., Heat Versus Altitude Training for Endurance Performance at Sea Level (Exerc Sport Sci Rev, 2021)",
+        "url": "https://doi.org/10.1249/jes.0000000000000238"
+      }
+    ],
+    "voirAussi": []
+  },
+  {
     "id": "velo-cadence",
     "dossier": "velo",
     "theme": "technique",
@@ -2301,6 +2354,68 @@ export const FICHES: Fiche[] = [
     ],
     "voirAussi": [
       "velo-douleurs-genou"
+    ]
+  },
+  {
+    "id": "velo-chaleur",
+    "dossier": "velo",
+    "theme": "environnement",
+    "titre": "Rouler par forte chaleur : effets sur la puissance et acclimatation",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "chaleur",
+      "forte chaleur",
+      "acclimatation",
+      "température",
+      "puissance en chaleur",
+      "contre-la-montre",
+      "coup de chaleur",
+      "sueur",
+      "plasma",
+      "température corporelle",
+      "été",
+      "canicule",
+      "immersion chaude"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- La chaleur **fait baisser la puissance** que l'on tient sur un effort long : sur un contre-la-montre de 40 km, des cyclistes ont perdu environ **13 %** de puissance à 35 °C par rapport à 20 °C, avec une température du corps qui monte à près de **39,8 °C**.\n- **Deux semaines d'acclimatation** (rouler dans la chaleur) suffisent à **retrouver un temps proche de celui obtenu au frais**, quand on est dans la chaleur.\n- Le bénéfice **au frais** est **discuté** : une étude trouve un gain de VO2max, une autre **aucun**.\n- La chaleur est aussi un **risque de santé** : il faut savoir reconnaître les signes d'alerte et ne pas se forcer.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; essais de 8 à 20 cyclistes, hommes entraînés ; un essai sur des coureurs.)*\n- **Coût de la chaleur** : Périard et coll. (*Exp Physiol*, 2011), 8 cyclistes, 40 km : 64,3 min à 35 °C (242 W) contre 59,8 min à 20 °C (279 W) ; la puissance baisse dès 20 min ; température rectale 39,8 °C contre 38,9 °C ; fréquence cardiaque plus haute de 8 battements. La revue de Junge (2016) donne en moyenne −15 % de puissance au-dessus de 30 °C.\n- **Acclimatation en conditions réelles** : Racinais et coll. (*Med Sci Sports Exerc*, 2015), 9 cyclistes, contre-la-montre de 43,4 km à environ 37 °C aux jours 1, 6 et 14 : 77 min le premier jour, 69 min le sixième ; après 2 semaines, les cyclistes terminent **dans un temps similaire à celui du frais** ; non acclimatés, ils subissent une chute de puissance marquée.\n- **Acclimatation et frais** : Lorenzo et coll. (*J Appl Physiol*, 2010), 12 cyclistes entraînés, 10 jours à 40 °C (environ 50 % de la VO2max) contre 8 témoins à 13 °C : +5 % de VO2max au frais (13 °C), +8 % en chaud, et +6 % de performance au contre-la-montre au frais. **Mais** Karlsen et coll. (*Scand J Med Sci Sports*, 2015), 18 cyclistes, 2 semaines à environ 35 °C : performance en chaleur +16 %, **pas de changement** de VO2max ni de performance au frais. Les résultats se contredisent.\n- **Immersion chaude après l'effort** : Zurawlew et coll. (*Scand J Med Sci Sports*, 2016), 17 hommes (coureurs sur tapis, non cyclistes), 6 jours de 40 min de course suivis d'une immersion à 40 °C : température corporelle plus basse, +4,9 % de performance au chaud, pas au frais.\n- **Cadre** : Junge et coll. (*Temperature*, 2016) : l'effet de la chaleur dépend de l'acclimatation et surtout du **vent généré par la vitesse ou l'air environnant** ([[velo-pacing-cm]]).",
+    "regles": "- **Chaleur forte** : conseiller de **baisser la cible de puissance et de la durée**, de rouler **tôt le matin ou tard**, d'emporter **plus à boire** ([[velo-hydratation]]), de se protéger du soleil.\n- Pour une **épreuve prévue dans la chaleur** : proposer **10 à 14 jours d'exposition progressive** (séances faciles à modérées à la chaleur), en prévenant que c'est **d'abord utile pour la chaleur**, pas pour progresser au frais.\n- **Signes d'alerte** (vertiges, nausées, frissons, confusion, arrêt de la transpiration, mal de tête violent) : arrêter, mettre à l'ombre, boire, **appeler les secours** en cas de doute.\n- Ne pas accepter qu'un utilisateur s'entraîne dur par canicule ; le plan peut **déplacer ou alléger** les séances ([[chaleur-altitude]]).",
+    "pieges": "- Garder les mêmes cibles de puissance par 35 °C que par 15 °C.\n- Considérer que « chaleur = progrès » : l'effet au frais est discuté.\n- Oublier que l'air immobile (home trainer sans ventilateur) rend la chaleur bien plus coûteuse.",
+    "sources": [
+      {
+        "titre": "Périard et al., Cardiovascular strain impairs prolonged self-paced exercise in the heat (Exp Physiol, 2011)",
+        "url": "https://doi.org/10.1113/expphysiol.2010.054213"
+      },
+      {
+        "titre": "Racinais et al., Effect of heat and heat acclimatization on cycling time trial performance and pacing (Med Sci Sports Exerc, 2015)",
+        "url": "https://doi.org/10.1249/mss.0000000000000428"
+      },
+      {
+        "titre": "Lorenzo et al., Heat acclimation improves exercise performance (J Appl Physiol, 2010)",
+        "url": "https://doi.org/10.1152/japplphysiol.00495.2010"
+      },
+      {
+        "titre": "Karlsen et al., Heat acclimatization does not improve VO2max or cycling performance in a cool climate in trained cyclists (Scand J Med Sci Sports, 2015)",
+        "url": "https://doi.org/10.1111/sms.12409"
+      },
+      {
+        "titre": "Zurawlew et al., Post-exercise hot water immersion induces heat acclimation and improves endurance exercise performance in the heat (Scand J Med Sci Sports, 2016)",
+        "url": "https://doi.org/10.1111/sms.12638"
+      },
+      {
+        "titre": "Junge et al., Prolonged self-paced exercise in the heat - environmental factors affecting performance (Temperature, 2016)",
+        "url": "https://doi.org/10.1080/23328940.2016.1216257"
+      }
+    ],
+    "voirAussi": [
+      "velo-pacing-cm",
+      "velo-hydratation",
+      "chaleur-altitude"
     ]
   },
   {
@@ -2830,6 +2945,62 @@ export const FICHES: Fiche[] = [
       "musculation-bases",
       "force-pour-endurants"
     ]
+  },
+  {
+    "id": "velo-froid-recuperation",
+    "dossier": "velo",
+    "theme": "recuperation",
+    "titre": "Bain froid et récupération : un petit effet sur les courbatures, utile entre deux efforts rapprochés",
+    "sports": [
+      "velo",
+      "triathlon",
+      "course"
+    ],
+    "motsCles": [
+      "bain froid",
+      "immersion en eau froide",
+      "cryothérapie",
+      "récupération",
+      "courbatures",
+      "glace",
+      "récupération active",
+      "enchaînement d'efforts",
+      "adaptation à l'entraînement",
+      "eau à 10-15 degrés"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- L'**immersion en eau froide** (10 à 15 °C, 10 à 15 minutes) soulage **un peu** les courbatures par rapport à ne rien faire, sans effet net sur les **marqueurs objectifs** de récupération.\n- Elle peut **aider à enchaîner deux efforts rapprochés** (par exemple deux manches dans la journée, par forte chaleur) : dans deux études sur cyclistes, la performance du second effort est maintenue après un bain froid et baisse après une récupération active.\n- Utilisée **systématiquement après chaque séance**, elle risque de **freiner une partie des adaptations** à l'entraînement (surtout de force) : à réserver aux moments où la récupération rapide prime.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; beaucoup d'essais sont petits et mal aveuglés : on ne peut pas cacher un bain froid.)*\n- **Courbatures** : Machado et coll. (*Sports Med*, 2016), méta-analyse de 9 essais : le bain froid est légèrement meilleur que la récupération passive pour les courbatures ; la meilleure fenêtre est **11-15 °C et 11-15 min**.\n- **Autres critères** : Hohenauer et coll. (*PLoS One*, 2015), méta-analyse de 36 articles : le froid réduit nettement les courbatures à 24, 48 et 96 h (différence standardisée d'environ −0,7) et l'effort perçu à 24 h ; **aucune preuve** d'effet sur les marqueurs objectifs de récupération sur 96 h ; risque de biais élevé.\n- **Cyclistes, chaleur** : Vaile et coll. (*J Sports Sci*, 2008), 10 cyclistes entraînés : après une récupération active, **4,1 % de travail en moins** au second effort ; aucune différence entre les différents bains froids. Vaile et coll. (*Br J Sports Med*, 2011), 10 sujets : −1,8 % après récupération active contre inchangé (+0,1 %) après le bain froid.\n- **Mécanismes** : White et Wells (*Extrem Physiol Med*, 2013), revue : le froid abaisse la température des tissus et modifie circulation, enflure et conduction nerveuse ; les mécanismes et les protocoles optimaux restent mal définis.\n- **Revue récente** : Kwiecien et McHugh (*Eur J Appl Physiol*, 2021) : le principal bénéfice chez l'humain est la **réduction de la douleur** ; l'usage chronique pendant la musculation **atténue l'effet** de l'entraînement ; le froid est indiqué **quand une récupération rapide est nécessaire entre des efforts**, plutôt qu'après un entraînement de routine.",
+    "regles": "- Pour des **courbatures** après un effort inhabituel : proposer **un bain frais (10-15 °C, 10-15 min)** comme confort, en précisant que l'effet est **modeste** ; **ne jamais** l'imposer.\n- **Entre deux efforts le même jour** (contre-la-montre en chaleur, deux manches) : un bain froid est une option raisonnable.\n- Après les **séances de force** ou lors de **blocs de préparation** : **ne pas en faire un réflexe**, pour ne pas freiner les adaptations.\n- **Précautions** : personnes avec problème cardiaque, circulation, hypertension ou Raynaud : **avis médical** avant tout bain froid ; ne jamais rester seul si la tolérance est inconnue.",
+    "pieges": "- Croire que le froid « répare » les muscles : les études montrent surtout un effet sur la douleur ressentie.\n- S'en servir après chaque séance de musculation.\n- Confondre cryothérapie locale (glace) et immersion.",
+    "sources": [
+      {
+        "titre": "Machado et al., Can Water Temperature and Immersion Time Influence the Effect of Cold Water Immersion on Muscle Soreness? A Systematic Review and Meta-Analysis (Sports Med, 2016)",
+        "url": "https://doi.org/10.1007/s40279-015-0431-7"
+      },
+      {
+        "titre": "Hohenauer et al., The Effect of Post-Exercise Cryotherapy on Recovery Characteristics: A Systematic Review and Meta-Analysis (PLoS One, 2015)",
+        "url": "https://doi.org/10.1371/journal.pone.0139028"
+      },
+      {
+        "titre": "Vaile et al., Effect of cold water immersion on repeat cycling performance and thermoregulation in the heat (J Sports Sci, 2008)",
+        "url": "https://doi.org/10.1080/02640410701567425"
+      },
+      {
+        "titre": "Vaile et al., Effect of cold water immersion on repeated cycling performance and limb blood flow (Br J Sports Med, 2011)",
+        "url": "https://doi.org/10.1136/bjsm.2009.067272"
+      },
+      {
+        "titre": "White & Wells, Cold-water immersion and other forms of cryotherapy: physiological changes potentially affecting recovery from high-intensity exercise (Extrem Physiol Med, 2013)",
+        "url": "https://doi.org/10.1186/2046-7648-2-26"
+      },
+      {
+        "titre": "Kwiecien & McHugh, The cold truth: the role of cryotherapy in the treatment of injury and recovery from exercise (Eur J Appl Physiol, 2021)",
+        "url": "https://doi.org/10.1007/s00421-021-04683-8"
+      }
+    ],
+    "voirAussi": []
   },
   {
     "id": "velo-ftp-tests",
@@ -3549,6 +3720,68 @@ export const FICHES: Fiche[] = [
     "voirAussi": [
       "velo-puissance-critique",
       "velo-ftp-tests"
+    ]
+  },
+  {
+    "id": "velo-tss-ctl",
+    "dossier": "velo",
+    "theme": "charge-suivi",
+    "titre": "Mesurer la charge d'entraînement à vélo (TSS, TRIMP, effort perçu) : ce qui est valide",
+    "sports": [
+      "velo",
+      "triathlon"
+    ],
+    "motsCles": [
+      "TSS",
+      "charge d'entraînement",
+      "TRIMP",
+      "effort perçu de séance",
+      "session RPE",
+      "CTL",
+      "ATL",
+      "forme",
+      "fatigue",
+      "blessure",
+      "suivi de charge",
+      "puissance",
+      "dose-réponse",
+      "indicateurs"
+    ],
+    "preuve": "probable",
+    "maj": "2026-11-13",
+    "essentiel": "- Plusieurs façons de mesurer la charge existent : **TSS** (calculé à partir de la puissance), **TRIMP** (à partir de la fréquence cardiaque) et **effort perçu de la séance** (RPE × durée). Chez des cyclistes de compétition suivis 10 semaines, **toutes** montrent un lien fort avec les progrès de forme, **le TSS et le TRIMP individualisé étant les plus liés**.\n- **Aucun indicateur unique** ne suffit à dire si l'on s'adapte, si l'on est fatigué ou si l'on risque de se blesser. Les revues recommandent de **combiner** des mesures de charge et des mesures de fatigue (sensations, sommeil, questionnaires).\n- L'**effort perçu de séance** est valide et fiable, et il ne coûte rien : c'est un bon complément quand la puissance ou la FC sont indisponibles.\n- Les **chiffres de forme** (CTL, ATL, TSB) sont des **modèles** : utiles pour la tendance, pas des mesures de laboratoire.",
+    "recherche": "*(Résumés lus via Europe PMC ; aucun texte intégral lu ; échantillons petits, un essai sur des coureurs.)*\n- **Chez les cyclistes** : Sanders et coll. (*IJSPP*, 2017), 15 cyclistes de compétition, 10 semaines de pré-saison : relations **larges à très larges** (r = 0,54-0,81) entre la charge et l'évolution de la puissance à 2 et 4 mmol/L, pour tous les calculs ; les plus fortes avec le TRIMP individualisé (r = 0,81 et 0,77) et le **TSS** (r = 0,75 et 0,79).\n- **Modèle forme-fatigue** : Wallace et coll. (*Eur J Appl Physiol*, 2014), 7 coureurs, 15 semaines : un modèle mathématique (forme/fatigue) reproduit la performance réelle de chaque coureur (corrélations ≈ 0,60-0,70) avec les charges calculées par TSS de course, effort perçu ou TRIMP ; les trois méthodes sont utilisables.\n- **Surveiller sans marqueur unique** : Halson (*Sports Med*, 2014), revue : très peu de marqueurs ont une base scientifique solide ; **aucun marqueur définitif** ; l'écart entre charge externe (puissance) et interne (FC, effort perçu) peut révéler la fatigue ; on y ajoute questionnaires, sommeil, FC de repos et récupération.\n- **Effort perçu de séance** : Haddad et coll. (*Front Neurosci*, 2017), revue : **36 études** confirment la validité, la fiabilité et la cohérence interne de la méthode de Foster (RPE de la séance × durée).\n- **Charge et blessure** : Jones, Griffiths, Mellalieu (*Sports Med*, 2017), revue systématique de 68 études : le lien entre charge sur la durée, marqueurs de fatigue et blessure ou maladie est étudié avec des méthodes **très disparates**, ce qui limite les conclusions.\n- **Concepts** : Impellizzeri et coll. (*Sports Med*, 2023) : distinguer « exposition » (charge externe) et « dose » (charge interne) ; une mesure de charge doit refléter les **mécanismes** du résultat visé pour être valide.",
+    "regles": "- Présenter CTL/ATL/TSB comme **une estimation de tendance**, avec une **marge** ; ne jamais en faire un verdict (« tu es à 87 de forme ») ni une règle de blessure.\n- Avec un **capteur de puissance** : TSS ; **sans**, FC ou **effort perçu de la séance** : demander à l'utilisateur de noter son ressenti (1 à 10) en fin de séance.\n- **Croiser** la charge avec les **sensations** : si la charge est modérée mais que l'utilisateur est épuisé, ou l'inverse, **croire l'utilisateur** et alléger ([[charge-forme-fraicheur]], [[surentrainement-fatigue]]).\n- Ne pas déclarer un risque de blessure à partir d'un seul chiffre de charge.",
+    "pieges": "- Comparer des TSS calculés avec des FTP différentes.\n- Chercher un chiffre « magique » de ratio charge aiguë/chronique.\n- Oublier que le TSS ignore le stress hors vélo (travail, sommeil, déplacements).",
+    "sources": [
+      {
+        "titre": "Sanders et al., Methods of Monitoring Training Load and Their Relationships to Changes in Fitness and Performance in Competitive Road Cyclists (IJSPP, 2017)",
+        "url": "https://doi.org/10.1123/ijspp.2016-0454"
+      },
+      {
+        "titre": "Wallace et al., A comparison of methods for quantifying training load: relationships between modelled and actual training responses (Eur J Appl Physiol, 2014)",
+        "url": "https://doi.org/10.1007/s00421-013-2745-1"
+      },
+      {
+        "titre": "Halson, Monitoring training load to understand fatigue in athletes (Sports Med, 2014)",
+        "url": "https://doi.org/10.1007/s40279-014-0253-z"
+      },
+      {
+        "titre": "Haddad et al., Session-RPE Method for Training Load Monitoring: Validity, Ecological Usefulness, and Influencing Factors (Front Neurosci, 2017)",
+        "url": "https://doi.org/10.3389/fnins.2017.00612"
+      },
+      {
+        "titre": "Jones et al., Training Load and Fatigue Marker Associations with Injury and Illness: A Systematic Review of Longitudinal Studies (Sports Med, 2017)",
+        "url": "https://doi.org/10.1007/s40279-016-0619-5"
+      },
+      {
+        "titre": "Impellizzeri et al., Understanding Training Load as Exposure and Dose (Sports Med, 2023)",
+        "url": "https://doi.org/10.1007/s40279-023-01833-0"
+      }
+    ],
+    "voirAussi": [
+      "charge-forme-fraicheur",
+      "surentrainement-fatigue"
     ]
   },
   {

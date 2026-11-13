@@ -2,7 +2,7 @@
 
 GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à la main. Une fiche est dans `<sport>/<partie>/<id>.md`.
 
-**69 fiches.**
+**73 fiches.**
 
 ## Tous les sports (`commun/`) — 20 fiches
 
@@ -113,7 +113,7 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 
 - [Course à pied : chaussures à plaque carbone, cadence, foulée](course/materiel/course-chaussures-cadence.md) — `course-chaussures-cadence` · preuve : probable · 4 sources
 
-## Vélo (`velo/`) — 24 fiches
+## Vélo (`velo/`) — 28 fiches
 
 ### Endurance de base (volume facile, sorties longues) (`velo/endurance/`)
 
@@ -137,6 +137,14 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 
 - [Périodisation du cycliste : par blocs, traditionnelle, ou au jour le jour](velo/planification/velo-periodisation.md) — `velo-periodisation` · preuve : probable · 5 sources
 - [Désentraînement du cycliste : ce qu'on perd, à quelle vitesse, et comment limiter](velo/planification/velo-reprise-apres-arret.md) — `velo-reprise-apres-arret` · preuve : probable · 5 sources
+
+### Charge et suivi (forme, monotonie, indicateurs) (`velo/charge-suivi/`)
+
+- [Mesurer la charge d'entraînement à vélo (TSS, TRIMP, effort perçu) : ce qui est valide](velo/charge-suivi/velo-tss-ctl.md) — `velo-tss-ctl` · preuve : probable · 6 sources
+
+### Récupération (sommeil, fatigue, HRV) (`velo/recuperation/`)
+
+- [Bain froid et récupération : un petit effet sur les courbatures, utile entre deux efforts rapprochés](velo/recuperation/velo-froid-recuperation.md) — `velo-froid-recuperation` · preuve : probable · 6 sources
 
 ### Nutrition et hydratation (`velo/nutrition/`)
 
@@ -164,6 +172,11 @@ GÉNÉRÉ par `supabase/scripts/generer-connaissances.mjs` : ne pas modifier à 
 ### Compétition (affûtage, allure, jour J) (`velo/competition/`)
 
 - [Gérer son effort à vélo (contre-la-montre, cyclosportive) : départ, régularité, chaleur](velo/competition/velo-pacing-cm.md) — `velo-pacing-cm` · preuve : debattu · 6 sources
+
+### Environnement (chaleur, altitude, froid) (`velo/environnement/`)
+
+- [Altitude à vélo : perte de performance et ce qui marche (ou pas)](velo/environnement/velo-altitude.md) — `velo-altitude` · preuve : debattu · 5 sources
+- [Rouler par forte chaleur : effets sur la puissance et acclimatation](velo/environnement/velo-chaleur.md) — `velo-chaleur` · preuve : probable · 6 sources
 
 ### Profils (débutants, femmes, vétérans, jeunes) (`velo/profils/`)
 

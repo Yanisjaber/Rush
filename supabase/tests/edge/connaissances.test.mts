@@ -64,7 +64,7 @@ const QUESTIONS: [string, string, number][] = [
   ["Mes règles changent mon entraînement ?", 'cycle-menstruel', 2],
   ["J'ai 52 ans, je peux encore progresser ?", 'veterans', 1],
   ["C'est quoi le TSB et le CTL ?", 'charge-forme-fraicheur', 1],
-  ['Comment courir quand il fait très chaud ?', 'chaleur-altitude', 1],
+  ['Comment courir quand il fait très chaud ?', 'chaleur-altitude', 3],
   ['Je pars trop vite en marathon, quelle stratégie d\'allure ?', 'allure-course-marathon', 1],
   ['Je veux perdre du poids en m\'entraînant beaucoup', 'energie-reds', 1],
   ['Ma HRV est basse ce matin', 'hrv-suivi-recuperation', 1],
