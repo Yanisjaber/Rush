@@ -10,7 +10,7 @@ import { usePalette } from '@/theme/usePalette';
 // Le graphique d'une séance prévue et le tableau de ses intervalles (maquette 3 du 14 nov.) : une barre par segment, colorée par zone, à la hauteur de sa cible (l'allure la plus rapide en haut),
 // avec les axes (cible à gauche, temps en bas) ; la valeur est écrite au-dessus de chaque effort. Dessous, le détail en lignes compactes : une pastille de durée, une pastille de zone avec sa cible,
 // le libellé ; les répétitions sont encadrées avec leur « 3× ».
-// Héros de la page 1 d'une séance prévue sans parcours.
+// Héros de la page 1 d'une séance prévue sans parcours, posé directement sur le fond (sans carte).
 const HAUTEUR = 132;
 const G = 34; // la place des valeurs à gauche
 const D = 6;
@@ -41,8 +41,7 @@ export function GrapheSeancePrevue({ blocs, couleur, reference, sport }: { blocs
   const etiquette = `Profil de la séance, ${texteDuree(g.total)}. ${lignes.map((l) => `${l.repetitions > 1 ? `${l.repetitions} fois ` : ''}${l.nom}, ${l.effort}, ${l.cible}${l.recup ? `, récupération ${l.recup}` : ''}`).join(' ; ')}.`;
 
   return (
-    <View accessible accessibilityLabel={etiquette} style={[styles.carte, { backgroundColor: p.surface, borderColor: p.trait }]}>
-      <View style={[styles.bandeau, { backgroundColor: couleur }]} />
+    <View accessible accessibilityLabel={etiquette} style={styles.corps}>
       <View onLayout={(e: LayoutChangeEvent) => setLargeur(e.nativeEvent.layout.width)}>
         {largeur > 0 ? (
           <Svg width="100%" height={HAUTEUR} viewBox={`0 0 ${largeur} ${HAUTEUR}`}>
@@ -128,8 +127,8 @@ function Ligne({ ligne }: { ligne: LigneDetail }) {
 }
 
 const styles = StyleSheet.create({
-  carte: { borderRadius: rayon.bloc, borderWidth: 1, padding: espace.e3, paddingTop: espace.e3 + 4, gap: espace.e2, overflow: 'hidden' },
-  bandeau: { position: 'absolute', top: 0, left: 0, right: 0, height: 4 },
+  // Pas de carte : le graphique et le détail sont posés directement sur le fond de la page
+  corps: { gap: espace.e2 },
   detail: { gap: 0 },
   enteteColonnes: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, paddingBottom: 4 },
   ligneDetail: { flexDirection: 'row', alignItems: 'center', gap: espace.e2, minHeight: 36, borderTopWidth: StyleSheet.hairlineWidth },
