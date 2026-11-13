@@ -25,10 +25,11 @@ test('trimestreDe : trois mois du calendrier', () => {
 });
 
 test('la note combine heures, charge et records, le meilleur trimestre vaut 100', () => {
-  // T1 : 10 h, 100 pts, et sa séance est la plus longue ET la plus chargée (2 records). T2 : 5 h, 50 pts.
-  const [c] = notesTrimestrielles([act('2026-01-10', 600, { tss: 100 }), act('2026-04-10', 300, { tss: 50 })], maintenant);
+  // T1 : 10 h, 100 pts, un record (1re place). T2 : 5 h, 50 pts, aucun record.
+  const records = [{ famille: 'course', cle: 'allure-300', dates: ['2026-01-15'] }];
+  const [c] = notesTrimestrielles([act('2026-01-10', 600, { tss: 100 }), act('2026-04-10', 300, { tss: 50 })], maintenant, records);
   assert.equal(c.points[0].note, 100);
-  assert.equal(c.points[0].records, 2);
+  assert.equal(c.points[0].records, 1);
   assert.equal(c.points[1].note, 33); // (50 % + 50 % + 0 %) / 3
   assert.equal(c.meilleur.trimestre, '2026-T1');
 });
@@ -39,15 +40,21 @@ test('les séances des trois mois du même trimestre s\'additionnent', () => {
   assert.equal(c.points[0].charge, 110);
 });
 
-test('les records sont rattachés au trimestre où ils ont été posés, même s\'il est moins chargé', () => {
-  const t1 = Array.from({ length: 20 }, (_, i) => act(`2026-01-${String(i + 1).padStart(2, '0')}`, 60, { tss: 10 }));
-  const [c] = notesTrimestrielles([...t1, act('2026-04-05', 180, { tss: 20 })], maintenant);
-  assert.equal(c.points.find((p) => p.trimestre === '2026-T2')?.records, 2); // la plus longue séance et la plus grosse charge
-  assert.equal(c.points.find((p) => p.trimestre === '2026-T1')?.records, 0);
+test('les 5 premiers d\'un record comptent : le 2e meilleur de T1 donne un petit coup de pouce à T1, même si le 1er est dans un trimestre plus récent', () => {
+  const records = [{ famille: 'course', cle: 'allure-300', dates: ['2026-04-10', '2026-01-15'] }]; // 1er en T2 2026, 2e en T1 2026
+  const [c] = notesTrimestrielles([act('2026-01-10', 60), act('2026-04-10', 60)], maintenant, records);
+  const t1 = c.points.find((p) => p.trimestre === '2026-T1');
+  const t2 = c.points.find((p) => p.trimestre === '2026-T2');
+  assert.equal(t1?.records, 1);
+  assert.equal(t1?.pointsRecords, 0.8);
+  assert.equal(t2?.pointsRecords, 1);
+  assert.ok((t1?.note ?? 0) > 0);
 });
 
+
 test('sans charge dans le sport, seuls les heures et les records comptent', () => {
-  const [c] = notesTrimestrielles([act('2026-01-10', 600), act('2026-04-10', 300)], maintenant);
+  const records = [{ famille: 'course', cle: 'allure-300', dates: ['2026-01-15'] }];
+  const [c] = notesTrimestrielles([act('2026-01-10', 600), act('2026-04-10', 300)], maintenant, records);
   assert.equal(c.points[0].note, 100);
   assert.equal(c.points[1].note, 25); // (50 % + 0 %) / 2
 });
@@ -75,7 +82,8 @@ test('à égalité, le premier trimestre en date est le meilleur', () => {
 });
 
 test('fenêtre : les 3 derniers trimestres gardent les notes de tout l\'historique', () => {
-  const g = notesTrimestrielles([act('2024-06-10', 1200), act('2025-10-10', 300), act('2026-04-10', 600)], maintenant);
+  const records = [{ famille: 'course', cle: 'allure-300', dates: ['2024-06-12'] }];
+  const g = notesTrimestrielles([act('2024-06-10', 1200), act('2025-10-10', 300), act('2026-04-10', 600)], maintenant, records);
   const f = fenetre(g, 3, maintenant);
   assert.deepEqual(f.trimestres, ['2025-T4', '2026-T1', '2026-T2']);
   assert.deepEqual(f.courbes[0].points.map((p) => p.note), [13, 0, 25]); // 100 = T2 2024, hors fenêtre

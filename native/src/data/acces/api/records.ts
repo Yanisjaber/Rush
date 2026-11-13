@@ -1,6 +1,7 @@
 import { sb } from '../supabase';
 import { courbeDeLignes, sortieVeloDeLigne, type CleSignal, type EntreeCourbe, type LigneCourbe, type LigneVelo, type PointCourbe, type SortieVelo } from '../../bilan/records.ts';
 import type { MesuresAnnee } from '../../bilan/piliers-niveau.ts';
+import type { LigneTop } from '../../bilan/records-niveau.ts';
 import { courbeCourseDeLignes, signalServeur, type CleCourbeCourse, type LigneCourbeCourse } from '../../bilan/records-course.ts';
 import type { LignePiliersCourse } from '../../bilan/piliers-course.ts';
 import { resultat, type Resultat } from './commun';
@@ -86,6 +87,24 @@ export async function chargerPiliersCourse(): Promise<Resultat<LignePiliersCours
   const nombre = (v: unknown): number | null => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? null : Number(v));
   return {
     data: res.data.map((l) => ({ an: Number(l.an), t1000: nombre(l.t1000), t5000: nombre(l.t5000), t10000: nombre(l.t10000), d300: nombre(l.d300), d3600: nombre(l.d3600), nCourbes: Number(l.n_courbes) || 0 })),
+    erreur: '',
+  };
+}
+
+/**
+ * Les 5 meilleures séances de chaque durée, pour le niveau trimestre par trimestre : la puissance du vélo (44 durées, on garde celles qui comptent) et la meilleure distance de la course par durée.
+ * Deux appels, au plus 300 lignes en tout ; chaque ligne n'a besoin que de la durée, du rang et de la date.
+ */
+export async function chargerTopRecordsNiveau(): Promise<Resultat<{ velo: LigneTop[]; course: LigneTop[] }>> {
+  const [v, c] = await Promise.all([sb.rpc('rpc_courbe_puissance', { p_n: 5 }), sb.rpc('rpc_courbe_course', { p_signal: 'dis', p_n: 5 })]);
+  const velo = resultat<{ duree_s: number; rang: number; start_date_local: string }[]>(v, 'Impossible de charger tes records de puissance.');
+  const course = resultat<{ cle: number; rang: number; start_date_local: string }[]>(c, 'Impossible de charger tes records de course.');
+  if (!velo.data || !course.data) return { data: null, erreur: velo.erreur || course.erreur };
+  return {
+    data: {
+      velo: velo.data.map((l) => ({ cle: l.duree_s, rang: l.rang, start_date_local: l.start_date_local })),
+      course: course.data.map((l) => ({ cle: l.cle, rang: l.rang, start_date_local: l.start_date_local })),
+    },
     erreur: '',
   };
 }

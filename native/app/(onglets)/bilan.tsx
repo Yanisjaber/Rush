@@ -54,6 +54,7 @@ import { useHistoriqueProgression, useSeriesForceProgression } from '@/hooks/use
 import { useReferences } from '@/hooks/useReferences';
 import { useMenu } from '@/stores/menu';
 import { fenetre as fenetreNiveau, notesTrimestrielles } from '@/data/bilan/niveau-trimestriel';
+import { useRecordsNiveau } from '@/hooks/useRecordsNiveau';
 import { demanderJour } from '@/stores/jour-demande';
 import { choisirMesure, useMesuresBilan } from '@/stores/mesures-bilan';
 import { usePiliersAnnuels } from '@/hooks/usePiliersAnnuels';
@@ -323,7 +324,8 @@ export default function Bilan() {
 
   // Le niveau trimestre par trimestre : heures, charge et records de chaque trimestre, sport par sport (data/bilan/niveau-trimestriel.ts)
   const [selNiveau, setSelNiveau] = useState<number | null>(null);
-  const courbesNiveau = useMemo(() => (niveauOuvert ? notesTrimestrielles(filtrees, maintenant) : []), [niveauOuvert, filtrees, maintenant]);
+  const recordsNiveau = useRecordsNiveau(niveauOuvert, toutes); // les records de puissance, d'allure et de plus longue sortie, tous sports (le filtre ne choisit que les courbes affichées)
+  const courbesNiveau = useMemo(() => (niveauOuvert && recordsNiveau.records ? notesTrimestrielles(filtrees, maintenant, recordsNiveau.records) : []), [niveauOuvert, filtrees, maintenant, recordsNiveau.records]);
   const vueNiveau = useMemo(() => fenetreNiveau(courbesNiveau, null, maintenant), [courbesNiveau, maintenant]);
   const couleursNiveau = useMemo(() => Object.fromEntries(vueNiveau.courbes.map((c) => [c.famille, couleurSport(p, c.famille)])), [vueNiveau, p]);
   useEffect(() => setSelNiveau(null), [filtre, onglet]);
@@ -722,7 +724,11 @@ export default function Bilan() {
             ) : null}
 
             {pret && onglet === 'progres' ? (
-              vueNiveau.courbes.length ? (
+              recordsNiveau.chargement ? (
+                <View accessible accessibilityLabel="Chargement du niveau" style={styles.attente}>
+                  <ActivityIndicator color={p.texteDoux} />
+                </View>
+              ) : vueNiveau.courbes.length ? (
                 <Bloc titre="Niveau trimestre par trimestre">
                   <View style={{ gap: espace.e3 }}>
                     <CourbesNiveau trimestres={vueNiveau.trimestres} courbes={vueNiveau.courbes} couleurs={couleursNiveau} selection={selNiveau} onSelection={setSelNiveau} />

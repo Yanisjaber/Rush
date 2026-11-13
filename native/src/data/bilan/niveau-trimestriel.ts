@@ -1,11 +1,13 @@
 // Le niveau trimestre par trimestre, calculé sur trois faits, sport par sport :
 //   - les heures d'entraînement du trimestre ;
 //   - la charge du trimestre (les « pts » de l'app) ;
-//   - les records posés pendant le trimestre : combien de tes records actuels (plus longue séance, plus longue distance, plus gros dénivelé, plus grosse charge) datent de ces trois mois.
+//   - les records du trimestre : tes records de puissance (vélo), d'allure (course, natation) et de plus longue sortie ; chaque record compte ses 5 meilleures séances, la meilleure pèse le plus
+//     (data/bilan/records-niveau.ts). Un record dont le 2e meilleur date du trimestre y apporte donc un petit coup de pouce, même si le 1er est plus récent.
 // Chaque fait est comparé à ton MEILLEUR trimestre de ce sport (100 = ton meilleur trimestre pour ce fait). La note du trimestre est la moyenne de ces pourcentages, remise à l'échelle
 // pour que ton meilleur trimestre vaille 100. Un fait que le sport n'a pas (pas de charge, aucun record) n'entre pas dans la moyenne. Fonctions pures, sans réseau.
 // Un trimestre = trois mois du calendrier : T1 janvier à mars, T2 avril à juin, T3 juillet à septembre, T4 octobre à décembre. Clé : « 2026-T1 ».
 import type { ActiviteBilan } from './bilan.ts';
+import { pointsRecordsParTrimestre, type RecordDate } from './records-niveau.ts';
 
 export interface PointTrimestre {
   /** « 2026-T1 » */
@@ -13,8 +15,10 @@ export interface PointTrimestre {
   heures: number;
   /** La charge du trimestre (somme des « pts » des séances) */
   charge: number;
-  /** Combien de tes records actuels ont été posés pendant ce trimestre */
+  /** Combien de places dans un top 5 de record tombent dans ce trimestre */
   records: number;
+  /** Les points de ces records (la meilleure séance pèse plus que la 5e) : c'est ce qui entre dans la note */
+  pointsRecords: number;
   /** 0 à 100 : la moyenne des pourcentages (heures, charge, records) par rapport à ton meilleur trimestre, remise à l'échelle (le meilleur vaut 100) */
   note: number;
   /** Le trimestre en cours : il n'est pas fini, sa note peut encore monter */
@@ -37,14 +41,12 @@ const indexTrimestre = (t: string): number => Number(t.slice(0, 4)) * 4 + Number
 const trimestreDepuisIndex = (i: number): string => `${Math.floor(i / 4)}-T${(i % 4) + 1}`;
 const trimestreCourant = (maintenant: Date): string => `${maintenant.getFullYear()}-T${Math.floor(maintenant.getMonth() / 3) + 1}`;
 
-/** Les mesures d'une séance dont le record (la plus grande valeur) compte comme « record posé pendant ce trimestre ». */
-const RECORDS_SEANCE = ['duree_min', 'distance_km', 'd_plus', 'tss'] as const;
-
 /** Les familles sans courbe : « Autres » (ski, trek…) mélange des sports sans rapport entre eux, un niveau n'y aurait aucun sens. */
 const SANS_COURBE = new Set(['autre']);
 
 /** Une courbe par sport (famille), le sport le plus pratiqué d'abord. Un sport sans une seule heure n'a pas de courbe. */
-export function notesTrimestrielles(acts: readonly ActiviteBilan[], maintenant: Date): CourbeSport[] {
+export function notesTrimestrielles(acts: readonly ActiviteBilan[], maintenant: Date, records: readonly RecordDate[] = []): CourbeSport[] {
+  const recordsParSport = pointsRecordsParTrimestre(records, trimestreDe);
   const courant = trimestreCourant(maintenant);
   const parSport = new Map<string, ActiviteBilan[]>();
   for (const a of acts) {
@@ -65,13 +67,8 @@ export function notesTrimestrielles(acts: readonly ActiviteBilan[], maintenant: 
       heuresParT.set(t, (heuresParT.get(t) ?? 0) + a.duree_min / 60);
       chargeParT.set(t, (chargeParT.get(t) ?? 0) + (a.tss > 0 ? a.tss : 0));
     }
-    // Les records actuels du sport : la plus grande valeur de chaque mesure (à égalité, la plus ancienne séance), rattachée à son trimestre
-    const recordsParT = new Map<string, number>();
-    for (const cle of RECORDS_SEANCE) {
-      let meilleure: ActiviteBilan | null = null;
-      for (const a of seances) if (a[cle] > 0 && (!meilleure || a[cle] > meilleure[cle] || (a[cle] === meilleure[cle] && a.iso < meilleure.iso))) meilleure = a;
-      if (meilleure) recordsParT.set(trimestreDe(meilleure.iso), (recordsParT.get(trimestreDe(meilleure.iso)) ?? 0) + 1);
-    }
+    // Les records du sport (s'il y en a : la muscu n'en a pas encore), par trimestre
+    const recordsParT = recordsParSport.get(famille) ?? new Map();
 
     const cles = [...heuresParT.keys()].sort();
     const debut = indexTrimestre(cles[0]);
@@ -80,7 +77,8 @@ export function notesTrimestrielles(acts: readonly ActiviteBilan[], maintenant: 
     for (let i = debut; i <= fin; i++) trimestres.push(trimestreDepuisIndex(i));
     const h = trimestres.map((t) => heuresParT.get(t) ?? 0);
     const c = trimestres.map((t) => chargeParT.get(t) ?? 0);
-    const r = trimestres.map((t) => recordsParT.get(t) ?? 0);
+    const r = trimestres.map((t) => recordsParT.get(t)?.points ?? 0);
+    const nbR = trimestres.map((t) => recordsParT.get(t)?.nb ?? 0);
     const hMax = Math.max(...h);
     if (!(hMax > 0)) continue;
     const cMax = Math.max(...c);
@@ -93,7 +91,7 @@ export function notesTrimestrielles(acts: readonly ActiviteBilan[], maintenant: 
       return parts.reduce((t, x) => t + x, 0) / parts.length;
     });
     const bMax = Math.max(...brute);
-    const points: PointTrimestre[] = trimestres.map((t, k) => ({ trimestre: t, heures: h[k], charge: c[k], records: r[k], note: Math.round((brute[k] / bMax) * 100), enCours: t === courant }));
+    const points: PointTrimestre[] = trimestres.map((t, k) => ({ trimestre: t, heures: h[k], charge: c[k], records: nbR[k], pointsRecords: r[k], note: Math.round((brute[k] / bMax) * 100), enCours: t === courant }));
     const meilleur = points.find((x) => x.note === 100) as PointTrimestre;
     courbes.push({ famille, points, meilleur, totalHeures: h.reduce((t, x) => t + x, 0) });
   }
