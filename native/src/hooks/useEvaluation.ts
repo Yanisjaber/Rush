@@ -2,9 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { chargerCourbeCourse, chargerCourbePuissance } from '@/data/acces/api';
 import { normaliser } from '@/data/bilan/bilan';
 import type { PointCourbe } from '@/data/bilan/records';
-import { courbeCourseDeLignes } from '@/data/bilan/records-course';
-import { recordsVeloDemo } from '@/data/demo/demo';
-import { lignesCourbeCourseDemo } from '@/data/demo/records-course-demo';
 import { evaluer, fusionnerCourbes, type Evaluation } from '@/data/profil/evaluation';
 import type { Profil } from '@/data/types';
 import { useAuth } from '@/stores/auth';
@@ -31,8 +28,8 @@ export function useEvaluation(): {
   enregistrer: (date: string, metric: string, valeur: number | null) => Promise<boolean>;
   recharger: () => Promise<void>;
 } {
-  const { session, demo } = useAuth();
-  const userId = !demo ? (session?.user.id ?? null) : null;
+  const { session } = useAuth();
+  const userId = session?.user.id ?? null;
   const versionEcarts = useVersionEcarts();
   const accueil = useDonneesAccueil();
   const bilan = useDonneesBilan();
@@ -65,15 +62,8 @@ export function useEvaluation(): {
     };
   }, [userId, annee, versionEcarts]);
 
-  // En démo : les courbes d'exemple
-  const courbesDemo = useMemo(() => {
-    if (!demo) return null;
-    const velo = recordsVeloDemo(new Date());
-    const course = (a: number) => courbeCourseDeLignes('pacedur', lignesCourbeCourseDemo(new Date(), 'dis', a));
-    return { puissance: fusionnerCourbes(velo.courbe(annee), velo.courbe(annee - 1)), course: fusionnerCourbes(course(annee), course(annee - 1)) };
-  }, [demo, annee]);
   // Les courbes d'un autre compte ne comptent jamais
-  const lesCourbes = courbesDemo ?? (courbes && courbes.userId === userId ? courbes : null);
+  const lesCourbes = courbes && courbes.userId === userId ? courbes : null;
 
   const activites = useMemo(() => bilan.brutes.map((s) => normaliser(s)), [bilan.brutes]);
   const donnees = accueil.donnees;
@@ -103,7 +93,7 @@ export function useEvaluation(): {
   return {
     evaluation,
     profil: donnees?.profil ?? null,
-    chargement: !donnees || (!demo && !lesCourbes) || sante.chargement,
+    chargement: !donnees || !lesCourbes || sante.chargement,
     erreur: donnees?.erreur || bilan.erreur || erreurCourbes || sante.erreur || '',
     enregistrer: sante.enregistrer,
     recharger,
