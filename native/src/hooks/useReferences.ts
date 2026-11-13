@@ -11,11 +11,11 @@ import { useAuth } from '@/stores/auth';
 const memoire = memoireReferences;
 
 export function useReferences(): Reference {
-  const { session, demo } = useAuth();
+  const { session } = useAuth();
   const userId = session?.user.id ?? null;
-  const [ref, setRef] = useState<Reference>(demo ? { ftp: 250, hrMax: 196, allureBase: 240 } : (userId ? memoire.get(userId) : undefined) ?? {});
+  const [ref, setRef] = useState<Reference>((userId ? memoire.get(userId) : undefined) ?? {});
   useEffect(() => {
-    if (demo || !userId || memoire.has(userId)) return;
+    if (!userId || memoire.has(userId)) return;
     let annule = false;
     void chargerProfil(userId).then((r) => {
       if (!r.data) return;
@@ -28,6 +28,6 @@ export function useReferences(): Reference {
     return () => {
       annule = true;
     };
-  }, [demo, userId]);
+  }, [userId]);
   return ref;
 }

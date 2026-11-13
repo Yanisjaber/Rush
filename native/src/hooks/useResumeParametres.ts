@@ -1,7 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { chargerConnexions, chargerProfilComplet, type ConnexionStrava } from '@/data/acces/api';
-import { donneesDemo } from '@/data/demo/demo';
 import { resumeParametres, type ResumeParametres } from '@/data/reglages/parametres';
 import type { LigneProfil } from '@/data/reglages/profil';
 import { useSportsChoisis } from '@/hooks/useSportsChoisis';
@@ -9,9 +8,8 @@ import { useAuth } from '@/stores/auth';
 import { SPORTS, type CleSport } from '@/theme/sports';
 
 // Le résumé de Paramètres : profil, sports cochés et statut Strava, lus une fois à l'ouverture. userId vient toujours de la session.
-// En démo, rien ne part sur le réseau : le profil d'exemple, aucune connexion.
 export function useResumeParametres(): { resume: ResumeParametres; chargement: boolean; erreurProfil: string; erreurConnexions: string } {
-  const { session, demo } = useAuth();
+  const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const { choisis } = useSportsChoisis();
   const [ligne, setLigne] = useState<LigneProfil | null>(null);
@@ -27,10 +25,7 @@ export function useResumeParametres(): { resume: ResumeParametres; chargement: b
     useCallback(() => {
       let annule = false;
       (async () => {
-        if (demo) {
-          setLigne({ ...donneesDemo().profil, extras: donneesDemo().profil.extras });
-          setStrava(null);
-        } else if (userId) {
+        if (userId) {
           const [p, c] = await Promise.all([chargerProfilComplet(userId), chargerConnexions(userId)]);
           if (annule) return;
           setLigne(p.data);
@@ -43,7 +38,7 @@ export function useResumeParametres(): { resume: ResumeParametres; chargement: b
       return () => {
         annule = true;
       };
-    }, [demo, userId]),
+    }, [userId]),
   );
 
   const resume = useMemo(

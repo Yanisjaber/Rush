@@ -1,6 +1,5 @@
-// Tout ce que l'Accueil affiche, chargé d'un coup : une enveloppe unique, la même pour la démo et pour un vrai compte.
+// Tout ce que l'Accueil affiche, chargé d'un coup : une enveloppe unique.
 // Port de routes/Accueil.svelte. Ce fichier est pur (aucun réseau) : le chargement d'un vrai compte est dans chargement.ts.
-import { donneesDemo, objectifHyroxDemo, programmesDemo, seriesForceHistoriqueDemo, testsHyroxHistoriqueDemo } from '../demo/demo.ts';
 import { familleAffichage, familleSport } from '../sports/familles.ts';
 import { fusionnerFamilles } from '../sports/sports-choisis.ts';
 import type { Metrique, Objectif, ObjectifHyrox, PointPuissance, Prevue, Profil, ProgrammeForce, Seance, SerieForce, TestHyrox } from '../types.ts';
@@ -36,22 +35,21 @@ export function famillesDe(d: Pick<DonneesAccueil, 'seances' | 'force' | 'hyrox'
   return fusionnerFamilles([...f], d.sportsChoisis);
 }
 
-/** Les données d'exemple : mêmes formes que celles de la base, sans compte. */
-export function donneesDemoAccueil(aujourdhui: Date = new Date(), options: { prevuesAujourdhui?: number } = {}): DonneesAccueil {
-  const d = donneesDemo(aujourdhui, undefined, options);
+/** Une enveloppe vide, avec un message d'erreur : pour ne jamais laisser l'écran bloqué si le chargement échoue. */
+export function donneesAccueilVides(erreur: string): DonneesAccueil {
   return {
-    profil: d.profil,
-    metriques: d.metriques,
-    seances: d.seances,
-    dernieres: d.seances,
-    objectifs: d.objectifs,
-    puissance: d.puissance,
-    planifiees: d.planifiees,
-    force: { series: seriesForceHistoriqueDemo(aujourdhui), programmes: programmesDemo() },
-    hyrox: { tests: testsHyroxHistoriqueDemo(aujourdhui), objectif: objectifHyroxDemo() },
+    profil: null,
+    metriques: [],
+    seances: [],
+    dernieres: [],
+    objectifs: [],
+    puissance: [],
+    planifiees: [],
+    force: { series: [], programmes: [] },
+    hyrox: { tests: [], objectif: null },
     sportsChoisis: null,
-    connecte: false,
-    erreur: '',
+    connecte: true,
+    erreur,
     erreurSport: '',
   };
 }

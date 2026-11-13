@@ -2,12 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { chargerCourbeCourse, chargerPodiumCourse } from '@/data/acces/api';
 import type { EntreeCourbe, PointCourbe } from '@/data/bilan/records';
 import { courbeCourseDeLignes, signalServeur, type CleCourbeCourse } from '@/data/bilan/records-course';
-import { lignesCourbeCourseDemo } from '@/data/demo/records-course-demo';
 import { useAuth } from '@/stores/auth';
 import { auChangementDEcarts, useVersionEcarts } from '@/stores/ecarts';
 
 // Les courbes de records de la course à pied (allure par distance, distance par durée, FC par durée) : tous temps et année choisie, puis le classement du point touché.
-// Chargées quand on ouvre l'onglet Records de la course ou qu'on change de signal, gardées en mémoire cinq minutes. En démo, il n'y a pas de courbe (les flux de démo n'en ont pas).
+// Chargées quand on ouvre l'onglet Records de la course ou qu'on change de signal, gardées en mémoire cinq minutes.
 const DUREE_CACHE = 5 * 60 * 1000;
 const ATTENTE_MS = 250;
 const cache = new Map<string, { data: PointCourbe[]; a: number }>();
@@ -20,8 +19,8 @@ auChangementDEcarts(() => {
 }); // une donnée écartée change les records : on relit
 
 export function useCourbeCourse(signal: CleCourbeCourse, annee: number, actif: boolean): { courbeTout: PointCourbe[]; courbeAnnee: PointCourbe[]; chargement: boolean; erreur: string } {
-  const { session, demo } = useAuth();
-  const userId = !demo ? (session?.user.id ?? null) : null;
+  const { session } = useAuth();
+  const userId = session?.user.id ?? null;
   const versionEcarts = useVersionEcarts();
   const [, rafraichir] = useState(0);
   const [chargement, setChargement] = useState(false);
@@ -60,11 +59,6 @@ export function useCourbeCourse(signal: CleCourbeCourse, annee: number, actif: b
     };
   }, [actif, userId, signal, annee, versionEcarts]);
 
-  const exemple = useMemo(
-    () => (demo && actif ? { tout: courbeCourseDeLignes(signal, lignesCourbeCourseDemo(new Date(), signalServeur(signal) as 'pace' | 'dis' | 'fc')), annee: courbeCourseDeLignes(signal, lignesCourbeCourseDemo(new Date(), signalServeur(signal) as 'pace' | 'dis' | 'fc', annee)) } : null),
-    [demo, actif, signal, annee],
-  );
-  if (exemple) return { courbeTout: exemple.tout, courbeAnnee: exemple.annee, chargement: false, erreur: '' };
   if (!actif || !userId) return { courbeTout: VIDE, courbeAnnee: VIDE, chargement: false, erreur: '' };
   return {
     courbeTout: cache.get(cleCache(userId, signal, undefined))?.data || VIDE,
@@ -76,8 +70,8 @@ export function useCourbeCourse(signal: CleCourbeCourse, annee: number, actif: b
 
 /** Le classement (jusqu'à 30 séances) d'une distance ou d'une durée touchée sur la courbe : demandé au serveur quand le doigt s'arrête (250 ms), gardé cinq minutes. Null tant qu'il n'est pas là. `annee` : null pour « Tous temps ». */
 export function usePodiumCourse(signal: CleCourbeCourse, cle: number | null, annee: number | null): EntreeCourbe[] | null {
-  const { session, demo } = useAuth();
-  const userId = !demo ? (session?.user.id ?? null) : null;
+  const { session } = useAuth();
+  const userId = session?.user.id ?? null;
   const versionEcarts = useVersionEcarts();
   const [, rafraichir] = useState(0);
 
@@ -105,11 +99,6 @@ export function usePodiumCourse(signal: CleCourbeCourse, cle: number | null, ann
     };
   }, [userId, signal, cle, annee, versionEcarts]);
 
-  const exemple = useMemo(
-    () => (demo && cle != null ? courbeCourseDeLignes(signal, lignesCourbeCourseDemo(new Date(), signalServeur(signal) as 'pace' | 'dis' | 'fc', annee ?? undefined, cle, 30))[0]?.top ?? null : null),
-    [demo, signal, cle, annee],
-  );
-  if (exemple) return exemple;
   if (!userId || cle == null) return null;
   return cachePodium.get(`${cleCache(userId, signal, annee ?? undefined)}|${cle}`)?.data ?? null;
 }

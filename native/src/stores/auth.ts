@@ -5,14 +5,13 @@ import { sb } from '@/data/acces/supabase';
 // État d'authentification. Trois situations :
 //  - pas encore lu (`pret` faux) : on affiche un écran d'attente ;
 //  - connecté (`session`) : on affiche les vraies données ;
-//  - non connecté : écran de connexion, avec la possibilité d'essayer la démo (`demo`).
+//  - non connecté : écran de connexion.
 interface EtatAuth {
   pret: boolean;
   session: Session | null;
-  demo: boolean;
 }
 
-let etat: EtatAuth = { pret: false, session: null, demo: false };
+let etat: EtatAuth = { pret: false, session: null };
 const ecouteurs = new Set<() => void>();
 const changer = (suite: Partial<EtatAuth>) => {
   etat = { ...etat, ...suite };
@@ -32,8 +31,7 @@ export async function initAuth(): Promise<void> {
     changer({ session: null, pret: true });
   }
   sb.auth.onAuthStateChange((_evenement, session) => {
-    // Se connecter quitte la démo ; un événement sans session (lecture initiale…) ne doit pas l'interrompre
-    changer(session ? { session, demo: false } : { session });
+    changer({ session });
   });
 }
 
@@ -66,15 +64,7 @@ export async function deconnexion(local = false): Promise<void> {
   } catch {
     // Même sans réponse du serveur, la session locale est effacée par le client
   }
-  changer({ demo: false });
-}
-
-export function entrerDemo(): void {
-  changer({ demo: true });
-}
-
-export function quitterDemo(): void {
-  changer({ demo: false });
+  changer({ session: null });
 }
 
 const abonner = (fn: () => void) => {

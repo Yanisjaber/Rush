@@ -1,7 +1,7 @@
 // Les records de la course en démo, calculés sur les streams des courses d'exemple (courbes-demo.ts) : mêmes lignes que la fonction SQL rpc_courbe_course et rpc_piliers_course.
-import type { LignePiliersCourse } from '../bilan/piliers-course.ts';
-import type { LigneCourbeCourse } from '../bilan/records-course.ts';
-import type { Seance } from '../types.ts';
+import type { LignePiliersCourse } from '../../src/data/bilan/piliers-course.ts';
+import type { LigneCourbeCourse } from '../../src/data/bilan/records-course.ts';
+import type { Seance } from '../../src/data/types.ts';
 import { courbesCourse, type CourbesCourse } from './courbes-demo.ts';
 import { activitesBilanDemo } from './demo.ts';
 

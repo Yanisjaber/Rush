@@ -18,7 +18,7 @@ export interface Seance {
   /** Les mesures calculées par le serveur sur les flux complets (if_pct, trimp, pmax, work_over_ftp_kj, eftp, cp, w_prime…). Absent sans flux. */
   metrics?: Record<string, number | string | null> | null;
   category: string;
-  /** Puissance mesurée par un capteur (faux : estimée par Strava). Absent des données de démo. */
+  /** Puissance mesurée par un capteur (faux : estimée par Strava). */
   device_watts?: boolean | null;
   /** Données que l'utilisateur a écartées de ses calculs (vrai = écartée) : voir data/calendrier/donnees-ecartees.ts. */
   excl_power?: boolean | null;
@@ -28,7 +28,7 @@ export interface Seance {
   excl_elevation?: boolean | null;
   excl_cadence?: boolean | null;
   excl_load?: boolean | null;
-  // Colonnes présentes sur les vraies lignes de la base (absentes des données de démo)
+  // Colonnes présentes sur les vraies lignes de la base
   strava_id?: number | null;
   source?: string;
   rpe?: number | null;

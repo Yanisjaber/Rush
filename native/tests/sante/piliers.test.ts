@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { donneesDemo, mesuresDemo, sommeilDemo } from '../../src/data/demo/demo.ts';
+import { donneesDemo, mesuresDemo, sommeilDemo } from '../fixtures-demo/demo.ts';
 import { indiceVeille, jusquAuDernierIndice, serieEtatDeForme } from '../../src/data/sante/forme-sante.ts';
 import { construirePiliers, construireSuivis, ecartTexte, historiquePilier, motifsDuJour, NOM_COURT, texteValeur } from '../../src/data/sante/piliers.ts';
 import { resoudreMesures } from '../../src/data/sante/sante-catalogue.ts';

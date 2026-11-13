@@ -61,13 +61,12 @@ export function sportsCoches(liste: string[] | null | undefined, familles: strin
  * Un compte qui a déjà des données n'est jamais dérangé ; il peut changer ses sports dans Préférences.
  */
 export function onboardingNecessaire({
-  demo = false,
   sportsEnregistres = null,
   nbSeances = 0,
   aForce = false,
   aHyrox = false,
-}: { demo?: boolean; sportsEnregistres?: string[] | null; nbSeances?: number; aForce?: boolean; aHyrox?: boolean } = {}): boolean {
-  return !demo && sportsEnregistres === null && nbSeances === 0 && !aForce && !aHyrox;
+}: { sportsEnregistres?: string[] | null; nbSeances?: number; aForce?: boolean; aHyrox?: boolean } = {}): boolean {
+  return sportsEnregistres === null && nbSeances === 0 && !aForce && !aHyrox;
 }
 
 /**

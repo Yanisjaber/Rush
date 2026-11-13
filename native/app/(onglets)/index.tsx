@@ -31,25 +31,24 @@ import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 import { COMPOSANTS, WidgetBientot } from '@/widgets/registre-composants';
 
-// Accueil : les widgets du sport choisi dans la barre du haut, avec les données du compte (ou la démo).
+// Accueil : les widgets du sport choisi dans la barre du haut, avec les données du compte.
 export default function Accueil() {
   const p = usePalette();
   const bas = useSafeAreaInsets().bottom;
   const router = useRouter();
   const { filtre, familles } = useMenu();
-  const { donnees, chargement, actualisation, demo, recharger } = useDonneesAccueil();
+  const { donnees, chargement, actualisation, recharger } = useDonneesAccueil();
 
   const contexte = useMemo(() => (donnees ? construireContexte(donnees, filtre) : null), [donnees, filtre]);
 
   // Compte neuf : aucune donnée (même ancienne) et aucune connexion. Une connexion, ou une vieille sortie, suffit à avoir un accueil normal.
-  const compteVide = !!donnees && estCompteVide(donnees, demo);
+  const compteVide = !!donnees && estCompteVide(donnees);
 
   // Compte neuf qui n'a jamais choisi ses sports : on les lui demande d'abord (voir onboardingNecessaire)
   const onboarding =
     !!donnees &&
     !donnees.erreur &&
     onboardingNecessaire({
-      demo,
       sportsEnregistres: donnees.sportsChoisis,
       nbSeances: donnees.seances.length + donnees.dernieres.length,
       aForce: donnees.force.series.length > 0 || donnees.force.programmes.length > 0,
@@ -60,8 +59,8 @@ export default function Accueil() {
   const { session } = useAuth();
   const disp = useDisposition();
   const cleFamilles = familles.join(',');
-  const uid = demo ? 'demo' : session?.user.id ?? null;
-  const bandeau = useBandeauConnexion(demo ? null : uid);
+  const uid = session?.user.id ?? null;
+  const bandeau = useBandeauConnexion(uid);
   useEffect(() => {
     if (donnees && uid && familles.length) void chargerDisposition(uid, familles);
     // cleFamilles : la liste change d'identité à chaque rendu du store, son contenu seul compte
@@ -167,7 +166,7 @@ export default function Accueil() {
             {donnees?.erreur ? <Avis texte={donnees.erreur} /> : null}
             {donnees?.erreurSport ? <Avis texte={donnees.erreurSport} /> : null}
             {disp.message && !enEdition ? <Avis texte={disp.message} /> : null}
-            {donnees && !enEdition && bandeauConnexionVisible(donnees, demo, bandeau.ferme) ? <BandeauConnexion onFermer={bandeau.fermer} /> : null}
+            {donnees && !enEdition && bandeauConnexionVisible(donnees, bandeau.ferme) ? <BandeauConnexion onFermer={bandeau.fermer} /> : null}
             {enEdition ? (
               <ListeTriable
                 ids={widgets.map((w) => w.id)}

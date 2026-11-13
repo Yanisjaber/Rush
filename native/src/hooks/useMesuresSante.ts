@@ -2,10 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { enregistrerMesureSante, supprimerMesureSante } from '@/data/acces/api';
 import { remplacerSaisie, resoudreMesures, type LigneMesure, type MesuresParJour } from '@/data/sante/sante-catalogue';
 import { useAuth } from '@/stores/auth';
-import { saisirMesureDemo, useMesuresDemo } from '@/stores/mesures-demo';
 import { chargerMesures, mesuresDuCompte, poserMesures, useEtatMesures } from '@/stores/mesures-sante';
 
-// Les mesures de santé du compte (ressenti, événements, corps, nutrition, appareils), démo ou compte connecté.
+// Les mesures de santé du compte (ressenti, événements, corps, nutrition, appareils).
 // L'état est PARTAGÉ entre tous les écrans (voir stores/mesures-sante.ts) : une saisie met à jour tous les écrans ouverts, sans nouveau téléchargement.
 // `mesures` : une valeur par jour et par mesure (la source la plus prioritaire). `enregistrer(date, mesure, valeur)` : saisie à la main ; null efface.
 export function useMesuresSante(): {
@@ -13,37 +12,31 @@ export function useMesuresSante(): {
   mesures: MesuresParJour;
   chargement: boolean;
   erreur: string;
-  demo: boolean;
   enregistrer: (date: string, metric: string, valeur: number | null) => Promise<boolean>;
   recharger: () => Promise<void>;
 } {
-  const { session, demo } = useAuth();
+  const { session } = useAuth();
   const userId = session?.user.id ?? null;
-  const demoLignes = useMesuresDemo();
   const partage = useEtatMesures();
   const [erreurSaisie, setErreurSaisie] = useState('');
 
   // Premier chargement : seulement si ce compte n'a pas déjà été chargé par un autre écran
   useEffect(() => {
-    if (!demo && userId && !mesuresDuCompte(userId).charge) void chargerMesures(userId);
-  }, [demo, userId]);
+    if (userId && !mesuresDuCompte(userId).charge) void chargerMesures(userId);
+  }, [userId]);
 
   // Les mesures d'un autre compte ne s'affichent jamais
-  const lot = demo ? { lignes: demoLignes, erreur: '' } : userId && partage.userId === userId && partage.charge ? partage : null;
+  const lot = userId && partage.userId === userId && partage.charge ? partage : null;
   const lignes = lot?.lignes ?? [];
   const mesures = useMemo(() => resoudreMesures(lignes), [lignes]);
 
   const recharger = useCallback(async () => {
-    if (!demo && userId) await chargerMesures(userId);
-  }, [demo, userId]);
+    if (userId) await chargerMesures(userId);
+  }, [userId]);
 
   const enregistrer = useCallback(
     async (date: string, metric: string, valeur: number | null): Promise<boolean> => {
       setErreurSaisie('');
-      if (demo) {
-        saisirMesureDemo(date, metric, valeur);
-        return true;
-      }
       if (!userId) return false;
       // Si les mesures ne sont pas encore arrivées, on les attend : sinon le chargement écraserait la saisie
       if (!mesuresDuCompte(userId).charge) await chargerMesures(userId);
@@ -64,10 +57,10 @@ export function useMesuresSante(): {
       }
       return true;
     },
-    [demo, userId],
+    [userId],
   );
 
-  return { lignes, mesures, chargement: !demo && !lot, erreur: erreurSaisie || lot?.erreur || '', demo, enregistrer, recharger };
+  return { lignes, mesures, chargement: !lot, erreur: erreurSaisie || lot?.erreur || '', enregistrer, recharger };
 }
 
 /** Remet la saisie manuelle d'un jour et d'une mesure comme elle était dans `avant`, en laissant le reste de `courantes` intact. */

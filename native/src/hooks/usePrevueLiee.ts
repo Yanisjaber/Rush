@@ -8,7 +8,7 @@ import type { Seance } from '@/data/types';
 // La séance du calendrier à laquelle cette sortie répond : même jour, même sport, la durée la plus proche (voir choisirPrevue), lue avec sa structure (blocs, zones).
 // `chargee` passe à vrai quand la lecture est finie, même sans séance prévue : l'analyse attend ce moment pour ne pas se refaire en deux temps.
 export function usePrevueLiee(seance: Seance | null): { prevue: PrevueAnalyse | null; chargee: boolean } {
-  const { session, demo } = useAuth();
+  const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const [etat, setEtat] = useState<{ prevue: PrevueAnalyse | null; chargee: boolean }>({ prevue: null, chargee: false });
   const id = seance?.id ?? null;
@@ -18,7 +18,7 @@ export function usePrevueLiee(seance: Seance | null): { prevue: PrevueAnalyse | 
 
   useEffect(() => {
     if (!id || !jour || !sport) return;
-    if (demo || !userId) return setEtat({ prevue: null, chargee: true });
+    if (!userId) return setEtat({ prevue: null, chargee: true });
     let annule = false;
     void (async () => {
       const liste = await chargerPlanifiees(userId, jour, jour);
@@ -31,7 +31,7 @@ export function usePrevueLiee(seance: Seance | null): { prevue: PrevueAnalyse | 
     return () => {
       annule = true;
     };
-  }, [id, jour, sport, duree, userId, demo]);
+  }, [id, jour, sport, duree, userId]);
 
   return etat;
 }

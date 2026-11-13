@@ -13,7 +13,7 @@ import { usePalette } from '@/theme/usePalette';
 // Les sports que tes séances révèlent (muscu, Hyrox…) apparaissent déjà cochés. L'ordre des pastilles = l'ordre où tu coches.
 export default function MesSports() {
   const p = usePalette();
-  const { choisis, setChoisis, erreur, envoi, appliquer, demo, lectureEchouee } = useSportsChoisis();
+  const { choisis, setChoisis, erreur, envoi, appliquer, lectureEchouee } = useSportsChoisis();
   const [initial, setInitial] = useState<string | null>(null);
   const [message, setMessage] = useState('');
 
@@ -51,7 +51,7 @@ export default function MesSports() {
   async function enregistrer() {
     if (await appliquer(choisis ?? [])) {
       setInitial(etatActuel);
-      setMessage(demo ? 'Mode démo : gardé en mémoire seulement.' : 'Enregistré. Ton Accueil se met à jour.');
+      setMessage('Enregistré. Ton Accueil se met à jour.');
     }
   }
 

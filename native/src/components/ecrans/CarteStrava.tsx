@@ -34,12 +34,11 @@ export function detailStrava(conn: ConnexionStrava | null, nbActivites: number):
 interface Props {
   strava: ConnexionStrava | null;
   nbActivites: number;
-  demo: boolean;
   /** Relit les connexions (après une déconnexion). */
   onChange: () => void;
 }
 
-export function CarteStrava({ strava, nbActivites, demo, onChange }: Props) {
+export function CarteStrava({ strava, nbActivites, onChange }: Props) {
   const p = usePalette();
   const router = useRouter();
   const [choix, setChoix] = useState(false);
@@ -54,7 +53,6 @@ export function CarteStrava({ strava, nbActivites, demo, onChange }: Props) {
 
   const deconnecter = async (effacer: boolean) => {
     setErreur('');
-    if (demo) return setErreur('Désactivé en mode démo.');
     setEnCours(true);
     const r = await deconnecterStrava(effacer);
     setEnCours(false);

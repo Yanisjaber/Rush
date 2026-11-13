@@ -10,9 +10,8 @@ import { CadreWidget } from '@/components/widgets/CadreWidget';
 import { Pastille } from '@/components/ui/Pastille';
 import type { Connexion } from '@/data/reglages/parametres';
 import { useResumeParametres } from '@/hooks/useResumeParametres';
-import { deconnexion, quitterDemo, useAuth } from '@/stores/auth';
+import { deconnexion, useAuth } from '@/stores/auth';
 import { definirTheme } from '@/stores/theme';
-import { definirPrevuesAujourdhui, PREVUES_AUJOURDHUI, useReglagesDemo } from '@/stores/reglages-demo';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -27,18 +26,18 @@ export default function Parametres() {
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { session, demo } = useAuth();
+  const { session } = useAuth();
   const { resume: resumeBrut, chargement, erreurProfil, erreurConnexions } = useResumeParametres();
   // Une lecture en erreur n'affiche ni « — » ni « non connecté » : on le dit, sans toucher aux autres lignes
   const connexions = erreurConnexions
     ? { etat: 'absente' as const, note: 'Illisible pour le moment' }
-    : chargement && !demo
+    : chargement
       ? { etat: 'absente' as const, note: 'Chargement…' }
       : resumeBrut.connexions;
   const resume = { ...resumeBrut, connexions };
   const aller = (vers: Href) => router.push(vers);
-  const email = demo ? null : session?.user.email ?? null;
-  const initiale = (resume.prenom || email || (demo ? 'D' : 'R')).trim().charAt(0).toUpperCase();
+  const email = session?.user.email ?? null;
+  const initiale = (resume.prenom || email || 'R').trim().charAt(0).toUpperCase();
 
   return (
     <View style={{ flex: 1 }}>
@@ -46,13 +45,13 @@ export default function Parametres() {
       <ScrollView style={{ backgroundColor: 'transparent' }} contentContainerStyle={[styles.contenu, { paddingTop: insets.top + espace.e4, paddingBottom: insets.bottom + 72 }]}>
         <BoutonRetour />
 
-        <View accessible accessibilityRole="header" accessibilityLabel={demo ? "Mon compte, mode démo, des données d'exemple" : `Mon compte, ${resume.prenom || 'sans prénom'}, ${email ?? ''}`} style={styles.entete}>
+        <View accessible accessibilityRole="header" accessibilityLabel={`Mon compte, ${resume.prenom || 'sans prénom'}, ${email ?? ''}`} style={styles.entete}>
           <View style={[styles.avatar, { backgroundColor: p.texte }]}>
             <Text style={[styles.initiale, { color: p.fond }]}>{initiale}</Text>
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[typo.titre1, { color: p.texte }]}>Mon compte</Text>
-            <Text numberOfLines={1} style={[typo.corps, { color: p.texteDoux }]}>{demo ? "Mode démo · données d'exemple" : email ?? ''}</Text>
+            <Text numberOfLines={1} style={[typo.corps, { color: p.texteDoux }]}>{email ?? ''}</Text>
           </View>
         </View>
 
@@ -61,8 +60,6 @@ export default function Parametres() {
             <Text style={[typo.petit, { color: p.texte }]}>{[erreurProfil, erreurConnexions].filter(Boolean).join(' ')}</Text>
           </View>
         ) : null}
-
-        {demo ? <ReglagesDemo /> : null}
 
         <Groupe titre="Mon profil">
           <Ligne icone="profil" titre="Profil" onPress={() => aller('/parametres/profil')} />
@@ -80,14 +77,14 @@ export default function Parametres() {
         </Groupe>
 
         <Groupe titre="Sécurité et données">
-          {demo ? null : <Ligne icone="mdp" titre="Changer mon mot de passe" externe onPress={() => ouvrirSite('#/mot-de-passe')} />}
-          {demo ? null : <Ligne icone="exporter" titre="Exporter mes données" externe onPress={() => ouvrirSite('#/parametres/general')} />}
+          <Ligne icone="mdp" titre="Changer mon mot de passe" externe onPress={() => ouvrirSite('#/mot-de-passe')} />
+          <Ligne icone="exporter" titre="Exporter mes données" externe onPress={() => ouvrirSite('#/parametres/general')} />
           <Ligne icone="confidentialite" titre="Confidentialité" externe onPress={() => ouvrirSite('#/confidentialite')} />
         </Groupe>
 
         <Groupe titre="Session">
-          <Ligne icone="sortir" titre={demo ? 'Quitter la démo' : 'Se déconnecter'} onPress={demo ? quitterDemo : () => void deconnexion()} />
-          {demo ? null : <Ligne icone="supprimer" titre="Supprimer mon compte" danger onPress={() => aller('/parametres/compte')} />}
+          <Ligne icone="sortir" titre="Se déconnecter" onPress={() => void deconnexion()} />
+          <Ligne icone="supprimer" titre="Supprimer mon compte" danger onPress={() => aller('/parametres/compte')} />
         </Groupe>
       </ScrollView>
     </View>
@@ -177,25 +174,6 @@ function Apparence() {
   );
 }
 
-// Réglage de la démo (visible seulement en démo) : combien de séances sont prévues aujourd'hui, pour voir chaque cas de la « Séance du jour ».
-function ReglagesDemo() {
-  const p = usePalette();
-  const { prevuesAujourdhui } = useReglagesDemo();
-  const router = useRouter();
-  return (
-    <CadreWidget titre="Réglage de la démo">
-      <Text style={[typo.petit, { color: p.texteDoux, marginBottom: 10 }]}>Séances prévues aujourd'hui</Text>
-      <View style={styles.choix} accessibilityRole="radiogroup">
-        {PREVUES_AUJOURDHUI.map((n) => (
-          <Pastille role="radio" key={n} nom={String(n)} couleur={p.texte} actif={prevuesAujourdhui === n} onPress={() => definirPrevuesAujourdhui(n)} aide={n === 0 ? "Rien de prévu aujourd'hui" : `${n} séance${n > 1 ? 's' : ''} prévue${n > 1 ? 's' : ''} aujourd'hui`} />
-        ))}
-      </View>
-      <View style={{ marginTop: 14 }}>
-        <Bouton variante="discret" onPress={() => router.push('/parametres/widgets')}>Catalogue des widgets</Bouton>
-      </View>
-    </CadreWidget>
-  );
-}
 
 // La pastille d'état d'une connexion : verte connectée, rouge en erreur, grise absente
 function PastilleEtat({ etat }: { etat: Connexion['etat'] }) {

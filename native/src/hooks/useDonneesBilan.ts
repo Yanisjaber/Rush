@@ -2,13 +2,12 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { chargerActivitesBilan, chargerObjectifsAnnuels } from '@/data/acces/api';
 import { donneesPerimees, fusionnerChargement, type ObjectifAnnuel } from '@/data/bilan/bilan';
-import { activitesBilanDemo } from '@/data/demo/demo';
-import { objectifsDemo, useVersionObjectifs } from '@/stores/objectifs';
+import { useVersionObjectifs } from '@/stores/objectifs';
 import { useAuth } from '@/stores/auth';
 import { useVersionEcarts } from '@/stores/ecarts';
 import type { Seance } from '@/data/types';
 
-// Les données du Bilan : toutes les activités depuis la première et les objectifs annuels (démo ou compte connecté, lecture seule).
+// Les données du Bilan : toutes les activités depuis la première et les objectifs annuels (lecture seule).
 // Toutes les années sont chargées d'un coup : changer d'année affichée ne recharge rien.
 // Les onglets restent ouverts en arrière-plan : en revenant sur le Bilan, on recharge si les données ont plus de cinq minutes.
 // Une écriture d'objectif ne recharge que les objectifs (pas tout l'historique), et un résultat arrivé en retard n'écrase jamais un plus récent.
@@ -22,11 +21,9 @@ export function useDonneesBilan(): {
   actualisation: boolean;
   recharger: () => Promise<void>;
 } {
-  const { session, demo } = useAuth();
+  const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const versionObjectifs = useVersionObjectifs(); // change quand un objectif est créé, modifié ou supprimé
-  const brutesDemo = useMemo(() => (demo ? activitesBilanDemo(new Date()) : null), [demo]);
-  const demoDonnees = useMemo(() => (brutesDemo ? { brutes: brutesDemo, objectifs: objectifsDemo(), erreur: '', pret: true } : null), [brutesDemo, versionObjectifs]);
   const [reel, setReel] = useState<{ userId: string; brutes: Seance[]; objectifs: ObjectifAnnuel[]; erreur: string; pret: boolean } | null>(null);
   const [actualisation, setActualisation] = useState(false);
   const chargeA = useRef<number | null>(null); // quand les données ont été chargées pour la dernière fois (millisecondes)
@@ -56,8 +53,8 @@ export function useDonneesBilan(): {
 
   const versionEcarts = useVersionEcarts(); // les totaux changent quand une donnée est écartée
   useEffect(() => {
-    if (!demo) void charger();
-  }, [demo, charger, versionEcarts]);
+    void charger();
+  }, [charger, versionEcarts]);
 
   // Un objectif créé, modifié ou supprimé : on relit seulement les objectifs
   const chargerObjectifsSeuls = useCallback(async () => {
@@ -74,28 +71,28 @@ export function useDonneesBilan(): {
   }, [userId]);
 
   useEffect(() => {
-    if (demo || versionVue.current === versionObjectifs) return;
+    if (versionVue.current === versionObjectifs) return;
     versionVue.current = versionObjectifs;
     void chargerObjectifsSeuls();
-  }, [demo, versionObjectifs, chargerObjectifsSeuls]);
+  }, [versionObjectifs, chargerObjectifsSeuls]);
 
   // Retour sur l'onglet : on recharge seulement si les données sont vieilles. Premier chargement encore en cours (chargeA vide) : rien à faire.
   useFocusEffect(
     useCallback(() => {
-      if (!demo && userId && chargeA.current != null && donneesPerimees(chargeA.current, Date.now())) void charger();
-    }, [demo, userId, charger]),
+      if (userId && chargeA.current != null && donneesPerimees(chargeA.current, Date.now())) void charger();
+    }, [userId, charger]),
   );
 
   const recharger = useCallback(async () => {
     setActualisation(true);
     try {
-      if (!demo) await charger();
+      await charger();
     } finally {
       setActualisation(false);
     }
-  }, [demo, charger]);
+  }, [charger]);
 
   // Les données d'un autre compte ne s'affichent jamais
-  const donnees = demo ? demoDonnees : reel && reel.userId === userId ? reel : null;
+  const donnees = reel && reel.userId === userId ? reel : null;
   return { brutes: donnees?.brutes ?? [], objectifs: donnees?.objectifs ?? [], chargement: !donnees, erreur: donnees?.erreur ?? '', pret: donnees?.pret ?? false, actualisation, recharger };
 }

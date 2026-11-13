@@ -7,13 +7,13 @@ import type { Seance } from '@/data/types';
 
 // Tes sorties des 90 derniers jours (même compte), rangées pour comparer une sortie aux précédentes du même type : voir data/calendrier/analyse/physio.ts.
 export function useHistoriqueSorties(seance: Seance | null): SortieHistorique[] {
-  const { session, demo } = useAuth();
+  const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const [liste, setListe] = useState<SortieHistorique[]>([]);
   const id = seance?.id ?? null;
 
   useEffect(() => {
-    if (!id || demo || !userId) return;
+    if (!id || !userId) return;
     let annule = false;
     void (async () => {
       const r = await chargerSeances(userId, 100);
@@ -34,7 +34,7 @@ export function useHistoriqueSorties(seance: Seance | null): SortieHistorique[] 
     return () => {
       annule = true;
     };
-  }, [id, userId, demo]);
+  }, [id, userId]);
 
   return liste;
 }

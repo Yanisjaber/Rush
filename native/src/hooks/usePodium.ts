@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { chargerPodium } from '@/data/acces/api';
 import type { CleSignal, EntreeCourbe } from '@/data/bilan/records';
-import { recordsVeloDemo } from '@/data/demo/demo';
 import { useAuth } from '@/stores/auth';
 import { auChangementDEcarts, useVersionEcarts } from '@/stores/ecarts';
 
 // Le podium (jusqu'à 30 séances) de la durée touchée sur la courbe, pour la puissance ou un autre signal.
 // Demandé au serveur seulement quand le doigt s'arrête sur une durée (250 ms), pour ne pas faire une requête par point pendant qu'on fait glisser le doigt ; gardé en mémoire cinq minutes.
-// Rend null tant que la liste n'est pas là : l'écran montre alors les trois séances de la courbe. En démo, c'est calculé sur les sorties d'exemple.
+// Rend null tant que la liste n'est pas là : l'écran montre alors les trois séances de la courbe.
 const DUREE_CACHE = 5 * 60 * 1000;
 const ATTENTE_MS = 250;
 const cache = new Map<string, { data: EntreeCourbe[]; a: number }>();
@@ -16,12 +15,10 @@ auChangementDEcarts(() => cache.clear()); // une donnée écartée change les re
 
 /** `annee` : l'année de la période choisie, ou null pour « Tous temps ». */
 export function usePodium(signal: CleSignal, duree: number | null, annee: number | null): EntreeCourbe[] | null {
-  const { session, demo } = useAuth();
-  const userId = !demo ? (session?.user.id ?? null) : null;
+  const { session } = useAuth();
+  const userId = session?.user.id ?? null;
   const versionEcarts = useVersionEcarts();
   const [, rafraichir] = useState(0);
-  const exemple = useMemo(() => (demo ? recordsVeloDemo(new Date()) : null), [demo]);
-  const donneesDemo = useMemo(() => (exemple && duree != null ? exemple.podium(signal, duree, annee ?? undefined) : null), [exemple, signal, duree, annee]);
 
   useEffect(() => {
     if (!userId || duree == null) return;
@@ -47,6 +44,5 @@ export function usePodium(signal: CleSignal, duree: number | null, annee: number
     };
   }, [userId, signal, duree, annee, versionEcarts]);
 
-  if (donneesDemo) return donneesDemo;
   return userId && duree != null ? (cache.get(cleCache(userId, signal, duree, annee))?.data ?? null) : null;
 }

@@ -3,8 +3,8 @@
 // des séances variées avec de vrais noms, des compétitions (semi, 10 km, marathon, triathlon, duathlon, cyclosportive, traversée à la nage), de la saisonnalité
 // et un athlète qui progresse. Tout est déterministe (aucun hasard réel) : le même jour donne toujours la même séance.
 // Les chiffres manquants (cardio, puissance, FTP) sont ajoutés par completerSeance (flux-demo.ts), les streams par genererFlux.
-import { dateIsoLocale } from '../outils/format.ts';
-import type { Seance } from '../types.ts';
+import { dateIsoLocale } from '../../src/data/outils/format.ts';
+import type { Seance } from '../../src/data/types.ts';
 import { completerSeance } from './flux-demo.ts';
 
 /** Un nombre entre 0 et 1, toujours le même pour (jour, graine). */

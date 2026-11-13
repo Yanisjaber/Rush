@@ -26,7 +26,7 @@ void SplashScreen.preventAutoHideAsync().catch(() => {});
 export default function RootLayout() {
   // Le thème est celui choisi dans Paramètres (gardé sur le téléphone) ; sans choix, il suit le téléphone.
   const palette = useColorScheme() === 'light' ? clair : sombre;
-  const { pret, session, demo } = useAuth();
+  const { pret, session } = useAuth();
 
   // Lit le thème choisi avant le premier affichage : sinon l'écran clignoterait dans l'autre thème
   const [themePret, setThemePret] = useState(false);
@@ -55,8 +55,8 @@ export default function RootLayout() {
   }, [erreurPolices]);
 
   // L'accès au Coach se lit dès que le compte est connu, et les onglets attendent la réponse (voir useAccesCoachLu).
-  // L'accès se relit à chaque changement de compte ; en démo (pas de vrai compte), jamais de Coach.
-  const compte = demo ? null : session?.user.id ?? null;
+  // L'accès se relit à chaque changement de compte .
+  const compte = session?.user.id ?? null;
   const accesLu = useAccesCoachLu();
   useEffect(() => {
     if (pret) void chargerAccesCoach(compte);
@@ -73,7 +73,7 @@ export default function RootLayout() {
     if (decorPret) void SplashScreen.hideAsync().catch(() => {});
   }, [decorPret]);
 
-  const connecte = !!session || demo;
+  const connecte = !!session;
 
   // L'écran de chargement (« À vos marques… ») dure 2,5 s au minimum et reste jusqu'à ce que l'Accueil ait ses données :
   // derrière lui, tout est déjà rempli (pas de spinner). Il repasse aussi après chaque connexion.
@@ -83,7 +83,7 @@ export default function RootLayout() {
   const [delaiDepasse, setDelaiDepasse] = useState(false);
   const [dejaConnecte, setDejaConnecte] = useState(connecte);
   if (dejaConnecte !== connecte) {
-    // Connexion (ou démo) : on remet l'écran de chargement le temps que l'Accueil se remplisse. Déconnexion : rien à montrer.
+    // Connexion : on remet l'écran de chargement le temps que l'Accueil se remplisse. Déconnexion : rien à montrer.
     setDejaConnecte(connecte);
     if (connecte && appPrete) {
       setChargementFini(false);
@@ -115,7 +115,7 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: palette.fond },
         }}
       >
-        {/* Sans compte (ni démo), seul l'écran de connexion existe : aucune autre adresse de l'app n'est atteignable */}
+        {/* Sans compte, seul l'écran de connexion existe : aucune autre adresse de l'app n'est atteignable */}
         <Stack.Protected guard={connecte}>
           <Stack.Screen name="(onglets)" />
           {/* Le détail d'une séance : un écran poussé par-dessus les onglets, avec son bouton retour */}

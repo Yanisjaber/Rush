@@ -8,7 +8,7 @@ import { useAuth } from '@/stores/auth';
 // d'heure), le calcul s'arrête et on le relance à la main. Fermer l'écran l'arrête aussi ; le rouvrir reprend là où il en était (tout est écrit au fur et à mesure).
 // Les durées sont calculées dans data/synchro/estimation.ts. Voir docs/native/SYNCHRO_STRAVA.md.
 
-export type PhaseSynchro = 'chargement' | 'vide' | 'repos' | 'calcul' | 'fini' | 'erreur' | 'demo';
+export type PhaseSynchro = 'chargement' | 'vide' | 'repos' | 'calcul' | 'fini' | 'erreur';
 
 export interface EtatSynchro {
   phase: PhaseSynchro;
@@ -30,9 +30,9 @@ const INITIAL: EtatSynchro = { phase: 'chargement', total: 0, faites: 0, secParS
 const attendre = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 export function useSynchroStrava(): EtatSynchro & { demarrer: () => void; arreter: () => void } {
-  const { session, demo } = useAuth();
-  const userId = !demo ? (session?.user.id ?? null) : null;
-  const [etat, setEtat] = useState<EtatSynchro>(demo ? { ...INITIAL, phase: 'demo' } : INITIAL);
+  const { session } = useAuth();
+  const userId = session?.user.id ?? null;
+  const [etat, setEtat] = useState<EtatSynchro>(INITIAL);
   const etatRef = useRef(etat);
   etatRef.current = etat;
   // Chaque lancement a son numéro : relancer ou arrêter rend l'ancienne boucle caduque
@@ -189,7 +189,7 @@ export function useSynchroStrava(): EtatSynchro & { demarrer: () => void; arrete
 
   // À l'ouverture de l'écran : on lit où on en est, et on repart s'il reste des sorties
   useEffect(() => {
-    if (demo || !userId) return;
+    if (!userId) return;
     let annule = false;
     void chargerCompteurSynchro(userId).then((r) => {
       if (annule) return;
@@ -207,7 +207,7 @@ export function useSynchroStrava(): EtatSynchro & { demarrer: () => void; arrete
       annule = true;
       boucle.current++; // fermer l'écran arrête le calcul
     };
-  }, [demo, userId, lancer, rattraperCourbes, maj]);
+  }, [userId, lancer, rattraperCourbes, maj]);
 
   return { ...etat, demarrer, arreter };
 }

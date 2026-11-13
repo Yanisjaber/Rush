@@ -273,7 +273,7 @@ const textOuVide = (v: unknown): string => (v == null ? '' : String(v));
 /** Le temps cible (minutes, en texte) d'une compétition : il est stocké dans `duration`. Une séance n'en a pas. */
 export const tempsCibleDepuisDuree = (categorie: string | undefined, duree: number | null | undefined): string | null => (categorie === 'competition' && duree != null && duree > 0 ? String(duree) : null);
 
-/** Une ligne qu'on vient d'écrire, vue comme la base la rend quand on la relit (les colonnes absentes de la ligne valent null). Sert à la démo, qui n'a pas de base. */
+/** Une ligne qu'on vient d'écrire, vue comme la base la rend quand on la relit (les colonnes absentes de la ligne valent null). */
 export const prevueDepuisLigne = (id: string, l: LignePrevue): PrevueComplete => ({
   id, name: l.name, date: l.date, sport: l.sport, duration: l.duration, tss: l.tss, category: l.category, km: l.km, d_plus: l.d_plus,
   start_date_local: l.start_date_local, rpe: l.rpe, notes: l.notes, structure: l.structure ?? null,

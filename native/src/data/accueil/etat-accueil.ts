@@ -17,11 +17,11 @@ export function aDesDonnees(d: Etat): boolean {
 }
 
 /** Écran de démarrage : ni donnée, ni connexion. Une connexion suffit à avoir un accueil normal (même sans sortie encore), tout comme une vieille sortie. */
-export function compteVide(d: Etat, demo: boolean): boolean {
-  return !demo && !d.erreur && !d.connecte && !aDesDonnees(d);
+export function compteVide(d: Etat): boolean {
+  return !d.erreur && !d.connecte && !aDesDonnees(d);
 }
 
 /** Message « connecte une app » : compte réel, sans connexion, qui a déjà des données (sinon l'écran de démarrage fait déjà le travail), pas encore fermé. */
-export function bandeauConnexionVisible(d: Etat, demo: boolean, ferme: boolean | null): boolean {
-  return !demo && !d.erreur && !d.connecte && aDesDonnees(d) && ferme === false;
+export function bandeauConnexionVisible(d: Etat, ferme: boolean | null): boolean {
+  return !d.erreur && !d.connecte && aDesDonnees(d) && ferme === false;
 }

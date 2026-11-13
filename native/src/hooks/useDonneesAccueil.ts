@@ -1,28 +1,24 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { donneesDemoAccueil, famillesDe, type DonneesAccueil } from '@/data/accueil/accueil';
+import { useCallback, useEffect, useState } from 'react';
+import { donneesAccueilVides, famillesDe, type DonneesAccueil } from '@/data/accueil/accueil';
 import { chargerAccueil } from '@/data/acces/chargement';
 import { definirSources } from '@/stores/menu';
 import { useSportsEtat } from '@/stores/sports';
 import { useAuth } from '@/stores/auth';
 import { useVersionEcarts } from '@/stores/ecarts';
-import { useReglagesDemo } from '@/stores/reglages-demo';
 import { marquerAccueilCharge } from '@/stores/chargement';
 
-// Les données de l'Accueil : la démo (générée, sans compte) ou celles du compte connecté (lecture seule, via Supabase).
+// Les données de l'Accueil : celles du compte connecté (lecture seule, via Supabase).
 // Au premier chargement `chargement` est vrai ; ensuite, `recharger` (tirer pour actualiser) garde les données affichées.
 export function useDonneesAccueil(): {
   donnees: DonneesAccueil | null;
   chargement: boolean;
   actualisation: boolean;
-  demo: boolean;
   recharger: () => Promise<void>;
 } {
-  const { session, demo } = useAuth();
+  const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const sports = useSportsEtat();
   const versionEcarts = useVersionEcarts(); // les totaux et la charge changent quand une donnée est écartée
-  const { prevuesAujourdhui } = useReglagesDemo();
-  const donneesDemo = useMemo(() => (demo ? donneesDemoAccueil(new Date(), { prevuesAujourdhui }) : null), [demo, prevuesAujourdhui]);
   const [reel, setReel] = useState<{ userId: string; donnees: DonneesAccueil } | null>(null);
   const [actualisation, setActualisation] = useState(false);
 
@@ -34,24 +30,23 @@ export function useDonneesAccueil(): {
     } catch (e) {
       // chargerAccueil ne lève pas ; on se protège quand même d'un échec inattendu pour ne jamais laisser l'écran bloqué
       console.error('[app/accueil]', e instanceof Error ? e.name : 'erreur');
-      setReel({ userId, donnees: { ...donneesDemoAccueil(), seances: [], dernieres: [], metriques: [], objectifs: [], planifiees: [], puissance: [], force: { series: [], programmes: [] }, hyrox: { tests: [], objectif: null }, connecte: true, profil: null, erreur: 'Impossible de charger tes données.' } });
+      setReel({ userId, donnees: donneesAccueilVides('Impossible de charger tes données.') });
     }
   }, [userId]);
 
   // `sports.version` change quand on coche ou décoche un sport : on recharge pour recomposer l'Accueil
   useEffect(() => {
-    if (!demo) void charger();
-  }, [demo, charger, sports.version, versionEcarts]);
+    void charger();
+  }, [charger, sports.version, versionEcarts]);
 
   // Les données d'un autre compte ne doivent jamais s'afficher : on ne garde que celles de l'utilisateur courant
-  const donnees = demo ? donneesDemo : reel && reel.userId === userId ? reel.donnees : null;
+  const donnees = reel && reel.userId === userId ? reel.donnees : null;
 
   useEffect(() => {
-    // La démo garde l'ordre fixe du site (course, vélo, muscu, hyrox) ; un vrai compte suit ses sports choisis puis ses données
+    // Les sources suivent les sports choisis puis les données du compte
     if (!donnees) return;
-    if (demo) definirSources(['course', 'velo', 'muscu', 'hyrox'], sports.demo);
-    else definirSources(famillesDe({ ...donnees, sportsChoisis: null }), donnees.sportsChoisis);
-  }, [donnees, demo, sports.demo]);
+    definirSources(famillesDe({ ...donnees, sportsChoisis: null }), donnees.sportsChoisis);
+  }, [donnees]);
 
   // Dit à l'écran de chargement que l'Accueil est rempli : il peut s'effacer
   useEffect(() => {
@@ -61,11 +56,11 @@ export function useDonneesAccueil(): {
   const recharger = useCallback(async () => {
     setActualisation(true);
     try {
-      if (!demo) await charger();
+      await charger();
     } finally {
       setActualisation(false);
     }
-  }, [demo, charger]);
+  }, [charger]);
 
-  return { donnees, chargement: !donnees, actualisation, demo, recharger };
+  return { donnees, chargement: !donnees, actualisation, recharger };
 }

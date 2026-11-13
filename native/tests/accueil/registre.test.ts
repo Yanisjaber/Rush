@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { compositionAuto, compositionSport, composerOnglet, estPertinent, existe, normaliserListe, LISTES_PAR_DEFAUT, ONGLETS_PERSONNALISABLES, ORDRE_ONGLET, TAILLES, TAILLES_ONGLET, WIDGETS } from '../../src/data/accueil/registre.ts';
 import { construireContexte } from '../../src/data/accueil/contexte.ts';
-import { donneesDemoAccueil } from '../../src/data/accueil/accueil.ts';
+import { donneesDemoAccueil } from '../fixtures-demo/accueil-demo.ts';
 
 test('existe : seuls les vrais widgets, pas les propriétés héritées', () => {
   assert.equal(existe('objectif'), true);

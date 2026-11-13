@@ -24,7 +24,7 @@ export default function Checkin() {
   const p = usePalette();
   const [date, setDate] = useState(dateIsoLocale(new Date()));
   const [message, setMessage] = useState('');
-  const { mesures, enregistrer, erreur, demo } = useMesuresSante();
+  const { mesures, enregistrer, erreur } = useMesuresSante();
   const { nuits } = useDonneesSommeil();
   const { metriques } = useMetriques();
   const jour = mesures[date] ?? {};
@@ -44,7 +44,7 @@ export default function Checkin() {
 
   async function saisir(metric: string, valeur: number | null) {
     setMessage('');
-    if (await enregistrer(date, metric, valeur)) setMessage(demo ? 'Noté (démo : non enregistré)' : 'Enregistré');
+    if (await enregistrer(date, metric, valeur)) setMessage('Enregistré');
   }
 
   const alcool = defMesure('alcool_verres');
@@ -53,7 +53,6 @@ export default function Checkin() {
     <EcranSection>
       <View style={{ gap: espace.e4 }}>
         <SelecteurJour date={date} onChange={(d) => { setDate(d); setMessage(''); }} />
-        {demo ? <Text style={[typo.petit, { color: p.texteMuet }]}>Mode démo : tes réponses restent en mémoire, rien n'est enregistré.</Text> : null}
         {erreur ? (
           <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
             <Text style={[typo.petit, { color: p.texte }]}>{erreur}</Text>

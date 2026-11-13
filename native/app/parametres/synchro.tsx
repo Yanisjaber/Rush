@@ -55,7 +55,6 @@ export default function SynchroStrava() {
     calcul: { mot: 'Calcul en cours', pastille: couleur },
     fini: { mot: 'À jour', pastille: p.ok },
     erreur: { mot: 'Interrompue', pastille: p.danger },
-    demo: { mot: 'Mode démo', pastille: p.traitFort },
   };
 
   const reste =
@@ -69,7 +68,6 @@ export default function SynchroStrava() {
   return (
     <EcranSection>
       <View style={{ gap: espace.e4 }}>
-        {s.phase === 'demo' ? <Text style={[typo.petit, { color: p.texteMuet }]}>Mode démo : pas de Strava à synchroniser.</Text> : null}
         {s.phase === 'chargement' ? <ActivityIndicator color={p.texteDoux} /> : null}
         {s.phase === 'vide' ? (
           <Bloc titre="Flux des sorties">

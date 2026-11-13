@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { donneesDemoAccueil } from '@/data/accueil/accueil';
 import { changerDonneeEcartee, chargerSeance, chargerTours, chargerTrace } from '@/data/acces/api';
 import { apercuDeTrace } from '@/data/calendrier/apercu-import';
 import type { ColonneEcart } from '@/data/calendrier/donnees-ecartees';
-import { activitesBilanDemo, toursDemo } from '@/data/demo/demo';
-import { seanceDeLaDemo, useVersionAjouts } from '@/stores/ajouts';
+import { useVersionAjouts } from '@/stores/ajouts';
 import { useAuth } from '@/stores/auth';
 import { ecartsChanges } from '@/stores/ecarts';
 import type { CourbesSortie } from '@/data/outils/courbes-sortie';
@@ -35,10 +33,10 @@ export interface RetourSeance extends Etat {
   basculerDonnee: (colonne: ColonneEcart, ecartee: boolean) => Promise<string>;
 }
 
-// Une séance et ses tours : la démo ou le compte connecté. La séance s'affiche dès qu'elle est là, les tours arrivent après
+// Une séance et ses tours : le compte connecté. La séance s'affiche dès qu'elle est là, les tours arrivent après
 // (ils passent par Strava : c'est plus lent, et ça peut échouer sans gêner le reste).
 export function useSeance(id: string): RetourSeance {
-  const { session, demo } = useAuth();
+  const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const version = useVersionAjouts(); // une modification ou une suppression d'activité fait relire la fiche
   const [etat, setEtat] = useState<Etat>(initial);
@@ -50,13 +48,6 @@ export function useSeance(id: string): RetourSeance {
     if (idLu.current !== id) {
       idLu.current = id;
       setEtat(initial);
-    }
-    if (demo) {
-      // Les sorties de l'historique de six ans (celles du Bilan, du classement des records) ne sont pas dans les 84 jours de l'accueil : on les cherche seulement si l'identifiant en vient
-      const base = id.startsWith('demo-bilan-') ? activitesBilanDemo(new Date()) : donneesDemoAccueil(new Date()).seances;
-      const s = seanceDeLaDemo(id, base);
-      setEtat({ ...initial, seance: s, chargement: false, tours: s ? toursDemo(s) : null, erreur: s ? '' : 'Séance introuvable.' });
-      return;
     }
     if (!userId) return;
     void (async () => {
@@ -84,15 +75,14 @@ export function useSeance(id: string): RetourSeance {
     return () => {
       annule = true;
     };
-  }, [id, userId, demo, version]);
+  }, [id, userId, version]);
 
-  // On change l'écran tout de suite, puis la base ; si la base refuse, on remet l'ancien état. En démo, rien n'est écrit (le changement dure le temps de l'écran).
+  // On change l'écran tout de suite, puis la base ; si la base refuse, on remet l'ancien état.
   const basculerDonnee = useCallback(
     async (colonne: ColonneEcart, ecartee: boolean): Promise<string> => {
       const poser = (valeur: boolean | null | undefined) => setEtat((e) => (e.seance ? { ...e, seance: { ...e.seance, [colonne]: valeur } } : e));
       const avant = etat.seance?.[colonne];
       poser(ecartee);
-      if (demo) return '';
       if (!userId) {
         poser(avant);
         return 'Reconnecte-toi.';
@@ -105,7 +95,7 @@ export function useSeance(id: string): RetourSeance {
       ecartsChanges(); // la charge, les records et le niveau se recalculent : les autres écrans relisent
       return '';
     },
-    [demo, userId, id, etat.seance],
+    [userId, id, etat.seance],
   );
 
   return { ...etat, basculerDonnee };

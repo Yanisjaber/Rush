@@ -14,32 +14,31 @@ const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
 // Les connexions du compte : la carte Strava (la même que sur le site, voir CarteStrava) et Garmin (bientôt, avec les nuits déjà importées).
 export default function Connexions() {
   const p = usePalette();
-  const { session, demo } = useAuth();
+  const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const [etat, setEtat] = useState<{ strava: ConnexionStrava | null; nbActivites: number; nbNuits: number } | null>(null);
   const [erreur, setErreur] = useState('');
 
   const charger = useCallback(async () => {
-    if (demo || !userId) return;
+    if (!userId) return;
     const r = await chargerConnexions(userId);
     setEtat(r.data);
     setErreur(r.erreur);
-  }, [demo, userId]);
+  }, [userId]);
 
   useEffect(() => {
     void charger();
   }, [charger]);
 
-  const strava = demo ? null : (etat?.strava ?? null);
+  const strava = etat?.strava ?? null;
   const nuits = etat?.nbNuits ?? 0;
 
   return (
     <EcranSection>
       <View style={{ gap: espace.e4 }}>
-        {demo ? <Text style={[typo.petit, { color: p.texteMuet }]}>Mode démo : aucune connexion.</Text> : null}
         {erreur ? <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>{erreur}</Text> : null}
-        {!demo && !etat && !erreur ? <ActivityIndicator color={p.texteDoux} /> : null}
-        {demo || etat ? <CarteStrava strava={strava} nbActivites={etat?.nbActivites ?? 0} demo={demo} onChange={() => void charger()} /> : null}
+        {!etat && !erreur ? <ActivityIndicator color={p.texteDoux} /> : null}
+        {etat ? <CarteStrava strava={strava} nbActivites={etat?.nbActivites ?? 0} onChange={() => void charger()} /> : null}
         <Bloc titre="Garmin">
           <View accessible accessibilityLabel="Garmin : bientôt disponible" style={styles.statut}>
             <View style={[styles.pastille, { backgroundColor: p.traitFort }]} />

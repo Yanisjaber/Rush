@@ -16,7 +16,7 @@ import { usePalette } from '@/theme/usePalette';
 // La photo est recadrée en carré avant l'envoi et enregistrée tout de suite (pas besoin du bouton Enregistrer du formulaire).
 export function PhotoProfil() {
   const p = usePalette();
-  const { session, demo } = useAuth();
+  const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const url = useAvatar();
   const [envoi, setEnvoi] = useState(false);
@@ -97,20 +97,14 @@ export function PhotoProfil() {
       <View style={styles.ligne}>
         <RondProfil url={url} taille={72} />
         <View style={styles.actions}>
-          {demo ? (
-            <Text style={[typo.petit, { color: p.texteMuet }]}>Mode démo : la photo n'est pas disponible.</Text>
-          ) : (
-            <>
-              <Bouton variante="discret" onPress={() => void choisir()} disabled={envoi}>
-                {envoi ? 'Envoi…' : url ? 'Changer la photo' : 'Choisir une photo'}
-              </Bouton>
-              {url ? (
-                <Bouton variante="discret" onPress={() => void retirer()} disabled={envoi}>
-                  Retirer la photo
-                </Bouton>
-              ) : null}
-            </>
-          )}
+          <Bouton variante="discret" onPress={() => void choisir()} disabled={envoi}>
+            {envoi ? 'Envoi…' : url ? 'Changer la photo' : 'Choisir une photo'}
+          </Bouton>
+          {url ? (
+            <Bouton variante="discret" onPress={() => void retirer()} disabled={envoi}>
+              Retirer la photo
+            </Bouton>
+          ) : null}
         </View>
       </View>
       {erreur ? (

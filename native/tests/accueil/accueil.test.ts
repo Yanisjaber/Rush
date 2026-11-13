@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { donneesDemoAccueil, famillesDe, type DonneesAccueil } from '../../src/data/accueil/accueil.ts';
+import { famillesDe, type DonneesAccueil } from '../../src/data/accueil/accueil.ts';
+import { donneesDemoAccueil } from '../fixtures-demo/accueil-demo.ts';
 import { appliquer, appliquerTout, cleRetouche, estManuelle } from '../../src/data/calendrier/retouches.ts';
 import { fusionnerFamilles, nettoyerSports, onboardingNecessaire, sportsCoches } from '../../src/data/sports/sports-choisis.ts';
 import { clair, sombre } from '../../src/theme/couleurs.ts';
@@ -77,7 +78,6 @@ test('sportsCoches : les sports révélés par les données apparaissent cochés
 
 test('onboardingNecessaire : seulement pour un vrai compte neuf', () => {
   assert.equal(onboardingNecessaire({}), true);
-  assert.equal(onboardingNecessaire({ demo: true }), false);
   assert.equal(onboardingNecessaire({ sportsEnregistres: [] }), false);
   assert.equal(onboardingNecessaire({ nbSeances: 3 }), false);
   assert.equal(onboardingNecessaire({ aHyrox: true }), false);
@@ -163,35 +163,34 @@ test('contourChamp : au moins 3:1 sur le fond et la surface, en sombre comme en 
 
 test('compte vide : ni donnée ni connexion → écran de démarrage', async () => {
   const { compteVide, bandeauConnexionVisible } = await import('../../src/data/accueil/etat-accueil.ts');
-  assert.equal(compteVide(vide(), false), true);
-  assert.equal(bandeauConnexionVisible(vide(), false, false), false); // l'écran de démarrage fait déjà le travail
+  assert.equal(compteVide(vide()), true);
+  assert.equal(bandeauConnexionVisible(vide(), false), false); // l'écran de démarrage fait déjà le travail
 });
 
 test('compte vide : une connexion suffit à avoir un accueil normal, même sans sortie encore', async () => {
   const { compteVide, bandeauConnexionVisible } = await import('../../src/data/accueil/etat-accueil.ts');
   const d = { ...vide(), connecte: true };
-  assert.equal(compteVide(d, false), false);
-  assert.equal(bandeauConnexionVisible(d, false, false), false);
+  assert.equal(compteVide(d), false);
+  assert.equal(bandeauConnexionVisible(d, false), false);
 });
 
 test('reprise après une pause : une vieille sortie suffit, sans connexion → accueil normal + message', async () => {
   const { compteVide, bandeauConnexionVisible } = await import('../../src/data/accueil/etat-accueil.ts');
   const d = { ...vide(), dernieres: [{ id: 'vieille' } as Seance] }; // hors des 84 jours : seules « dernieres » la voit
-  assert.equal(compteVide(d, false), false);
-  assert.equal(bandeauConnexionVisible(d, false, false), true);
+  assert.equal(compteVide(d), false);
+  assert.equal(bandeauConnexionVisible(d, false), true);
 });
 
-test('message de connexion : fermé ou pas encore lu → absent ; démo → absent', async () => {
+test('message de connexion : fermé ou pas encore lu → absent', async () => {
   const { bandeauConnexionVisible } = await import('../../src/data/accueil/etat-accueil.ts');
   const d = { ...vide(), dernieres: [{ id: 'x' } as Seance] };
-  assert.equal(bandeauConnexionVisible(d, false, true), false);
-  assert.equal(bandeauConnexionVisible(d, false, null), false);
-  assert.equal(bandeauConnexionVisible(d, true, false), false);
+  assert.equal(bandeauConnexionVisible(d, true), false);
+  assert.equal(bandeauConnexionVisible(d, null), false);
 });
 
 test('un compte qui n\'a que de la force, un objectif ou Hyrox n\'est pas vide', async () => {
   const { compteVide } = await import('../../src/data/accueil/etat-accueil.ts');
-  assert.equal(compteVide({ ...vide(), force: { series: [], programmes: [{ id: 'p' } as never] } }, false), false);
-  assert.equal(compteVide({ ...vide(), objectifs: [{ id: 'o' } as never] }, false), false);
-  assert.equal(compteVide({ ...vide(), hyrox: { tests: [], objectif: {} as never } }, false), false);
+  assert.equal(compteVide({ ...vide(), force: { series: [], programmes: [{ id: 'p' } as never] } }), false);
+  assert.equal(compteVide({ ...vide(), objectifs: [{ id: 'o' } as never] }), false);
+  assert.equal(compteVide({ ...vide(), hyrox: { tests: [], objectif: {} as never } }), false);
 });

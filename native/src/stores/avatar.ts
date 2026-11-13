@@ -40,10 +40,10 @@ export function definirAvatar(userId: string, url: string | null): void {
   changer({ userId, url, lu: Date.now() });
 }
 
-/** La photo du compte connecté (null : pas de photo, silhouette), et lance sa lecture si besoin. Jamais de photo en démo. */
+/** La photo du compte connecté (null : pas de photo, silhouette), et lance sa lecture si besoin. */
 export function useAvatar(): string | null {
-  const { session, demo } = useAuth();
-  const userId = !demo ? session?.user.id ?? null : null;
+  const { session } = useAuth();
+  const userId = session?.user.id ?? null;
   const courant = useSyncExternalStore(
     (fn) => {
       ecouteurs.add(fn);

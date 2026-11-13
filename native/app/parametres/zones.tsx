@@ -31,7 +31,7 @@ const ONGLETS: { cle: ModeleZones; libelle: string }[] = [
 export default function Zones() {
   const p = usePalette();
   const router = useRouter();
-  const { session, demo } = useAuth();
+  const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const { ligne, chargement } = useProfilSection('physiologie');
   const [onglet, setOnglet] = useState<ModeleZones>('puissance');
@@ -97,7 +97,7 @@ export default function Zones() {
     const suite = { ...extras } as Record<string, unknown>;
     if (Object.keys(zonesPerso).length) suite.zones_perso = zonesPerso;
     else delete suite.zones_perso;
-    const r = demo ? { erreur: '' } : userId ? await enregistrerProfil(userId, {}, suite) : { erreur: 'Reconnecte-toi.' };
+    const r = userId ? await enregistrerProfil(userId, {}, suite) : { erreur: 'Reconnecte-toi.' };
     setEnvoi(false);
     if (r.erreur) return setMessage(r.erreur);
     setPerso(zonesPerso);
@@ -164,15 +164,13 @@ export default function Zones() {
                 ))}
               </View>
 
-
-              {!demo ? (
-                <View style={{ gap: espace.e2 }}>
-                  {coach.etat !== 'proposition' ? (
-                    <Bouton variante="discret" onPress={() => void demanderAuCoach()} disabled={coach.etat === 'calcul'}>
-                      {coach.etat === 'calcul' ? 'Le coach calcule…' : 'Faire calculer mes zones par le coach'}
-                    </Bouton>
-                  ) : null}
-                  {coach.etat === 'erreur' ? <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>{coach.message}</Text> : null}
+              <View style={{ gap: espace.e2 }}>
+                {coach.etat !== 'proposition' ? (
+                  <Bouton variante="discret" onPress={() => void demanderAuCoach()} disabled={coach.etat === 'calcul'}>
+                    {coach.etat === 'calcul' ? 'Le coach calcule…' : 'Faire calculer mes zones par le coach'}
+                  </Bouton>
+                ) : null}
+                {coach.etat === 'erreur' ? <Text accessibilityRole="alert" style={[typo.petit, { color: p.danger }]}>{coach.message}</Text> : null}
                   {coach.etat === 'proposition' && coach.resultat ? (
                     <PropositionCoach
                       resultat={coach.resultat}
@@ -184,8 +182,7 @@ export default function Zones() {
                       onIgnorer={() => setCoach({ etat: 'repos' })}
                     />
                   ) : null}
-                </View>
-              ) : null}
+              </View>
             </View>
           ) : (
             <View style={styles.vide}>

@@ -1,21 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { chargerObjectifHyrox, chargerTestsHyrox } from '@/data/acces/api';
-import { objectifHyroxDemo, testsHyroxHistoriqueDemo } from '@/data/demo/demo';
 import type { ObjectifHyrox, TestHyrox } from '@/data/types';
 import { useAuth } from '@/stores/auth';
 
 // Les tests et courses Hyrox (table hyrox_tests) et l'objectif de temps pour le Bilan de l'Hyrox : une lecture quand l'onglet Hyrox est ouvert (`actif`), gardée cinq minutes.
-// En démo, les tests d'exemple. L'accueil les reçoit déjà dans son contexte ; le Bilan, lui, ne charge que les activités.
+// L'accueil les reçoit déjà dans son contexte ; le Bilan, lui, ne charge que les activités.
 const DUREE_CACHE = 5 * 60 * 1000;
 const cache = new Map<string, { tests: TestHyrox[]; objectif: ObjectifHyrox | null; a: number }>();
 const VIDE: TestHyrox[] = [];
 
 export function useTestsHyrox(actif: boolean): { tests: TestHyrox[]; objectif: ObjectifHyrox | null; chargement: boolean } {
-  const { session, demo } = useAuth();
-  const userId = !demo ? (session?.user.id ?? null) : null;
+  const { session } = useAuth();
+  const userId = session?.user.id ?? null;
   const [, rafraichir] = useState(0);
   const [chargement, setChargement] = useState(false);
-  const exemple = useMemo(() => (demo && actif ? { tests: testsHyroxHistoriqueDemo(new Date()), objectif: objectifHyroxDemo() } : null), [demo, actif]);
 
   useEffect(() => {
     if (!userId || !actif) return;
@@ -41,7 +39,6 @@ export function useTestsHyrox(actif: boolean): { tests: TestHyrox[]; objectif: O
   }, [userId, actif]);
 
   if (!actif) return { tests: VIDE, objectif: null, chargement: false };
-  if (exemple) return { ...exemple, chargement: false };
   const lu = userId ? cache.get(userId) : undefined;
   return { tests: lu?.tests ?? VIDE, objectif: lu?.objectif ?? null, chargement };
 }

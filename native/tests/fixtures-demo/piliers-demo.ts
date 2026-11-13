@@ -4,8 +4,8 @@
 //  - répétabilité : les 3 meilleurs efforts de 5 minutes de chaque sortie, médiane des 10 meilleures sorties de l'année ;
 //  - endurance : découplage cardiaque et cardio des sorties de plus de 2 h tenues à ±10 % de la puissance de référence ;
 //  - charge : CTL (forme de fond) calculé jour par jour sur la charge de toutes les séances, heures et jours actifs.
-import type { MesuresAnnee } from '../bilan/piliers-niveau.ts';
-import type { Seance } from '../types.ts';
+import type { MesuresAnnee } from '../../src/data/bilan/piliers-niveau.ts';
+import type { Seance } from '../../src/data/types.ts';
 import { genererFlux } from './flux-demo.ts';
 import { activitesBilanDemo, recordsVeloDemo } from './demo.ts';
 import { courbesVelo } from './courbes-demo.ts';

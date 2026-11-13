@@ -20,7 +20,7 @@ export interface EtatDisposition {
   /** Liste modifiée pendant l'édition : 'tout' ou un onglet de ONGLETS_PERSONNALISABLES. */
   ongletEdition: string;
   enEdition: boolean;
-  /** 'base' = enregistrée dans le compte ; 'local' = seulement sur cet appareil (démo, ou base injoignable). */
+  /** 'base' = enregistrée dans le compte ; 'local' = seulement sur cet appareil (base injoignable). */
   stockage: 'base' | 'local';
   message: string;
 }
@@ -30,7 +30,7 @@ const copie = (liste: WidgetPlace[]): WidgetPlace[] => liste.map((w) => ({ ...w 
 const estOngletRiche = (onglet: string) => ONGLETS_PERSONNALISABLES.includes(onglet);
 
 let etat: EtatDisposition = { pret: false, auto: true, widgets: [], onglets: ongletsVides(), ongletEdition: 'tout', enEdition: false, stockage: 'local', message: '' };
-let utilisateur: string | null = null; // identifiant du compte, ou 'demo'
+let utilisateur: string | null = null; // identifiant du compte
 let familles: string[] = [];
 let instantane: { auto: boolean; widgets: WidgetPlace[]; onglets: Record<string, WidgetPlace[] | null> } | null = null; // avant l'édition, pour « Annuler »
 const ecouteurs = new Set<() => void>();
@@ -58,7 +58,7 @@ function appliquer(layout: Disposition | null, garderOnglets = false) {
 }
 
 /**
- * Charge la disposition d'un utilisateur (`'demo'` : en mémoire, automatique). À appeler quand le compte ou ses sports changent :
+ * Charge la disposition d'un utilisateur À appeler quand le compte ou ses sports changent :
  * si c'est le même compte, seule la composition automatique est recalculée (sans toucher à une disposition personnalisée).
  */
 export async function chargerDisposition(uid: string, famillesPresentes: string[]) {
@@ -68,11 +68,6 @@ export async function chargerDisposition(uid: string, famillesPresentes: string[
     return;
   }
   utilisateur = uid;
-  if (uid === 'demo') {
-    changer({ stockage: 'local', message: '', enEdition: false });
-    appliquer(null);
-    return;
-  }
   const r = await chargerLayout(uid);
   if (utilisateur !== uid) return; // le compte a changé pendant la lecture
   changer({ stockage: r.erreur ? 'local' : 'base', message: '', enEdition: false });
@@ -94,7 +89,7 @@ async function enregistrer() {
     if (liste) onglets[sport] = liste.map((w) => ({ id: w.id, taille: w.taille }));
   }
   if (Object.keys(onglets).length) layout.onglets = onglets;
-  if (!utilisateur || utilisateur === 'demo' || etat.stockage !== 'base') return changer({ message: '' });
+  if (!utilisateur || etat.stockage !== 'base') return changer({ message: '' });
   const r = await enregistrerLayout(utilisateur, layout);
   changer({ stockage: r.erreur ? 'local' : 'base', message: r.erreur ? 'Enregistré sur cet appareil seulement (la sauvegarde en ligne a échoué).' : '' });
 }

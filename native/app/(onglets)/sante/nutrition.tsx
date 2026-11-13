@@ -28,7 +28,7 @@ export default function Nutrition() {
   const p = usePalette();
   const [date, setDate] = useState(dateIsoLocale(new Date()));
   const [message, setMessage] = useState('');
-  const { mesures, enregistrer, erreur, demo } = useMesuresSante();
+  const { mesures, enregistrer, erreur } = useMesuresSante();
   const jour = mesures[date] ?? {};
 
   const kcal = moyenneSur(mesures, 'calories_kcal', 7, date);
@@ -40,14 +40,13 @@ export default function Nutrition() {
 
   async function saisir(metric: string, valeur: number | null) {
     setMessage('');
-    if (await enregistrer(date, metric, valeur)) setMessage(demo ? 'Noté (démo : non enregistré)' : 'Enregistré');
+    if (await enregistrer(date, metric, valeur)) setMessage('Enregistré');
   }
 
   return (
     <EcranSection>
       <View style={{ gap: espace.e4 }}>
         <SelecteurJour date={date} onChange={(d) => { setDate(d); setMessage(''); }} />
-        {demo ? <Text style={[typo.petit, { color: p.texteMuet }]}>Mode démo : tes saisies restent en mémoire, rien n'est enregistré.</Text> : null}
         {erreur ? (
           <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
             <Text style={[typo.petit, { color: p.texte }]}>{erreur}</Text>

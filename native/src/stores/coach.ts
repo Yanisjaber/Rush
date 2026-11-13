@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react';
 import { lireAccesCoach } from '@/data/acces/api/coach';
 
 // L'accès au Coach (liste blanche : table coach_acces). L'onglet n'existe que si ce compte y a droit.
-// Tant que la lecture n'est pas finie, ou en cas d'erreur, ou en démo : pas d'accès, l'onglet reste caché.
+// Tant que la lecture n'est pas finie, ou en cas d'erreur: pas d'accès, l'onglet reste caché.
 let acces = false;
 let lu = false; // la lecture de l'accès est finie (ou a dépassé le délai) pour le compte courant
 let utilisateur: string | null = null;
@@ -52,7 +52,7 @@ async function lireCache(userId: string): Promise<boolean | null> {
 }
 const garderCache = (userId: string, ok: boolean) => void SecureStore.setItemAsync(cleCache(userId), ok ? 'oui' : 'non').catch(() => {});
 
-/** À appeler quand le compte change (connexion, déconnexion). `null` = personne de connecté, ou démo. */
+/** À appeler quand le compte change (connexion, déconnexion). `null` = personne de connecté. */
 export function chargerAccesCoach(userId: string | null): Promise<void> {
   // Même compte déjà lu ou en cours de lecture : rien à refaire (sinon l'accès repasserait à « non » un instant)
   if (userId === utilisateur && (enCours || userId === null) && lu) return enCours ?? Promise.resolve();

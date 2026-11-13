@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { chargerProfilComplet, enregistrerProfil } from '@/data/acces/api';
-import { donneesDemo } from '@/data/demo/demo';
 import { sectionParId, validerSection, valeursDepuis, versPayload, type LigneProfil, type Section } from '@/data/reglages/profil';
 import { useAuth } from '@/stores/auth';
 
 type Valeurs = Record<string, string | boolean>;
 
 // Une section du profil (Identité, Physiologie) : chargement, saisie, validation, enregistrement.
-// En démo rien n'est écrit : la ligne locale est simplement mise à jour. userId vient toujours de la session.
+// userId vient toujours de la session.
 export function useProfilSection(id: string) {
-  const { session, demo } = useAuth();
+  const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const section = useMemo<Section | null>(() => sectionParId(id), [id]);
   const [ligne, setLigne] = useState<LigneProfil | null>(null);
@@ -37,9 +36,7 @@ export function useProfilSection(id: string) {
     (async () => {
       setChargement(true);
       setErreur('');
-      if (demo) {
-        appliquer({ ...donneesDemo().profil }); // mêmes extras que la tuile de l'écran Paramètres
-      } else if (userId) {
+      if (userId) {
         const r = await chargerProfilComplet(userId);
         if (annule) return;
         if (r.erreur) setErreur(r.erreur);
@@ -50,7 +47,7 @@ export function useProfilSection(id: string) {
     return () => {
       annule = true;
     };
-  }, [demo, userId, appliquer]);
+  }, [userId, appliquer]);
 
   const modifier = useCallback((cle: string, valeur: string | boolean) => {
     setValeurs((v) => ({ ...v, [cle]: valeur }));
@@ -66,7 +63,7 @@ export function useProfilSection(id: string) {
     if (Object.keys(e).length) return;
     setEnvoi(true);
     const { colonnes, extras } = versPayload(section, propres, ligne?.extras);
-    const r = demo ? { data: { ...ligne, ...colonnes, extras } as LigneProfil, erreur: '' } : userId ? await enregistrerProfil(userId, colonnes, extras) : { data: null, erreur: 'Reconnecte-toi.' };
+    const r = userId ? await enregistrerProfil(userId, colonnes, extras) : { data: null, erreur: 'Reconnecte-toi.' };
     setEnvoi(false);
     if (r.erreur) {
       setErreur(r.erreur);
@@ -74,8 +71,8 @@ export function useProfilSection(id: string) {
     }
     appliquer(r.data);
     setMessage('Enregistré.');
-  }, [section, envoi, valeurs, ligne, demo, userId, appliquer]);
+  }, [section, envoi, valeurs, ligne, userId, appliquer]);
 
   const sale = initial !== '' && JSON.stringify(valeurs) !== initial;
-  return { section, ligne, valeurs, chargement, erreur, erreurs, envoi, message, sale, modifier, enregistrer, demo };
+  return { section, ligne, valeurs, chargement, erreur, erreurs, envoi, message, sale, modifier, enregistrer };
 }

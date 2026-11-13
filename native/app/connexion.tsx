@@ -4,7 +4,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, Pressable, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton } from '@/components/ui/Bouton';
 import { ChampTexte } from '@/components/champs/ChampTexte';
-import { connexion, entrerDemo } from '@/stores/auth';
+import { connexion } from '@/stores/auth';
 import { espace, rayon } from '@/theme/couleurs';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
@@ -12,7 +12,7 @@ import { usePalette } from '@/theme/usePalette';
 // Adresse du site, où l'on crée un compte (la confirmation par e-mail passe par le web pour l'instant).
 const ADRESSE_SITE = 'https://yanisjaber.github.io/Rush/';
 
-// Écran de connexion : e-mail et mot de passe, ou la démo sans compte.
+// Écran de connexion : e-mail et mot de passe.
 // Le mot de passe n'est jamais journalisé ni gardé ailleurs que dans le champ : il part directement à Supabase.
 export default function Connexion() {
   const p = usePalette();
@@ -104,11 +104,6 @@ export default function Connexion() {
           <Text style={[typo.corpsFort, { color: p.texte, textDecorationLine: 'underline' }]}>Ouvrir le site</Text>
         </Pressable>
 
-        <View style={{ marginTop: espace.e4 }}>
-          <Bouton variante="discret" onPress={entrerDemo}>
-            Essayer la démo, sans compte
-          </Bouton>
-        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

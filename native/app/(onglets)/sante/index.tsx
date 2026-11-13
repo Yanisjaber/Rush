@@ -32,7 +32,7 @@ export default function Sante() {
   const p = usePalette();
   const bas = useSafeAreaInsets().bottom;
   const router = useRouter();
-  const { nuits, chargement, erreur, actualisation, demo, recharger, rechargerSilencieux } = useDonneesSommeil();
+  const { nuits, chargement, erreur, actualisation, recharger, rechargerSilencieux } = useDonneesSommeil();
   const { metriques, chargement: chargementMetriques, erreur: erreurMetriques, recharger: rechargerMetriques } = useMetriques();
   const { mesures, chargement: chargementMesures, erreur: erreurMesures, recharger: rechargerMesures } = useMesuresSante();
   const serie = useMemo(() => serieEtatDeForme(nuits, metriques, mesures), [nuits, metriques, mesures]);
@@ -72,7 +72,7 @@ export default function Sante() {
         contentContainerStyle={[styles.contenu, { paddingTop: espace.e4, paddingBottom: bas + BARRE_ONGLETS }]}
         refreshControl={<RefreshControl refreshing={actualisation} onRefresh={() => void Promise.all([recharger(), rechargerMetriques(), rechargerMesures()])} tintColor={p.texteDoux} />}
       >
-        <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'capitalize' }]}>{demo ? 'Mode démo' : date}</Text>
+        <Text style={[typo.micro, { color: p.texteMuet, textTransform: 'capitalize' }]}>{date}</Text>
 
         {message ? (
           <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>

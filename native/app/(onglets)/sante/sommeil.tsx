@@ -32,7 +32,7 @@ const couleurTon = (p: Palette, ton: string) => (ton === 'bon' ? p.ok : ton === 
 export default function Sommeil() {
   const p = usePalette();
   const bas = useSafeAreaInsets().bottom;
-  const { nuits, chargement, erreur, actualisation, demo, recharger } = useDonneesSommeil();
+  const { nuits, chargement, erreur, actualisation, recharger } = useDonneesSommeil();
   const [vue, setVue] = useState<Vue>('Aperçu');
   const triees = useMemo(() => preparer(nuits), [nuits]);
   const pro = useMemo(() => analyser(triees), [triees]);
@@ -44,8 +44,6 @@ export default function Sommeil() {
         contentContainerStyle={[styles.contenu, { paddingTop: espace.e3, paddingBottom: bas + BARRE_ONGLETS }]}
         refreshControl={<RefreshControl refreshing={actualisation} onRefresh={recharger} tintColor={p.texteDoux} />}
       >
-        {demo ? <Text style={[typo.micro, { color: p.texteMuet }]}>Mode démo</Text> : null}
-
         <View accessibilityRole="tablist" style={[styles.segments, { backgroundColor: p.surface }]}>
           {VUES.map((v) => (
             <Pressable

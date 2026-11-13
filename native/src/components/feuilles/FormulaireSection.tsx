@@ -48,7 +48,6 @@ export function FormulaireSection({ id }: { id: string }) {
   }
   return (
     <View style={{ gap: espace.e4 }}>
-      {f.demo ? <Text style={[typo.petit, { color: p.texteMuet }]}>Mode démo : rien n'est enregistré.</Text> : null}
       {f.erreur ? (
         <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte }]}>
           <Text style={[typo.petit, { color: p.texte }]}>{f.erreur}</Text>

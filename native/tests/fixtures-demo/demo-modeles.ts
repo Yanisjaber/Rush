@@ -1,5 +1,5 @@
 // Les modèles de séance de la démo (la vraie liste vient de la table activity_template).
-import type { Modele } from '../calendrier/modeles.ts';
+import type { Modele } from '../../src/data/calendrier/modeles.ts';
 
 const bloc = (type: string, min: number, int: number, intHi: number | null = null, metric = 'power') => ({ type, metric, unit: 'zone', work: { min, int, intHi } });
 const intervalles = (reps: number, min: number, int: number, intHi: number, recMin: number, metric = 'power') => ({

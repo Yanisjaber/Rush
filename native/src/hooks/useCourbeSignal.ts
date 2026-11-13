@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { chargerCourbeSignal } from '@/data/acces/api';
 import type { CleSignal, PointCourbe } from '@/data/bilan/records';
-import { recordsVeloDemo } from '@/data/demo/demo';
 import { useAuth } from '@/stores/auth';
 import { auChangementDEcarts, useVersionEcarts } from '@/stores/ecarts';
 
 // La courbe d'un autre signal du vélo (FC, cadence, couple, vitesse, VAM, descente) : tous temps et année choisie.
-// Chargée quand on choisit le signal, puis gardée en mémoire cinq minutes. En démo, ce sont des courbes d'exemple. Pour la puissance, rien (elle vient de useRecordsVelo).
+// Chargée quand on choisit le signal, puis gardée en mémoire cinq minutes. Pour la puissance, rien (elle vient de useRecordsVelo).
 const DUREE_CACHE = 5 * 60 * 1000;
 const cache = new Map<string, { data: PointCourbe[]; a: number }>();
 const cleCache = (userId: string, signal: CleSignal, annee: number | undefined): string => `${userId}|${signal}|${annee ?? 'tout'}`;
@@ -14,15 +13,13 @@ const VIDE: PointCourbe[] = [];
 auChangementDEcarts(() => cache.clear()); // une donnée écartée change les records : on relit
 
 export function useCourbeSignal(signal: CleSignal, annee: number): { courbeTout: PointCourbe[]; courbeAnnee: PointCourbe[]; chargement: boolean; erreur: string } {
-  const { session, demo } = useAuth();
-  const userId = !demo ? (session?.user.id ?? null) : null;
+  const { session } = useAuth();
+  const userId = session?.user.id ?? null;
   const actif = signal !== 'puissance';
   const versionEcarts = useVersionEcarts();
   const [, rafraichir] = useState(0);
   const [chargement, setChargement] = useState(false);
   const [erreur, setErreur] = useState('');
-  const exemple = useMemo(() => (demo && actif ? recordsVeloDemo(new Date()) : null), [demo, actif]);
-  const donneesDemo = useMemo(() => (exemple ? { tout: exemple.courbeSignal(signal), annee: exemple.courbeSignal(signal, annee) } : null), [exemple, signal, annee]);
 
   useEffect(() => {
     if (signal === 'puissance' || !userId) return;
@@ -58,7 +55,6 @@ export function useCourbeSignal(signal: CleSignal, annee: number): { courbeTout:
   }, [userId, signal, annee, versionEcarts]);
 
   if (!actif) return { courbeTout: VIDE, courbeAnnee: VIDE, chargement: false, erreur: '' };
-  if (donneesDemo) return { courbeTout: donneesDemo.tout, courbeAnnee: donneesDemo.annee, chargement: false, erreur: '' };
   return {
     courbeTout: (userId && cache.get(cleCache(userId, signal, undefined))?.data) || VIDE,
     courbeAnnee: (userId && cache.get(cleCache(userId, signal, annee))?.data) || VIDE,

@@ -22,9 +22,8 @@ const TAILLES: Taille[] = ['xs', 's', 'm', 'l'];
 const IDS = Object.keys(WIDGETS);
 
 export default function CatalogueWidgets() {
-  const { demo } = useAuth();
-  // Outil de démo : un lien profond ne l'ouvre pas sur un vrai compte
-  return demo ? <Catalogue /> : <View style={{ flex: 1 }} />;
+  // Outil de démo : sans le mode démo il n'y a plus de données d'exemple, l'écran reste vide (à supprimer)
+  return <View style={{ flex: 1 }} />;
 }
 
 function Catalogue() {

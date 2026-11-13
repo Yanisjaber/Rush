@@ -2,7 +2,7 @@
 // supabase/functions/_shared/signaux.ts (vélo) et signaux-course.ts (course). Le code est copié ici (l'app mobile ne peut pas importer le dossier Deno) ;
 // tests/demo/courbes-demo.test.ts vérifie que les résultats sont identiques à ceux du serveur à 1 point par seconde.
 // Pour garder la démo rapide, les sorties à vélo sont calculées avec 1 point toutes les 5 secondes (`pas`) ; seules les durées de 1 à 4 s se lisent sur le stream à 1 point par seconde.
-import type { Seance } from '../types.ts';
+import type { Seance } from '../../src/data/types.ts';
 import { genererFlux, type Flux } from './flux-demo.ts';
 
 export type CourbeSignal = Record<string, number>;

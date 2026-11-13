@@ -3,8 +3,8 @@
 // et de l'air ; course : un profil d'allure par type de séance ; natation : des longueurs de 25 m et des repos ; muscu et Hyrox : des séries et des stations) et sont recalés sur les chiffres de la séance
 // (durée, distance, dénivelé, cardio moyen, puissance moyenne) : les moyennes d'un stream sont celles de la fiche. À partir d'eux, la démo calcule les mêmes courbes que le serveur (courbes-demo.ts).
 // Les chiffres d'une séance qui n'en a pas (cardio, puissance, FTP) se déduisent du même modèle : voir `completerSeance`.
-import type { Seance } from '../types.ts';
-import { familleAffichage } from '../sports/familles.ts';
+import type { Seance } from '../../src/data/types.ts';
+import { familleAffichage } from '../../src/data/sports/familles.ts';
 
 export interface Flux {
   /** Les secondes depuis le début (0, 1, 2… à 1 point par seconde ; 0, 5, 10… avec un pas de 5 s). */

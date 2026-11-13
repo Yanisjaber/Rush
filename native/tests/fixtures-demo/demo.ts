@@ -4,12 +4,12 @@
 import { completerSeance } from './flux-demo.ts';
 import { DEBUT_HISTORIQUE, historiqueDemo } from './historique-demo.ts';
 import { avecFtpDesCourbes, courbesCourtesVelo, courbesVelo, type CourbesVelo } from './courbes-demo.ts';
-import { familleAffichage } from '../sports/familles.ts';
-import { dateIsoLocale } from '../outils/format.ts';
-import type { ObjectifAnnuel } from '../bilan/bilan.ts';
-import type { CleSignal, EntreeCourbe, PointCourbe, SortieVelo } from '../bilan/records.ts';
-import { valeurValide, type LigneMesure } from '../sante/sante-catalogue.ts';
-import type { Nuit, SegmentNuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Seance, SerieForce, TestHyrox, Tour } from '../types.ts';
+import { familleAffichage } from '../../src/data/sports/familles.ts';
+import { dateIsoLocale } from '../../src/data/outils/format.ts';
+import type { ObjectifAnnuel } from '../../src/data/bilan/bilan.ts';
+import type { CleSignal, EntreeCourbe, PointCourbe, SortieVelo } from '../../src/data/bilan/records.ts';
+import { valeurValide, type LigneMesure } from '../../src/data/sante/sante-catalogue.ts';
+import type { Nuit, SegmentNuit, Metrique, Note, Objectif, ObjectifHyrox, PointPuissance, Prevue, ProgrammeForce, Seance, SerieForce, TestHyrox, Tour } from '../../src/data/types.ts';
 
 interface ModeleJour {
   sport: string;

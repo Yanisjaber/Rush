@@ -111,7 +111,6 @@ export function FormulairePhysio() {
           ))}
         </ScrollView>
 
-        {f.demo ? <Text style={[typo.petit, { color: p.texteMuet, marginBottom: espace.e2 }]}>Mode démo : rien n'est enregistré.</Text> : null}
         {f.erreur ? (
           <View accessibilityRole="alert" style={[styles.avis, { backgroundColor: p.surface, borderLeftColor: p.alerte, marginBottom: espace.e3 }]}>
             <Text style={[typo.petit, { color: p.texte }]}>{f.erreur}</Text>

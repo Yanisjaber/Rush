@@ -3,15 +3,15 @@ import { chargerSportsChoisis, enregistrerSportsChoisis } from '@/data/acces/api
 import { nettoyerSports, sportsCoches } from '@/data/sports/sports-choisis';
 import { useAuth } from '@/stores/auth';
 import { definirSportsCoches, useMenu } from '@/stores/menu';
-import { definirSportsDemo, sportsModifies, useSportsEtat } from '@/stores/sports';
+import { sportsModifies, useSportsEtat } from '@/stores/sports';
 
 // Les sports cochés du compte (sports choisis + sports que les séances révèlent) et leur enregistrement.
-// `appliquer` écrit en base (ou en mémoire en démo) puis prévient l'Accueil. userId vient toujours de la session.
+// `appliquer` écrit en base puis prévient l'Accueil. userId vient toujours de la session.
 export function useSportsChoisis() {
-  const { session, demo } = useAuth();
+  const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const { familles } = useMenu();
-  const { demo: sportsDemo, version } = useSportsEtat();
+  const { version } = useSportsEtat();
   const [choisis, setChoisis] = useState<string[] | null>(null);
   const [erreur, setErreur] = useState('');
   const [lectureEchouee, setLectureEchouee] = useState(false); // la liste enregistrée n'a pas pu être lue : on n'écrit rien par-dessus
@@ -22,9 +22,9 @@ export function useSportsChoisis() {
   useEffect(() => {
     let annule = false;
     (async () => {
-      const lue = demo || !userId ? null : await chargerSportsChoisis(userId);
+      const lue = !userId ? null : await chargerSportsChoisis(userId);
       if (annule) return;
-      const liste = demo ? sportsDemo : lue ? nettoyerSports(lue.data) : null;
+      const liste = lue ? nettoyerSports(lue.data) : null;
       setLectureEchouee(!!lue?.erreur);
       setErreur(lue?.erreur ?? '');
       // Une liste choisie est la vérité ; sinon on montre cochés les sports que les séances font apparaître
@@ -34,9 +34,8 @@ export function useSportsChoisis() {
       annule = true;
     };
     // `version` : on relit après chaque changement de sports (fait ici ou depuis un autre écran), sinon cette copie serait périmée.
-    // sportsDemo : relu à ces moments seulement, pour ne pas écraser une saisie en cours.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [demo, userId, version]);
+  }, [userId, version]);
 
   /** Enregistre la liste. Renvoie true si c'est fait. */
   const appliquer = useCallback(
@@ -44,12 +43,6 @@ export function useSportsChoisis() {
       if (envoi || lectureEchouee) return false;
       const propre = nettoyerSports(liste) ?? [];
       setErreur('');
-      if (demo) {
-        definirSportsDemo(propre);
-        definirSportsCoches(propre);
-        setChoisis(propre);
-        return true;
-      }
       if (!userId) return false;
       setEnvoi(true);
       const r = await enregistrerSportsChoisis(userId, propre);
@@ -63,8 +56,8 @@ export function useSportsChoisis() {
       sportsModifies();
       return true;
     },
-    [demo, userId, envoi, lectureEchouee],
+    [userId, envoi, lectureEchouee],
   );
 
-  return { choisis, setChoisis, erreur, envoi, appliquer, demo, lectureEchouee };
+  return { choisis, setChoisis, erreur, envoi, appliquer, lectureEchouee };
 }
