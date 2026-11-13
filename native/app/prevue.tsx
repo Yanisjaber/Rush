@@ -26,9 +26,9 @@ import { usePalette } from '@/theme/usePalette';
 // Une séance prévue ou une compétition, en lecture, avec le même modèle que la sortie réalisée (VueSortie) : page 1 = le graphique des blocs, ou le dessin du sport en fond sans bloc
 // ; page 2 = le temps par zone, tous les chiffres et les notes ; page 3 = la carte du GPX et son profil (s'il y en a un) ;
 // Le crayon du haut ouvre le formulaire (modifier, supprimer). On y arrive depuis le détail d'un jour du calendrier.
-// Les neuf tuiles de la page 2, toujours là dans cet ordre (un « - » quand la séance n'a pas la donnée) ; les autres chiffres (puissance, cardio, énergie…) suivent, seulement s'ils existent
-const TUILES_FIXES = ['duree', 'distance', 'allure', 'charge', 'effort', 'if', 'kcal', 'glucides', 'hydratation'];
-const LIBELLE_FIXE: Record<string, string> = { duree: 'Durée', distance: 'Distance', allure: 'Allure', charge: 'Charge', effort: 'Effort', if: 'Intensité', kcal: 'Calories', glucides: 'Glucides', hydratation: 'Hydratation' };
+// Les douze tuiles de la page 2, toujours là dans cet ordre (un « - » quand la séance n'a pas la donnée) ; les autres chiffres (puissance, cardio, énergie…) suivent, seulement s'ils existent
+const TUILES_FIXES = ['duree', 'distance', 'allure', 'charge', 'effort', 'if', 'kcal', 'glucides', 'hydratation', 'dplus', 'bpm', 'watts'];
+const LIBELLE_FIXE: Record<string, string> = { duree: 'Durée', distance: 'Distance', allure: 'Allure', charge: 'Charge', effort: 'Effort', if: 'Intensité', kcal: 'Calories', glucides: 'Glucides', hydratation: 'Hydratation', dplus: 'D+', bpm: 'Cardio moy.', watts: 'Puissance moy.' };
 
 // Le libellé d'une tuile : « Allure prévue » → « Allure », « Vitesse prévue » → « Vitesse »…
 const libelleTuile = (l: string): string =>
@@ -89,10 +89,9 @@ export default function Prevue() {
   // Le parcours GPX a toujours sa page (la 3, carte et profil d'altitude) ; la page 1 montre le graphique des blocs, ou la silhouette du sport sans bloc
   const profilEnGrand = blocs.length > 0;
   const minutes = minutesParZone(blocs, reference, prevue.sport);
-  // La page 2 : les neuf tuiles fixes (vide = « - »), puis les autres chiffres calculés
+  // La page 2 : les douze tuiles fixes (4 lignes de 3, vide = « - »), puis les autres chiffres éventuels de la compétition
   const tuilesPage2 = competition ? chiffres : [
     ...TUILES_FIXES.map((cle) => chiffres.find((c) => c.cle === cle) ?? { cle, libelle: cle === 'allure' && !['Run', 'TrailRun', 'Walk', 'Hike', 'Swim'].includes(prevue.sport) ? 'Vitesse' : LIBELLE_FIXE[cle], valeur: '-', unite: undefined }),
-    ...chiffres.filter((c) => !TUILES_FIXES.includes(c.cle)),
   ];
   const autres = tuilesPage2;
 
