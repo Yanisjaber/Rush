@@ -26,7 +26,7 @@ Chaque règle produit un constat avec une priorité ; on garde les 5 plus hauts.
 - Écran : `native/src/components/graphes/PageAnalyseSortie.tsx`, branchement dans `native/app/seance.tsx`, séance prévue liée par `native/src/hooks/usePrevueLiee.ts`.
 
 ## À savoir
-- Les seuils (70 %, 25 %, 4 %, 3 %, 10 %, 8 %…) sont des **conventions de lecture**, pas des normes. Seule la dérive de 5 % (endurance solide) est un repère connu. À sourcer comme les autres règles (voir `IA_A_FAIRE.md`).
+- Les seuils (70 %, 25 %, 4 %, 3 %, 10 %, 8 %…) sont des **conventions de lecture**, pas des normes. Seule la dérive de 5 % (endurance solide) est un repère connu. À sourcer comme les autres règles (voir `docs/A_FAIRE.md`).
 - La qualité dépend du profil : FC max, seuil de cœur, vitesse seuil (les allures des plans du coach sont des % de la vitesse seuil). Sans vitesse seuil, la ligne Plan dit ce qui manque au lieu d'inventer.
 - Les zones de cœur affichées partout viennent du même calcul (`calculerZones`).
 
@@ -34,7 +34,7 @@ Chaque règle produit un constat avec une priorité ; on garde les 5 plus hauts.
 La page affiche un titre et 3 ou 4 phrases (plus de liste de constats, plus de carte « À faire »). Le moteur choisit UN message principal (trop vite, trop dur, bien tenu, cibles du plan), puis le cœur (dérive, récupération entre les efforts d'un fractionné), la progression (à cœur égal contre les 5 dernières sorties du même type, `physio.ts`) et l'écart au prévu.
 
 ## Reste à faire
-Le chantier complet est suivi dans `IA_A_FAIRE.md` (section « Analyse de la sortie »).
+Le chantier complet est suivi dans `docs/A_FAIRE.md` (section « IA »).
 - Cadence (pas dans les flux bruts de l'app), relief (allure ajustée à la pente).
 - Muscu, natation, Hyrox : autres critères.
 - Un retour de Yanis sur la qualité des lignes après quelques sorties.

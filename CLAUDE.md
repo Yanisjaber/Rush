@@ -43,7 +43,7 @@ Guide pour Claude Code (claude.ai/code) dans ce dépôt. Les `.md` détaillés s
 
 ## `native/`
 
-- Charte visuelle : `docs/native/IDENTITE.md`. Chantiers en cours : `docs/native/CALENDRIER_A_FAIRE.md`.
+- Charte visuelle : `docs/native/IDENTITE.md`. Ce qui reste à faire : `docs/A_FAIRE.md`.
 - Écrans dans `native/app/`, logique dans `native/src/` (`data/`, `hooks/`, `stores/`), tests dans `native/tests/` (`node --test`).
 - Même compte et même base que le site (RLS identique), session dans SecureStore.
 - **Calculs en double** (`app/src/lib/data/*.js` et `native/src/data/*.ts`) : comme `app/` est gelé, on corrige **côté `native/` seulement**, sans synchroniser le web.

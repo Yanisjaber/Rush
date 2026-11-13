@@ -54,7 +54,7 @@ Les jetons Strava des utilisateurs sont chiffrés dans **Vault** (voir `docs/db/
 
 ## Limites du plan gratuit
 
-- 500 Mo de base : voir l'audit (`docs/db/AUDIT_2026-10-13.md`) pour la place prise par les courbes d'activités.
+- 500 Mo de base : les flux et courbes d’activités (`activities.streams_gz`, `signal_curves`) prennent l’essentiel de la place.
 - Le projet est mis en pause après 7 jours sans activité (il se réveille quand tu reviens).
 - 2 projets gratuits maximum par compte.
 

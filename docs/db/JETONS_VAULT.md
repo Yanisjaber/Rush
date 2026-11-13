@@ -1,6 +1,6 @@
 # Jetons Strava et Garmin : chiffrés dans Supabase Vault
 
-> Réponse à **SEC-1** de l'[audit](AUDIT_2026-10-13.md) : les jetons étaient lisibles en clair dans `connexions_app`.
+> Réponse à **SEC-1** de l’audit du 13 oct. 2026 (supprimé, récupérable dans git) : les jetons étaient lisibles en clair dans `connexions_app`.
 
 > **État actuel (28/10/2026)** : seul Strava est connecté (le Raspberry Pi et Garmin ont été retirés le 13/10), il n'y a plus de « repli en clair » et plus aucune colonne de jeton. Les Edge Functions concernées passent toutes par `_shared/jetons.ts`. Le reste de ce document garde l'historique des phases de la migration : les mentions du Pi, du repli et de l'écriture double sont du passé.
 
