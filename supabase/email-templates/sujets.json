@@ -1,5 +1,5 @@
 {
-  "confirm-signup": "Confirme ton compte Rush",
+  "confirm-signup": "Ton code Rush : {{ .Token }}",
   "recovery": "Réinitialise ton mot de passe Rush",
   "invite": "Tu es invité sur Rush",
   "password-changed": "Ton mot de passe Rush a été modifié",
