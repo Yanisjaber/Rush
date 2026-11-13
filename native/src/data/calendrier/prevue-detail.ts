@@ -17,6 +17,14 @@ const positif = (v: unknown): number | null => {
 };
 
 /** La distance écrite avec son unité : en mètres pour la natation, en kilomètres sinon (une décimale, aucune au-delà de 100 km). */
+/** Sépare l'unité collée à une valeur (« 5'49"/km », « 28,5 km/h », « 1'45"/100 m ») : elle va sur la ligne du dessous, comme « km » ou « pts ». */
+function separerUnite(texte: string | undefined): { valeur?: string; unite?: string } {
+  if (!texte) return {};
+  const m = texte.match(/^(.*?)(?: (km\/h))$|^(.*?)(\/.+)$/);
+  if (!m) return { valeur: texte };
+  return m[2] ? { valeur: m[1], unite: m[2] } : { valeur: m[3], unite: m[4] };
+}
+
 function distance(km: number, sport: string): { valeur: string; unite: string } {
   return sport === 'Swim' ? { valeur: formatNombre(Math.round(km * 1000)), unite: 'm' } : { valeur: formatKm(km, km >= 100 ? 0 : 1), unite: 'km' };
 }
@@ -58,7 +66,8 @@ export function chiffresPrevue(p: PrevueComplete): ChiffrePrevue[] {
     ajout('distance', 'Distance', d?.valeur, d?.unite);
     ajout('dplus', 'Dénivelé +', dplus != null ? formatNombre(dplus) : null, 'm');
     const allure = allureMoyenne(p.sport, km, cible);
-    ajout('allure', allure ? allure.libelle.replace('moy.', 'cible') : '', allure?.valeur);
+    const a = separerUnite(allure?.valeur);
+    ajout('allure', allure ? allure.libelle.replace('moy.', 'cible') : '', a.valeur, a.unite);
     ajout('federation', 'Fédération', p.federation);
     ajout('niveau', 'Niveau', p.race_level);
     ajout('format', 'Format', p.tri_format);
@@ -75,7 +84,8 @@ export function chiffresPrevue(p: PrevueComplete): ChiffrePrevue[] {
   ajout('dplus', 'Dénivelé +', dplus != null ? formatNombre(dplus) : null, 'm');
   ajout('effort', 'Effort estimé', rpe != null ? String(rpe) : null, '/10');
   const allure = allureMoyenne(p.sport, km, duree);
-  ajout('allure', allure ? allure.libelle.replace('moy.', 'prévue') : '', allure?.valeur);
+  const a = separerUnite(allure?.valeur);
+  ajout('allure', allure ? allure.libelle.replace('moy.', 'prévue') : '', a.valeur, a.unite);
   ajout('watts', 'Puissance estimée', positif(p.est_watts) != null ? formatNombre(Math.round(Number(p.est_watts))) : null, 'W');
   ajout('bpm', 'Cardio estimé', positif(p.est_bpm) != null ? formatNombre(Math.round(Number(p.est_bpm))) : null, 'bpm');
   ajout('kj', 'Énergie', positif(p.est_kj) != null ? formatNombre(Math.round(Number(p.est_kj))) : null, 'kJ');
