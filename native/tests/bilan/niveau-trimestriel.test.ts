@@ -82,6 +82,11 @@ test('fenêtre : les 3 derniers trimestres gardent les notes de tout l\'historiq
   assert.equal(fenetre(g, null, maintenant).trimestres.length, 9); // de T2 2024 à T2 2026
 });
 
+test('« Autres » n\'a pas de courbe : ski, trek… n\'ont aucun rapport entre eux', () => {
+  const g = notesTrimestrielles([act('2026-01-10', 600, { famille: 'autre' }), act('2026-01-12', 100)], maintenant);
+  assert.deepEqual(g.map((c) => c.famille), ['course']);
+});
+
 test('noms', () => {
   assert.equal(nomTrimestre('2026-T1'), 'T1 2026');
   assert.equal(moisDuTrimestre('2026-T3'), 'juil. – sept.');

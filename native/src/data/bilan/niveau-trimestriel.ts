@@ -40,11 +40,15 @@ const trimestreCourant = (maintenant: Date): string => `${maintenant.getFullYear
 /** Les mesures d'une séance dont le record (la plus grande valeur) compte comme « record posé pendant ce trimestre ». */
 const RECORDS_SEANCE = ['duree_min', 'distance_km', 'd_plus', 'tss'] as const;
 
+/** Les familles sans courbe : « Autres » (ski, trek…) mélange des sports sans rapport entre eux, un niveau n'y aurait aucun sens. */
+const SANS_COURBE = new Set(['autre']);
+
 /** Une courbe par sport (famille), le sport le plus pratiqué d'abord. Un sport sans une seule heure n'a pas de courbe. */
 export function notesTrimestrielles(acts: readonly ActiviteBilan[], maintenant: Date): CourbeSport[] {
   const courant = trimestreCourant(maintenant);
   const parSport = new Map<string, ActiviteBilan[]>();
   for (const a of acts) {
+    if (SANS_COURBE.has(a.famille)) continue;
     if (!(a.duree_min > 0)) continue;
     if (trimestreDe(a.iso) > courant) continue; // une séance datée dans le futur n'est pas encore faite
     const liste = parSport.get(a.famille) ?? [];
