@@ -26,7 +26,7 @@ import { typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
 // Une séance prévue ou une compétition, en lecture, avec le même modèle que la sortie réalisée (VueSortie) : page 1 = la carte et le profil du GPX, ou, sans GPX, le dessin du sport en fond
-// et le profil des blocs sous les chiffres ; page 2 = le temps par zone et les autres chiffres ; page 3 = la carte du GPX s'il y a aussi des blocs ; page « Notes » (seulement s'il y a des notes) = notes, Modifier et Supprimer.
+// et le profil des blocs sous les chiffres ; page 2 = le temps par zone, tous les chiffres, les notes, Modifier et Supprimer ; page 3 = la carte du GPX s'il y a aussi des blocs ;
 // Sans note, Modifier et Supprimer finissent la page 2. Le crayon du haut ouvre aussi le formulaire. On y arrive depuis le détail d'un jour du calendrier.
 export default function Prevue() {
   const p = usePalette();
@@ -108,8 +108,7 @@ export default function Prevue() {
   const profilEnGrand = blocs.length > 0;
   const carteEnPage = !!parcours && profilEnGrand;
   const minutes = minutesParZone(blocs, reference, prevue.sport);
-  const dejaVus = quatre.map((c) => c.cle);
-  const autres = chiffres.filter((c) => !dejaVus.includes(c.cle));
+  const autres = chiffres; // la page 2 reprend tous les chiffres, ceux de la page 1 compris
   const actions = (
     <View style={{ gap: espace.e2 }}>
       {erreurSuppression ? (
@@ -129,16 +128,6 @@ export default function Prevue() {
       </Pressable>
     </View>
   );
-  // Les notes ont leur page ; sans note, les boutons Modifier et Supprimer finissent la page 2 (pas de page presque vide)
-  const pageNotes = notes ? (
-    <>
-      <View style={[styles.notes, { backgroundColor: p.surface }]}>
-        <Text style={[typo.micro, { color: p.texteDoux }]}>NOTES</Text>
-        <Text style={[typo.corps, { color: p.texte }]}>{notes}</Text>
-      </View>
-      {actions}
-    </>
-  ) : undefined;
 
   return (
     <View style={styles.page}>
@@ -156,8 +145,6 @@ export default function Prevue() {
         onModifier={modifier}
         heros={profilEnGrand ? <GrapheSeancePrevue blocs={blocs} couleur={couleur} reference={reference} sport={prevue.sport} /> : undefined}
         avecPageCourbes={false}
-        nomPageCoach="Notes"
-        pageCoach={pageNotes}
         chiffres={
           <>
             {quatre.length ? (
@@ -186,7 +173,13 @@ export default function Prevue() {
               </View>
             ) : null}
             {!autres.length && !minutes.length ? <Text style={[typo.corps, { color: p.texteMuet }]}>Rien d'autre de renseigné sur cette séance.</Text> : null}
-            {pageNotes ? null : actions}
+            {notes ? (
+              <View style={[styles.notes, { backgroundColor: p.surface }]}>
+                <Text style={[typo.micro, { color: p.texteDoux }]}>NOTES</Text>
+                <Text style={[typo.corps, { color: p.texte }]}>{notes}</Text>
+              </View>
+            ) : null}
+            {actions}
           </>
         )}
       />
