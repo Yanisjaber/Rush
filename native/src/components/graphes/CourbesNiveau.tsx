@@ -9,7 +9,8 @@ import { SPORTS } from '@/theme/sports';
 import { police, typo } from '@/theme/typo';
 import { usePalette } from '@/theme/usePalette';
 
-// Le niveau mois par mois : une courbe de 0 à 100 par sport, dans la couleur du sport. La note d'un mois = ses heures / celles de ton meilleur mois de ce sport.
+// Le niveau mois par mois : une courbe de 0 à 100 par sport, dans la couleur du sport. La note d'un mois combine ses heures, sa charge et les records posés ce mois-là
+// (voir data/bilan/niveau-mensuel.ts) ; 100 = ton meilleur mois de ce sport.
 // Toucher le graphique choisit un mois : sous le dessin, la note de chaque sport pour ce mois (sinon, le meilleur mois de chaque sport).
 interface Props {
   /** Les mois affichés, dans l'ordre (« 2026-03 »). */
@@ -31,6 +32,9 @@ const B = 24; // la place des années en bas
 
 const nomSport = (famille: string): string => (Object.hasOwn(SPORTS, famille) ? SPORTS[famille as keyof typeof SPORTS].court : famille);
 const heures = (h: number): string => texteHM(Math.round(h * 60));
+/** Les trois faits d'un mois, écrits : « 51h40 · 2 140 pts · 2 records » */
+const faits = (pt: { heures: number; charge: number; records: number }): string =>
+  [heures(pt.heures), pt.charge > 0 ? `${Math.round(pt.charge).toLocaleString('fr-FR')} pts` : '', pt.records > 0 ? `${pt.records} ${pt.records > 1 ? 'records' : 'record'}` : ''].filter(Boolean).join(' · ');
 
 export function CourbesNiveau({ mois, courbes, couleurs, selection, onSelection }: Props) {
   const p = usePalette();
@@ -49,7 +53,7 @@ export function CourbesNiveau({ mois, courbes, couleurs, selection, onSelection 
     const xSvg = (xTactile / largeur) * LARGEUR;
     return Math.max(0, Math.min(n - 1, Math.round((xSvg - G) / (pas || 1))));
   };
-  const etiquette = `Niveau mois par mois, de ${nomMois(mois[0] ?? '')} à ${nomMois(mois[n - 1] ?? '')}. ${courbes.map((c) => `${nomSport(c.famille)} : meilleur mois ${nomMois(c.meilleur.mois)}, ${heures(c.meilleur.heures)}`).join(' ; ')}.`;
+  const etiquette = `Niveau mois par mois, de ${nomMois(mois[0] ?? '')} à ${nomMois(mois[n - 1] ?? '')}. ${courbes.map((c) => `${nomSport(c.famille)} : meilleur mois ${nomMois(c.meilleur.mois)}, ${faits(c.meilleur)}`).join(' ; ')}.`;
   const moisChoisi = selection != null ? mois[selection] : null;
 
   return (
@@ -95,13 +99,13 @@ export function CourbesNiveau({ mois, courbes, couleurs, selection, onSelection 
         {courbes.map((c) => {
           const couleur = couleurs[c.famille] ?? p.sportNeutre;
           const pt = moisChoisi ? c.points.find((x2) => x2.mois === moisChoisi) : c.meilleur;
-          const sous = moisChoisi ? (pt ? `${heures(pt.heures)}${pt.enCours ? ' · mois en cours' : ''}` : 'avant ton premier mois') : `${nomMois(c.meilleur.mois)} · ${heures(c.meilleur.heures)}`;
+          const sous = moisChoisi ? (pt ? `${faits(pt)}${pt.enCours ? ' · mois en cours' : ''}` : 'avant ton premier mois') : `${nomMois(c.meilleur.mois)} · ${faits(c.meilleur)}`;
           return (
             <View key={c.famille} accessible accessibilityLabel={`${nomSport(c.famille)}, ${pt ? `note ${pt.note}` : 'pas de note'}, ${sous}`} style={styles.ligne}>
               <View style={[styles.pastille, { backgroundColor: couleur }]} />
               <View style={{ flex: 1 }}>
                 <Text numberOfLines={1} style={[typo.corpsFort, { color: p.texte }]}>{nomSport(c.famille)}</Text>
-                <Text numberOfLines={1} style={[typo.petit, { color: p.texteMuet }]}>{sous}</Text>
+                <Text numberOfLines={2} style={[typo.petit, { color: p.texteMuet }]}>{sous}</Text>
               </View>
               <Text style={[styles.note, { color: p.texte }]}>{pt ? pt.note : '—'}</Text>
             </View>

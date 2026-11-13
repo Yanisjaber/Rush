@@ -110,7 +110,7 @@ Historique (une ligne par recalcul) :
 ## 7. Bilan et zones
 
 - [x] **8/10 · 1 j** Terminer la page Bilan en vue « Tous » : Résumé, Rythme, Records et Niveau (ex-Progrès) sont faits (14 nov.)
-- [x] **8/10 · 2 j** Supprimer ou modifier l'onglet Progrès avec des valeurs factuelles plutôt que des formules inventées (14 nov. : courbe de niveau mois par mois, note = heures du mois / heures du meilleur mois du sport, une courbe par sport)
+- [x] **8/10 · 2 j** Supprimer ou modifier l'onglet Progrès avec des valeurs factuelles plutôt que des formules inventées (14 nov. : courbe de niveau mois par mois, une courbe par sport ; note du mois = moyenne de 3 pourcentages : heures, charge, records posés ce mois-là, le meilleur mois = 100). Records = les 4 records de séance (durée, distance, dénivelé, charge) ; les records de puissance et de chrono (courbes) ne sont pas encore comptés
 - [ ] **4/10 · 1 j** Retirer le code de l'ancien Progrès dans `bilan.tsx` et ses composants (ProgresSport, NiveauGlobalSport, FormeSaison…), désactivé le 14 nov. mais encore là
 - [ ] **7/10 · 0,5 j** Voir et valider l'écran Paramètres › Zones dans le simulateur
 - [ ] **6/10 · 0,5 j** Essayer pour de vrai « Faire calculer mes zones par le coach »

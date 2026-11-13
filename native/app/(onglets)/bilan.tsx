@@ -726,7 +726,7 @@ export default function Bilan() {
               vueNiveau.courbes.length ? (
                 <Bloc titre="Niveau mois par mois">
                   <Text style={[typo.petit, { color: p.texteDoux, marginBottom: espace.e3 }]}>
-                    100 = ton meilleur mois de chaque sport, en heures d'entraînement. Touche un mois pour lire sa note.
+                    Note du mois = la moyenne de trois pourcentages : tes heures, ta charge et les records posés ce mois-là. 100 = ton meilleur mois de chaque sport. Touche un mois pour lire le détail.
                   </Text>
                   <View style={{ gap: espace.e3 }}>
                     <OngletsSegment<'3ans' | 'tout'>
