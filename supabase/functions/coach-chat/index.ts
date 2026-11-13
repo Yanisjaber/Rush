@@ -11,7 +11,7 @@
 //
 // Sécurité :
 //   - l'utilisateur vient du JWT vérifié, jamais du corps de la requête ;
-//   - liste blanche (table coach_acces), accord de partage des données, plafond de messages du jour, coupe-circuit de dépense du mois ;
+//   - accord de partage des données, plafond de messages du jour, coupe-circuit de dépense du mois ;
 //   - le modèle n'écrit jamais dans le calendrier : il propose des cartes, la séance n'existe qu'après « ajouter » (revalidé) ;
 //   - les journaux ne contiennent ni message, ni donnée de santé ; les erreurs montrées sont des phrases génériques ;
 //   - CORS restreint (_shared/cors.ts).

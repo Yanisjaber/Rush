@@ -1,18 +1,16 @@
 import { NativeTabs } from 'expo-router/native-tabs';
 import { police } from '@/theme/typo';
-import { useAccesCoach } from '@/stores/coach';
 import { useMenu } from '@/stores/menu';
 import { couleurSport } from '@/theme/sports';
 import { usePalette } from '@/theme/usePalette';
 
 // Barre du bas native (iOS 26 : Liquid Glass ; Android : barre Material). Cinq onglets :
 // Accueil, Calendrier, Bilan, Santé, Coach. Les Paramètres ne sont plus un onglet : la roue dentée en haut à droite les ouvre en plein écran.
-// Le Plan s'ouvrira depuis le Calendrier. Le Coach n'apparaît que pour les comptes de la liste blanche.
+// Le Plan s'ouvrira depuis le Calendrier.
 // Teinte active : la couleur du sport choisi dans la barre du haut, sinon la couleur du texte (charte §7).
 export default function OngletsLayout() {
   const p = usePalette();
   const { filtre } = useMenu();
-  const accesCoach = useAccesCoach();
   const teinte = filtre === 'tout' ? p.texte : couleurSport(p, filtre);
   return (
     <NativeTabs tintColor={teinte} labelStyle={{ fontFamily: police.texte600 }}>
@@ -32,8 +30,7 @@ export default function OngletsLayout() {
         <NativeTabs.Trigger.Label>Santé</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'heart', selected: 'heart.fill' }} md="favorite" />
       </NativeTabs.Trigger>
-      {/* Le Coach : seulement pour les comptes autorisés (liste blanche). Caché, l'onglet n'est atteignable d'aucune façon. */}
-      <NativeTabs.Trigger name="coach" hidden={!accesCoach}>
+      <NativeTabs.Trigger name="coach">
         <NativeTabs.Trigger.Label>Coach</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'bubble.left', selected: 'bubble.left.fill' }} md="chat" />
       </NativeTabs.Trigger>

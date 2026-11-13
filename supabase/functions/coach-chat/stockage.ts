@@ -27,10 +27,10 @@ function echec(contexte: string, error: any): never {
 
 export function creerStockage(sbUser: any, sbAdmin: any): StockageCoach {
   return {
-    async aAcces(userId) {
-      const { data, error } = await sbUser.from('coach_acces').select('user_id').eq('user_id', userId).maybeSingle();
-      if (error) echec('lecture de l\'accès', error);
-      return !!data;
+    // Le Coach est ouvert à tout compte connecté (la liste blanche coach_acces n'est plus lue, depuis le 13 nov. 2026).
+    // Restent les barrières : accord de partage des données, plafond de messages du jour, coupe-circuit de dépense du mois.
+    async aAcces(_userId) {
+      return true;
     },
 
     async lireReglages(userId) {

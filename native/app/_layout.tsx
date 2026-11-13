@@ -16,7 +16,6 @@ import { EcranChargement } from '@/components/ui/EcranChargement';
 import { ZoneClavier } from '@/components/champs/ZoneClavier';
 import { initAuth, useAuth } from '@/stores/auth';
 import { marquerAccueilCharge, useAccueilCharge } from '@/stores/chargement';
-import { chargerAccesCoach, useAccesCoachLu } from '@/stores/coach';
 import { chargerTheme } from '@/stores/theme';
 import { clair, sombre } from '@/theme/couleurs';
 
@@ -54,18 +53,11 @@ export default function RootLayout() {
     if (erreurPolices) console.warn('[polices] chargement impossible :', erreurPolices.message);
   }, [erreurPolices]);
 
-  // L'accès au Coach se lit dès que le compte est connu, et les onglets attendent la réponse (voir useAccesCoachLu).
-  // L'accès se relit à chaque changement de compte .
-  const compte = session?.user.id ?? null;
-  const accesLu = useAccesCoachLu();
-  useEffect(() => {
-    if (pret) void chargerAccesCoach(compte);
-  }, [pret, compte]);
-  // Une fois l'app affichée, elle ne redisparaît jamais (une déconnexion ne doit pas la démonter pour relire l'accès)
+  // Une fois l'app affichée, elle ne redisparaît jamais (une déconnexion ne doit pas la démonter)
   const [appPrete, setAppPrete] = useState(false);
   useEffect(() => {
-    if (pret && accesLu) setAppPrete(true);
-  }, [pret, accesLu]);
+    if (pret) setAppPrete(true);
+  }, [pret]);
 
   // Polices et thème prêts : on peut retirer l'écran de lancement natif, l'écran de chargement prend le relais par-dessus
   const decorPret = (policesPretes || !!erreurPolices) && themePret;

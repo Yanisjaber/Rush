@@ -12,7 +12,6 @@ import { ROUTE_ECRAN, type ActionApp } from '@/data/coach/actions';
 import { afficherRepere, repereHeure } from '@/data/coach/libelles';
 import { useCoach } from '@/hooks/useCoach';
 import { useAuth } from '@/stores/auth';
-import { useAccesCoach } from '@/stores/coach';
 import { demanderJour } from '@/stores/jour-demande';
 import { imposerFiltre } from '@/stores/menu';
 import { espace, rayon } from '@/theme/couleurs';
@@ -43,7 +42,6 @@ export default function Coach() {
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const { session } = useAuth();
-  const acces = useAccesCoach();
   const router = useRouter();
   // Les actions sans danger que le coach fait exécuter (liste blanche : data/coach/actions.ts). Aucune ne change une donnée.
   const executer = (a: ActionApp) => {
@@ -53,7 +51,7 @@ export default function Coach() {
       router.navigate('/calendrier');
     } else imposerFiltre(a.sport);
   };
-  const c = useCoach(acces ? session?.user.id ?? null : null, executer);
+  const c = useCoach(session?.user.id ?? null, executer);
   const clavier = useClavierOuvert();
   // Une liste NORMALE ancrée en bas (le plus récent en bas). Elle reste collée au bas tant que l'utilisateur n'a pas remonté ni déplié une carte :
 // un message qui arrive ou s'écrit reste visible, et une carte qu'on déplie s'ouvre vers le bas (son haut ne bouge pas), sans aucun décalage à rattraper.
@@ -112,9 +110,7 @@ export default function Coach() {
           }
         />
 
-        {!acces ? (
-          <Etat titre="Le coach n'est pas encore ouvert" texte="Ton compte n'y a pas encore accès. Il arrive bientôt." />
-        ) : c.chargement && c.messages.length === 0 ? (
+        {c.chargement && c.messages.length === 0 ? (
           <View accessible accessibilityLabel="Chargement de la conversation" style={styles.centre}>
             <ActivityIndicator color={p.texteDoux} />
           </View>
@@ -193,10 +189,10 @@ export default function Coach() {
           </GestureDetector>
         )}
 
-        {acces ? <SaisieCoach envoi={c.envoi} basse={clavier ? espace.e2 : insets.bottom + BARRE_ONGLETS} onEnvoyer={(t) => {
+        <SaisieCoach envoi={c.envoi} basse={clavier ? espace.e2 : insets.bottom + BARRE_ONGLETS} onEnvoyer={(t) => {
             colleAuBas.current = true;
             void c.envoyer(t);
-          }} /> : null}
+          }} />
       </KeyboardAvoidingView>
     </View>
   );

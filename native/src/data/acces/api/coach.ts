@@ -7,25 +7,11 @@ import { sb } from '../supabase';
 import type { Resultat } from './commun';
 
 // Tout ce que l'app échange avec le Coach IA (voir docs/ia/CADRAGE_IA.md).
-//   - Lire : la liste blanche, la conversation (RLS : seulement les lignes du compte).
+//   - Lire : la conversation (RLS : seulement les lignes du compte).
 //   - Écrire : jamais directement. Les messages, les cartes et le calendrier passent par la fonction serveur « coach-chat »,
 //     avec le jeton de la session (jamais de clé secrète dans l'app). Le serveur revérifie tout.
 
 const ADRESSE = `${SUPABASE_URL}/functions/v1/coach-chat`;
-
-/** Ce compte a-t-il droit au Coach (liste blanche) ? `null` = la lecture a échoué : on ne sait pas (ce n'est pas un « non »). */
-export async function lireAccesCoach(userId: string): Promise<boolean | null> {
-  try {
-    const { data, error } = await sb.from('coach_acces').select('user_id').eq('user_id', userId).maybeSingle();
-    if (error) {
-      console.error('[app/api] accès coach', error.code || '');
-      return null;
-    }
-    return !!data;
-  } catch {
-    return null;
-  }
-}
 
 /** Les derniers messages de la conversation (les plus récents d'abord, l'écran les remet dans l'ordre) */
 export async function chargerMessagesCoach(userId: string, limite = 60): Promise<Resultat<LigneMessage[]>> {

@@ -8,7 +8,7 @@
 // Le modèle propose seulement les limites des zones (voir _shared/coach-zones.ts) ; le code les valide (plafond absolu de 10 points) ; rien n'est écrit :
 // l'utilisateur voit la proposition sur une carte et la valide dans l'app, avec ses droits.
 //
-// Sécurité : l'utilisateur vient du JWT vérifié ; mêmes barrières que le chat (liste blanche coach_acces, accord de partage des données) ;
+// Sécurité : l'utilisateur vient du JWT vérifié ; mêmes barrières que le chat (accord de partage des données) ;
 // le modèle ne reçoit que des nombres ; les journaux ne contiennent aucune donnée ; CORS restreint (_shared/cors.ts).
 //
 // Déploiement : supabase functions deploy coach-zones
