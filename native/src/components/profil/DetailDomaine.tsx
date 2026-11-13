@@ -34,7 +34,7 @@ export function DetailDomaine({ palette: p, accent, numero, note, sexe, mesures,
         <Text style={[styles.grandeNote, { color: note.note === null ? p.texteMuet : p.texte }]}>{note.note === null ? '—' : note.note}</Text>
       </View>
       <Text style={[typo.petit, { color: p.texteDoux }]}>
-        {note.mesures} repère{note.mesures > 1 ? 's' : ''} mesuré{note.mesures > 1 ? 's' : ''} sur {note.reperes.filter((r) => !r.def.aVenir).length}. 100 = le meilleur mondial ({sexe === 'femme' ? 'femmes' : 'hommes'}).
+        {note.mesures}/{note.reperes.filter((r) => !r.def.aVenir).length} mesurés · 100 = record {sexe === 'femme' ? 'femmes' : 'hommes'}
       </Text>
       {note.reperes.map((v) => (
         <LigneRepere key={v.def.cle} palette={p} accent={accent} v={v} sexe={sexe} mesures={mesures} aujourdhui={aujourdhui} onSaisie={onSaisie} />
@@ -70,11 +70,11 @@ function LigneRepere({ palette: p, accent, v, sexe, mesures, aujourdhui, onSaisi
           </View>
           <Text style={[typo.petit, { color: p.texteMuet }]}>
             {v.provenance ? `${LIBELLE_PROVENANCE[v.provenance]}${v.date ? ` · ${dateCourte(v.date)}` : ''} · ` : ''}100 = {virgule(ref)}
-            {unite} ({v.def.ref.qui}){v.def.ref.statut === 'a_confirmer' ? ', à confirmer' : ''}
+            {unite}
+            {v.def.ref.statut === 'a_confirmer' ? ' (à confirmer)' : ''}
           </Text>
         </>
       ) : null}
-      {v.def.aide ? <Text style={[typo.petit, { color: p.texteDoux }]}>{v.def.aide}</Text> : null}
       {champ && !v.def.aVenir ? <ChampMesure def={champ} valeur={mesures[aujourdhui]?.[champ.cle] as number | undefined} onChange={(val) => onSaisie(champ.cle, val)} aideVisible={false} /> : null}
     </View>
   );
